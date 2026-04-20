@@ -86,16 +86,23 @@
 
 Серверні функції викликаються з route `loader` — це гарантує що дані завантажені до рендеру. Loader виконується і на сервері (SSR), і на клієнті (client-side navigation), але `createServerFn` автоматично стає RPC-викликом на клієнті.
 
+### Межа з Phase 5
+
+У цій фазі достатньо створити `src/server/themes.ts` як server-facing API для тем. Повна заміна внутрішньої реалізації `getActiveThemeSSR()` і фінальна cache-стратегія для themes завершуються в Phase 5, щоб не дублювати роботу.
+
 ## Антипатерни (уникати)
 
 ### ❌ DB-виклики напряму в route components
 В TanStack Start route components isomorphic — вони можуть виконуватися на клієнті. Прямий `supabase.from('products').select()` в компоненті витече в клієнтський bundle. Завжди через `createServerFn()`.
 
 ### ❌ Використовувати process.env в route modules без createServerFn
-`process.env.SUPABASE_*` доступні лише на сервері. Якщо route module виконується на клієнті, вони будуть undefined. Лише `NEXT_PUBLIC_*` (або `VITE_*`) доступні на клієнті.
+`process.env.SUPABASE_*` доступні лише на сервері. Якщо route module виконується на клієнті, вони будуть undefined. Після Phase 1 у клієнтському коді мають залишитися лише `import.meta.env.VITE_*` змінні.
 
 ### ❌ Створювати Supabase client всередині кожного createServerFn
 Factory має бути одна — `createServerSupabase()`. Серверні функції імпортують і викликають її. Не дублювати логіку cookies/headers в кожній функції.
+
+### ❌ Реалізувати тільки читання cookies без write-back
+Такий підхід дає приховану регресію: базова auth-перевірка може працювати, але session refresh і token rotation зламаються.
 
 ### ❌ Зберігати серверні функції в packages/simplycms/
 Серверні функції TanStack Start мають жити в `src/server/` — це site-level код, не core-level. Core має залишатися framework-agnostic (hooks, types, utils, UI components).
@@ -141,6 +148,7 @@ src/
 ## Definition of Done
 
 - [ ] `src/server/supabase.ts` існує з `createServerSupabase()` на базі TanStack Start server context
+- [ ] `createServerSupabase()` підтримує і читання, і запис cookies для `@supabase/ssr`
 - [ ] Серверні функції для products, sections, home, properties, auth, themes, sitemap існують і експортуються
 - [ ] Кожна серверна функція використовує `createServerFn()` з `@tanstack/react-start`
 - [ ] Серверні функції мають input validation де потрібно (slugs, ids)

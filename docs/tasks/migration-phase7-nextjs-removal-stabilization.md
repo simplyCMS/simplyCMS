@@ -25,7 +25,7 @@
 | `tsconfig.json` | Видалити Next.js-specific paths, додати src/ paths |
 | `eslint.config.mjs` | Замінити eslint-config-next на generic React config |
 | `tailwind.config.ts` | Оновити content paths (app/ → src/) |
-| `simplycms.config.ts` | Перевірити сумісність |
+| `simplycms.config.ts` | Перевірити сумісність і env access strategy |
 | `README.md` | Оновити інструкції (Next.js → TanStack Start) |
 | `AGENTS.md` | Оновити структуру проєкту |
 | `.github/instructions/*.md` | Оновити архітектурні інструкції |
@@ -82,7 +82,7 @@
 
 ### Перевірка Supabase Edge Functions
 
-- [ ] Перевірити `supabase/functions/` — Edge Functions (`get-guest-order/` та інші) не залежать від Next.js, але потрібно явно перевірити що вони працюють з новою архітектурою (guest-order endpoint тепер через createServerFn)
+- [ ] Перевірити `supabase/functions/` — Edge Functions (`get-guest-order/` та інші) не залежать від Next.js, але потрібно явно перевірити що вони працюють з новою архітектурою незалежно від того, чи guest-order реалізовано через `createServerFn`, чи через server handler
 
 ### Оновлення документації
 
@@ -125,6 +125,11 @@
 - [ ] `pnpm lint` — без помилок
 - [ ] `pnpm build` — production build проходить
 - [ ] `pnpm dev` — dev server стартує
+
+### Консистентність із попередніми фазами
+
+- [ ] Перевірити що фінальна auth/session реалізація використовує cookie read/write adapter для `@supabase/ssr`, а не лише читання cookies
+- [ ] Перевірити що theme caching спирається на in-memory TTL cache + loader/server-function orchestration, а не на `React.cache()` / `next/cache`
 - [ ] Функціональна перевірка:
   - Головна сторінка завантажується з SSR
   - Каталог / секції / товари відображаються
@@ -189,6 +194,9 @@
 ### ❌ Залишати "мертвий код"
 Після видалення app/ перевірити чи не залишились imports або references на видалені файли в packages/ або src/.
 
+### ❌ Залишати змішану env-модель
+Після cleanup не можна залишати одночасно `NEXT_PUBLIC_*` і `VITE_*` для клієнтських змінних. Клієнтський код має бути повністю переведений на `import.meta.env.VITE_*`, а серверний env-доступ — на узгоджену схему.
+
 ### ❌ Видаляти next-themes
 `next-themes` — framework-agnostic пакет (працює з будь-яким React). Незважаючи на назву, він не залежить від Next.js. Залишити.
 
@@ -227,6 +235,7 @@ src/
           index.tsx
           $productSlug.tsx
       properties/
+        index.tsx
         $propertySlug/
           index.tsx
           $optionSlug.tsx

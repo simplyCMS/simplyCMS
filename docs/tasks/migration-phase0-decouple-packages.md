@@ -30,6 +30,8 @@
 - [ ] Замінити `next/dynamic` в `app/(cms)/admin/` на `React.lazy` + `Suspense` (або залишити поки — ці файли будуть видалені в Phase 7)
 - [ ] Позначити `packages/simplycms/core/src/supabase/server.ts` (cookies з `next/headers`) і `packages/simplycms/core/src/supabase/proxy.ts` (NextResponse/NextRequest з `next/server`) як **server-only файли що будуть переписані в Phase 2** — поки не чіпати, але задокументувати залежність
 - [ ] Позначити `packages/simplycms/theme-system/src/getActiveThemeSSR.ts` (unstable_cache з `next/cache`) як **файл що буде переписаний в Phase 5** — поки не чіпати
+- [ ] Додатково перевірити `packages/simplycms/admin/src/components/` і `packages/simplycms/admin/src/layouts/` на прямі `next/*` імпорти, а не лише `pages/`
+- [ ] Зафіксувати що `packages/simplycms/core/src/supabase/client.ts` містить `"use client"` і browser singleton pattern; сам файл не змінювати в цій фазі, але врахувати його адаптацію в Phase 1
 - [ ] Після заміни: `pnpm typecheck` проходить без помилок
 - [ ] Після заміни: `pnpm build` проходить (Next.js ще залишається runtime)
 - [ ] Після заміни: `pnpm dev` працює без регресій
@@ -46,6 +48,7 @@
   - Чому це важливо: Next.js Link приймає `href`, TanStack Router Link приймає `to`. Якщо адаптер зберігає `href` prop, перемикання стане простішим
   - Варіант A: Адаптер приймає `href` і маппить на внутрішню реалізацію (рекомендовано для плавного переходу)
   - Варіант B: Одразу перейти на `to` prop (менше роботи в Phase 1, але більше змін тут)
+  - Додатково: адаптер має зберегти сумісність по `className`, `children`, `target`, `rel`, `onClick` і базових anchor props
   - Вплив: обсяг роботи в Phase 0 vs Phase 1
 
 - [ ] Що робити з `next-themes` (useTheme)?
@@ -132,6 +135,8 @@
 - `components/ProductModifications.tsx` — `next/image`
 - `components/ReviewDetail.tsx` — `next/image` (якщо не в pages/)
 
+> Перед імплементацією зробити повний grep по `packages/simplycms/admin/src/`, щоб підтвердити повний список `pages/`, `components/` і `layouts/`.
+
 ### Файли для заміни імпортів — themes (~12 файлів)
 
 **themes/default/:** components/Header, Footer, ProductCard, BannerSlider, BrandCarousel, ProductCarousel; layouts/ProfileLayout
@@ -150,6 +155,7 @@
 - [ ] Жоден файл в `packages/simplycms/admin/src/` не імпортує напряму з `next/*`
 - [ ] Жоден файл в `themes/default/` і `themes/solarstore/` не імпортує напряму з `next/*`
 - [ ] Всі framework-specific імпорти проходять через `@simplycms/core/adapters/*`
+- [ ] Повний grep по `packages/simplycms/admin/src/` підтверджує що `pages/`, `components/` і `layouts/` очищені від прямих `next/*` імпортів
 - [ ] `pnpm typecheck` проходить без помилок
 - [ ] `pnpm build` проходить без помилок
 - [ ] `pnpm dev` працює — storefront, admin, auth функціонують як раніше

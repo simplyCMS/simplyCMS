@@ -191,6 +191,7 @@ src/routes/
 - [ ] Всі storefront маршрути з таблиці маппінгу створені як TanStack Start file routes
 - [ ] Кожен SSR-маршрут має loader (серверна функція), head (SEO meta), component (theme page)
 - [ ] Сторінка товару має JSON-LD Product schema в head
+- [ ] Сторінка списку властивостей (`_storefront/properties/index.tsx`) існує і віддається як SSR route
 - [ ] Sitemap генерується як XML по URL `/sitemap.xml`
 - [ ] Robots.txt генерується по URL `/robots.txt`
 - [ ] Тема завантажується один раз в layout route і передається через context

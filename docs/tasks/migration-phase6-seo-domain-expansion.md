@@ -8,9 +8,9 @@
 
 | Таблиця | Наявні поля | Чого не вистачає |
 |---------|-------------|------------------|
-| `products` | `meta_title`, `meta_description` | seo_h1, canonical_url, og_title, og_description, og_image, robots, schema_json |
-| `sections` | `meta_title`, `meta_description` | seo_h1, canonical_url, og_title, og_description, og_image, robots |
-| `property_options` | `meta_title`, `meta_description` | seo_h1, canonical_url, og_description |
+| `products` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_title, og_description, og_image, twitter_title, twitter_description, twitter_image, robots, schema_json |
+| `sections` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_title, og_description, og_image, twitter_title, twitter_description, twitter_image, robots |
+| `property_options` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_description, twitter_description |
 
 ### Бажаний стан
 
@@ -25,15 +25,18 @@
 - [ ] Додати SEO-поля до таблиці `products`:
   - `seo_h1` (text, nullable) — заголовок H1 на сторінці (якщо відрізняється від name)
   - `canonical_url` (text, nullable) — канонічний URL
+  - `meta_keywords` або `seo_tags` (text або text[], nullable) — ключові слова / SEO теги, якщо вирішено підтримувати
   - `og_title` (text, nullable) — Open Graph title (fallback на meta_title → name)
   - `og_description` (text, nullable) — Open Graph description (fallback на meta_description → description)
   - `og_image` (text, nullable) — Open Graph image URL (fallback на перше зображення)
+  - `twitter_title` (text, nullable) — fallback на og_title → meta_title → name
+  - `twitter_description` (text, nullable) — fallback на og_description → meta_description → description
+  - `twitter_image` (text, nullable) — fallback на og_image → перше зображення
   - `robots` (text, nullable) — robots meta (index/noindex, follow/nofollow)
   - `schema_json` (jsonb, nullable) — custom JSON-LD override (якщо потрібна ручна корекція)
-  - `meta_keywords` (text, nullable) — ключові слова для meta keywords (опціонально, для сумісності)
 - [ ] Додати аналогічні SEO-поля до таблиці `sections` (без schema_json)
 - [ ] Додати SEO-поля до таблиці `property_options`:
-  - `seo_h1`, `canonical_url`, `og_description`
+  - `seo_h1`, `canonical_url`, `meta_keywords` або `seo_tags`, `og_description`, `twitter_description`
 - [ ] Створити Supabase migration для нових полів
 - [ ] Згенерувати оновлені TypeScript типи: `pnpm db:generate-types`
 
@@ -46,7 +49,7 @@
     2. Бізнес-поля (name, description, images)
     3. Site defaults (з CMS конфігурації)
   - Повертає обʼєкт придатний для прямого використання в route `head`
-  - Повертає Twitter Card meta (`twitter:title`, `twitter:description`, `twitter:image`, `twitter:card`)
+  - Повертає `canonical`, `h1`, `keywords/tags`, `og:*`, `twitter:*`, `robots`, `JSON-LD`
 - [ ] seoResolver має генерувати JSON-LD:
   - Для products: schema.org Product з offers
   - Для sections: schema.org CollectionPage
@@ -99,9 +102,9 @@ Resolver приймає raw entity data і повертає normalізовани
 - `og:image`: og_image → images[0] → site_og_image
 - `robots`: robots → "index, follow" (default)
 - `twitter:card`: "summary_large_image" (default)
-- `twitter:title`: og_title → meta_title → name
-- `twitter:description`: og_description → meta_description → short_description
-- `twitter:image`: og_image → images[0] → site_og_image
+- `twitter:title`: twitter_title → og_title → meta_title → name
+- `twitter:description`: twitter_description → og_description → meta_description → short_description
+- `twitter:image`: twitter_image → og_image → images[0] → site_og_image
 
 - Де створювати: `packages/simplycms/core/src/lib/seoResolver.ts`
 
@@ -159,7 +162,7 @@ Resolver — чиста функція `(entity, defaults) → SEOResult`. Жо�
 - [ ] TypeScript типи оновлені через `pnpm db:generate-types`
 - [ ] `seoResolver` utility створено в `@simplycms/core/lib/` з fallback chain
 - [ ] Admin UI має SEO collapse panel у формах product і section
-- [ ] Route `head` property використовує seoResolver для meta, og, robots, JSON-LD
+- [ ] Route `head` property використовує seoResolver для meta, canonical, keywords/tags, og, twitter, robots, JSON-LD
 - [ ] JSON-LD для products використовує schema.org Product з offers
 - [ ] Порожні SEO-поля fallback-ять на бізнес-поля → site defaults
 - [ ] `pnpm typecheck` проходить

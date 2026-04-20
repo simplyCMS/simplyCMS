@@ -48,9 +48,9 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 - [ ] **Міграція змінних оточення:** замінити `NEXT_PUBLIC_*` на `VITE_*` prefix у всіх клієнтських змінних. Зачеплені файли:
   - `packages/simplycms/core/src/supabase/anon.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `packages/simplycms/core/src/supabase/client.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
-  - `simplycms.config.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `.env.local` — перейменувати ключі
   - В Vite доступ через `import.meta.env.VITE_*` замість `process.env.NEXT_PUBLIC_*`
+- [ ] Окремо визначити env-strategy для `simplycms.config.ts`: або залишити server-side `process.env`, або ввести узгоджений helper для читання env, але не змішувати цю логіку хаотично з клієнтськими `import.meta.env`
 - [ ] Адаптувати `supabase/client.ts`: видалити `"use client"`, зберегти singleton pattern з `typeof window !== "undefined"` guard
 - [ ] Вирішити Tailwind v4 + Vite: використати `@tailwindcss/vite` плагін (замість PostCSS pipeline) або залишити PostCSS — прийняти рішення і задокументувати
 - [ ] `pnpm dev` стартує TanStack Start dev server
