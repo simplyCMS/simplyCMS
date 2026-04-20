@@ -10,13 +10,20 @@
 |---------|-------------|------------------|
 | `products` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_title, og_description, og_image, twitter_title, twitter_description, twitter_image, robots, schema_json |
 | `sections` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_title, og_description, og_image, twitter_title, twitter_description, twitter_image, robots |
+| `properties` | обмежений або відсутній SEO-контур | seo_h1, canonical_url, meta_keywords або seo_tags, og_title, og_description, robots |
 | `property_options` | `meta_title`, `meta_description` | seo_h1, canonical_url, meta_keywords або seo_tags, og_description, twitter_description |
 
 ### Бажаний стан
 
 Повноцінне SEO-управління з адмінки — можливість задавати title, description, OG-теги, canonical URL, robots, JSON-LD для кожної сторінки. З fallback-ланцюжком: SEO-поля → бізнес-поля → site defaults.
 
-Ця фаза може виконуватися **незалежно від Phases 0-5**, якщо DB-міграція сумісна з поточною структурою. Але рекомендується після Phase 3 (коли SSR routes вже використовують route `head` для SEO).
+У цій фазі **site defaults стандартизуються через `simplycms.config.ts`**. Окрема `site_settings` таблиця не вводиться в межах цієї міграції.
+
+Ця фаза **не є повністю незалежною** від Phases 0-5. DB-міграцію можна підготувати окремо, але повноцінне завершення фази залежить щонайменше від:
+
+- SSR storefront routes з Phase 3;
+- admin routes і форми редагування з Phase 4;
+- стабілізованого theme/provider/request lifecycle з Phase 5.
 
 ## Вимоги
 
@@ -35,6 +42,13 @@
   - `robots` (text, nullable) — robots meta (index/noindex, follow/nofollow)
   - `schema_json` (jsonb, nullable) — custom JSON-LD override (якщо потрібна ручна корекція)
 - [ ] Додати аналогічні SEO-поля до таблиці `sections` (без schema_json)
+- [ ] Додати SEO-поля до таблиці `properties`:
+  - `seo_h1`
+  - `canonical_url`
+  - `meta_keywords` або `seo_tags`
+  - `og_title`
+  - `og_description`
+  - `robots`
 - [ ] Додати SEO-поля до таблиці `property_options`:
   - `seo_h1`, `canonical_url`, `meta_keywords` або `seo_tags`, `og_description`, `twitter_description`
 - [ ] Створити Supabase migration для нових полів
@@ -43,7 +57,7 @@
 ### SEO resolver layer
 
 - [ ] Створити `seoResolver` utility в `@simplycms/core`:
-  - Приймає entity (product/section/property_option) і site defaults
+  - Приймає entity (product/section/property/property_option) і site defaults
   - Повертає повний SEO обʼєкт з fallback-ланцюжком:
     1. Явні SEO-поля (meta_title, og_title, etc.)
     2. Бізнес-поля (name, description, images)
@@ -53,6 +67,7 @@
 - [ ] seoResolver має генерувати JSON-LD:
   - Для products: schema.org Product з offers
   - Для sections: schema.org CollectionPage
+  - Для properties / property options: узгоджений CollectionPage або taxonomy-like schema, якщо він реально потрібен для індексації
   - Можливість override через `schema_json` поле
 
 ### Admin UI для SEO
@@ -62,11 +77,12 @@
   - Показувати preview як виглядатиме в Google Search (SERP preview)
   - Показувати автоматичні значення (fallback) поки поле порожнє
 - [ ] Додати аналогічну SEO-секцію до форми секції
+- [ ] Додати SEO-секцію до форми property
 - [ ] Додати SEO-поля до форми property option (менший набір)
 
 ### Оновлення storefront routes
 
-- [ ] Оновити route loaders щоб серверні функції повертали SEO-поля
+- [ ] Оновити route loaders щоб серверні функції повертали SEO-поля для products, sections, properties і property options
 - [ ] Оновити route `head` property щоб використовувати `seoResolver()` замість manual mapping
 - [ ] JSON-LD в head має використовувати resolver (з можливістю override через schema_json)
 
@@ -74,16 +90,14 @@
 
 - [ ] Чи потрібна окрема SEO-таблиця замість додавання полів в існуючі?
   - Чому це важливо: окрема таблиця `seo_metadata (entity_type, entity_id, ...)` — більш normalized, але складніший JOIN
-  - Варіант A: Поля напряму в products/sections/property_options (рекомендовано — простіше, менше запитів)
+  - Варіант A: Поля напряму в products/sections/properties/property_options (рекомендовано — простіше, менше запитів)
   - Варіант B: Окрема `seo_metadata` таблиця з polymorphic relation
   - Вплив: DB schema, запити, міграції
 
-- [ ] Які site defaults для SEO?
+- [ ] Джерело site defaults для SEO
   - Чому це важливо: seoResolver потребує fallback значень
-  - Варіант A: Конфігурація в `simplycms.config.ts` — site title, site description, default og:image
-  - Варіант B: Таблиця `site_settings` в БД
-  - Варіант C: Hardcoded defaults в resolver
-  - Вплив: конфігурабельність
+  - Прийняте рішення: `simplycms.config.ts` є єдиним source of truth для site title, site description і default og:image у межах цієї міграції
+  - Вплив: однозначний fallback chain і відсутність додаткового DB-контуру
 
 - [ ] Який формат SERP preview в адмінці?
   - Чому це важливо: Google SERP preview допомагає контент-менеджерам оптимізувати title/description
@@ -158,10 +172,10 @@ Resolver — чиста функція `(entity, defaults) → SEOResult`. Жо�
 
 ## Definition of Done
 
-- [ ] SEO-поля додані в БД (products, sections, property_options) через Supabase migration
+- [ ] SEO-поля додані в БД (products, sections, properties, property_options) через Supabase migration
 - [ ] TypeScript типи оновлені через `pnpm db:generate-types`
 - [ ] `seoResolver` utility створено в `@simplycms/core/lib/` з fallback chain
-- [ ] Admin UI має SEO collapse panel у формах product і section
+- [ ] Admin UI має SEO collapse panel у формах product, section і property
 - [ ] Route `head` property використовує seoResolver для meta, canonical, keywords/tags, og, twitter, robots, JSON-LD
 - [ ] JSON-LD для products використовує schema.org Product з offers
 - [ ] Порожні SEO-поля fallback-ять на бізнес-поля → site defaults

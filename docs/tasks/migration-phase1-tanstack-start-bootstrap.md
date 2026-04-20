@@ -1,10 +1,15 @@
-# Task: Phase 1 — Встановлення TanStack Start та перемикання адаптерів
+# Task: Phase 1 — Встановлення TanStack Start і прямий breaking rewrite примітивів
 
 ## Контекст
 
-Після Phase 0 пакети `@simplycms/core`, `@simplycms/admin` і `themes/*` більше не імпортують напряму з `next/*` — вони працюють через адаптери в `@simplycms/core/adapters/`. Зараз адаптери делегують до Next.js.
+Після Phase 0 зафіксовано, що міграція йде **без adapter-шару** і без dual-runtime. Ця фаза:
 
-Ця фаза встановлює **TanStack Start + Vite** як новий runtime, створює мінімальний робочий skeleton і **перемикає адаптери** з Next.js на TanStack Router. Після цієї фази Next.js ще фізично присутній в `node_modules`, але пакети вже не залежать від нього.
+- встановлює TanStack Start + Vite;
+- створює новий runtime skeleton;
+- **одразу** переписує `next/link`, `next/navigation`, `next/image`, `next/font`, `next/dynamic` на фінальні рішення;
+- рано прибирає Next.js з runtime-контурів проєкту замість того, щоб відкладати це до фінального cleanup.
+
+Після цієї фази `app/` може ще тимчасово існувати як довідкове джерело при перенесенні маршрутів, але **робочим runtime уже має бути TanStack Start**.
 
 ### Що таке TanStack Start
 
@@ -40,17 +45,28 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 - [ ] Створити `src/router.tsx` — фабрика роутера з `createRouter()` і route tree
 - [ ] Створити `src/routes/__root.tsx` — root route з HTML shell, `HeadContent`, `Scripts`, `Outlet`, глобальним CSS
 - [ ] Створити `src/routes/index.tsx` — мінімальна головна сторінка (placeholder) для перевірки що dev server стартує
+- [ ] Створити `src/start.ts` і підключити глобальний middleware pipeline, навіть якщо на цьому етапі він ще мінімальний
 - [ ] Оновити `package.json` scripts: `dev`, `build`, `start` мають запускати TanStack Start через Vite
-- [ ] **Перемкнути адаптер роутингу** (`@simplycms/core/adapters/router`) з `next/*` на `@tanstack/react-router`
-- [ ] **Перемкнути адаптер зображень** (`@simplycms/core/adapters/image`) з `next/image` на звичайний `<img>` елемент
+- [ ] Видалити залежності `next`, `eslint-config-next` і Next.js runtime-конфігурацію з активного шляху виконання одразу після того, як Start skeleton збирається
+- [ ] Замінити **всі** `next/link` у `packages/` і `themes/` на `Link` з `@tanstack/react-router` або на prop-driven навігацію через route layer
+- [ ] Замінити **всі** `next/navigation` у `packages/` і `themes/` на фінальні TanStack Router патерни:
+  - `useNavigate()`
+  - `useLocation()`
+  - `Route.useParams()` / `Route.useSearch()` на рівні route files
+  - props / route context у shared screens
+- [ ] Замінити **всі** `next/image` на звичайний `<img>` з коректними `width`/`height`/`loading`/`decoding`, а для LCP-зображень — `fetchPriority`
+- [ ] Замінити `next/dynamic` в адмінських route wrappers на `React.lazy()` + `Suspense` або відразу перенести маршрути в TanStack route files з code-splitting
+- [ ] Замінити `next/font` на CSS `@font-face`, `fontsource` або інший Vite-сумісний спосіб підключення шрифтів
 - [ ] Видалити `"use client"` директиви з усіх файлів у `packages/simplycms/` і `themes/` (вони більше не потрібні)
-- [ ] Перевірити що шрифт Inter підключається через CSS або fontsource замість `next/font`
 - [ ] **Міграція змінних оточення:** замінити `NEXT_PUBLIC_*` на `VITE_*` prefix у всіх клієнтських змінних. Зачеплені файли:
   - `packages/simplycms/core/src/supabase/anon.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `packages/simplycms/core/src/supabase/client.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `.env.local` — перейменувати ключі
   - В Vite доступ через `import.meta.env.VITE_*` замість `process.env.NEXT_PUBLIC_*`
-- [ ] Окремо визначити env-strategy для `simplycms.config.ts`: або залишити server-side `process.env`, або ввести узгоджений helper для читання env, але не змішувати цю логіку хаотично з клієнтськими `import.meta.env`
+- [ ] Визначити узгоджену env-strategy:
+  - клієнтський код — лише `import.meta.env.VITE_*`
+  - server functions / middleware — лише `process.env.*`
+  - `simplycms.config.ts` — привести до одного з цих сценаріїв без змішаної моделі
 - [ ] Адаптувати `supabase/client.ts`: видалити `"use client"`, зберегти singleton pattern з `typeof window !== "undefined"` guard
 - [ ] Вирішити Tailwind v4 + Vite: використати `@tailwindcss/vite` плагін (замість PostCSS pipeline) або залишити PostCSS — прийняти рішення і задокументувати
 - [ ] `pnpm dev` стартує TanStack Start dev server
@@ -58,19 +74,17 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 
 ## Clarify (питання перед імплементацією)
 
-- [ ] Як адаптувати useParams без route-scoped типізації?
-  - Чому це важливо: у TanStack Router `useParams()` прив'язаний до конкретного Route — `Route.useParams()`. Але в core і admin сторінки визначають useParams з generic типом `useParams<{ productId: string }>`, не знаючи конкретний Route
-  - Варіант A: Використовувати `useParams({ from: undefined, strict: false })` — працює, але без type-safety (рекомендовано для перехідного періоду)
-  - Варіант B: Передавати params як props з route-компонентів у page-компоненти
-  - Варіант C: Кожну page-компоненту core/admin прив'язати до конкретного route (ломає модульність)
-  - Вплив: архітектура, type-safety, обсяг змін
+- [ ] Як обробляти path params у package pages?
+  - Чому це важливо: `Route.useParams()` route-scoped і не повинен емулюватись через adapter
+  - Варіант A: storefront/core pages отримують params через props з route files (рекомендовано)
+  - Варіант B: admin pages використовують TanStack Router напряму там, де це дешевше
+  - Вплив: модульність, типізація, обсяг змін
 
-- [ ] Як обробляти useSearchParams?
-  - Чому це важливо: Next.js useSearchParams повертає URLSearchParams, TanStack Router useSearch повертає типізований обʼєкт
-  - Варіант A: Адаптер конвертує useSearch() у URLSearchParams-подібний API (рекомендовано)
-  - Варіант B: Рефакторити всі споживачі під типізований обʼєкт
-  - **Важливо:** в `@simplycms/admin` є файли (наприклад `DiscountEdit.tsx`, `DiscountGroupEdit.tsx`) які активно використовують `.get()`, `.toString()` на результаті useSearchParams. Адаптер має повертати **сумісний з URLSearchParams інтерфейс**
-  - Вплив: обсяг змін, type-safety
+- [ ] Як обробляти search params у формах адмінки?
+  - Чому це важливо: частина admin pages сьогодні покладається на `URLSearchParams.get()`
+  - Варіант A: route file читає `Route.useSearch()` і передає нормалізовані значення як props (рекомендовано)
+  - Варіант B: admin page прив'язується до конкретного route через `getRouteApi()`
+  - Вплив: зв'язність admin pages з route tree
 
 - [ ] Чи залишати workspace packages як transpilePackages?
   - Чому це важливо: Next.js мав `transpilePackages` в config. Vite працює з workspace packages інакше
@@ -88,17 +102,17 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 - Що перенести: lang="uk", suppressHydrationWarning, ThemeProvider, Providers, Toaster, SonnerToaster
 - Що НЕ переносити: `Inter` font через `next/font` (замінити на CSS), `export const metadata` (замінити на head property)
 
-### Адаптер роутингу після перемикання
+### Прямий rewrite роутингу
 
-Адаптер має маппити API якомога ближче до того, як його використовують споживачі. Ключові маппінги:
-- `Link` — приймає `href` prop, всередині маппить на `to` prop TanStack Router Link
-- `useRouter()` — повертає обʼєкт з `.push(path)`, `.replace(path)`, `.back()` методами
-- `useParams()` — generic обгортка навколо `useParams({ strict: false })`
-- `usePathname()` — обгортка навколо `useLocation().pathname`
+Маппінги мають бути прямими, без проміжного сумісного API:
+- `next/link` → `Link` з `@tanstack/react-router`
+- `useRouter().push()` → `useNavigate()`
+- `usePathname()` → `useLocation({ select: (location) => location.pathname })`
+- `useParams()` / `useSearchParams()` → route layer або `getRouteApi()` там, де це виправдано
 
-### Поступовий запуск
+### Поступовий запуск без dual-runtime
 
-Спочатку створити мінімальний skeleton з одним placeholder route. Переконатися що `pnpm dev` стартує. Потім перемикати адаптери і перевіряти що typecheck проходить. Маршрути будуть додані в Phase 3-4.
+Спочатку створити мінімальний skeleton з одним placeholder route. Після цього одразу виконати breaking rewrite `next/*` примітивів і перевести runtime на Start. Маршрути будуть доповнюватися у наступних фазах, але продакшн-модель виконання вже має бути TanStack-native.
 
 ## Антипатерни (уникати)
 
@@ -106,20 +120,20 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 Не шукати аналоги `app/layout.tsx` → nested layouts. TanStack Start має свою модель: root route + layout routes + file routes. Не копіювати, а адаптувати.
 
 ### ❌ Тримати два framework одночасно в робочому стані
-Мета — підняти TanStack Start skeleton і перемкнути адаптери. Next.js `app/` більше не буде працювати після цієї фази, і це нормально. Маршрути будуть перенесені в Phase 3-4.
+Після цієї фази Start має бути єдиним runtime. Двійний режим лише подовжує рефакторинг і суперечить рішенню про breaking migration.
 
-### ❌ Одразу мігрувати всі routes
-Ця фаза — лише skeleton + adapter rewire. Один placeholder route для перевірки що все працює. Routes переносяться в наступних фазах.
+### ❌ Емулювати `href`, `URLSearchParams` або `useRouter` через wrappers
+Якщо компонент потребує нового контракту, його треба переписати під цей контракт, а не підкладати сумісний шар.
 
 ### ❌ Зберігати `"use client"` директиви
 В TanStack Start немає цієї концепції. Execution boundary визначається через `createServerFn()`. Директиви потрібно видалити з усіх пакетів і тем.
 
 ## Архітектурні рішення
 
-- **В який пакет додавати код:** корінь проєкту (`vite.config.ts`, `src/`) + зміни в `@simplycms/core/adapters/`
+- **В який пакет додавати код:** корінь проєкту (`vite.config.ts`, `src/`) + прямі зміни в `packages/` і `themes/`
 - **Rendering стратегія:** TanStack Start SSR за замовчуванням
 - **Нові залежності:** `@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/react-router-devtools`, `@vitejs/plugin-react`, `vite`
-- **Залежності для видалення (пізніше):** `next`, `eslint-config-next` — фізично видаляються в Phase 7
+- **Залежності для видалення:** `next`, `eslint-config-next` — прибираються відразу після підняття Start skeleton
 
 ## Цільова структура після Phase 1
 
@@ -152,7 +166,7 @@ vite.config.ts            # TanStack Start + React plugin
 - [ ] `src/routes/index.tsx` існує з placeholder контентом
 - [ ] `pnpm dev` стартує TanStack Start dev server без помилок
 - [ ] Placeholder сторінка відображається в браузері
-- [ ] Адаптер роутингу перемкнутий на `@tanstack/react-router`
-- [ ] Адаптер зображень перемкнутий на звичайний `<img>`
+- [ ] Всі `next/link`, `next/navigation`, `next/image`, `next/dynamic`, `next/font` замінені на фінальні рішення без adapter-шару
 - [ ] Жодного `"use client"` в `packages/simplycms/` і `themes/`
-- [ ] `pnpm typecheck` проходить без помилок (з урахуванням що `app/` більше не збирається)
+- [ ] Жодного `NEXT_PUBLIC_*` у клієнтському коді
+- [ ] `pnpm typecheck` проходить без помилок

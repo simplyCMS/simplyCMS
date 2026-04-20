@@ -29,6 +29,9 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 ### Admin routes
 
+- [ ] Забезпечити **двошаровий захист** admin routes:
+  - server-side guard у `src/start.ts` для початкових request на `/admin`
+  - `beforeLoad` у `_admin.tsx` для client-side навігацій всередині застосунку
 - [ ] Створити layout route `_admin.tsx` або `admin.tsx` з `ssr: false`:
   - `beforeLoad` — перевірка admin session через серверну функцію `isAdmin()` (з Phase 2)
   - Component — lazy-load `AdminLayout` з `@simplycms/admin`
@@ -88,6 +91,11 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
   - `_protected/profile/orders/$orderId.tsx` — деталі замовлення
   - `_protected/profile/settings.tsx` — налаштування
 
+- [ ] Перенести client-heavy storefront routes:
+  - `_storefront/cart.tsx`
+  - `_storefront/checkout.tsx`
+  - обидва маршрути лишаються client-only і використовують storefront layout/theme
+
 ### API routes (server handlers)
 
 - [ ] Створити server handler для guest-order:
@@ -95,7 +103,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
   - Альтернатива: перенести логіку в `createServerFn`
 - [ ] Створити server handler для health check:
   - Замінити `app/api/health/route.ts`
-- [ ] Revalidation endpoint (з Phase 2) — вже має бути серверною функцією
+- [ ] Якщо `guest-order` або інший endpoint потрібен зовнішнім клієнтам — залишити його як HTTP server handler; internal invalidate/revalidation логіку не відновлювати як generic endpoint без явної потреби
 
 ## Clarify (питання перед імплементацією)
 
@@ -123,7 +131,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 Кожен admin route має `ssr: false` щоб гарантувати client-only rendering. `@simplycms/admin` повністю побудований на React Query + client Supabase — SSR не потрібен.
 
-**Увага щодо `beforeLoad` + `ssr: false`:** якщо route має `ssr: false`, то `beforeLoad` виконується **лише на клієнті**. `isAdmin()` — це `createServerFn` (RPC-виклик). Це працюватиме (виклик піде через HTTP на сервер), але auth guard працює через network call, не через server-side check.
+**Увага щодо `beforeLoad` + `ssr: false`:** якщо route має `ssr: false`, то `beforeLoad` виконується **лише на клієнті**. Тому `beforeLoad` тут не може бути єдиним механізмом захисту. Початковий запит на `/admin` має перевірятися в `src/start.ts`, а `beforeLoad` покриває навігацію після гідрації.
 
 - Де шукати поточний шаблон: `app/(cms)/admin/products/page.tsx` — типовий приклад
 - Що перенести: lazy import → React.lazy або прямий import, wrapper → route component
@@ -132,9 +140,19 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 TanStack Router `beforeLoad` виконується перед loader і component. Ідеальне місце для auth guards — замінює Next.js layout-based server checks і proxy.ts guards.
 
-- `_admin.tsx` beforeLoad: перевірити admin role, throw redirect('/auth') якщо ні
+- `_admin.tsx` beforeLoad: перевірити admin role для client-side навігації, throw redirect('/auth') якщо ні
 - `_protected.tsx` beforeLoad: перевірити auth session, throw redirect('/auth') якщо ні
 - `auth/index.tsx` beforeLoad: перевірити що не залогінений, throw redirect('/') якщо так
+
+### Server-side guard у `src/start.ts`
+
+Для `/admin` потрібен окремий server-side request middleware, бо admin shell client-only. Він має:
+
+- перевіряти сесію на початковому request;
+- перевіряти admin role;
+- redirectити незалогіненого користувача до `/auth` ще до рендеру shell.
+
+Це не замінює `beforeLoad`, а доповнює його для початкового входу в admin.
 
 ### OAuth callback як server handler
 
@@ -148,7 +166,7 @@ TanStack Start дозволяє визначити server handlers на route ч
 Адмінка — повністю клієнтська SPA. Вся data-fetching через React Query на клієнті. SSR тут додає складності без цінності.
 
 ### ❌ Переносити proxy.ts як окремий middleware файл
-proxy.ts містив маршрутні guards. В TanStack Start це робиться через `beforeLoad` на layout routes — більш декларативно і type-safe. Не потрібен окремий middleware.
+proxy.ts як окремий Next.js артефакт не потрібен. Але частина його поведінки для `/admin` має бути перенесена в `src/start.ts`, бо client-only admin shell інакше не має server-side захисту на першому request.
 
 ### ❌ Створювати нові API endpoints де можна обійтися createServerFn
 Якщо endpoint викликається лише з React-коду, `createServerFn` краще — type-safe, automatic serialization, no manual fetch. API routes потрібні лише для зовнішніх клієнтів.
@@ -159,7 +177,7 @@ Route file має лише lazy-load page з `@simplycms/admin/pages/*`. Жод�
 ## Архітектурні рішення
 
 - **В який пакет додавати код:** `src/routes/admin/`, `src/routes/auth/`, `src/routes/_protected/`
-- **Rendering стратегія:** Client-only для admin і auth, server-guarded для protected
+- **Rendering стратегія:** Client-only для admin і auth, server-guarded для protected, client-only для cart/checkout
 - **Залежності:** серверні функції auth з Phase 2, `@simplycms/admin` і `@simplycms/core` пакети
 
 ## Цільова структура після Phase 4
@@ -211,6 +229,9 @@ src/routes/
     settings/index.tsx
     users/index.tsx
     users/$userId.tsx
+  _storefront/
+    cart.tsx
+    checkout.tsx
   auth/
     index.tsx                         # Auth page (login/register)
     callback.tsx                      # OAuth callback server handler
@@ -240,10 +261,12 @@ src/routes/
 ## Definition of Done
 
 - [ ] Всі admin sub-routes створені як TanStack Start file routes з `ssr: false`
-- [ ] Admin layout route має auth guard (beforeLoad → isAdmin check)
+- [ ] Початковий request на `/admin` захищений server-side middleware у `src/start.ts`
+- [ ] Admin layout route має auth guard для client-side навігації (beforeLoad → isAdmin check)
 - [ ] Auth page працює — форми login/register відображаються
 - [ ] OAuth callback обробляє code і створює session
 - [ ] Protected routes мають auth guard — redirect на /auth для незалогінених
+- [ ] Cart і Checkout працюють як client-only storefront routes
 - [ ] Profile, orders, settings сторінки доступні залогіненим користувачам
 - [ ] `pnpm dev` — admin panel повністю функціональна (CRUD операції)
 - [ ] `pnpm dev` — auth flow працює (login → redirect → profile/admin)

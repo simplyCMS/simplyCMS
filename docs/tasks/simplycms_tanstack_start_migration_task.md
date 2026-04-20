@@ -4,6 +4,12 @@
 
 Провести **комплексну міграцію фреймворка** в проєкті `simplyCMS` з **Next.js App Router** на **TanStack Start + Vite**, збережучи поточну бізнес-функціональність, модульну архітектуру, Supabase-інтеграцію, систему тем і плагінів, а також побудувати **повноцінний DB-driven SEO-шар** для storefront.
 
+Міграція виконується як **one-shot breaking change без перехідного періоду**:
+
+- без adapter-шару для роутингу або зображень;
+- без підтримки двох framework API паралельно;
+- без сумісних wrapper-ів для `href`, `URLSearchParams`, `useRouter` або `next/image`.
+
 Цільова архітектура після міграції:
 
 - **storefront** — **SSR / full-document SSR** на TanStack Start
@@ -202,7 +208,6 @@ src/
     auth.tsx
     profile/
       index.tsx
-      orders.tsx
       orders/
         $orderId.tsx
       settings.tsx
@@ -214,8 +219,8 @@ src/
       sections.tsx
       ...
     api/
-      revalidate.ts
-      guest-order.ts
+      guest-order.ts   # лише якщо потрібен HTTP endpoint для зовнішніх клієнтів
+      health.ts        # лише якщо потрібен окремий health endpoint
   start.ts
   router.tsx
   providers/
@@ -269,20 +274,18 @@ src/
 Потрібно реалізувати або еквівалентний набір, або кращий узгоджений варіант:
 
 - `seo_h1`
-- `seo_url` або узгоджений canonical slug field
+- `canonical_url`
 - `meta_title`
 - `meta_description`
 - `meta_keywords` або `seo_tags`
-- `canonical_url`
-- `robots_index`
-- `robots_follow`
+- `robots`
 - `og_title`
 - `og_description`
 - `og_image`
 - `twitter_title`
 - `twitter_description`
 - `twitter_image`
-- `schema_json` або `schema_overrides`
+- `schema_json`
 
 #### 5.3 Правила використання SEO-полів у storefront
 
@@ -290,7 +293,7 @@ Storefront-сторінка повинна використовувати дан
 
 1. SEO fields з БД
 2. fallback на бізнес-поля (`name`, `description`, `slug`, `images`)
-3. fallback на глобальні site defaults
+3. fallback на глобальні site defaults з `simplycms.config.ts`
 
 #### 5.4 Що повинно потрапити в готовий HTML
 
@@ -308,278 +311,148 @@ Storefront-сторінка повинна використовувати дан
 
 #### 5.5 Sitemap
 
-Sitemap повинен будуватись на основі SEO URL / актуальних slug-полів з БД. Якщо є окремий `seo_url`, треба використовувати саме його або чітко документований алгоритм пріоритету
+Sitemap повинен будуватись на основі `canonical_url`, якщо він заданий, або на основі актуальних slug-полів з БД за чітко документованим fallback-алгоритмом
 
 ---
 
 ### 6. Комплексний план виконання
 
-## Phase 0 — Branch, audit, migration baseline
+## Phase 0 — Аудит залежностей і цільові контракти без адаптерів
 
 ### Завдання
 
-- створити окрему migration branch
+- створити migration branch
 - зафіксувати baseline стан build/dev
-- описати map старих маршрутів до нових route files
-- описати map Next-specific API → TanStack Start equivalents
-- визначити всі `next/*` імпорти
-- визначити всі місця з server-only поведінкою
+- зібрати повний inventory `next/*` залежностей
+- розділити їх на route-aware UI, image, server-only, runtime/bootstrap
+- визначити які storefront/core pages стають prop-driven
+- визначити де admin pages можуть залишатись route-aware
+- зафіксувати правило: **жодних router/image adapter-шарів не створювати**
 
 ### Результат
 
-- migration branch створена
 - inventory сформований
-- список ризиків сформований
+- цільові контракти переписування узгоджені
+- подвійний рефакторинг через adapter-механізм виключений
 
 ---
 
-## Phase 1 — Інсталяція TanStack Start та заміна build/runtime основи
+## Phase 1 — Встановлення TanStack Start і прямий breaking rewrite runtime-примітивів
 
 ### Завдання
 
 - встановити `@tanstack/react-start`, `@tanstack/react-router`, `vite`, `@vitejs/plugin-react`
-- створити `vite.config.ts` з `tanstackStart()` перед `react()`
-- оновити `package.json` scripts під Vite / Start
-- підготувати `src/router.tsx`
-- підготувати `src/routes/__root.tsx`
-
-### Важливо
-
-Поки Next ще не видаляти фізично до моменту, поки нова структура не почне збиратись. Але новий Start skeleton треба підняти першочергово
-
-### Результат
-
-- Start skeleton існує
-- root route існує
-- router factory існує
-- dev server стартує на мінімальному порожньому route tree
-
----
-
-## Phase 2 — Перенесення root shell, providers, global CSS, theme bootstrap
-
-### Завдання
-
-- перенести роль `app/layout.tsx` у `src/routes/__root.tsx`
-- перенести глобальний HTML shell
-- перенести `Providers`
-- перенести theme bootstrap логіку
-- інтегрувати `HeadContent`, `Scripts`, `Outlet`
-- перенести global CSS
-
-### Важливо
-
-Не переносити next-specific механіки дослівно. Потрібно адаптувати shell до TanStack Start conventions
-
-### Результат
-
-- глобальна оболонка працює
-- провайдери ініціалізуються
-- тема стартує коректно
-- basic hydration працює
-
----
-
-## Phase 3 — Перенесення server-side data layer у createServerFn / server handlers
-
-### Завдання
-
-- знайти всі місця, де зараз server logic сидить у Next page/layout/metadata flow
-- створити окремий шар server functions
-- винести туди:
-  - отримання товарів
-  - отримання секцій
-  - отримання активної теми
-  - sitemap data
-  - revalidation helper
-  - auth/session helpers
-  - SEO fetchers
-
-### Важливо
-
-У TanStack Start **не можна покладатися на те, що route component “і так серверний”**. Усі DB / secret / server-only виклики повинні бути ізольовані
-
-### Результат
-
-- є окремий server access layer
-- route modules працюють через loader + serverFn
-- немає небезпечних прямолінійних server-side викликів у isomorphic коді
-
----
-
-## Phase 4 — Міграція storefront маршрутів у SSR mode
-
-### Завдання
-
-Перенести маршрути:
-
-- `/`
-- `/catalog`
-- `/catalog/:sectionSlug`
-- `/catalog/:sectionSlug/:productSlug`
-- `/properties`
-- `/properties/:propertySlug`
-- `/properties/:propertySlug/:optionSlug`
-
-### Вимоги
-
-- SSR/full-document route output
-- loader-based data fetching
-- head-based SEO generation
-- JSON-LD insertion
-- theme-aware rendering
-- 404 / redirect handling
-
-### Результат
-
-- storefront parity досягнута
-- ключові публічні маршрути працюють на Start SSR
-
----
-
-## Phase 5 — Міграція admin, auth, profile, cart, checkout
-
-### Завдання
-
-Перенести client-heavy частини:
-
-- `/auth`
-- `/profile/*`
-- `/cart`
-- `/checkout`
-- `/admin/*`
-
-### Вимоги
-
-- зберегти React Query патерни
-- замінити `next/navigation` на TanStack Router navigation
-- адаптувати route params та links
-- зберегти CRUD та UI behavior
-
-### Результат
-
-- admin parity досягнута
-- auth/profile/cart/checkout працюють
-
----
-
-## Phase 6 — Middleware / auth control / request lifecycle
-
-### Завдання
-
-- перенести Next middleware/proxy логіку в `src/start.ts`
-- реалізувати auth middleware
-- реалізувати route protection для admin/profile
-- адаптувати cookie/session model
-
-### Результат
-
-- auth guards працюють
-- неавторизовані користувачі перенаправляються коректно
-- SSR routes мають доступ до auth context за потреби
-
----
-
-## Phase 7 — Theme system adaptation
-
-### Завдання
-
-- адаптувати theme registry під isomorphic execution model
-- забезпечити server-safe theme resolution
-- забезпечити client compatibility
-- зберегти fallback на default theme
-- не допустити дублювання registry init
-
-### Важливо
-
-Поточна задача `ssr-theme-resolution.md` повинна бути врахована як окремий ризиковий блок
-
-### Результат
-
-- теми працюють у Start
-- storefront route рендерить активну тему
-- адмінка може змінювати тему без руйнування storefront logic
-
----
-
-## Phase 8 — Реалізація повного SEO-шару з БД
-
-### Завдання
-
-- додати / нормалізувати SEO-поля в БД
-- оновити типи Supabase
-- оновити адмінку для редагування SEO-полів
-- реалізувати SEO resolver layer
-- прив’язати SEO resolver до head route API
-- реалізувати canonical / og / twitter / robots
-- реалізувати H1 precedence
-- реалізувати JSON-LD generation з SEO overrides
-- реалізувати sitemap generator
-
-### Важливо
-
-Цей етап є **обов’язковою частиною міграції**, а не окремим nice-to-have
-
-### Результат
-
-- SEO повністю керується з БД
-- storefront HTML містить правильний SEO output
-- admin редагує SEO централізовано
-
----
-
-## Phase 9 — API routes / utilities / sitemap / robots / revalidation
-
-### Завдання
-
-- перенести `app/api/*` у Start server routes
-- перенести `revalidate` endpoint
-- реалізувати `robots.txt` та sitemap endpoint у новій архітектурі
-- при оновленні товару / секції / SEO-полів коректно оновлювати cache / invalidation mechanism у Start-compatible way
-
-### Результат
-
-- API parity досягнута
-- SEO infrastructure повністю працює
-
----
-
-## Phase 10 — Очищення Next.js спадщини
-
-### Завдання
-
-Після досягнення функціонального паритету:
-
-- видалити `next`
-- видалити `next.config.ts`
-- видалити `app/`
-- видалити `middleware.ts` / `proxy.ts` якщо лишаться
-- видалити всі `next/*` imports
-- видалити залишки server component mental model
+- створити `vite.config.ts`, `src/start.ts`, `src/router.tsx`, `src/routes/__root.tsx`
+- перевести scripts на Start runtime
+- напряму замінити `next/link`, `next/navigation`, `next/image`, `next/font`, `next/dynamic`
 - прибрати `"use client"` / `"use server"`
+- перевести env-модель з `NEXT_PUBLIC_*` на `VITE_*`
+- рано прибрати Next.js з активного runtime-контуру
+
+### Результат
+
+- Start skeleton працює
+- TanStack Start є єдиним runtime
+- `next/*` примітиви більше не використовуються як активний API
+
+---
+
+## Phase 2 — Server-only data-access шар через createServerFn
+
+### Завдання
+
+- створити `src/server/` з доменними server functions
+- винести Supabase server factory на site-level
+- реалізувати auth/session helpers, sitemap, robots, storefront data fetchers
+- прибрати package-level Next.js server helpers
+- відмовитись від generic ISR/revalidation механіки для storefront
+
+### Результат
+
+- server-only логіка ізольована
+- cookies/session керуються через TanStack Start server context
+- route loaders працюють через server functions
+
+---
+
+## Phase 3 — Міграція storefront SSR-маршрутів
+
+### Завдання
+
+- перенести storefront маршрути в `src/routes/_storefront/*`
+- використовувати loader + head + theme-aware rendering
+- передавати params/search/SEO через route layer, а не через package-level Next hooks
+
+### Результат
+
+- ключові storefront SSR routes працюють на TanStack Start
+- HTML output містить SEO та structured data
+
+---
+
+## Phase 4 — Міграція admin, auth, protected та client-heavy маршрутів
+
+### Завдання
+
+- перенести `/admin/*`, `/auth`, `/profile/*`, `/cart`, `/checkout`
+- зберегти React Query патерни і CRUD behavior
+- винести guards у `beforeLoad`
+- за потреби лишити admin pages route-aware напряму через TanStack Router API
+
+### Результат
+
+- admin/auth/profile/cart/checkout працюють у новій архітектурі
+
+---
+
+## Phase 5 — Theme system, providers і request middleware
+
+### Завдання
+
+- замінити Next.js-specific theme resolver на loader/server-function оркестрацію
+- реалізувати in-memory TTL cache для активної теми
+- уніфікувати ThemeRegistry registration
+- інтегрувати providers у `__root.tsx`
+- звести global request middleware у `src/start.ts` без дублювання auth guards
+
+### Результат
+
+- theme system працює в isomorphic моделі TanStack Start
+- request lifecycle не залежить від `proxy.ts`
+
+---
+
+## Phase 6 — DB-driven SEO і site metadata infrastructure
+
+### Завдання
+
+- розширити SEO-домен у БД
+- оновити admin UI для SEO-полів
+- реалізувати `seoResolver`
+- прив'язати resolver до TanStack route `head`
+- узгодити sitemap/canonical/JSON-LD з SEO-полями
+
+### Результат
+
+- SEO керується з БД
+- storefront HTML має коректний SEO output
+
+---
+
+## Phase 7 — Фінальна стабілізація, cleanup і документація
+
+### Завдання
+
+- перевірити що ранній cleanup Next.js завершений повністю
+- прибрати мертві reference на `app/`, `next/*`, `NEXT_PUBLIC_*`
+- оновити README, AGENTS, instructions
+- виконати повну функціональну верифікацію storefront/admin/auth/theme/SEO
 
 ### Результат
 
 - кодова база повністю Start-native
-
----
-
-## Phase 11 — Stabilization / verification
-
-### Завдання
-
-- перевірити dev/build/start
-- перевірити основні storefront routes
-- перевірити SEO output у HTML
-- перевірити sitemap
-- перевірити admin CRUD
-- перевірити auth guards
-- перевірити theme switching
-- перевірити image rendering / remote URLs
-
-### Результат
-
-- проєкт стабільний після заміни framework
+- документація відповідає реальному стану системи
+- migration checkpoints закриті без прихованого legacy
 
 ---
 
@@ -591,53 +464,83 @@ Sitemap повинен будуватись на основі SEO URL / акту
 app/layout.tsx
   -> src/routes/__root.tsx
 
+app/(storefront)/layout.tsx
+  -> src/routes/_storefront.tsx
+
 app/(storefront)/page.tsx
-  -> src/routes/index.tsx
+  -> src/routes/_storefront/index.tsx
 
 app/(storefront)/catalog/page.tsx
-  -> src/routes/catalog/index.tsx
+  -> src/routes/_storefront/catalog/index.tsx
 
 app/(storefront)/catalog/[sectionSlug]/page.tsx
-  -> src/routes/catalog/$sectionSlug.tsx
+  -> src/routes/_storefront/catalog/$sectionSlug/index.tsx
 
 app/(storefront)/catalog/[sectionSlug]/[productSlug]/page.tsx
-  -> src/routes/catalog/$sectionSlug/$productSlug.tsx
+  -> src/routes/_storefront/catalog/$sectionSlug/$productSlug.tsx
 
 app/(storefront)/properties/page.tsx
-  -> src/routes/properties/index.tsx
+  -> src/routes/_storefront/properties/index.tsx
 
 app/(storefront)/properties/[propertySlug]/page.tsx
-  -> src/routes/properties/$propertySlug.tsx
+  -> src/routes/_storefront/properties/$propertySlug/index.tsx
 
 app/(storefront)/properties/[propertySlug]/[optionSlug]/page.tsx
-  -> src/routes/properties/$propertySlug/$optionSlug.tsx
+  -> src/routes/_storefront/properties/$propertySlug/$optionSlug.tsx
+
+app/(storefront)/order-success/[orderId]/page.tsx
+  -> src/routes/_storefront/order-success/$orderId.tsx
+
+app/(storefront)/cart/page.tsx
+  -> src/routes/_storefront/cart.tsx
+
+app/(storefront)/checkout/page.tsx
+  -> src/routes/_storefront/checkout.tsx
 
 app/auth/page.tsx
-  -> src/routes/auth.tsx
+  -> src/routes/auth/index.tsx
+
+app/auth/callback/route.ts
+  -> src/routes/auth/callback.tsx
+
+app/(protected)/layout.tsx
+  -> src/routes/_protected.tsx
 
 app/(protected)/profile/page.tsx
-  -> src/routes/profile/index.tsx
+  -> src/routes/_protected/profile/index.tsx
 
 app/(protected)/profile/orders/page.tsx
-  -> src/routes/profile/orders.tsx
+  -> src/routes/_protected/profile/orders/index.tsx
 
 app/(protected)/profile/orders/[orderId]/page.tsx
-  -> src/routes/profile/orders/$orderId.tsx
+  -> src/routes/_protected/profile/orders/$orderId.tsx
 
 app/(protected)/profile/settings/page.tsx
-  -> src/routes/profile/settings.tsx
+  -> src/routes/_protected/profile/settings.tsx
+
+app/(cms)/admin/layout.tsx
+  -> src/routes/_admin.tsx
 
 app/(cms)/admin/page.tsx
   -> src/routes/admin/index.tsx
 
 app/(cms)/admin/products/page.tsx
-  -> src/routes/admin/products.tsx
+  -> src/routes/admin/products/index.tsx
 
 app/(cms)/admin/products/[productId]/page.tsx
-  -> src/routes/admin/products/$productId.tsx
+  -> src/routes/admin/products/$productId/edit.tsx
 
-app/api/revalidate/route.ts
-  -> src/routes/api/revalidate.ts
+app/api/guest-order/route.ts
+  -> src/routes/api/guest-order.ts
+
+app/api/health/route.ts
+  -> src/routes/api/health.ts
+
+app/sitemap.ts
+  -> src/routes/sitemap[.]xml.tsx
+
+app/robots.ts
+  -> src/routes/robots[.]txt.tsx
 ```
 
 Реальна route map має бути повнішою, але цей мінімум обов’язковий
@@ -725,15 +628,15 @@ app/api/revalidate/route.ts
 
 ### 11. Перший практичний крок, з якого треба почати
 
-Почати потрібно не з переписування сторінок, а з **foundation layer**:
+Почати потрібно не з переписування окремих сторінок, а з **audit + foundation layer**:
 
 1. створити migration branch
-2. встановити TanStack Start та Vite
-3. підготувати `vite.config.ts`
-4. створити `src/router.tsx`
+2. зафіксувати inventory `next/*` залежностей і цільові контракти без adapters
+3. встановити TanStack Start та Vite
+4. підготувати `vite.config.ts`, `src/start.ts`, `src/router.tsx`
 5. створити `src/routes/__root.tsx`
 6. підняти мінімальний working Start shell
-7. тільки після цього переходити до route-by-route migration
+7. одразу після цього перейти до прямого rewrite примітивів, а не до створення compatibility layer
 
 ---
 

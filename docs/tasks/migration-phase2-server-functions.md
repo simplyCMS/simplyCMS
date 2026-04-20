@@ -1,8 +1,10 @@
-# Task: Phase 2 — Серверний data-access шар через createServerFn
+# Task: Phase 2 — Server-only data-access шар через createServerFn
 
 ## Контекст
 
-Після Phase 1 TanStack Start працює як runtime, адаптери перемкнуті на TanStack Router, але серверний доступ до даних ще не адаптований. Зараз серверна логіка залишилась у файлах, що прив'язані до Next.js server API:
+Після Phase 1 TanStack Start працює як єдиний runtime, а `next/*` примітиви вже переписані напряму. Тепер потрібно повністю винести server-only логіку з package-level Next.js файлів у site-level шар `src/server/`.
+
+Зараз серверна логіка залишилась у файлах, що прив'язані до Next.js server API:
 
 - **`packages/simplycms/core/src/supabase/server.ts`** — використовує `cookies()` з `next/headers` для створення серверного Supabase клієнта
 - **`packages/simplycms/core/src/supabase/proxy.ts`** — використовує `NextResponse`, `NextRequest` з `next/server` для auth guards
@@ -11,36 +13,40 @@
 
 В TanStack Start **серверна логіка ізолюється через `createServerFn()`**. Це RPC-style функції, які гарантовано виконуються лише на сервері. Вони викликаються з loaders, beforeLoad або компонентів, а framework автоматично створює API endpoint.
 
-Ця фаза створює **повний серверний data-access шар** на базі `createServerFn`, який замінить усі Next.js серверні механізми.
+Ця фаза створює **повний server-only data-access шар** на базі `createServerFn`, який замінить усі Next.js серверні механізми і стане єдиною точкою доступу до cookies, session, auth та server-side DB читання.
 
 ## Вимоги
 
 - [ ] Створити директорію `src/server/` для серверних функцій
-- [ ] Реалізувати серверний Supabase клієнт через `createServerFn` — замість `cookies()` з next/headers використовувати `getHeaders()` / `getCookie()` з TanStack Start server context
-  - **ВАЖЛИВО: cookie write-back.** `@supabase/ssr` потребує не лише **читання** cookies, а й **запису** (для session refresh / token rotation). В TanStack Start запис cookies виконується через `setCookie()` з `vinxi/http` або через Response headers. Без цього auth session refresh зламається.
+- [ ] Реалізувати `src/server/supabase.ts` з єдиною factory `createServerSupabase()`
+  - **Читання cookies:** через `getRequestHeader('cookie')` + `parseCookieHeader()` з `@supabase/ssr`
+  - **Запис cookies:** через `setCookie()` з `@tanstack/react-start/server`
+  - **ВАЖЛИВО:** `@supabase/ssr` потребує і читання, і запису cookies для session refresh / token rotation
 - [ ] Реалізувати серверні функції для отримання даних storefront:
   - Отримання товару по slug (для сторінки товару)
   - Отримання секції з товарами (для сторінки категорії)
   - Отримання списку секцій і товарів (для каталогу)
   - Отримання даних головної сторінки (банери, featured, нові товари, секції)
   - Отримання даних properties / property options
-- [ ] Реалізувати серверну функцію для перевірки auth сесії — аналог поточного proxy.ts
-- [ ] Реалізувати серверну функцію для перевірки admin ролі
+- [ ] Реалізувати серверні функції для auth:
+  - `getSession()`
+  - `getUser()`
+  - `isAdmin()`
 - [ ] Реалізувати серверну функцію для sitemap data
 - [ ] Реалізувати серверну функцію для robots.txt
-- [ ] Реалізувати механізм cache invalidation через server route замість `revalidatePath`/`revalidateTag`
-- [ ] Видалити або позначити як deprecated: `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`
+- [ ] Відмовитися від generic ISR/revalidation механіки для storefront: SSR-дані за замовчуванням читаються напряму з БД, без `revalidatePath`/`revalidateTag`
+- [ ] Видалити або позначити як deprecated: `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`, `app/api/revalidate/route.ts`
 - [ ] Клієнтський Supabase (`supabase/client.ts`) залишити без змін — він framework-agnostic
 
 > **Примітка:** `guest-order` API route (`app/api/guest-order/route.ts`) теж використовує `createServerSupabaseClient()`. Його міграція виконується в Phase 4 (як `createServerFn` або server handler), але після Phase 2 він зможе використовувати `createServerSupabase()` з `src/server/supabase.ts`.
 
 ## Clarify (питання перед імплементацією)
 
-- [ ] Як передавати cookies до Supabase server client у TanStack Start?
-  - Чому це важливо: `@supabase/ssr` createServerClient потребує доступу до cookies для auth сесії. Потрібно **і читання, і запис** cookies (session refresh, token rotation).
-  - Варіант A: `getHeaders()` з `@tanstack/react-start` для читання + `setCookie()` з `vinxi/http` для запису (рекомендовано, native API)
-  - Варіант B: Використовувати `vinxi` (underlying server) getCookie/setCookie API напряму
-  - Вплив: серверна автентифікація, session refresh
+- [ ] Який API використовувати для cookies у Supabase factory?
+  - Чому це важливо: `@supabase/ssr` очікує `getAll` / `setAll`, а TanStack Start працює з request headers і `setCookie()`
+  - Рекомендація: `getRequestHeader('cookie')` + `parseCookieHeader()` для read, `setCookie()` для write
+  - Альтернатива: низькорівневий `vinxi/http`, якщо виникне прогалина в `@tanstack/react-start/server`
+  - Вплив: auth session refresh, token rotation
 
 - [ ] Який механізм кешування замість unstable_cache?
   - Чому це важливо: `getActiveThemeSSR` зараз кешується через `unstable_cache` (cross-request cache з revalidation). TanStack Start не має вбудованого аналога
@@ -49,12 +55,10 @@
   - Варіант C: Зовнішній cache (Redis/Upstash) — overkill для одного запису
   - Вплив: продуктивність, складність
 
-- [ ] Як замінити revalidatePath / revalidateTag?
-  - Чому це важливо: адмінка після збереження товару/секції/теми викликає `/api/revalidate` для оновлення ISR-кешованих сторінок
-  - Варіант A: In-memory cache з manual invalidation endpoint (серверна функція + вбудований cache store)
-  - Варіант B: Без cross-request cache — кожен SSR request завжди робить свіжий DB запит. Для 99% CMS це достатньо швидко
-  - Варіант C: TanStack Start ISR якщо підтримується
-  - Вплив: продуктивність, складність, архітектура кешування
+- [ ] Чи потрібен окремий revalidation endpoint?
+  - Чому це важливо: у Next.js це було потрібно через ISR; у TanStack Start storefront може працювати на свіжому SSR без cross-request cache
+  - Рекомендація: ні для загального storefront data layer; окрема інвалідація потрібна лише для theme cache у Phase 5 або для зовнішніх webhook-інтеграцій
+  - Вплив: спрощення архітектури, менше технічного боргу
 
 ## Рекомендовані патерни
 
@@ -66,11 +70,14 @@
 
 ### Supabase server client factory
 
-Створити одну utility `createServerSupabase()` всередині `src/server/supabase.ts`, яка використовує `getHeaders()` для отримання cookies і `setCookie()` для їх запису, та створює authenticated Supabase client. Всі серверні функції використовують цю factory.
+Створити одну utility `createServerSupabase()` всередині `src/server/supabase.ts`, яка:
 
-- Де шукати поточну реалізацію: `packages/simplycms/core/src/supabase/server.ts`
-- Що змінюється: `cookies()` з next/headers → `getHeaders()` для read + `setCookie()` з vinxi/http для write
-- **Критично:** без cookie write-back auth session refresh (ротація refresh token) не працюватиме
+- читає raw cookie header через TanStack Start server API;
+- перетворює його у `getAll()` сумісний формат для `@supabase/ssr`;
+- записує cookies назад через `setCookie()`;
+- використовується усіма server functions і server handlers.
+
+Без cookie write-back auth session refresh працювати не буде.
 
 ### Home page data — один createServerFn з Promise.all
 
@@ -88,17 +95,17 @@
 
 ### Межа з Phase 5
 
-У цій фазі достатньо створити `src/server/themes.ts` як server-facing API для тем. Повна заміна внутрішньої реалізації `getActiveThemeSSR()` і фінальна cache-стратегія для themes завершуються в Phase 5, щоб не дублювати роботу.
+У цій фазі достатньо створити `src/server/themes.ts` як server-facing API для тем. Фінальна cache-стратегія і root-level інтеграція providers/theme registry завершуються в Phase 5.
 
 ## Антипатерни (уникати)
 
 ### ❌ DB-виклики напряму в route components
 В TanStack Start route components isomorphic — вони можуть виконуватися на клієнті. Прямий `supabase.from('products').select()` в компоненті витече в клієнтський bundle. Завжди через `createServerFn()`.
 
-### ❌ Використовувати process.env в route modules без createServerFn
+### ❌ Використовувати `process.env` в route modules без createServerFn
 `process.env.SUPABASE_*` доступні лише на сервері. Якщо route module виконується на клієнті, вони будуть undefined. Після Phase 1 у клієнтському коді мають залишитися лише `import.meta.env.VITE_*` змінні.
 
-### ❌ Створювати Supabase client всередині кожного createServerFn
+### ❌ Створювати Supabase client всередині кожного `createServerFn`
 Factory має бути одна — `createServerSupabase()`. Серверні функції імпортують і викликають її. Не дублювати логіку cookies/headers в кожній функції.
 
 ### ❌ Реалізувати тільки читання cookies без write-back
@@ -112,7 +119,7 @@ Factory має бути одна — `createServerSupabase()`. Серверні 
 - **В який пакет додавати код:** `src/server/` (site-level, не в packages)
 - **Rendering стратегія:** SSR (серверні функції виконуються на сервері під час SSR, стають RPC при client-side navigation)
 - **Залежності:** `@tanstack/react-start` (вже встановлено в Phase 1)
-- **Що видаляється:** `packages/simplycms/core/src/supabase/server.ts` (замінюється), `packages/simplycms/core/src/supabase/proxy.ts` (замінюється)
+- **Що видаляється:** `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`, generic Next.js revalidation endpoint
 
 ## Цільова структура після Phase 2
 
@@ -127,12 +134,12 @@ src/
     auth.ts               # getSession, getUser, isAdmin
     themes.ts             # getActiveTheme (серверна резолюція)
     sitemap.ts            # getSitemapData
-    revalidation.ts       # invalidateCache (manual cache control)
+    revalidation.ts       # за потреби: тільки для зовнішніх webhook / cache hooks
 ```
 
 ## MCP Servers (за потреби)
 
-- **context7** — TanStack Start `createServerFn` API, input validators, server context (getHeaders, getCookie)
+- **context7** — TanStack Start `createServerFn` API, input validators, server context (`getRequestHeader`, `setCookie`)
 - **supabase** — перевірити що `@supabase/ssr` createServerClient працює без Next.js cookie API
 
 ## Пов'язана документація
@@ -153,5 +160,6 @@ src/
 - [ ] Кожна серверна функція використовує `createServerFn()` з `@tanstack/react-start`
 - [ ] Серверні функції мають input validation де потрібно (slugs, ids)
 - [ ] Жоден серверний файл не імпортує з `next/*`
+- [ ] Відсутня generic залежність storefront від `revalidatePath` / `revalidateTag`
 - [ ] `pnpm typecheck` проходить
 - [ ] Серверні функції можна імпортувати і викликати з route loaders (перевірити на placeholder route)

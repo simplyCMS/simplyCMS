@@ -16,8 +16,6 @@
 | `(storefront)/properties/[propertySlug]/page.tsx` | `_storefront/properties/$propertySlug/index.tsx` | Список опцій властивості |
 | `(storefront)/properties/[propertySlug]/[optionSlug]/page.tsx` | `_storefront/properties/$propertySlug/$optionSlug.tsx` | Товари з опцією |
 | `(storefront)/properties/page.tsx` | `_storefront/properties/index.tsx` | Список всіх властивостей |
-| `(storefront)/cart/page.tsx` | `_storefront/cart.tsx` | Кошик |
-| `(storefront)/checkout/page.tsx` | `_storefront/checkout.tsx` | Оформлення замовлення |
 | `(storefront)/order-success/[orderId]/page.tsx` | `_storefront/order-success/$orderId.tsx` | Успішне замовлення |
 | `sitemap.ts` | `sitemap[.]xml.tsx` (server handler) | XML sitemap |
 | `robots.ts` | `robots[.]txt.tsx` (server handler) | robots.txt |
@@ -64,19 +62,13 @@
   - `head` → meta на основі property/option назв
   - Component → `theme.pages.PropertyPage` / `theme.pages.PropertyOptionPage`
 
-### Client-rendered сторінки (в storefront layout)
-
-- [ ] Кошик (`_storefront/cart.tsx`):
-  - `ssr: false` або мінімальний loader
-  - Component → `theme.pages.CartPage` або `@simplycms/core` CartPage
-
-- [ ] Checkout (`_storefront/checkout.tsx`):
-  - `ssr: false` або мінімальний loader
-  - Component → `theme.pages.CheckoutPage` або `@simplycms/core` CheckoutPage
+### Додаткові storefront маршрути
 
 - [ ] Order Success (`_storefront/order-success/$orderId.tsx`):
   - Мінімальний loader з orderId validation
   - Component → `theme.pages.OrderSuccessPage`
+
+> `cart` і `checkout` свідомо **не входять** до цієї фази. Вони переносяться у Phase 4 як client-heavy маршрути разом з auth/profile/admin.
 
 ### Server routes (не HTML)
 
@@ -141,7 +133,7 @@ Head і component мають спільний loader. Не робити окре
 ## Архітектурні рішення
 
 - **В який пакет додавати код:** `src/routes/_storefront/` (site-level routes)
-- **Rendering стратегія:** SSR для каталогу/товарів/properties, client-only для cart/checkout
+- **Rendering стратегія:** SSR для каталогу/товарів/properties/order-success
 - **Залежності:** серверні функції з Phase 2, theme system з `@simplycms/themes`
 
 ## Цільова структура після Phase 3
@@ -165,8 +157,6 @@ src/routes/
       $propertySlug/
         index.tsx                    # Список опцій
         $optionSlug.tsx              # Товари з опцією
-    cart.tsx                         # Кошик (client-only)
-    checkout.tsx                     # Checkout (client-only)
     order-success/
       $orderId.tsx                   # Успішне замовлення
 ```
@@ -195,7 +185,6 @@ src/routes/
 - [ ] Sitemap генерується як XML по URL `/sitemap.xml`
 - [ ] Robots.txt генерується по URL `/robots.txt`
 - [ ] Тема завантажується один раз в layout route і передається через context
-- [ ] Cart і Checkout працюють як client-only routes
 - [ ] `pnpm dev` — всі storefront сторінки відображаються з правильними даними
 - [ ] `pnpm build` проходить без помилок
 - [ ] View Source в браузері показує SSR HTML для каталогу/товарів

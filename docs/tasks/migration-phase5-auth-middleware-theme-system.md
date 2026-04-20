@@ -1,18 +1,18 @@
-# Task: Phase 5 — Адаптація Auth middleware та Theme system
+# Task: Phase 5 — Theme system, providers і request middleware
 
 ## Контекст
 
-Після Phase 4 всі маршрути мігровані на TanStack Start. Але дві підсистеми ще містять Next.js-specific код або потребують архітектурної адаптації:
+Після Phase 4 всі маршрути мігровані на TanStack Start. Залишилося стабілізувати дві cross-cutting підсистеми:
 
-1. **Auth middleware** — поточний `proxy.ts` використовує Next.js middleware API (NextResponse, NextRequest). В Phase 4 auth guards реалізовані через `beforeLoad`, але загальний middleware (CORS, logging, security headers) ще не адаптований
-2. **Theme system** — `getActiveThemeSSR()` використовує `unstable_cache` з `next/cache` для cross-request кешування. ThemeRegistry реєструється двічі (server + client) через різні entry points. Ця модель потребує уніфікації
+1. **Theme system** — поточний `getActiveThemeSSR()` і подвійна реєстрація тем прив'язані до Next.js mental model
+2. **Request middleware** — auth guards уже працюють через `beforeLoad`, але глобальні headers і загальний request lifecycle мають бути зведені в `src/start.ts`
 
 ### Поточна архітектура Theme System
 
 - **ThemeRegistry** — singleton Map з lazy-loading theme modules
 - **Реєстрація на сервері:** `app/theme-registry.server.ts` — імпортується в layout
 - **Реєстрація на клієнті:** `app/providers.tsx` — дублює ту саму реєстрацію в `"use client"` файлі
-- **getActiveThemeSSR()** — обгортка в `React.cache()` (per-request dedup) + `unstable_cache()` (cross-request, tag: "active-theme", revalidate: 3600)
+- **getActiveThemeSSR()** — Next.js-specific resolver з `React.cache()` + `unstable_cache()`
 - **ThemeContext** — client-side React Context з ThemeProvider, fallbackTheme, initialThemeName
 - **CMSProvider** — обгортає QueryClientProvider + Toaster + SonnerToaster
 
@@ -21,30 +21,35 @@
 В TanStack Start:
 - Немає `unstable_cache` — потрібен інший механізм cross-request кешування
 - Немає роздільних `"use client"` / server entry points — ThemeRegistry має працювати isomorphic
-- Middleware визначається в `start.ts` (або конфігурації серверного handler) замість `proxy.ts`
+- Global request middleware визначається в `src/start.ts`
 
 ## Вимоги
 
 ### Theme system adaptation
 
-- [ ] Замінити `unstable_cache` в `getActiveThemeSSR()` на framework-agnostic кешування:
-  - Module-level in-memory cache з TTL (наприклад, 3600 секунд)
-  - **Не використовувати `React.cache()`** — це RSC-only API, яке не працює в TanStack Start (ізоморфна модель без Server Components). Per-request dedup непотрібен, бо loader природньо виконується один раз на запит
+- [ ] Видалити `packages/simplycms/theme-system/src/getActiveThemeSSR.ts` як робочу точку інтеграції і замінити його на `src/server/themes.ts` + loader-based використання
+- [ ] Реалізувати theme cache як module-level in-memory cache з TTL
+- [ ] **Не використовувати `React.cache()`** — це RSC-only API і воно не є частиною цільової архітектури TanStack Start
 - [ ] Уніфікувати реєстрацію тем — єдиний entry point що працює і на сервері, і на клієнті:
   - ThemeRegistry.register() має викликатися один раз при старті застосунку
   - В TanStack Start немає boundary server/client — реєстрація в `src/routes/__root.tsx` або окремому файлі імпортованому з root
+  - `src/server/themes.ts` має явно гарантувати реєстрацію тем перед резолюцією активної теми (через import або `ensureThemeRegistry()`), а не покладатися лише на те, що side-effect уже відпрацював у root route
 - [ ] Адаптувати ThemeContext (CMSThemeProvider) для роботи без `"use client"` директиви
   - **Увага:** `ThemeContext.tsx` імпортує `supabase` з `@simplycms/core/supabase/client` — цей singleton має guard `typeof window !== "undefined"` для realtime subscription. Після видалення `"use client"` перевірити що isomorphic import не ламає серверний рендеринг (realtime subscription має бути client-only через useEffect)
 - [ ] Адаптувати Providers wrapper (CMSProvider + ThemeProvider) для TanStack Start __root.tsx
-- [ ] Реалізувати інвалідацію theme cache — серверна функція `invalidateThemeCache()` що скидає in-memory cache (замінює `revalidateTag('active-theme')`)
+- [ ] Реалізувати `invalidateThemeCache()` як server function для адмінки
+- [ ] Перевести storefront layout на loader + route context для передачі активної теми дочірнім маршрутам
 
-### Auth middleware
+### Request middleware
 
-- [ ] Якщо потрібен загальний middleware (не auth guards — вони вже в beforeLoad):
-  - Визначити в start.ts / app.ts серверну конфігурацію
-  - CORS headers для API endpoints
-  - Security headers (X-Frame-Options, CSP, etc.)
-- [ ] Видалити `proxy.ts` (вся його функціональність замінена beforeLoad guards і серверними функціями)
+- [ ] Визначити в `src/start.ts` глобальний request middleware тільки для того, що справді має бути global:
+  - security headers
+  - CORS для зовнішніх endpoints, якщо вони залишаються
+  - за потреби логування
+- [ ] Залишити в global middleware **лише той auth gate, який неможливо виразити server-side через `beforeLoad`**:
+  - початковий request на `/admin` для client-only admin shell
+- [ ] Не дублювати в global middleware route-level guards для `_protected` або інших SSR-маршрутів, які вже коректно захищаються через `beforeLoad`
+- [ ] Видалити `proxy.ts`, якщо це ще не зроблено у ранніх фазах
 
 ### Provider architecture
 
@@ -63,12 +68,10 @@
   - Варіант C: `React.cache()` тільки — **неможливо в TanStack Start** (це RSC-only API, не працює без React Server Components)
   - Вплив: продуктивність, складність, зовнішні залежності
 
-- [ ] Чи потрібен TanStack Start server middleware?
-  - Чому це важливо: proxy.ts виконував auth guards (вже в beforeLoad) + security headers + logging
-  - Варіант A: Лише security headers через Vite plugin або серверну конфігурацію (рекомендовано якщо deploy на Node.js)
-  - Варіант B: Повний middleware в start.ts — перевірка auth, headers, logging
-  - Варіант C: Без middleware — все в route-level beforeLoad + headers на рівні reverse proxy (Nginx/Cloudflare)
-  - Вплив: безпека, архітектура, DevOps
+- [ ] Чи потрібен глобальний request middleware для auth?
+  - Чому це важливо: `beforeLoad` не дає server-side захисту для `ssr: false` admin routes на початковому request
+  - Рекомендація: так, але тільки для `/admin` initial request; решта auth guards залишаються на route layer
+  - Вплив: безпечний вхід у admin без повернення до широкого `proxy.ts`
 
 - [ ] Як ThemeRegistry працюватиме на клієнті при client-side navigation?
   - Чому це важливо: зараз ThemeRegistry.register() в providers.tsx гарантує що тема доступна на клієнті. В TanStack Start client-side navigation теж потребує завантаження theme module
@@ -87,12 +90,12 @@
 
 ### Isomorphic ThemeRegistry
 
-ThemeRegistry — чистий TypeScript singleton без framework залежностей. Реєстрація — одна, спільна для server і client. В root route файлі імпортувати файл з реєстрацією (аналог поточного theme-registry.server.ts, але без server-only обмеження).
+ThemeRegistry — чистий TypeScript singleton без framework залежностей. Реєстрація — одна, спільна для server і client. Root route імпортує цей файл для клієнтського боку, а `src/server/themes.ts` явно імпортує або викликає helper реєстрації для server-side резолюції.
 
 - Де шукати поточну реалізацію: `app/theme-registry.server.ts` (server), `app/providers.tsx` (client)
-- Цільовий стан: один файл `src/theme-registry.ts` імпортований з `src/routes/__root.tsx`
+- Цільовий стан: один файл `src/theme-registry.ts`, який імпортується з `src/routes/__root.tsx` і з `src/server/themes.ts`
 
-### Providers в __root.tsx
+### Providers в `__root.tsx`
 
 __root.tsx component має обгортати Outlet:
 1. QueryClientProvider (React Query)
@@ -109,18 +112,18 @@ Redis, Upstash, або інші зовнішні cache stores — overkill дл�
 ### ❌ Дублювати ThemeRegistry реєстрацію в двох місцях
 В TanStack Start немає server/client boundary. Одна реєстрація в одному файлі. Не потрібні два entry points.
 
-### ❌ Використовувати createServerFn для ThemeRegistry реєстрації
+### ❌ Використовувати `createServerFn` для ThemeRegistry реєстрації
 ThemeRegistry — клієнтський singleton (потрібен і в браузері для theme components). Реєстрація має бути isomorphic, не server-only.
 
 ### ❌ Залишати proxy.ts
-Після Phase 4 вся функціональність proxy.ts покрита beforeLoad guards. Файл має бути видалений щоб уникнути плутанини.
+`proxy.ts` як Next.js артефакт має бути видалений. Його функції розділяються між `beforeLoad` для route-level guards і вузьким middleware у `src/start.ts` для початкового request на client-only admin shell.
 
 ## Архітектурні рішення
 
-- **В який пакет додавати код:** `@simplycms/theme-system` (cache utility), `src/` (theme-registry, root integration)
+- **В який пакет додавати код:** `@simplycms/theme-system` (cache utility), `src/` (theme-registry, root integration, start middleware)
 - **Rendering стратегія:** без змін
 - **Залежності:** жодних нових
-- **Що видаляється:** `proxy.ts`, `app/theme-registry.server.ts` (замінюється на `src/theme-registry.ts`), `unstable_cache` залежність
+- **Що видаляється:** `proxy.ts`, `app/theme-registry.server.ts`, дублююча реєстрація тем у `app/providers.tsx`, Next.js-specific theme resolver
 
 ## MCP Servers (за потреби)
 
@@ -140,11 +143,12 @@ ThemeRegistry — клієнтський singleton (потрібен і в бр�
 
 ## Definition of Done
 
-- [ ] `getActiveThemeSSR()` не імпортує з `next/cache` — використовує in-memory cache з TTL
+- [ ] `getActiveThemeSSR()` більше не є робочою точкою інтеграції runtime
 - [ ] ThemeRegistry реєструється один раз в єдиному файлі, доступному і на сервері і на клієнті
 - [ ] Providers (QueryClient, ThemeProvider, Toaster) підключені в __root.tsx
 - [ ] `proxy.ts` видалено
 - [ ] `app/theme-registry.server.ts` замінено на `src/theme-registry.ts`
 - [ ] Theme switching з адмінки працює (invalidation → наступний SSR-запит отримує нову тему)
+- [ ] Storefront layout отримує тему через loader/context, а не через Next.js-specific SSR resolver
 - [ ] `pnpm typecheck` проходить
 - [ ] `pnpm dev` — storefront використовує правильну тему, адмінка може перемикати теми

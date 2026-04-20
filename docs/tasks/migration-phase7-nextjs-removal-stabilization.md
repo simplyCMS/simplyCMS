@@ -1,21 +1,24 @@
-# Task: Phase 7 — Видалення Next.js та фінальна стабілізація
+# Task: Phase 7 — Фінальна стабілізація, cleanup і документація
 
 ## Контекст
 
-Після Phase 0-6 весь проєкт працює на TanStack Start. Next.js фізично ще присутній як залежність і директорія `app/` ще існує, але не використовується. Ця фаза — **фінальне очищення**: видалення Next.js, видалення `app/`, оновлення конфігурації, перевірка всіх функцій.
+Після Phase 0-6 весь проєкт уже має працювати на TanStack Start як на єдиному runtime. Видалення Next.js, `app/` і ранній cleanup мають відбутися в попередніх фазах, тому ця фаза — **не про ще одну міграцію**, а про фінальну стабілізацію:
 
-### Що видаляється
+- перевірити, що раннє видалення Next.js не залишило мертвих посилань;
+- довести до ладу документацію та інструкції;
+- зробити повну верифікацію архітектурної консистентності.
+
+### Що перевіряється як уже видалене
 
 | Артефакт | Причина |
 |----------|---------|
-| `next` npm package | Замінений TanStack Start |
-| `eslint-config-next` | Замінюється generic ESLint config |
-| `next.config.ts` | Замінений `vite.config.ts` |
-| `next-env.d.ts` | Next.js type declarations |
-| `app/` directory | Замінена `src/routes/` |
-| `proxy.ts` | Замінений beforeLoad guards (Phase 4-5) |
-| `postcss.config.mjs` | Перевірити чи потрібен (Tailwind v4 може працювати через Vite plugin) |
-| `.next/` build cache | Next.js build output |
+| `next` npm package | Має бути видалений у ранніх фазах |
+| `eslint-config-next` | Має бути видалений у ранніх фазах |
+| `next.config.ts` | Має бути замінений `vite.config.ts` |
+| `next-env.d.ts` | Має бути видалений |
+| `app/` directory | Має бути замінена `src/routes/` |
+| `proxy.ts` | Має бути замінений `beforeLoad`/`src/start.ts` |
+| `.next/` build cache | Не має бути частиною робочого контуру |
 
 ### Що оновлюється
 
@@ -32,29 +35,22 @@
 
 ## Вимоги
 
-### Видалення Next.js
+### Перевірка раннього cleanup
 
-- [ ] Видалити npm залежності: `next`, `eslint-config-next`, `@types/next` (якщо є)
-- [ ] Видалити файли:
-  - `next.config.ts`
-  - `next-env.d.ts`
-  - `proxy.ts`
-  - `.next/` директорія (build cache)
-- [ ] Видалити директорію `app/` повністю (всі routes мігровані в `src/routes/`)
-- [ ] Видалити `app/theme-registry.server.ts` (замінено на `src/theme-registry.ts`)
-- [ ] Видалити `app/providers.tsx` (замінено на providers в __root.tsx)
+- [ ] Підтвердити, що `next`, `eslint-config-next`, `@types/next` (якщо були) вже видалені з dependency graph
+- [ ] Підтвердити, що `next.config.ts`, `next-env.d.ts`, `proxy.ts`, `.next/`, `app/`, `app/theme-registry.server.ts`, `app/providers.tsx` відсутні або більше не використовуються
+- [ ] Якщо якийсь із цих артефактів ще існує, прибрати його саме в цій фазі як дефект попередніх фаз, а не як запланований основний обсяг робіт
 
 ### Оновлення конфігурації
 
 - [ ] `package.json`:
-  - Видалити next з dependencies
-  - Видалити eslint-config-next з devDependencies
-  - Оновити scripts: dev, build, start мають використовувати TanStack Start (вже зроблено в Phase 1, перевірити)
-  - Видалити scripts для Next.js (якщо залишились)
+  - Перевірити що next вже відсутній у dependencies
+  - Перевірити що scripts `dev`, `build`, `start` використовують TanStack Start
+  - Видалити залишкові scripts для Next.js, якщо вони ще лишились
 - [ ] `tsconfig.json`:
-  - Видалити `"next-env.d.ts"` з includes
-  - Оновити paths: видалити `@/*` → `app/*`, додати `@/*` → `src/*`
-  - Видалити Next.js-specific compiler options якщо є
+  - Перевірити що `next-env.d.ts` більше не включається
+  - Перевірити що paths орієнтовані на `src/*`, а не `app/*`
+  - Видалити залишкові Next.js-specific compiler options
 - [ ] `eslint.config.mjs`:
   - Замінити `eslint-config-next` на generic config (eslint-plugin-react, eslint-plugin-react-hooks)
   - Додати TanStack Router ESLint plugin якщо існує
@@ -128,8 +124,10 @@
 
 ### Консистентність із попередніми фазами
 
-- [ ] Перевірити що фінальна auth/session реалізація використовує cookie read/write adapter для `@supabase/ssr`, а не лише читання cookies
+- [ ] Перевірити що фінальна auth/session реалізація використовує повноцінний cookie read/write механізм для `@supabase/ssr`, а не лише читання cookies
 - [ ] Перевірити що theme caching спирається на in-memory TTL cache + loader/server-function orchestration, а не на `React.cache()` / `next/cache`
+- [ ] Перевірити що route params/search/head не емулюються через adapters або wrappers сумісності
+- [ ] Перевірити що image rendering не залежить від `next/image` і не використовує migration wrappers
 - [ ] Функціональна перевірка:
   - Головна сторінка завантажується з SSR
   - Каталог / секції / товари відображаються
@@ -164,14 +162,13 @@
 
 ## Рекомендовані патерни
 
-### Поступове видалення з верифікацією
+### Фінальна консистентність з верифікацією
 
-Не видаляти все одразу. Порядок:
-1. Видалити `app/` → `pnpm typecheck`
-2. Видалити next з package.json → `pnpm install` → `pnpm typecheck`
-3. Оновити конфігурацію → `pnpm build`
-4. Повна функціональна перевірка
-5. Оновити документацію
+У цій фазі не треба ще раз вигадувати великий cleanup. Порядок такий:
+1. Перевірити відсутність мертвих Next.js reference
+2. Перевірити конфігурацію та env-модель
+3. Перевірити документацію
+4. Запустити повну функціональну верифікацію
 
 ### Grep-based verification
 
@@ -185,8 +182,8 @@
 
 ## Антипатерни (уникати)
 
-### ❌ Видаляти все одним комітом
-Поступове видалення з верифікацією на кожному кроці. Якщо щось зламається — легко відкотити конкретний крок.
+### ❌ Перетворювати цю фазу на ще одну основну міграцію
+Якщо Next.js все ще залишається у runtime на цьому етапі, це означає що попередні фази не доведені до кінця.
 
 ### ❌ Забути оновити документацію
 Застаріла документація — гірше ніж відсутня. AGENTS.md, README.md і instructions files мають відображати актуальну архітектуру.
@@ -204,7 +201,7 @@
 
 - **В який пакет додавати код:** конфігураційні файли в корені, документація в docs/ і .github/
 - **Rendering стратегія:** фінальна — TanStack Start SSR для storefront, client-only для admin
-- **Що видаляється:** next, eslint-config-next, next.config.ts, next-env.d.ts, proxy.ts, app/, .next/
+- **Що стабілізується:** TanStack Start runtime, docs, конфігурація, verification pipeline
 
 ## Цільова структура після Phase 7
 
@@ -296,10 +293,10 @@ simplycms.config.ts
 
 ## Definition of Done
 
-- [ ] `next` і `eslint-config-next` видалені з package.json
-- [ ] `next.config.ts`, `next-env.d.ts`, `proxy.ts` видалені
-- [ ] `app/` директорія повністю видалена
-- [ ] `.next/` build cache видалено
+- [ ] `next` і `eslint-config-next` відсутні з package.json
+- [ ] `next.config.ts`, `next-env.d.ts`, `proxy.ts` відсутні
+- [ ] `app/` директорія або повністю видалена, або не має жодного живого reference
+- [ ] `.next/` build cache не використовується і не є частиною робочого контуру
 - [ ] `grep -r "from ['\"]next/" packages/ themes/ src/` — порожній результат
 - [ ] `pnpm install` — чисте встановлення
 - [ ] `pnpm typecheck` — 0 помилок
