@@ -6,11 +6,13 @@
 
 Зараз Next.js API проникає в усі шари проєкту. За результатами аудиту:
 
-- **`@simplycms/core`** — 43 точки: `next/navigation` (useParams, useRouter, useSearchParams, usePathname, redirect), `next/link` (Link), `next/image` (Image), `next/headers` (cookies), `next/server` (NextResponse, NextRequest)
-- **`@simplycms/admin`** — ~45 точок: `next/navigation`, `next/link`, `next/image`
+- **`@simplycms/core`** — ~30 точок у pages/ і components/: `next/navigation` (useParams, useRouter, useSearchParams, usePathname, redirect), `next/link` (Link), `next/image` (Image), `next/headers` (cookies), `next/server` (NextResponse, NextRequest)
+- **`@simplycms/admin`** — ~40 точок у pages/, layouts/AdminLayout.tsx, components/ImageUpload.tsx, components/ProductModifications.tsx: `next/navigation`, `next/link`, `next/image`
 - **`@simplycms/theme-system`** — 1 точка: `next/cache` (unstable_cache)
 - **`@simplycms/ui`** — 1 точка: `next-themes` (useTheme) — **залишити як є**, працює без Next.js
-- **`themes/default`** і **`themes/solarstore`** — 23 точки: `next/link`, `next/image`, `next/navigation`
+- **`themes/default`** і **`themes/solarstore`** — ~15 точок: `next/link`, `next/image`, `next/navigation`
+
+> **ВАЖЛИВО:** Числа орієнтовні. Перед імплементацією виконати свіжий `grep -r 'from "next/' packages/ themes/` для точного inventory.
 
 Мета цієї фази — **централізувати всі framework-specific імпорти** в тонкий adapter-шар всередині `@simplycms/core`, щоб решта коду залежала від адаптерів, а не напряму від `next/*`. Це дозволить Phase 1 перемкнути адаптери на TanStack Router без масового рефакторингу.
 
@@ -68,6 +70,14 @@
 
 - Де створювати: `packages/simplycms/core/src/adapters/image.tsx`
 
+### Контракт Link адаптера
+
+Адаптер `Link` має підтримувати всі props що активно використовуються в темах і пакетах: `href` (обовʼязковий), `className`, `children`, `target`, `onClick`, `prefetch`. Теми (`Header.tsx`, `Footer.tsx`, `ProductCard.tsx`) масово використовують ці props — адаптер не має їх втрачати.
+
+### Увага: `supabase/client.ts`
+
+`packages/simplycms/core/src/supabase/client.ts` має `"use client"` директиву і singleton з `typeof window !== "undefined"` guard. В Phase 0 цей файл **не чіпати** (він framework-agnostic по суті), але врахувати що `"use client"` буде видалено в Phase 1 — singleton pattern з window-перевіркою має залишитися.
+
 ### Масовий пошук і заміна
 
 Для кожного пакету виконати grep по `from "next/` або `from 'next/`, зібрати повний список файлів, замінити імпорти на адаптери. Перевірити типи після кожного пакету.
@@ -116,7 +126,11 @@
 
 ### Файли для заміни імпортів — admin (~30 файлів)
 
-Всі файли в `packages/simplycms/admin/src/pages/` і `layouts/AdminLayout.tsx`, `components/ImageUpload.tsx`, `components/ProductModifications.tsx`
+Всі файли в `packages/simplycms/admin/src/pages/` (~40 файлів), а також:
+- `layouts/AdminLayout.tsx` — `next/link`, `next/navigation`
+- `components/ImageUpload.tsx` — `next/image`
+- `components/ProductModifications.tsx` — `next/image`
+- `components/ReviewDetail.tsx` — `next/image` (якщо не в pages/)
 
 ### Файли для заміни імпортів — themes (~12 файлів)
 

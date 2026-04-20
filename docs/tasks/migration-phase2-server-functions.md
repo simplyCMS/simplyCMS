@@ -17,6 +17,7 @@
 
 - [ ] Створити директорію `src/server/` для серверних функцій
 - [ ] Реалізувати серверний Supabase клієнт через `createServerFn` — замість `cookies()` з next/headers використовувати `getHeaders()` / `getCookie()` з TanStack Start server context
+  - **ВАЖЛИВО: cookie write-back.** `@supabase/ssr` потребує не лише **читання** cookies, а й **запису** (для session refresh / token rotation). В TanStack Start запис cookies виконується через `setCookie()` з `vinxi/http` або через Response headers. Без цього auth session refresh зламається.
 - [ ] Реалізувати серверні функції для отримання даних storefront:
   - Отримання товару по slug (для сторінки товару)
   - Отримання секції з товарами (для сторінки категорії)
@@ -31,18 +32,20 @@
 - [ ] Видалити або позначити як deprecated: `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`
 - [ ] Клієнтський Supabase (`supabase/client.ts`) залишити без змін — він framework-agnostic
 
+> **Примітка:** `guest-order` API route (`app/api/guest-order/route.ts`) теж використовує `createServerSupabaseClient()`. Його міграція виконується в Phase 4 (як `createServerFn` або server handler), але після Phase 2 він зможе використовувати `createServerSupabase()` з `src/server/supabase.ts`.
+
 ## Clarify (питання перед імплементацією)
 
 - [ ] Як передавати cookies до Supabase server client у TanStack Start?
-  - Чому це важливо: `@supabase/ssr` createServerClient потребує доступу до cookies для auth сесії
-  - Варіант A: `getHeaders()` з `@tanstack/react-start` — отримати Cookie header і парсити вручну (рекомендовано, native API)
-  - Варіант B: Використовувати `vinxi` (underlying server) getCookie API
+  - Чому це важливо: `@supabase/ssr` createServerClient потребує доступу до cookies для auth сесії. Потрібно **і читання, і запис** cookies (session refresh, token rotation).
+  - Варіант A: `getHeaders()` з `@tanstack/react-start` для читання + `setCookie()` з `vinxi/http` для запису (рекомендовано, native API)
+  - Варіант B: Використовувати `vinxi` (underlying server) getCookie/setCookie API напряму
   - Вплив: серверна автентифікація, session refresh
 
 - [ ] Який механізм кешування замість unstable_cache?
   - Чому це важливо: `getActiveThemeSSR` зараз кешується через `unstable_cache` (cross-request cache з revalidation). TanStack Start не має вбудованого аналога
   - Варіант A: Module-level in-memory cache з TTL (простий Map + setTimeout) (рекомендовано для початку)
-  - Варіант B: React `cache()` для per-request deduplication + in-memory для cross-request
+  - Варіант B: ~~React `cache()` для per-request deduplication + in-memory для cross-request~~ — **неможливо:** `React.cache()` є RSC-only API, не працює в TanStack Start (ізоморфна модель без Server Components). Per-request dedup непотрібен, бо loader виконується один раз на запит
   - Варіант C: Зовнішній cache (Redis/Upstash) — overkill для одного запису
   - Вплив: продуктивність, складність
 
@@ -63,10 +66,17 @@
 
 ### Supabase server client factory
 
-Створити одну utility `createServerSupabase()` всередині `src/server/supabase.ts`, яка використовує `getHeaders()` для отримання cookies і створює authenticated Supabase client. Всі серверні функції використовують цю factory.
+Створити одну utility `createServerSupabase()` всередині `src/server/supabase.ts`, яка використовує `getHeaders()` для отримання cookies і `setCookie()` для їх запису, та створює authenticated Supabase client. Всі серверні функції використовують цю factory.
 
 - Де шукати поточну реалізацію: `packages/simplycms/core/src/supabase/server.ts`
-- Що змінюється: `cookies()` з next/headers → `getHeaders()` / cookie parsing з TanStack Start
+- Що змінюється: `cookies()` з next/headers → `getHeaders()` для read + `setCookie()` з vinxi/http для write
+- **Критично:** без cookie write-back auth session refresh (ротація refresh token) не працюватиме
+
+### Home page data — один createServerFn з Promise.all
+
+Поточна `app/(storefront)/page.tsx` робить 4 паралельні Supabase-запити (банери, featured, new products, секції). Серверна функція `getHomePageData()` має обгорнути всі 4 запити в один `createServerFn` з `Promise.all` всередині — це один RPC-виклик з клієнта замість 4-х окремих.
+
+- Де шукати поточну логіку: `app/(storefront)/page.tsx`
 
 ### Input validation в серверних функціях
 

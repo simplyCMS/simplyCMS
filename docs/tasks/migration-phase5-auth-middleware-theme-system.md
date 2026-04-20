@@ -29,11 +29,12 @@
 
 - [ ] Замінити `unstable_cache` в `getActiveThemeSSR()` на framework-agnostic кешування:
   - Module-level in-memory cache з TTL (наприклад, 3600 секунд)
-  - `React.cache()` для per-request deduplication (залишити як є)
+  - **Не використовувати `React.cache()`** — це RSC-only API, яке не працює в TanStack Start (ізоморфна модель без Server Components). Per-request dedup непотрібен, бо loader природньо виконується один раз на запит
 - [ ] Уніфікувати реєстрацію тем — єдиний entry point що працює і на сервері, і на клієнті:
   - ThemeRegistry.register() має викликатися один раз при старті застосунку
   - В TanStack Start немає boundary server/client — реєстрація в `src/routes/__root.tsx` або окремому файлі імпортованому з root
 - [ ] Адаптувати ThemeContext (CMSThemeProvider) для роботи без `"use client"` директиви
+  - **Увага:** `ThemeContext.tsx` імпортує `supabase` з `@simplycms/core/supabase/client` — цей singleton має guard `typeof window !== "undefined"` для realtime subscription. Після видалення `"use client"` перевірити що isomorphic import не ламає серверний рендеринг (realtime subscription має бути client-only через useEffect)
 - [ ] Адаптувати Providers wrapper (CMSProvider + ThemeProvider) для TanStack Start __root.tsx
 - [ ] Реалізувати інвалідацію theme cache — серверна функція `invalidateThemeCache()` що скидає in-memory cache (замінює `revalidateTag('active-theme')`)
 
@@ -59,7 +60,7 @@
   - Чому це важливо: cross-request cache для активної теми — критичний для продуктивності (без нього кожен SSR-запит робить DB-запит)
   - Варіант A: Простий module-level Map з TTL check — `let cached: ThemeRecord | null; let cachedAt: number;` (рекомендовано — мінімально, достатньо)
   - Варіант B: Бібліотека `lru-cache` або `node-cache`
-  - Варіант C: `React.cache()` тільки — кешує лише в межах одного request (недостатньо)
+  - Варіант C: `React.cache()` тільки — **неможливо в TanStack Start** (це RSC-only API, не працює без React Server Components)
   - Вплив: продуктивність, складність, зовнішні залежності
 
 - [ ] Чи потрібен TanStack Start server middleware?
@@ -124,7 +125,7 @@ ThemeRegistry — клієнтський singleton (потрібен і в бр�
 ## MCP Servers (за потреби)
 
 - **context7** — TanStack Start server middleware / start.ts configuration
-- **context7** — React.cache() API для per-request deduplication
+- **context7** — In-memory caching patterns для server functions (не React.cache())
 
 ## Пов'язана документація
 

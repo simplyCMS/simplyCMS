@@ -45,6 +45,14 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 - [ ] **Перемкнути адаптер зображень** (`@simplycms/core/adapters/image`) з `next/image` на звичайний `<img>` елемент
 - [ ] Видалити `"use client"` директиви з усіх файлів у `packages/simplycms/` і `themes/` (вони більше не потрібні)
 - [ ] Перевірити що шрифт Inter підключається через CSS або fontsource замість `next/font`
+- [ ] **Міграція змінних оточення:** замінити `NEXT_PUBLIC_*` на `VITE_*` prefix у всіх клієнтських змінних. Зачеплені файли:
+  - `packages/simplycms/core/src/supabase/anon.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
+  - `packages/simplycms/core/src/supabase/client.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
+  - `simplycms.config.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
+  - `.env.local` — перейменувати ключі
+  - В Vite доступ через `import.meta.env.VITE_*` замість `process.env.NEXT_PUBLIC_*`
+- [ ] Адаптувати `supabase/client.ts`: видалити `"use client"`, зберегти singleton pattern з `typeof window !== "undefined"` guard
+- [ ] Вирішити Tailwind v4 + Vite: використати `@tailwindcss/vite` плагін (замість PostCSS pipeline) або залишити PostCSS — прийняти рішення і задокументувати
 - [ ] `pnpm dev` стартує TanStack Start dev server
 - [ ] Placeholder index route відображається в браузері
 
@@ -61,6 +69,7 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
   - Чому це важливо: Next.js useSearchParams повертає URLSearchParams, TanStack Router useSearch повертає типізований обʼєкт
   - Варіант A: Адаптер конвертує useSearch() у URLSearchParams-подібний API (рекомендовано)
   - Варіант B: Рефакторити всі споживачі під типізований обʼєкт
+  - **Важливо:** в `@simplycms/admin` є файли (наприклад `DiscountEdit.tsx`, `DiscountGroupEdit.tsx`) які активно використовують `.get()`, `.toString()` на результаті useSearchParams. Адаптер має повертати **сумісний з URLSearchParams інтерфейс**
   - Вплив: обсяг змін, type-safety
 
 - [ ] Чи залишати workspace packages як transpilePackages?

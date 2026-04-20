@@ -40,7 +40,26 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
   - `admin/sections/index.tsx` — Sections
   - `admin/orders/index.tsx` — Orders
   - `admin/orders/$id.tsx` — Order detail
-  - ... і решта sub-routes (banners, discounts, languages, order-statuses, plugins, price-types, price-validator, properties, reviews, service-requests, services, settings, shipping, themes, user-categories, users)
+  - `admin/reviews/index.tsx` — Reviews list
+  - `admin/reviews/$reviewId.tsx` — Review detail
+  - `admin/themes/index.tsx` — Themes list
+  - `admin/themes/$themeId/settings.tsx` — Theme settings
+  - `admin/plugins/index.tsx` — Plugins list
+  - `admin/plugins/$pluginId/settings.tsx` — Plugin settings
+  - `admin/properties/index.tsx` — Properties list
+  - `admin/properties/$propertyId.tsx` — Property edit (включає property options)
+  - `admin/user-categories/index.tsx` — User categories
+  - `admin/user-categories/$id.tsx` — User category edit (+ rules)
+  - `admin/shipping/index.tsx` — Shipping overview
+  - `admin/shipping/methods.tsx` — Shipping methods
+  - `admin/shipping/methods/$id.tsx` — Method edit
+  - `admin/shipping/zones.tsx` — Shipping zones
+  - `admin/shipping/zones/$id.tsx` — Zone edit
+  - `admin/shipping/pickup-points.tsx` — Pickup points
+  - `admin/shipping/pickup-points/$id.tsx` — Pickup point edit
+  - ... і решта sub-routes (banners/$bannerId, discounts/$discountId, languages, order-statuses, price-types/$priceTypeId, price-validator, service-requests, services, settings, users/$userId)
+
+> **ВАЖЛИВО:** Перед імплементацією зробити повний audit `app/(cms)/admin/` для точного списку всіх вкладених маршрутів.
 - [ ] Кожен admin route має `ssr: false` — вся адмінка client-only
 - [ ] Кожен admin route lazy-load-ить відповідну сторінку з `@simplycms/admin/pages/*`
 
@@ -104,6 +123,8 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 Кожен admin route має `ssr: false` щоб гарантувати client-only rendering. `@simplycms/admin` повністю побудований на React Query + client Supabase — SSR не потрібен.
 
+**Увага щодо `beforeLoad` + `ssr: false`:** якщо route має `ssr: false`, то `beforeLoad` виконується **лише на клієнті**. `isAdmin()` — це `createServerFn` (RPC-виклик). Це працюватиме (виклик піде через HTTP на сервер), але auth guard працює через network call, не через server-side check.
+
 - Де шукати поточний шаблон: `app/(cms)/admin/products/page.tsx` — типовий приклад
 - Що перенести: lazy import → React.lazy або прямий import, wrapper → route component
 
@@ -158,22 +179,38 @@ src/routes/
     orders/
       index.tsx                       # Orders list
       $id.tsx                         # Order detail
+    reviews/index.tsx
+    reviews/$reviewId.tsx
+    themes/index.tsx
+    themes/$themeId/settings.tsx
+    plugins/index.tsx
+    plugins/$pluginId/settings.tsx
+    properties/index.tsx
+    properties/$propertyId.tsx
+    user-categories/index.tsx
+    user-categories/$id.tsx
+    shipping/
+      index.tsx
+      methods.tsx
+      methods/$id.tsx
+      zones.tsx
+      zones/$id.tsx
+      pickup-points.tsx
+      pickup-points/$id.tsx
     banners/index.tsx
+    banners/$bannerId.tsx
     discounts/index.tsx
+    discounts/$discountId.tsx
     languages/index.tsx
     order-statuses/index.tsx
-    plugins/index.tsx
     price-types/index.tsx
+    price-types/$priceTypeId.tsx
     price-validator/index.tsx
-    properties/index.tsx
-    reviews/index.tsx
     service-requests/index.tsx
     services/index.tsx
     settings/index.tsx
-    shipping/index.tsx
-    themes/index.tsx
-    user-categories/index.tsx
     users/index.tsx
+    users/$userId.tsx
   auth/
     index.tsx                         # Auth page (login/register)
     callback.tsx                      # OAuth callback server handler

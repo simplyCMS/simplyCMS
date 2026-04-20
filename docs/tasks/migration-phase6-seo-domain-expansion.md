@@ -30,6 +30,7 @@
   - `og_image` (text, nullable) — Open Graph image URL (fallback на перше зображення)
   - `robots` (text, nullable) — robots meta (index/noindex, follow/nofollow)
   - `schema_json` (jsonb, nullable) — custom JSON-LD override (якщо потрібна ручна корекція)
+  - `meta_keywords` (text, nullable) — ключові слова для meta keywords (опціонально, для сумісності)
 - [ ] Додати аналогічні SEO-поля до таблиці `sections` (без schema_json)
 - [ ] Додати SEO-поля до таблиці `property_options`:
   - `seo_h1`, `canonical_url`, `og_description`
@@ -45,6 +46,7 @@
     2. Бізнес-поля (name, description, images)
     3. Site defaults (з CMS конфігурації)
   - Повертає обʼєкт придатний для прямого використання в route `head`
+  - Повертає Twitter Card meta (`twitter:title`, `twitter:description`, `twitter:image`, `twitter:card`)
 - [ ] seoResolver має генерувати JSON-LD:
   - Для products: schema.org Product з offers
   - Для sections: schema.org CollectionPage
@@ -96,6 +98,10 @@ Resolver приймає raw entity data і повертає normalізовани
 - `og:title`: og_title → meta_title → name
 - `og:image`: og_image → images[0] → site_og_image
 - `robots`: robots → "index, follow" (default)
+- `twitter:card`: "summary_large_image" (default)
+- `twitter:title`: og_title → meta_title → name
+- `twitter:description`: og_description → meta_description → short_description
+- `twitter:image`: og_image → images[0] → site_og_image
 
 - Де створювати: `packages/simplycms/core/src/lib/seoResolver.ts`
 

@@ -15,6 +15,7 @@
 | `(storefront)/catalog/[sectionSlug]/[productSlug]/page.tsx` | `_storefront/catalog/$sectionSlug/$productSlug.tsx` | Сторінка товару |
 | `(storefront)/properties/[propertySlug]/page.tsx` | `_storefront/properties/$propertySlug/index.tsx` | Список опцій властивості |
 | `(storefront)/properties/[propertySlug]/[optionSlug]/page.tsx` | `_storefront/properties/$propertySlug/$optionSlug.tsx` | Товари з опцією |
+| `(storefront)/properties/page.tsx` | `_storefront/properties/index.tsx` | Список всіх властивостей |
 | `(storefront)/cart/page.tsx` | `_storefront/cart.tsx` | Кошик |
 | `(storefront)/checkout/page.tsx` | `_storefront/checkout.tsx` | Оформлення замовлення |
 | `(storefront)/order-success/[orderId]/page.tsx` | `_storefront/order-success/$orderId.tsx` | Успішне замовлення |
@@ -33,11 +34,12 @@
   - В `loader` викликає серверну функцію `getActiveTheme()` (з Phase 2)
   - Рендерить `theme.MainLayout` навколо `<Outlet />`
   - Передає theme дані дочірнім маршрутам через route context або props
+  - **ВАЖЛИВО:** при client-side навігації між storefront-маршрутами loader layout route спрацьовує повторно. Потрібно кешувати theme на рівні routeContext (не перезавантажувати) або використовувати `staleTime` / `gcTime` на loader щоб уникнути зайвих DB-запитів
 
 ### SSR-сторінки з SEO
 
 - [ ] Головна сторінка (`_storefront/index.tsx`):
-  - `loader` → серверна функція `getHomePageData()` (банери, featured, нові товари, секції)
+  - `loader` → серверна функція `getHomePageData()` — один RPC-виклик з `Promise.all` всередині (банери, featured, нові товари, секції)
   - `head` → title "Головна", description "SimplyCMS Store — інтернет-магазин"
   - Component → `theme.pages.HomePage` з даними з loader
 
@@ -57,7 +59,7 @@
   - notFound() якщо товар не знайдено
   - Component → `theme.pages.ProductPage`
 
-- [ ] Properties routes (`$propertySlug/index.tsx`, `$propertySlug/$optionSlug.tsx`):
+- [ ] Properties routes (`properties/index.tsx`, `$propertySlug/index.tsx`, `$propertySlug/$optionSlug.tsx`):
   - `loader` → серверні функції для properties
   - `head` → meta на основі property/option назв
   - Component → `theme.pages.PropertyPage` / `theme.pages.PropertyOptionPage`
@@ -159,6 +161,7 @@ src/routes/
         index.tsx                    # Секція з товарами
         $productSlug.tsx             # Сторінка товару (SSR + JSON-LD)
     properties/
+      index.tsx                    # Список властивостей
       $propertySlug/
         index.tsx                    # Список опцій
         $optionSlug.tsx              # Товари з опцією

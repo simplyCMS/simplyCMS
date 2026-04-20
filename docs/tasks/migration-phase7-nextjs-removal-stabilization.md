@@ -72,6 +72,18 @@
 - [ ] `packages/simplycms/ui/` — `next-themes` дозволено (framework-agnostic)
 - [ ] `themes/` — жодного `next/*` імпорту
 
+### Перевірка змінних оточення
+
+- [ ] Перевірити що **жодного** `NEXT_PUBLIC_*` не залишилось в коді:
+  - `grep -r "NEXT_PUBLIC_" packages/ themes/ src/ simplycms.config.ts` — має бути порожнім
+  - `grep -r "process.env.NEXT_PUBLIC_" packages/ themes/ src/` — має бути порожнім
+- [ ] Перевірити що `import.meta.env.VITE_*` використовується коректно
+- [ ] Оновити `.env.example` (якщо є) — `NEXT_PUBLIC_*` → `VITE_*`
+
+### Перевірка Supabase Edge Functions
+
+- [ ] Перевірити `supabase/functions/` — Edge Functions (`get-guest-order/` та інші) не залежать від Next.js, але потрібно явно перевірити що вони працюють з новою архітектурою (guest-order endpoint тепер через createServerFn)
+
 ### Оновлення документації
 
 - [ ] `README.md` — оновити:
@@ -90,6 +102,21 @@
 - [ ] `.github/instructions/tooling.instructions.md` — оновити:
   - Основні команди (якщо змінились)
   - Конфігурація (Next.js → Vite + TanStack Start)
+- [ ] `.github/instructions/data-access.instructions.md` — оновити:
+  - Замінити `unstable_cache` на in-memory TTL cache
+  - Замінити `cookies()` з next/headers на `getHeaders()` / `setCookie()`
+  - Замінити Server Components data fetching на loader/createServerFn патерни
+- [ ] `.github/instructions/storage.instructions.md` — оновити:
+  - Видалити посилання на `next/image` якщо є
+  - Оновити server-side image processing патерни
+- [ ] `.github/instructions/optimization.instructions.md` — оновити:
+  - Видалити Next.js-specific optimizations (next/image, ISR, Server Components)
+  - Додати Vite/TanStack Start optimizations (code splitting, lazy routes, prefetch)
+- [ ] `.github/copilot-instructions.md` — оновити:
+  - MCP recommendations (видалити Next.js-specific, додати TanStack Start)
+  - Migration awareness секцію (міграція завершена)
+  - Оновити project structure overview
+- [ ] `.github/prompts/` та `.github/agents/` (якщо існують) — перевірити на `next/*` references
 
 ### Повна верифікація
 
@@ -148,6 +175,8 @@
 - `grep -r "from \"next/" packages/ themes/ src/` — має бути порожнім
 - `grep -r "'use client'" packages/ themes/` — має бути порожнім (якщо видалили в Phase 1)
 - `grep -r "next/navigation\|next/link\|next/image\|next/headers\|next/cache\|next/server\|next/dynamic" .` — лише в temp/ і node_modules
+- `grep -r "NEXT_PUBLIC_" packages/ themes/ src/ simplycms.config.ts` — має бути порожнім
+- `grep -r "process.env.NEXT_PUBLIC_" packages/ themes/ src/` — має бути порожнім
 
 ## Антипатерни (уникати)
 
