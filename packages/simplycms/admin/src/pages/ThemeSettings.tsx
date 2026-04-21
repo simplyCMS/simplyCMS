@@ -1,6 +1,4 @@
-"use client";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { ThemeRegistry } from "@simplycms/themes/ThemeRegistry";
@@ -39,8 +37,8 @@ interface ThemeRecord {
 }
 
 export default function ThemeSettings() {
-  const { themeId } = useParams() as { themeId: string };
-  const router = useRouter();
+  const { themeId } = useParams({ strict: false }) as { themeId: string };
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [config, setConfig] = useState<Record<string, unknown>>({});
@@ -117,7 +115,7 @@ export default function ThemeSettings() {
       <div className="text-center py-12">
         <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Тему не знайдено</h2>
-        <Button onClick={() => router.push("/admin/themes")}>Повернутись</Button>
+        <Button onClick={() => navigate({ to: '/admin/themes' })}>Повернутись</Button>
       </div>
     );
   }
@@ -126,7 +124,7 @@ export default function ThemeSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/admin/themes">
+          <Link to="/admin/themes">
             <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
           </Link>
           <div>

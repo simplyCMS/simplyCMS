@@ -1,7 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import NextImage from "next/image";
+import { Link } from '@tanstack/react-router';
 import { ImageIcon, Star } from "lucide-react";
 
 interface ProductCardProps {
@@ -38,15 +35,15 @@ export function ProductCard({ product }: ProductCardProps) {
       : null;
 
   return (
-    <Link href={`/catalog/${sectionSlug}/${product.slug}`} className="group block">
+    <Link to={`/catalog/${sectionSlug}/${product.slug}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-md bg-muted mb-3">
         {firstImage ? (
-          <NextImage
+          <img
             src={firstImage}
             alt={product.name}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

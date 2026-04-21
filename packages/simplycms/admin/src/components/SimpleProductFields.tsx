@@ -1,4 +1,3 @@
-"use client";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";

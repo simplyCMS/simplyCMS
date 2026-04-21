@@ -1,12 +1,9 @@
-"use client";
-
-import NextImage from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 
 export function BrandCarousel() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -60,16 +57,16 @@ export function BrandCarousel() {
               {brands.map((brand) => (
                 <div key={brand.id} className="flex-[0_0_120px] md:flex-[0_0_150px] min-w-0">
                   <Link
-                    href={`/properties/${brand.propertySlug}/${brand.slug}`}
+                    to={`/properties/${brand.propertySlug}/${brand.slug}`}
                     className="relative flex items-center justify-center h-20 rounded-md border border-border/40 bg-card hover:border-primary/30 transition-colors p-4"
                   >
                     {brand.image_url ? (
-                      <NextImage
+                      <img
                         src={brand.image_url}
                         alt={brand.name}
-                        fill
-                        sizes="150px"
-                        className="object-contain opacity-60 hover:opacity-100 transition-opacity"
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-contain opacity-60 hover:opacity-100 transition-opacity"
                       />
                     ) : (
                       <span className="text-xs text-muted-foreground font-medium text-center">

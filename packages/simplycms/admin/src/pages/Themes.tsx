@@ -1,7 +1,5 @@
-"use client";
 import { useState } from "react";
-import Link from "next/link";
-import NextImage from "next/image";
+import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -105,7 +103,7 @@ export default function Themes() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/admin/settings">
+        <Link to="/admin/settings">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -151,12 +149,12 @@ export default function Themes() {
               {/* Preview image */}
               <div className="relative h-48 bg-muted rounded-t-lg overflow-hidden">
                 {theme.preview_image ? (
-                  <NextImage
+                  <img
                     src={theme.preview_image}
                     alt={theme.display_name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -193,7 +191,7 @@ export default function Themes() {
                 <div className="flex gap-2">
                   {theme.is_active ? (
                     <Button variant="outline" className="flex-1" asChild>
-                      <Link href={`/admin/themes/${theme.id}/settings`}>
+                      <Link to={`/admin/themes/${theme.id}/settings`}>
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування
                       </Link>
@@ -208,7 +206,7 @@ export default function Themes() {
                         Активувати
                       </Button>
                       <Button variant="outline" size="icon" asChild>
-                        <Link href={`/admin/themes/${theme.id}/settings`}>
+                        <Link to={`/admin/themes/${theme.id}/settings`}>
                           <Settings className="h-4 w-4" />
                         </Link>
                       </Button>

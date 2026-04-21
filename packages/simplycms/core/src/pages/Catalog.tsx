@@ -1,8 +1,5 @@
-"use client";
-
 import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import NextImage from "next/image";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -449,7 +446,7 @@ export default function CatalogPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -481,12 +478,14 @@ export default function CatalogPage({
             onClick={() => handleSectionClick(section.id)}
           >
             {section.image_url ? (
-              <NextImage
+              <img
                 src={section.image_url}
                 alt=""
                 width={16}
                 height={16}
                 className="rounded object-cover"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <FolderOpen className="w-3 h-3" />

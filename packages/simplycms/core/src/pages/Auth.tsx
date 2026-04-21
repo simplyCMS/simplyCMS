@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { supabase } from "../supabase/client";
 import { useAuth } from "../hooks/useAuth";
 import { Button } from "@simplycms/ui/button";
@@ -30,12 +28,12 @@ const registerSchema = z.object({
 });
 
 export default function Auth() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "login");
+  const [activeTab, setActiveTab] = useState<string>(search.tab || "login");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,9 +52,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      router.push("/");
+      navigate({ to: "/" });
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +94,7 @@ export default function Auth() {
           title: "Успішний вхід",
           description: "Ласкаво просимо!",
         });
-        router.push("/");
+        navigate({ to: "/" });
       }
     } catch {
       toast({
@@ -158,7 +156,7 @@ export default function Auth() {
           title: "Реєстрація успішна",
           description: "Ваш акаунт створено!",
         });
-        router.push("/");
+        navigate({ to: "/" });
       }
     } catch {
       toast({
@@ -451,7 +449,7 @@ export default function Auth() {
 
             {/* Back to Home */}
             <div className="mt-6 text-center">
-              <Button variant="link" onClick={() => router.push("/")} className="text-muted-foreground">
+              <Button variant="link" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
                 Повернутися на головну
               </Button>
             </div>

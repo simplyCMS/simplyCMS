@@ -1,25 +1,15 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useEffect } from "react";
+import { useNavigate } from '@tanstack/react-router';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@simplycms/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { Button } from "@simplycms/ui/button";
-import { LogOut, Home, Loader2 } from "lucide-react";
+import { LogOut, Home } from "lucide-react";
 import { supabase } from "@simplycms/core/supabase/client";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ThemeToggle } from "@simplycms/core/components/ThemeToggle";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isAdmin } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
-      router.push("/auth");
-    }
-  }, [user, isLoading, isAdmin, router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -27,20 +17,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       title: "Вихід виконано",
       description: "Ви успішно вийшли з системи",
     });
-    router.push("/");
+    navigate({ to: '/' });
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user || !isAdmin) {
-    return null;
-  }
 
   return (
     <SidebarProvider>
@@ -56,7 +34,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/' })}>
               <Home className="h-4 w-4 mr-2" />
               На сайт
             </Button>

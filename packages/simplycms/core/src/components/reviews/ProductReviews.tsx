@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { Loader2, LogIn } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useProductReviews } from "../../hooks/useProductReviews";
@@ -101,7 +99,7 @@ export function ProductReviews({ productId, renderEditor, renderImageUpload }: P
       ) : (
         <div className="border rounded-lg p-4 text-center space-y-2">
           <p className="text-muted-foreground">Щоб залишити вiдгук, увiйдiть в свiй акаунт</p>
-          <Link href="/auth" className="inline-flex items-center gap-2 px-4 py-2 border rounded-md text-sm">
+          <Link to="/auth" className="inline-flex items-center gap-2 px-4 py-2 border rounded-md text-sm">
             <LogIn className="h-4 w-4" />
             Увiйти або зареєструватись
           </Link>

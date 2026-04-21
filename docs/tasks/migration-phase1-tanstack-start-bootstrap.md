@@ -52,25 +52,25 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 
 ## Вимоги
 
-- [ ] Встановити `@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/react-router-devtools`, `@vitejs/plugin-react`, `vite` як залежності
-- [ ] Створити `vite.config.ts` в корені проєкту з плагіном `tanstackStart()` перед `react()`
-- [ ] Створити `src/router.tsx` — фабрика роутера з `createRouter()` і route tree
-- [ ] Створити `src/routes/__root.tsx` — root route з HTML shell, `HeadContent`, `Scripts`, `Outlet`, глобальним CSS
-- [ ] Створити `src/routes/index.tsx` — мінімальна головна сторінка (placeholder) для перевірки що dev server стартує
-- [ ] Створити `src/start.ts` і підключити глобальний middleware pipeline, навіть якщо на цьому етапі він ще мінімальний
-- [ ] Оновити `package.json` scripts: `dev`, `build`, `start` мають запускати TanStack Start через Vite
-- [ ] Видалити залежності `next`, `eslint-config-next` і Next.js runtime-конфігурацію з активного шляху виконання одразу після того, як Start skeleton збирається
-- [ ] Замінити **всі** `next/link` у `packages/` і `themes/` на `Link` з `@tanstack/react-router` або на prop-driven навігацію через route layer
-- [ ] Замінити **всі** `next/navigation` у `packages/` і `themes/` на фінальні TanStack Router патерни:
+- [Х] Встановити `@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/react-router-devtools`, `@vitejs/plugin-react`, `vite` як залежності
+- [Х] Створити `vite.config.ts` в корені проєкту з плагіном `tanstackStart()` перед `react()`
+- [Х] Створити `src/router.tsx` — фабрика роутера з `createRouter()` і route tree
+- [Х] Створити `src/routes/__root.tsx` — root route з HTML shell, `HeadContent`, `Scripts`, `Outlet`, глобальним CSS
+- [Х] Створити `src/routes/index.tsx` — мінімальна головна сторінка (placeholder) для перевірки що dev server стартує
+- [Х] Створити `src/start.ts` і підключити глобальний middleware pipeline, навіть якщо на цьому етапі він ще мінімальний
+- [Х] Оновити `package.json` scripts: `dev`, `build`, `start` мають запускати TanStack Start через Vite
+- [Х] Видалити залежності `next`, `eslint-config-next` і Next.js runtime-конфігурацію з активного шляху виконання одразу після того, як Start skeleton збирається
+- [Х] Замінити **всі** `next/link` у `packages/` і `themes/` на `Link` з `@tanstack/react-router` або на prop-driven навігацію через route layer
+- [Х] Замінити **всі** `next/navigation` у `packages/` і `themes/` на фінальні TanStack Router патерни:
   - `useNavigate()`
   - `useLocation()`
   - `Route.useParams()` / `Route.useSearch()` на рівні route files
   - props / route context у shared screens
-- [ ] Замінити **всі** `next/image` на звичайний `<img>` з коректними `width`/`height`/`loading`/`decoding`, а для LCP-зображень — `fetchPriority`
-- [ ] Замінити `next/dynamic` в адмінських route wrappers на `React.lazy()` + `Suspense` або відразу перенести маршрути в TanStack route files з code-splitting
-- [ ] Замінити `next/font` на CSS `@font-face`, `fontsource` або інший Vite-сумісний спосіб підключення шрифтів
-- [ ] Видалити `"use client"` директиви з усіх файлів у `packages/simplycms/` і `themes/` (вони більше не потрібні)
-- [ ] **Міграція змінних оточення:** замінити `NEXT_PUBLIC_*` на `VITE_*` prefix у всіх клієнтських змінних. Зачеплені файли:
+- [Х] Замінити **всі** `next/image` на звичайний `<img>` з коректними `width`/`height`/`loading`/`decoding`, а для LCP-зображень — `fetchPriority`
+- [Х] Замінити `next/dynamic` в адмінських route wrappers на `React.lazy()` + `Suspense` або відразу перенести маршрути в TanStack route files з code-splitting
+- [Х] Замінити `next/font` на CSS `@font-face`, `fontsource` або інший Vite-сумісний спосіб підключення шрифтів
+- [Х] Видалити `"use client"` директиви з усіх файлів у `packages/simplycms/` і `themes/` (вони більше не потрібні)
+- [Х] **Міграція змінних оточення:** замінити `NEXT_PUBLIC_*` на `VITE_*` prefix у всіх клієнтських змінних. Зачеплені файли:
   - `packages/simplycms/core/src/supabase/anon.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `packages/simplycms/core/src/supabase/client.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL`
   - `.env.local` — перейменувати ключі
@@ -79,28 +79,29 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
   - клієнтський код — лише `import.meta.env.VITE_*`
   - server functions / middleware — лише `process.env.*`
   - `simplycms.config.ts` — привести до одного з цих сценаріїв без змішаної моделі
-- [ ] Адаптувати `supabase/client.ts`: видалити `"use client"`, зберегти singleton pattern з `typeof window !== "undefined"` guard
-- [ ] Вирішити Tailwind v4 + Vite: використати `@tailwindcss/vite` плагін (замість PostCSS pipeline) або залишити PostCSS — прийняти рішення і задокументувати
-- [ ] `pnpm dev` стартує TanStack Start dev server
-- [ ] Placeholder index route відображається в браузері
+- [Х] Адаптувати `supabase/client.ts`: видалити `"use client"`, зберегти singleton pattern з `typeof window !== "undefined"` guard
+- [Х] Вирішити Tailwind v4 + Vite: використати `@tailwindcss/vite` плагін (замість PostCSS pipeline) або залишити PostCSS — прийняти рішення і задокументувати
+- [Х] `pnpm dev` стартує TanStack Start dev server
+- [Х] Placeholder index route відображається в браузері
 
 ## Clarify (питання перед імплементацією)
 
-- [ ] Як обробляти path params у package pages?
+- [Х] Як обробляти path params у package pages?
   - Чому це важливо: `Route.useParams()` route-scoped і не повинен емулюватись через adapter
   - Прийняте рішення: storefront/core pages отримують params через props з route files; admin pages використовують TanStack Router напряму
   - Вплив: модульність, типізація, обсяг змін
 
-- [ ] Як обробляти search params у формах адмінки?
+- [Х] Як обробляти search params у формах адмінки?
   - Чому це важливо: частина admin pages сьогодні покладається на `URLSearchParams.get()`
   - Прийняте рішення: admin pages залишаються route-aware і використовують route-scoped TanStack Router API (`Route.useSearch()` або `getRouteApi()`) напряму, без prop-driven adapter шару
   - Вплив: зв'язність admin pages з route tree
 
-- [ ] Чи залишати workspace packages як transpilePackages?
+- [Х] Чи залишати workspace packages як transpilePackages?
   - Чому це важливо: Next.js мав `transpilePackages` в config. Vite працює з workspace packages інакше
   - Варіант A: Vite з `optimizeDeps.include` для workspace пакетів
   - Варіант B: Публікувати пакети як pre-built ESM
   - Вплив: build pipeline, DX
+  - Прийняте рішення: Варіант A: Vite з `optimizeDeps.include` для workspace пакетів
 
 ## Рекомендовані патерни
 

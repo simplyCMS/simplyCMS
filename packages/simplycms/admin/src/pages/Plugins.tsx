@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavLink } from "@simplycms/core/components/NavLink";
@@ -108,7 +107,7 @@ export default function Plugins() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <NavLink href="/admin">
+          <NavLink to="/admin">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -196,7 +195,7 @@ export default function Plugins() {
                   )}
 
                   <div className="flex gap-2">
-                    <NavLink href={`/admin/plugins/${plugin.id}/settings`} className="flex-1">
+                    <NavLink to={`/admin/plugins/${plugin.id}/settings`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування

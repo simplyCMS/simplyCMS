@@ -1,4 +1,3 @@
-"use client";
 
 import { MapPin, RefreshCw, X } from "lucide-react";
 

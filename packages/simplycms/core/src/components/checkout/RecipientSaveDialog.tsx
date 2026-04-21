@@ -1,4 +1,3 @@
-"use client";
 
 import { UserPlus, RefreshCw, X } from "lucide-react";
 

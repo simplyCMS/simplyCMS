@@ -1,10 +1,9 @@
-"use client";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
 import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { Skeleton } from "@simplycms/ui/skeleton";
 
 export default function Shipping() {
@@ -123,7 +122,7 @@ export default function Shipping() {
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/admin/shipping/methods">
+        <Link to="/admin/shipping/methods">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -143,7 +142,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link href="/admin/shipping/zones">
+        <Link to="/admin/shipping/zones">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -162,7 +161,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link href="/admin/shipping/pickup-points">
+        <Link to="/admin/shipping/pickup-points">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -181,7 +180,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link href="/admin/shipping/locations">
+        <Link to="/admin/shipping/locations">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

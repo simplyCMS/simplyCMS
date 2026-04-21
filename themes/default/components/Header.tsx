@@ -1,8 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Search, User, ShoppingBag, Menu, X, Settings, LogOut } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
@@ -25,7 +21,7 @@ import {
 export function Header() {
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -68,9 +64,9 @@ export function Header() {
           </Button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             {logoUrl ? (
-              <Image src={logoUrl} alt={storeName} width={160} height={40} className="h-10 max-w-[160px] object-contain" />
+              <img src={logoUrl} alt={storeName} width={160} height={40} fetchPriority="high" loading="eager" decoding="async" className="h-10 max-w-[160px] object-contain" />
             ) : (
               <span className="text-xl font-serif font-bold tracking-wide text-foreground">
                 {storeName}
@@ -97,11 +93,11 @@ export function Header() {
                       {user.email}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                    <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
                       <User className="mr-2 h-4 w-4" /> Мій кабінет
                     </DropdownMenuItem>
                     {isAdmin && (
-                      <DropdownMenuItem onClick={() => router.push("/admin")}>
+                      <DropdownMenuItem onClick={() => navigate({ to: '/admin' })}>
                         <Settings className="mr-2 h-4 w-4" /> Адмін-панель
                       </DropdownMenuItem>
                     )}
@@ -113,7 +109,7 @@ export function Header() {
                 </DropdownMenu>
               ) : (
                 <Button variant="ghost" size="icon" className="text-foreground" asChild>
-                  <Link href="/auth"><User className="h-5 w-5" /></Link>
+                  <Link to="/auth"><User className="h-5 w-5" /></Link>
                 </Button>
               )
             )}
@@ -138,7 +134,7 @@ export function Header() {
         <nav className="hidden md:block border-t border-border/30">
           <div className="container mx-auto px-4 flex items-center justify-center gap-8 h-11">
             <Link
-              href="/catalog"
+              to="/catalog"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors uppercase tracking-wider"
             >
               Каталог
@@ -146,7 +142,7 @@ export function Header() {
             {sections?.map((s) => (
               <Link
                 key={s.id}
-                href={`/catalog/${s.slug}`}
+                to={`/catalog/${s.slug}`}
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider"
               >
                 {s.name}
@@ -160,7 +156,7 @@ export function Header() {
           <div className="md:hidden border-t border-border/30 bg-[hsl(var(--background))]">
             <div className="container mx-auto px-4 py-4 space-y-2">
               <Link
-                href="/catalog"
+                to="/catalog"
                 className="block py-2 text-sm font-medium text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -169,7 +165,7 @@ export function Header() {
               {sections?.map((s) => (
                 <Link
                   key={s.id}
-                  href={`/catalog/${s.slug}`}
+                  to={`/catalog/${s.slug}`}
                   className="block py-2 text-sm text-muted-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >

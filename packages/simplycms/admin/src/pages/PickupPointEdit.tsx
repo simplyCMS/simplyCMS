@@ -1,6 +1,5 @@
-"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter, useParams } from "next/navigation";
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,8 +42,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function PickupPointEdit() {
-  const { pointId } = useParams() as { pointId: string };
-  const router = useRouter();
+  const { pointId } = useParams({ strict: false }) as { pointId: string };
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = pointId === "new";
 
@@ -145,7 +144,7 @@ export default function PickupPointEdit() {
         queryClient.invalidateQueries({ queryKey: ["pickup-point", pointId] });
       }
       toast.success(isNew ? "Точку створено" : "Зміни збережено");
-      router.push("/admin/shipping/pickup-points");
+      navigate({ to: '/admin/shipping/pickup-points' });
     },
     onError: (error: Error) => {
       toast.error(`Помилка: ${error.message}`);
@@ -163,7 +162,7 @@ export default function PickupPointEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

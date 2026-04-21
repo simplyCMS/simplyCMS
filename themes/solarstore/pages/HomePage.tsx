@@ -1,7 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import NextImage from "next/image";
+import { Link } from '@tanstack/react-router';
 import { useQuery } from "@tanstack/react-query";
 import {
   Battery,
@@ -142,7 +139,7 @@ export default function HomePage() {
                 className="bg-[hsl(var(--primary))] text-white border-0 h-12 px-8 hover:bg-[hsl(var(--primary))]/90"
                 asChild
               >
-                <Link href="/catalog">
+                <Link to="/catalog">
                   Переглянути каталог
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Link>
@@ -303,7 +300,7 @@ function ProductCarousel({
           </h2>
           {viewAllLink && (
             <Link
-              href={viewAllLink}
+              to={viewAllLink}
               className="text-sm text-[hsl(var(--primary))] hover:underline font-medium"
             >
               Переглянути усі &rarr;
@@ -359,15 +356,15 @@ function SolarProductCard({ product }: { product: Product }) {
       : "/placeholder.svg";
 
   return (
-    <Link href={href} className="block group">
+    <Link to={href} className="block group">
       <Card className="overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div className="relative aspect-square overflow-hidden bg-[hsl(var(--muted))]">
-          <NextImage
+          <img
             src={imageUrl}
             alt={product.name}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
         <CardContent className="p-4">

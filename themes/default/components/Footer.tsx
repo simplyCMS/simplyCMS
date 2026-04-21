@@ -1,7 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
+import { Link } from '@tanstack/react-router';
 import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
 import { Facebook, Instagram } from "lucide-react";
 
@@ -18,9 +15,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="inline-block mb-3">
+            <Link to="/" className="inline-block mb-3">
               {logoUrl ? (
-                <Image src={logoUrl} alt={storeName} width={160} height={40} className="h-8 object-contain" />
+                <img src={logoUrl} alt={storeName} width={160} height={40} loading="lazy" decoding="async" className="h-8 object-contain" />
               ) : (
                 <span className="text-lg font-serif font-bold text-foreground">{storeName}</span>
               )}
@@ -46,10 +43,10 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Каталог</h4>
             <nav className="space-y-2">
-              <Link href="/catalog" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/catalog" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Усі товари
               </Link>
-              <Link href="/properties" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/properties" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Бренди
               </Link>
             </nav>
@@ -67,13 +64,13 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Мій акаунт</h4>
             <nav className="space-y-2">
-              <Link href="/profile" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/profile" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Кабінет
               </Link>
-              <Link href="/profile/orders" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/profile/orders" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Мої замовлення
               </Link>
-              <Link href="/cart" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/cart" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Кошик
               </Link>
             </nav>

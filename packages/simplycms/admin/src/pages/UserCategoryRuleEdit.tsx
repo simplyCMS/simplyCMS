@@ -1,7 +1,5 @@
-"use client";
 import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -198,8 +196,8 @@ function ConditionRuleRow({
 }
 
 export default function UserCategoryRuleEdit() {
-  const { ruleId } = useParams<{ ruleId: string }>();
-  const router = useRouter();
+  const { ruleId } = useParams({ strict: false }) as { ruleId: string };
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !ruleId || ruleId === "new";
 
@@ -307,7 +305,7 @@ export default function UserCategoryRuleEdit() {
       queryClient.invalidateQueries({ queryKey: ["category-rules"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       toast({ title: isNew ? "Правило створено" : "Зміни збережено" });
-      router.push("/admin/user-categories/rules");
+      navigate({ to: '/admin/user-categories/rules' });
     },
     onError: (error: Error) => {
       toast({
@@ -332,7 +330,7 @@ export default function UserCategoryRuleEdit() {
       queryClient.invalidateQueries({ queryKey: ["category-rules"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       toast({ title: "Правило видалено" });
-      router.push("/admin/user-categories/rules");
+      navigate({ to: '/admin/user-categories/rules' });
     },
     onError: (error: Error) => {
       toast({
@@ -352,7 +350,7 @@ export default function UserCategoryRuleEdit() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/user-categories/rules">
+            <Link to="/admin/user-categories/rules">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -581,7 +579,7 @@ export default function UserCategoryRuleEdit() {
 
           <div className="flex justify-end gap-4">
             <Button variant="outline" asChild>
-              <Link href="/admin/user-categories/rules">Скасувати</Link>
+              <Link to="/admin/user-categories/rules">Скасувати</Link>
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending && (

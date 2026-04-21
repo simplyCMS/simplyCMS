@@ -1,6 +1,5 @@
-"use client";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from "@simplycms/core/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -26,7 +25,7 @@ async function fetchOrders() {
 }
 
 export default function Orders() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
@@ -68,7 +67,7 @@ export default function Orders() {
                 <TableRow
                   key={order.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/admin/orders/${order.id}`)}
+                  onClick={() => navigate({ to: `/admin/orders/${order.id}` })}
                 >
                   <TableCell className="font-medium">{order.order_number}</TableCell>
                   <TableCell>

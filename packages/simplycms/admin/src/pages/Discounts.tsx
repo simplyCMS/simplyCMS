@@ -1,7 +1,6 @@
-"use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { Plus, ChevronRight, ChevronDown, Percent, DollarSign, Tag, Trash2, Pencil } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
@@ -173,7 +172,7 @@ export default function Discounts() {
               onCheckedChange={(checked) => toggleActive.mutate({ id: group.id, is_active: checked })}
             />
             <Button variant="ghost" size="icon" asChild>
-              <Link href={`/admin/discounts/groups/${group.id}`}>
+              <Link to={`/admin/discounts/groups/${group.id}`}>
                 <Pencil className="h-4 w-4" />
               </Link>
             </Button>
@@ -220,7 +219,7 @@ export default function Discounts() {
                  )}
                 <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/discount:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                    <Link href={`/admin/discounts/${d.id}`}>
+                    <Link to={`/admin/discounts/${d.id}`}>
                       <Pencil className="h-3 w-3" />
                     </Link>
                   </Button>
@@ -253,12 +252,12 @@ export default function Discounts() {
             {/* Add buttons */}
             <div className="flex gap-2 py-1 pl-6">
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
-                <Link href={`/admin/discounts/new?groupId=${group.id}`}>
+                <Link to={`/admin/discounts/new?groupId=${group.id}`}>
                   <Plus className="h-3 w-3 mr-1" /> Скидка
                 </Link>
               </Button>
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
-                <Link href={`/admin/discounts/groups/new?parentId=${group.id}`}>
+                <Link to={`/admin/discounts/groups/new?parentId=${group.id}`}>
                   <Plus className="h-3 w-3 mr-1" /> Підгрупа
                 </Link>
               </Button>
@@ -280,12 +279,12 @@ export default function Discounts() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/admin/price-validator">
+            <Link to="/admin/price-validator">
               <DollarSign className="h-4 w-4 mr-2" /> Валідатор цін
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/admin/discounts/groups/new">
+            <Link to="/admin/discounts/groups/new">
               <Plus className="h-4 w-4 mr-2" /> Нова група
             </Link>
           </Button>
@@ -304,7 +303,7 @@ export default function Discounts() {
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Ще немає груп скидок</p>
               <Button variant="outline" className="mt-4" asChild>
-                <Link href="/admin/discounts/groups/new">Створити першу групу</Link>
+                <Link to="/admin/discounts/groups/new">Створити першу групу</Link>
               </Button>
             </div>
           ) : (

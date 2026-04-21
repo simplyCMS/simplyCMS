@@ -1,9 +1,5 @@
-"use client";
-
 import { useState, useMemo, useCallback } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import NextImage from "next/image";
+import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -53,7 +49,7 @@ export default function CatalogSectionPage({
   initialSections,
   initialProducts: _initialProducts,
 }: CatalogSectionPageProps = {}) {
-  const params = useParams<{ sectionSlug: string }>();
+  const params = useParams({ strict: false }) as { sectionSlug?: string };
   const sectionSlug = propSectionSlug || params.sectionSlug;
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [sortBy, setSortBy] = useState<SortOption>("popular");
@@ -86,7 +82,7 @@ export default function CatalogSectionPage({
       const { data, error } = await supabase
         .from("sections")
         .select("*")
-        .eq("slug", sectionSlug)
+        .eq("slug", sectionSlug!)
         .eq("is_active", true)
         .maybeSingle();
       if (error) throw error;
@@ -469,7 +465,7 @@ export default function CatalogSectionPage({
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Розділ не знайдено</h1>
-        <Link href="/catalog">
+        <Link to="/catalog">
           <Button>Повернутись до каталогу</Button>
         </Link>
       </div>
@@ -480,11 +476,11 @@ export default function CatalogSectionPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/catalog" className="hover:text-foreground transition-colors">
+        <Link to="/catalog" className="hover:text-foreground transition-colors">
           Каталог
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -501,24 +497,26 @@ export default function CatalogSectionPage({
 
       {/* Section chips */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Link href="/catalog">
+        <Link to="/catalog">
           <Badge variant="outline" className="cursor-pointer px-3 py-1.5 text-sm">
             Всі товари
           </Badge>
         </Link>
         {sections?.map((s) => (
-          <Link key={s.id} href={`/catalog/${s.slug}`}>
+          <Link key={s.id} to={`/catalog/${s.slug}`}>
             <Badge
               variant={s.id === section.id ? "default" : "outline"}
               className="cursor-pointer px-3 py-1.5 text-sm gap-2"
             >
               {s.image_url ? (
-                <NextImage
+                <img
                   src={s.image_url}
                   alt=""
                   width={16}
                   height={16}
                   className="rounded object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 <FolderOpen className="w-3 h-3" />

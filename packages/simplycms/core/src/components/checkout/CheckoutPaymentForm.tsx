@@ -1,4 +1,3 @@
-"use client";
 
 import { CreditCard, Banknote } from "lucide-react";
 

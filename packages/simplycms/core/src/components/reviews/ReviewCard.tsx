@@ -1,9 +1,6 @@
-"use client";
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
-import NextImage from "next/image";
 import { Trash2 } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { useAuth } from "../../hooks/useAuth";
@@ -36,7 +33,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
               {review.profile?.avatar_url ? (
-                <NextImage src={review.profile.avatar_url} alt={displayName} width={40} height={40} className="rounded-full object-cover" />
+                <img src={review.profile.avatar_url} alt={displayName} width={40} height={40} className="rounded-full object-cover" loading="lazy" decoding="async" />
               ) : (
                 initials
               )}
@@ -98,12 +95,12 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
                 className="relative h-20 w-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border"
                 onClick={() => setLightboxImage(url)}
               >
-                <NextImage
+                <img
                   src={url}
                   alt={`Фото ${i + 1}`}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </button>
             ))}
@@ -118,12 +115,12 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
           onClick={() => setLightboxImage(null)}
         >
           <div className="relative w-full h-full">
-            <NextImage
+            <img
               src={lightboxImage}
               alt="Збiльшене фото"
-              fill
-              sizes="100vw"
-              className="object-contain rounded-lg"
+              className="absolute inset-0 w-full h-full object-contain rounded-lg"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>

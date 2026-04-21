@@ -1,7 +1,4 @@
-"use client";
-import NextImage from "next/image";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -22,8 +19,8 @@ import { uk } from "date-fns/locale";
 import { useState } from "react";
 
 export default function AdminReviewDetail() {
-  const { reviewId } = useParams() as { reviewId: string };
-  const router = useRouter();
+  const { reviewId } = useParams({ strict: false }) as { reviewId: string };
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [adminComment, setAdminComment] = useState("");
@@ -99,7 +96,7 @@ export default function AdminReviewDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
       toast({ title: "Відгук видалено" });
-      router.push("/admin/reviews");
+      navigate({ to: '/admin/reviews' });
     },
   });
 
@@ -125,7 +122,7 @@ export default function AdminReviewDetail() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/reviews")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/reviews' })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Деталі відгуку</h1>
@@ -141,7 +138,7 @@ export default function AdminReviewDetail() {
           <CardContent>
             {review.product ? (
               <Link
-                href={`/catalog/${review.product.sections?.slug || "all"}/${review.product.slug}`}
+                to={`/catalog/${review.product.sections?.slug || "all"}/${review.product.slug}`}
                 className="font-medium text-primary hover:underline"
               >
                 {review.product.name}
@@ -186,7 +183,7 @@ export default function AdminReviewDetail() {
             <div className="flex gap-2 flex-wrap">
               {(review.images as string[]).map((url: string, i: number) => (
                 <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative block h-24 w-24">
-                  <NextImage src={url} alt={`Фото ${i + 1}`} fill sizes="96px" className="object-cover rounded-lg border hover:opacity-80 transition-opacity" />
+                  <img src={url} alt={`Фото ${i + 1}`} className="absolute inset-0 w-full h-full object-cover rounded-lg border hover:opacity-80 transition-opacity" loading="lazy" decoding="async" />
                 </a>
               ))}
             </div>

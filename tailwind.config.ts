@@ -4,6 +4,7 @@ export default {
   darkMode: "class",
   content: [
     "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
     "./packages/simplycms/**/src/**/*.{ts,tsx}",
     "./themes/**/*.{ts,tsx}",
     "./plugins/**/*.{ts,tsx}",

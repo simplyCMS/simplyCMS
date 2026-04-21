@@ -1,5 +1,4 @@
 import { cache } from "react";
-import { unstable_cache } from "next/cache";
 import { createAnonSupabaseClient } from "@simplycms/core/supabase/anon";
 import { ThemeRegistry } from "./ThemeRegistry";
 import type { ActiveThemeSSR, ThemeRecord } from "./types";
@@ -11,8 +10,8 @@ const DEFAULT_THEME = "default";
  * Обгорнуто в unstable_cache для cross-request кешування.
  * Використовує анонімний клієнт (без cookies) для сумісності з cache.
  */
-const getCachedActiveThemeRecord = unstable_cache(
-  async (): Promise<ThemeRecord | null> => {
+// TODO: Додати cross-request кешування через TanStack Start API
+const getCachedActiveThemeRecord = async (): Promise<ThemeRecord | null> => {
     const supabase = createAnonSupabaseClient();
     const { data, error } = await supabase
       .from("themes")
@@ -49,10 +48,7 @@ const getCachedActiveThemeRecord = unstable_cache(
       created_at: data.created_at ?? new Date().toISOString(),
       updated_at: data.updated_at ?? new Date().toISOString(),
     };
-  },
-  ["active-theme"],
-  { revalidate: 3600, tags: ["active-theme"] }
-);
+};
 
 /**
  * SSR-резолюція активної теми.
