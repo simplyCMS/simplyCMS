@@ -1,5 +1,9 @@
 # Task: Phase 6 — Розширення SEO-домену (DB schema, admin UI, resolver)
 
+> Execution note: ця фаза не є стартовою. Її потрібно запускати лише після робочих SSR storefront routes, admin UI і стабілізованих providers/theme flows з Phase 3-5.
+> Це кодова фаза. Не використовувати її для повернення до framework migration; тут уже розширюється SEO-домен поверх TanStack Start архітектури.
+> Clarify-пункти з позначкою «Прийняте рішення» або з явно рекомендованим варіантом вважати дефолтними.
+
 ## Контекст
 
 Після Phase 5 весь проєкт працює на TanStack Start. SEO metadata для storefront сторінок генерується з бізнес-полів (product.name → title, product.description → description, product.images → og:image). Але SEO-поля в БД обмежені:

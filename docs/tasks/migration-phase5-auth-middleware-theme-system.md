@@ -1,5 +1,9 @@
 # Task: Phase 5 — Theme system, providers і request middleware
 
+> Execution note: ця фаза стабілізує cross-cutting підсистеми після переносу маршрутів у Phase 4.
+> Це кодова фаза. Не повертатися до Next.js-specific theme/runtime моделей і не дублювати guards між route layer та global middleware.
+> Clarify-пункти з рекомендацією або явною забороною (`React.cache()` тощо) трактувати як прийняті рішення.
+
 ## Контекст
 
 Після Phase 4 всі маршрути мігровані на TanStack Start. Залишилося стабілізувати дві cross-cutting підсистеми:

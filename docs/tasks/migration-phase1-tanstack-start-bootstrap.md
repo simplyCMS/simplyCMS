@@ -1,5 +1,9 @@
 # Task: Phase 1 — Встановлення TanStack Start і прямий breaking rewrite примітивів
 
+> Execution note: Phase 0 вже виконана. Ця фаза є кодовою імплементацією, а не повторною інвентаризацією.
+> Використовувати verified inventory з `migration-phase0-decouple-packages.md` як fixed input.
+> Не переписувати task document під час виконання цієї фази. Якщо Clarify-пункт уже має рішення в Phase 0 або в цьому документі як рекомендацію, трактувати його як прийняте рішення. Зупинятись лише на суперечностях або справді нових блокерах.
+
 ## Контекст
 
 Після Phase 0 зафіксовано, що міграція йде **без adapter-шару** і без dual-runtime. Ця фаза:
@@ -10,6 +14,14 @@
 - рано прибирає Next.js з runtime-контурів проєкту замість того, щоб відкладати це до фінального cleanup.
 
 Після цієї фази `app/` може ще тимчасово існувати як довідкове джерело при перенесенні маршрутів, але **робочим runtime уже має бути TanStack Start**.
+
+## Прийняті рішення з Phase 0
+
+- **Core pages — prop-driven.** Route params/search/pathname підіймаються в route layer і передаються через props.
+- **Admin pages — route-aware.** `@simplycms/admin/pages/*` переписуються напряму на TanStack Router, без prop-driven adapter шару.
+- **Themes — route-aware.** Theme components можуть використовувати TanStack Router напряму.
+- **`next/image` → `<img>`.** Без проміжних wrapper-компонентів.
+- **Adapter-шар заборонений.** Не вводити `href`/`useRouter`/`URLSearchParams` compatibility wrappers.
 
 ### Що таке TanStack Start
 
@@ -76,14 +88,12 @@ TanStack Start — full-stack React framework на базі Vite + TanStack Rout
 
 - [ ] Як обробляти path params у package pages?
   - Чому це важливо: `Route.useParams()` route-scoped і не повинен емулюватись через adapter
-  - Варіант A: storefront/core pages отримують params через props з route files (рекомендовано)
-  - Варіант B: admin pages використовують TanStack Router напряму там, де це дешевше
+  - Прийняте рішення: storefront/core pages отримують params через props з route files; admin pages використовують TanStack Router напряму
   - Вплив: модульність, типізація, обсяг змін
 
 - [ ] Як обробляти search params у формах адмінки?
   - Чому це важливо: частина admin pages сьогодні покладається на `URLSearchParams.get()`
-  - Варіант A: route file читає `Route.useSearch()` і передає нормалізовані значення як props (рекомендовано)
-  - Варіант B: admin page прив'язується до конкретного route через `getRouteApi()`
+  - Прийняте рішення: admin pages залишаються route-aware і використовують route-scoped TanStack Router API (`Route.useSearch()` або `getRouteApi()`) напряму, без prop-driven adapter шару
   - Вплив: зв'язність admin pages з route tree
 
 - [ ] Чи залишати workspace packages як transpilePackages?

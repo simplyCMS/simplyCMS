@@ -1,5 +1,7 @@
 # Task: Phase 0 — Повний inventory next/* залежностей і фіксація цільових контрактів
 
+> Статус: виконано. Цей документ є зафіксованим prerequisite для наступних фаз.
+
 ## Контекст
 
 Проєкт `simplyCMS` мігрує з Next.js App Router на TanStack Start + Vite як **один breaking change без перехідного періоду**. Це означає:
@@ -12,28 +14,32 @@
 
 Результат цієї фази — **документ-артефакт** (inventory table + decision log), а не код. Жоден файл не змінюється.
 
-## Inventory ~120 файлів з next/* залежностями
+## Inventory ~153 файлів з next/* залежностями
 
-### Фаза 0.1 — Core pages (prop-driven refactor): 13 файлів
+> **Верифіковано:** inventory перевірено через grep по реальній кодовій базі (2026-04-21).
+
+### Фаза 0.1 — Core pages (prop-driven refactor): 14 файлів
 
 Усі core pages переходять на prop-driven контракт. Route hooks (`useParams`, `useRouter`, `useSearchParams`, `usePathname`, `redirect`) виносяться в route layer.
 
-| Файл | Поточні hooks | Цільовий props контракт |
-|------|--------------|------------------------|
-| `core/src/pages/ProductDetail.tsx` | `useParams`, `useRouter`, `useSearchParams`, `usePathname` | `productSlug`, `sectionSlug`, `initialProduct?`, `initialModSlug?` |
-| `core/src/pages/CatalogSection.tsx` | `useParams` | `sectionSlug`, `initialSection?`, `initialProducts?` |
-| `core/src/pages/PropertyPage.tsx` | `useParams` | `propertySlug` |
-| `core/src/pages/PropertyDetail.tsx` | `useParams` | `propertySlug`, `optionSlug` |
-| `core/src/pages/OrderSuccess.tsx` | `useParams`, `useSearchParams` | `orderId`, `guestEmail?` |
-| `core/src/pages/ProfileOrderDetail.tsx` | `useParams`, `useRouter` | `orderId`, `onBack: () => void` |
-| `core/src/pages/Auth.tsx` | `useRouter`, `useSearchParams` | `redirectTo?`, `onSuccess: () => void` |
-| `core/src/pages/Checkout.tsx` | `useRouter` | `onSuccess: (orderId: string) => void` |
-| `core/src/pages/NotFound.tsx` | `usePathname` | `pathname: string` |
-| `core/src/pages/Cart.tsx` | `Link` | лише заміна `Link` примітиву |
-| `core/src/pages/Catalog.tsx` | `Link`, `NextImage` | лише заміна примітивів |
-| `core/src/pages/ProfileOrders.tsx` | `Link` | лише заміна `Link` |
-| `core/src/pages/Profile.tsx` | `Link` | лише заміна `Link` |
-| `core/src/pages/Properties.tsx` | `Link` | лише заміна `Link` |
+| Файл | Поточні next/* imports | Цільовий props контракт |
+|------|----------------------|------------------------|
+| `core/src/pages/ProductDetail.tsx` | `useParams`, `useRouter`, `useSearchParams`, `usePathname` (next/navigation); `Link` (next/link) | `productSlug`, `sectionSlug`, `initialProduct?`, `initialModSlug?` |
+| `core/src/pages/CatalogSection.tsx` | `useParams` (next/navigation); `Link` (next/link); `NextImage` (next/image) | `sectionSlug`, `initialSection?`, `initialProducts?` |
+| `core/src/pages/PropertyPage.tsx` | `useParams` (next/navigation); `NextImage` (next/image); `Link` (next/link) | `propertySlug` |
+| `core/src/pages/PropertyDetail.tsx` | `useParams` (next/navigation); `NextImage` (next/image); `Link` (next/link) | `propertySlug`, `optionSlug` |
+| `core/src/pages/OrderSuccess.tsx` | `useParams`, `useSearchParams` (next/navigation); `Link` (next/link) | `orderId`, `guestEmail?` |
+| `core/src/pages/ProfileOrderDetail.tsx` | `useParams`, `useRouter` (next/navigation); `Link` (next/link) | `orderId`, `onBack: () => void` |
+| `core/src/pages/Auth.tsx` | `useRouter`, `useSearchParams` (next/navigation) | `redirectTo?`, `onSuccess: () => void` |
+| `core/src/pages/Checkout.tsx` | `useRouter` (next/navigation); `Link` (next/link) | `onSuccess: (orderId: string) => void` |
+| `core/src/pages/NotFound.tsx` | `usePathname` (next/navigation); `Link` (next/link) | `pathname: string` |
+| `core/src/pages/Cart.tsx` | `Link` (next/link) | лише заміна `Link` примітиву |
+| `core/src/pages/Catalog.tsx` | `Link` (next/link); `NextImage` (next/image) | лише заміна примітивів |
+| `core/src/pages/ProfileOrders.tsx` | `Link` (next/link) | лише заміна `Link` |
+| `core/src/pages/Profile.tsx` | `Link` (next/link) | лише заміна `Link` |
+| `core/src/pages/Properties.tsx` | `Link` (next/link) | лише заміна `Link` |
+
+> **Примітка:** `ProfileSettings.tsx` існує в тій самій директорії, але не має next/* imports.
 
 Правило: `useRouter` для imperative navigation → callback props (`onSuccess`, `onBack`). `useParams`/`useSearchParams` → props від route layer. `usePathname` → prop `pathname`.
 
@@ -53,7 +59,7 @@
 | `AvatarUpload.tsx` | — | ✅ | — | `<img loading="lazy">` |
 | `ProductReviews.tsx` | ✅ | — | — | TanStack `Link` |
 
-### Фаза 0.3 — Admin pages (route-aware rewrite): ~30 файлів
+### Фаза 0.3 — Admin pages (route-aware rewrite): 36 файлів
 
 Admin pages залишаються route-aware і переписуються напряму на TanStack Router. Маппінг:
 
@@ -66,30 +72,30 @@ Admin pages залишаються route-aware і переписуються н�
 | `Link` | `Link` з `@tanstack/react-router` |
 | `NextImage` | `<img loading="lazy">` (admin не LCP-критичний) |
 
-Файли: `Dashboard`, `Products`, `ProductEdit`, `Sections`, `SectionEdit`, `Orders`, `OrderDetail`, `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail`, `Users`, `UserEdit`, `UserCategories`, `UserCategoryEdit`, `UserCategoryRules`, `UserCategoryRuleEdit`, `Properties`, `PropertyEdit`, `PropertyOptionEdit`, `PriceTypes`, `PriceTypeEdit`, `Discounts`, `DiscountEdit`, `DiscountGroupEdit`, `Themes`, `ThemeSettings`, `PluginSettings`, `Shipping`, `ShippingMethods`, `ShippingMethodEdit`, `ShippingZones`, `ShippingZoneEdit`, `PickupPoints`, `PickupPointEdit`, `PlaceholderPage`.
+Файли: `Dashboard` (Link), `Products` (NextImage, useRouter), `ProductEdit` (useParams, useRouter), `Sections` (NextImage, useRouter), `SectionEdit` (useParams, useRouter), `Orders` (useRouter), `OrderDetail` (useParams, useRouter), `Banners` (NextImage, useRouter), `BannerEdit` (useParams, useRouter), `Reviews` (useRouter), `ReviewDetail` (NextImage, useParams, useRouter, Link), `Users` (useRouter, Link), `UserEdit` (useParams, Link), `UserCategories` (useRouter, Link), `UserCategoryEdit` (useParams, useRouter, Link), `UserCategoryRules` (useRouter, Link), `UserCategoryRuleEdit` (useParams, useRouter, Link), `Properties` (useRouter), `PropertyEdit` (useParams, useRouter), `PropertyOptionEdit` (useParams, useRouter), `PriceTypes` (useRouter), `PriceTypeEdit` (useParams, useRouter, Link), `Discounts` (Link), `DiscountEdit` (useRouter, useParams, useSearchParams), `DiscountGroupEdit` (useRouter, useParams, useSearchParams), `Themes` (Link, NextImage), `ThemeSettings` (useParams, useRouter, Link), `PluginSettings` (useParams, useRouter), `Shipping` (Link), `ShippingMethods` (useRouter, Link), `ShippingMethodEdit` (useRouter, useParams), `ShippingZones` (useRouter, Link), `ShippingZoneEdit` (useRouter, useParams), `PickupPoints` (useRouter, Link), `PickupPointEdit` (useRouter, useParams), `PlaceholderPage` (usePathname).
 
 Admin components: `ImageUpload.tsx`, `ProductModifications.tsx` — лише заміна `NextImage` → `<img>`.
 `AdminLayout.tsx` — `useRouter` → `useNavigate()`, auth guard виноситься в `beforeLoad` route `_admin`.
 
-### Фаза 0.4 — Theme components: 13 файлів
+### Фаза 0.4 — Theme components: 11 файлів
 
 Теми переписуються напряму на TanStack Router `Link` і нативний `<img>`. Теми — project-local код, а не reusable library; framework-agnostic не потрібен.
 
 | Компонент | Зміни |
 |-----------|-------|
-| `themes/default/Header.tsx` | `Link` → TanStack, `Image` → `<img>` + LCP, `useRouter` → `useNavigate()` |
-| `themes/default/Footer.tsx` | `Link` → TanStack, `Image` → `<img>` |
-| `themes/default/ProfileLayout.tsx` | `Link` → TanStack, `usePathname`/`useRouter` → TanStack; прибрати auth guard |
-| `themes/default/BannerSlider.tsx` | `Image` → `<img>` + LCP attrs, `Link` → TanStack |
-| `themes/default/ProductCard.tsx` | `Link` → TanStack, `NextImage` → `<img>` |
-| `themes/default/BrandCarousel.tsx` | `NextImage` → `<img>`, `Link` → TanStack |
-| `themes/default/ProductCarousel.tsx` | `Link` → TanStack |
-| `themes/solarstore/Header.tsx` | `Link` → TanStack, `useRouter` → `useNavigate()` |
-| `themes/solarstore/Footer.tsx` | `Link` → TanStack |
-| `themes/solarstore/HomePage.tsx` | `Link` → TanStack, `NextImage` → `<img>` + LCP |
-| `themes/solarstore/ProfileLayout.tsx` | `Link` → TanStack, `usePathname`/`useRouter` → TanStack; прибрати auth guard |
+| `themes/default/components/Header.tsx` | `Link` → TanStack, `Image` → `<img>` + LCP, `useRouter` → `useNavigate()` |
+| `themes/default/components/Footer.tsx` | `Link` → TanStack, `Image` → `<img>` |
+| `themes/default/layouts/ProfileLayout.tsx` | `Link` → TanStack, `usePathname`/`useRouter` → TanStack; прибрати auth guard |
+| `themes/default/components/BannerSlider.tsx` | `Image` → `<img>` + LCP attrs, `Link` → TanStack |
+| `themes/default/components/ProductCard.tsx` | `Link` → TanStack, `NextImage` → `<img>` |
+| `themes/default/components/BrandCarousel.tsx` | `NextImage` → `<img>`, `Link` → TanStack |
+| `themes/default/components/ProductCarousel.tsx` | `Link` → TanStack |
+| `themes/solarstore/components/Header.tsx` | `Link` → TanStack, `useRouter` → `useNavigate()` |
+| `themes/solarstore/components/Footer.tsx` | `Link` → TanStack |
+| `themes/solarstore/pages/HomePage.tsx` | `Link` → TanStack, `NextImage` → `<img>` + LCP |
+| `themes/solarstore/layouts/ProfileLayout.tsx` | `Link` → TanStack, `usePathname`/`useRouter` → TanStack; прибрати auth guard |
 
-**Відхилення від норми:** `themes/*/ProfileLayout.tsx` дублюють auth guard (redirect на /auth). Це порушення архітектури: auth guard має бути лише в `beforeLoad` route `_authed`. З theme layouts auth логіку повністю прибрати.
+**Відхилення від норми:** `themes/*/ProfileLayout.tsx` дублюють auth guard через `useRouter().push("/auth")` (клієнтська навігація), а `core/src/components/profile/ProfileLayout.tsx` — через `redirect()` з `next/navigation` (серверний API). Це порушення архітектури: auth guard має бути лише в `beforeLoad` route `_authed`. З theme layouts та core ProfileLayout auth логіку повністю прибрати.
 
 ### Фаза 0.5 — Server-only файли: 12 файлів
 
@@ -99,8 +105,8 @@ Admin components: `ImageUpload.tsx`, `ProductModifications.tsx` — лише з�
 | `core/src/supabase/proxy.ts` | `NextResponse`, `NextRequest` | Зникає: `beforeLoad` + server fn |
 | `theme-system/src/getActiveThemeSSR.ts` | `unstable_cache`, `React.cache` | `src/server/theme.ts` (server fn з route-level cache) |
 | `proxy.ts` (root) | `NextResponse`, `NextRequest` | Зникає: auth guards у `beforeLoad` route definitions |
-| `app/layout.tsx` | `next/font`, `next-themes`, SSR theme | `src/routes/__root.tsx` |
-| `app/api/revalidate/route.ts` | `revalidatePath`, `revalidateTag` | Зникає: `router.invalidate()` + `queryClient.invalidateQueries()` |
+| `app/layout.tsx` | `next/font/google` (Inter), `type Metadata` (next), `next-themes` | `src/routes/__root.tsx` |
+| `app/api/revalidate/route.ts` | `revalidatePath`, `revalidateTag` (next/cache); `NextResponse` (next/server) | Зникає: `router.invalidate()` + `queryClient.invalidateQueries()` |
 | `app/api/guest-order/route.ts` | `NextResponse` | Server fn |
 | `app/api/health/route.ts` | `NextResponse` | Server fn або Vite middleware |
 | `app/auth/callback/route.ts` | `NextResponse` | Server fn або API route |
@@ -108,14 +114,14 @@ Admin components: `ImageUpload.tsx`, `ProductModifications.tsx` — лише з�
 | `app/(cms)/admin/layout.tsx` | `next/dynamic` | `ssr: false` на admin layout route |
 | `app/theme-registry.server.ts` | — (чистий TS) | Переноситься as-is |
 
-### Фаза 0.6 — App admin shims (next/dynamic): ~35 файлів
+### Фаза 0.6 — App admin shims (next/dynamic): 42 файли
 
 Усі `app/(cms)/admin/*/page.tsx` використовують однаковий патерн:
 ```
 import dynamic from 'next/dynamic';
 const Component = dynamic(() => import('@simplycms/admin/...'), { ssr: false });
 ```
-У TanStack Start admin layout route визначається з `ssr: false`, і всі дочірні routes автоматично client-only. Жоден окремий `dynamic()` шім не потрібен — 35 файлів зникають повністю.
+У TanStack Start admin layout route визначається з `ssr: false`, і всі дочірні routes автоматично client-only. Жоден окремий `dynamic()` шім не потрібен — 42 файли зникають повністю (включаючи shim-сторінки для `languages`, `order-statuses`, `price-validator`, `service-requests`, `services`, `settings`, `plugins` та кореневу `admin/page.tsx`).
 
 ### Фаза 0.7 — next/image LCP-матриця
 
@@ -129,15 +135,17 @@ const Component = dynamic(() => import('@simplycms/admin/...'), { ssr: false });
 
 Правило `NextImage fill` → CSS: `<img className="absolute inset-0 w-full h-full object-cover">` + батьківський `div position: relative`.
 
-### Фаза 0.8 — next-themes → better-themes
+### Фаза 0.8 — next-themes: залишається без змін
 
-`next-themes` має `next` як peer dependency і не підтримує Vite/TanStack Start офіційно. Замінити на `better-themes` — API-сумісний drop-in:
+> **Верифіковано:** `next-themes@0.4.6` НЕ має `next` як peer dependency. Потрібні лише `react` та `react-dom`. Пакет framework-agnostic, працює з будь-яким React-додатком. Заміна на `better-themes` **не потрібна**.
 
-| Файл | Зміна |
-|------|-------|
-| `app/layout.tsx` | `import { ThemeProvider } from 'next-themes'` → `import { ThemeProvider } from 'better-themes'` |
-| `ui/src/sonner.tsx` | `import { useTheme } from 'next-themes'` → `import { useTheme } from 'better-themes'` |
-| `core/src/components/ThemeToggle.tsx` | `import { useTheme } from 'next-themes'` → `import { useTheme } from 'better-themes'` |
+Файли з `next-themes` (залишаються as-is):
+
+| Файл | Import |
+|------|--------|
+| `app/layout.tsx` | `import { ThemeProvider } from 'next-themes'` |
+| `ui/src/sonner.tsx` | `import { useTheme } from 'next-themes'` |
+| `core/src/components/ThemeToggle.tsx` | `import { useTheme } from 'next-themes'` |
 
 API зберігається: `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`.
 
@@ -147,6 +155,41 @@ API зберігається: `attribute="class"`, `defaultTheme="system"`, `ena
 |------|-------|
 | `core/src/supabase/client.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*`; singleton pattern зберігається |
 | `core/src/supabase/anon.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*` |
+| `core/src/supabase/server.ts` | `NEXT_PUBLIC_*` → server-side env (process.env без prefix) |
+| `core/src/supabase/proxy.ts` | `NEXT_PUBLIC_*` → server-side env (process.env без prefix) |
+| `core/src/config.ts` | `NEXT_PUBLIC_*` → `VITE_*` (client) або server env залежно від контексту |
+| `simplycms.config.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*` |
+| `proxy.ts` (root) | `NEXT_PUBLIC_*` → зникає разом з файлом |
+| `app/api/health/route.ts` | `NEXT_PUBLIC_*` → зникає (стає server fn) |
+| `app/robots.ts` | `NEXT_PUBLIC_SITE_URL` → `VITE_SITE_URL` або server env |
+| `app/sitemap.ts` | `NEXT_PUBLIC_SITE_URL` → `VITE_SITE_URL` або server env |
+| `tools/content-loader-mcp/src/client.ts` | `NEXT_PUBLIC_SUPABASE_URL` fallback → `VITE_SUPABASE_URL` fallback |
+
+### Фаза 0.9.1 — App-layer storefront/protected pages: 14 файлів
+
+Ці файли знаходяться в `app/` і містять next/* залежності (type imports, runtime конвенції, route hooks):
+
+| Файл | Next.js API | Цільовий owner у TanStack Start |
+|------|-------------|--------------------------------|
+| `app/(storefront)/page.tsx` | `type Metadata`; `export const metadata`; `export const revalidate = 3600` | Route metadata + loader staleTime |
+| `app/(storefront)/catalog/page.tsx` | `type Metadata`; `export const metadata`; `export const revalidate = 1800` | Route metadata + loader staleTime |
+| `app/(storefront)/catalog/[sectionSlug]/page.tsx` | `notFound()`; `type Metadata`; `generateMetadata()`; `export const revalidate = 1800` | throw route error; route head(); loader staleTime |
+| `app/(storefront)/catalog/[sectionSlug]/[productSlug]/page.tsx` | `notFound()`; `type Metadata`; `generateMetadata()`; `export const revalidate = 3600` | throw route error; route head(); loader staleTime |
+| `app/(storefront)/properties/page.tsx` | `type Metadata`; `export const metadata`; `export const revalidate = 86400` | Route metadata + loader staleTime |
+| `app/(storefront)/properties/[propertySlug]/page.tsx` | `notFound()`; `type Metadata`; `generateMetadata()`; `export const revalidate = 86400` | throw route error; route head(); loader staleTime |
+| `app/(storefront)/properties/[propertySlug]/[optionSlug]/page.tsx` | `notFound()`; `type Metadata`; `generateMetadata()`; `export const revalidate = 86400` | throw route error; route head(); loader staleTime |
+| `app/(storefront)/order-success/[orderId]/page.tsx` | `useParams` (next/navigation) | Params з route definition |
+| `app/(protected)/profile/orders/[orderId]/page.tsx` | `useParams` (next/navigation) | Params з route definition |
+| `app/not-found.tsx` | `Link` (next/link) | TanStack Link або custom 404 route |
+| `app/auth/layout.tsx` | `type Metadata`; `export const metadata` | Route metadata |
+| `app/robots.ts` | `type MetadataRoute` (next); `NEXT_PUBLIC_SITE_URL` | Окремий файл або server fn |
+| `app/sitemap.ts` | `type MetadataRoute` (next); `NEXT_PUBLIC_SITE_URL` | Окремий файл або server fn |
+| `next.config.ts` | `type NextConfig` (next) | Зникає: конфігурація переходить у `app.config.ts` (Vinxi/TanStack Start) |
+
+> **Примітки:**
+> - `app/(storefront)/layout.tsx` не має прямих next/* imports, але транзитивно залежить від `getActiveThemeSSR()` (uses `unstable_cache` з `next/cache`). При міграції замінюється на TanStack Start route layout з server fn.
+> - `app/providers.tsx` не має next/* imports, але це інфраструктурний файл (CMSProvider, ThemeProvider), що потребує адаптації під TanStack Start.
+> - ~4 admin pages (`Plugins.tsx`, `PriceValidator.tsx`, `OrderStatuses.tsx`, `Settings.tsx`) не мають прямих next/* imports, але можуть мати транзитивні залежності через core-компоненти (напр. `NavLink` з `@simplycms/core`).
 
 ### Фаза 0.10 — Auth/proxy flow: beforeLoad + server functions
 
@@ -179,7 +222,7 @@ ISR (`revalidatePath`, `revalidateTag`, `unstable_cache`) не існує в Tan
 2. **Усі admin pages — route-aware.** Переписуються напряму на `@tanstack/react-router` hooks. Prop-driven для admin — зайвий overhead.
 3. **Теми — route-aware (TanStack Router).** Теми — project-local код, framework-agnostic не потрібен.
 4. **`next/image` → `<img>`.** LCP-критичні місця отримують `fetchpriority="high"` + `loading="eager"`. Решта — `loading="lazy"`. Окремий компонент `MediaImage` не створюється.
-5. **`next-themes` → `better-themes`.** Drop-in заміна, 3 файли.
+5. **`next-themes` — залишається.** Пакет framework-agnostic (peer deps: react + react-dom, без next). Заміна на `better-themes` не потрібна.
 6. **Auth guards — лише в `beforeLoad`.** Дублювання в layout components повністю прибирається.
 7. **ISR → client-side invalidation.** `router.invalidate()` + React Query invalidation. CDN-level cache — окрема задача після міграції.
 8. **Admin shims (next/dynamic) — зникають.** `ssr: false` на admin layout route.
@@ -208,28 +251,41 @@ Auth guard має бути тільки в `beforeLoad` route definitions. Profi
 
 `<img>` з правильними атрибутами — фінальне рішення. Wrapper вводити лише при доведеній продуктовій потребі після міграції.
 
+### ❌ Створювати обгортки для `export const revalidate`
+
+ISR семантика зникає повністю. Використовувати loader `staleTime` на route definitions.
+
+### ❌ Зберігати `generateMetadata` / `export const metadata` API
+
+Next.js metadata конвенція замінюється на `head()` property в TanStack Start route definitions.
+
 ## Архітектурні рішення
 
 - **В який пакет додавати код:** новий код у цій фазі не додається; це audit + фіксація цільових контрактів
 - **Rendering стратегія:** фіксується цільова: SSR для storefront (TanStack Start loaders), client-only для admin (`ssr: false`), `beforeLoad` для auth guards
 - **Міграція з temp/:** не стосується
-- **Залежності:** `next-themes` → `better-themes` (фіксується рішення, виконується у phase 1)
+- **Залежності:** `next-themes` залишається (framework-agnostic, без next peer dep)
 - **Формат артефакту:** inventory table + decision log у цьому файлі
 
 ## Зведена матриця файлів
 
 | Зона | Файлів | Стратегія |
 |------|--------|-----------|
-| Core pages (prop-driven refactor) | 13 | Props замість router hooks |
+| Core pages (prop-driven refactor) | 14 | Props замість router hooks |
 | Core components (примітиви) | 11 | TanStack Link / `<img>` / callbacks |
-| Admin pages (route-aware rewrite) | ~30 | Механічна заміна next/* → @tanstack/* |
+| Admin pages (route-aware rewrite) | 36 | Механічна заміна next/* → @tanstack/* |
 | Admin components | 3 | `NextImage` → `<img>` |
-| Theme components | 13 | TanStack Link / `<img>` / useNavigate |
+| Theme components | 11 | TanStack Link / `<img>` / useNavigate |
 | Server-only (packages) | 3 | Виносяться в src/server/ |
 | Server-only (app) | 9 | Стають route definitions / server fns |
-| App admin shims | ~35 | Зникають (ssr: false на layout route) |
-| next-themes → better-themes | 3 | Drop-in заміна |
-| **Разом** | **~120** | — |
+| App admin shims | 42 | Зникають (ssr: false на layout route) |
+| App storefront/protected pages | 14 | Route definitions / metadata / error handling |
+| next-themes (залишається) | 3 | Без змін (framework-agnostic) |
+| NEXT_PUBLIC_ env migration | 11 | `VITE_*` або server env |
+| **Разом** | **~153** | — |
+
+> **Примітка:** Деякі файли рахуються в кількох категоріях (напр. `app/layout.tsx` — server-only + next-themes).
+> Унікальних файлів з next/* або NEXT_PUBLIC_ залежностями: ~140.
 
 ## Пов'язана документація
 
@@ -242,15 +298,18 @@ Auth guard має бути тільки в `beforeLoad` route definitions. Profi
 
 ## Definition of Done
 
-- [ ] Є повний inventory `next/*` залежностей по `packages/`, `themes/`, `app/` з розбивкою по файлах
-- [ ] Кожна залежність віднесена до категорії та має зафіксований цільовий контракт
-- [ ] Є inventory table core pages з цільовим props-контрактом для кожної сторінки
-- [ ] Є список admin pages для route-aware rewrite на TanStack Router
-- [ ] Є список theme components з цільовими замінами `Link`/navigation/image API
-- [ ] Є повний список server-only файлів з цільовим owner у TanStack Start
-- [ ] Є LCP-матриця для всіх `next/image` використань
-- [ ] Є рішення по next-themes → better-themes
-- [ ] Є рішення по auth/proxy flow → beforeLoad + server functions
-- [ ] Є рішення по ISR/cache → router.invalidate() + React Query
-- [ ] Зафіксовано decision log з 10 прийнятими рішеннями
-- [ ] Зафіксовано що adapter-механізм повністю виключений з плану міграції
+- [x] Є повний inventory `next/*` залежностей по `packages/`, `themes/`, `app/` з розбивкою по файлах
+- [x] Кожна залежність віднесена до категорії та має зафіксований цільовий контракт
+- [x] Є inventory table core pages з цільовим props-контрактом для кожної сторінки
+- [x] Є список admin pages для route-aware rewrite на TanStack Router
+- [x] Є список theme components з цільовими замінами `Link`/navigation/image API
+- [x] Є повний список server-only файлів з цільовим owner у TanStack Start
+- [x] Є LCP-матриця для всіх `next/image` використань
+- [x] Є рішення по next-themes → better-themes
+- [x] Є рішення по auth/proxy flow → beforeLoad + server functions
+- [x] Є рішення по ISR/cache → router.invalidate() + React Query
+- [x] Зафіксовано decision log з 10 прийнятими рішеннями
+- [x] Зафіксовано що adapter-механізм повністю виключений з плану міграції
+- [x] Inventory верифіковано через grep по реальній кодовій базі (2026-04-21)
+- [x] Додано пропущені app-layer storefront/protected pages (14 файлів)
+- [x] Додано повний перелік NEXT_PUBLIC_* env usage (11 файлів)

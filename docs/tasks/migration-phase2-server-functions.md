@@ -1,5 +1,9 @@
 # Task: Phase 2 — Server-only data-access шар через createServerFn
 
+> Execution note: ця фаза запускається лише після робочого TanStack Start runtime з Phase 1.
+> Це кодова фаза. Не повертатися до inventory `next/*`; використовувати рішення Phase 0 і runtime skeleton з Phase 1 як fixed prerequisites.
+> Clarify-пункти з явною рекомендацією вважати дефолтним рішенням, якщо під час імплементації не з’явиться технічне обмеження.
+
 ## Контекст
 
 Після Phase 1 TanStack Start працює як єдиний runtime, а `next/*` примітиви вже переписані напряму. Тепер потрібно повністю винести server-only логіку з package-level Next.js файлів у site-level шар `src/server/`.

@@ -1,5 +1,9 @@
 # Task: Phase 3 — Міграція Storefront SSR-маршрутів
 
+> Execution note: ця фаза є прямим продовженням Phase 2 і передбачає, що server functions уже існують і використовуються як єдина server-only межа.
+> Це кодова фаза. Не відкладати storefront routes до «пізнішого cleanup» і не повертатися до Next.js app-router mental model.
+> Clarify-пункти з рекомендацією трактувати як дефолтну реалізацію, якщо інше не доведено технічно.
+
 ## Контекст
 
 Після Phase 2 серверні функції (data access, auth, themes) реалізовані через `createServerFn()`. Зараз потрібно створити **TanStack Start file routes** для всіх публічних storefront-сторінок і підключити їх до серверних функцій через route loaders.
