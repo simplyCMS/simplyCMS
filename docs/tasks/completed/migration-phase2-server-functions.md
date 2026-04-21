@@ -127,13 +127,13 @@ Factory має бути одна — `createServerSupabase()`. Серверні 
 src/
   server/
     supabase.ts           # createServerSupabase() factory
-    products.ts           # getProduct, getProducts, getProductsBySectionSlug
+    products.ts           # getProduct, getProducts, getProductsBySectionId
     sections.ts           # getSections, getSectionBySlug
     home.ts               # getHomePageData (banners, featured, new products)
     properties.ts         # getProperties, getPropertyBySlug, getPropertyOption
     auth.ts               # getSession, getUser, isAdmin
     themes.ts             # getActiveTheme (серверна резолюція)
-    sitemap.ts            # getSitemapData
+    sitemap.ts            # getSitemapData, getRobotsData
     revalidation.ts       # за потреби: тільки для зовнішніх webhook / cache hooks
 ```
 
