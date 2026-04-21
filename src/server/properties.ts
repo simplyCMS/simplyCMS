@@ -23,7 +23,8 @@ export const getProperties = createServerFn({ method: 'GET' })
 /** Отримати характеристику за slug з опціями */
 export const getPropertyBySlug = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string().min(1) }))
-  .handler(async ({ data: { slug } }) => {
+  .handler(async ({ data: input }) => {
+    const { slug } = input as { slug: string };
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -45,7 +46,11 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
     propertySlug: z.string().min(1),
     optionSlug: z.string().min(1),
   }))
-  .handler(async ({ data: { propertySlug, optionSlug } }) => {
+  .handler(async ({ data: input }) => {
+    const { propertySlug, optionSlug } = input as {
+      propertySlug: string;
+      optionSlug: string;
+    };
     const supabase = createServerSupabase();
 
     const { data: property } = await supabase

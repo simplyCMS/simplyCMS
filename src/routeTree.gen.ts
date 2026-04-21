@@ -9,50 +9,237 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as StorefrontRouteImport } from './routes/_storefront'
+import { Route as StorefrontIndexRouteImport } from './routes/_storefront/index'
+import { Route as StorefrontPropertiesIndexRouteImport } from './routes/_storefront/properties/index'
+import { Route as StorefrontCatalogIndexRouteImport } from './routes/_storefront/catalog/index'
+import { Route as StorefrontOrderSuccessOrderIdRouteImport } from './routes/_storefront/order-success/$orderId'
+import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './routes/_storefront/properties/$propertySlug/index'
+import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './routes/_storefront/catalog/$sectionSlug/index'
+import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './routes/_storefront/properties/$propertySlug/$optionSlug'
+import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './routes/_storefront/catalog/$sectionSlug/$productSlug'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const StorefrontRoute = StorefrontRouteImport.update({
+  id: '/_storefront',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StorefrontRoute,
+} as any)
+const StorefrontPropertiesIndexRoute =
+  StorefrontPropertiesIndexRouteImport.update({
+    id: '/properties/',
+    path: '/properties/',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontCatalogIndexRoute = StorefrontCatalogIndexRouteImport.update({
+  id: '/catalog/',
+  path: '/catalog/',
+  getParentRoute: () => StorefrontRoute,
+} as any)
+const StorefrontOrderSuccessOrderIdRoute =
+  StorefrontOrderSuccessOrderIdRouteImport.update({
+    id: '/order-success/$orderId',
+    path: '/order-success/$orderId',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontPropertiesPropertySlugIndexRoute =
+  StorefrontPropertiesPropertySlugIndexRouteImport.update({
+    id: '/properties/$propertySlug/',
+    path: '/properties/$propertySlug/',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontCatalogSectionSlugIndexRoute =
+  StorefrontCatalogSectionSlugIndexRouteImport.update({
+    id: '/catalog/$sectionSlug/',
+    path: '/catalog/$sectionSlug/',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontPropertiesPropertySlugOptionSlugRoute =
+  StorefrontPropertiesPropertySlugOptionSlugRouteImport.update({
+    id: '/properties/$propertySlug/$optionSlug',
+    path: '/properties/$propertySlug/$optionSlug',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontCatalogSectionSlugProductSlugRoute =
+  StorefrontCatalogSectionSlugProductSlugRouteImport.update({
+    id: '/catalog/$sectionSlug/$productSlug',
+    path: '/catalog/$sectionSlug/$productSlug',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof StorefrontIndexRoute
+  '/order-success/$orderId': typeof StorefrontOrderSuccessOrderIdRoute
+  '/catalog/': typeof StorefrontCatalogIndexRoute
+  '/properties/': typeof StorefrontPropertiesIndexRoute
+  '/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
+  '/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
+  '/catalog/$sectionSlug/': typeof StorefrontCatalogSectionSlugIndexRoute
+  '/properties/$propertySlug/': typeof StorefrontPropertiesPropertySlugIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof StorefrontIndexRoute
+  '/order-success/$orderId': typeof StorefrontOrderSuccessOrderIdRoute
+  '/catalog': typeof StorefrontCatalogIndexRoute
+  '/properties': typeof StorefrontPropertiesIndexRoute
+  '/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
+  '/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
+  '/catalog/$sectionSlug': typeof StorefrontCatalogSectionSlugIndexRoute
+  '/properties/$propertySlug': typeof StorefrontPropertiesPropertySlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_storefront': typeof StorefrontRouteWithChildren
+  '/_storefront/': typeof StorefrontIndexRoute
+  '/_storefront/order-success/$orderId': typeof StorefrontOrderSuccessOrderIdRoute
+  '/_storefront/catalog/': typeof StorefrontCatalogIndexRoute
+  '/_storefront/properties/': typeof StorefrontPropertiesIndexRoute
+  '/_storefront/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
+  '/_storefront/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
+  '/_storefront/catalog/$sectionSlug/': typeof StorefrontCatalogSectionSlugIndexRoute
+  '/_storefront/properties/$propertySlug/': typeof StorefrontPropertiesPropertySlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/order-success/$orderId'
+    | '/catalog/'
+    | '/properties/'
+    | '/catalog/$sectionSlug/$productSlug'
+    | '/properties/$propertySlug/$optionSlug'
+    | '/catalog/$sectionSlug/'
+    | '/properties/$propertySlug/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/order-success/$orderId'
+    | '/catalog'
+    | '/properties'
+    | '/catalog/$sectionSlug/$productSlug'
+    | '/properties/$propertySlug/$optionSlug'
+    | '/catalog/$sectionSlug'
+    | '/properties/$propertySlug'
+  id:
+    | '__root__'
+    | '/_storefront'
+    | '/_storefront/'
+    | '/_storefront/order-success/$orderId'
+    | '/_storefront/catalog/'
+    | '/_storefront/properties/'
+    | '/_storefront/catalog/$sectionSlug/$productSlug'
+    | '/_storefront/properties/$propertySlug/$optionSlug'
+    | '/_storefront/catalog/$sectionSlug/'
+    | '/_storefront/properties/$propertySlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  StorefrontRoute: typeof StorefrontRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_storefront': {
+      id: '/_storefront'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof StorefrontRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_storefront/': {
+      id: '/_storefront/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StorefrontIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/properties/': {
+      id: '/_storefront/properties/'
+      path: '/properties'
+      fullPath: '/properties/'
+      preLoaderRoute: typeof StorefrontPropertiesIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/catalog/': {
+      id: '/_storefront/catalog/'
+      path: '/catalog'
+      fullPath: '/catalog/'
+      preLoaderRoute: typeof StorefrontCatalogIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/order-success/$orderId': {
+      id: '/_storefront/order-success/$orderId'
+      path: '/order-success/$orderId'
+      fullPath: '/order-success/$orderId'
+      preLoaderRoute: typeof StorefrontOrderSuccessOrderIdRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/properties/$propertySlug/': {
+      id: '/_storefront/properties/$propertySlug/'
+      path: '/properties/$propertySlug'
+      fullPath: '/properties/$propertySlug/'
+      preLoaderRoute: typeof StorefrontPropertiesPropertySlugIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/catalog/$sectionSlug/': {
+      id: '/_storefront/catalog/$sectionSlug/'
+      path: '/catalog/$sectionSlug'
+      fullPath: '/catalog/$sectionSlug/'
+      preLoaderRoute: typeof StorefrontCatalogSectionSlugIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/properties/$propertySlug/$optionSlug': {
+      id: '/_storefront/properties/$propertySlug/$optionSlug'
+      path: '/properties/$propertySlug/$optionSlug'
+      fullPath: '/properties/$propertySlug/$optionSlug'
+      preLoaderRoute: typeof StorefrontPropertiesPropertySlugOptionSlugRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/catalog/$sectionSlug/$productSlug': {
+      id: '/_storefront/catalog/$sectionSlug/$productSlug'
+      path: '/catalog/$sectionSlug/$productSlug'
+      fullPath: '/catalog/$sectionSlug/$productSlug'
+      preLoaderRoute: typeof StorefrontCatalogSectionSlugProductSlugRouteImport
+      parentRoute: typeof StorefrontRoute
     }
   }
 }
 
+interface StorefrontRouteChildren {
+  StorefrontIndexRoute: typeof StorefrontIndexRoute
+  StorefrontOrderSuccessOrderIdRoute: typeof StorefrontOrderSuccessOrderIdRoute
+  StorefrontCatalogIndexRoute: typeof StorefrontCatalogIndexRoute
+  StorefrontPropertiesIndexRoute: typeof StorefrontPropertiesIndexRoute
+  StorefrontCatalogSectionSlugProductSlugRoute: typeof StorefrontCatalogSectionSlugProductSlugRoute
+  StorefrontPropertiesPropertySlugOptionSlugRoute: typeof StorefrontPropertiesPropertySlugOptionSlugRoute
+  StorefrontCatalogSectionSlugIndexRoute: typeof StorefrontCatalogSectionSlugIndexRoute
+  StorefrontPropertiesPropertySlugIndexRoute: typeof StorefrontPropertiesPropertySlugIndexRoute
+}
+
+const StorefrontRouteChildren: StorefrontRouteChildren = {
+  StorefrontIndexRoute: StorefrontIndexRoute,
+  StorefrontOrderSuccessOrderIdRoute: StorefrontOrderSuccessOrderIdRoute,
+  StorefrontCatalogIndexRoute: StorefrontCatalogIndexRoute,
+  StorefrontPropertiesIndexRoute: StorefrontPropertiesIndexRoute,
+  StorefrontCatalogSectionSlugProductSlugRoute:
+    StorefrontCatalogSectionSlugProductSlugRoute,
+  StorefrontPropertiesPropertySlugOptionSlugRoute:
+    StorefrontPropertiesPropertySlugOptionSlugRoute,
+  StorefrontCatalogSectionSlugIndexRoute:
+    StorefrontCatalogSectionSlugIndexRoute,
+  StorefrontPropertiesPropertySlugIndexRoute:
+    StorefrontPropertiesPropertySlugIndexRoute,
+}
+
+const StorefrontRouteWithChildren = StorefrontRoute._addFileChildren(
+  StorefrontRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  StorefrontRoute: StorefrontRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

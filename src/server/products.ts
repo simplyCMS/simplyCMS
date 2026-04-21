@@ -21,7 +21,8 @@ const PRODUCT_FULL_SELECT = `
 /** Отримати товар за slug (для сторінки товару) */
 export const getProduct = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string().min(1) }))
-  .handler(async ({ data: { slug } }) => {
+  .handler(async ({ data: input }) => {
+    const { slug } = input as { slug: string };
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -58,7 +59,8 @@ export const getProducts = createServerFn({ method: 'GET' })
 /** Отримати товари за ID секції */
 export const getProductsBySectionId = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ sectionId: z.string().min(1) }))
-  .handler(async ({ data: { sectionId } }) => {
+  .handler(async ({ data: input }) => {
+    const { sectionId } = input as { sectionId: string };
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase

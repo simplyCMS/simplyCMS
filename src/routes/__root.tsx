@@ -7,7 +7,11 @@ import {
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
+import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
 import appCss from '../app/globals.css?url';
+
+// Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
+import '../theme-registry';
 
 export const Route = createRootRoute({
   head: () => ({
@@ -44,9 +48,11 @@ function RootComponent() {
           enableSystem
           disableTransitionOnChange
         >
-          <Outlet />
-          <Toaster />
-          <SonnerToaster richColors position="top-right" />
+          <CMSProvider>
+            <Outlet />
+            <Toaster />
+            <SonnerToaster richColors position="top-right" />
+          </CMSProvider>
         </ThemeProvider>
         <Scripts />
       </body>

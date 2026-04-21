@@ -23,13 +23,15 @@ export const getSections = createServerFn({ method: 'GET' })
 /** Отримати секцію за slug */
 export const getSectionBySlug = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string().min(1) }))
-  .handler(async ({ data: { slug } }) => {
+  .handler(async ({ data: input }) => {
+    const { slug } = input as { slug: string };
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from('sections')
       .select('*')
       .eq('slug', slug)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (error) {
