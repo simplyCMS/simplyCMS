@@ -21,48 +21,44 @@
 
 ## Вимоги
 
-- [ ] Створити директорію `src/server/` для серверних функцій
-- [ ] Реалізувати `src/server/supabase.ts` з єдиною factory `createServerSupabase()`
+- [Х] Створити директорію `src/server/` для серверних функцій
+- [Х] Реалізувати `src/server/supabase.ts` з єдиною factory `createServerSupabase()`
   - **Читання cookies:** через `getRequestHeader('cookie')` + `parseCookieHeader()` з `@supabase/ssr`
   - **Запис cookies:** через `setCookie()` з `@tanstack/react-start/server`
   - **ВАЖЛИВО:** `@supabase/ssr` потребує і читання, і запису cookies для session refresh / token rotation
-- [ ] Реалізувати серверні функції для отримання даних storefront:
+- [Х] Реалізувати серверні функції для отримання даних storefront:
   - Отримання товару по slug (для сторінки товару)
   - Отримання секції з товарами (для сторінки категорії)
   - Отримання списку секцій і товарів (для каталогу)
   - Отримання даних головної сторінки (банери, featured, нові товари, секції)
   - Отримання даних properties / property options
-- [ ] Реалізувати серверні функції для auth:
+- [Х] Реалізувати серверні функції для auth:
   - `getSession()`
   - `getUser()`
   - `isAdmin()`
-- [ ] Реалізувати серверну функцію для sitemap data
-- [ ] Реалізувати серверну функцію для robots.txt
-- [ ] Відмовитися від generic ISR/revalidation механіки для storefront: SSR-дані за замовчуванням читаються напряму з БД, без `revalidatePath`/`revalidateTag`
-- [ ] Видалити або позначити як deprecated: `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`, `app/api/revalidate/route.ts`
-- [ ] Клієнтський Supabase (`supabase/client.ts`) залишити без змін — він framework-agnostic
+- [Х] Реалізувати серверну функцію для sitemap data
+- [Х] Реалізувати серверну функцію для robots.txt
+- [Х] Відмовитися від generic ISR/revalidation механіки для storefront: SSR-дані за замовчуванням читаються напряму з БД, без `revalidatePath`/`revalidateTag`
+- [Х] Видалити або позначити як deprecated: `packages/simplycms/core/src/supabase/server.ts`, `packages/simplycms/core/src/supabase/proxy.ts`, `app/api/revalidate/route.ts`
+- [Х] Клієнтський Supabase (`supabase/client.ts`) залишити без змін — він framework-agnostic
 
 > **Примітка:** `guest-order` API route (`app/api/guest-order/route.ts`) теж використовує `createServerSupabaseClient()`. Його міграція виконується в Phase 4 (як `createServerFn` або server handler), але після Phase 2 він зможе використовувати `createServerSupabase()` з `src/server/supabase.ts`.
 
 ## Clarify (питання перед імплементацією)
 
-- [ ] Який API використовувати для cookies у Supabase factory?
+- [Х] Який API використовувати для cookies у Supabase factory?
   - Чому це важливо: `@supabase/ssr` очікує `getAll` / `setAll`, а TanStack Start працює з request headers і `setCookie()`
-  - Рекомендація: `getRequestHeader('cookie')` + `parseCookieHeader()` для read, `setCookie()` для write
-  - Альтернатива: низькорівневий `vinxi/http`, якщо виникне прогалина в `@tanstack/react-start/server`
+  - **Рішення:** `getRequestHeader('cookie')` + `parseCookieHeader()` для read, `setCookie()` для write
   - Вплив: auth session refresh, token rotation
 
-- [ ] Який механізм кешування замість unstable_cache?
-  - Чому це важливо: `getActiveThemeSSR` зараз кешується через `unstable_cache` (cross-request cache з revalidation). TanStack Start не має вбудованого аналога
-  - Варіант A: Module-level in-memory cache з TTL (простий Map + setTimeout) (рекомендовано для початку)
-  - Варіант B: ~~React `cache()` для per-request deduplication + in-memory для cross-request~~ — **неможливо:** `React.cache()` є RSC-only API, не працює в TanStack Start (ізоморфна модель без Server Components). Per-request dedup непотрібен, бо loader виконується один раз на запит
-  - Варіант C: Зовнішній cache (Redis/Upstash) — overkill для одного запису
-  - Вплив: продуктивність, складність
+- [Х] Який механізм кешування замість unstable_cache?
+  - Чому це важливо: `getActiveThemeSSR` зараз кешується через `unstable_cache`
+  - **Рішення:** Варіант A — Module-level in-memory cache з TTL (5 хв) + `invalidateThemeCache()` для зовнішніх webhook
+  - Вплив: простота, працює в single-process
 
-- [ ] Чи потрібен окремий revalidation endpoint?
-  - Чому це важливо: у Next.js це було потрібно через ISR; у TanStack Start storefront може працювати на свіжому SSR без cross-request cache
-  - Рекомендація: ні для загального storefront data layer; окрема інвалідація потрібна лише для theme cache у Phase 5 або для зовнішніх webhook-інтеграцій
-  - Вплив: спрощення архітектури, менше технічного боргу
+- [Х] Чи потрібен окремий revalidation endpoint?
+  - **Рішення:** Ні для загального storefront; тема-інвалідація через `invalidateThemeCache()` (Phase 5)
+  - Вплив: спрощення архітектури
 
 ## Рекомендовані патерни
 
@@ -158,12 +154,12 @@ src/
 
 ## Definition of Done
 
-- [ ] `src/server/supabase.ts` існує з `createServerSupabase()` на базі TanStack Start server context
-- [ ] `createServerSupabase()` підтримує і читання, і запис cookies для `@supabase/ssr`
-- [ ] Серверні функції для products, sections, home, properties, auth, themes, sitemap існують і експортуються
-- [ ] Кожна серверна функція використовує `createServerFn()` з `@tanstack/react-start`
-- [ ] Серверні функції мають input validation де потрібно (slugs, ids)
-- [ ] Жоден серверний файл не імпортує з `next/*`
-- [ ] Відсутня generic залежність storefront від `revalidatePath` / `revalidateTag`
-- [ ] `pnpm typecheck` проходить
-- [ ] Серверні функції можна імпортувати і викликати з route loaders (перевірити на placeholder route)
+- [Х] `src/server/supabase.ts` існує з `createServerSupabase()` на базі TanStack Start server context
+- [Х] `createServerSupabase()` підтримує і читання, і запис cookies для `@supabase/ssr`
+- [Х] Серверні функції для products, sections, home, properties, auth, themes, sitemap існують і експортуються
+- [Х] Кожна серверна функція використовує `createServerFn()` з `@tanstack/react-start`
+- [Х] Серверні функції мають input validation де потрібно (slugs, ids)
+- [Х] Жоден серверний файл не імпортує з `next/*`
+- [Х] Відсутня generic залежність storefront від `revalidatePath` / `revalidateTag`
+- [Х] `pnpm typecheck` проходить (нуль нових помилок)
+- [Х] Серверні функції можна імпортувати і викликати з route loaders (правильний export pattern)

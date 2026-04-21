@@ -1,3 +1,9 @@
+/**
+ * @deprecated ISR revalidation — Next.js-specific механізм.
+ * У TanStack Start storefront працює на свіжому SSR без cross-request cache.
+ * Тема-інвалідація реалізована через invalidateThemeCache() в src/server/themes.ts.
+ * Повна заміна на server handler — Phase 4/5.
+ */
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@simplycms/core/supabase/server';

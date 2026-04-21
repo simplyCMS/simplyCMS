@@ -1,3 +1,7 @@
+/**
+ * @deprecated Замінено auth guards через TanStack Start middleware (Phase 4).
+ * Цей файл залишається для Next.js proxy до повної міграції.
+ */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./types";

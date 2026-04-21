@@ -1,3 +1,8 @@
+/**
+ * @deprecated Замінено на src/server/supabase.ts (createServerSupabase)
+ * для TanStack Start. Цей файл залишається для зворотної сумісності
+ * з Next.js API routes до повної міграції (Phase 4).
+ */
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./types";
 

@@ -298,18 +298,18 @@ Next.js metadata конвенція замінюється на `head()` propert
 
 ## Definition of Done
 
-- [x] Є повний inventory `next/*` залежностей по `packages/`, `themes/`, `app/` з розбивкою по файлах
-- [x] Кожна залежність віднесена до категорії та має зафіксований цільовий контракт
-- [x] Є inventory table core pages з цільовим props-контрактом для кожної сторінки
-- [x] Є список admin pages для route-aware rewrite на TanStack Router
-- [x] Є список theme components з цільовими замінами `Link`/navigation/image API
-- [x] Є повний список server-only файлів з цільовим owner у TanStack Start
-- [x] Є LCP-матриця для всіх `next/image` використань
-- [x] Є рішення по next-themes → better-themes
-- [x] Є рішення по auth/proxy flow → beforeLoad + server functions
-- [x] Є рішення по ISR/cache → router.invalidate() + React Query
-- [x] Зафіксовано decision log з 10 прийнятими рішеннями
-- [x] Зафіксовано що adapter-механізм повністю виключений з плану міграції
-- [x] Inventory верифіковано через grep по реальній кодовій базі (2026-04-21)
-- [x] Додано пропущені app-layer storefront/protected pages (14 файлів)
-- [x] Додано повний перелік NEXT_PUBLIC_* env usage (11 файлів)
+- [Х] Є повний inventory `next/*` залежностей по `packages/`, `themes/`, `app/` з розбивкою по файлах
+- [Х] Кожна залежність віднесена до категорії та має зафіксований цільовий контракт
+- [Х] Є inventory table core pages з цільовим props-контрактом для кожної сторінки
+- [Х] Є список admin pages для route-aware rewrite на TanStack Router
+- [Х] Є список theme components з цільовими замінами `Link`/navigation/image API
+- [Х] Є повний список server-only файлів з цільовим owner у TanStack Start
+- [Х] Є LCP-матриця для всіх `next/image` використань
+- [Х] Є рішення по next-themes → better-themes
+- [Х] Є рішення по auth/proxy flow → beforeLoad + server functions
+- [Х] Є рішення по ISR/cache → router.invalidate() + React Query
+- [Х] Зафіксовано decision log з 10 прийнятими рішеннями
+- [Х] Зафіксовано що adapter-механізм повністю виключений з плану міграції
+- [Х] Inventory верифіковано через grep по реальній кодовій базі (2026-04-21)
+- [Х] Додано пропущені app-layer storefront/protected pages (14 файлів)
+- [Х] Додано повний перелік NEXT_PUBLIC_* env usage (11 файлів)
