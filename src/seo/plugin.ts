@@ -23,10 +23,7 @@ export function seoRoutesPlugin(): Plugin {
             './src/seo/sitemap.ts',
           );
           const xml = await buildSitemapXml();
-          res.setHeader(
-            'Content-Type',
-            'application/xml; charset=utf-8',
-          );
+          res.setHeader('Content-Type', 'application/xml; charset=utf-8');
           res.end(xml);
         } catch (err) {
           console.error('[sitemap] Помилка:', err);
@@ -41,10 +38,7 @@ export function seoRoutesPlugin(): Plugin {
             './src/seo/robots.ts',
           );
           const text = await buildRobotsTxt();
-          res.setHeader(
-            'Content-Type',
-            'text/plain; charset=utf-8',
-          );
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
           res.end(text);
         } catch (err) {
           console.error('[robots] Помилка:', err);

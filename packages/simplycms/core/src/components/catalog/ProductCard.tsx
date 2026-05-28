@@ -33,7 +33,7 @@ export function ProductCard({ product, rating }: ProductCardProps) {
   };
 
   return (
-    <Link to={`/catalog/${sectionSlug}/${product.slug}`}>
+    <Link to="/catalog/$sectionSlug/$productSlug" params={{ sectionSlug, productSlug: product.slug }}>
       <div className="group h-full overflow-hidden rounded-lg border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
         <div className="aspect-square overflow-hidden bg-muted relative">
           {firstImage ? (

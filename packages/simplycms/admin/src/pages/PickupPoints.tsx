@@ -77,7 +77,7 @@ export default function PickupPoints() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/pickup-points/new">
+          <Link to="/admin/shipping/pickup-points/$pointId" params={{ pointId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати точку
           </Link>

@@ -180,7 +180,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link to="/admin/shipping/locations">
+        <Link to=".">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

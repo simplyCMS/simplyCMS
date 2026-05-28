@@ -57,7 +57,8 @@ export function BrandCarousel() {
               {brands.map((brand) => (
                 <div key={brand.id} className="flex-[0_0_120px] md:flex-[0_0_150px] min-w-0">
                   <Link
-                    to={`/properties/${brand.propertySlug}/${brand.slug}`}
+                    to="/properties/$propertySlug/$optionSlug"
+                    params={{ propertySlug: brand.propertySlug, optionSlug: brand.slug }}
                     className="relative flex items-center justify-center h-20 rounded-md border border-border/40 bg-card hover:border-primary/30 transition-colors p-4"
                   >
                     {brand.image_url ? (

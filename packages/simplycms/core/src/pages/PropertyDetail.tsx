@@ -103,7 +103,8 @@ export default function PropertyDetailPage({
           {options.map((option) => (
             <Link
               key={option.id}
-              to={`/properties/${property.slug}/${option.slug}`}
+              to="/properties/$propertySlug/$optionSlug"
+              params={{ propertySlug: property.slug, optionSlug: option.slug }}
             >
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group overflow-hidden">
                 {option.image_url && (

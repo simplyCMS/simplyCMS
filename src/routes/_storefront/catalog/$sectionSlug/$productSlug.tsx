@@ -4,12 +4,14 @@ import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { getProduct } from '../../../../server/products';
 
-const BASE_URL =
-  import.meta.env.VITE_SITE_URL || 'https://example.com';
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 
 export const Route = createFileRoute(
   '/_storefront/catalog/$sectionSlug/$productSlug',
 )({
+  validateSearch: (search: Record<string, unknown>): { mod?: string } => ({
+    mod: typeof search.mod === 'string' ? search.mod : undefined,
+  }),
   loader: async ({ params: { sectionSlug, productSlug } }) => {
     const product = await getProduct({ data: { slug: productSlug } });
 
@@ -18,8 +20,8 @@ export const Route = createFileRoute(
     }
 
     /** Canonical URL: redirect 301 якщо sectionSlug не відповідає */
-    const actualSectionSlug =
-      (product.sections as { slug: string } | null)?.slug;
+    const actualSectionSlug = (product.sections as { slug: string } | null)
+      ?.slug;
 
     if (actualSectionSlug && actualSectionSlug !== sectionSlug) {
       throw redirect({
@@ -38,8 +40,7 @@ export const Route = createFileRoute(
     const images = Array.isArray(product.images) ? product.images : [];
     const description =
       product.description || `Купити ${product.name} в SimplyCMS Store`;
-    const canonicalUrl =
-      `${BASE_URL}/catalog/${sectionSlug}/${product.slug}`;
+    const canonicalUrl = `${BASE_URL}/catalog/${sectionSlug}/${product.slug}`;
 
     /** Базова ціна для JSON-LD (перша ціна без модифікації) */
     const prices = Array.isArray(product.product_prices)
@@ -95,9 +96,6 @@ function ProductPage() {
   const theme = use(ThemeRegistry.load(themeName));
 
   return (
-    <theme.pages.ProductPage
-      product={product}
-      sectionSlug={sectionSlug}
-    />
+    <theme.pages.ProductPage product={product} sectionSlug={sectionSlug} />
   );
 }

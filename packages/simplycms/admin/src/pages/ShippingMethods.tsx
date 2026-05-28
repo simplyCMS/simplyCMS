@@ -98,7 +98,7 @@ export default function ShippingMethods() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/methods/new">
+          <Link to="/admin/shipping/methods/$methodId" params={{ methodId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати службу
           </Link>

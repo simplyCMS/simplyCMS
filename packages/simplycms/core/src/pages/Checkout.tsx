@@ -261,9 +261,16 @@ export default function Checkout() {
 
       // Navigate to success page
       if (user) {
-        navigate({ to: `/order-success/${order.id}` });
+        navigate({
+          to: '/order-success/$orderId',
+          params: { orderId: order.id },
+        });
       } else {
-        navigate({ to: `/order-success/${order.id}`, search: { token: order.access_token } });
+        navigate({
+          to: '/order-success/$orderId',
+          params: { orderId: order.id },
+          search: { token: order.access_token ?? undefined },
+        });
       }
     } catch (error: unknown) {
       console.error("Order creation error:", error);

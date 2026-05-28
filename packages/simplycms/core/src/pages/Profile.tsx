@@ -177,7 +177,8 @@ export default function ProfilePage() {
               {recentOrders.map((order) => (
                 <Link
                   key={order.id}
-                  to={`/profile/orders/${order.id}`}
+                  to="/profile/orders/$orderId"
+                  params={{ orderId: order.id }}
                   className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">

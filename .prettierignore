@@ -1,0 +1,8 @@
+node_modules
+.output
+.nitro
+.tanstack
+temp
+pnpm-lock.yaml
+src/routeTree.gen.ts
+supabase/types.ts

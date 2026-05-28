@@ -75,19 +75,19 @@ export function CatalogLayout({
                 Бренди
               </Link>
               <Link
-                to="#"
+                to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Послуги
               </Link>
               <Link
-                to="#"
+                to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Про нас
               </Link>
               <Link
-                to="#"
+                to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Контакти

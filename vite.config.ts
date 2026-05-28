@@ -1,9 +1,10 @@
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 import { seoRoutesPlugin } from './src/seo/plugin';
 
 export default {
-  plugins: [tanstackStart(), seoRoutesPlugin()],
+  plugins: [tailwindcss(), tanstackStart(), seoRoutesPlugin()],
   resolve: {
     alias: {
       '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),

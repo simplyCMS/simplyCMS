@@ -10,15 +10,12 @@ const HOME_PRODUCT_SELECT = `
 ` as const;
 
 /** Отримати дані головної сторінки одним RPC-викликом */
-export const getHomePageData = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getHomePageData = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const supabase = createServerSupabase();
 
     const [banners, featured, newProducts, sections] = await Promise.all([
-      supabase
-        .from('banners')
-        .select('*')
-        .eq('is_active', true),
+      supabase.from('banners').select('*').eq('is_active', true),
       supabase
         .from('products')
         .select(HOME_PRODUCT_SELECT)
@@ -46,7 +43,8 @@ export const getHomePageData = createServerFn({ method: 'GET' })
       newProducts: (newProducts.data ?? []).map(mapHomeProduct),
       sections: sections.data ?? [],
     };
-  });
+  },
+);
 
 /** Трансформація продукту для картки на головній */
 function mapHomeProduct(p: Record<string, unknown>) {

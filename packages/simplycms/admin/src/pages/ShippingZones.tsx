@@ -80,7 +80,7 @@ export default function ShippingZones() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/zones/new">
+          <Link to="/admin/shipping/zones/$zoneId" params={{ zoneId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати зону
           </Link>

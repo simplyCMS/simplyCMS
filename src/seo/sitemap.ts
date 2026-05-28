@@ -1,17 +1,13 @@
 import { createAnonSupabaseClient } from '@simplycms/core/supabase/anon';
 
-const BASE_URL =
-  import.meta.env.VITE_SITE_URL || 'https://example.com';
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 
 /** Генерує sitemap.xml з активних секцій і товарів */
 export async function buildSitemapXml(): Promise<string> {
   const supabase = createAnonSupabaseClient();
 
   const [sectionsRes, productsRes] = await Promise.all([
-    supabase
-      .from('sections')
-      .select('slug, updated_at')
-      .order('sort_order'),
+    supabase.from('sections').select('slug, updated_at').order('sort_order'),
     supabase
       .from('products')
       .select('slug, updated_at, sections(slug)')

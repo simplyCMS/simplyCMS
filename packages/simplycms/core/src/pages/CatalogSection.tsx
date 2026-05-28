@@ -503,7 +503,7 @@ export default function CatalogSectionPage({
           </Badge>
         </Link>
         {sections?.map((s) => (
-          <Link key={s.id} to={`/catalog/${s.slug}`}>
+          <Link key={s.id} to="/catalog/$sectionSlug" params={{ sectionSlug: s.slug }}>
             <Badge
               variant={s.id === section.id ? "default" : "outline"}
               className="cursor-pointer px-3 py-1.5 text-sm gap-2"

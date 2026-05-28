@@ -47,7 +47,8 @@ export function ProductCharacteristics({ propertyValues }: ProductCharacteristic
     if (pv.property?.has_page && pv.option?.slug && pv.property?.slug) {
       return (
         <Link
-          to={`/properties/${pv.property.slug}/${pv.option.slug}`}
+          to="/properties/$propertySlug/$optionSlug"
+          params={{ propertySlug: pv.property.slug, optionSlug: pv.option.slug }}
           className="text-primary hover:underline"
         >
           {formattedValue}

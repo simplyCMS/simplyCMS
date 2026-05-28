@@ -138,7 +138,8 @@ export default function AdminReviewDetail() {
           <CardContent>
             {review.product ? (
               <Link
-                to={`/catalog/${review.product.sections?.slug || "all"}/${review.product.slug}`}
+                to="/catalog/$sectionSlug/$productSlug"
+                params={{ sectionSlug: review.product.sections?.slug || "all", productSlug: review.product.slug }}
                 className="font-medium text-primary hover:underline"
               >
                 {review.product.name}

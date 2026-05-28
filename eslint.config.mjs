@@ -23,7 +23,16 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ["temp/**", "node_modules/**", ".next/**", ".output/**"],
+    ignores: [
+      "temp/**",
+      "node_modules/**",
+      "dist/**",
+      "dist-ssr/**",
+      ".output/**",
+      ".nitro/**",
+      ".tanstack/**",
+      "src/routeTree.gen.ts",
+    ],
   },
 ];
 

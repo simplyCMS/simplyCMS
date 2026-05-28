@@ -67,7 +67,7 @@ export default function Banners() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Банери</h1>
-        <Button onClick={() => navigate({ to: '/admin/banners/new' })}>
+        <Button onClick={() => navigate({ to: '/admin/banners/$bannerId', params: { bannerId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" /> Додати банер
         </Button>
       </div>

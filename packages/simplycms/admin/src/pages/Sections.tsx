@@ -60,7 +60,7 @@ export default function Sections() {
           <h1 className="text-3xl font-bold">Розділи</h1>
           <p className="text-muted-foreground">Керування розділами каталогу</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/sections/new' })}>
+        <Button onClick={() => navigate({ to: '/admin/sections/$sectionId', params: { sectionId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати розділ
         </Button>

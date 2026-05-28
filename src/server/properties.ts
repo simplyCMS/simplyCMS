@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { createServerSupabase } from './supabase';
 
 /** Отримати всі характеристики з has_page=true */
-export const getProperties = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getProperties = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -18,7 +18,8 @@ export const getProperties = createServerFn({ method: 'GET' })
     }
 
     return data ?? [];
-  });
+  },
+);
 
 /** Отримати характеристику за slug з опціями */
 export const getPropertyBySlug = createServerFn({ method: 'GET' })
@@ -42,10 +43,12 @@ export const getPropertyBySlug = createServerFn({ method: 'GET' })
 
 /** Отримати опцію характеристики з повʼязаними товарами */
 export const getPropertyOption = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({
-    propertySlug: z.string().min(1),
-    optionSlug: z.string().min(1),
-  }))
+  .inputValidator(
+    z.object({
+      propertySlug: z.string().min(1),
+      optionSlug: z.string().min(1),
+    }),
+  )
   .handler(async ({ data: input }) => {
     const { propertySlug, optionSlug } = input as {
       propertySlug: string;
@@ -74,8 +77,8 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
       .from('products')
       .select(
         '*, product_modifications!inner(' +
-        '*, modification_property_values!inner(option_id)' +
-        ')',
+          '*, modification_property_values!inner(option_id)' +
+          ')',
       )
       .eq(
         'product_modifications.modification_property_values.option_id',

@@ -1,5 +1,4 @@
-const BASE_URL =
-  import.meta.env.VITE_SITE_URL || 'https://example.com';
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 
 /** Генерує robots.txt */
 export async function buildRobotsTxt(): Promise<string> {

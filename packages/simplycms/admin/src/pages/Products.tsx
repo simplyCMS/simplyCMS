@@ -80,7 +80,7 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Товари</h1>
           <p className="text-muted-foreground">Керування каталогом товарів</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/products/new' })}>
+        <Button onClick={() => navigate({ to: '/admin/products/$productId', params: { productId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати товар
         </Button>

@@ -6,9 +6,7 @@ import { getSectionBySlug } from '../../../../server/sections';
 import { getSections } from '../../../../server/sections';
 import { getProductsBySectionId } from '../../../../server/products';
 
-export const Route = createFileRoute(
-  '/_storefront/catalog/$sectionSlug/',
-)({
+export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
   staleTime: 60_000,
   loader: async ({ params: { sectionSlug } }) => {
     const section = await getSectionBySlug({ data: { slug: sectionSlug } });
@@ -31,7 +29,9 @@ export const Route = createFileRoute(
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.initialSection?.name ?? 'Секція'} — SimplyCMS Store` },
+      {
+        title: `${loaderData?.initialSection?.name ?? 'Секція'} — SimplyCMS Store`,
+      },
       {
         name: 'description',
         content: loaderData?.initialSection?.description ?? '',

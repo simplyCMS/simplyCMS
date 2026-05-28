@@ -46,7 +46,7 @@ export default function UserCategories() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/admin/user-categories/rules"><Settings className="h-4 w-4 mr-2" />Правила переходу</Link></Button>
-          <Button asChild><Link to="/admin/user-categories/new"><Plus className="h-4 w-4 mr-2" />Додати категорію</Link></Button>
+          <Button asChild><Link to="/admin/user-categories/$categoryId" params={{ categoryId: 'new' }}><Plus className="h-4 w-4 mr-2" />Додати категорію</Link></Button>
         </div>
       </div>
 

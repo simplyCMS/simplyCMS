@@ -51,7 +51,7 @@ export default function PriceTypes() {
           <h1 className="text-3xl font-bold">Види цін</h1>
           <p className="text-muted-foreground">Управління видами цін для товарів</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/price-types/new' })}>
+        <Button onClick={() => navigate({ to: '/admin/price-types/$priceTypeId', params: { priceTypeId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати вид ціни
         </Button>

@@ -191,7 +191,7 @@ export default function Themes() {
                 <div className="flex gap-2">
                   {theme.is_active ? (
                     <Button variant="outline" className="flex-1" asChild>
-                      <Link to={`/admin/themes/${theme.id}/settings`}>
+                      <Link to="/admin/themes/$themeId/settings" params={{ themeId: theme.id }}>
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування
                       </Link>
@@ -206,7 +206,7 @@ export default function Themes() {
                         Активувати
                       </Button>
                       <Button variant="outline" size="icon" asChild>
-                        <Link to={`/admin/themes/${theme.id}/settings`}>
+                        <Link to="/admin/themes/$themeId/settings" params={{ themeId: theme.id }}>
                           <Settings className="h-4 w-4" />
                         </Link>
                       </Button>

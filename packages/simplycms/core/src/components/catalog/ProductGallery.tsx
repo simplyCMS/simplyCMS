@@ -30,7 +30,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             src={currentImage}
             alt={productName}
             className="absolute inset-0 w-full h-full object-contain transition-transform group-hover:scale-105"
-            fetchpriority="high"
+            fetchPriority="high"
             loading="eager"
             decoding="async"
           />

@@ -4,9 +4,7 @@ import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { getPropertyBySlug } from '../../../../server/properties';
 
-export const Route = createFileRoute(
-  '/_storefront/properties/$propertySlug/',
-)({
+export const Route = createFileRoute('/_storefront/properties/$propertySlug/')({
   loader: async ({ params: { propertySlug } }) => {
     const property = await getPropertyBySlug({ data: { slug: propertySlug } });
 
@@ -35,9 +33,6 @@ function PropertyDetailPage() {
   const theme = use(ThemeRegistry.load(themeName));
 
   return (
-    <theme.pages.PropertyDetailPage
-      property={property}
-      options={options}
-    />
+    <theme.pages.PropertyDetailPage property={property} options={options} />
   );
 }

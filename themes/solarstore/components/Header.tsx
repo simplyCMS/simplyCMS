@@ -103,7 +103,8 @@ export function Header() {
             {sections?.map((s) => (
               <Link
                 key={s.id}
-                to={`/catalog/${s.slug}`}
+                to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                 className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               >
                 {s.name}
@@ -212,7 +213,8 @@ export function Header() {
               return (
                 <Link
                   key={s.id}
-                  to={`/catalog/${s.slug}`}
+                  to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                   className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
                 >
                   <Icon className="h-4 w-4" />
@@ -239,7 +241,8 @@ export function Header() {
                 return (
                   <Link
                     key={s.id}
-                    to={`/catalog/${s.slug}`}
+                    to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                     className="flex items-center gap-2 py-2 text-sm text-[hsl(var(--muted-foreground))]"
                     onClick={() => setMobileMenuOpen(false)}
                   >

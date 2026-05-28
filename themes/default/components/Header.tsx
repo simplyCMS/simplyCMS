@@ -142,7 +142,8 @@ export function Header() {
             {sections?.map((s) => (
               <Link
                 key={s.id}
-                to={`/catalog/${s.slug}`}
+                to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider"
               >
                 {s.name}
@@ -165,7 +166,8 @@ export function Header() {
               {sections?.map((s) => (
                 <Link
                   key={s.id}
-                  to={`/catalog/${s.slug}`}
+                  to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                   className="block py-2 text-sm text-muted-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >

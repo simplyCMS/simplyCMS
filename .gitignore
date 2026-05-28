@@ -2,13 +2,12 @@
 node_modules
 .pnpm-store
 
-# Next.js
-.next
-out
-
-# Build
+# Build / TanStack Start (Vite + Nitro)
 dist
 dist-ssr
+.output
+.nitro
+.tanstack
 *.tsbuildinfo
 
 # Environment

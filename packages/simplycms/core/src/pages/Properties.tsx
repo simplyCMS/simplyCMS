@@ -81,7 +81,7 @@ export default function PropertiesPage({
       {properties && properties.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {properties.map((property) => (
-            <Link key={property.id} to={`/properties/${property.slug}`}>
+            <Link key={property.id} to="/properties/$propertySlug" params={{ propertySlug: property.slug }}>
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">

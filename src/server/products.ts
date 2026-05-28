@@ -39,8 +39,8 @@ export const getProduct = createServerFn({ method: 'GET' })
   });
 
 /** Отримати всі активні товари (каталог) */
-export const getProducts = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getProducts = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -54,7 +54,8 @@ export const getProducts = createServerFn({ method: 'GET' })
     }
 
     return data ?? [];
-  });
+  },
+);
 
 /** Отримати товари за ID секції */
 export const getProductsBySectionId = createServerFn({ method: 'GET' })

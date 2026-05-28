@@ -406,7 +406,8 @@ export default function ProductDetailPage({
           <>
             <ChevronRight className="h-4 w-4" />
             <Link
-              to={`/catalog/${section.slug}`}
+              to="/catalog/$sectionSlug"
+              params={{ sectionSlug: section.slug }}
               className="hover:text-foreground transition-colors"
             >
               {section.name}

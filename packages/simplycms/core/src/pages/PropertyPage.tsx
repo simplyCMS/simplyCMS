@@ -181,7 +181,7 @@ export default function PropertyPage({
           Властивості
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link to={`/properties/${property?.slug}`} className="hover:text-foreground transition-colors">
+        <Link to="/properties/$propertySlug" params={{ propertySlug: property?.slug ?? "" }} className="hover:text-foreground transition-colors">
           {property?.name}
         </Link>
         <ChevronRight className="h-4 w-4" />

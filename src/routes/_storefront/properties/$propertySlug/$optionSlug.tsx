@@ -8,7 +8,9 @@ export const Route = createFileRoute(
   '/_storefront/properties/$propertySlug/$optionSlug',
 )({
   loader: async ({ params: { propertySlug, optionSlug } }) => {
-    const result = await getPropertyOption({ data: { propertySlug, optionSlug } });
+    const result = await getPropertyOption({
+      data: { propertySlug, optionSlug },
+    });
 
     if (!result) {
       throw notFound();

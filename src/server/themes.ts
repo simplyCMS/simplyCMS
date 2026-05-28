@@ -32,11 +32,11 @@ let themeCache: CacheEntry | null = null;
  * Використовує анонімний клієнт (таблиця themes має RLS anon SELECT).
  * Результат кешується in-memory з TTL для cross-request ефективності.
  */
-export const getActiveTheme = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getActiveTheme = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const now = Date.now();
 
-    if (themeCache && (now - themeCache.timestamp) < CACHE_TTL) {
+    if (themeCache && now - themeCache.timestamp < CACHE_TTL) {
       return themeCache.data;
     }
 
@@ -73,7 +73,8 @@ export const getActiveTheme = createServerFn({ method: 'GET' })
 
     themeCache = { data: record, timestamp: now };
     return record;
-  });
+  },
+);
 
 /** Скинути кеш активної теми (для зовнішніх webhook / admin) */
 export function invalidateThemeCache() {

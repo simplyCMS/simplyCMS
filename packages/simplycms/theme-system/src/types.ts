@@ -53,8 +53,8 @@ export interface ThemeComponents {
 export interface ThemeModule {
   manifest: ThemeManifest;
   MainLayout: React.ComponentType<{ children?: React.ReactNode }>;
-  CatalogLayout: React.ComponentType;
-  ProfileLayout: React.ComponentType;
+  CatalogLayout: React.ComponentType<{ children?: React.ReactNode }>;
+  ProfileLayout: React.ComponentType<{ children?: React.ReactNode }>;
   pages: ThemePages;
   components?: ThemeComponents;
 }

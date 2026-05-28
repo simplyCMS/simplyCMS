@@ -168,7 +168,7 @@ export default function UserCategoryRules() {
             Запустити перевірку
           </Button>
           <Button asChild>
-            <Link to="/admin/user-categories/rules/new">
+            <Link to="/admin/user-categories/rules/$ruleId" params={{ ruleId: 'new' }}>
               <Plus className="h-4 w-4 mr-2" />
               Додати правило
             </Link>

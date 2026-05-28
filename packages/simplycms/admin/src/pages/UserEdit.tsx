@@ -504,7 +504,7 @@ export default function UserEdit() {
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/admin/orders/${order.id}`}>
+                          <Link to="/admin/orders/$orderId" params={{ orderId: order.id }}>
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

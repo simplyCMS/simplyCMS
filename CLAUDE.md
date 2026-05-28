@@ -4,18 +4,21 @@
 
 ```bash
 pnpm install          # Install dependencies
-pnpm dev              # Start dev server (Turbopack)
-pnpm build            # Production build
+pnpm dev              # Start dev server (Vite + TanStack Start)
+pnpm build            # Production build (vite build)
+pnpm start            # Run production server (.output/server/index.mjs)
 pnpm typecheck        # TypeScript type check
 pnpm lint             # ESLint
 pnpm lint:fix         # ESLint (auto-fix)
+pnpm format           # Prettier (write)
+pnpm format:check     # Prettier (check only)
 pnpm test             # Run tests (vitest run)
 pnpm test:watch       # Tests in watch mode
 ```
 
 ## What This Project Is
 
-SimplyCMS is an open-source e-commerce CMS built with Next.js 16 App Router and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages are distributed via Git Subtree from a separate repository.
+SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages are distributed via Git Subtree from a separate repository.
 
 ## Mandatory Instructions
 
@@ -38,29 +41,37 @@ Also see:
 
 ## Tech Stack
 
-- **Framework:** Next.js 16.1.6 (App Router, Turbopack)
+- **Framework:** TanStack Start 1.167 + TanStack Router 1.168 (Vite 8, React 19)
 - **Language:** TypeScript 5.9 (strict mode)
 - **Package Manager:** pnpm 10.26 (workspaces)
 - **Database:** Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4
-- **Data Fetching:** TanStack React Query 5 (client components)
+- **Data Fetching:** TanStack React Query 5 (client) + route loaders / `createServerFn` (server)
 - **Rich Text:** Tiptap v3
 - **Testing:** Vitest 4 + Testing Library
+- **Formatting:** Prettier 3
 
 ## Project Structure
 
 ```
 simplyCMS/
-├── app/                              # Next.js App Router
-│   ├── (storefront)/                 # Public SSR pages — uses getActiveThemeSSR()
-│   ├── (cms)/admin/                  # Admin panel (client-side, auth-guarded)
-│   ├── (protected)/                  # Auth-protected user pages (profile, orders)
-│   ├── auth/                         # Login/register + OAuth callback
-│   ├── api/                          # API routes (health, guest-order, revalidate)
-│   ├── theme-registry.server.ts      # Server-side theme registration
-│   ├── providers.tsx                 # Client providers (CMSProvider, ThemeProvider)
-│   └── layout.tsx                    # Root layout (Inter font, ThemeProvider, Toaster)
+├── src/                              # TanStack Start application
+│   ├── routes/                       # File-based routes (TanStack Router)
+│   │   ├── __root.tsx                # Root route (html, providers, 404/error)
+│   │   ├── _storefront.tsx + _storefront/  # Public SSR pages (theme MainLayout)
+│   │   ├── admin.tsx + admin/        # Admin panel (client-only, ssr:false, guard)
+│   │   ├── _protected.tsx + _protected/    # Auth-guarded profile pages
+│   │   ├── auth/                     # Login/register (index) + OAuth callback (server route)
+│   │   └── api/                      # Server routes (health, guest-order)
+│   ├── server/                       # createServerFn (auth, themes, products, …)
+│   ├── seo/                          # sitemap.xml / robots.txt vite plugin
+│   ├── styles/globals.css            # Tailwind v4 entry (@import + @config)
+│   ├── theme-registry.ts             # Isomorphic theme registration (side-effect)
+│   ├── router.tsx                    # createRouter
+│   ├── start.ts                      # createStart + global request middleware (admin guard)
+│   ├── client.tsx                    # Client hydration entry
+│   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
 ├── supabase/                         # Site-level database
 │   ├── config.toml                   # Supabase project config
@@ -82,8 +93,7 @@ simplyCMS/
 ├── temp/                             # Reference React SPA (read-only)
 │
 ├── simplycms.config.ts               # CMS config
-├── proxy.ts                          # Auth proxy
-├── next.config.ts                    # Next.js config
+├── vite.config.ts                    # Vite + tanstackStart() + seoRoutesPlugin()
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```
@@ -98,29 +108,27 @@ simplyCMS/
 | `@simplycms/ui` | `packages/simplycms/ui/src` |
 | `@simplycms/plugins` | `packages/simplycms/plugin-system/src` |
 | `@simplycms/themes` | `packages/simplycms/theme-system/src` |
-| `@/*` | `app/*` |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
 ## Theme System (SSR)
 
-Themes use build-time registration + runtime DB activation:
+Themes use isomorphic registration + runtime DB activation:
 
-1. **Registration:** `app/theme-registry.server.ts` and `app/providers.tsx` register themes via `ThemeRegistry.register()`
-2. **SSR Resolution:** `getActiveThemeSSR()` reads active theme from DB (cached via `unstable_cache`), resolves `ThemeModule` via `ThemeRegistry`
-3. **Storefront pages:** Call `getActiveThemeSSR()` → get `theme.pages.XxxPage` dynamically
-4. **Admin activation:** `themes` table `is_active` flag → `revalidatePath('/', 'layout')` on switch
-5. **ThemeContext (client):** Accepts `initialThemeName` from SSR, avoids redundant client fetch
+1. **Registration:** `src/theme-registry.ts` registers themes via `ThemeRegistry.register()` — imported as a side-effect from `__root.tsx` (works on server and client).
+2. **SSR Resolution:** `src/server/themes.ts` (`getActiveTheme` `createServerFn`) reads the active theme from the DB; the `_storefront` / `_protected` route `loader` provides `themeName` to children.
+3. **Storefront pages:** Route component does `const theme = use(ThemeRegistry.load(themeName))` → renders `theme.pages.XxxPage`.
+4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache (no Next `revalidatePath`).
+5. **ThemeContext (client):** Accepts `initialThemeName` from the loader, avoids redundant client fetch.
 
 ## Environment Variables
 
-Required (copy `.env.example` to `.env.local`):
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
-- `SUPABASE_PROJECT_ID` — Supabase project ref
-- `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API
-- `NEXT_PUBLIC_SITE_URL` — Public site URL (production)
-- `REVALIDATION_SECRET` — ISR revalidation token (optional)
+Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VITE_` prefix:
+- `VITE_SUPABASE_URL` — Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` — Supabase anon key
+- `VITE_SITE_URL` — Public site URL (production)
+- `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
+- `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
 
 ## Git Subtree Workflow
 

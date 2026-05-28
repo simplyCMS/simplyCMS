@@ -35,7 +35,7 @@ export function ProductCard({ product }: ProductCardProps) {
       : null;
 
   return (
-    <Link to={`/catalog/${sectionSlug}/${product.slug}`} className="group block">
+    <Link to="/catalog/$sectionSlug/$productSlug" params={{ sectionSlug, productSlug: product.slug }} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-md bg-muted mb-3">
         {firstImage ? (
           <img

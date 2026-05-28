@@ -168,7 +168,8 @@ export default function ProfileOrdersPage() {
           {orders.map((order) => (
             <Link
               key={order.id}
-              to={`/profile/orders/${order.id}`}
+              to="/profile/orders/$orderId"
+              params={{ orderId: order.id }}
               className="block"
             >
               <Card className="hover:border-primary/50 transition-colors">

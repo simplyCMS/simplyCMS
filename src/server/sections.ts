@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { createServerSupabase } from './supabase';
 
 /** Отримати всі активні секції */
-export const getSections = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getSections = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -18,7 +18,8 @@ export const getSections = createServerFn({ method: 'GET' })
     }
 
     return data ?? [];
-  });
+  },
+);
 
 /** Отримати секцію за slug */
 export const getSectionBySlug = createServerFn({ method: 'GET' })
@@ -42,8 +43,8 @@ export const getSectionBySlug = createServerFn({ method: 'GET' })
   });
 
 /** Отримати кореневі секції (без parent_id) для навігації */
-export const getRootSections = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const getRootSections = createServerFn({ method: 'GET' }).handler(
+  async () => {
     const supabase = createServerSupabase();
 
     const { data, error } = await supabase
@@ -58,4 +59,5 @@ export const getRootSections = createServerFn({ method: 'GET' })
     }
 
     return data ?? [];
-  });
+  },
+);
