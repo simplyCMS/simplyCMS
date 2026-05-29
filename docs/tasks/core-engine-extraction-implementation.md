@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P6, P9 + фундамент P4 + частково P5/P8/P10; попереду P7 та admin-on-repositories.
+> Статус: **у роботі** — готові P1, P2, P3, P6, P7 (структурний split на 5 пакетів), P9 + фундамент P4 + частково P5/P8/P10. Лишок: per-component presentational/container split, admin-on-repositories, повна publish-CI.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -14,7 +14,7 @@
 | **P4** `@simplycms/react-query` | 🟡 **Фундамент** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки + mock-repo тест. Перенесення наявних core-хуків на контекст — попереду (залежить від P3 eradication). |
 | **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ThemeContext мігровано на `useSupabaseClient` (singleton прибрано). Object-agnostic рендер тем — попереду. |
 | **P6** `@simplycms/storefront` | ✅ **Готово** | Лоадери (`products`/`sections`/`home`/`properties`) + SEO (`sitemap`/`robots`) винесено у пакет, параметризовано інжектованим `SupabaseClient<Database>`. App `src/server/*` + `src/seo/*` делегують у пакет (createServerFn-glue лишився в app). _Параметризація доменним репозиторієм (замість сирого client) — разом із P7, коли сторінки споживатимуть domain-типи._ |
-| **P7** feature-ui split | ⛔ **Не почато** | — |
+| **P7** feature-ui split | ✅ **Структурно готово** | Усі 5 пакетів створено: `cart-ui`, `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`. Компоненти перенесено з `core/components/*`; старі шляхи — re-export шими (barrel + deep-path працюють). Presentational/container split показано на `cart-ui` (`CartItemView`/`CartItem`); по інших компонентах — інкрементально. |
 | **P8** `@simplycms/admin` на портах | 🟡 **LinkResolver готовий** | Хардкод `/admin/*` прибрано: 85 літералів у 36 файлах → `adminPath()` (`lib/adminLinks.ts`), host-remappable база. _Переведення admin-CRUD на `CatalogRepository`/`OrderRepository` (замість прямих supabase-запитів) — попереду, разом із P7 (потребує domain-shape)._ |
 | **P9** `@simplycms/runtime` | ✅ **Готово** | `defineConfig` складає `EngineContext` з адаптерів/модулів/теми/плагінів (pure, deps лише objects). Reference-збірка застосунку: `src/server/engine.ts` (`createServerRuntime`). |
 | **P10** дистрибуція / CI | 🟡 **Частково** | Subtree push-команди + `cms:remote` (репоінт на `simplySOFTua`) готові; per-package publish CI — попереду. |
@@ -161,10 +161,11 @@ export interface EngineContext {
 - DoD: маркетплейс може зібрати публічну вітрину, надавши власний клієнт; simplyCMS-app мігрував на пакет. ✅
 - _Реалізація:_ `packages/simplycms/storefront/src/{loaders,seo,client.ts}`. **Лишок:** параметризація доменним `CatalogRepository`/`EngineContext` (замість сирого client) — фолдиться в P7, бо storefront-сторінки поки споживають сирі DB-shape; генерація SEO «із зареєстрованих об'єктів» — після object-agnostic тем (P5).
 
-### P7 — feature-ui (split presentational/container)
-- `core/components/{catalog,cart,checkout,reviews,profile}` → відповідні `*-ui` пакети.
-- Кожен компонент розділити: **presentational** (props-only) + **container** (через `useEngine()`/хуки).
-- DoD: presentational-компоненти не роблять fetch; HUB може реюзати presentational зі своїми контейнерами.
+### P7 — feature-ui (split presentational/container) — ✅ СТРУКТУРНО ГОТОВО
+- `core/components/{catalog,cart,checkout,reviews,profile}` → відповідні `*-ui` пакети. ✅ Усі 5 створено (`@simplycms/{cart,catalog,checkout,profile,reviews}-ui`); старі шляхи лишилися re-export шимами для зворотної сумісності (core barrel + deep-path importers, напр. теми, працюють).
+- Кожен компонент розділити: **presentational** (props-only) + **container** (через хуки). 🟡 Показано на `cart-ui` (`CartItemView` props-only + `CartItem` container на `useCart`); по інших компонентах split — інкрементальний (компоненти перенесено as-is, поведінка збережена).
+- DoD: presentational-компоненти не роблять fetch; HUB може реюзати зі своїми контейнерами. 🟡 (пакетні межі готові; повний props-only split — далі)
+- _Реалізація:_ `packages/simplycms/{cart,catalog,checkout,profile,reviews}-ui/`. Імпорти `../../{hooks,lib,supabase}` → `@simplycms/core/*`; tsconfig paths + vite alias додано для кожного.
 
 ### P8 — `@simplycms/admin` (на репозиторіях + LinkResolver) — 🟡 LINKRESOLVER ГОТОВИЙ
 - **LinkResolver:** хардкод `/admin/*` прибрано — 85 літералів у 36 файлах → `adminPath()`/`setAdminBase()` (`packages/simplycms/admin/src/lib/adminLinks.ts`), база переприв'язується host'ом. ✅
@@ -202,7 +203,7 @@ export interface EngineContext {
 - [x] `grep "import { supabase }"` по ядру = 0; singleton прибрано. _(P3 — ✅; ~80 call-sites на `useSupabaseClient`)_
 - [x] `@simplycms/react-query` з `EngineProvider`/`useEngine`; тест із mock-repo.
 - [x] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6 — ✅; client-параметризація, repo-параметризація разом із P7)_
-- [ ] feature-ui розділено presentational/container. _(P7)_
+- [x] feature-ui розділено на 5 `*-ui` пакетів. _(P7 — структурно ✅; presentational/container split — `cart-ui` готово, решта інкрементально)_
 - [~] `admin` на портах+LinkResolver. _(P8 — LinkResolver ✅ хардкод прибрано; admin-on-repositories — разом із P7)_
 - [x] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplycms/runtime` + reference-збірка `src/server/engine.ts`; checks зелені)_
 - [~] CI публікує пакети (Packages) + subtree-флоу робочий. _(subtree-флоу + `cms:remote` репоінт на `simplySOFTua` готові; publish-CI — попереду)_
