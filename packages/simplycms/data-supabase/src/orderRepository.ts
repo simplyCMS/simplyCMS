@@ -41,17 +41,21 @@ export function createSupabaseOrderRepository(
         (sum, it) => sum + it.price * it.quantity,
         0,
       );
+      const shippingCost = input.shippingCost ?? 0;
       const [firstName, ...rest] = input.customer.name.split(" ");
       const insert: Row = {
         user_id: input.userId ?? null,
         order_number: `${Date.now()}`,
         first_name: firstName ?? "",
         last_name: rest.join(" "),
-        email: input.customer.email,
+        // orders.email/payment_method — NOT NULL у схемі.
+        email: input.customer.email ?? "",
         phone: input.customer.phone,
+        payment_method: input.paymentMethod ?? "cash",
         notes: input.comment ?? null,
         subtotal,
-        total: subtotal + (input.shipping ? 0 : 0),
+        shipping_cost: shippingCost,
+        total: subtotal + shippingCost,
         shipping_method_id: input.shipping?.methodId ?? null,
         shipping_rate_id: input.shipping?.rateId ?? null,
         pickup_point_id: input.shipping?.pickupPointId ?? null,
@@ -119,10 +123,14 @@ export function createSupabaseOrderRepository(
     },
 
     async updateStatus(id: string, status: string): Promise<void> {
+      // status_id — UUID FK на order_statuses; не пишемо сирий рядок як FK.
       const statusId = await resolveStatusId(status);
+      if (!statusId) {
+        throw new Error(`[updateStatus] невідомий статус: ${status}`);
+      }
       const { error } = await client
         .from("orders")
-        .update({ status_id: statusId ?? status })
+        .update({ status_id: statusId })
         .eq("id", id);
       if (error) throw new Error(`[updateStatus] ${error.message}`);
     },

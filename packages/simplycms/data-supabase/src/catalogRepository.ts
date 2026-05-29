@@ -126,8 +126,12 @@ export function createSupabaseCatalogRepository(
     },
 
     async getProperties(q?: PropertyQuery): Promise<Property[]> {
+      // Канонічний storefront-лістинг фільтрує has_page=true (властивості з лендінгами).
       let query = scoped(
-        client.from("section_properties").select("*, property_options(*)"),
+        client
+          .from("section_properties")
+          .select("*, property_options(*)")
+          .eq("has_page", true),
       );
       if (q?.sectionId) query = query.eq("section_id", q.sectionId);
       if (q?.filterableOnly) query = query.eq("is_filterable", true);
@@ -179,13 +183,16 @@ export function createSupabaseCatalogRepository(
     },
 
     async getDiscounts(ctx: DiscountScope): Promise<DiscountGroup[]> {
-      let dq = scoped(
+      // discounts.price_type_id — NOT NULL: знижки завжди скоупляться типом ціни
+      // (мірор canonical useDiscountGroups, що повертає [] без priceTypeId).
+      if (!ctx.priceTypeId) return [];
+      const dq = scoped(
         client
           .from("discounts")
           .select("*, discount_targets(*), discount_conditions(*)")
-          .eq("is_active", true),
+          .eq("is_active", true)
+          .eq("price_type_id", ctx.priceTypeId),
       );
-      if (ctx.priceTypeId) dq = dq.eq("price_type_id", ctx.priceTypeId);
       const { data: dbDiscounts } = await dq;
       const discounts = (dbDiscounts as Row[] | null) ?? [];
       if (!discounts.length) return [];

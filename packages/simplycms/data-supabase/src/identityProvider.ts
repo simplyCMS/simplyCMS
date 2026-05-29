@@ -18,22 +18,27 @@ export function createSupabaseIdentityProvider(
     } = await client.auth.getUser();
     if (!user) return null;
 
-    // Категорія користувача та роль — з profiles.
+    // Категорія користувача — з profiles; ролі — з окремої таблиці user_roles.
     const { data: profile } = await client
       .from("profiles")
-      .select("category_id, role")
+      .select("category_id")
       .eq("user_id", user.id)
       .maybeSingle();
     const profileRow = (profile as Row | null) ?? {};
+
+    const { data: roleRows } = await client
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
 
     const metaRoles =
       (user.app_metadata?.roles as string[] | undefined) ??
       (user.user_metadata?.roles as string[] | undefined) ??
       [];
-    const roles = [
-      ...metaRoles,
-      ...(profileRow.role ? [String(profileRow.role)] : []),
-    ];
+    const dbRoles = ((roleRows as Row[] | null) ?? []).map((r) =>
+      String(r.role),
+    );
+    const roles = [...new Set([...metaRoles, ...dbRoles])];
 
     return {
       id: user.id,

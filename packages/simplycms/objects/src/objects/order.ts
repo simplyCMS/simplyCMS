@@ -42,6 +42,8 @@ export interface CreateOrderInput {
   customer: OrderCustomer;
   items: OrderItem[];
   shipping?: Order["shipping"];
+  shippingCost?: number;
+  paymentMethod?: string;
   comment?: string | null;
   userId?: string | null;
 }
