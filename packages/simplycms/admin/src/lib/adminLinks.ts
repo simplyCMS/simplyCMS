@@ -15,7 +15,9 @@ export function setAdminBase(base: string): void {
  */
 export function adminPath(sub?: string): string {
   if (!sub) return adminBase;
-  return `${adminBase}/${sub.replace(/^\/+/, "")}`;
+  const clean = sub.replace(/^\/+/, "");
+  // base === "/" → не дублюємо роздільник ("//products")
+  return adminBase === "/" ? `/${clean}` : `${adminBase}/${clean}`;
 }
 
 /** LinkResolver-обʼєкт для admin-зони. */
