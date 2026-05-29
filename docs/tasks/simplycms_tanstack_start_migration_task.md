@@ -424,18 +424,11 @@ Sitemap повинен будуватись на основі `canonical_url`, �
 
 ## Phase 6 — DB-driven SEO і site metadata infrastructure
 
-### Завдання
-
-- розширити SEO-домен у БД
-- оновити admin UI для SEO-полів
-- реалізувати `seoResolver`
-- прив'язати resolver до TanStack route `head`
-- узгодити sitemap/canonical/JSON-LD з SEO-полями
-
-### Результат
-
-- SEO керується з БД
-- storefront HTML має коректний SEO output
+> **Винесено в окрему задачу.** Цю фазу видалено з даного міграційного документа і **повністю переписано** як самостійну задачу, що покриває весь SEO/SSR-контур storefront разом із faceted navigation (фільтрами каталогу), crawl-менеджментом та керуванням із адмінки.
+>
+> Див.: [`docs/tasks/seo-ssr-faceted-navigation.md`](./seo-ssr-faceted-navigation.md)
+>
+> Причина винесення: SEO-домен переріс рамки одного кроку міграції — він включає не лише DB-поля + resolver, а й URL-схему фільтрів, серверну фільтрацію каталогу, індексованість single-facet лендингів, sitemap/robots/canonical-політику та окремий розділ адмінки. Це окремий продуктовий контур, а не завершальний крок framework-міграції.
 
 ---
 
