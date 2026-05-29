@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — фундамент закладено (P1, P2, P4-foundation), інвазивні фази (P3, P5–P9) попереду.
+> Статус: **у роботі** — готові P1, P2, P9 + адаптер P3 + фундамент P4 + частково P5/P10; інвазивні фази (singleton-eradication, P6/P7/P8) попереду.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -10,16 +10,16 @@
 |------|------|----------|
 | **P1** `@simplycms/objects` | ✅ **Готово** | Type-only пакет; усі порти + `EngineContext`; 0 runtime deps; subpath `./objects`, `./ports`. |
 | **P2** `@simplycms/domain` | ✅ **Готово** | Subpath `./pricing`/`./discounts`/`./inventory`/`./shipping`; pure; 27 unit-тестів (vitest). `core/lib` re-export'ить домен для зворотної сумісності. |
-| **P3** `data-supabase` + знесення singleton | ⛔ **Не почато** | Найінвазивніша фаза (31 core + ~50 admin call-sites). Singleton `export const supabase` досі на місці. |
-| **P4** `@simplycms/react-query` | 🟡 **Фундамент** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки + mock-repo тест. Перенесення наявних core-хуків на контекст — попереду (залежить від P3). |
-| **P5** `ui`/`theme-system`/`plugins` | ⛔ **Не почато** | — |
+| **P3** `data-supabase` + знесення singleton | 🟡 **Адаптер готовий** | `@simplycms/data-supabase` (Catalog/Order/Identity репозиторії на інжектованому клієнті + `ScopeResolver`, mappers, тести) ✅. **Знесення singleton** з ~50 споживачів (`export const supabase` досі на місці) — окремий інвазивний крок. |
+| **P4** `@simplycms/react-query` | 🟡 **Фундамент** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки + mock-repo тест. Перенесення наявних core-хуків на контекст — попереду (залежить від P3 eradication). |
+| **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ще тягне singleton для fetch активної теми (фолдиться в P3 eradication). |
 | **P6** `@simplycms/storefront` | ⛔ **Не почато** | — |
 | **P7** feature-ui split | ⛔ **Не почато** | — |
 | **P8** `@simplycms/admin` на портах | ⛔ **Не почато** | 38 хардкодів `/admin/*` ще на місці. |
-| **P9** `@simplycms/runtime` | ⛔ **Не почато** | — |
+| **P9** `@simplycms/runtime` | ✅ **Готово** | `defineConfig` складає `EngineContext` з адаптерів/модулів/теми/плагінів (pure, deps лише objects). Reference-збірка застосунку: `src/server/engine.ts` (`createServerRuntime`). |
 | **P10** дистрибуція / CI | 🟡 **Частково** | Subtree push-команди + `cms:remote` (репоінт на `simplySOFTua`) готові; per-package publish CI — попереду. |
 
-**Перевірки на момент оновлення:** `pnpm typecheck` ✅ · `pnpm lint` ✅ (0 errors) · `pnpm test` ✅ (32 passed) · `pnpm build` ✅.
+**Перевірки на момент оновлення:** `pnpm typecheck` ✅ · `pnpm lint` ✅ (0 errors) · `pnpm test` ✅ (38 passed) · `pnpm build` ✅.
 
 > Підхід обрано **адитивний на фундаменті**: нові пакети T0/T1 створені й покриті тестами, а `@simplycms/core` тимчасово re-export'ить домен, щоб застосунок лишався зеленим. Інвазивне знесення singleton (P3) та рознесення UI/admin/storefront (P5–P9) — окремими безпечними кроками, бо зачіпають ~80 call-sites і весь app-shell.
 
@@ -136,11 +136,12 @@ export interface EngineContext {
 - DoD: всі функції pure, deps лише `objects`; unit-тести (vitest) на pricing/discount/shipping/availability. ✅ (27 тестів)
 - _Реалізація:_ `packages/simplycms/domain/src/*` + `__tests__`. `core/lib/{priceUtils,discountEngine,shipping/calculateRate,shipping/types}` та `hooks/useProductsWithStock` тепер re-export'ять домен.
 
-### P3 — `@simplycms/data-supabase` + знесення singleton 🔴
-- Створити `createSupabaseCatalogRepository(client, scope)` / `createSupabaseOrderRepository(...)` — імплементації портів, що приймають **інжектований** client + `ScopeResolver`.
-- Прибрати `core/src/supabase/client.ts` глобальний `export const supabase`.
-- **Інвентар call-sites для рефакторингу (31 файл core):** hooks (`useStock`,`usePriceType`,`useAuth`,`useBanners`,`useDiscountedPrice`,`useProductReviews`,`useProductsWithStock`), `lib/supabase`, `lib/shipping/findZone`, UI-компоненти (`FilterSidebar`,`CatalogLayout`, profile/*, checkout/*), pages/*. Усі → беруть repo/identity з контексту.
-- DoD: `grep "import { supabase }"` по ядру = 0; `import.meta.env` лишається тільки у `data-supabase` фабриці simplyCMS і `runtime`.
+### P3 — `@simplycms/data-supabase` + знесення singleton 🔴 — 🟡 АДАПТЕР ГОТОВИЙ
+- Створити `createSupabaseCatalogRepository(client, scope)` / `createSupabaseOrderRepository(...)` — імплементації портів, що приймають **інжектований** client + `ScopeResolver`. ✅ (+ `createSupabaseIdentityProvider`)
+- Прибрати `core/src/supabase/client.ts` глобальний `export const supabase`. ⛔ _ще на місці_
+- **Інвентар call-sites для рефакторингу (31 файл core):** hooks (`useStock`,`usePriceType`,`useAuth`,`useBanners`,`useDiscountedPrice`,`useProductReviews`,`useProductsWithStock`), `lib/supabase`, `lib/shipping/findZone`, UI-компоненти (`FilterSidebar`,`CatalogLayout`, profile/*, checkout/*), pages/*. Усі → беруть repo/identity з контексту. ⛔ _попереду_
+- DoD: `grep "import { supabase }"` по ядру = 0; `import.meta.env` лишається тільки у `data-supabase` фабриці simplyCMS і `runtime`. ⛔ _не досягнуто (адаптер є, eradication — ні)_
+- _Реалізація адаптера:_ `packages/simplycms/data-supabase/src/*` (repos + `mappers.ts` + `scope.ts`), тести `__tests__/mappers.test.ts`. **Знесення singleton із ~50 споживачів — окремий інвазивний крок** (потребує змонтованого `EngineProvider` в app + переписування кожного хука/компонента; залежить від P4-перенесення, P7, P8).
 
 ### P4 — `@simplycms/react-query` (хуки через контекст) — 🟡 ФУНДАМЕНТ
 - Перенести data-частину хуків; кожен хук бере `useEngine()`. 🟡 _нові порт-керовані хуки (`useProduct`/`useProducts`/`useSections`/`useStockInfo`/`useOrder`/…) додані; перенесення наявних core-хуків (`useStock`, `useBanners`, …) — після P3._
@@ -148,11 +149,11 @@ export interface EngineContext {
 - DoD: хуки не знають про конкретну БД; працюють з будь-якою реалізацією порту; тест із mock-репозиторієм. ✅ (`queries.test.ts` з in-memory `CatalogRepository`/`OrderRepository`)
 - _Реалізація:_ `packages/simplycms/react-query/src/{EngineProvider.tsx,queries.ts,hooks.ts}`. Логіка запитів — у `queries.ts` (порт-керовані фабрики), хуки — тонка прив'язка до контексту.
 
-### P5 — `ui` / `theme-system` / `plugins` (мінімальні зміни, object-agnostic)
-- `ui` — лишити; прибрати випадкові доменні домішки.
-- `theme-system` — зберегти ThemeRegistry-singleton (не плутати з supabase); зробити рендер **object-agnostic** (рендерить будь-який зареєстрований тип, не лише товар).
-- `plugins` — зберегти; хук-поінти лишаються backbone розширення.
-- DoD: theme/plugins не залежать від data-шару напряму.
+### P5 — `ui` / `theme-system` / `plugins` (мінімальні зміни, object-agnostic) — 🟡 ЧАСТКОВО
+- `ui` — лишити; прибрати випадкові доменні домішки. ✅ (домішок не виявлено)
+- `theme-system` — зберегти ThemeRegistry-singleton (не плутати з supabase); зробити рендер **object-agnostic** (рендерить будь-який зареєстрований тип, не лише товар). ⛔ _ThemeContext ще fetch'ить активну тему через supabase-singleton — фолдиться в P3 eradication._
+- `plugins` — зберегти; хук-поінти лишаються backbone розширення. ✅ (loader уже на DI; type-coupling до core DB прибрано: `Json` → `@simplycms/objects`)
+- DoD: theme/plugins не залежать від data-шару напряму. 🟡 _plugins — так; theme — ще ні._
 
 ### P6 — `@simplycms/storefront` (винос SSR/SEO з app-shell)
 - Перенести `src/server/*` (createServerFn loaders) → `storefront/loaders`, параметризувавши репозиторієм.
@@ -168,10 +169,11 @@ export interface EngineContext {
 - Перевести admin-pages/components на `CatalogRepository`/`OrderRepository` + `LinkResolver` (прибрати хардкод `/admin/*` — 38 місць).
 - DoD: admin працює поверх портів; simplyCMS-app зелений.
 
-### P9 — `@simplycms/runtime` (defineConfig / wiring)
-- Розширити `defineConfig` з `{supabase}` до `{ adapters:{catalog,orders,scope,identity,links,media,config}, modules:[], theme, plugins }`.
-- simplyCMS-app = повна збірка через runtime.
-- DoD: `simplycms.config.ts` збирає магазин через адаптери; немає прямих `import.meta.env` поза runtime.
+### P9 — `@simplycms/runtime` (defineConfig / wiring) — ✅ ГОТОВО
+- Розширити `defineConfig` з `{supabase}` до `{ adapters:{catalog,orders,scope,identity,links,media,config}, modules:[], theme, plugins }`. ✅ (новий `@simplycms/runtime` defineConfig; legacy core `defineConfig` лишено для зворотної сумісності `simplycms.config.ts`)
+- simplyCMS-app = повна збірка через runtime. ✅ reference: `src/server/engine.ts` `createServerRuntime()` — складає `EngineContext` з data-supabase репозиторіїв + app `LinkResolver`/`MediaProvider`/`ConfigProvider` поверх одного інжектованого серверного клієнта.
+- DoD: `simplycms.config.ts` збирає магазин через адаптери; немає прямих `import.meta.env` поза runtime. 🟡 _runtime сам pure; `import.meta.env` лишається у app-wiring (`engine.ts`/`config.ts`) та `data-supabase`-фабриці — як і передбачено._
+- _Реалізація:_ `packages/simplycms/runtime/src/index.ts` (`defineConfig`, `bootstrapRuntime`, `EngineModule`).
 
 ### P10 — дистрибуція / CI
 - Per-package `package.json` з `exports` + (для published) build; семвер.
@@ -200,7 +202,7 @@ export interface EngineContext {
 - [ ] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6)_
 - [ ] feature-ui розділено presentational/container. _(P7)_
 - [ ] `admin` на портах+LinkResolver. _(P8)_
-- [~] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(checks зелені вже зараз; сам `runtime`-пакет — P9)_
+- [x] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplycms/runtime` + reference-збірка `src/server/engine.ts`; checks зелені)_
 - [~] CI публікує пакети (Packages) + subtree-флоу робочий. _(subtree-флоу + `cms:remote` репоінт на `simplySOFTua` готові; publish-CI — попереду)_
 - [x] `migration-phase0-decouple-packages.md` має amendment про superseded singleton-рішення.
 
