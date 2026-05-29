@@ -1,6 +1,5 @@
-"use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -45,7 +44,7 @@ const propertyTypes = [
 ];
 
 export default function Properties() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [propertyType, setPropertyType] = useState<Enums<"property_type">>("text");
   const { toast } = useToast();
@@ -246,7 +245,7 @@ export default function Properties() {
                 <TableRow 
                   key={property.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/admin/properties/${property.id}`)}
+                  onClick={() => navigate({ to: `/admin/properties/${property.id}` })}
                 >
                   <TableCell className="font-medium">
                     {property.name}

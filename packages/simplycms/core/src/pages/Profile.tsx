@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { User, Mail, Phone, Package, ChevronRight, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
@@ -108,7 +106,7 @@ export default function ProfilePage() {
             Особисті дані
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/settings">Редагувати</Link>
+            <Link to="/profile/settings">Редагувати</Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -162,7 +160,7 @@ export default function ProfilePage() {
             Останні замовлення
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/orders">Всі замовлення</Link>
+            <Link to="/profile/orders">Всі замовлення</Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -171,7 +169,7 @@ export default function ProfilePage() {
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">У вас ще немає замовлень</p>
               <Button className="mt-4" asChild>
-                <Link href="/catalog">Перейти до каталогу</Link>
+                <Link to="/catalog">Перейти до каталогу</Link>
               </Button>
             </div>
           ) : (
@@ -179,7 +177,8 @@ export default function ProfilePage() {
               {recentOrders.map((order) => (
                 <Link
                   key={order.id}
-                  href={`/profile/orders/${order.id}`}
+                  to="/profile/orders/$orderId"
+                  params={{ orderId: order.id }}
                   className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">

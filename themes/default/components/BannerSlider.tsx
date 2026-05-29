@@ -1,12 +1,9 @@
-"use client";
-
 import { useBanners, type Banner, type BannerButton } from "@simplycms/core/hooks/useBanners";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
-import Image from "next/image";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 
 interface BannerSliderProps {
   placement?: string;
@@ -106,13 +103,13 @@ function BannerContent({ banner, isFirst }: { banner: Banner; isFirst: boolean }
 
   return (
     <div className="relative aspect-[21/9] md:aspect-[3/1] bg-muted overflow-hidden">
-      <Image
+      <img
         src={banner.image_url}
         alt={banner.title}
-        fill
-        sizes="100vw"
-        priority={isFirst}
-        className="object-cover"
+        fetchPriority={isFirst ? 'high' : undefined}
+        loading={isFirst ? 'eager' : 'lazy'}
+        decoding="async"
+        className="absolute inset-0 w-full h-full object-cover"
         style={{
           animationDuration: `${banner.animation_duration}ms`,
         }}
@@ -159,7 +156,7 @@ function BannerButtonEl({ button }: { button: BannerButton }) {
   }
 
   return (
-    <Link href={button.url || "#"} className={`${baseClass} ${variantClass}`}>
+    <Link to={button.url || "#"} className={`${baseClass} ${variantClass}`}>
       {button.text}
     </Link>
   );

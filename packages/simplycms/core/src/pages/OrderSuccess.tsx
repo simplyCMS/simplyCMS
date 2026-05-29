@@ -1,8 +1,5 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useSearch, Link } from "@tanstack/react-router";
 import { CheckCircle2, Package, ChevronRight, Home, User, Copy, Check } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -51,10 +48,10 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function OrderSuccess() {
-  const params = useParams();
+  const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const orderId = params.orderId as string;
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const token = search.token ?? null;
   const { user } = useAuth();
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
@@ -155,7 +152,7 @@ export default function OrderSuccess() {
               Можливо, посилання недійсне або термін доступу вичерпано
             </p>
             <Button asChild>
-              <Link href="/">На головну</Link>
+              <Link to="/">На головну</Link>
             </Button>
           </CardContent>
         </Card>
@@ -167,7 +164,7 @@ export default function OrderSuccess() {
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -285,14 +282,14 @@ export default function OrderSuccess() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button variant="outline" asChild>
-            <Link href="/">
+            <Link to="/">
               <Home className="h-4 w-4 mr-2" />
               На головну
             </Link>
           </Button>
           {user && (
             <Button asChild>
-              <Link href="/profile/orders">
+              <Link to="/profile/orders">
                 <User className="h-4 w-4 mr-2" />
                 Мої замовлення
               </Link>

@@ -1,4 +1,3 @@
-"use client";
 
 import { ShoppingBag, Loader2 } from "lucide-react";
 import { type CartItem } from "../../hooks/useCart";

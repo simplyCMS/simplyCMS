@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { Package, Calendar, ChevronRight, Filter } from "lucide-react";
 import { Card, CardContent } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
@@ -160,7 +158,7 @@ export default function ProfileOrdersPage() {
             </p>
             {selectedStatus === "all" && (
               <Button asChild>
-                <Link href="/catalog">Перейти до каталогу</Link>
+                <Link to="/catalog">Перейти до каталогу</Link>
               </Button>
             )}
           </CardContent>
@@ -170,7 +168,8 @@ export default function ProfileOrdersPage() {
           {orders.map((order) => (
             <Link
               key={order.id}
-              href={`/profile/orders/${order.id}`}
+              to="/profile/orders/$orderId"
+              params={{ orderId: order.id }}
               className="block"
             >
               <Card className="hover:border-primary/50 transition-colors">

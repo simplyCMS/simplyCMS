@@ -1,6 +1,4 @@
-"use client";
-import NextImage from "next/image";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -26,7 +24,7 @@ type ProductWithSection = Product & {
 };
 
 export default function Products() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -57,7 +55,7 @@ export default function Products() {
   });
 
   const handleRowClick = (productId: string) => {
-    router.push(`/admin/products/${productId}`);
+    navigate({ to: `/admin/products/${productId}` });
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -82,7 +80,7 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Товари</h1>
           <p className="text-muted-foreground">Керування каталогом товарів</p>
         </div>
-        <Button onClick={() => router.push("/admin/products/new")}>
+        <Button onClick={() => navigate({ to: '/admin/products/$productId', params: { productId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати товар
         </Button>
@@ -115,12 +113,14 @@ export default function Products() {
                   >
                     <TableCell>
                       {firstImage ? (
-                        <NextImage
+                        <img
                           src={firstImage}
                           alt={product.name}
                           width={40}
                           height={40}
                           className="object-cover rounded"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">

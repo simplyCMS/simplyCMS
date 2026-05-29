@@ -1,10 +1,9 @@
-"use client";
-import { usePathname } from "next/navigation";
+import { useLocation } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Construction } from "lucide-react";
 
 export default function PlaceholderPage() {
-  const pathname = usePathname();
+  const pathname = useLocation({ select: (l) => l.pathname });
   const pageName = pathname.split("/").pop() || "Сторінка";
 
   const pageNames: Record<string, string> = {

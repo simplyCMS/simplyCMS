@@ -1,8 +1,5 @@
-"use client";
-
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -76,7 +73,7 @@ const checkoutSchema = z.object({
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,9 +134,9 @@ export default function Checkout() {
   // Redirect if cart is empty
   useEffect(() => {
     if (items.length === 0) {
-      router.push("/cart");
+      navigate({ to: "/cart" });
     }
-  }, [items, router]);
+  }, [items, navigate]);
 
   const totalWithShipping = totalPrice + shippingCost;
 
@@ -264,9 +261,16 @@ export default function Checkout() {
 
       // Navigate to success page
       if (user) {
-        router.push(`/order-success/${order.id}`);
+        navigate({
+          to: '/order-success/$orderId',
+          params: { orderId: order.id },
+        });
       } else {
-        router.push(`/order-success/${order.id}?token=${order.access_token}`);
+        navigate({
+          to: '/order-success/$orderId',
+          params: { orderId: order.id },
+          search: { token: order.access_token ?? undefined },
+        });
       }
     } catch (error: unknown) {
       console.error("Order creation error:", error);
@@ -293,11 +297,11 @@ export default function Checkout() {
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/cart" className="hover:text-foreground transition-colors">
+        <Link to="/cart" className="hover:text-foreground transition-colors">
           Кошик
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -306,7 +310,7 @@ export default function Checkout() {
 
       <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/cart">
+          <Link to="/cart">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>

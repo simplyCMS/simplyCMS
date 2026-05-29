@@ -1,6 +1,5 @@
-"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -15,11 +14,11 @@ import {
   TableRow,
 } from "@simplycms/ui/table";
 import { toast } from "sonner";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Globe } from "lucide-react";
 
 export default function ShippingZones() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: zones, isLoading } = useQuery({
@@ -81,7 +80,7 @@ export default function ShippingZones() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/shipping/zones/new">
+          <Link to="/admin/shipping/zones/$zoneId" params={{ zoneId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати зону
           </Link>
@@ -117,7 +116,7 @@ export default function ShippingZones() {
                   <TableRow
                     key={zone.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/admin/shipping/zones/${zone.id}`)}
+                    onClick={() => navigate({ to: `/admin/shipping/zones/${zone.id}` })}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -1,6 +1,5 @@
-"use client";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -30,8 +29,8 @@ import type { TablesInsert, TablesUpdate } from "@simplycms/core/supabase/types"
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 
 export default function ProductEdit() {
-  const { productId } = useParams<{ productId: string }>();
-  const router = useRouter();
+  const { productId } = useParams({ strict: false }) as { productId: string };
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isNew = productId === "new";
@@ -114,7 +113,7 @@ export default function ProductEdit() {
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       toast({ title: "Товар створено" });
-      router.push(`/admin/products/${newProduct.id}`);
+      navigate({ to: `/admin/products/${newProduct.id}` });
     },
     onError: (error) => {
       toast({ variant: "destructive", title: "Помилка", description: error.message });
@@ -190,7 +189,7 @@ export default function ProductEdit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/products")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/products' })}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>

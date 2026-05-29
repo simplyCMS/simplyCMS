@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { ChevronRight, ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -23,7 +21,7 @@ export default function Cart() {
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -43,7 +41,7 @@ export default function Cart() {
               Перегляньте наш каталог та додайте товари, які вас цікавлять
             </p>
             <Button asChild>
-              <Link href="/catalog">Перейти до каталогу</Link>
+              <Link to="/catalog">Перейти до каталогу</Link>
             </Button>
           </CardContent>
         </Card>
@@ -104,7 +102,7 @@ export default function Cart() {
               </CardContent>
               <CardFooter>
                 <Button className="w-full" size="lg" asChild>
-                  <Link href="/checkout">Оформити замовлення</Link>
+                  <Link to="/checkout">Оформити замовлення</Link>
                 </Button>
               </CardFooter>
             </Card>

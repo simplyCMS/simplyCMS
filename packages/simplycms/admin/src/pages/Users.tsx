@@ -1,8 +1,6 @@
-"use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, Link } from '@tanstack/react-router';
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
@@ -47,7 +45,7 @@ interface UserWithDetails {
 }
 
 export default function Users() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -169,7 +167,7 @@ export default function Users() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin">
+          <Link to="/admin">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -249,7 +247,7 @@ export default function Users() {
                 <TableRow
                   key={user.user_id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/admin/users/${user.user_id}`)}
+                  onClick={() => navigate({ to: `/admin/users/${user.user_id}` })}
                 >
                   <TableCell>
                     <Avatar className="h-10 w-10">

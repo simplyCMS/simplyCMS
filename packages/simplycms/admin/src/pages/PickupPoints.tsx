@@ -1,6 +1,5 @@
-"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -15,11 +14,11 @@ import {
   TableRow,
 } from "@simplycms/ui/table";
 import { toast } from "sonner";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Building, Shield } from "lucide-react";
 
 export default function PickupPoints() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: points, isLoading } = useQuery({
@@ -78,7 +77,7 @@ export default function PickupPoints() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/shipping/pickup-points/new">
+          <Link to="/admin/shipping/pickup-points/$pointId" params={{ pointId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати точку
           </Link>
@@ -115,7 +114,7 @@ export default function PickupPoints() {
                   <TableRow
                     key={point.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/admin/shipping/pickup-points/${point.id}`)}
+                    onClick={() => navigate({ to: `/admin/shipping/pickup-points/${point.id}` })}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">

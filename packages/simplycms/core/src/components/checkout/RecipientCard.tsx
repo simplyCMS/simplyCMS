@@ -1,4 +1,3 @@
-"use client";
 
 import { cn } from "../../lib/utils";
 import { Check, User } from "lucide-react";

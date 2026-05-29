@@ -1,4 +1,3 @@
-"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Input } from "@simplycms/ui/input";

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 
 import type { Json } from "../supabase/types";

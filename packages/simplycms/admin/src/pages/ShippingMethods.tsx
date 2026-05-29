@@ -1,6 +1,5 @@
-"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -15,7 +14,7 @@ import {
   TableRow,
 } from "@simplycms/ui/table";
 import { toast } from "sonner";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Truck } from "lucide-react";
 import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
 import { icons } from "lucide-react";
@@ -40,7 +39,7 @@ const methodTypeBadge = (type: string) => {
 };
 
 export default function ShippingMethods() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: methods, isLoading } = useQuery({
@@ -99,7 +98,7 @@ export default function ShippingMethods() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/shipping/methods/new">
+          <Link to="/admin/shipping/methods/$methodId" params={{ methodId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати службу
           </Link>
@@ -138,7 +137,7 @@ export default function ShippingMethods() {
                     <TableRow
                       key={method.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/admin/shipping/methods/${method.id}`)}
+                      onClick={() => navigate({ to: `/admin/shipping/methods/${method.id}` })}
                     >
                       <TableCell>
                         <IconComponent className="h-5 w-5 text-muted-foreground" />

@@ -1,15 +1,12 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, redirect } from "next/navigation";
+import { Link, useLocation } from "@tanstack/react-router";
 import { User, Package, Settings, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuth";
 
 const navItems = [
-  { href: "/profile", icon: User, label: "Профiль", end: true },
-  { href: "/profile/orders", icon: Package, label: "Мої замовлення" },
-  { href: "/profile/settings", icon: Settings, label: "Налаштування" },
+  { to: "/profile", icon: User, label: "Профiль", end: true },
+  { to: "/profile/orders", icon: Package, label: "Мої замовлення" },
+  { to: "/profile/settings", icon: Settings, label: "Налаштування" },
 ];
 
 interface ProfileLayoutProps {
@@ -18,7 +15,7 @@ interface ProfileLayoutProps {
 
 export function ProfileLayout({ children }: ProfileLayoutProps) {
   const { user, isLoading, signOut } = useAuth();
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   if (isLoading) {
     return (
@@ -38,7 +35,8 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
   }
 
   if (!user) {
-    redirect("/auth");
+    // TODO: Auth guard moves to beforeLoad in route definition
+    return null;
   }
 
   return (
@@ -49,12 +47,12 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = item.end
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
+                ? pathname === item.to
+                : pathname.startsWith(item.to);
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.to}
+                  to={item.to}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     isActive

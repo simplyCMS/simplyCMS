@@ -1,8 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   Sun,
   Battery,
@@ -41,7 +38,7 @@ const categoryIcons = [
 export function Header() {
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -86,7 +83,7 @@ export function Header() {
         {/* Верхній рядок: логотип + навігація + дії */}
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           {/* Логотип */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--primary))]">
               <Sun className="h-6 w-6 text-white" />
             </div>
@@ -98,7 +95,7 @@ export function Header() {
           {/* Десктопна навігація */}
           <nav className="hidden md:flex items-center gap-6">
             <Link
-              href="/catalog"
+              to="/catalog"
               className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
               Каталог
@@ -106,7 +103,8 @@ export function Header() {
             {sections?.map((s) => (
               <Link
                 key={s.id}
-                href={`/catalog/${s.slug}`}
+                to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                 className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               >
                 {s.name}
@@ -146,13 +144,13 @@ export function Header() {
                         {user.email}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => router.push("/profile")}>
+                      <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
                         <User className="mr-2 h-4 w-4" />
                         Мій кабінет
                       </DropdownMenuItem>
                       {isAdmin && (
                         <DropdownMenuItem
-                          onClick={() => router.push("/admin")}
+                          onClick={() => navigate({ to: '/admin' })}
                         >
                           <Settings className="mr-2 h-4 w-4" />
                           Адмін-панель
@@ -170,7 +168,7 @@ export function Header() {
                   </DropdownMenu>
                 ) : (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href="/auth">Увійти</Link>
+                    <Link to="/auth">Увійти</Link>
                   </Button>
                 )}
               </>
@@ -215,7 +213,8 @@ export function Header() {
               return (
                 <Link
                   key={s.id}
-                  href={`/catalog/${s.slug}`}
+                  to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                   className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
                 >
                   <Icon className="h-4 w-4" />
@@ -231,7 +230,7 @@ export function Header() {
           <div className="md:hidden border-t border-[hsl(var(--border))]/30 bg-[hsl(var(--background))]">
             <div className="container mx-auto px-4 py-4 space-y-2">
               <Link
-                href="/catalog"
+                to="/catalog"
                 className="block py-2 text-sm font-medium text-[hsl(var(--foreground))]"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -242,7 +241,8 @@ export function Header() {
                 return (
                   <Link
                     key={s.id}
-                    href={`/catalog/${s.slug}`}
+                    to="/catalog/$sectionSlug"
+                params={{ sectionSlug: s.slug }}
                     className="flex items-center gap-2 py-2 text-sm text-[hsl(var(--muted-foreground))]"
                     onClick={() => setMobileMenuOpen(false)}
                   >

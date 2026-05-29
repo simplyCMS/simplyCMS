@@ -1,6 +1,5 @@
-"use client";
 import { useState } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,9 +48,9 @@ interface ConditionRow {
 }
 
 export default function DiscountEdit() {
-  const { discountId } = useParams() as { discountId: string };
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { discountId } = useParams({ strict: false }) as { discountId: string };
+  const search = useSearch({ strict: false }) as Record<string, string>;
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !discountId || discountId === "new";
 
@@ -63,8 +62,8 @@ export default function DiscountEdit() {
     defaultValues: {
       name: "",
       description: "",
-      group_id: searchParams.get("groupId") || "",
-      price_type_id: searchParams.get("priceTypeId") || "",
+      group_id: search.groupId || "",
+      price_type_id: search.priceTypeId || "",
       discount_type: "percent",
       discount_value: 10,
       priority: 0,
@@ -207,7 +206,7 @@ export default function DiscountEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
       toast({ title: isNew ? "Скидку створено" : "Скидку оновлено" });
-      router.push("/admin/discounts");
+      navigate({ to: '/admin/discounts' });
     },
     onError: (err: Error) => {
       toast({ title: "Помилка", description: err.message, variant: "destructive" });
@@ -223,7 +222,7 @@ export default function DiscountEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/discounts")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/discounts' })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">{isNew ? "Нова скидка" : "Редагування скидки"}</h1>
@@ -558,7 +557,7 @@ export default function DiscountEdit() {
             <Button type="submit" disabled={save.isPending}>
               {save.isPending ? "Збереження..." : "Зберегти"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/admin/discounts")}>
+            <Button type="button" variant="outline" onClick={() => navigate({ to: '/admin/discounts' })}>
               Скасувати
             </Button>
           </div>

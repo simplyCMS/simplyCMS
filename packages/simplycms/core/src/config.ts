@@ -14,8 +14,8 @@ export function defineConfig(config: SimplyCMSConfig): SimplyCMSConfig {
   return {
     ...config,
     supabase: {
-      url: config.supabase?.url || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      anonKey: config.supabase?.anonKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      url: config.supabase?.url || import.meta.env.VITE_SUPABASE_URL!,
+      anonKey: config.supabase?.anonKey || import.meta.env.VITE_SUPABASE_ANON_KEY!,
     },
   };
 }

@@ -1,4 +1,3 @@
-"use client";
 
 import { Check, X, Clock, Building } from "lucide-react";
 import {

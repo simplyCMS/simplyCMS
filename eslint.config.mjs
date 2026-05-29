@@ -1,25 +1,38 @@
-import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
-import nextTypescript from "eslint-config-next/typescript";
+import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 const eslintConfig = [
-  ...nextCoreWebVitals,
-  ...nextTypescript,
+  ...tseslint.configs.recommended,
+  {
+    plugins: {
+      'react-hooks': reactHooks,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
+    },
+  },
   {
     rules: {
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-require-imports": "off",
-      "react/no-unescaped-entities": "off",
-      "@next/next/no-img-element": "off",
-      "@next/next/no-assign-module-variable": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/static-components": "warn",
-      "react-hooks/purity": "warn",
     },
   },
   {
-    ignores: ["temp/**", "node_modules/**", ".next/**"],
+    ignores: [
+      "temp/**",
+      "node_modules/**",
+      "dist/**",
+      "dist-ssr/**",
+      ".output/**",
+      ".nitro/**",
+      ".tanstack/**",
+      "src/routeTree.gen.ts",
+    ],
   },
 ];
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";

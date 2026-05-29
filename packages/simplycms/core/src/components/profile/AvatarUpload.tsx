@@ -1,7 +1,4 @@
-"use client";
-
 import { useState, useRef } from "react";
-import NextImage from "next/image";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../supabase/client";
 import { Camera, Loader2, Trash2 } from "lucide-react";
@@ -138,7 +135,7 @@ export function AvatarUpload({
         <div className="relative">
           <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
             {displayUrl ? (
-              <NextImage src={displayUrl} alt="Avatar" width={96} height={96} className="rounded-full object-cover" />
+              <img src={displayUrl} alt="Avatar" width={96} height={96} className="rounded-full object-cover" loading="lazy" decoding="async" />
             ) : (
               getInitials()
             )}

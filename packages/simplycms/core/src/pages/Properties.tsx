@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -64,7 +62,7 @@ export default function PropertiesPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -83,7 +81,7 @@ export default function PropertiesPage({
       {properties && properties.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {properties.map((property) => (
-            <Link key={property.id} href={`/properties/${property.slug}`}>
+            <Link key={property.id} to="/properties/$propertySlug" params={{ propertySlug: property.slug }}>
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">

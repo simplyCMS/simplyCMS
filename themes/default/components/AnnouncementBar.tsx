@@ -1,5 +1,3 @@
-"use client";
-
 import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
 
 export function AnnouncementBar() {

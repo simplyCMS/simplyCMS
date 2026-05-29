@@ -1,8 +1,4 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import NextImage from "next/image";
-import Link from "next/link";
+import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { Card, CardContent } from "@simplycms/ui/card";
@@ -19,7 +15,7 @@ export default function PropertyDetailPage({
   property: initialProperty,
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
-  const params = useParams();
+  const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const propertySlug = params?.propertySlug as string | undefined;
 
   // Fetch property by slug
@@ -67,7 +63,7 @@ export default function PropertyDetailPage({
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Властивість не знайдено</h1>
-        <Link href="/properties">
+        <Link to="/properties">
           <Button>Повернутись до властивостей</Button>
         </Link>
       </div>
@@ -78,11 +74,11 @@ export default function PropertyDetailPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/properties" className="hover:text-foreground transition-colors">
+        <Link to="/properties" className="hover:text-foreground transition-colors">
           Властивості
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -107,17 +103,18 @@ export default function PropertyDetailPage({
           {options.map((option) => (
             <Link
               key={option.id}
-              href={`/properties/${property.slug}/${option.slug}`}
+              to="/properties/$propertySlug/$optionSlug"
+              params={{ propertySlug: property.slug, optionSlug: option.slug }}
             >
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group overflow-hidden">
                 {option.image_url && (
                   <div className="relative aspect-square overflow-hidden">
-                    <NextImage
+                    <img
                       src={option.image_url}
                       alt={option.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 )}

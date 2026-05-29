@@ -1,8 +1,5 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams, useNavigate, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Package,
@@ -84,9 +81,9 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function ProfileOrderDetailPage() {
-  const params = useParams();
+  const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const orderId = params?.orderId as string | undefined;
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,7 +170,7 @@ export default function ProfileOrderDetailPage() {
         description: `Замовлення ${order.order_number} успішно скасовано`,
       });
 
-      router.push("/profile/orders");
+      navigate({ to: "/profile/orders" });
     } catch (error: unknown) {
       console.error("Error cancelling order:", error);
       toast({
@@ -206,7 +203,7 @@ export default function ProfileOrderDetailPage() {
             Можливо, воно було видалено або ви не маєте до нього доступу
           </p>
           <Button asChild>
-            <Link href="/profile/orders">Мої замовлення</Link>
+            <Link to="/profile/orders">Мої замовлення</Link>
           </Button>
         </CardContent>
       </Card>
@@ -219,7 +216,7 @@ export default function ProfileOrderDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/profile/orders">
+            <Link to="/profile/orders">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>

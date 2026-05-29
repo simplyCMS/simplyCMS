@@ -1,6 +1,5 @@
-"use client";
 import { useEffect } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,9 +29,9 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DiscountGroupEdit() {
-  const { groupId } = useParams() as { groupId: string };
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { groupId } = useParams({ strict: false }) as { groupId: string };
+  const search = useSearch({ strict: false }) as Record<string, string>;
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !groupId || groupId === "new";
 
@@ -42,7 +41,7 @@ export default function DiscountGroupEdit() {
       name: "",
       description: "",
       operator: "and",
-      parent_group_id: searchParams.get("parentId") || "",
+      parent_group_id: search.parentId || "",
       is_active: true,
       priority: 0,
       starts_at: "",
@@ -116,7 +115,7 @@ export default function DiscountGroupEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
       toast({ title: isNew ? "Групу створено" : "Групу оновлено" });
-      router.push("/admin/discounts");
+      navigate({ to: '/admin/discounts' });
     },
     onError: (err: Error) => {
       toast({ title: "Помилка", description: err.message, variant: "destructive" });
@@ -126,7 +125,7 @@ export default function DiscountGroupEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/discounts")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/discounts' })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">{isNew ? "Нова група скидок" : "Редагування групи"}</h1>
@@ -226,7 +225,7 @@ export default function DiscountGroupEdit() {
             <Button type="submit" disabled={save.isPending}>
               {save.isPending ? "Збереження..." : "Зберегти"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/admin/discounts")}>
+            <Button type="button" variant="outline" onClick={() => navigate({ to: '/admin/discounts' })}>
               Скасувати
             </Button>
           </div>

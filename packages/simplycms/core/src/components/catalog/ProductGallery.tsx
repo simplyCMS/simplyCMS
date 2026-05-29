@@ -1,7 +1,4 @@
-"use client";
-
 import { useState } from "react";
-import NextImage from "next/image";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -29,13 +26,13 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       {/* Main image */}
       <div className="aspect-square rounded-lg bg-muted overflow-hidden cursor-zoom-in relative group">
         {currentImage ? (
-          <NextImage
+          <img
             src={currentImage}
             alt={productName}
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-contain transition-transform group-hover:scale-105"
-            priority
+            className="absolute inset-0 w-full h-full object-contain transition-transform group-hover:scale-105"
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -82,12 +79,12 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
                   : "border-transparent hover:border-muted-foreground/50"
               )}
             >
-              <NextImage
+              <img
                 src={image}
                 alt={`${productName} ${index + 1}`}
-                fill
-                sizes="80px"
-                className="object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             </button>
           ))}

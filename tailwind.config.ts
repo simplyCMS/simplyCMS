@@ -1,9 +1,10 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: "class",
   content: [
-    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
     "./packages/simplycms/**/src/**/*.{ts,tsx}",
     "./themes/**/*.{ts,tsx}",
     "./plugins/**/*.{ts,tsx}",
@@ -131,5 +132,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [typography],
 } satisfies Config;

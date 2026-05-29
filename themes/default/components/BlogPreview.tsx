@@ -1,5 +1,3 @@
-"use client";
-
 import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
 import { ImageIcon } from "lucide-react";
 

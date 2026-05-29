@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode, useEffect, useState } from "react";
 import { hookRegistry } from "./HookRegistry";
 

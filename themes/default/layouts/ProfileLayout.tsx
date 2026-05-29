@@ -1,13 +1,9 @@
-"use client";
-
 import { useEffect } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link, useLocation } from '@tanstack/react-router';
 import { User, Package, Settings, LogOut } from "lucide-react";
 import { cn } from "@simplycms/core/lib/utils";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 import { Button } from "@simplycms/ui/button";
-import { Skeleton } from "@simplycms/ui/skeleton";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 
@@ -18,9 +14,8 @@ const navItems = [
 ];
 
 export function ProfileLayout({ children }: { children?: React.ReactNode }) {
-  const { user, isLoading, signOut } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const { signOut } = useAuth();
+  const pathname = useLocation({ select: (l) => l.pathname });
 
   useEffect(() => {
     document.documentElement.classList.add("default-theme");
@@ -28,30 +23,6 @@ export function ProfileLayout({ children }: { children?: React.ReactNode }) {
       document.documentElement.classList.remove("default-theme");
     };
   }, []);
-
-  if (isLoading) {
-    return (
-      <div className="default-theme min-h-screen bg-[hsl(var(--background))] flex flex-col">
-        <Header />
-        <div className="container mx-auto px-4 py-8 flex-1">
-          <div className="flex gap-8">
-            <div className="w-64 space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="flex-1"><Skeleton className="h-64 w-full" /></div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!user) {
-    router.push("/auth");
-    return null;
-  }
 
   return (
     <div className="default-theme min-h-screen bg-[hsl(var(--background))] flex flex-col">
@@ -67,7 +38,7 @@ export function ProfileLayout({ children }: { children?: React.ReactNode }) {
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    to={item.href}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
                       isActive

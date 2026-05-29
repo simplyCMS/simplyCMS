@@ -11,13 +11,13 @@ import type { Database } from "./types";
  * НЕ використовуй для запитів що потребують авторизації.
  */
 export function createAnonSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     throw new Error(
       '[createAnonSupabaseClient] Відсутні змінні оточення: ' +
-      'NEXT_PUBLIC_SUPABASE_URL та NEXT_PUBLIC_SUPABASE_ANON_KEY обовʼязкові.'
+      'VITE_SUPABASE_URL та VITE_SUPABASE_ANON_KEY обовʼязкові.'
     );
   }
 

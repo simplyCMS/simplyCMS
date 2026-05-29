@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";

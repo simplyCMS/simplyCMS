@@ -1,8 +1,5 @@
-"use client";
-
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
-import Link from "next/link";
+import { useParams, useNavigate, useSearch, useLocation, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -47,14 +44,14 @@ export interface ProductDetailPageProps {
 export default function ProductDetailPage({
   product: initialProduct,
 }: ProductDetailPageProps = {}) {
-  const params = useParams<{
-    sectionSlug: string;
-    productSlug: string;
-  }>();
+  const params = useParams({ strict: false }) as {
+    sectionSlug?: string;
+    productSlug?: string;
+  };
   const productSlug = params.productSlug;
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
   const { addItem } = useCart();
   const { toast } = useToast();
   const { priceTypeId, defaultPriceTypeId } = usePriceType();
@@ -83,7 +80,7 @@ export default function ProductDetailPage({
           )
         `
         )
-        .eq("slug", productSlug)
+        .eq("slug", productSlug!)
         .eq("is_active", true)
         .maybeSingle();
 
@@ -199,7 +196,7 @@ export default function ProductDetailPage({
 
   // Selected modification - sync with URL (only for products with modifications)
   const [selectedModId, setSelectedModId] = useState<string>("");
-  const modSlugFromUrl = searchParams.get("mod");
+  const modSlugFromUrl = search.mod;
 
   useEffect(() => {
     if (!hasModifications || modifications.length === 0) return;
@@ -220,7 +217,7 @@ export default function ProductDetailPage({
       // Batch: оновлюємо стан та URL разом
       setSelectedModId(id);
       if (slug) {
-        router.replace(pathname + "?mod=" + slug);
+        navigate({ to: pathname, search: { mod: slug }, replace: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -233,9 +230,9 @@ export default function ProductDetailPage({
     const mod = modifications.find((m) => m.id === modId);
     if (mod) {
       setSelectedModId(modId);
-      router.replace(pathname + "?mod=" + mod.slug);
+      navigate({ to: pathname, search: { mod: mod.slug }, replace: true });
     }
-  }, [modifications, router, pathname]);
+  }, [modifications, navigate, pathname]);
 
   // Combine product and modification images
   const allImages = useMemo(() => {
@@ -339,7 +336,7 @@ export default function ProductDetailPage({
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Товар не знайдено</h1>
-        <Button onClick={() => router.back()}>Повернутись назад</Button>
+        <Button onClick={() => window.history.back()}>Повернутись назад</Button>
       </div>
     );
   }
@@ -398,18 +395,19 @@ export default function ProductDetailPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/catalog" className="hover:text-foreground transition-colors">
+        <Link to="/catalog" className="hover:text-foreground transition-colors">
           Каталог
         </Link>
         {section && (
           <>
             <ChevronRight className="h-4 w-4" />
             <Link
-              href={`/catalog/${section.slug}`}
+              to="/catalog/$sectionSlug"
+              params={{ sectionSlug: section.slug }}
               className="hover:text-foreground transition-colors"
             >
               {section.name}

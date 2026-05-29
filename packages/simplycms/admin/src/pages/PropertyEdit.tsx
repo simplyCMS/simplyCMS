@@ -1,6 +1,5 @@
-"use client";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@simplycms/core/supabase/client";
 import { Button } from "@simplycms/ui/button";
@@ -60,8 +59,8 @@ const propertyTypes = [
 ];
 
 export default function PropertyEdit() {
-  const { propertyId } = useParams() as { propertyId: string };
-  const router = useRouter();
+  const { propertyId } = useParams({ strict: false }) as { propertyId: string };
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -181,7 +180,7 @@ export default function PropertyEdit() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/properties")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/properties' })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -292,7 +291,7 @@ export default function PropertyEdit() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Опції властивості</CardTitle>
             <Button 
-              onClick={() => router.push(`/admin/properties/${propertyId}/options/new`)} 
+              onClick={() => navigate({ to: `/admin/properties/${propertyId}/options/new` })} 
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -320,7 +319,7 @@ export default function PropertyEdit() {
                     <TableRow 
                       key={option.id} 
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/admin/properties/${propertyId}/options/${option.id}`)}
+                      onClick={() => navigate({ to: `/admin/properties/${propertyId}/options/${option.id}` })}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <GripVertical className="h-4 w-4 text-muted-foreground" />

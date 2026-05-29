@@ -1,9 +1,7 @@
-"use client";
-
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
-import Link from "next/link";
+import { Link } from '@tanstack/react-router';
 import { ProductCard } from "./ProductCard";
 
 interface Product {
@@ -42,7 +40,7 @@ export function ProductCarousel({ title, products, viewAllLink }: ProductCarouse
           </h2>
           {viewAllLink && (
             <Link
-              href={viewAllLink}
+              to={viewAllLink}
               className="text-sm text-primary hover:underline font-medium"
             >
               Переглянути усі &rarr;

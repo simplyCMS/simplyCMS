@@ -1,9 +1,5 @@
-"use client";
-
 import { useMemo } from "react";
-import { useParams } from "next/navigation";
-import NextImage from "next/image";
-import Link from "next/link";
+import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase/client";
 import { ProductCard } from "../components/catalog/ProductCard";
@@ -24,7 +20,7 @@ export default function PropertyPage({
   option: initialOption,
   products: _initialProducts,
 }: PropertyOptionPageProps = {}) {
-  const params = useParams();
+  const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const propertySlug = params?.propertySlug as string | undefined;
   const optionSlug = params?.optionSlug as string | undefined;
 
@@ -161,7 +157,7 @@ export default function PropertyPage({
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Сторінку не знайдено</h1>
-        <Link href="/catalog">
+        <Link to="/catalog">
           <Button>Повернутись до каталогу</Button>
         </Link>
       </div>
@@ -177,15 +173,15 @@ export default function PropertyPage({
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/properties" className="hover:text-foreground transition-colors">
+        <Link to="/properties" className="hover:text-foreground transition-colors">
           Властивості
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href={`/properties/${property?.slug}`} className="hover:text-foreground transition-colors">
+        <Link to="/properties/$propertySlug" params={{ propertySlug: property?.slug ?? "" }} className="hover:text-foreground transition-colors">
           {property?.name}
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -196,12 +192,12 @@ export default function PropertyPage({
       <div className="mb-8">
         {imageUrl && (
           <div className="relative w-full h-48 md:h-64 mb-6 rounded-xl overflow-hidden">
-            <NextImage
+            <img
               src={imageUrl}
               alt={displayName}
-              fill
-              sizes="100vw"
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         )}
