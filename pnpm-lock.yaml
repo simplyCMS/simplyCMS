@@ -307,6 +307,15 @@ importers:
         specifier: ^2.0.0 || ^3.0.0
         version: 3.4.0
 
+  packages/simplycms/data-supabase:
+    dependencies:
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.95.3
+
   packages/simplycms/domain:
     dependencies:
       '@simplycms/objects':
@@ -342,6 +351,12 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
+
+  packages/simplycms/runtime:
+    dependencies:
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
 
   packages/simplycms/theme-system:
     dependencies:

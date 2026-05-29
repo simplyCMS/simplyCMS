@@ -34,6 +34,18 @@
       "@simplycms/domain/*": [
         "./packages/simplycms/domain/src/*"
       ],
+      "@simplycms/data-supabase": [
+        "./packages/simplycms/data-supabase/src"
+      ],
+      "@simplycms/data-supabase/*": [
+        "./packages/simplycms/data-supabase/src/*"
+      ],
+      "@simplycms/runtime": [
+        "./packages/simplycms/runtime/src"
+      ],
+      "@simplycms/runtime/*": [
+        "./packages/simplycms/runtime/src/*"
+      ],
       "@simplycms/react-query": [
         "./packages/simplycms/react-query/src"
       ],

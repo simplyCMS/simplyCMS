@@ -16,6 +16,14 @@ export default {
         __dirname,
         'packages/simplycms/domain/src',
       ),
+      '@simplycms/data-supabase': resolve(
+        __dirname,
+        'packages/simplycms/data-supabase/src',
+      ),
+      '@simplycms/runtime': resolve(
+        __dirname,
+        'packages/simplycms/runtime/src',
+      ),
       '@simplycms/react-query': resolve(
         __dirname,
         'packages/simplycms/react-query/src',

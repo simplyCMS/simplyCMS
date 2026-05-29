@@ -87,4 +87,6 @@ export interface DiscountScope {
   productId?: string;
   sectionId?: string;
   userCategoryId?: string | null;
+  /** Тип ціни (price list), за яким відбираються знижки. */
+  priceTypeId?: string | null;
 }
