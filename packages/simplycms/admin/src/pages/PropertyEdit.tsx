@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -59,6 +59,7 @@ const propertyTypes = [
 ];
 
 export default function PropertyEdit() {
+  const supabase = useSupabaseClient();
   const { propertyId } = useParams({ strict: false }) as { propertyId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

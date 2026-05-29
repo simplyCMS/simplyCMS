@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Switch } from "@simplycms/ui/switch";
 import { Label } from "@simplycms/ui/label";
@@ -20,6 +20,7 @@ interface SystemSetting {
 }
 
 export default function Settings() {
+  const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
 
   const { data: stockSettings, isLoading } = useQuery({

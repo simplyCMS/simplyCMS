@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Badge } from "@simplycms/ui/badge";
@@ -45,6 +45,7 @@ async function revalidateTheme() {
 }
 
 export default function Themes() {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@simplycms/ui/select";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 
 interface Order {
   id: string;
@@ -40,6 +40,7 @@ interface OrderStatus {
 }
 
 export default function ProfileOrdersPage() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [statuses, setStatuses] = useState<OrderStatus[]>([]);
@@ -55,7 +56,7 @@ export default function ProfileOrdersPage() {
       setStatuses(data || []);
     }
     loadStatuses();
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     async function loadOrders() {
@@ -87,7 +88,7 @@ export default function ProfileOrdersPage() {
     }
 
     loadOrders();
-  }, [user, selectedStatus]);
+  }, [user, selectedStatus, supabase]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat("uk-UA", {

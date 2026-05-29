@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import {
@@ -9,6 +9,7 @@ import {
 import { ArrowLeft, Plus, Settings, Star } from "lucide-react";
 
 export default function UserCategories() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
 
   const { data: categories, isLoading } = useQuery({

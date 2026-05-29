@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Badge } from "@simplycms/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
 import { Card, CardContent } from "@simplycms/ui/card";
@@ -46,6 +46,7 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 export default function AdminReviews() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("all");
 

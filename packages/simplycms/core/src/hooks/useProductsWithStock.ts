@@ -1,4 +1,4 @@
-import { supabase } from "../supabase/client";
+import type { SupabaseClient } from "../supabase/client";
 
 // Pure-розрахунок наявності перенесено в @simplycms/domain/inventory.
 // Re-export для зворотної сумісності.
@@ -21,6 +21,7 @@ export interface ModPropertyValue {
  * Fetches modification property values
  */
 export async function fetchModificationPropertyValues(
+  supabase: SupabaseClient,
   modificationIds: string[]
 ): Promise<Record<string, ModPropertyValue[]>> {
   if (modificationIds.length === 0) return {};
@@ -45,6 +46,7 @@ export async function fetchModificationPropertyValues(
  * Fetches stock data for modifications
  */
 export async function fetchModificationStockData(
+  supabase: SupabaseClient,
   modificationIds: string[]
 ): Promise<Record<string, number>> {
   if (modificationIds.length === 0) return {};

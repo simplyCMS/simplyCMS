@@ -12,7 +12,7 @@ import { Switch } from "@simplycms/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 
 const schema = z.object({
@@ -29,6 +29,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DiscountGroupEdit() {
+  const supabase = useSupabaseClient();
   const { groupId } = useParams({ strict: false }) as { groupId: string };
   const search = useSearch({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();

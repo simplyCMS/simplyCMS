@@ -1,9 +1,9 @@
-import { supabase } from "../supabase/client";
+import { getSupabaseBrowserClient } from "../supabase/client";
 
-export { supabase };
-
-// Auth helper functions
+// Auth helper functions (client-side). Клієнт беремо з браузерної фабрики,
+// а не з глобального singleton.
 export async function signUp(email: string, password: string) {
+  const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -15,6 +15,7 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
+  const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -23,11 +24,13 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  const supabase = getSupabaseBrowserClient();
   const { error } = await supabase.auth.signOut();
   return { error };
 }
 
 export async function resetPassword(email: string) {
+  const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`,
   });
@@ -35,6 +38,7 @@ export async function resetPassword(email: string) {
 }
 
 export async function updatePassword(newPassword: string) {
+  const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
   });
@@ -43,12 +47,14 @@ export async function updatePassword(newPassword: string) {
 
 // Get current session
 export async function getSession() {
+  const supabase = getSupabaseBrowserClient();
   const { data: { session }, error } = await supabase.auth.getSession();
   return { session, error };
 }
 
 // Get current user
 export async function getUser() {
+  const supabase = getSupabaseBrowserClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   return { user, error };
 }

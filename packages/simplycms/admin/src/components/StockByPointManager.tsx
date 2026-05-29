@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -29,6 +29,7 @@ export function StockByPointManager({
   modificationId,
   showCard = true,
 }: StockByPointManagerProps) {
+  const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [stockData, setStockData] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);

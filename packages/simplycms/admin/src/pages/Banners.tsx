@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
 import { Switch } from "@simplycms/ui/switch";
@@ -18,6 +18,7 @@ const PLACEMENT_LABELS: Record<string, string> = {
 };
 
 export default function Banners() {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();

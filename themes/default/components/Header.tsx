@@ -4,7 +4,7 @@ import { Button } from "@simplycms/ui/button";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 import { useCart } from "@simplycms/core/hooks/useCart";
 import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { AnnouncementBar } from "./AnnouncementBar";
@@ -19,6 +19,7 @@ import {
 } from "@simplycms/ui/dropdown-menu";
 
 export function Header() {
+  const supabase = useSupabaseClient();
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
   const navigate = useNavigate();

@@ -81,8 +81,10 @@ export type {
 // ---- Types ----
 export type { Database } from "./types";
 
-// ---- Supabase Client ----
-export { supabase } from "./supabase/client";
+// ---- Supabase Client (DI) ----
+export { createClient, getSupabaseBrowserClient } from "./supabase/client";
+export type { SupabaseClient } from "./supabase/client";
+export { SupabaseProvider, useSupabaseClient } from "./supabase/SupabaseProvider";
 
 // ---- Catalog Components ----
 export { ActiveFilters } from "./components/catalog/ActiveFilters";

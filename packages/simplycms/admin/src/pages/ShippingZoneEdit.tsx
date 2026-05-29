@@ -3,7 +3,7 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Input } from "@simplycms/ui/input";
@@ -75,6 +75,7 @@ function arrayToString(arr: string[] | undefined): string {
 }
 
 export default function ShippingZoneEdit() {
+  const supabase = useSupabaseClient();
   const { zoneId } = useParams({ strict: false }) as { zoneId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();

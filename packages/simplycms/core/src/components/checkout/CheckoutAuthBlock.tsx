@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { useToast } from "../../hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, User, Loader2, LogIn, UserPlus, UserX, AlertCircle, CheckCircle } from "lucide-react";
 
@@ -10,6 +10,7 @@ interface CheckoutAuthBlockProps {
 }
 
 export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: CheckoutAuthBlockProps) {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [showPassword, setShowPassword] = useState(false);

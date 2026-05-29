@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Truck, ChevronRight, Save, icons } from "lucide-react";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { ShippingMethod, ShippingRate, PickupPoint } from "../../lib/shipping/types";
 import { formatShippingCost } from "../../lib/shipping";
 import { useAuth } from "../../hooks/useAuth";
@@ -35,6 +35,7 @@ const getMethodIcon = (iconName: string | null): React.ComponentType<{ className
 };
 
 export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCostChange }: CheckoutDeliveryFormProps) {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

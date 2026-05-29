@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Badge } from "@simplycms/ui/badge";
 import { Label } from "@simplycms/ui/label";
 import { Separator } from "@simplycms/ui/separator";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
 import { resolveDiscount, type DiscountGroup, type DiscountContext, type GroupOperator, type AppliedDiscount, type RejectedDiscount } from "@simplycms/core/lib/discountEngine";
 
@@ -24,6 +24,7 @@ interface ValidationStep {
 }
 
 export default function PriceValidator() {
+  const supabase = useSupabaseClient();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedModificationId, setSelectedModificationId] = useState<string>("");

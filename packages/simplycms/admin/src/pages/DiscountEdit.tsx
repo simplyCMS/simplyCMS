@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@simplycms/ui/tabs";
 import { Badge } from "@simplycms/ui/badge";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 import type { Json } from "@simplycms/core/supabase/types";
 
@@ -48,6 +48,7 @@ interface ConditionRow {
 }
 
 export default function DiscountEdit() {
+  const supabase = useSupabaseClient();
   const { discountId } = useParams({ strict: false }) as { discountId: string };
   const search = useSearch({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();

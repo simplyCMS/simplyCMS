@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
 import {
@@ -10,6 +10,7 @@ import { Plus, Trash2, Star, Loader2 } from "lucide-react";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 
 export default function PriceTypes() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();

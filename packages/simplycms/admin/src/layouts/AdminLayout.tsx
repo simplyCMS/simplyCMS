@@ -3,11 +3,12 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@simplycms/ui/sid
 import { AdminSidebar } from "./AdminSidebar";
 import { Button } from "@simplycms/ui/button";
 import { LogOut, Home } from "lucide-react";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ThemeToggle } from "@simplycms/core/components/ThemeToggle";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
 

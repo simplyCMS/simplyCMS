@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@simplycms/ui/form";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
 import { AvatarUpload } from "../components/profile/AvatarUpload";
 import { AddressesList } from "../components/profile/AddressesList";
@@ -41,6 +41,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function ProfileSettingsPage() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -91,7 +92,7 @@ export default function ProfileSettingsPage() {
     }
 
     loadProfile();
-  }, [user, profileForm]);
+  }, [user, profileForm, supabase]);
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     if (!user) return;

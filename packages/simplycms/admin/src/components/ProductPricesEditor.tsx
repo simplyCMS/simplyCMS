@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Input } from "@simplycms/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -16,6 +16,7 @@ interface ProductPricesEditorProps {
 }
 
 export function ProductPricesEditor({ productId, modificationId = null }: ProductPricesEditorProps) {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Textarea } from "@simplycms/ui/textarea";
@@ -35,6 +35,7 @@ const categorySchema = z.object({
 type CategoryFormData = z.infer<typeof categorySchema>;
 
 export default function UserCategoryEdit() {
+  const supabase = useSupabaseClient();
   const { categoryId } = useParams({ strict: false }) as { categoryId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();

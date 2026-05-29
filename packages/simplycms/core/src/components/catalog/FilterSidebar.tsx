@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { X } from "lucide-react";
 
 interface Property {
@@ -54,6 +54,7 @@ export function FilterSidebar({
   numericPropertyRanges = {},
   products = [],
 }: FilterSidebarProps) {
+  const supabase = useSupabaseClient();
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([
     priceRange?.min || 0,
     priceRange?.max || 100000,

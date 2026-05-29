@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, Loader2, AlertTriangle } from "lucide-react";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -16,6 +16,7 @@ interface Address {
 }
 
 export function AddressesList() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { ThemeRegistry } from "@simplycms/themes/ThemeRegistry";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -37,6 +37,7 @@ interface ThemeRecord {
 }
 
 export default function ThemeSettings() {
+  const supabase = useSupabaseClient();
   const { themeId } = useParams({ strict: false }) as { themeId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

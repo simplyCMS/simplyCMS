@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -44,6 +44,7 @@ const propertyTypes = [
 ];
 
 export default function Properties() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [propertyType, setPropertyType] = useState<Enums<"property_type">>("text");

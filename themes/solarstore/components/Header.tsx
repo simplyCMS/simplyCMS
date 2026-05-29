@@ -23,7 +23,7 @@ import {
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 import { useCart } from "@simplycms/core/hooks/useCart";
 import { useToast } from "@simplycms/core/hooks/use-toast";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { CartDrawer } from "@simplycms/core/components/cart/CartDrawer";
 import { useQuery } from "@tanstack/react-query";
 
@@ -36,6 +36,7 @@ const categoryIcons = [
 ];
 
 export function Header() {
+  const supabase = useSupabaseClient();
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
   const navigate = useNavigate();

@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Package, FolderTree, ShoppingCart, Users, Wrench, FileText } from "lucide-react";
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 import { Link } from '@tanstack/react-router';
 
 export default function Dashboard() {
+  const supabase = useSupabaseClient();
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {

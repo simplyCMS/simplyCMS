@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, ChevronRight, Save } from "lucide-react";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/use-toast";
 import { RecipientCard } from "./RecipientCard";
@@ -29,6 +29,7 @@ interface SavedRecipient {
 const MAX_VISIBLE_CARDS = 3;
 
 export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFormProps) {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

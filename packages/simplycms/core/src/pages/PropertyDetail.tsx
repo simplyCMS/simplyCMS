@@ -1,6 +1,6 @@
 import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { Card, CardContent } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
 import { Loader2, ChevronRight } from "lucide-react";
@@ -15,6 +15,7 @@ export default function PropertyDetailPage({
   property: initialProperty,
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
+  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const propertySlug = params?.propertySlug as string | undefined;
 

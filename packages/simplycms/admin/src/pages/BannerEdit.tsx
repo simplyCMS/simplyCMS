@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
@@ -79,6 +79,7 @@ const defaultForm: BannerForm = {
 };
 
 export default function BannerEdit() {
+  const supabase = useSupabaseClient();
   const { bannerId } = useParams({ strict: false }) as { bannerId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import { Switch } from "@simplycms/ui/switch";
@@ -46,6 +46,7 @@ const fieldLabels: Record<string, string> = {
 };
 
 export default function UserCategoryRules() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isRunning, setIsRunning] = useState(false);

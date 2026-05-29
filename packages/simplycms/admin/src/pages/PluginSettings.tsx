@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
@@ -21,6 +21,7 @@ import { useState, useEffect } from "react";
 import { parsePlugin, type Plugin, type PluginSettingDefinition } from "@simplycms/plugins/types";
 
 export default function PluginSettings() {
+  const supabase = useSupabaseClient();
   const { pluginId } = useParams({ strict: false }) as { pluginId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

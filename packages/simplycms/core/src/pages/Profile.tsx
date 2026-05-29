@@ -6,7 +6,7 @@ import { Button } from "@simplycms/ui/button";
 import { Skeleton } from "@simplycms/ui/skeleton";
 import { Badge } from "@simplycms/ui/badge";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 
 interface ProfileData {
   first_name: string | null;
@@ -30,6 +30,7 @@ interface RecentOrder {
 }
 
 export default function ProfilePage() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
@@ -66,7 +67,7 @@ export default function ProfilePage() {
     }
 
     loadData();
-  }, [user]);
+  }, [user, supabase]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat("uk-UA", {

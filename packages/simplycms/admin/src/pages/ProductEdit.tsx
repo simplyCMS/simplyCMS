@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
@@ -29,6 +29,7 @@ import type { TablesInsert, TablesUpdate } from "@simplycms/core/supabase/types"
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 
 export default function ProductEdit() {
+  const supabase = useSupabaseClient();
   const { productId } = useParams({ strict: false }) as { productId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

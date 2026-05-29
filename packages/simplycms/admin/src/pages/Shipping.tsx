@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
 import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";
@@ -7,6 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { Skeleton } from "@simplycms/ui/skeleton";
 
 export default function Shipping() {
+  const supabase = useSupabaseClient();
   const { data: methods, isLoading: methodsLoading } = useQuery({
     queryKey: ["shipping-methods"],
     queryFn: async () => {

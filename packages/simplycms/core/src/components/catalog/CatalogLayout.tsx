@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Sun, User, Search } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { useToast } from "../../hooks/use-toast";
 
 interface CatalogLayoutProps {
@@ -28,6 +28,7 @@ export function CatalogLayout({
   renderDropdownMenu,
   children,
 }: CatalogLayoutProps) {
+  const supabase = useSupabaseClient();
   const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();

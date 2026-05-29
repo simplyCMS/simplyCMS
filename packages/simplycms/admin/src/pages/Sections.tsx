@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -15,6 +15,7 @@ import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Plus, Trash2, Loader2, ImageIcon } from "lucide-react";
 
 export default function Sections() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();

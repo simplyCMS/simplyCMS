@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../../supabase/client";
+import { useSupabaseClient } from "../../supabase/SupabaseProvider";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 
@@ -21,6 +21,7 @@ export function AvatarUpload({
   email,
   onUpdate,
 }: AvatarUploadProps) {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();

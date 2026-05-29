@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -15,6 +15,7 @@ import { RichTextEditor } from "../components/RichTextEditor";
 import { SectionPropertiesManager } from "../components/SectionPropertiesManager";
 
 export default function SectionEdit() {
+  const supabase = useSupabaseClient();
   const { sectionId } = useParams({ strict: false }) as { sectionId: string };
   const navigate = useNavigate();
   const { toast } = useToast();

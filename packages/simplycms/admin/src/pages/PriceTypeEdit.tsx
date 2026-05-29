@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Switch } from "@simplycms/ui/switch";
@@ -29,6 +29,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function PriceTypeEdit() {
+  const supabase = useSupabaseClient();
   const { priceTypeId } = useParams({ strict: false }) as { priceTypeId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();

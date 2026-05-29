@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearch, useLocation, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import { Separator } from "@simplycms/ui/separator";
@@ -44,6 +44,7 @@ export interface ProductDetailPageProps {
 export default function ProductDetailPage({
   product: initialProduct,
 }: ProductDetailPageProps = {}) {
+  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as {
     sectionSlug?: string;
     productSlug?: string;

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import type { SupabaseClient } from "@simplycms/core/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
   Table,
@@ -15,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 
-async function fetchOrders() {
+async function fetchOrders(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("orders")
     .select("*, order_statuses(name, color)")
@@ -26,10 +27,11 @@ async function fetchOrders() {
 
 export default function Orders() {
   const navigate = useNavigate();
+  const supabase = useSupabaseClient();
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
-    queryFn: fetchOrders,
+    queryFn: () => fetchOrders(supabase),
   });
 
   if (isLoading) {

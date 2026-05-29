@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 
 export default function UserEdit() {
+  const supabase = useSupabaseClient();
   const { userId } = useParams({ strict: false }) as { userId: string };
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);

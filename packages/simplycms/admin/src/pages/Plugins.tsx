@@ -11,7 +11,7 @@ import { ArrowLeft, Puzzle, Settings, Trash2 } from "lucide-react";
 import {
   getRegisteredPluginModules,
 } from "@simplycms/plugins";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { parsePlugin, type ParsedPlugin, type Plugin } from "@simplycms/plugins/types";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
 import { InstallPluginDialog } from "../components/InstallPluginDialog";
 
 export default function Plugins() {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [togglingPlugin, setTogglingPlugin] = useState<string | null>(null);

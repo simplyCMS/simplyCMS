@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { useAuth } from "./useAuth";
 import { usePriceType } from "./usePriceType";
 import { resolveDiscount, type DiscountGroup, type DiscountContext, type DiscountResult, type GroupOperator, type DiscountType } from "../lib/discountEngine";
 
 /** Loads all active discount groups for the given price type, with nested discounts/targets/conditions */
 export function useDiscountGroups() {
+  const supabase = useSupabaseClient();
   const { priceTypeId } = usePriceType();
 
   return useQuery({
@@ -103,6 +104,7 @@ export function useDiscountGroups() {
 
 /** Returns user context for discount evaluation */
 export function useDiscountContext() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
 
   const { data: userCategoryId } = useQuery({

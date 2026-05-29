@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -20,6 +20,7 @@ export function useStock(
   productId?: string | null,
   modificationId?: string | null
 ) {
+  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ["stock-info", modificationId ?? productId],
     queryFn: async (): Promise<StockInfo> => {
@@ -63,6 +64,7 @@ export function useStock(
 }
 
 export function usePickupPointsCount() {
+  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ["pickup-points-count"],
     queryFn: async (): Promise<number> => {
@@ -75,6 +77,7 @@ export function usePickupPointsCount() {
 }
 
 export function usePickupPoints() {
+  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ["active-pickup-points"],
     queryFn: async () => {

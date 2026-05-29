@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
@@ -23,6 +23,7 @@ export interface ProductReview {
 }
 
 export function useProductReviews(productId: string | undefined) {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -149,6 +150,7 @@ export function useProductReviews(productId: string | undefined) {
 }
 
 export function useProductRatings(productIds: string[]) {
+  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ["product-ratings", productIds],
     queryFn: async () => {
