@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — готові P1, P2, P9 + адаптер P3 + фундамент P4 + частково P5/P10; інвазивні фази (singleton-eradication, P6/P7/P8) попереду.
+> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P9 + фундамент P4 + частково P5/P10; попереду P6/P7/P8.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -10,9 +10,9 @@
 |------|------|----------|
 | **P1** `@simplycms/objects` | ✅ **Готово** | Type-only пакет; усі порти + `EngineContext`; 0 runtime deps; subpath `./objects`, `./ports`. |
 | **P2** `@simplycms/domain` | ✅ **Готово** | Subpath `./pricing`/`./discounts`/`./inventory`/`./shipping`; pure; 27 unit-тестів (vitest). `core/lib` re-export'ить домен для зворотної сумісності. |
-| **P3** `data-supabase` + знесення singleton | 🟡 **Адаптер готовий** | `@simplycms/data-supabase` (Catalog/Order/Identity репозиторії на інжектованому клієнті + `ScopeResolver`, mappers, тести) ✅. **Знесення singleton** з ~50 споживачів (`export const supabase` досі на місці) — окремий інвазивний крок. |
+| **P3** `data-supabase` + знесення singleton | ✅ **Готово** | `@simplycms/data-supabase` (Catalog/Order/Identity репозиторії на інжектованому клієнті + `ScopeResolver`, mappers, тести) ✅. **Singleton знесено**: `SupabaseProvider`/`useSupabaseClient` (DI через контекст) у `CMSProvider`; ~80 call-sites мігровано; `grep "import { supabase }"` по репо = 0; `export const supabase` прибрано. _Лишок: `import.meta.env` ще у `core/supabase/client.ts` (релокація у runtime — P9-уточнення)._ |
 | **P4** `@simplycms/react-query` | 🟡 **Фундамент** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки + mock-repo тест. Перенесення наявних core-хуків на контекст — попереду (залежить від P3 eradication). |
-| **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ще тягне singleton для fetch активної теми (фолдиться в P3 eradication). |
+| **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ThemeContext мігровано на `useSupabaseClient` (singleton прибрано). Object-agnostic рендер тем — попереду. |
 | **P6** `@simplycms/storefront` | ⛔ **Не почато** | — |
 | **P7** feature-ui split | ⛔ **Не почато** | — |
 | **P8** `@simplycms/admin` на портах | ⛔ **Не почато** | 38 хардкодів `/admin/*` ще на місці. |
@@ -136,12 +136,12 @@ export interface EngineContext {
 - DoD: всі функції pure, deps лише `objects`; unit-тести (vitest) на pricing/discount/shipping/availability. ✅ (27 тестів)
 - _Реалізація:_ `packages/simplycms/domain/src/*` + `__tests__`. `core/lib/{priceUtils,discountEngine,shipping/calculateRate,shipping/types}` та `hooks/useProductsWithStock` тепер re-export'ять домен.
 
-### P3 — `@simplycms/data-supabase` + знесення singleton 🔴 — 🟡 АДАПТЕР ГОТОВИЙ
+### P3 — `@simplycms/data-supabase` + знесення singleton 🔴 — ✅ ГОТОВО
 - Створити `createSupabaseCatalogRepository(client, scope)` / `createSupabaseOrderRepository(...)` — імплементації портів, що приймають **інжектований** client + `ScopeResolver`. ✅ (+ `createSupabaseIdentityProvider`)
-- Прибрати `core/src/supabase/client.ts` глобальний `export const supabase`. ⛔ _ще на місці_
-- **Інвентар call-sites для рефакторингу (31 файл core):** hooks (`useStock`,`usePriceType`,`useAuth`,`useBanners`,`useDiscountedPrice`,`useProductReviews`,`useProductsWithStock`), `lib/supabase`, `lib/shipping/findZone`, UI-компоненти (`FilterSidebar`,`CatalogLayout`, profile/*, checkout/*), pages/*. Усі → беруть repo/identity з контексту. ⛔ _попереду_
-- DoD: `grep "import { supabase }"` по ядру = 0; `import.meta.env` лишається тільки у `data-supabase` фабриці simplyCMS і `runtime`. ⛔ _не досягнуто (адаптер є, eradication — ні)_
-- _Реалізація адаптера:_ `packages/simplycms/data-supabase/src/*` (repos + `mappers.ts` + `scope.ts`), тести `__tests__/mappers.test.ts`. **Знесення singleton із ~50 споживачів — окремий інвазивний крок** (потребує змонтованого `EngineProvider` в app + переписування кожного хука/компонента; залежить від P4-перенесення, P7, P8).
+- Прибрати `core/src/supabase/client.ts` глобальний `export const supabase`. ✅
+- **Інвентар call-sites (~80 файлів):** core hooks (`useStock`,`usePriceType`,`useBanners`,`useDiscountedPrice`,`useProductReviews`,`useProductsWithStock`), `lib/supabase`, `lib/shipping/findZone`, core UI (`FilterSidebar`,`CatalogLayout`, profile/*, checkout/*), core pages/*, admin pages/components, theme-system, themes/default + themes/solarstore — усі мігровано на `useSupabaseClient()` (або інжектований client-параметр для не-React хелперів). ✅
+- DoD: `grep "import { supabase }"` по ядру = 0 ✅. `import.meta.env` — досі у `core/supabase/client.ts` (фабрика браузерного клієнта); релокація у `runtime`/`data-supabase` — P9-уточнення. 🟡
+- _Реалізація:_ `packages/simplycms/data-supabase/src/*` (repos + `mappers.ts` + `scope.ts`, тести); DI-клієнт — `core/src/supabase/SupabaseProvider.tsx` (`SupabaseProvider`/`useSupabaseClient`), змонтований у `CMSProvider`. Не-React хелпери (`Orders.fetchOrders`, `fetchModification*`, `lib/supabase`, `findZone`) приймають/беруть client явно.
 
 ### P4 — `@simplycms/react-query` (хуки через контекст) — 🟡 ФУНДАМЕНТ
 - Перенести data-частину хуків; кожен хук бере `useEngine()`. 🟡 _нові порт-керовані хуки (`useProduct`/`useProducts`/`useSections`/`useStockInfo`/`useOrder`/…) додані; перенесення наявних core-хуків (`useStock`, `useBanners`, …) — після P3._
@@ -197,7 +197,7 @@ export interface EngineContext {
 
 - [x] `@simplycms/objects` з усіма портами; 0 runtime deps.
 - [x] `@simplycms/domain` (single, subpath) — pure, з тестами.
-- [ ] `grep "import { supabase }"` по ядру = 0; singleton прибрано. _(P3 — не почато)_
+- [x] `grep "import { supabase }"` по ядру = 0; singleton прибрано. _(P3 — ✅; ~80 call-sites на `useSupabaseClient`)_
 - [x] `@simplycms/react-query` з `EngineProvider`/`useEngine`; тест із mock-repo.
 - [ ] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6)_
 - [ ] feature-ui розділено presentational/container. _(P7)_
