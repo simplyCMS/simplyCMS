@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Building, Shield } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 
 export default function PickupPoints() {
   const supabase = useSupabaseClient();
@@ -78,7 +79,7 @@ export default function PickupPoints() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/pickup-points/$pointId" params={{ pointId: 'new' }}>
+          <Link to={adminPath("shipping/pickup-points/$pointId")} params={{ pointId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати точку
           </Link>
@@ -115,7 +116,7 @@ export default function PickupPoints() {
                   <TableRow
                     key={point.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate({ to: `/admin/shipping/pickup-points/${point.id}` })}
+                    onClick={() => navigate({ to: adminPath(`shipping/pickup-points/${point.id}`) })}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -23,6 +23,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "@simplycms/core/hooks/use-toast";
+import { adminPath } from "../lib/adminLinks";
 
 interface RuleCondition {
   field: string;
@@ -144,7 +145,7 @@ export default function UserCategoryRules() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/admin/user-categories">
+            <Link to={adminPath("user-categories")}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -169,7 +170,7 @@ export default function UserCategoryRules() {
             Запустити перевірку
           </Button>
           <Button asChild>
-            <Link to="/admin/user-categories/rules/$ruleId" params={{ ruleId: 'new' }}>
+            <Link to={adminPath("user-categories/rules/$ruleId")} params={{ ruleId: 'new' }}>
               <Plus className="h-4 w-4 mr-2" />
               Додати правило
             </Link>
@@ -207,7 +208,7 @@ export default function UserCategoryRules() {
                   key={rule.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() =>
-                    navigate({ to: `/admin/user-categories/rules/${rule.id}` })
+                    navigate({ to: adminPath(`user-categories/rules/${rule.id}`) })
                   }
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>

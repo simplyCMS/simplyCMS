@@ -5,6 +5,7 @@ import { Button } from "@simplycms/ui/button";
 import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";
 import { Link } from '@tanstack/react-router';
 import { Skeleton } from "@simplycms/ui/skeleton";
+import { adminPath } from "../lib/adminLinks";
 
 export default function Shipping() {
   const supabase = useSupabaseClient();
@@ -123,7 +124,7 @@ export default function Shipping() {
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link to="/admin/shipping/methods">
+        <Link to={adminPath("shipping/methods")}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -143,7 +144,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link to="/admin/shipping/zones">
+        <Link to={adminPath("shipping/zones")}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -162,7 +163,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link to="/admin/shipping/pickup-points">
+        <Link to={adminPath("shipping/pickup-points")}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

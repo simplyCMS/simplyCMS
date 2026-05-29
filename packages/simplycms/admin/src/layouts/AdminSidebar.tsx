@@ -1,4 +1,5 @@
 import { NavLink } from "@simplycms/core/components/NavLink";
+import { adminPath } from "../lib/adminLinks";
 import { useSidebar } from "@simplycms/ui/sidebar";
 import {
   LayoutDashboard,
@@ -36,42 +37,42 @@ import {
 } from "@simplycms/ui/sidebar";
 
 const catalogItems = [
-  { title: "Розділи", url: "/admin/sections", icon: FolderTree },
-  { title: "Властивості", url: "/admin/properties", icon: ListChecks },
-  { title: "Товари", url: "/admin/products", icon: Package },
-  { title: "Види цін", url: "/admin/price-types", icon: DollarSign },
-  { title: "Скидки", url: "/admin/discounts", icon: Percent },
-  { title: "Валідатор цін", url: "/admin/price-validator", icon: Calculator },
+  { title: "Розділи", url: adminPath("sections"), icon: FolderTree },
+  { title: "Властивості", url: adminPath("properties"), icon: ListChecks },
+  { title: "Товари", url: adminPath("products"), icon: Package },
+  { title: "Види цін", url: adminPath("price-types"), icon: DollarSign },
+  { title: "Скидки", url: adminPath("discounts"), icon: Percent },
+  { title: "Валідатор цін", url: adminPath("price-validator"), icon: Calculator },
 ];
 
 const ordersItems = [
-  { title: "Замовлення", url: "/admin/orders", icon: ShoppingCart },
-  { title: "Статуси", url: "/admin/order-statuses", icon: Tags },
+  { title: "Замовлення", url: adminPath("orders"), icon: ShoppingCart },
+  { title: "Статуси", url: adminPath("order-statuses"), icon: Tags },
 ];
 
 const servicesItems = [
-  { title: "Послуги", url: "/admin/services", icon: Wrench },
-  { title: "Заявки", url: "/admin/service-requests", icon: FileText },
+  { title: "Послуги", url: adminPath("services"), icon: Wrench },
+  { title: "Заявки", url: adminPath("service-requests"), icon: FileText },
 ];
 
 const shippingItems = [
-  { title: "Служби доставки", url: "/admin/shipping/methods", icon: Truck },
-  { title: "Зони доставки", url: "/admin/shipping/zones", icon: Map },
-  { title: "Точки самовивозу", url: "/admin/shipping/pickup-points", icon: Building },
+  { title: "Служби доставки", url: adminPath("shipping/methods"), icon: Truck },
+  { title: "Зони доставки", url: adminPath("shipping/zones"), icon: Map },
+  { title: "Точки самовивозу", url: adminPath("shipping/pickup-points"), icon: Building },
 ];
 
 const contentItems = [
-  { title: "Банери", url: "/admin/banners", icon: ImageIcon },
-  { title: "Відгуки", url: "/admin/reviews", icon: MessageSquare },
+  { title: "Банери", url: adminPath("banners"), icon: ImageIcon },
+  { title: "Відгуки", url: adminPath("reviews"), icon: MessageSquare },
 ];
 
 const settingsItems = [
-  { title: "Розширення", url: "/admin/plugins", icon: Puzzle },
-  { title: "Теми", url: "/admin/themes", icon: Palette },
-  { title: "Користувачі", url: "/admin/users", icon: Users },
-  { title: "Категорії користувачів", url: "/admin/user-categories", icon: Tags },
-  { title: "Мови", url: "/admin/languages", icon: Globe },
-  { title: "Налаштування", url: "/admin/settings", icon: Settings },
+  { title: "Розширення", url: adminPath("plugins"), icon: Puzzle },
+  { title: "Теми", url: adminPath("themes"), icon: Palette },
+  { title: "Користувачі", url: adminPath("users"), icon: Users },
+  { title: "Категорії користувачів", url: adminPath("user-categories"), icon: Tags },
+  { title: "Мови", url: adminPath("languages"), icon: Globe },
+  { title: "Налаштування", url: adminPath("settings"), icon: Settings },
 ];
 
 export function AdminSidebar() {

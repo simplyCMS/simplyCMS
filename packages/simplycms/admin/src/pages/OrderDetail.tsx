@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminPath } from "../lib/adminLinks";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
@@ -318,7 +319,7 @@ export default function OrderDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Замовлення не знайдено</p>
-        <Button variant="link" onClick={() => navigate({ to: '/admin/orders' })}>
+        <Button variant="link" onClick={() => navigate({ to: adminPath('orders') })}>
           Повернутися до списку
         </Button>
       </div>
@@ -332,7 +333,7 @@ export default function OrderDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/orders' })}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('orders') })}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>

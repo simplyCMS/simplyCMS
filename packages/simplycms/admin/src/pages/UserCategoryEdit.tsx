@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -103,7 +104,7 @@ export default function UserCategoryEdit() {
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories-with-counts"] });
       toast({ title: isNew ? "Категорію створено" : "Зміни збережено" });
-      navigate({ to: '/admin/user-categories' });
+      navigate({ to: adminPath('user-categories') });
     },
     onError: (error: Error) => {
       toast({ title: "Помилка", description: error.message, variant: "destructive" });
@@ -120,7 +121,7 @@ export default function UserCategoryEdit() {
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories-with-counts"] });
       toast({ title: "Категорію видалено" });
-      navigate({ to: '/admin/user-categories' });
+      navigate({ to: adminPath('user-categories') });
     },
     onError: (error: Error) => {
       toast({ title: "Помилка", description: error.message, variant: "destructive" });
@@ -133,7 +134,7 @@ export default function UserCategoryEdit() {
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild><Link to="/admin/user-categories"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <Button variant="ghost" size="icon" asChild><Link to={adminPath("user-categories")}><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-3xl font-bold">{isNew ? "Нова категорія" : "Редагування категорії"}</h1>
         </div>
         {!isNew && (
@@ -202,7 +203,7 @@ export default function UserCategoryEdit() {
                 </FormItem>
               )} />
               <div className="flex justify-end gap-4">
-                <Button variant="outline" asChild><Link to="/admin/user-categories">Скасувати</Link></Button>
+                <Button variant="outline" asChild><Link to={adminPath("user-categories")}>Скасувати</Link></Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
                   {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isNew ? "Створити" : "Зберегти"}

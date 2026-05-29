@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@simplycms/ui/table";
 import { ArrowLeft, Plus, Settings, Star } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 
 export default function UserCategories() {
   const supabase = useSupabaseClient();
@@ -39,15 +40,15 @@ export default function UserCategories() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild><Link to="/admin"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <Button variant="ghost" size="icon" asChild><Link to={adminPath()}><ArrowLeft className="h-5 w-5" /></Link></Button>
           <div>
             <h1 className="text-3xl font-bold">Категорії користувачів</h1>
             <p className="text-muted-foreground">Управління категоріями та правилами переходу</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild><Link to="/admin/user-categories/rules"><Settings className="h-4 w-4 mr-2" />Правила переходу</Link></Button>
-          <Button asChild><Link to="/admin/user-categories/$categoryId" params={{ categoryId: 'new' }}><Plus className="h-4 w-4 mr-2" />Додати категорію</Link></Button>
+          <Button variant="outline" asChild><Link to={adminPath("user-categories/rules")}><Settings className="h-4 w-4 mr-2" />Правила переходу</Link></Button>
+          <Button asChild><Link to={adminPath("user-categories/$categoryId")} params={{ categoryId: 'new' }}><Plus className="h-4 w-4 mr-2" />Додати категорію</Link></Button>
         </div>
       </div>
 
@@ -69,7 +70,7 @@ export default function UserCategories() {
               <TableRow><TableCell colSpan={5} className="text-center py-8">Категорій не знайдено</TableCell></TableRow>
             ) : (
               categories?.map((cat) => (
-                <TableRow key={cat.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate({ to: `/admin/user-categories/${cat.id}` })}>
+                <TableRow key={cat.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate({ to: adminPath(`user-categories/${cat.id}`) })}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{cat.name}</span>

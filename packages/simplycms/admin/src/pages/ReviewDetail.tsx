@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminPath } from "../lib/adminLinks";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
@@ -97,7 +98,7 @@ export default function AdminReviewDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
       toast({ title: "Відгук видалено" });
-      navigate({ to: '/admin/reviews' });
+      navigate({ to: adminPath('reviews') });
     },
   });
 
@@ -123,7 +124,7 @@ export default function AdminReviewDetail() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/reviews' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('reviews') })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Деталі відгуку</h1>

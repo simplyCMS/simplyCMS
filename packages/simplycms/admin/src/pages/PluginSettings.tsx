@@ -17,6 +17,7 @@ import {
 } from "@simplycms/ui/select";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Loader2, Save, Power, PowerOff, Plug, Settings } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import { useState, useEffect } from "react";
 import { parsePlugin, type Plugin, type PluginSettingDefinition } from "@simplycms/plugins/types";
 
@@ -120,7 +121,7 @@ export default function PluginSettings() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Розширення не знайдено</p>
-        <Button variant="link" onClick={() => navigate({ to: '/admin/plugins' })}>
+        <Button variant="link" onClick={() => navigate({ to: adminPath('plugins') })}>
           Повернутися до списку
         </Button>
       </div>
@@ -134,7 +135,7 @@ export default function PluginSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/plugins' })}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('plugins') })}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">

@@ -4,6 +4,7 @@ import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Package, FolderTree, ShoppingCart, Users, Wrench, FileText } from "lucide-react";
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 import { Link } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 
 export default function Dashboard() {
   const supabase = useSupabaseClient();
@@ -74,7 +75,7 @@ export default function Dashboard() {
             <CardDescription>Часто використовувані функції</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link to="/admin/products" className="block p-3 rounded-lg hover:bg-muted transition-colors">
+            <Link to={adminPath("products")} className="block p-3 rounded-lg hover:bg-muted transition-colors">
               <div className="flex items-center gap-3">
                 <Package className="h-5 w-5 text-muted-foreground" />
                 <div>
@@ -83,7 +84,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </Link>
-            <Link to="/admin/sections" className="block p-3 rounded-lg hover:bg-muted transition-colors">
+            <Link to={adminPath("sections")} className="block p-3 rounded-lg hover:bg-muted transition-colors">
               <div className="flex items-center gap-3">
                 <FolderTree className="h-5 w-5 text-muted-foreground" />
                 <div>
@@ -92,7 +93,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </Link>
-            <Link to="/admin/orders" className="block p-3 rounded-lg hover:bg-muted transition-colors">
+            <Link to={adminPath("orders")} className="block p-3 rounded-lg hover:bg-muted transition-colors">
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                 <div>

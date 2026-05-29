@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -145,7 +146,7 @@ export default function PickupPointEdit() {
         queryClient.invalidateQueries({ queryKey: ["pickup-point", pointId] });
       }
       toast.success(isNew ? "Точку створено" : "Зміни збережено");
-      navigate({ to: '/admin/shipping/pickup-points' });
+      navigate({ to: adminPath('shipping/pickup-points') });
     },
     onError: (error: Error) => {
       toast.error(`Помилка: ${error.message}`);

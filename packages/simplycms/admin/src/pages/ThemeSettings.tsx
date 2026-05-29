@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@simplycms/ui/skeleton";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Save, Palette } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import { useState, useEffect } from "react";
 import type { ThemeSettingDefinition } from "@simplycms/themes/types";
 
@@ -116,7 +117,7 @@ export default function ThemeSettings() {
       <div className="text-center py-12">
         <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Тему не знайдено</h2>
-        <Button onClick={() => navigate({ to: '/admin/themes' })}>Повернутись</Button>
+        <Button onClick={() => navigate({ to: adminPath('themes') })}>Повернутись</Button>
       </div>
     );
   }
@@ -125,7 +126,7 @@ export default function ThemeSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/admin/themes">
+          <Link to={adminPath("themes")}>
             <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
           </Link>
           <div>

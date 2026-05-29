@@ -14,6 +14,7 @@ import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ImageUpload } from "../components/ImageUpload";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import type { Json } from "@simplycms/core/supabase/types";
+import { adminPath } from "../lib/adminLinks";
 
 interface BannerButton {
   text: string;
@@ -171,7 +172,7 @@ export default function BannerEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-banners"] });
       toast({ title: "Банер збережено" });
-      navigate({ to: '/admin/banners' });
+      navigate({ to: adminPath('banners') });
     },
     onError: () => {
       toast({ variant: "destructive", title: "Помилка збереження" });
@@ -208,7 +209,7 @@ export default function BannerEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/banners' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('banners') })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">{isNew ? "Новий банер" : "Редагування банера"}</h1>

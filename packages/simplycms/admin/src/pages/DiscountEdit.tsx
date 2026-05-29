@@ -17,6 +17,7 @@ import { Badge } from "@simplycms/ui/badge";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 import type { Json } from "@simplycms/core/supabase/types";
+import { adminPath } from "../lib/adminLinks";
 
 const schema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
@@ -207,7 +208,7 @@ export default function DiscountEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
       toast({ title: isNew ? "Скидку створено" : "Скидку оновлено" });
-      navigate({ to: '/admin/discounts' });
+      navigate({ to: adminPath('discounts') });
     },
     onError: (err: Error) => {
       toast({ title: "Помилка", description: err.message, variant: "destructive" });
@@ -223,7 +224,7 @@ export default function DiscountEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/discounts' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('discounts') })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">{isNew ? "Нова скидка" : "Редагування скидки"}</h1>
@@ -558,7 +559,7 @@ export default function DiscountEdit() {
             <Button type="submit" disabled={save.isPending}>
               {save.isPending ? "Збереження..." : "Зберегти"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => navigate({ to: '/admin/discounts' })}>
+            <Button type="button" variant="outline" onClick={() => navigate({ to: adminPath('discounts') })}>
               Скасувати
             </Button>
           </div>

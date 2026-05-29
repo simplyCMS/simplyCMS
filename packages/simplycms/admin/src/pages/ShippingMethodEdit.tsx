@@ -27,6 +27,7 @@ import {
 } from "@simplycms/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 
@@ -118,7 +119,7 @@ export default function ShippingMethodEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-methods"] });
       toast.success(isNew ? "Службу створено" : "Зміни збережено");
-      navigate({ to: '/admin/shipping/methods' });
+      navigate({ to: adminPath('shipping/methods') });
     },
     onError: (error: Error) => {
       toast.error(`Помилка: ${error.message}`);

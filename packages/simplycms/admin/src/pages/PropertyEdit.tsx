@@ -23,14 +23,15 @@ import {
 import { Label } from "@simplycms/ui/label";
 import { Switch } from "@simplycms/ui/switch";
 import { useToast } from "@simplycms/core/hooks/use-toast";
-import { 
-  ArrowLeft, 
-  Save, 
-  Loader2, 
-  Plus, 
-  Trash2, 
-  GripVertical 
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Plus,
+  Trash2,
+  GripVertical
 } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import type { Tables } from "@simplycms/core/supabase/types";
 
 type SectionProperty = Tables<"section_properties">;
@@ -181,7 +182,7 @@ export default function PropertyEdit() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/properties' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('properties') })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -292,7 +293,7 @@ export default function PropertyEdit() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Опції властивості</CardTitle>
             <Button 
-              onClick={() => navigate({ to: `/admin/properties/${propertyId}/options/new` })} 
+              onClick={() => navigate({ to: adminPath(`properties/${propertyId}/options/new`) })}
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -320,7 +321,7 @@ export default function PropertyEdit() {
                     <TableRow 
                       key={option.id} 
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: `/admin/properties/${propertyId}/options/${option.id}` })}
+                      onClick={() => navigate({ to: adminPath(`properties/${propertyId}/options/${option.id}`) })}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <GripVertical className="h-4 w-4 text-muted-foreground" />

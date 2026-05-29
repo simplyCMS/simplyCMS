@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Globe } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 
 export default function ShippingZones() {
   const supabase = useSupabaseClient();
@@ -81,7 +82,7 @@ export default function ShippingZones() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/zones/$zoneId" params={{ zoneId: 'new' }}>
+          <Link to={adminPath("shipping/zones/$zoneId")} params={{ zoneId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати зону
           </Link>
@@ -117,7 +118,7 @@ export default function ShippingZones() {
                   <TableRow
                     key={zone.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate({ to: `/admin/shipping/zones/${zone.id}` })}
+                    onClick={() => navigate({ to: adminPath(`shipping/zones/${zone.id}`) })}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -11,6 +11,7 @@ import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { ImageUpload } from "../components/ImageUpload";
 import { RichTextEditor } from "../components/RichTextEditor";
+import { adminPath } from "../lib/adminLinks";
 
 function generateSlug(text: string): string {
   return text
@@ -144,7 +145,7 @@ export default function PropertyOptionEdit() {
       toast({ title: wasCreating ? "Опцію створено" : "Опцію збережено" });
       
       if (wasCreating && result?.id) {
-        navigate({ to: `/admin/properties/${propertyId}/options/${result.id}`, replace: true });
+        navigate({ to: adminPath(`properties/${propertyId}/options/${result.id}`), replace: true });
       }
     },
     onError: (error) => {
@@ -168,7 +169,7 @@ export default function PropertyOptionEdit() {
   };
 
   const goBack = () => {
-    navigate({ to: `/admin/properties/${propertyId}` });
+    navigate({ to: adminPath(`properties/${propertyId}`) });
   };
 
   if (optionLoading) {

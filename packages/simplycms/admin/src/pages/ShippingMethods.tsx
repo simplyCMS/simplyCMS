@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Truck } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
 import { icons } from "lucide-react";
 
@@ -99,7 +100,7 @@ export default function ShippingMethods() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/admin/shipping/methods/$methodId" params={{ methodId: 'new' }}>
+          <Link to={adminPath("shipping/methods/$methodId")} params={{ methodId: 'new' }}>
             <Plus className="h-4 w-4 mr-2" />
             Додати службу
           </Link>
@@ -138,7 +139,7 @@ export default function ShippingMethods() {
                     <TableRow
                       key={method.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: `/admin/shipping/methods/${method.id}` })}
+                      onClick={() => navigate({ to: adminPath(`shipping/methods/${method.id}`) })}
                     >
                       <TableCell>
                         <IconComponent className="h-5 w-5 text-muted-foreground" />

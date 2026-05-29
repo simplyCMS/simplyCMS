@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import type { SupabaseClient } from "@simplycms/core/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -69,7 +70,7 @@ export default function Orders() {
                 <TableRow
                   key={order.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: `/admin/orders/${order.id}` })}
+                  onClick={() => navigate({ to: adminPath(`orders/${order.id}`) })}
                 >
                   <TableCell className="font-medium">{order.order_number}</TableCell>
                   <TableCell>

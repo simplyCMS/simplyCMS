@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
@@ -248,7 +249,7 @@ export default function Users() {
                 <TableRow
                   key={user.user_id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: `/admin/users/${user.user_id}` })}
+                  onClick={() => navigate({ to: adminPath(`users/${user.user_id}`) })}
                 >
                   <TableCell>
                     <Avatar className="h-10 w-10">

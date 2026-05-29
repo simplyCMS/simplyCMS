@@ -8,6 +8,7 @@ import { Badge } from "@simplycms/ui/badge";
 import { Skeleton } from "@simplycms/ui/skeleton";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Puzzle, Settings, Trash2 } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import {
   getRegisteredPluginModules,
 } from "@simplycms/plugins";
@@ -196,7 +197,7 @@ export default function Plugins() {
                   )}
 
                   <div className="flex gap-2">
-                    <NavLink to={`/admin/plugins/${plugin.id}/settings`} className="flex-1">
+                    <NavLink to={adminPath(`plugins/${plugin.id}/settings`)} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування

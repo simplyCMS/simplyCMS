@@ -27,6 +27,7 @@ import { SimpleProductFields } from "../components/SimpleProductFields";
 import { AllProductProperties } from "../components/AllProductProperties";
 import type { TablesInsert, TablesUpdate } from "@simplycms/core/supabase/types";
 import { PluginSlot } from "@simplycms/plugins/PluginSlot";
+import { adminPath } from "../lib/adminLinks";
 
 export default function ProductEdit() {
   const supabase = useSupabaseClient();
@@ -114,7 +115,7 @@ export default function ProductEdit() {
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       toast({ title: "Товар створено" });
-      navigate({ to: `/admin/products/${newProduct.id}` });
+      navigate({ to: adminPath(`products/${newProduct.id}`) });
     },
     onError: (error) => {
       toast({ variant: "destructive", title: "Помилка", description: error.message });
@@ -190,7 +191,7 @@ export default function ProductEdit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/products' })}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('products') })}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>

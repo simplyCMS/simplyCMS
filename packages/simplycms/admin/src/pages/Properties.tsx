@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminPath } from "../lib/adminLinks";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
@@ -246,7 +247,7 @@ export default function Properties() {
                 <TableRow 
                   key={property.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: `/admin/properties/${property.id}` })}
+                  onClick={() => navigate({ to: adminPath(`properties/${property.id}`) })}
                 >
                   <TableCell className="font-medium">
                     {property.name}

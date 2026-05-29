@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -175,7 +176,7 @@ export default function ShippingZoneEdit() {
       queryClient.invalidateQueries({ queryKey: ["shipping-zones"] });
       toast.success(isNew ? "Зону створено" : "Зміни збережено");
       if (isNew) {
-        navigate({ to: '/admin/shipping/zones' });
+        navigate({ to: adminPath('shipping/zones') });
       }
     },
     onError: (error: Error) => {

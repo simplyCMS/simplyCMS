@@ -13,6 +13,7 @@ import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { ImageUpload } from "../components/ImageUpload";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { SectionPropertiesManager } from "../components/SectionPropertiesManager";
+import { adminPath } from "../lib/adminLinks";
 
 export default function SectionEdit() {
   const supabase = useSupabaseClient();
@@ -94,7 +95,7 @@ export default function SectionEdit() {
       queryClient.invalidateQueries({ queryKey: ["section", sectionId] });
       toast({ title: isNew ? "Розділ створено" : "Розділ збережено" });
       if (isNew) {
-        navigate({ to: '/admin/sections' });
+        navigate({ to: adminPath('sections') });
       }
     },
     onError: (error) => {
@@ -124,7 +125,7 @@ export default function SectionEdit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/sections' })}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('sections') })}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
