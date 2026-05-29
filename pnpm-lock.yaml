@@ -285,6 +285,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -300,6 +303,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -312,6 +318,36 @@ importers:
 
   packages/simplycms/core:
     dependencies:
+      '@hookform/resolvers':
+        specifier: ^5.0.0
+        version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
+      '@simplycms/cart-ui':
+        specifier: workspace:*
+        version: link:../cart-ui
+      '@simplycms/catalog-ui':
+        specifier: workspace:*
+        version: link:../catalog-ui
+      '@simplycms/checkout-ui':
+        specifier: workspace:*
+        version: link:../checkout-ui
+      '@simplycms/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@simplycms/plugins':
+        specifier: workspace:*
+        version: link:../plugin-system
+      '@simplycms/profile-ui':
+        specifier: workspace:*
+        version: link:../profile-ui
+      '@simplycms/reviews-ui':
+        specifier: workspace:*
+        version: link:../reviews-ui
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@supabase/ssr':
+        specifier: ^0.5.0 || ^0.6.0 || ^0.7.0
+        version: 0.7.0(@supabase/supabase-js@2.95.3)
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.95.3
@@ -342,15 +378,24 @@ importers:
       lucide-react:
         specifier: ^0.400.0
         version: 0.400.0(react@19.2.4)
+      next-themes:
+        specifier: ^0.3.0 || ^0.4.0
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
       react-dom:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4(react@19.2.4)
+      react-hook-form:
+        specifier: ^7.0.0
+        version: 7.71.1(react@19.2.4)
       tailwind-merge:
         specifier: ^2.0.0 || ^3.0.0
         version: 3.4.0
+      zod:
+        specifier: ^3.0.0 || ^4.0.0
+        version: 4.3.6
 
   packages/simplycms/data-supabase:
     dependencies:
@@ -390,6 +435,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -417,9 +465,24 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tiptap/extension-link':
+        specifier: ^3.0.0
+        version: 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)
+      '@tiptap/extension-underline':
+        specifier: ^3.0.0
+        version: 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))
       '@tiptap/react':
         specifier: ^3.0.0
         version: 3.19.0(@floating-ui/dom@1.7.5)(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tiptap/starter-kit':
+        specifier: ^3.0.0
+        version: 3.19.0
+      date-fns:
+        specifier: ^3.0.0 || ^4.0.0
+        version: 4.1.0
       lucide-react:
         specifier: ^0.400.0
         version: 0.400.0(react@19.2.4)
@@ -435,6 +498,9 @@ importers:
 
   packages/simplycms/storefront:
     dependencies:
+      '@simplycms/core':
+        specifier: workspace:*
+        version: link:../core
       '@simplycms/objects':
         specifier: workspace:*
         version: link:../objects
@@ -1764,6 +1830,11 @@ packages:
   '@supabase/realtime-js@2.95.3':
     resolution: {integrity: sha512-D7EAtfU3w6BEUxDACjowWNJo/ZRo7sDIuhuOGKHIm9FHieGeoJV5R6GKTLtga/5l/6fDr2u+WcW/m8I9SYmaIw==}
     engines: {node: '>=20.0.0'}
+
+  '@supabase/ssr@0.7.0':
+    resolution: {integrity: sha512-G65t5EhLSJ5c8hTCcXifSL9Q/ZRXvqgXeNo+d3P56f4U1IxwTqjB64UfmfixvmMcjuxnq2yGqEWVJqUcO+AzAg==}
+    peerDependencies:
+      '@supabase/supabase-js': ^2.43.4
 
   '@supabase/ssr@0.8.0':
     resolution: {integrity: sha512-/PKk8kNFSs8QvvJ2vOww1mF5/c5W8y42duYtXvkOSe+yZKRgTTZywYG2l41pjhNomqESZCpZtXuWmYjFRMV+dw==}
@@ -5164,6 +5235,11 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.95.3)':
+    dependencies:
+      '@supabase/supabase-js': 2.95.3
+      cookie: 1.1.1
 
   '@supabase/ssr@0.8.0(@supabase/supabase-js@2.95.3)':
     dependencies:

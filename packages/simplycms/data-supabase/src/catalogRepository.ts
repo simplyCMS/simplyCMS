@@ -93,13 +93,19 @@ export function createSupabaseCatalogRepository(
       if (q.search) query = query.ilike("name", `%${q.search}%`);
       query = query.order("created_at", { ascending: false });
 
-      const page = q.page ?? 1;
-      const pageSize = q.pageSize ?? 24;
-      query = query.range((page - 1) * pageSize, page * pageSize - 1);
+      // Пагінація лише за явним запитом; інакше — без обмеження (як канонічний loader).
+      if (q.page !== undefined || q.pageSize !== undefined) {
+        const page = q.page ?? 1;
+        const pageSize = q.pageSize ?? 24;
+        query = query.range((page - 1) * pageSize, page * pageSize - 1);
+        const { data, count } = await query;
+        const items = ((data as Row[] | null) ?? []).map(mapProduct);
+        return pageOf(items, { page, pageSize }, count ?? items.length);
+      }
 
       const { data, count } = await query;
       const items = ((data as Row[] | null) ?? []).map(mapProduct);
-      return pageOf(items, { page, pageSize }, count ?? items.length);
+      return pageOf(items, undefined, count ?? items.length);
     },
 
     async getProductsBySection(

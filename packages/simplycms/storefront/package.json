@@ -13,7 +13,8 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplycms/objects": "workspace:*"
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/core": "workspace:*"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.0.0"

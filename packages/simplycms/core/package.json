@@ -9,12 +9,28 @@
     ".": "./src/index.ts",
     "./providers": "./src/providers/CMSProvider.tsx",
     "./hooks": "./src/hooks/useAuth.tsx",
+    "./hooks/*": "./src/hooks/*",
     "./lib/*": "./src/lib/*",
+    "./supabase/*": "./src/supabase/*",
+    "./components/*": "./src/components/*",
     "./types": "./src/types/index.ts"
   },
+  "dependencies": {
+    "@simplycms/domain": "workspace:*",
+    "@simplycms/ui": "workspace:*",
+    "@simplycms/plugins": "workspace:*",
+    "@simplycms/cart-ui": "workspace:*",
+    "@simplycms/catalog-ui": "workspace:*",
+    "@simplycms/checkout-ui": "workspace:*",
+    "@simplycms/profile-ui": "workspace:*",
+    "@simplycms/reviews-ui": "workspace:*"
+  },
   "peerDependencies": {
+    "@hookform/resolvers": "^5.0.0",
+    "@supabase/ssr": "^0.5.0 || ^0.6.0 || ^0.7.0",
     "@supabase/supabase-js": "^2.0.0",
     "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
     "@tiptap/extension-link": "^3.0.0",
     "@tiptap/extension-underline": "^3.0.0",
     "@tiptap/react": "^3.0.0",
@@ -22,10 +38,12 @@
     "clsx": "^2.0.0",
     "date-fns": "^3.0.0 || ^4.0.0",
     "lucide-react": "^0.400.0",
-    "@tanstack/react-router": "^1.0.0",
+    "next-themes": "^0.3.0 || ^0.4.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "tailwind-merge": "^2.0.0 || ^3.0.0"
+    "react-hook-form": "^7.0.0",
+    "tailwind-merge": "^2.0.0 || ^3.0.0",
+    "zod": "^3.0.0 || ^4.0.0"
   },
   "peerDependenciesMeta": {
     "@tiptap/extension-link": { "optional": true },
