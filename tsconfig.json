@@ -58,6 +58,12 @@
       "@simplycms/storefront/*": [
         "./packages/simplycms/storefront/src/*"
       ],
+      "@simplycms/cart-ui": [
+        "./packages/simplycms/cart-ui/src"
+      ],
+      "@simplycms/cart-ui/*": [
+        "./packages/simplycms/cart-ui/src/*"
+      ],
       "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],

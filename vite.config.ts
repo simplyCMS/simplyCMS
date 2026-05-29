@@ -32,6 +32,10 @@ export default {
         __dirname,
         'packages/simplycms/storefront/src',
       ),
+      '@simplycms/cart-ui': resolve(
+        __dirname,
+        'packages/simplycms/cart-ui/src',
+      ),
       '@simplycms/core': resolve(
         __dirname,
         'packages/simplycms/core/src',
