@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P6, P9 + фундамент P4 + частково P5/P10; попереду P7/P8.
+> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P6, P9 + фундамент P4 + частково P5/P8/P10; попереду P7 та admin-on-repositories.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -15,7 +15,7 @@
 | **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ThemeContext мігровано на `useSupabaseClient` (singleton прибрано). Object-agnostic рендер тем — попереду. |
 | **P6** `@simplycms/storefront` | ✅ **Готово** | Лоадери (`products`/`sections`/`home`/`properties`) + SEO (`sitemap`/`robots`) винесено у пакет, параметризовано інжектованим `SupabaseClient<Database>`. App `src/server/*` + `src/seo/*` делегують у пакет (createServerFn-glue лишився в app). _Параметризація доменним репозиторієм (замість сирого client) — разом із P7, коли сторінки споживатимуть domain-типи._ |
 | **P7** feature-ui split | ⛔ **Не почато** | — |
-| **P8** `@simplycms/admin` на портах | ⛔ **Не почато** | 38 хардкодів `/admin/*` ще на місці. |
+| **P8** `@simplycms/admin` на портах | 🟡 **LinkResolver готовий** | Хардкод `/admin/*` прибрано: 85 літералів у 36 файлах → `adminPath()` (`lib/adminLinks.ts`), host-remappable база. _Переведення admin-CRUD на `CatalogRepository`/`OrderRepository` (замість прямих supabase-запитів) — попереду, разом із P7 (потребує domain-shape)._ |
 | **P9** `@simplycms/runtime` | ✅ **Готово** | `defineConfig` складає `EngineContext` з адаптерів/модулів/теми/плагінів (pure, deps лише objects). Reference-збірка застосунку: `src/server/engine.ts` (`createServerRuntime`). |
 | **P10** дистрибуція / CI | 🟡 **Частково** | Subtree push-команди + `cms:remote` (репоінт на `simplySOFTua`) готові; per-package publish CI — попереду. |
 
@@ -166,9 +166,10 @@ export interface EngineContext {
 - Кожен компонент розділити: **presentational** (props-only) + **container** (через `useEngine()`/хуки).
 - DoD: presentational-компоненти не роблять fetch; HUB може реюзати presentational зі своїми контейнерами.
 
-### P8 — `@simplycms/admin` (на репозиторіях + LinkResolver)
-- Перевести admin-pages/components на `CatalogRepository`/`OrderRepository` + `LinkResolver` (прибрати хардкод `/admin/*` — 38 місць).
-- DoD: admin працює поверх портів; simplyCMS-app зелений.
+### P8 — `@simplycms/admin` (на репозиторіях + LinkResolver) — 🟡 LINKRESOLVER ГОТОВИЙ
+- **LinkResolver:** хардкод `/admin/*` прибрано — 85 літералів у 36 файлах → `adminPath()`/`setAdminBase()` (`packages/simplycms/admin/src/lib/adminLinks.ts`), база переприв'язується host'ом. ✅
+- Перевести admin-pages/components на `CatalogRepository`/`OrderRepository` (замість прямих supabase-запитів). ⛔ _попереду — великий рефактор admin-CRUD, фолдиться з P7 (потребує domain-shape об'єктів)._
+- DoD: admin працює поверх портів; simplyCMS-app зелений. 🟡 (app зелений; CRUD ще на supabase через `useSupabaseClient`)
 
 ### P9 — `@simplycms/runtime` (defineConfig / wiring) — ✅ ГОТОВО
 - Розширити `defineConfig` з `{supabase}` до `{ adapters:{catalog,orders,scope,identity,links,media,config}, modules:[], theme, plugins }`. ✅ (новий `@simplycms/runtime` defineConfig; legacy core `defineConfig` лишено для зворотної сумісності `simplycms.config.ts`)
@@ -202,7 +203,7 @@ export interface EngineContext {
 - [x] `@simplycms/react-query` з `EngineProvider`/`useEngine`; тест із mock-repo.
 - [x] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6 — ✅; client-параметризація, repo-параметризація разом із P7)_
 - [ ] feature-ui розділено presentational/container. _(P7)_
-- [ ] `admin` на портах+LinkResolver. _(P8)_
+- [~] `admin` на портах+LinkResolver. _(P8 — LinkResolver ✅ хардкод прибрано; admin-on-repositories — разом із P7)_
 - [x] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplycms/runtime` + reference-збірка `src/server/engine.ts`; checks зелені)_
 - [~] CI публікує пакети (Packages) + subtree-флоу робочий. _(subtree-флоу + `cms:remote` репоінт на `simplySOFTua` готові; publish-CI — попереду)_
 - [x] `migration-phase0-decouple-packages.md` має amendment про superseded singleton-рішення.
