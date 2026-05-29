@@ -36,6 +36,22 @@ export default {
         __dirname,
         'packages/simplycms/cart-ui/src',
       ),
+      '@simplycms/catalog-ui': resolve(
+        __dirname,
+        'packages/simplycms/catalog-ui/src',
+      ),
+      '@simplycms/checkout-ui': resolve(
+        __dirname,
+        'packages/simplycms/checkout-ui/src',
+      ),
+      '@simplycms/profile-ui': resolve(
+        __dirname,
+        'packages/simplycms/profile-ui/src',
+      ),
+      '@simplycms/reviews-ui': resolve(
+        __dirname,
+        'packages/simplycms/reviews-ui/src',
+      ),
       '@simplycms/core': resolve(
         __dirname,
         'packages/simplycms/core/src',

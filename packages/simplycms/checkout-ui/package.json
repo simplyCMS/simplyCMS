@@ -1,0 +1,22 @@
+{
+  "name": "@simplycms/checkout-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Checkout UI for SimplyCMS — presentational components + containers for addresses, recipients, delivery, payment, and order summary. Reference package for the feature-ui split (P7).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@simplycms/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": "^1.0.0",
+    "lucide-react": "^0.400.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "license": "MIT"
+}

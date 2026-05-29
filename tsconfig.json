@@ -64,6 +64,30 @@
       "@simplycms/cart-ui/*": [
         "./packages/simplycms/cart-ui/src/*"
       ],
+      "@simplycms/catalog-ui": [
+        "./packages/simplycms/catalog-ui/src"
+      ],
+      "@simplycms/catalog-ui/*": [
+        "./packages/simplycms/catalog-ui/src/*"
+      ],
+      "@simplycms/checkout-ui": [
+        "./packages/simplycms/checkout-ui/src"
+      ],
+      "@simplycms/checkout-ui/*": [
+        "./packages/simplycms/checkout-ui/src/*"
+      ],
+      "@simplycms/profile-ui": [
+        "./packages/simplycms/profile-ui/src"
+      ],
+      "@simplycms/profile-ui/*": [
+        "./packages/simplycms/profile-ui/src/*"
+      ],
+      "@simplycms/reviews-ui": [
+        "./packages/simplycms/reviews-ui/src"
+      ],
+      "@simplycms/reviews-ui/*": [
+        "./packages/simplycms/reviews-ui/src/*"
+      ],
       "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],
