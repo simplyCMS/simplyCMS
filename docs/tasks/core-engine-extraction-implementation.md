@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P9 + фундамент P4 + частково P5/P10; попереду P6/P7/P8.
+> Статус: **у роботі** — готові P1, P2, P3 (адаптер + повне знесення singleton), P6, P9 + фундамент P4 + частково P5/P10; попереду P7/P8.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -13,7 +13,7 @@
 | **P3** `data-supabase` + знесення singleton | ✅ **Готово** | `@simplycms/data-supabase` (Catalog/Order/Identity репозиторії на інжектованому клієнті + `ScopeResolver`, mappers, тести) ✅. **Singleton знесено**: `SupabaseProvider`/`useSupabaseClient` (DI через контекст) у `CMSProvider`; ~80 call-sites мігровано; `grep "import { supabase }"` по репо = 0; `export const supabase` прибрано. _Лишок: `import.meta.env` ще у `core/supabase/client.ts` (релокація у runtime — P9-уточнення)._ |
 | **P4** `@simplycms/react-query` | 🟡 **Фундамент** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки + mock-repo тест. Перенесення наявних core-хуків на контекст — попереду (залежить від P3 eradication). |
 | **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ThemeContext мігровано на `useSupabaseClient` (singleton прибрано). Object-agnostic рендер тем — попереду. |
-| **P6** `@simplycms/storefront` | ⛔ **Не почато** | — |
+| **P6** `@simplycms/storefront` | ✅ **Готово** | Лоадери (`products`/`sections`/`home`/`properties`) + SEO (`sitemap`/`robots`) винесено у пакет, параметризовано інжектованим `SupabaseClient<Database>`. App `src/server/*` + `src/seo/*` делегують у пакет (createServerFn-glue лишився в app). _Параметризація доменним репозиторієм (замість сирого client) — разом із P7, коли сторінки споживатимуть domain-типи._ |
 | **P7** feature-ui split | ⛔ **Не почато** | — |
 | **P8** `@simplycms/admin` на портах | ⛔ **Не почато** | 38 хардкодів `/admin/*` ще на місці. |
 | **P9** `@simplycms/runtime` | ✅ **Готово** | `defineConfig` складає `EngineContext` з адаптерів/модулів/теми/плагінів (pure, deps лише objects). Reference-збірка застосунку: `src/server/engine.ts` (`createServerRuntime`). |
@@ -155,10 +155,11 @@ export interface EngineContext {
 - `plugins` — зберегти; хук-поінти лишаються backbone розширення. ✅ (loader уже на DI; type-coupling до core DB прибрано: `Json` → `@simplycms/objects`)
 - DoD: theme/plugins не залежать від data-шару напряму. 🟡 _plugins — так; theme — ще ні._
 
-### P6 — `@simplycms/storefront` (винос SSR/SEO з app-shell)
-- Перенести `src/server/*` (createServerFn loaders) → `storefront/loaders`, параметризувавши репозиторієм.
-- Перенести `src/seo/*` (sitemap/robots) → `storefront/seo`, генерувати з зареєстрованих об'єктів.
-- DoD: маркетплейс може зібрати публічну вітрину, надавши лише `EngineContext`; simplyCMS-app мігрує на пакет.
+### P6 — `@simplycms/storefront` (винос SSR/SEO з app-shell) — ✅ ГОТОВО
+- Перенести `src/server/*` (логіку createServerFn-лоадерів) → `storefront/loaders`, параметризувавши **інжектованим клієнтом** (`SupabaseClient<Database>`). ✅ createServerFn-обгортки лишилися в app і делегують у пакет.
+- Перенести `src/seo/*` (sitemap/robots) → `storefront/seo`, параметризувавши клієнтом + baseUrl. ✅
+- DoD: маркетплейс може зібрати публічну вітрину, надавши власний клієнт; simplyCMS-app мігрував на пакет. ✅
+- _Реалізація:_ `packages/simplycms/storefront/src/{loaders,seo,client.ts}`. **Лишок:** параметризація доменним `CatalogRepository`/`EngineContext` (замість сирого client) — фолдиться в P7, бо storefront-сторінки поки споживають сирі DB-shape; генерація SEO «із зареєстрованих об'єктів» — після object-agnostic тем (P5).
 
 ### P7 — feature-ui (split presentational/container)
 - `core/components/{catalog,cart,checkout,reviews,profile}` → відповідні `*-ui` пакети.
@@ -199,7 +200,7 @@ export interface EngineContext {
 - [x] `@simplycms/domain` (single, subpath) — pure, з тестами.
 - [x] `grep "import { supabase }"` по ядру = 0; singleton прибрано. _(P3 — ✅; ~80 call-sites на `useSupabaseClient`)_
 - [x] `@simplycms/react-query` з `EngineProvider`/`useEngine`; тест із mock-repo.
-- [ ] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6)_
+- [x] `storefront` пакет з loaders+seo; simplyCMS-app на ньому. _(P6 — ✅; client-параметризація, repo-параметризація разом із P7)_
 - [ ] feature-ui розділено presentational/container. _(P7)_
 - [ ] `admin` на портах+LinkResolver. _(P8)_
 - [x] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplycms/runtime` + reference-збірка `src/server/engine.ts`; checks зелені)_
