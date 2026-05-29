@@ -136,6 +136,7 @@
     "node_modules",
     "temp",
     "tools",
-    "supabase/functions"
+    "supabase/functions",
+    "vitest.config.ts"
   ]
 }

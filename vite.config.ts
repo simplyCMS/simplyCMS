@@ -6,6 +6,7 @@ import { seoRoutesPlugin } from './src/seo/plugin';
 export default {
   plugins: [tailwindcss(), tanstackStart(), seoRoutesPlugin()],
   resolve: {
+    dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
       '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
       '@simplycms/objects': resolve(
