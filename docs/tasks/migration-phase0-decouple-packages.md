@@ -2,6 +2,13 @@
 
 > Статус: виконано. Цей документ є зафіксованим prerequisite для наступних фаз.
 
+> ⚠️ **Superseded (2026-05-29, частково — лише дата-шар):** два рішення цієї фази переглянуто задачею
+> [`core-engine-extraction-implementation.md`](./core-engine-extraction-implementation.md) у межах виносу ядра в headless commerce engine:
+> - **Фаза 0.9 «singleton pattern зберігається»** → скасовано: глобальний `export const supabase` прибирається на користь dependency injection через порт `CatalogRepository`/`OrderRepository` + `EngineProvider`. Причина: singleton унеможливлює мультитенантне (`hub_id`) перевикористання в MetaHub і subset-adoption.
+> - **Decision #10 «Жодних adapter-модулів»** → уточнено: заборона стосувалась **router/image-адаптерів** під час Next→TanStack міграції (щоб не робити подвійний рефакторинг). **Data-access порти (репозиторії)** — інша категорія, тепер дозволені й обов'язкові.
+>
+> Решта рішень фази (prop-driven pages, route-aware admin, `<img>`, next-themes, beforeLoad auth, ISR→invalidate, **ThemeRegistry-singleton**) лишаються чинними. ThemeRegistry-singleton ≠ supabase-singleton — не плутати.
+
 ## Контекст
 
 Проєкт `simplyCMS` мігрує з Next.js App Router на TanStack Start + Vite як **один breaking change без перехідного періоду**. Це означає:
@@ -153,7 +160,7 @@ API зберігається: `attribute="class"`, `defaultTheme="system"`, `ena
 
 | Файл | Зміна |
 |------|-------|
-| `core/src/supabase/client.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*`; singleton pattern зберігається |
+| `core/src/supabase/client.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*`; singleton pattern зберігається ⚠️ **(SUPERSEDED — singleton прибирається, див. amendment вгорі + `core-engine-extraction-implementation.md`)** |
 | `core/src/supabase/anon.ts` | `NEXT_PUBLIC_*` → `VITE_*` через `import.meta.env.*` |
 | `core/src/supabase/server.ts` | `NEXT_PUBLIC_*` → server-side env (process.env без prefix) |
 | `core/src/supabase/proxy.ts` | `NEXT_PUBLIC_*` → server-side env (process.env без prefix) |
@@ -227,7 +234,7 @@ ISR (`revalidatePath`, `revalidateTag`, `unstable_cache`) не існує в Tan
 7. **ISR → client-side invalidation.** `router.invalidate()` + React Query invalidation. CDN-level cache — окрема задача після міграції.
 8. **Admin shims (next/dynamic) — зникають.** `ssr: false` на admin layout route.
 9. **Server-only файли — виносяться з packages.** `supabase/server.ts`, `supabase/proxy.ts`, `getActiveThemeSSR.ts` переходять у `src/server/`.
-10. **Жодних adapter-модулів `@simplycms/core/adapters/*` не створювати.**
+10. **Жодних adapter-модулів `@simplycms/core/adapters/*` не створювати.** ⚠️ **(УТОЧНЕНО — стосувалось router/image-адаптерів; data-access порти/репозиторії тепер дозволені, див. amendment вгорі)**
 
 ## Антипатерни (уникати)
 
