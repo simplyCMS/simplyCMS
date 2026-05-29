@@ -52,6 +52,12 @@
       "@simplycms/react-query/*": [
         "./packages/simplycms/react-query/src/*"
       ],
+      "@simplycms/storefront": [
+        "./packages/simplycms/storefront/src"
+      ],
+      "@simplycms/storefront/*": [
+        "./packages/simplycms/storefront/src/*"
+      ],
       "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],

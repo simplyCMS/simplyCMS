@@ -358,6 +358,15 @@ importers:
         specifier: workspace:*
         version: link:../objects
 
+  packages/simplycms/storefront:
+    dependencies:
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.95.3
+
   packages/simplycms/theme-system:
     dependencies:
       '@simplycms/core':

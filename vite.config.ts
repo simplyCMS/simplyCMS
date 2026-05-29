@@ -28,6 +28,10 @@ export default {
         __dirname,
         'packages/simplycms/react-query/src',
       ),
+      '@simplycms/storefront': resolve(
+        __dirname,
+        'packages/simplycms/storefront/src',
+      ),
       '@simplycms/core': resolve(
         __dirname,
         'packages/simplycms/core/src',
