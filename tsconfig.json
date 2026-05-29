@@ -22,6 +22,24 @@
       "@simplycms/db-types": [
         "./supabase/types.ts"
       ],
+      "@simplycms/objects": [
+        "./packages/simplycms/objects/src"
+      ],
+      "@simplycms/objects/*": [
+        "./packages/simplycms/objects/src/*"
+      ],
+      "@simplycms/domain": [
+        "./packages/simplycms/domain/src"
+      ],
+      "@simplycms/domain/*": [
+        "./packages/simplycms/domain/src/*"
+      ],
+      "@simplycms/react-query": [
+        "./packages/simplycms/react-query/src"
+      ],
+      "@simplycms/react-query/*": [
+        "./packages/simplycms/react-query/src/*"
+      ],
       "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],

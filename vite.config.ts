@@ -8,6 +8,18 @@ export default {
   resolve: {
     alias: {
       '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
+      '@simplycms/objects': resolve(
+        __dirname,
+        'packages/simplycms/objects/src',
+      ),
+      '@simplycms/domain': resolve(
+        __dirname,
+        'packages/simplycms/domain/src',
+      ),
+      '@simplycms/react-query': resolve(
+        __dirname,
+        'packages/simplycms/react-query/src',
+      ),
       '@simplycms/core': resolve(
         __dirname,
         'packages/simplycms/core/src',

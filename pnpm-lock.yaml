@@ -307,6 +307,14 @@ importers:
         specifier: ^2.0.0 || ^3.0.0
         version: 3.4.0
 
+  packages/simplycms/domain:
+    dependencies:
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+
+  packages/simplycms/objects: {}
+
   packages/simplycms/plugin-system:
     dependencies:
       '@supabase/supabase-js':
@@ -322,6 +330,18 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+
+  packages/simplycms/react-query:
+    dependencies:
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.21(react@19.2.4)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.4
 
   packages/simplycms/theme-system:
     dependencies:
