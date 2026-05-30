@@ -1,6 +1,6 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
-> Статус: **у роботі** — готові P1, P2, P3, P4 (EngineProvider змонтовано, hook-тест), P6, P7 (структурний split на 5 пакетів), P9 + частково P5/P8/P10. Лишок: міграція наявних споживачів на `useEngine`, per-component presentational/container split, admin-on-repositories, publish-CI з build-кроком.
+> Статус: **у роботі** — готові P1, P2, P3, P4 (EngineProvider живий), P6, P7 (5 пакетів), P9, P10 (build/publish для Tier 0/1/2); P5 — ui self-contained + tier-розв'язка. Лишок: повний retarget `*-ui` від core (потребує identity/reviews/stock port-розширень), міграція data-споживачів під domain-shape, admin-on-repositories.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
 
@@ -12,29 +12,29 @@
 | **P2** `@simplycms/domain` | ✅ **Готово** | Subpath `./pricing`/`./discounts`/`./inventory`/`./shipping`; pure; 27 unit-тестів (vitest). `core/lib` re-export'ить домен для зворотної сумісності. |
 | **P3** `data-supabase` + знесення singleton | ✅ **Готово** | `@simplycms/data-supabase` (Catalog/Order/Identity репозиторії на інжектованому клієнті + `ScopeResolver`, mappers, тести) ✅. **Singleton знесено**: `SupabaseProvider`/`useSupabaseClient` (DI через контекст) у `CMSProvider`; ~80 call-sites мігровано; `grep "import { supabase }"` по репо = 0; `export const supabase` прибрано. _Лишок: `import.meta.env` ще у **трьох** core-файлах (`supabase/client.ts`, `supabase/anon.ts`, `config.ts`); SSR-резолв теми (`getActiveThemeSSR` → `createAnonSupabaseClient`) лишається env-залежним. Релокація у runtime — попереду._ |
 | **P4** `@simplycms/react-query` | 🟡 **Підключено (двигун живий)** | `EngineProvider`/`useEngine` + порт-керовані query-фабрики/хуки. **`EngineProvider` змонтовано в `__root` (`src/engine-provider.tsx` → `buildClientEngine` з браузерного клієнта + data-supabase репозиторіїв)**, тож `useEngine()` живий по всьому застосунку. Hook-рівневий тест (`engine-provider.test.tsx`, jsdom) перевіряє `useEngine`/`useProduct`/`useSections` через `EngineProvider` з mock-репо. _Лишок: наявні feature-ui/сторінки **ще** читають через core-хуки на `useSupabaseClient` — поступова міграція їх на `useEngine` попереду._ |
-| **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від `@simplycms/core` DB-типів (Json → objects); loader уже на DI. `theme-system` ThemeContext мігровано на `useSupabaseClient` (singleton прибрано). Object-agnostic рендер тем — попереду. |
+| **P5** `ui`/`theme-system`/`plugins` | 🟡 **Частково** | `plugin-system` відв'язано від core DB-типів. **`@simplycms/ui` тепер self-contained**: `cn`/`use-toast`/`use-mobile` перенесено з core у ui → ui більше не залежить від `@simplycms/core` (виправлено T3→god-package інверсію; core тримає re-export шими). `theme-system` ThemeContext на `useSupabaseClient`. Object-agnostic рендер тем — попереду. |
 | **P6** `@simplycms/storefront` | 🟡 **Винесено (client-параметризація)** | Лоадери (`products`/`sections`/`home`/`properties`) + SEO (`sitemap`/`robots`) винесено у пакет, параметризовано **сирим `SupabaseClient<Database>`** (не `CatalogRepository`/`EngineContext`). App `src/server/*` + `src/seo/*` делегують у пакет. _Наслідок: marketplace на іншій БД/схемі (hub_id) **поки не може** підставити свій репозиторій — потрібен клієнт проти тієї самої `Database`-схеми. Query-логіка дублюється з `data-supabase` (той самий `PRODUCT_FULL_SELECT`). Repo/EngineContext-параметризація — попереду._ |
 | **P7** feature-ui split | ✅ **Структурно готово** | Усі 5 пакетів створено: `cart-ui`, `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`. Компоненти перенесено з `core/components/*`; старі шляхи — re-export шими (barrel + deep-path працюють). Presentational/container split показано на `cart-ui` (`CartItemView`/`CartItem`); по інших компонентах — інкрементально. |
 | **P8** `@simplycms/admin` на портах | 🟡 **LinkResolver готовий** | Хардкод `/admin/*` прибрано: 85 літералів у 36 файлах → `adminPath()` (`lib/adminLinks.ts`), host-remappable база. _Переведення admin-CRUD на `CatalogRepository`/`OrderRepository` (замість прямих supabase-запитів) — попереду, разом із P7 (потребує domain-shape)._ |
 | **P9** `@simplycms/runtime` | 🟡 **Зібрано (не підключено)** | `defineConfig` складає `EngineContext` з адаптерів/модулів/теми/плагінів (pure, deps лише objects) ✅. **Reference-збірка `src/server/engine.ts` (`createServerRuntime`) ніде не викликається** — live-маршрути досі йдуть через `createServerSupabase()` напряму. Підключення рантайму до реальних шляхів — попереду. |
-| **P10** дистрибуція / CI | 🟡 **Частково** | Subtree push-команди + `cms:remote` (репоінт на `simplySOFTua`) готові. Маніфести виправлено (див. нижче), але пакети `private:true`, `main/exports` вказують на `.ts`-джерело без build-кроку → **publish-CI + build-крок попереду**. |
+| **P10** дистрибуція / CI | ✅ **Готово** (для Tier 0/1/2) | Subtree push + `cms:remote`. **Build/publish pipeline**: tsup-білд (esm+dts) для `objects`/`domain`/`data-supabase`/`react-query`/`runtime` — `private:false`, `publishConfig` (dev=src, publish=dist), `build`/`prepublishOnly` скрипти, `dist/` gitignored. Root `build:packages`. CI `publish-packages.yml` (build + `pnpm publish` на тег `v*`). _Лишок: `core`/`storefront`/`*-ui` не публікуються (db-types alias / browser / god-package) — окремий крок._ |
 
 **Перевірки на момент оновлення:** `pnpm typecheck` ✅ · `pnpm lint` ✅ (0 errors) · `pnpm test` ✅ (38 passed) · `pnpm build` ✅.
 
 ### Портативність у сторонні проєкти — статус після код-ревью
 
-**Виправлено** (маніфести/поведінка, білд лишається зеленим):
-- `@simplycms/core` тепер декларує sibling-залежності (`domain`, `ui`, `plugins`, усі `*-ui`) та зовнішні peer-deps (`next-themes`, `zod`, `react-hook-form`, `@hookform/resolvers`, `@supabase/ssr`); `exports` розширено `./hooks/*`, `./supabase/*`, `./components/*`.
-- `@simplycms/storefront` додано залежність `@simplycms/core`.
-- `*-ui` пакети: додано відсутні peer-deps (`@tanstack/react-query` у catalog/checkout/profile; tiptap-extensions + `date-fns` + react-router у reviews) та subpath-export `./*` (для per-file шимів).
-- `data-supabase.listProducts`/`getProductsBySection`: прибрано неявний кеп `pageSize:24` — без явної пагінації повертає всі активні товари (як канонічний loader).
+**Виправлено** (маніфести/build/tiers, білд лишається зеленим):
+- `@simplycms/core` декларує sibling-залежності (`domain`, `react-query`, `ui`, `plugins`, усі `*-ui`) та зовнішні peer-deps; `exports` розширено `./hooks/*`, `./supabase/*`, `./components/*`.
+- `@simplycms/storefront` додано залежність `@simplycms/core`; `*-ui` — відсутні peer-deps + subpath-export `./*`.
+- `data-supabase.listProducts`/`getProductsBySection`: прибрано неявний кеп `pageSize:24`.
+- **Build/publish (P10):** tsup-білд (esm+dts) + `publishConfig` (dev=src/publish=dist) + `private:false` для `objects`/`domain`/`data-supabase`/`react-query`/`runtime`; root `build:packages`; CI `publish-packages.yml`.
+- **Tier-розв'язка:** `@simplycms/ui` self-contained (cn/use-toast/use-mobile перенесено з core); `useCart` → `@simplycms/react-query`; **`cart-ui` повністю без `@simplycms/core`**; catalog/checkout/profile/reviews-ui переведено на тонкі tier-и для cn/toast/cart/shipping (core лишився лише для useAuth/useStock/useProductReviews/SupabaseProvider).
+- **Двигун живий:** `EngineProvider` змонтовано в `__root`; `useEngine()` покрито hook-тестом.
 
 **Лишилось (свідомі блокери, поза зеленим білдом app):**
-1. **Немає build-кроку**: усі пакети `private:true`, `main/exports` → `.ts(x)`-джерело. Для `pnpm add`/Packages потрібен tsup/tsc-emit + `private:false` (P10).
-2. **Резолв через app-аліаси**: крос-пакетні імпорти працюють завдяки root `tsconfig`/`vite` аліасам, яких немає у зовнішнього споживача (bundler-консюмери впораються через `exports`, Node-ESM рантайм — ні, доки немає build).
-3. **`*-ui` залежать від god-package `@simplycms/core`** замість тонких tier-ів (`objects`/`react-query`/`ui`) — subset-adoption (HUB «лише товари») тягне весь core. Потрібне перенесення хуків з core у `react-query`/`objects` (P4).
-4. **Двигун підключено частково**: `EngineProvider` змонтовано в `__root` (клієнт), `useEngine()` живий і покритий hook-тестом; **але** наявні сторінки/feature-ui ще читають через core-хуки (`useSupabaseClient`), а серверні loaders — через `createServerSupabase` напряму (не через `createServerRuntime`). Поступова міграція споживачів на `useEngine`/runtime — попереду.
-5. **`@simplycms/core/supabase/types` → `@simplycms/db-types`** (phantom alias на згенеровані типи host-схеми) — зовнішній споживач має постачати власні типи схеми.
+1. **`core`/`storefront`/`*-ui` ще не публікуються**: `core` тягне `@simplycms/db-types` (phantom alias на host-схему) + browser-залежності; `storefront` залежить від core-типів; `*-ui` ще на core. Потрібен build-крок + декаплінг типів схеми.
+2. **Повний retarget `*-ui` від core** заблоковано трьома port-розширеннями: **identity-auth** (щоб `useAuth`→engine), **reviews-port** (щоб `useProductReviews`→engine), **stock із modification-id** (щоб `useStock`→engine; зараз `getStock(ids)` лише product-level). Доки їх нема — catalog/checkout/profile/reviews-ui тримають core-залежність.
+3. **Повна міграція data-споживачів на `useEngine`** потребує адаптації сторінок/feature-ui під domain-shape об'єктів (порти повертають domain `Product`/`Section`, а рендер очікує сирі DB-рядки) — це P7-domain робота. Зроблено: tier-relocation `useCart`; live `EngineProvider`. Серверні loaders ще через `createServerSupabase` (не `createServerRuntime`).
 
 > Підхід обрано **адитивний на фундаменті**: нові пакети T0/T1 створені й покриті тестами, а `@simplycms/core` тимчасово re-export'ить домен, щоб застосунок лишався зеленим. Інвазивне знесення singleton (P3) та рознесення UI/admin/storefront (P5–P9) — окремими безпечними кроками, бо зачіпають ~80 call-sites і весь app-shell.
 
@@ -193,10 +193,10 @@ export interface EngineContext {
 - DoD: `simplycms.config.ts` збирає магазин через адаптери; немає прямих `import.meta.env` поза runtime. 🟡 _runtime сам pure; `import.meta.env` лишається у app-wiring (`engine.ts`/`config.ts`) і core (`client.ts`/`anon.ts`/`config.ts`); `data-supabase` env не містить._
 - _Реалізація:_ `packages/simplycms/runtime/src/index.ts` (`defineConfig`, `bootstrapRuntime`, `EngineModule`).
 
-### P10 — дистрибуція / CI
-- Per-package `package.json` з `exports` + (для published) build; семвер.
-- CI: workflow публікації кожного пакета в GitHub Packages на тег; subtree-сумісність (`cms:pull/push`) збережена.
-- DoD: MetaHub може `pnpm add @simplycms/objects@^x @simplycms/domain@^x ...`; subtree-флоу працює для пакетів у розробці.
+### P10 — дистрибуція / CI — ✅ ГОТОВО (Tier 0/1/2)
+- Per-package `package.json` з `exports` + build (tsup, esm+dts). ✅ для `objects`/`domain`/`data-supabase`/`react-query`/`runtime`: `publishConfig` (dev=src, publish=dist), `private:false`, `files`/`license`/`repository`, `build`+`prepublishOnly`, `dist/` gitignored. Root `build:packages`.
+- CI: `.github/workflows/publish-packages.yml` — `pnpm install` → `build:packages` → `pnpm publish` 5 пакетів на тег `v*`/manual; subtree-флоу (`cms:pull/push`) збережено. ✅
+- DoD: MetaHub може `pnpm add @simplycms/objects@^x @simplycms/domain@^x …`; subtree-флоу працює. ✅ (для Tier 0/1/2). _Лишок: `core`/`storefront`/`*-ui` — не публікуються (db-types alias / browser / god-package); потрібен декаплінг типів схеми + build для них._
 
 ## Як MetaHub споживає (orientation для HUB-задачі)
 
@@ -221,7 +221,7 @@ export interface EngineContext {
 - [x] feature-ui розділено на 5 `*-ui` пакетів. _(P7 — структурно ✅; presentational/container split — `cart-ui` готово, решта інкрементально)_
 - [~] `admin` на портах+LinkResolver. _(P8 — LinkResolver ✅ хардкод прибрано; admin-on-repositories — разом із P7)_
 - [~] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplycms/runtime` + reference-збірка `src/server/engine.ts` ✅; checks зелені; але runtime ще не підключено до live-маршрутів)_
-- [~] CI публікує пакети (Packages) + subtree-флоу робочий. _(subtree-флоу + `cms:remote` репоінт на `simplySOFTua` готові; publish-CI — попереду)_
+- [x] CI публікує пакети (Packages) + subtree-флоу робочий. _(tsup-build + `publish-packages.yml` для Tier 0/1/2 + `cms:remote` репоінт ✅; `core`/`storefront`/`*-ui` — окремий крок)_
 - [x] `migration-phase0-decouple-packages.md` має amendment про superseded singleton-рішення.
 
 ## Пов'язана документація
