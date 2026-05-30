@@ -1,5 +1,5 @@
 import { Minus, Plus, X } from "lucide-react";
-import type { CartItem as CartItemType } from "@simplycms/core/hooks/useCart";
+import type { CartItem as CartItemType } from "@simplycms/react-query";
 
 // Presentational-компонент позиції кошика: лише props, без data/стану.
 // HUB може реюзати його зі своїм контейнером.

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { useToast } from "@simplycms/ui/use-toast";
 import { Eye, EyeOff, Mail, Lock, User, Loader2, LogIn, UserPlus, UserX, AlertCircle, CheckCircle } from "lucide-react";
 
 interface CheckoutAuthBlockProps {

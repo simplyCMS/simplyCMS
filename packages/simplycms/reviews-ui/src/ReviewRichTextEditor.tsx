@@ -13,7 +13,7 @@ import {
   Undo,
   Redo,
 } from "lucide-react";
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 import { useCallback, useEffect } from "react";
 
 /** Кнопка тулбару редактора */

@@ -12,7 +12,10 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplycms/core": "workspace:*"
+    "@simplycms/core": "workspace:*",
+    "@simplycms/ui": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
+    "@simplycms/domain": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

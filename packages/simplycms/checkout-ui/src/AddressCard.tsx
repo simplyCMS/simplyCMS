@@ -1,5 +1,5 @@
 
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 import { Check, MapPin } from "lucide-react";
 
 interface AddressCardProps {

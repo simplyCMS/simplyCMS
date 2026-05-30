@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ShoppingCart } from "lucide-react";
-import { useCart } from "@simplycms/core/hooks/useCart";
+import { useCart } from "@simplycms/react-query";
 import { CartItem } from "./CartItem";
 
 export function CartDrawer() {

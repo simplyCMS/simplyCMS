@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 
 interface StarRatingProps {
   value: number;

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, ChevronRight, Save } from "lucide-react";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { useToast } from "@simplycms/ui/use-toast";
 import { RecipientCard } from "./RecipientCard";
 import { RecipientSelectorPopup } from "./RecipientSelectorPopup";
 import { RecipientSaveDialog } from "./RecipientSaveDialog";

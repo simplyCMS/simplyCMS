@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@simplycms/domain": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",
     "@simplycms/cart-ui": "workspace:*",

@@ -12,7 +12,7 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplycms/core": "workspace:*"
+    "@simplycms/react-query": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",

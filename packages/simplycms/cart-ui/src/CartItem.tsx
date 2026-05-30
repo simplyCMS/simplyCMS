@@ -1,4 +1,4 @@
-import { type CartItem as CartItemType, useCart } from "@simplycms/core/hooks/useCart";
+import { type CartItem as CartItemType, useCart } from "@simplycms/react-query";
 import { CartItemView } from "./CartItemView";
 
 interface CartItemProps {

@@ -12,7 +12,8 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplycms/core": "workspace:*"
+    "@simplycms/core": "workspace:*",
+    "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",

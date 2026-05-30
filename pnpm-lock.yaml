@@ -273,9 +273,9 @@ importers:
 
   packages/simplycms/cart-ui:
     dependencies:
-      '@simplycms/core':
+      '@simplycms/react-query':
         specifier: workspace:*
-        version: link:../core
+        version: link:../react-query
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -291,6 +291,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.21(react@19.2.4)
@@ -309,6 +312,15 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@simplycms/react-query':
+        specifier: workspace:*
+        version: link:../react-query
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.21(react@19.2.4)
@@ -345,6 +357,9 @@ importers:
       '@simplycms/profile-ui':
         specifier: workspace:*
         version: link:../profile-ui
+      '@simplycms/react-query':
+        specifier: workspace:*
+        version: link:../react-query
       '@simplycms/reviews-ui':
         specifier: workspace:*
         version: link:../reviews-ui
@@ -441,6 +456,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.21(react@19.2.4)
@@ -471,6 +489,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -525,15 +546,18 @@ importers:
 
   packages/simplycms/ui:
     dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
+      clsx:
+        specifier: ^2.0.0
+        version: 2.1.1
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
       react-dom:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4(react@19.2.4)
+      tailwind-merge:
+        specifier: ^2.0.0 || ^3.0.0
+        version: 3.4.0
 
   themes/default: {}
 
