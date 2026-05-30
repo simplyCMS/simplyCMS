@@ -39,12 +39,17 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-      # Публікуємо лише framework-agnostic пакети (Tier 0/1/2).
-      # workspace:* → конкретна версія підставляється pnpm автоматично.
-      - name: Publish
+      # Спершу публікуємо базовий @simplycms/objects (від нього залежать решта),
+      # щоб уникнути 404 при concurrent-публікації (pnpm не гарантує topo-порядок).
+      - name: Publish objects (base)
+        run: pnpm publish --filter @simplycms/objects --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      # Далі — залежні Tier 1/2. workspace:* → конкретна версія підставляється pnpm.
+      - name: Publish dependents
         run: >-
           pnpm publish
-          --filter @simplycms/objects
           --filter @simplycms/domain
           --filter @simplycms/data-supabase
           --filter @simplycms/react-query

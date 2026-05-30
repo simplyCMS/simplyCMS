@@ -13,4 +13,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
+  splitting: false,
+  external: ["@simplycms/objects"],
 });

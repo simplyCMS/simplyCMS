@@ -197,6 +197,7 @@ export interface EngineContext {
 - Per-package `package.json` з `exports` + build (tsup, esm+dts). ✅ для `objects`/`domain`/`data-supabase`/`react-query`/`runtime`: `publishConfig` (dev=src, publish=dist), `private:false`, `files`/`license`/`repository`, `build`+`prepublishOnly`, `dist/` gitignored. Root `build:packages`.
 - CI: `.github/workflows/publish-packages.yml` — `pnpm install` → `build:packages` → `pnpm publish` 5 пакетів на тег `v*`/manual; subtree-флоу (`cms:pull/push`) збережено. ✅
 - DoD: MetaHub може `pnpm add @simplycms/objects@^x @simplycms/domain@^x …`; subtree-флоу працює. ✅ (для Tier 0/1/2). _Лишок: `core`/`storefront`/`*-ui` — не публікуються (db-types alias / browser / god-package); потрібен декаплінг типів схеми + build для них._
+- **Примітки щодо публікації:** (a) CI публікує `@simplycms/objects` окремим кроком ПЕРЕД залежними (pnpm не гарантує topo-порядок → інакше 404). (b) Згенеровані `.d.ts` ре-експортують через `.js`-specifier (rollup-dts) — споживач має `moduleResolution: "bundler"|"node16"|"nodenext"` (норма для сучасного ESM; legacy `node` не підтримується). (c) Для GitHub Packages scope `@simplycms` ≠ власник `simplySOFTua` — публікувати в npmjs або перейменувати scope (workflow за замовч. npmjs).
 
 ## Як MetaHub споживає (orientation для HUB-задачі)
 

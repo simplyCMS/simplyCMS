@@ -7,4 +7,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
+  // Без code-splitting: кожен entry самодостатній (інакше .d.ts ре-експортує
+  // з hash-чанка через .js → ламає moduleResolution:node у споживачів).
+  splitting: false,
 });
