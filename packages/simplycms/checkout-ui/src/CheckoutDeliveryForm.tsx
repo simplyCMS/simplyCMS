@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Truck, ChevronRight, Save, icons } from "lucide-react";
 import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { ShippingMethod, ShippingRate, PickupPoint } from "@simplycms/domain/shipping";
+import type { ShippingMethod, ShippingRate, PickupPoint } from "@simplycms/domain/shipping";
 import { formatShippingCost } from "@simplycms/domain/shipping";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 import { useToast } from "@simplycms/ui/use-toast";
