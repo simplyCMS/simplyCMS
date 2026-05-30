@@ -32,8 +32,8 @@
 - **Двигун живий:** `EngineProvider` змонтовано в `__root`; `useEngine()` покрито hook-тестом.
 
 **Лишилось (свідомі блокери, поза зеленим білдом app):**
-1. **`core`/`storefront`/`*-ui` ще не публікуються**: `core` тягне `@simplycms/db-types` (phantom alias на host-схему) + browser-залежності; `storefront` залежить від core-типів; `*-ui` ще на core. Потрібен build-крок + декаплінг типів схеми.
-2. **Повний retarget `*-ui` від core** заблоковано трьома port-розширеннями: **identity-auth** (щоб `useAuth`→engine), **reviews-port** (щоб `useProductReviews`→engine), **stock із modification-id** (щоб `useStock`→engine; зараз `getStock(ids)` лише product-level). Доки їх нема — catalog/checkout/profile/reviews-ui тримають core-залежність.
+1. **`core`/`ui`/`storefront`/`*-ui` ще не публікуються**: `core` тягне `@simplycms/db-types` (phantom alias на host-схему) + browser-залежності; `storefront` залежить від core-типів **і** `parseBannerRow` з `@simplycms/core/lib/bannerUtils`; `*-ui` ще на core. `@simplycms/ui` self-contained від core, але `private:true` і його `package.json` ще не декларує peer-deps на 27 `@radix-ui/*` + `cmdk`/`input-otp`/`sonner`/`vaul`/`recharts`/`next-themes` (потрібні перед публікацією). Усім потрібен build-крок + декаплінг типів схеми.
+2. **Повний retarget `*-ui` від core** заблоковано port-розширеннями. Окрім хуків (**identity-auth** для `useAuth`, **reviews-port** для `useProductReviews`, **stock із modification-id** для `useStock`), кілька feature-компонентів роблять **прямі supabase data-запити** через `useSupabaseClient` (а не лише auth): `catalog-ui/FilterSidebar` (section_property_assignments, property_options), `checkout-ui/CheckoutDeliveryForm` (shipping_methods/rates, pickup_points, user_addresses), `CheckoutRecipientForm`/`profile-ui` (user_recipients/user_addresses). Тобто треба ще **data-порти**: catalog-properties(faceted), shipping, addresses/recipients. Доки їх нема — catalog/checkout/profile/reviews-ui тримають `@simplycms/core` (через `SupabaseProvider`).
 3. **Повна міграція data-споживачів на `useEngine`** потребує адаптації сторінок/feature-ui під domain-shape об'єктів (порти повертають domain `Product`/`Section`, а рендер очікує сирі DB-рядки) — це P7-domain робота. Зроблено: tier-relocation `useCart`; live `EngineProvider`. Серверні loaders ще через `createServerSupabase` (не `createServerRuntime`).
 
 > Підхід обрано **адитивний на фундаменті**: нові пакети T0/T1 створені й покриті тестами, а `@simplycms/core` тимчасово re-export'ить домен, щоб застосунок лишався зеленим. Інвазивне знесення singleton (P3) та рознесення UI/admin/storefront (P5–P9) — окремими безпечними кроками, бо зачіпають ~80 call-sites і весь app-shell.
@@ -166,7 +166,7 @@ export interface EngineContext {
 
 ### P5 — `ui` / `theme-system` / `plugins` (мінімальні зміни, object-agnostic) — 🟡 ЧАСТКОВО
 - `ui` — лишити; прибрати випадкові доменні домішки. ✅ (домішок не виявлено)
-- `theme-system` — зберегти ThemeRegistry-singleton (не плутати з supabase); зробити рендер **object-agnostic** (рендерить будь-який зареєстрований тип, не лише товар). ⛔ _ThemeContext ще fetch'ить активну тему через supabase-singleton — фолдиться в P3 eradication._
+- `theme-system` — зберегти ThemeRegistry-singleton (не плутати з supabase); зробити рендер **object-agnostic** (рендерить будь-який зареєстрований тип, не лише товар). 🟡 _ThemeContext вже на DI (`useSupabaseClient`, P3); лишок — SSR-резолв `getActiveThemeSSR` через `createAnonSupabaseClient` (env-залежний) + object-agnostic рендер._
 - `plugins` — зберегти; хук-поінти лишаються backbone розширення. ✅ (loader уже на DI; type-coupling до core DB прибрано: `Json` → `@simplycms/objects`)
 - DoD: theme/plugins не залежать від data-шару напряму. 🟡 _plugins — так; theme — ще ні._
 
