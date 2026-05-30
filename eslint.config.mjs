@@ -27,6 +27,7 @@ const eslintConfig = [
       "temp/**",
       "node_modules/**",
       "dist/**",
+      "**/dist/**",
       "dist-ssr/**",
       ".output/**",
       ".nitro/**",

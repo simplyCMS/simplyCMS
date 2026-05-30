@@ -1,7 +1,7 @@
 {
   "name": "@simplycms/data-supabase",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "Supabase implementations of SimplyCMS engine ports (Tier 2). Repositories receive an injected client + ScopeResolver — no global singleton.",
   "type": "module",
   "main": "./src/index.ts",
@@ -9,12 +9,32 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
   "sideEffects": false,
+  "files": ["dist", "src"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
+    "directory": "data-supabase"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "tsup"
+  },
   "dependencies": {
     "@simplycms/objects": "workspace:*"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.0.0"
-  },
-  "license": "MIT"
+  }
 }

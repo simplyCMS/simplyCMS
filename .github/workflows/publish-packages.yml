@@ -1,0 +1,54 @@
+name: Publish Packages
+
+# Публікація framework-agnostic пакетів SimplyCMS у реєстр.
+# Тригер: git-тег виду v* (напр. v0.1.0) або ручний запуск.
+#
+# Передумови (repo settings → secrets/vars):
+#   - NODE_AUTH_TOKEN — токен реєстру (npm automation token або GitHub Packages PAT).
+#   - vars.NPM_REGISTRY — (опц.) URL реєстру; за замовч. https://registry.npmjs.org.
+# Зауваження щодо scope: пакети мають scope @simplycms. Для GitHub Packages
+# scope має збігатися з власником репозиторію — інакше публікуйте в npmjs під
+# організацією @simplycms, або перейменуйте scope на @simplysoftua.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build & publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+          registry-url: ${{ vars.NPM_REGISTRY || 'https://registry.npmjs.org' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build publishable packages
+        run: pnpm run build:packages
+
+      # Публікуємо лише framework-agnostic пакети (Tier 0/1/2).
+      # workspace:* → конкретна версія підставляється pnpm автоматично.
+      - name: Publish
+        run: >-
+          pnpm publish
+          --filter @simplycms/objects
+          --filter @simplycms/domain
+          --filter @simplycms/data-supabase
+          --filter @simplycms/react-query
+          --filter @simplycms/runtime
+          --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

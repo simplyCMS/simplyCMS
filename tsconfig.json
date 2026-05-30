@@ -137,6 +137,8 @@
     "temp",
     "tools",
     "supabase/functions",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "**/tsup.config.ts",
+    "**/dist"
   ]
 }

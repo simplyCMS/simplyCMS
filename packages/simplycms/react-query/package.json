@@ -1,7 +1,7 @@
 {
   "name": "@simplycms/react-query",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "TanStack Query hooks for SimplyCMS engine, wired through EngineProvider/useEngine. Data-access via injected ports — never imports supabase directly.",
   "type": "module",
   "main": "./src/index.ts",
@@ -10,13 +10,37 @@
     ".": "./src/index.ts",
     "./queries": "./src/queries.ts"
   },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./queries": {
+        "types": "./dist/queries.d.ts",
+        "import": "./dist/queries.js"
+      }
+    }
+  },
   "sideEffects": false,
+  "files": ["dist", "src"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
+    "directory": "react-query"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "tsup"
+  },
   "dependencies": {
     "@simplycms/objects": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "react": "^18.0.0 || ^19.0.0"
-  },
-  "license": "MIT"
+  }
 }
