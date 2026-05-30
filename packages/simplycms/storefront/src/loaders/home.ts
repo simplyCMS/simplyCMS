@@ -1,5 +1,32 @@
-import { parseBannerRow } from "@simplycms/core/lib/bannerUtils";
+import type { Banner, BannerButton } from "@simplycms/objects";
 import type { StorefrontClient } from "../client";
+
+/** Перетворює рядок banners на доменний Banner (раніше — core/lib/bannerUtils). */
+function mapBannerRow(row: Record<string, unknown>): Banner {
+  return {
+    ...(row as unknown as Banner),
+    buttons: parseBannerButtons(row.buttons),
+    schedule_days: Array.isArray(row.schedule_days)
+      ? (row.schedule_days as number[])
+      : null,
+  };
+}
+
+function parseBannerButtons(raw: unknown): BannerButton[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isBannerButton);
+}
+
+function isBannerButton(item: unknown): item is BannerButton {
+  if (typeof item !== "object" || item === null) return false;
+  const obj = item as Record<string, unknown>;
+  return (
+    typeof obj.text === "string" &&
+    typeof obj.url === "string" &&
+    typeof obj.target === "string" &&
+    typeof obj.variant === "string"
+  );
+}
 
 /** Скорочений select для карточки товару на головній */
 const HOME_PRODUCT_SELECT = `
@@ -34,7 +61,7 @@ export async function loadHomePageData(client: StorefrontClient) {
   ]);
 
   return {
-    banners: (banners.data ?? []).map(parseBannerRow),
+    banners: (banners.data ?? []).map(mapBannerRow),
     featuredProducts: (featured.data ?? []).map(mapHomeProduct),
     newProducts: (newProducts.data ?? []).map(mapHomeProduct),
     sections: sections.data ?? [],

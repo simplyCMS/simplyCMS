@@ -54,6 +54,7 @@ jobs:
           --filter @simplycms/data-supabase
           --filter @simplycms/react-query
           --filter @simplycms/runtime
+          --filter @simplycms/storefront
           --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

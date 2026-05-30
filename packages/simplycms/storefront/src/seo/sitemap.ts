@@ -35,7 +35,7 @@ export async function buildSitemapXml(
   /** Товари */
   for (const p of productsRes.data ?? []) {
     const sectionSlug =
-      (p.sections as { slug: string } | null)?.slug ?? "products";
+      (p.sections as unknown as { slug: string } | null)?.slug ?? "products";
     urls.push(
       entry(
         `${baseUrl}/catalog/${sectionSlug}/${p.slug}`,
