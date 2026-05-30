@@ -1,7 +1,7 @@
 import { GripVertical } from "lucide-react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 
 const ResizablePanelGroup = ({ className, ...props }: React.ComponentProps<typeof ResizablePrimitive.Group>) => (
   <ResizablePrimitive.Group

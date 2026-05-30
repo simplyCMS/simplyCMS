@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 
 /** Типізація Recharts payload елемента */
 interface RechartsPayloadItem {
