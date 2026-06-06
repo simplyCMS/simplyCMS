@@ -1,4 +1,4 @@
-import { supabase } from '../../supabase/client';
+import { getSupabaseBrowserClient } from '../../supabase/client';
 import { ShippingZone } from './types';
 
 /**
@@ -9,6 +9,7 @@ import { ShippingZone } from './types';
 export async function findShippingZone(
   customerCity: string
 ): Promise<ShippingZone | null> {
+  const supabase = getSupabaseBrowserClient();
   // Fetch all active zones
   const { data: zones, error } = await supabase
     .from('shipping_zones')

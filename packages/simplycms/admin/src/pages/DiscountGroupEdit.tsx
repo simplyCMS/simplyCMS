@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +13,7 @@ import { Switch } from "@simplycms/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 
 const schema = z.object({
@@ -29,6 +30,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DiscountGroupEdit() {
+  const supabase = useSupabaseClient();
   const { groupId } = useParams({ strict: false }) as { groupId: string };
   const search = useSearch({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();
@@ -115,7 +117,7 @@ export default function DiscountGroupEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
       toast({ title: isNew ? "Групу створено" : "Групу оновлено" });
-      navigate({ to: '/admin/discounts' });
+      navigate({ to: adminPath('discounts') });
     },
     onError: (err: Error) => {
       toast({ title: "Помилка", description: err.message, variant: "destructive" });
@@ -125,7 +127,7 @@ export default function DiscountGroupEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/admin/discounts' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('discounts') })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">{isNew ? "Нова група скидок" : "Редагування групи"}</h1>
@@ -225,7 +227,7 @@ export default function DiscountGroupEdit() {
             <Button type="submit" disabled={save.isPending}>
               {save.isPending ? "Збереження..." : "Зберегти"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => navigate({ to: '/admin/discounts' })}>
+            <Button type="button" variant="outline" onClick={() => navigate({ to: adminPath('discounts') })}>
               Скасувати
             </Button>
           </div>

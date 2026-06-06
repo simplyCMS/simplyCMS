@@ -1,0 +1,44 @@
+{
+  "name": "@simplycms/objects",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Type-only, zero runtime dependencies.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./objects": "./src/objects/index.ts",
+    "./ports": "./src/ports/index.ts"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./objects": {
+        "types": "./dist/objects/index.d.ts",
+        "import": "./dist/objects/index.js"
+      },
+      "./ports": {
+        "types": "./dist/ports/index.d.ts",
+        "import": "./dist/ports/index.js"
+      }
+    }
+  },
+  "sideEffects": false,
+  "files": ["dist", "src"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
+    "directory": "objects"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "tsup"
+  }
+}

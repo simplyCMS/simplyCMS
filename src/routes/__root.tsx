@@ -9,6 +9,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
+import { ClientEngineProvider } from '../engine-provider';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
@@ -52,9 +53,11 @@ function RootComponent() {
           disableTransitionOnChange
         >
           <CMSProvider>
-            <Outlet />
-            <Toaster />
-            <SonnerToaster richColors position="top-right" />
+            <ClientEngineProvider>
+              <Outlet />
+              <Toaster />
+              <SonnerToaster richColors position="top-right" />
+            </ClientEngineProvider>
           </CMSProvider>
         </ThemeProvider>
         <Scripts />

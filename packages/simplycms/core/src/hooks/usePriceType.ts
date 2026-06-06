@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { useAuth } from "./useAuth";
 
 export function usePriceType() {
+  const supabase = useSupabaseClient();
   const { user } = useAuth();
 
   const { data: defaultPriceType } = useQuery({

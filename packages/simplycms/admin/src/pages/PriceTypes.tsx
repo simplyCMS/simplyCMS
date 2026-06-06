@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
 import {
@@ -8,8 +8,10 @@ import {
 } from "@simplycms/ui/table";
 import { Plus, Trash2, Star, Loader2 } from "lucide-react";
 import { useToast } from "@simplycms/core/hooks/use-toast";
+import { adminPath } from "../lib/adminLinks";
 
 export default function PriceTypes() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,7 +53,7 @@ export default function PriceTypes() {
           <h1 className="text-3xl font-bold">Види цін</h1>
           <p className="text-muted-foreground">Управління видами цін для товарів</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/price-types/$priceTypeId', params: { priceTypeId: 'new' } })}>
+        <Button onClick={() => navigate({ to: adminPath('price-types/$priceTypeId'), params: { priceTypeId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати вид ціни
         </Button>
@@ -69,7 +71,7 @@ export default function PriceTypes() {
             </TableHeader>
             <TableBody>
               {priceTypes?.map((pt) => (
-                <TableRow key={pt.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate({ to: `/admin/price-types/${pt.id}` })}>
+                <TableRow key={pt.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate({ to: adminPath(`price-types/${pt.id}`) })}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{pt.name}</span>

@@ -1,0 +1,41 @@
+{
+  "name": "@simplycms/storefront",
+  "version": "0.1.0",
+  "private": false,
+  "description": "SSR storefront loaders + SEO generators for SimplyCMS, parameterized by an injected Supabase client. Host wires its own framework glue (createServerFn).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./loaders": "./src/loaders/index.ts",
+    "./seo": "./src/seo/index.ts"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+      "./loaders": { "types": "./dist/loaders/index.d.ts", "import": "./dist/loaders/index.js" },
+      "./seo": { "types": "./dist/seo/index.d.ts", "import": "./dist/seo/index.js" }
+    }
+  },
+  "sideEffects": false,
+  "files": ["dist", "src"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
+    "directory": "storefront"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@simplycms/objects": "workspace:*"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}

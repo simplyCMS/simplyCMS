@@ -8,7 +8,7 @@ import { Button } from "@simplycms/ui/button";
 import { Form } from "@simplycms/ui/form";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
 import { CheckoutAuthBlock } from "../components/checkout/CheckoutAuthBlock";
 import { CheckoutContactForm } from "../components/checkout/CheckoutContactForm";
@@ -73,6 +73,7 @@ const checkoutSchema = z.object({
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
@@ -129,7 +130,7 @@ export default function Checkout() {
     }
 
     loadProfile();
-  }, [user, form]);
+  }, [user, form, supabase]);
 
   // Redirect if cart is empty
   useEffect(() => {

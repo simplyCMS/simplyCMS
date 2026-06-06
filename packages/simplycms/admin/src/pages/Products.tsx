@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { adminPath } from "../lib/adminLinks";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -24,6 +25,7 @@ type ProductWithSection = Product & {
 };
 
 export default function Products() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -55,7 +57,7 @@ export default function Products() {
   });
 
   const handleRowClick = (productId: string) => {
-    navigate({ to: `/admin/products/${productId}` });
+    navigate({ to: adminPath(`products/${productId}`) });
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -80,7 +82,7 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Товари</h1>
           <p className="text-muted-foreground">Керування каталогом товарів</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/products/$productId', params: { productId: 'new' } })}>
+        <Button onClick={() => navigate({ to: adminPath('products/$productId'), params: { productId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати товар
         </Button>

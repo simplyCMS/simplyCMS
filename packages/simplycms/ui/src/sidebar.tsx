@@ -3,8 +3,8 @@ import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
 
-import { useIsMobile } from "@simplycms/core/hooks/use-mobile";
-import { cn } from "@simplycms/core/lib/utils";
+import { useIsMobile } from "@simplycms/ui/use-mobile";
+import { cn } from "@simplycms/ui/utils";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Separator } from "./separator";

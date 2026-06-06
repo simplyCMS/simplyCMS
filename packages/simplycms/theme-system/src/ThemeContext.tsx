@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { ThemeRegistry } from "./ThemeRegistry";
 import type {
   ThemeContextType,
@@ -67,6 +67,7 @@ export function ThemeProvider({
   initialThemeName,
   initialThemeSettings,
 }: ThemeProviderProps) {
+  const supabase = useSupabaseClient();
   const [activeTheme, setActiveTheme] = useState<ThemeModule | null>(null);
   const [themeName, setThemeName] = useState<string>(
     initialThemeName || DEFAULT_THEME_NAME
@@ -166,7 +167,7 @@ export function ThemeProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [fallbackTheme, loadTheme]);
+  }, [fallbackTheme, loadTheme, supabase]);
 
   const refreshTheme = useCallback(async () => {
     ThemeRegistry.clearCache();

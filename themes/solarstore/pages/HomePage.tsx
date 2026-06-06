@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import useEmblaCarousel from "embla-carousel-react";
 
 /** Категорії товарів для героїв-секції */
@@ -50,6 +50,7 @@ const advantages = [
 ];
 
 export default function HomePage() {
+  const supabase = useSupabaseClient();
   /** Рекомендовані товари */
   const { data: featuredProducts } = useQuery({
     queryKey: ["featured-products"],
@@ -393,6 +394,7 @@ function SectionProductCarousel({
 }: {
   section: { id: string; name: string; slug: string };
 }) {
+  const supabase = useSupabaseClient();
   const { data: products } = useQuery({
     queryKey: ["section-products", section.id],
     queryFn: async () => {

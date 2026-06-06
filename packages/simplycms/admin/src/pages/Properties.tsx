@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { adminPath } from "../lib/adminLinks";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -44,6 +45,7 @@ const propertyTypes = [
 ];
 
 export default function Properties() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [propertyType, setPropertyType] = useState<Enums<"property_type">>("text");
@@ -245,7 +247,7 @@ export default function Properties() {
                 <TableRow 
                   key={property.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: `/admin/properties/${property.id}` })}
+                  onClick={() => navigate({ to: adminPath(`properties/${property.id}`) })}
                 >
                   <TableCell className="font-medium">
                     {property.name}

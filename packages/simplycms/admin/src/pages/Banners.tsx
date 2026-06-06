@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
 import { Switch } from "@simplycms/ui/switch";
@@ -8,6 +8,7 @@ import { Skeleton } from "@simplycms/ui/skeleton";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Plus, Trash2, GripVertical, ImageIcon, Clock, Calendar } from "lucide-react";
 import { useNavigate } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 
 const PLACEMENT_LABELS: Record<string, string> = {
   home: "Головна",
@@ -18,6 +19,7 @@ const PLACEMENT_LABELS: Record<string, string> = {
 };
 
 export default function Banners() {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -67,7 +69,7 @@ export default function Banners() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Банери</h1>
-        <Button onClick={() => navigate({ to: '/admin/banners/$bannerId', params: { bannerId: 'new' } })}>
+        <Button onClick={() => navigate({ to: adminPath('banners/$bannerId'), params: { bannerId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" /> Додати банер
         </Button>
       </div>
@@ -82,7 +84,7 @@ export default function Banners() {
       ) : (
         <div className="space-y-3">
           {banners.map((b) => (
-            <Card key={b.id} className="overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate({ to: `/admin/banners/${b.id}` })}>
+            <Card key={b.id} className="overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate({ to: adminPath(`banners/${b.id}`) })}>
               <div className="flex items-center gap-4 p-4">
                 <GripVertical className="h-5 w-5 text-muted-foreground shrink-0" />
                 <div className="relative h-16 w-28 rounded bg-muted overflow-hidden shrink-0">

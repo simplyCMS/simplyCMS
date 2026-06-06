@@ -22,6 +22,72 @@
       "@simplycms/db-types": [
         "./supabase/types.ts"
       ],
+      "@simplycms/objects": [
+        "./packages/simplycms/objects/src"
+      ],
+      "@simplycms/objects/*": [
+        "./packages/simplycms/objects/src/*"
+      ],
+      "@simplycms/domain": [
+        "./packages/simplycms/domain/src"
+      ],
+      "@simplycms/domain/*": [
+        "./packages/simplycms/domain/src/*"
+      ],
+      "@simplycms/data-supabase": [
+        "./packages/simplycms/data-supabase/src"
+      ],
+      "@simplycms/data-supabase/*": [
+        "./packages/simplycms/data-supabase/src/*"
+      ],
+      "@simplycms/runtime": [
+        "./packages/simplycms/runtime/src"
+      ],
+      "@simplycms/runtime/*": [
+        "./packages/simplycms/runtime/src/*"
+      ],
+      "@simplycms/react-query": [
+        "./packages/simplycms/react-query/src"
+      ],
+      "@simplycms/react-query/*": [
+        "./packages/simplycms/react-query/src/*"
+      ],
+      "@simplycms/storefront": [
+        "./packages/simplycms/storefront/src"
+      ],
+      "@simplycms/storefront/*": [
+        "./packages/simplycms/storefront/src/*"
+      ],
+      "@simplycms/cart-ui": [
+        "./packages/simplycms/cart-ui/src"
+      ],
+      "@simplycms/cart-ui/*": [
+        "./packages/simplycms/cart-ui/src/*"
+      ],
+      "@simplycms/catalog-ui": [
+        "./packages/simplycms/catalog-ui/src"
+      ],
+      "@simplycms/catalog-ui/*": [
+        "./packages/simplycms/catalog-ui/src/*"
+      ],
+      "@simplycms/checkout-ui": [
+        "./packages/simplycms/checkout-ui/src"
+      ],
+      "@simplycms/checkout-ui/*": [
+        "./packages/simplycms/checkout-ui/src/*"
+      ],
+      "@simplycms/profile-ui": [
+        "./packages/simplycms/profile-ui/src"
+      ],
+      "@simplycms/profile-ui/*": [
+        "./packages/simplycms/profile-ui/src/*"
+      ],
+      "@simplycms/reviews-ui": [
+        "./packages/simplycms/reviews-ui/src"
+      ],
+      "@simplycms/reviews-ui/*": [
+        "./packages/simplycms/reviews-ui/src/*"
+      ],
       "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],
@@ -70,6 +136,9 @@
     "node_modules",
     "temp",
     "tools",
-    "supabase/functions"
+    "supabase/functions",
+    "vitest.config.ts",
+    "**/tsup.config.ts",
+    "**/dist"
   ]
 }

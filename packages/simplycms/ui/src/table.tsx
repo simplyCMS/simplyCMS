@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplycms/ui/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (

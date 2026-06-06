@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
@@ -24,6 +24,7 @@ interface InstallPluginDialogProps {
 }
 
 export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);

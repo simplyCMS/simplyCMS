@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SupabaseProvider } from "../supabase/SupabaseProvider";
 import { AuthProvider } from "../hooks/useAuth";
 import { CartProvider } from "../hooks/useCart";
 
@@ -21,11 +22,13 @@ export function CMSProvider({ children, customQueryClient }: CMSProviderProps) {
 
   return (
     <QueryClientProvider client={client}>
-      <AuthProvider>
-        <CartProvider>
-          {children}
-        </CartProvider>
-      </AuthProvider>
+      <SupabaseProvider>
+        <AuthProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </AuthProvider>
+      </SupabaseProvider>
     </QueryClientProvider>
   );
 }

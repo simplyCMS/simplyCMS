@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { ProductCard } from "../components/catalog/ProductCard";
 import { Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
@@ -20,6 +20,7 @@ export default function PropertyPage({
   option: initialOption,
   products: _initialProducts,
 }: PropertyOptionPageProps = {}) {
+  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const propertySlug = params?.propertySlug as string | undefined;
   const optionSlug = params?.optionSlug as string | undefined;

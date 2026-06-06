@@ -6,9 +6,10 @@ import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Switch } from "@simplycms/ui/switch";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 import type { Tables } from "@simplycms/core/supabase/types";
+import { adminPath } from "../lib/adminLinks";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -57,6 +58,7 @@ interface DiscountGroup {
 }
 
 export default function Discounts() {
+  const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -173,7 +175,7 @@ export default function Discounts() {
             />
             <Button variant="ghost" size="icon" asChild>
               <Link
-                to="/admin/discounts/groups/$groupId"
+                to={adminPath("discounts/groups/$groupId")}
                 params={{ groupId: group.id }}
               >
                 <Pencil className="h-4 w-4" />
@@ -223,7 +225,7 @@ export default function Discounts() {
                 <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/discount:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
                     <Link
-                      to="/admin/discounts/$discountId"
+                      to={adminPath("discounts/$discountId")}
                       params={{ discountId: d.id }}
                     >
                       <Pencil className="h-3 w-3" />
@@ -259,7 +261,7 @@ export default function Discounts() {
             <div className="flex gap-2 py-1 pl-6">
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
                 <Link
-                  to="/admin/discounts/$discountId"
+                  to={adminPath("discounts/$discountId")}
                   params={{ discountId: 'new' }}
                   search={{ groupId: group.id }}
                 >
@@ -268,7 +270,7 @@ export default function Discounts() {
               </Button>
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
                 <Link
-                  to="/admin/discounts/groups/$groupId"
+                  to={adminPath("discounts/groups/$groupId")}
                   params={{ groupId: 'new' }}
                   search={{ parentId: group.id }}
                 >
@@ -293,12 +295,12 @@ export default function Discounts() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link to="/admin/price-validator">
+            <Link to={adminPath("price-validator")}>
               <DollarSign className="h-4 w-4 mr-2" /> Валідатор цін
             </Link>
           </Button>
           <Button asChild>
-            <Link to="/admin/discounts/groups/$groupId" params={{ groupId: 'new' }}>
+            <Link to={adminPath("discounts/groups/$groupId")} params={{ groupId: 'new' }}>
               <Plus className="h-4 w-4 mr-2" /> Нова група
             </Link>
           </Button>
@@ -317,7 +319,7 @@ export default function Discounts() {
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Ще немає груп скидок</p>
               <Button variant="outline" className="mt-4" asChild>
-                <Link to="/admin/discounts/groups/$groupId" params={{ groupId: 'new' }}>Створити першу групу</Link>
+                <Link to={adminPath("discounts/groups/$groupId")} params={{ groupId: 'new' }}>Створити першу групу</Link>
               </Button>
             </div>
           ) : (

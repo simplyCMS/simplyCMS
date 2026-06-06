@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { useAuth } from "../hooks/useAuth";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
@@ -28,6 +28,7 @@ const registerSchema = z.object({
 });
 
 export default function Auth() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<string, string | undefined>;
   const { user, isLoading: authLoading } = useAuth();

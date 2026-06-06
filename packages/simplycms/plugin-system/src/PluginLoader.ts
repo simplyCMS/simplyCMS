@@ -1,7 +1,7 @@
 import { hookRegistry } from "./HookRegistry";
 import type { Plugin, PluginModule } from "./types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Json } from "@simplycms/core/supabase/types";
+import type { Json } from "@simplycms/objects";
 
 // Map of available plugins (will be populated by dynamic imports)
 const pluginModules: Map<string, PluginModule> = new Map();

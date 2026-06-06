@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Upload, X, Loader2 } from "lucide-react";
@@ -22,6 +22,7 @@ export function ImageUpload({
   maxImages = 10,
   disabled = false,
 }: ImageUploadProps) {
+  const supabase = useSupabaseClient();
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const { toast } = useToast();
@@ -72,7 +73,7 @@ export function ImageUpload({
       .getPublicUrl(fileName);
 
     return urlData.publicUrl;
-  }, [folder, bucket, toast]);
+  }, [folder, bucket, toast, supabase]);
 
   const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0 || disabled) return;

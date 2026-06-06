@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import {
@@ -45,6 +45,7 @@ export default function CatalogPage({
   initialSections,
   initialProducts: _initialProducts,
 }: CatalogPageProps = {}) {
+  const supabase = useSupabaseClient();
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -92,8 +93,8 @@ export default function CatalogPage({
       );
 
       const [modPropertyValues, modStockData] = await Promise.all([
-        fetchModificationPropertyValues(modificationIds),
-        fetchModificationStockData(modificationIds),
+        fetchModificationPropertyValues(supabase, modificationIds),
+        fetchModificationStockData(supabase, modificationIds),
       ]);
 
       const mapped = data.map((product) => {

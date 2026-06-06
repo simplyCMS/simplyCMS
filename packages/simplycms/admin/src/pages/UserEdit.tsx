@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -43,10 +43,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "@simplycms/core/hooks/use-toast";
+import { adminPath } from "../lib/adminLinks";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 
 export default function UserEdit() {
+  const supabase = useSupabaseClient();
   const { userId } = useParams({ strict: false }) as { userId: string };
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -235,7 +237,7 @@ export default function UserEdit() {
       <div className="p-8 text-center">
         <p>Користувача не знайдено</p>
         <Button asChild className="mt-4">
-          <Link to="/admin/users">Назад до списку</Link>
+          <Link to={adminPath("users")}>Назад до списку</Link>
         </Button>
       </div>
     );
@@ -246,7 +248,7 @@ export default function UserEdit() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/admin/users">
+          <Link to={adminPath("users")}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -504,7 +506,7 @@ export default function UserEdit() {
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to="/admin/orders/$orderId" params={{ orderId: order.id }}>
+                          <Link to={adminPath("orders/$orderId")} params={{ orderId: order.id }}>
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

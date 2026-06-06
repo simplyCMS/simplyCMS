@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Badge } from "@simplycms/ui/badge";
 import { Skeleton } from "@simplycms/ui/skeleton";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Palette, Check, Settings, ArrowLeft } from "lucide-react";
+import { adminPath } from "../lib/adminLinks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ async function revalidateTheme() {
 }
 
 export default function Themes() {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
@@ -103,7 +105,7 @@ export default function Themes() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to="/admin/settings">
+        <Link to={adminPath("settings")}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -191,7 +193,7 @@ export default function Themes() {
                 <div className="flex gap-2">
                   {theme.is_active ? (
                     <Button variant="outline" className="flex-1" asChild>
-                      <Link to="/admin/themes/$themeId/settings" params={{ themeId: theme.id }}>
+                      <Link to={adminPath("themes/$themeId/settings")} params={{ themeId: theme.id }}>
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування
                       </Link>
@@ -206,7 +208,7 @@ export default function Themes() {
                         Активувати
                       </Button>
                       <Button variant="outline" size="icon" asChild>
-                        <Link to="/admin/themes/$themeId/settings" params={{ themeId: theme.id }}>
+                        <Link to={adminPath("themes/$themeId/settings")} params={{ themeId: theme.id }}>
                           <Settings className="h-4 w-4" />
                         </Link>
                       </Button>

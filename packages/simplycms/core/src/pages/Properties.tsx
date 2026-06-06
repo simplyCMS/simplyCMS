@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Loader2, ChevronRight, Tag } from "lucide-react";
 import type { Tables } from "../supabase/types";
@@ -12,6 +12,7 @@ export interface PropertiesPageProps {
 export default function PropertiesPage({
   properties: initialProperties,
 }: PropertiesPageProps = {}) {
+  const supabase = useSupabaseClient();
   // Fetch properties with has_page = true
   const { data: properties, isLoading } = useQuery({
     queryKey: ["public-properties-with-pages"],

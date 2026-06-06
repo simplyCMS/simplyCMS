@@ -1,55 +1,13 @@
-import { supabase } from "../supabase/client";
+import type { SupabaseClient } from "../supabase/client";
 
-interface ProductModification {
-  id: string;
-  stock_status: string | null;
-  is_default: boolean;
-  sort_order: number;
-}
+// Pure-розрахунок наявності перенесено в @simplycms/domain/inventory.
+// Re-export для зворотної сумісності.
+export {
+  calculateProductAvailability,
+  enrichProductsWithAvailability,
+} from "@simplycms/domain/inventory";
+export type { StockData } from "@simplycms/domain/inventory";
 
-interface RawProduct {
-  id: string;
-  stock_status: string | null;
-  has_modifications: boolean | null;
-  product_modifications: ProductModification[] | null;
-  stock_by_pickup_point?: Array<{ quantity: number }> | null;
-  [key: string]: unknown;
-}
-
-export interface StockData {
-  modificationStock: Record<string, number>;
-  productStock: Record<string, number>;
-}
-
-/**
- * Calculates product availability using the same logic as RPC get_stock_info:
- * is_available = total_quantity > 0 OR stock_status = 'on_order'
- */
-export function calculateProductAvailability(
-  product: RawProduct,
-  stockData: StockData
-): boolean {
-  const mods = product.product_modifications || [];
-  const hasModifications = product.has_modifications ?? true;
-
-  if (hasModifications && mods.length > 0) {
-    // For products with modifications: check if ANY modification is available
-    return mods.some((m) => {
-      const modQty = stockData.modificationStock[m.id] || 0;
-      return modQty > 0 || m.stock_status === "on_order";
-    });
-  } else {
-    // For simple products: check product stock from inline data or stockData
-    const inlineStock = (product.stock_by_pickup_point || [])
-      .reduce((sum, s) => sum + (s.quantity || 0), 0);
-    const productQty = stockData.productStock[product.id] || inlineStock;
-    return productQty > 0 || product.stock_status === "on_order";
-  }
-}
-
-/**
- * Fetches modification property values
- */
 /** Елемент характеристики модифікації */
 export interface ModPropertyValue {
   modification_id: string;
@@ -59,7 +17,11 @@ export interface ModPropertyValue {
   option_id: string | null;
 }
 
+/**
+ * Fetches modification property values
+ */
 export async function fetchModificationPropertyValues(
+  supabase: SupabaseClient,
   modificationIds: string[]
 ): Promise<Record<string, ModPropertyValue[]>> {
   if (modificationIds.length === 0) return {};
@@ -84,6 +46,7 @@ export async function fetchModificationPropertyValues(
  * Fetches stock data for modifications
  */
 export async function fetchModificationStockData(
+  supabase: SupabaseClient,
   modificationIds: string[]
 ): Promise<Record<string, number>> {
   if (modificationIds.length === 0) return {};
@@ -101,22 +64,4 @@ export async function fetchModificationStockData(
   });
 
   return stock;
-}
-
-/**
- * Enriches products with isAvailable field based on stock data
- */
-export function enrichProductsWithAvailability<T extends RawProduct>(
-  products: T[],
-  modStockData: Record<string, number>
-): (T & { isAvailable: boolean })[] {
-  const stockData: StockData = {
-    modificationStock: modStockData,
-    productStock: {},
-  };
-
-  return products.map((product) => ({
-    ...product,
-    isAvailable: calculateProductAvailability(product, stockData),
-  }));
 }

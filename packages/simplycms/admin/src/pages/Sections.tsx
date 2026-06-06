@@ -1,7 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
+import { adminPath } from "../lib/adminLinks";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
   Table,
@@ -15,6 +16,7 @@ import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Plus, Trash2, Loader2, ImageIcon } from "lucide-react";
 
 export default function Sections() {
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,7 +62,7 @@ export default function Sections() {
           <h1 className="text-3xl font-bold">Розділи</h1>
           <p className="text-muted-foreground">Керування розділами каталогу</p>
         </div>
-        <Button onClick={() => navigate({ to: '/admin/sections/$sectionId', params: { sectionId: 'new' } })}>
+        <Button onClick={() => navigate({ to: adminPath('sections/$sectionId'), params: { sectionId: 'new' } })}>
           <Plus className="h-4 w-4 mr-2" />
           Додати розділ
         </Button>
@@ -87,7 +89,7 @@ export default function Sections() {
                 <TableRow 
                   key={section.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: `/admin/sections/${section.id}` })}
+                  onClick={() => navigate({ to: adminPath(`sections/${section.id}`) })}
                 >
                   <TableCell>
                     {section.image_url ? (

@@ -46,4 +46,8 @@ export * from "./toaster";
 export * from "./toggle";
 export * from "./toggle-group";
 export * from "./tooltip";
-export * from "./use-toast";
+// use-toast: явний re-export, бо ./toast вже експортує ToastProps (компонентний).
+export { useToast, toast } from "./use-toast";
+export type { ToastVariant } from "./use-toast";
+export { useIsMobile } from "./use-mobile";
+export { cn } from "./utils";

@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Link } from '@tanstack/react-router';
 
 export function BrandCarousel() {
+  const supabase = useSupabaseClient();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "start",

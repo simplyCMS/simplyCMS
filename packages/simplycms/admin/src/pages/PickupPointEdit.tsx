@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { adminPath } from "../lib/adminLinks";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Badge } from "@simplycms/ui/badge";
@@ -42,6 +43,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function PickupPointEdit() {
+  const supabase = useSupabaseClient();
   const { pointId } = useParams({ strict: false }) as { pointId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -144,7 +146,7 @@ export default function PickupPointEdit() {
         queryClient.invalidateQueries({ queryKey: ["pickup-point", pointId] });
       }
       toast.success(isNew ? "Точку створено" : "Зміни збережено");
-      navigate({ to: '/admin/shipping/pickup-points' });
+      navigate({ to: adminPath('shipping/pickup-points') });
     },
     onError: (error: Error) => {
       toast.error(`Помилка: ${error.message}`);

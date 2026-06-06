@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
 import { Switch } from "@simplycms/ui/switch";
@@ -32,6 +32,7 @@ interface Props {
 }
 
 export function AllProductProperties({ productId, sectionId }: Props) {
+  const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<Record<string, { 
     value: string | null; 

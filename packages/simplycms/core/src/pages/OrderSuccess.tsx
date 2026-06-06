@@ -5,7 +5,7 @@ import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Separator } from "@simplycms/ui/separator";
 import { Skeleton } from "@simplycms/ui/skeleton";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "../hooks/use-toast";
 
@@ -48,6 +48,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function OrderSuccess() {
+  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const orderId = params.orderId as string;
   const search = useSearch({ strict: false }) as Record<string, string | undefined>;
@@ -95,7 +96,7 @@ export default function OrderSuccess() {
     }
 
     fetchOrder();
-  }, [orderId, token, user]);
+  }, [orderId, token, user, supabase]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat("uk-UA", {

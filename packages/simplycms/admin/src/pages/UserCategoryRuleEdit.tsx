@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Textarea } from "@simplycms/ui/textarea";
@@ -39,6 +39,7 @@ import {
 } from "@simplycms/ui/alert-dialog";
 import { ArrowLeft, Loader2, Trash2, Plus, X } from "lucide-react";
 import { toast } from "@simplycms/core/hooks/use-toast";
+import { adminPath } from "../lib/adminLinks";
 
 const conditionFields = [
   { value: "total_purchases", label: "Сума покупок (грн)" },
@@ -196,6 +197,7 @@ function ConditionRuleRow({
 }
 
 export default function UserCategoryRuleEdit() {
+  const supabase = useSupabaseClient();
   const { ruleId } = useParams({ strict: false }) as { ruleId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -305,7 +307,7 @@ export default function UserCategoryRuleEdit() {
       queryClient.invalidateQueries({ queryKey: ["category-rules"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       toast({ title: isNew ? "Правило створено" : "Зміни збережено" });
-      navigate({ to: '/admin/user-categories/rules' });
+      navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
@@ -330,7 +332,7 @@ export default function UserCategoryRuleEdit() {
       queryClient.invalidateQueries({ queryKey: ["category-rules"] });
       queryClient.invalidateQueries({ queryKey: ["user-categories"] });
       toast({ title: "Правило видалено" });
-      navigate({ to: '/admin/user-categories/rules' });
+      navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
@@ -350,7 +352,7 @@ export default function UserCategoryRuleEdit() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/admin/user-categories/rules">
+            <Link to={adminPath("user-categories/rules")}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -579,7 +581,7 @@ export default function UserCategoryRuleEdit() {
 
           <div className="flex justify-end gap-4">
             <Button variant="outline" asChild>
-              <Link to="/admin/user-categories/rules">Скасувати</Link>
+              <Link to={adminPath("user-categories/rules")}>Скасувати</Link>
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending && (

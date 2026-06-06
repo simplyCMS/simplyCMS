@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { BannerSlider } from "../components/BannerSlider";
 import { BrandCarousel } from "../components/BrandCarousel";
 import { ProductCarousel } from "../components/ProductCarousel";
@@ -33,6 +33,7 @@ export default function HomePage({
   newProducts: initialNew,
   sections: initialSections,
 }: HomePageProps) {
+  const supabase = useSupabaseClient();
   const showBrands = useThemeSettings<boolean>("showBrandCarousel");
 
   const { data: featuredProducts } = useQuery({
@@ -131,6 +132,7 @@ export default function HomePage({
 }
 
 function SectionProductCarousel({ section }: { section: { id: string; name: string; slug: string } }) {
+  const supabase = useSupabaseClient();
   const { data: products } = useQuery({
     queryKey: ["section-products", section.id],
     queryFn: async () => {

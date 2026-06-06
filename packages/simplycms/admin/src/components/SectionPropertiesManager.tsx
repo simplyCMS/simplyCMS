@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import {
   Table,
@@ -52,6 +52,7 @@ const propertyTypes: Record<string, string> = {
 };
 
 export function SectionPropertiesManager({ sectionId }: SectionPropertiesManagerProps) {
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);

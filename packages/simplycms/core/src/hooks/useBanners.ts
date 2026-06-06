@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { parseBannerRow } from "../lib/bannerUtils";
 
 export interface BannerButton {
@@ -58,6 +58,7 @@ function isBannerVisible(banner: Banner): boolean {
 }
 
 export function useBanners(placement: string, sectionId?: string) {
+  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ["banners", placement, sectionId],
     queryFn: async () => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
@@ -51,6 +51,7 @@ interface StatusFormData {
 }
 
 export default function OrderStatuses() {
+  const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState<OrderStatus | null>(null);

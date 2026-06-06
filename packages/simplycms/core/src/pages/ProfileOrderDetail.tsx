@@ -28,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@simplycms/ui/alert-dialog";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../supabase/client";
+import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
 import type { Json } from "../supabase/types";
 
@@ -81,6 +81,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function ProfileOrderDetailPage() {
+  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const orderId = params?.orderId as string | undefined;
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ export default function ProfileOrderDetailPage() {
     }
 
     loadOrder();
-  }, [orderId, user]);
+  }, [orderId, user, supabase]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat("uk-UA", {

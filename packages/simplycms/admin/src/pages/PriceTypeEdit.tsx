@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Switch } from "@simplycms/ui/switch";
@@ -14,6 +14,7 @@ import {
 } from "@simplycms/ui/form";
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@simplycms/core/hooks/use-toast";
+import { adminPath } from "../lib/adminLinks";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -29,6 +30,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function PriceTypeEdit() {
+  const supabase = useSupabaseClient();
   const { priceTypeId } = useParams({ strict: false }) as { priceTypeId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -82,7 +84,7 @@ export default function PriceTypeEdit() {
       queryClient.invalidateQueries({ queryKey: ["admin-price-types"] });
       queryClient.invalidateQueries({ queryKey: ["price-types"] });
       toast({ title: isNew ? "Вид ціни створено" : "Зміни збережено" });
-      navigate({ to: '/admin/price-types' });
+      navigate({ to: adminPath('price-types') });
     },
     onError: (error: Error) => {
       toast({ title: "Помилка", description: error.message, variant: "destructive" });
@@ -97,7 +99,7 @@ export default function PriceTypeEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-price-types"] });
       toast({ title: "Вид ціни видалено" });
-      navigate({ to: '/admin/price-types' });
+      navigate({ to: adminPath('price-types') });
     },
     onError: (error: Error) => {
       toast({ title: "Помилка", description: error.message, variant: "destructive" });
@@ -111,7 +113,7 @@ export default function PriceTypeEdit() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/admin/price-types"><ArrowLeft className="h-5 w-5" /></Link>
+            <Link to={adminPath("price-types")}><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <h1 className="text-3xl font-bold">{isNew ? "Новий вид ціни" : "Редагування виду ціни"}</h1>
         </div>
@@ -159,7 +161,7 @@ export default function PriceTypeEdit() {
                 </FormItem>
               )} />
               <div className="flex justify-end gap-4">
-                <Button variant="outline" asChild><Link to="/admin/price-types">Скасувати</Link></Button>
+                <Button variant="outline" asChild><Link to={adminPath("price-types")}>Скасувати</Link></Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
                   {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isNew ? "Створити" : "Зберегти"}
