@@ -24,22 +24,37 @@ GitHub. Усе, що стосується Marketplace (storefront/`*-ui`/runtime
 
 ## Чекліст готовності (скоуп цієї задачі)
 
-### 1. Канал поставки через GitHub — зняти scope-блокер
+### 1. Канал поставки через GitHub — subtree зараз, готовність до Packages потім
 
-Зафіксований гібрид (рішення №5): Packages для readonly-споживання,
-subtree для активної доробки. Для HUB (readonly) зараз блокер:
-GitHub Packages вимагає збігу scope з власником репо (`@simplysoftua/*`),
-а пакети — `@simplycms/*` (примітка (c) у P10).
+**Рішення власника (2026-06-11): registry зараз не запускаємо.** Споживач
+(MetaHub) бере `objects`+`domain` subtree-ом, але все готується так, щоб
+перемикання на пакети пізніше було механічним:
 
-- [ ] Рішення власника: (а) rename scope на `@simplysoftua/*`,
-      (б) публікація в npmjs під `@simplycms/*`, (в) тимчасово —
-      subtree/git-deps без registry.
-- [ ] Якщо (в): задокументувати для споживача обидва робочі варіанти —
-      `git subtree add --prefix=packages/vendor/simplycms <repo> main --squash`
-      (тільки objects+domain) та pnpm git-залежність
-      `github:simplySOFTua/simplyCMS-core#path:/packages/objects`.
-- [ ] Перший semver-тег `v0.x` для `objects`+`domain` (зафіксувати API
-      для зовнішнього споживача; далі — semver-дисципліна на breaking).
+- [ ] **Semver-теги вже зараз:** перший тег `v0.x` для `objects`+`domain`;
+      далі тег на кожну зовнішньо-видиму зміну (breaking → major за
+      semver). Споживач робить `subtree pull` лише на теги — це
+      semver-споживання без registry.
+- [ ] **Scope лишається `@simplycms/*`** — щоб майбутній перехід на
+      registry (npmjs) не міняв жодного імпорту в споживачів. Rename
+      на `@simplysoftua/*` (вимога GitHub Packages) відхилено як
+      breaking для імпортів; якщо колись захочеться саме GitHub
+      Packages — окреме рішення (потребує org/scope `simplycms`).
+- [ ] **Інваріант публічної поверхні:** subpath-`exports` у dev-умові
+      (src, для workspace/subtree) і publish-умові (dist) мають
+      збігатися 1:1 — додати перевірку/тест, щоб src-споживання не
+      відкривало шляхів, яких не буде в dist.
+- [ ] **CI publish-workflow лишити «сплячим але зеленим»:** build
+      (`build:packages`) ганяти на CI кожен PR, сам `publish` — за
+      manual dispatch; так момент перемикання = увімкнути крок, а не
+      налагоджувати білд.
+- [ ] Задокументувати для споживача канонічний subtree-рецепт.
+      `git subtree` тягне лише ціле репо, тому: (а) споживач vendor'ить
+      усе core одним префіксом і workspace-глобами включає лише
+      objects+domain, або (б) core CI веде split-гілки
+      (`git subtree split --prefix=objects` → `split/objects`, те саме
+      для domain) на кожен тег — споживач subtree-add'ить лише їх.
+      Обрати (а) чи (б), описати в consumer-доці + правило «vendor
+      readonly, зміни — upstream-first PR-ом сюди».
 
 ### 2. Reference-схема: hub-variant blueprint (дизайн §5)
 
@@ -50,7 +65,9 @@ as-is. Для HUB потрібен **версіонований blueprint-шаб
 - [ ] Виділити «товарну підмножину» blueprint: `products`, `sections`,
       `product_modifications`, `price_types`, `product_prices`,
       `section_properties`, `property_options`, `product_property_values`
-      — без orders/cart/shipping/reviews/discounts;
+      — без orders/cart/shipping/reviews/discounts і без
+      stock-механіки (`pickup_points`/`stock_by_pickup_point` —
+      продукти HUB цифрові, рішення власника 2026-06-11);
 - [ ] Документувати multi-tenant адаптацію: колонка `hub_id NOT NULL`,
       унікальність `(hub_id, slug)` замість глобальної, FK всередині
       tenant, індекси з `hub_id` першим;
@@ -65,8 +82,10 @@ as-is. Для HUB потрібен **версіонований blueprint-шаб
       зовнішньої імплементації (HUB пише власний адаптер на
       `@kit/supabase`): `getProduct`, `listProducts`,
       `getProductsBySection`, `getSections`, `getProperties`,
-      `getPriceTypes`, `getStock` — без прихованих залежностей на
-      DB-shape (`Database`-типи не протікають у `objects`);
+      `getPriceTypes` — без прихованих залежностей на DB-shape
+      (`Database`-типи не протікають у `objects`); `getStock` для
+      цифрових продуктів HUB може повертати статичну доступність —
+      перевірити, що контракт це дозволяє;
 - [ ] Write-операції admin (`upsertProduct`, …) у порті — **не блокер**
       для HUB (admin-запис іде через host Server Functions); зафіксувати
       це в дизайн-доку, щоб не розширювати порт передчасно;
