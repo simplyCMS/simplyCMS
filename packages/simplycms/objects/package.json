@@ -12,6 +12,7 @@
     "./ports": "./src/ports/index.ts"
   },
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
