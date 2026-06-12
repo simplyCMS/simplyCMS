@@ -30,31 +30,35 @@ GitHub. Усе, що стосується Marketplace (storefront/`*-ui`/runtime
 зовнішніх споживачів не використовується** (внутрішній subtree-флоу
 simplyCMS-app ↔ simplyCMS-core `cms:pull/push` лишається без змін).
 
-- [ ] **Rename scope `@simplysoftua/*` → `@simplysoftua/*`** (вимога GitHub
-      Packages «scope = власник»; зафіксовано власником 2026-06-12).
-      Обсяг: `name` у package.json усіх workspace-пакетів +
+- [x] **Rename scope зі старого `@simplycms` на `@simplysoftua`** (вимога
+      GitHub Packages «scope = власник»; зафіксовано власником
+      2026-06-12). Обсяг: `name` у package.json усіх workspace-пакетів +
       міжпакетні dependencies + усі імпорти в `packages/`, `src/`,
       `themes/`, `plugins/` + tsconfig paths + vite-аліаси + згадки в
       docs/instructions. Phantom-alias `@simplysoftua/db-types` —
-      перейменувати разом для одноманітності. Механічний codemod;
-      DoD: `grep -r "@simplysoftua/"` по репо = 0,
-      `typecheck`/`lint`/`test`/`build` зелені.
-- [ ] **publishConfig.registry** на кожному публікованому пакеті:
-      `https://npm.pkg.github.com` (+ `repository.url` на
-      simplySOFTua/simplyCMS-core, щоб пакети лінкувалися до репо).
-- [ ] **CI publish:** оновити `publish-packages.yml` — registry
-      npm.pkg.github.com, `permissions: packages: write`,
-      автентифікація `GITHUB_TOKEN` (PAT не потрібен для публікації з
-      того ж org); тригер — semver-тег `v*` + manual dispatch;
-      `build:packages` ганяти на кожен PR (сплячий publish, зелений
-      build).
+      перейменовано разом для одноманітності. Механічний codemod (392
+      файли); DoD виконано: `grep` старого scope по репо = 0,
+      `typecheck`/`lint`/`test`/`build`/`build:packages` зелені.
+      _(2026-06-12)_
+- [x] **publishConfig.registry** на кожному публікованому пакеті:
+      `https://npm.pkg.github.com` (`repository.url` уже вказував на
+      simplySOFTua/simplyCMS-core — підтверджено для всіх 6 пакетів).
+      _(2026-06-12)_
+- [x] **CI publish:** `publish-packages.yml` оновлено — registry
+      npm.pkg.github.com (`registry-url`+`scope`), `permissions:
+      packages: write`, автентифікація `GITHUB_TOKEN`; тригер publish —
+      semver-тег `v*` + `workflow_dispatch`; окрема `build`-job ганяє
+      `build:packages` на кожен PR/push (publish gated, build як gate).
+      _(2026-06-12)_
 - [ ] **Перший реліз:** тег `v0.1.0` → публікація `objects` + `domain`
       (+ за бажанням data-supabase/react-query/runtime/storefront, які
       вже buildable). Далі — semver-дисципліна на breaking.
-- [ ] **Інваріант публічної поверхні:** subpath-`exports` у dev-умові
-      (src, для внутрішнього workspace) і publish-умові (dist) мають
-      збігатися 1:1 — додати перевірку, щоб внутрішнє src-споживання
-      не відкривало шляхів, яких не буде в опублікованому dist.
+      _(окремий крок після ревью — НЕ робити в цій задачі)_
+- [x] **Інваріант публічної поверхні:** subpath-`exports` у dev-умові
+      (src) і publish-умові (dist) збігаються 1:1 (аудит — розбіжностей
+      і битих шляхів немає); guard додано:
+      `tests/published-exports-parity.test.ts` (12 кейсів, зелені).
+      _(2026-06-12)_
 - [ ] **Доступ на читання:** GitHub Packages вимагає токен навіть для
       public-пакетів — задокументувати для споживачів `.npmrc`
       (`@simplysoftua:registry=https://npm.pkg.github.com` +
