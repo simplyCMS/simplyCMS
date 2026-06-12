@@ -1,23 +1,46 @@
 name: Publish Packages
 
-# Публікація framework-agnostic пакетів SimplyCMS у реєстр.
-# Тригер: git-тег виду v* (напр. v0.1.0) або ручний запуск.
+# Публікація framework-agnostic пакетів SimplyCMS у GitHub Packages.
 #
-# Передумови (repo settings → secrets/vars):
-#   - NODE_AUTH_TOKEN — токен реєстру (npm automation token або GitHub Packages PAT).
-#   - vars.NPM_REGISTRY — (опц.) URL реєстру; за замовч. https://registry.npmjs.org.
-# Зауваження щодо scope: пакети мають scope @simplycms. Для GitHub Packages
-# scope має збігатися з власником репозиторію — інакше публікуйте в npmjs під
-# організацією @simplycms, або перейменуйте scope на @simplysoftua.
+# Реєстр: https://npm.pkg.github.com — scope @simplysoftua збігається з
+# власником репозиторію (вимога GitHub Packages), тому публікація
+# авторизується вбудованим GITHUB_TOKEN (PAT не потрібен).
+#
+# Тригери:
+#   - push semver-тегу v* (напр. v0.1.0) або ручний workflow_dispatch
+#     → build + publish;
+#   - pull_request / push гілки → лише build:packages (сплячий publish,
+#     зелений build як gate).
 
 on:
   push:
+    branches: ['main']
     tags: ['v*']
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  # Збірка публікованих пакетів — ганяється на КОЖЕН PR/push як gate.
+  build:
+    name: Build packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build publishable packages
+        run: pnpm run build:packages
+
+  # Публікація — лише на semver-тег v* або ручний workflow_dispatch.
   publish:
     name: Build & publish
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,7 +54,8 @@ jobs:
         with:
           node-version: lts/*
           cache: 'pnpm'
-          registry-url: ${{ vars.NPM_REGISTRY || 'https://registry.npmjs.org' }}
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@simplysoftua'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -39,22 +63,23 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-      # Спершу публікуємо базовий @simplycms/objects (від нього залежать решта),
-      # щоб уникнути 404 при concurrent-публікації (pnpm не гарантує topo-порядок).
+      # Спершу публікуємо базовий @simplysoftua/objects (від нього залежать
+      # решта), щоб уникнути 404 при concurrent-публікації (pnpm не
+      # гарантує topo-порядок).
       - name: Publish objects (base)
-        run: pnpm publish --filter @simplycms/objects --access public --no-git-checks
+        run: pnpm publish --filter @simplysoftua/objects --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Далі — залежні Tier 1/2. workspace:* → конкретна версія підставляється pnpm.
       - name: Publish dependents
         run: >-
           pnpm publish
-          --filter @simplycms/domain
-          --filter @simplycms/data-supabase
-          --filter @simplycms/react-query
-          --filter @simplycms/runtime
-          --filter @simplycms/storefront
-          --access public --no-git-checks
+          --filter @simplysoftua/domain
+          --filter @simplysoftua/data-supabase
+          --filter @simplysoftua/react-query
+          --filter @simplysoftua/runtime
+          --filter @simplysoftua/storefront
+          --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

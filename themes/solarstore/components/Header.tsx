@@ -12,19 +12,19 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { Button } from "@simplysoftua/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@simplycms/ui/dropdown-menu";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useCart } from "@simplycms/core/hooks/useCart";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { CartDrawer } from "@simplycms/core/components/cart/CartDrawer";
+} from "@simplysoftua/ui/dropdown-menu";
+import { useAuth } from "@simplysoftua/core/hooks/useAuth";
+import { useCart } from "@simplysoftua/core/hooks/useCart";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { CartDrawer } from "@simplysoftua/core/components/cart/CartDrawer";
 import { useQuery } from "@tanstack/react-query";
 
 /** Категорії з іконками для навігації */

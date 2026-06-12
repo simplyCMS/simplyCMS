@@ -1,1 +1,1 @@
-export { default } from "@simplycms/core/pages/NotFound";
+export { default } from "@simplysoftua/core/pages/NotFound";

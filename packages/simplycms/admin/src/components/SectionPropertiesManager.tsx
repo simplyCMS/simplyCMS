@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
 import {
   Table,
   TableBody,
@@ -9,22 +9,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@simplycms/ui/dialog";
+} from "@simplysoftua/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Label } from "@simplycms/ui/label";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+} from "@simplysoftua/ui/select";
+import { Label } from "@simplysoftua/ui/label";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { Plus, Trash2, Loader2, Package, Layers } from "lucide-react";
 
 /** Тип для join-результату property з section_property_assignments */

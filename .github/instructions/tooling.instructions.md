@@ -41,12 +41,12 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 ### TypeScript
 - Strict mode увімкнено.
 - Path aliases:
-  - `@simplycms/db-types` → `supabase/types.ts`
-  - `@simplycms/core` → `packages/simplycms/core/src`
-  - `@simplycms/admin` → `packages/simplycms/admin/src`
-  - `@simplycms/ui` → `packages/simplycms/ui/src`
-  - `@simplycms/plugins` → `packages/simplycms/plugin-system/src`
-  - `@simplycms/themes` → `packages/simplycms/theme-system/src`
+  - `@simplysoftua/db-types` → `supabase/types.ts`
+  - `@simplysoftua/core` → `packages/simplycms/core/src`
+  - `@simplysoftua/admin` → `packages/simplycms/admin/src`
+  - `@simplysoftua/ui` → `packages/simplycms/ui/src`
+  - `@simplysoftua/plugins` → `packages/simplycms/plugin-system/src`
+  - `@simplysoftua/themes` → `packages/simplycms/theme-system/src`
   - `@/*` → `app/*`
   - `@themes/*` → `themes/*`
   - `@plugins/*` → `plugins/*`

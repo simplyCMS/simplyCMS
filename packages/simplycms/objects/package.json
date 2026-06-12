@@ -1,5 +1,5 @@
 {
-  "name": "@simplycms/objects",
+  "name": "@simplysoftua/objects",
   "version": "0.1.0",
   "private": false,
   "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Type-only, zero runtime dependencies.",
@@ -12,6 +12,7 @@
     "./ports": "./src/ports/index.ts"
   },
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {

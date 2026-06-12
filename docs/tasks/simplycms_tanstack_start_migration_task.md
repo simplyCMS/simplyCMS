@@ -234,11 +234,11 @@ src/
 
 Не зламати існуючі workspace packages:
 
-- `@simplycms/core`
-- `@simplycms/admin`
-- `@simplycms/ui`
-- `@simplycms/plugins`
-- `@simplycms/themes`
+- `@simplysoftua/core`
+- `@simplysoftua/admin`
+- `@simplysoftua/ui`
+- `@simplysoftua/plugins`
+- `@simplysoftua/themes`
 
 Потрібно адаптувати збірку під Vite / TanStack Start так, щоб ці пакети лишились окремими логічними модулями
 

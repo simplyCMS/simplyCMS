@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import PriceValidator from '@simplycms/admin/pages/PriceValidator';
+import PriceValidator from '@simplysoftua/admin/pages/PriceValidator';
 
 export const Route = createFileRoute('/admin/price-validator/')({
   ssr: false,

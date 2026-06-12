@@ -2,16 +2,16 @@ import { useState, useMemo, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@simplycms/ui/sheet";
+} from "@simplysoftua/ui/select";
+import { Sheet, SheetContent, SheetTrigger } from "@simplysoftua/ui/sheet";
 import { ProductCard } from "../components/catalog/ProductCard";
 import { FilterSidebar } from "../components/catalog/FilterSidebar";
 import { ActiveFilters } from "../components/catalog/ActiveFilters";

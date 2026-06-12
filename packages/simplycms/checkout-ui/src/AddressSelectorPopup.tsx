@@ -1,7 +1,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, MapPin, Check, Plus } from "lucide-react";
-import { cn } from "@simplycms/ui/utils";
+import { cn } from "@simplysoftua/ui/utils";
 
 interface Address {
   id: string;

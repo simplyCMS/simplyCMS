@@ -111,7 +111,7 @@ Sections та properties вже працюють через `initialData` — н
 
 ## Архітектурні рішення
 
-- **Основний пакет змін:** `@simplycms/core` — shared enrichment utilities
+- **Основний пакет змін:** `@simplysoftua/core` — shared enrichment utilities
 - **Зачеплені файли:**
   - `packages/simplycms/core/src/hooks/useProductsWithStock.ts` — рефакторинг в client-agnostic utilities
   - `packages/simplycms/core/src/pages/Catalog.tsx` — `initialData` в products query

@@ -6,24 +6,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Switch } from "@simplycms/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Textarea } from "@simplysoftua/ui/textarea";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
-} from "@simplycms/ui/form";
+} from "@simplysoftua/ui/form";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@simplycms/ui/select";
+} from "@simplysoftua/ui/select";
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
-import { toast } from "@simplycms/core/hooks/use-toast";
+import { toast } from "@simplysoftua/core/hooks/use-toast";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+} from "@simplysoftua/ui/alert-dialog";
 
 const categorySchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),

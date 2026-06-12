@@ -1,4 +1,4 @@
-// Мапери рядків Supabase → доменні об'єкти @simplycms/objects.
+// Мапери рядків Supabase → доменні об'єкти @simplysoftua/objects.
 // Тримаємо межу: БД-схема не протікає в домен.
 
 import type {
@@ -15,7 +15,7 @@ import type {
   DiscountGroup,
   DiscountType,
   GroupOperator,
-} from "@simplycms/objects";
+} from "@simplysoftua/objects";
 
 // Рядки БД описуємо мінімально-необхідним чином (permissive),
 // бо складні nested-select повертають широкі типи.

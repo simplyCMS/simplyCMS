@@ -1,6 +1,6 @@
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { Button } from "@simplysoftua/ui/button";
 import { Link } from '@tanstack/react-router';
 import { ProductCard } from "./ProductCard";
 

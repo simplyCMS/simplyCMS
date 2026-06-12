@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import PlaceholderPage from '@simplycms/admin/pages/PlaceholderPage';
+import PlaceholderPage from '@simplysoftua/admin/pages/PlaceholderPage';
 
 export const Route = createFileRoute('/admin/languages/')({
   ssr: false,

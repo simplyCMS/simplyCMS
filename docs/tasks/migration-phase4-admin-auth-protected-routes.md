@@ -8,14 +8,14 @@
 
 Після Phase 3 всі публічні storefront маршрути працюють на TanStack Start. Тепер потрібно мігрувати:
 
-1. **Admin panel** — ~20 route files в `app/(cms)/admin/`, які є тонкими обгортками навколо `@simplycms/admin` пакету
+1. **Admin panel** — ~20 route files в `app/(cms)/admin/`, які є тонкими обгортками навколо `@simplysoftua/admin` пакету
 2. **Auth routes** — авторизація, callback для OAuth
 3. **Protected routes** — профіль, замовлення, налаштування
 4. **API routes** — guest-order, health, revalidation
 
 ### Поточна архітектура адмінки
 
-Всі admin маршрути мають ідентичний шаблон: `"use client"` + `dynamic(() => import('@simplycms/admin/pages/X'), { ssr: false })`. Фактично вся логіка живе в `@simplycms/admin` — route files лише lazy-load пакетні сторінки без SSR. Цей патерн ідеально маппиться на TanStack Start routes з `ssr: false` + `React.lazy`.
+Всі admin маршрути мають ідентичний шаблон: `"use client"` + `dynamic(() => import('@simplysoftua/admin/pages/X'), { ssr: false })`. Фактично вся логіка живе в `@simplysoftua/admin` — route files лише lazy-load пакетні сторінки без SSR. Цей патерн ідеально маппиться на TanStack Start routes з `ssr: false` + `React.lazy`.
 
 ### Поточні admin sub-routes
 
@@ -38,7 +38,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
   - `beforeLoad` у `_admin.tsx` для client-side навігацій всередині застосунку
 - [ ] Створити layout route `_admin.tsx` або `admin.tsx` з `ssr: false`:
   - `beforeLoad` — перевірка admin session через серверну функцію `isAdmin()` (з Phase 2)
-  - Component — lazy-load `AdminLayout` з `@simplycms/admin`
+  - Component — lazy-load `AdminLayout` з `@simplysoftua/admin`
 - [ ] Створити route files для кожного admin sub-route (~20 файлів):
   - `admin/index.tsx` — Dashboard
   - `admin/products/index.tsx` — Products list
@@ -68,7 +68,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 > **ВАЖЛИВО:** Перед імплементацією зробити повний audit `app/(cms)/admin/` для точного списку всіх вкладених маршрутів.
 - [ ] Кожен admin route має `ssr: false` — вся адмінка client-only
-- [ ] Кожен admin route lazy-load-ить відповідну сторінку з `@simplycms/admin/pages/*`
+- [ ] Кожен admin route lazy-load-ить відповідну сторінку з `@simplysoftua/admin/pages/*`
 
 ### Auth routes
 
@@ -76,7 +76,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
   - `ssr: false` (auth форми клієнтські)
   - `beforeLoad` — якщо вже залогінений, redirect на `/`
   - `head` — title "Авторизація | SolarStore"
-  - Component — `@simplycms/core/pages/Auth`
+  - Component — `@simplysoftua/core/pages/Auth`
 - [ ] Створити server handler для OAuth callback `auth/callback.tsx`:
   - Server handler (не component route)
   - Отримує `code` з query params
@@ -133,7 +133,7 @@ banners, discounts, languages, orders, order-statuses, plugins, price-types, pri
 
 ### Admin route з ssr: false
 
-Кожен admin route має `ssr: false` щоб гарантувати client-only rendering. `@simplycms/admin` повністю побудований на React Query + client Supabase — SSR не потрібен.
+Кожен admin route має `ssr: false` щоб гарантувати client-only rendering. `@simplysoftua/admin` повністю побудований на React Query + client Supabase — SSR не потрібен.
 
 **Увага щодо `beforeLoad` + `ssr: false`:** якщо route має `ssr: false`, то `beforeLoad` виконується **лише на клієнті**. Тому `beforeLoad` тут не може бути єдиним механізмом захисту. Початковий запит на `/admin` має перевірятися в `src/start.ts`, а `beforeLoad` покриває навігацію після гідрації.
 
@@ -176,13 +176,13 @@ proxy.ts як окремий Next.js артефакт не потрібен. А�
 Якщо endpoint викликається лише з React-коду, `createServerFn` краще — type-safe, automatic serialization, no manual fetch. API routes потрібні лише для зовнішніх клієнтів.
 
 ### ❌ Дублювати admin page components в route files
-Route file має лише lazy-load page з `@simplycms/admin/pages/*`. Жодної UI логіки в route файлі.
+Route file має лише lazy-load page з `@simplysoftua/admin/pages/*`. Жодної UI логіки в route файлі.
 
 ## Архітектурні рішення
 
 - **В який пакет додавати код:** `src/routes/admin/`, `src/routes/auth/`, `src/routes/_protected/`
 - **Rendering стратегія:** Client-only для admin і auth, server-guarded для protected, client-only для cart/checkout
-- **Залежності:** серверні функції auth з Phase 2, `@simplycms/admin` і `@simplycms/core` пакети
+- **Залежності:** серверні функції auth з Phase 2, `@simplysoftua/admin` і `@simplysoftua/core` пакети
 
 ## Цільова структура після Phase 4
 

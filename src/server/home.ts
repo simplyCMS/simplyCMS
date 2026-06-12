@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { loadHomePageData } from '@simplycms/storefront/loaders';
+import { loadHomePageData } from '@simplysoftua/storefront/loaders';
 import { createServerSupabase } from './supabase';
 
 /** Отримати дані головної сторінки */

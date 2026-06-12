@@ -1,5 +1,5 @@
 
-import { cn } from "@simplycms/ui/utils";
+import { cn } from "@simplysoftua/ui/utils";
 import { Check } from "lucide-react";
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';

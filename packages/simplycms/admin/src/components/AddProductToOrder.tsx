@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from "@simplycms/ui/dialog";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { ScrollArea } from "@simplycms/ui/scroll-area";
+} from "@simplysoftua/ui/dialog";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { ScrollArea } from "@simplysoftua/ui/scroll-area";
 import { Plus, Search, Loader2 } from "lucide-react";
 
 interface Product {

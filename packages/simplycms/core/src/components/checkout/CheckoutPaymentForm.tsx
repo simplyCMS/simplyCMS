@@ -1,2 +1,2 @@
-// Перенесено в @simplycms/checkout-ui. Re-export для зворотної сумісності.
-export * from "@simplycms/checkout-ui";
+// Перенесено в @simplysoftua/checkout-ui. Re-export для зворотної сумісності.
+export * from "@simplysoftua/checkout-ui";

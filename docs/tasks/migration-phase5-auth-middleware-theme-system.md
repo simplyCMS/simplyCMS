@@ -39,7 +39,7 @@
   - В TanStack Start немає boundary server/client — реєстрація в `src/routes/__root.tsx` або окремому файлі імпортованому з root
   - `src/server/themes.ts` має явно гарантувати реєстрацію тем перед резолюцією активної теми (через import або `ensureThemeRegistry()`), а не покладатися лише на те, що side-effect уже відпрацював у root route
 - [ ] Адаптувати ThemeContext (CMSThemeProvider) для роботи без `"use client"` директиви
-  - **Увага:** `ThemeContext.tsx` імпортує `supabase` з `@simplycms/core/supabase/client` — цей singleton має guard `typeof window !== "undefined"` для realtime subscription. Після видалення `"use client"` перевірити що isomorphic import не ламає серверний рендеринг (realtime subscription має бути client-only через useEffect)
+  - **Увага:** `ThemeContext.tsx` імпортує `supabase` з `@simplysoftua/core/supabase/client` — цей singleton має guard `typeof window !== "undefined"` для realtime subscription. Після видалення `"use client"` перевірити що isomorphic import не ламає серверний рендеринг (realtime subscription має бути client-only через useEffect)
 - [ ] Адаптувати Providers wrapper (CMSProvider + ThemeProvider) для TanStack Start __root.tsx
 - [ ] Реалізувати `invalidateThemeCache()` як server function для адмінки
 - [ ] Перевести storefront layout на loader + route context для передачі активної теми дочірнім маршрутам
@@ -124,7 +124,7 @@ ThemeRegistry — клієнтський singleton (потрібен і в бр�
 
 ## Архітектурні рішення
 
-- **В який пакет додавати код:** `@simplycms/theme-system` (cache utility), `src/` (theme-registry, root integration, start middleware)
+- **В який пакет додавати код:** `@simplysoftua/theme-system` (cache utility), `src/` (theme-registry, root integration, start middleware)
 - **Rendering стратегія:** без змін
 - **Залежності:** жодних нових
 - **Що видаляється:** `proxy.ts`, `app/theme-registry.server.ts`, дублююча реєстрація тем у `app/providers.tsx`, Next.js-specific theme resolver

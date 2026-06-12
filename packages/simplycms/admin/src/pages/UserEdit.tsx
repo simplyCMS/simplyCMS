@@ -2,21 +2,21 @@ import { useState } from "react";
 import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Switch } from "@simplycms/ui/switch";
-import { Label } from "@simplycms/ui/label";
-import { Badge } from "@simplycms/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplycms/ui/avatar";
-import { Separator } from "@simplycms/ui/separator";
+} from "@simplysoftua/ui/select";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Label } from "@simplysoftua/ui/label";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@simplysoftua/ui/avatar";
+import { Separator } from "@simplysoftua/ui/separator";
 import {
   Table,
   TableBody,
@@ -24,14 +24,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplycms/ui/dialog";
+} from "@simplysoftua/ui/dialog";
 import {
   ArrowLeft,
   Shield,
@@ -42,7 +42,7 @@ import {
   History,
   ExternalLink,
 } from "lucide-react";
-import { toast } from "@simplycms/core/hooks/use-toast";
+import { toast } from "@simplysoftua/core/hooks/use-toast";
 import { adminPath } from "../lib/adminLinks";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";

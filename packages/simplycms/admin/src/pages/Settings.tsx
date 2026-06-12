@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Switch } from "@simplycms/ui/switch";
-import { Label } from "@simplycms/ui/label";
-import { Separator } from "@simplycms/ui/separator";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Label } from "@simplysoftua/ui/label";
+import { Separator } from "@simplysoftua/ui/separator";
 import { toast } from "sonner";
 import { Loader2, Settings as SettingsIcon, Package } from "lucide-react";
-import type { Json } from "@simplycms/core/supabase/types";
+import type { Json } from "@simplysoftua/core/supabase/types";
 
 interface StockManagementSettings {
   decrease_on_order: boolean;

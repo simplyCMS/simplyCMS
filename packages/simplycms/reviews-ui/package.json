@@ -1,5 +1,5 @@
 {
-  "name": "@simplycms/reviews-ui",
+  "name": "@simplysoftua/reviews-ui",
   "version": "0.1.0",
   "private": true,
   "description": "Reviews UI for SimplyCMS — presentational components + containers for product reviews.",
@@ -12,8 +12,8 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplycms/core": "workspace:*",
-    "@simplycms/ui": "workspace:*"
+    "@simplysoftua/core": "workspace:*",
+    "@simplysoftua/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",

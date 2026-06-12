@@ -6,7 +6,7 @@ import type {
   Product,
   Paged,
   Order,
-} from "@simplycms/objects";
+} from "@simplysoftua/objects";
 
 // Мінімальна in-memory реалізація портів — доводить, що хуки/запити
 // працюють з будь-якою реалізацією, не лише з supabase.

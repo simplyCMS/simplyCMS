@@ -1,5 +1,5 @@
 {
-  "name": "@simplycms/storefront",
+  "name": "@simplysoftua/storefront",
   "version": "0.1.0",
   "private": false,
   "description": "SSR storefront loaders + SEO generators for SimplyCMS, parameterized by an injected Supabase client. Host wires its own framework glue (createServerFn).",
@@ -12,6 +12,7 @@
     "./seo": "./src/seo/index.ts"
   },
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -33,7 +34,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@simplycms/objects": "workspace:*"
+    "@simplysoftua/objects": "workspace:*"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.0.0"

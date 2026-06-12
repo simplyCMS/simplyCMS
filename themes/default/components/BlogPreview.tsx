@@ -1,4 +1,4 @@
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
+import { useThemeSettings } from "@simplysoftua/core/hooks/useThemeSettings";
 import { ImageIcon } from "lucide-react";
 
 const mockArticles = [

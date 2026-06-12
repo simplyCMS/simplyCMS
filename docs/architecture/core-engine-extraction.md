@@ -15,11 +15,11 @@
 
 | Пакет | Файлів | LOC | Природа | Чистота |
 |---|--:|--:|---|---|
-| `@simplycms/core` | 76 | 11 833 | **god-package**: об'єкти+типи, pure-логіка (pricing/discount/shipping/stock), data-hooks, singleton-клієнт, UI (catalog/cart/checkout/reviews/profile), pages, providers | змішана |
-| `@simplycms/admin` | 56 | 15 448 | admin CRUD pages + form-компоненти (products/sections/properties/stock/prices/discounts/shipping/orders/user-categories/banners/plugins) | data-coupled |
-| `@simplycms/ui` | 50 | 4 025 | shadcn/Radix примітиви | ✅ чистий, без домену |
-| `@simplycms/theme-system` | 6 | 646 | ThemeRegistry / Resolver / SSR / Context | ✅ чистий рушій |
-| `@simplycms/plugins` | 6 | 786 | HookRegistry / PluginLoader / PluginSlot + 30+ хук-поінтів | ✅ чистий, 0 deps |
+| `@simplysoftua/core` | 76 | 11 833 | **god-package**: об'єкти+типи, pure-логіка (pricing/discount/shipping/stock), data-hooks, singleton-клієнт, UI (catalog/cart/checkout/reviews/profile), pages, providers | змішана |
+| `@simplysoftua/admin` | 56 | 15 448 | admin CRUD pages + form-компоненти (products/sections/properties/stock/prices/discounts/shipping/orders/user-categories/banners/plugins) | data-coupled |
+| `@simplysoftua/ui` | 50 | 4 025 | shadcn/Radix примітиви | ✅ чистий, без домену |
+| `@simplysoftua/theme-system` | 6 | 646 | ThemeRegistry / Resolver / SSR / Context | ✅ чистий рушій |
+| `@simplysoftua/plugins` | 6 | 786 | HookRegistry / PluginLoader / PluginSlot + 30+ хук-поінтів | ✅ чистий, 0 deps |
 | app `src/server` | — | 476 | `createServerFn`: getProducts/getProduct/getSections/getProperties/getHomePageData/themes/auth | в app-shell |
 | app `src/seo` | — | 159 | sitemap / robots / vite-plugin | в app-shell |
 | app `src/routes` | — | 1 216 | storefront / protected / admin / api композиція | app-specific |
@@ -43,28 +43,28 @@
 Принцип: **залежності тільки вниз по рівнях**; кожен рівень — окремо споживаний; оточення приходить через **порти**, які реалізує host.
 
 ```
-Tier 0  CONTRACTS      @simplycms/objects        (типи об'єктів + інтерфейси портів) — 0 deps
+Tier 0  CONTRACTS      @simplysoftua/objects        (типи об'єктів + інтерфейси портів) — 0 deps
                           ▲
-Tier 1  DOMAIN LOGIC   @simplycms/domain         (pricing, discounts, shipping-calc, inventory) — pure, deps: objects
+Tier 1  DOMAIN LOGIC   @simplysoftua/domain         (pricing, discounts, shipping-calc, inventory) — pure, deps: objects
                           ▲
-Tier 2  DATA ACCESS    @simplycms/data-supabase  (репозиторії на Supabase, інжектять client+scope)
-                       @simplycms/react-query    (TanStack-Query хуки поверх репозиторіїв)
+Tier 2  DATA ACCESS    @simplysoftua/data-supabase  (репозиторії на Supabase, інжектять client+scope)
+                       @simplysoftua/react-query    (TanStack-Query хуки поверх репозиторіїв)
                           ▲
-Tier 3  UI PRIMITIVES  @simplycms/ui             (shadcn, без домену)
+Tier 3  UI PRIMITIVES  @simplysoftua/ui             (shadcn, без домену)
                           ▲
-Tier 4  RENDERING      @simplycms/theme-system   (SSR теми)        ── object-agnostic
-                       @simplycms/plugins        (hook/slot движок)
-                       @simplycms/storefront     (SSR-loaders + SEO/sitemap) ← НОВИЙ, з app-shell
+Tier 4  RENDERING      @simplysoftua/theme-system   (SSR теми)        ── object-agnostic
+                       @simplysoftua/plugins        (hook/slot движок)
+                       @simplysoftua/storefront     (SSR-loaders + SEO/sitemap) ← НОВИЙ, з app-shell
                           ▲
-Tier 5  FEATURE UI     @simplycms/catalog-ui, cart-ui, checkout-ui, reviews-ui, profile-ui
-                       @simplycms/admin          (admin-kit, на репозиторіях+LinkResolver)
+Tier 5  FEATURE UI     @simplysoftua/catalog-ui, cart-ui, checkout-ui, reviews-ui, profile-ui
+                       @simplysoftua/admin          (admin-kit, на репозиторіях+LinkResolver)
                           ▲
-Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адаптерів+модулів+теми+плагінів)
+Tier 6  ASSEMBLY       @simplysoftua/runtime        (defineConfig: wiring адаптерів+модулів+теми+плагінів)
 ```
 
 ### 2.1. Визначені об'єкти (Tier 0 — серце концепції)
 
-`@simplycms/objects` — стабільні контракти, **незалежні від форми рядка БД** (zod-схеми + TS-типи):
+`@simplysoftua/objects` — стабільні контракти, **незалежні від форми рядка БД** (zod-схеми + TS-типи):
 
 - `Product`, `ProductModification`, `Section` (категорія), `Property` + `PropertyOption`, `PropertyValue`
 - `PriceType`, `PriceEntry`, `UserCategory` (B2B-група)
@@ -90,7 +90,7 @@ Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адап�
 
 Ядро викликає `repo.getProduct(id)`, не `supabase.from('products')`. Той самий `useProductsWithStock` працює і single-tenant, і hub-scoped — різниця лише в реалізації порту.
 
-> **Стрижень усієї схеми (наслідок прийнятих рішень):** оскільки HUB пише **власний репозиторій** на `@kit/supabase`, а Marketplace бере **повну вітрину**, — всередині MetaHub існує **одна репозиторій-імплементація (scoped по `hub_id`), що обслуговує і admin-домен «Продукти», і Marketplace**. `@simplycms/data-supabase` лишається імплементацією **тільки для simplyCMS**. Тому реально-крос-проєктним контрактом є `@simplycms/objects` (порти+типи) + `@simplycms/domain` (pure-логіка). Хуки та feature-ui **зобов'язані** брати репозиторій з `RepositoryProvider` (контекст), а кожен host інжектить свою реалізацію порту. Це підвищує важливість DI-рефакторингу хуків/компонентів (вони — спільні; дата — хостова).
+> **Стрижень усієї схеми (наслідок прийнятих рішень):** оскільки HUB пише **власний репозиторій** на `@kit/supabase`, а Marketplace бере **повну вітрину**, — всередині MetaHub існує **одна репозиторій-імплементація (scoped по `hub_id`), що обслуговує і admin-домен «Продукти», і Marketplace**. `@simplysoftua/data-supabase` лишається імплементацією **тільки для simplyCMS**. Тому реально-крос-проєктним контрактом є `@simplysoftua/objects` (порти+типи) + `@simplysoftua/domain` (pure-логіка). Хуки та feature-ui **зобов'язані** брати репозиторій з `RepositoryProvider` (контекст), а кожен host інжектить свою реалізацію порту. Це підвищує важливість DI-рефакторингу хуків/компонентів (вони — спільні; дата — хостова).
 
 ---
 
@@ -98,56 +98,56 @@ Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адап�
 
 ### 3.1. Розщеплення god-package `core`
 
-`@simplycms/core` (11.8k LOC) ріжеться **за рівнем чистоти**, а не за фічами:
+`@simplysoftua/core` (11.8k LOC) ріжеться **за рівнем чистоти**, а не за фічами:
 
 | Звідки (поточний core/...) | Куди | Tier | Що зробити при переносі |
 |---|---|---|---|
-| `types/`, частина hook-типів | `@simplycms/objects` | 0 | відв'язати типи від `Database` (рядків БД) → доменні контракти + zod |
-| `lib/priceUtils`, `lib/discountEngine` | `@simplycms/domain/pricing`, `/discounts` | 1 | вже pure — перенести як є |
-| `lib/shipping/*` | `@simplycms/domain/shipping` | 1 | `findZone` робить IO → винести запит у репозиторій, лишити чистий розрахунок |
-| `hooks/useProductsWithStock` (calc-частина) | `@simplycms/domain/inventory` | 1 | `calculateProductAvailability/enrich*` — pure, перенести |
-| `supabase/client.ts`, `lib/supabase.ts` | `@simplycms/data-supabase` | 2 | **прибрати singleton** → фабрика `createRepository(client, scope)` |
-| `hooks/*` (data-частина) | `@simplycms/react-query` | 2 | хуки приймають repo з контексту, а не `import { supabase }` |
-| `components/catalog/*` | `@simplycms/catalog-ui` | 5 | розділити на presentational (props-only) + container (repo) |
-| `components/cart/*` | `@simplycms/cart-ui` | 5 | те саме |
-| `components/checkout/*` | `@simplycms/checkout-ui` | 5 | те саме |
-| `components/reviews/*` | `@simplycms/reviews-ui` | 5 | те саме |
-| `components/profile/*` | `@simplycms/profile-ui` | 5 | залежить від IdentityProvider |
-| `providers/CMSProvider`, `config.ts` | `@simplycms/runtime` | 6 | розширити `defineConfig` адаптерами+модулями |
+| `types/`, частина hook-типів | `@simplysoftua/objects` | 0 | відв'язати типи від `Database` (рядків БД) → доменні контракти + zod |
+| `lib/priceUtils`, `lib/discountEngine` | `@simplysoftua/domain/pricing`, `/discounts` | 1 | вже pure — перенести як є |
+| `lib/shipping/*` | `@simplysoftua/domain/shipping` | 1 | `findZone` робить IO → винести запит у репозиторій, лишити чистий розрахунок |
+| `hooks/useProductsWithStock` (calc-частина) | `@simplysoftua/domain/inventory` | 1 | `calculateProductAvailability/enrich*` — pure, перенести |
+| `supabase/client.ts`, `lib/supabase.ts` | `@simplysoftua/data-supabase` | 2 | **прибрати singleton** → фабрика `createRepository(client, scope)` |
+| `hooks/*` (data-частина) | `@simplysoftua/react-query` | 2 | хуки приймають repo з контексту, а не `import { supabase }` |
+| `components/catalog/*` | `@simplysoftua/catalog-ui` | 5 | розділити на presentational (props-only) + container (repo) |
+| `components/cart/*` | `@simplysoftua/cart-ui` | 5 | те саме |
+| `components/checkout/*` | `@simplysoftua/checkout-ui` | 5 | те саме |
+| `components/reviews/*` | `@simplysoftua/reviews-ui` | 5 | те саме |
+| `components/profile/*` | `@simplysoftua/profile-ui` | 5 | залежить від IdentityProvider |
+| `providers/CMSProvider`, `config.ts` | `@simplysoftua/runtime` | 6 | розширити `defineConfig` адаптерами+модулями |
 | `pages/*` | **лишити в app-shell** (або `themes/`) | — | сторінки — це композиція, не движок |
 
 ### 3.2. Нові пакети з app-shell (для маркетплейсу)
 
 | Звідки | Куди | Що зробити |
 |---|---|---|
-| `src/server/*.ts` (createServerFn) | `@simplycms/storefront/loaders` | параметризувати репозиторієм; зробити object-agnostic |
-| `src/seo/*` (sitemap/robots/plugin) | `@simplycms/storefront/seo` | генерувати з зареєстрованих об'єктів, не хардкод товарів |
+| `src/server/*.ts` (createServerFn) | `@simplysoftua/storefront/loaders` | параметризувати репозиторієм; зробити object-agnostic |
+| `src/seo/*` (sitemap/robots/plugin) | `@simplysoftua/storefront/seo` | генерувати з зареєстрованих об'єктів, не хардкод товарів |
 
 ### 3.3. Пакети, що лишаються майже як є
 
-- `@simplycms/ui` (Tier 3) — чистий, лише, можливо, прибрати випадкові доменні домішки.
-- `@simplycms/theme-system` (Tier 4) — чистий; зробити рендер object-agnostic (тема рендерить будь-який зареєстрований тип, не лише товар).
-- `@simplycms/plugins` (Tier 4) — чистий движок; хук-поінти лишаються — це backbone розширення для всіх збірок.
+- `@simplysoftua/ui` (Tier 3) — чистий, лише, можливо, прибрати випадкові доменні домішки.
+- `@simplysoftua/theme-system` (Tier 4) — чистий; зробити рендер object-agnostic (тема рендерить будь-який зареєстрований тип, не лише товар).
+- `@simplysoftua/plugins` (Tier 4) — чистий движок; хук-поінти лишаються — це backbone розширення для всіх збірок.
 
 ### 3.4. Підсумкова карта пакетів (target)
 
 ```
-@simplycms/objects        T0  контракти+порти          0 deps          (фундамент)
-@simplycms/domain         T1  pricing|discounts|        objects         (pure)
+@simplysoftua/objects        T0  контракти+порти          0 deps          (фундамент)
+@simplysoftua/domain         T1  pricing|discounts|        objects         (pure)
                               shipping|inventory  (subpath exports)
-@simplycms/data-supabase  T2  репозиторії               objects, @supabase/*
-@simplycms/react-query    T2  TanStack-Query хуки        objects, react, @tanstack/react-query
-@simplycms/ui             T3  shadcn примітиви           react, radix
-@simplycms/theme-system   T4  SSR теми                   react
-@simplycms/plugins        T4  hook/slot движок           react (peer)
-@simplycms/storefront     T4  SSR-loaders + SEO          objects, @tanstack/react-start
-@simplycms/catalog-ui     T5  ProductCard/Gallery/...    objects, react-query, ui
-@simplycms/cart-ui        T5                              ...
-@simplycms/checkout-ui    T5                              ...
-@simplycms/reviews-ui     T5                              ...
-@simplycms/profile-ui     T5                              objects, identity
-@simplycms/admin          T5  admin-kit                  ui, react-query, links
-@simplycms/runtime        T6  defineConfig/wiring        усі обрані
+@simplysoftua/data-supabase  T2  репозиторії               objects, @supabase/*
+@simplysoftua/react-query    T2  TanStack-Query хуки        objects, react, @tanstack/react-query
+@simplysoftua/ui             T3  shadcn примітиви           react, radix
+@simplysoftua/theme-system   T4  SSR теми                   react
+@simplysoftua/plugins        T4  hook/slot движок           react (peer)
+@simplysoftua/storefront     T4  SSR-loaders + SEO          objects, @tanstack/react-start
+@simplysoftua/catalog-ui     T5  ProductCard/Gallery/...    objects, react-query, ui
+@simplysoftua/cart-ui        T5                              ...
+@simplysoftua/checkout-ui    T5                              ...
+@simplysoftua/reviews-ui     T5                              ...
+@simplysoftua/profile-ui     T5                              objects, identity
+@simplysoftua/admin          T5  admin-kit                  ui, react-query, links
+@simplysoftua/runtime        T6  defineConfig/wiring        усі обрані
 ```
 
 > Орієнтир: ~3 «чистих» пакети лишаються; god-`core` → ~10 нових; +2 з app-shell. Сумарний LOC майже не зростає — це **перенесення з межами**, не переписування логіки.
@@ -170,7 +170,7 @@ Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адап�
 | admin | ✅ | mine-as-pattern | ❌ | опц. |
 | runtime | ✅ | власне wiring | власне wiring | власне |
 
-**HUB «Продукти» конкретно:** `objects` + `domain` + **власний `CatalogRepository` на `@kit/supabase`** (реалізація порту, scoped по `hub_id`) + reference-схема з доданим `hub_id`. Admin будується на `@kit/ui`/`@kit/cardshell` (а не на `@simplycms/admin`), з'єднання з `sales_invoices` через нову таблицю-міст `si_products`. Storefront/cart/checkout/theme **не береться** — це прийде з маркетплейсом.
+**HUB «Продукти» конкретно:** `objects` + `domain` + **власний `CatalogRepository` на `@kit/supabase`** (реалізація порту, scoped по `hub_id`) + reference-схема з доданим `hub_id`. Admin будується на `@kit/ui`/`@kit/cardshell` (а не на `@simplysoftua/admin`), з'єднання з `sales_invoices` через нову таблицю-міст `si_products`. Storefront/cart/checkout/theme **не береться** — це прийде з маркетплейсом.
 
 **Marketplace конкретно (повна вітрина):** `storefront` (SSR+SEO) + `theme-system` + `catalog-ui` + **`cart-ui` + `checkout-ui` + orders** + `react-query`, поверх **того самого metahub-репозиторію** (`CatalogRepository`+`OrderRepository` на `@kit/supabase`, scope=hub_id), що й HUB. Admin не береться.
 > Наслідок повної вітрини: потрібен `OrderRepository` на metahub-боці + перенос схеми `orders/order_items/cart` з `hub_id`. Варто одразу вирішити, чи замовлення/заявки маркетплейсу стають сутністю MetaHub (лінк до `clients`/лідів) — щоб «збирати заявки від клієнтів» (план #3) інтегрувалося з CRM хабу.
@@ -217,7 +217,7 @@ Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адап�
 
 | Критерій споживання | Канал | Приклади |
 |---|---|---|
-| Пакет **стабільний**, споживач його **НЕ редагує локально** | **GitHub Packages** (семвер) | MetaHub тягне `@simplycms/objects@^1`, `@simplycms/domain@^1`, `@simplycms/ui`, `@simplycms/theme-system`, `@simplycms/plugins`, `@simplycms/storefront`, feature-ui — як readonly-залежності |
+| Пакет **стабільний**, споживач його **НЕ редагує локально** | **GitHub Packages** (семвер) | MetaHub тягне `@simplysoftua/objects@^1`, `@simplysoftua/domain@^1`, `@simplysoftua/ui`, `@simplysoftua/theme-system`, `@simplysoftua/plugins`, `@simplysoftua/storefront`, feature-ui — як readonly-залежності |
 | Можливе **локальне допрацювання ядра** / активна спільна розробка | **Git Subtree** (як зараз `cms:pull/push`) | фаза екстракції; simplyCMS-app; будь-який пакет, який MetaHub-команда мусить правити й повертати назад (`cms:push`) |
 
 Один і той самий пакет може спочатку йти через subtree (поки правиться), потім «застигати» у Packages. Залежність строго одностороння: усі споживають ядро, ядро не знає про споживачів.
@@ -246,7 +246,7 @@ Tier 6  ASSEMBLY       @simplycms/runtime        (defineConfig: wiring адап�
 
 | # | Питання | Рішення |
 |---|---|---|
-| 1 | Структура domain (Tier 1) | ✅ **Один `@simplycms/domain`** із subpath-exports (`./pricing`, `./discounts`, `./inventory`, `./shipping`) |
+| 1 | Структура domain (Tier 1) | ✅ **Один `@simplysoftua/domain`** із subpath-exports (`./pricing`, `./discounts`, `./inventory`, `./shipping`) |
 | 2 | Дата-доступ HUB | ✅ **Власний репозиторій на `@kit/supabase`** (реалізація порту, scope=hub_id); `data-supabase` лишається лише для simplyCMS |
 | 3 | Обсяг marketplace на старті | ✅ **Повна вітрина з кошиком/checkout** → потрібен `OrderRepository` + перенос orders-схеми з `hub_id` |
 | 5 | Канал дистрибуції | ✅ **Гібрид per-споживач**: Packages там, де ядро не правиться локально; subtree там, де можливе допрацювання |

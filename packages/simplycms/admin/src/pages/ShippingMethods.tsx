@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Switch } from "@simplycms/ui/switch";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Switch } from "@simplysoftua/ui/switch";
 import {
   Table,
   TableBody,
@@ -12,12 +12,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Truck } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
-import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
+import { ShippingMethod } from "@simplysoftua/core/lib/shipping/types";
 import { icons } from "lucide-react";
 
 const getMethodIcon = (iconName: string | null): React.ComponentType<{ className?: string }> => {

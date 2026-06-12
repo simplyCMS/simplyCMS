@@ -17,7 +17,7 @@
 - **не потрібна** сумісність Next.js і TanStack Start в одному коді;
 - всі `next/*` залежності мають бути або прибрані, або переписані одразу під фінальні API.
 
-Зараз Next.js API проник у `@simplycms/core` (pages + components), `@simplycms/admin` (pages + components + layout), `@simplycms/ui` (sonner), `@simplycms/theme-system` (getActiveThemeSSR) і `themes/*` (layouts + components). Перед імплементацією потрібно зафіксувати точний inventory і визначити фінальні контракти міграції, щоб не робити подвійний рефакторинг.
+Зараз Next.js API проник у `@simplysoftua/core` (pages + components), `@simplysoftua/admin` (pages + components + layout), `@simplysoftua/ui` (sonner), `@simplysoftua/theme-system` (getActiveThemeSSR) і `themes/*` (layouts + components). Перед імплементацією потрібно зафіксувати точний inventory і визначити фінальні контракти міграції, щоб не робити подвійний рефакторинг.
 
 Результат цієї фази — **документ-артефакт** (inventory table + decision log), а не код. Жоден файл не змінюється.
 
@@ -126,7 +126,7 @@ Admin components: `ImageUpload.tsx`, `ProductModifications.tsx` — лише з�
 Усі `app/(cms)/admin/*/page.tsx` використовують однаковий патерн:
 ```
 import dynamic from 'next/dynamic';
-const Component = dynamic(() => import('@simplycms/admin/...'), { ssr: false });
+const Component = dynamic(() => import('@simplysoftua/admin/...'), { ssr: false });
 ```
 У TanStack Start admin layout route визначається з `ssr: false`, і всі дочірні routes автоматично client-only. Жоден окремий `dynamic()` шім не потрібен — 42 файли зникають повністю (включаючи shim-сторінки для `languages`, `order-statuses`, `price-validator`, `service-requests`, `services`, `settings`, `plugins` та кореневу `admin/page.tsx`).
 
@@ -196,7 +196,7 @@ API зберігається: `attribute="class"`, `defaultTheme="system"`, `ena
 > **Примітки:**
 > - `app/(storefront)/layout.tsx` не має прямих next/* imports, але транзитивно залежить від `getActiveThemeSSR()` (uses `unstable_cache` з `next/cache`). При міграції замінюється на TanStack Start route layout з server fn.
 > - `app/providers.tsx` не має next/* imports, але це інфраструктурний файл (CMSProvider, ThemeProvider), що потребує адаптації під TanStack Start.
-> - ~4 admin pages (`Plugins.tsx`, `PriceValidator.tsx`, `OrderStatuses.tsx`, `Settings.tsx`) не мають прямих next/* imports, але можуть мати транзитивні залежності через core-компоненти (напр. `NavLink` з `@simplycms/core`).
+> - ~4 admin pages (`Plugins.tsx`, `PriceValidator.tsx`, `OrderStatuses.tsx`, `Settings.tsx`) не мають прямих next/* imports, але можуть мати транзитивні залежності через core-компоненти (напр. `NavLink` з `@simplysoftua/core`).
 
 ### Фаза 0.10 — Auth/proxy flow: beforeLoad + server functions
 
@@ -234,7 +234,7 @@ ISR (`revalidatePath`, `revalidateTag`, `unstable_cache`) не існує в Tan
 7. **ISR → client-side invalidation.** `router.invalidate()` + React Query invalidation. CDN-level cache — окрема задача після міграції.
 8. **Admin shims (next/dynamic) — зникають.** `ssr: false` на admin layout route.
 9. **Server-only файли — виносяться з packages.** `supabase/server.ts`, `supabase/proxy.ts`, `getActiveThemeSSR.ts` переходять у `src/server/`.
-10. **Жодних adapter-модулів `@simplycms/core/adapters/*` не створювати.** ⚠️ **(УТОЧНЕНО — стосувалось router/image-адаптерів; data-access порти/репозиторії тепер дозволені, див. amendment вгорі)**
+10. **Жодних adapter-модулів `@simplysoftua/core/adapters/*` не створювати.** ⚠️ **(УТОЧНЕНО — стосувалось router/image-адаптерів; data-access порти/репозиторії тепер дозволені, див. amendment вгорі)**
 
 ## Антипатерни (уникати)
 

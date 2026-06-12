@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearch, useLocation, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Separator } from "@simplycms/ui/separator";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Separator } from "@simplysoftua/ui/separator";
 
 import { ProductGallery } from "../components/catalog/ProductGallery";
 import { ModificationSelector, type ModificationStockInfo } from "../components/catalog/ModificationSelector";
@@ -19,7 +19,7 @@ import {
   Share2,
 } from "lucide-react";
 import { StockDisplay } from "../components/catalog/StockDisplay";
-import { PluginSlot } from "@simplycms/plugins/PluginSlot";
+import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
 import { ProductReviews } from "../components/reviews/ProductReviews";
 import { usePriceType } from "../hooks/usePriceType";
 import { resolvePrice, type PriceEntry } from "../lib/priceUtils";

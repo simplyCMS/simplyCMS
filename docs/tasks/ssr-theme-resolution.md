@@ -18,7 +18,7 @@
 
 - [ ] **1.** В адмін-панелі (`/admin/themes`) відображаються всі теми, які є в `ThemeRegistry` та в БД
 - [ ] **2.** Перемикання теми в адмінці змінює storefront (layouts, pages, components)
-- [ ] **3.** Серверна функція `getActiveThemeSSR()` в `@simplycms/themes` — резолв активної теми з БД для Server Components
+- [ ] **3.** Серверна функція `getActiveThemeSSR()` в `@simplysoftua/themes` — резолв активної теми з БД для Server Components
 - [ ] **4.** Storefront layout та сторінки використовують динамічний theme resolution замість hardcoded імпортів
 - [ ] **5.** ThemeRegistry популяризований і на сервері, і на клієнті (одна точка реєстрації)
 - [ ] **6.** Seed-міграція для `solarstore` в таблиці `themes` (або auto-sync через `InstallThemeDialog`)
@@ -132,7 +132,7 @@ ThemeRegistry має бути заповнений і на сервері. Як�
 
 ## Архітектурні рішення
 
-- **Новий код (SSR API):** `@simplycms/themes` — `getActiveThemeSSR()`, оновлення `ThemeResolver.ts` або новий файл
+- **Новий код (SSR API):** `@simplysoftua/themes` — `getActiveThemeSSR()`, оновлення `ThemeResolver.ts` або новий файл
 - **Новий код (реєстрація):** `app/theme-register.ts` — site-specific, без `'use client'`
 - **Зміни (storefront):** `app/(storefront)/layout.tsx` + 10 page.tsx файлів — заміна hardcoded imports
 - **Зміни (providers):** `app/providers.tsx` — імпорт theme-register замість inline реєстрації
@@ -140,7 +140,7 @@ ThemeRegistry має бути заповнений і на сервері. Як�
 - **Міграції (опціонально):** seed `solarstore` в `public.themes` + виправлення display_name для `default`
 - **Rendering стратегія:** SSR (storefront) — тема резолвиться на сервері; Client (admin) — без змін
 - **Пакет/site boundary:**
-  - Core (`@simplycms/themes`): `getActiveThemeSSR()`, `ThemeRegistry`, `ThemeResolver` — не знає конкретних тем
+  - Core (`@simplysoftua/themes`): `getActiveThemeSSR()`, `ThemeRegistry`, `ThemeResolver` — не знає конкретних тем
   - Site (`app/`): список тем, їх dynamic imports, реєстрація — знає які теми включені в build
   - DB (`public.themes`): "яка активна" + config/settings — джерело істини для runtime
 
@@ -188,7 +188,7 @@ ThemeRegistry має бути заповнений і на сервері. Як�
 - [ ] Після перемикання назад на default — рендериться default layout/pages
 - [ ] Fallback працює: якщо активна тема видалена з ThemeRegistry — рендериться default
 - [ ] Жодного `import ... from '@themes/default/...'` в `app/(storefront)/` (крім `theme-register.ts`)
-- [ ] `getActiveThemeSSR()` доступний з `@simplycms/themes`
+- [ ] `getActiveThemeSSR()` доступний з `@simplysoftua/themes`
 - [ ] ThemeRegistry заповнений і на сервері (SSR), і на клієнті
 - [ ] ISR revalidation працює після перемикання теми
 - [ ] `pnpm typecheck` проходить без помилок

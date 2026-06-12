@@ -1,5 +1,5 @@
 {
-  "name": "@simplycms/admin",
+  "name": "@simplysoftua/admin",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -11,10 +11,10 @@
     "./layouts/*": "./src/layouts/*"
   },
   "dependencies": {
-    "@simplycms/core": "workspace:*",
-    "@simplycms/ui": "workspace:*",
-    "@simplycms/plugins": "workspace:*",
-    "@simplycms/themes": "workspace:*"
+    "@simplysoftua/core": "workspace:*",
+    "@simplysoftua/ui": "workspace:*",
+    "@simplysoftua/plugins": "workspace:*",
+    "@simplysoftua/themes": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

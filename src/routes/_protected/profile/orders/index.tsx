@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import { useTheme } from '@simplysoftua/themes/ThemeContext';
+import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
 
 export const Route = createFileRoute('/_protected/profile/orders/')({
   head: () => ({

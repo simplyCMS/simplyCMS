@@ -7,7 +7,7 @@ import type {
   MediaProvider,
   ConfigProvider,
   ImageOpts,
-} from '@simplycms/objects';
+} from '@simplysoftua/objects';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Маршрути simplyCMS-вітрини. */

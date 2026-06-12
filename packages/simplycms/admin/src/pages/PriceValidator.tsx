@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, CheckCircle, XCircle, Info, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Label } from "@simplycms/ui/label";
-import { Separator } from "@simplycms/ui/separator";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
-import { resolveDiscount, type DiscountGroup, type DiscountContext, type GroupOperator, type AppliedDiscount, type RejectedDiscount } from "@simplycms/core/lib/discountEngine";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Label } from "@simplysoftua/ui/label";
+import { Separator } from "@simplysoftua/ui/separator";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { resolvePrice, type PriceEntry } from "@simplysoftua/core/lib/priceUtils";
+import { resolveDiscount, type DiscountGroup, type DiscountContext, type GroupOperator, type AppliedDiscount, type RejectedDiscount } from "@simplysoftua/core/lib/discountEngine";
 
 /** Крок валідації ціни */
 interface ValidationStep {

@@ -6,9 +6,9 @@ import {
   createRootRoute,
 } from '@tanstack/react-router';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@simplycms/ui/toaster';
+import { Toaster } from '@simplysoftua/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
-import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
+import { CMSProvider } from '@simplysoftua/core/providers/CMSProvider';
 import { ClientEngineProvider } from '../engine-provider';
 import appCss from '../styles/globals.css?url';
 

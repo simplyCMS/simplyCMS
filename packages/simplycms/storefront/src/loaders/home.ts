@@ -1,4 +1,4 @@
-import type { Banner, BannerButton } from "@simplycms/objects";
+import type { Banner, BannerButton } from "@simplysoftua/objects";
 import type { StorefrontClient } from "../client";
 
 /** Перетворює рядок banners на доменний Banner (раніше — core/lib/bannerUtils). */

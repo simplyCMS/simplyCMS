@@ -1,5 +1,5 @@
 import { useLocation } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import { Construction } from "lucide-react";
 
 export default function PlaceholderPage() {

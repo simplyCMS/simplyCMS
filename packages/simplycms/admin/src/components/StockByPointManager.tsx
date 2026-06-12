@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Input } from "@simplysoftua/ui/input";
+import { Label } from "@simplysoftua/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Button } from "@simplysoftua/ui/button";
 import {
   Table,
   TableBody,
@@ -12,11 +12,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import { toast } from "sonner";
 import { Loader2, Save, Building } from "lucide-react";
-import type { TablesInsert } from "@simplycms/core/supabase/types";
-import { usePickupPointsCount, usePickupPoints } from "@simplycms/core/hooks/useStock";
+import type { TablesInsert } from "@simplysoftua/core/supabase/types";
+import { usePickupPointsCount, usePickupPoints } from "@simplysoftua/core/hooks/useStock";
 
 interface StockByPointManagerProps {
   productId?: string | null;

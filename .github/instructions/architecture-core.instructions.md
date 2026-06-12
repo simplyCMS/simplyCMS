@@ -19,11 +19,11 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом для п
 
 | Пакет | Alias | Призначення |
 |-------|-------|-------------|
-| `core/` | `@simplycms/core` | Бізнес-логіка, хуки, типи, Supabase клієнти, компоненти |
-| `admin/` | `@simplycms/admin` | Адмін-панель (layouts, pages, components) |
-| `ui/` | `@simplycms/ui` | Дизайн-система (50+ shadcn/ui компонентів) |
-| `plugin-system/` | `@simplycms/plugins` | HookRegistry, PluginLoader, PluginSlot |
-| `theme-system/` | `@simplycms/themes` | ThemeRegistry, ThemeContext, ThemeResolver |
+| `core/` | `@simplysoftua/core` | Бізнес-логіка, хуки, типи, Supabase клієнти, компоненти |
+| `admin/` | `@simplysoftua/admin` | Адмін-панель (layouts, pages, components) |
+| `ui/` | `@simplysoftua/ui` | Дизайн-система (50+ shadcn/ui компонентів) |
+| `plugin-system/` | `@simplysoftua/plugins` | HookRegistry, PluginLoader, PluginSlot |
+| `theme-system/` | `@simplysoftua/themes` | ThemeRegistry, ThemeContext, ThemeResolver |
 | `schema/` | — | Seed-міграції (reference SQL для bootstrap нових проектів) |
 
 ### Rendering-стратегії
@@ -38,7 +38,7 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом для п
 
 ## ✅ ALWAYS
 - Вибирай React Server Components за замовчуванням; додавай `'use client'` лише за потреби (стан, ефекти, події).
-- Використовуй пакети `@simplycms/*` замість локальних копій (UI, core, admin).
+- Використовуй пакети `@simplysoftua/*` замість локальних копій (UI, core, admin).
 - SSR для storefront-сторінок (каталог, товари, головна) — SEO критично.
 - Client-side для адмін-панелі — вся `(cms)/admin/` працює як SPA.
 - Cookie-based auth через `@supabase/ssr` (не localStorage JWT).
@@ -57,7 +57,7 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом для п
 - Не обминай систему тем для storefront-сторінок.
 - Не редагуй файли в `temp/` — це read-only референс для міграції.
 - Не хардкодь Supabase URL/ключі — використовуй змінні оточення.
-- Не використовуй прямий `supabase-js` без `@simplycms/core` обгорток в клієнтському коді.
+- Не використовуй прямий `supabase-js` без `@simplysoftua/core` обгорток в клієнтському коді.
 - **НЕ додавай shadcn/ui компоненти без перевірки через MCP** (search → examples → audit).
 - **НЕ припускай library APIs — перевіряй через MCP context7**.
 - Не ставай `'use client'` в Server Components без потреби.

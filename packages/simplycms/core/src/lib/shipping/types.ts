@@ -1,4 +1,4 @@
-// Shipping-типи перенесено в @simplycms/objects. Re-export для зворотної сумісності.
+// Shipping-типи перенесено в @simplysoftua/objects. Re-export для зворотної сумісності.
 export type {
   ShippingMethodType,
   ShippingCalculationType,
@@ -11,4 +11,4 @@ export type {
   ShippingCalculationContext,
   ShippingCalculationResult,
   ShippingFormData,
-} from "@simplycms/objects";
+} from "@simplysoftua/objects";

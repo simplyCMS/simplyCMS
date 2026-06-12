@@ -1,20 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Switch } from "@simplycms/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Input } from "@simplysoftua/ui/input";
+import { Label } from "@simplysoftua/ui/label";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Checkbox } from "@simplycms/ui/checkbox";
+} from "@simplysoftua/ui/select";
+import { Checkbox } from "@simplysoftua/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import type { Tables } from "@simplycms/core/supabase/types";
+import type { Tables } from "@simplysoftua/core/supabase/types";
 
 type SectionProperty = Tables<"section_properties">;
 

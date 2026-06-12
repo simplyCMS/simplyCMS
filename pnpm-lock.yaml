@@ -249,16 +249,16 @@ importers:
 
   packages/simplycms/admin:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/plugins':
+      '@simplysoftua/plugins':
         specifier: workspace:*
         version: link:../plugin-system
-      '@simplycms/themes':
+      '@simplysoftua/themes':
         specifier: workspace:*
         version: link:../theme-system
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-query':
@@ -273,7 +273,7 @@ importers:
 
   packages/simplycms/cart-ui:
     dependencies:
-      '@simplycms/react-query':
+      '@simplysoftua/react-query':
         specifier: workspace:*
         version: link:../react-query
       '@tanstack/react-router':
@@ -288,10 +288,10 @@ importers:
 
   packages/simplycms/catalog-ui:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-query':
@@ -309,16 +309,16 @@ importers:
 
   packages/simplycms/checkout-ui:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/domain':
+      '@simplysoftua/domain':
         specifier: workspace:*
         version: link:../domain
-      '@simplycms/react-query':
+      '@simplysoftua/react-query':
         specifier: workspace:*
         version: link:../react-query
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-query':
@@ -339,31 +339,31 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.0.0
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
-      '@simplycms/cart-ui':
+      '@simplysoftua/cart-ui':
         specifier: workspace:*
         version: link:../cart-ui
-      '@simplycms/catalog-ui':
+      '@simplysoftua/catalog-ui':
         specifier: workspace:*
         version: link:../catalog-ui
-      '@simplycms/checkout-ui':
+      '@simplysoftua/checkout-ui':
         specifier: workspace:*
         version: link:../checkout-ui
-      '@simplycms/domain':
+      '@simplysoftua/domain':
         specifier: workspace:*
         version: link:../domain
-      '@simplycms/plugins':
+      '@simplysoftua/plugins':
         specifier: workspace:*
         version: link:../plugin-system
-      '@simplycms/profile-ui':
+      '@simplysoftua/profile-ui':
         specifier: workspace:*
         version: link:../profile-ui
-      '@simplycms/react-query':
+      '@simplysoftua/react-query':
         specifier: workspace:*
         version: link:../react-query
-      '@simplycms/reviews-ui':
+      '@simplysoftua/reviews-ui':
         specifier: workspace:*
         version: link:../reviews-ui
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@supabase/ssr':
@@ -420,7 +420,7 @@ importers:
 
   packages/simplycms/data-supabase:
     dependencies:
-      '@simplycms/objects':
+      '@simplysoftua/objects':
         specifier: workspace:*
         version: link:../objects
       '@supabase/supabase-js':
@@ -429,7 +429,7 @@ importers:
 
   packages/simplycms/domain:
     dependencies:
-      '@simplycms/objects':
+      '@simplysoftua/objects':
         specifier: workspace:*
         version: link:../objects
 
@@ -453,10 +453,10 @@ importers:
 
   packages/simplycms/profile-ui:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-query':
@@ -474,7 +474,7 @@ importers:
 
   packages/simplycms/react-query:
     dependencies:
-      '@simplycms/objects':
+      '@simplysoftua/objects':
         specifier: workspace:*
         version: link:../objects
       '@tanstack/react-query':
@@ -486,10 +486,10 @@ importers:
 
   packages/simplycms/reviews-ui:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/ui':
+      '@simplysoftua/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-router':
@@ -519,13 +519,13 @@ importers:
 
   packages/simplycms/runtime:
     dependencies:
-      '@simplycms/objects':
+      '@simplysoftua/objects':
         specifier: workspace:*
         version: link:../objects
 
   packages/simplycms/storefront:
     dependencies:
-      '@simplycms/objects':
+      '@simplysoftua/objects':
         specifier: workspace:*
         version: link:../objects
       '@supabase/supabase-js':
@@ -534,7 +534,7 @@ importers:
 
   packages/simplycms/theme-system:
     dependencies:
-      '@simplycms/core':
+      '@simplysoftua/core':
         specifier: workspace:*
         version: link:../core
       react:

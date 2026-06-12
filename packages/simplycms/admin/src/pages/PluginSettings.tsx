@@ -1,25 +1,25 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Switch } from "@simplycms/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Separator } from "@simplycms/ui/separator";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Label } from "@simplysoftua/ui/label";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Separator } from "@simplysoftua/ui/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+} from "@simplysoftua/ui/select";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { ArrowLeft, Loader2, Save, Power, PowerOff, Plug, Settings } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
 import { useState, useEffect } from "react";
-import { parsePlugin, type Plugin, type PluginSettingDefinition } from "@simplycms/plugins/types";
+import { parsePlugin, type Plugin, type PluginSettingDefinition } from "@simplysoftua/plugins/types";
 
 export default function PluginSettings() {
   const supabase = useSupabaseClient();

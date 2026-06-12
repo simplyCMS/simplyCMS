@@ -2,19 +2,19 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from '@tanstack/react-router';
 import { Plus, ChevronRight, ChevronDown, Percent, DollarSign, Tag, Trash2, Pencil } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Switch } from "@simplycms/ui/switch";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Tables } from "@simplycms/core/supabase/types";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { toast } from "@simplysoftua/core/hooks/use-toast";
+import type { Tables } from "@simplysoftua/core/supabase/types";
 import { adminPath } from "../lib/adminLinks";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+} from "@simplysoftua/ui/alert-dialog";
 
 const operatorLabels: Record<string, string> = {
   and: "ТА (сума)",

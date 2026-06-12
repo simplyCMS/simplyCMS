@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Textarea } from "@simplycms/ui/textarea";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Label } from "@simplysoftua/ui/label";
+import { Textarea } from "@simplysoftua/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplycms/ui/dialog";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+} from "@simplysoftua/ui/dialog";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { Plus, Loader2 } from "lucide-react";
-import { getRegisteredPluginModules } from "@simplycms/plugins";
-import { Badge } from "@simplycms/ui/badge";
+import { getRegisteredPluginModules } from "@simplysoftua/plugins";
+import { Badge } from "@simplysoftua/ui/badge";
 
 interface InstallPluginDialogProps {
   trigger?: React.ReactNode;

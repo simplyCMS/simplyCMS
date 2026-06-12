@@ -1,8 +1,8 @@
-import { useBanners, type Banner, type BannerButton } from "@simplycms/core/hooks/useBanners";
+import { useBanners, type Banner, type BannerButton } from "@simplysoftua/core/hooks/useBanners";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { Button } from "@simplysoftua/ui/button";
 import { Link } from '@tanstack/react-router';
 
 interface BannerSliderProps {

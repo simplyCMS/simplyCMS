@@ -162,7 +162,7 @@ try {
   writeTypesFile(rawTypes);
 
   console.log('✅ Типи успішно оновлено!\n');
-  console.log('💡 Усі споживачі отримають оновлені типи через @simplycms/db-types.\n');
+  console.log('💡 Усі споживачі отримають оновлені типи через @simplysoftua/db-types.\n');
 } catch (error) {
   const msg = error instanceof Error ? error.message : String(error);
   console.error(`\n❌ Помилка: ${msg}`);
