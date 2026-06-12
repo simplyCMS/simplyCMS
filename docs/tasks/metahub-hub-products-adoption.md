@@ -24,37 +24,42 @@ GitHub. Усе, що стосується Marketplace (storefront/`*-ui`/runtime
 
 ## Чекліст готовності (скоуп цієї задачі)
 
-### 1. Канал поставки через GitHub — subtree зараз, готовність до Packages потім
+### 1. Канал поставки: GitHub Packages (рішення оновлено 2026-06-12)
 
-**Рішення власника (2026-06-11): registry зараз не запускаємо.** Споживач
-(MetaHub) бере `objects`+`domain` subtree-ом, але все готується так, щоб
-перемикання на пакети пізніше було механічним:
+**Рішення власника: публікуємо в GitHub Packages одразу; subtree для
+зовнішніх споживачів не використовується** (внутрішній subtree-флоу
+simplyCMS-app ↔ simplyCMS-core `cms:pull/push` лишається без змін).
 
-- [ ] **Semver-теги вже зараз:** перший тег `v0.x` для `objects`+`domain`;
-      далі тег на кожну зовнішньо-видиму зміну (breaking → major за
-      semver). Споживач робить `subtree pull` лише на теги — це
-      semver-споживання без registry.
-- [ ] **Scope лишається `@simplycms/*`** — щоб майбутній перехід на
-      registry (npmjs) не міняв жодного імпорту в споживачів. Rename
-      на `@simplysoftua/*` (вимога GitHub Packages) відхилено як
-      breaking для імпортів; якщо колись захочеться саме GitHub
-      Packages — окреме рішення (потребує org/scope `simplycms`).
+- [ ] **Rename scope `@simplycms/*` → `@simplysoftua/*`** (вимога GitHub
+      Packages «scope = власник»; зафіксовано власником 2026-06-12).
+      Обсяг: `name` у package.json усіх workspace-пакетів +
+      міжпакетні dependencies + усі імпорти в `packages/`, `src/`,
+      `themes/`, `plugins/` + tsconfig paths + vite-аліаси + згадки в
+      docs/instructions. Phantom-alias `@simplycms/db-types` —
+      перейменувати разом для одноманітності. Механічний codemod;
+      DoD: `grep -r "@simplycms/"` по репо = 0,
+      `typecheck`/`lint`/`test`/`build` зелені.
+- [ ] **publishConfig.registry** на кожному публікованому пакеті:
+      `https://npm.pkg.github.com` (+ `repository.url` на
+      simplySOFTua/simplyCMS-core, щоб пакети лінкувалися до репо).
+- [ ] **CI publish:** оновити `publish-packages.yml` — registry
+      npm.pkg.github.com, `permissions: packages: write`,
+      автентифікація `GITHUB_TOKEN` (PAT не потрібен для публікації з
+      того ж org); тригер — semver-тег `v*` + manual dispatch;
+      `build:packages` ганяти на кожен PR (сплячий publish, зелений
+      build).
+- [ ] **Перший реліз:** тег `v0.1.0` → публікація `objects` + `domain`
+      (+ за бажанням data-supabase/react-query/runtime/storefront, які
+      вже buildable). Далі — semver-дисципліна на breaking.
 - [ ] **Інваріант публічної поверхні:** subpath-`exports` у dev-умові
-      (src, для workspace/subtree) і publish-умові (dist) мають
-      збігатися 1:1 — додати перевірку/тест, щоб src-споживання не
-      відкривало шляхів, яких не буде в dist.
-- [ ] **CI publish-workflow лишити «сплячим але зеленим»:** build
-      (`build:packages`) ганяти на CI кожен PR, сам `publish` — за
-      manual dispatch; так момент перемикання = увімкнути крок, а не
-      налагоджувати білд.
-- [ ] Задокументувати для споживача канонічний subtree-рецепт.
-      `git subtree` тягне лише ціле репо, тому: (а) споживач vendor'ить
-      усе core одним префіксом і workspace-глобами включає лише
-      objects+domain, або (б) core CI веде split-гілки
-      (`git subtree split --prefix=objects` → `split/objects`, те саме
-      для domain) на кожен тег — споживач subtree-add'ить лише їх.
-      Обрати (а) чи (б), описати в consumer-доці + правило «vendor
-      readonly, зміни — upstream-first PR-ом сюди».
+      (src, для внутрішнього workspace) і publish-умові (dist) мають
+      збігатися 1:1 — додати перевірку, щоб внутрішнє src-споживання
+      не відкривало шляхів, яких не буде в опублікованому dist.
+- [ ] **Доступ на читання:** GitHub Packages вимагає токен навіть для
+      public-пакетів — задокументувати для споживачів `.npmrc`
+      (`@simplysoftua:registry=https://npm.pkg.github.com` +
+      `_authToken`) і потребу PAT `read:packages` у CI/Vercel
+      споживача.
 
 ### 2. Reference-схема: hub-variant blueprint (дизайн §5)
 
@@ -98,13 +103,14 @@ as-is. Для HUB потрібен **версіонований blueprint-шаб
 - [ ] Короткий `docs/architecture/consuming-hub-products.md` (або розділ
       у extraction-доку): що саме бере HUB (objects+domain+blueprint),
       чого НЕ бере (data-supabase/ui/admin/storefront), як оновлюється
-      (subtree pull / semver bump), як виглядає мінімальний адаптер
+      (semver bump з GitHub Packages), як виглядає мінімальний адаптер
       порту (приклад ~30 LOC на основі `data-supabase/src/scope.ts`).
 
 ## Definition of Done
 
-- [ ] MetaHub може підключити `objects`+`domain` з GitHub без жодного
-      редагування коду ядра і без registry-блокерів.
+- [ ] MetaHub може зробити `pnpm add @simplysoftua/objects
+      @simplysoftua/domain` з GitHub Packages без жодного редагування
+      коду ядра.
 - [ ] Blueprint товарної підмножини схеми опубліковано в
       `packages/simplycms/schema/` з інструкцією multi-tenant адаптації.
 - [ ] Тест-матриця scope (`undefined`/`hub_id`) зелена у `data-supabase`.
