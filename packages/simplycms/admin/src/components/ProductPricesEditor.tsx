@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Input } from "@simplycms/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Input } from "@simplysoftua/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@simplycms/ui/table";
-import { Button } from "@simplycms/ui/button";
+} from "@simplysoftua/ui/table";
+import { Button } from "@simplysoftua/ui/button";
 import { Loader2, Save } from "lucide-react";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 
 interface ProductPricesEditorProps {
   productId: string;

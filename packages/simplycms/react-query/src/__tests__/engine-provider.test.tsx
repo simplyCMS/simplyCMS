@@ -8,7 +8,7 @@ import type {
   CatalogRepository,
   Product,
   Paged,
-} from "@simplycms/objects";
+} from "@simplysoftua/objects";
 import { EngineProvider, useEngine } from "../EngineProvider";
 import { useProduct, useSections } from "../hooks";
 

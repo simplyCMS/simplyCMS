@@ -4,7 +4,7 @@ import {
   loadProperties,
   loadPropertyBySlug,
   loadPropertyOption,
-} from '@simplycms/storefront/loaders';
+} from '@simplysoftua/storefront/loaders';
 import { createServerSupabase } from './supabase';
 
 /** Отримати всі характеристики з has_page=true */

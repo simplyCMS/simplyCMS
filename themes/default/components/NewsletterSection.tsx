@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useThemeSettings } from "@simplysoftua/core/hooks/useThemeSettings";
 
 export function NewsletterSection() {
   const show = useThemeSettings<boolean>("showNewsletter");

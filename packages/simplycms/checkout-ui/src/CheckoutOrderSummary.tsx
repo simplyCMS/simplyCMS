@@ -1,7 +1,7 @@
 
 import { ShoppingBag, Loader2 } from "lucide-react";
-import { type CartItem } from "@simplycms/react-query";
-import { formatShippingCost } from "@simplycms/domain/shipping";
+import { type CartItem } from "@simplysoftua/react-query";
+import { formatShippingCost } from "@simplysoftua/domain/shipping";
 
 interface CheckoutOrderSummaryProps {
   items: CartItem[];

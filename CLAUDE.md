@@ -80,11 +80,11 @@ simplyCMS/
 │   └── types.ts                      # Auto-generated TypeScript types
 │
 ├── packages/simplycms/               # Core CMS (Git Subtree from simplyCMS-core)
-│   ├── core/src/       @simplycms/core
-│   ├── admin/src/      @simplycms/admin
-│   ├── ui/src/         @simplycms/ui
-│   ├── plugin-system/  @simplycms/plugins
-│   ├── theme-system/   @simplycms/themes
+│   ├── core/src/       @simplysoftua/core
+│   ├── admin/src/      @simplysoftua/admin
+│   ├── ui/src/         @simplysoftua/ui
+│   ├── plugin-system/  @simplysoftua/plugins
+│   ├── theme-system/   @simplysoftua/themes
 │   └── schema/                       # Seed migrations
 │
 ├── themes/default/                   # Default storefront theme
@@ -102,12 +102,12 @@ simplyCMS/
 
 | Import | Path |
 |--------|------|
-| `@simplycms/db-types` | `supabase/types.ts` |
-| `@simplycms/core` | `packages/simplycms/core/src` |
-| `@simplycms/admin` | `packages/simplycms/admin/src` |
-| `@simplycms/ui` | `packages/simplycms/ui/src` |
-| `@simplycms/plugins` | `packages/simplycms/plugin-system/src` |
-| `@simplycms/themes` | `packages/simplycms/theme-system/src` |
+| `@simplysoftua/db-types` | `supabase/types.ts` |
+| `@simplysoftua/core` | `packages/simplycms/core/src` |
+| `@simplysoftua/admin` | `packages/simplycms/admin/src` |
+| `@simplysoftua/ui` | `packages/simplycms/ui/src` |
+| `@simplysoftua/plugins` | `packages/simplycms/plugin-system/src` |
+| `@simplysoftua/themes` | `packages/simplycms/theme-system/src` |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 

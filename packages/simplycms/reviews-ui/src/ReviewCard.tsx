@@ -3,8 +3,8 @@ import { format } from "date-fns";
 import { uk } from "date-fns/locale";
 import { Trash2 } from "lucide-react";
 import { StarRating } from "./StarRating";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import type { ProductReview } from "@simplycms/core/hooks/useProductReviews";
+import { useAuth } from "@simplysoftua/core/hooks/useAuth";
+import type { ProductReview } from "@simplysoftua/core/hooks/useProductReviews";
 
 interface ReviewCardProps {
   review: ProductReview;

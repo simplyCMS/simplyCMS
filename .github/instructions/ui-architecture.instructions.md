@@ -5,11 +5,11 @@ description: "Правила побудови UI, система тем та sha
 
 # UI Architecture Rules
 
-## Дизайн-система (@simplycms/ui)
+## Дизайн-система (@simplysoftua/ui)
 
 - 50+ компонентів на базі **shadcn/ui** + Radix UI.
 - Стилі через **Tailwind v4** + `class-variance-authority`.
-- Утиліта `cn()` з `@simplycms/core` для злиття класів.
+- Утиліта `cn()` з `@simplysoftua/core` для злиття класів.
 
 ### Додавання нових UI компонентів
 
@@ -46,7 +46,7 @@ themes/default/
 ### Використання теми в app/
 ```typescript
 // app/(storefront)/page.tsx
-import { getActiveTheme } from '@simplycms/themes';
+import { getActiveTheme } from '@simplysoftua/themes';
 
 export default async function HomePage() {
   const theme = await getActiveTheme();
@@ -56,10 +56,10 @@ export default async function HomePage() {
 ```
 
 ## ✅ ALWAYS
-- Використовуй `@simplycms/ui` компоненти, не створюй дублікати.
+- Використовуй `@simplysoftua/ui` компоненти, не створюй дублікати.
 - Перевіряй shadcn MCP перед додаванням нових компонентів.
 - Theme-specific компоненти — лише в `themes/*/components/`.
-- Бізнес-компоненти (ProductCard, CartItem) — в `@simplycms/core`.
+- Бізнес-компоненти (ProductCard, CartItem) — в `@simplysoftua/core`.
 - Responsive дизайн (mobile-first).
 - Dark mode підтримка через `next-themes` + CSS variables.
 - `forwardRef` для UI-компонентів що проксують ref.
@@ -67,24 +67,24 @@ export default async function HomePage() {
 ## ❌ NEVER
 - Не обминай систему тем для storefront-сторінок.
 - Не розміщуй бізнес-логіку в темах (теми — лише візуалізація).
-- Не дублюй shadcn/ui компоненти в `app/` — вони мають бути в `@simplycms/ui`.
+- Не дублюй shadcn/ui компоненти в `app/` — вони мають бути в `@simplysoftua/ui`.
 - Не хардкодь кольори — використовуй CSS variables та Tailwind classes.
 - Не додавай shadcn/ui компоненти без перевірки через MCP.
 - Не використовуй inline styles — лише Tailwind CSS classes.
 
 ## Компоненти за пакетами
 
-### @simplycms/ui (дизайн-система)
+### @simplysoftua/ui (дизайн-система)
 Button, Input, Dialog, Table, Card, Select, Tabs, Form, etc.
 
-### @simplycms/core (бізнес-компоненти)
+### @simplysoftua/core (бізнес-компоненти)
 - **Catalog:** ProductCard, FilterSidebar, ProductGallery, ModificationSelector, StockDisplay
 - **Cart:** CartButton, CartDrawer, CartItem
 - **Checkout:** CheckoutContactForm, CheckoutDeliveryForm, CheckoutOrderSummary, etc.
 - **Reviews:** ProductReviews, ReviewCard, ReviewForm, StarRating
 - **Profile:** AddressesList, AvatarUpload, ProfileLayout, RecipientsList
 
-### @simplycms/admin (адмін-компоненти)
+### @simplysoftua/admin (адмін-компоненти)
 AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc.
 
 ### themes/* (theme-specific)

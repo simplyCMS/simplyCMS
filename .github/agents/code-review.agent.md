@@ -51,7 +51,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 **Перевір відповідність патернам:**
 
 - **Package Structure:**
-  - [ ] Код розміщено у правильному пакеті (@simplycms/core, admin, ui, plugins, themes)
+  - [ ] Код розміщено у правильному пакеті (@simplysoftua/core, admin, ui, plugins, themes)
   - [ ] Бізнес-логіка НЕ в темах (теми — лише візуалізація)
   - [ ] Відсутність circular dependencies між пакетами
 
@@ -72,7 +72,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - **Data Access Patterns:**
   - [ ] SSR: `createServerSupabase()` для server-side data fetching
-  - [ ] Client: `supabase` client з `@simplycms/core` для адмін-панелі
+  - [ ] Client: `supabase` client з `@simplysoftua/core` для адмін-панелі
   - [ ] TanStack Query для client-side caching (admin)
   - [ ] ISR revalidation після змін даних
 

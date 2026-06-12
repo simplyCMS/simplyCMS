@@ -39,10 +39,10 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-      # Спершу публікуємо базовий @simplycms/objects (від нього залежать решта),
+      # Спершу публікуємо базовий @simplysoftua/objects (від нього залежать решта),
       # щоб уникнути 404 при concurrent-публікації (pnpm не гарантує topo-порядок).
       - name: Publish objects (base)
-        run: pnpm publish --filter @simplycms/objects --access public --no-git-checks
+        run: pnpm publish --filter @simplysoftua/objects --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -50,11 +50,11 @@ jobs:
       - name: Publish dependents
         run: >-
           pnpm publish
-          --filter @simplycms/domain
-          --filter @simplycms/data-supabase
-          --filter @simplycms/react-query
-          --filter @simplycms/runtime
-          --filter @simplycms/storefront
+          --filter @simplysoftua/domain
+          --filter @simplysoftua/data-supabase
+          --filter @simplysoftua/react-query
+          --filter @simplysoftua/runtime
+          --filter @simplysoftua/storefront
           --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

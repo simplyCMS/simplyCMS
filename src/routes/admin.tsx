@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { AdminLayout } from '@simplycms/admin/layouts/AdminLayout';
+import { AdminLayout } from '@simplysoftua/admin/layouts/AdminLayout';
 import { getUser, isAdmin } from '../server/auth';
 
 /**

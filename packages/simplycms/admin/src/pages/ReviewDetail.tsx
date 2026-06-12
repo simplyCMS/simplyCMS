@@ -1,19 +1,19 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Label } from "@simplycms/ui/label";
-import { StarRating } from "@simplycms/core/components/reviews/StarRating";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplycms/ui/avatar";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Textarea } from "@simplysoftua/ui/textarea";
+import { Label } from "@simplysoftua/ui/label";
+import { StarRating } from "@simplysoftua/core/components/reviews/StarRating";
+import { Avatar, AvatarFallback, AvatarImage } from "@simplysoftua/ui/avatar";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+} from "@simplysoftua/ui/alert-dialog";
 import { ArrowLeft, Check, X, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";

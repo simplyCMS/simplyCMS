@@ -1,4 +1,4 @@
-import { useToast } from "@simplycms/ui/use-toast";
+import { useToast } from "@simplysoftua/ui/use-toast";
 import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "./toast";
 
 export function Toaster() {

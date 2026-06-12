@@ -130,7 +130,7 @@ Clarify-питання з попередньої версії задачі **в�
 
 **Мета:** SSR-сторінки storefront рендерять активну тему з БД, а не хардкод
 
-**Scope:** `@simplycms/themes` (core) + `app/theme-registry.server.ts` (site-level)
+**Scope:** `@simplysoftua/themes` (core) + `app/theme-registry.server.ts` (site-level)
 
 - [ ] **2.1** Створити `app/theme-registry.server.ts` — server-only модуль реєстрації тем:
   - Без `"use client"`
@@ -215,7 +215,7 @@ Clarify-питання з попередньої версії задачі **в�
 
 **Мета:** клієнтський ThemeContext не конфліктує з SSR, не дублює роботу
 
-**Scope:** `@simplycms/themes` (ThemeContext.tsx) + `app/providers.tsx`
+**Scope:** `@simplysoftua/themes` (ThemeContext.tsx) + `app/providers.tsx`
 
 - [ ] **4.1** Додати prop `initialThemeName` до `ThemeProvider`:
   - SSR layout передає `themeName` (з `getActiveThemeSSR()`) → `<Providers initialThemeName={themeName}>`
@@ -248,7 +248,7 @@ Clarify-питання з попередньої версії задачі **в�
 
 **Мета:** адмінка відповідає концепції "теми тільки через код + міграцію"
 
-**Scope:** `@simplycms/admin` + `app/api/revalidate/`
+**Scope:** `@simplysoftua/admin` + `app/api/revalidate/`
 
 - [ ] **5.1** Видалити `packages/simplycms/admin/src/components/InstallThemeDialog.tsx`
 - [ ] **5.2** Оновити `packages/simplycms/admin/src/pages/Themes.tsx`:
@@ -344,7 +344,7 @@ Clarify-питання з попередньої версії задачі **в�
 Flash/mismatch. SSR має знати правильну тему через `getActiveThemeSSR()`.
 
 ### ❌ Бізнес-логіка в темах
-Теми — чиста візуалізація. Fetching, enrichment, price resolution залишаються в `app/` page.tsx або `@simplycms/core`.
+Теми — чиста візуалізація. Fetching, enrichment, price resolution залишаються в `app/` page.tsx або `@simplysoftua/core`.
 
 ### ❌ `"use client"` у SSR theme resolver
 `getActiveThemeSSR()` — server-only функція з `createServerSupabaseClient()`. Без `"use client"`.
@@ -368,11 +368,11 @@ ThemeRegistry і ThemeContext мають багато `console.log` — приб
 | Компонент | Пакет | Деталі |
 |-----------|-------|--------|
 | DB міграція | `supabase/migrations/` (site-level) | Нова структура themes, seed для обох тем |
-| SSR Resolver | `@simplycms/themes` (core) | `getActiveThemeSSR()` + `unstable_cache` |
+| SSR Resolver | `@simplysoftua/themes` (core) | `getActiveThemeSSR()` + `unstable_cache` |
 | Server Registration | `app/theme-registry.server.ts` (site-level) | Server-only реєстрація модулів |
 | Storefront pages | `app/(storefront)/` (site-level) | Динамічний рендер через SSR resolver |
-| ThemeContext | `@simplycms/themes` (core) | `initialThemeName` prop, без визначення теми |
-| Admin Themes | `@simplycms/admin` (core) | Без InstallDialog, з revalidation |
+| ThemeContext | `@simplysoftua/themes` (core) | `initialThemeName` prop, без визначення теми |
+| Admin Themes | `@simplysoftua/admin` (core) | Без InstallDialog, з revalidation |
 | Revalidation | `app/api/revalidate/` (site-level) | + type `theme` → `revalidateTag('active-theme')` |
 
 - **Rendering storefront:** SSR + ISR (без змін — джерело компонентів стає динамічним)

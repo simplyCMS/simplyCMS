@@ -8,9 +8,9 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent } from "@simplycms/ui/card";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Card, CardContent } from "@simplysoftua/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
 import useEmblaCarousel from "embla-carousel-react";
 
 /** Категорії товарів для героїв-секції */

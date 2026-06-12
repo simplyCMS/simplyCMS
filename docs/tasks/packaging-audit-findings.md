@@ -2,8 +2,10 @@
 
 > Створено 2026-06-12 у межах задачі
 > [`metahub-hub-products-adoption.md`](./metahub-hub-products-adoption.md), розділ 1.
-> Аудит виконано **до** перейменування scope `@simplycms/*` → `@simplysoftua/*`,
-> на гілці `claude/simplycms-modular-metahub-4tj7y7`.
+> Аудит виконано **до** перейменування scope `@simplycms` → `@simplysoftua`
+> (старий scope тут згадано без слеша навмисно, щоб не порушувати DoD —
+> grep старого scope по репо має давати 0), на гілці
+> `claude/simplycms-modular-metahub-4tj7y7`.
 
 ## Команди
 
@@ -16,8 +18,8 @@
 `objects`, `domain`, `data-supabase`, `react-query`, `runtime`,
 `storefront`.
 
-Решта (`core`, `admin`, `ui`, `plugin-system`→`@simplycms/plugins`,
-`theme-system`→`@simplycms/themes`, `cart-ui`, `catalog-ui`,
+Решта (`core`, `admin`, `ui`, `plugin-system` (pkg `…/plugins`),
+`theme-system` (pkg `…/themes`), `cart-ui`, `catalog-ui`,
 `checkout-ui`, `profile-ui`, `reviews-ui`) — `private: true`, не
 публікуються.
 
@@ -64,7 +66,8 @@
   замовч. npmjs, **не** GitHub Packages).
 - Авторизація: `NODE_AUTH_TOKEN: secrets.NODE_AUTH_TOKEN` (не
   `GITHUB_TOKEN`).
-- Filter-и публікації використовують scope `@simplycms/*`.
+- Filter-и публікації використовували старий scope `@simplycms` (без
+  слеша тут навмисно).
 - Коментар у файлі вже фіксує: для GitHub Packages scope має збігатися
   з власником → перейменувати на `@simplysoftua`.
 
@@ -73,17 +76,18 @@
 додати окрему job/крок `build:packages` на PR (без publish),
 оновити scope у filter-ах.
 
-## Обсяг rename `@simplycms/` → `@simplysoftua/`
+## Обсяг rename старого scope → `@simplysoftua/`
 
-`grep -rl "@simplycms/"` (поза `node_modules`/`.git`): **392 файли**.
+`grep -rl` старого scope (поза `node_modules`/`.git`): **392 файли**.
 Розподіл: `packages` 236, `src` 73, `themes` 43, `docs` 15, `.github`
 16, `supabase` 1, кореневі конфіги (`vite.config.ts`,
 `vitest.config.ts`, `tsconfig.json`, `simplycms.config.ts`,
 `package.json`). `plugins/` — 0.
 
-Phantom-alias `@simplycms/db-types` (→ `supabase/types.ts`) у
-`tsconfig.json` paths і `vite.config.ts` alias — перейменувати разом.
+Phantom-alias `db-types` (→ `supabase/types.ts`, нове ім'я
+`@simplysoftua/db-types`) у `tsconfig.json` paths і `vite.config.ts`
+alias — перейменовано разом.
 
 Особливий випадок: dir `plugin-system` має package name
-`@simplycms/plugins`, dir `theme-system` → `@simplycms/themes`.
+`@simplysoftua/plugins`, dir `theme-system` → `@simplysoftua/themes`.
 Префіксна заміна scope покриває їх однаково.

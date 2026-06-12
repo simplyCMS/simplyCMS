@@ -11,11 +11,11 @@ import {
   Loader2,
   UserPlus,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Separator } from "@simplycms/ui/separator";
-import { Skeleton } from "@simplycms/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Separator } from "@simplysoftua/ui/separator";
+import { Skeleton } from "@simplysoftua/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+} from "@simplysoftua/ui/alert-dialog";
 import { useAuth } from "../hooks/useAuth";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";

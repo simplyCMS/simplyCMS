@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Users, Loader2, AlertTriangle, Phone, Mail, MapPin } from "lucide-react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { useToast } from "@simplycms/ui/use-toast";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { useToast } from "@simplysoftua/ui/use-toast";
+import { useAuth } from "@simplysoftua/core/hooks/useAuth";
 
 interface Recipient {
   id: string;

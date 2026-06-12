@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import { ArrowLeft, Plus, Settings, Star } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
 

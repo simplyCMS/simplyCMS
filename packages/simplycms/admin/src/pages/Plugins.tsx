@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { NavLink } from "@simplycms/core/components/NavLink";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Switch } from "@simplycms/ui/switch";
-import { Badge } from "@simplycms/ui/badge";
-import { Skeleton } from "@simplycms/ui/skeleton";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { NavLink } from "@simplysoftua/core/components/NavLink";
+import { Button } from "@simplysoftua/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Skeleton } from "@simplysoftua/ui/skeleton";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { ArrowLeft, Puzzle, Settings, Trash2 } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
 import {
   getRegisteredPluginModules,
-} from "@simplycms/plugins";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { parsePlugin, type ParsedPlugin, type Plugin } from "@simplycms/plugins/types";
+} from "@simplysoftua/plugins";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { parsePlugin, type ParsedPlugin, type Plugin } from "@simplysoftua/plugins/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+} from "@simplysoftua/ui/alert-dialog";
 import { InstallPluginDialog } from "../components/InstallPluginDialog";
 
 export default function Plugins() {

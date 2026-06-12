@@ -1,4 +1,4 @@
-import { buildRobotsTxt as buildRobots } from '@simplycms/storefront/seo';
+import { buildRobotsTxt as buildRobots } from '@simplysoftua/storefront/seo';
 
 const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 

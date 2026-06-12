@@ -4,8 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Form } from "@simplycms/ui/form";
+import { Button } from "@simplysoftua/ui/button";
+import { Form } from "@simplysoftua/ui/form";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
@@ -16,7 +16,7 @@ import { CheckoutDeliveryForm } from "../components/checkout/CheckoutDeliveryFor
 import { CheckoutPaymentForm } from "../components/checkout/CheckoutPaymentForm";
 import { CheckoutOrderSummary } from "../components/checkout/CheckoutOrderSummary";
 import { CheckoutRecipientForm } from "../components/checkout/CheckoutRecipientForm";
-import { PluginSlot } from "@simplycms/plugins";
+import { PluginSlot } from "@simplysoftua/plugins";
 
 const checkoutSchema = z.object({
   firstName: z.string().min(2, "Мінімум 2 символи").max(100, "Максимум 100 символів"),

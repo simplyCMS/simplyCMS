@@ -4,10 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { User, Save, Loader2, KeyRound } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Skeleton } from "@simplycms/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@simplysoftua/ui/card";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Skeleton } from "@simplysoftua/ui/skeleton";
 import {
   Form,
   FormControl,
@@ -15,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplycms/ui/form";
+} from "@simplysoftua/ui/form";
 import { useAuth } from "../hooks/useAuth";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";

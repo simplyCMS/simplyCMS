@@ -4,7 +4,7 @@ import {
   loadSections,
   loadSectionBySlug,
   loadRootSections,
-} from '@simplycms/storefront/loaders';
+} from '@simplysoftua/storefront/loaders';
 import { createServerSupabase } from './supabase';
 
 /** Отримати всі активні секції */

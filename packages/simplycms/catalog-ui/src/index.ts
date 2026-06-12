@@ -1,4 +1,4 @@
-// @simplycms/catalog-ui — catalog presentational + container components.
+// @simplysoftua/catalog-ui — catalog presentational + container components.
 export * from "./ActiveFilters";
 export * from "./CatalogLayout";
 export * from "./FilterSidebar";

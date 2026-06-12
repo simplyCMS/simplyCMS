@@ -14,7 +14,7 @@ SimplyCMS використовує **Tiptap v3** для rich text editing. Ре�
 ## ✅ ALWAYS
 
 ### Компоненти
-- Редактор знаходиться в `@simplycms/admin` (для адмін-панелі) та `@simplycms/core` (для відгуків).
+- Редактор знаходиться в `@simplysoftua/admin` (для адмін-панелі) та `@simplysoftua/core` (для відгуків).
 - Використовуй `RichTextEditor` компонент з відповідного пакету.
 - Використовуй `ReviewRichTextEditor` для форми відгуків.
 

@@ -63,11 +63,11 @@ Storefront pages в SimplyCMS — це **ізоморфні React-компоне
   - Імпортується з `src/server/themes.ts` для серверної резолюції (гарантія реєстрації перед load)
 
 - [ ] Підключити CMSProvider в `src/routes/__root.tsx`:
-  - CMSProvider (з `@simplycms/core`) обгортає `<Outlet />` — дає QueryClientProvider + AuthProvider + CartProvider
+  - CMSProvider (з `@simplysoftua/core`) обгортає `<Outlet />` — дає QueryClientProvider + AuthProvider + CartProvider
   - CMSProvider вже framework-agnostic: AuthProvider використовує supabase.auth.onAuthStateChange (guard `typeof window`), CartProvider — localStorage (SSR-safe lazy initializer)
 
 - [ ] Підключити CMS ThemeProvider в layout route `_storefront.tsx`:
-  - ThemeProvider (з `@simplycms/themes/ThemeContext`) обгортає `<theme.MainLayout><Outlet /></theme.MainLayout>`
+  - ThemeProvider (з `@simplysoftua/themes/ThemeContext`) обгортає `<theme.MainLayout><Outlet /></theme.MainLayout>`
   - Приймає `initialThemeName` з loader для пропуску початкового DB fetch на клієнті
   - Дочірні маршрути отримують тему через `useTheme().activeTheme.pages.*`
 
@@ -144,7 +144,7 @@ Storefront pages в SimplyCMS — це **ізоморфні React-компоне
 
 ### ✅ Передача теми: React Context (ThemeProvider), не route context
 
-ThemeModule містить React-компоненти (MainLayout, pages) — не серіалізується для route context. Використовуємо існуючий ThemeProvider з `@simplycms/themes/ThemeContext`:
+ThemeModule містить React-компоненти (MainLayout, pages) — не серіалізується для route context. Використовуємо існуючий ThemeProvider з `@simplysoftua/themes/ThemeContext`:
 - Layout route loader повертає лише themeName і themeSettings (серіалізовані дані з ThemeRecord).
 - Layout route component викликає `React.use(ThemeRegistry.load(themeName))` і рендерить `<ThemeProvider initialThemeName={themeName} initialThemeSettings={themeSettings}>`.
 - Дочірні routes отримують тему через `useTheme()`.
@@ -202,7 +202,7 @@ OrderSuccessPage — client-only за контрактом ThemePages. Дост�
 
 - **В який пакет додавати код:** `src/routes/_storefront/` (site-level routes), `src/theme-registry.ts` (ізоморфна реєстрація)
 - **Rendering стратегія:** SSR (loader + initialData + hydration) для каталогу/товарів/properties; client-only для order-success
-- **Залежності:** серверні функції з Phase 2, theme system з `@simplycms/themes`, CMSProvider з `@simplycms/core`
+- **Залежності:** серверні функції з Phase 2, theme system з `@simplysoftua/themes`, CMSProvider з `@simplysoftua/core`
 - **Міграція з Phase 5:** мінімальний набір prerequisites (providers, theme-registry) виноситься в Phase 3A
 
 ## Цільова структура після Phase 3

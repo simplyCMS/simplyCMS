@@ -16,7 +16,7 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 ## ✅ ALWAYS
 
 ### Upload
-- Використовуй Supabase Storage API через `@simplycms/core` обгортки.
+- Використовуй Supabase Storage API через `@simplysoftua/core` обгортки.
 - Валідуй файли перед upload (розмір, MIME type).
 - Використовуй `next/image` для оптимізації зображень на storefront.
 - Генеруй унікальні імена файлів для уникнення конфліктів.
@@ -28,7 +28,7 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 
 ### Зображення
 - Storefront: `next/image` з `remotePatterns` для `*.supabase.co`.
-- Admin: `ImageUpload` компонент з `@simplycms/admin`.
+- Admin: `ImageUpload` компонент з `@simplysoftua/admin`.
 - Публічні бакети для зображень товарів та банерів.
 
 ### Конфігурація

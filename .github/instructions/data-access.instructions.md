@@ -8,9 +8,9 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- **Server Components / Server Actions:** використовуй `createServerSupabase()` з `@simplycms/core/supabase/server` (cookie-based).
-- **Client Components:** використовуй `supabase` з `@simplycms/core/supabase/client` (browser client).
-- **Proxy:** використовуй `createProxySupabaseClient()` з `@simplycms/core/supabase/proxy` (cookie-based session refresh + guards).
+- **Server Components / Server Actions:** використовуй `createServerSupabase()` з `@simplysoftua/core/supabase/server` (cookie-based).
+- **Client Components:** використовуй `supabase` з `@simplysoftua/core/supabase/client` (browser client).
+- **Proxy:** використовуй `createProxySupabaseClient()` з `@simplysoftua/core/supabase/proxy` (cookie-based session refresh + guards).
 - **API Routes:** використовуй `createServerSupabase()` для authenticated запитів.
 - Виконуй роботу з базою даних через MCP supabase, включаючи аналіз структури таблиць, RLS policies та виконання міграцій.
 
@@ -127,7 +127,7 @@ await fetch('/api/revalidate', {
 
 ## ❌ NEVER
 - Не створюй локальні файли міграцій — завжди через MCP supabase.
-- Не використовуй прямий `supabase-js` без обгорток з `@simplycms/core` (виняток: `unstable_cache`, див. вище).
+- Не використовуй прямий `supabase-js` без обгорток з `@simplysoftua/core` (виняток: `unstable_cache`, див. вище).
 - Не редагуй `supabase/types.ts` вручну — виключно через `pnpm db:generate-types`.
 - Не забувай ISR revalidation після змін даних в адмінці.
 - Не використовуй `queryClient.setQueryData()` для складних кейсів — invalidate замість цього.

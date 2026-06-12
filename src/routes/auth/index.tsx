@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import Auth from '@simplycms/core/pages/Auth';
+import Auth from '@simplysoftua/core/pages/Auth';
 import { getUser } from '../../server/auth';
 
 /**

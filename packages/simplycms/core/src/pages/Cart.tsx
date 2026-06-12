@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, ShoppingCart, Trash2 } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Separator } from "@simplycms/ui/separator";
+import { Button } from "@simplysoftua/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Separator } from "@simplysoftua/ui/separator";
 import { useCart } from "../hooks/useCart";
 import { CartItem } from "../components/cart/CartItem";
 

@@ -18,7 +18,7 @@
 ## Прийняті рішення з Phase 0
 
 - **Core pages — prop-driven.** Route params/search/pathname підіймаються в route layer і передаються через props.
-- **Admin pages — route-aware.** `@simplycms/admin/pages/*` переписуються напряму на TanStack Router, без prop-driven adapter шару.
+- **Admin pages — route-aware.** `@simplysoftua/admin/pages/*` переписуються напряму на TanStack Router, без prop-driven adapter шару.
 - **Themes — route-aware.** Theme components можуть використовувати TanStack Router напряму.
 - **`next/image` → `<img>`.** Без проміжних wrapper-компонентів.
 - **Adapter-шар заборонений.** Не вводити `href`/`useRouter`/`URLSearchParams` compatibility wrappers.

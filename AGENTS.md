@@ -51,11 +51,11 @@ app/                              # Next.js App Router
 └── layout.tsx                    # Root layout
 
 packages/simplycms/               # Core CMS (Git Subtree)
-├── core/       @simplycms/core
-├── admin/      @simplycms/admin
-├── ui/         @simplycms/ui
-├── plugin-system/  @simplycms/plugins
-└── theme-system/   @simplycms/themes
+├── core/       @simplysoftua/core
+├── admin/      @simplysoftua/admin
+├── ui/         @simplysoftua/ui
+├── plugin-system/  @simplysoftua/plugins
+└── theme-system/   @simplysoftua/themes
 
 themes/{default,solarstore}/      # Storefront themes
 supabase/                         # Migrations, types, edge functions
@@ -66,6 +66,6 @@ supabase/                         # Migrations, types, edge functions
 - **Rendering:** SSR for storefront, client-side for admin
 - **Themes:** Build-time registration, runtime activation via DB
 - **Auth:** Cookie-based sessions via `@supabase/ssr`
-- **Imports:** Always use `@simplycms/*` aliases, not relative paths to packages
+- **Imports:** Always use `@simplysoftua/*` aliases, not relative paths to packages
 - **Language:** Comments and UI text in Ukrainian
-- **Do not:** Edit `temp/`, put logic in themes, bypass `@simplycms/core` wrappers
+- **Do not:** Edit `temp/`, put logic in themes, bypass `@simplysoftua/core` wrappers

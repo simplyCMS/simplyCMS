@@ -1,4 +1,4 @@
-// @simplycms/data-supabase — Tier 2 Supabase-реалізації портів (DI, без singleton).
+// @simplysoftua/data-supabase — Tier 2 Supabase-реалізації портів (DI, без singleton).
 
 export { createSupabaseCatalogRepository } from "./catalogRepository";
 export { createSupabaseOrderRepository } from "./orderRepository";

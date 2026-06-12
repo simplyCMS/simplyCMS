@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Package, Calendar, ChevronRight, Filter } from "lucide-react";
-import { Card, CardContent } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Skeleton } from "@simplycms/ui/skeleton";
+import { Card, CardContent } from "@simplysoftua/ui/card";
+import { Button } from "@simplysoftua/ui/button";
+import { Badge } from "@simplysoftua/ui/badge";
+import { Skeleton } from "@simplysoftua/ui/skeleton";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
+} from "@simplysoftua/ui/select";
 import { useAuth } from "../hooks/useAuth";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
 

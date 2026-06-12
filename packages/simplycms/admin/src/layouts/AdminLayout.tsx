@@ -1,11 +1,11 @@
 import { useNavigate } from '@tanstack/react-router';
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@simplycms/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@simplysoftua/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
-import { Button } from "@simplycms/ui/button";
+import { Button } from "@simplysoftua/ui/button";
 import { LogOut, Home } from "lucide-react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { ThemeToggle } from "@simplycms/core/components/ThemeToggle";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { ThemeToggle } from "@simplysoftua/core/components/ThemeToggle";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = useSupabaseClient();

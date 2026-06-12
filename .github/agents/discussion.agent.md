@@ -23,7 +23,7 @@ $ARGUMENTS
 
 SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 - Next.js App Router, Supabase, Tailwind v4, shadcn/ui
-- Пакети: @simplycms/core, @simplycms/admin, @simplycms/ui, @simplycms/plugins, @simplycms/themes
+- Пакети: @simplysoftua/core, @simplysoftua/admin, @simplysoftua/ui, @simplysoftua/plugins, @simplysoftua/themes
 - Система тем (ThemeModule) та плагінів (HookRegistry)
 - Git Subtree для дистрибуції ядра
 - Міграція з React SPA (temp/ — read-only референс)

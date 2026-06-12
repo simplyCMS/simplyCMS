@@ -15,8 +15,8 @@ GitHub. Усе, що стосується Marketplace (storefront/`*-ui`/runtime
 
 ## Що вже готово (не чіпати)
 
-- `@simplycms/objects` (T0) — контракти + порти, 0 runtime deps (P1 ✅).
-- `@simplycms/domain` (T1) — pure pricing/discounts/inventory/shipping,
+- `@simplysoftua/objects` (T0) — контракти + порти, 0 runtime deps (P1 ✅).
+- `@simplysoftua/domain` (T1) — pure pricing/discounts/inventory/shipping,
   27 unit-тестів (P2 ✅).
 - Singleton `supabase` знесено, DI через `SupabaseProvider` (P3 ✅).
 - Build/publish: tsup + `publish-packages.yml` для T0/T1/T2 (P10 ✅).
@@ -30,14 +30,14 @@ GitHub. Усе, що стосується Marketplace (storefront/`*-ui`/runtime
 зовнішніх споживачів не використовується** (внутрішній subtree-флоу
 simplyCMS-app ↔ simplyCMS-core `cms:pull/push` лишається без змін).
 
-- [ ] **Rename scope `@simplycms/*` → `@simplysoftua/*`** (вимога GitHub
+- [ ] **Rename scope `@simplysoftua/*` → `@simplysoftua/*`** (вимога GitHub
       Packages «scope = власник»; зафіксовано власником 2026-06-12).
       Обсяг: `name` у package.json усіх workspace-пакетів +
       міжпакетні dependencies + усі імпорти в `packages/`, `src/`,
       `themes/`, `plugins/` + tsconfig paths + vite-аліаси + згадки в
-      docs/instructions. Phantom-alias `@simplycms/db-types` —
+      docs/instructions. Phantom-alias `@simplysoftua/db-types` —
       перейменувати разом для одноманітності. Механічний codemod;
-      DoD: `grep -r "@simplycms/"` по репо = 0,
+      DoD: `grep -r "@simplysoftua/"` по репо = 0,
       `typecheck`/`lint`/`test`/`build` зелені.
 - [ ] **publishConfig.registry** на кожному публікованому пакеті:
       `https://npm.pkg.github.com` (+ `repository.url` на

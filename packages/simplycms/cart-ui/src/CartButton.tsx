@@ -1,5 +1,5 @@
 import { ShoppingCart } from "lucide-react";
-import { useCart } from "@simplycms/react-query";
+import { useCart } from "@simplysoftua/react-query";
 
 export function CartButton() {
   const { totalItems, setIsOpen } = useCart();

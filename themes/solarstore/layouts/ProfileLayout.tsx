@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from '@tanstack/react-router';
 import { User, Package, Settings, LogOut } from "lucide-react";
-import { cn } from "@simplycms/core/lib/utils";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { Button } from "@simplycms/ui/button";
+import { cn } from "@simplysoftua/core/lib/utils";
+import { useAuth } from "@simplysoftua/core/hooks/useAuth";
+import { Button } from "@simplysoftua/ui/button";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 

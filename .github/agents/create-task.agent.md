@@ -58,7 +58,7 @@ docs/tasks/{feature-name}.md
 [Чому це погано в контексті SimplyCMS]
 
 ## Архітектурні рішення
-- В який пакет додавати код: @simplycms/core | @simplycms/admin | @simplycms/ui | themes/
+- В який пакет додавати код: @simplysoftua/core | @simplysoftua/admin | @simplysoftua/ui | themes/
 - Rendering стратегія: SSR | Client-only | Mixed
 - Міграція з temp/: [шлях до оригіналу якщо мігрується]
 

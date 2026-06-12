@@ -3,7 +3,7 @@
 
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { EngineContext } from "@simplycms/objects";
+import type { EngineContext } from "@simplysoftua/objects";
 
 const EngineReactContext = createContext<EngineContext | null>(null);
 

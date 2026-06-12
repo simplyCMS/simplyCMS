@@ -14,5 +14,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   splitting: false,
-  external: ["@simplycms/objects"],
+  external: ["@simplysoftua/objects"],
 });

@@ -1,5 +1,5 @@
 {
-  "name": "@simplycms/core",
+  "name": "@simplysoftua/core",
   "version": "0.1.0",
   "private": true,
   "description": "Core business logic, hooks, and components for SimplyCMS e-commerce platform",
@@ -16,15 +16,15 @@
     "./types": "./src/types/index.ts"
   },
   "dependencies": {
-    "@simplycms/domain": "workspace:*",
-    "@simplycms/react-query": "workspace:*",
-    "@simplycms/ui": "workspace:*",
-    "@simplycms/plugins": "workspace:*",
-    "@simplycms/cart-ui": "workspace:*",
-    "@simplycms/catalog-ui": "workspace:*",
-    "@simplycms/checkout-ui": "workspace:*",
-    "@simplycms/profile-ui": "workspace:*",
-    "@simplycms/reviews-ui": "workspace:*"
+    "@simplysoftua/domain": "workspace:*",
+    "@simplysoftua/react-query": "workspace:*",
+    "@simplysoftua/ui": "workspace:*",
+    "@simplysoftua/plugins": "workspace:*",
+    "@simplysoftua/cart-ui": "workspace:*",
+    "@simplysoftua/catalog-ui": "workspace:*",
+    "@simplysoftua/checkout-ui": "workspace:*",
+    "@simplysoftua/profile-ui": "workspace:*",
+    "@simplysoftua/reviews-ui": "workspace:*"
   },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",

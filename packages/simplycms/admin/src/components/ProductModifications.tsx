@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Switch } from "@simplycms/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { Input } from "@simplysoftua/ui/input";
+import { Label } from "@simplysoftua/ui/label";
+import { Switch } from "@simplysoftua/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplycms/ui/dialog";
+} from "@simplysoftua/ui/dialog";
 import {
   Table,
   TableBody,
@@ -20,21 +20,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from "@simplysoftua/ui/table";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@simplycms/ui/collapsible";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+} from "@simplysoftua/ui/collapsible";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { Plus, Trash2, Loader2, ImageIcon, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import { ImageUpload } from "./ImageUpload";
 import { ProductPropertyValues } from "./ProductPropertyValues";
 import { StockStatusSelect } from "./StockStatusSelect";
 import { StockByPointManager } from "./StockByPointManager";
 import { ProductPricesEditor } from "./ProductPricesEditor";
-import type { Tables, TablesInsert } from "@simplycms/core/supabase/types";
-import type { StockStatus } from "@simplycms/core/hooks/useStock";
+import type { Tables, TablesInsert } from "@simplysoftua/core/supabase/types";
+import type { StockStatus } from "@simplysoftua/core/hooks/useStock";
 
 type ProductModification = Tables<"product_modifications">;
 

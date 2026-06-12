@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import DiscountGroupEdit from '@simplycms/admin/pages/DiscountGroupEdit';
+import DiscountGroupEdit from '@simplysoftua/admin/pages/DiscountGroupEdit';
 
 export const Route = createFileRoute('/admin/discounts/groups/$groupId')({
   ssr: false,

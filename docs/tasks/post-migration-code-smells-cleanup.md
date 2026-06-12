@@ -67,7 +67,7 @@ Health endpoint має повертати типізований об’єкт �
 
 ### Мінімізація витоку token з URL
 Після успішного використання одноразового token прибирати його з URL, не змінюючи поточний контракт.
-- Де шукати: `@simplycms/core/pages/Checkout`, `@simplycms/core/pages/OrderSuccess`.
+- Де шукати: `@simplysoftua/core/pages/Checkout`, `@simplysoftua/core/pages/OrderSuccess`.
 
 ## Антипатерни (уникати)
 
@@ -89,8 +89,8 @@ Health endpoint має повертати типізований об’єкт �
 ## Архітектурні рішення
 - В який пакет додавати код:
   - Storefront routing/SSR: `app/`
-  - Theme resolution/types: `@simplycms/themes`
-  - Plugin init: ймовірно `@simplycms/core` (provider) + `@simplycms/plugins` (loader)
+  - Theme resolution/types: `@simplysoftua/themes`
+  - Plugin init: ймовірно `@simplysoftua/core` (provider) + `@simplysoftua/plugins` (loader)
 - Rendering стратегія:
   - Storefront: SSR/ISR (Server Components) + client components лише за потреби
   - Admin: client-only

@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplysoftua/ui/button";
+import { useToast } from "@simplysoftua/core/hooks/use-toast";
 import { Upload, X, Loader2 } from "lucide-react";
-import { cn } from "@simplycms/core/lib/utils";
+import { cn } from "@simplysoftua/core/lib/utils";
 
 interface ImageUploadProps {
   images: string[];

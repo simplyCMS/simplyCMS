@@ -1,9 +1,9 @@
 // Pure-логіка ціноутворення. Перенесено з core/lib/priceUtils.
-// Залежить лише від типів @simplycms/objects.
+// Залежить лише від типів @simplysoftua/objects.
 
-import type { PriceEntry, ResolvedPrice } from "@simplycms/objects";
+import type { PriceEntry, ResolvedPrice } from "@simplysoftua/objects";
 
-export type { PriceEntry, ResolvedPrice } from "@simplycms/objects";
+export type { PriceEntry, ResolvedPrice } from "@simplysoftua/objects";
 
 /**
  * Обирає ціну для товару/модифікації за типом ціни користувача,

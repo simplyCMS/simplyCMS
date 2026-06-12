@@ -1,1 +1,1 @@
-export { default } from "@simplycms/core/pages/ProfileOrders";
+export { default } from "@simplysoftua/core/pages/ProfileOrders";

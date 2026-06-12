@@ -22,14 +22,14 @@ Admin-сторінки навігують на типізовані шляхи `
 
 ### A. Admin (client-only) — `src/routes/admin.tsx` (layout) + 42 leaf-роути
 - `admin.tsx`: `ssr:false`, `beforeLoad` → `isAdmin()` server fn → `redirect('/auth')`,
-  component = `AdminLayout` (`@simplycms/admin/layouts/AdminLayout`) з `<Outlet/>`.
+  component = `AdminLayout` (`@simplysoftua/admin/layouts/AdminLayout`) з `<Outlet/>`.
 - Кожен leaf — тонка обгортка: `createFileRoute(...)({ ssr:false, component })`, де
-  component — default-експорт з `@simplycms/admin/pages/*`. Жодної логіки в route-файлі.
+  component — default-експорт з `@simplysoftua/admin/pages/*`. Жодної логіки в route-файлі.
 - Структура дзеркалить старий `app/(cms)/admin/`; режим «new» обробляється сторінками через
   значення параметра (`id === 'new'`), тож окремих `new.tsx` не створюємо.
 
 ### B. Auth / Protected / client storefront
-- `auth/index.tsx`: `ssr:false`, `beforeLoad` → якщо є user → `redirect('/')`, component = `@simplycms/core/pages/Auth`.
+- `auth/index.tsx`: `ssr:false`, `beforeLoad` → якщо є user → `redirect('/')`, component = `@simplysoftua/core/pages/Auth`.
 - `auth/callback.tsx`: server route (`server.handlers.GET`) — обмін `code` → session → redirect.
 - `_protected.tsx`: `beforeLoad` (server) → `getUser()` → `redirect('/auth')`; вантажить активну тему;
   рендерить `theme.ProfileLayout` з `<Outlet/>`.
