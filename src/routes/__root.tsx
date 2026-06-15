@@ -10,12 +10,20 @@ import { Toaster } from '@simplysoftua/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplysoftua/core/providers/CMSProvider';
 import { ClientEngineProvider } from '../engine-provider';
+import { getActiveTheme } from '../server/themes';
+import { serializeActiveThemeScript } from '../active-theme';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
 import '../theme-registry';
 
 export const Route = createRootRoute({
+  // Резолвимо активну тему один раз на рівні root — її назву інлайн-скриптом
+  // прокидаємо клієнту, щоб той прогрів саме цю тему ДО гідрації (без suspend).
+  loader: async () => {
+    const record = await getActiveTheme();
+    return { activeThemeName: record?.name ?? 'default' };
+  },
   notFoundComponent: NotFound,
   errorComponent: ErrorBoundary,
   head: () => ({
@@ -40,9 +48,17 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const { activeThemeName } = Route.useLoaderData();
+
   return (
     <html lang="uk" suppressHydrationWarning>
       <head>
+        {/* Назва активної теми для клієнта (прогрів кешу до гідрації) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: serializeActiveThemeScript(activeThemeName),
+          }}
+        />
         <HeadContent />
       </head>
       <body className="font-sans antialiased">

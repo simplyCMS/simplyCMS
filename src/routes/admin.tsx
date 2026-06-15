@@ -23,6 +23,10 @@ export const Route = createFileRoute('/admin')({
       throw redirect({ to: '/' });
     }
   },
+  // `ssr: false` маршруту потрібен pendingComponent: сервер рендерить його як
+  // fallback, він гідрується змонтованим, і перехід pending→loaded на клієнті
+  // не б'є setState по ще не змонтованому Transitioner (попередження React).
+  pendingComponent: AdminPending,
   component: AdminRoot,
 });
 
@@ -31,5 +35,14 @@ function AdminRoot() {
     <AdminLayout>
       <Outlet />
     </AdminLayout>
+  );
+}
+
+/** Fallback під час client-side guard/завантаження адмінки */
+function AdminPending() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-sm text-muted-foreground">Завантаження адмінки…</p>
+    </div>
   );
 }

@@ -1,9 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
-import Underline from "@tiptap/extension-underline";
 import { Button } from "@simplysoftua/ui/button";
 import { Toggle } from "@simplysoftua/ui/toggle";
 import { Separator } from "@simplysoftua/ui/separator";
@@ -46,16 +44,17 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
+      // StarterKit v3 уже містить link + underline — налаштовуємо link тут,
+      // щоб не дублювати розширення (underline лишаємо з типовою конфігурацією).
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3],
         },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-primary underline cursor-pointer",
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: "text-primary underline cursor-pointer",
+          },
         },
       }),
       Image.configure({
