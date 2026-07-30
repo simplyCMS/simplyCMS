@@ -9,7 +9,7 @@
 
 ### context7 - Library Documentation
 - Tools: `resolve-library-id`, `get-library-docs`
-- Use for: Next.js, React, TypeScript, TanStack Query, Zod, and other external libraries
+- Use for: TanStack Start/Router, React, TypeScript, TanStack Query, Zod, and other external libraries
 - When: Working with external libraries, checking APIs, finding best practices
 - MCP provides latest documentation that may differ from your training data
 
@@ -44,12 +44,6 @@
 - Verify Supabase schema and types through MCP tools
 - **Do not add shadcn/ui components without checking MCP registry first**
 - **Do not assume library APIs — always verify through MCP context7**
-
-### Migration Awareness
-- The `temp/` directory contains a reference React SPA (Vite + React Router) project
-- Use it as **read-only reference** for migrating components, hooks, and business logic
-- **Never edit files in `temp/`** — only read them for understanding existing behavior
-- See `BRD_SIMPLYCMS_NEXTJS.md` for detailed migration plan and file mapping
 
 ### Code Quality Commands
 - Використовуй `pnpm typecheck`, `pnpm lint` для перевірок.

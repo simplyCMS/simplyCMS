@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/simplycms/core/**/*.{ts,tsx},app/**/*.{ts,tsx}"
+applyTo: "packages/simplycms/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
 description: "Правила роботи з файловим сховищем Supabase Storage в SimplyCMS"
 ---
 
@@ -18,7 +18,7 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 ### Upload
 - Використовуй Supabase Storage API через `@simplysoftua/core` обгортки.
 - Валідуй файли перед upload (розмір, MIME type).
-- Використовуй `next/image` для оптимізації зображень на storefront.
+- Задавай `loading="lazy"`, явні `width`/`height` (або aspect-ratio) для зображень на storefront.
 - Генеруй унікальні імена файлів для уникнення конфліктів.
 
 ### Storage Paths
@@ -27,21 +27,9 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 - Приклад: `products/123/main-image.jpg`
 
 ### Зображення
-- Storefront: `next/image` з `remotePatterns` для `*.supabase.co`.
+- Storefront: стандартний `<img>` з public URL Supabase Storage (`/storage/v1/object/public/**`); lazy loading + розміри обовʼязково.
 - Admin: `ImageUpload` компонент з `@simplysoftua/admin`.
 - Публічні бакети для зображень товарів та банерів.
-
-### Конфігурація
-- Remote patterns налаштовані в `next.config.ts`:
-  ```typescript
-  images: {
-    remotePatterns: [{
-      protocol: 'https',
-      hostname: '*.supabase.co',
-      pathname: '/storage/v1/object/public/**',
-    }],
-  },
-  ```
 
 ## ❌ NEVER
 - Не викликай `supabase.storage.from()` напряму в компонентах — використовуй обгортки.
@@ -51,5 +39,3 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 
 ## ℹ️ Де шукати деталі
 - `packages/simplycms/admin/src/components/ImageUpload.tsx` — компонент upload.
-- `next.config.ts` — конфігурація remote patterns для зображень.
-- `temp/src/components/admin/ImageUpload.tsx` — референсна реалізація (read-only).

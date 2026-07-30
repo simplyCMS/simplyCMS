@@ -90,7 +90,6 @@ simplyCMS/
 ├── themes/default/                   # Default storefront theme
 ├── themes/solarstore/                # SolarStore theme (blue palette)
 ├── plugins/                          # Local plugins directory
-├── temp/                             # Reference React SPA (read-only)
 │
 ├── simplycms.config.ts               # CMS config
 ├── vite.config.ts                    # Vite + tanstackStart() + seoRoutesPlugin()
@@ -118,7 +117,7 @@ Themes use isomorphic registration + runtime DB activation:
 1. **Registration:** `src/theme-registry.ts` registers themes via `ThemeRegistry.register()` — imported as a side-effect from `__root.tsx` (works on server and client).
 2. **SSR Resolution:** `src/server/themes.ts` (`getActiveTheme` `createServerFn`) reads the active theme from the DB; the `_storefront` / `_protected` route `loader` provides `themeName` to children.
 3. **Storefront pages:** Route component does `const theme = use(ThemeRegistry.load(themeName))` → renders `theme.pages.XxxPage`.
-4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache (no Next `revalidatePath`).
+4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache.
 5. **ThemeContext (client):** Accepts `initialThemeName` from the loader, avoids redundant client fetch.
 
 ## Environment Variables

@@ -41,7 +41,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 **CRITICAL: NEVER ask "Що було реалізовано?" — extract context from attachments and $ARGUMENTS automatically.**
 
 **Завантаж релевантну документацію:**
-- `BRD_SIMPLYCMS_NEXTJS.md` — якщо архітектурні зміни
+- `docs/architecture/core-engine-extraction.md` — якщо архітектурні зміни
 - `.github/instructions/*.instructions.md` — правила для конкретної області коду
 
 ### 2. Архітектурна перевірка
@@ -56,10 +56,9 @@ You **MUST** consider the user input before proceeding (if not empty).
   - [ ] Відсутність circular dependencies між пакетами
 
 - **Server/Client розділення:**
-  - [ ] Server Components за замовчуванням
-  - [ ] `'use client'` лише коли потрібно (стан, ефекти, події)
-  - [ ] SSR для storefront-сторінок (SEO)
-  - [ ] Client-side для адмін-панелі
+  - [ ] SSR для storefront-сторінок (`_storefront`, SEO)
+  - [ ] Client-side для адмін-панелі (`ssr: false` + `pendingComponent`)
+  - [ ] Дані на сервері — через `createServerFn` / route `loader`
 
 - **Theme System:**
   - [ ] Storefront сторінки використовують компоненти з активної теми
@@ -72,19 +71,19 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - **Data Access Patterns:**
   - [ ] SSR: `createServerSupabase()` для server-side data fetching
-  - [ ] Client: `supabase` client з `@simplysoftua/core` для адмін-панелі
+  - [ ] Client: DI через `useSupabaseClient()` (без глобального singleton)
   - [ ] TanStack Query для client-side caching (admin)
-  - [ ] ISR revalidation після змін даних
+  - [ ] Інвалідація query keys / router invalidate після змін даних
 
 - **Authentication:**
   - [ ] Cookie-based auth через `@supabase/ssr`
-  - [ ] Auth guards в `proxy.ts` (admin → admin role, profile → auth)
-  - [ ] Auth логіка НЕ за межами proxy та auth/ route
+  - [ ] Auth guards: `src/start.ts` middleware (admin) + `beforeLoad` (protected)
+  - [ ] Auth логіка НЕ за межами start.ts та auth/ route
 
 **MCP Integration Check:**
 Перевір чи використовувалися MCP сервери для:
 - [ ] shadcn/ui components — чи перевірялись через MCP registry
-- [ ] Library APIs (Next.js, React Query, Zod) — чи звірялись з context7
+- [ ] Library APIs (TanStack Start/Router, React Query, Zod) — чи звірялись з context7
 - [ ] Supabase schema — чи генерувались types через MCP
 
 ### 3. Якість коду
@@ -117,9 +116,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 #### ⚡ Performance
 
 - **SSR Optimization:**
-  - [ ] ISR revalidation для storefront сторінок
-  - [ ] `next/image` для зображень
-  - [ ] `generateMetadata` для SEO
+  - [ ] In-memory TTL cache / `staleTime` для cross-request даних
+  - [ ] Lazy loading зображень + явні розміри
+  - [ ] `head` (title/description/og/canonical) для SEO
   - [ ] Dynamic imports для важких компонентів (Tiptap, Recharts)
 
 - **Client-side:**
@@ -138,7 +137,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - **Authentication:**
   - [ ] Cookie-based sessions (не localStorage JWT)
-  - [ ] Proxy guards для захищених маршрутів
+  - [ ] Request-guards для захищених маршрутів (start.ts / beforeLoad)
   - [ ] Перевірка ролей для адмін-доступу
 
 - **Validation:**
@@ -157,13 +156,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - **Error Handling:**
   - [ ] Try-catch блоки у critical sections
-  - [ ] Error Boundaries (error.tsx)
-  - [ ] Loading states (loading.tsx)
+  - [ ] `errorComponent` / `notFoundComponent` на роутах
+  - [ ] `pendingComponent` для `ssr:false`-роутів
   - [ ] Empty states для списків
-
-- **Migration Compliance:**
-  - [ ] Якщо мігрується компонент з temp/ — поведінка збережена
-  - [ ] Адаптація для Next.js (SSR, App Router) виконана коректно
 
 ## Структура звіту
 

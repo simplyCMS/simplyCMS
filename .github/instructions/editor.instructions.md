@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/simplycms/core/**/*.{ts,tsx},app/**/*.{ts,tsx}"
+applyTo: "packages/simplycms/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
 description: "Правила роботи з rich text редактором (Tiptap v3) в SimplyCMS"
 ---
 
@@ -37,4 +37,3 @@ SimplyCMS використовує **Tiptap v3** для rich text editing. Ре�
 ## ℹ️ Де шукати деталі
 - `packages/simplycms/admin/src/components/` — адмін-компоненти з редактором.
 - `packages/simplycms/core/src/components/reviews/ReviewRichTextEditor.tsx` — редактор відгуків.
-- `temp/src/components/admin/RichTextEditor.tsx` — референсна реалізація (read-only).

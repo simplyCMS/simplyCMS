@@ -22,12 +22,11 @@ $ARGUMENTS
 ## Context
 
 SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
-- Next.js App Router, Supabase, Tailwind v4, shadcn/ui
-- Пакети: @simplysoftua/core, @simplysoftua/admin, @simplysoftua/ui, @simplysoftua/plugins, @simplysoftua/themes
+- TanStack Start (Vite, React 19), Supabase, Tailwind v4, shadcn/ui
+- Пакети: @simplysoftua/objects, domain, data-supabase, react-query, core, admin, ui, plugins, themes, storefront, *-ui, runtime
 - Система тем (ThemeModule) та плагінів (HookRegistry)
-- Git Subtree для дистрибуції ядра
-- Міграція з React SPA (temp/ — read-only референс)
-- Детальний BRD: `BRD_SIMPLYCMS_NEXTJS.md`
+- Git Subtree + GitHub Packages для дистрибуції ядра
+- Архітектура ядра: `docs/architecture/core-engine-extraction.md`
 
 ## Response Rules
 
@@ -36,7 +35,7 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 - Короткі пояснення (2-5 речень максимум)
 - Bullet points для ключових концепцій
 - Mermaid діаграми для візуалізації архітектури
-- Посилання на BRD секції та інструкції
+- Посилання на docs/architecture та інструкції
 - Уточнюючі питання
 - Фінальне питання: **"Створити код/міграцію?"**
 
@@ -78,7 +77,7 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 [Mermaid діаграма]
 
 ### Де шукати деталі
-- `BRD_SIMPLYCMS_NEXTJS.md` секція N — опис
+- `docs/architecture/*.md` / `CLAUDE.md` — опис
 - `.github/instructions/name.instructions.md` — правила
 
 ---
@@ -94,8 +93,8 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 ## Пояснення
 
 Система тем побудована на контракті ThemeModule — кожна тема експортує layouts, pages та опціональні components.
-Storefront сторінки в app/(storefront)/ делегують рендеринг компонентам активної теми.
-Тема підключається статичним імпортом через simplycms.config.ts (зміна теми потребує rebuild).
+Storefront-роути в src/routes/_storefront/ делегують рендеринг компонентам активної теми.
+Теми реєструються в src/theme-registry.ts (build-time), активна тема обирається з БД (runtime).
 
 ### Ключові моменти
 - ThemeModule: manifest + MainLayout + CatalogLayout + ProfileLayout + pages
@@ -103,7 +102,7 @@ Storefront сторінки в app/(storefront)/ делегують рендер
 - Пошук: local themes/ → npm packages → simplycms-theme-* prefix
 
 ### Де шукати деталі
-- BRD секція 7 — повний контракт ThemeModule
+- packages/simplycms/theme-system/src/types.ts — повний контракт ThemeModule
 - packages/simplycms/theme-system/src/ — реалізація
 - themes/default/ — еталонна тема
 

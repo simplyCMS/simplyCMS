@@ -33,7 +33,7 @@ docs/tasks/{feature-name}.md
 # Task: {Назва задачі}
 
 ## Контекст
-[Короткий опис проблеми/фічі та зв'язок з BRD_SIMPLYCMS_NEXTJS.md]
+[Короткий опис проблеми/фічі та зв'язок з архітектурою (docs/architecture/, CLAUDE.md)]
 
 ## Вимоги
 - [ ] Вимога 1
@@ -50,7 +50,7 @@ docs/tasks/{feature-name}.md
 
 ### Pattern Name
 [Опис патерну без повного коду]
-- Де шукати приклад: [шлях до файлу або секція BRD]
+- Де шукати приклад: [шлях до файлу або документа в docs/]
 
 ## Антипатерни (уникати)
 
@@ -58,19 +58,17 @@ docs/tasks/{feature-name}.md
 [Чому це погано в контексті SimplyCMS]
 
 ## Архітектурні рішення
-- В який пакет додавати код: @simplysoftua/core | @simplysoftua/admin | @simplysoftua/ui | themes/
-- Rendering стратегія: SSR | Client-only | Mixed
-- Міграція з temp/: [шлях до оригіналу якщо мігрується]
+- В який пакет додавати код: @simplysoftua/* (objects | domain | data-supabase | react-query | core | admin | ui | storefront | *-ui) | themes/ | src/
+- Rendering стратегія: SSR | Client-only (ssr:false) | Mixed
 
 ## MCP Servers (за потреби)
-- **context7** — для перевірки API бібліотек (Next.js, React Query, Zod)
+- **context7** — для перевірки API бібліотек (TanStack Start/Router, React Query, Zod)
 - **shadcn** — для UI компонентів
 - **supabase** — для DB операцій та міграцій
 
 ## Пов'язана документація
-- `BRD_SIMPLYCMS_NEXTJS.md` секція [N] — [опис]
+- `docs/architecture/[name].md` — [опис]
 - `.github/instructions/[name].instructions.md` — [що релевантно]
-- `temp/src/[path]` — референсний код (read-only)
 
 ## Definition of Done
 - [ ] Критерій 1
@@ -85,10 +83,9 @@ docs/tasks/{feature-name}.md
 
 - Рекомендації та патерни використання
 - Антипатерни (чого уникати в SimplyCMS)
-- Посилання на BRD та відповідні інструкції
+- Посилання на docs/architecture та відповідні інструкції
 - Вказати MCP сервери якщо потрібен контекст
 - Вказати пакет та rendering стратегію
-- Вказати файл-оригінал з temp/ якщо це міграція
 - Definition of Done критерії
 
 ### ❌ ЗАБОРОНЕНО

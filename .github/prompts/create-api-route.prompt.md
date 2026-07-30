@@ -1,10 +1,10 @@
 ---
-description: "Створити API роут для Next.js App Router в SimplyCMS"
+description: "Створити server route (TanStack Start) в SimplyCMS"
 ---
 
 # Створення API роута
 
-Створи новий API роут для Next.js App Router з такими вимогами:
+Створи новий server route для TanStack Start (src/routes/api/, server.handlers) з такими вимогами:
 
 ## Специфікація API:
 
@@ -58,5 +58,5 @@ export async function GET(request: Request) {
 ```
 
 ## Перевір через MCP:
-- **context7:** Next.js Route Handlers API
+- **context7:** TanStack Start server routes API
 - **supabase:** RLS policies для нових таблиць
