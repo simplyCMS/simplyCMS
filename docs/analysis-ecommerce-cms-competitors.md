@@ -3,6 +3,8 @@
 > **Дата:** 2026-02-17
 > **Автор:** Claude Code (автоматизований аналіз)
 > **Мета:** Дослідити 9 open-source e-commerce/CMS проєктів та виявити можливості для покращення SimplyCMS
+>
+> **[Примітка 2026-07-30]** Аналіз робився ще на Next.js-версії SimplyCMS. Застаріло: рекомендації `"use cache"`/`cacheLife()`/ISR (Next-специфіка), «cart/checkout — заглушки» (реалізовано), «0 тестів» (є 53 unit-тести). Досі актуально: пошук по каталогу, URL-фільтрація/пагінація (див. seo-ssr-faceted-navigation), i18n, BreadcrumbList/Organization JSON-LD, image polish, e2e-тести.
 
 ---
 

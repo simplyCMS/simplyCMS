@@ -1,5 +1,7 @@
 # Task: Core Engine Extraction — імплементація headless commerce engine
 
+> **[AMENDMENT 2026-07-30]** MetaHub-adoption **скасовано** власником (MetaHub реалізує домен «Продукти» власним шляхом; див. `completed/metahub-hub-products-adoption.md`). Tier-архітектура, порти та DI **лишаються стратегією** — тепер споживачі це: (1) повнозбірний магазин SimplyCMS, (2) майбутні сторонні магазини/плагіни/теми на платформі. Згадки MetaHub/HUB/Marketplace нижче читати як історичний контекст рішень, не як актуальних споживачів. Подальший розвиток модульності — в межах архітектури платформи (design doc у `docs/superpowers/specs/`).
+>
 > Статус: **у роботі** — готові P1, P2, P3, P4 (EngineProvider живий), P6, P7 (5 пакетів), P9, P10 (build/publish для Tier 0/1/2); P5 — ui self-contained + tier-розв'язка. Лишок: повний retarget `*-ui` від core (потребує identity/reviews/stock port-розширень), міграція data-споживачів під domain-shape, admin-on-repositories.
 > Дизайн-першоджерело: [`docs/architecture/core-engine-extraction.md`](../architecture/core-engine-extraction.md).
 > Це **breaking** реструктуризація `packages/simplycms/*` без перехідного adapter-періоду (за духом `migration-phase0`).
@@ -50,11 +52,11 @@
 
 ### Зв'язок із наявними задачами
 
-> ⚠️ **Ця задача свідомо реверсує два рішення `migration-phase0-decouple-packages.md`** (для дата-шару):
+> ⚠️ **Ця задача свідомо реверсує два рішення `completed/migration-phase0-decouple-packages.md`** (для дата-шару):
 > - Фаза 0.9: «singleton pattern зберігається» → **скасовано**: singleton прибирається на користь DI/ports.
 > - Decision #10: «Жодних adapter-модулів» → **уточнено**: заборона стосувалась router/image-адаптерів під час Next→TanStack міграції; data-access **порти** (репозиторії) тепер дозволені й обов'язкові.
 >
-> ThemeRegistry-singleton (`phase3`/`phase5`/`theme-switching`) **зберігається** — це інший механізм, не торкається. Див. amendment у `migration-phase0-decouple-packages.md` §«Superseded».
+> ThemeRegistry-singleton (`phase3`/`phase5`/`theme-switching`) **зберігається** — це інший механізм, не торкається. Див. amendment у `completed/migration-phase0-decouple-packages.md` §«Superseded».
 
 ## Прийняті рішення (locked)
 
@@ -225,11 +227,11 @@ export interface EngineContext {
 - [~] `admin` на портах+LinkResolver. _(P8 — LinkResolver ✅ хардкод прибрано; admin-on-repositories — разом із P7)_
 - [~] `runtime`/`defineConfig` збирає simplyCMS повністю; `typecheck`/`lint`/`build`/`test` зелені. _(пакет `@simplysoftua/runtime` + reference-збірка `src/server/engine.ts` ✅; checks зелені; але runtime ще не підключено до live-маршрутів)_
 - [x] CI публікує пакети (Packages) + subtree-флоу робочий. _(tsup-build + `publish-packages.yml` для Tier 0/1/2 + `cms:remote` репоінт ✅; `core`/`storefront`/`*-ui` — окремий крок)_
-- [x] `migration-phase0-decouple-packages.md` має amendment про superseded singleton-рішення.
+- [x] `completed/migration-phase0-decouple-packages.md` має amendment про superseded singleton-рішення.
 
 ## Пов'язана документація
 
 - `docs/architecture/core-engine-extraction.md` — дизайн (першоджерело)
-- `docs/tasks/migration-phase0-decouple-packages.md` — superseded singleton/adapter рішення (див. amendment)
+- `docs/tasks/completed/migration-phase0-decouple-packages.md` — superseded singleton/adapter рішення (див. amendment)
 - `.github/instructions/data-access.instructions.md` — Supabase client patterns (оновити під DI)
 - `.github/instructions/architecture-core.instructions.md`
