@@ -26,7 +26,7 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 - Пакети: @simplysoftua/objects, domain, data-supabase, react-query, core, admin, ui, plugins, themes, storefront, *-ui, runtime
 - Система тем (ThemeModule) та плагінів (HookRegistry)
 - Git Subtree + GitHub Packages для дистрибуції ядра
-- Архітектура ядра: `docs/architecture/core-engine-extraction.md`
+- Архітектура платформи: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`
 
 ## Response Rules
 

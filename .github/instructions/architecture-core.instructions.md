@@ -32,7 +32,7 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 | `runtime/` | `@simplysoftua/runtime` | T6 | `defineConfig` / збірка EngineContext |
 | `schema/` | — | — | Seed-міграції (reference SQL для bootstrap нових проектів) |
 
-Залежності — тільки вниз по tier-ах. Дизайн: `docs/architecture/core-engine-extraction.md`.
+Залежності — тільки вниз по tier-ах. Цільова архітектура платформи: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`.
 
 ### Rendering-стратегії
 
@@ -75,7 +75,8 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 
 ## 📚 Коли потрібні деталі
 - Огляд проекту та структура: `CLAUDE.md`
-- Модульна архітектура ядра (tiers, порти, розподіл пакетів): `docs/architecture/core-engine-extraction.md`
+- Архітектура платформи (пакети, роути, плагіни, теми, міграції): `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`
+- Аналітична база рішень: `docs/architecture/platform-delivery-options.md`
 - Система тем (SSR-резолв, реєстрація): `CLAUDE.md` розділ «Theme System (SSR)»
 - SEO/faceted navigation: `docs/tasks/seo-ssr-faceted-navigation.md`
 

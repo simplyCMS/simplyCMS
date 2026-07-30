@@ -20,7 +20,7 @@ All coding rules, architecture decisions, and best practices are maintained in `
 Also see:
 - [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars, subtree workflow)
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — MCP servers, agent registry
-- [`docs/architecture/core-engine-extraction.md`](docs/architecture/core-engine-extraction.md) — modular engine design
+- [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md) — platform architecture spec (джерело правди напряму)
 
 **These instruction files are mandatory.** All agents MUST follow the rules defined there.
 

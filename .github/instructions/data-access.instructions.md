@@ -112,4 +112,4 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 - `packages/simplycms/core/src/supabase/` — клієнти Supabase (server/anon/SupabaseProvider).
 - `packages/simplycms/data-supabase/src/` — репозиторії-порти.
 - `packages/simplycms/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
-- `docs/architecture/core-engine-extraction.md` — порти, DI, tier-архітектура.
+- `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` — порти, DI, цільова пакетна архітектура.

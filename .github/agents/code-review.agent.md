@@ -41,7 +41,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 **CRITICAL: NEVER ask "Що було реалізовано?" — extract context from attachments and $ARGUMENTS automatically.**
 
 **Завантаж релевантну документацію:**
-- `docs/architecture/core-engine-extraction.md` — якщо архітектурні зміни
+- `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` — якщо архітектурні зміни
 - `.github/instructions/*.instructions.md` — правила для конкретної області коду
 
 ### 2. Архітектурна перевірка

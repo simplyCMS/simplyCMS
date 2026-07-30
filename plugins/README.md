@@ -2,14 +2,7 @@
 
 Директорія локальних плагінів магазину (аліас `@plugins/*`).
 
-## Поточний стан
-
-Порожня — жоден плагін ще не підключений. Runtime плагін-системи
-(`@simplysoftua/plugins`: `HookRegistry`, `PluginSlot`, таблиця `plugins` у БД)
-існує і `PluginSlot` розставлений у storefront/admin, але **точка реєстрації
-модулів (`registerPluginModule`) та завантаження (`loadPlugins`) наразі ніде не
-викликаються** — слоти рендерять порожньо.
-
-Механізм підключення плагінів (build-time встановлення через код + runtime
-активація з адмінки) проєктується в межах архітектури платформи — див.
-`docs/superpowers/specs/` (design doc після затвердження).
+Порожня: контур плагінів підключається у Фазі 0 роадмапу платформи.
+Контракт плагіна, SDK, життєвий цикл встановлення/активації — див. специфікацію:
+[`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](../docs/superpowers/specs/2026-07-30-platform-architecture-design.md)
+(розділ 7) та [`docs/tasks/platform-roadmap.md`](../docs/tasks/platform-roadmap.md).

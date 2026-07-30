@@ -17,8 +17,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplysoftua/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
 | `schema/` | — | Seed migrations (reference SQL for bootstrapping new projects) |
 
-> See `docs/architecture/core-engine-extraction.md` and
-> `docs/tasks/core-engine-extraction-implementation.md` for the engine-extraction design and status.
+> See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
 
 ## Usage
 

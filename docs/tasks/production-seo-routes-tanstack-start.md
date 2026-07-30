@@ -1,14 +1,14 @@
 # Task: Production SEO routes для TanStack Start
 
+> **Фаза 1** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)); виконується разом із вибором server preset (custom server entry — спільна точка).
+
 ## Контекст
 
 Після міграції storefront SSR-маршрутів sitemap.xml і robots.txt зараз працюють лише в dev/preview через Vite plugin на основі configureServer/configurePreviewServer. У production цей підхід не працює, бо TanStack Start обробляє запити через server entry з єдиним fetch handler, а не через Vite middleware.
 
 Потрібно перевести SEO routes на production-ready механізм, який працює однаково в dev, preview і production, не додає інфраструктурного боргу та не ламає TanStack Start SSR flow.
 
-Це напряму пов’язано з SSR-стратегією з BRD_SIMPLYCMS_NEXTJS.md: storefront має залишатися SEO-friendly, а non-HTML endpoints повинні віддаватися як нативні HTTP responses без React route rendering.
-
-Ця задача замінює попередню route-level інтерпретацію sitemap.xml і robots.txt з Phase 3, де вони розглядалися як server handlers на рівні routes. Для production canonical підхід тут інший: HTTP interception у custom server entry.
+Це напряму повʼязано з вимогами до канонічних сторінок зі spec §11: storefront має залишатися SEO-friendly, а non-HTML endpoints повинні віддаватися як нативні HTTP responses без React route rendering. Canonical підхід для production: HTTP interception у custom server entry.
 
 ## Вимоги
 
@@ -119,7 +119,7 @@ Server entry не повинен знати, як саме працює Supabase
 
 ## Пов'язана документація
 
-- BRD_SIMPLYCMS_NEXTJS.md секція 9 — SSR стратегія, SEO та серверний rendering storefront
+- `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` §11 — вимоги SEO/AI канонічних сторінок
 - .github/instructions/architecture-core.instructions.md — SSR-first storefront, theme system, route strategy
 - .github/instructions/data-access.instructions.md — правила data access для storefront і Supabase wrappers
 - .github/instructions/tooling.instructions.md — команди перевірки build/typecheck
