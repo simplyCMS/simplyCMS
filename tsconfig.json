@@ -15,7 +15,6 @@
     "incremental": true,
 
     "paths": {
-      "@simplycms/db-types": ["./supabase/types.ts"],
       "@simplycms/objects": ["./packages/simplycms/objects/src"],
       "@simplycms/objects/*": ["./packages/simplycms/objects/src/*"],
       "@simplycms/domain": ["./packages/simplycms/domain/src"],

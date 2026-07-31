@@ -11,6 +11,17 @@ import type {
 import type { SupabaseClient } from '@supabase/supabase-js';
 import config from '../simplycms.config';
 
+/**
+ * Типи БД ЦЬОГО магазину: core-схема + таблиці встановлених плагінів.
+ * Джерело — генерат `pnpm db:generate-types` (`supabase/types.ts`).
+ *
+ * Пакети ядра типізуються проти baseline у `@simplycms/supabase`; host звужує
+ * клієнти до своїх типів, підставляючи `StoreDatabase` у generic-параметр
+ * фабрик (`createServerSupabase<StoreDatabase>()`, `useSupabaseClient<…>()`).
+ * Тип-онлі реекспорт — у бандл не потрапляє.
+ */
+export type { Database as StoreDatabase } from '../supabase/types';
+
 /** Маршрути simplyCMS-вітрини. */
 export const appLinks: LinkResolver = {
   product: (p) =>

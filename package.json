@@ -20,7 +20,8 @@
     "db:dump-rls": "pnpm --filter @simplycms/schema run db:dump-rls",
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
-    "db:generate-types": "node supabase/scripts/update-types.mjs"
+    "db:generate-types": "node supabase/scripts/update-types.mjs",
+    "types:baseline": "node scripts/types-baseline.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

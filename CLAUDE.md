@@ -14,8 +14,8 @@ pnpm format           # Prettier (write)
 pnpm format:check     # Prettier (check only)
 pnpm test             # Run tests (vitest run)
 pnpm test:watch       # Tests in watch mode
-pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types
-                      # Схема БД — див. «Database Commands»
+pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
+                      # Схема БД і типи — див. «Database Commands»
 ```
 
 ## What This Project Is
@@ -161,7 +161,6 @@ simplyCMS/
 
 | Import | Path |
 |--------|------|
-| `@simplycms/db-types` | `supabase/types.ts` |
 | `@simplycms/objects` | `packages/simplycms/objects/src` |
 | `@simplycms/domain` | `packages/simplycms/domain/src` |
 | `@simplycms/supabase` | `packages/simplycms/supabase/src` |
@@ -230,7 +229,15 @@ pnpm db:dump-rls               # Дамп RLS-політик із живої Б�
 pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
 pnpm db:migrate                # supabase link + db push + db:generate-types
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
+pnpm types:baseline            # Снапшот CORE-типів → @simplycms/supabase/src/database.ts
 ```
+
+🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
+встановлених плагінів); проти нього типізується host-код.
+`packages/simplycms/supabase/src/database.ts` — **baseline** core-схеми для пакетів
+ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів після
+кожної core-міграції. Магазин звужує клієнти до своїх типів через generic-параметр
+фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/simplycms/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).

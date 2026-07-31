@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
       '@simplycms/objects': pkg('objects/src'),
       '@simplycms/domain': pkg('domain/src'),
       '@simplycms/supabase': pkg('supabase/src'),
