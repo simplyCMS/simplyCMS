@@ -13,10 +13,9 @@ import { physical, rootRoute } from '@tanstack/virtual-file-routes';
 export const routes = rootRoute('__root.tsx', [
   physical('', '../../packages/simplycms/storefront-routes/routes'),
   physical('', '../../packages/simplycms/admin-routes/routes'),
-  // Транзитивний запис: роути, які ще не переїхали в пакети, лишаються в
-  // `src/routes`. Скан теки `.` уже покриває і `src/routes/my/`, тож окремий
-  // `physical('', 'my')` тут навмисно відсутній — інакше `my/` сканувався б
-  // двічі й будь-який файл у ньому дав би дубль роуту.
-  // Замінюється на `physical('', 'my')` у Task 9, коли `src/routes` порожніє.
-  physical('', '.'),
+  // Кастомні роути конкретного магазину. Після переїзду ядра в пакети це
+  // єдина тека роутів, що лишається в host — саме вона, а не весь
+  // `src/routes`: інакше будь-який файл, покладений поруч із `__root.tsx`,
+  // мовчки ставав би роутом.
+  physical('', 'my'),
 ]);
