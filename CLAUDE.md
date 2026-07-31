@@ -133,6 +133,11 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 
 ## Git Subtree Workflow
 
+> ⚠️ Виводиться з експлуатації у Фазі 0 роадмапу платформи (spec §4.1): магазини
+> більше не форкають цей репозиторій, тож окремий `simplyCMS-core` не потрібен —
+> монорепо стає єдиним джерелом, публікація ядра йде на npmjs. Команди нижче
+> чинні лише до завершення Фази 0.
+
 ```bash
 pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplySOFTua/simplyCMS-core
 pnpm cms:pull                  # Pull core updates from simplyCMS-core main (runs cms:remote first)
