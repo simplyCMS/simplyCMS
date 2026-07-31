@@ -25,6 +25,10 @@ export default {
         __dirname,
         'packages/simplycms/supabase/src',
       ),
+      '@simplycms/storefront-routes': resolve(
+        __dirname,
+        'packages/simplycms/storefront-routes/src',
+      ),
       '@simplycms/runtime': resolve(
         __dirname,
         'packages/simplycms/runtime/src',

@@ -18,6 +18,7 @@ export default defineConfig({
       '@simplycms/supabase': pkg('supabase/src'),
       '@simplycms/react-query': pkg('react-query/src'),
       '@simplycms/storefront': pkg('storefront/src'),
+      '@simplycms/storefront-routes': pkg('storefront-routes/src'),
       '@simplycms/cart-ui': pkg('cart-ui/src'),
       '@simplycms/catalog-ui': pkg('catalog-ui/src'),
       '@simplycms/checkout-ui': pkg('checkout-ui/src'),

@@ -46,6 +46,12 @@
       "@simplycms/supabase/*": [
         "./packages/simplycms/supabase/src/*"
       ],
+      "@simplycms/storefront-routes": [
+        "./packages/simplycms/storefront-routes/src"
+      ],
+      "@simplycms/storefront-routes/*": [
+        "./packages/simplycms/storefront-routes/src/*"
+      ],
       "@simplycms/runtime": [
         "./packages/simplycms/runtime/src"
       ],
