@@ -89,8 +89,10 @@
       gates зі spec §15 (server fns, bundle-guard, Tailwind `@source`, splitting)
 - [ ] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
 - [ ] Server preset: працюючий `pnpm start` (обрати target під хостинг)
-- [ ] Production `sitemap.xml`/`robots.txt` через custom server entry
-      (див. [`production-seo-routes-tanstack-start.md`](./production-seo-routes-tanstack-start.md))
+- [X] Production `sitemap.xml`/`robots.txt` через custom server entry
+      (SEO-інтерсептор у `src/server.ts`; dev-плагін знято. Задачу
+      `production-seo-routes-tanstack-start.md` видалено як виконану —
+      політика «тільки актуальне»)
 
 **DoD:** магазин із tarball-ів проходить smoke-e2e; деплой можливий.
 

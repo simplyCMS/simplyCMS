@@ -25,15 +25,6 @@ const PEER_PACKAGES = new Set([
 const PEER_SCOPES = ['@supabase/'];
 
 /**
- * Build-time тулінг хоста: пакет імпортує лише типи (або підключається у
- * `vite.config.ts` споживача). Власний інстанс тягнути не можна — два `vite`
- * у дереві ламають резолв плагінів. Тому це peer, і в manifest-і він
- * позначається `peerDependenciesMeta.optional`: рантайм пакета без нього
- * працює.
- */
-const HOST_TOOLING = new Set(['vite']);
-
-/**
  * Специфікатор → імʼя npm-пакета.
  * Відносні/абсолютні шляхи, `node:*` і вбудовані модулі → `null`.
  * @param {string} specifier
@@ -61,7 +52,6 @@ export function toPackageName(specifier) {
  */
 export function classifyExternal(name) {
   if (PEER_PACKAGES.has(name)) return 'peerDependencies';
-  if (HOST_TOOLING.has(name)) return 'peerDependencies';
   if (PEER_SCOPES.some((scope) => name.startsWith(scope)))
     return 'peerDependencies';
   return 'dependencies';

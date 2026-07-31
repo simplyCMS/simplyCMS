@@ -64,7 +64,9 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/simply
 - `src/routeTree.gen.ts` виключено з лінтингу (автогенерований).
 
 ### Vite / TanStack Start
-- `vite.config.ts`: `tanstackStart()` + `tailwindcss()` + `seoRoutesPlugin()`.
+- `vite.config.ts`: `tanstackStart({ router.virtualRouteConfig, server.entry })` + `tailwindcss()`.
+- SEO-ендпойнти (`/sitemap.xml`, `/robots.txt`) — у серверному вході `src/server.ts`
+  (працює в dev, `vite preview` і production; окремого vite-плагіна немає).
 - `resolve.dedupe`: `react`, `react-dom`, `@tanstack/react-query`.
 - Тести мають окремий `vitest.config.ts` (з `@vitejs/plugin-react`, без tanstackStart).
 

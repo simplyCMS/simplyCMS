@@ -1,9 +1,6 @@
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
-// Шлях відносний, а не аліасний: vite.config.ts бандлиться esbuild-ом ДО того,
-// як застосовується resolve.alias, тож пакетний спеціфаєр тут не резолвиться.
-import { seoRoutesPlugin } from './packages/simplycms/storefront-routes/src/seo/plugin';
 
 export default {
   plugins: [
@@ -11,15 +8,12 @@ export default {
     tanstackStart({
       router: { virtualRouteConfig: './routes.ts' },
       // Кастомний серверний вхід замість дефолтного: дає точку розширення
-      // перед делегацією в Start-хендлер (див. `src/server.ts`).
+      // перед делегацією в Start-хендлер (див. `src/server.ts` — там же живуть
+      // `/sitemap.xml` і `/robots.txt`, тому окремого SEO-плагіна немає).
       // 🔴 Шлях резолвиться ВІД `srcDirectory` (за замовчуванням `src/`), а не
       // від кореня — `'./src/server.ts'` тут мовчки не знайдеться і плагін
       // відкотиться на дефолтний entry (resolve-entries.js: `from: srcDirectory`).
       server: { entry: './server.ts' },
-    }),
-    seoRoutesPlugin({
-      sitemapModule: '/packages/simplycms/storefront-routes/src/seo/sitemap.ts',
-      robotsModule: '/packages/simplycms/storefront-routes/src/seo/robots.ts',
     }),
   ],
   resolve: {

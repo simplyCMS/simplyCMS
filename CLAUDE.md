@@ -149,7 +149,7 @@ simplyCMS/
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
-├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry }) + seoRoutesPlugin()
+├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```

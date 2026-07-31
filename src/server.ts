@@ -3,23 +3,31 @@ import {
   defaultStreamHandler,
 } from '@tanstack/react-start/server';
 import { createServerEntry } from '@tanstack/react-start/server-entry';
+import {
+  createSeoInterceptor,
+  withSeoInterceptor,
+} from '@simplycms/storefront-routes/seo/interceptor';
+import { buildRobotsTxt } from '@simplycms/storefront-routes/seo/robots';
+import { buildSitemapXml } from '@simplycms/storefront-routes/seo/sitemap';
 
 /**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).
  *
- * Дефолтний вхід TanStack Start робить рівно те саме, але власний файл дає
- * точку розширення: перед делегацією в Start-хендлер можна перехопити запит
- * (SEO-ендпойнти тощо). Збірка віддає fetch-handler, а не Node-listener —
- * підняттям HTTP-сервера займається кореневий `server.mjs`.
+ * Тут — точка розширення ПЕРЕД делегацією в Start-хендлер: SEO-ендпойнти
+ * (`/sitemap.xml`, `/robots.txt`) відповідають самі й до роутера не доходять.
+ * Вхід один для всіх трьох середовищ (dev, `vite preview`, production через
+ * `server.mjs`), тому окремий vite-плагін для dev більше не потрібен.
+ *
+ * Збірка віддає fetch-handler, а не Node-listener — HTTP-сервер піднімає
+ * кореневий `server.mjs`.
  */
 const startHandler = createStartHandler(defaultStreamHandler);
 
-export default createServerEntry({
-  fetch: async (request, options) => {
-    // ── Точка розширення: перехоплювачі запиту ────────────────────────────
-    // Тут (ПЕРЕД делегацією) вмикаються обробники, які відповідають самі й не
-    // доходять до роутера. Кожен повертає `Response` або `null`.
+const seoInterceptor = createSeoInterceptor({
+  sitemap: buildSitemapXml,
+  robots: buildRobotsTxt,
+});
 
-    return startHandler(request, options);
-  },
+export default createServerEntry({
+  fetch: withSeoInterceptor(seoInterceptor, startHandler),
 });

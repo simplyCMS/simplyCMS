@@ -112,10 +112,10 @@
 
 **Files:** Modify `packages/simplycms/storefront/src/seo/sitemap.ts` (**+перевірка `.error` обох запитів → throw** — інакше кеш на годину зафіксує неповний sitemap як успіх); Create `packages/simplycms/storefront-routes/src/seo/interceptor.ts` (`createSeoInterceptor(builders): (req) => Response | null`) + тест; Modify `src/server.ts` (wiring: інтерсептор ПЕРЕД делегацією), `vite.config.ts` (видалити `seoRoutesPlugin`); Delete `packages/simplycms/storefront-routes/src/seo/plugin.ts`; Modify `.github/instructions/tooling.instructions.md` (рядок про `seoRoutesPlugin` у vite.config — прибрати), CLAUDE.md (те саме); Test: `tests/seo-endpoints.test.ts`.
 
-- [ ] **Step 1 (TDD builder):** тест `buildSitemapXml`: помилка products-запиту → throw; помилка sections → throw (зараз мовчки статичні URL). Фікс.
-- [ ] **Step 2 (TDD інтерсептор):** `/sitemap.xml` → 200 + `application/xml` + cache header; builder кинув → **500 без public cache**; `/robots.txt` → 200 text; будь-який інший шлях → `null`; **delegate-spy**: обгортка entry викликає fetch-handler рівно для не-SEO шляхів.
-- [ ] **Step 3 (наскрізна перевірка трьох середовищ):** `pnpm dev` → curls `/sitemap.xml`, `/robots.txt`, `/`, `/catalog`; `vite preview` → ті самі; `pnpm build && pnpm start` → ті самі + `/api/health` (SSR-регресій немає — вимога source-задачі).
-- [ ] **Step 4:** видалити dev-plugin; задачу `docs/tasks/production-seo-routes-tanstack-start.md` видалити з відміткою в роадмапі (політика «тільки актуальне»). Гейти → коміт: `feat(seo): production sitemap/robots у server entry; builder кидає на помилках; dev-plugin знято`.
+- [X] **Step 1 (TDD builder):** тест `buildSitemapXml`: помилка products-запиту → throw; помилка sections → throw (зараз мовчки статичні URL). Фікс.
+- [X] **Step 2 (TDD інтерсептор):** `/sitemap.xml` → 200 + `application/xml` + cache header; builder кинув → **500 без public cache**; `/robots.txt` → 200 text; будь-який інший шлях → `null`; **delegate-spy**: обгортка entry викликає fetch-handler рівно для не-SEO шляхів.
+- [X] **Step 3 (наскрізна перевірка трьох середовищ):** `pnpm dev` → curls `/sitemap.xml`, `/robots.txt`, `/`, `/catalog`; `vite preview` → ті самі; `pnpm build && pnpm start` → ті самі + `/api/health` (SSR-регресій немає — вимога source-задачі).
+- [X] **Step 4:** видалити dev-plugin; задачу `docs/tasks/production-seo-routes-tanstack-start.md` видалити з відміткою в роадмапі (політика «тільки актуальне»). Гейти → коміт: `feat(seo): production sitemap/robots у server entry; builder кидає на помилках; dev-plugin знято`.
 
 ---
 
