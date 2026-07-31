@@ -60,3 +60,31 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+  packaging:
+    name: Packaging
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
+      # тому вимагає зібраних `dist/` кожного пакета, яких у test-job немає.
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Tarball parity
+        run: pnpm test:packaging

@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "test:watch": "vitest",
     "db:pull": "pnpm --filter @simplycms/schema run db:pull",
     "db:dump-rls": "pnpm --filter @simplycms/schema run db:dump-rls",

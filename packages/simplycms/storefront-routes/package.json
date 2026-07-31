@@ -1,8 +1,7 @@
 {
   "name": "@simplycms/storefront-routes",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "description": "Storefront route-компоненти, server-шар і SEO для SimplyCMS",
   "type": "module",
   "main": "./src/index.ts",
@@ -16,6 +15,56 @@
     "./components/*": "./src/components/*.tsx",
     "./shells/*": "./src/shells/*",
     "./routes/*": "./routes/*"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./active-theme": {
+        "types": "./dist/active-theme.d.ts",
+        "import": "./dist/active-theme.js"
+      },
+      "./server/*": {
+        "types": "./dist/server/*.d.ts",
+        "import": "./dist/server/*.js"
+      },
+      "./seo/*": {
+        "types": "./dist/seo/*.d.ts",
+        "import": "./dist/seo/*.js"
+      },
+      "./pages/*": {
+        "types": "./dist/pages/*.d.ts",
+        "import": "./dist/pages/*.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js"
+      },
+      "./shells/*": {
+        "types": "./dist/shells/*.d.ts",
+        "import": "./dist/shells/*.js"
+      },
+      "./routes/*": "./routes/*"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "routes"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/storefront-routes"
+  },
+  "scripts": {
+    "build": "tsup"
   },
   "dependencies": {
     "@simplycms/catalog-ui": "workspace:*",

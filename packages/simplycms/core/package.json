@@ -1,9 +1,9 @@
 {
   "name": "@simplycms/core",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "description": "Core business logic, hooks, and components for SimplyCMS e-commerce platform",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -15,6 +15,58 @@
     "./lib/*": "./src/lib/*",
     "./components/*": "./src/components/*",
     "./types": "./src/types/index.ts"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./providers": {
+        "types": "./dist/providers/CMSProvider.d.ts",
+        "import": "./dist/providers/CMSProvider.js"
+      },
+      "./providers/CMSProvider": {
+        "types": "./dist/providers/CMSProvider.d.ts",
+        "import": "./dist/providers/CMSProvider.js"
+      },
+      "./hooks": {
+        "types": "./dist/hooks/useAuth.d.ts",
+        "import": "./dist/hooks/useAuth.js"
+      },
+      "./hooks/*": {
+        "types": "./dist/hooks/*.d.ts",
+        "import": "./dist/hooks/*.js"
+      },
+      "./lib/*": {
+        "types": "./dist/lib/*.d.ts",
+        "import": "./dist/lib/*.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js"
+      },
+      "./types": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/types/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/core"
+  },
+  "scripts": {
+    "build": "tsup"
   },
   "dependencies": {
     "@simplycms/supabase": "workspace:*",

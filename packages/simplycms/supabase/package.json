@@ -1,8 +1,7 @@
 {
   "name": "@simplycms/supabase",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "description": "Supabase clients (browser/server/anon), DI provider and DB types for SimplyCMS",
   "type": "module",
   "main": "./src/index.ts",
@@ -14,6 +13,50 @@
     "./server-client": "./src/server-client.ts",
     "./anon-client": "./src/anon-client.ts",
     "./SupabaseProvider": "./src/SupabaseProvider.tsx"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./keys": {
+        "types": "./dist/keys.d.ts",
+        "import": "./dist/keys.js"
+      },
+      "./browser-client": {
+        "types": "./dist/browser-client.d.ts",
+        "import": "./dist/browser-client.js"
+      },
+      "./server-client": {
+        "types": "./dist/server-client.d.ts",
+        "import": "./dist/server-client.js"
+      },
+      "./anon-client": {
+        "types": "./dist/anon-client.d.ts",
+        "import": "./dist/anon-client.js"
+      },
+      "./SupabaseProvider": {
+        "types": "./dist/SupabaseProvider.d.ts",
+        "import": "./dist/SupabaseProvider.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/supabase"
+  },
+  "scripts": {
+    "build": "tsup"
   },
   "peerDependencies": {
     "@supabase/ssr": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0",

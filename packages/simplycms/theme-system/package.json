@@ -1,8 +1,8 @@
 {
   "name": "@simplycms/themes",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -12,6 +12,50 @@
     "./applyTokens": "./src/applyTokens.ts",
     "./validateThemeModule": "./src/validateThemeModule.ts",
     "./types": "./src/types.ts"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ThemeRegistry": {
+        "types": "./dist/ThemeRegistry.d.ts",
+        "import": "./dist/ThemeRegistry.js"
+      },
+      "./ThemeContext": {
+        "types": "./dist/ThemeContext.d.ts",
+        "import": "./dist/ThemeContext.js"
+      },
+      "./applyTokens": {
+        "types": "./dist/applyTokens.d.ts",
+        "import": "./dist/applyTokens.js"
+      },
+      "./validateThemeModule": {
+        "types": "./dist/validateThemeModule.d.ts",
+        "import": "./dist/validateThemeModule.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/theme-system"
+  },
+  "scripts": {
+    "build": "tsup"
   },
   "dependencies": {
     "@simplycms/objects": "workspace:*",

@@ -1,12 +1,26 @@
 {
   "name": "@simplycms/admin-routes",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "description": "Admin route-компоненти для SimplyCMS (фізичні файли, підключаються через virtualRouteConfig)",
   "type": "module",
   "exports": {
     "./routes/*": "./routes/*"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "exports": {
+      "./routes/*": "./routes/*"
+    }
+  },
+  "files": [
+    "routes"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/admin-routes"
   },
   "dependencies": {
     "@simplycms/admin": "workspace:*",

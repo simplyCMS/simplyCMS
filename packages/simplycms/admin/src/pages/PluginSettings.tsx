@@ -70,9 +70,13 @@ export default function PluginSettings() {
     queryFn: async () => {
       if (!plugin?.name) return null;
       try {
-        const pluginModule = await import(
-          `../../plugins/${plugin.name}/manifest.json`
-        );
+        // Специфікатор рахується у змінну навмисно: інлайн-літерал bundler
+        // намагається розгорнути в glob ще до резолверів і валить збірку
+        // пакета. Шлях `../../plugins/**` з теки пакета не існує — імпорт
+        // завжди кидає й дає null; лишається до фікса завантаження
+        // маніфестів у plugin-system.
+        const manifestPath = `../../plugins/${plugin.name}/manifest.json`;
+        const pluginModule = await import(/* @vite-ignore */ manifestPath);
         return pluginModule.default || pluginModule;
       } catch {
         return null;

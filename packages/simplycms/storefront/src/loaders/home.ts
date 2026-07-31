@@ -39,8 +39,14 @@ const HOME_PRODUCT_SELECT = `
 const SECTION_PRODUCT_SELECT =
   'id, name, slug, images, short_description, stock_status' as const;
 
-/** Кореневий розділ каталогу у виборці фази 1 */
-interface RootSection {
+/**
+ * Кореневий розділ каталогу у виборці фази 1.
+ *
+ * Експортується, бо тече у публічний тип `loadHomePageData`: без цього
+ * споживач (`@simplycms/storefront-routes`) не може іменувати тип під час
+ * емісії власних `.d.ts` (TS4023).
+ */
+export interface RootSection {
   id: string;
   name: string;
   slug: string;

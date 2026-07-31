@@ -1,8 +1,7 @@
 {
   "name": "@simplycms/plugins",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -23,8 +22,38 @@
       "default": "./src/types.ts"
     }
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./PluginSlot": {
+        "types": "./dist/PluginSlot.d.ts",
+        "import": "./dist/PluginSlot.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/plugin-system"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsup"
   },
   "dependencies": {
     "@simplycms/objects": "workspace:*"
