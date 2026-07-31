@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "../supabase/client";
 
-// Pure-розрахунок наявності перенесено в @simplysoftua/domain/inventory.
+// Pure-розрахунок наявності перенесено в @simplycms/domain/inventory.
 // Re-export для зворотної сумісності.
 export {
   calculateProductAvailability,
   enrichProductsWithAvailability,
-} from "@simplysoftua/domain/inventory";
-export type { StockData } from "@simplysoftua/domain/inventory";
+} from "@simplycms/domain/inventory";
+export type { StockData } from "@simplycms/domain/inventory";
 
 /** Елемент характеристики модифікації */
 export interface ModPropertyValue {

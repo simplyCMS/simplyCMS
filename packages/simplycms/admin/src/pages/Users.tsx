@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Input } from "@simplycms/ui/input";
 import {
   Table,
   TableBody,
@@ -12,16 +12,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplysoftua/ui/avatar";
+} from "@simplycms/ui/select";
+import { Badge } from "@simplycms/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@simplycms/ui/avatar";
 import { Search, Shield, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";

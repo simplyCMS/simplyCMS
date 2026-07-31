@@ -12,7 +12,7 @@ import type {
   Order,
   OrderQuery,
   StockInfo,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 export interface QueryOptionsLike<T> {
   queryKey: readonly unknown[];

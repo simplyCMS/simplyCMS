@@ -4,13 +4,13 @@ import { adminPath } from "../lib/adminLinks";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Input } from "@simplysoftua/ui/input";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Badge } from "@simplysoftua/ui/badge";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Input } from "@simplycms/ui/input";
+import { Textarea } from "@simplycms/ui/textarea";
+import { Switch } from "@simplycms/ui/switch";
+import { Badge } from "@simplycms/ui/badge";
 import {
   Form,
   FormControl,
@@ -19,14 +19,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplysoftua/ui/form";
+} from "@simplycms/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
+} from "@simplycms/ui/select";
 import {
   Table,
   TableBody,
@@ -34,11 +34,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
-import { ShippingZone, ShippingRate, ShippingMethod, ShippingCalculationType } from "@simplysoftua/core/lib/shipping/types";
-import { formatShippingCost } from "@simplysoftua/core/lib/shipping";
+import { ShippingZone, ShippingRate, ShippingMethod, ShippingCalculationType } from "@simplycms/core/lib/shipping/types";
+import { formatShippingCost } from "@simplycms/core/lib/shipping";
 
 const formSchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),

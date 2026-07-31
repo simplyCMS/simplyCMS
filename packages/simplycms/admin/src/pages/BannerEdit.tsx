@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Slider } from "@simplysoftua/ui/slider";
-import { Checkbox } from "@simplysoftua/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Input } from "@simplycms/ui/input";
+import { Label } from "@simplycms/ui/label";
+import { Switch } from "@simplycms/ui/switch";
+import { Slider } from "@simplycms/ui/slider";
+import { Checkbox } from "@simplycms/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ImageUpload } from "../components/ImageUpload";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import type { Json } from "@simplysoftua/core/supabase/types";
+import type { Json } from "@simplycms/core/supabase/types";
 import { adminPath } from "../lib/adminLinks";
 
 interface BannerButton {

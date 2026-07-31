@@ -19,103 +19,103 @@
     "incremental": true,
 
     "paths": {
-      "@simplysoftua/db-types": [
+      "@simplycms/db-types": [
         "./supabase/types.ts"
       ],
-      "@simplysoftua/objects": [
+      "@simplycms/objects": [
         "./packages/simplycms/objects/src"
       ],
-      "@simplysoftua/objects/*": [
+      "@simplycms/objects/*": [
         "./packages/simplycms/objects/src/*"
       ],
-      "@simplysoftua/domain": [
+      "@simplycms/domain": [
         "./packages/simplycms/domain/src"
       ],
-      "@simplysoftua/domain/*": [
+      "@simplycms/domain/*": [
         "./packages/simplycms/domain/src/*"
       ],
-      "@simplysoftua/data-supabase": [
+      "@simplycms/data-supabase": [
         "./packages/simplycms/data-supabase/src"
       ],
-      "@simplysoftua/data-supabase/*": [
+      "@simplycms/data-supabase/*": [
         "./packages/simplycms/data-supabase/src/*"
       ],
-      "@simplysoftua/runtime": [
+      "@simplycms/runtime": [
         "./packages/simplycms/runtime/src"
       ],
-      "@simplysoftua/runtime/*": [
+      "@simplycms/runtime/*": [
         "./packages/simplycms/runtime/src/*"
       ],
-      "@simplysoftua/react-query": [
+      "@simplycms/react-query": [
         "./packages/simplycms/react-query/src"
       ],
-      "@simplysoftua/react-query/*": [
+      "@simplycms/react-query/*": [
         "./packages/simplycms/react-query/src/*"
       ],
-      "@simplysoftua/storefront": [
+      "@simplycms/storefront": [
         "./packages/simplycms/storefront/src"
       ],
-      "@simplysoftua/storefront/*": [
+      "@simplycms/storefront/*": [
         "./packages/simplycms/storefront/src/*"
       ],
-      "@simplysoftua/cart-ui": [
+      "@simplycms/cart-ui": [
         "./packages/simplycms/cart-ui/src"
       ],
-      "@simplysoftua/cart-ui/*": [
+      "@simplycms/cart-ui/*": [
         "./packages/simplycms/cart-ui/src/*"
       ],
-      "@simplysoftua/catalog-ui": [
+      "@simplycms/catalog-ui": [
         "./packages/simplycms/catalog-ui/src"
       ],
-      "@simplysoftua/catalog-ui/*": [
+      "@simplycms/catalog-ui/*": [
         "./packages/simplycms/catalog-ui/src/*"
       ],
-      "@simplysoftua/checkout-ui": [
+      "@simplycms/checkout-ui": [
         "./packages/simplycms/checkout-ui/src"
       ],
-      "@simplysoftua/checkout-ui/*": [
+      "@simplycms/checkout-ui/*": [
         "./packages/simplycms/checkout-ui/src/*"
       ],
-      "@simplysoftua/profile-ui": [
+      "@simplycms/profile-ui": [
         "./packages/simplycms/profile-ui/src"
       ],
-      "@simplysoftua/profile-ui/*": [
+      "@simplycms/profile-ui/*": [
         "./packages/simplycms/profile-ui/src/*"
       ],
-      "@simplysoftua/reviews-ui": [
+      "@simplycms/reviews-ui": [
         "./packages/simplycms/reviews-ui/src"
       ],
-      "@simplysoftua/reviews-ui/*": [
+      "@simplycms/reviews-ui/*": [
         "./packages/simplycms/reviews-ui/src/*"
       ],
-      "@simplysoftua/core": [
+      "@simplycms/core": [
         "./packages/simplycms/core/src"
       ],
-      "@simplysoftua/core/*": [
+      "@simplycms/core/*": [
         "./packages/simplycms/core/src/*"
       ],
-      "@simplysoftua/admin": [
+      "@simplycms/admin": [
         "./packages/simplycms/admin/src"
       ],
-      "@simplysoftua/admin/*": [
+      "@simplycms/admin/*": [
         "./packages/simplycms/admin/src/*"
       ],
-      "@simplysoftua/ui": [
+      "@simplycms/ui": [
         "./packages/simplycms/ui/src"
       ],
-      "@simplysoftua/ui/*": [
+      "@simplycms/ui/*": [
         "./packages/simplycms/ui/src/*"
       ],
-      "@simplysoftua/plugins": [
+      "@simplycms/plugins": [
         "./packages/simplycms/plugin-system/src"
       ],
-      "@simplysoftua/plugins/*": [
+      "@simplycms/plugins/*": [
         "./packages/simplycms/plugin-system/src/*"
       ],
-      "@simplysoftua/themes": [
+      "@simplycms/themes": [
         "./packages/simplycms/theme-system/src"
       ],
-      "@simplysoftua/themes/*": [
+      "@simplycms/themes/*": [
         "./packages/simplycms/theme-system/src/*"
       ],
       "@themes/*": [

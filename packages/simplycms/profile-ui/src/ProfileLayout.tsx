@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { User, Package, Settings, LogOut } from "lucide-react";
-import { cn } from "@simplysoftua/ui/utils";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
+import { cn } from "@simplycms/ui/utils";
+import { useAuth } from "@simplycms/core/hooks/useAuth";
 
 const navItems = [
   { to: "/profile", icon: User, label: "Профiль", end: true },

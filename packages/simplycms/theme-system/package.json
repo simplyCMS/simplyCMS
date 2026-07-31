@@ -1,5 +1,5 @@
 {
-  "name": "@simplysoftua/themes",
+  "name": "@simplycms/themes",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -13,7 +13,7 @@
     "./types": "./src/types.ts"
   },
   "dependencies": {
-    "@simplysoftua/core": "workspace:*"
+    "@simplycms/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"

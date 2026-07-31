@@ -5,7 +5,7 @@ import type {
   IdentityProvider,
   Identity,
   SignInResult,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 type Row = Record<string, unknown>;
 

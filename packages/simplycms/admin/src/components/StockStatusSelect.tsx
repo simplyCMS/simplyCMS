@@ -4,10 +4,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { Label } from "@simplysoftua/ui/label";
+} from "@simplycms/ui/select";
+import { Label } from "@simplycms/ui/label";
 import { Package, PackageX, Clock } from "lucide-react";
-import type { StockStatus } from "@simplysoftua/core/hooks/useStock";
+import type { StockStatus } from "@simplycms/core/hooks/useStock";
 
 interface StockStatusSelectProps {
   value: StockStatus;

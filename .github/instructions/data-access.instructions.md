@@ -8,14 +8,14 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `@simplysoftua/core/supabase/server` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
-- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `@simplysoftua/core/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
-- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `@simplysoftua/core/supabase/anon` — без cookies, лише RLS `anon`-читання.
-- **Порти/репозиторії:** нові data-шляхи будуй через `@simplysoftua/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `@simplysoftua/react-query` (`useEngine()`).
+- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `@simplycms/core/supabase/server` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
+- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `@simplycms/core/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
+- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `@simplycms/core/supabase/anon` — без cookies, лише RLS `anon`-читання.
+- **Порти/репозиторії:** нові data-шляхи будуй через `@simplycms/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `@simplycms/react-query` (`useEngine()`).
 - Виконуй роботу з базою даних через MCP supabase, включаючи аналіз структури таблиць, RLS policies та виконання міграцій.
 
 ### Storefront (SSR)
-- Data fetching — у route `loader` через `createServerFn` (`src/server/*`), який делегує в `@simplysoftua/storefront/loaders`:
+- Data fetching — у route `loader` через `createServerFn` (`src/server/*`), який делегує в `@simplycms/storefront/loaders`:
   ```typescript
   // src/routes/_storefront/catalog/$sectionSlug/index.tsx
   export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({

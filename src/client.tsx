@@ -1,7 +1,7 @@
 import { StrictMode, startTransition } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { StartClient } from '@tanstack/react-start/client';
-import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { readActiveThemeName } from './active-theme';
 
 // Side-effect: реєстрація тем у ThemeRegistry (до прогріву кешу нижче)

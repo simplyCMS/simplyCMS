@@ -5,7 +5,7 @@ import type {
   ShippingRate,
   ShippingCalculationContext,
   ShippingCalculationResult,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 export type {
   ShippingMethod,
@@ -19,7 +19,7 @@ export type {
   ShippingCalculationContext,
   ShippingCalculationResult,
   ShippingFormData,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 /**
  * Розраховує вартість доставки за конфігурацією тарифу.

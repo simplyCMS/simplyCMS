@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Button } from "@simplysoftua/ui/button";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Button } from "@simplycms/ui/button";
 import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";
 import { Link } from '@tanstack/react-router';
-import { Skeleton } from "@simplysoftua/ui/skeleton";
+import { Skeleton } from "@simplycms/ui/skeleton";
 import { adminPath } from "../lib/adminLinks";
 
 export default function Shipping() {

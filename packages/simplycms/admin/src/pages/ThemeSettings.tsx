@@ -1,19 +1,19 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { ThemeRegistry } from "@simplysoftua/themes/ThemeRegistry";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { ThemeRegistry } from "@simplycms/themes/ThemeRegistry";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Input } from "@simplycms/ui/input";
+import { Label } from "@simplycms/ui/label";
+import { Switch } from "@simplycms/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
+import { Skeleton } from "@simplycms/ui/skeleton";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Save, Palette } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
 import { useState, useEffect } from "react";
-import type { ThemeSettingDefinition } from "@simplysoftua/themes/types";
+import type { ThemeSettingDefinition } from "@simplycms/themes/types";
 
 /** Виклик revalidation API після зміни налаштувань теми */
 async function revalidateTheme() {

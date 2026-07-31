@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Input } from "@simplycms/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
   Table,
   TableBody,
@@ -13,26 +13,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplysoftua/ui/dialog";
+} from "@simplycms/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+} from "@simplycms/ui/select";
+import { Label } from "@simplycms/ui/label";
+import { Switch } from "@simplycms/ui/switch";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Plus, Trash2, Loader2 } from "lucide-react";
-import type { TablesInsert, Enums } from "@simplysoftua/core/supabase/types";
+import type { TablesInsert, Enums } from "@simplycms/core/supabase/types";
 
 const propertyTypes = [
   { value: "text", label: "Текст" },

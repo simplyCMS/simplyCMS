@@ -4,7 +4,7 @@
  * Єдиний файл замість двох (app/theme-registry.server.ts + app/providers.tsx).
  * Імпортується як side-effect з __root.tsx (клієнт) та server/themes.ts (сервер).
  */
-import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 
 if (!ThemeRegistry.has('default')) {
   ThemeRegistry.register('default', () =>

@@ -75,16 +75,16 @@ src/                              # TanStack Start application
 └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 
 packages/simplycms/               # Core CMS (Git Subtree from simplyCMS-core)
-├── objects/        @simplysoftua/objects       # Contracts + ports (0 deps)
-├── domain/         @simplysoftua/domain        # Pure logic (pricing/discounts/…)
-├── data-supabase/  @simplysoftua/data-supabase # Repository implementations
-├── react-query/    @simplysoftua/react-query   # EngineProvider + hooks
-├── core/           @simplysoftua/core
-├── admin/          @simplysoftua/admin
-├── ui/             @simplysoftua/ui
-├── plugin-system/  @simplysoftua/plugins
-├── theme-system/   @simplysoftua/themes
-├── storefront/     @simplysoftua/storefront    # SSR loaders + SEO
+├── objects/        @simplycms/objects       # Contracts + ports (0 deps)
+├── domain/         @simplycms/domain        # Pure logic (pricing/discounts/…)
+├── data-supabase/  @simplycms/data-supabase # Repository implementations
+├── react-query/    @simplycms/react-query   # EngineProvider + hooks
+├── core/           @simplycms/core
+├── admin/          @simplycms/admin
+├── ui/             @simplycms/ui
+├── plugin-system/  @simplycms/plugins
+├── theme-system/   @simplycms/themes
+├── storefront/     @simplycms/storefront    # SSR loaders + SEO
 └── …               # cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui, runtime, schema
 
 themes/{default,solarstore}/      # Storefront themes
@@ -98,6 +98,6 @@ supabase/                         # Migrations, types, edge functions
 - **Themes:** Isomorphic registration (`src/theme-registry.ts`), runtime activation via DB (`themes.is_active`)
 - **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
 - **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient` or repository ports
-- **Imports:** Always use `@simplysoftua/*` aliases, not relative paths to packages
+- **Imports:** Always use `@simplycms/*` aliases, not relative paths to packages
 - **Language:** Comments and UI text in Ukrainian
 - **Do not:** Put logic in themes, edit `src/routeTree.gen.ts`, bypass package boundaries

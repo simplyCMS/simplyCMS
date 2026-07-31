@@ -1,4 +1,4 @@
-import { defineConfig } from '@simplysoftua/core/config';
+import { defineConfig } from '@simplycms/core/config';
 
 export default defineConfig({
   supabase: {

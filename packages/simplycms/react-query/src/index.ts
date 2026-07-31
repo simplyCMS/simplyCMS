@@ -1,4 +1,4 @@
-// @simplysoftua/react-query — EngineProvider + порт-керовані хуки/запити.
+// @simplycms/react-query — EngineProvider + порт-керовані хуки/запити.
 
 export { EngineProvider, useEngine } from "./EngineProvider";
 export type { EngineProviderProps } from "./EngineProvider";

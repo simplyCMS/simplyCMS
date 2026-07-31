@@ -1,23 +1,23 @@
 import { useState } from "react";
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Separator } from "@simplysoftua/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@simplysoftua/ui/radio-group";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Input } from "@simplycms/ui/input";
+import { Label } from "@simplycms/ui/label";
+import { Textarea } from "@simplycms/ui/textarea";
+import { Switch } from "@simplycms/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Separator } from "@simplycms/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@simplycms/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+} from "@simplycms/ui/select";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { ImageUpload } from "../components/ImageUpload";
 import { RichTextEditor } from "../components/RichTextEditor";
@@ -25,8 +25,8 @@ import { ProductPropertyValues } from "../components/ProductPropertyValues";
 import { ProductModifications } from "../components/ProductModifications";
 import { SimpleProductFields } from "../components/SimpleProductFields";
 import { AllProductProperties } from "../components/AllProductProperties";
-import type { TablesInsert, TablesUpdate } from "@simplysoftua/core/supabase/types";
-import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
+import type { TablesInsert, TablesUpdate } from "@simplycms/core/supabase/types";
+import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 import { adminPath } from "../lib/adminLinks";
 
 export default function ProductEdit() {

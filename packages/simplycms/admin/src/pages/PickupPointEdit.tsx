@@ -4,12 +4,12 @@ import { adminPath } from "../lib/adminLinks";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Input } from "@simplysoftua/ui/input";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Badge } from "@simplycms/ui/badge";
+import { Input } from "@simplycms/ui/input";
+import { Switch } from "@simplycms/ui/switch";
 import {
   Form,
   FormControl,
@@ -18,17 +18,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplysoftua/ui/form";
+} from "@simplycms/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
+} from "@simplycms/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Shield } from "lucide-react";
-import { PickupPoint, ShippingMethod, ShippingZone } from "@simplysoftua/core/lib/shipping/types";
+import { PickupPoint, ShippingMethod, ShippingZone } from "@simplycms/core/lib/shipping/types";
 
 const formSchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),

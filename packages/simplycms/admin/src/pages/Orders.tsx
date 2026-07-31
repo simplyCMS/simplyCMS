@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import type { SupabaseClient } from "@simplysoftua/core/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import type { SupabaseClient } from "@simplycms/core/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
   Table,
   TableBody,
@@ -11,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
-import { Badge } from "@simplysoftua/ui/badge";
+} from "@simplycms/ui/table";
+import { Badge } from "@simplycms/ui/badge";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";

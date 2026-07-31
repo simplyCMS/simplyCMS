@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { User, Mail, Phone, Package, ChevronRight, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Button } from "@simplysoftua/ui/button";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { Badge } from "@simplysoftua/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Button } from "@simplycms/ui/button";
+import { Skeleton } from "@simplycms/ui/skeleton";
+import { Badge } from "@simplycms/ui/badge";
 import { useAuth } from "../hooks/useAuth";
 import { useSupabaseClient } from "../supabase/SupabaseProvider";
 

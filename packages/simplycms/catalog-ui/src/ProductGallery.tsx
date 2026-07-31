@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
-import { cn } from "@simplysoftua/ui/utils";
+import { cn } from "@simplycms/ui/utils";
 
 interface ProductGalleryProps {
   images: string[];

@@ -1,13 +1,13 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent } from "@simplysoftua/ui/card";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent } from "@simplycms/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import { Plus, Trash2, Star, Loader2 } from "lucide-react";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { adminPath } from "../lib/adminLinks";
 
 export default function PriceTypes() {

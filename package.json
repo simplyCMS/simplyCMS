@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "build:packages": "pnpm --filter \"@simplysoftua/*\" run build",
+    "build:packages": "pnpm --filter \"@simplycms/*\" run build",
     "start": "node .output/server/index.mjs",
     "lint": "pnpm exec eslint .",
     "lint:fix": "pnpm exec eslint . --fix",

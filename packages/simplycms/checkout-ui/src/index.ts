@@ -1,4 +1,4 @@
-// @simplysoftua/checkout-ui — checkout presentational + container components.
+// @simplycms/checkout-ui — checkout presentational + container components.
 export * from "./AddressCard";
 export * from "./AddressSaveDialog";
 export * from "./AddressSelectorPopup";

@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Badge } from "@simplycms/ui/badge";
+import { Switch } from "@simplycms/ui/switch";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Globe } from "lucide-react";

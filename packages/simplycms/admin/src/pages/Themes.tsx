@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Badge } from "@simplycms/ui/badge";
+import { Skeleton } from "@simplycms/ui/skeleton";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Palette, Check, Settings, ArrowLeft } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
 import {
@@ -18,7 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@simplysoftua/ui/alert-dialog";
+} from "@simplycms/ui/alert-dialog";
 
 interface ThemeRecord {
   id: string;

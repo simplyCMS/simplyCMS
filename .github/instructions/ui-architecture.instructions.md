@@ -5,11 +5,11 @@ description: "Правила побудови UI, система тем та sha
 
 # UI Architecture Rules
 
-## Дизайн-система (@simplysoftua/ui)
+## Дизайн-система (@simplycms/ui)
 
 - 50+ компонентів на базі **shadcn/ui** + Radix UI.
 - Стилі через **Tailwind v4** + `class-variance-authority`.
-- Утиліта `cn()` з `@simplysoftua/ui` для злиття класів (ui — self-contained, без залежності від core).
+- Утиліта `cn()` з `@simplycms/ui` для злиття класів (ui — self-contained, без залежності від core).
 
 ### Додавання нових UI компонентів
 
@@ -47,7 +47,7 @@ themes/default/
 ```typescript
 // src/routes/_storefront/index.tsx
 import { use } from 'react';
-import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 
 function HomeRoute() {
   const { themeName } = Route.useRouteContext(); // з loader-а _storefront
@@ -58,10 +58,10 @@ function HomeRoute() {
 ```
 
 ## ✅ ALWAYS
-- Використовуй `@simplysoftua/ui` компоненти, не створюй дублікати.
+- Використовуй `@simplycms/ui` компоненти, не створюй дублікати.
 - Перевіряй shadcn MCP перед додаванням нових компонентів.
 - Theme-specific компоненти — лише в `themes/*/components/`.
-- Бізнес-компоненти — у feature-ui пакетах (`@simplysoftua/catalog-ui`, `cart-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`); legacy-шляхи через `@simplysoftua/core` — re-export шими.
+- Бізнес-компоненти — у feature-ui пакетах (`@simplycms/catalog-ui`, `cart-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`); legacy-шляхи через `@simplycms/core` — re-export шими.
 - Responsive дизайн (mobile-first).
 - Dark mode підтримка через `next-themes` + CSS variables.
 - `forwardRef` для UI-компонентів що проксують ref.
@@ -69,24 +69,24 @@ function HomeRoute() {
 ## ❌ NEVER
 - Не обминай систему тем для storefront-сторінок.
 - Не розміщуй бізнес-логіку в темах (теми — лише візуалізація).
-- Не дублюй shadcn/ui компоненти в `src/` — вони мають бути в `@simplysoftua/ui`.
+- Не дублюй shadcn/ui компоненти в `src/` — вони мають бути в `@simplycms/ui`.
 - Не хардкодь кольори — використовуй CSS variables та Tailwind classes.
 - Не додавай shadcn/ui компоненти без перевірки через MCP.
 - Не використовуй inline styles — лише Tailwind CSS classes.
 
 ## Компоненти за пакетами
 
-### @simplysoftua/ui (дизайн-система)
+### @simplycms/ui (дизайн-система)
 Button, Input, Dialog, Table, Card, Select, Tabs, Form, etc.
 
 ### Feature-UI пакети (бізнес-компоненти)
-- **@simplysoftua/catalog-ui:** ProductCard, FilterSidebar, ProductGallery, ModificationSelector, StockDisplay
-- **@simplysoftua/cart-ui:** CartButton, CartDrawer, CartItem (+ CartItemView — presentational)
-- **@simplysoftua/checkout-ui:** CheckoutContactForm, CheckoutDeliveryForm, CheckoutOrderSummary, etc.
-- **@simplysoftua/reviews-ui:** ProductReviews, ReviewCard, ReviewForm, StarRating
-- **@simplysoftua/profile-ui:** AddressesList, AvatarUpload, RecipientsList
+- **@simplycms/catalog-ui:** ProductCard, FilterSidebar, ProductGallery, ModificationSelector, StockDisplay
+- **@simplycms/cart-ui:** CartButton, CartDrawer, CartItem (+ CartItemView — presentational)
+- **@simplycms/checkout-ui:** CheckoutContactForm, CheckoutDeliveryForm, CheckoutOrderSummary, etc.
+- **@simplycms/reviews-ui:** ProductReviews, ReviewCard, ReviewForm, StarRating
+- **@simplycms/profile-ui:** AddressesList, AvatarUpload, RecipientsList
 
-### @simplysoftua/admin (адмін-компоненти)
+### @simplycms/admin (адмін-компоненти)
 AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc.
 
 ### themes/* (theme-specific)

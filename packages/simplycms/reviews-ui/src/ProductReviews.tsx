@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Loader2, LogIn } from "lucide-react";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useProductReviews } from "@simplysoftua/core/hooks/useProductReviews";
+import { useAuth } from "@simplycms/core/hooks/useAuth";
+import { useProductReviews } from "@simplycms/core/hooks/useProductReviews";
 import { StarRating } from "./StarRating";
 import { ReviewCard } from "./ReviewCard";
 import { ReviewForm } from "./ReviewForm";

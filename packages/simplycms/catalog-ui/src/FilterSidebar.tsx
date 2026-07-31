@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { X } from "lucide-react";
 
 interface Property {

@@ -1,5 +1,5 @@
 {
-  "name": "@simplysoftua/core",
+  "name": "@simplycms/core",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -17,15 +17,15 @@
     "./types": "./src/types/index.ts"
   },
   "dependencies": {
-    "@simplysoftua/domain": "workspace:*",
-    "@simplysoftua/react-query": "workspace:*",
-    "@simplysoftua/ui": "workspace:*",
-    "@simplysoftua/plugins": "workspace:*",
-    "@simplysoftua/cart-ui": "workspace:*",
-    "@simplysoftua/catalog-ui": "workspace:*",
-    "@simplysoftua/checkout-ui": "workspace:*",
-    "@simplysoftua/profile-ui": "workspace:*",
-    "@simplysoftua/reviews-ui": "workspace:*"
+    "@simplycms/domain": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
+    "@simplycms/ui": "workspace:*",
+    "@simplycms/plugins": "workspace:*",
+    "@simplycms/cart-ui": "workspace:*",
+    "@simplycms/catalog-ui": "workspace:*",
+    "@simplycms/checkout-ui": "workspace:*",
+    "@simplycms/profile-ui": "workspace:*",
+    "@simplycms/reviews-ui": "workspace:*"
   },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",

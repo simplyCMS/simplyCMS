@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { use } from 'react';
-import { useTheme } from '@simplysoftua/themes/ThemeContext';
-import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
+import { useTheme } from '@simplycms/themes/ThemeContext';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { getHomePageData } from '../../server/home';
 
 export const Route = createFileRoute('/_storefront/')({

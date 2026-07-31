@@ -1,5 +1,5 @@
 // Discount Engine — pure-логіка обчислення дерева знижок.
-// Перенесено з core/lib/discountEngine; типи — з @simplysoftua/objects.
+// Перенесено з core/lib/discountEngine; типи — з @simplycms/objects.
 
 import type {
   Discount,
@@ -10,7 +10,7 @@ import type {
   DiscountResult,
   AppliedDiscount,
   RejectedDiscount,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 export type {
   DiscountType,
@@ -24,7 +24,7 @@ export type {
   AppliedDiscount,
   RejectedDiscount,
   DiscountResult,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 // --- Date check ---
 function isWithinDateRange(

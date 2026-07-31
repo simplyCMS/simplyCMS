@@ -1,5 +1,5 @@
 
-import { cn } from "@simplysoftua/ui/utils";
+import { cn } from "@simplycms/ui/utils";
 import { Check, User } from "lucide-react";
 
 interface RecipientCardProps {

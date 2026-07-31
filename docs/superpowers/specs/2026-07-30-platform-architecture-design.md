@@ -43,8 +43,8 @@ Skeleton-update — задача, яку індустрія не закрила 
 
 ```
 ┌─ npmjs (єдиний склад коду) ──────────────────────────────────────────────┐
-│  @simplysoftua/* (ядро, реліз-потяг)     @vendor/simplycms-plugin-*      │
-│  @simplysoftua/plugin-sdk                @vendor/simplycms-theme-*       │
+│  @simplycms/* (ядро, реліз-потяг)     @vendor/simplycms-plugin-*      │
+│  @simplycms/plugin-sdk                @vendor/simplycms-theme-*       │
 └──────────────────────────────────────────────────────────────────────────┘
         ▲ pnpm add (виконує CLI)                 ▲ npm publish (автор)
 ┌─ Магазин (репо розробника) ─────────┐   ┌─ Маркетплейс (вітрина) ────────┐
@@ -67,19 +67,19 @@ Skeleton-update — задача, яку індустрія не закрила 
 
 | Пакет | Зміст | Походження |
 |---|---|---|
-| `@simplysoftua/objects` | Контракти + порти (0 deps) | як є |
-| `@simplysoftua/domain` | Pure-логіка: pricing/discounts/inventory/shipping | як є |
-| `@simplysoftua/schema` | **Drizzle-схема ядра + RLS** (`pgPolicy`, `drizzle-orm/supabase`) | новий; замінює сирі seed-міграції |
-| `@simplysoftua/supabase` | Клієнти (browser/server/server-admin), auth-хелпери, hooks, testing, типи | консолідація `core/supabase/*` + `data-supabase` за зразком `@kit/supabase` |
-| `@simplysoftua/engine` | EngineProvider, репозиторії, query-хуки | `data-supabase` + `react-query` |
-| `@simplysoftua/ui` | shadcn-примітиви (self-contained) | як є |
-| `@simplysoftua/theme-system` | ThemeRegistry (новий контракт §6), токени | перебудова |
-| `@simplysoftua/plugin-system` | HookRegistry, PluginSlot, loader | як є + wiring |
-| `@simplysoftua/plugin-sdk` | `definePlugin`, порти, Zod-хелпери настройок | новий |
-| `@simplysoftua/storefront-routes` | **Канонічні SSR-сторінки** (route-файли + server fns + SEO) | `src/routes/_storefront|_protected|auth|api` + `src/server` + сторінки з core/themes |
-| `@simplysoftua/admin-routes` | Route-файли адмінки | `src/routes/admin` (тонкі обгортки `@simplysoftua/admin`) |
-| `@simplysoftua/admin` | Сторінки/компоненти адмінки | як є |
-| `@simplysoftua/cli` | `simplycms` CLI | новий |
+| `@simplycms/objects` | Контракти + порти (0 deps) | як є |
+| `@simplycms/domain` | Pure-логіка: pricing/discounts/inventory/shipping | як є |
+| `@simplycms/schema` | **Drizzle-схема ядра + RLS** (`pgPolicy`, `drizzle-orm/supabase`) | новий; замінює сирі seed-міграції |
+| `@simplycms/supabase` | Клієнти (browser/server/server-admin), auth-хелпери, hooks, testing, типи | консолідація `core/supabase/*` + `data-supabase` за зразком `@kit/supabase` |
+| `@simplycms/engine` | EngineProvider, репозиторії, query-хуки | `data-supabase` + `react-query` |
+| `@simplycms/ui` | shadcn-примітиви (self-contained) | як є |
+| `@simplycms/theme-system` | ThemeRegistry (новий контракт §6), токени | перебудова |
+| `@simplycms/plugin-system` | HookRegistry, PluginSlot, loader | як є + wiring |
+| `@simplycms/plugin-sdk` | `definePlugin`, порти, Zod-хелпери настройок | новий |
+| `@simplycms/storefront-routes` | **Канонічні SSR-сторінки** (route-файли + server fns + SEO) | `src/routes/_storefront|_protected|auth|api` + `src/server` + сторінки з core/themes |
+| `@simplycms/admin-routes` | Route-файли адмінки | `src/routes/admin` (тонкі обгортки `@simplycms/admin`) |
+| `@simplycms/admin` | Сторінки/компоненти адмінки | як є |
+| `@simplycms/cli` | `simplycms` CLI | новий |
 | `create-simplycms-store` | Скаффолдер магазину | новий |
 | feature-ui (`catalog-ui` та ін.) | Вливаються у storefront-routes/admin або лишаються внутрішніми | рішення на імплементації |
 
@@ -103,7 +103,7 @@ breaking — тільки major** (свідомий контраст із Medusa
   2026-07-31: npm-пакет `simplycms` вільний, у scope `@simplycms` немає жодного
   опублікованого пакета, GitHub-імʼя `simplycms` не зайняте. Для платформи
   продуктовий неймінг (як vendure-ecommerce, medusajs, payloadcms) кращий за
-  корпоративний `simplySOFTua`. Rename scope `@simplysoftua` → `@simplycms` —
+  корпоративний `simplySOFTua`. Rename scope `@simplycms` → `@simplycms` —
   механічний codemod (робився один раз у зворотний бік; червнева причина
   переіменування — вимога GitHub Packages «scope = власник» — зникла з переходом
   на npmjs). Виконати у Фазі 0, поки зовнішніх споживачів нуль.
@@ -125,8 +125,8 @@ import { rootRoute, layout, physical } from '@tanstack/virtual-file-routes'
 const pkg = (n: string) => path.join('node_modules', n, 'routes') // symlink, НЕ require.resolve
 
 export const routes = rootRoute('__root.tsx', [
-  layout('_storefront.tsx', [physical('/', pkg('@simplysoftua/storefront-routes'))]),
-  physical('/admin', pkg('@simplysoftua/admin-routes')),
+  layout('_storefront.tsx', [physical('/', pkg('@simplycms/storefront-routes'))]),
+  physical('/admin', pkg('@simplycms/admin-routes')),
   physical('/', 'my'),                                  // власні сторінки магазину
   // адмін-сторінки плагінів (генерує CLI з simplycms.config.ts):
   physical('/admin/x-plugin', pkg('@vendor/simplycms-plugin-x/admin-routes')),
@@ -189,7 +189,7 @@ interface ThemeModule {
 ## 7. Контракт плагіна
 
 ```ts
-// @simplysoftua/plugin-sdk
+// @simplycms/plugin-sdk
 export default definePlugin({
   name: 'x-plugin',
   version: '1.0.0',
@@ -230,7 +230,7 @@ export default definePlugin({
 
 ## 9. Дані: Drizzle-схема, міграції, типи
 
-- Схема ядра: `@simplysoftua/schema` — Drizzle TS, включно з RLS
+- Схема ядра: `@simplycms/schema` — Drizzle TS, включно з RLS
   (`pgPolicy`, `pgTable.withRLS`, `authenticatedRole`/`authUsers` з
   `drizzle-orm/supabase`). Схема плагіна — Drizzle-фрагмент у пакеті плагіна.
 - **Конвеєр:** `simplycms db:diff` → складає core + встановлені плагіни →
@@ -248,7 +248,7 @@ export default definePlugin({
 
 ## 10. Supabase-шар
 
-`@simplysoftua/supabase` (за зразком `@kit/supabase` з metahub, звірено з офіційним
+`@simplycms/supabase` (за зразком `@kit/supabase` з metahub, звірено з офіційним
 quickstart Supabase для TanStack Start):
 
 - `./browser-client` — `createBrowserClient` (`import.meta.env.VITE_*`);
@@ -312,7 +312,7 @@ canonical/og), JSON-LD (Product+Offer, BreadcrumbList, Organization), корек
 переїзд `src/routes` на `routes.ts` + `physical()` до нових пакетів
 `storefront-routes`/`admin-routes`; канонікалізація сторінок (сторінки з core/themes →
 storefront-routes; теми → tokens+components); wiring плагін-контуру від
-`simplycms.config.ts`; консолідація `@simplysoftua/supabase`; Drizzle-baseline +
+`simplycms.config.ts`; консолідація `@simplycms/supabase`; Drizzle-baseline +
 конвеєр `db:diff`; LICENSE; i18n-скелет; гігієна з беклогу (guest-token з URL,
 перевірка SSR-повноти списків).
 *DoD: магазин працює на новій топології в монорепо; typecheck/lint/test/build зелені;
@@ -323,7 +323,7 @@ storefront-routes; теми → tokens+components); wiring плагін-конт
 sitemap/robots (custom server entry). *DoD: магазин зібраний зі справжніх tarball-ів
 проходить smoke-e2e; деплой можливий.*
 
-**Фаза 2 — CLI + скаффолдер + перший реліз:** `@simplysoftua/cli`
+**Фаза 2 — CLI + скаффолдер + перший реліз:** `@simplycms/cli`
 (add/update/db:diff/doctor + schematics для host-файлів), `create-simplycms-store`,
 реліз-потяг v1.0 на npmjs. *DoD: сторонній розробник створює магазин двома командами
 і оновлює ядро одним `pnpm update`.*
@@ -345,7 +345,7 @@ conformance-kit для авторів, JSON-індекс + вітрина. *DoD:
 
 1. **Новий магазин:** `pnpm create simplycms-store my-shop` → конфіг Supabase →
    `pnpm dev` → повний магазин (канонічні сторінки, default-тема, порожня адмінка).
-2. **Оновлення ядра:** `pnpm update "@simplysoftua/*"` → нові сторінки/фікси в
+2. **Оновлення ядра:** `pnpm update "@simplycms/*"` → нові сторінки/фікси в
    білді; якщо реліз позначено host-змінами — `simplycms update` доганяє ~6 файлів.
 3. **Плагін:** маркетплейс → `simplycms add @vendor/simplycms-plugin-np` →
    diff міграцій на ревʼю → rebuild → активація і налаштування в адмінці.

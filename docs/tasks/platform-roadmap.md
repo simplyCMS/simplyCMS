@@ -9,17 +9,17 @@
 ## Фаза 0 — Фундамент у монорепо (без публікації)
 
 - [ ] `routes.ts` + `physical()` на workspace-теки: нові пакети
-      `@simplysoftua/storefront-routes`, `@simplysoftua/admin-routes`;
+      `@simplycms/storefront-routes`, `@simplycms/admin-routes`;
       `src/routes` магазину стискається до `__root` + лейаути + `my/`
 - [ ] Канонікалізація сторінок: сторінки з `core/pages` і `themes/*/pages` →
       `storefront-routes`; теми → `{manifest, tokens, components, settings}`
       (новий контракт, spec §6); перебудова `theme-system`
 - [ ] Wiring плагін-контуру від `simplycms.config.ts` (одне джерело істини,
       spec §8); `loadPlugins` на старті; деградація при розсинхроні конфіг↔БД
-- [ ] Консолідація `@simplysoftua/supabase` (spec §10, зразок `@kit/supabase`);
+- [ ] Консолідація `@simplycms/supabase` (spec §10, зразок `@kit/supabase`);
       знесення legacy `core/supabase/*`; оновити `.env.example`
       (`VITE_SUPABASE_PUBLISHABLE_KEY`)
-- [ ] Drizzle-baseline: `@simplysoftua/schema` (introspect наявної схеми → TS + RLS),
+- [ ] Drizzle-baseline: `@simplycms/schema` (introspect наявної схеми → TS + RLS),
       конвеєр `db:diff` → ревʼю → Supabase CLI; вивести з експлуатації
       `supabase/scripts/migrate.mjs` (spec §9)
 - [ ] LICENSE (MIT) у корінь + `license` у всі пакети
@@ -31,7 +31,7 @@
 - [ ] Знести re-export-шими core та мертві аліаси (рішення D5 — без перехідних шимів)
 - [ ] Вивести з експлуатації git-subtree `simplyCMS-core` (`cms:pull`/`cms:push`
       скрипти геть; репо архівувати) — монорепо стає єдиним джерелом (spec §4.1)
-- [ ] Rename scope `@simplysoftua/*` → `@simplycms/*` після створення власником
+- [ ] Rename scope `@simplycms/*` → `@simplycms/*` після створення власником
       GitHub org `simplyCMS` та npm org `simplycms` (spec §4.1; імена перевірені
       2026-07-31 — вільні); зарезервувати npm-імʼя `simplycms` під CLI
 
@@ -51,7 +51,7 @@
 
 ## Фаза 2 — CLI + скаффолдер + перший реліз
 
-- [ ] `@simplysoftua/cli`: `add` / `update` (+schematics для host-файлів) /
+- [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
       `db:diff` / `doctor`
 - [ ] `create-simplycms-store`
 - [ ] Реліз-потяг v1.0 на npmjs (строгий semver; `engines.simplycms` перевірка)
@@ -61,7 +61,7 @@
 
 ## Фаза 3 — Plugin SDK + референс-плагіни
 
-- [ ] `@simplysoftua/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7)
+- [ ] `@simplycms/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7)
 - [ ] Межа довіри: dependency-lint (плагін не імпортує повз SDK; без SupabaseClient)
 - [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) + пункт меню через слот
 - [ ] 1-2 референс-плагіни (доставка, оплата) + авторський цикл

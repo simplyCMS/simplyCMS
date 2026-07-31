@@ -6,15 +6,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplysoftua/ui/form";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { toast } from "@simplysoftua/core/hooks/use-toast";
+import { Button } from "@simplycms/ui/button";
+import { Input } from "@simplycms/ui/input";
+import { Textarea } from "@simplycms/ui/textarea";
+import { Switch } from "@simplycms/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { toast } from "@simplycms/core/hooks/use-toast";
 
 const schema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),

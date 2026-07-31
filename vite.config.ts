@@ -8,68 +8,68 @@ export default {
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplysoftua/db-types': resolve(__dirname, 'supabase/types.ts'),
-      '@simplysoftua/objects': resolve(
+      '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
+      '@simplycms/objects': resolve(
         __dirname,
         'packages/simplycms/objects/src',
       ),
-      '@simplysoftua/domain': resolve(
+      '@simplycms/domain': resolve(
         __dirname,
         'packages/simplycms/domain/src',
       ),
-      '@simplysoftua/data-supabase': resolve(
+      '@simplycms/data-supabase': resolve(
         __dirname,
         'packages/simplycms/data-supabase/src',
       ),
-      '@simplysoftua/runtime': resolve(
+      '@simplycms/runtime': resolve(
         __dirname,
         'packages/simplycms/runtime/src',
       ),
-      '@simplysoftua/react-query': resolve(
+      '@simplycms/react-query': resolve(
         __dirname,
         'packages/simplycms/react-query/src',
       ),
-      '@simplysoftua/storefront': resolve(
+      '@simplycms/storefront': resolve(
         __dirname,
         'packages/simplycms/storefront/src',
       ),
-      '@simplysoftua/cart-ui': resolve(
+      '@simplycms/cart-ui': resolve(
         __dirname,
         'packages/simplycms/cart-ui/src',
       ),
-      '@simplysoftua/catalog-ui': resolve(
+      '@simplycms/catalog-ui': resolve(
         __dirname,
         'packages/simplycms/catalog-ui/src',
       ),
-      '@simplysoftua/checkout-ui': resolve(
+      '@simplycms/checkout-ui': resolve(
         __dirname,
         'packages/simplycms/checkout-ui/src',
       ),
-      '@simplysoftua/profile-ui': resolve(
+      '@simplycms/profile-ui': resolve(
         __dirname,
         'packages/simplycms/profile-ui/src',
       ),
-      '@simplysoftua/reviews-ui': resolve(
+      '@simplycms/reviews-ui': resolve(
         __dirname,
         'packages/simplycms/reviews-ui/src',
       ),
-      '@simplysoftua/core': resolve(
+      '@simplycms/core': resolve(
         __dirname,
         'packages/simplycms/core/src',
       ),
-      '@simplysoftua/admin': resolve(
+      '@simplycms/admin': resolve(
         __dirname,
         'packages/simplycms/admin/src',
       ),
-      '@simplysoftua/ui': resolve(
+      '@simplycms/ui': resolve(
         __dirname,
         'packages/simplycms/ui/src',
       ),
-      '@simplysoftua/plugins': resolve(
+      '@simplycms/plugins': resolve(
         __dirname,
         'packages/simplycms/plugin-system/src',
       ),
-      '@simplysoftua/themes': resolve(
+      '@simplycms/themes': resolve(
         __dirname,
         'packages/simplycms/theme-system/src',
       ),

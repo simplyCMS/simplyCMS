@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { parseCookieHeader } from '@supabase/ssr';
 import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
-import type { Database } from '@simplysoftua/core/supabase/types';
+import type { Database } from '@simplycms/core/supabase/types';
 
 /**
  * Factory для створення серверного Supabase-клієнта в TanStack Start.

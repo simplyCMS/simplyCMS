@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useThemeSettings } from "@simplysoftua/core/hooks/useThemeSettings";
+import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
 import { Facebook, Instagram } from "lucide-react";
 
 export function Footer() {

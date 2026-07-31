@@ -46,8 +46,8 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 ### TypeScript
 - Strict mode увімкнено.
 - Path aliases (повний перелік — `tsconfig.json` + дзеркало у `vite.config.ts`):
-  - `@simplysoftua/db-types` → `supabase/types.ts`
-  - `@simplysoftua/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
+  - `@simplycms/db-types` → `supabase/types.ts`
+  - `@simplycms/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
     react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
     storefront, runtime, cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui)
   - `@themes/*` → `themes/*`

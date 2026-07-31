@@ -3,12 +3,12 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Input } from "@simplysoftua/ui/input";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Input } from "@simplycms/ui/input";
+import { Textarea } from "@simplycms/ui/textarea";
+import { Switch } from "@simplycms/ui/switch";
 import {
   Form,
   FormControl,
@@ -17,19 +17,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplysoftua/ui/form";
+} from "@simplycms/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
+} from "@simplycms/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { adminPath } from "../lib/adminLinks";
-import { ShippingMethod } from "@simplysoftua/core/lib/shipping/types";
-import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
+import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
+import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 
 const formSchema = z.object({
   code: z.string().min(1, "Код обов'язковий").max(50),

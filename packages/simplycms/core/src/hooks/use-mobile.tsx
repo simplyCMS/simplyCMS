@@ -1,1 +1,1 @@
-export * from "@simplysoftua/ui/use-mobile";
+export * from "@simplycms/ui/use-mobile";

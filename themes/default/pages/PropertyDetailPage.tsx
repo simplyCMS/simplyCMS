@@ -1,1 +1,1 @@
-export { default } from "@simplysoftua/core/pages/PropertyDetail";
+export { default } from "@simplycms/core/pages/PropertyDetail";

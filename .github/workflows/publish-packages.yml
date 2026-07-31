@@ -1,7 +1,7 @@
 name: Publish Packages
 
 # ⚠️ PUBLISH ПРИЗУПИНЕНО (2026-07-31, перенос у org simplyCMS).
-# GitHub Packages вимагає «scope = власник»: scope @simplysoftua більше НЕ
+# GitHub Packages вимагає «scope = власник»: scope @simplycms більше НЕ
 # збігається з власником simplyCMS → публікація по тегу гарантовано падає з 403.
 # За рішенням власника (spec §4.1) публікація переїжджає на npmjs під scope
 # @simplycms — workflow переписується у Фазі 0 роадмапу разом із rename scope
@@ -52,7 +52,7 @@ jobs:
           node-version: lts/*
           cache: 'pnpm'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@simplysoftua'
+          scope: '@simplycms'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -60,11 +60,11 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-      # Спершу публікуємо базовий @simplysoftua/objects (від нього залежать
+      # Спершу публікуємо базовий @simplycms/objects (від нього залежать
       # решта), щоб уникнути 404 при concurrent-публікації (pnpm не
       # гарантує topo-порядок).
       - name: Publish objects (base)
-        run: pnpm publish --filter @simplysoftua/objects --no-git-checks
+        run: pnpm publish --filter @simplycms/objects --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -72,11 +72,11 @@ jobs:
       - name: Publish dependents
         run: >-
           pnpm publish
-          --filter @simplysoftua/domain
-          --filter @simplysoftua/data-supabase
-          --filter @simplysoftua/react-query
-          --filter @simplysoftua/runtime
-          --filter @simplysoftua/storefront
+          --filter @simplycms/domain
+          --filter @simplycms/data-supabase
+          --filter @simplycms/react-query
+          --filter @simplycms/runtime
+          --filter @simplycms/storefront
           --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

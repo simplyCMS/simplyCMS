@@ -1,1 +1,1 @@
-export { default } from "@simplysoftua/core/pages/CatalogSection";
+export { default } from "@simplycms/core/pages/CatalogSection";

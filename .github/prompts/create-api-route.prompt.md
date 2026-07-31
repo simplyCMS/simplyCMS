@@ -15,7 +15,7 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
 ## Вимоги:
 
 1. **Авторизація та безпека**
-   - Перевір авторизацію через `createServerSupabase()` з `@simplysoftua/core`
+   - Перевір авторизацію через `createServerSupabase()` з `@simplycms/core`
    - Реалізуй перевірку ролей якщо потрібно (user_roles)
    - Валідуй вхідні дані через Zod
 
@@ -25,7 +25,7 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
    - Реалізуй правильну обробку помилок
 
 3. **База даних**
-   - Працюй через Supabase клієнт з `@simplysoftua/core/supabase/server`
+   - Працюй через Supabase клієнт з `@simplycms/core/supabase/server`
    - RLS policies для авторизації на рівні бази
    - Поверни структуровані дані
 
@@ -48,7 +48,7 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
 
 ```typescript
 // app/api/[name]/route.ts
-import { createServerSupabase } from '@simplysoftua/core/supabase/server';
+import { createServerSupabase } from '@simplycms/core/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {

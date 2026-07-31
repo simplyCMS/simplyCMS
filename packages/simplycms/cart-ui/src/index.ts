@@ -1,4 +1,4 @@
-// @simplysoftua/cart-ui — cart presentational + container components.
+// @simplycms/cart-ui — cart presentational + container components.
 export { CartButton } from "./CartButton";
 export { CartDrawer } from "./CartDrawer";
 export { CartItem } from "./CartItem";

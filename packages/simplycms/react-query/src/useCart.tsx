@@ -7,9 +7,9 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import type { Json } from "@simplysoftua/objects";
+import type { Json } from "@simplycms/objects";
 
-// Клієнтський стан кошика (localStorage). Перенесено з @simplysoftua/core у
+// Клієнтський стан кошика (localStorage). Перенесено з @simplycms/core у
 // Tier-2, щоб feature-ui (cart-ui/checkout-ui) не залежали від god-package.
 
 export interface CartItem {

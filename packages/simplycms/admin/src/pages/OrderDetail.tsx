@@ -1,19 +1,19 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Button } from "@simplysoftua/ui/button";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Input } from "@simplysoftua/ui/input";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { Button } from "@simplycms/ui/button";
+import { Badge } from "@simplycms/ui/badge";
+import { Input } from "@simplycms/ui/input";
+import { Skeleton } from "@simplycms/ui/skeleton";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
+} from "@simplycms/ui/select";
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +32,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplysoftua/ui/alert-dialog";
+} from "@simplycms/ui/alert-dialog";
  import { ArrowLeft, Trash2, Save, Loader2, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { useState } from "react";
 import { AddProductToOrder } from "../components/AddProductToOrder";
 

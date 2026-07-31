@@ -1,3 +1,3 @@
-// Перенесено в @simplysoftua/react-query. Re-export для зворотної сумісності.
-export { CartProvider, useCart } from "@simplysoftua/react-query";
-export type { CartItem } from "@simplysoftua/react-query";
+// Перенесено в @simplycms/react-query. Re-export для зворотної сумісності.
+export { CartProvider, useCart } from "@simplycms/react-query";
+export type { CartItem } from "@simplycms/react-query";

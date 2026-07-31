@@ -2,7 +2,7 @@
 // Логіка запитів — у queries.ts; тут лише прив'язка до контексту.
 
 import { useQuery } from "@tanstack/react-query";
-import type { ProductQuery, OrderQuery } from "@simplysoftua/objects";
+import type { ProductQuery, OrderQuery } from "@simplycms/objects";
 import { useEngine } from "./EngineProvider";
 import { catalogQueries, orderQueries } from "./queries";
 

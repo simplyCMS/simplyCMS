@@ -19,7 +19,7 @@ import type {
   DiscountGroup,
   DiscountScope,
   ShippingZone,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 import {
   mapProduct,
   mapSection,

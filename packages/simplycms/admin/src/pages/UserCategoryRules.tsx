@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { Badge } from "@simplycms/ui/badge";
+import { Switch } from "@simplycms/ui/switch";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from "@simplycms/ui/table";
 import {
   ArrowLeft,
   Plus,
@@ -22,7 +22,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { toast } from "@simplysoftua/core/hooks/use-toast";
+import { toast } from "@simplycms/core/hooks/use-toast";
 import { adminPath } from "../lib/adminLinks";
 
 interface RuleCondition {

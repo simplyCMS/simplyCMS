@@ -1,14 +1,14 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Search, User, ShoppingBag, Menu, X, Settings, LogOut } from "lucide-react";
-import { Button } from "@simplysoftua/ui/button";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useCart } from "@simplysoftua/core/hooks/useCart";
-import { useThemeSettings } from "@simplysoftua/core/hooks/useThemeSettings";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { Button } from "@simplycms/ui/button";
+import { useAuth } from "@simplycms/core/hooks/useAuth";
+import { useCart } from "@simplycms/core/hooks/useCart";
+import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useToast } from "@simplycms/core/hooks/use-toast";
 import { AnnouncementBar } from "./AnnouncementBar";
-import { CartDrawer } from "@simplysoftua/core/components/cart/CartDrawer";
+import { CartDrawer } from "@simplycms/core/components/cart/CartDrawer";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@simplysoftua/ui/dropdown-menu";
+} from "@simplycms/ui/dropdown-menu";
 
 export function Header() {
   const supabase = useSupabaseClient();

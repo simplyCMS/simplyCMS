@@ -46,19 +46,19 @@ for(const root of glob){for(const d of fs.readdirSync(root,{withFileTypes:true})
 
 - [ ] **Step 3:** Верифікація повна + коміт: `chore(license): LICENSE MIT + license-поле в усі workspace-пакети`.
 
-### Task 2: Rename scope `@simplysoftua` → `@simplycms` + registry npmjs
+### Task 2: Rename scope `@simplycms` → `@simplycms` + registry npmjs
 
-**Files:** усі файли зі згадкою (`git grep -l '@simplysoftua'`), плюс `packages/simplycms/*/package.json` (publishConfig) і `tests/published-exports-parity.test.ts`.
+**Files:** усі файли зі згадкою (`git grep -l '@simplycms'`), плюс `packages/simplycms/*/package.json` (publishConfig) і `tests/published-exports-parity.test.ts`.
 
 - [ ] **Step 1:** Заміна тільки по tracked-файлах:
 
 ```bash
-git grep -l '@simplysoftua' | xargs sed -i 's|@simplysoftua|@simplycms|g'
+git grep -l '@simplycms' | xargs sed -i 's|@simplycms|@simplycms|g'
 ```
 
 - [ ] **Step 2:** **Registry → npmjs** (spec D8; GitHub Packages більше не використовується): у 6 публікованих `package.json` (`objects`,`domain`,`data-supabase`,`react-query`,`runtime`,`storefront`) замінити `"registry": "https://npm.pkg.github.com"` → `"registry": "https://registry.npmjs.org"`; у `tests/published-exports-parity.test.ts` — те саме очікування. `.github/workflows/publish-packages.yml`: scope `@simplycms` (джоба лишається `if: false` — повне переписування на npmjs+NPM_TOKEN це Фаза 2).
 - [ ] **Step 3:** Точкові перевірки: `build:packages` filter = `"@simplycms/*"`; tsconfig paths / vite / vitest аліаси на `@simplycms/*` (включно `@simplycms/db-types`).
-- [ ] **Step 4:** `git grep -c '@simplysoftua'` → 0; `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test`; коміт: `refactor(scope): rename @simplysoftua → @simplycms + registry npmjs`.
+- [ ] **Step 4:** `git grep -c '@simplycms'` → 0; `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test`; коміт: `refactor(scope): rename @simplycms → @simplycms + registry npmjs`.
 
 **Прим. (узгодження з Codex-знахідкою №3):** пакети `@simplycms/themes` і `@simplycms/plugins` зберігають наявні імена (теки `theme-system`/`plugin-system`); таблиця spec §4 виправляється під фактичні імена окремим кроком Task 17 (щоб spec не розходилась з кодом).
 
@@ -324,7 +324,7 @@ export function useT(): ReturnType<typeof createTranslator>
 
 - [ ] **Step 1:** Шими: для кожного кандидата `git grep -n "<шлях>" -- ':!сам-файл'` → 0 → `git rm`; не нуль → лишити, зафіксувати споживача в коміті.
 - [ ] **Step 2:** Документи за списком; чекбокси роадмапу.
-- [ ] **Step 3 (DoD):** `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test` зелені; dev smoke (головна/каталог/товар/адмінка/профіль/sitemap); регрес-тест physical() зелений; `git grep -c '@simplysoftua'` = 0; `git diff --check` чистий → коміт: `chore(phase0): зачистка + синхронізація документації — Фаза 0 завершена` → після коміту `git status` чистий.
+- [ ] **Step 3 (DoD):** `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test` зелені; dev smoke (головна/каталог/товар/адмінка/профіль/sitemap); регрес-тест physical() зелений; `git grep -c '@simplycms'` = 0; `git diff --check` чистий → коміт: `chore(phase0): зачистка + синхронізація документації — Фаза 0 завершена` → після коміту `git status` чистий.
 
 ---
 

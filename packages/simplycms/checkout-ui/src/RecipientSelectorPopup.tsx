@@ -1,7 +1,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, User, Check, Plus } from "lucide-react";
-import { cn } from "@simplysoftua/ui/utils";
+import { cn } from "@simplycms/ui/utils";
 
 interface Recipient {
   id: string;

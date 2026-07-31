@@ -1,5 +1,5 @@
 {
-  "name": "@simplysoftua/profile-ui",
+  "name": "@simplycms/profile-ui",
   "version": "0.1.0",
   "private": true,
   "description": "Profile UI for SimplyCMS — addresses, avatar upload, recipients and layout components. Feature-UI split package.",
@@ -12,8 +12,8 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@simplysoftua/core": "workspace:*",
-    "@simplysoftua/ui": "workspace:*"
+    "@simplycms/core": "workspace:*",
+    "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

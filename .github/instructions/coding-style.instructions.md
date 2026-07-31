@@ -50,7 +50,7 @@ description: 'Стиль коду, форматування та докумен�
 - Обробка помилок через Error Boundaries.
 
 ## Imports
-- Використовуй `@simplysoftua/*` path aliases для пакетів ядра.
+- Використовуй `@simplycms/*` path aliases для пакетів ядра.
 - Використовуй `@/*` для файлів з `app/` директорії.
 - Використовуй `@themes/*` та `@plugins/*` для тем/плагінів.
 - Не використовуй relative imports (`../../..`) для cross-package imports.

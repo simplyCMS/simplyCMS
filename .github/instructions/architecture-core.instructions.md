@@ -18,18 +18,18 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 
 | Пакет | Alias | Tier | Призначення |
 |-------|-------|------|-------------|
-| `objects/` | `@simplysoftua/objects` | T0 | Доменні контракти + порти (0 runtime deps) |
-| `domain/` | `@simplysoftua/domain` | T1 | Pure-логіка: pricing, discounts, inventory, shipping |
-| `data-supabase/` | `@simplysoftua/data-supabase` | T2 | Репозиторії на інжектованому Supabase-клієнті |
-| `react-query/` | `@simplysoftua/react-query` | T2 | `EngineProvider`/`useEngine` + data-хуки |
-| `ui/` | `@simplysoftua/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
-| `theme-system/` | `@simplysoftua/themes` | T4 | ThemeRegistry, ThemeContext, SSR-резолв теми |
-| `plugin-system/` | `@simplysoftua/plugins` | T4 | HookRegistry, PluginLoader, PluginSlot |
-| `storefront/` | `@simplysoftua/storefront` | T4 | SSR-loaders + SEO (sitemap/robots) |
-| `*-ui/` | `@simplysoftua/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
-| `admin/` | `@simplysoftua/admin` | T5 | Адмін-панель (layouts, pages, components) |
-| `core/` | `@simplysoftua/core` | — | Legacy-ядро (хуки, pages, providers; поступово розноситься по tier-ах) |
-| `runtime/` | `@simplysoftua/runtime` | T6 | `defineConfig` / збірка EngineContext |
+| `objects/` | `@simplycms/objects` | T0 | Доменні контракти + порти (0 runtime deps) |
+| `domain/` | `@simplycms/domain` | T1 | Pure-логіка: pricing, discounts, inventory, shipping |
+| `data-supabase/` | `@simplycms/data-supabase` | T2 | Репозиторії на інжектованому Supabase-клієнті |
+| `react-query/` | `@simplycms/react-query` | T2 | `EngineProvider`/`useEngine` + data-хуки |
+| `ui/` | `@simplycms/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
+| `theme-system/` | `@simplycms/themes` | T4 | ThemeRegistry, ThemeContext, SSR-резолв теми |
+| `plugin-system/` | `@simplycms/plugins` | T4 | HookRegistry, PluginLoader, PluginSlot |
+| `storefront/` | `@simplycms/storefront` | T4 | SSR-loaders + SEO (sitemap/robots) |
+| `*-ui/` | `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
+| `admin/` | `@simplycms/admin` | T5 | Адмін-панель (layouts, pages, components) |
+| `core/` | `@simplycms/core` | — | Legacy-ядро (хуки, pages, providers; поступово розноситься по tier-ах) |
+| `runtime/` | `@simplycms/runtime` | T6 | `defineConfig` / збірка EngineContext |
 | `schema/` | — | — | Seed-міграції (reference SQL для bootstrap нових проектів) |
 
 Залежності — тільки вниз по tier-ах. Цільова архітектура платформи: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`.
@@ -52,7 +52,7 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 - Cookie-based auth через `@supabase/ssr` (не localStorage JWT).
 - Request-level guard для `/admin` — у `src/start.ts` (middleware).
 - Supabase-клієнт — через DI: `SupabaseProvider`/`useSupabaseClient` або репозиторії-порти; не глобальний singleton.
-- Використовуй пакети `@simplysoftua/*` замість локальних копій (UI, core, admin).
+- Використовуй пакети `@simplycms/*` замість локальних копій (UI, core, admin).
 - **Використовуй MCP сервери** для перевірки актуальних API:
   - **context7:** TanStack Start/Router, React, TanStack Query, Zod docs
   - **shadcn:** UI компоненти перед додаванням

@@ -6,15 +6,15 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 | Package | Tier | Description |
 |---------|------|-------------|
-| `@simplysoftua/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`). Type-only, 0 runtime deps. |
-| `@simplysoftua/domain` | T1 | Pure commerce logic — `./pricing`, `./discounts`, `./inventory`, `./shipping`. No IO. |
-| `@simplysoftua/data-supabase` | T2 | Supabase implementations of the ports (DI: injected client + `ScopeResolver`). *(planned)* |
-| `@simplysoftua/react-query` | T2 | TanStack Query hooks wired through `EngineProvider`/`useEngine`. |
-| `@simplysoftua/core` | — | Legacy facade; re-exports domain logic for backward compatibility (being decomposed). |
-| `@simplysoftua/admin` | T5 | Admin panel layouts, pages, components |
-| `@simplysoftua/ui` | T3 | shadcn/ui component library |
-| `@simplysoftua/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
-| `@simplysoftua/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
+| `@simplycms/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`). Type-only, 0 runtime deps. |
+| `@simplycms/domain` | T1 | Pure commerce logic — `./pricing`, `./discounts`, `./inventory`, `./shipping`. No IO. |
+| `@simplycms/data-supabase` | T2 | Supabase implementations of the ports (DI: injected client + `ScopeResolver`). *(planned)* |
+| `@simplycms/react-query` | T2 | TanStack Query hooks wired through `EngineProvider`/`useEngine`. |
+| `@simplycms/core` | — | Legacy facade; re-exports domain logic for backward compatibility (being decomposed). |
+| `@simplycms/admin` | T5 | Admin panel layouts, pages, components |
+| `@simplycms/ui` | T3 | shadcn/ui component library |
+| `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
+| `@simplycms/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
 | `schema/` | — | Seed migrations (reference SQL for bootstrapping new projects) |
 
 > See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).

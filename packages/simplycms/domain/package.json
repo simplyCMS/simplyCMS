@@ -1,5 +1,5 @@
 {
-  "name": "@simplysoftua/domain",
+  "name": "@simplycms/domain",
   "version": "0.1.0",
   "private": false,
   "description": "Pure commerce domain logic for SimplyCMS engine (Tier 1): pricing, discounts, inventory, shipping. No IO, no supabase, no react.",
@@ -14,7 +14,7 @@
     "./shipping": "./src/shipping.ts"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
+    "registry": "https://registry.npmjs.org",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -56,6 +56,6 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@simplysoftua/objects": "workspace:*"
+    "@simplycms/objects": "workspace:*"
   }
 }

@@ -5,7 +5,7 @@ import {
   usePickupPointsCount,
   type StockStatus,
   type StockByPoint,
-} from "@simplysoftua/core/hooks/useStock";
+} from "@simplycms/core/hooks/useStock";
 
 interface StockDisplayProps {
   productId?: string | null;

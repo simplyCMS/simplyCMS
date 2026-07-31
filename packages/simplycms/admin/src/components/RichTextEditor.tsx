@@ -2,9 +2,9 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
-import { Button } from "@simplysoftua/ui/button";
-import { Toggle } from "@simplysoftua/ui/toggle";
-import { Separator } from "@simplysoftua/ui/separator";
+import { Button } from "@simplycms/ui/button";
+import { Toggle } from "@simplycms/ui/toggle";
+import { Separator } from "@simplycms/ui/separator";
 import {
   Bold,
   Italic,
@@ -26,7 +26,7 @@ import {
   Code,
   Minus,
 } from "lucide-react";
-import { cn } from "@simplysoftua/core/lib/utils";
+import { cn } from "@simplycms/core/lib/utils";
 import { useCallback, useEffect } from "react";
 
 interface RichTextEditorProps {

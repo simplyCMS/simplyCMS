@@ -1,5 +1,5 @@
-// @simplysoftua/runtime — складання магазину через адаптери.
-// Залежить лише від контрактів @simplysoftua/objects (без supabase/env).
+// @simplycms/runtime — складання магазину через адаптери.
+// Залежить лише від контрактів @simplycms/objects (без supabase/env).
 
 import type {
   EngineContext,
@@ -10,7 +10,7 @@ import type {
   LinkResolver,
   MediaProvider,
   ConfigProvider,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 
 /** Опис feature-модуля збірки (catalog/cart/checkout/orders/…). */
 export interface EngineModule {

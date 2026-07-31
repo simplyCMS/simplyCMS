@@ -1,5 +1,5 @@
-import type { ThemeModule } from '@simplysoftua/themes/types';
-import type { PluginModule } from '@simplysoftua/plugins/types';
+import type { ThemeModule } from '@simplycms/themes/types';
+import type { PluginModule } from '@simplycms/plugins/types';
 
 export interface SimplyCMSConfig {
   supabase?: { url?: string; anonKey?: string };

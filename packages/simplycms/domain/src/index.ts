@@ -1,4 +1,4 @@
-// @simplysoftua/domain — Tier 1 pure commerce logic.
+// @simplycms/domain — Tier 1 pure commerce logic.
 // Subpath-exports: ./pricing, ./discounts, ./inventory, ./shipping.
 
 export * from "./pricing";

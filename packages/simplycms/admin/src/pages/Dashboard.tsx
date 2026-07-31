@@ -1,8 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { Package, FolderTree, ShoppingCart, Users, Wrench, FileText } from "lucide-react";
-import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
+import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 import { Link } from '@tanstack/react-router';
 import { adminPath } from "../lib/adminLinks";
 

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
-import { createAnonSupabaseClient } from '@simplysoftua/core/supabase/anon';
-import type { Json } from '@simplysoftua/core/supabase/types';
+import { createAnonSupabaseClient } from '@simplycms/core/supabase/anon';
+import type { Json } from '@simplycms/core/supabase/types';
 
 /** Запис теми з БД */
 interface ThemeRecord {

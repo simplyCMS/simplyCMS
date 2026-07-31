@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
 import { ThemeRegistry } from "./ThemeRegistry";
 import type {
   ThemeContextType,

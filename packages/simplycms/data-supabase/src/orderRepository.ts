@@ -8,7 +8,7 @@ import type {
   OrderQuery,
   CreateOrderInput,
   Paged,
-} from "@simplysoftua/objects";
+} from "@simplycms/objects";
 import { mapOrder } from "./mappers";
 import { singleTenantScope, SCOPE_COLUMN } from "./scope";
 

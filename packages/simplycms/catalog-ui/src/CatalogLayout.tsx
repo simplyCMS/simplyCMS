@@ -1,9 +1,9 @@
 import React from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Sun, User, Search } from "lucide-react";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { useToast } from "@simplysoftua/ui/use-toast";
+import { useAuth } from "@simplycms/core/hooks/useAuth";
+import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useToast } from "@simplycms/ui/use-toast";
 
 interface CatalogLayoutProps {
   /** Render a theme toggle button */

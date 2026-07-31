@@ -1,9 +1,9 @@
 // Pure-розрахунок наявності товару. Перенесено з core/hooks/useProductsWithStock
 // (тільки чисті функції; data-fetch лишається у data-шарі).
 
-import type { StockData, ProductAvailabilityInput } from "@simplysoftua/objects";
+import type { StockData, ProductAvailabilityInput } from "@simplycms/objects";
 
-export type { StockData, ProductAvailabilityInput } from "@simplysoftua/objects";
+export type { StockData, ProductAvailabilityInput } from "@simplycms/objects";
 
 /**
  * Обчислює доступність товару тією ж логікою, що й RPC get_stock_info:

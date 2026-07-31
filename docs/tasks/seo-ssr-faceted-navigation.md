@@ -1,6 +1,6 @@
 # Task: SEO / SSR storefront + Faceted Navigation (DB-driven SEO domain)
 
-> **Паралельний продуктовий трек** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)). Після Фази 0 фільтри/SEO живуть у канонічних сторінках `@simplysoftua/storefront-routes` (spec §11) — імплементувати вже там.
+> **Паралельний продуктовий трек** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)). Після Фази 0 фільтри/SEO живуть у канонічних сторінках `@simplycms/storefront-routes` (spec §11) — імплементувати вже там.
 
 > **Статус:** окрема продуктова задача. Повністю замінює та переписує колишню `migration-phase6-seo-domain-expansion.md` (видалена) і виносить «Phase 6 — DB-driven SEO» із загального міграційного документа `simplycms_tanstack_start_migration_task.md`.
 >
@@ -111,7 +111,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 
 ### 4.3 Рендеринг
 - Уся фільтрація — **серверна** (loader/`createServerFn`), як уже зроблено в `getPropertyOption`. Клієнтський `useMemo`-фільтр прибрати; UI лише змінює URL-search, дані приходять з loader-а.
-- Уся SEO-логіка — через `seoResolver` (чиста функція в `@simplysoftua/core`); route `head` лише передає її результат.
+- Уся SEO-логіка — через `seoResolver` (чиста функція в `@simplycms/core`); route `head` лише передає її результат.
 
 ---
 
@@ -168,7 +168,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - ❌ Порожнє SEO-поле = відсутній тег: завжди fallback на бізнес-поля → site defaults.
 - ❌ Індексувати multi-facet/утиліті-комбінації або плодити для них ЧПУ.
 - ❌ `schema_json` як TEXT (має бути JSONB).
-- ❌ Resolver, прив'язаний до фреймворка (імпорти TanStack/Next) — чиста функція в `@simplysoftua/core`.
+- ❌ Resolver, прив'язаний до фреймворка (імпорти TanStack/Next) — чиста функція в `@simplycms/core`.
 - ❌ Чіпати транспорт sitemap/robots (це окрема задача) — тут лише склад/контент.
 
 ---
@@ -215,7 +215,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 
 ## 11. Definition of Done
 - [ ] SEO-поля додані в `products/sections/section_properties/property_options`; типи перегенеровані.
-- [ ] `seoResolver` створено в `@simplysoftua/core/lib/` з повним fallback-ланцюжком і JSON-LD; `simplycms.config.ts.seo` розширено (`defaultDescription/baseUrl/defaultOgImage`).
+- [ ] `seoResolver` створено в `@simplycms/core/lib/` з повним fallback-ланцюжком і JSON-LD; `simplycms.config.ts.seo` розширено (`defaultDescription/baseUrl/defaultOgImage`).
 - [ ] Фільтри секції живуть в URL (слаги) і застосовуються **на сервері**; клієнтський `useMemo`-фільтр прибрано.
 - [ ] Multi-facet/query-стан: `noindex,follow` + canonical→секція; порожня комбінація → 404.
 - [ ] Single-facet лендинг (за обраною формою §8): SSR, self-canonical, унікальні title/H1/description, JSON-LD; генерується лише за `is_filterable` + поріг.

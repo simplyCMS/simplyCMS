@@ -4,7 +4,7 @@ import {
   loadProduct,
   loadProducts,
   loadProductsBySectionId,
-} from '@simplysoftua/storefront/loaders';
+} from '@simplycms/storefront/loaders';
 import { createServerSupabase } from './supabase';
 
 /** Отримати товар за slug (для сторінки товару) */

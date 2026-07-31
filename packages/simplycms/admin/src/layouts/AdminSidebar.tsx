@@ -1,6 +1,6 @@
-import { NavLink } from "@simplysoftua/core/components/NavLink";
+import { NavLink } from "@simplycms/core/components/NavLink";
 import { adminPath } from "../lib/adminLinks";
-import { useSidebar } from "@simplysoftua/ui/sidebar";
+import { useSidebar } from "@simplycms/ui/sidebar";
 import {
   LayoutDashboard,
   FolderTree,
@@ -24,7 +24,7 @@ import {
   ImageIcon,
   MessageSquare,
 } from "lucide-react";
-import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
+import { PluginSlot } from "@simplycms/plugins/PluginSlot";
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +34,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@simplysoftua/ui/sidebar";
+} from "@simplycms/ui/sidebar";
 
 const catalogItems = [
   { title: "Розділи", url: adminPath("sections"), icon: FolderTree },
