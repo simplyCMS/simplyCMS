@@ -46,13 +46,13 @@
 Використати власний server entry для TanStack Start, який отримує всі HTTP-запити та першим перевіряє pathname. Для /sitemap.xml і /robots.txt він формує нативний Response, а для всіх інших URL делегує запит стандартному createStartHandler(defaultStreamHandler).
 
 - Де шукати приклад: TanStack Start default server entry в node_modules/@tanstack/react-start/src/default-entry/server.ts
-- Де застосовувати в проекті: src/server.ts, vite.config.ts, src/seo/
+- Де застосовувати в проекті: src/server.ts (проєктований host-level entry, файл ще не існує), vite.config.ts, packages/simplycms/storefront-routes/src/seo/
 
 ### SEO builders як чисті окремі модулі
 
 Логіка побудови XML і robots має залишатися в окремих модулях, а server entry має лише маршрутизувати HTTP-запит і формувати Response. Це зберігає розділення відповідальності: business/data logic окремо, transport layer окремо.
 
-- Де шукати приклад: src/seo/sitemap.ts, src/seo/robots.ts
+- Де шукати приклад: packages/simplycms/storefront-routes/src/seo/sitemap.ts, packages/simplycms/storefront-routes/src/seo/robots.ts
 
 ### Pre-routing до React/router pipeline
 
@@ -70,7 +70,7 @@ SEO endpoints треба віддавати до того, як запит по�
 
 Server entry не повинен містити SQL, Supabase queries або SEO-бізнес-логіку. Його роль: розпізнати endpoint, викликати відповідний builder, встановити заголовки, делегувати все інше стандартному handler.
 
-- Де шукати приклад: src/seo/sitemap.ts, src/seo/robots.ts, src/server/products.ts як орієнтир на розділення data layer і orchestration
+- Де шукати приклад: packages/simplycms/storefront-routes/src/seo/sitemap.ts, packages/simplycms/storefront-routes/src/seo/robots.ts, packages/simplycms/storefront-routes/src/server/products.ts як орієнтир на розділення data layer і orchestration
 
 ## Антипатерни (уникати)
 
@@ -104,7 +104,7 @@ Server entry не повинен знати, як саме працює Supabase
 
 ## Архітектурні рішення
 
-- В який пакет додавати код: site-level runtime в src/server.ts; SEO builders залишаються в src/seo/; конфігурація підключення в vite.config.ts
+- В який пакет додавати код: site-level runtime в src/server.ts (проєктований host-level entry, файл ще не існує); SEO builders залишаються в packages/simplycms/storefront-routes/src/seo/; конфігурація підключення в vite.config.ts
 - Rendering стратегія: Mixed
 - Міграція з temp/: не застосовується
 - Додаткові залежності: не потрібні; рішення реалізовується штатними можливостями TanStack Start і Web Response API
@@ -125,9 +125,9 @@ Server entry не повинен знати, як саме працює Supabase
 - .github/instructions/tooling.instructions.md — команди перевірки build/typecheck
 - docs/tasks/migration-phase3-storefront-ssr-routes.md — базова SSR-модель storefront routes і поточний контекст міграції
 - docs/tasks/migration-phase3-storefront-ssr-routes.md — попередня постановка, яку ця задача уточнює для production SEO endpoints
-- src/seo/sitemap.ts — поточний sitemap builder
-- src/seo/robots.ts — поточний robots builder
-- src/seo/plugin.ts — dev/preview workaround, який має бути замінений або прибраний
+- packages/simplycms/storefront-routes/src/seo/sitemap.ts — поточний sitemap builder
+- packages/simplycms/storefront-routes/src/seo/robots.ts — поточний robots builder
+- packages/simplycms/storefront-routes/src/seo/plugin.ts — dev/preview workaround, який має бути замінений або прибраний
 - vite.config.ts — поточне підключення SEO plugin і місце для переходу на server entry конфігурацію
 
 ## Definition of Done
@@ -141,4 +141,4 @@ Server entry не повинен знати, як саме працює Supabase
 - [ ] Звичайні storefront SSR routes продовжують працювати без регресій
 - [ ] pnpm build проходить
 - [ ] pnpm typecheck проходить
-- [ ] Ручна перевірка підтверджує коректні відповіді для /sitemap.xml і /robots.txt у локальному production-like сценарії без опори на src/seo/plugin.ts як runtime-механізм
+- [ ] Ручна перевірка підтверджує коректні відповіді для /sitemap.xml і /robots.txt у локальному production-like сценарії без опори на packages/simplycms/storefront-routes/src/seo/plugin.ts як runtime-механізм

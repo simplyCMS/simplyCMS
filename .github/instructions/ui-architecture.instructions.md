@@ -98,7 +98,7 @@ AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc
 Header, Footer, HeroBanner, ProductCard (override), FilterSidebar (override)
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/theme-system/src/types.ts` — контракт `ThemeModule`/`ThemePages`.
-- `CLAUDE.md` розділ «Theme System (SSR)» — реєстрація та SSR-резолв.
+- `packages/simplycms/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
+- `CLAUDE.md` розділ «Theme System (контракт v2)» — реєстрація та SSR-резолв.
 - `packages/simplycms/ui/src/` — всі shadcn/ui компоненти.
 - `themes/default/` — еталонна реалізація теми.

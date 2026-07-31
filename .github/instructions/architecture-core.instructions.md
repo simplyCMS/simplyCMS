@@ -28,10 +28,10 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 | `react-query/` | `@simplycms/react-query` | T2 | `EngineProvider`/`useEngine` + data-хуки |
 | `i18n/` | `@simplycms/i18n` | T2 | `createTranslator`/`normalizeLocale`, `I18nProvider`/`useT`, каталоги uk/en |
 | `runtime/` | `@simplycms/runtime` | T2 | `defineRuntime` (складання EngineContext) + host-`defineConfig` |
+| `storefront/` | `@simplycms/storefront` | T2 | SSR-loaders + SEO (sitemap/robots), Supabase-клієнт інʼєктується |
 | `ui/` | `@simplycms/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
 | `theme-system/` | `@simplycms/themes` | T4 | ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`, `getActiveThemeSSR` |
 | `plugin-system/` | `@simplycms/plugins` | T4 | HookRegistry, PluginSlot, `bootstrapPlugins` |
-| `storefront/` | `@simplycms/storefront` | T4 | SSR-loaders + SEO (sitemap/robots), Supabase-клієнт інʼєктується |
 | `*-ui/` | `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
 | `storefront-routes/` | `@simplycms/storefront-routes` | T5 | `routes/` + канонічні `pages/` + `shells/` + server-шар + SEO-плагін |
 | `admin-routes/` | — (workspace-симлінк) | T5 | Route-файли адмінки (тонкі обгортки над `@simplycms/admin`) |

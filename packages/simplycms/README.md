@@ -18,7 +18,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
 | `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
 | `@simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, типи БД |
-| `@simplycms/storefront` | T3 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
+| `@simplycms/storefront` | T2 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
 | `@simplycms/storefront-routes` | T5 | Канонічні SSR-сторінки + route-файли storefront/protected/auth/api |
 | `@simplycms/admin-routes` | T5 | Route-файли адмінки (тонкі обгортки `@simplycms/admin`) |
 | `@simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS (`db:pull`/`db:diff`/`db:migrate`) |

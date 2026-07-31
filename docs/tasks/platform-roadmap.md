@@ -52,7 +52,9 @@
       `hooks/useProductsWithStock`, частина `components/*`) лишились разом із
       самим `core` — повне розчинення `core` перенесено на Фазу 1+
 - [x] Вивести з експлуатації git-subtree `simplyCMS-core` (`cms:pull`/`cms:push`
-      скрипти геть; репо архівувати) — монорепо стає єдиним джерелом (spec §4.1)
+      скрипти геть) — монорепо стає єдиним джерелом (spec §4.1). *Лишається дія
+      власника: заархівувати репозиторій `simplyCMS-core` (перевірено
+      2026-07-31: `isArchived: false`).*
 - [x] Rename scope `@simplysoftua/*` → `@simplycms/*` (384 файли) + registry
       npmjs (spec §4.1). *Лишається дія власника: створити GitHub org `simplyCMS`
       і npm org `simplycms`, зарезервувати npm-імʼя `simplycms` під CLI —
