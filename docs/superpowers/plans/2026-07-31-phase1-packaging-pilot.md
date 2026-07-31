@@ -35,10 +35,10 @@
 
 **Зафіксований двофазний алгоритм loader-а:** фаза 1 — наявний `Promise.all` (banners/featured/new/**sections**); фаза 2 — `Promise.all(rootSections.map(s => products.select(…).eq('section_id', s.id).limit(8)))`; результат — **мапа `sectionId → HomeProduct[]`** у поверненні loader-а; помилка БУДЬ-ЯКОГО секційного запиту → reject (за Task 0.1). Per-section `limit(8)` одним запитом PostgREST не вміє — N паралельних запитів свідомо переїжджають на сервер (один SSR-батч); RPC — пізніша оптимізація.
 
-- [ ] **Step 1 (TDD, loader):** тест: 3 секції у фазі 1 → рівно 3 виклики `.eq('section_id', …)` з `.limit(8)` у фазі 2; повернення містить мапу з ключами всіх трьох; помилка одного секційного запиту → reject.
-- [ ] **Step 2 (TDD, клієнт):** рендер 3 × `SectionProductCarousel` з `initialData` з мапи → spy: **0** клієнтських викликів `.eq('section_id', …)` (зараз 3).
-- [ ] **Step 3:** реалізація: loader + `useSectionProducts(section, { initialData, staleTime: 60_000 })`, `queryKey` незмінний; проброс route → `Home` → карусель.
-- [ ] **Step 4:** SSR-підтвердження: `curl -s localhost:3000/ | grep "<назва товару секційної каруселі>"` → знайдено. Гейти → коміт: `fix(home): N+1 усунено — секційні товари в SSR-loader`.
+- [X] **Step 1 (TDD, loader):** тест: 3 секції у фазі 1 → рівно 3 виклики `.eq('section_id', …)` з `.limit(8)` у фазі 2; повернення містить мапу з ключами всіх трьох; помилка одного секційного запиту → reject.
+- [X] **Step 2 (TDD, клієнт):** рендер 3 × `SectionProductCarousel` з `initialData` з мапи → spy: **0** клієнтських викликів `.eq('section_id', …)` (зараз 3).
+- [X] **Step 3:** реалізація: loader + `useSectionProducts(section, { initialData, staleTime: 60_000 })`, `queryKey` незмінний; проброс route → `Home` → карусель.
+- [X] **Step 4:** SSR-підтвердження: `curl -s localhost:3000/ | grep "<назва товару секційної каруселі>"` → знайдено. Гейти → коміт: `fix(home): N+1 усунено — секційні товари в SSR-loader`.
 
 ### Task 0.3: Дрібні фікси (4 minor + env-матриця)
 

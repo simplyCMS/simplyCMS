@@ -93,12 +93,27 @@ export function useRootSections(initialData?: HomeSection[]) {
   });
 }
 
-/** Товари однієї категорії — для посекційної добірки */
-export function useSectionProducts(section: HomeSection) {
+/** Опції посекційної добірки: `initialData` приходить із SSR-лоадера */
+export interface SectionProductsOptions {
+  initialData?: HomeProduct[];
+}
+
+/**
+ * Товари однієї категорії — для посекційної добірки.
+ *
+ * Дані префетчить SSR-лоадер головної й передає через `initialData`: разом зі
+ * `staleTime` це прибирає N+1 (карусель більше не ходить у Supabase з клієнта).
+ */
+export function useSectionProducts(
+  section: HomeSection,
+  options?: SectionProductsOptions,
+) {
   const supabase = useSupabaseClient();
 
   return useQuery({
     queryKey: ['section-products', section.id],
+    initialData: options?.initialData,
+    staleTime: 60_000,
     queryFn: async (): Promise<HomeProduct[]> => {
       const { data, error } = await supabase
         .from('products')

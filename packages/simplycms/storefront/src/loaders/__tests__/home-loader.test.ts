@@ -1,65 +1,109 @@
 import { describe, it, expect } from 'vitest';
-import type { StorefrontClient } from '../../client';
 import { loadHomePageData } from '../home';
+import { FAIL, makeClient, sectionCalls } from './home-client.mock';
 
 /**
- * Task 0.1: `loadHomePageData` не має ковтати помилку жодного з чотирьох
- * запитів `Promise.all` (banners/featured/newProducts/sections) — при
- * помилці будь-якого з них функція повинна кинути виняток.
+ * Task 0.1: `loadHomePageData` не має ковтати помилку жодного із запитів —
+ * при помилці будь-якого з них функція повинна кинути виняток.
+ * Task 0.2: фаза 2 — секційні товари тягне саме лоадер (SSR), по одному
+ * запиту `limit(8)` на кореневу секцію; результат — мапа `sectionId → товари`.
  */
 
-/** Thenable-білдер, що на будь-який виклик ланцюга повертає задане значення. */
-function makeBuilder(result: { data: unknown; error: unknown }) {
-  const builder: Record<string, unknown> = {};
-  const chain = () => builder;
-  builder.select = chain;
-  builder.eq = chain;
-  builder.is = chain;
-  builder.order = chain;
-  builder.limit = chain;
-  builder.then = <TResult>(onfulfilled: (value: typeof result) => TResult) =>
-    Promise.resolve(result).then(onfulfilled);
-  return builder;
-}
+const SECTIONS = [
+  { id: 's1', name: 'Секція A', slug: 'a' },
+  { id: 's2', name: 'Секція B', slug: 'b' },
+  { id: 's3', name: 'Секція C', slug: 'c' },
+];
 
-const OK = { data: [], error: null };
-const FAIL = { data: null, error: { message: 'RLS violation' } };
-
-function makeClient(overrides: Partial<Record<string, unknown>>) {
-  const results: Record<string, { data: unknown; error: unknown }> = {
-    banners: OK,
-    products: OK,
-    sections: OK,
-    ...overrides,
-  };
-  return {
-    from: (table: string) => makeBuilder(results[table]),
-  } as unknown as StorefrontClient;
-}
+/** Рядок товару секційної добірки (сирий вигляд із PostgREST) */
+const productRow = (id: string) => ({
+  id,
+  name: `Товар ${id}`,
+  slug: id,
+  images: ['/img.jpg'],
+  short_description: null,
+  stock_status: 'in_stock',
+});
 
 describe('loadHomePageData — помилки Supabase не ковтаються', () => {
   it('усі запити успішні → повертає дані', async () => {
-    const client = makeClient({});
+    const { client } = makeClient();
     await expect(loadHomePageData(client)).resolves.toEqual({
       banners: [],
       featuredProducts: [],
       newProducts: [],
       sections: [],
+      sectionProducts: {},
     });
   });
 
   it('помилка banners → reject', async () => {
-    const client = makeClient({ banners: FAIL });
+    const { client } = makeClient({ results: { banners: FAIL } });
     await expect(loadHomePageData(client)).rejects.toBeTruthy();
   });
 
   it('помилка products (featured/new) → reject', async () => {
-    const client = makeClient({ products: FAIL });
+    const { client } = makeClient({ results: { products: FAIL } });
     await expect(loadHomePageData(client)).rejects.toBeTruthy();
   });
 
   it('помилка sections → reject', async () => {
-    const client = makeClient({ sections: FAIL });
+    const { client } = makeClient({ results: { sections: FAIL } });
+    await expect(loadHomePageData(client)).rejects.toBeTruthy();
+  });
+});
+
+describe('loadHomePageData — фаза 2: секційні товари в SSR', () => {
+  it('3 кореневі секції → рівно 3 запити з limit(8)', async () => {
+    const { client, calls } = makeClient({ rootSections: SECTIONS });
+    await loadHomePageData(client);
+
+    const phase2 = sectionCalls(calls);
+    expect(phase2).toHaveLength(3);
+    expect(phase2.map((call) => call.eq.section_id)).toEqual([
+      's1',
+      's2',
+      's3',
+    ]);
+    expect(phase2.every((call) => call.limit === 8)).toBe(true);
+    expect(phase2.every((call) => call.table === 'products')).toBe(true);
+  });
+
+  it('повернення містить мапу з ключами всіх трьох секцій', async () => {
+    const { client } = makeClient({
+      rootSections: SECTIONS,
+      bySection: {
+        s1: { data: [productRow('p1')], error: null },
+        s2: { data: [productRow('p2')], error: null },
+        s3: { data: [], error: null },
+      },
+    });
+
+    const data = await loadHomePageData(client);
+    expect(Object.keys(data.sectionProducts).sort()).toEqual([
+      's1',
+      's2',
+      's3',
+    ]);
+    expect(data.sectionProducts.s1).toEqual([
+      {
+        id: 'p1',
+        name: 'Товар p1',
+        slug: 'p1',
+        images: ['/img.jpg'],
+        short_description: null,
+        stock_status: 'in_stock',
+        section: { slug: 'a' },
+      },
+    ]);
+    expect(data.sectionProducts.s3).toEqual([]);
+  });
+
+  it('помилка одного секційного запиту → reject', async () => {
+    const { client } = makeClient({
+      rootSections: SECTIONS,
+      bySection: { s2: FAIL },
+    });
     await expect(loadHomePageData(client)).rejects.toBeTruthy();
   });
 });
