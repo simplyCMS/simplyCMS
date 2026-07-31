@@ -10,7 +10,11 @@ export const Route = createFileRoute('/_storefront/catalog/')({
       getSections(),
       getProducts(),
     ]);
-    return { initialSections: sections, initialProducts: products };
+    return {
+      initialSections: sections,
+      initialProducts: products.items,
+      priceContext: products.priceContext,
+    };
   },
   head: () => ({
     meta: [

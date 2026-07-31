@@ -591,6 +591,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@simplycms/i18n':
         specifier: workspace:*
         version: link:../i18n

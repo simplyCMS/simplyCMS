@@ -16,6 +16,18 @@ export const PRODUCT_FULL_SELECT = `
   )
 ` as const;
 
+/**
+ * Select для списків каталогу. Крім базових полів тягне секцію (для href
+ * картки), модифікації та ціни — щоб ціну можна було порахувати на сервері
+ * і віддати список готовим у SSR-HTML.
+ */
+export const PRODUCT_LIST_SELECT = `
+  *,
+  sections(id, slug, name),
+  product_modifications(*),
+  product_prices(price_type_id, price, old_price, modification_id)
+` as const;
+
 /** Отримати товар за slug (для сторінки товару) */
 export async function loadProduct(client: StorefrontClient, slug: string) {
   const { data, error } = await client
@@ -35,7 +47,7 @@ export async function loadProduct(client: StorefrontClient, slug: string) {
 export async function loadProducts(client: StorefrontClient) {
   const { data, error } = await client
     .from("products")
-    .select("*, sections(*), product_modifications(*)")
+    .select(PRODUCT_LIST_SELECT)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
@@ -53,7 +65,7 @@ export async function loadProductsBySectionId(
 ) {
   const { data, error } = await client
     .from("products")
-    .select("*, product_modifications(*)")
+    .select(PRODUCT_LIST_SELECT)
     .eq("section_id", sectionId)
     .eq("is_active", true)
     .order("created_at", { ascending: false });

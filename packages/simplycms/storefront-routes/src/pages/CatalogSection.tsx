@@ -21,6 +21,8 @@ import { usePriceType } from "@simplycms/core/hooks/usePriceType";
 import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
 import { useDiscountGroups, useDiscountContext, applyDiscount } from "@simplycms/core/hooks/useDiscountedPrice";
 import { useProductRatings } from "@simplycms/core/hooks/useProductReviews";
+import { SsrProductGrid } from "../components/SsrProductGrid";
+import type { ProductListItem } from "../server/product-list-item";
 import type { Tables } from "@simplycms/supabase";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
@@ -40,14 +42,14 @@ export interface CatalogSectionPageProps {
   sectionSlug?: string;
   initialSection?: Tables<'sections'> & Record<string, unknown>;
   initialSections?: Array<Tables<'sections'> & Record<string, unknown>>;
-  initialProducts?: Array<Tables<'products'> & Record<string, unknown>>;
+  initialProducts?: ProductListItem[];
 }
 
 export default function CatalogSectionPage({
   sectionSlug: propSectionSlug,
   initialSection,
   initialSections,
-  initialProducts: _initialProducts,
+  initialProducts,
 }: CatalogSectionPageProps = {}) {
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as { sectionSlug?: string };
@@ -55,6 +57,10 @@ export default function CatalogSectionPage({
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  /** Серверний список товарів: рендериться в SSR-HTML і в першому клієнтському
+   *  рендері, доки React Query не поверне збагачені дані. */
+  const ssrProducts = initialProducts ?? [];
 
   const { priceTypeId, defaultPriceTypeId } = usePriceType();
   const { data: discountGroups = [] } = useDiscountGroups();
@@ -567,7 +573,7 @@ export default function CatalogSectionPage({
               </Sheet>
 
               <span className="text-sm text-muted-foreground">
-                {filteredProducts.length} товарів
+                {products ? filteredProducts.length : ssrProducts.length} товарів
               </span>
             </div>
 
@@ -615,8 +621,10 @@ export default function CatalogSectionPage({
             onClearAll={handleClearAllFilters}
           />
 
-          {/* Products grid */}
-          {productsLoading ? (
+          {/* Products grid: спершу серверний список, далі — збагачений клієнтський */}
+          {!products && ssrProducts.length > 0 ? (
+            <SsrProductGrid items={ssrProducts} viewMode={viewMode} />
+          ) : productsLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>

@@ -22,7 +22,8 @@ export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
       sectionSlug,
       initialSection: section,
       initialSections: sections,
-      initialProducts: products,
+      initialProducts: products.items,
+      priceContext: products.priceContext,
     };
   },
   head: ({ loaderData }) => ({
