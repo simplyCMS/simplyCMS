@@ -1,8 +1,7 @@
-
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { X } from "lucide-react";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { X } from 'lucide-react';
 
 interface Property {
   id: string;
@@ -68,12 +67,13 @@ export function FilterSidebar({
   }
 
   const { data: properties } = useQuery({
-    queryKey: ["section-filter-properties", sectionId],
+    queryKey: ['section-filter-properties', sectionId],
     queryFn: async () => {
       if (!sectionId) return [];
       const { data, error } = await supabase
-        .from("section_property_assignments")
-        .select(`
+        .from('section_property_assignments')
+        .select(
+          `
           applies_to,
           property:property_id (
             id,
@@ -82,11 +82,12 @@ export function FilterSidebar({
             property_type,
             is_filterable
           )
-        `)
-        .eq("section_id", sectionId);
+        `,
+        )
+        .eq('section_id', sectionId);
       if (error) throw error;
       const propertyMap = new Map<string, Property>();
-      data.forEach(a => {
+      data.forEach((a) => {
         const prop = a.property as Property | null;
         if (prop && prop.is_filterable && !propertyMap.has(prop.id)) {
           propertyMap.set(prop.id, prop);
@@ -100,21 +101,23 @@ export function FilterSidebar({
   const filterableProperties = properties || [];
 
   const selectPropertyIds = filterableProperties
-    .filter(p => p.property_type === "select" || p.property_type === "multiselect")
-    .map(p => p.id);
+    .filter(
+      (p) => p.property_type === 'select' || p.property_type === 'multiselect',
+    )
+    .map((p) => p.id);
 
   const { data: propertyOptions } = useQuery({
-    queryKey: ["filter-property-options", selectPropertyIds],
+    queryKey: ['filter-property-options', selectPropertyIds],
     queryFn: async () => {
       if (selectPropertyIds.length === 0) return {};
       const { data, error } = await supabase
-        .from("property_options")
-        .select("*")
-        .in("property_id", selectPropertyIds)
-        .order("sort_order", { ascending: true });
+        .from('property_options')
+        .select('*')
+        .in('property_id', selectPropertyIds)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       const grouped: Record<string, PropertyOption[]> = {};
-      data?.forEach(opt => {
+      data?.forEach((opt) => {
         if (!grouped[opt.property_id]) {
           grouped[opt.property_id] = [];
         }
@@ -125,10 +128,14 @@ export function FilterSidebar({
     enabled: selectPropertyIds.length > 0,
   });
 
-  const [localNumericRanges, setLocalNumericRanges] = useState<Record<string, [number, number]>>({});
+  const [localNumericRanges, setLocalNumericRanges] = useState<
+    Record<string, [number, number]>
+  >({});
 
   // Синхронізація числових діапазонів при зміні (adjust state during render)
-  const [prevNumericRanges, setPrevNumericRanges] = useState(numericPropertyRanges);
+  const [prevNumericRanges, setPrevNumericRanges] = useState(
+    numericPropertyRanges,
+  );
   if (numericPropertyRanges !== prevNumericRanges) {
     setPrevNumericRanges(numericPropertyRanges);
     const newRanges: Record<string, [number, number]> = {};
@@ -138,7 +145,11 @@ export function FilterSidebar({
     setLocalNumericRanges(newRanges);
   }
 
-  const handleCheckboxChange = (propertySlug: string, optionId: string, checked: boolean) => {
+  const handleCheckboxChange = (
+    propertySlug: string,
+    optionId: string,
+    checked: boolean,
+  ) => {
     const raw = filters[propertySlug];
     const current = Array.isArray(raw) ? raw : [];
     const updated = checked
@@ -160,7 +171,7 @@ export function FilterSidebar({
   };
 
   const handleNumericRangeChange = (propertySlug: string, values: number[]) => {
-    setLocalNumericRanges(prev => ({
+    setLocalNumericRanges((prev) => ({
       ...prev,
       [propertySlug]: [values[0], values[1]],
     }));
@@ -188,8 +199,9 @@ export function FilterSidebar({
   };
 
   const hasActiveFilters = Object.keys(filters).some(
-    (key) => filters[key] !== undefined &&
-    (Array.isArray(filters[key]) ? filters[key].length > 0 : true)
+    (key) =>
+      filters[key] !== undefined &&
+      (Array.isArray(filters[key]) ? filters[key].length > 0 : true),
   );
 
   const getOptionsForProperty = (property: Property): PropertyOption[] => {
@@ -197,12 +209,12 @@ export function FilterSidebar({
   };
 
   const getOptionCount = (optionId: string): number => {
-    return products.filter(product =>
-      product.propertyValues.some(pv => {
+    return products.filter((product) =>
+      product.propertyValues.some((pv) => {
         if (!pv.option_id) return false;
-        const productOptionIds = pv.option_id.split(",").filter(Boolean);
+        const productOptionIds = pv.option_id.split(',').filter(Boolean);
         return productOptionIds.includes(optionId);
-      })
+      }),
     ).length;
   };
 
@@ -239,7 +251,10 @@ export function FilterSidebar({
           }
           className="rounded"
         />
-        <label htmlFor="inStockOnly" className="text-sm font-normal cursor-pointer">
+        <label
+          htmlFor="inStockOnly"
+          className="text-sm font-normal cursor-pointer"
+        >
           Тiльки в наявностi
         </label>
       </div>
@@ -279,56 +294,61 @@ export function FilterSidebar({
         const options = getOptionsForProperty(property);
 
         if (
-          property.property_type === "select" ||
-          property.property_type === "multiselect" ||
-          property.property_type === "color"
+          property.property_type === 'select' ||
+          property.property_type === 'multiselect' ||
+          property.property_type === 'color'
         ) {
           return (
             <div key={property.id} className="space-y-2 border-b pb-4">
               <h4 className="text-sm font-medium">{property.name}</h4>
               {options.length > 0 ? (
                 (() => {
-                const filterVal = filters[property.slug];
-                const selectedIds = Array.isArray(filterVal) ? filterVal : [];
-                return options.map((option) => {
-                  const count = getOptionCount(option.id);
-                  return (
-                    <div key={option.id} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`${property.slug}-${option.id}`}
-                        checked={selectedIds.includes(option.id)}
-                        onChange={(e) =>
-                          handleCheckboxChange(property.slug, option.id, e.target.checked)
-                        }
-                        className="rounded"
-                      />
-                      {property.property_type === "color" && (
-                        <div
-                          className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: option.name }}
+                  const filterVal = filters[property.slug];
+                  const selectedIds = Array.isArray(filterVal) ? filterVal : [];
+                  return options.map((option) => {
+                    const count = getOptionCount(option.id);
+                    return (
+                      <div key={option.id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`${property.slug}-${option.id}`}
+                          checked={selectedIds.includes(option.id)}
+                          onChange={(e) =>
+                            handleCheckboxChange(
+                              property.slug,
+                              option.id,
+                              e.target.checked,
+                            )
+                          }
+                          className="rounded"
                         />
-                      )}
-                      <label
-                        htmlFor={`${property.slug}-${option.id}`}
-                        className="text-sm font-normal cursor-pointer flex-1"
-                      >
-                        {option.name}
-                      </label>
-                      <span className="text-xs text-muted-foreground">
-                        ({count})
-                      </span>
-                    </div>
-                  );
-                });
-              })()) : (
+                        {property.property_type === 'color' && (
+                          <div
+                            className="w-4 h-4 rounded-full border"
+                            style={{ backgroundColor: option.name }}
+                          />
+                        )}
+                        <label
+                          htmlFor={`${property.slug}-${option.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {option.name}
+                        </label>
+                        <span className="text-xs text-muted-foreground">
+                          ({count})
+                        </span>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
                 <p className="text-sm text-muted-foreground">Немає опцiй</p>
               )}
             </div>
           );
         }
 
-        if (property.property_type === "boolean") {
+        if (property.property_type === 'boolean') {
           return (
             <div key={property.id} className="space-y-2 border-b pb-4">
               <h4 className="text-sm font-medium">{property.name}</h4>
@@ -357,7 +377,8 @@ export function FilterSidebar({
         }
 
         if (
-          (property.property_type === "number" || property.property_type === "range") &&
+          (property.property_type === 'number' ||
+            property.property_type === 'range') &&
           numericPropertyRanges[property.slug]
         ) {
           const range = numericPropertyRanges[property.slug];
@@ -370,7 +391,10 @@ export function FilterSidebar({
                   value={localNumericRanges[property.slug]?.[0] ?? range.min}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || range.min;
-                    handleNumericRangeChange(property.slug, [val, localNumericRanges[property.slug]?.[1] ?? range.max]);
+                    handleNumericRangeChange(property.slug, [
+                      val,
+                      localNumericRanges[property.slug]?.[1] ?? range.max,
+                    ]);
                   }}
                   onBlur={() => handleNumericRangeCommit(property.slug)}
                   className="h-8 w-full text-sm border rounded px-2"
@@ -381,7 +405,10 @@ export function FilterSidebar({
                   value={localNumericRanges[property.slug]?.[1] ?? range.max}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || range.max;
-                    handleNumericRangeChange(property.slug, [localNumericRanges[property.slug]?.[0] ?? range.min, val]);
+                    handleNumericRangeChange(property.slug, [
+                      localNumericRanges[property.slug]?.[0] ?? range.min,
+                      val,
+                    ]);
                   }}
                   onBlur={() => handleNumericRangeCommit(property.slug)}
                   className="h-8 w-full text-sm border rounded px-2"

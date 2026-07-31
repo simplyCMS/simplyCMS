@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -18,13 +18,13 @@ export interface StockInfo {
 
 export function useStock(
   productId?: string | null,
-  modificationId?: string | null
+  modificationId?: string | null,
 ) {
   const supabase = useSupabaseClient();
   return useQuery({
-    queryKey: ["stock-info", modificationId ?? productId],
+    queryKey: ['stock-info', modificationId ?? productId],
     queryFn: async (): Promise<StockInfo> => {
-      const { data, error } = await supabase.rpc("get_stock_info", {
+      const { data, error } = await supabase.rpc('get_stock_info', {
         p_product_id: modificationId ? undefined : (productId ?? undefined),
         p_modification_id: modificationId ?? undefined,
       });
@@ -66,9 +66,11 @@ export function useStock(
 export function usePickupPointsCount() {
   const supabase = useSupabaseClient();
   return useQuery({
-    queryKey: ["pickup-points-count"],
+    queryKey: ['pickup-points-count'],
     queryFn: async (): Promise<number> => {
-      const { data, error } = await supabase.rpc("get_active_pickup_points_count");
+      const { data, error } = await supabase.rpc(
+        'get_active_pickup_points_count',
+      );
       if (error) throw error;
       return data ?? 0;
     },
@@ -79,14 +81,14 @@ export function usePickupPointsCount() {
 export function usePickupPoints() {
   const supabase = useSupabaseClient();
   return useQuery({
-    queryKey: ["active-pickup-points"],
+    queryKey: ['active-pickup-points'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("pickup_points")
-        .select("id, name, city, address, is_system")
-        .eq("is_active", true)
-        .order("is_system", { ascending: false })
-        .order("sort_order");
+        .from('pickup_points')
+        .select('id, name, city, address, is_system')
+        .eq('is_active', true)
+        .order('is_system', { ascending: false })
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
@@ -97,36 +99,36 @@ export function usePickupPoints() {
 // Helper to check availability based on stock status
 export function isProductAvailable(
   stockStatus: StockStatus | null,
-  totalQuantity: number
+  totalQuantity: number,
 ): boolean {
-  if (stockStatus === "on_order") return true;
-  if (stockStatus === "in_stock") return totalQuantity > 0;
+  if (stockStatus === 'on_order') return true;
+  if (stockStatus === 'in_stock') return totalQuantity > 0;
   return false;
 }
 
 // Status display helpers
 export function getStockStatusLabel(status: StockStatus | null): string {
   switch (status) {
-    case "in_stock":
-      return "В наявності";
-    case "out_of_stock":
-      return "Немає в наявності";
-    case "on_order":
-      return "Під замовлення";
+    case 'in_stock':
+      return 'В наявності';
+    case 'out_of_stock':
+      return 'Немає в наявності';
+    case 'on_order':
+      return 'Під замовлення';
     default:
-      return "Невідомо";
+      return 'Невідомо';
   }
 }
 
 export function getStockStatusColor(status: StockStatus | null): string {
   switch (status) {
-    case "in_stock":
-      return "text-green-600";
-    case "out_of_stock":
-      return "text-destructive";
-    case "on_order":
-      return "text-amber-600";
+    case 'in_stock':
+      return 'text-green-600';
+    case 'out_of_stock':
+      return 'text-destructive';
+    case 'on_order':
+      return 'text-amber-600';
     default:
-      return "text-muted-foreground";
+      return 'text-muted-foreground';
   }
 }

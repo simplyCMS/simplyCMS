@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Table,
   TableBody,
@@ -12,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from '@simplycms/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@simplysoftua/ui/dialog";
+} from '@simplycms/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +29,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@simplysoftua/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { toast } from "sonner";
+} from '@simplycms/ui/alert-dialog';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface OrderStatus {
   id: string;
@@ -57,19 +57,19 @@ export default function OrderStatuses() {
   const [editingStatus, setEditingStatus] = useState<OrderStatus | null>(null);
   const [deleteStatus, setDeleteStatus] = useState<OrderStatus | null>(null);
   const [formData, setFormData] = useState<StatusFormData>({
-    name: "",
-    code: "",
-    color: "#6B7280",
+    name: '',
+    code: '',
+    color: '#6B7280',
     is_default: false,
   });
 
   const { data: statuses, isLoading } = useQuery({
-    queryKey: ["order-statuses"],
+    queryKey: ['order-statuses'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("order_statuses")
-        .select("*")
-        .order("sort_order", { ascending: true });
+        .from('order_statuses')
+        .select('*')
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
       return data as OrderStatus[];
@@ -78,17 +78,18 @@ export default function OrderStatuses() {
 
   const createMutation = useMutation({
     mutationFn: async (data: StatusFormData) => {
-      const maxSortOrder = statuses?.reduce((max, s) => Math.max(max, s.sort_order), -1) ?? -1;
-      
+      const maxSortOrder =
+        statuses?.reduce((max, s) => Math.max(max, s.sort_order), -1) ?? -1;
+
       // If setting as default, unset other defaults first
       if (data.is_default) {
         await supabase
-          .from("order_statuses")
+          .from('order_statuses')
           .update({ is_default: false })
-          .eq("is_default", true);
+          .eq('is_default', true);
       }
 
-      const { error } = await supabase.from("order_statuses").insert({
+      const { error } = await supabase.from('order_statuses').insert({
         name: data.name,
         code: data.code,
         color: data.color,
@@ -99,12 +100,12 @@ export default function OrderStatuses() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-statuses"] });
-      toast.success("Статус створено");
+      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
+      toast.success('Статус створено');
       handleCloseDialog();
     },
     onError: (error) => {
-      toast.error("Помилка створення статусу: " + error.message);
+      toast.error('Помилка створення статусу: ' + error.message);
     },
   });
 
@@ -113,60 +114,67 @@ export default function OrderStatuses() {
       // If setting as default, unset other defaults first
       if (data.is_default) {
         await supabase
-          .from("order_statuses")
+          .from('order_statuses')
           .update({ is_default: false })
-          .neq("id", id);
+          .neq('id', id);
       }
 
       const { error } = await supabase
-        .from("order_statuses")
+        .from('order_statuses')
         .update({
           name: data.name,
           code: data.code,
           color: data.color,
           is_default: data.is_default,
         })
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-statuses"] });
-      toast.success("Статус оновлено");
+      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
+      toast.success('Статус оновлено');
       handleCloseDialog();
     },
     onError: (error) => {
-      toast.error("Помилка оновлення статусу: " + error.message);
+      toast.error('Помилка оновлення статусу: ' + error.message);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("order_statuses")
+        .from('order_statuses')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-statuses"] });
-      toast.success("Статус видалено");
+      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
+      toast.success('Статус видалено');
       setDeleteStatus(null);
     },
     onError: (error) => {
-      toast.error("Помилка видалення статусу: " + error.message);
+      toast.error('Помилка видалення статусу: ' + error.message);
     },
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async ({ id, direction }: { id: string; direction: "up" | "down" }) => {
+    mutationFn: async ({
+      id,
+      direction,
+    }: {
+      id: string;
+      direction: 'up' | 'down';
+    }) => {
       if (!statuses) return;
 
       const currentIndex = statuses.findIndex((s) => s.id === id);
       if (currentIndex === -1) return;
 
-      const swapIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      const swapIndex =
+        direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       if (swapIndex < 0 || swapIndex >= statuses.length) return;
 
       const currentStatus = statuses[currentIndex];
@@ -174,29 +182,29 @@ export default function OrderStatuses() {
 
       // Swap sort_order values
       await supabase
-        .from("order_statuses")
+        .from('order_statuses')
         .update({ sort_order: swapStatus.sort_order })
-        .eq("id", currentStatus.id);
+        .eq('id', currentStatus.id);
 
       await supabase
-        .from("order_statuses")
+        .from('order_statuses')
         .update({ sort_order: currentStatus.sort_order })
-        .eq("id", swapStatus.id);
+        .eq('id', swapStatus.id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-statuses"] });
+      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
     },
     onError: (error) => {
-      toast.error("Помилка зміни порядку: " + error.message);
+      toast.error('Помилка зміни порядку: ' + error.message);
     },
   });
 
   const handleOpenCreate = () => {
     setEditingStatus(null);
     setFormData({
-      name: "",
-      code: "",
-      color: "#6B7280",
+      name: '',
+      code: '',
+      color: '#6B7280',
       is_default: false,
     });
     setIsDialogOpen(true);
@@ -207,7 +215,7 @@ export default function OrderStatuses() {
     setFormData({
       name: status.name,
       code: status.code,
-      color: status.color || "#6B7280",
+      color: status.color || '#6B7280',
       is_default: status.is_default,
     });
     setIsDialogOpen(true);
@@ -217,9 +225,9 @@ export default function OrderStatuses() {
     setIsDialogOpen(false);
     setEditingStatus(null);
     setFormData({
-      name: "",
-      code: "",
-      color: "#6B7280",
+      name: '',
+      code: '',
+      color: '#6B7280',
       is_default: false,
     });
   };
@@ -242,8 +250,8 @@ export default function OrderStatuses() {
   const generateCode = (name: string) => {
     return name
       .toLowerCase()
-      .replace(/[^a-zа-яіїєґ0-9\s]/gi, "")
-      .replace(/\s+/g, "_")
+      .replace(/[^a-zа-яіїєґ0-9\s]/gi, '')
+      .replace(/\s+/g, '_')
       .slice(0, 20);
   };
 
@@ -288,7 +296,10 @@ export default function OrderStatuses() {
           <TableBody>
             {statuses?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Статуси ще не додані
                 </TableCell>
               </TableRow>
@@ -302,7 +313,12 @@ export default function OrderStatuses() {
                         size="icon"
                         className="h-6 w-6"
                         disabled={index === 0}
-                        onClick={() => reorderMutation.mutate({ id: status.id, direction: "up" })}
+                        onClick={() =>
+                          reorderMutation.mutate({
+                            id: status.id,
+                            direction: 'up',
+                          })
+                        }
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -311,7 +327,12 @@ export default function OrderStatuses() {
                         size="icon"
                         className="h-6 w-6"
                         disabled={index === (statuses?.length ?? 0) - 1}
-                        onClick={() => reorderMutation.mutate({ id: status.id, direction: "down" })}
+                        onClick={() =>
+                          reorderMutation.mutate({
+                            id: status.id,
+                            direction: 'down',
+                          })
+                        }
                       >
                         <ArrowDown className="h-3 w-3" />
                       </Button>
@@ -327,10 +348,10 @@ export default function OrderStatuses() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-6 h-6 rounded-full border"
-                        style={{ backgroundColor: status.color || "#6B7280" }}
+                        style={{ backgroundColor: status.color || '#6B7280' }}
                       />
                       <span className="text-sm text-muted-foreground">
-                        {status.color || "#6B7280"}
+                        {status.color || '#6B7280'}
                       </span>
                     </div>
                   </TableCell>
@@ -372,7 +393,7 @@ export default function OrderStatuses() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingStatus ? "Редагувати статус" : "Новий статус"}
+              {editingStatus ? 'Редагувати статус' : 'Новий статус'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -448,14 +469,18 @@ export default function OrderStatuses() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+              >
                 Скасувати
               </Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {editingStatus ? "Зберегти" : "Створити"}
+                {editingStatus ? 'Зберегти' : 'Створити'}
               </Button>
             </DialogFooter>
           </form>
@@ -463,19 +488,25 @@ export default function OrderStatuses() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteStatus} onOpenChange={() => setDeleteStatus(null)}>
+      <AlertDialog
+        open={!!deleteStatus}
+        onOpenChange={() => setDeleteStatus(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Видалити статус?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ви впевнені, що хочете видалити статус "{deleteStatus?.name}"? Цю дію
-              не можна скасувати. Замовлення з цим статусом залишаться без статусу.
+              Ви впевнені, що хочете видалити статус "{deleteStatus?.name}"? Цю
+              дію не можна скасувати. Замовлення з цим статусом залишаться без
+              статусу.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Скасувати</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteStatus && deleteMutation.mutate(deleteStatus.id)}
+              onClick={() =>
+                deleteStatus && deleteMutation.mutate(deleteStatus.id)
+              }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Видалити

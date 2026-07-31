@@ -5,11 +5,11 @@ description: "Правила побудови UI, система тем та sha
 
 # UI Architecture Rules
 
-## Дизайн-система (@simplysoftua/ui)
+## Дизайн-система (@simplycms/ui)
 
 - 50+ компонентів на базі **shadcn/ui** + Radix UI.
 - Стилі через **Tailwind v4** + `class-variance-authority`.
-- Утиліта `cn()` з `@simplysoftua/ui` для злиття класів (ui — self-contained, без залежності від core).
+- Утиліта `cn()` з `@simplycms/ui` для злиття класів (ui — self-contained, без залежності від core).
 
 ### Додавання нових UI компонентів
 
@@ -20,48 +20,53 @@ description: "Правила побудови UI, система тем та sha
 
 ## Система тем
 
-### ThemeModule Contract
+### ThemeModule Contract (v2)
 ```typescript
 interface ThemeModule {
-  manifest: ThemeManifest;
-  MainLayout: React.ComponentType<{ children: React.ReactNode }>;
-  CatalogLayout: React.ComponentType<{ children: React.ReactNode }>;
-  ProfileLayout: React.ComponentType<{ children: React.ReactNode }>;
-  pages: ThemePages;
-  components?: ThemeComponents;
+  manifest: ThemeManifest;                 // name, displayName, version, engines.simplycms
+  tokens: DesignTokens;                    // значення НАЯВНИХ semantic-змінних shadcn + dark-перекриття
+  components: ThemeComponents;             // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
+  settings?: Record<string, ThemeSettingDefinition>;
 }
 ```
+
+🔴 Тема **не** постачає сторінок і лейаутів. `MainLayout`, `CatalogLayout`,
+`ProfileLayout`, `theme.pages` видалені (рішення D3/D4). Джерело контракту —
+`packages/simplycms/theme-system/src/types.ts`.
 
 ### Структура теми
 ```
 themes/default/
-├── manifest.ts          # Метадані теми
+├── manifest.ts          # Метадані + engines.simplycms
+├── tokens.ts            # DesignTokens (CSS-змінні, включно з dark)
+├── components/          # Header, Footer (+ опційні HeroBanner, HomeSections)
 ├── index.ts             # ThemeModule export
-├── layouts/             # MainLayout, CatalogLayout, ProfileLayout
-├── pages/               # HomePage, CatalogPage, ProductPage, etc.
-├── components/          # Theme-specific компоненти (Header, Footer, etc.)
-└── styles/              # CSS variables override
+└── package.json
 ```
 
-### Використання теми в src/routes/
+Ніяких `pages/`, `layouts/`, `styles/theme.css` — токени розкладає `applyTokens`.
+
+### Де рендеряться сторінки
+Канонічні сторінки живуть у `@simplycms/storefront-routes/src/pages/`.
+Каркаси `StorefrontShell` / `ProtectedShell` беруть `Header`/`Footer` і `tokens`
+з активної теми та обгортають канонічну сторінку — route-файл теми не торкається:
+
 ```typescript
-// src/routes/_storefront/index.tsx
-import { use } from 'react';
-import { ThemeRegistry } from '@simplysoftua/themes/ThemeRegistry';
-
-function HomeRoute() {
-  const { themeName } = Route.useRouteContext(); // з loader-а _storefront
-  const theme = use(ThemeRegistry.load(themeName));
-  const { HomePage: ThemedHomePage } = theme.pages;
-  return <ThemedHomePage />;
-}
+// packages/simplycms/storefront-routes/routes/_storefront.tsx (спрощено)
+loader: async () => ({ themeName: (await getActiveTheme())?.name ?? 'default', … })
+// component:
+<ThemeProvider fallbackTheme="default" initialThemeName={themeName} …>
+  <StorefrontShell><Outlet /></StorefrontShell>
+</ThemeProvider>
 ```
+
+Валідація модуля теми для авторів — `validateThemeModule` з `@simplycms/themes`.
 
 ## ✅ ALWAYS
-- Використовуй `@simplysoftua/ui` компоненти, не створюй дублікати.
+- Використовуй `@simplycms/ui` компоненти, не створюй дублікати.
 - Перевіряй shadcn MCP перед додаванням нових компонентів.
 - Theme-specific компоненти — лише в `themes/*/components/`.
-- Бізнес-компоненти — у feature-ui пакетах (`@simplysoftua/catalog-ui`, `cart-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`); legacy-шляхи через `@simplysoftua/core` — re-export шими.
+- Бізнес-компоненти — у feature-ui пакетах (`@simplycms/catalog-ui`, `cart-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`); legacy-шляхи через `@simplycms/core` — re-export шими.
 - Responsive дизайн (mobile-first).
 - Dark mode підтримка через `next-themes` + CSS variables.
 - `forwardRef` для UI-компонентів що проксують ref.
@@ -69,31 +74,31 @@ function HomeRoute() {
 ## ❌ NEVER
 - Не обминай систему тем для storefront-сторінок.
 - Не розміщуй бізнес-логіку в темах (теми — лише візуалізація).
-- Не дублюй shadcn/ui компоненти в `src/` — вони мають бути в `@simplysoftua/ui`.
+- Не дублюй shadcn/ui компоненти в `src/` — вони мають бути в `@simplycms/ui`.
 - Не хардкодь кольори — використовуй CSS variables та Tailwind classes.
 - Не додавай shadcn/ui компоненти без перевірки через MCP.
 - Не використовуй inline styles — лише Tailwind CSS classes.
 
 ## Компоненти за пакетами
 
-### @simplysoftua/ui (дизайн-система)
+### @simplycms/ui (дизайн-система)
 Button, Input, Dialog, Table, Card, Select, Tabs, Form, etc.
 
 ### Feature-UI пакети (бізнес-компоненти)
-- **@simplysoftua/catalog-ui:** ProductCard, FilterSidebar, ProductGallery, ModificationSelector, StockDisplay
-- **@simplysoftua/cart-ui:** CartButton, CartDrawer, CartItem (+ CartItemView — presentational)
-- **@simplysoftua/checkout-ui:** CheckoutContactForm, CheckoutDeliveryForm, CheckoutOrderSummary, etc.
-- **@simplysoftua/reviews-ui:** ProductReviews, ReviewCard, ReviewForm, StarRating
-- **@simplysoftua/profile-ui:** AddressesList, AvatarUpload, RecipientsList
+- **@simplycms/catalog-ui:** ProductCard, FilterSidebar, ProductGallery, ModificationSelector, StockDisplay
+- **@simplycms/cart-ui:** CartButton, CartDrawer, CartItem (+ CartItemView — presentational)
+- **@simplycms/checkout-ui:** CheckoutContactForm, CheckoutDeliveryForm, CheckoutOrderSummary, etc.
+- **@simplycms/reviews-ui:** ProductReviews, ReviewCard, ReviewForm, StarRating
+- **@simplycms/profile-ui:** AddressesList, AvatarUpload, RecipientsList
 
-### @simplysoftua/admin (адмін-компоненти)
+### @simplycms/admin (адмін-компоненти)
 AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc.
 
 ### themes/* (theme-specific)
 Header, Footer, HeroBanner, ProductCard (override), FilterSidebar (override)
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/theme-system/src/types.ts` — контракт `ThemeModule`/`ThemePages`.
-- `CLAUDE.md` розділ «Theme System (SSR)» — реєстрація та SSR-резолв.
+- `packages/simplycms/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
+- `CLAUDE.md` розділ «Theme System (контракт v2)» — реєстрація та SSR-резолв.
 - `packages/simplycms/ui/src/` — всі shadcn/ui компоненти.
 - `themes/default/` — еталонна реалізація теми.

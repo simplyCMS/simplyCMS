@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
-import { StarRating } from "./StarRating";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import type { ProductReview } from "@simplysoftua/core/hooks/useProductReviews";
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
+import { Trash2 } from 'lucide-react';
+import { StarRating } from './StarRating';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import type { ProductReview } from '@simplycms/core/hooks/useProductReviews';
 
 interface ReviewCardProps {
   review: ProductReview;
@@ -14,17 +14,22 @@ interface ReviewCardProps {
 export function ReviewCard({ review, onDelete }: ReviewCardProps) {
   const { user } = useAuth();
   const isOwn = user?.id === review.user_id;
-  const isPending = review.status === "pending";
+  const isPending = review.status === 'pending';
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const displayName = review.profile
-    ? [review.profile.first_name, review.profile.last_name].filter(Boolean).join(" ") || "Користувач"
-    : "Користувач";
+    ? [review.profile.first_name, review.profile.last_name]
+        .filter(Boolean)
+        .join(' ') || 'Користувач'
+    : 'Користувач';
 
   const initials = review.profile
-    ? [review.profile.first_name?.[0], review.profile.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "U"
-    : "U";
+    ? [review.profile.first_name?.[0], review.profile.last_name?.[0]]
+        .filter(Boolean)
+        .join('')
+        .toUpperCase() || 'U'
+    : 'U';
 
   return (
     <>
@@ -33,7 +38,15 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
               {review.profile?.avatar_url ? (
-                <img src={review.profile.avatar_url} alt={displayName} width={40} height={40} className="rounded-full object-cover" loading="lazy" decoding="async" />
+                <img
+                  src={review.profile.avatar_url}
+                  alt={displayName}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 initials
               )}
@@ -42,13 +55,17 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
               <div className="flex items-center gap-2">
                 <span className="font-medium text-sm">{displayName}</span>
                 {isOwn && isPending && (
-                  <span className="text-xs px-2 py-0.5 rounded border">На модерацii</span>
+                  <span className="text-xs px-2 py-0.5 rounded border">
+                    На модерацii
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <StarRating value={review.rating} readonly size="sm" />
                 <span className="text-xs text-muted-foreground">
-                  {format(new Date(review.created_at), "d MMM yyyy", { locale: uk })}
+                  {format(new Date(review.created_at), 'd MMM yyyy', {
+                    locale: uk,
+                  })}
                 </span>
               </div>
             </div>
@@ -65,10 +82,25 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
               {confirmDelete && (
                 <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg p-4 z-10 w-64">
                   <p className="text-sm font-medium mb-2">Видалити вiдгук?</p>
-                  <p className="text-xs text-muted-foreground mb-3">Цю дiю неможливо скасувати.</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Цю дiю неможливо скасувати.
+                  </p>
                   <div className="flex gap-2 justify-end">
-                    <button className="px-3 py-1 border rounded text-sm" onClick={() => setConfirmDelete(false)}>Скасувати</button>
-                    <button className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm" onClick={() => { onDelete(review.id); setConfirmDelete(false); }}>Видалити</button>
+                    <button
+                      className="px-3 py-1 border rounded text-sm"
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Скасувати
+                    </button>
+                    <button
+                      className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm"
+                      onClick={() => {
+                        onDelete(review.id);
+                        setConfirmDelete(false);
+                      }}
+                    >
+                      Видалити
+                    </button>
                   </div>
                 </div>
               )}
@@ -76,11 +108,9 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
           )}
         </div>
 
-        {review.title && (
-          <h4 className="font-semibold">{review.title}</h4>
-        )}
+        {review.title && <h4 className="font-semibold">{review.title}</h4>}
 
-        {review.content && review.content !== "<p></p>" && (
+        {review.content && review.content !== '<p></p>' && (
           <div
             className="prose prose-sm dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: review.content }}

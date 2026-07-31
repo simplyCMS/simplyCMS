@@ -1,12 +1,12 @@
-import type { SupabaseClient } from "../supabase/client";
+import type { SupabaseClient } from '@simplycms/supabase/browser-client';
 
-// Pure-розрахунок наявності перенесено в @simplysoftua/domain/inventory.
+// Pure-розрахунок наявності перенесено в @simplycms/domain/inventory.
 // Re-export для зворотної сумісності.
 export {
   calculateProductAvailability,
   enrichProductsWithAvailability,
-} from "@simplysoftua/domain/inventory";
-export type { StockData } from "@simplysoftua/domain/inventory";
+} from '@simplycms/domain/inventory';
+export type { StockData } from '@simplycms/domain/inventory';
 
 /** Елемент характеристики модифікації */
 export interface ModPropertyValue {
@@ -22,14 +22,14 @@ export interface ModPropertyValue {
  */
 export async function fetchModificationPropertyValues(
   supabase: SupabaseClient,
-  modificationIds: string[]
+  modificationIds: string[],
 ): Promise<Record<string, ModPropertyValue[]>> {
   if (modificationIds.length === 0) return {};
 
   const { data } = await supabase
-    .from("modification_property_values")
-    .select("modification_id, property_id, value, numeric_value, option_id")
-    .in("modification_id", modificationIds);
+    .from('modification_property_values')
+    .select('modification_id, property_id, value, numeric_value, option_id')
+    .in('modification_id', modificationIds);
 
   const result: Record<string, ModPropertyValue[]> = {};
   data?.forEach((v) => {
@@ -47,14 +47,14 @@ export async function fetchModificationPropertyValues(
  */
 export async function fetchModificationStockData(
   supabase: SupabaseClient,
-  modificationIds: string[]
+  modificationIds: string[],
 ): Promise<Record<string, number>> {
   if (modificationIds.length === 0) return {};
 
   const { data } = await supabase
-    .from("stock_by_pickup_point")
-    .select("modification_id, quantity")
-    .in("modification_id", modificationIds);
+    .from('stock_by_pickup_point')
+    .select('modification_id, quantity')
+    .in('modification_id', modificationIds);
 
   const stock: Record<string, number> = {};
   data?.forEach((s) => {

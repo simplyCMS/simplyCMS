@@ -1,2 +1,2 @@
-// Перенесено в @simplysoftua/cart-ui. Re-export для зворотної сумісності.
-export { CartItem } from "@simplysoftua/cart-ui";
+// Перенесено в @simplycms/cart-ui. Re-export для зворотної сумісності.
+export { CartItem } from '@simplycms/cart-ui';

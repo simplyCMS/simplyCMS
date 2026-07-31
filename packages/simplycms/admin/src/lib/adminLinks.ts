@@ -2,11 +2,11 @@
 // Прибирає хардкод "/admin/*" по сторінках: host може переприв'язати базовий
 // префікс (напр. MetaHub монтує admin під іншим шляхом) одним викликом.
 
-let adminBase = "/admin";
+let adminBase = '/admin';
 
 /** Переприв'язати базовий префікс admin-зони (host wiring). */
 export function setAdminBase(base: string): void {
-  adminBase = base.replace(/\/+$/, "") || "/";
+  adminBase = base.replace(/\/+$/, '') || '/';
 }
 
 /**
@@ -15,9 +15,9 @@ export function setAdminBase(base: string): void {
  */
 export function adminPath(sub?: string): string {
   if (!sub) return adminBase;
-  const clean = sub.replace(/^\/+/, "");
+  const clean = sub.replace(/^\/+/, '');
   // base === "/" → не дублюємо роздільник ("//products")
-  return adminBase === "/" ? `/${clean}` : `${adminBase}/${clean}`;
+  return adminBase === '/' ? `/${clean}` : `${adminBase}/${clean}`;
 }
 
 /** LinkResolver-обʼєкт для admin-зони. */

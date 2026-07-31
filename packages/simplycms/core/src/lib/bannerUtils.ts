@@ -1,4 +1,4 @@
-import type { Tables } from '../supabase/types';
+import type { Tables } from '@simplycms/supabase';
 import type { Banner, BannerButton } from '../hooks/useBanners';
 
 /** Перетворює рядок Supabase banners на типізований Banner */

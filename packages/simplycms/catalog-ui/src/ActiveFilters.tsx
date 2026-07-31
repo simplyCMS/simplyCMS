@@ -1,11 +1,10 @@
-
-import { X } from "lucide-react";
+import { X } from 'lucide-react';
 
 interface ActiveFilter {
   key: string;
   label: string;
   value: string;
-  type: "option" | "range" | "price";
+  type: 'option' | 'range' | 'price';
   optionId?: string;
 }
 
@@ -14,32 +13,70 @@ interface ActiveFiltersProps {
   onRemoveFilter: (filter: ActiveFilter) => void;
   onClearAll: () => void;
   /** Render a Badge component. Receives props: variant, className, children */
-  renderBadge?: (props: { variant: string; className?: string; children: React.ReactNode }) => React.ReactNode;
+  renderBadge?: (props: {
+    variant: string;
+    className?: string;
+    children: React.ReactNode;
+  }) => React.ReactNode;
   /** Render a Button component. Receives props: variant, size, onClick, className, children */
-  renderButton?: (props: { variant: string; size: string; onClick: () => void; className?: string; children: React.ReactNode }) => React.ReactNode;
+  renderButton?: (props: {
+    variant: string;
+    size: string;
+    onClick: () => void;
+    className?: string;
+    children: React.ReactNode;
+  }) => React.ReactNode;
 }
 
 export type { ActiveFilter };
 
 /** Бейдж за замовчуванням */
-function DefaultBadge({ children, className }: { variant?: string; className?: string; children: React.ReactNode }) {
+function DefaultBadge({
+  children,
+  className,
+}: {
+  variant?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground ${className || ""}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground ${className || ''}`}
+    >
       {children}
     </span>
   );
 }
 
 /** Кнопка за замовчуванням */
-function DefaultButton({ children, onClick, className }: { variant?: string; size?: string; onClick: () => void; className?: string; children: React.ReactNode }) {
+function DefaultButton({
+  children,
+  onClick,
+  className,
+}: {
+  variant?: string;
+  size?: string;
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <button onClick={onClick} className={`text-sm hover:underline ${className || ""}`}>
+    <button
+      onClick={onClick}
+      className={`text-sm hover:underline ${className || ''}`}
+    >
       {children}
     </button>
   );
 }
 
-export function ActiveFilters({ filters, onRemoveFilter, onClearAll, renderBadge, renderButton }: ActiveFiltersProps) {
+export function ActiveFilters({
+  filters,
+  onRemoveFilter,
+  onClearAll,
+  renderBadge,
+  renderButton,
+}: ActiveFiltersProps) {
   if (filters.length === 0) return null;
 
   const Badge = renderBadge || DefaultBadge;
@@ -65,7 +102,12 @@ export function ActiveFilters({ filters, onRemoveFilter, onClearAll, renderBadge
           </button>
         </Badge>
       ))}
-      <Button variant="ghost" size="sm" onClick={onClearAll} className="h-6 text-xs">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClearAll}
+        className="h-6 text-xs"
+      >
         Скинути всi
       </Button>
     </div>

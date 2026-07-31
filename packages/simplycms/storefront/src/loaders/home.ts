@@ -1,5 +1,5 @@
-import type { Banner, BannerButton } from "@simplysoftua/objects";
-import type { StorefrontClient } from "../client";
+import type { Banner, BannerButton } from '@simplycms/objects';
+import type { StorefrontClient } from '../client';
 
 /** Перетворює рядок banners на доменний Banner (раніше — core/lib/bannerUtils). */
 function mapBannerRow(row: Record<string, unknown>): Banner {
@@ -18,13 +18,13 @@ function parseBannerButtons(raw: unknown): BannerButton[] {
 }
 
 function isBannerButton(item: unknown): item is BannerButton {
-  if (typeof item !== "object" || item === null) return false;
+  if (typeof item !== 'object' || item === null) return false;
   const obj = item as Record<string, unknown>;
   return (
-    typeof obj.text === "string" &&
-    typeof obj.url === "string" &&
-    typeof obj.target === "string" &&
-    typeof obj.variant === "string"
+    typeof obj.text === 'string' &&
+    typeof obj.url === 'string' &&
+    typeof obj.target === 'string' &&
+    typeof obj.variant === 'string'
   );
 }
 
@@ -38,26 +38,26 @@ const HOME_PRODUCT_SELECT = `
 /** Отримати дані головної сторінки */
 export async function loadHomePageData(client: StorefrontClient) {
   const [banners, featured, newProducts, sections] = await Promise.all([
-    client.from("banners").select("*").eq("is_active", true),
+    client.from('banners').select('*').eq('is_active', true),
     client
-      .from("products")
+      .from('products')
       .select(HOME_PRODUCT_SELECT)
-      .eq("is_active", true)
-      .eq("is_featured", true)
-      .order("created_at", { ascending: false })
+      .eq('is_active', true)
+      .eq('is_featured', true)
+      .order('created_at', { ascending: false })
       .limit(12),
     client
-      .from("products")
+      .from('products')
       .select(HOME_PRODUCT_SELECT)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
       .limit(12),
     client
-      .from("sections")
-      .select("id, name, slug")
-      .eq("is_active", true)
-      .is("parent_id", null)
-      .order("sort_order"),
+      .from('sections')
+      .select('id, name, slug')
+      .eq('is_active', true)
+      .is('parent_id', null)
+      .order('sort_order'),
   ]);
 
   return {

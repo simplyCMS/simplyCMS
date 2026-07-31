@@ -8,19 +8,15 @@ import type {
   SectionQuery,
   Property,
   PropertyQuery,
-} from "../objects/catalog";
-import type { Paged } from "../objects/common";
-import type { StockInfo } from "../objects/inventory";
-import type { PriceType } from "../objects/pricing";
-import type { DiscountGroup, DiscountScope } from "../objects/discount";
-import type { ShippingZone } from "../objects/shipping";
-import type {
-  Order,
-  OrderQuery,
-  CreateOrderInput,
-} from "../objects/order";
-import type { Identity } from "../objects/identity";
-import type { SeoConfig, ImageOpts } from "../objects/config";
+} from '../objects/catalog';
+import type { Paged } from '../objects/common';
+import type { StockInfo } from '../objects/inventory';
+import type { PriceType } from '../objects/pricing';
+import type { DiscountGroup, DiscountScope } from '../objects/discount';
+import type { ShippingZone } from '../objects/shipping';
+import type { Order, OrderQuery, CreateOrderInput } from '../objects/order';
+import type { Identity } from '../objects/identity';
+import type { SeoConfig, ImageOpts } from '../objects/config';
 
 /** Розв'язувач скоупу: undefined = single-tenant, hubId = multi-tenant (MetaHub). */
 export interface ScopeResolver {

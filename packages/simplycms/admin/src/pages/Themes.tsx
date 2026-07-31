@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { Palette, Check, Settings, ArrowLeft } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +24,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@simplysoftua/ui/alert-dialog";
+} from '@simplycms/ui/alert-dialog';
 
 interface ThemeRecord {
   id: string;
@@ -35,10 +41,10 @@ interface ThemeRecord {
 /** Виклик revalidation API після зміни теми (авторизація через cookie-сесію) */
 async function revalidateTheme() {
   try {
-    await fetch("/api/revalidate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "theme" }),
+    await fetch('/api/revalidate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'theme' }),
     });
   } catch {
     // Revalidation — best effort
@@ -52,12 +58,12 @@ export default function Themes() {
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
 
   const { data: themes, isLoading } = useQuery({
-    queryKey: ["admin-themes"],
+    queryKey: ['admin-themes'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("themes")
-        .select("*")
-        .order("created_at", { ascending: true });
+        .from('themes')
+        .select('*')
+        .order('created_at', { ascending: true });
       if (error) throw error;
       return data as ThemeRecord[];
     },
@@ -67,45 +73,46 @@ export default function Themes() {
     mutationFn: async (themeId: string) => {
       // Деактивувати всі теми
       const { error: deactivateError } = await supabase
-        .from("themes")
+        .from('themes')
         .update({ is_active: false })
-        .neq("id", themeId);
+        .neq('id', themeId);
 
       if (deactivateError) throw deactivateError;
 
       // Активувати обрану тему
       const { error: activateError } = await supabase
-        .from("themes")
+        .from('themes')
         .update({ is_active: true })
-        .eq("id", themeId);
+        .eq('id', themeId);
 
       if (activateError) throw activateError;
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-themes"] });
+      queryClient.invalidateQueries({ queryKey: ['admin-themes'] });
       await revalidateTheme();
       setConfirmThemeId(null);
       toast({
-        title: "Тему активовано",
-        description: "Зміни застосовані на сайті",
+        title: 'Тему активовано',
+        description: 'Зміни застосовані на сайті',
       });
     },
     onError: (error) => {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: error instanceof Error ? error.message : "Не вдалося активувати тему",
+        variant: 'destructive',
+        title: 'Помилка',
+        description:
+          error instanceof Error ? error.message : 'Не вдалося активувати тему',
       });
     },
   });
 
-  const themeToActivate = themes?.find(t => t.id === confirmThemeId);
+  const themeToActivate = themes?.find((t) => t.id === confirmThemeId);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to={adminPath("settings")}>
+        <Link to={adminPath('settings')}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -138,7 +145,9 @@ export default function Themes() {
         <Card>
           <CardContent className="text-center py-12">
             <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Немає зареєстрованих тем</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Немає зареєстрованих тем
+            </h3>
             <p className="text-muted-foreground">
               Теми додаються через код проекту та міграції БД
             </p>
@@ -147,7 +156,10 @@ export default function Themes() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {themes?.map((theme) => (
-            <Card key={theme.id} className={theme.is_active ? "ring-2 ring-primary" : ""}>
+            <Card
+              key={theme.id}
+              className={theme.is_active ? 'ring-2 ring-primary' : ''}
+            >
               {/* Preview image */}
               <div className="relative h-48 bg-muted rounded-t-lg overflow-hidden">
                 {theme.preview_image ? (
@@ -193,7 +205,10 @@ export default function Themes() {
                 <div className="flex gap-2">
                   {theme.is_active ? (
                     <Button variant="outline" className="flex-1" asChild>
-                      <Link to={adminPath("themes/$themeId/settings")} params={{ themeId: theme.id }}>
+                      <Link
+                        to={adminPath('themes/$themeId/settings')}
+                        params={{ themeId: theme.id }}
+                      >
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування
                       </Link>
@@ -208,7 +223,10 @@ export default function Themes() {
                         Активувати
                       </Button>
                       <Button variant="outline" size="icon" asChild>
-                        <Link to={adminPath("themes/$themeId/settings")} params={{ themeId: theme.id }}>
+                        <Link
+                          to={adminPath('themes/$themeId/settings')}
+                          params={{ themeId: theme.id }}
+                        >
                           <Settings className="h-4 w-4" />
                         </Link>
                       </Button>
@@ -222,19 +240,24 @@ export default function Themes() {
       )}
 
       {/* Підтвердження активації теми */}
-      <AlertDialog open={!!confirmThemeId} onOpenChange={() => setConfirmThemeId(null)}>
+      <AlertDialog
+        open={!!confirmThemeId}
+        onOpenChange={() => setConfirmThemeId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Активувати тему?</AlertDialogTitle>
             <AlertDialogDescription>
-              Тема "{themeToActivate?.display_name}" буде активована.
-              Зміни буде застосовано на сайті одразу.
+              Тема "{themeToActivate?.display_name}" буде активована. Зміни буде
+              застосовано на сайті одразу.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Скасувати</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => confirmThemeId && activateMutation.mutate(confirmThemeId)}
+              onClick={() =>
+                confirmThemeId && activateMutation.mutate(confirmThemeId)
+              }
             >
               Активувати
             </AlertDialogAction>

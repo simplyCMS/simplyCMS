@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '../../supabase/client';
+import { getSupabaseBrowserClient } from '@simplycms/supabase/browser-client';
 import { ShippingZone } from './types';
 
 /**
@@ -7,7 +7,7 @@ import { ShippingZone } from './types';
  * Returns default zone if no specific match found
  */
 export async function findShippingZone(
-  customerCity: string
+  customerCity: string,
 ): Promise<ShippingZone | null> {
   const supabase = getSupabaseBrowserClient();
   // Fetch all active zones
@@ -33,28 +33,27 @@ export async function findShippingZone(
 
     // Check if customer city matches any zone city
     const cities = zoneData.cities || [];
-    if (cities.some(city => normalizeString(city) === normalized)) {
+    if (cities.some((city) => normalizeString(city) === normalized)) {
       return zoneData;
     }
 
     // Check regions if provided
     const regions = zoneData.regions || [];
-    if (regions.some(region => normalizeString(region) === normalized)) {
+    if (regions.some((region) => normalizeString(region) === normalized)) {
       return zoneData;
     }
   }
 
   // Return default zone if exists
-  const defaultZone = zones.find(z => (z as unknown as ShippingZone).is_default);
-  return defaultZone as unknown as ShippingZone || null;
+  const defaultZone = zones.find(
+    (z) => (z as unknown as ShippingZone).is_default,
+  );
+  return (defaultZone as unknown as ShippingZone) || null;
 }
 
 /**
  * Normalize string for comparison
  */
 function normalizeString(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+  return str.toLowerCase().trim().replace(/\s+/g, ' ');
 }

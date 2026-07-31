@@ -1,5 +1,5 @@
-// @simplysoftua/runtime — складання магазину через адаптери.
-// Залежить лише від контрактів @simplysoftua/objects (без supabase/env).
+// @simplycms/runtime — складання магазину через адаптери.
+// Залежить лише від контрактів @simplycms/objects (без supabase/env).
 
 import type {
   EngineContext,
@@ -10,7 +10,17 @@ import type {
   LinkResolver,
   MediaProvider,
   ConfigProvider,
-} from "@simplysoftua/objects";
+} from '@simplycms/objects';
+
+// Конфіг магазину (host-`defineConfig`) — окремий контур від складання
+// EngineContext нижче: він описує САЙТ, а не адаптери даних.
+export { defineConfig } from './config';
+export type {
+  SimplyCmsConfig,
+  SimplyCmsSeoConfig,
+  PluginRegistration,
+  ThemeLoader,
+} from './config';
 
 /** Опис feature-модуля збірки (catalog/cart/checkout/orders/…). */
 export interface EngineModule {
@@ -19,7 +29,7 @@ export interface EngineModule {
   setup?(engine: EngineContext): void | Promise<void>;
 }
 
-export interface DefineConfigInput {
+export interface DefineRuntimeInput {
   adapters: {
     catalog: CatalogRepository;
     orders?: OrderRepository;
@@ -48,7 +58,7 @@ const defaultScope: ScopeResolver = { getScope: () => undefined };
  * Збирає рантайм магазину з адаптерів. Усі залежності інжектуються —
  * жодного прямого доступу до supabase чи import.meta.env тут немає.
  */
-export function defineConfig(input: DefineConfigInput): SimplyCmsRuntime {
+export function defineRuntime(input: DefineRuntimeInput): SimplyCmsRuntime {
   const { adapters } = input;
 
   const engine: EngineContext = {

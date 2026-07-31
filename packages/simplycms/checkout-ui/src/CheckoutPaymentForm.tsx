@@ -1,5 +1,4 @@
-
-import { CreditCard, Banknote } from "lucide-react";
+import { CreditCard, Banknote } from 'lucide-react';
 
 interface CheckoutPaymentFormProps {
   selectedMethod: string;
@@ -8,21 +7,24 @@ interface CheckoutPaymentFormProps {
 
 const paymentMethods = [
   {
-    id: "cash",
-    name: "Оплата при отриманнi",
-    description: "Готiвкою або карткою при отриманнi",
+    id: 'cash',
+    name: 'Оплата при отриманнi',
+    description: 'Готiвкою або карткою при отриманнi',
     icon: Banknote,
   },
   {
-    id: "online",
-    name: "Онлайн оплата",
-    description: "Банкiвська картка (скоро)",
+    id: 'online',
+    name: 'Онлайн оплата',
+    description: 'Банкiвська картка (скоро)',
     icon: CreditCard,
     disabled: true,
   },
 ];
 
-export function CheckoutPaymentForm({ selectedMethod, onMethodChange }: CheckoutPaymentFormProps) {
+export function CheckoutPaymentForm({
+  selectedMethod,
+  onMethodChange,
+}: CheckoutPaymentFormProps) {
   return (
     <div className="border rounded-lg">
       <div className="p-4 border-b">
@@ -37,9 +39,11 @@ export function CheckoutPaymentForm({ selectedMethod, onMethodChange }: Checkout
             <label
               key={method.id}
               className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
-                method.disabled ? "opacity-50 cursor-not-allowed" : ""
+                method.disabled ? 'opacity-50 cursor-not-allowed' : ''
               } ${
-                selectedMethod === method.id ? "border-primary" : "border-muted hover:bg-accent"
+                selectedMethod === method.id
+                  ? 'border-primary'
+                  : 'border-muted hover:bg-accent'
               }`}
             >
               <input

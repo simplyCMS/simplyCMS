@@ -1,19 +1,19 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Separator } from "@simplysoftua/ui/separator";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { ImageUpload } from "../components/ImageUpload";
-import { RichTextEditor } from "../components/RichTextEditor";
-import { SectionPropertiesManager } from "../components/SectionPropertiesManager";
-import { adminPath } from "../lib/adminLinks";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
+import { Separator } from '@simplycms/ui/separator';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ImageUpload } from '../components/ImageUpload';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { SectionPropertiesManager } from '../components/SectionPropertiesManager';
+import { adminPath } from '../lib/adminLinks';
 
 export default function SectionEdit() {
   const supabase = useSupabaseClient();
@@ -21,14 +21,14 @@ export default function SectionEdit() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isNew = sectionId === "new";
+  const isNew = sectionId === 'new';
 
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    description: "",
-    meta_title: "",
-    meta_description: "",
+    name: '',
+    slug: '',
+    description: '',
+    meta_title: '',
+    meta_description: '',
     sort_order: 0,
     is_active: true,
   });
@@ -36,13 +36,13 @@ export default function SectionEdit() {
 
   // Fetch section data
   const { data: section, isLoading } = useQuery({
-    queryKey: ["section", sectionId],
+    queryKey: ['section', sectionId],
     queryFn: async () => {
       if (isNew) return null;
       const { data, error } = await supabase
-        .from("sections")
-        .select("*")
-        .eq("id", sectionId)
+        .from('sections')
+        .select('*')
+        .eq('id', sectionId)
         .single();
       if (error) throw error;
       return data;
@@ -55,11 +55,11 @@ export default function SectionEdit() {
   if (section && section.id !== prevSectionId) {
     setPrevSectionId(section.id);
     setFormData({
-      name: section.name || "",
-      slug: section.slug || "",
-      description: section.description || "",
-      meta_title: section.meta_title || "",
-      meta_description: section.meta_description || "",
+      name: section.name || '',
+      slug: section.slug || '',
+      description: section.description || '',
+      meta_title: section.meta_title || '',
+      meta_description: section.meta_description || '',
       sort_order: section.sort_order || 0,
       is_active: section.is_active ?? true,
     });
@@ -80,26 +80,30 @@ export default function SectionEdit() {
       };
 
       if (isNew) {
-        const { error } = await supabase.from("sections").insert([data]);
+        const { error } = await supabase.from('sections').insert([data]);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("sections")
+          .from('sections')
           .update(data)
-          .eq("id", sectionId);
+          .eq('id', sectionId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-sections"] });
-      queryClient.invalidateQueries({ queryKey: ["section", sectionId] });
-      toast({ title: isNew ? "Розділ створено" : "Розділ збережено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-sections'] });
+      queryClient.invalidateQueries({ queryKey: ['section', sectionId] });
+      toast({ title: isNew ? 'Розділ створено' : 'Розділ збережено' });
       if (isNew) {
         navigate({ to: adminPath('sections') });
       }
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -125,15 +129,21 @@ export default function SectionEdit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('sections') })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: adminPath('sections') })}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isNew ? "Новий розділ" : formData.name || "Редагування розділу"}
+              {isNew ? 'Новий розділ' : formData.name || 'Редагування розділу'}
             </h1>
             <p className="text-muted-foreground">
-              {isNew ? "Створення нового розділу каталогу" : `Редагування розділу`}
+              {isNew
+                ? 'Створення нового розділу каталогу'
+                : `Редагування розділу`}
             </p>
           </div>
         </div>
@@ -162,7 +172,7 @@ export default function SectionEdit() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
+                      onChange={(e) => handleChange('name', e.target.value)}
                       required
                     />
                   </div>
@@ -171,7 +181,7 @@ export default function SectionEdit() {
                     <Input
                       id="slug"
                       value={formData.slug}
-                      onChange={(e) => handleChange("slug", e.target.value)}
+                      onChange={(e) => handleChange('slug', e.target.value)}
                       required
                     />
                   </div>
@@ -180,7 +190,7 @@ export default function SectionEdit() {
                   <Label htmlFor="description">Опис</Label>
                   <RichTextEditor
                     content={formData.description}
-                    onChange={(content) => handleChange("description", content)}
+                    onChange={(content) => handleChange('description', content)}
                     placeholder="Введіть опис розділу..."
                   />
                 </div>
@@ -198,7 +208,7 @@ export default function SectionEdit() {
                   <Input
                     id="meta_title"
                     value={formData.meta_title}
-                    onChange={(e) => handleChange("meta_title", e.target.value)}
+                    onChange={(e) => handleChange('meta_title', e.target.value)}
                     placeholder="Заголовок для пошукових систем"
                   />
                 </div>
@@ -207,7 +217,9 @@ export default function SectionEdit() {
                   <Input
                     id="meta_description"
                     value={formData.meta_description}
-                    onChange={(e) => handleChange("meta_description", e.target.value)}
+                    onChange={(e) =>
+                      handleChange('meta_description', e.target.value)
+                    }
                     placeholder="Опис для пошукових систем"
                   />
                 </div>
@@ -227,7 +239,9 @@ export default function SectionEdit() {
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
-                    onCheckedChange={(checked) => handleChange("is_active", checked)}
+                    onCheckedChange={(checked) =>
+                      handleChange('is_active', checked)
+                    }
                   />
                 </div>
                 <Separator />
@@ -237,7 +251,9 @@ export default function SectionEdit() {
                     id="sort_order"
                     type="number"
                     value={formData.sort_order}
-                    onChange={(e) => handleChange("sort_order", parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleChange('sort_order', parseInt(e.target.value) || 0)
+                    }
                   />
                 </div>
               </CardContent>
@@ -265,7 +281,8 @@ export default function SectionEdit() {
             <CardHeader>
               <CardTitle>Властивості розділу</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Налаштуйте які властивості доступні для товарів та модифікацій в цьому розділі
+                Налаштуйте які властивості доступні для товарів та модифікацій в
+                цьому розділі
               </p>
             </CardHeader>
             <CardContent>

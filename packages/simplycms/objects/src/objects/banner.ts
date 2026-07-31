@@ -3,8 +3,8 @@
 export interface BannerButton {
   text: string;
   url: string;
-  target: "_self" | "_blank";
-  variant: "primary" | "secondary" | "outline";
+  target: '_self' | '_blank';
+  variant: 'primary' | 'secondary' | 'outline';
 }
 
 export interface Banner {

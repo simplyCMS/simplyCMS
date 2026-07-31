@@ -1,7 +1,7 @@
 // ScopeResolver-хелпери. simplyCMS — single-tenant (scope=undefined);
 // MetaHub передає hub_id. Репозиторії застосовують scope лише коли він визначений.
 
-import type { ScopeResolver } from "@simplysoftua/objects";
+import type { ScopeResolver } from '@simplycms/objects';
 
 /** Single-tenant (simplyCMS): без скоупу. */
 export const singleTenantScope: ScopeResolver = {
@@ -14,4 +14,4 @@ export function hubScope(hubId: string): ScopeResolver {
 }
 
 /** Колонка скоупу за замовчуванням для multi-tenant таблиць. */
-export const SCOPE_COLUMN = "hub_id";
+export const SCOPE_COLUMN = 'hub_id';

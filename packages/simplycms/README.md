@@ -6,43 +6,37 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 | Package | Tier | Description |
 |---------|------|-------------|
-| `@simplysoftua/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`). Type-only, 0 runtime deps. |
-| `@simplysoftua/domain` | T1 | Pure commerce logic — `./pricing`, `./discounts`, `./inventory`, `./shipping`. No IO. |
-| `@simplysoftua/data-supabase` | T2 | Supabase implementations of the ports (DI: injected client + `ScopeResolver`). *(planned)* |
-| `@simplysoftua/react-query` | T2 | TanStack Query hooks wired through `EngineProvider`/`useEngine`. |
-| `@simplysoftua/core` | — | Legacy facade; re-exports domain logic for backward compatibility (being decomposed). |
-| `@simplysoftua/admin` | T5 | Admin panel layouts, pages, components |
-| `@simplysoftua/ui` | T3 | shadcn/ui component library |
-| `@simplysoftua/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
-| `@simplysoftua/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
-| `schema/` | — | Seed migrations (reference SQL for bootstrapping new projects) |
+| `@simplycms/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`). Type-only, 0 runtime deps. |
+| `@simplycms/domain` | T1 | Pure commerce logic — `./pricing`, `./discounts`, `./inventory`, `./shipping`. No IO. |
+| `@simplycms/data-supabase` | T2 | Supabase implementations of the ports (DI: injected client + `ScopeResolver`). *(planned)* |
+| `@simplycms/react-query` | T2 | TanStack Query hooks wired through `EngineProvider`/`useEngine`. |
+| `@simplycms/core` | — | Legacy facade; re-exports domain logic for backward compatibility (being decomposed). |
+| `@simplycms/admin` | T5 | Admin panel layouts, pages, components |
+| `@simplycms/ui` | T3 | shadcn/ui component library |
+| `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
+| `@simplycms/themes` | T4 | Theme system v2 (ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`) — теки `theme-system/` |
+| `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
+| `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
+| `@simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, типи БД |
+| `@simplycms/storefront` | T2 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
+| `@simplycms/storefront-routes` | T5 | Канонічні SSR-сторінки + route-файли storefront/protected/auth/api |
+| `@simplycms/admin-routes` | T5 | Route-файли адмінки (тонкі обгортки `@simplycms/admin`) |
+| `@simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS (`db:pull`/`db:diff`/`db:migrate`) |
 
 > See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
 
 ## Usage
 
-SimplyCMS core is distributed via Git Subtree. To use it in your project:
-
-```bash
-# Add remote (the project lives under the simplyCMS org)
-git remote add simplycms-core https://github.com/simplyCMS/simplyCMS-core.git
-
-# Add as subtree
-git subtree add --prefix=packages/simplycms simplycms-core main --squash
-
-# Pull updates later
-git subtree pull --prefix=packages/simplycms simplycms-core main --squash
-```
+Ці пакети живуть у монорепо SimplyCMS — окремих форків/копій у магазинах немає.
+Магазини споживають ядро як звичайні npm-залежності (публікація на npmjs —
+Фаза 1+ роадмапу платформи); розширення відбувається через плагіни й теми, а
+не форк ядра.
 
 ## Development
 
-When developing within the main SimplyCMS project, changes to `packages/simplycms/` are automatically part of the subtree. To push changes back to the core repo:
-
-```bash
-pnpm cms:push                 # push packages/simplycms → simplycms-core main
-pnpm cms:push:branch <branch> # push to a specific branch
-pnpm cms:diff                 # review local core changes before pushing
-```
+Розробка ведеться напряму в цьому монорепо: зміни в `packages/simplycms/`
+коммітяться разом з рештою проекту, окремого push у зовнішній core-репозиторій
+не потрібно.
 
 ## License
 

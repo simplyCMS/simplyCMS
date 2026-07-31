@@ -1,0 +1,39 @@
+{
+  "name": "@simplycms/storefront-routes",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Storefront route-компоненти, server-шар і SEO для SimplyCMS",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./active-theme": "./src/active-theme.ts",
+    "./server/*": "./src/server/*.ts",
+    "./seo/*": "./src/seo/*.ts",
+    "./pages/*": "./src/pages/*.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./shells/*": "./src/shells/*",
+    "./routes/*": "./routes/*"
+  },
+  "dependencies": {
+    "@simplycms/catalog-ui": "workspace:*",
+    "@simplycms/core": "workspace:*",
+    "@simplycms/domain": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/plugins": "workspace:*",
+    "@simplycms/storefront": "workspace:*",
+    "@simplycms/supabase": "workspace:*",
+    "@simplycms/themes": "workspace:*",
+    "@simplycms/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@tanstack/react-start": "^1.0.0",
+    "lucide-react": "^0.400.0",
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}

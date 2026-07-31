@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import type { User, Session } from "@supabase/supabase-js";
-import { getSupabaseBrowserClient } from "../supabase/client";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@simplycms/supabase/browser-client';
 
 interface AuthContextType {
   user: User | null;
@@ -28,30 +28,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = getSupabaseBrowserClient();
 
     // Set up auth state listener BEFORE getting session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
 
-        if (session?.user) {
-          // Check if user is admin - use queueMicrotask to avoid race conditions
-          queueMicrotask(async () => {
-            const { data, error } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .eq("role", "admin")
-              .maybeSingle();
+      if (session?.user) {
+        // Check if user is admin - use queueMicrotask to avoid race conditions
+        queueMicrotask(async () => {
+          const { data, error } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
 
-            setIsAdmin(!error && !!data);
-          });
-        } else {
-          setIsAdmin(false);
-        }
-
-        setIsLoading(false);
+          setIsAdmin(!error && !!data);
+        });
+      } else {
+        setIsAdmin(false);
       }
-    );
+
+      setIsLoading(false);
+    });
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -60,10 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
           .maybeSingle()
           .then(({ data, error }) => {
             setIsAdmin(!error && !!data);
@@ -85,7 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, signOut: handleSignOut }}>
+    <AuthContext.Provider
+      value={{ user, session, isLoading, isAdmin, signOut: handleSignOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -94,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

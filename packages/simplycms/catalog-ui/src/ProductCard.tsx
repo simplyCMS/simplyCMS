@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { ImageIcon, Star } from "lucide-react";
+import { Link } from '@tanstack/react-router';
+import { ImageIcon, Star } from 'lucide-react';
 
 interface ProductCardProps {
   product: {
@@ -21,19 +21,22 @@ export function ProductCard({ product, rating }: ProductCardProps) {
   const firstImage = product.images?.[0];
   const price = product.price ?? undefined;
   const oldPrice = product.old_price;
-  const stockStatus = product.stock_status ?? "in_stock";
-  const sectionSlug = product.section?.slug || "";
+  const stockStatus = product.stock_status ?? 'in_stock';
+  const sectionSlug = product.section?.slug || '';
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
 
   return (
-    <Link to="/catalog/$sectionSlug/$productSlug" params={{ sectionSlug, productSlug: product.slug }}>
+    <Link
+      to="/catalog/$sectionSlug/$productSlug"
+      params={{ sectionSlug, productSlug: product.slug }}
+    >
       <div className="group h-full overflow-hidden rounded-lg border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
         <div className="aspect-square overflow-hidden bg-muted relative">
           {firstImage ? (
@@ -46,15 +49,18 @@ export function ProductCard({ product, rating }: ProductCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ImageIcon className="h-12 w-12 text-muted-foreground" aria-hidden="true" />
+              <ImageIcon
+                className="h-12 w-12 text-muted-foreground"
+                aria-hidden="true"
+              />
             </div>
           )}
-          {stockStatus === "on_order" && (
+          {stockStatus === 'on_order' && (
             <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
               Пiд замовлення
             </span>
           )}
-          {stockStatus === "out_of_stock" && (
+          {stockStatus === 'out_of_stock' && (
             <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
               Немає в наявностi
             </span>
@@ -90,7 +96,9 @@ export function ProductCard({ product, rating }: ProductCardProps) {
             <div className="flex items-center gap-1 mt-1">
               <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
               <span className="text-xs font-medium">{rating.avgRating}</span>
-              <span className="text-xs text-muted-foreground">({rating.reviewCount})</span>
+              <span className="text-xs text-muted-foreground">
+                ({rating.reviewCount})
+              </span>
             </div>
           )}
         </div>

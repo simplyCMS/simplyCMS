@@ -64,7 +64,7 @@ async function downloadImage(url: string): Promise<{
 
   if (arrayBuffer.byteLength > MAX_IMAGE_BYTES) {
     throw new Error(
-      `Image too large (${arrayBuffer.byteLength} bytes) for ${url}`
+      `Image too large (${arrayBuffer.byteLength} bytes) for ${url}`,
     );
   }
 
@@ -88,23 +88,27 @@ async function uploadToPublicBucket(params: {
   bytes: Uint8Array;
   contentType: string | null;
 }): Promise<string> {
-  const { error } = await supabase.storage.from(params.bucket).upload(
-    params.path,
-    params.bytes,
-    {
+  const { error } = await supabase.storage
+    .from(params.bucket)
+    .upload(params.path, params.bytes, {
       upsert: true,
       contentType: params.contentType ?? undefined,
-    }
-  );
+    });
 
   if (error) {
-    throw new Error(`Storage upload failed (${params.bucket}): ${error.message}`);
+    throw new Error(
+      `Storage upload failed (${params.bucket}): ${error.message}`,
+    );
   }
 
-  const { data } = supabase.storage.from(params.bucket).getPublicUrl(params.path);
+  const { data } = supabase.storage
+    .from(params.bucket)
+    .getPublicUrl(params.path);
 
   if (!data.publicUrl) {
-    throw new Error(`Failed to build public URL for ${params.bucket}/${params.path}`);
+    throw new Error(
+      `Failed to build public URL for ${params.bucket}/${params.path}`,
+    );
   }
 
   return data.publicUrl;

@@ -1,15 +1,29 @@
-
-import React, { useState } from "react";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { useToast } from "@simplysoftua/ui/use-toast";
-import { Eye, EyeOff, Mail, Lock, User, Loader2, LogIn, UserPlus, UserX, AlertCircle, CheckCircle } from "lucide-react";
+import React, { useState } from 'react';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useToast } from '@simplycms/ui/use-toast';
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Loader2,
+  LogIn,
+  UserPlus,
+  UserX,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
 
 interface CheckoutAuthBlockProps {
   onAuthSuccess?: () => void;
-  defaultTab?: "guest" | "login" | "register";
+  defaultTab?: 'guest' | 'login' | 'register';
 }
 
-export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: CheckoutAuthBlockProps) {
+export function CheckoutAuthBlock({
+  onAuthSuccess,
+  defaultTab = 'guest',
+}: CheckoutAuthBlockProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
@@ -18,12 +32,12 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [regFirstName, setRegFirstName] = useState("");
-  const [regLastName, setRegLastName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
 
   const clearMessages = () => {
     setAuthError(null);
@@ -43,18 +57,23 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
 
       if (error) {
         let errorMessage = error.message;
-        if (error.message === "Invalid login credentials") {
-          errorMessage = "Невiрний email або пароль.";
+        if (error.message === 'Invalid login credentials') {
+          errorMessage = 'Невiрний email або пароль.';
         }
         setAuthError(errorMessage);
-        toast({ variant: "destructive", title: "Помилка входу", description: errorMessage });
+        toast({
+          variant: 'destructive',
+          title: 'Помилка входу',
+          description: errorMessage,
+        });
       } else {
-        setAuthSuccess("Успiшний вхiд!");
-        toast({ title: "Успiшний вхiд!" });
+        setAuthSuccess('Успiшний вхiд!');
+        toast({ title: 'Успiшний вхiд!' });
         onAuthSuccess?.();
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Щось пiшло не так.";
+      const errorMessage =
+        error instanceof Error ? error.message : 'Щось пiшло не так.';
       setAuthError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -62,7 +81,13 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
   };
 
   const handleRegister = async () => {
-    if (regFirstName.length < 2 || regLastName.length < 2 || !regEmail || regPassword.length < 6) return;
+    if (
+      regFirstName.length < 2 ||
+      regLastName.length < 2 ||
+      !regEmail ||
+      regPassword.length < 6
+    )
+      return;
     setIsLoading(true);
     clearMessages();
 
@@ -81,21 +106,26 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
 
       if (error) {
         let errorMessage = error.message;
-        if (error.message.includes("already registered")) {
-          errorMessage = "Цей email вже зареєстровано.";
+        if (error.message.includes('already registered')) {
+          errorMessage = 'Цей email вже зареєстровано.';
         }
         setAuthError(errorMessage);
-        toast({ variant: "destructive", title: "Помилка реєстрацiї", description: errorMessage });
+        toast({
+          variant: 'destructive',
+          title: 'Помилка реєстрацiї',
+          description: errorMessage,
+        });
       } else if (signUpData?.user && !signUpData.session) {
-        setAuthSuccess("Реєстрацiя успiшна! Перевiрте вашу пошту.");
-        toast({ title: "Перевiрте пошту!" });
+        setAuthSuccess('Реєстрацiя успiшна! Перевiрте вашу пошту.');
+        toast({ title: 'Перевiрте пошту!' });
       } else if (signUpData?.user && signUpData.session) {
-        setAuthSuccess("Реєстрацiя успiшна!");
-        toast({ title: "Реєстрацiя успiшна!" });
+        setAuthSuccess('Реєстрацiя успiшна!');
+        toast({ title: 'Реєстрацiя успiшна!' });
         onAuthSuccess?.();
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Щось пiшло не так.";
+      const errorMessage =
+        error instanceof Error ? error.message : 'Щось пiшло не так.';
       setAuthError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -130,17 +160,20 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
         {/* Tabs */}
         <div className="grid grid-cols-3 gap-1 bg-muted p-1 rounded-lg mb-4">
           {[
-            { value: "guest", icon: UserX, label: "Гiсть" },
-            { value: "login", icon: LogIn, label: "Увiйти" },
-            { value: "register", icon: UserPlus, label: "Реєстрацiя" },
+            { value: 'guest', icon: UserX, label: 'Гiсть' },
+            { value: 'login', icon: LogIn, label: 'Увiйти' },
+            { value: 'register', icon: UserPlus, label: 'Реєстрацiя' },
           ].map((tab) => (
             <button
               key={tab.value}
-              onClick={() => { setActiveTab(tab.value); clearMessages(); }}
+              onClick={() => {
+                setActiveTab(tab.value);
+                clearMessages();
+              }}
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === tab.value
-                  ? "bg-background shadow text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? 'bg-background shadow text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <tab.icon className="h-4 w-4 hidden sm:block" />
@@ -150,14 +183,17 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
         </div>
 
         {/* Guest Tab */}
-        {activeTab === "guest" && (
+        {activeTab === 'guest' && (
           <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
-            <p>Оформiть замовлення без реєстрацiї. Вкажiть email або телефон для зв&apos;язку.</p>
+            <p>
+              Оформiть замовлення без реєстрацiї. Вкажiть email або телефон для
+              зв&apos;язку.
+            </p>
           </div>
         )}
 
         {/* Login Tab */}
-        {activeTab === "login" && (
+        {activeTab === 'login' && (
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium mb-1 block">Email</label>
@@ -178,7 +214,7 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="........"
                   className="w-full pl-10 pr-10 py-2 border rounded-md text-sm"
                   disabled={isLoading}
@@ -190,7 +226,11 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -199,18 +239,22 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
               disabled={isLoading}
               onClick={handleLogin}
             >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Увiйти
             </button>
           </div>
         )}
 
         {/* Register Tab */}
-        {activeTab === "register" && (
+        {activeTab === 'register' && (
           <div className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium mb-1 block">Iм&apos;я</label>
+                <label className="text-sm font-medium mb-1 block">
+                  Iм&apos;я
+                </label>
                 <input
                   placeholder="Iван"
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -220,7 +264,9 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Прiзвище</label>
+                <label className="text-sm font-medium mb-1 block">
+                  Прiзвище
+                </label>
                 <input
                   placeholder="Петренко"
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -249,7 +295,7 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="........"
                   className="w-full pl-10 pr-10 py-2 border rounded-md text-sm"
                   disabled={isLoading}
@@ -261,7 +307,11 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -270,7 +320,9 @@ export function CheckoutAuthBlock({ onAuthSuccess, defaultTab = "guest" }: Check
               disabled={isLoading}
               onClick={handleRegister}
             >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Зареєструватися
             </button>
           </div>

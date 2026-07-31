@@ -1,6 +1,14 @@
-import type { ThemeModule } from "./types";
+import type { ThemeModule } from './types';
+import { validateThemeModule } from './validateThemeModule';
 
-type ThemeLoader = () => Promise<{ default: ThemeModule }>;
+/**
+ * Лоадер теми повертає `unknown`: модуль приходить із зовнішнього пакета,
+ * і його форма стає `ThemeModule` лише після `validateThemeModule`.
+ */
+export type ThemeLoader = () => Promise<{ default: unknown }>;
+
+/** Тема, на яку падаємо, якщо запитану не зареєстровано */
+const FALLBACK_THEME = 'default';
 
 /**
  * Проміс із полями thenable-протоколу React (`status`/`value`/`reason`).
@@ -8,7 +16,7 @@ type ThemeLoader = () => Promise<{ default: ThemeModule }>;
  * без suspend — це усуває «висіння» компонента під час гідрації.
  */
 type ReactThenable<T> = Promise<T> & {
-  status?: "pending" | "fulfilled" | "rejected";
+  status?: 'pending' | 'fulfilled' | 'rejected';
   value?: T;
   reason?: unknown;
 };
@@ -48,6 +56,10 @@ class ThemeRegistryClass {
    * результат у новий проміс на кожному виклику, а React `use()` вимагає
    * стабільний проміс між рендерами (інакше — попередження про uncached promise
    * і нескінченний suspend).
+   *
+   * Незареєстрована тема (магазин видалив пакет, а в БД лишився старий рядок)
+   * не валить сторінку — падаємо на `default`. Якщо й `default` не
+   * зареєстровано — reject: підставляти нема що.
    */
   load(name: string): Promise<ThemeModule> {
     const cached = this.loadingPromises.get(name);
@@ -55,13 +67,21 @@ class ThemeRegistryClass {
 
     const loader = this.themes.get(name);
     if (!loader) {
+      if (name !== FALLBACK_THEME && this.themes.has(FALLBACK_THEME)) {
+        console.warn(
+          `[ThemeRegistry] Theme "${name}" is not registered — falling back to "${FALLBACK_THEME}"`,
+        );
+        // Свідомо НЕ кешуємо під запитаною назвою: тему можуть зареєструвати
+        // пізніше, і кеш робив би fallback вічним.
+        return this.load(FALLBACK_THEME);
+      }
       return Promise.reject(new Error(`Theme "${name}" is not registered`));
     }
 
     const promise: ReactThenable<ThemeModule> = loader()
       .then((themeModule) => {
         const theme = themeModule.default;
-        this.validateTheme(name, theme);
+        validateThemeModule(theme);
         this.loadedThemes.set(name, theme);
         return theme;
       })
@@ -74,64 +94,20 @@ class ThemeRegistryClass {
 
     // Анотуємо проміс полями thenable-протоколу React: щойно тема завантажена,
     // `use(load(name))` повертає її синхронно (без suspend під час гідрації).
-    promise.status = "pending";
+    promise.status = 'pending';
     promise.then(
       (theme) => {
-        promise.status = "fulfilled";
+        promise.status = 'fulfilled';
         promise.value = theme;
       },
       (reason) => {
-        promise.status = "rejected";
+        promise.status = 'rejected';
         promise.reason = reason;
       },
     );
 
     this.loadingPromises.set(name, promise);
     return promise;
-  }
-
-  /** Валідація структури ThemeModule */
-  private validateTheme(name: string, theme: ThemeModule): void {
-    if (!theme.manifest) {
-      throw new Error(`Theme "${name}" is missing manifest`);
-    }
-    if (
-      !theme.manifest.name ||
-      !theme.manifest.displayName ||
-      !theme.manifest.version
-    ) {
-      throw new Error(`Theme "${name}" manifest is incomplete`);
-    }
-    if (!theme.MainLayout) {
-      throw new Error(`Theme "${name}" is missing MainLayout`);
-    }
-    if (!theme.CatalogLayout) {
-      throw new Error(`Theme "${name}" is missing CatalogLayout`);
-    }
-    if (!theme.ProfileLayout) {
-      throw new Error(`Theme "${name}" is missing ProfileLayout`);
-    }
-    if (!theme.pages) {
-      throw new Error(`Theme "${name}" is missing pages`);
-    }
-
-    const requiredPages = [
-      "HomePage",
-      "CatalogPage",
-      "ProductPage",
-      "CartPage",
-      "CheckoutPage",
-      "ProfilePage",
-      "NotFoundPage",
-    ];
-
-    for (const page of requiredPages) {
-      if (!theme.pages[page as keyof typeof theme.pages]) {
-        throw new Error(
-          `Theme "${name}" is missing required page: ${page}`
-        );
-      }
-    }
   }
 
   /** Очистити кеш завантажених тем */

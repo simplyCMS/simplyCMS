@@ -1,25 +1,43 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Separator } from "@simplysoftua/ui/separator";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Separator } from '@simplycms/ui/separator';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { ArrowLeft, Loader2, Save, Power, PowerOff, Plug, Settings } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
-import { useState, useEffect } from "react";
-import { parsePlugin, type Plugin, type PluginSettingDefinition } from "@simplysoftua/plugins/types";
+} from '@simplycms/ui/select';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import {
+  ArrowLeft,
+  Loader2,
+  Save,
+  Power,
+  PowerOff,
+  Plug,
+  Settings,
+} from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import { useState, useEffect } from 'react';
+import {
+  parsePlugin,
+  type Plugin,
+  type PluginSettingDefinition,
+} from '@simplycms/plugins/types';
 
 export default function PluginSettings() {
   const supabase = useSupabaseClient();
@@ -31,25 +49,30 @@ export default function PluginSettings() {
   const [config, setConfig] = useState<Record<string, unknown>>({});
 
   const { data: plugin, isLoading } = useQuery({
-    queryKey: ["plugin", pluginId],
+    queryKey: ['plugin', pluginId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("plugins")
-        .select("*")
-        .eq("id", pluginId)
+        .from('plugins')
+        .select('*')
+        .eq('id', pluginId)
         .single();
       if (error) throw error;
-      return parsePlugin({ ...data, is_active: data.is_active ?? false } as Plugin);
+      return parsePlugin({
+        ...data,
+        is_active: data.is_active ?? false,
+      } as Plugin);
     },
   });
 
   // Load plugin manifest to get settings definitions
   const { data: manifest } = useQuery({
-    queryKey: ["plugin-manifest", plugin?.name],
+    queryKey: ['plugin-manifest', plugin?.name],
     queryFn: async () => {
       if (!plugin?.name) return null;
       try {
-        const pluginModule = await import(`../../plugins/${plugin.name}/manifest.json`);
+        const pluginModule = await import(
+          `../../plugins/${plugin.name}/manifest.json`
+        );
         return pluginModule.default || pluginModule;
       } catch {
         return null;
@@ -67,37 +90,48 @@ export default function PluginSettings() {
   const toggleMutation = useMutation({
     mutationFn: async (isActive: boolean) => {
       const { error } = await supabase
-        .from("plugins")
+        .from('plugins')
         .update({ is_active: isActive, updated_at: new Date().toISOString() })
-        .eq("id", pluginId);
+        .eq('id', pluginId);
       if (error) throw error;
     },
     onSuccess: (_, isActive) => {
-      queryClient.invalidateQueries({ queryKey: ["plugin", pluginId] });
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      queryClient.invalidateQueries({ queryKey: ['plugin', pluginId] });
+      queryClient.invalidateQueries({ queryKey: ['plugins'] });
       toast({
-        title: isActive ? "Розширення активовано" : "Розширення деактивовано",
+        title: isActive ? 'Розширення активовано' : 'Розширення деактивовано',
       });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const saveMutation = useMutation({
     mutationFn: async (newConfig: Record<string, unknown>) => {
       const { error } = await supabase
-        .from("plugins")
-        .update({ config: newConfig as unknown as Record<string, never>, updated_at: new Date().toISOString() })
-        .eq("id", pluginId);
+        .from('plugins')
+        .update({
+          config: newConfig as unknown as Record<string, never>,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pluginId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plugin", pluginId] });
-      toast({ title: "Налаштування збережено" });
+      queryClient.invalidateQueries({ queryKey: ['plugin', pluginId] });
+      toast({ title: 'Налаштування збережено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -121,21 +155,29 @@ export default function PluginSettings() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Розширення не знайдено</p>
-        <Button variant="link" onClick={() => navigate({ to: adminPath('plugins') })}>
+        <Button
+          variant="link"
+          onClick={() => navigate({ to: adminPath('plugins') })}
+        >
           Повернутися до списку
         </Button>
       </div>
     );
   }
 
-  const settings = manifest?.settings as Record<string, PluginSettingDefinition> | undefined;
+  const settings = manifest?.settings as
+    Record<string, PluginSettingDefinition> | undefined;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('plugins') })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: adminPath('plugins') })}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
@@ -145,8 +187,8 @@ export default function PluginSettings() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold">{plugin.display_name}</h1>
-                <Badge variant={plugin.is_active ? "default" : "secondary"}>
-                  {plugin.is_active ? "Активне" : "Неактивне"}
+                <Badge variant={plugin.is_active ? 'default' : 'secondary'}>
+                  {plugin.is_active ? 'Активне' : 'Неактивне'}
                 </Badge>
               </div>
               <p className="text-muted-foreground">
@@ -157,7 +199,7 @@ export default function PluginSettings() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={plugin.is_active ? "outline" : "default"}
+            variant={plugin.is_active ? 'outline' : 'default'}
             onClick={() => toggleMutation.mutate(!plugin.is_active)}
             disabled={toggleMutation.isPending}
           >
@@ -168,7 +210,7 @@ export default function PluginSettings() {
             ) : (
               <Power className="h-4 w-4 mr-2" />
             )}
-            {plugin.is_active ? "Деактивувати" : "Активувати"}
+            {plugin.is_active ? 'Деактивувати' : 'Активувати'}
           </Button>
           {settings && Object.keys(settings).length > 0 && (
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
@@ -213,21 +255,27 @@ export default function PluginSettings() {
               <CardContent className="space-y-6">
                 {Object.entries(settings).map(([key, setting]) => (
                   <div key={key} className="space-y-2">
-                    {setting.type === "boolean" ? (
+                    {setting.type === 'boolean' ? (
                       <div className="flex items-center justify-between">
                         <Label htmlFor={key}>{setting.label}</Label>
                         <Switch
                           id={key}
                           checked={Boolean(config[key] ?? setting.default)}
-                          onCheckedChange={(checked) => handleConfigChange(key, checked)}
+                          onCheckedChange={(checked) =>
+                            handleConfigChange(key, checked)
+                          }
                         />
                       </div>
-                    ) : setting.type === "select" ? (
+                    ) : setting.type === 'select' ? (
                       <>
                         <Label htmlFor={key}>{setting.label}</Label>
                         <Select
-                          value={(config[key] as string) ?? String(setting.default)}
-                          onValueChange={(value) => handleConfigChange(key, value)}
+                          value={
+                            (config[key] as string) ?? String(setting.default)
+                          }
+                          onValueChange={(value) =>
+                            handleConfigChange(key, value)
+                          }
                         >
                           <SelectTrigger id={key}>
                             <SelectValue />
@@ -241,14 +289,16 @@ export default function PluginSettings() {
                           </SelectContent>
                         </Select>
                       </>
-                    ) : setting.type === "number" ? (
+                    ) : setting.type === 'number' ? (
                       <>
                         <Label htmlFor={key}>{setting.label}</Label>
                         <Input
                           id={key}
                           type="number"
-                          value={String(config[key] ?? setting.default ?? "")}
-                          onChange={(e) => handleConfigChange(key, parseFloat(e.target.value))}
+                          value={String(config[key] ?? setting.default ?? '')}
+                          onChange={(e) =>
+                            handleConfigChange(key, parseFloat(e.target.value))
+                          }
                         />
                       </>
                     ) : (
@@ -256,8 +306,10 @@ export default function PluginSettings() {
                         <Label htmlFor={key}>{setting.label}</Label>
                         <Input
                           id={key}
-                          value={String(config[key] ?? setting.default ?? "")}
-                          onChange={(e) => handleConfigChange(key, e.target.value)}
+                          value={String(config[key] ?? setting.default ?? '')}
+                          onChange={(e) =>
+                            handleConfigChange(key, e.target.value)
+                          }
                         />
                       </>
                     )}
@@ -325,7 +377,9 @@ export default function PluginSettings() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">ID</span>
-                <span className="font-mono text-xs">{plugin.id.slice(0, 8)}...</span>
+                <span className="font-mono text-xs">
+                  {plugin.id.slice(0, 8)}...
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between">
@@ -349,12 +403,16 @@ export default function PluginSettings() {
               <Separator />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Встановлено</span>
-                <span>{new Date(plugin.installed_at).toLocaleDateString("uk-UA")}</span>
+                <span>
+                  {new Date(plugin.installed_at).toLocaleDateString('uk-UA')}
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Оновлено</span>
-                <span>{new Date(plugin.updated_at).toLocaleDateString("uk-UA")}</span>
+                <span>
+                  {new Date(plugin.updated_at).toLocaleDateString('uk-UA')}
+                </span>
               </div>
             </CardContent>
           </Card>

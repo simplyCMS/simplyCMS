@@ -1,15 +1,18 @@
-
-import { useEffect, useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Truck, ChevronRight, Save, icons } from "lucide-react";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import type { ShippingMethod, ShippingRate, PickupPoint } from "@simplysoftua/domain/shipping";
-import { formatShippingCost } from "@simplysoftua/domain/shipping";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useToast } from "@simplysoftua/ui/use-toast";
-import { AddressCard } from "./AddressCard";
-import { AddressSelectorPopup } from "./AddressSelectorPopup";
-import { AddressSaveDialog } from "./AddressSaveDialog";
+import { useEffect, useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Truck, ChevronRight, Save, icons } from 'lucide-react';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import type {
+  ShippingMethod,
+  ShippingRate,
+  PickupPoint,
+} from '@simplycms/domain/shipping';
+import { formatShippingCost } from '@simplycms/domain/shipping';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useToast } from '@simplycms/ui/use-toast';
+import { AddressCard } from './AddressCard';
+import { AddressSelectorPopup } from './AddressSelectorPopup';
+import { AddressSaveDialog } from './AddressSaveDialog';
 
 interface CheckoutDeliveryFormProps {
   values: Record<string, string | boolean>;
@@ -28,13 +31,20 @@ interface SavedAddress {
 
 const MAX_VISIBLE_CARDS = 3;
 
-const getMethodIcon = (iconName: string | null): React.ComponentType<{ className?: string }> => {
+const getMethodIcon = (
+  iconName: string | null,
+): React.ComponentType<{ className?: string }> => {
   if (!iconName) return Truck;
   const Icon = icons[iconName as keyof typeof icons];
   return (Icon as React.ComponentType<{ className?: string }>) || Truck;
 };
 
-export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCostChange }: CheckoutDeliveryFormProps) {
+export function CheckoutDeliveryForm({
+  values,
+  onChange,
+  subtotal,
+  onShippingCostChange,
+}: CheckoutDeliveryFormProps) {
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -44,57 +54,59 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [originalAddress, setOriginalAddress] = useState<SavedAddress | null>(null);
+  const [originalAddress, setOriginalAddress] = useState<SavedAddress | null>(
+    null,
+  );
 
   const { data: methods, isLoading: methodsLoading } = useQuery({
-    queryKey: ["checkout-shipping-methods"],
+    queryKey: ['checkout-shipping-methods'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+        .from('shipping_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as ShippingMethod[];
     },
   });
 
   const { data: rates } = useQuery({
-    queryKey: ["checkout-shipping-rates"],
+    queryKey: ['checkout-shipping-rates'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_rates")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+        .from('shipping_rates')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as ShippingRate[];
     },
   });
 
   const { data: pickupPoints } = useQuery({
-    queryKey: ["checkout-pickup-points"],
+    queryKey: ['checkout-pickup-points'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("pickup_points")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+        .from('pickup_points')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as PickupPoint[];
     },
   });
 
   const { data: savedAddresses } = useQuery({
-    queryKey: ["checkout-saved-addresses", user?.id],
+    queryKey: ['checkout-saved-addresses', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from("user_addresses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false })
-        .order("created_at", { ascending: false });
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data as SavedAddress[];
     },
@@ -106,9 +118,10 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
     return savedAddresses.slice(0, MAX_VISIBLE_CARDS);
   }, [savedAddresses]);
 
-  const showMoreButton = savedAddresses && savedAddresses.length > MAX_VISIBLE_CARDS;
+  const showMoreButton =
+    savedAddresses && savedAddresses.length > MAX_VISIBLE_CARDS;
   const selectedMethod = methods?.find((m) => m.id === selectedMethodId);
-  const isPickup = selectedMethod?.code === "pickup";
+  const isPickup = selectedMethod?.code === 'pickup';
   const showAddressFields = selectedMethod && !isPickup;
 
   const currentCity = String(values.deliveryCity || '');
@@ -117,23 +130,26 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
   // hasChanges — виведений стан, не потребує окремого useState
   const hasChanges = useMemo(() => {
     if (!originalAddress) return false;
-    return currentCity !== originalAddress.city || currentAddress !== originalAddress.address;
+    return (
+      currentCity !== originalAddress.city ||
+      currentAddress !== originalAddress.address
+    );
   }, [currentCity, currentAddress, originalAddress]);
 
   const handleSelectAddress = (addressId: string) => {
     if (selectedAddressId === addressId) {
-      onChange("savedAddressId", "");
+      onChange('savedAddressId', '');
       setOriginalAddress(null);
-      onChange("deliveryCity", "");
-      onChange("deliveryAddress", "");
+      onChange('deliveryCity', '');
+      onChange('deliveryAddress', '');
       return;
     }
     const address = savedAddresses?.find((a) => a.id === addressId);
     if (address) {
-      onChange("savedAddressId", addressId);
+      onChange('savedAddressId', addressId);
       setOriginalAddress(address);
-      onChange("deliveryCity", address.city);
-      onChange("deliveryAddress", address.address);
+      onChange('deliveryCity', address.city);
+      onChange('deliveryAddress', address.address);
     }
   };
 
@@ -141,15 +157,19 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
     mutationFn: async () => {
       if (!originalAddress) return;
       const { error } = await supabase
-        .from("user_addresses")
+        .from('user_addresses')
         .update({ city: currentCity, address: currentAddress })
-        .eq("id", originalAddress.id);
+        .eq('id', originalAddress.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checkout-saved-addresses"] });
-      toast({ title: "Адресу оновлено" });
-      setOriginalAddress({ ...originalAddress!, city: currentCity, address: currentAddress });
+      queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
+      toast({ title: 'Адресу оновлено' });
+      setOriginalAddress({
+        ...originalAddress!,
+        city: currentCity,
+        address: currentAddress,
+      });
     },
   });
 
@@ -157,18 +177,24 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
     mutationFn: async () => {
       if (!user) return;
       const { data, error } = await supabase
-        .from("user_addresses")
-        .insert({ user_id: user.id, name: "Нова адреса", city: currentCity, address: currentAddress, is_default: false })
+        .from('user_addresses')
+        .insert({
+          user_id: user.id,
+          name: 'Нова адреса',
+          city: currentCity,
+          address: currentAddress,
+          is_default: false,
+        })
         .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["checkout-saved-addresses"] });
-      toast({ title: "Нову адресу створено" });
+      queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
+      toast({ title: 'Нову адресу створено' });
       if (data) {
-        onChange("savedAddressId", data.id);
+        onChange('savedAddressId', data.id);
         setOriginalAddress(data as SavedAddress);
       }
     },
@@ -181,29 +207,39 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
 
   const handleCancelChanges = () => {
     if (originalAddress) {
-      onChange("deliveryCity", originalAddress.city);
-      onChange("deliveryAddress", originalAddress.address);
+      onChange('deliveryCity', originalAddress.city);
+      onChange('deliveryAddress', originalAddress.address);
     } else {
-      onChange("deliveryCity", "");
-      onChange("deliveryAddress", "");
+      onChange('deliveryCity', '');
+      onChange('deliveryAddress', '');
     }
   };
 
   const handleAddNew = () => {
-    onChange("savedAddressId", "");
+    onChange('savedAddressId', '');
     setOriginalAddress(null);
-    onChange("deliveryCity", "");
-    onChange("deliveryAddress", "");
+    onChange('deliveryCity', '');
+    onChange('deliveryAddress', '');
     setPopupOpen(false);
   };
 
   useEffect(() => {
-    if (!selectedMethodId || !rates) { onShippingCostChange(0); return; }
+    if (!selectedMethodId || !rates) {
+      onShippingCostChange(0);
+      return;
+    }
     const methodRates = rates.filter((r) => r.method_id === selectedMethodId);
-    if (methodRates.length === 0) { onShippingCostChange(0); return; }
+    if (methodRates.length === 0) {
+      onShippingCostChange(0);
+      return;
+    }
     const rate = methodRates[0];
     let cost = rate.base_cost;
-    if (rate.calculation_type === "free_from" && rate.free_from_amount && subtotal >= rate.free_from_amount) {
+    if (
+      rate.calculation_type === 'free_from' &&
+      rate.free_from_amount &&
+      subtotal >= rate.free_from_amount
+    ) {
       cost = 0;
     }
     onShippingCostChange(cost);
@@ -211,7 +247,7 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
 
   useEffect(() => {
     if (methods && methods.length > 0 && !selectedMethodId) {
-      onChange("shippingMethodId", methods[0].id);
+      onChange('shippingMethodId', methods[0].id);
     }
   }, [methods, selectedMethodId, onChange]);
 
@@ -221,7 +257,11 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
     if (methodRates.length === 0) return null;
     const rate = methodRates[0];
     let displayCost = rate.base_cost;
-    if (rate.calculation_type === "free_from" && rate.free_from_amount && subtotal >= rate.free_from_amount) {
+    if (
+      rate.calculation_type === 'free_from' &&
+      rate.free_from_amount &&
+      subtotal >= rate.free_from_amount
+    ) {
       displayCost = 0;
     }
     return { cost: displayCost, estimatedDays: rate.estimated_days };
@@ -260,7 +300,9 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
                 <label
                   key={method.id}
                   className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
-                    selectedMethodId === method.id ? "border-primary" : "border-muted hover:bg-accent"
+                    selectedMethodId === method.id
+                      ? 'border-primary'
+                      : 'border-muted hover:bg-accent'
                   }`}
                 >
                   <input
@@ -268,19 +310,23 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
                     name="shippingMethod"
                     value={method.id}
                     checked={selectedMethodId === method.id}
-                    onChange={() => onChange("shippingMethodId", method.id)}
+                    onChange={() => onChange('shippingMethodId', method.id)}
                     className="sr-only"
                   />
                   <IconComponent className="h-5 w-5 text-muted-foreground" />
                   <div className="flex-1">
                     <div className="font-medium">{method.name}</div>
-                    <div className="text-sm text-muted-foreground">{method.description}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {method.description}
+                    </div>
                     {rateInfo?.estimatedDays && (
-                      <div className="text-xs text-muted-foreground mt-1">{rateInfo.estimatedDays}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {rateInfo.estimatedDays}
+                      </div>
                     )}
                   </div>
                   <div className="font-medium text-right">
-                    {rateInfo ? formatShippingCost(rateInfo.cost) : "—"}
+                    {rateInfo ? formatShippingCost(rateInfo.cost) : '—'}
                   </div>
                 </label>
               );
@@ -289,10 +335,12 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
 
           {isPickup && pickupPoints && pickupPoints.length > 0 && (
             <div className="pt-4 border-t">
-              <label className="text-sm font-medium mb-1 block">Оберiть пункт самовивозу *</label>
+              <label className="text-sm font-medium mb-1 block">
+                Оберiть пункт самовивозу *
+              </label>
               <select
-                value={String(values.pickupPointId || "")}
-                onChange={(e) => onChange("pickupPointId", e.target.value)}
+                value={String(values.pickupPointId || '')}
+                onChange={(e) => onChange('pickupPointId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md text-sm"
               >
                 <option value="">Оберiть пункт</option>
@@ -309,7 +357,9 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
             <div className="space-y-4 pt-4 border-t">
               {user && savedAddresses && savedAddresses.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-muted-foreground">Збереженi адреси</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Збереженi адреси
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     {visibleAddresses.map((address) => (
                       <AddressCard
@@ -338,21 +388,25 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
               )}
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Мiсто *</label>
+                <label className="text-sm font-medium mb-1 block">
+                  Мiсто *
+                </label>
                 <input
                   placeholder="Введiть мiсто"
-                  value={currentCity || ""}
-                  onChange={(e) => onChange("deliveryCity", e.target.value)}
+                  value={currentCity || ''}
+                  onChange={(e) => onChange('deliveryCity', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Адреса доставки *</label>
+                <label className="text-sm font-medium mb-1 block">
+                  Адреса доставки *
+                </label>
                 <input
                   placeholder="вул. Хрещатик, 1, кв. 10"
-                  value={currentAddress || ""}
-                  onChange={(e) => onChange("deliveryAddress", e.target.value)}
+                  value={currentAddress || ''}
+                  onChange={(e) => onChange('deliveryAddress', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                 />
               </div>
@@ -370,7 +424,9 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
                     type="button"
                     className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-2"
                     onClick={handleSaveClick}
-                    disabled={updateMutation.isPending || createMutation.isPending}
+                    disabled={
+                      updateMutation.isPending || createMutation.isPending
+                    }
                   >
                     <Save className="h-4 w-4" />
                     Зберегти адресу
@@ -398,7 +454,10 @@ export function CheckoutDeliveryForm({ values, onChange, subtotal, onShippingCos
         onOpenChange={setSaveDialogOpen}
         existingAddressName={originalAddress?.name}
         onUpdate={() => updateMutation.mutate()}
-        onCreate={() => { onChange("savedAddressId", ""); createMutation.mutate(); }}
+        onCreate={() => {
+          onChange('savedAddressId', '');
+          createMutation.mutate();
+        }}
         onCancel={handleCancelChanges}
       />
     </>

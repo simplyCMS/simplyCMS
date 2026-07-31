@@ -1,68 +1,26 @@
 /**
- * SolarStore Theme
+ * SolarStore Theme — синя палітра для магазину альтернативної енергетики.
  *
- * Blue palette for solar energy equipment store.
+ * Контракт v2: тема постачає лише паспорт, токени і компоненти. Сторінки,
+ * каркаси і канонічні секції головної — у ядрі. Власний hero тема задає
+ * явно (`HeroBanner`), бо він статичний і не є слайдером банерів.
  */
+import type { ThemeModule } from '@simplycms/themes/types';
+import manifest from './manifest';
+import { tokens } from './tokens';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { HeroBanner } from './components/HeroBanner';
+import { HomeSections } from './components/HomeSections';
 
-import manifest from "./manifest";
-import "./styles/theme.css";
-
-// Layouts
-import { MainLayout } from "./layouts/MainLayout";
-import { CatalogLayout } from "./layouts/CatalogLayout";
-import { ProfileLayout } from "./layouts/ProfileLayout";
-
-// Pages
-import HomePage from "./pages/HomePage";
-import CatalogPage from "./pages/CatalogPage";
-import CatalogSectionPage from "./pages/CatalogSectionPage";
-import ProductPage from "./pages/ProductPage";
-import CartPage from "./pages/CartPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import OrderSuccessPage from "./pages/OrderSuccessPage";
-import AuthPage from "./pages/AuthPage";
-import ProfilePage from "./pages/ProfilePage";
-import ProfileOrdersPage from "./pages/ProfileOrdersPage";
-import ProfileOrderDetailPage from "./pages/ProfileOrderDetailPage";
-import ProfileSettingsPage from "./pages/ProfileSettingsPage";
-import PropertiesPage from "./pages/PropertiesPage";
-import PropertyDetailPage from "./pages/PropertyDetailPage";
-import PropertyOptionPage from "./pages/PropertyOptionPage";
-import NotFoundPage from "./pages/NotFoundPage";
-
-// Components
-import { Header } from "./components/Header";
-import { Footer } from "./components/Footer";
-
-const theme = {
+const theme: ThemeModule = {
   manifest,
-
-  MainLayout,
-  CatalogLayout,
-  ProfileLayout,
-
-  pages: {
-    HomePage,
-    CatalogPage,
-    CatalogSectionPage,
-    ProductPage,
-    CartPage,
-    CheckoutPage,
-    OrderSuccessPage,
-    AuthPage,
-    ProfilePage,
-    ProfileOrdersPage,
-    ProfileOrderDetailPage,
-    ProfileSettingsPage,
-    PropertiesPage,
-    PropertyDetailPage,
-    PropertyOptionPage,
-    NotFoundPage,
-  },
-
+  tokens,
   components: {
     Header,
     Footer,
+    HeroBanner,
+    HomeSections,
   },
 };
 

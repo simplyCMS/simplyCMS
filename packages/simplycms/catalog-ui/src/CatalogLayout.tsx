@@ -1,9 +1,9 @@
-import React from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { Sun, User, Search } from "lucide-react";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { useToast } from "@simplysoftua/ui/use-toast";
+import React from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { Sun, User, Search } from 'lucide-react';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useToast } from '@simplycms/ui/use-toast';
 
 interface CatalogLayoutProps {
   /** Render a theme toggle button */
@@ -37,14 +37,14 @@ export function CatalogLayout({
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: "Не вдалося вийти з акаунту",
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Не вдалося вийти з акаунту',
       });
     } else {
       toast({
-        title: "Вихiд виконано",
-        description: "До зустрiчi!",
+        title: 'Вихiд виконано',
+        description: 'До зустрiчi!',
       });
     }
   };
@@ -59,7 +59,9 @@ export function CatalogLayout({
               <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-brand">
                 <Sun className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-foreground">SolarStore</span>
+              <span className="text-xl font-bold text-foreground">
+                SolarStore
+              </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
@@ -105,18 +107,28 @@ export function CatalogLayout({
               <>
                 {user ? (
                   renderDropdownMenu ? (
-                    renderDropdownMenu({ user, isAdmin, handleSignOut, navigate })
+                    renderDropdownMenu({
+                      user,
+                      isAdmin,
+                      handleSignOut,
+                      navigate,
+                    })
                   ) : (
                     <button
-                      onClick={() => navigate({ to: "/profile" })}
+                      onClick={() => navigate({ to: '/profile' })}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm"
                     >
                       <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">{user.email?.split("@")[0]}</span>
+                      <span className="hidden sm:inline">
+                        {user.email?.split('@')[0]}
+                      </span>
                     </button>
                   )
                 ) : (
-                  <Link to="/auth" className="px-3 py-1.5 rounded-md border text-sm">
+                  <Link
+                    to="/auth"
+                    className="px-3 py-1.5 rounded-md border text-sm"
+                  >
                     Увiйти
                   </Link>
                 )}
@@ -129,9 +141,7 @@ export function CatalogLayout({
 
       {renderCartDrawer?.()}
       {/* Content */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
       <footer className="border-t py-8 bg-card">

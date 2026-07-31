@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Textarea } from "@simplysoftua/ui/textarea";
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Textarea } from '@simplycms/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplysoftua/ui/dialog";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { Plus, Loader2 } from "lucide-react";
-import { getRegisteredPluginModules } from "@simplysoftua/plugins";
-import { Badge } from "@simplysoftua/ui/badge";
+} from '@simplycms/ui/dialog';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Plus, Loader2 } from 'lucide-react';
+import { getRegisteredPluginModules } from '@simplycms/plugins';
+import { Badge } from '@simplycms/ui/badge';
 
 interface InstallPluginDialogProps {
   trigger?: React.ReactNode;
@@ -28,13 +28,13 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    name: "",
-    displayName: "",
-    version: "1.0.0",
-    description: "",
-    author: "",
+    name: '',
+    displayName: '',
+    version: '1.0.0',
+    description: '',
+    author: '',
   });
 
   const registeredModules = getRegisteredPluginModules();
@@ -44,7 +44,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
     mutationFn: async () => {
       // Check if module exists
       const moduleExists = registeredModules.has(formData.name);
-      
+
       // Get hooks from module if it exists
       let hooks: { name: string; priority?: number }[] = [];
       if (moduleExists) {
@@ -55,7 +55,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
       }
 
       const { data, error } = await supabase
-        .from("plugins")
+        .from('plugins')
         .insert({
           name: formData.name,
           display_name: formData.displayName,
@@ -75,24 +75,24 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
     },
     onSuccess: () => {
       toast({
-        title: "Плагін встановлено",
+        title: 'Плагін встановлено',
         description: `Плагін "${formData.displayName}" успішно додано до системи.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      queryClient.invalidateQueries({ queryKey: ['plugins'] });
       setOpen(false);
       setFormData({
-        name: "",
-        displayName: "",
-        version: "1.0.0",
-        description: "",
-        author: "",
+        name: '',
+        displayName: '',
+        version: '1.0.0',
+        description: '',
+        author: '',
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка встановлення",
+        title: 'Помилка встановлення',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -103,7 +103,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
       toast({
         title: "Заповніть обов'язкові поля",
         description: "Назва та відображувана назва обов'язкові",
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -116,9 +116,9 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
       ...prev,
       name: moduleName,
       displayName: pluginModule?.manifest?.displayName || moduleName,
-      version: pluginModule?.manifest?.version || "1.0.0",
-      description: pluginModule?.manifest?.description || "",
-      author: pluginModule?.manifest?.author || "",
+      version: pluginModule?.manifest?.version || '1.0.0',
+      description: pluginModule?.manifest?.description || '',
+      author: pluginModule?.manifest?.author || '',
     }));
   };
 
@@ -137,7 +137,8 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
           <DialogHeader>
             <DialogTitle>Встановлення плагіна</DialogTitle>
             <DialogDescription>
-              Додайте новий плагін до системи. Виберіть із зареєстрованих модулів або введіть дані вручну.
+              Додайте новий плагін до системи. Виберіть із зареєстрованих
+              модулів або введіть дані вручну.
             </DialogDescription>
           </DialogHeader>
 
@@ -150,7 +151,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
                   {availableModules.map((name) => (
                     <Badge
                       key={name}
-                      variant={formData.name === name ? "default" : "outline"}
+                      variant={formData.name === name ? 'default' : 'outline'}
                       className="cursor-pointer"
                       onClick={() => handleModuleSelect(name)}
                     >
@@ -185,14 +186,18 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="displayName">
-                  Відображувана назва <span className="text-destructive">*</span>
+                  Відображувана назва{' '}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="displayName"
                   placeholder="Мій плагін"
                   value={formData.displayName}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, displayName: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      displayName: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -207,7 +212,10 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
                   placeholder="1.0.0"
                   value={formData.version}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, version: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      version: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -232,7 +240,10 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
                 placeholder="Короткий опис функціональності плагіна..."
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 rows={3}
               />
@@ -241,8 +252,9 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
             {formData.name && !registeredModules.has(formData.name) && (
               <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  ⚠️ Модуль "{formData.name}" не знайдено в системі. Плагін буде зареєстровано, 
-                  але для його роботи потрібно додати код модуля до проєкту.
+                  ⚠️ Модуль "{formData.name}" не знайдено в системі. Плагін буде
+                  зареєстровано, але для його роботи потрібно додати код модуля
+                  до проєкту.
                 </p>
               </div>
             )}

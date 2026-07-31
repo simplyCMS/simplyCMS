@@ -1,41 +1,46 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import type {
   EngineContext,
   CatalogRepository,
   Product,
   Paged,
-} from "@simplysoftua/objects";
-import { EngineProvider, useEngine } from "../EngineProvider";
-import { useProduct, useSections } from "../hooks";
+} from '@simplycms/objects';
+import { EngineProvider, useEngine } from '../EngineProvider';
+import { useProduct, useSections } from '../hooks';
 
 const product: Product = {
-  id: "p1",
-  slug: "widget",
-  name: "Widget",
+  id: 'p1',
+  slug: 'widget',
+  name: 'Widget',
   description: null,
-  section_id: "s1",
-  stock_status: "in_stock",
+  section_id: 's1',
+  stock_status: 'in_stock',
   has_modifications: false,
   modifications: [],
   prices: [],
   images: [],
 };
-const paged: Paged<Product> = { items: [product], total: 1, page: 1, pageSize: 20 };
+const paged: Paged<Product> = {
+  items: [product],
+  total: 1,
+  page: 1,
+  pageSize: 20,
+};
 
 const mockCatalog: CatalogRepository = {
   getProduct: async (idOrSlug) =>
-    idOrSlug === "widget" || idOrSlug === "p1" ? product : null,
+    idOrSlug === 'widget' || idOrSlug === 'p1' ? product : null,
   listProducts: async () => paged,
   getProductsBySection: async () => paged,
   getSections: async () => [
     {
-      id: "s1",
-      slug: "all",
-      name: "All",
+      id: 's1',
+      slug: 'all',
+      name: 'All',
       description: null,
       parent_id: null,
       sort_order: 0,
@@ -62,17 +67,17 @@ const mockEngine: EngineContext = {
   links: {
     product: (p) => `/catalog/${p.slug}`,
     section: (s) => `/catalog/${s.slug}`,
-    cart: () => "/cart",
-    checkout: () => "/checkout",
-    profile: () => "/profile",
-    auth: () => "/auth",
+    cart: () => '/cart',
+    checkout: () => '/checkout',
+    profile: () => '/profile',
+    auth: () => '/auth',
   },
-  media: { url: (p) => p, upload: async () => "x" },
+  media: { url: (p) => p, upload: async () => 'x' },
   config: {
-    locale: "uk-UA",
-    currency: "UAH",
-    siteUrl: "",
-    seo: { defaultTitle: "", titleTemplate: "%s", defaultDescription: "" },
+    locale: 'uk-UA',
+    currency: 'UAH',
+    siteUrl: '',
+    seo: { defaultTitle: '', titleTemplate: '%s', defaultDescription: '' },
   },
 };
 
@@ -87,26 +92,26 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-describe("EngineProvider / useEngine wiring", () => {
-  it("useEngine returns the injected context", () => {
+describe('EngineProvider / useEngine wiring', () => {
+  it('useEngine returns the injected context', () => {
     const { result } = renderHook(() => useEngine(), { wrapper });
-    expect(result.current.config.currency).toBe("UAH");
+    expect(result.current.config.currency).toBe('UAH');
     expect(result.current.catalog).toBe(mockCatalog);
   });
 
-  it("useEngine throws outside a provider", () => {
+  it('useEngine throws outside a provider', () => {
     expect(() => renderHook(() => useEngine())).toThrow(/EngineProvider/);
   });
 
-  it("useProduct resolves through the injected repository", async () => {
-    const { result } = renderHook(() => useProduct("widget"), { wrapper });
+  it('useProduct resolves through the injected repository', async () => {
+    const { result } = renderHook(() => useProduct('widget'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.name).toBe("Widget");
+    expect(result.current.data?.name).toBe('Widget');
   });
 
-  it("useSections resolves through the injected repository", async () => {
+  it('useSections resolves through the injected repository', async () => {
     const { result } = renderHook(() => useSections(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.[0].slug).toBe("all");
+    expect(result.current.data?.[0].slug).toBe('all');
   });
 });

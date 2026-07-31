@@ -1,15 +1,15 @@
-import { Link } from "@tanstack/react-router";
-import { ShoppingCart } from "lucide-react";
-import { useCart } from "@simplysoftua/react-query";
-import { CartItem } from "./CartItem";
+import { Link } from '@tanstack/react-router';
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@simplycms/react-query';
+import { CartItem } from './CartItem';
 
 export function CartDrawer() {
   const { items, totalItems, totalPrice, isOpen, setIsOpen } = useCart();
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
@@ -31,7 +31,13 @@ export function CartDrawer() {
             Кошик
             {totalItems > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({totalItems} {totalItems === 1 ? "товар" : totalItems < 5 ? "товари" : "товарiв"})
+                ({totalItems}{' '}
+                {totalItems === 1
+                  ? 'товар'
+                  : totalItems < 5
+                    ? 'товари'
+                    : 'товарiв'}
+                )
               </span>
             )}
           </h2>
@@ -75,7 +81,9 @@ export function CartDrawer() {
                 </div>
                 <div className="flex justify-between font-medium text-lg">
                   <span>До сплати</span>
-                  <span className="text-primary">{formatPrice(totalPrice)}</span>
+                  <span className="text-primary">
+                    {formatPrice(totalPrice)}
+                  </span>
                 </div>
               </div>
 

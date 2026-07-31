@@ -110,7 +110,7 @@ end-to-end splitting на реальних 65 роутах.
 1. **Розкладка «що де лежить»:** склад коду — **один, npmjs** (ядро, плагіни, теми);
    `simplycms` CLI — інструмент поверх pnpm (add/update/db:diff/doctor), НЕ окремий
    реєстр; маркетплейс — індекс-вітрина з метаданими, що вказує на npm-пакети;
-   `@simplysoftua/plugin-sdk` — звичайний npm-пакет з типами/хелперами для авторів.
+   `@simplycms/plugin-sdk` — звичайний npm-пакет з типами/хелперами для авторів.
 2. **Адмінка: перевизначення сторінок НЕ закладається взагалі** (модель OpenCart/WP —
    замінити сторінку products не можна навіть плагіном). Плагіни **додають** сторінки:
    пакет плагіна везе `admin-routes/`, монтується під `/admin/<plugin-slug>/…`,
@@ -130,7 +130,7 @@ end-to-end splitting на реальних 65 роутах.
    документацією) → `simplycms db:diff` генерує одну зведену SQL-міграцію →
    у `supabase/migrations/` на людське ревʼю → застосування Supabase CLI. Саморобний
    `migrate.mjs` замінюється. Data-access лишається на supabase-js/PostgREST.
-6. **Supabase-шар:** консолідувати в єдиний пакет `@simplysoftua/supabase` за зразком
+6. **Supabase-шар:** консолідувати в єдиний пакет `@simplycms/supabase` за зразком
    `metahub/packages/supabase` (@kit/supabase), звірено з офіційним quickstart Supabase
    для TanStack Start (два клієнти: browser + server на `getCookies`/`setCookie`;
    новий нейминг `VITE_SUPABASE_PUBLISHABLE_KEY`). Плагіни клієнт не отримують —
@@ -146,7 +146,7 @@ end-to-end splitting на реальних 65 роутах.
 
 ```
 my-store/
-├── package.json              # @simplysoftua/* як залежності (semver)
+├── package.json              # @simplycms/* як залежності (semver)
 ├── simplycms.config.ts       # ЄДИНЕ джерело істини: тема, плагіни, адаптери, SEO
 ├── routes.ts                 # монтаж каркаса ядра (нижче)
 ├── src/
@@ -173,11 +173,11 @@ import { rootRoute, layout, physical } from '@tanstack/virtual-file-routes'
 const pkg = (name: string) => path.join('node_modules', name, 'routes')
 
 export const routes = rootRoute('__root.tsx', [
-  layout('_storefront.tsx', [ physical('/', pkg('@simplysoftua/storefront-routes')) ]),
-  physical('/admin', pkg('@simplysoftua/admin-routes')),
+  layout('_storefront.tsx', [ physical('/', pkg('@simplycms/storefront-routes')) ]),
+  physical('/admin', pkg('@simplycms/admin-routes')),
   physical('/', 'my'),                       // власні сторінки магазину
   // плагіни зі своїми сторінками адмінки:
-  physical('/admin/reviews-plus', pkg('@simplysoftua-plugins/reviews-plus/routes')),
+  physical('/admin/reviews-plus', pkg('@simplycms-plugins/reviews-plus/routes')),
 ])
 ```
 
@@ -193,7 +193,7 @@ peer dep на `@tanstack/react-start` (вмикає авто-noExternal чере
 **Створення магазину:** `pnpm create simplycms-store` → генерує тонку збірку вище
 (6-8 файлів + конфіг), `pnpm dev` — повний магазин працює.
 
-**Оновлення ядра:** `pnpm update "@simplysoftua/*"` → генератор при наступному dev/build
+**Оновлення ядра:** `pnpm update "@simplycms/*"` → генератор при наступному dev/build
 підхоплює нові route-файли пакета → нові сторінки/фікси зʼявляються. Якщо реліз позначений
 як такий, що міняє host-файли (рідко: ~6 файлів), — `simplycms update` доганяє їх
 schematics-міграцією (модель `ng update`). CI магазину: `install → build (генерація) →
@@ -343,7 +343,7 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
 ### 5.1. Механіка
 
 `src/routes/admin/$.tsx` — один catch-all, який рендерить `AdminApp` з
-`@simplysoftua/admin`; внутрішній роутинг адмінки — усередині пакета. Оновлення
+`@simplycms/admin`; внутрішній роутинг адмінки — усередині пакета. Оновлення
 адмінки = `pnpm update`. Storefront лишається як зараз (форк).
 
 ### 5.2. Переваги

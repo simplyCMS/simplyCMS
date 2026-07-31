@@ -5,13 +5,18 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@simplysoftua/ui/toaster';
+import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
-import { CMSProvider } from '@simplysoftua/core/providers/CMSProvider';
+import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
+import { bootstrapPlugins } from '@simplycms/plugins';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { I18nProvider, normalizeLocale } from '@simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
-import { getActiveTheme } from '../server/themes';
-import { serializeActiveThemeScript } from '../active-theme';
+import config from '../../simplycms.config';
+import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
+import { serializeActiveThemeScript } from '@simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
@@ -49,9 +54,11 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { activeThemeName } = Route.useLoaderData();
+  // Локаль магазину — з конфіга, один раз на рендер (без глобального стану).
+  const locale = normalizeLocale(config.locale);
 
   return (
-    <html lang="uk" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* Назва активної теми для клієнта (прогрів кешу до гідрації) */}
         <script
@@ -62,24 +69,46 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <CMSProvider>
-            <ClientEngineProvider>
-              <Outlet />
-              <Toaster />
-              <SonnerToaster richColors position="top-right" />
-            </ClientEngineProvider>
-          </CMSProvider>
-        </ThemeProvider>
+        {/* I18nProvider — над усіма групами роутів (storefront, auth, protected) */}
+        <I18nProvider locale={locale}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <CMSProvider>
+              <PluginBootstrap />
+              <ClientEngineProvider>
+                <Outlet />
+                <Toaster />
+                <SonnerToaster richColors position="top-right" />
+              </ClientEngineProvider>
+            </CMSProvider>
+          </ThemeProvider>
+        </I18nProvider>
         <Scripts />
       </body>
     </html>
   );
+}
+
+/**
+ * Клієнтський bootstrap плагінів із `simplycms.config.ts`.
+ *
+ * Виклик в ефекті (тільки браузер) — НЕ блокує гідрацію: слоти `PluginSlot`
+ * підписані на HookRegistry через useSyncExternalStore, тож віджети зʼявляться
+ * самі, щойно активні плагіни зареєструються. SSR-слоти вітрини в цій фазі
+ * не вмикаємо — PluginSlot і так виконує хуки в ефекті.
+ */
+function PluginBootstrap() {
+  const supabase = useSupabaseClient();
+
+  useEffect(() => {
+    void bootstrapPlugins(config.plugins ?? [], supabase);
+  }, [supabase]);
+
+  return null;
 }
 
 /** 404 — сторінку не знайдено */

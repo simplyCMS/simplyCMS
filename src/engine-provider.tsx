@@ -1,5 +1,5 @@
 // Збірка EngineContext + монтування EngineProvider у дерево застосунку.
-// Робить рушій (`@simplysoftua/runtime`/`@simplysoftua/react-query`) ЖИВИМ:
+// Робить рушій (`@simplycms/runtime`/`@simplycms/react-query`) ЖИВИМ:
 // будь-який компонент під ним бере дані через useEngine()/порт-хуки,
 // а не через прямий supabase. Ізоморфний: на SSR `useSupabaseClient()`
 // повертає null, репозиторії будуються lazy (без деференсу), запити йдуть
@@ -11,10 +11,10 @@ import {
   createSupabaseOrderRepository,
   createSupabaseIdentityProvider,
   singleTenantScope,
-} from '@simplysoftua/data-supabase';
-import { EngineProvider } from '@simplysoftua/react-query';
-import { useSupabaseClient } from '@simplysoftua/core/supabase/SupabaseProvider';
-import type { EngineContext } from '@simplysoftua/objects';
+} from '@simplycms/data-supabase';
+import { EngineProvider } from '@simplycms/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import type { EngineContext } from '@simplycms/objects';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { appLinks, appConfig, createAppMediaProvider } from './engine.shared';
 

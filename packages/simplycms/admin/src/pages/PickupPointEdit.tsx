@@ -1,15 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { adminPath } from "../lib/adminLinks";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Input } from "@simplysoftua/ui/input";
-import { Switch } from "@simplysoftua/ui/switch";
+import { adminPath } from '../lib/adminLinks';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Input } from '@simplycms/ui/input';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Form,
   FormControl,
@@ -18,17 +18,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplysoftua/ui/form";
+} from '@simplycms/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { toast } from "sonner";
-import { ArrowLeft, Loader2, Shield } from "lucide-react";
-import { PickupPoint, ShippingMethod, ShippingZone } from "@simplysoftua/core/lib/shipping/types";
+} from '@simplycms/ui/select';
+import { toast } from 'sonner';
+import { ArrowLeft, Loader2, Shield } from 'lucide-react';
+import {
+  PickupPoint,
+  ShippingMethod,
+  ShippingZone,
+} from '@simplycms/core/lib/shipping/types';
 
 const formSchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
@@ -47,16 +51,16 @@ export default function PickupPointEdit() {
   const { pointId } = useParams({ strict: false }) as { pointId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = pointId === "new";
+  const isNew = pointId === 'new';
 
   const { data: point, isLoading } = useQuery({
-    queryKey: ["pickup-point", pointId],
+    queryKey: ['pickup-point', pointId],
     queryFn: async () => {
       if (isNew) return null;
       const { data, error } = await supabase
-        .from("pickup_points")
-        .select("*")
-        .eq("id", pointId)
+        .from('pickup_points')
+        .select('*')
+        .eq('id', pointId)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as PickupPoint;
@@ -65,12 +69,12 @@ export default function PickupPointEdit() {
   });
 
   const { data: pickupMethod } = useQuery({
-    queryKey: ["pickup-method"],
+    queryKey: ['pickup-method'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .eq("code", "pickup")
+        .from('shipping_methods')
+        .select('*')
+        .eq('code', 'pickup')
         .maybeSingle();
       if (error) throw error;
       return data as unknown as ShippingMethod;
@@ -78,13 +82,13 @@ export default function PickupPointEdit() {
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["shipping-zones"],
+    queryKey: ['shipping-zones'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_zones")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+        .from('shipping_zones')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as ShippingZone[];
     },
@@ -93,11 +97,11 @@ export default function PickupPointEdit() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      city: "",
-      address: "",
-      phone: "",
-      zone_id: "",
+      name: '',
+      city: '',
+      address: '',
+      phone: '',
+      zone_id: '',
       is_active: true,
       sort_order: 0,
     },
@@ -106,8 +110,8 @@ export default function PickupPointEdit() {
           name: point.name,
           city: point.city,
           address: point.address,
-          phone: point.phone || "",
-          zone_id: point.zone_id || "",
+          phone: point.phone || '',
+          zone_id: point.zone_id || '',
           is_active: point.is_active,
           sort_order: point.sort_order,
         }
@@ -116,7 +120,7 @@ export default function PickupPointEdit() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!pickupMethod) throw new Error("Метод самовивозу не знайдено");
+      if (!pickupMethod) throw new Error('Метод самовивозу не знайдено');
 
       const payload = {
         method_id: pickupMethod.id,
@@ -130,22 +134,24 @@ export default function PickupPointEdit() {
       };
 
       if (isNew) {
-        const { error } = await supabase.from("pickup_points").insert([payload]);
+        const { error } = await supabase
+          .from('pickup_points')
+          .insert([payload]);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("pickup_points")
+          .from('pickup_points')
           .update(payload)
-          .eq("id", pointId);
+          .eq('id', pointId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pickup-points"] });
+      queryClient.invalidateQueries({ queryKey: ['pickup-points'] });
       if (!isNew) {
-        queryClient.invalidateQueries({ queryKey: ["pickup-point", pointId] });
+        queryClient.invalidateQueries({ queryKey: ['pickup-point', pointId] });
       }
-      toast.success(isNew ? "Точку створено" : "Зміни збережено");
+      toast.success(isNew ? 'Точку створено' : 'Зміни збережено');
       navigate({ to: adminPath('shipping/pickup-points') });
     },
     onError: (error: Error) => {
@@ -164,13 +170,17 @@ export default function PickupPointEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.back()}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold">
-              {isNew ? "Нова точка самовивозу" : point?.name}
+              {isNew ? 'Нова точка самовивозу' : point?.name}
             </h1>
             {point?.is_system && (
               <Badge variant="secondary" className="gap-1">
@@ -181,10 +191,10 @@ export default function PickupPointEdit() {
           </div>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? "Додайте нову адресу для самовивозу"
+              ? 'Додайте нову адресу для самовивозу'
               : point?.is_system
-                ? "Системна точка — не може бути видалена"
-                : "Редагування точки самовивозу"}
+                ? 'Системна точка — не може бути видалена'
+                : 'Редагування точки самовивозу'}
           </p>
         </div>
       </div>
@@ -264,8 +274,10 @@ export default function PickupPointEdit() {
                         <FormItem>
                           <FormLabel>Зона доставки</FormLabel>
                           <Select
-                            onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
-                            value={field.value || "none"}
+                            onValueChange={(val) =>
+                              field.onChange(val === 'none' ? '' : val)
+                            }
+                            value={field.value || 'none'}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -353,7 +365,7 @@ export default function PickupPointEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? "Створити" : "Зберегти"}
+                    {isNew ? 'Створити' : 'Зберегти'}
                   </Button>
                 </CardContent>
               </Card>

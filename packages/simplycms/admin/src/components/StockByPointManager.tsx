@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Button } from "@simplysoftua/ui/button";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
 import {
   Table,
   TableBody,
@@ -12,11 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
-import { toast } from "sonner";
-import { Loader2, Save, Building } from "lucide-react";
-import type { TablesInsert } from "@simplysoftua/core/supabase/types";
-import { usePickupPointsCount, usePickupPoints } from "@simplysoftua/core/hooks/useStock";
+} from '@simplycms/ui/table';
+import { toast } from 'sonner';
+import { Loader2, Save, Building } from 'lucide-react';
+import type { TablesInsert } from '@simplycms/supabase';
+import {
+  usePickupPointsCount,
+  usePickupPoints,
+} from '@simplycms/core/hooks/useStock';
 
 interface StockByPointManagerProps {
   productId?: string | null;
@@ -35,18 +38,19 @@ export function StockByPointManager({
   const [hasChanges, setHasChanges] = useState(false);
 
   const { data: pointsCount = 0 } = usePickupPointsCount();
-  const { data: pickupPoints = [], isLoading: pointsLoading } = usePickupPoints();
+  const { data: pickupPoints = [], isLoading: pointsLoading } =
+    usePickupPoints();
 
   // Fetch existing stock data
   const { data: existingStock, isLoading: stockLoading } = useQuery({
-    queryKey: ["stock-by-point", modificationId ?? productId],
+    queryKey: ['stock-by-point', modificationId ?? productId],
     queryFn: async () => {
-      let query = supabase.from("stock_by_pickup_point").select("*");
+      let query = supabase.from('stock_by_pickup_point').select('*');
 
       if (modificationId) {
-        query = query.eq("modification_id", modificationId);
+        query = query.eq('modification_id', modificationId);
       } else if (productId) {
-        query = query.eq("product_id", productId);
+        query = query.eq('product_id', productId);
       } else {
         return [];
       }
@@ -61,13 +65,17 @@ export function StockByPointManager({
   // Ініціалізація даних залишків (adjust state during render)
   const [prevExistingStock, setPrevExistingStock] = useState(existingStock);
   const [prevPickupPoints, setPrevPickupPoints] = useState(pickupPoints);
-  if (existingStock && pickupPoints.length > 0 && (existingStock !== prevExistingStock || pickupPoints !== prevPickupPoints)) {
+  if (
+    existingStock &&
+    pickupPoints.length > 0 &&
+    (existingStock !== prevExistingStock || pickupPoints !== prevPickupPoints)
+  ) {
     setPrevExistingStock(existingStock);
     setPrevPickupPoints(pickupPoints);
     const newStockData: Record<string, number> = {};
     pickupPoints.forEach((point) => {
       const existing = existingStock.find(
-        (s) => s.pickup_point_id === point.id
+        (s) => s.pickup_point_id === point.id,
       );
       newStockData[point.id] = existing?.quantity ?? 0;
     });
@@ -80,20 +88,20 @@ export function StockByPointManager({
       for (const [pointId, quantity] of Object.entries(stockData)) {
         // Find existing record for this point
         const existingRecord = existingStock?.find(
-          (s) => s.pickup_point_id === pointId
+          (s) => s.pickup_point_id === pointId,
         );
 
         if (existingRecord) {
           // Update existing record
           const { error } = await supabase
-            .from("stock_by_pickup_point")
+            .from('stock_by_pickup_point')
             .update({ quantity, updated_at: new Date().toISOString() })
-            .eq("id", existingRecord.id);
+            .eq('id', existingRecord.id);
 
           if (error) throw error;
         } else {
           // Insert new record
-          const payload: TablesInsert<"stock_by_pickup_point"> = {
+          const payload: TablesInsert<'stock_by_pickup_point'> = {
             pickup_point_id: pointId,
             quantity,
           };
@@ -105,7 +113,7 @@ export function StockByPointManager({
           }
 
           const { error } = await supabase
-            .from("stock_by_pickup_point")
+            .from('stock_by_pickup_point')
             .insert(payload);
 
           if (error) throw error;
@@ -114,13 +122,13 @@ export function StockByPointManager({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["stock-by-point", modificationId ?? productId],
+        queryKey: ['stock-by-point', modificationId ?? productId],
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-info", modificationId ?? productId],
+        queryKey: ['stock-info', modificationId ?? productId],
       });
       setHasChanges(false);
-      toast.success("Залишки збережено");
+      toast.success('Залишки збережено');
     },
     onError: (error: Error) => {
       toast.error(`Помилка збереження: ${error.message}`);
@@ -161,7 +169,7 @@ export function StockByPointManager({
               if (singlePoint) {
                 handleQuantityChange(
                   singlePoint.id,
-                  parseInt(e.target.value) || 0
+                  parseInt(e.target.value) || 0,
                 );
               }
             }}
@@ -231,7 +239,10 @@ export function StockByPointManager({
                   min={0}
                   value={stockData[point.id] ?? 0}
                   onChange={(e) =>
-                    handleQuantityChange(point.id, parseInt(e.target.value) || 0)
+                    handleQuantityChange(
+                      point.id,
+                      parseInt(e.target.value) || 0,
+                    )
                   }
                   className="w-24 ml-auto text-right"
                 />

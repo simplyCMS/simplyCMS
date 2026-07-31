@@ -1,27 +1,39 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { ThemeRegistry } from "@simplysoftua/themes/ThemeRegistry";
-import { Button } from "@simplysoftua/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { ArrowLeft, Save, Palette } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
-import { useState, useEffect } from "react";
-import type { ThemeSettingDefinition } from "@simplysoftua/themes/types";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import { Button } from '@simplycms/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@simplycms/ui/select';
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { ArrowLeft, Save, Palette } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import { useState, useEffect } from 'react';
+import type { ThemeSettingDefinition } from '@simplycms/themes/types';
 
 /** Виклик revalidation API після зміни налаштувань теми */
 async function revalidateTheme() {
   try {
-    await fetch("/api/revalidate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "theme" }),
+    await fetch('/api/revalidate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'theme' }),
     });
   } catch {
     // Revalidation — best effort
@@ -44,16 +56,18 @@ export default function ThemeSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [config, setConfig] = useState<Record<string, unknown>>({});
-  const [settingsSchema, setSettingsSchema] = useState<Record<string, ThemeSettingDefinition>>({});
+  const [settingsSchema, setSettingsSchema] = useState<
+    Record<string, ThemeSettingDefinition>
+  >({});
 
   // Завантаження теми з БД
   const { data: theme, isLoading } = useQuery({
-    queryKey: ["admin-theme", themeId],
+    queryKey: ['admin-theme', themeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("themes")
-        .select("*")
-        .eq("id", themeId)
+        .from('themes')
+        .select('*')
+        .eq('id', themeId)
         .single();
       if (error) throw error;
 
@@ -73,7 +87,9 @@ export default function ThemeSettings() {
       let schema: Record<string, ThemeSettingDefinition> = {};
       if (ThemeRegistry.has(theme.name)) {
         const themeModule = await ThemeRegistry.load(theme.name);
-        schema = themeModule.manifest.settings || {};
+        // Контракт v2: схема налаштувань лежить у самому модулі теми,
+        // маніфест — лише паспорт (ідентичність + сумісність із ядром).
+        schema = themeModule.settings || {};
       }
       setSettingsSchema(schema);
 
@@ -89,27 +105,31 @@ export default function ThemeSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
-        .from("themes")
+        .from('themes')
         .update({ settings: config as never })
-        .eq("id", themeId);
+        .eq('id', themeId);
       if (error) throw error;
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-theme", themeId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-theme', themeId] });
       await revalidateTheme();
-      toast({ title: "Налаштування збережено" });
+      toast({ title: 'Налаштування збережено' });
     },
     onError: () => {
-      toast({ variant: "destructive", title: "Помилка збереження" });
+      toast({ variant: 'destructive', title: 'Помилка збереження' });
     },
   });
 
   const handleChange = (key: string, value: unknown) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+    setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
   if (isLoading) {
-    return <div className="space-y-6"><Skeleton className="h-8 w-64" /></div>;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+      </div>
+    );
   }
 
   if (!theme) {
@@ -117,7 +137,9 @@ export default function ThemeSettings() {
       <div className="text-center py-12">
         <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Тему не знайдено</h2>
-        <Button onClick={() => navigate({ to: adminPath('themes') })}>Повернутись</Button>
+        <Button onClick={() => navigate({ to: adminPath('themes') })}>
+          Повернутись
+        </Button>
       </div>
     );
   }
@@ -126,16 +148,22 @@ export default function ThemeSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to={adminPath("themes")}>
-            <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
+          <Link to={adminPath('themes')}>
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold">{theme.display_name}</h1>
             <p className="text-muted-foreground">v{theme.version}</p>
           </div>
         </div>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          <Save className="h-4 w-4 mr-2" />Зберегти
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Зберегти
         </Button>
       </div>
 
@@ -152,14 +180,14 @@ export default function ThemeSettings() {
               <div key={key} className="space-y-2">
                 <Label>{setting.label}</Label>
 
-                {setting.type === "boolean" && (
+                {setting.type === 'boolean' && (
                   <Switch
                     checked={Boolean(config[key] ?? setting.default)}
                     onCheckedChange={(checked) => handleChange(key, checked)}
                   />
                 )}
 
-                {setting.type === "color" && (
+                {setting.type === 'color' && (
                   <Input
                     type="color"
                     value={String(config[key] ?? setting.default)}
@@ -168,15 +196,19 @@ export default function ThemeSettings() {
                   />
                 )}
 
-                {setting.type === "select" && setting.options && (
+                {setting.type === 'select' && setting.options && (
                   <Select
                     value={String(config[key] ?? setting.default)}
                     onValueChange={(value) => handleChange(key, value)}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {setting.options.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

@@ -12,7 +12,7 @@ import type {
   Order,
   OrderQuery,
   StockInfo,
-} from "@simplysoftua/objects";
+} from '@simplycms/objects';
 
 export interface QueryOptionsLike<T> {
   queryKey: readonly unknown[];
@@ -21,20 +21,20 @@ export interface QueryOptionsLike<T> {
 
 /** Стабільний namespace ключів для кешу React Query. */
 export const catalogKeys = {
-  all: ["catalog"] as const,
-  product: (idOrSlug: string) => ["catalog", "product", idOrSlug] as const,
-  products: (q: ProductQuery) => ["catalog", "products", q] as const,
+  all: ['catalog'] as const,
+  product: (idOrSlug: string) => ['catalog', 'product', idOrSlug] as const,
+  products: (q: ProductQuery) => ['catalog', 'products', q] as const,
   sectionProducts: (sectionId: string, q?: ProductQuery) =>
-    ["catalog", "section-products", sectionId, q ?? null] as const,
-  sections: ["catalog", "sections"] as const,
-  properties: ["catalog", "properties"] as const,
-  stock: (ids: string[]) => ["catalog", "stock", ...ids] as const,
+    ['catalog', 'section-products', sectionId, q ?? null] as const,
+  sections: ['catalog', 'sections'] as const,
+  properties: ['catalog', 'properties'] as const,
+  stock: (ids: string[]) => ['catalog', 'stock', ...ids] as const,
 };
 
 export const orderKeys = {
-  all: ["orders"] as const,
-  order: (id: string) => ["orders", "detail", id] as const,
-  list: (q: OrderQuery) => ["orders", "list", q] as const,
+  all: ['orders'] as const,
+  order: (id: string) => ['orders', 'detail', id] as const,
+  list: (q: OrderQuery) => ['orders', 'list', q] as const,
 };
 
 export const catalogQueries = {

@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from "../supabase/client";
+import { getSupabaseBrowserClient } from '@simplycms/supabase/browser-client';
 
 // Auth helper functions (client-side). Клієнт беремо з браузерної фабрики,
 // а не з глобального singleton.
@@ -48,13 +48,19 @@ export async function updatePassword(newPassword: string) {
 // Get current session
 export async function getSession() {
   const supabase = getSupabaseBrowserClient();
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
   return { session, error };
 }
 
 // Get current user
 export async function getUser() {
   const supabase = getSupabaseBrowserClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
   return { user, error };
 }

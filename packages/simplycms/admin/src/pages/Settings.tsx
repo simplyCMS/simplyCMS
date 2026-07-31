@@ -1,12 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Label } from "@simplysoftua/ui/label";
-import { Separator } from "@simplysoftua/ui/separator";
-import { toast } from "sonner";
-import { Loader2, Settings as SettingsIcon, Package } from "lucide-react";
-import type { Json } from "@simplysoftua/core/supabase/types";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Switch } from '@simplycms/ui/switch';
+import { Label } from '@simplycms/ui/label';
+import { Separator } from '@simplycms/ui/separator';
+import { toast } from 'sonner';
+import { Loader2, Settings as SettingsIcon, Package } from 'lucide-react';
+import type { Json } from '@simplycms/supabase';
 
 interface StockManagementSettings {
   decrease_on_order: boolean;
@@ -24,12 +30,12 @@ export default function Settings() {
   const queryClient = useQueryClient();
 
   const { data: stockSettings, isLoading } = useQuery({
-    queryKey: ["system-settings", "stock_management"],
+    queryKey: ['system-settings', 'stock_management'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("key", "stock_management")
+        .from('system_settings')
+        .select('*')
+        .eq('key', 'stock_management')
         .single();
       if (error) throw error;
       return data as unknown as SystemSetting;
@@ -39,14 +45,14 @@ export default function Settings() {
   const updateMutation = useMutation({
     mutationFn: async (newValue: StockManagementSettings) => {
       const { error } = await supabase
-        .from("system_settings")
+        .from('system_settings')
         .update({ value: newValue as unknown as Json })
-        .eq("key", "stock_management");
+        .eq('key', 'stock_management');
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
-      toast.success("Налаштування збережено");
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+      toast.success('Налаштування збережено');
     },
     onError: (error: Error) => {
       toast.error(`Помилка: ${error.message}`);

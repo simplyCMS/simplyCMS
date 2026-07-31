@@ -58,7 +58,7 @@ docs/tasks/{feature-name}.md
 [Чому це погано в контексті SimplyCMS]
 
 ## Архітектурні рішення
-- В який пакет додавати код: @simplysoftua/* (objects | domain | data-supabase | react-query | core | admin | ui | storefront | *-ui) | themes/ | src/
+- В який пакет додавати код: @simplycms/* (objects | domain | data-supabase | react-query | core | admin | ui | storefront | *-ui) | themes/ | src/
 - Rendering стратегія: SSR | Client-only (ssr:false) | Mixed
 
 ## MCP Servers (за потреби)

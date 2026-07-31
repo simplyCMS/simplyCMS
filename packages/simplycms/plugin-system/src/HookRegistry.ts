@@ -2,16 +2,43 @@ import type {
   HookHandler,
   HookRegistryInterface,
   RegisteredHook,
-} from "./types";
+} from './types';
 
 class HookRegistry implements HookRegistryInterface {
   private hooks: Map<string, RegisteredHook[]> = new Map();
+  private listeners: Set<() => void> = new Set();
+  private version = 0;
+
+  /**
+   * Підписка на зміни реєстру (джерело для `useSyncExternalStore`).
+   * Стрілкові властивості, а не методи класу: React вимагає СТАБІЛЬНІ
+   * референції `subscribe`/`getSnapshot` між рендерами.
+   */
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+
+  /**
+   * Синхронний снапшот — монотонна версія реєстру (число, стабільне за
+   * значенням). Повертати сам вміст хуків не можна: `getHandlers` віддає новий
+   * масив на кожен виклик, і React зациклив би рендери.
+   */
+  getVersion = (): number => this.version;
+
+  /** Нотифікація підписників: версія росте на будь-якій мутації реєстру. */
+  private notify(): void {
+    this.version += 1;
+    for (const listener of this.listeners) listener();
+  }
 
   register<TContext = unknown, TResult = unknown>(
     hookName: string,
     pluginName: string,
     handler: HookHandler<TContext, TResult>,
-    priority: number = 10
+    priority: number = 10,
   ): void {
     const existing = this.hooks.get(hookName) || [];
 
@@ -28,6 +55,7 @@ class HookRegistry implements HookRegistryInterface {
     filtered.sort((a, b) => a.priority - b.priority);
 
     this.hooks.set(hookName, filtered);
+    this.notify();
   }
 
   unregister(hookName: string, pluginName: string): void {
@@ -35,17 +63,19 @@ class HookRegistry implements HookRegistryInterface {
     if (!existing) return;
 
     const filtered = existing.filter((h) => h.pluginName !== pluginName);
+    if (filtered.length === existing.length) return;
 
     if (filtered.length === 0) {
       this.hooks.delete(hookName);
     } else {
       this.hooks.set(hookName, filtered);
     }
+    this.notify();
   }
 
   async execute<TContext = unknown, TResult = unknown>(
     hookName: string,
-    context: TContext
+    context: TContext,
   ): Promise<TResult[]> {
     const handlers = this.hooks.get(hookName) || [];
     const results: TResult[] = [];
@@ -57,10 +87,7 @@ class HookRegistry implements HookRegistryInterface {
           results.push(result as TResult);
         }
       } catch (error) {
-        console.error(
-          `Error executing hook "${hookName}" from plugin:`,
-          error
-        );
+        console.error(`Error executing hook "${hookName}" from plugin:`, error);
       }
     }
 
@@ -68,9 +95,12 @@ class HookRegistry implements HookRegistryInterface {
   }
 
   getHandlers<TContext = unknown, TResult = unknown>(
-    hookName: string
+    hookName: string,
   ): RegisteredHook<TContext, TResult>[] {
-    return (this.hooks.get(hookName) || []) as RegisteredHook<TContext, TResult>[];
+    return (this.hooks.get(hookName) || []) as RegisteredHook<
+      TContext,
+      TResult
+    >[];
   }
 
   getRegisteredHooks(): string[] {
@@ -83,7 +113,9 @@ class HookRegistry implements HookRegistryInterface {
   }
 
   clear(): void {
+    if (this.hooks.size === 0) return;
     this.hooks.clear();
+    this.notify();
   }
 }
 

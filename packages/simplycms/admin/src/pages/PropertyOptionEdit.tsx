@@ -1,54 +1,57 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Label } from "@simplysoftua/ui/label";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { ImageUpload } from "../components/ImageUpload";
-import { RichTextEditor } from "../components/RichTextEditor";
-import { adminPath } from "../lib/adminLinks";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Label } from '@simplycms/ui/label';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ImageUpload } from '../components/ImageUpload';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { adminPath } from '../lib/adminLinks';
 
 function generateSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9а-яіїєґ\s-]/gi, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
+    .replace(/[^a-z0-9а-яіїєґ\s-]/gi, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
     .trim();
 }
 
 export default function PropertyOptionEdit() {
   const supabase = useSupabaseClient();
-  const { propertyId, optionId } = useParams({ strict: false }) as { propertyId: string; optionId: string };
+  const { propertyId, optionId } = useParams({ strict: false }) as {
+    propertyId: string;
+    optionId: string;
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const isNew = optionId === "new";
+
+  const isNew = optionId === 'new';
 
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
+    name: '',
+    slug: '',
     sort_order: 0,
-    description: "",
-    image_url: "",
-    meta_title: "",
-    meta_description: "",
+    description: '',
+    image_url: '',
+    meta_title: '',
+    meta_description: '',
   });
 
   // Fetch property info
   const { data: property } = useQuery({
-    queryKey: ["property", propertyId],
+    queryKey: ['property', propertyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .eq("id", propertyId!)
+        .from('section_properties')
+        .select('*')
+        .eq('id', propertyId!)
         .single();
       if (error) throw error;
       return data;
@@ -58,12 +61,12 @@ export default function PropertyOptionEdit() {
 
   // Fetch existing option
   const { data: option, isLoading: optionLoading } = useQuery({
-    queryKey: ["property-option", optionId],
+    queryKey: ['property-option', optionId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("property_options")
-        .select("*")
-        .eq("id", optionId!)
+        .from('property_options')
+        .select('*')
+        .eq('id', optionId!)
         .single();
       if (error) throw error;
       return data;
@@ -73,12 +76,12 @@ export default function PropertyOptionEdit() {
 
   // Get next sort order for new options
   const { data: optionsCount } = useQuery({
-    queryKey: ["property-options-count", propertyId],
+    queryKey: ['property-options-count', propertyId],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("property_options")
-        .select("*", { count: "exact", head: true })
-        .eq("property_id", propertyId!);
+        .from('property_options')
+        .select('*', { count: 'exact', head: true })
+        .eq('property_id', propertyId!);
       if (error) throw error;
       return count || 0;
     },
@@ -87,21 +90,27 @@ export default function PropertyOptionEdit() {
 
   // Ініціалізація форми при завантаженні даних (adjust state during render)
   const [prevOptionId, setPrevOptionId] = useState<string | null>(null);
-  const [prevOptionsCount, setPrevOptionsCount] = useState<number | undefined>(undefined);
+  const [prevOptionsCount, setPrevOptionsCount] = useState<number | undefined>(
+    undefined,
+  );
   if (option && option.id !== prevOptionId) {
     setPrevOptionId(option.id);
     setFormData({
-      name: option.name || "",
-      slug: option.slug || "",
+      name: option.name || '',
+      slug: option.slug || '',
       sort_order: option.sort_order || 0,
-      description: option.description || "",
-      image_url: option.image_url || "",
-      meta_title: option.meta_title || "",
-      meta_description: option.meta_description || "",
+      description: option.description || '',
+      image_url: option.image_url || '',
+      meta_title: option.meta_title || '',
+      meta_description: option.meta_description || '',
     });
-  } else if (isNew && optionsCount !== undefined && optionsCount !== prevOptionsCount) {
+  } else if (
+    isNew &&
+    optionsCount !== undefined &&
+    optionsCount !== prevOptionsCount
+  ) {
     setPrevOptionsCount(optionsCount);
-    setFormData(prev => ({ ...prev, sort_order: optionsCount }));
+    setFormData((prev) => ({ ...prev, sort_order: optionsCount }));
   }
 
   const saveMutation = useMutation({
@@ -117,11 +126,11 @@ export default function PropertyOptionEdit() {
       };
 
       // Check if this is a new option - optionId is "new" string from URL params
-      const isCreating = !optionId || optionId === "new";
+      const isCreating = !optionId || optionId === 'new';
 
       if (isCreating) {
         const { data: newOption, error } = await supabase
-          .from("property_options")
+          .from('property_options')
           .insert([{ ...payload, property_id: propertyId }])
           .select()
           .single();
@@ -129,27 +138,38 @@ export default function PropertyOptionEdit() {
         return newOption;
       } else {
         const { error } = await supabase
-          .from("property_options")
+          .from('property_options')
           .update(payload)
-          .eq("id", optionId);
+          .eq('id', optionId);
         if (error) throw error;
         return { id: optionId };
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["property-options", propertyId] });
-      const wasCreating = !optionId || optionId === "new";
+      queryClient.invalidateQueries({
+        queryKey: ['property-options', propertyId],
+      });
+      const wasCreating = !optionId || optionId === 'new';
       if (!wasCreating) {
-        queryClient.invalidateQueries({ queryKey: ["property-option", optionId] });
+        queryClient.invalidateQueries({
+          queryKey: ['property-option', optionId],
+        });
       }
-      toast({ title: wasCreating ? "Опцію створено" : "Опцію збережено" });
-      
+      toast({ title: wasCreating ? 'Опцію створено' : 'Опцію збережено' });
+
       if (wasCreating && result?.id) {
-        navigate({ to: adminPath(`properties/${propertyId}/options/${result.id}`), replace: true });
+        navigate({
+          to: adminPath(`properties/${propertyId}/options/${result.id}`),
+          replace: true,
+        });
       }
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -158,10 +178,13 @@ export default function PropertyOptionEdit() {
     saveMutation.mutate(formData);
   };
 
-  const handleChange = (field: keyof typeof formData, value: string | number) => {
-    setFormData(prev => {
+  const handleChange = (
+    field: keyof typeof formData,
+    value: string | number,
+  ) => {
+    setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      if (field === "name" && isNew) {
+      if (field === 'name' && isNew) {
         newData.slug = generateSlug(value as string);
       }
       return newData;
@@ -188,7 +211,7 @@ export default function PropertyOptionEdit() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? "Нова опція" : option?.name || "Опція"}
+            {isNew ? 'Нова опція' : option?.name || 'Опція'}
           </h1>
           {property && (
             <p className="text-muted-foreground">
@@ -210,7 +233,7 @@ export default function PropertyOptionEdit() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
+                  onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="Samsung"
                   required
                 />
@@ -220,7 +243,7 @@ export default function PropertyOptionEdit() {
                 <Input
                   id="slug"
                   value={formData.slug}
-                  onChange={(e) => handleChange("slug", e.target.value)}
+                  onChange={(e) => handleChange('slug', e.target.value)}
                   placeholder="samsung"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -235,7 +258,9 @@ export default function PropertyOptionEdit() {
                 id="sort_order"
                 type="number"
                 value={formData.sort_order}
-                onChange={(e) => handleChange("sort_order", parseInt(e.target.value) || 0)}
+                onChange={(e) =>
+                  handleChange('sort_order', parseInt(e.target.value) || 0)
+                }
                 className="w-32"
               />
             </div>
@@ -251,7 +276,9 @@ export default function PropertyOptionEdit() {
               <Label>Зображення</Label>
               <ImageUpload
                 images={formData.image_url ? [formData.image_url] : []}
-                onImagesChange={(urls) => handleChange("image_url", urls[0] || "")}
+                onImagesChange={(urls) =>
+                  handleChange('image_url', urls[0] || '')
+                }
                 maxImages={1}
               />
             </div>
@@ -260,7 +287,7 @@ export default function PropertyOptionEdit() {
               <Label>Опис</Label>
               <RichTextEditor
                 content={formData.description}
-                onChange={(value) => handleChange("description", value)}
+                onChange={(value) => handleChange('description', value)}
               />
             </div>
           </CardContent>
@@ -276,7 +303,7 @@ export default function PropertyOptionEdit() {
               <Input
                 id="meta_title"
                 value={formData.meta_title}
-                onChange={(e) => handleChange("meta_title", e.target.value)}
+                onChange={(e) => handleChange('meta_title', e.target.value)}
                 placeholder="Назва для пошукових систем"
               />
               <p className="text-xs text-muted-foreground">
@@ -289,7 +316,9 @@ export default function PropertyOptionEdit() {
               <Textarea
                 id="meta_description"
                 value={formData.meta_description}
-                onChange={(e) => handleChange("meta_description", e.target.value)}
+                onChange={(e) =>
+                  handleChange('meta_description', e.target.value)
+                }
                 placeholder="Опис для пошукових систем"
                 rows={3}
               />

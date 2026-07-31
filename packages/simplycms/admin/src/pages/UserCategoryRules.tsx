@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Switch } from "@simplysoftua/ui/switch";
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplysoftua/ui/table";
+} from '@simplycms/ui/table';
 import {
   ArrowLeft,
   Plus,
@@ -21,9 +21,9 @@ import {
   Loader2,
   ChevronUp,
   ChevronDown,
-} from "lucide-react";
-import { toast } from "@simplysoftua/core/hooks/use-toast";
-import { adminPath } from "../lib/adminLinks";
+} from 'lucide-react';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import { adminPath } from '../lib/adminLinks';
 
 interface RuleCondition {
   field: string;
@@ -32,18 +32,18 @@ interface RuleCondition {
 }
 
 interface RuleConditions {
-  type: "all" | "any";
+  type: 'all' | 'any';
   rules: RuleCondition[];
 }
 
 const fieldLabels: Record<string, string> = {
-  total_purchases: "Сума покупок",
-  registration_days: "Днів з реєстрації",
-  orders_count: "Кількість замовлень",
-  email_domain: "Домен email",
-  auth_provider: "Провайдер авторизації",
-  utm_source: "UTM Source",
-  utm_campaign: "UTM Campaign",
+  total_purchases: 'Сума покупок',
+  registration_days: 'Днів з реєстрації',
+  orders_count: 'Кількість замовлень',
+  email_domain: 'Домен email',
+  auth_provider: 'Провайдер авторизації',
+  utm_source: 'UTM Source',
+  utm_campaign: 'UTM Campaign',
 };
 
 export default function UserCategoryRules() {
@@ -54,16 +54,18 @@ export default function UserCategoryRules() {
 
   // Fetch rules with categories
   const { data: rules, isLoading } = useQuery({
-    queryKey: ["category-rules"],
+    queryKey: ['category-rules'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("category_rules")
-        .select(`
+        .from('category_rules')
+        .select(
+          `
           *,
           from_category:user_categories!category_rules_from_category_id_fkey(name),
           to_category:user_categories!category_rules_to_category_id_fkey(name)
-        `)
-        .order("priority", { ascending: false });
+        `,
+        )
+        .order('priority', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -71,15 +73,21 @@ export default function UserCategoryRules() {
 
   // Toggle active mutation
   const toggleMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({
+      id,
+      is_active,
+    }: {
+      id: string;
+      is_active: boolean;
+    }) => {
       const { error } = await supabase
-        .from("category_rules")
+        .from('category_rules')
         .update({ is_active })
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-rules"] });
+      queryClient.invalidateQueries({ queryKey: ['category-rules'] });
     },
   });
 
@@ -87,13 +95,13 @@ export default function UserCategoryRules() {
   const priorityMutation = useMutation({
     mutationFn: async ({ id, priority }: { id: string; priority: number }) => {
       const { error } = await supabase
-        .from("category_rules")
+        .from('category_rules')
         .update({ priority })
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-rules"] });
+      queryClient.invalidateQueries({ queryKey: ['category-rules'] });
     },
   });
 
@@ -101,18 +109,21 @@ export default function UserCategoryRules() {
   const runAllRules = async () => {
     setIsRunning(true);
     try {
-      const { data, error } = await supabase.rpc("check_all_users_category_rules");
+      const { data, error } = await supabase.rpc(
+        'check_all_users_category_rules',
+      );
       if (error) throw error;
       toast({
-        title: "Перевірку завершено",
+        title: 'Перевірку завершено',
         description: `Змінено категорію у ${data || 0} користувачів`,
       });
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     } catch (error: unknown) {
       toast({
-        title: "Помилка",
-        description: error instanceof Error ? error.message : 'Невідома помилка',
-        variant: "destructive",
+        title: 'Помилка',
+        description:
+          error instanceof Error ? error.message : 'Невідома помилка',
+        variant: 'destructive',
       });
     } finally {
       setIsRunning(false);
@@ -120,12 +131,12 @@ export default function UserCategoryRules() {
   };
 
   const formatConditions = (conditions: RuleConditions) => {
-    if (!conditions?.rules?.length) return "—";
+    if (!conditions?.rules?.length) return '—';
     return conditions.rules.map((r, i) => (
       <span key={i} className="inline-flex items-center gap-1">
         {i > 0 && (
           <span className="text-muted-foreground mx-1">
-            {conditions.type === "all" ? "та" : "або"}
+            {conditions.type === 'all' ? 'та' : 'або'}
           </span>
         )}
         <Badge variant="outline" className="font-normal">
@@ -135,8 +146,13 @@ export default function UserCategoryRules() {
     ));
   };
 
-  const movePriority = (ruleId: string, currentPriority: number, direction: "up" | "down") => {
-    const newPriority = direction === "up" ? currentPriority + 1 : currentPriority - 1;
+  const movePriority = (
+    ruleId: string,
+    currentPriority: number,
+    direction: 'up' | 'down',
+  ) => {
+    const newPriority =
+      direction === 'up' ? currentPriority + 1 : currentPriority - 1;
     priorityMutation.mutate({ id: ruleId, priority: newPriority });
   };
 
@@ -145,7 +161,7 @@ export default function UserCategoryRules() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={adminPath("user-categories")}>
+            <Link to={adminPath('user-categories')}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -157,11 +173,7 @@ export default function UserCategoryRules() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={runAllRules}
-            disabled={isRunning}
-          >
+          <Button variant="outline" onClick={runAllRules} disabled={isRunning}>
             {isRunning ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -170,7 +182,10 @@ export default function UserCategoryRules() {
             Запустити перевірку
           </Button>
           <Button asChild>
-            <Link to={adminPath("user-categories/rules/$ruleId")} params={{ ruleId: 'new' }}>
+            <Link
+              to={adminPath('user-categories/rules/$ruleId')}
+              params={{ ruleId: 'new' }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Додати правило
             </Link>
@@ -208,7 +223,9 @@ export default function UserCategoryRules() {
                   key={rule.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() =>
-                    navigate({ to: adminPath(`user-categories/rules/${rule.id}`) })
+                    navigate({
+                      to: adminPath(`user-categories/rules/${rule.id}`),
+                    })
                   }
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -220,7 +237,7 @@ export default function UserCategoryRules() {
                           size="icon"
                           className="h-5 w-5"
                           onClick={() =>
-                            movePriority(rule.id, rule.priority, "up")
+                            movePriority(rule.id, rule.priority, 'up')
                           }
                         >
                           <ChevronUp className="h-3 w-3" />
@@ -230,7 +247,7 @@ export default function UserCategoryRules() {
                           size="icon"
                           className="h-5 w-5"
                           onClick={() =>
-                            movePriority(rule.id, rule.priority, "down")
+                            movePriority(rule.id, rule.priority, 'down')
                           }
                         >
                           <ChevronDown className="h-3 w-3" />
@@ -249,7 +266,7 @@ export default function UserCategoryRules() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">
-                        {rule.from_category?.name || "Будь-яка"}
+                        {rule.from_category?.name || 'Будь-яка'}
                       </Badge>
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       <Badge>{rule.to_category?.name}</Badge>
@@ -257,7 +274,9 @@ export default function UserCategoryRules() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {formatConditions(rule.conditions as unknown as RuleConditions)}
+                      {formatConditions(
+                        rule.conditions as unknown as RuleConditions,
+                      )}
                     </div>
                   </TableCell>
                   <TableCell
@@ -267,7 +286,10 @@ export default function UserCategoryRules() {
                     <Switch
                       checked={rule.is_active}
                       onCheckedChange={(checked) =>
-                        toggleMutation.mutate({ id: rule.id, is_active: checked })
+                        toggleMutation.mutate({
+                          id: rule.id,
+                          is_active: checked,
+                        })
                       }
                     />
                   </TableCell>
@@ -282,8 +304,8 @@ export default function UserCategoryRules() {
         <p>
           <strong>Як це працює:</strong> Правила перевіряються при кожному
           завершеному замовленні (статус "completed"). Правила виконуються в
-          порядку пріоритету (вищий пріоритет = виконується першим). Застосовується
-          лише перше правило, що спрацювало.
+          порядку пріоритету (вищий пріоритет = виконується першим).
+          Застосовується лише перше правило, що спрацювало.
         </p>
       </div>
     </div>

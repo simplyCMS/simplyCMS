@@ -64,7 +64,9 @@ function checkPrerequisites() {
     console.log(`  ✅ Supabase CLI: ${version}`);
   } catch {
     console.error('  ❌ Supabase CLI не знайдено!');
-    console.log('  💡 Встанови: https://supabase.com/docs/guides/cli/getting-started');
+    console.log(
+      '  💡 Встанови: https://supabase.com/docs/guides/cli/getting-started',
+    );
     return false;
   }
 
@@ -106,7 +108,9 @@ function generateTypes() {
   });
 
   if (!typesOutput || typesOutput.trim().length < 100) {
-    throw new Error('Supabase CLI повернув порожній результат. Перевір project ID та токен.');
+    throw new Error(
+      'Supabase CLI повернув порожній результат. Перевір project ID та токен.',
+    );
   }
 
   return typesOutput;
@@ -162,16 +166,22 @@ try {
   writeTypesFile(rawTypes);
 
   console.log('✅ Типи успішно оновлено!\n');
-  console.log('💡 Усі споживачі отримають оновлені типи через @simplysoftua/db-types.\n');
+  console.log(
+    '💡 Усі споживачі отримають оновлені типи через @simplycms/db-types.\n',
+  );
 } catch (error) {
   const msg = error instanceof Error ? error.message : String(error);
   console.error(`\n❌ Помилка: ${msg}`);
 
   if (msg.includes('authentication') || msg.includes('token')) {
-    console.log('💡 Перевір SUPABASE_ACCESS_TOKEN — можливо він протермінований');
+    console.log(
+      '💡 Перевір SUPABASE_ACCESS_TOKEN — можливо він протермінований',
+    );
   }
   if (msg.includes('project')) {
-    console.log('💡 Перевір SUPABASE_PROJECT_ID — він має відповідати вашому проекту');
+    console.log(
+      '💡 Перевір SUPABASE_PROJECT_ID — він має відповідати вашому проекту',
+    );
   }
   if (msg.includes('network') || msg.includes('ECONNREFUSED')) {
     console.log('💡 Перевір підключення до інтернету');

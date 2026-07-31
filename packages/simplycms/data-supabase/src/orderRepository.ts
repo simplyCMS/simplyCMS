@@ -1,6 +1,6 @@
 // Supabase-реалізація OrderRepository (DI client + scope).
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   OrderRepository,
   ScopeResolver,
@@ -8,11 +8,11 @@ import type {
   OrderQuery,
   CreateOrderInput,
   Paged,
-} from "@simplysoftua/objects";
-import { mapOrder } from "./mappers";
-import { singleTenantScope, SCOPE_COLUMN } from "./scope";
+} from '@simplycms/objects';
+import { mapOrder } from './mappers';
+import { singleTenantScope, SCOPE_COLUMN } from './scope';
 
-const ORDER_SELECT = "*, order_statuses(id, name, color, code), order_items(*)";
+const ORDER_SELECT = '*, order_statuses(id, name, color, code), order_items(*)';
 
 type Row = Record<string, unknown>;
 
@@ -28,8 +28,8 @@ export function createSupabaseOrderRepository(
 
   async function resolveStatusId(status: string): Promise<string | null> {
     const { data } = await client
-      .from("order_statuses")
-      .select("id")
+      .from('order_statuses')
+      .select('id')
       .or(`code.eq.${status},name.eq.${status}`)
       .maybeSingle();
     return data ? String((data as Row).id) : null;
@@ -42,16 +42,16 @@ export function createSupabaseOrderRepository(
         0,
       );
       const shippingCost = input.shippingCost ?? 0;
-      const [firstName, ...rest] = input.customer.name.split(" ");
+      const [firstName, ...rest] = input.customer.name.split(' ');
       const insert: Row = {
         user_id: input.userId ?? null,
         order_number: `${Date.now()}`,
-        first_name: firstName ?? "",
-        last_name: rest.join(" "),
+        first_name: firstName ?? '',
+        last_name: rest.join(' '),
         // orders.email/payment_method — NOT NULL у схемі.
-        email: input.customer.email ?? "",
+        email: input.customer.email ?? '',
         phone: input.customer.phone,
-        payment_method: input.paymentMethod ?? "cash",
+        payment_method: input.paymentMethod ?? 'cash',
         notes: input.comment ?? null,
         subtotal,
         shipping_cost: shippingCost,
@@ -66,17 +66,17 @@ export function createSupabaseOrderRepository(
       if (hubId !== undefined) insert[SCOPE_COLUMN] = hubId;
 
       const { data: created, error } = await client
-        .from("orders")
+        .from('orders')
         .insert(insert)
-        .select("id")
+        .select('id')
         .single();
       if (error || !created) {
-        throw new Error(`[createOrder] ${error?.message ?? "insert failed"}`);
+        throw new Error(`[createOrder] ${error?.message ?? 'insert failed'}`);
       }
       const orderId = String((created as Row).id);
 
       if (input.items.length) {
-        await client.from("order_items").insert(
+        await client.from('order_items').insert(
           input.items.map((it) => ({
             order_id: orderId,
             product_id: it.productId,
@@ -90,28 +90,28 @@ export function createSupabaseOrderRepository(
       }
 
       const order = await this.getOrder(orderId);
-      if (!order) throw new Error("[createOrder] failed to reload order");
+      if (!order) throw new Error('[createOrder] failed to reload order');
       return order;
     },
 
     async getOrder(id: string): Promise<Order | null> {
       const { data } = await scoped(
-        client.from("orders").select(ORDER_SELECT).eq("id", id),
+        client.from('orders').select(ORDER_SELECT).eq('id', id),
       ).maybeSingle();
       return data ? mapOrder(data as Row) : null;
     },
 
     async listOrders(q: OrderQuery): Promise<Paged<Order>> {
       let query = scoped(
-        client.from("orders").select(ORDER_SELECT, { count: "exact" }),
+        client.from('orders').select(ORDER_SELECT, { count: 'exact' }),
       );
       if (q.status) {
         const statusId = await resolveStatusId(q.status);
-        if (statusId) query = query.eq("status_id", statusId);
+        if (statusId) query = query.eq('status_id', statusId);
       }
-      if (q.userId) query = query.eq("user_id", q.userId);
-      if (q.search) query = query.ilike("order_number", `%${q.search}%`);
-      query = query.order("created_at", { ascending: false });
+      if (q.userId) query = query.eq('user_id', q.userId);
+      if (q.search) query = query.ilike('order_number', `%${q.search}%`);
+      query = query.order('created_at', { ascending: false });
 
       const page = q.page ?? 1;
       const pageSize = q.pageSize ?? 50;
@@ -129,9 +129,9 @@ export function createSupabaseOrderRepository(
         throw new Error(`[updateStatus] невідомий статус: ${status}`);
       }
       const { error } = await client
-        .from("orders")
+        .from('orders')
         .update({ status_id: statusId })
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw new Error(`[updateStatus] ${error.message}`);
     },
   };

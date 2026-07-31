@@ -1,6 +1,6 @@
 // Доменні об'єкти замовлень.
 
-import type { PageQuery } from "./common";
+import type { PageQuery } from './common';
 
 export interface OrderItem {
   productId: string;
@@ -41,7 +41,7 @@ export interface Order {
 export interface CreateOrderInput {
   customer: OrderCustomer;
   items: OrderItem[];
-  shipping?: Order["shipping"];
+  shipping?: Order['shipping'];
   shippingCost?: number;
   paymentMethod?: string;
   comment?: string | null;

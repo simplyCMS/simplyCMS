@@ -1,4 +1,4 @@
-// Мапери рядків Supabase → доменні об'єкти @simplysoftua/objects.
+// Мапери рядків Supabase → доменні об'єкти @simplycms/objects.
 // Тримаємо межу: БД-схема не протікає в домен.
 
 import type {
@@ -15,14 +15,14 @@ import type {
   DiscountGroup,
   DiscountType,
   GroupOperator,
-} from "@simplysoftua/objects";
+} from '@simplycms/objects';
 
 // Рядки БД описуємо мінімально-необхідним чином (permissive),
 // бо складні nested-select повертають широкі типи.
 type Row = Record<string, unknown>;
 
 function asStockStatus(v: unknown): StockStatus | null {
-  return v === "in_stock" || v === "out_of_stock" || v === "on_order"
+  return v === 'in_stock' || v === 'out_of_stock' || v === 'on_order'
     ? v
     : null;
 }
@@ -59,8 +59,8 @@ export function mapProduct(row: Row): Product {
 
   return {
     id: String(row.id),
-    slug: String(row.slug ?? ""),
-    name: String(row.name ?? ""),
+    slug: String(row.slug ?? ''),
+    name: String(row.name ?? ''),
     description: (row.description as string | null) ?? null,
     section_id: (row.section_id as string | null) ?? null,
     stock_status: asStockStatus(row.stock_status),
@@ -77,8 +77,8 @@ export function mapProduct(row: Row): Product {
 export function mapSection(row: Row): Section {
   return {
     id: String(row.id),
-    slug: String(row.slug ?? ""),
-    name: String(row.name ?? ""),
+    slug: String(row.slug ?? ''),
+    name: String(row.name ?? ''),
     description: (row.description as string | null) ?? null,
     parent_id: (row.parent_id as string | null) ?? null,
     sort_order: Number(row.sort_order ?? 0),
@@ -90,7 +90,7 @@ export function mapPropertyOption(row: Row): PropertyOption {
   return {
     id: String(row.id),
     property_id: String(row.property_id),
-    value: String(row.name ?? row.value ?? ""),
+    value: String(row.name ?? row.value ?? ''),
     sort_order: Number(row.sort_order ?? 0),
   };
 }
@@ -101,9 +101,9 @@ export function mapProperty(row: Row): Property {
     : undefined;
   return {
     id: String(row.id),
-    code: String(row.slug ?? row.code ?? ""),
-    name: String(row.name ?? ""),
-    type: String(row.property_type ?? row.type ?? "text"),
+    code: String(row.slug ?? row.code ?? ''),
+    name: String(row.name ?? ''),
+    type: String(row.property_type ?? row.type ?? 'text'),
     is_filterable: Boolean(row.is_filterable),
     sort_order: Number(row.sort_order ?? 0),
     options,
@@ -113,16 +113,16 @@ export function mapProperty(row: Row): Property {
 export function mapPriceType(row: Row): PriceType {
   return {
     id: String(row.id),
-    name: String(row.name ?? ""),
+    name: String(row.name ?? ''),
     is_default: Boolean(row.is_default),
   };
 }
 
 export function mapOrderItem(row: Row): OrderItem {
   return {
-    productId: String(row.product_id ?? ""),
+    productId: String(row.product_id ?? ''),
     modificationId: (row.modification_id as string | null) ?? null,
-    name: String(row.name ?? ""),
+    name: String(row.name ?? ''),
     quantity: Number(row.quantity ?? 0),
     price: Number(row.price ?? 0),
   };
@@ -138,12 +138,12 @@ export function mapOrder(row: Row): Order {
 
   return {
     id: String(row.id),
-    number: String(row.order_number ?? ""),
-    status: String(statusRow?.code ?? statusRow?.name ?? row.status_id ?? ""),
+    number: String(row.order_number ?? ''),
+    status: String(statusRow?.code ?? statusRow?.name ?? row.status_id ?? ''),
     customer: {
-      name: [row.first_name, row.last_name].filter(Boolean).join(" ").trim(),
+      name: [row.first_name, row.last_name].filter(Boolean).join(' ').trim(),
       email: (row.email as string | null) ?? null,
-      phone: String(row.phone ?? ""),
+      phone: String(row.phone ?? ''),
     },
     items,
     subtotal: Number(row.subtotal ?? 0),
@@ -160,8 +160,8 @@ export function mapOrder(row: Row): Order {
       : null,
     comment: (row.notes as string | null) ?? null,
     userId: (row.user_id as string | null) ?? null,
-    created_at: String(row.created_at ?? ""),
-    updated_at: String(row.updated_at ?? row.created_at ?? ""),
+    created_at: String(row.created_at ?? ''),
+    updated_at: String(row.updated_at ?? row.created_at ?? ''),
   };
 }
 
@@ -178,7 +178,7 @@ export function buildDiscountTree(
   for (const g of allGroups) {
     groupMap.set(String(g.id), {
       id: String(g.id),
-      name: String(g.name ?? ""),
+      name: String(g.name ?? ''),
       description: (g.description as string | null) ?? null,
       operator: g.operator as GroupOperator,
       is_active: Boolean(g.is_active),
@@ -195,7 +195,7 @@ export function buildDiscountTree(
     if (group) {
       group.discounts.push({
         id: String(d.id),
-        name: String(d.name ?? ""),
+        name: String(d.name ?? ''),
         description: (d.description as string | null) ?? null,
         discount_type: d.discount_type as DiscountType,
         discount_value: Number(d.discount_value),
@@ -203,9 +203,12 @@ export function buildDiscountTree(
         is_active: Boolean(d.is_active),
         starts_at: (d.starts_at as string | null) ?? null,
         ends_at: (d.ends_at as string | null) ?? null,
-        targets: (d.discount_targets as DiscountGroup["discounts"][number]["targets"]) || [],
+        targets:
+          (d.discount_targets as DiscountGroup['discounts'][number]['targets']) ||
+          [],
         conditions:
-          (d.discount_conditions as DiscountGroup["discounts"][number]["conditions"]) || [],
+          (d.discount_conditions as DiscountGroup['discounts'][number]['conditions']) ||
+          [],
       });
     }
   }

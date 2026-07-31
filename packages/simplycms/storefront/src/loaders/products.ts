@@ -1,4 +1,4 @@
-import type { StorefrontClient } from "../client";
+import type { StorefrontClient } from '../client';
 
 /** Повний select для сторінки товару (з усіма зв'язками) */
 export const PRODUCT_FULL_SELECT = `
@@ -16,16 +16,28 @@ export const PRODUCT_FULL_SELECT = `
   )
 ` as const;
 
+/**
+ * Select для списків каталогу. Крім базових полів тягне секцію (для href
+ * картки), модифікації та ціни — щоб ціну можна було порахувати на сервері
+ * і віддати список готовим у SSR-HTML.
+ */
+export const PRODUCT_LIST_SELECT = `
+  *,
+  sections(id, slug, name),
+  product_modifications(*),
+  product_prices(price_type_id, price, old_price, modification_id)
+` as const;
+
 /** Отримати товар за slug (для сторінки товару) */
 export async function loadProduct(client: StorefrontClient, slug: string) {
   const { data, error } = await client
-    .from("products")
+    .from('products')
     .select(PRODUCT_FULL_SELECT)
-    .eq("slug", slug)
+    .eq('slug', slug)
     .maybeSingle();
 
   if (error) {
-    console.error("[loadProduct] Помилка:", error.message);
+    console.error('[loadProduct] Помилка:', error.message);
   }
 
   return data;
@@ -34,13 +46,13 @@ export async function loadProduct(client: StorefrontClient, slug: string) {
 /** Отримати всі активні товари (каталог) */
 export async function loadProducts(client: StorefrontClient) {
   const { data, error } = await client
-    .from("products")
-    .select("*, sections(*), product_modifications(*)")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .from('products')
+    .select(PRODUCT_LIST_SELECT)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("[loadProducts] Помилка:", error.message);
+    console.error('[loadProducts] Помилка:', error.message);
   }
 
   return data ?? [];
@@ -52,14 +64,14 @@ export async function loadProductsBySectionId(
   sectionId: string,
 ) {
   const { data, error } = await client
-    .from("products")
-    .select("*, product_modifications(*)")
-    .eq("section_id", sectionId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .from('products')
+    .select(PRODUCT_LIST_SELECT)
+    .eq('section_id', sectionId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("[loadProductsBySectionId] Помилка:", error.message);
+    console.error('[loadProductsBySectionId] Помилка:', error.message);
   }
 
   return data ?? [];

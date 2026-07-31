@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   Sun,
@@ -11,28 +11,28 @@ import {
   ShoppingCart,
   Menu,
   X,
-} from "lucide-react";
-import { Button } from "@simplysoftua/ui/button";
+} from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@simplysoftua/ui/dropdown-menu";
-import { useAuth } from "@simplysoftua/core/hooks/useAuth";
-import { useCart } from "@simplysoftua/core/hooks/useCart";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { CartDrawer } from "@simplysoftua/core/components/cart/CartDrawer";
-import { useQuery } from "@tanstack/react-query";
+} from '@simplycms/ui/dropdown-menu';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useCart } from '@simplycms/core/hooks/useCart';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
+import { useQuery } from '@tanstack/react-query';
 
 /** Категорії з іконками для навігації */
 const categoryIcons = [
-  { icon: Battery, label: "Акумулятори" },
-  { icon: Zap, label: "Інвертори" },
-  { icon: Sun, label: "Сонячні панелі" },
-  { icon: Wrench, label: "Послуги монтажу" },
+  { icon: Battery, label: 'Акумулятори' },
+  { icon: Zap, label: 'Інвертори' },
+  { icon: Sun, label: 'Сонячні панелі' },
+  { icon: Wrench, label: 'Послуги монтажу' },
 ];
 
 export function Header() {
@@ -45,14 +45,14 @@ export function Header() {
 
   /** Отримати секції каталогу */
   const { data: sections } = useQuery({
-    queryKey: ["sections-nav"],
+    queryKey: ['sections-nav'],
     queryFn: async () => {
       const { data } = await supabase
-        .from("sections")
-        .select("id, name, slug, parent_id")
-        .eq("is_active", true)
-        .is("parent_id", null)
-        .order("sort_order");
+        .from('sections')
+        .select('id, name, slug, parent_id')
+        .eq('is_active', true)
+        .is('parent_id', null)
+        .order('sort_order');
       return data || [];
     },
   });
@@ -61,12 +61,12 @@ export function Header() {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: "Не вдалося вийти з акаунту",
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Не вдалося вийти з акаунту',
       });
     } else {
-      toast({ title: "Вихід виконано", description: "До зустрічі!" });
+      toast({ title: 'Вихід виконано', description: 'До зустрічі!' });
     }
   };
 
@@ -136,7 +136,7 @@ export function Header() {
                       <Button variant="outline" size="sm" className="gap-2">
                         <User className="h-4 w-4" />
                         <span className="hidden sm:inline">
-                          {user.email?.split("@")[0]}
+                          {user.email?.split('@')[0]}
                         </span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -145,7 +145,9 @@ export function Header() {
                         {user.email}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: '/profile' })}
+                      >
                         <User className="mr-2 h-4 w-4" />
                         Мій кабінет
                       </DropdownMenuItem>
@@ -215,7 +217,7 @@ export function Header() {
                 <Link
                   key={s.id}
                   to="/catalog/$sectionSlug"
-                params={{ sectionSlug: s.slug }}
+                  params={{ sectionSlug: s.slug }}
                   className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
                 >
                   <Icon className="h-4 w-4" />
@@ -243,7 +245,7 @@ export function Header() {
                   <Link
                     key={s.id}
                     to="/catalog/$sectionSlug"
-                params={{ sectionSlug: s.slug }}
+                    params={{ sectionSlug: s.slug }}
                     className="flex items-center gap-2 py-2 text-sm text-[hsl(var(--muted-foreground))]"
                     onClick={() => setMobileMenuOpen(false)}
                   >

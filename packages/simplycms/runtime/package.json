@@ -1,5 +1,5 @@
 {
-  "name": "@simplysoftua/runtime",
+  "name": "@simplycms/runtime",
   "version": "0.1.0",
   "private": false,
   "description": "SimplyCMS engine runtime (Tier 6): defineConfig wires adapters/modules/theme/plugins into an EngineContext.",
@@ -10,7 +10,7 @@
     ".": "./src/index.ts"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
+    "registry": "https://registry.npmjs.org",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -36,6 +36,6 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@simplysoftua/objects": "workspace:*"
+    "@simplycms/objects": "workspace:*"
   }
 }

@@ -1,7 +1,6 @@
-
-import { useState, useMemo } from "react";
-import { Search, MapPin, Check, Plus } from "lucide-react";
-import { cn } from "@simplysoftua/ui/utils";
+import { useState, useMemo } from 'react';
+import { Search, MapPin, Check, Plus } from 'lucide-react';
+import { cn } from '@simplycms/ui/utils';
 
 interface Address {
   id: string;
@@ -20,7 +19,7 @@ interface AddressSelectorPopupProps {
   onAddNew: () => void;
 }
 
-type SortOption = "default" | "name" | "city";
+type SortOption = 'default' | 'name' | 'city';
 
 export function AddressSelectorPopup({
   open,
@@ -30,8 +29,8 @@ export function AddressSelectorPopup({
   onSelect,
   onAddNew,
 }: AddressSelectorPopupProps) {
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('default');
 
   const filteredAddresses = useMemo(() => {
     let result = [...addresses];
@@ -42,18 +41,18 @@ export function AddressSelectorPopup({
         (a) =>
           a.name.toLowerCase().includes(searchLower) ||
           a.city.toLowerCase().includes(searchLower) ||
-          a.address.toLowerCase().includes(searchLower)
+          a.address.toLowerCase().includes(searchLower),
       );
     }
 
     switch (sortBy) {
-      case "name":
+      case 'name':
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case "city":
+      case 'city':
         result.sort((a, b) => a.city.localeCompare(b.city));
         break;
-      case "default":
+      case 'default':
       default:
         result.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
         break;
@@ -71,7 +70,10 @@ export function AddressSelectorPopup({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
+      <div
+        className="fixed inset-0 bg-black/50"
+        onClick={() => onOpenChange(false)}
+      />
       <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col">
         <h3 className="text-lg font-semibold mb-4">Оберiть адресу доставки</h3>
 
@@ -103,11 +105,11 @@ export function AddressSelectorPopup({
               type="button"
               onClick={() => handleSelect(addr.id)}
               className={cn(
-                "w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all",
-                "hover:border-primary/50 hover:bg-accent/50",
+                'w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all',
+                'hover:border-primary/50 hover:bg-accent/50',
                 selectedId === addr.id
-                  ? "border-primary bg-primary/5"
-                  : "border-muted bg-card"
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted bg-card',
               )}
             >
               <div className="flex-shrink-0 h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -137,7 +139,7 @@ export function AddressSelectorPopup({
 
           {filteredAddresses.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              {search ? "Нiчого не знайдено" : "Немає збережених адрес"}
+              {search ? 'Нiчого не знайдено' : 'Немає збережених адрес'}
             </div>
           )}
         </div>

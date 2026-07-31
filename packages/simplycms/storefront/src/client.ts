@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Клієнт даних для storefront-лоадерів. Параметр-схема НЕ фіксується тут

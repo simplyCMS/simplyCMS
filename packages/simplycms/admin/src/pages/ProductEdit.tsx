@@ -1,33 +1,33 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Input } from "@simplysoftua/ui/input";
-import { Label } from "@simplysoftua/ui/label";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Switch } from "@simplysoftua/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Separator } from "@simplysoftua/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@simplysoftua/ui/radio-group";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Switch } from '@simplycms/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Separator } from '@simplycms/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@simplycms/ui/radio-group';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplysoftua/ui/select";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { ImageUpload } from "../components/ImageUpload";
-import { RichTextEditor } from "../components/RichTextEditor";
-import { ProductPropertyValues } from "../components/ProductPropertyValues";
-import { ProductModifications } from "../components/ProductModifications";
-import { SimpleProductFields } from "../components/SimpleProductFields";
-import { AllProductProperties } from "../components/AllProductProperties";
-import type { TablesInsert, TablesUpdate } from "@simplysoftua/core/supabase/types";
-import { PluginSlot } from "@simplysoftua/plugins/PluginSlot";
-import { adminPath } from "../lib/adminLinks";
+} from '@simplycms/ui/select';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ImageUpload } from '../components/ImageUpload';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { ProductPropertyValues } from '../components/ProductPropertyValues';
+import { ProductModifications } from '../components/ProductModifications';
+import { SimpleProductFields } from '../components/SimpleProductFields';
+import { AllProductProperties } from '../components/AllProductProperties';
+import type { TablesInsert, TablesUpdate } from '@simplycms/supabase';
+import { PluginSlot } from '@simplycms/plugins/PluginSlot';
+import { adminPath } from '../lib/adminLinks';
 
 export default function ProductEdit() {
   const supabase = useSupabaseClient();
@@ -35,32 +35,32 @@ export default function ProductEdit() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isNew = productId === "new";
+  const isNew = productId === 'new';
 
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    short_description: "",
-    description: "",
-    meta_title: "",
-    meta_description: "",
-    section_id: "",
+    name: '',
+    slug: '',
+    short_description: '',
+    description: '',
+    meta_title: '',
+    meta_description: '',
+    section_id: '',
     is_active: true,
     is_featured: false,
     has_modifications: true,
-    sku: "",
-    stock_status: "in_stock" as "in_stock" | "out_of_stock" | "on_order",
+    sku: '',
+    stock_status: 'in_stock' as 'in_stock' | 'out_of_stock' | 'on_order',
   });
   const [images, setImages] = useState<string[]>([]);
 
   const { data: product, isLoading: productLoading } = useQuery({
-    queryKey: ["product", productId],
+    queryKey: ['product', productId],
     queryFn: async () => {
       if (isNew) return null;
       const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId)
+        .from('products')
+        .select('*')
+        .eq('id', productId)
         .single();
       if (error) throw error;
       return data;
@@ -69,12 +69,12 @@ export default function ProductEdit() {
   });
 
   const { data: sections } = useQuery({
-    queryKey: ["admin-sections-list"],
+    queryKey: ['admin-sections-list'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sections")
-        .select("id, name")
-        .order("name");
+        .from('sections')
+        .select('id, name')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -85,27 +85,27 @@ export default function ProductEdit() {
   if (product && product.id !== prevProductId) {
     setPrevProductId(product.id);
     setFormData({
-      name: product.name || "",
-      slug: product.slug || "",
-      short_description: product.short_description || "",
-      description: product.description || "",
-      meta_title: product.meta_title || "",
-      meta_description: product.meta_description || "",
-      section_id: product.section_id || "",
+      name: product.name || '',
+      slug: product.slug || '',
+      short_description: product.short_description || '',
+      description: product.description || '',
+      meta_title: product.meta_title || '',
+      meta_description: product.meta_description || '',
+      section_id: product.section_id || '',
       is_active: product.is_active ?? true,
       is_featured: product.is_featured ?? false,
       has_modifications: product.has_modifications ?? true,
-      sku: product.sku || "",
-      stock_status: product.stock_status || "in_stock",
+      sku: product.sku || '',
+      stock_status: product.stock_status || 'in_stock',
     });
     const productImages = product.images;
     setImages(Array.isArray(productImages) ? productImages.map(String) : []);
   }
 
   const createMutation = useMutation({
-    mutationFn: async (data: TablesInsert<"products">) => {
+    mutationFn: async (data: TablesInsert<'products'>) => {
       const { data: newProduct, error } = await supabase
-        .from("products")
+        .from('products')
         .insert([data])
         .select()
         .single();
@@ -113,36 +113,44 @@ export default function ProductEdit() {
       return newProduct;
     },
     onSuccess: (newProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      toast({ title: "Товар створено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast({ title: 'Товар створено' });
       navigate({ to: adminPath(`products/${newProduct.id}`) });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: TablesUpdate<"products">) => {
+    mutationFn: async (data: TablesUpdate<'products'>) => {
       const { error } = await supabase
-        .from("products")
+        .from('products')
         .update(data)
-        .eq("id", productId);
+        .eq('id', productId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", productId] });
-      toast({ title: "Товар оновлено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      toast({ title: 'Товар оновлено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data: TablesInsert<"products"> = {
+    const data: TablesInsert<'products'> = {
       name: formData.name,
       slug: formData.slug,
       short_description: formData.short_description,
@@ -162,7 +170,7 @@ export default function ProductEdit() {
       data.stock_status = formData.stock_status;
     } else {
       data.sku = null;
-      data.stock_status = "in_stock";
+      data.stock_status = 'in_stock';
     }
 
     if (isNew) {
@@ -191,15 +199,21 @@ export default function ProductEdit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('products') })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: adminPath('products') })}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isNew ? "Новий товар" : formData.name || "Редагування товару"}
+              {isNew ? 'Новий товар' : formData.name || 'Редагування товару'}
             </h1>
             <p className="text-muted-foreground">
-              {isNew ? "Створіть новий товар" : "Редагуйте інформацію про товар"}
+              {isNew
+                ? 'Створіть новий товар'
+                : 'Редагуйте інформацію про товар'}
             </p>
           </div>
         </div>
@@ -209,14 +223,14 @@ export default function ProductEdit() {
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {isNew ? "Створити" : "Зберегти"}
+          {isNew ? 'Створити' : 'Зберегти'}
         </Button>
       </div>
 
       {/* Plugin slot: before product form */}
-      <PluginSlot 
-        name="admin.product.form.before" 
-        context={{ product, formData, isNew, productId }} 
+      <PluginSlot
+        name="admin.product.form.before"
+        context={{ product, formData, isNew, productId }}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -233,7 +247,7 @@ export default function ProductEdit() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
+                    onChange={(e) => handleChange('name', e.target.value)}
                     required
                   />
                 </div>
@@ -242,7 +256,7 @@ export default function ProductEdit() {
                   <Input
                     id="slug"
                     value={formData.slug}
-                    onChange={(e) => handleChange("slug", e.target.value)}
+                    onChange={(e) => handleChange('slug', e.target.value)}
                     required
                   />
                 </div>
@@ -252,14 +266,16 @@ export default function ProductEdit() {
                 <Input
                   id="short_description"
                   value={formData.short_description}
-                  onChange={(e) => handleChange("short_description", e.target.value)}
+                  onChange={(e) =>
+                    handleChange('short_description', e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Повний опис</Label>
                 <RichTextEditor
                   content={formData.description}
-                  onChange={(content) => handleChange("description", content)}
+                  onChange={(content) => handleChange('description', content)}
                   placeholder="Введіть опис товару..."
                 />
               </div>
@@ -274,7 +290,7 @@ export default function ProductEdit() {
               <ImageUpload
                 images={images}
                 onImagesChange={setImages}
-                folder={`products/${productId || "new"}`}
+                folder={`products/${productId || 'new'}`}
                 maxImages={10}
               />
             </CardContent>
@@ -290,7 +306,7 @@ export default function ProductEdit() {
                 <Input
                   id="meta_title"
                   value={formData.meta_title}
-                  onChange={(e) => handleChange("meta_title", e.target.value)}
+                  onChange={(e) => handleChange('meta_title', e.target.value)}
                   placeholder="Заголовок для пошукових систем"
                 />
               </div>
@@ -300,7 +316,9 @@ export default function ProductEdit() {
                   id="meta_description"
                   rows={3}
                   value={formData.meta_description}
-                  onChange={(e) => handleChange("meta_description", e.target.value)}
+                  onChange={(e) =>
+                    handleChange('meta_description', e.target.value)
+                  }
                   placeholder="Опис для пошукових систем"
                 />
               </div>
@@ -308,9 +326,9 @@ export default function ProductEdit() {
           </Card>
 
           {/* Plugin slot: additional form fields from plugins */}
-          <PluginSlot 
-            name="admin.product.form.fields" 
-            context={{ product, formData, isNew, productId, handleChange }} 
+          <PluginSlot
+            name="admin.product.form.fields"
+            context={{ product, formData, isNew, productId, handleChange }}
           />
 
           {/* Simple product fields - only for simple products */}
@@ -319,8 +337,8 @@ export default function ProductEdit() {
               productId={productId!}
               sku={formData.sku}
               stockStatus={formData.stock_status}
-              onSkuChange={(v) => handleChange("sku", v)}
-              onStockStatusChange={(v) => handleChange("stock_status", v)}
+              onSkuChange={(v) => handleChange('sku', v)}
+              onStockStatusChange={(v) => handleChange('stock_status', v)}
             />
           )}
 
@@ -342,13 +360,16 @@ export default function ProductEdit() {
 
           {/* Modifications - only show for products with modifications */}
           {!isNew && formData.has_modifications && (
-            <ProductModifications productId={productId!} sectionId={formData.section_id} />
+            <ProductModifications
+              productId={productId!}
+              sectionId={formData.section_id}
+            />
           )}
 
           {/* Plugin slot: after main form content */}
-          <PluginSlot 
-            name="admin.product.form.after" 
-            context={{ product, formData, isNew, productId }} 
+          <PluginSlot
+            name="admin.product.form.after"
+            context={{ product, formData, isNew, productId }}
           />
         </div>
 
@@ -363,7 +384,7 @@ export default function ProductEdit() {
                 <Label>Розділ *</Label>
                 <Select
                   value={formData.section_id}
-                  onValueChange={(value) => handleChange("section_id", value)}
+                  onValueChange={(value) => handleChange('section_id', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Виберіть розділ" />
@@ -383,19 +404,35 @@ export default function ProductEdit() {
               <div className="space-y-2">
                 <Label>Тип товару</Label>
                 <RadioGroup
-                  value={formData.has_modifications ? "with_modifications" : "simple"}
-                  onValueChange={(value) => handleChange("has_modifications", value === "with_modifications")}
+                  value={
+                    formData.has_modifications ? 'with_modifications' : 'simple'
+                  }
+                  onValueChange={(value) =>
+                    handleChange(
+                      'has_modifications',
+                      value === 'with_modifications',
+                    )
+                  }
                   className="flex flex-col gap-2"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="simple" id="type_simple" />
-                    <Label htmlFor="type_simple" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="type_simple"
+                      className="font-normal cursor-pointer"
+                    >
                       Простий товар
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="with_modifications" id="type_modifications" />
-                    <Label htmlFor="type_modifications" className="font-normal cursor-pointer">
+                    <RadioGroupItem
+                      value="with_modifications"
+                      id="type_modifications"
+                    />
+                    <Label
+                      htmlFor="type_modifications"
+                      className="font-normal cursor-pointer"
+                    >
                       Товар з модифікаціями
                     </Label>
                   </div>
@@ -409,7 +446,9 @@ export default function ProductEdit() {
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
-                  onCheckedChange={(checked) => handleChange("is_active", checked)}
+                  onCheckedChange={(checked) =>
+                    handleChange('is_active', checked)
+                  }
                 />
               </div>
 
@@ -418,16 +457,18 @@ export default function ProductEdit() {
                 <Switch
                   id="is_featured"
                   checked={formData.is_featured}
-                  onCheckedChange={(checked) => handleChange("is_featured", checked)}
+                  onCheckedChange={(checked) =>
+                    handleChange('is_featured', checked)
+                  }
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Plugin slot: sidebar items from plugins */}
-          <PluginSlot 
-            name="admin.product.form.sidebar" 
-            context={{ product, formData, isNew, productId }} 
+          <PluginSlot
+            name="admin.product.form.sidebar"
+            context={{ product, formData, isNew, productId }}
           />
 
           {!isNew && (
@@ -440,12 +481,12 @@ export default function ProductEdit() {
                 {product && (
                   <>
                     <p>
-                      Створено:{" "}
-                      {new Date(product.created_at).toLocaleDateString("uk-UA")}
+                      Створено:{' '}
+                      {new Date(product.created_at).toLocaleDateString('uk-UA')}
                     </p>
                     <p>
-                      Оновлено:{" "}
-                      {new Date(product.updated_at).toLocaleDateString("uk-UA")}
+                      Оновлено:{' '}
+                      {new Date(product.updated_at).toLocaleDateString('uk-UA')}
                     </p>
                   </>
                 )}

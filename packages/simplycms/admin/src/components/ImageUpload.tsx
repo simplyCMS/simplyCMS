@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
-import { Upload, X, Loader2 } from "lucide-react";
-import { cn } from "@simplysoftua/core/lib/utils";
+import { useState, useCallback } from 'react';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Upload, X, Loader2 } from 'lucide-react';
+import { cn } from '@simplycms/core/lib/utils';
 
 interface ImageUploadProps {
   images: string[];
@@ -17,8 +17,8 @@ interface ImageUploadProps {
 export function ImageUpload({
   images,
   onImagesChange,
-  folder = "products",
-  bucket = "product-images",
+  folder = 'products',
+  bucket = 'product-images',
   maxImages = 10,
   disabled = false,
 }: ImageUploadProps) {
@@ -27,86 +27,94 @@ export function ImageUpload({
   const [dragOver, setDragOver] = useState(false);
   const { toast } = useToast();
 
-  const uploadFile = useCallback(async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split(".").pop()?.toLowerCase();
-    const allowedExts = ["jpg", "jpeg", "png", "webp", "gif"];
-    
-    if (!fileExt || !allowedExts.includes(fileExt)) {
-      toast({
-        variant: "destructive",
-        title: "Непідтримуваний формат",
-        description: "Дозволені формати: JPG, PNG, WebP, GIF",
-      });
-      return null;
-    }
+  const uploadFile = useCallback(
+    async (file: File): Promise<string | null> => {
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "Файл занадто великий",
-        description: "Максимальний розмір: 5 МБ",
-      });
-      return null;
-    }
-
-    const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (error) {
-      console.error("Upload error:", error);
-      toast({
-        variant: "destructive",
-        title: "Помилка завантаження",
-        description: error.message,
-      });
-      return null;
-    }
-
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName);
-
-    return urlData.publicUrl;
-  }, [folder, bucket, toast, supabase]);
-
-  const handleFileSelect = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0 || disabled) return;
-
-    const remainingSlots = maxImages - images.length;
-    if (remainingSlots <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Ліміт досягнуто",
-        description: `Максимум ${maxImages} зображень`,
-      });
-      return;
-    }
-
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
-    setIsUploading(true);
-
-    try {
-      const uploadPromises = filesToUpload.map((file) => uploadFile(file));
-      const results = await Promise.all(uploadPromises);
-      const successfulUploads = results.filter((url): url is string => url !== null);
-
-      if (successfulUploads.length > 0) {
-        onImagesChange([...images, ...successfulUploads]);
+      if (!fileExt || !allowedExts.includes(fileExt)) {
         toast({
-          title: "Завантажено",
-          description: `${successfulUploads.length} зображень додано`,
+          variant: 'destructive',
+          title: 'Непідтримуваний формат',
+          description: 'Дозволені формати: JPG, PNG, WebP, GIF',
         });
+        return null;
       }
-    } finally {
-      setIsUploading(false);
-    }
-  }, [disabled, maxImages, images, onImagesChange, toast, uploadFile]);
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          variant: 'destructive',
+          title: 'Файл занадто великий',
+          description: 'Максимальний розмір: 5 МБ',
+        });
+        return null;
+      }
+
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Помилка завантаження',
+          description: error.message,
+        });
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    },
+    [folder, bucket, toast, supabase],
+  );
+
+  const handleFileSelect = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0 || disabled) return;
+
+      const remainingSlots = maxImages - images.length;
+      if (remainingSlots <= 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Ліміт досягнуто',
+          description: `Максимум ${maxImages} зображень`,
+        });
+        return;
+      }
+
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
+      setIsUploading(true);
+
+      try {
+        const uploadPromises = filesToUpload.map((file) => uploadFile(file));
+        const results = await Promise.all(uploadPromises);
+        const successfulUploads = results.filter(
+          (url): url is string => url !== null,
+        );
+
+        if (successfulUploads.length > 0) {
+          onImagesChange([...images, ...successfulUploads]);
+          toast({
+            title: 'Завантажено',
+            description: `${successfulUploads.length} зображень додано`,
+          });
+        }
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [disabled, maxImages, images, onImagesChange, toast, uploadFile],
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -114,7 +122,7 @@ export function ImageUpload({
       setDragOver(false);
       handleFileSelect(e.dataTransfer.files);
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -158,16 +166,18 @@ export function ImageUpload({
       {/* Upload area */}
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer",
-          dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
-          disabled && "opacity-50 cursor-not-allowed"
+          'border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer',
+          dragOver
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-primary/50',
+          disabled && 'opacity-50 cursor-not-allowed',
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => {
           if (!disabled && !isUploading) {
-            document.getElementById("image-upload-input")?.click();
+            document.getElementById('image-upload-input')?.click();
           }
         }}
       >
@@ -183,7 +193,9 @@ export function ImageUpload({
         {isUploading ? (
           <div className="flex items-center justify-center gap-2 py-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Завантаження...</span>
+            <span className="text-sm text-muted-foreground">
+              Завантаження...
+            </span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-2">

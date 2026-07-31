@@ -117,12 +117,13 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 
 | Зона | За чим перевіряти |
 | ---- | ----------------- |
-| `src/routes/_storefront*` | SSR: route loaders, дані з `src/server`, тема через `ThemeRegistry.load(themeName)`, SEO/`src/seo` |
-| `src/routes/admin*` | client-only: `ssr: false` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
-| `src/routes/_protected*`, `src/routes/auth`, `src/routes/api` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
-| `src/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
+| `storefront-routes/routes/_storefront*` | SSR: route loaders, дані з `storefront-routes/src/server`, каркас `StorefrontShell`, SEO (`storefront-routes/src/seo`) |
+| `admin-routes/routes/*` | client-only: `ssr: false` **лише** на `admin.tsx` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
+| `storefront-routes/routes/{_protected*,auth,api}` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
+| `*/src/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
+| `routes.ts`, `src/routes/` | дерево збирає `virtualRouteConfig`; host тримає лише `__root.tsx` + `my/` (гард — `tests/virtual-routes-escape.test.ts`) |
 | `packages/simplycms/*` | межі пакетів і напрям залежностей, публічні барелі, ліміт 150 рядків, відсутність прив'язки до `src/` |
-| `themes/*`, `plugins/*` | лише презентація й реєстрація (`src/theme-registry.ts`), нуль бізнес-логіки й прямих запитів до БД |
+| `themes/*`, `plugins/*` | контракт теми v2 (`manifest+tokens+components`, без сторінок/лейаутів), реєстрація з `config.themes`, нуль бізнес-логіки й прямих запитів до БД |
 
 **Два правила для формулювання «як лагодити»:**
 
@@ -151,9 +152,10 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   (гейти в канонічному порядку: `pnpm format:check` → `pnpm lint` → `pnpm build`
   → `pnpm typecheck` → `pnpm test`; **build перед typecheck**, бо build генерує
   `src/routeTree.gen.ts`; гейт саме `format:check` — `pnpm format` це
-  `prettier --write`, він не червоніє. 🔴 `prettier` наразі не встановлений
-  (`devDependencies` його не містить, CI format не запускає) — тож де-факто
-  гейти починаються з `lint`; це борг, а не привід писати «format зелений»);
+  `prettier --write`, він не червоніє. Обидві покривають увесь репозиторій;
+  що виключено — у `.prettierignore`: машинний генерат, артефакти збірки, `*.md`.
+  🔴 Форматування — НЕ предмет рев'ю: `format:check` або зелений, або ні; не пиши
+  знахідок про стиль, який prettier вже нормалізував);
 - вердикт: `CONFIRMED` (з confidence) / `REFUTED` (з причиною) / `PARTIAL`
   (реальне, але не так і не там, де описано) — з переформулюванням.
 

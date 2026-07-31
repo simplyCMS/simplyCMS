@@ -1,2 +1,2 @@
-// Перенесено в @simplysoftua/profile-ui. Re-export для зворотної сумісності.
-export * from "@simplysoftua/profile-ui/AddressesList";
+// Перенесено в @simplycms/profile-ui. Re-export для зворотної сумісності.
+export * from '@simplycms/profile-ui/AddressesList';

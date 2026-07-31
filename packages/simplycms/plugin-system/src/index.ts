@@ -1,6 +1,6 @@
 // Core exports
-export { hookRegistry } from "./HookRegistry";
-export { default as HookRegistry } from "./HookRegistry";
+export { hookRegistry } from './HookRegistry';
+export { default as HookRegistry } from './HookRegistry';
 export {
   loadPlugins,
   activatePlugin,
@@ -11,10 +11,14 @@ export {
   uninstallPlugin,
   registerPluginModule,
   getRegisteredPluginModules,
-} from "./PluginLoader";
+} from './PluginLoader';
+
+// Bootstrap (конфіг магазину → реєстр → БД)
+export { bootstrapPlugins } from './bootstrap';
+export type { PluginRegistration } from './bootstrap';
 
 // Component exports
-export { PluginSlot, usePluginSlot, getPluginSlotCount } from "./PluginSlot";
+export { PluginSlot, usePluginSlot, getPluginSlotCount } from './PluginSlot';
 
 // Hook point constants
 export {
@@ -48,7 +52,7 @@ export {
   HOOK_PRODUCT_BEFORE_SAVE,
   HOOK_USER_REGISTERED,
   ALL_HOOKS,
-} from "./hooks";
+} from './hooks';
 
 // Type exports
 export type {
@@ -69,6 +73,6 @@ export type {
   ProductFormContext,
   ProductDetailContext,
   OrderActionsContext,
-} from "./types";
+} from './types';
 
-export { parsePlugin } from "./types";
+export { parsePlugin } from './types';

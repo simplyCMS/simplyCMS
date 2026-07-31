@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
-import { cn } from "@simplysoftua/ui/utils";
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { cn } from '@simplycms/ui/utils';
 
 interface ProductGalleryProps {
   images: string[];
@@ -73,10 +73,10 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={cn(
-                "relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-colors",
+                'relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-colors',
                 index === currentIndex
-                  ? "border-primary"
-                  : "border-transparent hover:border-muted-foreground/50"
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted-foreground/50',
               )}
             >
               <img

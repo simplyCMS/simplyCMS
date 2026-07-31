@@ -1,16 +1,29 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplysoftua/ui/select";
-import { Card, CardContent } from "@simplysoftua/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@simplysoftua/ui/table";
-import { StarRating } from "@simplysoftua/core/components/reviews/StarRating";
-import { Loader2, MessageSquare } from "lucide-react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Badge } from '@simplycms/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@simplycms/ui/select';
+import { Card, CardContent } from '@simplycms/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@simplycms/ui/table';
+import { StarRating } from '@simplycms/core/components/reviews/StarRating';
+import { Loader2, MessageSquare } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
 
 interface ReviewProfile {
   user_id: string;
@@ -36,31 +49,34 @@ interface ReviewWithMeta {
 }
 
 const statusLabels: Record<string, string> = {
-  pending: "На модерації",
-  approved: "Затверджено",
-  rejected: "Відхилено",
+  pending: 'На модерації',
+  approved: 'Затверджено',
+  rejected: 'Відхилено',
 };
-const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "outline",
-  approved: "default",
-  rejected: "destructive",
+const statusVariants: Record<
+  string,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  pending: 'outline',
+  approved: 'default',
+  rejected: 'destructive',
 };
 
 export default function AdminReviews() {
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ["admin-reviews", statusFilter],
+    queryKey: ['admin-reviews', statusFilter],
     queryFn: async () => {
       let query = supabase
-        .from("product_reviews")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('product_reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
       }
 
       const { data, error } = await query;
@@ -75,29 +91,33 @@ export default function AdminReviews() {
 
       if (productIds.length > 0) {
         const { data: products } = await supabase
-          .from("products")
-          .select("id, name")
-          .in("id", productIds);
-        products?.forEach((p) => { productsMap[p.id] = p.name; });
+          .from('products')
+          .select('id, name')
+          .in('id', productIds);
+        products?.forEach((p) => {
+          productsMap[p.id] = p.name;
+        });
       }
 
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, first_name, last_name, email")
-          .in("user_id", userIds);
-        profiles?.forEach((p) => { profilesMap[p.user_id] = p; });
+          .from('profiles')
+          .select('user_id, first_name, last_name, email')
+          .in('user_id', userIds);
+        profiles?.forEach((p) => {
+          profilesMap[p.user_id] = p;
+        });
       }
 
       return (data || []).map((r) => ({
         ...r,
-        productName: productsMap[r.product_id] || "—",
+        productName: productsMap[r.product_id] || '—',
         profile: profilesMap[r.user_id] || null,
       })) as ReviewWithMeta[];
     },
   });
 
-  const pendingCount = reviews.filter((r) => r.status === "pending").length;
+  const pendingCount = reviews.filter((r) => r.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -132,7 +152,9 @@ export default function AdminReviews() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : reviews.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">Відгуків не знайдено</p>
+        <p className="text-muted-foreground text-center py-8">
+          Відгуків не знайдено
+        </p>
       ) : (
         <Card>
           <CardContent className="p-0">
@@ -149,24 +171,36 @@ export default function AdminReviews() {
               <TableBody>
                 {reviews.map((r) => {
                   const authorName = r.profile
-                    ? [r.profile.first_name, r.profile.last_name].filter(Boolean).join(" ") || r.profile.email || "—"
-                    : "—";
+                    ? [r.profile.first_name, r.profile.last_name]
+                        .filter(Boolean)
+                        .join(' ') ||
+                      r.profile.email ||
+                      '—'
+                    : '—';
                   return (
                     <TableRow
                       key={r.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: adminPath(`reviews/${r.id}`) })}
+                      onClick={() =>
+                        navigate({ to: adminPath(`reviews/${r.id}`) })
+                      }
                     >
-                      <TableCell className="font-medium max-w-[200px] truncate">{r.productName}</TableCell>
+                      <TableCell className="font-medium max-w-[200px] truncate">
+                        {r.productName}
+                      </TableCell>
                       <TableCell>{authorName}</TableCell>
-                      <TableCell><StarRating value={r.rating} readonly size="sm" /></TableCell>
                       <TableCell>
-                        <Badge variant={statusVariants[r.status] || "outline"}>
+                        <StarRating value={r.rating} readonly size="sm" />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariants[r.status] || 'outline'}>
                           {statusLabels[r.status] || r.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(r.created_at), "d MMM yyyy HH:mm", { locale: uk })}
+                        {format(new Date(r.created_at), 'd MMM yyyy HH:mm', {
+                          locale: uk,
+                        })}
                       </TableCell>
                     </TableRow>
                   );

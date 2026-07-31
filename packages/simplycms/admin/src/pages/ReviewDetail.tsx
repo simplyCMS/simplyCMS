@@ -1,23 +1,30 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Button } from "@simplysoftua/ui/button";
-import { Badge } from "@simplysoftua/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Textarea } from "@simplysoftua/ui/textarea";
-import { Label } from "@simplysoftua/ui/label";
-import { StarRating } from "@simplysoftua/core/components/reviews/StarRating";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplysoftua/ui/avatar";
-import { useToast } from "@simplysoftua/core/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Label } from '@simplycms/ui/label';
+import { StarRating } from '@simplycms/core/components/reviews/StarRating';
+import { Avatar, AvatarFallback, AvatarImage } from '@simplycms/ui/avatar';
+import { useToast } from '@simplycms/core/hooks/use-toast';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@simplysoftua/ui/alert-dialog";
-import { ArrowLeft, Check, X, Trash2, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
-import { useState } from "react";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@simplycms/ui/alert-dialog';
+import { ArrowLeft, Check, X, Trash2, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
+import { useState } from 'react';
 
 export default function AdminReviewDetail() {
   const supabase = useSupabaseClient();
@@ -25,30 +32,30 @@ export default function AdminReviewDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [adminComment, setAdminComment] = useState("");
+  const [adminComment, setAdminComment] = useState('');
 
   const { data: review, isLoading } = useQuery({
-    queryKey: ["admin-review", reviewId],
+    queryKey: ['admin-review', reviewId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("product_reviews")
-        .select("*")
-        .eq("id", reviewId)
+        .from('product_reviews')
+        .select('*')
+        .eq('id', reviewId)
         .single();
       if (error) throw error;
 
       // Fetch product
       const { data: product } = await supabase
-        .from("products")
-        .select("id, name, slug, sections(slug)")
-        .eq("id", data.product_id)
+        .from('products')
+        .select('id, name, slug, sections(slug)')
+        .eq('id', data.product_id)
         .single();
 
       // Fetch profile
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, email, avatar_url")
-        .eq("user_id", data.user_id)
+        .from('profiles')
+        .select('user_id, first_name, last_name, email, avatar_url')
+        .eq('user_id', data.user_id)
         .single();
 
       return {
@@ -61,19 +68,25 @@ export default function AdminReviewDetail() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ status, comment }: { status: string; comment?: string }) => {
+    mutationFn: async ({
+      status,
+      comment,
+    }: {
+      status: string;
+      comment?: string;
+    }) => {
       const updateData: { status: string; admin_comment?: string } = { status };
       if (comment !== undefined) updateData.admin_comment = comment;
       const { error } = await supabase
-        .from("product_reviews")
+        .from('product_reviews')
         .update(updateData)
-        .eq("id", reviewId);
+        .eq('id', reviewId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-review", reviewId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
-      toast({ title: "Статус оновлено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-review', reviewId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+      toast({ title: 'Статус оновлено' });
     },
   });
 
@@ -81,29 +94,40 @@ export default function AdminReviewDetail() {
     mutationFn: async () => {
       // Delete images from storage
       if (review?.images?.length) {
-        const paths = (review.images as string[]).map((url: string) => {
-          try {
-            const u = new URL(url);
-            const match = u.pathname.match(/\/review-images\/(.+)$/);
-            return match ? match[1] : null;
-          } catch { return null; }
-        }).filter(Boolean) as string[];
+        const paths = (review.images as string[])
+          .map((url: string) => {
+            try {
+              const u = new URL(url);
+              const match = u.pathname.match(/\/review-images\/(.+)$/);
+              return match ? match[1] : null;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean) as string[];
         if (paths.length > 0) {
-          await supabase.storage.from("review-images").remove(paths);
+          await supabase.storage.from('review-images').remove(paths);
         }
       }
-      const { error } = await supabase.from("product_reviews").delete().eq("id", reviewId);
+      const { error } = await supabase
+        .from('product_reviews')
+        .delete()
+        .eq('id', reviewId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
-      toast({ title: "Відгук видалено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+      toast({ title: 'Відгук видалено' });
       navigate({ to: adminPath('reviews') });
     },
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
   }
 
   if (!review) {
@@ -111,24 +135,42 @@ export default function AdminReviewDetail() {
   }
 
   const authorName = review.profile
-    ? [review.profile.first_name, review.profile.last_name].filter(Boolean).join(" ") || review.profile.email || "—"
-    : "—";
+    ? [review.profile.first_name, review.profile.last_name]
+        .filter(Boolean)
+        .join(' ') ||
+      review.profile.email ||
+      '—'
+    : '—';
 
   const initials = review.profile
-    ? [review.profile.first_name?.[0], review.profile.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "U"
-    : "U";
+    ? [review.profile.first_name?.[0], review.profile.last_name?.[0]]
+        .filter(Boolean)
+        .join('')
+        .toUpperCase() || 'U'
+    : 'U';
 
-  const statusLabels: Record<string, string> = { pending: "На модерації", approved: "Затверджено", rejected: "Відхилено" };
-  const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = { pending: "outline", approved: "default", rejected: "destructive" };
+  const statusLabels: Record<string, string> = {
+    pending: 'На модерації',
+    approved: 'Затверджено',
+    rejected: 'Відхилено',
+  };
+  const statusVariants: Record<
+    string,
+    'default' | 'secondary' | 'destructive' | 'outline'
+  > = { pending: 'outline', approved: 'default', rejected: 'destructive' };
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('reviews') })}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate({ to: adminPath('reviews') })}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Деталі відгуку</h1>
-        <Badge variant={statusVariants[review.status] || "outline"}>
+        <Badge variant={statusVariants[review.status] || 'outline'}>
           {statusLabels[review.status] || review.status}
         </Badge>
       </div>
@@ -136,21 +178,34 @@ export default function AdminReviewDetail() {
       {/* Product & Author info */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Товар</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Товар
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             {review.product ? (
               <Link
                 to="/catalog/$sectionSlug/$productSlug"
-                params={{ sectionSlug: review.product.sections?.slug || "all", productSlug: review.product.slug }}
+                params={{
+                  sectionSlug: review.product.sections?.slug || 'all',
+                  productSlug: review.product.slug,
+                }}
                 className="font-medium text-primary hover:underline"
               >
                 {review.product.name}
               </Link>
-            ) : <span>—</span>}
+            ) : (
+              <span>—</span>
+            )}
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Автор</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Автор
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
@@ -160,7 +215,9 @@ export default function AdminReviewDetail() {
               <div>
                 <p className="font-medium text-sm">{authorName}</p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(review.created_at), "d MMM yyyy HH:mm", { locale: uk })}
+                  {format(new Date(review.created_at), 'd MMM yyyy HH:mm', {
+                    locale: uk,
+                  })}
                 </p>
               </div>
             </div>
@@ -176,17 +233,34 @@ export default function AdminReviewDetail() {
             <span className="text-lg font-semibold">{review.rating}/5</span>
           </div>
 
-          {review.title && <h3 className="text-lg font-semibold">{review.title}</h3>}
+          {review.title && (
+            <h3 className="text-lg font-semibold">{review.title}</h3>
+          )}
 
-          {review.content && review.content !== "<p></p>" && (
-            <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: review.content }} />
+          {review.content && review.content !== '<p></p>' && (
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: review.content }}
+            />
           )}
 
           {review.images.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {(review.images as string[]).map((url: string, i: number) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative block h-24 w-24">
-                  <img src={url} alt={`Фото ${i + 1}`} className="absolute inset-0 w-full h-full object-cover rounded-lg border hover:opacity-80 transition-opacity" loading="lazy" decoding="async" />
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block h-24 w-24"
+                >
+                  <img
+                    src={url}
+                    alt={`Фото ${i + 1}`}
+                    className="absolute inset-0 w-full h-full object-cover rounded-lg border hover:opacity-80 transition-opacity"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </a>
               ))}
             </div>
@@ -207,18 +281,28 @@ export default function AdminReviewDetail() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {review.status !== "approved" && (
+            {review.status !== 'approved' && (
               <Button
-                onClick={() => updateStatus.mutate({ status: "approved", comment: adminComment || undefined })}
+                onClick={() =>
+                  updateStatus.mutate({
+                    status: 'approved',
+                    comment: adminComment || undefined,
+                  })
+                }
                 disabled={updateStatus.isPending}
               >
                 <Check className="h-4 w-4 mr-1" /> Затвердити
               </Button>
             )}
-            {review.status !== "rejected" && (
+            {review.status !== 'rejected' && (
               <Button
                 variant="outline"
-                onClick={() => updateStatus.mutate({ status: "rejected", comment: adminComment || undefined })}
+                onClick={() =>
+                  updateStatus.mutate({
+                    status: 'rejected',
+                    comment: adminComment || undefined,
+                  })
+                }
                 disabled={updateStatus.isPending}
               >
                 <X className="h-4 w-4 mr-1" /> Відхилити
@@ -233,11 +317,15 @@ export default function AdminReviewDetail() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Видалити відгук?</AlertDialogTitle>
-                  <AlertDialogDescription>Відгук та всі його зображення будуть видалені назавжди.</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    Відгук та всі його зображення будуть видалені назавжди.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Скасувати</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteReview.mutate()}>Видалити</AlertDialogAction>
+                  <AlertDialogAction onClick={() => deleteReview.mutate()}>
+                    Видалити
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -245,7 +333,9 @@ export default function AdminReviewDetail() {
 
           {review.admin_comment && (
             <div className="bg-muted rounded-lg p-3">
-              <p className="text-sm text-muted-foreground">Попередній коментар:</p>
+              <p className="text-sm text-muted-foreground">
+                Попередній коментар:
+              </p>
               <p className="text-sm">{review.admin_comment}</p>
             </div>
           )}

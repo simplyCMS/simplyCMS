@@ -30,15 +30,11 @@ pnpm test:watch             # Vitest watch mode
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
 
-# Git Subtree (ядро CMS)
-pnpm cms:pull               # Підтягнути оновлення ядра
-pnpm cms:push               # Відправити зміни ядра
-pnpm cms:push:branch <br>   # Push в окрему гілку
-pnpm cms:diff               # Побачити зміни в ядрі
-
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
+pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
+pnpm db:diff <name>         # schema.ts → SQL у supabase/migrations (ревʼю обовʼязкове!)
+pnpm db:migrate             # Застосувати міграції (supabase link + db push + типи)
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase
-pnpm db:migrate             # Застосувати міграції (supabase link + db push)
 ```
 
 ## Конфігурація
@@ -46,8 +42,8 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 ### TypeScript
 - Strict mode увімкнено.
 - Path aliases (повний перелік — `tsconfig.json` + дзеркало у `vite.config.ts`):
-  - `@simplysoftua/db-types` → `supabase/types.ts`
-  - `@simplysoftua/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
+  - `@simplycms/db-types` → `supabase/types.ts`
+  - `@simplycms/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
     react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
     storefront, runtime, cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui)
   - `@themes/*` → `themes/*`
@@ -72,20 +68,6 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 - **Testing Library** (@testing-library/react) для компонентів (environment: jsdom per-file).
 - Тести поруч з кодом або в `__tests__/` директоріях.
 - `tests/published-exports-parity.test.ts` — guard паритету dev/publish exports пакетів.
-
-## Git Subtree Workflow
-
-### Повсякденна розробка
-1. Працюй в будь-яких файлах як звичайно.
-2. Коміть і пуш в `main`.
-
-### Публікація змін ядра
-1. Переконайся що зміни в `packages/simplycms/` закомічені.
-2. Виконай `pnpm cms:push` для відправки в core-репозиторій.
-
-### Оновлення ядра
-1. Виконай `pnpm cms:pull` для підтягування змін з core-репозиторію.
-2. Розвʼяжи merge conflicts якщо є.
 
 ## Змінні оточення
 

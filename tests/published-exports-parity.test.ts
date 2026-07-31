@@ -39,8 +39,8 @@ describe('published packages: dev/publish exports parity', () => {
       expect(pub).toEqual(dev);
     });
 
-    it(`${json.name}: publishes to GitHub Packages`, () => {
-      expect(json.publishConfig?.registry).toBe('https://npm.pkg.github.com');
+    it(`${json.name}: publishes to npmjs`, () => {
+      expect(json.publishConfig?.registry).toBe('https://registry.npmjs.org');
     });
   }
 });

@@ -1,7 +1,7 @@
 // Supabase-реалізація CatalogRepository. Клієнт інжектується (DI),
 // scope застосовується лише коли визначений (multi-tenant MetaHub).
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CatalogRepository,
   ScopeResolver,
@@ -19,15 +19,15 @@ import type {
   DiscountGroup,
   DiscountScope,
   ShippingZone,
-} from "@simplysoftua/objects";
+} from '@simplycms/objects';
 import {
   mapProduct,
   mapSection,
   mapProperty,
   mapPriceType,
   buildDiscountTree,
-} from "./mappers";
-import { singleTenantScope, SCOPE_COLUMN } from "./scope";
+} from './mappers';
+import { singleTenantScope, SCOPE_COLUMN } from './scope';
 
 const PRODUCT_FULL_SELECT = `
   *,
@@ -59,7 +59,11 @@ export function createSupabaseCatalogRepository(
     return hubId === undefined ? query : query.eq(SCOPE_COLUMN, hubId);
   };
 
-  const pageOf = <T>(items: T[], q?: { page?: number; pageSize?: number }, total?: number): Paged<T> => ({
+  const pageOf = <T>(
+    items: T[],
+    q?: { page?: number; pageSize?: number },
+    total?: number,
+  ): Paged<T> => ({
     items,
     total: total ?? items.length,
     page: q?.page ?? 1,
@@ -69,13 +73,19 @@ export function createSupabaseCatalogRepository(
   return {
     async getProduct(idOrSlug: string): Promise<Product | null> {
       const bySlug = await scoped(
-        client.from("products").select(PRODUCT_FULL_SELECT).eq("slug", idOrSlug),
+        client
+          .from('products')
+          .select(PRODUCT_FULL_SELECT)
+          .eq('slug', idOrSlug),
       ).maybeSingle();
       if (bySlug.data) return mapProduct(bySlug.data as Row);
 
       if (UUID_RE.test(idOrSlug)) {
         const byId = await scoped(
-          client.from("products").select(PRODUCT_FULL_SELECT).eq("id", idOrSlug),
+          client
+            .from('products')
+            .select(PRODUCT_FULL_SELECT)
+            .eq('id', idOrSlug),
         ).maybeSingle();
         if (byId.data) return mapProduct(byId.data as Row);
       }
@@ -85,13 +95,15 @@ export function createSupabaseCatalogRepository(
     async listProducts(q: ProductQuery): Promise<Paged<Product>> {
       let query = scoped(
         client
-          .from("products")
-          .select("*, sections(*), product_modifications(*)", { count: "exact" })
-          .eq("is_active", true),
+          .from('products')
+          .select('*, sections(*), product_modifications(*)', {
+            count: 'exact',
+          })
+          .eq('is_active', true),
       );
-      if (q.sectionId) query = query.eq("section_id", q.sectionId);
-      if (q.search) query = query.ilike("name", `%${q.search}%`);
-      query = query.order("created_at", { ascending: false });
+      if (q.sectionId) query = query.eq('section_id', q.sectionId);
+      if (q.search) query = query.ilike('name', `%${q.search}%`);
+      query = query.order('created_at', { ascending: false });
 
       // Пагінація лише за явним запитом; інакше — без обмеження (як канонічний loader).
       if (q.page !== undefined || q.pageSize !== undefined) {
@@ -116,17 +128,21 @@ export function createSupabaseCatalogRepository(
     },
 
     async getSections(q?: SectionQuery): Promise<Section[]> {
-      let query = scoped(client.from("sections").select("*"));
-      if (q?.activeOnly !== false) query = query.eq("is_active", true);
-      if (q?.parentId === null) query = query.is("parent_id", null);
-      else if (q?.parentId) query = query.eq("parent_id", q.parentId);
-      const { data } = await query.order("sort_order");
+      let query = scoped(client.from('sections').select('*'));
+      if (q?.activeOnly !== false) query = query.eq('is_active', true);
+      if (q?.parentId === null) query = query.is('parent_id', null);
+      else if (q?.parentId) query = query.eq('parent_id', q.parentId);
+      const { data } = await query.order('sort_order');
       return ((data as Row[] | null) ?? []).map(mapSection);
     },
 
     async getSectionBySlug(slug: string): Promise<Section | null> {
       const { data } = await scoped(
-        client.from("sections").select("*").eq("slug", slug).eq("is_active", true),
+        client
+          .from('sections')
+          .select('*')
+          .eq('slug', slug)
+          .eq('is_active', true),
       ).maybeSingle();
       return data ? mapSection(data as Row) : null;
     },
@@ -135,13 +151,13 @@ export function createSupabaseCatalogRepository(
       // Канонічний storefront-лістинг фільтрує has_page=true (властивості з лендінгами).
       let query = scoped(
         client
-          .from("section_properties")
-          .select("*, property_options(*)")
-          .eq("has_page", true),
+          .from('section_properties')
+          .select('*, property_options(*)')
+          .eq('has_page', true),
       );
-      if (q?.sectionId) query = query.eq("section_id", q.sectionId);
-      if (q?.filterableOnly) query = query.eq("is_filterable", true);
-      const { data } = await query.order("name");
+      if (q?.sectionId) query = query.eq('section_id', q.sectionId);
+      if (q?.filterableOnly) query = query.eq('is_filterable', true);
+      const { data } = await query.order('name');
       return ((data as Row[] | null) ?? []).map(mapProperty);
     },
 
@@ -149,7 +165,7 @@ export function createSupabaseCatalogRepository(
       const result: Record<string, StockInfo> = {};
       await Promise.all(
         ids.map(async (id) => {
-          const { data } = await client.rpc("get_stock_info", {
+          const { data } = await client.rpc('get_stock_info', {
             p_product_id: id,
             p_modification_id: undefined,
           });
@@ -183,8 +199,8 @@ export function createSupabaseCatalogRepository(
 
     async getPriceTypes(): Promise<PriceType[]> {
       const { data } = await scoped(
-        client.from("price_types").select("*"),
-      ).order("sort_order");
+        client.from('price_types').select('*'),
+      ).order('sort_order');
       return ((data as Row[] | null) ?? []).map(mapPriceType);
     },
 
@@ -194,10 +210,10 @@ export function createSupabaseCatalogRepository(
       if (!ctx.priceTypeId) return [];
       const dq = scoped(
         client
-          .from("discounts")
-          .select("*, discount_targets(*), discount_conditions(*)")
-          .eq("is_active", true)
-          .eq("price_type_id", ctx.priceTypeId),
+          .from('discounts')
+          .select('*, discount_targets(*), discount_conditions(*)')
+          .eq('is_active', true)
+          .eq('price_type_id', ctx.priceTypeId),
       );
       const { data: dbDiscounts } = await dq;
       const discounts = (dbDiscounts as Row[] | null) ?? [];
@@ -205,10 +221,10 @@ export function createSupabaseCatalogRepository(
 
       const groupIds = [...new Set(discounts.map((d) => String(d.group_id)))];
       const { data: dbGroups } = await client
-        .from("discount_groups")
-        .select("*")
-        .in("id", groupIds)
-        .eq("is_active", true);
+        .from('discount_groups')
+        .select('*')
+        .in('id', groupIds)
+        .eq('is_active', true);
       let allGroups = (dbGroups as Row[] | null) ?? [];
       if (!allGroups.length) return [];
 
@@ -217,10 +233,10 @@ export function createSupabaseCatalogRepository(
         .filter((id): id is string => !!id && !groupIds.includes(id));
       if (parentIds.length > 0) {
         const { data: parents } = await client
-          .from("discount_groups")
-          .select("*")
-          .in("id", parentIds)
-          .eq("is_active", true);
+          .from('discount_groups')
+          .select('*')
+          .in('id', parentIds)
+          .eq('is_active', true);
         if (parents) allGroups = [...allGroups, ...(parents as Row[])];
       }
 
@@ -229,18 +245,18 @@ export function createSupabaseCatalogRepository(
 
     async getShippingZones(): Promise<ShippingZone[]> {
       const { data } = await scoped(
-        client.from("shipping_zones").select("*").eq("is_active", true),
-      ).order("sort_order", { ascending: true });
+        client.from('shipping_zones').select('*').eq('is_active', true),
+      ).order('sort_order', { ascending: true });
       return ((data as Row[] | null) ?? []).map((z) => ({
         id: String(z.id),
-        name: String(z.name ?? ""),
+        name: String(z.name ?? ''),
         description: (z.description as string | null) ?? null,
         cities: Array.isArray(z.cities) ? (z.cities as string[]) : [],
         regions: Array.isArray(z.regions) ? (z.regions as string[]) : [],
         is_active: Boolean(z.is_active),
         is_default: Boolean(z.is_default),
         sort_order: Number(z.sort_order ?? 0),
-        created_at: String(z.created_at ?? ""),
+        created_at: String(z.created_at ?? ''),
       }));
     },
   };

@@ -1,1 +1,1 @@
-export { useThemeSettings } from "@simplysoftua/themes/ThemeContext";
+export { useThemeSettings } from '@simplycms/themes/ThemeContext';

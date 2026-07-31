@@ -1,45 +1,45 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplysoftua/core/supabase/SupabaseProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplysoftua/ui/card";
-import { Button } from "@simplysoftua/ui/button";
-import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Truck, MapPin, Map, Building, ArrowRight } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
-import { Skeleton } from "@simplysoftua/ui/skeleton";
-import { adminPath } from "../lib/adminLinks";
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { adminPath } from '../lib/adminLinks';
 
 export default function Shipping() {
   const supabase = useSupabaseClient();
   const { data: methods, isLoading: methodsLoading } = useQuery({
-    queryKey: ["shipping-methods"],
+    queryKey: ['shipping-methods'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .order("sort_order");
+        .from('shipping_methods')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: zones, isLoading: zonesLoading } = useQuery({
-    queryKey: ["shipping-zones"],
+    queryKey: ['shipping-zones'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_zones")
-        .select("*")
-        .order("sort_order");
+        .from('shipping_zones')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: pickupPoints, isLoading: pointsLoading } = useQuery({
-    queryKey: ["pickup-points"],
+    queryKey: ['pickup-points'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("pickup_points")
-        .select("*")
-        .order("sort_order");
+        .from('pickup_points')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
@@ -124,7 +124,7 @@ export default function Shipping() {
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link to={adminPath("shipping/methods")}>
+        <Link to={adminPath('shipping/methods')}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -144,7 +144,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link to={adminPath("shipping/zones")}>
+        <Link to={adminPath('shipping/zones')}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function Shipping() {
           </Card>
         </Link>
 
-        <Link to={adminPath("shipping/pickup-points")}>
+        <Link to={adminPath('shipping/pickup-points')}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
