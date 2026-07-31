@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";
 import { Textarea } from "@simplycms/ui/textarea";

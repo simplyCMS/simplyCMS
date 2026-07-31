@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, Loader2, AlertTriangle } from "lucide-react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useToast } from "@simplycms/ui/use-toast";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 

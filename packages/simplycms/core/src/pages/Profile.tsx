@@ -6,7 +6,7 @@ import { Button } from "@simplycms/ui/button";
 import { Skeleton } from "@simplycms/ui/skeleton";
 import { Badge } from "@simplycms/ui/badge";
 import { useAuth } from "../hooks/useAuth";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 
 interface ProfileData {
   first_name: string | null;

@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Sun, User, Search } from "lucide-react";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useToast } from "@simplycms/ui/use-toast";
 
 interface CatalogLayoutProps {

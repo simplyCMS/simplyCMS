@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { createServerSupabase } from './supabase';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
 
 /** Отримати поточну сесію користувача */
 export const getSession = createServerFn({ method: 'GET' }).handler(

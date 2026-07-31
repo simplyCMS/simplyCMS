@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Badge } from "@simplycms/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
 import { Card, CardContent } from "@simplycms/ui/card";

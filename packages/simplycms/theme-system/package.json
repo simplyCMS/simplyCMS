@@ -13,6 +13,7 @@
     "./types": "./src/types.ts"
   },
   "dependencies": {
+    "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*"
   },
   "peerDependencies": {

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearch, useLocation, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import { Separator } from "@simplycms/ui/separator";
@@ -24,7 +24,7 @@ import { ProductReviews } from "../components/reviews/ProductReviews";
 import { usePriceType } from "../hooks/usePriceType";
 import { resolvePrice, type PriceEntry } from "../lib/priceUtils";
 import { useDiscountGroups, useDiscountContext, applyDiscount } from "../hooks/useDiscountedPrice";
-import type { Tables } from "../supabase/types";
+import type { Tables } from "@simplycms/supabase";
 
 /** Елемент характеристики товару з інформацією про властивість та опцію */
 interface PropertyValueItem {

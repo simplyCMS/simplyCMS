@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import {
@@ -21,7 +21,7 @@ import { usePriceType } from "../hooks/usePriceType";
 import { resolvePrice, type PriceEntry } from "../lib/priceUtils";
 import { useDiscountGroups, useDiscountContext, applyDiscount } from "../hooks/useDiscountedPrice";
 import { useProductRatings } from "../hooks/useProductReviews";
-import type { Tables } from "../supabase/types";
+import type { Tables } from "@simplycms/supabase";
 
 type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
 

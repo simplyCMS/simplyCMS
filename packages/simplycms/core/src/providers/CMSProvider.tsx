@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SupabaseProvider } from "../supabase/SupabaseProvider";
+import { SupabaseProvider } from "@simplycms/supabase/SupabaseProvider";
 import { AuthProvider } from "../hooks/useAuth";
 import { CartProvider } from "../hooks/useCart";
 

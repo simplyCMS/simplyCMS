@@ -13,7 +13,7 @@ import {
 } from "@simplycms/data-supabase";
 import { defineConfig, type SimplyCmsRuntime } from "@simplycms/runtime";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServerSupabase } from "./supabase";
+import { createServerSupabase } from "@simplycms/supabase/server-client";
 import { appLinks, appConfig, createAppMediaProvider } from "../engine.shared";
 
 // Спільні адаптери винесено в ../engine.shared (щоб переюзати на клієнті).

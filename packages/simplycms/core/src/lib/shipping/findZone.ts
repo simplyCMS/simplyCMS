@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '../../supabase/client';
+import { getSupabaseBrowserClient } from '@simplycms/supabase/browser-client';
 import { ShippingZone } from './types';
 
 /**

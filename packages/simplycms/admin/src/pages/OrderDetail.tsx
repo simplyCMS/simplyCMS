@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";

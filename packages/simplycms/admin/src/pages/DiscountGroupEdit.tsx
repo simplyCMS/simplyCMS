@@ -13,7 +13,7 @@ import { Switch } from "@simplycms/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
 
 const schema = z.object({

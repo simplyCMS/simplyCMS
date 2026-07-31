@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { BannerSlider } from "../components/BannerSlider";
 import { BrandCarousel } from "../components/BrandCarousel";
 import { ProductCarousel } from "../components/ProductCarousel";
@@ -7,7 +7,7 @@ import { NewsletterSection } from "../components/NewsletterSection";
 import { BlogPreview } from "../components/BlogPreview";
 import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
 import type { Banner } from "@simplycms/core/hooks/useBanners";
-import type { Enums } from "@simplycms/core/supabase/types";
+import type { Enums } from "@simplycms/supabase";
 
 /** Продукт для головної сторінки (мінімальний набір полів) */
 interface HomeProduct {

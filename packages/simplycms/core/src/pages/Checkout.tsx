@@ -8,7 +8,7 @@ import { Button } from "@simplycms/ui/button";
 import { Form } from "@simplycms/ui/form";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
 import { CheckoutAuthBlock } from "../components/checkout/CheckoutAuthBlock";
 import { CheckoutContactForm } from "../components/checkout/CheckoutContactForm";

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 

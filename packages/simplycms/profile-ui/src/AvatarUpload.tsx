@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@simplycms/ui/use-toast";
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useAuth } from "./useAuth";
 import { usePriceType } from "./usePriceType";
 import { resolveDiscount, type DiscountGroup, type DiscountContext, type DiscountResult, type GroupOperator, type DiscountType } from "../lib/discountEngine";

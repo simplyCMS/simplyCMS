@@ -5,7 +5,7 @@ import {
   loadProducts,
   loadProductsBySectionId,
 } from '@simplycms/storefront/loaders';
-import { createServerSupabase } from './supabase';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
 
 /** Отримати товар за slug (для сторінки товару) */
 export const getProduct = createServerFn({ method: 'GET' })

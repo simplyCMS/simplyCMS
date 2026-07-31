@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Button } from "@simplycms/ui/button";
 import { Truck, MapPin, Map, Building, ArrowRight } from "lucide-react";

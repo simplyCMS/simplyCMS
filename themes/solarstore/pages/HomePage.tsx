@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent } from "@simplycms/ui/card";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import useEmblaCarousel from "embla-carousel-react";
 
 /** Категорії товарів для героїв-секції */

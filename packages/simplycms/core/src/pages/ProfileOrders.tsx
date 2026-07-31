@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@simplycms/ui/select";
 import { useAuth } from "../hooks/useAuth";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 
 interface Order {
   id: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useAuth } from "../hooks/useAuth";
 import { Button } from "@simplycms/ui/button";
 import { Input } from "@simplycms/ui/input";

@@ -21,6 +21,10 @@ export default {
         __dirname,
         'packages/simplycms/data-supabase/src',
       ),
+      '@simplycms/supabase': resolve(
+        __dirname,
+        'packages/simplycms/supabase/src',
+      ),
       '@simplycms/runtime': resolve(
         __dirname,
         'packages/simplycms/runtime/src',

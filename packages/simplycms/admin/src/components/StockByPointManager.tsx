@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Input } from "@simplycms/ui/input";
 import { Label } from "@simplycms/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -15,7 +15,7 @@ import {
 } from "@simplycms/ui/table";
 import { toast } from "sonner";
 import { Loader2, Save, Building } from "lucide-react";
-import type { TablesInsert } from "@simplycms/core/supabase/types";
+import type { TablesInsert } from "@simplycms/supabase";
 import { usePickupPointsCount, usePickupPoints } from "@simplycms/core/hooks/useStock";
 
 interface StockByPointManagerProps {

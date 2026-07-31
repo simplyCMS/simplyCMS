@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@simplycms/ui/form";
 import { useAuth } from "../hooks/useAuth";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
 import { AvatarUpload } from "../components/profile/AvatarUpload";
 import { AddressesList } from "../components/profile/AddressesList";

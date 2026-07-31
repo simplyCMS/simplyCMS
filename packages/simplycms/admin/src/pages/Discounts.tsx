@@ -6,9 +6,9 @@ import { Button } from "@simplycms/ui/button";
 import { Badge } from "@simplycms/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Switch } from "@simplycms/ui/switch";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Tables } from "@simplycms/core/supabase/types";
+import type { Tables } from "@simplycms/supabase";
 import { adminPath } from "../lib/adminLinks";
 
 import {

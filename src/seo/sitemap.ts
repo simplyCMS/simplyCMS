@@ -1,4 +1,4 @@
-import { createAnonSupabaseClient } from '@simplycms/core/supabase/anon';
+import { createAnonSupabaseClient } from '@simplycms/supabase/anon-client';
 import { buildSitemapXml as buildSitemap } from '@simplycms/storefront/seo';
 
 const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';

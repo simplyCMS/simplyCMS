@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Upload, X, Loader2 } from "lucide-react";

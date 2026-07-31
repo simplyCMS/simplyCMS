@@ -15,6 +15,7 @@ export default defineConfig({
       '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
       '@simplycms/objects': pkg('objects/src'),
       '@simplycms/domain': pkg('domain/src'),
+      '@simplycms/supabase': pkg('supabase/src'),
       '@simplycms/react-query': pkg('react-query/src'),
       '@simplycms/storefront': pkg('storefront/src'),
       '@simplycms/cart-ui': pkg('cart-ui/src'),

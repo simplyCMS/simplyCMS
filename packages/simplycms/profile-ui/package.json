@@ -12,6 +12,7 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*",
     "@simplycms/ui": "workspace:*"
   },

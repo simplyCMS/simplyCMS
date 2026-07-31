@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { createAnonSupabaseClient } from "@simplycms/core/supabase/anon";
+import { createAnonSupabaseClient } from "@simplycms/supabase/anon-client";
 import { ThemeRegistry } from "./ThemeRegistry";
 import type { ActiveThemeSSR, ThemeRecord } from "./types";
 

@@ -1,6 +1,6 @@
 import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
-import { createServerSupabase } from './server/supabase';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
 
 /**
  * Server-side guard для початкового запиту на `/admin`.

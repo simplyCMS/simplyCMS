@@ -5,7 +5,7 @@ import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Separator } from "@simplycms/ui/separator";
 import { Skeleton } from "@simplycms/ui/skeleton";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "../hooks/use-toast";
 

@@ -13,7 +13,7 @@ import {
   singleTenantScope,
 } from '@simplycms/data-supabase';
 import { EngineProvider } from '@simplycms/react-query';
-import { useSupabaseClient } from '@simplycms/core/supabase/SupabaseProvider';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import type { EngineContext } from '@simplycms/objects';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { appLinks, appConfig, createAppMediaProvider } from './engine.shared';

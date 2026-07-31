@@ -40,6 +40,12 @@
       "@simplycms/data-supabase/*": [
         "./packages/simplycms/data-supabase/src/*"
       ],
+      "@simplycms/supabase": [
+        "./packages/simplycms/supabase/src"
+      ],
+      "@simplycms/supabase/*": [
+        "./packages/simplycms/supabase/src/*"
+      ],
       "@simplycms/runtime": [
         "./packages/simplycms/runtime/src"
       ],

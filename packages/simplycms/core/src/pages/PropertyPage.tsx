@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { ProductCard } from "../components/catalog/ProductCard";
 import { Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { usePriceType } from "../hooks/usePriceType";
 import { resolvePrice, type PriceEntry } from "../lib/priceUtils";
-import type { Tables } from "../supabase/types";
+import type { Tables } from "@simplycms/supabase";
 
 export interface PropertyOptionPageProps {
   property?: Tables<'section_properties'> & Record<string, unknown>;

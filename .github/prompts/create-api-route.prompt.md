@@ -25,7 +25,7 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
    - Реалізуй правильну обробку помилок
 
 3. **База даних**
-   - Працюй через Supabase клієнт з `@simplycms/core/supabase/server`
+   - Працюй через Supabase клієнт з `@simplycms/supabase/server-client`
    - RLS policies для авторизації на рівні бази
    - Поверни структуровані дані
 
@@ -48,7 +48,7 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
 
 ```typescript
 // app/api/[name]/route.ts
-import { createServerSupabase } from '@simplycms/core/supabase/server';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
-import { getSupabaseBrowserClient, type SupabaseClient } from "./client";
+import { getSupabaseBrowserClient, type SupabaseClient } from "./browser-client";
 
 // DI-контекст браузерного Supabase-клієнта (замінює глобальний singleton).
 // Клієнт інжектиться рантаймом/застосунком; хуки беруть його через useSupabaseClient().

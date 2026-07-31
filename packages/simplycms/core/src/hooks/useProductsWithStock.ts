@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "../supabase/client";
+import type { SupabaseClient } from "@simplycms/supabase/browser-client";
 
 // Pure-розрахунок наявності перенесено в @simplycms/domain/inventory.
 // Re-export для зворотної сумісності.

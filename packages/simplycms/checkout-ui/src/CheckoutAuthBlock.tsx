@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useToast } from "@simplycms/ui/use-toast";
 import { Eye, EyeOff, Mail, Lock, User, Loader2, LogIn, UserPlus, UserX, AlertCircle, CheckCircle } from "lucide-react";
 

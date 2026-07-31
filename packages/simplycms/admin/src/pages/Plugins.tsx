@@ -12,7 +12,7 @@ import { adminPath } from "../lib/adminLinks";
 import {
   getRegisteredPluginModules,
 } from "@simplycms/plugins";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { parsePlugin, type ParsedPlugin, type Plugin } from "@simplycms/plugins/types";
 import {
   AlertDialog,

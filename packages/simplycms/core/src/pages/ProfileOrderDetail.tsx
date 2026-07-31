@@ -28,9 +28,9 @@ import {
   AlertDialogTrigger,
 } from "@simplycms/ui/alert-dialog";
 import { useAuth } from "../hooks/useAuth";
-import { useSupabaseClient } from "../supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "../hooks/use-toast";
-import type { Json } from "../supabase/types";
+import type { Json } from "@simplycms/supabase";
 
 interface OrderDetails {
   id: string;

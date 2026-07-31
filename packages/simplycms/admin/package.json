@@ -12,6 +12,7 @@
     "./layouts/*": "./src/layouts/*"
   },
   "dependencies": {
+    "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",

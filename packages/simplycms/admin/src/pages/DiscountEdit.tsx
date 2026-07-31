@@ -14,9 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@simplycms/ui/tabs";
 import { Badge } from "@simplycms/ui/badge";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Json } from "@simplycms/core/supabase/types";
+import type { Json } from "@simplycms/supabase";
 import { adminPath } from "../lib/adminLinks";
 
 const schema = z.object({

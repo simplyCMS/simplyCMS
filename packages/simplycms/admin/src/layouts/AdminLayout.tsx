@@ -3,7 +3,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@simplycms/ui/sid
 import { AdminSidebar } from "./AdminSidebar";
 import { Button } from "@simplycms/ui/button";
 import { LogOut, Home } from "lucide-react";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { ThemeToggle } from "@simplycms/core/components/ThemeToggle";
 

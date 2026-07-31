@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
@@ -14,8 +14,8 @@ import {
 } from "@simplycms/ui/table";
 import { useToast } from "@simplycms/core/hooks/use-toast";
 import { Plus, Trash2, Loader2, ImageIcon } from "lucide-react";
-import type { Tables } from "@simplycms/core/supabase/types";
-import type { Json } from "@simplycms/core/supabase/types";
+import type { Tables } from "@simplycms/supabase";
+import type { Json } from "@simplycms/supabase";
 
 type Product = Tables<"products">;
 

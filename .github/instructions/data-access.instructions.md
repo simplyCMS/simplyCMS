@@ -8,9 +8,9 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `@simplycms/core/supabase/server` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
-- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `@simplycms/core/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
-- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `@simplycms/core/supabase/anon` — без cookies, лише RLS `anon`-читання.
+- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `@simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
+- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `@simplycms/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
+- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `@simplycms/supabase/anon-client` — без cookies, лише RLS `anon`-читання.
 - **Порти/репозиторії:** нові data-шляхи будуй через `@simplycms/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `@simplycms/react-query` (`useEngine()`).
 - Виконуй роботу з базою даних через MCP supabase, включаючи аналіз структури таблиць, RLS policies та виконання міграцій.
 

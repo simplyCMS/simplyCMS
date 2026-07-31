@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/core/supabase/SupabaseProvider";
-import type { SupabaseClient } from "@simplycms/core/supabase/client";
+import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
+import type { SupabaseClient } from "@simplycms/supabase/browser-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
 import {
   Table,
