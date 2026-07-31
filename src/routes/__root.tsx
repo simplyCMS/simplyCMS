@@ -5,11 +5,15 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
+import { bootstrapPlugins } from '@simplycms/plugins';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { ClientEngineProvider } from '../engine-provider';
+import config from '../../simplycms.config';
 import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
 import { serializeActiveThemeScript } from '@simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
@@ -69,6 +73,7 @@ function RootComponent() {
           disableTransitionOnChange
         >
           <CMSProvider>
+            <PluginBootstrap />
             <ClientEngineProvider>
               <Outlet />
               <Toaster />
@@ -80,6 +85,24 @@ function RootComponent() {
       </body>
     </html>
   );
+}
+
+/**
+ * Клієнтський bootstrap плагінів із `simplycms.config.ts`.
+ *
+ * Виклик в ефекті (тільки браузер) — НЕ блокує гідрацію: слоти `PluginSlot`
+ * підписані на HookRegistry через useSyncExternalStore, тож віджети зʼявляться
+ * самі, щойно активні плагіни зареєструються. SSR-слоти вітрини в цій фазі
+ * не вмикаємо — PluginSlot і так виконує хуки в ефекті.
+ */
+function PluginBootstrap() {
+  const supabase = useSupabaseClient();
+
+  useEffect(() => {
+    void bootstrapPlugins(config.plugins ?? [], supabase);
+  }, [supabase]);
+
+  return null;
 }
 
 /** 404 — сторінку не знайдено */

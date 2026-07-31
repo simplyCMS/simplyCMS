@@ -39,9 +39,11 @@ export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
         if (pluginModule) {
           pluginModule.register(hookRegistry);
           loadedPlugins.push(plugin as Plugin);
-          console.log(`Plugin "${plugin.display_name}" loaded successfully`);
         } else {
-          console.warn(`Plugin module "${plugin.name}" not found in registry`);
+          // spec §8: активний у БД, але невідомий модуль — помилка + пропуск.
+          console.error(
+            `Plugin module "${plugin.name}" not found in registry — skipped`
+          );
         }
       } catch (err) {
         console.error(`Error loading plugin "${plugin.name}":`, err);
@@ -77,7 +79,6 @@ export async function activatePlugin(supabase: SupabaseClient, pluginName: strin
       return false;
     }
 
-    console.log(`Plugin "${pluginName}" activated`);
     return true;
   } catch (err) {
     console.error(`Error activating plugin "${pluginName}":`, err);
@@ -110,7 +111,6 @@ export async function deactivatePlugin(supabase: SupabaseClient, pluginName: str
       hookRegistry.unregister(hook, pluginName);
     }
 
-    console.log(`Plugin "${pluginName}" deactivated`);
     return true;
   } catch (err) {
     console.error(`Error deactivating plugin "${pluginName}":`, err);

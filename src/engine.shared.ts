@@ -9,6 +9,7 @@ import type {
   ImageOpts,
 } from '@simplycms/objects';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import config from '../simplycms.config';
 
 /** Маршрути simplyCMS-вітрини. */
 export const appLinks: LinkResolver = {
@@ -49,14 +50,14 @@ export function createAppMediaProvider(
   };
 }
 
-/** Конфіг вітрини. */
+/** Конфіг вітрини — проєкція `simplycms.config.ts` на контракт ConfigProvider. */
 export const appConfig: ConfigProvider = {
-  locale: 'uk-UA',
-  currency: 'UAH',
-  siteUrl: import.meta.env.VITE_SITE_URL ?? '',
+  locale: config.locale,
+  currency: config.currency,
+  siteUrl: config.seo.siteUrl,
   seo: {
-    defaultTitle: 'SimplyCMS Store — Best Products',
-    titleTemplate: '%s | SimplyCMS Store',
-    defaultDescription: 'SimplyCMS Store',
+    defaultTitle: config.seo.defaultTitle,
+    titleTemplate: config.seo.titleTemplate,
+    defaultDescription: config.seo.defaultDescription,
   },
 };

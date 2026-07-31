@@ -1,19 +1,15 @@
 /**
  * Ізоморфна реєстрація тем у ThemeRegistry.
  *
- * Єдиний файл замість двох (app/theme-registry.server.ts + app/providers.tsx).
- * Імпортується як side-effect з __root.tsx (клієнт) та server/themes.ts (сервер).
+ * Тонкий споживач `simplycms.config.ts`: набір тем оголошено в конфізі магазину,
+ * тут — лише перенесення його в реєстр. Імпортується як side-effect із
+ * __root.tsx (клієнт) та storefront-routes/server/themes.ts (сервер).
  */
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import config from '../simplycms.config';
 
-if (!ThemeRegistry.has('default')) {
-  ThemeRegistry.register('default', () =>
-    import('@themes/default/index').then((m) => ({ default: m.default })),
-  );
-}
-
-if (!ThemeRegistry.has('solarstore')) {
-  ThemeRegistry.register('solarstore', () =>
-    import('@themes/solarstore/index').then((m) => ({ default: m.default })),
-  );
+for (const [name, loader] of Object.entries(config.themes ?? {})) {
+  if (!ThemeRegistry.has(name)) {
+    ThemeRegistry.register(name, loader);
+  }
 }

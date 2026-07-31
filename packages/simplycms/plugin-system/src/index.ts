@@ -13,6 +13,10 @@ export {
   getRegisteredPluginModules,
 } from "./PluginLoader";
 
+// Bootstrap (конфіг магазину → реєстр → БД)
+export { bootstrapPlugins } from "./bootstrap";
+export type { PluginRegistration } from "./bootstrap";
+
 // Component exports
 export { PluginSlot, usePluginSlot, getPluginSlotCount } from "./PluginSlot";
 

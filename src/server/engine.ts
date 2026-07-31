@@ -11,7 +11,7 @@ import {
   createSupabaseIdentityProvider,
   singleTenantScope,
 } from "@simplycms/data-supabase";
-import { defineConfig, type SimplyCmsRuntime } from "@simplycms/runtime";
+import { defineRuntime, type SimplyCmsRuntime } from "@simplycms/runtime";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@simplycms/supabase/server-client";
 import { appLinks, appConfig, createAppMediaProvider } from "../engine.shared";
@@ -25,7 +25,7 @@ export { appLinks, appConfig, createAppMediaProvider } from "../engine.shared";
  */
 export function createServerRuntime(cookieHeader?: string): SimplyCmsRuntime {
   const client = createServerSupabase(cookieHeader) as unknown as SupabaseClient;
-  return defineConfig({
+  return defineRuntime({
     adapters: {
       catalog: createSupabaseCatalogRepository(client, singleTenantScope),
       orders: createSupabaseOrderRepository(client, singleTenantScope),
