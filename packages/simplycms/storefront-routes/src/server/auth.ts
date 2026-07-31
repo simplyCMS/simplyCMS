@@ -35,8 +35,14 @@ export const getUser = createServerFn({ method: 'GET' }).handler(async () => {
   return user;
 });
 
-/** Перевірити чи поточний користувач має роль admin */
-export const isAdmin = createServerFn({ method: 'GET' }).handler(async () => {
+/**
+ * Чи має поточний користувач роль admin — ЗВИЧАЙНА функція.
+ *
+ * Саме її викликають server-route handler-и (`server.handlers.*`): у них немає
+ * контексту `createServerFn`, тому виклик serverFn-обгортки там впав би.
+ * Без сесії → `false`.
+ */
+export async function checkIsAdmin(): Promise<boolean> {
   const supabase = createServerSupabase();
   const {
     data: { user },
@@ -52,4 +58,9 @@ export const isAdmin = createServerFn({ method: 'GET' }).handler(async () => {
     .maybeSingle();
 
   return !!role;
-});
+}
+
+/** Перевірити чи поточний користувач має роль admin (serverFn для роутів/компонентів) */
+export const isAdmin = createServerFn({ method: 'GET' }).handler(async () =>
+  checkIsAdmin(),
+);

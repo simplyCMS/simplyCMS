@@ -167,7 +167,7 @@ baseline з `@simplycms/supabase` (свіжий магазин не має пл�
 
 **Files:** Create `packages/simplycms/storefront-routes/routes/api/revalidate-theme.tsx`; Modify `packages/simplycms/admin/src/pages/Themes.tsx` (замість мертвого `/api/revalidate` — новий endpoint, **перевірка `response.ok`**, toast при помилці); Test: guard-тест (без сесії/не-адмін → 403; адмін → 200 + кеш скинуто).
 
-- [ ] **Step 1 (TDD)** → **Step 2** реалізація → **Step 3** гейти → коміт: `fix(themes): інвалідація кешу активної теми через auth-guarded server fn (замість мертвого /api/revalidate)`.
+- [X] **Step 1 (TDD)** → **Step 2** реалізація → **Step 3** гейти → коміт: `fix(themes): інвалідація кешу активної теми через auth-guarded server fn (замість мертвого /api/revalidate)`.
 
 ### Task 4.2: Плагін-toggle мутує registry, не лише БД
 

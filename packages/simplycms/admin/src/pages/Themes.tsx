@@ -38,16 +38,19 @@ interface ThemeRecord {
   created_at: string;
 }
 
-/** Виклик revalidation API після зміни теми (авторизація через cookie-сесію) */
-async function revalidateTheme() {
-  try {
-    await fetch('/api/revalidate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'theme' }),
-    });
-  } catch {
-    // Revalidation — best effort
+/**
+ * Скинути серверний кеш активної теми (авторизація — cookie-сесія, guard 403
+ * на боці роуту). Звертаємось по HTTP, а не імпортом: ребро
+ * `@simplycms/admin → @simplycms/storefront-routes` заборонене.
+ *
+ * Кидає на не-2xx і на мережевій помилці — мовчки ігнорувати відповідь не можна:
+ * саме це ховало те, що старий `/api/revalidate` не існує.
+ */
+async function revalidateTheme(): Promise<void> {
+  const response = await fetch('/api/revalidate-theme', { method: 'POST' });
+
+  if (!response.ok) {
+    throw new Error(`Сервер відповів ${response.status}`);
   }
 }
 
@@ -89,8 +92,22 @@ export default function Themes() {
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['admin-themes'] });
-      await revalidateTheme();
       setConfirmThemeId(null);
+
+      try {
+        await revalidateTheme();
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Тему активовано, але кеш вітрини не скинуто',
+          description:
+            error instanceof Error
+              ? `${error.message}. Зміни зʼявляться протягом 5 хвилин.`
+              : 'Зміни зʼявляться протягом 5 хвилин.',
+        });
+        return;
+      }
+
       toast({
         title: 'Тему активовано',
         description: 'Зміни застосовані на сайті',

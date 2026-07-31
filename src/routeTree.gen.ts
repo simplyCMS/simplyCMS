@@ -16,6 +16,7 @@ import { Route as AuthIndexRouteImport } from './../packages/simplycms/storefron
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/index'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/index'
 import { Route as AuthCallbackRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/callback'
+import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/storefront-routes/routes/api/revalidate-theme'
 import { Route as ApiHealthRouteImport } from './../packages/simplycms/storefront-routes/routes/api/health'
 import { Route as ApiGuestOrderRouteImport } from './../packages/simplycms/storefront-routes/routes/api/guest-order'
 import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/checkout'
@@ -104,6 +105,11 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
+  id: '/api/revalidate-theme',
+  path: '/api/revalidate-theme',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/_storefront/checkout': typeof StorefrontCheckoutRoute
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/api/guest-order'
     | '/api/health'
+    | '/api/revalidate-theme'
     | '/auth/callback'
     | '/admin/'
     | '/auth/'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/api/guest-order'
     | '/api/health'
+    | '/api/revalidate-theme'
     | '/auth/callback'
     | '/admin'
     | '/auth'
@@ -740,6 +751,7 @@ export interface FileRouteTypes {
     | '/_storefront/checkout'
     | '/api/guest-order'
     | '/api/health'
+    | '/api/revalidate-theme'
     | '/auth/callback'
     | '/_storefront/'
     | '/admin/'
@@ -804,6 +816,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   ApiGuestOrderRoute: typeof ApiGuestOrderRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
@@ -857,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/revalidate-theme': {
+      id: '/api/revalidate-theme'
+      path: '/api/revalidate-theme'
+      fullPath: '/api/revalidate-theme'
+      preLoaderRoute: typeof ApiRevalidateThemeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -1405,6 +1425,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   ApiGuestOrderRoute: ApiGuestOrderRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
