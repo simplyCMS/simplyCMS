@@ -70,13 +70,13 @@ git grep -l '@simplysoftua' | xargs sed -i 's|@simplysoftua|@simplycms|g'
 - [x] **Step 2:** Додати прямими devDependencies (exact): `@tanstack/virtual-file-routes` і `@tanstack/router-generator` — версії, **сумісні зі встановленим `@tanstack/react-start`** (взяти ті, що вже в lockfile як транзитивні для router-plugin: `pnpm why @tanstack/router-generator`). Без цього імпорти в `routes.ts`/регрес-тесті не резолвляться при strict linking pnpm.
 - [x] **Step 3:** `pnpm install --frozen-lockfile=false && pnpm build && pnpm typecheck && pnpm test`; коміт: `chore(deps): pin TanStack-набір + прямі deps virtual-file-routes/router-generator (spec §15)`.
 
-### Task 3: Вивід git-subtree `simplyCMS-core`
+### Task 3: Вивід git-subtree core-дзеркала
 
 **Files:** `package.json` (скрипти `cms:*` геть), `CLAUDE.md` (розділ «Git Subtree Workflow» + cms-рядки Quick Reference), `AGENTS.md`, `.github/instructions/tooling.instructions.md` (subtree-розділи), `.github/instructions/architecture-core.instructions.md` (рядок про subtree), `packages/simplycms/README.md` (переписати: монорепо, npmjs).
 
-- [x] **Step 1:** Правки за списком; remote — ідемпотентно: `git remote remove simplycms-core 2>/dev/null || true`.
+- [x] **Step 1:** Правки за списком; локальний git-remote дзеркала знято (ідемпотентно).
 - [x] **Step 2:** Контроль: `git grep -n "cms:pull\|cms:push\|subtree" -- '*.json' '*.md' ':!docs/architecture' ':!docs/superpowers'` → порожньо (allowlist: аналітика/спека/план описують сам вивід).
-- [x] **Step 3:** Верифікація + коміт: `chore(repo): вивести git-subtree simplyCMS-core (spec §4.1)`. У PR-описі: власник архівує `simplyCMS/simplyCMS-core` на GitHub.
+- [x] **Step 3:** Верифікація + коміт: `chore(repo): вивести git-subtree (spec §4.1)`. Репозиторій-дзеркало видалено власником (2026-07-31).
 
 ---
 
