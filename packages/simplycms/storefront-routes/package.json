@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@simplycms/core": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/catalog-ui": "workspace:*",
     "@simplycms/themes": "workspace:*",

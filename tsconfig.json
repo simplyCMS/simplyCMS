@@ -52,6 +52,12 @@
       "@simplycms/storefront-routes/*": [
         "./packages/simplycms/storefront-routes/src/*"
       ],
+      "@simplycms/i18n": [
+        "./packages/simplycms/i18n/src"
+      ],
+      "@simplycms/i18n/*": [
+        "./packages/simplycms/i18n/src/*"
+      ],
       "@simplycms/runtime": [
         "./packages/simplycms/runtime/src"
       ],

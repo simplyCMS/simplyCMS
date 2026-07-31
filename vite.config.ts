@@ -38,6 +38,10 @@ export default {
         __dirname,
         'packages/simplycms/storefront-routes/src',
       ),
+      '@simplycms/i18n': resolve(
+        __dirname,
+        'packages/simplycms/i18n/src',
+      ),
       '@simplycms/runtime': resolve(
         __dirname,
         'packages/simplycms/runtime/src',

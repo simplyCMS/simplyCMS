@@ -1,16 +1,24 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { User, Package, Settings, LogOut } from "lucide-react";
+import { User, Package, Settings, LogOut, type LucideIcon } from "lucide-react";
 import { cn } from "@simplycms/core/lib/utils";
 import { useAuth } from "@simplycms/core/hooks/useAuth";
 import { Button } from "@simplycms/ui/button";
+import { useT, type MessageKey } from "@simplycms/i18n";
 import { useActiveThemeModule } from "./useActiveThemeModule";
 import { ThemeTokens } from "./ThemeTokens";
 
-const navItems = [
-  { href: "/profile", icon: User, label: "Профіль", exact: true },
-  { href: "/profile/orders", icon: Package, label: "Мої замовлення" },
-  { href: "/profile/settings", icon: Settings, label: "Налаштування" },
+type NavItem = {
+  href: string;
+  icon: LucideIcon;
+  labelKey: MessageKey;
+  exact?: boolean;
+};
+
+const navItems: NavItem[] = [
+  { href: "/profile", icon: User, labelKey: "nav.profile", exact: true },
+  { href: "/profile/orders", icon: Package, labelKey: "nav.orders" },
+  { href: "/profile/settings", icon: Settings, labelKey: "nav.settings" },
 ];
 
 /**
@@ -24,6 +32,7 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
   const { Header, Footer } = theme.components;
   const { signOut } = useAuth();
   const pathname = useLocation({ select: (l) => l.pathname });
+  const t = useT();
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col">
@@ -49,7 +58,7 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
                     )}
                   >
                     <item.icon className="h-5 w-5" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}
@@ -59,7 +68,7 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
                 onClick={signOut}
               >
                 <LogOut className="h-5 w-5" />
-                Вийти
+                {t("nav.signOut")}
               </Button>
             </nav>
           </aside>

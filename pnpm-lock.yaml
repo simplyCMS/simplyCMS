@@ -469,6 +469,12 @@ importers:
         specifier: workspace:*
         version: link:../objects
 
+  packages/simplycms/i18n:
+    dependencies:
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.4
+
   packages/simplycms/objects: {}
 
   packages/simplycms/plugin-system:
@@ -585,6 +591,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@simplycms/storefront':
         specifier: workspace:*
         version: link:../storefront

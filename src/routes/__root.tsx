@@ -12,6 +12,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from '@simplycms/plugins';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { I18nProvider, normalizeLocale } from '@simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import config from '../../simplycms.config';
 import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
@@ -53,9 +54,11 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { activeThemeName } = Route.useLoaderData();
+  // Локаль магазину — з конфіга, один раз на рендер (без глобального стану).
+  const locale = normalizeLocale(config.locale);
 
   return (
-    <html lang="uk" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* Назва активної теми для клієнта (прогрів кешу до гідрації) */}
         <script
@@ -66,21 +69,24 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <CMSProvider>
-            <PluginBootstrap />
-            <ClientEngineProvider>
-              <Outlet />
-              <Toaster />
-              <SonnerToaster richColors position="top-right" />
-            </ClientEngineProvider>
-          </CMSProvider>
-        </ThemeProvider>
+        {/* I18nProvider — над усіма групами роутів (storefront, auth, protected) */}
+        <I18nProvider locale={locale}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <CMSProvider>
+              <PluginBootstrap />
+              <ClientEngineProvider>
+                <Outlet />
+                <Toaster />
+                <SonnerToaster richColors position="top-right" />
+              </ClientEngineProvider>
+            </CMSProvider>
+          </ThemeProvider>
+        </I18nProvider>
         <Scripts />
       </body>
     </html>
