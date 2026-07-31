@@ -1,4 +1,4 @@
-# Фаза 1 «Пілот пакування + production-готовність» + fix-пакет ревʼю Фази 0 — план (v2, після Codex-аудиту)
+# Фаза 1 «Пілот пакування + production-готовність» + fix-пакет ревʼю Фази 0 — план (v3, після двох кіл Codex-аудиту)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
