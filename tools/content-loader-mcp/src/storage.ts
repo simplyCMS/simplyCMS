@@ -50,7 +50,7 @@ async function downloadImage(url: string): Promise<{
   const response = await fetch(url, {
     headers: {
       'User-Agent':
-        'Mozilla/5.0 (compatible; SimplyCMS ContentLoader/1.0; +https://github.com/simplySOFTua/simplyCMS)',
+        'Mozilla/5.0 (compatible; SimplyCMS ContentLoader/1.0; +https://github.com/simplyCMS/simplyCMS)',
       Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
     },
   });

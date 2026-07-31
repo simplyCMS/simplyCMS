@@ -16,18 +16,30 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
-      ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-      "./loaders": { "types": "./dist/loaders/index.d.ts", "import": "./dist/loaders/index.js" },
-      "./seo": { "types": "./dist/seo/index.d.ts", "import": "./dist/seo/index.js" }
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./loaders": {
+        "types": "./dist/loaders/index.d.ts",
+        "import": "./dist/loaders/index.js"
+      },
+      "./seo": {
+        "types": "./dist/seo/index.d.ts",
+        "import": "./dist/seo/index.js"
+      }
     }
   },
   "sideEffects": false,
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
-    "directory": "storefront"
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/storefront"
   },
   "scripts": {
     "build": "tsup",

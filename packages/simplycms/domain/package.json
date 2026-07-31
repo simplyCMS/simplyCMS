@@ -41,12 +41,15 @@
     }
   },
   "sideEffects": false,
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simplySOFTua/simplyCMS-core.git",
-    "directory": "domain"
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/domain"
   },
   "scripts": {
     "build": "tsup",

@@ -24,8 +24,8 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 SimplyCMS core is distributed via Git Subtree. To use it in your project:
 
 ```bash
-# Add remote (the project lives under the simplySOFTua org)
-git remote add simplycms-core https://github.com/simplySOFTua/simplyCMS-core.git
+# Add remote (the project lives under the simplyCMS org)
+git remote add simplycms-core https://github.com/simplyCMS/simplyCMS-core.git
 
 # Add as subtree
 git subtree add --prefix=packages/simplycms simplycms-core main --squash

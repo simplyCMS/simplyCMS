@@ -5,7 +5,7 @@
   "description": "SimplyCMS Core — open-source e-commerce CMS packages",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simplySOFTua/simplyCMS-core.git"
+    "url": "https://github.com/simplyCMS/simplyCMS.git"
   },
   "license": "MIT",
   "workspaces": [

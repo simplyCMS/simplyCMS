@@ -139,15 +139,15 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 > чинні лише до завершення Фази 0.
 
 ```bash
-pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplySOFTua/simplyCMS-core
+pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplyCMS/simplyCMS-core
 pnpm cms:pull                  # Pull core updates from simplyCMS-core main (runs cms:remote first)
 pnpm cms:push                  # Push core changes to simplyCMS-core main (runs cms:remote first)
 pnpm cms:push:branch <branch>  # Push to a specific branch
 pnpm cms:diff                  # View local core changes
 ```
 
-> The core repo moved to the **simplySOFTua** org (`https://github.com/simplySOFTua/simplyCMS-core.git`).
-> `cms:remote` is idempotent — creates the remote if missing or repoints a stale URL (e.g. the old `VSydorenko` one).
+> The repos live under the **simplyCMS** org (`https://github.com/simplyCMS/simplyCMS-core.git`).
+> `cms:remote` is idempotent — creates the remote if missing or repoints a stale URL (e.g. the old `simplySOFTua`/`VSydorenko` ones).
 
 ## Database Commands
 
