@@ -11,6 +11,16 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./PluginSlot": {
+      "types": "./src/PluginSlot.tsx",
+      "import": "./src/PluginSlot.tsx",
+      "default": "./src/PluginSlot.tsx"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./src/types.ts",
+      "default": "./src/types.ts"
     }
   },
   "scripts": {

@@ -69,9 +69,9 @@
 
 **Files:** Create `scripts/audit-exports.mjs`; Modify `packages/simplycms/*/package.json` (додати відсутні exports).
 
-- [ ] **Step 1:** скрипт: зібрати всі імпорт-специфікатори `@simplycms/<pkg>/<subpath>` по репо (`git grep -oE`) → для кожного перевірити наявність ключа в `exports` відповідного manifest → вивести відсутні. Прогнати, отримати повний список.
-- [ ] **Step 2:** додати відсутні exports (dev=src) у manifests; скрипт → 0 відсутніх; підключити скрипт до `pnpm test` (або окремий vitest-тест, що його викликає) — гейт назавжди.
-- [ ] **Step 3:** гейти → коміт: `fix(packaging): exports покривають усі реально споживані subpath-и (audit-exports гейт)`.
+- [x] **Step 1:** скрипт: зібрати всі імпорт-специфікатори `@simplycms/<pkg>/<subpath>` по репо (`git grep -oE`) → для кожного перевірити наявність ключа в `exports` відповідного manifest → вивести відсутні. Прогнати, отримати повний список.
+- [x] **Step 2:** додати відсутні exports (dev=src) у manifests; скрипт → 0 відсутніх; підключити скрипт до `pnpm test` (або окремий vitest-тест, що його викликає) — гейт назавжди.
+- [x] **Step 3:** гейти → коміт: `fix(packaging): exports покривають усі реально споживані subpath-и (audit-exports гейт)`.
 
 ### Task 1.3: Deps-graph аудит manifest-ів
 

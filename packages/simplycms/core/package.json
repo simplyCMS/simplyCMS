@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./providers": "./src/providers/CMSProvider.tsx",
+    "./providers/CMSProvider": "./src/providers/CMSProvider.tsx",
     "./hooks": "./src/hooks/useAuth.tsx",
     "./hooks/*": "./src/hooks/*",
     "./lib/*": "./src/lib/*",
