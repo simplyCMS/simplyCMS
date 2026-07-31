@@ -74,7 +74,7 @@ git grep -l '@simplysoftua' | xargs sed -i 's|@simplysoftua|@simplycms|g'
 
 **Files:** `package.json` (скрипти `cms:*` геть), `CLAUDE.md` (розділ «Git Subtree Workflow» + cms-рядки Quick Reference), `AGENTS.md`, `.github/instructions/tooling.instructions.md` (subtree-розділи), `.github/instructions/architecture-core.instructions.md` (рядок про subtree), `packages/simplycms/README.md` (переписати: монорепо, npmjs).
 
-- [x] **Step 1:** Правки за списком; remote — ідемпотентно: `git remote remove simplycms-core 2>/dev/null || true`.
+- [x] **Step 1:** Правки за списком; локальний git-remote дзеркала знято (ідемпотентно).
 - [x] **Step 2:** Контроль: `git grep -n "cms:pull\|cms:push\|subtree" -- '*.json' '*.md' ':!docs/architecture' ':!docs/superpowers'` → порожньо (allowlist: аналітика/спека/план описують сам вивід).
 - [x] **Step 3:** Верифікація + коміт: `chore(repo): вивести git-subtree (spec §4.1)`. Репозиторій-дзеркало видалено власником (2026-07-31).
 
