@@ -16,6 +16,10 @@ import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import {
+  revalidateFailureDescription,
+  revalidateTheme,
+} from '../lib/revalidateTheme';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,22 +40,6 @@ interface ThemeRecord {
   preview_image: string | null;
   is_active: boolean;
   created_at: string;
-}
-
-/**
- * Скинути серверний кеш активної теми (авторизація — cookie-сесія, guard 403
- * на боці роуту). Звертаємось по HTTP, а не імпортом: ребро
- * `@simplycms/admin → @simplycms/storefront-routes` заборонене.
- *
- * Кидає на не-2xx і на мережевій помилці — мовчки ігнорувати відповідь не можна:
- * саме це ховало те, що старий `/api/revalidate` не існує.
- */
-async function revalidateTheme(): Promise<void> {
-  const response = await fetch('/api/revalidate-theme', { method: 'POST' });
-
-  if (!response.ok) {
-    throw new Error(`Сервер відповів ${response.status}`);
-  }
 }
 
 export default function Themes() {
@@ -100,10 +88,7 @@ export default function Themes() {
         toast({
           variant: 'destructive',
           title: 'Тему активовано, але кеш вітрини не скинуто',
-          description:
-            error instanceof Error
-              ? `${error.message}. Зміни зʼявляться протягом 5 хвилин.`
-              : 'Зміни зʼявляться протягом 5 хвилин.',
+          description: revalidateFailureDescription(error),
         });
         return;
       }
