@@ -60,6 +60,11 @@ export async function loadHomePageData(client: StorefrontClient) {
       .order('sort_order'),
   ]);
 
+  if (banners.error) throw banners.error;
+  if (featured.error) throw featured.error;
+  if (newProducts.error) throw newProducts.error;
+  if (sections.error) throw sections.error;
+
   return {
     banners: (banners.data ?? []).map(mapBannerRow),
     featuredProducts: (featured.data ?? []).map(mapHomeProduct),

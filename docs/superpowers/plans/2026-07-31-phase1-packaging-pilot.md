@@ -24,10 +24,10 @@
 
 **Files:** Modify `packages/simplycms/storefront-routes/src/pages/home/queries.ts` (4 хуки), `packages/simplycms/storefront/src/loaders/home.ts`; Test: Create `packages/simplycms/storefront-routes/src/__tests__/home-queries-errors.test.tsx`, `packages/simplycms/storefront/src/loaders/__tests__/home-loader.test.ts`.
 
-- [ ] **Step 1 (TDD, хуки):** мок-клієнт повертає `{data:null, error:{message:'RLS violation'}}` для кожного з 4 хуків → очікування `isError === true` (зараз червоно: `isSuccess:true, data:[]`). Патерн мока — з `bootstrap.test.ts`.
-- [ ] **Step 2:** у кожному queryFn `const { data, error } = …; if (error) throw error;` (канон `data-access.instructions.md:37`). Зелено.
-- [ ] **Step 3 (TDD, loader):** тест `loadHomePageData`: будь-який з 4 запитів `Promise.all` повертає `error` → функція **кидає**. Фікс: перевірка `.error` кожного результату.
-- [ ] **Step 4:** гейти → коміт: `fix(home): помилки Supabase більше не ковтаються (хуки + loader)`.
+- [X] **Step 1 (TDD, хуки):** мок-клієнт повертає `{data:null, error:{message:'RLS violation'}}` для кожного з 4 хуків → очікування `isError === true` (зараз червоно: `isSuccess:true, data:[]`). Патерн мока — з `bootstrap.test.ts`.
+- [X] **Step 2:** у кожному queryFn `const { data, error } = …; if (error) throw error;` (канон `data-access.instructions.md:37`). Зелено.
+- [X] **Step 3 (TDD, loader):** тест `loadHomePageData`: будь-який з 4 запитів `Promise.all` повертає `error` → функція **кидає**. Фікс: перевірка `.error` кожного результату.
+- [X] **Step 4:** гейти → коміт: `fix(home): помилки Supabase більше не ковтаються (хуки + loader)`.
 
 ### Task 0.2: [major] N+1 на головній — серверний префетч + initialData
 
