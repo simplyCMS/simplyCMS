@@ -56,46 +56,56 @@ pnpm db:generate-types # Regenerate TypeScript types
 
 ## Project Structure (Summary)
 
+Фаза 0 завершена 2026-07-31: роути й сторінки — у пакетах, host — тонка збірка.
+
 ```
-src/                              # TanStack Start application
-├── routes/
-│   ├── __root.tsx                # Root route (html, providers, 404/error)
-│   ├── _storefront.tsx + _storefront/  # Public SSR pages (theme MainLayout)
-│   ├── admin.tsx + admin/        # Admin panel (client-only, ssr:false, guard)
-│   ├── _protected.tsx + _protected/    # Auth-guarded profile pages
-│   ├── auth/                     # Login/register + OAuth callback
-│   └── api/                      # Server routes (health, guest-order)
-├── server/                       # createServerFn (auth, themes, products, …)
-├── seo/                          # sitemap.xml / robots.txt
-├── theme-registry.ts             # Isomorphic theme registration (side-effect)
+routes.ts                         # virtualRouteConfig: rootRoute + physical() на теки пакетів
+src/                              # Host (тонка збірка магазину)
+├── routes/__root.tsx             # Root route (html, providers, 404/error)
+├── routes/my/                    # ЄДИНА тека роутів магазину (кастомні сторінки)
+├── server/engine.ts              # createServerFn-glue для EngineContext
+├── engine-provider.tsx           # EngineProvider (DI-клієнт, lazy-репозиторії)
+├── engine.shared.ts              # Shared-частина EngineContext
+├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
 ├── router.tsx                    # createRouter
 ├── start.ts                      # createStart + request middleware (admin guard)
 └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 
 packages/simplycms/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
-├── objects/        @simplycms/objects       # Contracts + ports (0 deps)
-├── domain/         @simplycms/domain        # Pure logic (pricing/discounts/…)
-├── data-supabase/  @simplycms/data-supabase # Repository implementations
-├── react-query/    @simplycms/react-query   # EngineProvider + hooks
-├── core/           @simplycms/core
-├── admin/          @simplycms/admin
-├── ui/             @simplycms/ui
-├── plugin-system/  @simplycms/plugins
-├── theme-system/   @simplycms/themes
-├── storefront/     @simplycms/storefront    # SSR loaders + SEO
-└── …               # cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui, runtime, schema
+├── objects/            @simplycms/objects       # Contracts + ports (0 deps)
+├── domain/             @simplycms/domain        # Pure logic (pricing/discounts/…)
+├── schema/             @simplycms/schema        # Drizzle-схема ядра + RLS у TS
+├── supabase/           @simplycms/supabase      # browser/server/anon-клієнти, keys, provider
+├── data-supabase/      @simplycms/data-supabase # Repository implementations
+├── react-query/        @simplycms/react-query   # Query-хуки через EngineContext
+├── runtime/            @simplycms/runtime       # defineRuntime + host-defineConfig
+├── i18n/               @simplycms/i18n          # createTranslator, I18nProvider, uk/en
+├── storefront/         @simplycms/storefront    # SSR loaders + SEO (DI-клієнт)
+├── storefront-routes/  @simplycms/storefront-routes # routes/ + канонічні pages/ + shells/
+├── admin-routes/       @simplycms/admin-routes  # routes/admin* (тонкі обгортки)
+├── admin/              @simplycms/admin
+├── ui/                 @simplycms/ui
+├── plugin-system/      @simplycms/plugins
+├── theme-system/       @simplycms/themes
+├── core/               @simplycms/core          # Legacy-фасад (розчиняється; Фаза 1+)
+└── …                   # cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui
 
-themes/{default,solarstore}/      # Storefront themes
-plugins/                          # Local plugins
-supabase/                         # Migrations, types, edge functions
+scripts/                          # db-diff.mjs, db-migrate.mjs
+tests/                            # virtual-routes-escape, published-exports-parity
+themes/{default,solarstore}/      # Теми: manifest + tokens + components (контракт v2)
+plugins/hello-world/              # Референс-плагін
+supabase/                         # config.toml, migrations/, functions/, types.ts
 ```
 
 ## Key Conventions (Summary)
 
-- **Rendering:** SSR for storefront (`_storefront`), client-only for admin (`ssr:false`); `ssr:false` routes always define a `pendingComponent`
-- **Themes:** Isomorphic registration (`src/theme-registry.ts`), runtime activation via DB (`themes.is_active`)
+- **Routes:** дерево збирається `routes.ts` (`virtualRouteConfig`), а не скануванням `src/routes`. Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у route-теці відповідного пакета
+- **Rendering:** SSR for storefront, client-only for admin (`ssr:false` на `admin.tsx`; дочірні роути його **не** повторюють); `ssr:false` routes always define a `pendingComponent`
+- **Themes:** контракт v2 — `{ manifest, tokens, components, settings? }`. Тема **не** постачає сторінок/лейаутів; канонічні сторінки — у `@simplycms/storefront-routes/src/pages/`, каркаси — `StorefrontShell`/`ProtectedShell`. Реєстрація з `config.themes`, активація через `themes.is_active`
 - **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
 - **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient` or repository ports
+- **DB schema:** джерело правди — `@simplycms/schema` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP
+- **i18n:** нові рядки — через `@simplycms/i18n` (`useT`/`createTranslator`). `pnpm lint` дає ~960 warn на ще не мігровані кириличні рядки — це очікувано, не глушити
 - **Imports:** Always use `@simplycms/*` aliases, not relative paths to packages
 - **Language:** Comments and UI text in Ukrainian
 - **Do not:** Put logic in themes, edit `src/routeTree.gen.ts`, bypass package boundaries

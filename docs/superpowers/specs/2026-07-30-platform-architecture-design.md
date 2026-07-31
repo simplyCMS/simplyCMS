@@ -90,6 +90,45 @@ Skeleton-update — задача, яку індустрія не закрила 
 breaking — тільки major** (свідомий контраст із Medusa). Плагіни/теми декларують
 `engines.simplycms` (діапазон) — CLI і bootstrap перевіряють (модель Vendure).
 
+### 4.0. Амендмент за фактом Фази 0 (2026-07-31)
+
+Таблиця вище — **цільовий** стан. Фаза 0 приземлила його частково; нижче —
+розбіжності станом на завершення Фази 0. Таблицю навмисно не переписано:
+вона лишається ціллю, цей блок — фактом.
+
+**Імена пакетів ≠ імена тек.** Пакети називаються `@simplycms/themes` і
+`@simplycms/plugins`; теки лишились `packages/simplycms/theme-system/` та
+`packages/simplycms/plugin-system/`. У таблиці стоять імена-за-текою
+(`@simplycms/theme-system`, `@simplycms/plugin-system`) — це неточність
+таблиці, перейменування пакетів **не планується**.
+
+**`@simplycms/engine` — відкладено на Фазу 1+.** Обʼєднання
+`data-supabase` + `react-query` у Фазі 0 **не робилось**: обидва пакети живі
+окремо, EngineContext складається `defineRuntime` з `@simplycms/runtime`,
+а host-glue лишився в `src/engine-provider.tsx` / `src/server/engine.ts`.
+
+**`@simplycms/supabase` — вужчий за опис у таблиці.** Фактично увійшли
+`browser-client`, `server-client`, `anon-client`, `SupabaseProvider`,
+`keys` (`resolveSupabaseKeys`), `database` (типи). **Не** увійшли:
+`server-admin` (service-role ніде не використовується — свідомо не заводили
+поверхню, якої нема кому споживати), hooks і testing-хелпери (auth-хуки
+лишились у `@simplycms/core/hooks` — див. deferral `useAuth`). Перенести —
+Фаза 1+, разом із розчиненням `core`.
+
+**Пакети, яких немає в таблиці, але які існують за фактом:**
+
+| Пакет | Зміст | Коли зʼявився |
+|---|---|---|
+| `@simplycms/i18n` | request-scoped `createTranslator`/`normalizeLocale`, `I18nProvider`/`useT`, каталоги uk/en | Фаза 0 (§12) |
+| `@simplycms/storefront` | SSR-лоадери + генератори SEO, параметризовані інʼєктованим Supabase-клієнтом (без framework-glue) | Фаза 0 |
+| `@simplycms/runtime` | `defineRuntime` (складання EngineContext) + host-`defineConfig` | Фаза 0 (§8) |
+
+**`core` (legacy) розчинений не повністю.** Re-export-шими без споживачів
+знесені; шими з живими споживачами (`lib/priceUtils`, `lib/shipping/*`,
+`lib/discountEngine`, `hooks/useCart`, `hooks/useProductsWithStock`,
+частина `components/*`) лишились разом із самим `core`. Повне розчинення —
+Фаза 1+.
+
 ### 4.1. Репозиторії, організація, неймінг (доповнення 2026-07-31)
 
 - **Один монорепо платформи.** Окремий репозиторій `simplyCMS-core` і
@@ -103,10 +142,11 @@ breaking — тільки major** (свідомий контраст із Medusa
   2026-07-31: npm-пакет `simplycms` вільний, у scope `@simplycms` немає жодного
   опублікованого пакета, GitHub-імʼя `simplycms` не зайняте. Для платформи
   продуктовий неймінг (як vendure-ecommerce, medusajs, payloadcms) кращий за
-  корпоративний `simplySOFTua`. Rename scope `@simplycms` → `@simplycms` —
+  корпоративний `simplySOFTua`. Rename scope `@simplysoftua` → `@simplycms` —
   механічний codemod (робився один раз у зворотний бік; червнева причина
   переіменування — вимога GitHub Packages «scope = власник» — зникла з переходом
-  на npmjs). Виконати у Фазі 0, поки зовнішніх споживачів нуль.
+  на npmjs). **Виконано у Фазі 0** (2026-07-31, 384 файли), поки зовнішніх
+  споживачів нуль.
   *Дії власника: створити org на GitHub і org `simplycms` на npmjs;
   зарезервувати пакетне імʼя `simplycms` (майбутній CLI).*
 - **Структура репозиторіїв org:** `simplycms/simplycms` (монорепо платформи),

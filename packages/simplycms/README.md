@@ -14,8 +14,14 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/admin` | T5 | Admin panel layouts, pages, components |
 | `@simplycms/ui` | T3 | shadcn/ui component library |
 | `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
-| `@simplycms/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
-| `schema/` | — | Seed migrations (reference SQL for bootstrapping new projects) |
+| `@simplycms/themes` | T4 | Theme system v2 (ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`) — теки `theme-system/` |
+| `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
+| `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
+| `@simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, типи БД |
+| `@simplycms/storefront` | T3 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
+| `@simplycms/storefront-routes` | T5 | Канонічні SSR-сторінки + route-файли storefront/protected/auth/api |
+| `@simplycms/admin-routes` | T5 | Route-файли адмінки (тонкі обгортки `@simplycms/admin`) |
+| `@simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS (`db:pull`/`db:diff`/`db:migrate`) |
 
 > See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
 

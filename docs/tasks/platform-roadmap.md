@@ -6,42 +6,78 @@
 > Детальний імплементаційний план кожної фази пишеться перед її стартом
 > (superpowers writing-plans) і посилається звідси.
 
-## Фаза 0 — Фундамент у монорепо (без публікації)
+## Фаза 0 — Фундамент у монорепо (без публікації) — **завершена 2026-07-31**
 
-- [ ] `routes.ts` + `physical()` на workspace-теки: нові пакети
+План виконання: [`docs/superpowers/plans/2026-07-31-phase0-foundation.md`](../superpowers/plans/2026-07-31-phase0-foundation.md)
+(17 задач, гілка `feat/phase0-foundation`).
+
+- [x] `routes.ts` + `physical()` на workspace-теки: нові пакети
       `@simplycms/storefront-routes`, `@simplycms/admin-routes`;
-      `src/routes` магазину стискається до `__root` + лейаути + `my/`
-- [ ] Канонікалізація сторінок: сторінки з `core/pages` і `themes/*/pages` →
-      `storefront-routes`; теми → `{manifest, tokens, components, settings}`
-      (новий контракт, spec §6); перебудова `theme-system`
-- [ ] Wiring плагін-контуру від `simplycms.config.ts` (одне джерело істини,
-      spec §8); `loadPlugins` на старті; деградація при розсинхроні конфіг↔БД
-- [ ] Консолідація `@simplycms/supabase` (spec §10, зразок `@kit/supabase`);
-      знесення legacy `core/supabase/*`; оновити `.env.example`
-      (`VITE_SUPABASE_PUBLISHABLE_KEY`)
-- [ ] Drizzle-baseline: `@simplycms/schema` (introspect наявної схеми → TS + RLS),
-      конвеєр `db:diff` → ревʼю → Supabase CLI; вивести з експлуатації
-      `supabase/scripts/migrate.mjs` (spec §9)
-- [ ] LICENSE (MIT) у корінь + `license` у всі пакети
-- [ ] i18n-скелет: каталоги повідомлень ядра (uk + en), лінт проти хардкод-рядків
-      (spec §12)
-- [ ] i18n (після Фази 0): мігрувати ~262 кириличні входження в канонічних
-      сторінках `@simplycms/storefront-routes` + адмінку `@simplycms/admin`
-      (зараз warn-рівень `no-restricted-syntax`); повідомлення toast і Zod —
-      окремий прохід (лінт JSX їх не бачить); після міграції розширити
-      error-зону в `eslint.config.mjs` з переліку файлів на весь пакет
-- [ ] Гігієна: прибрати guest-order token з URL після використання
-      (`OrderSuccess.tsx`); перевірити SSR-повноту списків товарів
-      (`curl /catalog` — назви/ціни в HTML), за потреби винести enrichment на сервер
-- [ ] Знести re-export-шими core та мертві аліаси (рішення D5 — без перехідних шимів)
-- [ ] Вивести з експлуатації git-subtree `simplyCMS-core` (`cms:pull`/`cms:push`
+      `src/routes` магазину стиснуто до `__root.tsx` + `my/` (лейаути теж
+      переїхали в пакет); регрес-гард `tests/virtual-routes-escape.test.ts`
+- [x] Канонікалізація сторінок: сторінки з `core/pages` і `themes/*/pages` →
+      `storefront-routes`; теми → `{manifest, tokens, components, settings?}`
+      (новий контракт, spec §6); `theme-system` перебудовано
+      (`applyTokens`, `validateThemeModule`, fallback на `default`)
+- [x] Wiring плагін-контуру від `simplycms.config.ts` (одне джерело істини,
+      spec §8); `bootstrapPlugins` на старті; реактивний `PluginSlot`
+      (`hookRegistry.subscribe` + `useSyncExternalStore`); референс-плагін
+      `plugins/hello-world`
+- [x] Консолідація `@simplycms/supabase` (spec §10, зразок `@kit/supabase`);
+      legacy `core/supabase/*` і `src/server/supabase.ts` знесено; `.env.example`
+      оновлено (`VITE_SUPABASE_PUBLISHABLE_KEY` + legacy anon fallback).
+      **Обсяг вужчий за spec-таблицю:** `server-admin`, hooks і testing-хелпери
+      не увійшли — див. амендмент spec §4.0
+- [x] Drizzle-baseline: `@simplycms/schema` (introspect наявної схеми → 40 таблиць
+      + 93 RLS-політики в TS, snapshot у `drizzle/`, `rls-parity.test.ts`);
+      конвеєр `db:diff` → ревʼю → `db:migrate`; `supabase/scripts/migrate.mjs`
+      виведено з експлуатації (spec §9)
+- [x] LICENSE (MIT) у корінь + `license` у всі workspace-пакети
+- [x] i18n-скелет: `@simplycms/i18n` (request-scoped `createTranslator`,
+      `normalizeLocale`, `I18nProvider`/`useT`, каталоги uk + en), два
+      `no-restricted-syntax`-селектори проти хардкод-рядків (spec §12)
+- [ ] **i18n-міграція (борг, Фаза 1+):** мігрувати ~954 кириличні входження в
+      канонічних сторінках `@simplycms/storefront-routes` + адмінці
+      `@simplycms/admin` (зараз warn-рівень `no-restricted-syntax`; error-зона —
+      3 файли); повідомлення toast і Zod — окремий прохід (лінт JSX їх не
+      бачить); після міграції **warn→error**: розширити error-зону в
+      `eslint.config.mjs` з переліку файлів на весь пакет
+- [x] Гігієна: guest-order token прибирається з URL після використання
+      (`OrderSuccess.tsx`); SSR-повнота списків товарів — `ProductListItem` DTO
+      + `SsrProductGrid`, назви/ціни в серверному HTML
+- [x] Знести re-export-шими core та мертві аліаси (рішення D5 — без перехідних
+      шимів). **Частково:** знесено 12 шимів core без споживачів +
+      `theme-system/ThemeResolver`; шими з живими споживачами
+      (`lib/priceUtils`, `lib/shipping/*`, `lib/discountEngine`, `hooks/useCart`,
+      `hooks/useProductsWithStock`, частина `components/*`) лишились разом із
+      самим `core` — повне розчинення `core` перенесено на Фазу 1+
+- [x] Вивести з експлуатації git-subtree `simplyCMS-core` (`cms:pull`/`cms:push`
       скрипти геть; репо архівувати) — монорепо стає єдиним джерелом (spec §4.1)
-- [ ] Rename scope `@simplycms/*` → `@simplycms/*` після створення власником
-      GitHub org `simplyCMS` та npm org `simplycms` (spec §4.1; імена перевірені
-      2026-07-31 — вільні); зарезервувати npm-імʼя `simplycms` під CLI
+- [x] Rename scope `@simplysoftua/*` → `@simplycms/*` (384 файли) + registry
+      npmjs (spec §4.1). *Лишається дія власника: створити GitHub org `simplyCMS`
+      і npm org `simplycms`, зарезервувати npm-імʼя `simplycms` під CLI —
+      імена перевірені 2026-07-31, вільні.*
 
 **DoD:** магазин працює на новій топології в монорепо; `typecheck`/`lint`/`test`/
-`build` зелені; регрес-тест `physical()`-механізму в CI.
+`build` зелені; регрес-тест `physical()`-механізму в CI. — **виконано.**
+
+### Борги, свідомо винесені за межі Фази 0
+
+- **Живі клікові смоки не виконані** (агенти без браузера): перемикання теми в
+  адмінці; `/profile` під залогіненим користувачем; `/admin/plugins` →
+  увімкнути плагін → віджет на дашборді без reload → вимкнути. HTTP-смоки
+  (коди відповідей, наявність назв/цін у SSR-HTML) прогнані.
+- **Upsert рядка `hello-world` у таблицю `plugins` не підтверджено на живій БД:**
+  RLS не дає анонімного INSERT, тож `bootstrapPlugins` пише рядок лише коли на
+  сайт зайде адмін (у коді є гард на сесію).
+- **`prettier` відсутній у `devDependencies`:** `pnpm format` / `format:check`
+  падають із `prettier: not found`, CI їх не запускає — гейти де-факто
+  починаються з `pnpm lint`.
+- **i18n-міграція** (~954 warn-входження) — окремий прохід, див. чекбокс вище.
+- **`@simplycms/engine`** (обʼєднання `data-supabase` + `react-query`) — не
+  робилось, обидва пакети живі окремо; див. амендмент spec §4.0.
+- **`useAuth` лишається в `@simplycms/core/hooks`** (20 файлів-споживачів) —
+  заявлений deferral, переїзд у `@simplycms/supabase` — Фаза 1+.
 
 ## Фаза 1 — Пілот пакування + production-готовність
 

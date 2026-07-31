@@ -89,7 +89,6 @@ export { SupabaseProvider, useSupabaseClient } from "@simplycms/supabase/Supabas
 // ---- Catalog Components ----
 export { ActiveFilters } from "./components/catalog/ActiveFilters";
 export type { ActiveFilter } from "./components/catalog/ActiveFilters";
-export { CatalogLayout } from "./components/catalog/CatalogLayout";
 export { FilterSidebar } from "./components/catalog/FilterSidebar";
 export { ModificationSelector } from "./components/catalog/ModificationSelector";
 export type { ModificationStockInfo } from "./components/catalog/ModificationSelector";
@@ -99,33 +98,22 @@ export { ProductGallery } from "./components/catalog/ProductGallery";
 export { StockDisplay, StockBadge } from "./components/catalog/StockDisplay";
 
 // ---- Cart Components ----
-export { CartButton } from "./components/cart/CartButton";
 export { CartDrawer } from "./components/cart/CartDrawer";
 export { CartItem } from "./components/cart/CartItem";
 
 // ---- Checkout Components ----
-export { AddressCard } from "./components/checkout/AddressCard";
-export { AddressSaveDialog } from "./components/checkout/AddressSaveDialog";
-export { AddressSelectorPopup } from "./components/checkout/AddressSelectorPopup";
 export { CheckoutAuthBlock } from "./components/checkout/CheckoutAuthBlock";
 export { CheckoutContactForm } from "./components/checkout/CheckoutContactForm";
 export { CheckoutDeliveryForm } from "./components/checkout/CheckoutDeliveryForm";
 export { CheckoutOrderSummary } from "./components/checkout/CheckoutOrderSummary";
 export { CheckoutPaymentForm } from "./components/checkout/CheckoutPaymentForm";
 export { CheckoutRecipientForm } from "./components/checkout/CheckoutRecipientForm";
-export { RecipientCard } from "./components/checkout/RecipientCard";
-export { RecipientSaveDialog } from "./components/checkout/RecipientSaveDialog";
-export { RecipientSelectorPopup } from "./components/checkout/RecipientSelectorPopup";
 
 // ---- Reviews Components ----
 export { ProductReviews } from "./components/reviews/ProductReviews";
-export { ReviewCard } from "./components/reviews/ReviewCard";
-export { ReviewForm } from "./components/reviews/ReviewForm";
-export { ReviewRichTextEditor } from "./components/reviews/ReviewRichTextEditor";
 export { StarRating } from "./components/reviews/StarRating";
 
 // ---- Profile Components ----
 export { AddressesList } from "./components/profile/AddressesList";
 export { AvatarUpload } from "./components/profile/AvatarUpload";
-export { ProfileLayout } from "./components/profile/ProfileLayout";
 export { RecipientsList } from "./components/profile/RecipientsList";

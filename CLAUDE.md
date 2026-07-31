@@ -14,13 +14,17 @@ pnpm format           # Prettier (write)
 pnpm format:check     # Prettier (check only)
 pnpm test             # Run tests (vitest run)
 pnpm test:watch       # Tests in watch mode
+pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types
+                      # Схема БД — див. «Database Commands»
 ```
 
 ## What This Project Is
 
 SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages live in this monorepo and are published to npmjs (Фаза 1+).
 
-**Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md). Опис нижче документує **поточний** стан коду до реструктуризації.
+**Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md).
+
+**Фаза 0 завершена 2026-07-31.** Опис нижче — фактичний стан коду після неї: роути й канонічні сторінки живуть у пакетах (`@simplycms/storefront-routes`, `@simplycms/admin-routes`), host стиснуто до `__root.tsx` + `src/routes/my/`, теми — контракт v2 (`manifest + tokens + components`), схема БД — Drizzle-baseline у `@simplycms/schema`. Незакриті борги Фази 0 перелічені в роадмапі (розділ «Борги»).
 
 ## Mandatory Instructions
 
@@ -75,6 +79,13 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 падають із `prettier: not found`, а CI їх не запускає. Де-факто гейти
 починаються з `pnpm lint`.
 
+🔴 **`pnpm lint` = 0 errors / ~960 warnings — це НОРМА.** Warn-зона двох
+`no-restricted-syntax`-селекторів (i18n) навмисно підсвічує ще не мігровані
+кириличні рядки в `@simplycms/storefront-routes` та `@simplycms/admin`.
+Error-зона — явний список із 3 файлів у `eslint.config.mjs`. Ці ворнінги
+**не глушити** й селектори не послабляти: warn→error станеться після
+i18n-міграції (роадмап, Фаза 1+).
+
 ## Tech Stack
 
 - **Framework:** TanStack Start 1.167 + TanStack Router 1.168 (Vite 8, React 19)
@@ -92,75 +103,116 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 
 ```
 simplyCMS/
-├── src/                              # TanStack Start application
-│   ├── routes/                       # File-based routes (TanStack Router)
+├── routes.ts                         # virtualRouteConfig: rootRoute + physical() на теки пакетів
+├── src/                              # Host — тонка збірка магазину
+│   ├── routes/
 │   │   ├── __root.tsx                # Root route (html, providers, 404/error)
-│   │   ├── _storefront.tsx + _storefront/  # Public SSR pages (theme MainLayout)
-│   │   ├── admin.tsx + admin/        # Admin panel (client-only, ssr:false, guard)
-│   │   ├── _protected.tsx + _protected/    # Auth-guarded profile pages
-│   │   ├── auth/                     # Login/register (index) + OAuth callback (server route)
-│   │   └── api/                      # Server routes (health, guest-order)
-│   ├── server/                       # createServerFn (auth, themes, products, …)
-│   ├── seo/                          # sitemap.xml / robots.txt vite plugin
+│   │   └── my/                       # ЄДИНА тека роутів магазину (кастомні сторінки)
+│   ├── server/engine.ts              # createServerFn-glue для EngineContext
+│   ├── engine-provider.tsx           # EngineProvider (репозиторії lazy, DI-клієнт)
+│   ├── engine.shared.ts              # Shared-частина EngineContext (isomorphic)
 │   ├── styles/globals.css            # Tailwind v4 entry (@import + @config)
-│   ├── theme-registry.ts             # Isomorphic theme registration (side-effect)
+│   ├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
 │   ├── router.tsx                    # createRouter
 │   ├── start.ts                      # createStart + global request middleware (admin guard)
 │   ├── client.tsx                    # Client hydration entry
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
-├── supabase/                         # Site-level database
-│   ├── config.toml                   # Supabase project config
-│   ├── migrations/                   # SQL migrations
-│   ├── functions/                    # Edge Functions
-│   └── types.ts                      # Auto-generated TypeScript types
+├── packages/simplycms/               # Ядро CMS (публікація на npmjs — Фаза 1+)
+│   ├── objects/            @simplycms/objects        # Контракти + порти (0 deps)
+│   ├── domain/             @simplycms/domain         # Pure-логіка: pricing/discounts/inventory/shipping
+│   ├── schema/             @simplycms/schema         # Drizzle-схема ядра + RLS у TS + drizzle/ snapshot
+│   ├── supabase/           @simplycms/supabase       # browser/server/anon-клієнти, SupabaseProvider, keys
+│   ├── data-supabase/      @simplycms/data-supabase  # Реалізації портів на Supabase
+│   ├── react-query/        @simplycms/react-query    # Query-хуки через EngineContext
+│   ├── runtime/            @simplycms/runtime        # defineRuntime + host-defineConfig
+│   ├── i18n/               @simplycms/i18n           # createTranslator, I18nProvider, каталоги uk/en
+│   ├── storefront/         @simplycms/storefront     # SSR-лоадери + SEO-генератори (DI-клієнт)
+│   ├── storefront-routes/  @simplycms/storefront-routes  # routes/ + канонічні pages/ + shells/ + server/
+│   ├── admin-routes/       @simplycms/admin-routes   # routes/admin* (тонкі обгортки)
+│   ├── admin/              @simplycms/admin          # Сторінки/компоненти адмінки
+│   ├── theme-system/       @simplycms/themes         # ThemeRegistry, applyTokens, validateThemeModule
+│   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins
+│   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
+│   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
+│   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │
-├── packages/simplycms/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
-│   ├── core/src/       @simplycms/core
-│   ├── admin/src/      @simplycms/admin
-│   ├── ui/src/         @simplycms/ui
-│   ├── plugin-system/  @simplycms/plugins
-│   ├── theme-system/   @simplycms/themes
-│   └── schema/                       # Seed migrations
+├── scripts/                          # db-diff.mjs, db-migrate.mjs (конвеєр міграцій)
+├── supabase/                         # config.toml, migrations/ (згенеровані), functions/, types.ts
+├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
+├── plugins/hello-world/              # Референс-плагін
+├── tests/                            # virtual-routes-escape, published-exports-parity
 │
-├── themes/default/                   # Default storefront theme
-├── themes/solarstore/                # SolarStore theme (blue palette)
-├── plugins/                          # Local plugins directory
-│
-├── simplycms.config.ts               # CMS config
-├── vite.config.ts                    # Vite + tanstackStart() + seoRoutesPlugin()
+├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
+├── vite.config.ts                    # tanstackStart({ virtualRouteConfig: './routes.ts' }) + seoRoutesPlugin()
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```
 
-## Package Aliases (tsconfig paths)
+🔴 `src/routes/` сканується **не** цілком: `routes.ts` монтує лише `my/`. Файл,
+покладений поруч із `__root.tsx`, роутом не стане (гард — `tests/virtual-routes-escape.test.ts`).
+
+## Package Aliases (tsconfig paths + vite resolve.alias)
+
+Кожен запис має пару `X` і `X/*`. Імʼя пакета ≠ імʼя теки для `themes`/`plugins`.
 
 | Import | Path |
 |--------|------|
 | `@simplycms/db-types` | `supabase/types.ts` |
-| `@simplycms/core` | `packages/simplycms/core/src` |
+| `@simplycms/objects` | `packages/simplycms/objects/src` |
+| `@simplycms/domain` | `packages/simplycms/domain/src` |
+| `@simplycms/supabase` | `packages/simplycms/supabase/src` |
+| `@simplycms/data-supabase` | `packages/simplycms/data-supabase/src` |
+| `@simplycms/react-query` | `packages/simplycms/react-query/src` |
+| `@simplycms/runtime` | `packages/simplycms/runtime/src` |
+| `@simplycms/i18n` | `packages/simplycms/i18n/src` |
+| `@simplycms/storefront` | `packages/simplycms/storefront/src` |
+| `@simplycms/storefront-routes` | `packages/simplycms/storefront-routes/src` |
 | `@simplycms/admin` | `packages/simplycms/admin/src` |
 | `@simplycms/ui` | `packages/simplycms/ui/src` |
-| `@simplycms/plugins` | `packages/simplycms/plugin-system/src` |
-| `@simplycms/themes` | `packages/simplycms/theme-system/src` |
+| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/simplycms/<name>/src` |
+| `@simplycms/plugins` | `packages/simplycms/**plugin-system**/src` |
+| `@simplycms/themes` | `packages/simplycms/**theme-system**/src` |
+| `@simplycms/core` | `packages/simplycms/core/src` (legacy-фасад) |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
-## Theme System (SSR)
+`@simplycms/schema` і `@simplycms/admin-routes` аліасів **не мають** — вони
+резолвляться через workspace-симлінки `node_modules` (schema споживають лише
+`scripts/db-*.mjs`, admin-routes монтується шляхом у `routes.ts`).
 
-Themes use isomorphic registration + runtime DB activation:
+## Theme System (контракт v2)
 
-1. **Registration:** `src/theme-registry.ts` registers themes via `ThemeRegistry.register()` — imported as a side-effect from `__root.tsx` (works on server and client).
-2. **SSR Resolution:** `src/server/themes.ts` (`getActiveTheme` `createServerFn`) reads the active theme from the DB; the `_storefront` / `_protected` route `loader` provides `themeName` to children.
-3. **Storefront pages:** Route component does `const theme = use(ThemeRegistry.load(themeName))` → renders `theme.pages.XxxPage`.
-4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache.
-5. **ThemeContext (client):** Accepts `initialThemeName` from the loader, avoids redundant client fetch.
+Тема постачає **лише** оформлення. Сторінок і лейаутів у ній немає.
+
+```ts
+ThemeModule = { manifest, tokens, components, settings? }
+```
+
+1. **Реєстрація:** `src/theme-registry.ts` реєструє теми з `config.themes`
+   (`simplycms.config.ts`) через `ThemeRegistry.register()` — side-effect-імпорт
+   з `__root.tsx`, працює на сервері й на клієнті.
+2. **SSR-резолв:** `getActiveThemeSSR` (`@simplycms/themes`) читає активну тему з БД;
+   `loader` каркасних роутів віддає `themeName` дітям.
+3. **Сторінки — в ядрі:** канонічні сторінки живуть у
+   `@simplycms/storefront-routes/src/pages/`. Каркаси `StorefrontShell` /
+   `ProtectedShell` беруть з теми `components` (Header/Footer/HomeSections/…)
+   і обгортають канонічну сторінку. `theme.pages.*` більше **не існує**.
+4. **Токени:** `applyTokens(theme.tokens)` розкладає палітру в CSS-змінні —
+   тема не везе власний `theme.css`.
+5. **Валідація:** `validateThemeModule` — публічний API для авторів тем;
+   `ThemeRegistry.load` падає на тему `default`, якщо запитаної немає.
+6. **Активація з адмінки:** прапорець `is_active` у таблиці `themes`;
+   перемикання інвалідовує кеш теми.
+7. **ThemeContext (клієнт):** приймає `initialThemeName` з лоадера — зайвого
+   клієнтського фетчу немає.
 
 ## Environment Variables
 
 Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VITE_` prefix:
 - `VITE_SUPABASE_URL` — Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` — Supabase anon key
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key
+  (legacy fallback — `VITE_SUPABASE_ANON_KEY`; резолв — `resolveSupabaseKeys`)
 - `VITE_SITE_URL` — Public site URL (production)
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
@@ -171,6 +223,7 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
+pnpm db:dump-rls               # Дамп RLS-політик із живої БД (джерело для rls-parity.test.ts)
 pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
 pnpm db:migrate                # supabase link + db push + db:generate-types
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts

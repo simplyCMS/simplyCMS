@@ -28,7 +28,7 @@ graphify update . --force                   # ребілд AST з видален
 
 | Погано | Чому | Добре |
 | ------ | ---- | ----- |
-| `"how does the storefront resolve the active theme"` | стартові вузли обираються за випадковими загальними словами | `"ThemeRegistry ThemeResolver getActiveThemeSSR"` |
+| `"how does the storefront resolve the active theme"` | стартові вузли обираються за випадковими загальними словами | `"ThemeRegistry applyTokens getActiveThemeSSR"` |
 | `"як рахується ціна зі знижкою"` | у мітках графа немає кирилиці | `"pricing discounts calculateTotal"` |
 
 Мітки вузлів — це імена символів і файлів. Тому найкращий запит виглядає як

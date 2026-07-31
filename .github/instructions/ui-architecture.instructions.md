@@ -20,42 +20,47 @@ description: "Правила побудови UI, система тем та sha
 
 ## Система тем
 
-### ThemeModule Contract
+### ThemeModule Contract (v2)
 ```typescript
 interface ThemeModule {
-  manifest: ThemeManifest;
-  MainLayout: React.ComponentType<{ children: React.ReactNode }>;
-  CatalogLayout: React.ComponentType<{ children: React.ReactNode }>;
-  ProfileLayout: React.ComponentType<{ children: React.ReactNode }>;
-  pages: ThemePages;
-  components?: ThemeComponents;
+  manifest: ThemeManifest;                 // name, displayName, version, engines.simplycms
+  tokens: DesignTokens;                    // значення НАЯВНИХ semantic-змінних shadcn + dark-перекриття
+  components: ThemeComponents;             // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
+  settings?: Record<string, ThemeSettingDefinition>;
 }
 ```
+
+🔴 Тема **не** постачає сторінок і лейаутів. `MainLayout`, `CatalogLayout`,
+`ProfileLayout`, `theme.pages` видалені (рішення D3/D4). Джерело контракту —
+`packages/simplycms/theme-system/src/types.ts`.
 
 ### Структура теми
 ```
 themes/default/
-├── manifest.ts          # Метадані теми
+├── manifest.ts          # Метадані + engines.simplycms
+├── tokens.ts            # DesignTokens (CSS-змінні, включно з dark)
+├── components/          # Header, Footer (+ опційні HeroBanner, HomeSections)
 ├── index.ts             # ThemeModule export
-├── layouts/             # MainLayout, CatalogLayout, ProfileLayout
-├── pages/               # HomePage, CatalogPage, ProductPage, etc.
-├── components/          # Theme-specific компоненти (Header, Footer, etc.)
-└── styles/              # CSS variables override
+└── package.json
 ```
 
-### Використання теми в src/routes/
+Ніяких `pages/`, `layouts/`, `styles/theme.css` — токени розкладає `applyTokens`.
+
+### Де рендеряться сторінки
+Канонічні сторінки живуть у `@simplycms/storefront-routes/src/pages/`.
+Каркаси `StorefrontShell` / `ProtectedShell` беруть `Header`/`Footer` і `tokens`
+з активної теми та обгортають канонічну сторінку — route-файл теми не торкається:
+
 ```typescript
-// src/routes/_storefront/index.tsx
-import { use } from 'react';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-
-function HomeRoute() {
-  const { themeName } = Route.useRouteContext(); // з loader-а _storefront
-  const theme = use(ThemeRegistry.load(themeName));
-  const { HomePage: ThemedHomePage } = theme.pages;
-  return <ThemedHomePage />;
-}
+// packages/simplycms/storefront-routes/routes/_storefront.tsx (спрощено)
+loader: async () => ({ themeName: (await getActiveTheme())?.name ?? 'default', … })
+// component:
+<ThemeProvider fallbackTheme="default" initialThemeName={themeName} …>
+  <StorefrontShell><Outlet /></StorefrontShell>
+</ThemeProvider>
 ```
+
+Валідація модуля теми для авторів — `validateThemeModule` з `@simplycms/themes`.
 
 ## ✅ ALWAYS
 - Використовуй `@simplycms/ui` компоненти, не створюй дублікати.

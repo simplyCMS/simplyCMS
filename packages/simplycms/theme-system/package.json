@@ -9,7 +9,6 @@
     ".": "./src/index.ts",
     "./ThemeRegistry": "./src/ThemeRegistry.ts",
     "./ThemeContext": "./src/ThemeContext.tsx",
-    "./ThemeResolver": "./src/ThemeResolver.ts",
     "./applyTokens": "./src/applyTokens.ts",
     "./validateThemeModule": "./src/validateThemeModule.ts",
     "./types": "./src/types.ts"

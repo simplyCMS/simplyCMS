@@ -92,14 +92,14 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 ```
 ## Пояснення
 
-Система тем побудована на контракті ThemeModule — кожна тема експортує layouts, pages та опціональні components.
-Storefront-роути в src/routes/_storefront/ делегують рендеринг компонентам активної теми.
-Теми реєструються в src/theme-registry.ts (build-time), активна тема обирається з БД (runtime).
+Система тем побудована на контракті ThemeModule v2 — тема експортує manifest, tokens, components (+ опційні settings). Сторінок і лейаутів тема НЕ постачає.
+Канонічні сторінки живуть у @simplycms/storefront-routes; каркаси StorefrontShell/ProtectedShell підставляють Header/Footer теми.
+Теми реєструються в src/theme-registry.ts (build-time, з config.themes), активна тема обирається з БД (runtime).
 
 ### Ключові моменти
-- ThemeModule: manifest + MainLayout + CatalogLayout + ProfileLayout + pages
-- ThemeRegistry для реєстрації тем, ThemeResolver для пошуку
-- Пошук: local themes/ → npm packages → simplycms-theme-* prefix
+- ThemeModule v2: manifest + tokens + components (+ settings?)
+- ThemeRegistry для реєстрації, applyTokens для CSS-змінних, validateThemeModule для перевірки контракту
+- ThemeRegistry.load падає на тему `default`, якщо запитаної немає
 
 ### Де шукати деталі
 - packages/simplycms/theme-system/src/types.ts — повний контракт ThemeModule

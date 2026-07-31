@@ -15,9 +15,10 @@ description: "Правила роботи з даними та Supabase в Simpl
 - **Інспекція БД** (структура таблиць, RLS policies, аналіз) — через MCP supabase у read-only режимі: `list_tables`, `execute_sql` (лише `SELECT`), `get_advisors`, `search_docs`. Зміни схеми — виключно міграціями (див. «Міграції»).
 
 ### Storefront (SSR)
-- Data fetching — у route `loader` через `createServerFn` (`src/server/*`), який делегує в `@simplycms/storefront/loaders`:
+- Data fetching — у route `loader` через `createServerFn`
+  (`@simplycms/storefront-routes/src/server/*`), який делегує в `@simplycms/storefront/loaders`:
   ```typescript
-  // src/routes/_storefront/catalog/$sectionSlug/index.tsx
+  // packages/simplycms/storefront-routes/routes/_storefront/catalog/$sectionSlug/index.tsx
   export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
     loader: async ({ params }) => getSectionPageData({ data: params.sectionSlug }),
     component: CatalogSectionRoute,
@@ -73,7 +74,7 @@ pnpm db:migrate           # 4. supabase link + db push + автоматични�
 
 ### Server function + in-memory TTL cache (cross-request)
 ```typescript
-// src/server/themes.ts — еталон патерну
+// packages/simplycms/storefront-routes/src/server/themes.ts — еталон патерну
 const CACHE_TTL = 5 * 60 * 1000;
 let cache: { data: T | null; timestamp: number } | null = null;
 
