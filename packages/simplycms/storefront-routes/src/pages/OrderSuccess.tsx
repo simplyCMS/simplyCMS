@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearch, Link } from "@tanstack/react-router";
+import { useParams, useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { CheckCircle2, Package, ChevronRight, Home, User, Copy, Check } from "lucide-react";
 import { Button } from "@simplycms/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
@@ -54,6 +54,7 @@ export default function OrderSuccess() {
   const search = useSearch({ strict: false }) as Record<string, string | undefined>;
   const token = search.token ?? null;
   const { user } = useAuth();
+  const navigate = useNavigate({ from: "/order-success/$orderId" });
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +89,17 @@ export default function OrderSuccess() {
 
         if (error) throw error;
         setOrder(data as OrderDetails);
+
+        // Guest-token одноразовий: після успішного завантаження прибираємо
+        // його з URL, щоб він не лишався в історії/логах/шарінгу посилання.
+        navigate({
+          search: (s) => {
+            const rest = { ...s };
+            delete rest.token;
+            return rest;
+          },
+          replace: true,
+        });
       } catch (error) {
         console.error("Error fetching order:", error);
       } finally {
@@ -96,6 +108,7 @@ export default function OrderSuccess() {
     }
 
     fetchOrder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate стабільний з @tanstack/react-router
   }, [orderId, token, user, supabase]);
 
   const formatPrice = (value: number) => {
