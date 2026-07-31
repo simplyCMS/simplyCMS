@@ -49,6 +49,13 @@ description: "Правила роботи з даними та Supabase в Simpl
 - DB команди працюють через `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` з `.env.local` (Management API).
 - Zod schemas для валідації форм (react-hook-form + @hookform/resolvers/zod).
 
+### Env-матриця для DB команд
+
+| Змінні | Команди |
+|--------|---------|
+| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types`, `db:migrate` (Management API) |
+| `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |
+
 ### Міграції
 
 Джерело правди схеми — **`packages/simplycms/schema/src/schema.ts`** (Drizzle).
@@ -126,7 +133,7 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 - Не хардкодь query keys — використовуй константи або фабрики.
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/core/src/supabase/` — клієнти Supabase (server/anon/SupabaseProvider).
+- `packages/simplycms/supabase/src/` — клієнти Supabase (server/anon/SupabaseProvider).
 - `packages/simplycms/data-supabase/src/` — репозиторії-порти.
 - `packages/simplycms/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
 - `packages/simplycms/schema/README.md` — Drizzle-baseline, RLS-parity gate, ручні правки після `pull`.

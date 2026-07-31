@@ -44,8 +44,8 @@
 
 **Files:** `packages/simplycms/core/src/index.ts` (видалити мертвий блок «Supabase Client (DI)» ~91-100; deps НЕ чіпати); `.github/instructions/data-access.instructions.md` (рядок ~129 → `packages/simplycms/supabase/src/`; **+ env-матриця**: `SUPABASE_PROJECT_ID`+`SUPABASE_ACCESS_TOKEN` → `db:generate-types`/`db:migrate`; `DATABASE_URL` → `db:pull`/`db:diff`/`db:dump-rls`); `.github/instructions/tooling.instructions.md` (аліаси += `supabase`,`i18n`,`storefront-routes`; та сама env-матриця в розділі env); `.env.example` (+`DATABASE_URL=` з приміткою «session pooler; лише db:pull/diff/dump-rls»); `packages/simplycms/schema/package.json` (+`dependencies: dotenv, pg`).
 
-- [ ] **Step 1:** всі правки; контроль: `git grep -n "core/src/supabase" -- ':!docs'` → 0.
-- [ ] **Step 2:** гейти → коміт: `chore(review): minor-знахідки ревʼю + env-матриця в інструкціях`.
+- [x] **Step 1:** всі правки; контроль: `git grep -n "core/src/supabase" -- ':!docs'` → 0.
+- [x] **Step 2:** гейти → коміт: `chore(review): minor-знахідки ревʼю + env-матриця в інструкціях`.
 
 ---
 

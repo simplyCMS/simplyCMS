@@ -16,6 +16,10 @@
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
     "db:dump-rls": "node ./scripts/dump-rls.mjs"
   },
+  "dependencies": {
+    "dotenv": "^17.2.4",
+    "pg": "8.22.0"
+  },
   "peerDependencies": {
     "drizzle-orm": "^0.45.0"
   }

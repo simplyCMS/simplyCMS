@@ -45,7 +45,8 @@ pnpm db:generate-types      # Згенерувати TypeScript типи з Supa
   - `@simplycms/db-types` → `supabase/types.ts`
   - `@simplycms/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
     react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
-    storefront, runtime, cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui)
+    storefront, storefront-routes, runtime, supabase, i18n, cart-ui, catalog-ui,
+    checkout-ui, profile-ui, reviews-ui)
   - `@themes/*` → `themes/*`
   - `@plugins/*` → `plugins/*`
 
@@ -83,3 +84,10 @@ SUPABASE_ACCESS_TOKEN=sbp_xxxx
 - `VITE_` prefix для клієнтських змінних (`import.meta.env.VITE_*`).
 - `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` — для CLI (міграції, генерація типів через Management API).
 - Не комітьте `.env.local` — він в `.gitignore`.
+
+### Env-матриця для DB команд
+
+| Змінні | Команди |
+|--------|---------|
+| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types`, `db:migrate` (Management API) |
+| `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |
