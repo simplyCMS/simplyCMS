@@ -4,10 +4,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Щотижневий прогін пілота пакування (job `pilot`) — понеділок, 04:00 UTC.
+    - cron: '0 4 * * 1'
 
 jobs:
   typecheck:
     name: TypeScript
+    # Weekly-розклад існує лише заради job-а `pilot` — решту на ньому не ганяємо.
+    if: github.event_name != 'schedule'
     timeout-minutes: 8
     runs-on: ubuntu-latest
 
@@ -40,6 +46,7 @@ jobs:
 
   test:
     name: Tests
+    if: github.event_name != 'schedule'
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -63,6 +70,7 @@ jobs:
 
   packaging:
     name: Packaging
+    if: github.event_name != 'schedule'
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -88,3 +96,37 @@ jobs:
 
       - name: Tarball parity
         run: pnpm test:packaging
+
+  pilot:
+    name: Packaging pilot
+    # Пілот ставить ядро справжнім `npm install` із tarball-ів і ходить у живу
+    # Supabase — довго й з мережею, тому не на кожен PR: тільки вручну
+    # (`workflow_dispatch`) або за розкладом (weekly `schedule` вище).
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # 🔴 `.env.local` у CI немає (він у .gitignore і містить робочі ключі),
+      # тому env скретч-магазину береться з secrets репозиторію. Мапінг
+      # PILOT_* → `.env` магазину робить сам `scripts/pilot-pack.mjs`
+      # (`resolvePilotEnv`). Секрети `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY`
+      # створює власник репо: URL проєкту Supabase і його publishable-ключ.
+      # Без них job падає з явним повідомленням, а не мовчки зеленіє.
+      - name: Run packaging pilot
+        env:
+          PILOT_SUPABASE_URL: ${{ secrets.PILOT_SUPABASE_URL }}
+          PILOT_SUPABASE_KEY: ${{ secrets.PILOT_SUPABASE_KEY }}
+        run: node scripts/pilot-pack.mjs

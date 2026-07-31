@@ -1,0 +1,135 @@
+/**
+ * Крок 2 пілота: розгортання скретч-магазину з fixture-шаблону.
+ *
+ * Шаблон (`tests/pilot/store-template/`) — це host ЧУЖОГО проєкту: ті самі
+ * файли, що й у монорепо, але без жодного workspace-аліаса на `packages/**`.
+ * Теми й плагіни копіюються з репо як власні файли магазину.
+ */
+
+import {
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+
+const REPO_ROOT = resolve(import.meta.dirname, '../..');
+const TEMPLATE_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
+
+/** Ключі, які магазин чекає у своєму `.env`. */
+const ENV_KEYS = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'VITE_SITE_URL',
+];
+
+/**
+ * Розгорнути магазин: шаблон + теми/плагіни + tarball-и в manifest + `.env`.
+ *
+ * @param {{ storeDir: string; tarballs: Map<string,string>; env: Record<string,string> }} opts
+ */
+export function scaffoldStore({ storeDir, tarballs, env }) {
+  rmSync(storeDir, { recursive: true, force: true });
+  mkdirSync(storeDir, { recursive: true });
+
+  cpSync(TEMPLATE_DIR, storeDir, { recursive: true });
+  cpSync(join(REPO_ROOT, 'themes'), join(storeDir, 'themes'), {
+    recursive: true,
+    filter: (src) => !src.includes('node_modules'),
+  });
+  cpSync(
+    join(REPO_ROOT, 'plugins/hello-world'),
+    join(storeDir, 'plugins/hello-world'),
+    { recursive: true, filter: (src) => !src.includes('node_modules') },
+  );
+
+  writeManifest(storeDir, tarballs);
+  writeEnv(storeDir, env);
+}
+
+/**
+ * Підставити шляхи tarball-ів у manifest магазину.
+ *
+ * 🔴 Дві зафіксовані вади методу (обидві свідомі):
+ *  1. npm НЕ резолвить `file:`-транзитивність по імені: якщо пакет A залежить
+ *     від сиблінга B за версією `0.1.0`, npm піде за ним у registry, де його
+ *     ще немає. Тому ВСІ пакети ядра прописуються в `overrides` — це єдиний
+ *     спосіб змусити npm узяти локальний tarball на будь-якій глибині дерева.
+ *  2. Через `overrides` пілот НЕ перевіряє повноту `dependencies` у manifest-ах
+ *     (недекларована залежність усе одно встановиться). Статичну повноту
+ *     гарантує окремий гейт — `node scripts/audit-deps.mjs` (Task 1.3).
+ */
+function writeManifest(storeDir, tarballs) {
+  const manifestPath = join(storeDir, 'package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+  for (const [name, tarball] of tarballs) {
+    if (manifest.dependencies[name]) {
+      manifest.dependencies[name] = `file:${tarball}`;
+    }
+  }
+
+  manifest.overrides = Object.fromEntries(
+    [...tarballs].map(([name, tarball]) => [name, `file:${tarball}`]),
+  );
+
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+}
+
+/** `.env` магазину — vite підхоплює його з кореня проєкту на збірці. */
+function writeEnv(storeDir, env) {
+  const lines = ENV_KEYS.filter((key) => env[key]).map(
+    (key) => `${key}=${env[key]}`,
+  );
+  writeFileSync(join(storeDir, '.env'), `${lines.join('\n')}\n`, 'utf8');
+}
+
+/**
+ * Джерело env для магазину.
+ *
+ * Локально — кореневий `.env.local` (живі ключі dev-проєкту). У CI його немає,
+ * тож беруться secrets `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY`.
+ *
+ * @param {number} port порт, на якому підніметься магазин (іде у VITE_SITE_URL)
+ */
+export function resolvePilotEnv(port) {
+  const siteUrl = `http://127.0.0.1:${port}`;
+
+  if (process.env.PILOT_SUPABASE_URL && process.env.PILOT_SUPABASE_KEY) {
+    return {
+      VITE_SUPABASE_URL: process.env.PILOT_SUPABASE_URL,
+      VITE_SUPABASE_ANON_KEY: process.env.PILOT_SUPABASE_KEY,
+      VITE_SUPABASE_PUBLISHABLE_KEY: process.env.PILOT_SUPABASE_KEY,
+      VITE_SITE_URL: siteUrl,
+    };
+  }
+
+  const local = parseDotEnv(join(REPO_ROOT, '.env.local'));
+  return {
+    VITE_SUPABASE_URL: local.VITE_SUPABASE_URL ?? '',
+    VITE_SUPABASE_ANON_KEY: local.VITE_SUPABASE_ANON_KEY ?? '',
+    VITE_SUPABASE_PUBLISHABLE_KEY: local.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+    VITE_SITE_URL: siteUrl,
+  };
+}
+
+/** Мінімальний парсер `.env` (без залежностей: KEY=VALUE, `#` — коментар). */
+function parseDotEnv(path) {
+  /** @type {Record<string,string>} */
+  const out = {};
+  let raw = '';
+  try {
+    raw = readFileSync(path, 'utf8');
+  } catch {
+    return out;
+  }
+  for (const line of raw.split('\n')) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
+    if (!match) continue;
+    out[match[1]] = match[2].replace(/^["']|["']$/g, '').trim();
+  }
+  return out;
+}

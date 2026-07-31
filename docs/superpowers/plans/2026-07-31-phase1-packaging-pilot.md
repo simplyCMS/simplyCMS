@@ -125,12 +125,35 @@
 
 **Files:** Create `scripts/pilot-pack.mjs` + `tests/pilot/store-template/` — **повний** host-fixture (перелік вичерпний, аудит: без цього route tree не згенерується): `package.json` (top-level deps: `@simplycms/{storefront-routes,admin-routes,admin,ui,themes,plugins,supabase,runtime,i18n,core,storefront,react-query,data-supabase,objects,domain}` + feature-ui + tanstack/react/vite — **через overrides-мапу всіх tarball-ів** (`file:`-транзитивність npm по імені не резолвить; це відома вада методу — статичну повноту manifest-deps гарантує Task 1.3, зафіксувати обидва факти коментарем у скрипті)), `vite.config.ts` (tanstackStart + virtualRouteConfig + tailwind, БЕЗ workspace-аліасів — у цьому суть пілота), `tsconfig.json`, `routes.ts`, `simplycms.config.ts`, `src/{routes/__root.tsx,routes/my/.gitkeep,router.tsx,start.ts,client.tsx,server.ts,engine-provider.tsx,engine.shared.ts,server/engine.ts,theme-registry.ts,styles/globals.css}`, `server.mjs`, `themes/default/**` (копія), `plugins/hello-world/**` (копія), `.env` (dev-ключі з `.env.local`).
 
-- [ ] **Step 1:** `pilot-pack.mjs`: `pnpm build:packages` → `pnpm pack` кожного пакета → скопіювати template у `/tmp/simplycms-pilot/store` → підставити tarball-шляхи в overrides → `npm install` (саме npm — інший linker) → `npx vite build` → старт `node server.mjs` на вільному порту.
-- [ ] **Step 2 (Gate A — роути з node_modules):** множина route-id зі скретч-`routeTree.gen.ts` **ідентична** множині з монорепо (63 id; точний set-diff, не grep по `createFileRoute` — його в генераті немає); імпорти в генераті ведуть у `node_modules/@simplycms/…`.
-- [ ] **Step 3 (Gate B — production + server fns, #7213):** curls до запущеного скретч-сервера: `/` (200, назва товару), `/catalog` (назви+ціни — server fn з пакета в **production**-манифесті), `/admin` (guard-редірект), `/sitemap.xml`, `/robots.txt`, `/api/health`.
-- [ ] **Step 4 (Gate C — bundle-guard + splitting, по модульному графу):** Vite manifest модулів НЕ містить — у vite.config скретча додається міні-плагін `emitBundleStats()` (hook `generateBundle`: пише `bundle-stats.json` = `{[chunkFileName]: Object.keys(chunk.modules)}`). Перевірки по stats: (а) жоден модуль з `server/`-тек пакетів і `server-client` не входить у клієнтські чанки; (б) initial-чанк `/` (entry + статичні імпорти за графом) не містить модулів `@simplycms/admin`, `@tiptap/*`, `recharts` (splitting-gate роадмапу).
-- [ ] **Step 5 (Gate D — Tailwind):** зібраний CSS скретча містить утиліти компонентів пакетів (перевірка 2-3 класів з `@simplycms/ui`); фінальна візуальна перевірка — Етап 4 (браузер).
-- [ ] **Step 6:** пілот однією командою; CI job `pilot` (workflow_dispatch + weekly): env скретча — з GitHub secrets `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY` (мапінг job-env → `.env` скретча в скрипті; `.env.local` в CI недоступний — задокументувати в workflow-коментарі; секрети створює власник). Гейти → коміт: `feat(packaging): npm-pack пілот — скретч-магазин з tarball-ів проходить gates A-D`.
+- [X] **Step 1:** `pilot-pack.mjs`: `pnpm build:packages` → `pnpm pack` кожного пакета → скопіювати template у `/tmp/simplycms-pilot/store` → підставити tarball-шляхи в overrides → `npm install` (саме npm — інший linker) → `npx vite build` → старт `node server.mjs` на вільному порту.
+- [X] **Step 2 (Gate A — роути з node_modules):** множина route-id зі скретч-`routeTree.gen.ts` **ідентична** множині з монорепо (63 id; точний set-diff, не grep по `createFileRoute` — його в генераті немає); імпорти в генераті ведуть у `node_modules/@simplycms/…`.
+- [X] **Step 3 (Gate B — production + server fns, #7213):** curls до запущеного скретч-сервера: `/` (200, назва товару), `/catalog` (назви+ціни — server fn з пакета в **production**-манифесті), `/admin` (guard-редірект), `/sitemap.xml`, `/robots.txt`, `/api/health`.
+- [X] **Step 4 (Gate C — bundle-guard + splitting, по модульному графу):** Vite manifest модулів НЕ містить — у vite.config скретча додається міні-плагін `emitBundleStats()` (hook `generateBundle`: пише `bundle-stats.json` = `{[chunkFileName]: Object.keys(chunk.modules)}`). Перевірки по stats: (а) жоден модуль з `server/`-тек пакетів і `server-client` не входить у клієнтські чанки; (б) initial-чанк `/` (entry + статичні імпорти за графом) не містить модулів `@simplycms/admin`, `@tiptap/*`, `recharts` (splitting-gate роадмапу).
+- [X] **Step 5 (Gate D — Tailwind):** зібраний CSS скретча містить утиліти компонентів пакетів (перевірка 2-3 класів з `@simplycms/ui`); фінальна візуальна перевірка — Етап 4 (браузер).
+- [X] **Step 6:** пілот однією командою; CI job `pilot` (workflow_dispatch + weekly): env скретча — з GitHub secrets `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY` (мапінг job-env → `.env` скретча в скрипті; `.env.local` в CI недоступний — задокументувати в workflow-коментарі; секрети створює власник). Гейти → коміт: `feat(packaging): npm-pack пілот — скретч-магазин з tarball-ів проходить gates A-D`.
+
+**Факт виконання (Task 3.1):** усі Step-и 1-6 пройдено, gates A-D зелені на живій
+Supabase. Розходження з текстом плану, зафіксовані по коду:
+(1) fixture додатково містить `tailwind.config.ts` — без нього `@apply border-border`
+у `globals.css` не компілюється, а `content`-глоби на `node_modules/@simplycms/**`
+і є предметом Gate D; (2) `bundle-stats.json` пише не лише `modules`, а й
+`imports`/`isEntry` — інакше initial-чанк за графом не обчислити; (3) route-id у
+`FileRoutesById` — 64 разом із `__root__` (63 роутові), гейт звіряє множини, а не
+число; (4) Gate C(а): модулі `dist/server/*.js` у клієнті Є як RPC-заглушки
+server-fn (так і має бути) — гейт забороняє їхній серверний ВАНТАЖ
+(`supabase/server-client`, `storefront/loaders`); (5) `StoreDatabase` у скретчі —
+baseline з `@simplycms/supabase` (свіжий магазин не має плагінних таблиць і свого
+`supabase/types.ts`).
+
+**Знахідки пілота (виправлені тим самим комітом — без них скретч не збирався):**
+`peerDependencies: lucide-react ^0.400.0` → `>=0.400.0` (7 пакетів; `^` на 0.x
+означає `<0.401.0` → ERESOLVE); 19 фасадних модулів `@simplycms/core` з
+`export * from '<external>'` → іменовані re-export-и (esbuild при `splitting`
+лишав зірковий re-export у спільному чанку і НЕ піднімав у entry → MISSING_EXPORT
+у кожного споживача); `@simplycms/core` не мав export-а `./lib/shipping`
+(директорія, wildcard `./lib/*` дає неіснуючий `dist/lib/shipping.js`);
+`tsup` без `target: esnext` лоуерив `import.meta` у `{}` → dist пакетів
+`supabase`/`storefront-routes` падав на `{}.env.VITE_…` при першому запиті.
 
 ---
 

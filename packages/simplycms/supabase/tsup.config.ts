@@ -10,6 +10,12 @@ export default defineConfig({
     'src/SupabaseProvider.tsx',
   ],
   format: ['esm'],
+  // 🔴 `target: esnext` обовʼязковий (знахідка пілота Task 3.1): за нижчого
+  // таргета esbuild лоуерить `import.meta` у `var import_meta = {}`, і
+  // опублікований dist падає на `{}.env.VITE_…` ще до першого запиту. Пакет
+  // читає `import.meta.env` — форму треба ЗБЕРЕГТИ, щоб її замінив bundler
+  // магазину.
+  target: 'esnext',
   dts: { tsconfig: './tsconfig.json' },
   sourcemap: true,
   clean: true,

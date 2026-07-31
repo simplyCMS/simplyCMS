@@ -72,6 +72,7 @@
     "supabase/functions",
     "vitest.config.ts",
     "**/tsup.config.ts",
-    "**/dist"
+    "**/dist",
+    "tests/pilot/store-template"
   ]
 }
