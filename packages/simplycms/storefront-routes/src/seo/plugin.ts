@@ -1,6 +1,20 @@
 import type { Plugin, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+/** Опції плагіна: шляхи до SEO-модулів, які підвантажує `ssrLoadModule`. */
+export interface SeoRoutesPluginOptions {
+  /**
+   * Модуль з експортом `buildSitemapXml`.
+   * Шлях від кореня проєкту, напр. `/packages/…/src/seo/sitemap.ts`.
+   */
+  sitemapModule: string;
+  /**
+   * Модуль з експортом `buildRobotsTxt`.
+   * Шлях від кореня проєкту, напр. `/packages/…/src/seo/robots.ts`.
+   */
+  robotsModule: string;
+}
+
 /**
  * Vite plugin для обробки /sitemap.xml та /robots.txt.
  *
@@ -9,8 +23,14 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
  *
  * Працює в dev (configureServer) та preview (configurePreviewServer).
  * Для production build потрібен окремий server handler.
+ *
+ * Шляхи модулів — обовʼязкові опції без дефолту: плагін живе в пакеті, а
+ * модулі резолвляться відносно кореня магазину-хоста. Дефолт на «старий»
+ * шлях лише замаскував би помилку конфігурації мовчазним падінням у next().
  */
-export function seoRoutesPlugin(): Plugin {
+export function seoRoutesPlugin(options: SeoRoutesPluginOptions): Plugin {
+  const { sitemapModule, robotsModule } = options;
+
   function createMiddleware(server: ViteDevServer) {
     return async (
       req: IncomingMessage,
@@ -19,9 +39,8 @@ export function seoRoutesPlugin(): Plugin {
     ) => {
       if (req.url === '/sitemap.xml') {
         try {
-          const { buildSitemapXml } = await server.ssrLoadModule(
-            './src/seo/sitemap.ts',
-          );
+          const { buildSitemapXml } =
+            await server.ssrLoadModule(sitemapModule);
           const xml = await buildSitemapXml();
           res.setHeader('Content-Type', 'application/xml; charset=utf-8');
           res.end(xml);
@@ -34,9 +53,7 @@ export function seoRoutesPlugin(): Plugin {
 
       if (req.url === '/robots.txt') {
         try {
-          const { buildRobotsTxt } = await server.ssrLoadModule(
-            './src/seo/robots.ts',
-          );
+          const { buildRobotsTxt } = await server.ssrLoadModule(robotsModule);
           const text = await buildRobotsTxt();
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
           res.end(text);

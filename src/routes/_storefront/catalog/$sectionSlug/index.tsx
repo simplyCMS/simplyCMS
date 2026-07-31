@@ -2,9 +2,9 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { use } from 'react';
 import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-import { getSectionBySlug } from '../../../../server/sections';
-import { getSections } from '../../../../server/sections';
-import { getProductsBySectionId } from '../../../../server/products';
+import { getSectionBySlug } from '@simplycms/storefront-routes/server/sections';
+import { getSections } from '@simplycms/storefront-routes/server/sections';
+import { getProductsBySectionId } from '@simplycms/storefront-routes/server/products';
 
 export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
   staleTime: 60_000,

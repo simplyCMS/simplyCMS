@@ -2,8 +2,8 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { use } from 'react';
 import { ThemeProvider } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-import { getActiveTheme } from '../server/themes';
-import { getUser } from '../server/auth';
+import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
+import { getUser } from '@simplycms/storefront-routes/server/auth';
 
 /**
  * Layout захищених маршрутів (профіль користувача).

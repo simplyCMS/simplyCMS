@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { use } from 'react';
 import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-import { getPropertyBySlug } from '../../../../server/properties';
+import { getPropertyBySlug } from '@simplycms/storefront-routes/server/properties';
 
 export const Route = createFileRoute('/_storefront/properties/$propertySlug/')({
   loader: async ({ params: { propertySlug } }) => {

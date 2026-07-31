@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { use } from 'react';
 import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-import { getHomePageData } from '../../server/home';
+import { getHomePageData } from '@simplycms/storefront-routes/server/home';
 
 export const Route = createFileRoute('/_storefront/')({
   staleTime: 60_000,

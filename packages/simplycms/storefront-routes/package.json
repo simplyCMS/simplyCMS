@@ -9,6 +9,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./active-theme": "./src/active-theme.ts",
     "./server/*": "./src/server/*.ts",
     "./seo/*": "./src/seo/*.ts",
     "./routes/*": "./routes/*"

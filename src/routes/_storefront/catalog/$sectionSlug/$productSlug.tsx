@@ -2,7 +2,7 @@ import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { use } from 'react';
 import { useTheme } from '@simplycms/themes/ThemeContext';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
-import { getProduct } from '../../../../server/products';
+import { getProduct } from '@simplycms/storefront-routes/server/products';
 
 const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 

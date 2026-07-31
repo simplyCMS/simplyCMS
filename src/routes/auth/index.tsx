@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import Auth from '@simplycms/core/pages/Auth';
-import { getUser } from '../../server/auth';
+import { getUser } from '@simplycms/storefront-routes/server/auth';
 
 /**
  * Сторінка авторизації (логін / реєстрація).

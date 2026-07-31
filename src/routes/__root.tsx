@@ -10,8 +10,8 @@ import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
 import { ClientEngineProvider } from '../engine-provider';
-import { getActiveTheme } from '../server/themes';
-import { serializeActiveThemeScript } from '../active-theme';
+import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
+import { serializeActiveThemeScript } from '@simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
