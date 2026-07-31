@@ -81,8 +81,8 @@
 
 **Обсяг аудиту (повний, за аудитом):** для кожного пакета сканувати **всі publish-roots** (`src/` **і** `routes/`), збирати **всі bare-імпорти** — і `@simplycms/*`, і зовнішні (`@tanstack/*`, `@tiptap/*`, `lucide-react`, `zod`, `@supabase/*`, …; приклад розриву: `admin` імпортує router/Tiptap/lucide/zod, а manifest їх не декларує). Кожен зовнішній класифікується: **peers** — react/react-dom/@tanstack/react-router/react-start/react-query/@supabase/* (один інстанс на host); **deps** — решта утиліт. Перевірка: множина bare-імпортів ⊆ deps∪peers.
 
-- [ ] **Step 1:** скрипт + прогін → список розривів → додати відсутні deps/peers (`workspace:*` для сиблінгів).
-- [ ] **Step 2:** підключити до тест-гейта (як 1.2). Гейти → коміт: `fix(packaging): manifest-deps покривають УСІ bare-імпорти обох publish-roots (audit-deps гейт)`.
+- [X] **Step 1:** скрипт + прогін → список розривів → додати відсутні deps/peers (`workspace:*` для сиблінгів).
+- [X] **Step 2:** підключити до тест-гейта (як 1.2). Гейти → коміт: `fix(packaging): manifest-deps покривають УСІ bare-імпорти обох publish-roots (audit-deps гейт)`.
 
 ### Task 1.4: Build + publishConfig для всіх пакетів; parity по TARBALL; окремий CI job
 

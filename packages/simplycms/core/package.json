@@ -19,6 +19,8 @@
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/domain": "workspace:*",
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/themes": "workspace:*",
     "@simplycms/react-query": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",
