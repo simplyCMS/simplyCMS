@@ -8,7 +8,7 @@ import { seoRoutesPlugin } from './packages/simplycms/storefront-routes/src/seo/
 export default {
   plugins: [
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({ router: { virtualRouteConfig: './routes.ts' } }),
     seoRoutesPlugin({
       sitemapModule: '/packages/simplycms/storefront-routes/src/seo/sitemap.ts',
       robotsModule: '/packages/simplycms/storefront-routes/src/seo/robots.ts',
