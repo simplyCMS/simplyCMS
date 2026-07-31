@@ -1,4 +1,4 @@
-import type { Banner } from "@simplycms/core/hooks/useBanners";
+import type { Banner } from "@simplycms/objects/objects";
 import { BannerSlider } from "../components/BannerSlider";
 import { ProductCarousel } from "../components/ProductCarousel";
 import { useActiveThemeModule } from "../shells/useActiveThemeModule";

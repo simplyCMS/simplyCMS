@@ -18,14 +18,16 @@
     "./routes/*": "./routes/*"
   },
   "dependencies": {
+    "@simplycms/catalog-ui": "workspace:*",
     "@simplycms/core": "workspace:*",
     "@simplycms/domain": "workspace:*",
     "@simplycms/i18n": "workspace:*",
-    "@simplycms/ui": "workspace:*",
-    "@simplycms/catalog-ui": "workspace:*",
-    "@simplycms/themes": "workspace:*",
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/plugins": "workspace:*",
+    "@simplycms/storefront": "workspace:*",
     "@simplycms/supabase": "workspace:*",
-    "@simplycms/storefront": "workspace:*"
+    "@simplycms/themes": "workspace:*",
+    "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

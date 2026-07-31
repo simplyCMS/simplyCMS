@@ -9,6 +9,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./keys": "./src/keys.ts",
     "./browser-client": "./src/browser-client.ts",
     "./server-client": "./src/server-client.ts",
     "./anon-client": "./src/anon-client.ts",

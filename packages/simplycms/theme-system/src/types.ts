@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Banner } from "@simplycms/core/hooks/useBanners";
+import type { Banner } from "@simplycms/objects/objects";
 
 /**
  * Паспорт теми. Тема — це встановлювана одиниця платформи, тому маніфест

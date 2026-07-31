@@ -291,6 +291,12 @@ importers:
 
   packages/simplycms/admin-routes:
     dependencies:
+      '@simplycms/admin':
+        specifier: workspace:*
+        version: link:../admin
+      '@simplycms/storefront-routes':
+        specifier: workspace:*
+        version: link:../storefront-routes
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -597,6 +603,12 @@ importers:
       '@simplycms/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+      '@simplycms/plugins':
+        specifier: workspace:*
+        version: link:../plugin-system
       '@simplycms/storefront':
         specifier: workspace:*
         version: link:../storefront
@@ -642,9 +654,9 @@ importers:
 
   packages/simplycms/theme-system:
     dependencies:
-      '@simplycms/core':
+      '@simplycms/objects':
         specifier: workspace:*
-        version: link:../core
+        version: link:../objects
       '@simplycms/supabase':
         specifier: workspace:*
         version: link:../supabase

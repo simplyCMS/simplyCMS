@@ -1,6 +1,27 @@
 import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
 import { createServerSupabase } from '@simplycms/supabase/server-client';
+import {
+  resolveSupabaseKeys,
+  type SupabaseEnv,
+} from '@simplycms/supabase/keys';
+
+/**
+ * Чи достатньо env, щоб підняти серверний Supabase-клієнт.
+ *
+ * Делегує рішення `resolveSupabaseKeys` — єдиній точці резолву (publishable з
+ * пріоритетом, anon як legacy-fallback). Власної перевірки імен змінних тут
+ * НЕ дублюємо: інакше guard мовчки вимикається на інсталяціях, де оголошений
+ * лише новий publishable-ключ.
+ */
+export function isSupabaseEnvReady(env: SupabaseEnv): boolean {
+  try {
+    resolveSupabaseKeys(env);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Server-side guard для початкового запиту на `/admin`.
@@ -19,10 +40,7 @@ const adminRequestGuard = createMiddleware().server(
 
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
       // Без env Supabase guard неможливий — пропускаємо (admin однаково не запрацює).
-      if (
-        import.meta.env.VITE_SUPABASE_URL &&
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      ) {
+      if (isSupabaseEnvReady(import.meta.env)) {
         // Передаємо cookie з request напряму — не залежимо від ALS getRequestHeader.
         const supabase = createServerSupabase(
           request.headers.get('cookie') ?? '',

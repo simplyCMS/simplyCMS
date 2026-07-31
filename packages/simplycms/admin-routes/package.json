@@ -8,6 +8,10 @@
   "exports": {
     "./routes/*": "./routes/*"
   },
+  "dependencies": {
+    "@simplycms/admin": "workspace:*",
+    "@simplycms/storefront-routes": "workspace:*"
+  },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-start": "^1.0.0",

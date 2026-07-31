@@ -1,4 +1,5 @@
-import { useBanners, type Banner, type BannerButton } from "@simplycms/core/hooks/useBanners";
+import { useBanners } from "@simplycms/core/hooks/useBanners";
+import type { Banner, BannerButton } from "@simplycms/objects/objects";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
