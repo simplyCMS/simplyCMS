@@ -5,13 +5,15 @@ export {
   loadPlugins,
   activatePlugin,
   deactivatePlugin,
-  getAllPlugins,
-  updatePluginConfig,
-  installPlugin,
   uninstallPlugin,
   registerPluginModule,
   getRegisteredPluginModules,
 } from './PluginLoader';
+export {
+  getAllPlugins,
+  updatePluginConfig,
+  installPlugin,
+} from './pluginRepository';
 
 // Bootstrap (конфіг магазину → реєстр → БД)
 export { bootstrapPlugins } from './bootstrap';

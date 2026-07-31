@@ -175,7 +175,7 @@ baseline з `@simplycms/supabase` (свіжий магазин не має пл�
 
 **Files:** Modify `packages/simplycms/plugin-system/src/PluginLoader.ts` — **атомарний порядок** в `activatePlugin`/`deactivatePlugin`: спершу DB-update, і ТІЛЬКИ при успіху — мутація registry (зараз registry мутується до DB і без rollback — збій БД лишає «привидний» стан); Modify `packages/simplycms/admin/src/pages/Plugins.tsx` — toggle викликає ці функції (єдиний механізм); Test: розширення `slot-reactive.test.tsx` (toggle → слот без remount) + **failure-тести**: DB-помилка при activate → registry БЕЗ змін, стан toggle відкочено; те саме для deactivate.
 
-- [ ] **Step 1 (TDD, включно з failure-кейсами)** → **Step 2** → гейти → коміт: `fix(plugins): атомарний activate/deactivate (DB → registry) — слоти оновлюються без reload, збій БД не лишає привидів`.
+- [X] **Step 1 (TDD, включно з failure-кейсами)** → **Step 2** → гейти → коміт: `fix(plugins): атомарний activate/deactivate (DB → registry) — слоти оновлюються без reload, збій БД не лишає привидів`.
 
 ### Task 4.3: Живі браузерні смоки (борги Фази 0)
 
