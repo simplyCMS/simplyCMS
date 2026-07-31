@@ -17,6 +17,23 @@ All coding rules, architecture decisions, and best practices are maintained in `
 | [`tooling`](.github/instructions/tooling.instructions.md) | `**/*` | Commands, testing, formatting |
 | [`optimization`](.github/instructions/optimization.instructions.md) | `**/*.ts,tsx` | Performance, bundle, rendering optimization |
 
+## Agent Tooling
+
+- **Скіли** (джерело правди — `.agents/skills/`, симлінки в `.claude/skills/`):
+  `codebase-research` — як шукати в репо; `code-review` — як рев'ювити.
+- **Субагенти** (`.claude/agents/`): `codebase-research`, `code-review` (одна лінза
+  за виклик), `code-review-verifier` (адверсаріальний скептик).
+- **Команди** (`.claude/commands/`, симлінки в `.github/prompts/` для Copilot):
+  `/виконай-задачу` — головна; далі `/перевір-роботу-агента-кодування`,
+  `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`,
+  `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`.
+- **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
+  (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
+- **🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test` —
+  `build` перед `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме
+  `format:check` (`pnpm format` — це `--write`, він не червоніє). 🔴 `prettier`
+  наразі не встановлений — де-факто гейти починаються з `lint` (борг репо).
+
 Also see:
 - [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars, subtree workflow)
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — MCP servers, agent registry

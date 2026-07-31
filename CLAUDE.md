@@ -41,6 +41,40 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 
+## Agent Tooling
+
+Процесний тулінг для агентної розробки. Джерело правди — `.agents/skills/`;
+`.claude/skills/*` і `.github/prompts/*.prompt.md` — симлінки на нього, щоб
+Claude Code й Copilot читали **одні й ті самі** файли.
+
+| Шар | Що це |
+|-----|-------|
+| `.agents/skills/codebase-research/` | Як шукати в репо: `orient` (карта символів, валідація якорів плану), протокол стейл-графа, формат звіту-дельти |
+| `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
+| `.claude/agents/` | Субагенти `codebase-research`, `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
+| `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли` |
+
+```bash
+ORIENT=.agents/skills/codebase-research/scripts/orient
+$ORIENT ThemeRegistry getActiveTheme   # де лежить + хто споживає (з транзитивними через барелі)
+$ORIENT --plan docs/superpowers/plans/2026-07-31-phase0-foundation.md
+$ORIENT --doctor                       # чи є граф, чи свіжий, чи немає привидів
+```
+
+**Knowledge graph (graphify).** `graphify-out/` — локальний артефакт (gitignored),
+оновлюється post-commit хуком (AST, без LLM). `orient` працює і без графа —
+тихо падає на `ripgrep`. Семантика доків і назви спільнот хуком **не**
+оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою моделлю
+(`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
+
+**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test`.
+`build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
+гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
+червоніє (обидві покривають лише `src/**`).
+🔴 **Борг:** `prettier` відсутній у `devDependencies` — обидві команди зараз
+падають із `prettier: not found`, а CI їх не запускає. Де-факто гейти
+починаються з `pnpm lint`.
+
 ## Tech Stack
 
 - **Framework:** TanStack Start 1.167 + TanStack Router 1.168 (Vite 8, React 19)
