@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Sun, Phone, Mail, MapPin } from "lucide-react";
+import { Sun, Phone, Mail, MapPin } from 'lucide-react';
 
 export function Footer() {
   return (

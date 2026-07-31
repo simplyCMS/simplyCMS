@@ -1,7 +1,7 @@
-import { use } from "react";
-import { useTheme } from "@simplycms/themes/ThemeContext";
-import { ThemeRegistry } from "@simplycms/themes/ThemeRegistry";
-import type { ThemeModule } from "@simplycms/themes/types";
+import { use } from 'react';
+import { useTheme } from '@simplycms/themes/ThemeContext';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import type { ThemeModule } from '@simplycms/themes/types';
 
 /**
  * Активний модуль теми для канонічних сторінок і каркасів.

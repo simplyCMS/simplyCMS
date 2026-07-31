@@ -1,11 +1,11 @@
 // Supabase-реалізація IdentityProvider (DI client).
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   IdentityProvider,
   Identity,
   SignInResult,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 type Row = Record<string, unknown>;
 
@@ -20,16 +20,16 @@ export function createSupabaseIdentityProvider(
 
     // Категорія користувача — з profiles; ролі — з окремої таблиці user_roles.
     const { data: profile } = await client
-      .from("profiles")
-      .select("category_id")
-      .eq("user_id", user.id)
+      .from('profiles')
+      .select('category_id')
+      .eq('user_id', user.id)
       .maybeSingle();
     const profileRow = (profile as Row | null) ?? {};
 
     const { data: roleRows } = await client
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
 
     const metaRoles =
       (user.app_metadata?.roles as string[] | undefined) ??

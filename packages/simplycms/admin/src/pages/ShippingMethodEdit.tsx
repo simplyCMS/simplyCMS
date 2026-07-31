@@ -1,14 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Input } from "@simplycms/ui/input";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Switch } from "@simplycms/ui/switch";
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Input } from '@simplycms/ui/input';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Form,
   FormControl,
@@ -17,25 +17,25 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplycms/ui/form";
+} from '@simplycms/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
-import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
-import { PluginSlot } from "@simplycms/plugins/PluginSlot";
+} from '@simplycms/ui/select';
+import { toast } from 'sonner';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import { ShippingMethod } from '@simplycms/core/lib/shipping/types';
+import { PluginSlot } from '@simplycms/plugins/PluginSlot';
 
 const formSchema = z.object({
   code: z.string().min(1, "Код обов'язковий").max(50),
   name: z.string().min(1, "Назва обов'язкова"),
   description: z.string().optional(),
-  type: z.enum(["system", "manual", "plugin"]),
+  type: z.enum(['system', 'manual', 'plugin']),
   plugin_name: z.string().optional(),
   is_active: z.boolean(),
   sort_order: z.number().int().min(0),
@@ -49,16 +49,16 @@ export default function ShippingMethodEdit() {
   const { methodId } = useParams({ strict: false }) as { methodId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = methodId === "new";
+  const isNew = methodId === 'new';
 
   const { data: method, isLoading } = useQuery({
-    queryKey: ["shipping-method", methodId],
+    queryKey: ['shipping-method', methodId],
     queryFn: async () => {
       if (isNew) return null;
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .eq("id", methodId)
+        .from('shipping_methods')
+        .select('*')
+        .eq('id', methodId)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as ShippingMethod;
@@ -69,25 +69,25 @@ export default function ShippingMethodEdit() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      code: "",
-      name: "",
-      description: "",
-      type: "manual",
-      plugin_name: "",
+      code: '',
+      name: '',
+      description: '',
+      type: 'manual',
+      plugin_name: '',
       is_active: true,
       sort_order: 0,
-      icon: "",
+      icon: '',
     },
     values: method
       ? {
           code: method.code,
           name: method.name,
-          description: method.description || "",
+          description: method.description || '',
           type: method.type,
-          plugin_name: method.plugin_name || "",
+          plugin_name: method.plugin_name || '',
           is_active: method.is_active,
           sort_order: method.sort_order,
-          icon: method.icon || "",
+          icon: method.icon || '',
         }
       : undefined,
   });
@@ -99,26 +99,29 @@ export default function ShippingMethodEdit() {
         name: values.name,
         description: values.description || null,
         type: values.type,
-        plugin_name: values.type === "plugin" ? values.plugin_name || null : null,
+        plugin_name:
+          values.type === 'plugin' ? values.plugin_name || null : null,
         is_active: values.is_active,
         sort_order: values.sort_order,
         icon: values.icon || null,
       };
 
       if (isNew) {
-        const { error } = await supabase.from("shipping_methods").insert([payload]);
+        const { error } = await supabase
+          .from('shipping_methods')
+          .insert([payload]);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("shipping_methods")
+          .from('shipping_methods')
           .update(payload)
-          .eq("id", methodId);
+          .eq('id', methodId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-methods"] });
-      toast.success(isNew ? "Службу створено" : "Зміни збережено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
+      toast.success(isNew ? 'Службу створено' : 'Зміни збережено');
       navigate({ to: adminPath('shipping/methods') });
     },
     onError: (error: Error) => {
@@ -126,8 +129,8 @@ export default function ShippingMethodEdit() {
     },
   });
 
-  const methodType = useWatch({ control: form.control, name: "type" });
-  const isSystem = method?.type === "system";
+  const methodType = useWatch({ control: form.control, name: 'type' });
+  const isSystem = method?.type === 'system';
 
   if (!isNew && isLoading) {
     return (
@@ -140,17 +143,21 @@ export default function ShippingMethodEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.back()}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? "Нова служба доставки" : method?.name}
+            {isNew ? 'Нова служба доставки' : method?.name}
           </h1>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? "Створіть новий спосіб доставки"
-              : "Редагування параметрів служби доставки"}
+              ? 'Створіть новий спосіб доставки'
+              : 'Редагування параметрів служби доставки'}
           </p>
         </div>
       </div>
@@ -244,7 +251,7 @@ export default function ShippingMethodEdit() {
                       )}
                     />
 
-                    {methodType === "plugin" && (
+                    {methodType === 'plugin' && (
                       <FormField
                         control={form.control}
                         name="plugin_name"
@@ -304,7 +311,7 @@ export default function ShippingMethodEdit() {
               </Card>
 
               {/* Plugin settings slot */}
-              {methodType === "plugin" && method && (
+              {methodType === 'plugin' && method && (
                 <PluginSlot
                   name="admin.shipping.method.settings"
                   context={{ method }}
@@ -351,7 +358,7 @@ export default function ShippingMethodEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? "Створити" : "Зберегти"}
+                    {isNew ? 'Створити' : 'Зберегти'}
                   </Button>
                 </CardContent>
               </Card>

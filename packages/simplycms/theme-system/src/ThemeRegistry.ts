@@ -1,5 +1,5 @@
-import type { ThemeModule } from "./types";
-import { validateThemeModule } from "./validateThemeModule";
+import type { ThemeModule } from './types';
+import { validateThemeModule } from './validateThemeModule';
 
 /**
  * Лоадер теми повертає `unknown`: модуль приходить із зовнішнього пакета,
@@ -8,7 +8,7 @@ import { validateThemeModule } from "./validateThemeModule";
 export type ThemeLoader = () => Promise<{ default: unknown }>;
 
 /** Тема, на яку падаємо, якщо запитану не зареєстровано */
-const FALLBACK_THEME = "default";
+const FALLBACK_THEME = 'default';
 
 /**
  * Проміс із полями thenable-протоколу React (`status`/`value`/`reason`).
@@ -16,7 +16,7 @@ const FALLBACK_THEME = "default";
  * без suspend — це усуває «висіння» компонента під час гідрації.
  */
 type ReactThenable<T> = Promise<T> & {
-  status?: "pending" | "fulfilled" | "rejected";
+  status?: 'pending' | 'fulfilled' | 'rejected';
   value?: T;
   reason?: unknown;
 };
@@ -94,14 +94,14 @@ class ThemeRegistryClass {
 
     // Анотуємо проміс полями thenable-протоколу React: щойно тема завантажена,
     // `use(load(name))` повертає її синхронно (без suspend під час гідрації).
-    promise.status = "pending";
+    promise.status = 'pending';
     promise.then(
       (theme) => {
-        promise.status = "fulfilled";
+        promise.status = 'fulfilled';
         promise.value = theme;
       },
       (reason) => {
-        promise.status = "rejected";
+        promise.status = 'rejected';
         promise.reason = reason;
       },
     );

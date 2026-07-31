@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
-import { User, Package, Settings, LogOut, type LucideIcon } from "lucide-react";
-import { cn } from "@simplycms/core/lib/utils";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { Button } from "@simplycms/ui/button";
-import { useT, type MessageKey } from "@simplycms/i18n";
-import { useActiveThemeModule } from "./useActiveThemeModule";
-import { ThemeTokens } from "./ThemeTokens";
+import type { ReactNode } from 'react';
+import { Link, useLocation } from '@tanstack/react-router';
+import { User, Package, Settings, LogOut, type LucideIcon } from 'lucide-react';
+import { cn } from '@simplycms/core/lib/utils';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { Button } from '@simplycms/ui/button';
+import { useT, type MessageKey } from '@simplycms/i18n';
+import { useActiveThemeModule } from './useActiveThemeModule';
+import { ThemeTokens } from './ThemeTokens';
 
 type NavItem = {
   href: string;
@@ -16,9 +16,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/profile", icon: User, labelKey: "nav.profile", exact: true },
-  { href: "/profile/orders", icon: Package, labelKey: "nav.orders" },
-  { href: "/profile/settings", icon: Settings, labelKey: "nav.settings" },
+  { href: '/profile', icon: User, labelKey: 'nav.profile', exact: true },
+  { href: '/profile/orders', icon: Package, labelKey: 'nav.orders' },
+  { href: '/profile/settings', icon: Settings, labelKey: 'nav.settings' },
 ];
 
 /**
@@ -51,10 +51,10 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
+                      'flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -68,7 +68,7 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
                 onClick={signOut}
               >
                 <LogOut className="h-5 w-5" />
-                {t("nav.signOut")}
+                {t('nav.signOut')}
               </Button>
             </nav>
           </aside>

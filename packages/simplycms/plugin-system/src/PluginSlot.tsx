@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useState, useSyncExternalStore } from "react";
-import { hookRegistry } from "./HookRegistry";
+import { ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
+import { hookRegistry } from './HookRegistry';
 
 interface PluginSlotProps<TContext = unknown> {
   name: string;
@@ -95,7 +95,7 @@ export function PluginSlot<TContext = unknown>({
   const { results, loading } = useSlotResults<TContext, ReactNode>(
     name,
     context,
-    "plugin slot",
+    'plugin slot',
   );
 
   if (loading) {
@@ -126,7 +126,7 @@ export function usePluginSlot<TContext = unknown, TResult = unknown>(
   name: string,
   context?: TContext,
 ): { results: TResult[]; loading: boolean } {
-  return useSlotResults<TContext, TResult>(name, context, "usePluginSlot");
+  return useSlotResults<TContext, TResult>(name, context, 'usePluginSlot');
 }
 
 // Get handlers count for a specific hook

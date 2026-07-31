@@ -1,19 +1,19 @@
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Package, Calendar, ChevronRight, Filter } from "lucide-react";
-import { Card, CardContent } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Skeleton } from "@simplycms/ui/skeleton";
+import { useEffect, useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { Package, Calendar, ChevronRight, Filter } from 'lucide-react';
+import { Card, CardContent } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Skeleton } from '@simplycms/ui/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
+} from '@simplycms/ui/select';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 
 interface Order {
   id: string;
@@ -44,15 +44,15 @@ export default function ProfileOrdersPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [statuses, setStatuses] = useState<OrderStatus[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadStatuses() {
       const { data } = await supabase
-        .from("order_statuses")
-        .select("id, name, color")
-        .order("sort_order");
+        .from('order_statuses')
+        .select('id, name, color')
+        .order('sort_order');
       setStatuses(data || []);
     }
     loadStatuses();
@@ -65,23 +65,25 @@ export default function ProfileOrdersPage() {
 
       try {
         let query = supabase
-          .from("orders")
-          .select(`
+          .from('orders')
+          .select(
+            `
             id, order_number, total, created_at, status_id,
             status:order_statuses(id, name, color),
             items:order_items(id, name, quantity)
-          `)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+          `,
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-        if (selectedStatus !== "all") {
-          query = query.eq("status_id", selectedStatus);
+        if (selectedStatus !== 'all') {
+          query = query.eq('status_id', selectedStatus);
         }
 
         const { data } = await query;
         setOrders(data || []);
       } catch (error) {
-        console.error("Error loading orders:", error);
+        console.error('Error loading orders:', error);
       } finally {
         setIsLoading(false);
       }
@@ -91,20 +93,20 @@ export default function ProfileOrdersPage() {
   }, [user, selectedStatus, supabase]);
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(new Date(dateString));
   };
 
@@ -126,7 +128,7 @@ export default function ProfileOrdersPage() {
                   <div className="flex items-center gap-2">
                     <div
                       className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: status.color || "#gray" }}
+                      style={{ backgroundColor: status.color || '#gray' }}
                     />
                     {status.name}
                   </div>
@@ -148,16 +150,16 @@ export default function ProfileOrdersPage() {
           <CardContent className="py-12 text-center">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">
-              {selectedStatus === "all"
-                ? "У вас ще немає замовлень"
-                : "Замовлень з таким статусом не знайдено"}
+              {selectedStatus === 'all'
+                ? 'У вас ще немає замовлень'
+                : 'Замовлень з таким статусом не знайдено'}
             </h2>
             <p className="text-muted-foreground mb-4">
-              {selectedStatus === "all"
-                ? "Перегляньте наш каталог та оформіть перше замовлення"
-                : "Спробуйте обрати інший фільтр"}
+              {selectedStatus === 'all'
+                ? 'Перегляньте наш каталог та оформіть перше замовлення'
+                : 'Спробуйте обрати інший фільтр'}
             </p>
-            {selectedStatus === "all" && (
+            {selectedStatus === 'all' && (
               <Button asChild>
                 <Link to="/catalog">Перейти до каталогу</Link>
               </Button>
@@ -202,7 +204,7 @@ export default function ProfileOrdersPage() {
                       <div className="text-sm text-muted-foreground">
                         {order.items.slice(0, 2).map((item, i) => (
                           <span key={item.id}>
-                            {i > 0 && ", "}
+                            {i > 0 && ', '}
                             {item.name} ×{item.quantity}
                           </span>
                         ))}

@@ -1,22 +1,22 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Switch } from "@simplycms/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Switch } from '@simplycms/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
+} from '@simplycms/ui/select';
 import {
   Form,
   FormControl,
@@ -25,7 +25,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplycms/ui/form";
+} from '@simplycms/ui/form';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,54 +36,56 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
-import { ArrowLeft, Loader2, Trash2, Plus, X } from "lucide-react";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import { adminPath } from "../lib/adminLinks";
+} from '@simplycms/ui/alert-dialog';
+import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import { adminPath } from '../lib/adminLinks';
 
 const conditionFields = [
-  { value: "total_purchases", label: "Сума покупок (грн)" },
-  { value: "registration_days", label: "Днів з реєстрації" },
-  { value: "orders_count", label: "Кількість замовлень" },
-  { value: "email_domain", label: "Домен email" },
-  { value: "auth_provider", label: "Провайдер авторизації" },
-  { value: "utm_source", label: "UTM Source" },
-  { value: "utm_campaign", label: "UTM Campaign" },
+  { value: 'total_purchases', label: 'Сума покупок (грн)' },
+  { value: 'registration_days', label: 'Днів з реєстрації' },
+  { value: 'orders_count', label: 'Кількість замовлень' },
+  { value: 'email_domain', label: 'Домен email' },
+  { value: 'auth_provider', label: 'Провайдер авторизації' },
+  { value: 'utm_source', label: 'UTM Source' },
+  { value: 'utm_campaign', label: 'UTM Campaign' },
 ];
 
 const numericOperators = [
-  { value: ">=", label: ">=" },
-  { value: ">", label: ">" },
-  { value: "<=", label: "<=" },
-  { value: "<", label: "<" },
-  { value: "=", label: "=" },
+  { value: '>=', label: '>=' },
+  { value: '>', label: '>' },
+  { value: '<=', label: '<=' },
+  { value: '<', label: '<' },
+  { value: '=', label: '=' },
 ];
 
 const stringOperators = [
-  { value: "=", label: "дорівнює" },
-  { value: "contains", label: "містить" },
+  { value: '=', label: 'дорівнює' },
+  { value: 'contains', label: 'містить' },
 ];
 
 /** Чи є поле числовим */
 function isNumericField(field: string) {
-  return ["total_purchases", "registration_days", "orders_count"].includes(field);
+  return ['total_purchases', 'registration_days', 'orders_count'].includes(
+    field,
+  );
 }
 
 const ruleSchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
   description: z.string().optional(),
   from_category_id: z.string().nullable(),
-  to_category_id: z.string().min(1, "Оберіть категорію призначення"),
+  to_category_id: z.string().min(1, 'Оберіть категорію призначення'),
   priority: z.coerce.number().int().min(0),
   is_active: z.boolean(),
   conditions: z.object({
-    type: z.enum(["all", "any"]),
+    type: z.enum(['all', 'any']),
     rules: z.array(
       z.object({
         field: z.string().min(1),
         operator: z.string().min(1),
         value: z.string().min(1),
-      })
+      }),
     ),
   }),
 });
@@ -102,8 +104,13 @@ function ConditionRuleRow({
   onRemove: () => void;
   setValue: ReturnType<typeof useForm<z.infer<typeof ruleSchema>>>['setValue'];
 }) {
-  const fieldValue = useWatch({ control, name: `conditions.rules.${index}.field` });
-  const operators = isNumericField(fieldValue) ? numericOperators : stringOperators;
+  const fieldValue = useWatch({
+    control,
+    name: `conditions.rules.${index}.field`,
+  });
+  const operators = isNumericField(fieldValue)
+    ? numericOperators
+    : stringOperators;
 
   return (
     <div className="flex items-start gap-2 p-4 border rounded-lg">
@@ -118,7 +125,7 @@ function ConditionRuleRow({
                 field.onChange(v);
                 setValue(
                   `conditions.rules.${index}.operator`,
-                  isNumericField(v) ? ">=" : "="
+                  isNumericField(v) ? '>=' : '=',
                 );
               }}
             >
@@ -145,10 +152,7 @@ function ConditionRuleRow({
         name={`conditions.rules.${index}.operator`}
         render={({ field }) => (
           <FormItem className="w-32">
-            <Select
-              value={field.value}
-              onValueChange={field.onChange}
-            >
+            <Select value={field.value} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Оператор" />
@@ -174,7 +178,7 @@ function ConditionRuleRow({
           <FormItem className="flex-1">
             <FormControl>
               <Input
-                type={isNumericField(fieldValue) ? "number" : "text"}
+                type={isNumericField(fieldValue) ? 'number' : 'text'}
                 placeholder="Значення"
                 {...field}
               />
@@ -184,12 +188,7 @@ function ConditionRuleRow({
         )}
       />
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onRemove}
-      >
+      <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
         <X className="h-4 w-4" />
       </Button>
     </div>
@@ -201,21 +200,21 @@ export default function UserCategoryRuleEdit() {
   const { ruleId } = useParams({ strict: false }) as { ruleId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = !ruleId || ruleId === "new";
+  const isNew = !ruleId || ruleId === 'new';
 
   const form = useForm<RuleFormData>({
     // zodResolver + z.coerce.number() спричиняє TFieldValues mismatch
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(ruleSchema) as any,
     defaultValues: {
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       from_category_id: null,
-      to_category_id: "",
+      to_category_id: '',
       priority: 0,
       is_active: true,
       conditions: {
-        type: "all",
+        type: 'all',
         rules: [],
       },
     },
@@ -223,17 +222,17 @@ export default function UserCategoryRuleEdit() {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "conditions.rules",
+    name: 'conditions.rules',
   });
 
   // Fetch categories
   const { data: categories } = useQuery({
-    queryKey: ["user-categories"],
+    queryKey: ['user-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_categories")
-        .select("*")
-        .order("name");
+        .from('user_categories')
+        .select('*')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -241,13 +240,13 @@ export default function UserCategoryRuleEdit() {
 
   // Fetch rule
   const { data: rule, isLoading } = useQuery({
-    queryKey: ["category-rule", ruleId],
+    queryKey: ['category-rule', ruleId],
     queryFn: async () => {
       if (isNew || !ruleId) return null;
       const { data, error } = await supabase
-        .from("category_rules")
-        .select("*")
-        .eq("id", ruleId)
+        .from('category_rules')
+        .select('*')
+        .eq('id', ruleId)
         .single();
       if (error) throw error;
       return data;
@@ -258,21 +257,25 @@ export default function UserCategoryRuleEdit() {
   // Fill form when rule loads
   useEffect(() => {
     if (rule) {
-      const conditions = rule.conditions as { type: "all" | "any"; rules: Array<{ field: string; operator: string; value: string }> };
+      const conditions = rule.conditions as {
+        type: 'all' | 'any';
+        rules: Array<{ field: string; operator: string; value: string }>;
+      };
       form.reset({
         name: rule.name,
-        description: rule.description || "",
+        description: rule.description || '',
         from_category_id: rule.from_category_id,
         to_category_id: rule.to_category_id,
         priority: rule.priority,
         is_active: rule.is_active,
         conditions: {
-          type: conditions?.type || "all",
-          rules: conditions?.rules?.map((r) => ({
-            field: r.field,
-            operator: r.operator,
-            value: String(r.value),
-          })) || [],
+          type: conditions?.type || 'all',
+          rules:
+            conditions?.rules?.map((r) => ({
+              field: r.field,
+              operator: r.operator,
+              value: String(r.value),
+            })) || [],
         },
       });
     }
@@ -292,28 +295,28 @@ export default function UserCategoryRuleEdit() {
       };
 
       if (isNew) {
-        const { error } = await supabase.from("category_rules").insert(payload);
+        const { error } = await supabase.from('category_rules').insert(payload);
         if (error) throw error;
       } else {
-        if (!ruleId) throw new Error("Rule ID is required for update");
+        if (!ruleId) throw new Error('Rule ID is required for update');
         const { error } = await supabase
-          .from("category_rules")
+          .from('category_rules')
           .update(payload)
-          .eq("id", ruleId);
+          .eq('id', ruleId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-rules"] });
-      queryClient.invalidateQueries({ queryKey: ["user-categories"] });
-      toast({ title: isNew ? "Правило створено" : "Зміни збережено" });
+      queryClient.invalidateQueries({ queryKey: ['category-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+      toast({ title: isNew ? 'Правило створено' : 'Зміни збережено' });
       navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка",
+        title: 'Помилка',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -321,24 +324,24 @@ export default function UserCategoryRuleEdit() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!ruleId) throw new Error("Rule ID is required for delete");
+      if (!ruleId) throw new Error('Rule ID is required for delete');
       const { error } = await supabase
-        .from("category_rules")
+        .from('category_rules')
         .delete()
-        .eq("id", ruleId);
+        .eq('id', ruleId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-rules"] });
-      queryClient.invalidateQueries({ queryKey: ["user-categories"] });
-      toast({ title: "Правило видалено" });
+      queryClient.invalidateQueries({ queryKey: ['category-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['user-categories'] });
+      toast({ title: 'Правило видалено' });
       navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка",
+        title: 'Помилка',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -352,12 +355,12 @@ export default function UserCategoryRuleEdit() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={adminPath("user-categories/rules")}>
+            <Link to={adminPath('user-categories/rules')}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">
-            {isNew ? "Нове правило" : "Редагування правила"}
+            {isNew ? 'Нове правило' : 'Редагування правила'}
           </h1>
         </div>
         {!isNew && (
@@ -478,9 +481,9 @@ export default function UserCategoryRuleEdit() {
                     <FormItem>
                       <FormLabel>З категорії</FormLabel>
                       <Select
-                        value={field.value || "any"}
+                        value={field.value || 'any'}
                         onValueChange={(v) =>
-                          field.onChange(v === "any" ? null : v)
+                          field.onChange(v === 'any' ? null : v)
                         }
                       >
                         <FormControl>
@@ -489,7 +492,9 @@ export default function UserCategoryRuleEdit() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="any">Будь-яка категорія</SelectItem>
+                          <SelectItem value="any">
+                            Будь-яка категорія
+                          </SelectItem>
                           {categories?.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
@@ -508,7 +513,10 @@ export default function UserCategoryRuleEdit() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>До категорії</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Оберіть категорію" />
@@ -570,7 +578,11 @@ export default function UserCategoryRuleEdit() {
                 type="button"
                 variant="outline"
                 onClick={() =>
-                  append({ field: "total_purchases", operator: ">=", value: "" })
+                  append({
+                    field: 'total_purchases',
+                    operator: '>=',
+                    value: '',
+                  })
                 }
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -581,13 +593,13 @@ export default function UserCategoryRuleEdit() {
 
           <div className="flex justify-end gap-4">
             <Button variant="outline" asChild>
-              <Link to={adminPath("user-categories/rules")}>Скасувати</Link>
+              <Link to={adminPath('user-categories/rules')}>Скасувати</Link>
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {isNew ? "Створити" : "Зберегти"}
+              {isNew ? 'Створити' : 'Зберегти'}
             </Button>
           </div>
         </form>

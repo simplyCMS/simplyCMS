@@ -1,4 +1,4 @@
-import { resolvePrice, type PriceEntry } from "@simplycms/domain/pricing";
+import { resolvePrice, type PriceEntry } from '@simplycms/domain/pricing';
 
 /**
  * Контекст цін для серверного резолву. SSR рендериться анонімно, тож ціни
@@ -46,16 +46,14 @@ function pickDefaultModification(
   if (mods.length === 0) return null;
   const flagged = mods.find((m) => m.is_default);
   if (flagged) return flagged;
-  return [...mods].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  )[0];
+  return [...mods].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
 }
 
 /** Перше зображення товару з jsonb-масиву `images`. */
 function pickFirstImage(images: unknown): string | null {
   if (!Array.isArray(images)) return null;
   const first: unknown = images[0];
-  return typeof first === "string" && first.length > 0 ? first : null;
+  return typeof first === 'string' && first.length > 0 ? first : null;
 }
 
 /**

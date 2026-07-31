@@ -1,12 +1,19 @@
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { User, Mail, Phone, Package, ChevronRight, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Skeleton } from "@simplycms/ui/skeleton";
-import { Badge } from "@simplycms/ui/badge";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
+import { useEffect, useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import {
+  User,
+  Mail,
+  Phone,
+  Package,
+  ChevronRight,
+  Calendar,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { Badge } from '@simplycms/ui/badge';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 
 interface ProfileData {
   first_name: string | null;
@@ -43,24 +50,28 @@ export default function ProfilePage() {
       try {
         // Load profile
         const { data: profileData } = await supabase
-          .from("profiles")
-          .select("first_name, last_name, email, phone, category:user_categories(name)")
-          .eq("user_id", user.id)
+          .from('profiles')
+          .select(
+            'first_name, last_name, email, phone, category:user_categories(name)',
+          )
+          .eq('user_id', user.id)
           .maybeSingle();
 
         setProfile(profileData);
 
         // Load recent orders
         const { data: ordersData } = await supabase
-          .from("orders")
-          .select("id, order_number, total, created_at, status:order_statuses(name, color)")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
+          .from('orders')
+          .select(
+            'id, order_number, total, created_at, status:order_statuses(name, color)',
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
           .limit(3);
 
         setRecentOrders(ordersData || []);
       } catch (error) {
-        console.error("Error loading profile data:", error);
+        console.error('Error loading profile data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -70,18 +81,18 @@ export default function ProfilePage() {
   }, [user, supabase]);
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     }).format(new Date(dateString));
   };
 
@@ -119,7 +130,7 @@ export default function ProfilePage() {
                 <p className="font-medium">
                   {profile?.first_name && profile?.last_name
                     ? `${profile.first_name} ${profile.last_name}`
-                    : "Не вказано"}
+                    : 'Не вказано'}
                 </p>
               </div>
             </div>
@@ -128,7 +139,9 @@ export default function ProfilePage() {
               <Mail className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{profile?.email || user?.email || "Не вказано"}</p>
+                <p className="font-medium">
+                  {profile?.email || user?.email || 'Не вказано'}
+                </p>
               </div>
             </div>
 
@@ -136,7 +149,7 @@ export default function ProfilePage() {
               <Phone className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Телефон</p>
-                <p className="font-medium">{profile?.phone || "Не вказано"}</p>
+                <p className="font-medium">{profile?.phone || 'Не вказано'}</p>
               </div>
             </div>
 
@@ -193,7 +206,9 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">{formatPrice(order.total)}</p>
+                      <p className="font-semibold">
+                        {formatPrice(order.total)}
+                      </p>
                       {order.status && (
                         <Badge
                           variant="outline"

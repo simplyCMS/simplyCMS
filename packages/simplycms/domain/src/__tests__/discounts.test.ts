@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { resolveDiscount } from "../discounts";
-import type { Discount, DiscountGroup, DiscountContext } from "../discounts";
+import { describe, it, expect } from 'vitest';
+import { resolveDiscount } from '../discounts';
+import type { Discount, DiscountGroup, DiscountContext } from '../discounts';
 
 function makeDiscount(over: Partial<Discount>): Discount {
   return {
-    id: "d1",
-    name: "D1",
+    id: 'd1',
+    name: 'D1',
     description: null,
-    discount_type: "percent",
+    discount_type: 'percent',
     discount_value: 10,
     priority: 0,
     is_active: true,
@@ -21,10 +21,10 @@ function makeDiscount(over: Partial<Discount>): Discount {
 
 function makeGroup(over: Partial<DiscountGroup>): DiscountGroup {
   return {
-    id: "g1",
-    name: "G1",
+    id: 'g1',
+    name: 'G1',
     description: null,
-    operator: "and",
+    operator: 'and',
     is_active: true,
     priority: 0,
     starts_at: null,
@@ -38,26 +38,32 @@ function makeGroup(over: Partial<DiscountGroup>): DiscountGroup {
 const baseCtx: DiscountContext = {
   quantity: 1,
   cartTotal: 1000,
-  productId: "p1",
+  productId: 'p1',
   isLoggedIn: false,
 };
 
-describe("resolveDiscount", () => {
-  it("applies a simple percent discount", () => {
-    const groups = [makeGroup({ discounts: [makeDiscount({ discount_value: 10 })] })];
+describe('resolveDiscount', () => {
+  it('applies a simple percent discount', () => {
+    const groups = [
+      makeGroup({ discounts: [makeDiscount({ discount_value: 10 })] }),
+    ];
     const res = resolveDiscount(100, groups, baseCtx);
     expect(res.totalDiscount).toBe(10);
     expect(res.finalPrice).toBe(90);
     expect(res.appliedDiscounts).toHaveLength(1);
   });
 
-  it("AND sums discounts", () => {
+  it('AND sums discounts', () => {
     const groups = [
       makeGroup({
-        operator: "and",
+        operator: 'and',
         discounts: [
-          makeDiscount({ id: "a", discount_value: 10 }),
-          makeDiscount({ id: "b", discount_type: "fixed_amount", discount_value: 5 }),
+          makeDiscount({ id: 'a', discount_value: 10 }),
+          makeDiscount({
+            id: 'b',
+            discount_type: 'fixed_amount',
+            discount_value: 5,
+          }),
         ],
       }),
     ];
@@ -65,28 +71,28 @@ describe("resolveDiscount", () => {
     expect(res.totalDiscount).toBe(15);
   });
 
-  it("OR picks first by priority and rejects the rest", () => {
+  it('OR picks first by priority and rejects the rest', () => {
     const groups = [
       makeGroup({
-        operator: "or",
+        operator: 'or',
         discounts: [
-          makeDiscount({ id: "a", priority: 0, discount_value: 10 }),
-          makeDiscount({ id: "b", priority: 1, discount_value: 20 }),
+          makeDiscount({ id: 'a', priority: 0, discount_value: 10 }),
+          makeDiscount({ id: 'b', priority: 1, discount_value: 20 }),
         ],
       }),
     ];
     const res = resolveDiscount(100, groups, baseCtx);
     expect(res.totalDiscount).toBe(10);
-    expect(res.rejectedDiscounts.map((r) => r.id)).toContain("b");
+    expect(res.rejectedDiscounts.map((r) => r.id)).toContain('b');
   });
 
-  it("MAX picks the largest discount", () => {
+  it('MAX picks the largest discount', () => {
     const groups = [
       makeGroup({
-        operator: "max",
+        operator: 'max',
         discounts: [
-          makeDiscount({ id: "a", discount_value: 10 }),
-          makeDiscount({ id: "b", discount_value: 25 }),
+          makeDiscount({ id: 'a', discount_value: 10 }),
+          makeDiscount({ id: 'b', discount_value: 25 }),
         ],
       }),
     ];
@@ -94,13 +100,17 @@ describe("resolveDiscount", () => {
     expect(res.totalDiscount).toBe(25);
   });
 
-  it("fixed_price wins in AND group", () => {
+  it('fixed_price wins in AND group', () => {
     const groups = [
       makeGroup({
-        operator: "and",
+        operator: 'and',
         discounts: [
-          makeDiscount({ id: "a", discount_value: 10 }),
-          makeDiscount({ id: "fp", discount_type: "fixed_price", discount_value: 70 }),
+          makeDiscount({ id: 'a', discount_value: 10 }),
+          makeDiscount({
+            id: 'fp',
+            discount_type: 'fixed_price',
+            discount_value: 70,
+          }),
         ],
       }),
     ];
@@ -110,13 +120,18 @@ describe("resolveDiscount", () => {
     expect(res.finalPrice).toBe(70);
   });
 
-  it("rejects discount failing min_order_amount condition", () => {
+  it('rejects discount failing min_order_amount condition', () => {
     const groups = [
       makeGroup({
         discounts: [
           makeDiscount({
             conditions: [
-              { id: "c", condition_type: "min_order_amount", operator: ">=", value: 5000 },
+              {
+                id: 'c',
+                condition_type: 'min_order_amount',
+                operator: '>=',
+                value: 5000,
+              },
             ],
           }),
         ],
@@ -127,9 +142,13 @@ describe("resolveDiscount", () => {
     expect(res.rejectedDiscounts).toHaveLength(1);
   });
 
-  it("clamps total discount to base price", () => {
+  it('clamps total discount to base price', () => {
     const groups = [
-      makeGroup({ discounts: [makeDiscount({ discount_type: "fixed_amount", discount_value: 999 })] }),
+      makeGroup({
+        discounts: [
+          makeDiscount({ discount_type: 'fixed_amount', discount_value: 999 }),
+        ],
+      }),
     ];
     const res = resolveDiscount(100, groups, baseCtx);
     expect(res.totalDiscount).toBe(100);

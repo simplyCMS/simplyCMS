@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
+import { useState } from 'react';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
 
 export function NewsletterSection() {
-  const show = useThemeSettings<boolean>("showNewsletter");
-  const [email, setEmail] = useState("");
+  const show = useThemeSettings<boolean>('showNewsletter');
+  const [email, setEmail] = useState('');
   const { toast } = useToast();
 
   if (!show) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Дякуємо!", description: "Ви підписані на розсилку." });
-    setEmail("");
+    toast({ title: 'Дякуємо!', description: 'Ви підписані на розсилку.' });
+    setEmail('');
   };
 
   return (

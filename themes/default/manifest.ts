@@ -1,4 +1,4 @@
-import type { ThemeManifest } from "@simplycms/themes/types";
+import type { ThemeManifest } from '@simplycms/themes/types';
 
 /**
  * Паспорт default-теми (контракт v2): ідентичність + діапазон сумісності
@@ -6,10 +6,10 @@ import type { ThemeManifest } from "@simplycms/themes/types";
  * рядку таблиці `themes`.
  */
 const manifest: ThemeManifest = {
-  name: "default",
-  displayName: "Default Theme",
-  version: "0.1.0",
-  engines: { simplycms: "^0.1.0" },
+  name: 'default',
+  displayName: 'Default Theme',
+  version: '0.1.0',
+  engines: { simplycms: '^0.1.0' },
 };
 
 export default manifest;

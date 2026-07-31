@@ -1,9 +1,9 @@
-import { useBanners } from "@simplycms/core/hooks/useBanners";
-import type { Banner, BannerButton } from "@simplycms/objects/objects";
-import useEmblaCarousel from "embla-carousel-react";
-import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { useBanners } from '@simplycms/core/hooks/useBanners';
+import type { Banner, BannerButton } from '@simplycms/objects/objects';
+import useEmblaCarousel from 'embla-carousel-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
 import { Link } from '@tanstack/react-router';
 
 interface BannerSliderProps {
@@ -12,7 +12,11 @@ interface BannerSliderProps {
   banners?: Banner[];
 }
 
-export function BannerSlider({ placement = "home", sectionId, banners: initialBanners }: BannerSliderProps) {
+export function BannerSlider({
+  placement = 'home',
+  sectionId,
+  banners: initialBanners,
+}: BannerSliderProps) {
   const { data: fetchedBanners } = useBanners(placement, sectionId);
   const banners = fetchedBanners ?? initialBanners;
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
@@ -32,7 +36,7 @@ export function BannerSlider({ placement = "home", sectionId, banners: initialBa
 
   useEffect(() => {
     if (!emblaApi || !banners?.length) return;
-    emblaApi.on("select", onSelect);
+    emblaApi.on('select', onSelect);
 
     const currentBanner = banners[emblaApi.selectedScrollSnap()];
     const duration = currentBanner?.slide_duration || 5000;
@@ -44,7 +48,7 @@ export function BannerSlider({ placement = "home", sectionId, banners: initialBa
 
     return () => {
       clearInterval(interval);
-      emblaApi.off("select", onSelect);
+      emblaApi.off('select', onSelect);
     };
   }, [emblaApi, onSelect, banners]);
 
@@ -86,7 +90,9 @@ export function BannerSlider({ placement = "home", sectionId, banners: initialBa
               <button
                 key={i}
                 className={`h-2 rounded-full transition-all ${
-                  i === selectedIndex ? "w-6 bg-primary" : "w-2 bg-foreground/30"
+                  i === selectedIndex
+                    ? 'w-6 bg-primary'
+                    : 'w-2 bg-foreground/30'
                 }`}
                 onClick={() => emblaApi?.scrollTo(i)}
               />
@@ -98,9 +104,25 @@ export function BannerSlider({ placement = "home", sectionId, banners: initialBa
   );
 }
 
-function BannerContent({ banner, isFirst }: { banner: Banner; isFirst: boolean }) {
-  const textAlign = banner.text_position === "center" ? "items-center text-center" : banner.text_position === "right" ? "items-end text-right" : "items-start";
-  const gradientDir = banner.text_position === "right" ? "from-transparent to-black/40" : banner.text_position === "center" ? "from-black/30 via-black/20 to-black/30" : "from-black/40 to-transparent";
+function BannerContent({
+  banner,
+  isFirst,
+}: {
+  banner: Banner;
+  isFirst: boolean;
+}) {
+  const textAlign =
+    banner.text_position === 'center'
+      ? 'items-center text-center'
+      : banner.text_position === 'right'
+        ? 'items-end text-right'
+        : 'items-start';
+  const gradientDir =
+    banner.text_position === 'right'
+      ? 'from-transparent to-black/40'
+      : banner.text_position === 'center'
+        ? 'from-black/30 via-black/20 to-black/30'
+        : 'from-black/40 to-transparent';
 
   return (
     <div className="relative aspect-[21/9] md:aspect-[3/1] bg-muted overflow-hidden">
@@ -121,9 +143,13 @@ function BannerContent({ banner, isFirst }: { banner: Banner; isFirst: boolean }
       >
         <div className="container mx-auto px-4 flex flex-col justify-center h-full">
           <div className={`max-w-lg text-white flex flex-col ${textAlign}`}>
-            <h2 className="text-2xl md:text-4xl font-serif font-bold mb-2">{banner.title}</h2>
+            <h2 className="text-2xl md:text-4xl font-serif font-bold mb-2">
+              {banner.title}
+            </h2>
             {banner.subtitle && (
-              <p className="text-sm md:text-base opacity-90 mb-4">{banner.subtitle}</p>
+              <p className="text-sm md:text-base opacity-90 mb-4">
+                {banner.subtitle}
+              </p>
             )}
             {banner.buttons.length > 0 && (
               <div className="flex gap-3 flex-wrap">
@@ -140,24 +166,30 @@ function BannerContent({ banner, isFirst }: { banner: Banner; isFirst: boolean }
 }
 
 function BannerButtonEl({ button }: { button: BannerButton }) {
-  const baseClass = "inline-block px-6 py-2 rounded text-sm font-medium transition-colors";
+  const baseClass =
+    'inline-block px-6 py-2 rounded text-sm font-medium transition-colors';
   const variantClass =
-    button.variant === "secondary"
-      ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-      : button.variant === "outline"
-      ? "border border-white text-white hover:bg-white/20"
-      : "bg-primary text-primary-foreground hover:bg-primary/90";
+    button.variant === 'secondary'
+      ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+      : button.variant === 'outline'
+        ? 'border border-white text-white hover:bg-white/20'
+        : 'bg-primary text-primary-foreground hover:bg-primary/90';
 
-  if (button.target === "_blank") {
+  if (button.target === '_blank') {
     return (
-      <a href={button.url} target="_blank" rel="noopener noreferrer" className={`${baseClass} ${variantClass}`}>
+      <a
+        href={button.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${baseClass} ${variantClass}`}
+      >
         {button.text}
       </a>
     );
   }
 
   return (
-    <Link to={button.url || "#"} className={`${baseClass} ${variantClass}`}>
+    <Link to={button.url || '#'} className={`${baseClass} ${variantClass}`}>
       {button.text}
     </Link>
   );

@@ -1,34 +1,34 @@
-import type { DesignTokens, ThemeTokenValues } from "./types";
+import type { DesignTokens, ThemeTokenValues } from './types';
 
 /**
  * Порядок і повний перелік CSS-змінних, які може задати тема.
  * Джерело правди — фактичний набір, який задають теми (`themes/<тема>/tokens.ts`).
  */
 const TOKEN_KEYS: ReadonlyArray<keyof ThemeTokenValues> = [
-  "background",
-  "foreground",
-  "card",
-  "card-foreground",
-  "popover",
-  "popover-foreground",
-  "primary",
-  "primary-foreground",
-  "secondary",
-  "secondary-foreground",
-  "muted",
-  "muted-foreground",
-  "accent",
-  "accent-foreground",
-  "destructive",
-  "destructive-foreground",
-  "success",
-  "success-foreground",
-  "warning",
-  "warning-foreground",
-  "border",
-  "input",
-  "ring",
-  "radius",
+  'background',
+  'foreground',
+  'card',
+  'card-foreground',
+  'popover',
+  'popover-foreground',
+  'primary',
+  'primary-foreground',
+  'secondary',
+  'secondary-foreground',
+  'muted',
+  'muted-foreground',
+  'accent',
+  'accent-foreground',
+  'destructive',
+  'destructive-foreground',
+  'success',
+  'success-foreground',
+  'warning',
+  'warning-foreground',
+  'border',
+  'input',
+  'ring',
+  'radius',
 ];
 
 /**
@@ -40,21 +40,21 @@ const UNSAFE_VALUE = /[;{}<>]|\/\*/;
 
 function isSafeValue(value: unknown): value is string {
   return (
-    typeof value === "string" &&
-    value.trim() !== "" &&
+    typeof value === 'string' &&
+    value.trim() !== '' &&
     !UNSAFE_VALUE.test(value)
   );
 }
 
 /** Зібрати один CSS-блок `selector { --key: value; … }` */
 function renderBlock(selector: string, values: ThemeTokenValues): string {
-  const declarations = TOKEN_KEYS.filter((key) =>
-    isSafeValue(values[key]),
-  ).map((key) => `  --${key}: ${values[key]};`);
+  const declarations = TOKEN_KEYS.filter((key) => isSafeValue(values[key])).map(
+    (key) => `  --${key}: ${values[key]};`,
+  );
 
-  if (declarations.length === 0) return "";
+  if (declarations.length === 0) return '';
 
-  return `${selector} {\n${declarations.join("\n")}\n}`;
+  return `${selector} {\n${declarations.join('\n')}\n}`;
 }
 
 /**
@@ -65,11 +65,11 @@ function renderBlock(selector: string, values: ThemeTokenValues): string {
  * (нешарові правила виграють у каскаді в будь-якого шару).
  */
 export function applyTokens(tokens: DesignTokens): string {
-  const blocks = [renderBlock(":root", tokens)];
+  const blocks = [renderBlock(':root', tokens)];
 
   if (tokens.dark) {
-    blocks.push(renderBlock(".dark", tokens.dark));
+    blocks.push(renderBlock('.dark', tokens.dark));
   }
 
-  return blocks.filter(Boolean).join("\n");
+  return blocks.filter(Boolean).join('\n');
 }

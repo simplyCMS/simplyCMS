@@ -1,13 +1,12 @@
-
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, ChevronRight, Save } from "lucide-react";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useToast } from "@simplycms/ui/use-toast";
-import { RecipientCard } from "./RecipientCard";
-import { RecipientSelectorPopup } from "./RecipientSelectorPopup";
-import { RecipientSaveDialog } from "./RecipientSaveDialog";
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { UserPlus, ChevronRight, Save } from 'lucide-react';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useToast } from '@simplycms/ui/use-toast';
+import { RecipientCard } from './RecipientCard';
+import { RecipientSelectorPopup } from './RecipientSelectorPopup';
+import { RecipientSaveDialog } from './RecipientSaveDialog';
 
 interface CheckoutRecipientFormProps {
   values: Record<string, string | boolean>;
@@ -28,7 +27,10 @@ interface SavedRecipient {
 
 const MAX_VISIBLE_CARDS = 3;
 
-export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFormProps) {
+export function CheckoutRecipientForm({
+  values,
+  onChange,
+}: CheckoutRecipientFormProps) {
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,18 +40,19 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [originalRecipient, setOriginalRecipient] = useState<SavedRecipient | null>(null);
+  const [originalRecipient, setOriginalRecipient] =
+    useState<SavedRecipient | null>(null);
 
   const { data: savedRecipients } = useQuery({
-    queryKey: ["checkout-saved-recipients", user?.id],
+    queryKey: ['checkout-saved-recipients', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from("user_recipients")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false })
-        .order("created_at", { ascending: false });
+        .from('user_recipients')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data as SavedRecipient[];
     },
@@ -61,21 +64,29 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
     return savedRecipients.slice(0, MAX_VISIBLE_CARDS);
   }, [savedRecipients]);
 
-  const showMoreButton = savedRecipients && savedRecipients.length > MAX_VISIBLE_CARDS;
+  const showMoreButton =
+    savedRecipients && savedRecipients.length > MAX_VISIBLE_CARDS;
 
-  const currentValues = useMemo(() => ({
-    firstName: String(values.recipientFirstName || ''),
-    lastName: String(values.recipientLastName || ''),
-    phone: String(values.recipientPhone || ''),
-    email: String(values.recipientEmail || ''),
-    city: String(values.recipientCity || ''),
-    address: String(values.recipientAddress || ''),
-    notes: String(values.recipientNotes || ''),
-  }), [
-    values.recipientFirstName, values.recipientLastName,
-    values.recipientPhone, values.recipientEmail,
-    values.recipientCity, values.recipientAddress, values.recipientNotes,
-  ]);
+  const currentValues = useMemo(
+    () => ({
+      firstName: String(values.recipientFirstName || ''),
+      lastName: String(values.recipientLastName || ''),
+      phone: String(values.recipientPhone || ''),
+      email: String(values.recipientEmail || ''),
+      city: String(values.recipientCity || ''),
+      address: String(values.recipientAddress || ''),
+      notes: String(values.recipientNotes || ''),
+    }),
+    [
+      values.recipientFirstName,
+      values.recipientLastName,
+      values.recipientPhone,
+      values.recipientEmail,
+      values.recipientCity,
+      values.recipientAddress,
+      values.recipientNotes,
+    ],
+  );
 
   // hasChanges — виведений стан, не потребує окремого useState
   const hasChanges = useMemo(() => {
@@ -84,47 +95,55 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
       currentValues.firstName !== originalRecipient.first_name ||
       currentValues.lastName !== originalRecipient.last_name ||
       currentValues.phone !== originalRecipient.phone ||
-      (currentValues.email || "") !== (originalRecipient.email || "") ||
+      (currentValues.email || '') !== (originalRecipient.email || '') ||
       currentValues.city !== originalRecipient.city ||
       currentValues.address !== originalRecipient.address ||
-      (currentValues.notes || "") !== (originalRecipient.notes || "")
+      (currentValues.notes || '') !== (originalRecipient.notes || '')
     );
   }, [currentValues, originalRecipient]);
 
   const handleSelectRecipient = (recipientId: string) => {
     if (selectedRecipientId === recipientId) {
-      onChange("savedRecipientId", "");
+      onChange('savedRecipientId', '');
       setOriginalRecipient(null);
       clearRecipientFields();
       return;
     }
     const recipient = savedRecipients?.find((r) => r.id === recipientId);
     if (recipient) {
-      onChange("savedRecipientId", recipientId);
+      onChange('savedRecipientId', recipientId);
       setOriginalRecipient(recipient);
       fillRecipientFields(recipient);
     }
   };
 
   const fillRecipientFields = (recipient: SavedRecipient) => {
-    onChange("recipientFirstName", recipient.first_name);
-    onChange("recipientLastName", recipient.last_name);
-    onChange("recipientPhone", recipient.phone);
-    onChange("recipientEmail", recipient.email || "");
-    onChange("recipientCity", recipient.city);
-    onChange("recipientAddress", recipient.address);
-    onChange("recipientNotes", recipient.notes || "");
+    onChange('recipientFirstName', recipient.first_name);
+    onChange('recipientLastName', recipient.last_name);
+    onChange('recipientPhone', recipient.phone);
+    onChange('recipientEmail', recipient.email || '');
+    onChange('recipientCity', recipient.city);
+    onChange('recipientAddress', recipient.address);
+    onChange('recipientNotes', recipient.notes || '');
   };
 
   const clearRecipientFields = useCallback(() => {
-    ["recipientFirstName", "recipientLastName", "recipientPhone", "recipientEmail", "recipientCity", "recipientAddress", "recipientNotes"].forEach(f => onChange(f, ""));
+    [
+      'recipientFirstName',
+      'recipientLastName',
+      'recipientPhone',
+      'recipientEmail',
+      'recipientCity',
+      'recipientAddress',
+      'recipientNotes',
+    ].forEach((f) => onChange(f, ''));
   }, [onChange]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!originalRecipient) return;
       const { error } = await supabase
-        .from("user_recipients")
+        .from('user_recipients')
         .update({
           first_name: currentValues.firstName,
           last_name: currentValues.lastName,
@@ -134,12 +153,14 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
           address: currentValues.address,
           notes: currentValues.notes || null,
         })
-        .eq("id", originalRecipient.id);
+        .eq('id', originalRecipient.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checkout-saved-recipients"] });
-      toast({ title: "Отримувача оновлено" });
+      queryClient.invalidateQueries({
+        queryKey: ['checkout-saved-recipients'],
+      });
+      toast({ title: 'Отримувача оновлено' });
     },
   });
 
@@ -147,7 +168,7 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
     mutationFn: async () => {
       if (!user) return;
       const { data, error } = await supabase
-        .from("user_recipients")
+        .from('user_recipients')
         .insert({
           user_id: user.id,
           first_name: currentValues.firstName,
@@ -165,10 +186,12 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["checkout-saved-recipients"] });
-      toast({ title: "Нового отримувача створено" });
+      queryClient.invalidateQueries({
+        queryKey: ['checkout-saved-recipients'],
+      });
+      toast({ title: 'Нового отримувача створено' });
       if (data) {
-        onChange("savedRecipientId", data.id);
+        onChange('savedRecipientId', data.id);
         setOriginalRecipient(data as SavedRecipient);
       }
     },
@@ -185,14 +208,16 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
   };
 
   const handleAddNew = () => {
-    onChange("savedRecipientId", "");
+    onChange('savedRecipientId', '');
     setOriginalRecipient(null);
     clearRecipientFields();
     setPopupOpen(false);
   };
 
   // Скидання отримувача при вимкненні опції (adjust state during render)
-  const [prevHasDifferentRecipient, setPrevHasDifferentRecipient] = useState(hasDifferentRecipient);
+  const [prevHasDifferentRecipient, setPrevHasDifferentRecipient] = useState(
+    hasDifferentRecipient,
+  );
   if (hasDifferentRecipient !== prevHasDifferentRecipient) {
     setPrevHasDifferentRecipient(hasDifferentRecipient);
     if (!hasDifferentRecipient) {
@@ -202,7 +227,7 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
 
   useEffect(() => {
     if (!hasDifferentRecipient) {
-      onChange("savedRecipientId", "");
+      onChange('savedRecipientId', '');
       clearRecipientFields();
     }
   }, [hasDifferentRecipient, onChange, clearRecipientFields]);
@@ -221,12 +246,16 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
             <input
               type="checkbox"
               checked={!!hasDifferentRecipient}
-              onChange={(e) => onChange("hasDifferentRecipient", e.target.checked)}
+              onChange={(e) =>
+                onChange('hasDifferentRecipient', e.target.checked)
+              }
               className="rounded mt-0.5"
             />
             <div>
               <span className="font-medium text-sm">Iнший отримувач</span>
-              <p className="text-sm text-muted-foreground">Замовлення отримає iнша людина</p>
+              <p className="text-sm text-muted-foreground">
+                Замовлення отримає iнша людина
+              </p>
             </div>
           </label>
 
@@ -234,7 +263,9 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
             <div className="space-y-4 pt-4 border-t">
               {user && savedRecipients && savedRecipients.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-muted-foreground">Збереженi отримувачi</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Збереженi отримувачi
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     {visibleRecipients.map((recipient) => (
                       <RecipientCard
@@ -265,43 +296,113 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Iм&apos;я отримувача *</label>
-                  <input placeholder="Введiть iм'я" value={currentValues.firstName || ""} onChange={(e) => onChange("recipientFirstName", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Iм&apos;я отримувача *
+                  </label>
+                  <input
+                    placeholder="Введiть iм'я"
+                    value={currentValues.firstName || ''}
+                    onChange={(e) =>
+                      onChange('recipientFirstName', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Прiзвище отримувача *</label>
-                  <input placeholder="Введiть прiзвище" value={currentValues.lastName || ""} onChange={(e) => onChange("recipientLastName", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Прiзвище отримувача *
+                  </label>
+                  <input
+                    placeholder="Введiть прiзвище"
+                    value={currentValues.lastName || ''}
+                    onChange={(e) =>
+                      onChange('recipientLastName', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Телефон отримувача *</label>
-                  <input type="tel" placeholder="+380" value={currentValues.phone || ""} onChange={(e) => onChange("recipientPhone", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Телефон отримувача *
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+380"
+                    value={currentValues.phone || ''}
+                    onChange={(e) => onChange('recipientPhone', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Email отримувача</label>
-                  <input type="email" placeholder="email@example.com" value={currentValues.email || ""} onChange={(e) => onChange("recipientEmail", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Email отримувача
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={currentValues.email || ''}
+                    onChange={(e) => onChange('recipientEmail', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Мiсто *</label>
-                  <input placeholder="Введiть мiсто" value={currentValues.city || ""} onChange={(e) => onChange("recipientCity", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Мiсто *
+                  </label>
+                  <input
+                    placeholder="Введiть мiсто"
+                    value={currentValues.city || ''}
+                    onChange={(e) => onChange('recipientCity', e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Адреса *</label>
-                  <input placeholder="вул. Хрещатик, 1, кв. 10" value={currentValues.address || ""} onChange={(e) => onChange("recipientAddress", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm" />
+                  <label className="text-sm font-medium mb-1 block">
+                    Адреса *
+                  </label>
+                  <input
+                    placeholder="вул. Хрещатик, 1, кв. 10"
+                    value={currentValues.address || ''}
+                    onChange={(e) =>
+                      onChange('recipientAddress', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Примiтки</label>
-                <textarea placeholder="Додаткова iнформацiя про отримувача..." value={currentValues.notes || ""} onChange={(e) => onChange("recipientNotes", e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm resize-none" />
+                <label className="text-sm font-medium mb-1 block">
+                  Примiтки
+                </label>
+                <textarea
+                  placeholder="Додаткова iнформацiя про отримувача..."
+                  value={currentValues.notes || ''}
+                  onChange={(e) => onChange('recipientNotes', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm resize-none"
+                />
               </div>
 
               {user && hasChanges && (
                 <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
-                  <button type="button" className="px-3 py-1.5 border rounded-md text-sm" onClick={handleCancelChanges}>Скасувати</button>
-                  <button type="button" className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-2" onClick={handleSaveClick} disabled={updateMutation.isPending || createMutation.isPending}>
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 border rounded-md text-sm"
+                    onClick={handleCancelChanges}
+                  >
+                    Скасувати
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-2"
+                    onClick={handleSaveClick}
+                    disabled={
+                      updateMutation.isPending || createMutation.isPending
+                    }
+                  >
                     <Save className="h-4 w-4" />
                     Зберегти змiни
                   </button>
@@ -326,9 +427,16 @@ export function CheckoutRecipientForm({ values, onChange }: CheckoutRecipientFor
       <RecipientSaveDialog
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
-        existingRecipientName={originalRecipient ? `${originalRecipient.first_name} ${originalRecipient.last_name}` : undefined}
+        existingRecipientName={
+          originalRecipient
+            ? `${originalRecipient.first_name} ${originalRecipient.last_name}`
+            : undefined
+        }
         onUpdate={() => updateMutation.mutate()}
-        onCreate={() => { onChange("savedRecipientId", ""); createMutation.mutate(); }}
+        onCreate={() => {
+          onChange('savedRecipientId', '');
+          createMutation.mutate();
+        }}
         onCancel={handleCancelChanges}
       />
     </>

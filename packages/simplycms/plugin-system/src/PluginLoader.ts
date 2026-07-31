@@ -1,7 +1,7 @@
-import { hookRegistry } from "./HookRegistry";
-import type { Plugin, PluginModule } from "./types";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Json } from "@simplycms/objects";
+import { hookRegistry } from './HookRegistry';
+import type { Plugin, PluginModule } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Json } from '@simplycms/objects';
 
 // Map of available plugins (will be populated by dynamic imports)
 const pluginModules: Map<string, PluginModule> = new Map();
@@ -20,13 +20,13 @@ export function getRegisteredPluginModules(): Map<string, PluginModule> {
 export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
   try {
     const { data: plugins, error } = await supabase
-      .from("plugins")
-      .select("*")
-      .eq("is_active", true)
-      .order("installed_at", { ascending: true });
+      .from('plugins')
+      .select('*')
+      .eq('is_active', true)
+      .order('installed_at', { ascending: true });
 
     if (error) {
-      console.error("Error loading plugins:", error);
+      console.error('Error loading plugins:', error);
       return [];
     }
 
@@ -42,7 +42,7 @@ export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
         } else {
           // spec §8: активний у БД, але невідомий модуль — помилка + пропуск.
           console.error(
-            `Plugin module "${plugin.name}" not found in registry — skipped`
+            `Plugin module "${plugin.name}" not found in registry — skipped`,
           );
         }
       } catch (err) {
@@ -52,13 +52,16 @@ export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
 
     return loadedPlugins;
   } catch (err) {
-    console.error("Error in loadPlugins:", err);
+    console.error('Error in loadPlugins:', err);
     return [];
   }
 }
 
 // Activate a specific plugin
-export async function activatePlugin(supabase: SupabaseClient, pluginName: string): Promise<boolean> {
+export async function activatePlugin(
+  supabase: SupabaseClient,
+  pluginName: string,
+): Promise<boolean> {
   const pluginModule = pluginModules.get(pluginName);
 
   if (!pluginModule) {
@@ -70,12 +73,12 @@ export async function activatePlugin(supabase: SupabaseClient, pluginName: strin
     pluginModule.register(hookRegistry);
 
     const { error } = await supabase
-      .from("plugins")
+      .from('plugins')
       .update({ is_active: true, updated_at: new Date().toISOString() })
-      .eq("name", pluginName);
+      .eq('name', pluginName);
 
     if (error) {
-      console.error("Error activating plugin in database:", error);
+      console.error('Error activating plugin in database:', error);
       return false;
     }
 
@@ -87,7 +90,10 @@ export async function activatePlugin(supabase: SupabaseClient, pluginName: strin
 }
 
 // Deactivate a specific plugin
-export async function deactivatePlugin(supabase: SupabaseClient, pluginName: string): Promise<boolean> {
+export async function deactivatePlugin(
+  supabase: SupabaseClient,
+  pluginName: string,
+): Promise<boolean> {
   const pluginModule = pluginModules.get(pluginName);
 
   if (pluginModule?.unregister) {
@@ -96,12 +102,12 @@ export async function deactivatePlugin(supabase: SupabaseClient, pluginName: str
 
   try {
     const { error } = await supabase
-      .from("plugins")
+      .from('plugins')
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq("name", pluginName);
+      .eq('name', pluginName);
 
     if (error) {
-      console.error("Error deactivating plugin in database:", error);
+      console.error('Error deactivating plugin in database:', error);
       return false;
     }
 
@@ -119,14 +125,16 @@ export async function deactivatePlugin(supabase: SupabaseClient, pluginName: str
 }
 
 // Get all plugins from database
-export async function getAllPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
+export async function getAllPlugins(
+  supabase: SupabaseClient,
+): Promise<Plugin[]> {
   const { data, error } = await supabase
-    .from("plugins")
-    .select("*")
-    .order("display_name", { ascending: true });
+    .from('plugins')
+    .select('*')
+    .order('display_name', { ascending: true });
 
   if (error) {
-    console.error("Error fetching plugins:", error);
+    console.error('Error fetching plugins:', error);
     return [];
   }
 
@@ -137,16 +145,19 @@ export async function getAllPlugins(supabase: SupabaseClient): Promise<Plugin[]>
 export async function updatePluginConfig(
   supabase: SupabaseClient,
   pluginName: string,
-  config: Record<string, unknown>
+  config: Record<string, unknown>,
 ): Promise<boolean> {
   const { error } = await supabase
-    .from("plugins")
-     
-    .update({ config: config as unknown as Json, updated_at: new Date().toISOString() })
-    .eq("name", pluginName);
+    .from('plugins')
+
+    .update({
+      config: config as unknown as Json,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('name', pluginName);
 
   if (error) {
-    console.error("Error updating plugin config:", error);
+    console.error('Error updating plugin config:', error);
     return false;
   }
 
@@ -161,10 +172,10 @@ export async function installPlugin(
   version: string,
   description?: string,
   author?: string,
-  hooks?: { name: string; priority?: number }[]
+  hooks?: { name: string; priority?: number }[],
 ): Promise<Plugin | null> {
   const { data, error } = await supabase
-    .from("plugins")
+    .from('plugins')
     .insert({
       name,
       display_name: displayName,
@@ -178,7 +189,7 @@ export async function installPlugin(
     .single();
 
   if (error) {
-    console.error("Error installing plugin:", error);
+    console.error('Error installing plugin:', error);
     return null;
   }
 
@@ -186,17 +197,20 @@ export async function installPlugin(
 }
 
 // Uninstall a plugin (remove from database)
-export async function uninstallPlugin(supabase: SupabaseClient, pluginName: string): Promise<boolean> {
+export async function uninstallPlugin(
+  supabase: SupabaseClient,
+  pluginName: string,
+): Promise<boolean> {
   // First deactivate
   await deactivatePlugin(supabase, pluginName);
 
   const { error } = await supabase
-    .from("plugins")
+    .from('plugins')
     .delete()
-    .eq("name", pluginName);
+    .eq('name', pluginName);
 
   if (error) {
-    console.error("Error uninstalling plugin:", error);
+    console.error('Error uninstalling plugin:', error);
     return false;
   }
 

@@ -1,12 +1,12 @@
-import { Button } from "@simplycms/ui/button";
-import { Card } from "@simplycms/ui/card";
+import { Button } from '@simplycms/ui/button';
+import { Card } from '@simplycms/ui/card';
 
 /** Переваги компанії */
 const advantages = [
-  { value: "5+", label: "років досвіду" },
-  { value: "1000+", label: "встановлених систем" },
-  { value: "24/7", label: "підтримка клієнтів" },
-  { value: "3", label: "роки гарантії" },
+  { value: '5+', label: 'років досвіду' },
+  { value: '1000+', label: 'встановлених систем' },
+  { value: '24/7', label: 'підтримка клієнтів' },
+  { value: '3', label: 'роки гарантії' },
 ];
 
 /**

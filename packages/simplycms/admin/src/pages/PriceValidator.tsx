@@ -1,16 +1,29 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search, CheckCircle, XCircle, Info, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Label } from "@simplycms/ui/label";
-import { Separator } from "@simplycms/ui/separator";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
-import { resolveDiscount, type DiscountGroup, type DiscountContext, type GroupOperator, type AppliedDiscount, type RejectedDiscount } from "@simplycms/core/lib/discountEngine";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, CheckCircle, XCircle, Info, ChevronRight } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@simplycms/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Label } from '@simplycms/ui/label';
+import { Separator } from '@simplycms/ui/separator';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import {
+  resolveDiscount,
+  type DiscountGroup,
+  type DiscountContext,
+  type GroupOperator,
+  type AppliedDiscount,
+  type RejectedDiscount,
+} from '@simplycms/core/lib/discountEngine';
 
 /** Крок валідації ціни */
 interface ValidationStep {
@@ -25,21 +38,24 @@ interface ValidationStep {
 
 export default function PriceValidator() {
   const supabase = useSupabaseClient();
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
-  const [selectedModificationId, setSelectedModificationId] = useState<string>("");
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedModificationId, setSelectedModificationId] =
+    useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [cartTotal, setCartTotal] = useState<number>(0);
   const [result, setResult] = useState<ValidationStep[] | null>(null);
 
   // Load users (profiles)
   const { data: users = [] } = useQuery({
-    queryKey: ["validator-users"],
+    queryKey: ['validator-users'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, email, category_id, user_categories(id, name, price_type_id, price_types(id, name))")
-        .order("email")
+        .from('profiles')
+        .select(
+          'user_id, first_name, last_name, email, category_id, user_categories(id, name, price_type_id, price_types(id, name))',
+        )
+        .order('email')
         .limit(200);
       if (error) throw error;
       return data;
@@ -48,13 +64,13 @@ export default function PriceValidator() {
 
   // Load products
   const { data: products = [] } = useQuery({
-    queryKey: ["validator-products"],
+    queryKey: ['validator-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products")
-        .select("id, name, section_id, has_modifications")
-        .eq("is_active", true)
-        .order("name")
+        .from('products')
+        .select('id, name, section_id, has_modifications')
+        .eq('is_active', true)
+        .order('name')
         .limit(500);
       if (error) throw error;
       return data;
@@ -63,14 +79,14 @@ export default function PriceValidator() {
 
   // Load modifications for selected product
   const { data: modifications = [] } = useQuery({
-    queryKey: ["validator-modifications", selectedProductId],
+    queryKey: ['validator-modifications', selectedProductId],
     queryFn: async () => {
       if (!selectedProductId) return [];
       const { data, error } = await supabase
-        .from("product_modifications")
-        .select("id, name")
-        .eq("product_id", selectedProductId)
-        .order("sort_order");
+        .from('product_modifications')
+        .select('id, name')
+        .eq('product_id', selectedProductId)
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
@@ -79,12 +95,12 @@ export default function PriceValidator() {
 
   // Load default price type
   const { data: defaultPriceType } = useQuery({
-    queryKey: ["default-price-type"],
+    queryKey: ['default-price-type'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("price_types")
-        .select("id, name")
-        .eq("is_default", true)
+        .from('price_types')
+        .select('id, name')
+        .eq('is_default', true)
         .single();
       if (error) return null;
       return data;
@@ -99,8 +115,8 @@ export default function PriceValidator() {
 
     // Step 1: Determine price type
     let priceTypeId: string | null = null;
-    let priceTypeName = "";
-    let priceTypeReason = "";
+    let priceTypeName = '';
+    let priceTypeReason = '';
 
     const user = users.find((u) => u.user_id === selectedUserId);
     if (user && user.user_categories) {
@@ -121,33 +137,34 @@ export default function PriceValidator() {
     }
 
     steps.push({
-      title: "Вид ціни",
-      value: priceTypeName || "Не визначено",
-      reason: priceTypeReason || "Не знайдено жодного виду ціни",
-      status: priceTypeId ? "ok" : "error",
+      title: 'Вид ціни',
+      value: priceTypeName || 'Не визначено',
+      reason: priceTypeReason || 'Не знайдено жодного виду ціни',
+      status: priceTypeId ? 'ok' : 'error',
     });
 
     // Step 2: Get base price
     const { data: prices } = await supabase
-      .from("product_prices")
-      .select("price_type_id, price, old_price, modification_id")
-      .eq("product_id", selectedProductId);
+      .from('product_prices')
+      .select('price_type_id, price, old_price, modification_id')
+      .eq('product_id', selectedProductId);
 
     const modId = selectedModificationId || null;
     const resolved = resolvePrice(
       (prices || []) as PriceEntry[],
       priceTypeId,
       defaultPriceType?.id || null,
-      modId
+      modId,
     );
 
     steps.push({
-      title: "Базова ціна",
-      value: resolved.price !== null ? `${resolved.price} грн` : "Не знайдено",
-      reason: resolved.price !== null
-        ? `product_prices (price_type: "${priceTypeName}", ${modId ? "modification" : "product"})`
-        : "Немає ціни для цього виду ціни",
-      status: resolved.price !== null ? "ok" : "error",
+      title: 'Базова ціна',
+      value: resolved.price !== null ? `${resolved.price} грн` : 'Не знайдено',
+      reason:
+        resolved.price !== null
+          ? `product_prices (price_type: "${priceTypeName}", ${modId ? 'modification' : 'product'})`
+          : 'Немає ціни для цього виду ціни',
+      status: resolved.price !== null ? 'ok' : 'error',
       oldPrice: resolved.oldPrice,
     });
 
@@ -155,25 +172,25 @@ export default function PriceValidator() {
     if (resolved.price !== null && priceTypeId) {
       // Load discounts for this price type
       const { data: dbDiscounts } = await supabase
-        .from("discounts")
-        .select("*, discount_targets(*), discount_conditions(*)")
-        .eq("price_type_id", priceTypeId)
-        .eq("is_active", true);
+        .from('discounts')
+        .select('*, discount_targets(*), discount_conditions(*)')
+        .eq('price_type_id', priceTypeId)
+        .eq('is_active', true);
 
       if (!dbDiscounts?.length) {
         steps.push({
-          title: "Скидки",
-          value: "Немає",
-          reason: "Жодна скидка не знайдена для цього виду ціни",
-          status: "info",
+          title: 'Скидки',
+          value: 'Немає',
+          reason: 'Жодна скидка не знайдена для цього виду ціни',
+          status: 'info',
           applied: [],
           rejected: [],
         });
         steps.push({
-          title: "Фінальна ціна",
+          title: 'Фінальна ціна',
           value: `${resolved.price.toFixed(2)} грн`,
           reason: `Без знижки: ${resolved.price} грн`,
-          status: "ok",
+          status: 'ok',
         });
         setResult(steps);
         return;
@@ -182,10 +199,10 @@ export default function PriceValidator() {
       // Load groups for these discounts
       const groupIds = [...new Set(dbDiscounts.map((d) => d.group_id))];
       const { data: dbGroups } = await supabase
-        .from("discount_groups")
-        .select("*")
-        .in("id", groupIds)
-        .eq("is_active", true);
+        .from('discount_groups')
+        .select('*')
+        .in('id', groupIds)
+        .eq('is_active', true);
 
       // Build tree
       const allGroups = dbGroups || [];
@@ -249,25 +266,28 @@ export default function PriceValidator() {
       const discountResult = resolveDiscount(resolved.price, roots, ctx);
 
       steps.push({
-        title: "Скидки",
-        value: discountResult.totalDiscount > 0
-          ? `-${discountResult.totalDiscount.toFixed(2)} грн`
-          : "Немає",
-        reason: discountResult.appliedDiscounts.length > 0
-          ? `Застосовано ${discountResult.appliedDiscounts.length} скидок`
-          : "Жодна скидка не підходить",
-        status: "info",
+        title: 'Скидки',
+        value:
+          discountResult.totalDiscount > 0
+            ? `-${discountResult.totalDiscount.toFixed(2)} грн`
+            : 'Немає',
+        reason:
+          discountResult.appliedDiscounts.length > 0
+            ? `Застосовано ${discountResult.appliedDiscounts.length} скидок`
+            : 'Жодна скидка не підходить',
+        status: 'info',
         applied: discountResult.appliedDiscounts,
         rejected: discountResult.rejectedDiscounts,
       });
 
       steps.push({
-        title: "Фінальна ціна",
+        title: 'Фінальна ціна',
         value: `${discountResult.finalPrice.toFixed(2)} грн`,
-        reason: discountResult.totalDiscount > 0
-          ? `${resolved.price} - ${discountResult.totalDiscount.toFixed(2)} = ${discountResult.finalPrice.toFixed(2)}`
-          : `Без знижки: ${resolved.price} грн`,
-        status: "ok",
+        reason:
+          discountResult.totalDiscount > 0
+            ? `${resolved.price} - ${discountResult.totalDiscount.toFixed(2)} = ${discountResult.finalPrice.toFixed(2)}`
+            : `Без знижки: ${resolved.price} грн`,
+        status: 'ok',
       });
     }
 
@@ -291,13 +311,21 @@ export default function PriceValidator() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Користувач</Label>
-              <Select value={selectedUserId || "__guest__"} onValueChange={(v) => setSelectedUserId(v === "__guest__" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="Гість (без авторизації)" /></SelectTrigger>
+              <Select
+                value={selectedUserId || '__guest__'}
+                onValueChange={(v) =>
+                  setSelectedUserId(v === '__guest__' ? '' : v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Гість (без авторизації)" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__guest__">Гість</SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.user_id} value={u.user_id}>
-                      {u.first_name || ""} {u.last_name || ""} ({u.email || "без email"})
+                      {u.first_name || ''} {u.last_name || ''} (
+                      {u.email || 'без email'})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -306,11 +334,21 @@ export default function PriceValidator() {
 
             <div className="space-y-2">
               <Label>Товар</Label>
-              <Select value={selectedProductId} onValueChange={(v) => { setSelectedProductId(v); setSelectedModificationId(""); }}>
-                <SelectTrigger><SelectValue placeholder="Оберіть товар" /></SelectTrigger>
+              <Select
+                value={selectedProductId}
+                onValueChange={(v) => {
+                  setSelectedProductId(v);
+                  setSelectedModificationId('');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Оберіть товар" />
+                </SelectTrigger>
                 <SelectContent>
                   {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -320,12 +358,21 @@ export default function PriceValidator() {
           {modifications.length > 0 && (
             <div className="space-y-2">
               <Label>Модифікація</Label>
-              <Select value={selectedModificationId || "__none__"} onValueChange={(v) => setSelectedModificationId(v === "__none__" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="Без модифікації" /></SelectTrigger>
+              <Select
+                value={selectedModificationId || '__none__'}
+                onValueChange={(v) =>
+                  setSelectedModificationId(v === '__none__' ? '' : v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Без модифікації" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">Без модифікації</SelectItem>
                   {modifications.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -335,11 +382,21 @@ export default function PriceValidator() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Кількість</Label>
-              <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+              <Input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Сума кошика (грн)</Label>
-              <Input type="number" min={0} value={cartTotal} onChange={(e) => setCartTotal(Number(e.target.value))} />
+              <Input
+                type="number"
+                min={0}
+                value={cartTotal}
+                onChange={(e) => setCartTotal(Number(e.target.value))}
+              />
             </div>
           </div>
 
@@ -358,36 +415,64 @@ export default function PriceValidator() {
             {result.map((step, idx) => (
               <div key={idx}>
                 <div className="flex items-start gap-3">
-                  {step.status === "ok" && <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />}
-                  {step.status === "error" && <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />}
-                  {step.status === "info" && <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />}
+                  {step.status === 'ok' && (
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                  )}
+                  {step.status === 'error' && (
+                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+                  )}
+                  {step.status === 'info' && (
+                    <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                  )}
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">{idx + 1}.</span>
+                      <span className="text-sm text-muted-foreground">
+                        {idx + 1}.
+                      </span>
                       <span className="font-medium">{step.title}:</span>
                       <span className="font-bold">{step.value}</span>
                       {step.oldPrice && (
-                        <span className="text-sm text-muted-foreground line-through">{step.oldPrice} грн</span>
+                        <span className="text-sm text-muted-foreground line-through">
+                          {step.oldPrice} грн
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">{step.reason}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {step.reason}
+                    </p>
 
                     {/* Applied discounts */}
                     {step.applied && step.applied.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {step.applied.map((d) => (
-                          <div key={d.id} className="flex items-center gap-2 text-sm">
+                          <div
+                            key={d.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
                             <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                            <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-xs">
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 dark:bg-green-950 text-xs"
+                            >
                               Застосовано
                             </Badge>
                             <span>
-                              {d.type === "percent" ? `-${d.value}%` : d.type === "fixed_amount" ? `-${d.value} грн` : `= ${d.value} грн`}
+                              {d.type === 'percent'
+                                ? `-${d.value}%`
+                                : d.type === 'fixed_amount'
+                                  ? `-${d.value} грн`
+                                  : `= ${d.value} грн`}
                             </span>
-                            <span className="text-muted-foreground">"{d.name}"</span>
-                            <span className="text-muted-foreground">({d.groupName})</span>
-                            <span className="font-medium">= -{d.calculatedAmount.toFixed(2)} грн</span>
+                            <span className="text-muted-foreground">
+                              "{d.name}"
+                            </span>
+                            <span className="text-muted-foreground">
+                              ({d.groupName})
+                            </span>
+                            <span className="font-medium">
+                              = -{d.calculatedAmount.toFixed(2)} грн
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -397,15 +482,27 @@ export default function PriceValidator() {
                     {step.rejected && step.rejected.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {step.rejected.map((d) => (
-                          <div key={d.id} className="flex items-center gap-2 text-sm">
+                          <div
+                            key={d.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
                             <XCircle className="h-3.5 w-3.5 text-red-400" />
-                            <Badge variant="outline" className="bg-red-50 dark:bg-red-950 text-xs">
+                            <Badge
+                              variant="outline"
+                              className="bg-red-50 dark:bg-red-950 text-xs"
+                            >
                               Відхилено
                             </Badge>
-                            <span className="text-muted-foreground">"{d.name}"</span>
-                            <span className="text-muted-foreground">({d.groupName})</span>
+                            <span className="text-muted-foreground">
+                              "{d.name}"
+                            </span>
+                            <span className="text-muted-foreground">
+                              ({d.groupName})
+                            </span>
                             <ChevronRight className="h-3 w-3" />
-                            <span className="text-sm text-red-600 dark:text-red-400">{d.reason}</span>
+                            <span className="text-sm text-red-600 dark:text-red-400">
+                              {d.reason}
+                            </span>
                           </div>
                         ))}
                       </div>

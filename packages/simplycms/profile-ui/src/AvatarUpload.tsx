@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Camera, Loader2, Trash2 } from "lucide-react";
-import { useToast } from "@simplycms/ui/use-toast";
+import { useState, useRef } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Camera, Loader2, Trash2 } from 'lucide-react';
+import { useToast } from '@simplycms/ui/use-toast';
 
 interface AvatarUploadProps {
   userId: string;
@@ -28,59 +28,59 @@ export function AvatarUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const getInitials = () => {
-    const first = firstName?.[0] || "";
-    const last = lastName?.[0] || "";
-    return (first + last).toUpperCase() || email?.[0]?.toUpperCase() || "?";
+    const first = firstName?.[0] || '';
+    const last = lastName?.[0] || '';
+    return (first + last).toUpperCase() || email?.[0]?.toUpperCase() || '?';
   };
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
-        throw new Error("Пiдтримуються тiльки JPG, PNG та WebP");
+        throw new Error('Пiдтримуються тiльки JPG, PNG та WebP');
       }
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error("Максимальний розмiр файлу 5MB");
+        throw new Error('Максимальний розмiр файлу 5MB');
       }
 
-      const ext = file.name.split(".").pop();
+      const ext = file.name.split('.').pop();
       const filename = `${userId}/avatar-${Date.now()}.${ext}`;
 
       if (currentAvatarUrl) {
-        const oldPath = currentAvatarUrl.split("/").slice(-2).join("/");
-        await supabase.storage.from("user-avatars").remove([oldPath]);
+        const oldPath = currentAvatarUrl.split('/').slice(-2).join('/');
+        await supabase.storage.from('user-avatars').remove([oldPath]);
       }
 
       const { error: uploadError } = await supabase.storage
-        .from("user-avatars")
+        .from('user-avatars')
         .upload(filename, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("user-avatars").getPublicUrl(filename);
+      } = supabase.storage.from('user-avatars').getPublicUrl(filename);
 
       const { error: updateError } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update({ avatar_url: publicUrl })
-        .eq("user_id", userId);
+        .eq('user_id', userId);
 
       if (updateError) throw updateError;
 
       return publicUrl;
     },
     onSuccess: (url) => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       onUpdate?.(url);
       setPreviewUrl(null);
-      toast({ title: "Аватар оновлено" });
+      toast({ title: 'Аватар оновлено' });
     },
     onError: (error: Error) => {
       setPreviewUrl(null);
       toast({
-        title: "Помилка завантаження",
+        title: 'Помилка завантаження',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -89,26 +89,26 @@ export function AvatarUpload({
     mutationFn: async () => {
       if (!currentAvatarUrl) return;
 
-      const path = currentAvatarUrl.split("/").slice(-2).join("/");
-      await supabase.storage.from("user-avatars").remove([path]);
+      const path = currentAvatarUrl.split('/').slice(-2).join('/');
+      await supabase.storage.from('user-avatars').remove([path]);
 
       const { error } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update({ avatar_url: null })
-        .eq("user_id", userId);
+        .eq('user_id', userId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       onUpdate?.(null);
-      toast({ title: "Аватар видалено" });
+      toast({ title: 'Аватар видалено' });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка видалення",
+        title: 'Помилка видалення',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -136,7 +136,15 @@ export function AvatarUpload({
         <div className="relative">
           <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
             {displayUrl ? (
-              <img src={displayUrl} alt="Avatar" width={96} height={96} className="rounded-full object-cover" loading="lazy" decoding="async" />
+              <img
+                src={displayUrl}
+                alt="Avatar"
+                width={96}
+                height={96}
+                className="rounded-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               getInitials()
             )}

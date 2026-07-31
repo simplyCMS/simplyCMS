@@ -2,7 +2,7 @@ import type {
   HookHandler,
   HookRegistryInterface,
   RegisteredHook,
-} from "./types";
+} from './types';
 
 class HookRegistry implements HookRegistryInterface {
   private hooks: Map<string, RegisteredHook[]> = new Map();
@@ -38,7 +38,7 @@ class HookRegistry implements HookRegistryInterface {
     hookName: string,
     pluginName: string,
     handler: HookHandler<TContext, TResult>,
-    priority: number = 10
+    priority: number = 10,
   ): void {
     const existing = this.hooks.get(hookName) || [];
 
@@ -75,7 +75,7 @@ class HookRegistry implements HookRegistryInterface {
 
   async execute<TContext = unknown, TResult = unknown>(
     hookName: string,
-    context: TContext
+    context: TContext,
   ): Promise<TResult[]> {
     const handlers = this.hooks.get(hookName) || [];
     const results: TResult[] = [];
@@ -87,10 +87,7 @@ class HookRegistry implements HookRegistryInterface {
           results.push(result as TResult);
         }
       } catch (error) {
-        console.error(
-          `Error executing hook "${hookName}" from plugin:`,
-          error
-        );
+        console.error(`Error executing hook "${hookName}" from plugin:`, error);
       }
     }
 
@@ -98,9 +95,12 @@ class HookRegistry implements HookRegistryInterface {
   }
 
   getHandlers<TContext = unknown, TResult = unknown>(
-    hookName: string
+    hookName: string,
   ): RegisteredHook<TContext, TResult>[] {
-    return (this.hooks.get(hookName) || []) as RegisteredHook<TContext, TResult>[];
+    return (this.hooks.get(hookName) || []) as RegisteredHook<
+      TContext,
+      TResult
+    >[];
   }
 
   getRegisteredHooks(): string[] {

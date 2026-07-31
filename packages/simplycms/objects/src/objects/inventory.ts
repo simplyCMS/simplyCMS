@@ -1,6 +1,6 @@
 // Доменні типи наявності/складу. Винесено з core/hooks/useStock + useProductsWithStock.
 
-export type StockStatus = "in_stock" | "out_of_stock" | "on_order";
+export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
 export interface StockByPoint {
   point_id: string;

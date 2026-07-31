@@ -12,6 +12,6 @@ export interface ImageOpts {
   width?: number;
   height?: number;
   quality?: number;
-  format?: "webp" | "avif" | "jpeg" | "png" | "auto";
-  resize?: "cover" | "contain" | "fill";
+  format?: 'webp' | 'avif' | 'jpeg' | 'png' | 'auto';
+  resize?: 'cover' | 'contain' | 'fill';
 }

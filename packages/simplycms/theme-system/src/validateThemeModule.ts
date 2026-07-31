@@ -1,7 +1,7 @@
-import type { ThemeModule } from "./types";
+import type { ThemeModule } from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === 'object' && value !== null;
 }
 
 /**
@@ -13,27 +13,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 export function validateThemeModule(m: unknown): asserts m is ThemeModule {
   if (!isRecord(m)) {
-    throw new Error("[theme] Модуль теми має бути обʼєктом");
+    throw new Error('[theme] Модуль теми має бути обʼєктом');
   }
 
   const { manifest, tokens, components, settings } = m;
 
   if (!isRecord(manifest)) {
-    throw new Error("[theme] Відсутній manifest");
+    throw new Error('[theme] Відсутній manifest');
   }
 
   if (
-    typeof manifest.name !== "string" ||
-    typeof manifest.displayName !== "string" ||
-    typeof manifest.version !== "string"
+    typeof manifest.name !== 'string' ||
+    typeof manifest.displayName !== 'string' ||
+    typeof manifest.version !== 'string'
   ) {
     throw new Error(
-      "[theme] Неповний manifest: потрібні name, displayName, version",
+      '[theme] Неповний manifest: потрібні name, displayName, version',
     );
   }
 
   const engines = manifest.engines;
-  if (!isRecord(engines) || typeof engines.simplycms !== "string") {
+  if (!isRecord(engines) || typeof engines.simplycms !== 'string') {
     throw new Error(
       `[theme] "${manifest.name}": manifest.engines.simplycms обовʼязковий (діапазон сумісності з ядром)`,
     );
@@ -47,11 +47,11 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     throw new Error(`[theme] "${manifest.name}": відсутні components`);
   }
 
-  if (typeof components.Header !== "function") {
+  if (typeof components.Header !== 'function') {
     throw new Error(`[theme] "${manifest.name}": відсутній components.Header`);
   }
 
-  if (typeof components.Footer !== "function") {
+  if (typeof components.Footer !== 'function') {
     throw new Error(`[theme] "${manifest.name}": відсутній components.Footer`);
   }
 

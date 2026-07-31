@@ -1,16 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { adminPath } from "../lib/adminLinks";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Input } from "@simplycms/ui/input";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Switch } from "@simplycms/ui/switch";
-import { Badge } from "@simplycms/ui/badge";
+import { adminPath } from '../lib/adminLinks';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Input } from '@simplycms/ui/input';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Switch } from '@simplycms/ui/switch';
+import { Badge } from '@simplycms/ui/badge';
 import {
   Form,
   FormControl,
@@ -19,14 +19,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@simplycms/ui/form";
+} from '@simplycms/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
+} from '@simplycms/ui/select';
 import {
   Table,
   TableBody,
@@ -34,11 +34,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
-import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
-import { ShippingZone, ShippingRate, ShippingMethod, ShippingCalculationType } from "@simplycms/core/lib/shipping/types";
-import { formatShippingCost } from "@simplycms/core/lib/shipping";
+} from '@simplycms/ui/table';
+import { toast } from 'sonner';
+import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react';
+import {
+  ShippingZone,
+  ShippingRate,
+  ShippingMethod,
+  ShippingCalculationType,
+} from '@simplycms/core/lib/shipping/types';
+import { formatShippingCost } from '@simplycms/core/lib/shipping';
 
 const formSchema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
@@ -53,11 +58,11 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const calculationTypeLabels: Record<ShippingCalculationType, string> = {
-  flat: "Фіксована ціна",
-  weight: "За вагою",
-  order_total: "Відсоток від суми",
-  free_from: "Безкоштовно від суми",
-  plugin: "Розрахунок плагіном",
+  flat: 'Фіксована ціна',
+  weight: 'За вагою',
+  order_total: 'Відсоток від суми',
+  free_from: 'Безкоштовно від суми',
+  plugin: 'Розрахунок плагіном',
 };
 
 // Parse comma/newline separated string into array
@@ -65,14 +70,14 @@ function parseStringToArray(str: string | undefined): string[] {
   if (!str) return [];
   return str
     .split(/[,\n]+/)
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 }
 
 // Convert array to comma-separated string
 function arrayToString(arr: string[] | undefined): string {
-  if (!arr || arr.length === 0) return "";
-  return arr.join(", ");
+  if (!arr || arr.length === 0) return '';
+  return arr.join(', ');
 }
 
 export default function ShippingZoneEdit() {
@@ -80,16 +85,16 @@ export default function ShippingZoneEdit() {
   const { zoneId } = useParams({ strict: false }) as { zoneId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = zoneId === "new";
+  const isNew = zoneId === 'new';
 
   const { data: zone, isLoading } = useQuery({
-    queryKey: ["shipping-zone", zoneId],
+    queryKey: ['shipping-zone', zoneId],
     queryFn: async () => {
       if (isNew) return null;
       const { data, error } = await supabase
-        .from("shipping_zones")
-        .select("*")
-        .eq("id", zoneId)
+        .from('shipping_zones')
+        .select('*')
+        .eq('id', zoneId)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as ShippingZone;
@@ -98,14 +103,14 @@ export default function ShippingZoneEdit() {
   });
 
   const { data: rates } = useQuery({
-    queryKey: ["shipping-rates", zoneId],
+    queryKey: ['shipping-rates', zoneId],
     queryFn: async () => {
       if (isNew) return [];
       const { data, error } = await supabase
-        .from("shipping_rates")
+        .from('shipping_rates')
         .select(`*, method:shipping_methods(*)`)
-        .eq("zone_id", zoneId)
-        .order("sort_order");
+        .eq('zone_id', zoneId)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as (ShippingRate & { method: ShippingMethod })[];
     },
@@ -113,13 +118,13 @@ export default function ShippingZoneEdit() {
   });
 
   const { data: methods } = useQuery({
-    queryKey: ["shipping-methods"],
+    queryKey: ['shipping-methods'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
+        .from('shipping_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as ShippingMethod[];
     },
@@ -128,10 +133,10 @@ export default function ShippingZoneEdit() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      cities: "",
-      regions: "",
+      name: '',
+      description: '',
+      cities: '',
+      regions: '',
       is_active: true,
       is_default: false,
       sort_order: 0,
@@ -139,7 +144,7 @@ export default function ShippingZoneEdit() {
     values: zone
       ? {
           name: zone.name,
-          description: zone.description || "",
+          description: zone.description || '',
           cities: arrayToString(zone.cities),
           regions: arrayToString(zone.regions),
           is_active: zone.is_active,
@@ -162,19 +167,21 @@ export default function ShippingZoneEdit() {
       };
 
       if (isNew) {
-        const { error } = await supabase.from("shipping_zones").insert([payload]);
+        const { error } = await supabase
+          .from('shipping_zones')
+          .insert([payload]);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("shipping_zones")
+          .from('shipping_zones')
           .update(payload)
-          .eq("id", zoneId);
+          .eq('id', zoneId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-zones"] });
-      toast.success(isNew ? "Зону створено" : "Зміни збережено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
+      toast.success(isNew ? 'Зону створено' : 'Зміни збережено');
       if (isNew) {
         navigate({ to: adminPath('shipping/zones') });
       }
@@ -186,35 +193,40 @@ export default function ShippingZoneEdit() {
 
   const deleteRate = useMutation({
     mutationFn: async (rateId: string) => {
-      const { error } = await supabase.from("shipping_rates").delete().eq("id", rateId);
+      const { error } = await supabase
+        .from('shipping_rates')
+        .delete()
+        .eq('id', rateId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-rates", zoneId] });
-      toast.success("Тариф видалено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-rates', zoneId] });
+      toast.success('Тариф видалено');
     },
     onError: () => {
-      toast.error("Помилка видалення тарифу");
+      toast.error('Помилка видалення тарифу');
     },
   });
 
   const addRate = useMutation({
     mutationFn: async (methodId: string) => {
-      const { error } = await supabase.from("shipping_rates").insert([{
-        method_id: methodId,
-        zone_id: zoneId,
-        name: "Новий тариф",
-        calculation_type: "flat",
-        base_cost: 0,
-      }]);
+      const { error } = await supabase.from('shipping_rates').insert([
+        {
+          method_id: methodId,
+          zone_id: zoneId,
+          name: 'Новий тариф',
+          calculation_type: 'flat',
+          base_cost: 0,
+        },
+      ]);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-rates", zoneId] });
-      toast.success("Тариф додано");
+      queryClient.invalidateQueries({ queryKey: ['shipping-rates', zoneId] });
+      toast.success('Тариф додано');
     },
     onError: () => {
-      toast.error("Помилка додавання тарифу");
+      toast.error('Помилка додавання тарифу');
     },
   });
 
@@ -229,17 +241,21 @@ export default function ShippingZoneEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.back()}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? "Нова зона доставки" : zone?.name}
+            {isNew ? 'Нова зона доставки' : zone?.name}
           </h1>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? "Створіть нову географічну зону"
-              : "Редагування зони та тарифів доставки"}
+              ? 'Створіть нову географічну зону'
+              : 'Редагування зони та тарифів доставки'}
           </p>
         </div>
       </div>
@@ -330,7 +346,8 @@ export default function ShippingZoneEdit() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Введіть назви міст через кому або кожне місто з нового рядка
+                          Введіть назви міст через кому або кожне місто з нового
+                          рядка
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -365,7 +382,9 @@ export default function ShippingZoneEdit() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Тарифи доставки</CardTitle>
-                    <Select onValueChange={(methodId) => addRate.mutate(methodId)}>
+                    <Select
+                      onValueChange={(methodId) => addRate.mutate(methodId)}
+                    >
                       <SelectTrigger className="w-[200px]">
                         <Plus className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="Додати тариф" />
@@ -382,7 +401,8 @@ export default function ShippingZoneEdit() {
                   <CardContent>
                     {!rates?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        Тарифи не налаштовано. Додайте тариф для кожного способу доставки.
+                        Тарифи не налаштовано. Додайте тариф для кожного способу
+                        доставки.
                       </div>
                     ) : (
                       <Table>
@@ -399,7 +419,9 @@ export default function ShippingZoneEdit() {
                             <TableRow key={rate.id}>
                               <TableCell>
                                 <div>
-                                  <div className="font-medium">{rate.method?.name}</div>
+                                  <div className="font-medium">
+                                    {rate.method?.name}
+                                  </div>
                                   <div className="text-sm text-muted-foreground">
                                     {rate.name}
                                   </div>
@@ -418,7 +440,7 @@ export default function ShippingZoneEdit() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    if (confirm("Видалити цей тариф?")) {
+                                    if (confirm('Видалити цей тариф?')) {
                                       deleteRate.mutate(rate.id);
                                     }
                                   }}
@@ -496,7 +518,7 @@ export default function ShippingZoneEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? "Створити" : "Зберегти"}
+                    {isNew ? 'Створити' : 'Зберегти'}
                   </Button>
                 </CardContent>
               </Card>

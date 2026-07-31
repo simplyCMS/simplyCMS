@@ -1,6 +1,6 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { forwardRef } from "react";
-import { cn } from "../lib/utils";
+import { Link, useLocation } from '@tanstack/react-router';
+import { forwardRef } from 'react';
+import { cn } from '../lib/utils';
 
 interface NavLinkProps {
   to: string;
@@ -31,7 +31,7 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
   },
 );
 
-NavLink.displayName = "NavLink";
+NavLink.displayName = 'NavLink';
 
 export { NavLink };
 export type { NavLinkProps };

@@ -1,5 +1,4 @@
-
-import { User } from "lucide-react";
+import { User } from 'lucide-react';
 
 interface CheckoutContactFormProps {
   values: {
@@ -11,7 +10,10 @@ interface CheckoutContactFormProps {
   onChange: (field: string, value: string) => void;
 }
 
-export function CheckoutContactForm({ values, onChange }: CheckoutContactFormProps) {
+export function CheckoutContactForm({
+  values,
+  onChange,
+}: CheckoutContactFormProps) {
   return (
     <div className="border rounded-lg">
       <div className="p-4 border-b">
@@ -23,11 +25,13 @@ export function CheckoutContactForm({ values, onChange }: CheckoutContactFormPro
       <div className="p-4 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">Iм&apos;я *</label>
+            <label className="text-sm font-medium mb-1 block">
+              Iм&apos;я *
+            </label>
             <input
               placeholder="Введiть iм'я"
               value={values.firstName}
-              onChange={(e) => onChange("firstName", e.target.value)}
+              onChange={(e) => onChange('firstName', e.target.value)}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -36,7 +40,7 @@ export function CheckoutContactForm({ values, onChange }: CheckoutContactFormPro
             <input
               placeholder="Введiть прiзвище"
               value={values.lastName}
-              onChange={(e) => onChange("lastName", e.target.value)}
+              onChange={(e) => onChange('lastName', e.target.value)}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -49,7 +53,7 @@ export function CheckoutContactForm({ values, onChange }: CheckoutContactFormPro
               type="email"
               placeholder="email@example.com"
               value={values.email}
-              onChange={(e) => onChange("email", e.target.value)}
+              onChange={(e) => onChange('email', e.target.value)}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -59,7 +63,7 @@ export function CheckoutContactForm({ values, onChange }: CheckoutContactFormPro
               type="tel"
               placeholder="+380"
               value={values.phone}
-              onChange={(e) => onChange("phone", e.target.value)}
+              onChange={(e) => onChange('phone', e.target.value)}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>

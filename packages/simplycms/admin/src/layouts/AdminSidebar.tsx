@@ -1,6 +1,6 @@
-import { NavLink } from "@simplycms/core/components/NavLink";
-import { adminPath } from "../lib/adminLinks";
-import { useSidebar } from "@simplycms/ui/sidebar";
+import { NavLink } from '@simplycms/core/components/NavLink';
+import { adminPath } from '../lib/adminLinks';
+import { useSidebar } from '@simplycms/ui/sidebar';
 import {
   LayoutDashboard,
   FolderTree,
@@ -23,8 +23,8 @@ import {
   Calculator,
   ImageIcon,
   MessageSquare,
-} from "lucide-react";
-import { PluginSlot } from "@simplycms/plugins/PluginSlot";
+} from 'lucide-react';
+import { PluginSlot } from '@simplycms/plugins/PluginSlot';
 import {
   Sidebar,
   SidebarContent,
@@ -34,50 +34,62 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@simplycms/ui/sidebar";
+} from '@simplycms/ui/sidebar';
 
 const catalogItems = [
-  { title: "Розділи", url: adminPath("sections"), icon: FolderTree },
-  { title: "Властивості", url: adminPath("properties"), icon: ListChecks },
-  { title: "Товари", url: adminPath("products"), icon: Package },
-  { title: "Види цін", url: adminPath("price-types"), icon: DollarSign },
-  { title: "Скидки", url: adminPath("discounts"), icon: Percent },
-  { title: "Валідатор цін", url: adminPath("price-validator"), icon: Calculator },
+  { title: 'Розділи', url: adminPath('sections'), icon: FolderTree },
+  { title: 'Властивості', url: adminPath('properties'), icon: ListChecks },
+  { title: 'Товари', url: adminPath('products'), icon: Package },
+  { title: 'Види цін', url: adminPath('price-types'), icon: DollarSign },
+  { title: 'Скидки', url: adminPath('discounts'), icon: Percent },
+  {
+    title: 'Валідатор цін',
+    url: adminPath('price-validator'),
+    icon: Calculator,
+  },
 ];
 
 const ordersItems = [
-  { title: "Замовлення", url: adminPath("orders"), icon: ShoppingCart },
-  { title: "Статуси", url: adminPath("order-statuses"), icon: Tags },
+  { title: 'Замовлення', url: adminPath('orders'), icon: ShoppingCart },
+  { title: 'Статуси', url: adminPath('order-statuses'), icon: Tags },
 ];
 
 const servicesItems = [
-  { title: "Послуги", url: adminPath("services"), icon: Wrench },
-  { title: "Заявки", url: adminPath("service-requests"), icon: FileText },
+  { title: 'Послуги', url: adminPath('services'), icon: Wrench },
+  { title: 'Заявки', url: adminPath('service-requests'), icon: FileText },
 ];
 
 const shippingItems = [
-  { title: "Служби доставки", url: adminPath("shipping/methods"), icon: Truck },
-  { title: "Зони доставки", url: adminPath("shipping/zones"), icon: Map },
-  { title: "Точки самовивозу", url: adminPath("shipping/pickup-points"), icon: Building },
+  { title: 'Служби доставки', url: adminPath('shipping/methods'), icon: Truck },
+  { title: 'Зони доставки', url: adminPath('shipping/zones'), icon: Map },
+  {
+    title: 'Точки самовивозу',
+    url: adminPath('shipping/pickup-points'),
+    icon: Building,
+  },
 ];
 
 const contentItems = [
-  { title: "Банери", url: adminPath("banners"), icon: ImageIcon },
-  { title: "Відгуки", url: adminPath("reviews"), icon: MessageSquare },
+  { title: 'Банери', url: adminPath('banners'), icon: ImageIcon },
+  { title: 'Відгуки', url: adminPath('reviews'), icon: MessageSquare },
 ];
 
 const settingsItems = [
-  { title: "Розширення", url: adminPath("plugins"), icon: Puzzle },
-  { title: "Теми", url: adminPath("themes"), icon: Palette },
-  { title: "Користувачі", url: adminPath("users"), icon: Users },
-  { title: "Категорії користувачів", url: adminPath("user-categories"), icon: Tags },
-  { title: "Мови", url: adminPath("languages"), icon: Globe },
-  { title: "Налаштування", url: adminPath("settings"), icon: Settings },
+  { title: 'Розширення', url: adminPath('plugins'), icon: Puzzle },
+  { title: 'Теми', url: adminPath('themes'), icon: Palette },
+  { title: 'Користувачі', url: adminPath('users'), icon: Users },
+  {
+    title: 'Категорії користувачів',
+    url: adminPath('user-categories'),
+    icon: Tags,
+  },
+  { title: 'Мови', url: adminPath('languages'), icon: Globe },
+  { title: 'Налаштування', url: adminPath('settings'), icon: Settings },
 ];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const collapsed = state === 'collapsed';
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -113,7 +125,7 @@ export function AdminSidebar() {
 
         {/* Catalog */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Каталог"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Каталог'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {catalogItems.map((item) => (
@@ -136,7 +148,7 @@ export function AdminSidebar() {
 
         {/* Orders */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Замовлення"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Замовлення'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {ordersItems.map((item) => (
@@ -159,7 +171,7 @@ export function AdminSidebar() {
 
         {/* Services */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Послуги"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Послуги'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {servicesItems.map((item) => (
@@ -182,7 +194,7 @@ export function AdminSidebar() {
 
         {/* Shipping */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Доставка"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Доставка'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {shippingItems.map((item) => (
@@ -205,7 +217,7 @@ export function AdminSidebar() {
 
         {/* Content */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Контент"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Контент'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {contentItems.map((item) => (
@@ -227,12 +239,14 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         {/* Plugin slot: sidebar items from plugins */}
-        <PluginSlot 
-          name="admin.sidebar.items" 
+        <PluginSlot
+          name="admin.sidebar.items"
           context={{ collapsed }}
           wrapper={(children) => (
             <SidebarGroup>
-              <SidebarGroupLabel>{!collapsed && "Розширення"}</SidebarGroupLabel>
+              <SidebarGroupLabel>
+                {!collapsed && 'Розширення'}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {children.map((child, index) => (
@@ -248,7 +262,7 @@ export function AdminSidebar() {
 
         {/* Settings */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Налаштування"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && 'Налаштування'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => (

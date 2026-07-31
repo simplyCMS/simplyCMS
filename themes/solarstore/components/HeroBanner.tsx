@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { Link } from '@tanstack/react-router';
+import { ChevronRight } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
 
 /**
  * Hero SolarStore — статичний банер із колишньої `pages/HomePage.tsx`.
@@ -16,7 +16,7 @@ export function HeroBanner() {
       <div className="container mx-auto px-4 relative">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-[hsl(var(--foreground))] sm:text-5xl md:text-6xl">
-            Енергетична{" "}
+            Енергетична{' '}
             <span className="text-[hsl(var(--primary))]">незалежність</span> для
             вашого дому
           </h1>

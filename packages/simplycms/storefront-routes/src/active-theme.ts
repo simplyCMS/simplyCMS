@@ -19,6 +19,5 @@ export function serializeActiveThemeScript(themeName: string): string {
 export function readActiveThemeName(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   return (window as unknown as Record<string, unknown>)[ACTIVE_THEME_GLOBAL] as
-    | string
-    | undefined;
+    string | undefined;
 }

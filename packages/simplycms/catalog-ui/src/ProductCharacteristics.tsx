@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router';
 
 interface PropertyValue {
   property_id: string;
@@ -22,9 +22,11 @@ interface ProductCharacteristicsProps {
   propertyValues: PropertyValue[];
 }
 
-export function ProductCharacteristics({ propertyValues }: ProductCharacteristicsProps) {
+export function ProductCharacteristics({
+  propertyValues,
+}: ProductCharacteristicsProps) {
   const displayableValues = propertyValues.filter(
-    (pv) => pv.property && (pv.value || pv.numeric_value !== null)
+    (pv) => pv.property && (pv.value || pv.numeric_value !== null),
   );
 
   if (displayableValues.length === 0) {
@@ -32,13 +34,13 @@ export function ProductCharacteristics({ propertyValues }: ProductCharacteristic
   }
 
   const formatValue = (pv: PropertyValue): string => {
-    if (pv.property?.property_type === "boolean") {
-      return pv.value === "true" ? "Так" : "Нi";
+    if (pv.property?.property_type === 'boolean') {
+      return pv.value === 'true' ? 'Так' : 'Нi';
     }
     if (pv.numeric_value !== null) {
       return String(pv.numeric_value);
     }
-    return pv.value || "—";
+    return pv.value || '—';
   };
 
   const renderValue = (pv: PropertyValue) => {
@@ -48,7 +50,10 @@ export function ProductCharacteristics({ propertyValues }: ProductCharacteristic
       return (
         <Link
           to="/properties/$propertySlug/$optionSlug"
-          params={{ propertySlug: pv.property.slug, optionSlug: pv.option.slug }}
+          params={{
+            propertySlug: pv.property.slug,
+            optionSlug: pv.option.slug,
+          }}
           className="text-primary hover:underline"
         >
           {formattedValue}

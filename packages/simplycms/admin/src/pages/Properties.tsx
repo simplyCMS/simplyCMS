@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Table,
   TableBody,
@@ -13,84 +13,98 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplycms/ui/dialog";
+} from '@simplycms/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Label } from "@simplycms/ui/label";
-import { Switch } from "@simplycms/ui/switch";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { Plus, Trash2, Loader2 } from "lucide-react";
-import type { TablesInsert, Enums } from "@simplycms/supabase";
+} from '@simplycms/ui/select';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import type { TablesInsert, Enums } from '@simplycms/supabase';
 
 const propertyTypes = [
-  { value: "text", label: "Текст" },
-  { value: "number", label: "Число" },
-  { value: "select", label: "Вибір (один)" },
-  { value: "multiselect", label: "Вибір (декілька)" },
-  { value: "range", label: "Діапазон" },
-  { value: "color", label: "Колір" },
-  { value: "boolean", label: "Так/Ні" },
+  { value: 'text', label: 'Текст' },
+  { value: 'number', label: 'Число' },
+  { value: 'select', label: 'Вибір (один)' },
+  { value: 'multiselect', label: 'Вибір (декілька)' },
+  { value: 'range', label: 'Діапазон' },
+  { value: 'color', label: 'Колір' },
+  { value: 'boolean', label: 'Так/Ні' },
 ];
 
 export default function Properties() {
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [propertyType, setPropertyType] = useState<Enums<"property_type">>("text");
+  const [propertyType, setPropertyType] =
+    useState<Enums<'property_type'>>('text');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch all properties (global, not section-specific)
   const { data: properties, isLoading } = useQuery({
-    queryKey: ["all-properties"],
+    queryKey: ['all-properties'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .order("name", { ascending: true });
+        .from('section_properties')
+        .select('*')
+        .order('name', { ascending: true });
       if (error) throw error;
       return data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: TablesInsert<"section_properties">) => {
-      const { error } = await supabase.from("section_properties").insert([data]);
+    mutationFn: async (data: TablesInsert<'section_properties'>) => {
+      const { error } = await supabase
+        .from('section_properties')
+        .insert([data]);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-properties"] });
+      queryClient.invalidateQueries({ queryKey: ['all-properties'] });
       closeDialog();
-      toast({ title: "Властивість створено" });
+      toast({ title: 'Властивість створено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("section_properties").delete().eq("id", id);
+      const { error } = await supabase
+        .from('section_properties')
+        .delete()
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-properties"] });
-      toast({ title: "Властивість видалено" });
+      queryClient.invalidateQueries({ queryKey: ['all-properties'] });
+      toast({ title: 'Властивість видалено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -99,13 +113,13 @@ export default function Properties() {
     const formData = new FormData(e.currentTarget);
 
     const data = {
-      name: formData.get("name") as string,
-      slug: formData.get("slug") as string,
+      name: formData.get('name') as string,
+      slug: formData.get('slug') as string,
       property_type: propertyType,
-      is_required: formData.get("is_required") === "on",
-      is_filterable: formData.get("is_filterable") === "on",
-      has_page: formData.get("has_page") === "on",
-      sort_order: parseInt(formData.get("sort_order") as string) || 0,
+      is_required: formData.get('is_required') === 'on',
+      is_filterable: formData.get('is_filterable') === 'on',
+      has_page: formData.get('has_page') === 'on',
+      sort_order: parseInt(formData.get('sort_order') as string) || 0,
       section_id: null, // Global property
     };
 
@@ -114,11 +128,11 @@ export default function Properties() {
 
   const closeDialog = () => {
     setIsOpen(false);
-    setPropertyType("text");
+    setPropertyType('text');
   };
 
   const openCreate = () => {
-    setPropertyType("text");
+    setPropertyType('text');
     setIsOpen(true);
   };
 
@@ -135,7 +149,9 @@ export default function Properties() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Властивості</h1>
-          <p className="text-muted-foreground">Глобальні властивості для товарів</p>
+          <p className="text-muted-foreground">
+            Глобальні властивості для товарів
+          </p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -159,7 +175,7 @@ export default function Properties() {
                     required
                   />
                 </div>
-              <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="slug">Slug</Label>
                   <Input
                     id="slug"
@@ -172,7 +188,12 @@ export default function Properties() {
 
               <div className="space-y-2">
                 <Label>Тип властивості</Label>
-                <Select value={propertyType} onValueChange={(v) => setPropertyType(v as Enums<"property_type">)}>
+                <Select
+                  value={propertyType}
+                  onValueChange={(v) =>
+                    setPropertyType(v as Enums<'property_type'>)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -207,7 +228,9 @@ export default function Properties() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch id="has_page" name="has_page" />
-                  <Label htmlFor="has_page">Створювати сторінки для значень</Label>
+                  <Label htmlFor="has_page">
+                    Створювати сторінки для значень
+                  </Label>
                 </div>
               </div>
 
@@ -244,10 +267,12 @@ export default function Properties() {
             </TableHeader>
             <TableBody>
               {properties?.map((property) => (
-                <TableRow 
+                <TableRow
                   key={property.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: adminPath(`properties/${property.id}`) })}
+                  onClick={() =>
+                    navigate({ to: adminPath(`properties/${property.id}`) })
+                  }
                 >
                   <TableCell className="font-medium">
                     {property.name}
@@ -259,7 +284,11 @@ export default function Properties() {
                     {property.slug}
                   </TableCell>
                   <TableCell>
-                    {propertyTypes.find(t => t.value === property.property_type)?.label}
+                    {
+                      propertyTypes.find(
+                        (t) => t.value === property.property_type,
+                      )?.label
+                    }
                   </TableCell>
                   <TableCell>
                     {property.is_filterable ? (
@@ -274,7 +303,7 @@ export default function Properties() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm("Видалити цю властивість?")) {
+                        if (confirm('Видалити цю властивість?')) {
                           deleteMutation.mutate(property.id);
                         }
                       }}
@@ -287,7 +316,10 @@ export default function Properties() {
               ))}
               {properties?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground"
+                  >
                     Властивостей ще немає
                   </TableCell>
                 </TableRow>

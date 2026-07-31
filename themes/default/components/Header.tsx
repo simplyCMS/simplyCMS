@@ -1,22 +1,30 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Search, User, ShoppingBag, Menu, X, Settings, LogOut } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useCart } from "@simplycms/core/hooks/useCart";
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { AnnouncementBar } from "./AnnouncementBar";
-import { CartDrawer } from "@simplycms/core/components/cart/CartDrawer";
-import { useState } from "react";
+import {
+  Search,
+  User,
+  ShoppingBag,
+  Menu,
+  X,
+  Settings,
+  LogOut,
+} from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useCart } from '@simplycms/core/hooks/useCart';
+import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useQuery } from '@tanstack/react-query';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { AnnouncementBar } from './AnnouncementBar';
+import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
+import { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@simplycms/ui/dropdown-menu";
+} from '@simplycms/ui/dropdown-menu';
 
 export function Header() {
   const supabase = useSupabaseClient();
@@ -26,25 +34,25 @@ export function Header() {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const logoUrl = useThemeSettings<string>("logoUrl");
-  const storeName = useThemeSettings<string>("storeName") || "Beauty Store";
+  const logoUrl = useThemeSettings<string>('logoUrl');
+  const storeName = useThemeSettings<string>('storeName') || 'Beauty Store';
 
   const { data: sections } = useQuery({
-    queryKey: ["sections-nav"],
+    queryKey: ['sections-nav'],
     queryFn: async () => {
       const { data } = await supabase
-        .from("sections")
-        .select("id, name, slug, parent_id")
-        .eq("is_active", true)
-        .is("parent_id", null)
-        .order("sort_order");
+        .from('sections')
+        .select('id, name, slug, parent_id')
+        .eq('is_active', true)
+        .is('parent_id', null)
+        .order('sort_order');
       return data || [];
     },
   });
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast({ title: "Вихід виконано" });
+    toast({ title: 'Вихід виконано' });
   };
 
   return (
@@ -61,13 +69,26 @@ export function Header() {
             className="md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} width={160} height={40} fetchPriority="high" loading="eager" decoding="async" className="h-10 max-w-[160px] object-contain" />
+              <img
+                src={logoUrl}
+                alt={storeName}
+                width={160}
+                height={40}
+                fetchPriority="high"
+                loading="eager"
+                decoding="async"
+                className="h-10 max-w-[160px] object-contain"
+              />
             ) : (
               <span className="text-xl font-serif font-bold tracking-wide text-foreground">
                 {storeName}
@@ -81,11 +102,15 @@ export function Header() {
               <Search className="h-5 w-5" />
             </Button>
 
-            {!authLoading && (
-              user ? (
+            {!authLoading &&
+              (user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-foreground">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-foreground"
+                    >
                       <User className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -94,26 +119,39 @@ export function Header() {
                       {user.email}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: '/profile' })}
+                    >
                       <User className="mr-2 h-4 w-4" /> Мій кабінет
                     </DropdownMenuItem>
                     {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate({ to: '/admin' })}>
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: '/admin' })}
+                      >
                         <Settings className="mr-2 h-4 w-4" /> Адмін-панель
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="text-destructive"
+                    >
                       <LogOut className="mr-2 h-4 w-4" /> Вийти
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button variant="ghost" size="icon" className="text-foreground" asChild>
-                  <Link to="/auth"><User className="h-5 w-5" /></Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-foreground"
+                  asChild
+                >
+                  <Link to="/auth">
+                    <User className="h-5 w-5" />
+                  </Link>
                 </Button>
-              )
-            )}
+              ))}
 
             <Button
               variant="ghost"
@@ -168,7 +206,7 @@ export function Header() {
                 <Link
                   key={s.id}
                   to="/catalog/$sectionSlug"
-                params={{ sectionSlug: s.slug }}
+                  params={{ sectionSlug: s.slug }}
                   className="block py-2 text-sm text-muted-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >

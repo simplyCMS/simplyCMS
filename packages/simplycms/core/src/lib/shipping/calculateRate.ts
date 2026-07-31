@@ -3,4 +3,4 @@ export {
   calculateShippingCost,
   calculateShipping,
   formatShippingCost,
-} from "@simplycms/domain/shipping";
+} from '@simplycms/domain/shipping';

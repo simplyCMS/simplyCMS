@@ -31,8 +31,9 @@ All coding rules, architecture decisions, and best practices are maintained in `
   (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
 - **🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test` —
   `build` перед `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме
-  `format:check` (`pnpm format` — це `--write`, він не червоніє). 🔴 `prettier`
-  наразі не встановлений — де-факто гейти починаються з `lint` (борг репо).
+  `format:check` (`pnpm format` — це `--write`, він не червоніє). Обидві команди
+  покривають увесь репозиторій; винятки — у `.prettierignore` (машинний генерат,
+  артефакти збірки, усі `*.md`).
 
 Also see:
 - [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars)

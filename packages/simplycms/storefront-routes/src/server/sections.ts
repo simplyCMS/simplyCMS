@@ -8,8 +8,8 @@ import {
 import { createServerSupabase } from '@simplycms/supabase/server-client';
 
 /** Отримати всі активні секції */
-export const getSections = createServerFn({ method: 'GET' }).handler(
-  async () => loadSections(createServerSupabase()),
+export const getSections = createServerFn({ method: 'GET' }).handler(async () =>
+  loadSections(createServerSupabase()),
 );
 
 /** Отримати секцію за slug */

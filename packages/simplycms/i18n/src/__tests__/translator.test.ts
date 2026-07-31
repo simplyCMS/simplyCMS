@@ -68,7 +68,14 @@ describe('createTranslator — конкурентність (без глобал
       })(),
     ]);
 
-    expect(results).toEqual(['Кошик', 'Cart', 'Кошик', 'Cart', 'Кошик', 'Cart']);
+    expect(results).toEqual([
+      'Кошик',
+      'Cart',
+      'Кошик',
+      'Cart',
+      'Кошик',
+      'Cart',
+    ]);
   });
 });
 

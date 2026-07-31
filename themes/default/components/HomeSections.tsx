@@ -1,7 +1,7 @@
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
-import { BrandCarousel } from "./BrandCarousel";
-import { NewsletterSection } from "./NewsletterSection";
-import { BlogPreview } from "./BlogPreview";
+import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
+import { BrandCarousel } from './BrandCarousel';
+import { NewsletterSection } from './NewsletterSection';
+import { BlogPreview } from './BlogPreview';
 
 /**
  * Унікальні секції головної default-теми.
@@ -15,7 +15,7 @@ import { BlogPreview } from "./BlogPreview";
  * лишається тут — рівно як було в колишній `pages/HomePage.tsx`.
  */
 export function HomeSections() {
-  const showBrands = useThemeSettings<boolean>("showBrandCarousel");
+  const showBrands = useThemeSettings<boolean>('showBrandCarousel');
 
   return (
     <>

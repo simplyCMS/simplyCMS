@@ -1,9 +1,9 @@
-import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Loader2, ChevronRight, Tag } from "lucide-react";
-import type { Tables } from "@simplycms/supabase";
+import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Loader2, ChevronRight, Tag } from 'lucide-react';
+import type { Tables } from '@simplycms/supabase';
 
 export interface PropertiesPageProps {
   properties?: Tables<'section_properties'>[];
@@ -15,13 +15,13 @@ export default function PropertiesPage({
   const supabase = useSupabaseClient();
   // Fetch properties with has_page = true
   const { data: properties, isLoading } = useQuery({
-    queryKey: ["public-properties-with-pages"],
+    queryKey: ['public-properties-with-pages'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .eq("has_page", true)
-        .order("sort_order", { ascending: true });
+        .from('section_properties')
+        .select('*')
+        .eq('has_page', true)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -30,19 +30,19 @@ export default function PropertiesPage({
 
   // Fetch option counts for each property
   const { data: optionCounts } = useQuery({
-    queryKey: ["property-option-counts", properties?.map(p => p.id)],
+    queryKey: ['property-option-counts', properties?.map((p) => p.id)],
     queryFn: async () => {
       if (!properties?.length) return {};
 
       const { data, error } = await supabase
-        .from("property_options")
-        .select("property_id");
+        .from('property_options')
+        .select('property_id');
 
       if (error) throw error;
 
       // Count options per property
       const counts: Record<string, number> = {};
-      data?.forEach(opt => {
+      data?.forEach((opt) => {
         counts[opt.property_id] = (counts[opt.property_id] || 0) + 1;
       });
 
@@ -82,7 +82,11 @@ export default function PropertiesPage({
       {properties && properties.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {properties.map((property) => (
-            <Link key={property.id} to="/properties/$propertySlug" params={{ propertySlug: property.slug }}>
+            <Link
+              key={property.id}
+              to="/properties/$propertySlug"
+              params={{ propertySlug: property.slug }}
+            >
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">

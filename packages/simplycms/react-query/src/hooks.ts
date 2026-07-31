@@ -1,10 +1,10 @@
 // Тонкі React-Query хуки поверх портів з useEngine().
 // Логіка запитів — у queries.ts; тут лише прив'язка до контексту.
 
-import { useQuery } from "@tanstack/react-query";
-import type { ProductQuery, OrderQuery } from "@simplycms/objects";
-import { useEngine } from "./EngineProvider";
-import { catalogQueries, orderQueries } from "./queries";
+import { useQuery } from '@tanstack/react-query';
+import type { ProductQuery, OrderQuery } from '@simplycms/objects';
+import { useEngine } from './EngineProvider';
+import { catalogQueries, orderQueries } from './queries';
 
 export function useProduct(idOrSlug: string) {
   const { catalog } = useEngine();
@@ -36,12 +36,14 @@ export function useStockInfo(ids: string[]) {
 
 export function useOrder(id: string) {
   const { orders } = useEngine();
-  if (!orders) throw new Error("OrderRepository is not configured in EngineContext");
+  if (!orders)
+    throw new Error('OrderRepository is not configured in EngineContext');
   return useQuery(orderQueries.order(orders, id));
 }
 
 export function useOrders(q: OrderQuery) {
   const { orders } = useEngine();
-  if (!orders) throw new Error("OrderRepository is not configured in EngineContext");
+  if (!orders)
+    throw new Error('OrderRepository is not configured in EngineContext');
   return useQuery(orderQueries.list(orders, q));
 }

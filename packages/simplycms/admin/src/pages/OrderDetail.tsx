@@ -1,19 +1,19 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Input } from "@simplycms/ui/input";
-import { Skeleton } from "@simplycms/ui/skeleton";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Input } from '@simplycms/ui/input';
+import { Skeleton } from '@simplycms/ui/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
+} from '@simplycms/ui/select';
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,13 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
- import { ArrowLeft, Trash2, Save, Loader2, UserPlus } from "lucide-react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { useState } from "react";
-import { AddProductToOrder } from "../components/AddProductToOrder";
+} from '@simplycms/ui/alert-dialog';
+import { ArrowLeft, Trash2, Save, Loader2, UserPlus } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useState } from 'react';
+import { AddProductToOrder } from '../components/AddProductToOrder';
 
 /** Застосована знижка в позиції замовлення */
 interface OrderItemDiscount {
@@ -76,12 +76,12 @@ export default function OrderDetail() {
 
   // Fetch order details
   const { data: order, isLoading: orderLoading } = useQuery({
-    queryKey: ["admin-order", orderId],
+    queryKey: ['admin-order', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders")
-        .select("*, order_statuses(id, name, color, code)")
-        .eq("id", orderId!)
+        .from('orders')
+        .select('*, order_statuses(id, name, color, code)')
+        .eq('id', orderId!)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -91,13 +91,13 @@ export default function OrderDetail() {
 
   // Fetch order items
   const { data: orderItems, isLoading: itemsLoading } = useQuery({
-    queryKey: ["admin-order-items", orderId],
+    queryKey: ['admin-order-items', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("order_items")
-        .select("*")
-        .eq("order_id", orderId!)
-        .order("created_at");
+        .from('order_items')
+        .select('*')
+        .eq('order_id', orderId!)
+        .order('created_at');
       if (error) throw error;
       return data as OrderItem[];
     },
@@ -106,12 +106,12 @@ export default function OrderDetail() {
 
   // Fetch available statuses
   const { data: statuses } = useQuery({
-    queryKey: ["order-statuses"],
+    queryKey: ['order-statuses'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("order_statuses")
-        .select("*")
-        .order("sort_order");
+        .from('order_statuses')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
@@ -131,51 +131,54 @@ export default function OrderDetail() {
         if (item) {
           const newTotal = item.price * newQuantity;
           const { error } = await supabase
-            .from("order_items")
+            .from('order_items')
             .update({ quantity: newQuantity, total: newTotal })
-            .eq("id", itemId);
+            .eq('id', itemId);
           if (error) throw error;
         }
       }
 
       // Recalculate order totals
       const { data: updatedItems } = await supabase
-        .from("order_items")
-        .select("total")
-        .eq("order_id", orderId!);
+        .from('order_items')
+        .select('total')
+        .eq('order_id', orderId!);
 
-      const newSubtotal = updatedItems?.reduce((sum, item) => sum + item.total, 0) || 0;
+      const newSubtotal =
+        updatedItems?.reduce((sum, item) => sum + item.total, 0) || 0;
 
       // Update order with new totals and status
       const { error } = await supabase
-        .from("orders")
+        .from('orders')
         .update({
           subtotal: newSubtotal,
           total: newSubtotal,
           status_id: selectedStatus,
         })
-        .eq("id", orderId!);
+        .eq('id', orderId!);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-order-items", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order', orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-order-items', orderId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       setEditedItems({});
       setHasChanges(false);
       toast({
-        title: "Замовлення оновлено",
-        description: "Зміни успішно збережено",
+        title: 'Замовлення оновлено',
+        description: 'Зміни успішно збережено',
       });
     },
     onError: (error) => {
       toast({
-        title: "Помилка",
-        description: "Не вдалося оновити замовлення",
-        variant: "destructive",
+        title: 'Помилка',
+        description: 'Не вдалося оновити замовлення',
+        variant: 'destructive',
       });
-      console.error("Update error:", error);
+      console.error('Update error:', error);
     },
   });
 
@@ -183,43 +186,46 @@ export default function OrderDetail() {
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const { error } = await supabase
-        .from("order_items")
+        .from('order_items')
         .delete()
-        .eq("id", itemId);
+        .eq('id', itemId);
       if (error) throw error;
 
       // Recalculate order totals
       const { data: remainingItems } = await supabase
-        .from("order_items")
-        .select("total")
-        .eq("order_id", orderId!);
+        .from('order_items')
+        .select('total')
+        .eq('order_id', orderId!);
 
-      const newSubtotal = remainingItems?.reduce((sum, item) => sum + item.total, 0) || 0;
+      const newSubtotal =
+        remainingItems?.reduce((sum, item) => sum + item.total, 0) || 0;
 
       const { error: updateError } = await supabase
-        .from("orders")
+        .from('orders')
         .update({
           subtotal: newSubtotal,
           total: newSubtotal,
         })
-        .eq("id", orderId!);
+        .eq('id', orderId!);
 
       if (updateError) throw updateError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-order-items", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order', orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-order-items', orderId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({
-        title: "Товар видалено",
-        description: "Товар успішно видалено з замовлення",
+        title: 'Товар видалено',
+        description: 'Товар успішно видалено з замовлення',
       });
     },
     onError: () => {
       toast({
-        title: "Помилка",
-        description: "Не вдалося видалити товар",
-        variant: "destructive",
+        title: 'Помилка',
+        description: 'Не вдалося видалити товар',
+        variant: 'destructive',
       });
     },
   });
@@ -234,7 +240,7 @@ export default function OrderDetail() {
       modification_id: string | null;
     }) => {
       const total = newItem.price * newItem.quantity;
-      const { error } = await supabase.from("order_items").insert({
+      const { error } = await supabase.from('order_items').insert({
         order_id: orderId!,
         name: newItem.name,
         price: newItem.price,
@@ -247,36 +253,39 @@ export default function OrderDetail() {
 
       // Recalculate order totals
       const { data: updatedItems } = await supabase
-        .from("order_items")
-        .select("total")
-        .eq("order_id", orderId!);
+        .from('order_items')
+        .select('total')
+        .eq('order_id', orderId!);
 
-      const newSubtotal = updatedItems?.reduce((sum, item) => sum + item.total, 0) || 0;
+      const newSubtotal =
+        updatedItems?.reduce((sum, item) => sum + item.total, 0) || 0;
 
       const { error: updateError } = await supabase
-        .from("orders")
+        .from('orders')
         .update({
           subtotal: newSubtotal,
           total: newSubtotal,
         })
-        .eq("id", orderId!);
+        .eq('id', orderId!);
 
       if (updateError) throw updateError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-order-items", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order', orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-order-items', orderId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({
-        title: "Товар додано",
-        description: "Товар успішно додано до замовлення",
+        title: 'Товар додано',
+        description: 'Товар успішно додано до замовлення',
       });
     },
     onError: () => {
       toast({
-        title: "Помилка",
-        description: "Не вдалося додати товар",
-        variant: "destructive",
+        title: 'Помилка',
+        description: 'Не вдалося додати товар',
+        variant: 'destructive',
       });
     },
   });
@@ -319,7 +328,10 @@ export default function OrderDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Замовлення не знайдено</p>
-        <Button variant="link" onClick={() => navigate({ to: adminPath('orders') })}>
+        <Button
+          variant="link"
+          onClick={() => navigate({ to: adminPath('orders') })}
+        >
           Повернутися до списку
         </Button>
       </div>
@@ -333,13 +345,22 @@ export default function OrderDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('orders') })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: adminPath('orders') })}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Замовлення {order.order_number}</h1>
+            <h1 className="text-2xl font-bold">
+              Замовлення {order.order_number}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              від {format(new Date(order.created_at), "dd MMMM yyyy, HH:mm", { locale: uk })}
+              від{' '}
+              {format(new Date(order.created_at), 'dd MMMM yyyy, HH:mm', {
+                locale: uk,
+              })}
             </p>
           </div>
         </div>
@@ -372,9 +393,13 @@ export default function OrderDetail() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Назва</TableHead>
-                    <TableHead className="w-28 text-right">Базова ціна</TableHead>
+                    <TableHead className="w-28 text-right">
+                      Базова ціна
+                    </TableHead>
                     <TableHead className="w-24 text-right">Ціна</TableHead>
-                    <TableHead className="w-32 text-center">Кількість</TableHead>
+                    <TableHead className="w-32 text-center">
+                      Кількість
+                    </TableHead>
                     <TableHead className="w-28 text-right">Сума</TableHead>
                     <TableHead className="w-16"></TableHead>
                   </TableRow>
@@ -384,13 +409,20 @@ export default function OrderDetail() {
                     <TableRow key={item.id}>
                       <TableCell>
                         <div className="font-medium">{item.name}</div>
-                        {(item.discount_data?.appliedDiscounts?.length ?? 0) > 0 && (
+                        {(item.discount_data?.appliedDiscounts?.length ?? 0) >
+                          0 && (
                           <div className="mt-1">
-                            {item.discount_data?.appliedDiscounts?.map((d, i: number) => (
-                              <span key={i} className="inline-block text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded px-1.5 py-0.5 mr-1 mb-0.5">
-                                {d.name}: -{d.calculatedAmount.toLocaleString()} ₴
-                              </span>
-                            ))}
+                            {item.discount_data?.appliedDiscounts?.map(
+                              (d, i: number) => (
+                                <span
+                                  key={i}
+                                  className="inline-block text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded px-1.5 py-0.5 mr-1 mb-0.5"
+                                >
+                                  {d.name}: -
+                                  {d.calculatedAmount.toLocaleString()} ₴
+                                </span>
+                              ),
+                            )}
                           </div>
                         )}
                       </TableCell>
@@ -413,7 +445,10 @@ export default function OrderDetail() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() =>
-                              handleQuantityChange(item.id, getItemQuantity(item) - 1)
+                              handleQuantityChange(
+                                item.id,
+                                getItemQuantity(item) - 1,
+                              )
                             }
                             disabled={getItemQuantity(item) <= 1}
                           >
@@ -424,7 +459,10 @@ export default function OrderDetail() {
                             min="1"
                             value={getItemQuantity(item)}
                             onChange={(e) =>
-                              handleQuantityChange(item.id, parseInt(e.target.value) || 1)
+                              handleQuantityChange(
+                                item.id,
+                                parseInt(e.target.value) || 1,
+                              )
                             }
                             className="w-14 h-8 text-center"
                           />
@@ -433,7 +471,10 @@ export default function OrderDetail() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() =>
-                              handleQuantityChange(item.id, getItemQuantity(item) + 1)
+                              handleQuantityChange(
+                                item.id,
+                                getItemQuantity(item) + 1,
+                              )
                             }
                           >
                             +
@@ -457,15 +498,20 @@ export default function OrderDetail() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Видалити товар?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Видалити товар?
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Ви впевнені, що хочете видалити "{item.name}" з замовлення?
+                                Ви впевнені, що хочете видалити "{item.name}" з
+                                замовлення?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Скасувати</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => deleteItemMutation.mutate(item.id)}
+                                onClick={() =>
+                                  deleteItemMutation.mutate(item.id)
+                                }
                               >
                                 Видалити
                               </AlertDialogAction>
@@ -496,14 +542,19 @@ export default function OrderDetail() {
               <CardTitle>Статус замовлення</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={selectedStatus || ""} onValueChange={handleStatusChange}>
+              <Select
+                value={selectedStatus || ''}
+                onValueChange={handleStatusChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Виберіть статус">
                     {currentStatus && (
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: currentStatus.color || "#6B7280" }}
+                          style={{
+                            backgroundColor: currentStatus.color || '#6B7280',
+                          }}
                         />
                         {currentStatus.name}
                       </div>
@@ -516,7 +567,7 @@ export default function OrderDetail() {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: status.color || "#6B7280" }}
+                          style={{ backgroundColor: status.color || '#6B7280' }}
                         />
                         {status.name}
                       </div>
@@ -527,7 +578,7 @@ export default function OrderDetail() {
               {currentStatus && (
                 <Badge
                   className="w-full justify-center py-1"
-                  style={{ backgroundColor: currentStatus.color || "#6B7280" }}
+                  style={{ backgroundColor: currentStatus.color || '#6B7280' }}
                 >
                   {currentStatus.name}
                 </Badge>
@@ -558,38 +609,38 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
 
-           {/* Recipient Info - if different from customer */}
-           {order.has_different_recipient && (
-             <Card className="border-primary/30 bg-primary/5">
-               <CardHeader>
-                 <CardTitle className="flex items-center gap-2">
-                   <UserPlus className="h-4 w-4" />
-                   Отримувач
-                 </CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-3 text-sm">
-                 <div>
-                   <span className="text-muted-foreground">Ім'я:</span>
-                   <p className="font-medium">
-                     {order.recipient_first_name} {order.recipient_last_name}
-                   </p>
-                 </div>
-                 {order.recipient_phone && (
-                   <div>
-                     <span className="text-muted-foreground">Телефон:</span>
-                     <p className="font-medium">{order.recipient_phone}</p>
-                   </div>
-                 )}
-                 {order.recipient_email && (
-                   <div>
-                     <span className="text-muted-foreground">Email:</span>
-                     <p className="font-medium">{order.recipient_email}</p>
-                   </div>
-                 )}
-               </CardContent>
-             </Card>
-           )}
- 
+          {/* Recipient Info - if different from customer */}
+          {order.has_different_recipient && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Отримувач
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Ім'я:</span>
+                  <p className="font-medium">
+                    {order.recipient_first_name} {order.recipient_last_name}
+                  </p>
+                </div>
+                {order.recipient_phone && (
+                  <div>
+                    <span className="text-muted-foreground">Телефон:</span>
+                    <p className="font-medium">{order.recipient_phone}</p>
+                  </div>
+                )}
+                {order.recipient_email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="font-medium">{order.recipient_email}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Delivery */}
           <Card>
             <CardHeader>
@@ -599,13 +650,13 @@ export default function OrderDetail() {
               <div>
                 <span className="text-muted-foreground">Спосіб:</span>
                 <p className="font-medium">
-                  {order.delivery_method === "pickup"
-                    ? "Самовивіз"
-                    : order.delivery_method === "nova_poshta"
-                    ? "Нова Пошта"
-                    : order.delivery_method === "courier"
-                    ? "Кур'єр"
-                    : order.delivery_method}
+                  {order.delivery_method === 'pickup'
+                    ? 'Самовивіз'
+                    : order.delivery_method === 'nova_poshta'
+                      ? 'Нова Пошта'
+                      : order.delivery_method === 'courier'
+                        ? "Кур'єр"
+                        : order.delivery_method}
                 </p>
               </div>
               {order.delivery_city && (
@@ -632,7 +683,9 @@ export default function OrderDetail() {
               <div>
                 <span className="text-muted-foreground">Спосіб:</span>
                 <p className="font-medium">
-                  {order.payment_method === "cash" ? "Оплата при отриманні" : order.payment_method}
+                  {order.payment_method === 'cash'
+                    ? 'Оплата при отриманні'
+                    : order.payment_method}
                 </p>
               </div>
             </CardContent>

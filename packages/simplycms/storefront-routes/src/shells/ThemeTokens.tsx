@@ -1,5 +1,5 @@
-import { applyTokens } from "@simplycms/themes/applyTokens";
-import type { DesignTokens } from "@simplycms/themes/types";
+import { applyTokens } from '@simplycms/themes/applyTokens';
+import type { DesignTokens } from '@simplycms/themes/types';
 
 /**
  * Токени активної теми у вигляді інлайн-`<style>`.

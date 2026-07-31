@@ -1,4 +1,4 @@
-import type { DesignTokens } from "@simplycms/themes/types";
+import type { DesignTokens } from '@simplycms/themes/types';
 
 /**
  * Токени default-теми — тепла бежева палітра з кораловим акцентом.
@@ -9,42 +9,42 @@ import type { DesignTokens } from "@simplycms/themes/types";
  */
 export const tokens: DesignTokens = {
   // Тло
-  background: "30 33% 93%",
-  foreground: "20 10% 20%",
+  background: '30 33% 93%',
+  foreground: '20 10% 20%',
 
   // Картки
-  card: "30 33% 97%",
-  "card-foreground": "20 10% 20%",
+  card: '30 33% 97%',
+  'card-foreground': '20 10% 20%',
 
   // Поповери
-  popover: "30 33% 97%",
-  "popover-foreground": "20 10% 20%",
+  popover: '30 33% 97%',
+  'popover-foreground': '20 10% 20%',
 
   // Основний — кораловий
-  primary: "4 58% 56%",
-  "primary-foreground": "0 0% 100%",
+  primary: '4 58% 56%',
+  'primary-foreground': '0 0% 100%',
 
   // Вторинний
-  secondary: "30 20% 88%",
-  "secondary-foreground": "20 10% 25%",
+  secondary: '30 20% 88%',
+  'secondary-foreground': '20 10% 25%',
 
   // Приглушений
-  muted: "30 15% 90%",
-  "muted-foreground": "20 8% 45%",
+  muted: '30 15% 90%',
+  'muted-foreground': '20 8% 45%',
 
   // Акцент
-  accent: "30 30% 90%",
-  "accent-foreground": "4 58% 46%",
+  accent: '30 30% 90%',
+  'accent-foreground': '4 58% 46%',
 
   // Деструктивний
-  destructive: "0 72% 51%",
-  "destructive-foreground": "0 0% 100%",
+  destructive: '0 72% 51%',
+  'destructive-foreground': '0 0% 100%',
 
   // Межі
-  border: "30 15% 82%",
-  input: "30 15% 82%",
-  ring: "4 58% 56%",
+  border: '30 15% 82%',
+  input: '30 15% 82%',
+  ring: '4 58% 56%',
 
   // Радіус — мʼякший
-  radius: "0.375rem",
+  radius: '0.375rem',
 };

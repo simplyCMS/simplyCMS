@@ -1,13 +1,26 @@
-import { useEffect, useState } from "react";
-import { useParams, useSearch, useNavigate, Link } from "@tanstack/react-router";
-import { CheckCircle2, Package, ChevronRight, Home, User, Copy, Check } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Separator } from "@simplycms/ui/separator";
-import { Skeleton } from "@simplycms/ui/skeleton";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { toast } from "@simplycms/core/hooks/use-toast";
+import { useEffect, useState } from 'react';
+import {
+  useParams,
+  useSearch,
+  useNavigate,
+  Link,
+} from '@tanstack/react-router';
+import {
+  CheckCircle2,
+  Package,
+  ChevronRight,
+  Home,
+  User,
+  Copy,
+  Check,
+} from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Separator } from '@simplycms/ui/separator';
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { toast } from '@simplycms/core/hooks/use-toast';
 
 interface OrderDetails {
   id: string;
@@ -37,24 +50,30 @@ interface OrderDetails {
 }
 
 const deliveryLabels: Record<string, string> = {
-  pickup: "Самовивіз",
-  nova_poshta: "Нова Пошта",
+  pickup: 'Самовивіз',
+  nova_poshta: 'Нова Пошта',
   courier: "Кур'єр",
 };
 
 const paymentLabels: Record<string, string> = {
-  cash: "Оплата при отриманні",
-  online: "Онлайн оплата",
+  cash: 'Оплата при отриманні',
+  online: 'Онлайн оплата',
 };
 
 export default function OrderSuccess() {
   const supabase = useSupabaseClient();
-  const params = useParams({ strict: false }) as Record<string, string | undefined>;
+  const params = useParams({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const orderId = params.orderId as string;
-  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const search = useSearch({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const token = search.token ?? null;
   const { user } = useAuth();
-  const navigate = useNavigate({ from: "/order-success/$orderId" });
+  const navigate = useNavigate({ from: '/order-success/$orderId' });
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,20 +85,22 @@ export default function OrderSuccess() {
 
       try {
         let query = supabase
-          .from("orders")
-          .select(`
+          .from('orders')
+          .select(
+            `
             *,
             status:order_statuses(name, color),
             items:order_items(id, name, price, quantity, total)
-          `)
-          .eq("id", orderId);
+          `,
+          )
+          .eq('id', orderId);
 
         // If user is logged in, check ownership
         if (user) {
-          query = query.eq("user_id", user.id);
+          query = query.eq('user_id', user.id);
         } else if (token) {
           // For guest orders, use access_token
-          query = query.eq("access_token", token);
+          query = query.eq('access_token', token);
         } else {
           setIsLoading(false);
           return;
@@ -101,7 +122,7 @@ export default function OrderSuccess() {
           replace: true,
         });
       } catch (error) {
-        console.error("Error fetching order:", error);
+        console.error('Error fetching order:', error);
       } finally {
         setIsLoading(false);
       }
@@ -112,20 +133,20 @@ export default function OrderSuccess() {
   }, [orderId, token, user, supabase]);
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(new Date(dateString));
   };
 
@@ -134,8 +155,8 @@ export default function OrderSuccess() {
       navigator.clipboard.writeText(order.order_number);
       setCopied(true);
       toast({
-        title: "Скопійовано",
-        description: "Номер замовлення скопійовано в буфер обміну",
+        title: 'Скопійовано',
+        description: 'Номер замовлення скопійовано в буфер обміну',
       });
       setTimeout(() => setCopied(false), 2000);
     }
@@ -161,7 +182,9 @@ export default function OrderSuccess() {
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
               <Package className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Замовлення не знайдено</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Замовлення не знайдено
+            </h2>
             <p className="text-muted-foreground mb-6">
               Можливо, посилання недійсне або термін доступу вичерпано
             </p>
@@ -202,7 +225,9 @@ export default function OrderSuccess() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Номер замовлення</p>
+                <p className="text-sm text-muted-foreground">
+                  Номер замовлення
+                </p>
                 <p className="text-2xl font-bold">{order.order_number}</p>
               </div>
               <Button variant="outline" size="icon" onClick={copyOrderNumber}>
@@ -216,9 +241,9 @@ export default function OrderSuccess() {
             <div className="mt-4 flex items-center gap-2">
               <div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: order.status?.color || "#gray" }}
+                style={{ backgroundColor: order.status?.color || '#gray' }}
               />
-              <span className="text-sm">{order.status?.name || "Новий"}</span>
+              <span className="text-sm">{order.status?.name || 'Новий'}</span>
               <span className="text-sm text-muted-foreground ml-auto">
                 {formatDate(order.created_at)}
               </span>
@@ -263,7 +288,8 @@ export default function OrderSuccess() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Доставка</p>
                 <p className="font-medium">
-                  {deliveryLabels[order.delivery_method] || order.delivery_method}
+                  {deliveryLabels[order.delivery_method] ||
+                    order.delivery_method}
                 </p>
                 {order.delivery_city && (
                   <p className="text-sm text-muted-foreground">

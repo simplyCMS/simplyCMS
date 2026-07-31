@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { registerPluginModule, loadPlugins } from "./PluginLoader";
-import type { PluginModule } from "./types";
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { registerPluginModule, loadPlugins } from './PluginLoader';
+import type { PluginModule } from './types';
 
 /** Опис плагіна в конфізі магазину: імʼя + ліниве завантаження модуля. */
 export interface PluginRegistration {
@@ -24,7 +24,7 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
   return {
     name,
     display_name: manifest?.displayName ?? name,
-    version: manifest?.version ?? "0.0.0",
+    version: manifest?.version ?? '0.0.0',
     description: manifest?.description ?? null,
     author: manifest?.author ?? null,
     is_active: false,
@@ -47,9 +47,9 @@ async function syncPluginRows(
 ): Promise<void> {
   if (modules.size === 0) return;
 
-  const { data, error } = await supabase.from("plugins").select("name");
+  const { data, error } = await supabase.from('plugins').select('name');
   if (error) {
-    console.error("[plugins] Не вдалося прочитати таблицю plugins:", error);
+    console.error('[plugins] Не вдалося прочитати таблицю plugins:', error);
     return;
   }
 
@@ -65,12 +65,10 @@ async function syncPluginRows(
   const { data: auth } = await supabase.auth.getSession();
   if (!auth.session) return;
 
-  const { error: insertError } = await supabase
-    .from("plugins")
-    .insert(missing);
+  const { error: insertError } = await supabase.from('plugins').insert(missing);
   if (insertError) {
     console.error(
-      "[plugins] Не вдалося зареєструвати плагіни в БД:",
+      '[plugins] Не вдалося зареєструвати плагіни в БД:',
       insertError,
     );
   }

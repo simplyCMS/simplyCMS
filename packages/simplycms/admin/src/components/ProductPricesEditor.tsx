@@ -1,49 +1,57 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Input } from "@simplycms/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Input } from '@simplycms/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@simplycms/ui/table";
-import { Button } from "@simplycms/ui/button";
-import { Loader2, Save } from "lucide-react";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@simplycms/ui/table';
+import { Button } from '@simplycms/ui/button';
+import { Loader2, Save } from 'lucide-react';
+import { useToast } from '@simplycms/core/hooks/use-toast';
 
 interface ProductPricesEditorProps {
   productId: string;
   modificationId?: string | null;
 }
 
-export function ProductPricesEditor({ productId, modificationId = null }: ProductPricesEditorProps) {
+export function ProductPricesEditor({
+  productId,
+  modificationId = null,
+}: ProductPricesEditorProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: priceTypes } = useQuery({
-    queryKey: ["price-types"],
+    queryKey: ['price-types'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("price_types")
-        .select("*")
-        .order("sort_order");
+        .from('price_types')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: existingPrices, isLoading } = useQuery({
-    queryKey: ["product-prices-editor", productId, modificationId],
+    queryKey: ['product-prices-editor', productId, modificationId],
     queryFn: async () => {
       let query = supabase
-        .from("product_prices")
-        .select("*")
-        .eq("product_id", productId);
+        .from('product_prices')
+        .select('*')
+        .eq('product_id', productId);
 
       if (modificationId) {
-        query = query.eq("modification_id", modificationId);
+        query = query.eq('modification_id', modificationId);
       } else {
-        query = query.is("modification_id", null);
+        query = query.is('modification_id', null);
       }
 
       const { data, error } = await query;
@@ -52,20 +60,26 @@ export function ProductPricesEditor({ productId, modificationId = null }: Produc
     },
   });
 
-  const [prices, setPrices] = useState<Record<string, { price: string; old_price: string }>>({});
+  const [prices, setPrices] = useState<
+    Record<string, { price: string; old_price: string }>
+  >({});
 
   // Ініціалізація цін при завантаженні даних (adjust state during render)
   const [prevPriceTypes, setPrevPriceTypes] = useState(priceTypes);
   const [prevExistingPrices, setPrevExistingPrices] = useState(existingPrices);
-  if (priceTypes && existingPrices && (priceTypes !== prevPriceTypes || existingPrices !== prevExistingPrices)) {
+  if (
+    priceTypes &&
+    existingPrices &&
+    (priceTypes !== prevPriceTypes || existingPrices !== prevExistingPrices)
+  ) {
     setPrevPriceTypes(priceTypes);
     setPrevExistingPrices(existingPrices);
     const initial: Record<string, { price: string; old_price: string }> = {};
     priceTypes.forEach((pt) => {
       const existing = existingPrices.find((ep) => ep.price_type_id === pt.id);
       initial[pt.id] = {
-        price: existing?.price?.toString() || "",
-        old_price: existing?.old_price?.toString() || "",
+        price: existing?.price?.toString() || '',
+        old_price: existing?.old_price?.toString() || '',
       };
     });
     setPrices(initial);
@@ -75,24 +89,31 @@ export function ProductPricesEditor({ productId, modificationId = null }: Produc
     mutationFn: async () => {
       for (const [priceTypeId, values] of Object.entries(prices)) {
         const priceVal = parseFloat(values.price);
-        const existing = existingPrices?.find((ep) => ep.price_type_id === priceTypeId);
+        const existing = existingPrices?.find(
+          (ep) => ep.price_type_id === priceTypeId,
+        );
 
-        if (isNaN(priceVal) || values.price === "") {
+        if (isNaN(priceVal) || values.price === '') {
           if (existing) {
-            await supabase.from("product_prices").delete().eq("id", existing.id);
+            await supabase
+              .from('product_prices')
+              .delete()
+              .eq('id', existing.id);
           }
           continue;
         }
 
-        const oldPriceVal = values.old_price ? parseFloat(values.old_price) : null;
+        const oldPriceVal = values.old_price
+          ? parseFloat(values.old_price)
+          : null;
 
         if (existing) {
           await supabase
-            .from("product_prices")
+            .from('product_prices')
             .update({ price: priceVal, old_price: oldPriceVal })
-            .eq("id", existing.id);
+            .eq('id', existing.id);
         } else {
-          await supabase.from("product_prices").insert({
+          await supabase.from('product_prices').insert({
             price_type_id: priceTypeId,
             product_id: productId,
             modification_id: modificationId || null,
@@ -103,12 +124,18 @@ export function ProductPricesEditor({ productId, modificationId = null }: Produc
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product-prices-editor", productId] });
-      queryClient.invalidateQueries({ queryKey: ["product-prices"] });
-      toast({ title: "Ціни збережено" });
+      queryClient.invalidateQueries({
+        queryKey: ['product-prices-editor', productId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['product-prices'] });
+      toast({ title: 'Ціни збережено' });
     },
     onError: (error: Error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -164,7 +191,7 @@ export function ProductPricesEditor({ productId, modificationId = null }: Produc
                     type="number"
                     step="0.01"
                     min="0"
-                    value={prices[pt.id]?.price || ""}
+                    value={prices[pt.id]?.price || ''}
                     onChange={(e) =>
                       setPrices((prev) => ({
                         ...prev,
@@ -180,7 +207,7 @@ export function ProductPricesEditor({ productId, modificationId = null }: Produc
                     type="number"
                     step="0.01"
                     min="0"
-                    value={prices[pt.id]?.old_price || ""}
+                    value={prices[pt.id]?.old_price || ''}
                     onChange={(e) =>
                       setPrices((prev) => ({
                         ...prev,

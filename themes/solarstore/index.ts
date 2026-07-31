@@ -5,13 +5,13 @@
  * каркаси і канонічні секції головної — у ядрі. Власний hero тема задає
  * явно (`HeroBanner`), бо він статичний і не є слайдером банерів.
  */
-import type { ThemeModule } from "@simplycms/themes/types";
-import manifest from "./manifest";
-import { tokens } from "./tokens";
-import { Header } from "./components/Header";
-import { Footer } from "./components/Footer";
-import { HeroBanner } from "./components/HeroBanner";
-import { HomeSections } from "./components/HomeSections";
+import type { ThemeModule } from '@simplycms/themes/types';
+import manifest from './manifest';
+import { tokens } from './tokens';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { HeroBanner } from './components/HeroBanner';
+import { HomeSections } from './components/HomeSections';
 
 const theme: ThemeModule = {
   manifest,

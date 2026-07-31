@@ -1,45 +1,61 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Plus, ChevronRight, ChevronDown, Percent, DollarSign, Tag, Trash2, Pencil } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Switch } from "@simplycms/ui/switch";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Tables } from "@simplycms/supabase";
-import { adminPath } from "../lib/adminLinks";
+import {
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  Percent,
+  DollarSign,
+  Tag,
+  Trash2,
+  Pencil,
+} from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Switch } from '@simplycms/ui/switch';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import type { Tables } from '@simplycms/supabase';
+import { adminPath } from '../lib/adminLinks';
 
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@simplycms/ui/alert-dialog';
 
 const operatorLabels: Record<string, string> = {
-  and: "ТА (сума)",
-  or: "АБО (перша)",
-  not: "НЕ (інверсія)",
-  min: "МІН (найменша)",
-  max: "МАКС (найбільша)",
+  and: 'ТА (сума)',
+  or: 'АБО (перша)',
+  not: 'НЕ (інверсія)',
+  min: 'МІН (найменша)',
+  max: 'МАКС (найбільша)',
 };
 
 const operatorColors: Record<string, string> = {
-  and: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  or: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  not: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  min: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  max: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  and: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  or: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  not: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  min: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  max: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
 };
 
 const discountTypeLabels: Record<string, string> = {
-  percent: "%",
-  fixed_amount: "грн",
-  fixed_price: "= грн",
+  percent: '%',
+  fixed_amount: 'грн',
+  fixed_price: '= грн',
 };
 
 /** Знижка з приєднаним видом ціни */
-type DiscountWithPriceType = Tables<"discounts"> & {
+type DiscountWithPriceType = Tables<'discounts'> & {
   price_types: { name: string } | null;
 };
 
@@ -63,18 +79,18 @@ export default function Discounts() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const { data: groups = [], isLoading } = useQuery({
-    queryKey: ["discount-groups-tree"],
+    queryKey: ['discount-groups-tree'],
     queryFn: async () => {
       const { data: allGroups, error: gErr } = await supabase
-        .from("discount_groups")
-        .select("*")
-        .order("priority");
+        .from('discount_groups')
+        .select('*')
+        .order('priority');
       if (gErr) throw gErr;
 
       const { data: allDiscounts, error: dErr } = await supabase
-        .from("discounts")
-        .select("*, price_types(name)")
-        .order("priority");
+        .from('discounts')
+        .select('*, price_types(name)')
+        .order('priority');
       if (dErr) throw dErr;
 
       // Build tree
@@ -102,32 +118,45 @@ export default function Discounts() {
   });
 
   const toggleActive = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from("discount_groups").update({ is_active }).eq("id", id);
+    mutationFn: async ({
+      id,
+      is_active,
+    }: {
+      id: string;
+      is_active: boolean;
+    }) => {
+      const { error } = await supabase
+        .from('discount_groups')
+        .update({ is_active })
+        .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] }),
   });
 
   const deleteGroup = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("discount_groups").delete().eq("id", id);
+      const { error } = await supabase
+        .from('discount_groups')
+        .delete()
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
-      toast({ title: "Групу видалено" });
+      queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
+      toast({ title: 'Групу видалено' });
     },
   });
 
   const deleteDiscount = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("discounts").delete().eq("id", id);
+      const { error } = await supabase.from('discounts').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
-      toast({ title: "Скидку видалено" });
+      queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
+      toast({ title: 'Скидку видалено' });
     },
   });
 
@@ -146,36 +175,52 @@ export default function Discounts() {
   function renderGroup(group: DiscountGroup, depth: number = 0) {
     const isExpanded = expandedGroups.has(group.id);
     return (
-      <div key={group.id} style={{ marginLeft: depth * 24 }} className="border-l-2 border-muted pl-4 mb-2">
+      <div
+        key={group.id}
+        style={{ marginLeft: depth * 24 }}
+        className="border-l-2 border-muted pl-4 mb-2"
+      >
         <div className="flex items-center gap-2 py-2 group">
           <button onClick={() => toggleExpanded(group.id)} className="p-0.5">
-            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </button>
 
           <Badge variant="outline" className={operatorColors[group.operator]}>
             {operatorLabels[group.operator]}
           </Badge>
 
-          <span className={`font-medium ${!group.is_active ? "text-muted-foreground line-through" : ""}`}>
+          <span
+            className={`font-medium ${!group.is_active ? 'text-muted-foreground line-through' : ''}`}
+          >
             {group.name}
           </span>
 
           {group.starts_at || group.ends_at ? (
             <Badge variant="outline" className="text-xs">
-              {group.starts_at ? new Date(group.starts_at).toLocaleDateString() : "∞"}
-              {" — "}
-              {group.ends_at ? new Date(group.ends_at).toLocaleDateString() : "∞"}
+              {group.starts_at
+                ? new Date(group.starts_at).toLocaleDateString()
+                : '∞'}
+              {' — '}
+              {group.ends_at
+                ? new Date(group.ends_at).toLocaleDateString()
+                : '∞'}
             </Badge>
           ) : null}
 
           <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Switch
               checked={group.is_active}
-              onCheckedChange={(checked) => toggleActive.mutate({ id: group.id, is_active: checked })}
+              onCheckedChange={(checked) =>
+                toggleActive.mutate({ id: group.id, is_active: checked })
+              }
             />
             <Button variant="ghost" size="icon" asChild>
               <Link
-                to={adminPath("discounts/groups/$groupId")}
+                to={adminPath('discounts/groups/$groupId')}
                 params={{ groupId: group.id }}
               >
                 <Pencil className="h-4 w-4" />
@@ -191,12 +236,17 @@ export default function Discounts() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Видалити групу?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Всі скидки та дочірні групи будуть видалені разом з цією групою.
+                    Всі скидки та дочірні групи будуть видалені разом з цією
+                    групою.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Скасувати</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteGroup.mutate(group.id)}>Видалити</AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={() => deleteGroup.mutate(group.id)}
+                  >
+                    Видалити
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -207,25 +257,39 @@ export default function Discounts() {
           <div className="ml-2">
             {/* Discounts in this group */}
             {group.discounts?.map((d) => (
-              <div key={d.id} className="flex items-center gap-2 py-1.5 pl-6 group/discount">
+              <div
+                key={d.id}
+                className="flex items-center gap-2 py-1.5 pl-6 group/discount"
+              >
                 <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className={`text-sm ${!d.is_active ? "text-muted-foreground line-through" : ""}`}>
+                <span
+                  className={`text-sm ${!d.is_active ? 'text-muted-foreground line-through' : ''}`}
+                >
                   {d.name}
                 </span>
                 <Badge variant="outline" className="text-xs">
-                  {d.discount_type === 'percent' ? '-' : d.discount_type === 'fixed_price' ? '=' : '-'}
+                  {d.discount_type === 'percent'
+                    ? '-'
+                    : d.discount_type === 'fixed_price'
+                      ? '='
+                      : '-'}
                   {d.discount_value}
                   {discountTypeLabels[d.discount_type]}
                 </Badge>
-                 {d.price_types && (
-                   <Badge variant="secondary" className="text-xs">
-                     {d.price_types.name}
-                   </Badge>
-                 )}
+                {d.price_types && (
+                  <Badge variant="secondary" className="text-xs">
+                    {d.price_types.name}
+                  </Badge>
+                )}
                 <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/discount:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    asChild
+                  >
                     <Link
-                      to={adminPath("discounts/$discountId")}
+                      to={adminPath('discounts/$discountId')}
                       params={{ discountId: d.id }}
                     >
                       <Pencil className="h-3 w-3" />
@@ -246,7 +310,11 @@ export default function Discounts() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Скасувати</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteDiscount.mutate(d.id)}>Видалити</AlertDialogAction>
+                        <AlertDialogAction
+                          onClick={() => deleteDiscount.mutate(d.id)}
+                        >
+                          Видалити
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -261,7 +329,7 @@ export default function Discounts() {
             <div className="flex gap-2 py-1 pl-6">
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
                 <Link
-                  to={adminPath("discounts/$discountId")}
+                  to={adminPath('discounts/$discountId')}
                   params={{ discountId: 'new' }}
                   search={{ groupId: group.id }}
                 >
@@ -270,7 +338,7 @@ export default function Discounts() {
               </Button>
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
                 <Link
-                  to={adminPath("discounts/groups/$groupId")}
+                  to={adminPath('discounts/groups/$groupId')}
                   params={{ groupId: 'new' }}
                   search={{ parentId: group.id }}
                 >
@@ -295,12 +363,15 @@ export default function Discounts() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link to={adminPath("price-validator")}>
+            <Link to={adminPath('price-validator')}>
               <DollarSign className="h-4 w-4 mr-2" /> Валідатор цін
             </Link>
           </Button>
           <Button asChild>
-            <Link to={adminPath("discounts/groups/$groupId")} params={{ groupId: 'new' }}>
+            <Link
+              to={adminPath('discounts/groups/$groupId')}
+              params={{ groupId: 'new' }}
+            >
               <Plus className="h-4 w-4 mr-2" /> Нова група
             </Link>
           </Button>
@@ -319,13 +390,16 @@ export default function Discounts() {
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Ще немає груп скидок</p>
               <Button variant="outline" className="mt-4" asChild>
-                <Link to={adminPath("discounts/groups/$groupId")} params={{ groupId: 'new' }}>Створити першу групу</Link>
+                <Link
+                  to={adminPath('discounts/groups/$groupId')}
+                  params={{ groupId: 'new' }}
+                >
+                  Створити першу групу
+                </Link>
               </Button>
             </div>
           ) : (
-            <div className="space-y-1">
-              {groups.map((g) => renderGroup(g))}
-            </div>
+            <div className="space-y-1">{groups.map((g) => renderGroup(g))}</div>
           )}
         </CardContent>
       </Card>

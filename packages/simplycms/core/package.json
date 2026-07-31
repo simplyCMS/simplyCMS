@@ -47,9 +47,17 @@
     "zod": "^3.0.0 || ^4.0.0"
   },
   "peerDependenciesMeta": {
-    "@tiptap/extension-link": { "optional": true },
-    "@tiptap/extension-underline": { "optional": true },
-    "@tiptap/react": { "optional": true },
-    "@tiptap/starter-kit": { "optional": true }
+    "@tiptap/extension-link": {
+      "optional": true
+    },
+    "@tiptap/extension-underline": {
+      "optional": true
+    },
+    "@tiptap/react": {
+      "optional": true
+    },
+    "@tiptap/starter-kit": {
+      "optional": true
+    }
   }
 }

@@ -1,9 +1,9 @@
 // Інжекція EngineContext через React-контекст.
 // Усі feature-хуки беруть залежності з useEngine() — ніколи не імпортують supabase напряму.
 
-import { createContext, useContext } from "react";
-import type { ReactNode } from "react";
-import type { EngineContext } from "@simplycms/objects";
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import type { EngineContext } from '@simplycms/objects';
 
 const EngineReactContext = createContext<EngineContext | null>(null);
 
@@ -24,7 +24,7 @@ export function EngineProvider({ value, children }: EngineProviderProps) {
 export function useEngine(): EngineContext {
   const ctx = useContext(EngineReactContext);
   if (!ctx) {
-    throw new Error("useEngine must be used within an <EngineProvider>");
+    throw new Error('useEngine must be used within an <EngineProvider>');
   }
   return ctx;
 }

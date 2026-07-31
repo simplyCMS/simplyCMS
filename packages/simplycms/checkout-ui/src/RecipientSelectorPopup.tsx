@@ -1,7 +1,6 @@
-
-import { useState, useMemo } from "react";
-import { Search, User, Check, Plus } from "lucide-react";
-import { cn } from "@simplycms/ui/utils";
+import { useState, useMemo } from 'react';
+import { Search, User, Check, Plus } from 'lucide-react';
+import { cn } from '@simplycms/ui/utils';
 
 interface Recipient {
   id: string;
@@ -23,7 +22,7 @@ interface RecipientSelectorPopupProps {
   onAddNew: () => void;
 }
 
-type SortOption = "default" | "name" | "date";
+type SortOption = 'default' | 'name' | 'date';
 
 export function RecipientSelectorPopup({
   open,
@@ -33,8 +32,8 @@ export function RecipientSelectorPopup({
   onSelect,
   onAddNew,
 }: RecipientSelectorPopupProps) {
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('default');
 
   const filteredRecipients = useMemo(() => {
     let result = [...recipients];
@@ -46,17 +45,19 @@ export function RecipientSelectorPopup({
           r.first_name.toLowerCase().includes(searchLower) ||
           r.last_name.toLowerCase().includes(searchLower) ||
           r.phone.includes(search) ||
-          r.city.toLowerCase().includes(searchLower)
+          r.city.toLowerCase().includes(searchLower),
       );
     }
 
     switch (sortBy) {
-      case "name":
+      case 'name':
         result.sort((a, b) =>
-          `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`)
+          `${a.first_name} ${a.last_name}`.localeCompare(
+            `${b.first_name} ${b.last_name}`,
+          ),
         );
         break;
-      case "default":
+      case 'default':
       default:
         result.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
         break;
@@ -74,7 +75,10 @@ export function RecipientSelectorPopup({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
+      <div
+        className="fixed inset-0 bg-black/50"
+        onClick={() => onOpenChange(false)}
+      />
       <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col">
         <h3 className="text-lg font-semibold mb-4">Оберiть отримувача</h3>
 
@@ -106,11 +110,11 @@ export function RecipientSelectorPopup({
               type="button"
               onClick={() => handleSelect(recipient.id)}
               className={cn(
-                "w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all",
-                "hover:border-primary/50 hover:bg-accent/50",
+                'w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all',
+                'hover:border-primary/50 hover:bg-accent/50',
                 selectedId === recipient.id
-                  ? "border-primary bg-primary/5"
-                  : "border-muted bg-card"
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted bg-card',
               )}
             >
               <div className="flex-shrink-0 h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -127,7 +131,9 @@ export function RecipientSelectorPopup({
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{recipient.phone}</p>
+                <p className="text-sm text-muted-foreground">
+                  {recipient.phone}
+                </p>
                 <p className="text-sm text-muted-foreground truncate">
                   м. {recipient.city}, {recipient.address}
                 </p>
@@ -142,16 +148,22 @@ export function RecipientSelectorPopup({
 
           {filteredRecipients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              {search ? "Нiчого не знайдено" : "Немає збережених отримувачiв"}
+              {search ? 'Нiчого не знайдено' : 'Немає збережених отримувачiв'}
             </div>
           )}
         </div>
 
         <div className="flex justify-between pt-4 border-t mt-4">
-          <button className="px-4 py-2 border rounded-md text-sm" onClick={() => onOpenChange(false)}>
+          <button
+            className="px-4 py-2 border rounded-md text-sm"
+            onClick={() => onOpenChange(false)}
+          >
             Скасувати
           </button>
-          <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm flex items-center gap-2" onClick={onAddNew}>
+          <button
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm flex items-center gap-2"
+            onClick={onAddNew}
+          >
             <Plus className="h-4 w-4" />
             Новий отримувач
           </button>

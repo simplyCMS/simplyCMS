@@ -10,21 +10,23 @@ import {
   createSupabaseOrderRepository,
   createSupabaseIdentityProvider,
   singleTenantScope,
-} from "@simplycms/data-supabase";
-import { defineRuntime, type SimplyCmsRuntime } from "@simplycms/runtime";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServerSupabase } from "@simplycms/supabase/server-client";
-import { appLinks, appConfig, createAppMediaProvider } from "../engine.shared";
+} from '@simplycms/data-supabase';
+import { defineRuntime, type SimplyCmsRuntime } from '@simplycms/runtime';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { appLinks, appConfig, createAppMediaProvider } from '../engine.shared';
 
 // Спільні адаптери винесено в ../engine.shared (щоб переюзати на клієнті).
-export { appLinks, appConfig, createAppMediaProvider } from "../engine.shared";
+export { appLinks, appConfig, createAppMediaProvider } from '../engine.shared';
 
 /**
  * Збирає серверний рантайм магазину: один інжектований Supabase-клієнт
  * + адаптери репозиторіїв + app-провайдери. Single-tenant (без hub_id).
  */
 export function createServerRuntime(cookieHeader?: string): SimplyCmsRuntime {
-  const client = createServerSupabase(cookieHeader) as unknown as SupabaseClient;
+  const client = createServerSupabase(
+    cookieHeader,
+  ) as unknown as SupabaseClient;
   return defineRuntime({
     adapters: {
       catalog: createSupabaseCatalogRepository(client, singleTenantScope),

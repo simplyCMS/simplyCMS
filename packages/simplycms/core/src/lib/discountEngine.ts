@@ -1,5 +1,5 @@
 // Перенесено в @simplycms/domain/discounts. Re-export для зворотної сумісності.
-export { resolveDiscount } from "@simplycms/domain/discounts";
+export { resolveDiscount } from '@simplycms/domain/discounts';
 export type {
   DiscountType,
   GroupOperator,
@@ -12,4 +12,4 @@ export type {
   AppliedDiscount,
   RejectedDiscount,
   DiscountResult,
-} from "@simplycms/domain/discounts";
+} from '@simplycms/domain/discounts';

@@ -1,11 +1,11 @@
 // Доменні типи системи знижок. Винесено з core/lib/discountEngine,
 // відв'язано від Database (Json — локальний тип).
 
-import type { Json } from "./common";
+import type { Json } from './common';
 
-export type DiscountType = "percent" | "fixed_amount" | "fixed_price";
-export type GroupOperator = "and" | "or" | "not" | "min" | "max";
-export type TargetType = "product" | "modification" | "section" | "all";
+export type DiscountType = 'percent' | 'fixed_amount' | 'fixed_price';
+export type GroupOperator = 'and' | 'or' | 'not' | 'min' | 'max';
+export type TargetType = 'product' | 'modification' | 'section' | 'all';
 
 export interface DiscountTarget {
   id: string;

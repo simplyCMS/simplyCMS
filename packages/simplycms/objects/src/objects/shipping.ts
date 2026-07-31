@@ -1,12 +1,8 @@
 // Доменні типи доставки. Винесено з core/lib/shipping/types.
 
-export type ShippingMethodType = "system" | "manual" | "plugin";
+export type ShippingMethodType = 'system' | 'manual' | 'plugin';
 export type ShippingCalculationType =
-  | "flat"
-  | "weight"
-  | "order_total"
-  | "free_from"
-  | "plugin";
+  'flat' | 'weight' | 'order_total' | 'free_from' | 'plugin';
 
 export interface ShippingMethod {
   id: string;

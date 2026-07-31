@@ -1,6 +1,5 @@
-
-import { cn } from "@simplycms/ui/utils";
-import { Check } from "lucide-react";
+import { cn } from '@simplycms/ui/utils';
+import { Check } from 'lucide-react';
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -44,13 +43,13 @@ export function ModificationSelector({
       return {
         isAvailable: stockInfo.isAvailable,
         totalQuantity: stockInfo.totalQuantity,
-        isOnOrder: mod.stock_status === "on_order",
+        isOnOrder: mod.stock_status === 'on_order',
       };
     }
     return {
-      isAvailable: mod.stock_status !== "out_of_stock",
+      isAvailable: mod.stock_status !== 'out_of_stock',
       totalQuantity: 0,
-      isOnOrder: mod.stock_status === "on_order",
+      isOnOrder: mod.stock_status === 'on_order',
     };
   };
 
@@ -60,7 +59,8 @@ export function ModificationSelector({
       <div className="grid gap-3">
         {modifications.map((mod) => {
           const availability = getModificationAvailability(mod);
-          const isUnavailable = !availability.isAvailable && !availability.isOnOrder;
+          const isUnavailable =
+            !availability.isAvailable && !availability.isOnOrder;
           const modPrice = prices[mod.id];
           const isSelected = selectedId === mod.id;
 
@@ -69,11 +69,11 @@ export function ModificationSelector({
               key={mod.id}
               htmlFor={mod.id}
               className={cn(
-                "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors",
+                'flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors',
                 isSelected
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/50",
-                isUnavailable && "opacity-50 bg-muted/30"
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-muted-foreground/50',
+                isUnavailable && 'opacity-50 bg-muted/30',
               )}
             >
               <div className="flex items-center gap-3">
@@ -86,14 +86,25 @@ export function ModificationSelector({
                   onChange={() => onSelect(mod.id)}
                   className="sr-only"
                 />
-                <div className={cn(
-                  "h-4 w-4 rounded-full border-2 flex items-center justify-center",
-                  isSelected ? "border-primary" : "border-muted-foreground/50"
-                )}>
-                  {isSelected && <div className="h-2 w-2 rounded-full bg-primary" />}
+                <div
+                  className={cn(
+                    'h-4 w-4 rounded-full border-2 flex items-center justify-center',
+                    isSelected
+                      ? 'border-primary'
+                      : 'border-muted-foreground/50',
+                  )}
+                >
+                  {isSelected && (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  )}
                 </div>
                 <div>
-                  <div className={cn("font-medium", isUnavailable && "text-muted-foreground")}>
+                  <div
+                    className={cn(
+                      'font-medium',
+                      isUnavailable && 'text-muted-foreground',
+                    )}
+                  >
                     {mod.name}
                   </div>
                   {mod.sku && (
@@ -114,23 +125,33 @@ export function ModificationSelector({
                     Пiд замовлення
                   </span>
                 )}
-                {availability.isAvailable && !availability.isOnOrder && availability.totalQuantity > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded border border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20 flex items-center gap-1">
-                    <Check className="h-3 w-3" />
-                    {availability.totalQuantity} шт
-                  </span>
-                )}
+                {availability.isAvailable &&
+                  !availability.isOnOrder &&
+                  availability.totalQuantity > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded border border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20 flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      {availability.totalQuantity} шт
+                    </span>
+                  )}
 
                 {modPrice && (
                   <div className="text-right">
-                    <div className={cn("font-bold", isUnavailable ? "text-muted-foreground" : "text-primary")}>
+                    <div
+                      className={cn(
+                        'font-bold',
+                        isUnavailable
+                          ? 'text-muted-foreground'
+                          : 'text-primary',
+                      )}
+                    >
                       {formatPrice(modPrice.price)}
                     </div>
-                    {modPrice.oldPrice && modPrice.oldPrice > modPrice.price && (
-                      <div className="text-sm text-muted-foreground line-through">
-                        {formatPrice(modPrice.oldPrice)}
-                      </div>
-                    )}
+                    {modPrice.oldPrice &&
+                      modPrice.oldPrice > modPrice.price && (
+                        <div className="text-sm text-muted-foreground line-through">
+                          {formatPrice(modPrice.oldPrice)}
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

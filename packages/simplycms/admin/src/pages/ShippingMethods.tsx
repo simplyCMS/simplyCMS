@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Switch } from "@simplycms/ui/switch";
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Table,
   TableBody,
@@ -12,15 +12,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
-import { toast } from "sonner";
+} from '@simplycms/ui/table';
+import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
-import { Plus, Trash2, Truck } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
-import { ShippingMethod } from "@simplycms/core/lib/shipping/types";
-import { icons } from "lucide-react";
+import { Plus, Trash2, Truck } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import { ShippingMethod } from '@simplycms/core/lib/shipping/types';
+import { icons } from 'lucide-react';
 
-const getMethodIcon = (iconName: string | null): React.ComponentType<{ className?: string }> => {
+const getMethodIcon = (
+  iconName: string | null,
+): React.ComponentType<{ className?: string }> => {
   if (!iconName) return Truck;
   const Icon = icons[iconName as keyof typeof icons];
   return Icon || Truck;
@@ -28,11 +30,11 @@ const getMethodIcon = (iconName: string | null): React.ComponentType<{ className
 
 const methodTypeBadge = (type: string) => {
   switch (type) {
-    case "system":
+    case 'system':
       return <Badge variant="secondary">Системний</Badge>;
-    case "manual":
+    case 'manual':
       return <Badge variant="outline">Ручний</Badge>;
-    case "plugin":
+    case 'plugin':
       return <Badge className="bg-purple-500">Плагін</Badge>;
     default:
       return <Badge variant="outline">{type}</Badge>;
@@ -45,48 +47,54 @@ export default function ShippingMethods() {
   const queryClient = useQueryClient();
 
   const { data: methods, isLoading } = useQuery({
-    queryKey: ["shipping-methods"],
+    queryKey: ['shipping-methods'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_methods")
-        .select("*")
-        .order("sort_order");
+        .from('shipping_methods')
+        .select('*')
+        .order('sort_order');
       if (error) throw error;
       return data as unknown as ShippingMethod[];
     },
   });
 
   const toggleActive = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({
+      id,
+      is_active,
+    }: {
+      id: string;
+      is_active: boolean;
+    }) => {
       const { error } = await supabase
-        .from("shipping_methods")
+        .from('shipping_methods')
         .update({ is_active })
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-methods"] });
-      toast.success("Статус оновлено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
+      toast.success('Статус оновлено');
     },
     onError: () => {
-      toast.error("Помилка оновлення статусу");
+      toast.error('Помилка оновлення статусу');
     },
   });
 
   const deleteMethod = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("shipping_methods")
+        .from('shipping_methods')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-methods"] });
-      toast.success("Службу видалено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
+      toast.success('Службу видалено');
     },
     onError: () => {
-      toast.error("Помилка видалення служби");
+      toast.error('Помилка видалення служби');
     },
   });
 
@@ -100,7 +108,10 @@ export default function ShippingMethods() {
           </p>
         </div>
         <Button asChild>
-          <Link to={adminPath("shipping/methods/$methodId")} params={{ methodId: 'new' }}>
+          <Link
+            to={adminPath('shipping/methods/$methodId')}
+            params={{ methodId: 'new' }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Додати службу
           </Link>
@@ -139,7 +150,11 @@ export default function ShippingMethods() {
                     <TableRow
                       key={method.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: adminPath(`shipping/methods/${method.id}`) })}
+                      onClick={() =>
+                        navigate({
+                          to: adminPath(`shipping/methods/${method.id}`),
+                        })
+                      }
                     >
                       <TableCell>
                         <IconComponent className="h-5 w-5 text-muted-foreground" />
@@ -171,19 +186,22 @@ export default function ShippingMethods() {
                         <Switch
                           checked={method.is_active}
                           onCheckedChange={(checked) =>
-                            toggleActive.mutate({ id: method.id, is_active: checked })
+                            toggleActive.mutate({
+                              id: method.id,
+                              is_active: checked,
+                            })
                           }
                           onClick={(e) => e.stopPropagation()}
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {method.type !== "system" && (
+                        {method.type !== 'system' && (
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm("Видалити цю службу доставки?")) {
+                              if (confirm('Видалити цю службу доставки?')) {
                                 deleteMethod.mutate(method.id);
                               }
                             }}

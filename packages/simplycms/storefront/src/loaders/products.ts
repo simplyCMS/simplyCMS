@@ -1,4 +1,4 @@
-import type { StorefrontClient } from "../client";
+import type { StorefrontClient } from '../client';
 
 /** Повний select для сторінки товару (з усіма зв'язками) */
 export const PRODUCT_FULL_SELECT = `
@@ -31,13 +31,13 @@ export const PRODUCT_LIST_SELECT = `
 /** Отримати товар за slug (для сторінки товару) */
 export async function loadProduct(client: StorefrontClient, slug: string) {
   const { data, error } = await client
-    .from("products")
+    .from('products')
     .select(PRODUCT_FULL_SELECT)
-    .eq("slug", slug)
+    .eq('slug', slug)
     .maybeSingle();
 
   if (error) {
-    console.error("[loadProduct] Помилка:", error.message);
+    console.error('[loadProduct] Помилка:', error.message);
   }
 
   return data;
@@ -46,13 +46,13 @@ export async function loadProduct(client: StorefrontClient, slug: string) {
 /** Отримати всі активні товари (каталог) */
 export async function loadProducts(client: StorefrontClient) {
   const { data, error } = await client
-    .from("products")
+    .from('products')
     .select(PRODUCT_LIST_SELECT)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("[loadProducts] Помилка:", error.message);
+    console.error('[loadProducts] Помилка:', error.message);
   }
 
   return data ?? [];
@@ -64,14 +64,14 @@ export async function loadProductsBySectionId(
   sectionId: string,
 ) {
   const { data, error } = await client
-    .from("products")
+    .from('products')
     .select(PRODUCT_LIST_SELECT)
-    .eq("section_id", sectionId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .eq('section_id', sectionId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("[loadProductsBySectionId] Помилка:", error.message);
+    console.error('[loadProductsBySectionId] Помилка:', error.message);
   }
 
   return data ?? [];

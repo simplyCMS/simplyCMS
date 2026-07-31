@@ -1,29 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
 import { Link } from '@tanstack/react-router';
 
 export function BrandCarousel() {
   const supabase = useSupabaseClient();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
-    align: "start",
+    align: 'start',
     slidesToScroll: 1,
     breakpoints: {
-      "(min-width: 768px)": { slidesToScroll: 2 },
+      '(min-width: 768px)': { slidesToScroll: 2 },
     },
   });
 
   const { data: brands } = useQuery({
-    queryKey: ["beauty-brands"],
+    queryKey: ['beauty-brands'],
     queryFn: async () => {
       // Find the "brand" property and get its options
       const { data: properties } = await supabase
-        .from("section_properties")
-        .select("id, slug")
-        .eq("has_page", true)
+        .from('section_properties')
+        .select('id, slug')
+        .eq('has_page', true)
         .limit(10);
 
       if (!properties?.length) return [];
@@ -31,10 +31,10 @@ export function BrandCarousel() {
       // Get options with images for the first property that has page (likely brands)
       const brandProp = properties[0];
       const { data: options } = await supabase
-        .from("property_options")
-        .select("id, name, slug, image_url")
-        .eq("property_id", brandProp.id)
-        .order("sort_order");
+        .from('property_options')
+        .select('id, name, slug, image_url')
+        .eq('property_id', brandProp.id)
+        .order('sort_order');
 
       return (options || []).map((o) => ({
         ...o,
@@ -56,10 +56,16 @@ export function BrandCarousel() {
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-6">
               {brands.map((brand) => (
-                <div key={brand.id} className="flex-[0_0_120px] md:flex-[0_0_150px] min-w-0">
+                <div
+                  key={brand.id}
+                  className="flex-[0_0_120px] md:flex-[0_0_150px] min-w-0"
+                >
                   <Link
                     to="/properties/$propertySlug/$optionSlug"
-                    params={{ propertySlug: brand.propertySlug, optionSlug: brand.slug }}
+                    params={{
+                      propertySlug: brand.propertySlug,
+                      optionSlug: brand.slug,
+                    }}
                     className="relative flex items-center justify-center h-20 rounded-md border border-border/40 bg-card hover:border-primary/30 transition-colors p-4"
                   >
                     {brand.image_url ? (

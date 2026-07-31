@@ -1,22 +1,22 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Switch } from "@simplycms/ui/switch";
-import { Label } from "@simplycms/ui/label";
-import { Badge } from "@simplycms/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplycms/ui/avatar";
-import { Separator } from "@simplycms/ui/separator";
+} from '@simplycms/ui/select';
+import { Switch } from '@simplycms/ui/switch';
+import { Label } from '@simplycms/ui/label';
+import { Badge } from '@simplycms/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@simplycms/ui/avatar';
+import { Separator } from '@simplycms/ui/separator';
 import {
   Table,
   TableBody,
@@ -24,14 +24,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@simplycms/ui/dialog";
+} from '@simplycms/ui/dialog';
 import {
   ArrowLeft,
   Shield,
@@ -41,11 +41,11 @@ import {
   ShoppingCart,
   History,
   ExternalLink,
-} from "lucide-react";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import { adminPath } from "../lib/adminLinks";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
+} from 'lucide-react';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import { adminPath } from '../lib/adminLinks';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
 
 export default function UserEdit() {
   const supabase = useSupabaseClient();
@@ -55,15 +55,17 @@ export default function UserEdit() {
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["admin-user", userId],
+    queryKey: ['admin-user', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select(`
+        .from('profiles')
+        .select(
+          `
           *,
           category:user_categories(id, name)
-        `)
-        .eq("user_id", userId)
+        `,
+        )
+        .eq('user_id', userId)
         .single();
       if (error) throw error;
       return data;
@@ -73,13 +75,13 @@ export default function UserEdit() {
 
   // Fetch if user is admin
   const { data: isAdmin } = useQuery({
-    queryKey: ["user-is-admin", userId],
+    queryKey: ['user-is-admin', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("role", "admin")
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
         .maybeSingle();
       if (error) throw error;
       return !!data;
@@ -89,12 +91,12 @@ export default function UserEdit() {
 
   // Fetch categories
   const { data: categories } = useQuery({
-    queryKey: ["user-categories"],
+    queryKey: ['user-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_categories")
-        .select("*")
-        .order("name");
+        .from('user_categories')
+        .select('*')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -102,19 +104,21 @@ export default function UserEdit() {
 
   // Fetch user orders
   const { data: orders } = useQuery({
-    queryKey: ["user-orders", userId],
+    queryKey: ['user-orders', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders")
-        .select(`
+        .from('orders')
+        .select(
+          `
           id,
           order_number,
           total,
           created_at,
           status:order_statuses(name, color)
-        `)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
+        `,
+        )
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;
       return data;
@@ -124,9 +128,9 @@ export default function UserEdit() {
 
   // Fetch user stats
   const { data: stats } = useQuery({
-    queryKey: ["user-stats", userId],
+    queryKey: ['user-stats', userId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_user_stats", {
+      const { data, error } = await supabase.rpc('get_user_stats', {
         p_user_id: userId,
       });
       if (error) throw error;
@@ -137,17 +141,19 @@ export default function UserEdit() {
 
   // Fetch category history
   const { data: categoryHistory } = useQuery({
-    queryKey: ["user-category-history", userId],
+    queryKey: ['user-category-history', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_category_history")
-        .select(`
+        .from('user_category_history')
+        .select(
+          `
           *,
           from_category:user_categories!user_category_history_from_category_id_fkey(name),
           to_category:user_categories!user_category_history_to_category_id_fkey(name)
-        `)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        `,
+        )
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -157,24 +163,26 @@ export default function UserEdit() {
   // Toggle admin mutation
   const toggleAdminMutation = useMutation({
     mutationFn: async (newIsAdmin: boolean) => {
-      const { error } = await supabase.rpc("toggle_user_admin", {
+      const { error } = await supabase.rpc('toggle_user_admin', {
         p_user_id: userId!,
         p_is_admin: newIsAdmin,
       });
       if (error) throw error;
     },
     onSuccess: (_, newIsAdmin) => {
-      queryClient.invalidateQueries({ queryKey: ["user-is-admin", userId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ['user-is-admin', userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast({
-        title: newIsAdmin ? "Адміністратора призначено" : "Роль адміністратора знято",
+        title: newIsAdmin
+          ? 'Адміністратора призначено'
+          : 'Роль адміністратора знято',
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка",
+        title: 'Помилка',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -182,7 +190,7 @@ export default function UserEdit() {
   // Update category mutation
   const updateCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      const { error } = await supabase.rpc("admin_update_user_category", {
+      const { error } = await supabase.rpc('admin_update_user_category', {
         target_user_id: userId!,
         new_category_id: categoryId,
       });
@@ -190,42 +198,44 @@ export default function UserEdit() {
 
       // Record history
       const { error: historyError } = await supabase
-        .from("user_category_history")
+        .from('user_category_history')
         .insert({
           user_id: userId!,
           from_category_id: profile?.category_id,
           to_category_id: categoryId,
-          reason: "Ручна зміна адміністратором",
+          reason: 'Ручна зміна адміністратором',
           changed_by: (await supabase.auth.getUser()).data.user?.id,
         });
-      if (historyError) console.error("History error:", historyError);
+      if (historyError) console.error('History error:', historyError);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Категорію змінено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({ title: 'Категорію змінено' });
     },
     onError: (error: Error) => {
       toast({
-        title: "Помилка",
+        title: 'Помилка',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const getInitials = () => {
-    const first = profile?.first_name?.[0] || "";
-    const last = profile?.last_name?.[0] || "";
-    return (first + last).toUpperCase() || profile?.email?.[0]?.toUpperCase() || "?";
+    const first = profile?.first_name?.[0] || '';
+    const last = profile?.last_name?.[0] || '';
+    return (
+      (first + last).toUpperCase() || profile?.email?.[0]?.toUpperCase() || '?'
+    );
   };
 
   if (profileLoading) {
@@ -237,7 +247,7 @@ export default function UserEdit() {
       <div className="p-8 text-center">
         <p>Користувача не знайдено</p>
         <Button asChild className="mt-4">
-          <Link to={adminPath("users")}>Назад до списку</Link>
+          <Link to={adminPath('users')}>Назад до списку</Link>
         </Button>
       </div>
     );
@@ -248,7 +258,7 @@ export default function UserEdit() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={adminPath("users")}>
+          <Link to={adminPath('users')}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -267,14 +277,16 @@ export default function UserEdit() {
             <div className="flex items-start gap-6">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
+                <AvatarFallback className="text-2xl">
+                  {getInitials()}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-3">
                 <div>
                   <h2 className="text-2xl font-semibold flex items-center gap-2">
                     {profile.first_name || profile.last_name
-                      ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
-                      : "Без імені"}
+                      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                      : 'Без імені'}
                     {isAdmin && <Shield className="h-5 w-5 text-primary" />}
                   </h2>
                   {profile.auth_provider && (
@@ -298,8 +310,8 @@ export default function UserEdit() {
                   )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    Зареєстровано:{" "}
-                    {format(new Date(profile.created_at), "dd MMMM yyyy", {
+                    Зареєстровано:{' '}
+                    {format(new Date(profile.created_at), 'dd MMMM yyyy', {
                       locale: uk,
                     })}
                   </div>
@@ -307,24 +319,29 @@ export default function UserEdit() {
               </div>
             </div>
 
-            {profile.registration_utm && Object.keys(profile.registration_utm).length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-medium mb-2">UTM мітки при реєстрації</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(profile.registration_utm as Record<string, string>).map(
-                      ([key, value]) =>
-                        value && (
-                          <Badge key={key} variant="secondary">
-                            {key}: {value}
-                          </Badge>
-                        )
-                    )}
+            {profile.registration_utm &&
+              Object.keys(profile.registration_utm).length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-medium mb-2">
+                      UTM мітки при реєстрації
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(
+                        profile.registration_utm as Record<string, string>,
+                      ).map(
+                        ([key, value]) =>
+                          value && (
+                            <Badge key={key} variant="secondary">
+                              {key}: {value}
+                            </Badge>
+                          ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
           </CardContent>
         </Card>
 
@@ -338,8 +355,10 @@ export default function UserEdit() {
               <Label>Категорія користувача</Label>
               <div className="flex items-center gap-2">
                 <Select
-                  value={profile.category_id || ""}
-                  onValueChange={(value) => updateCategoryMutation.mutate(value)}
+                  value={profile.category_id || ''}
+                  onValueChange={(value) =>
+                    updateCategoryMutation.mutate(value)
+                  }
                   disabled={updateCategoryMutation.isPending}
                 >
                   <SelectTrigger className="flex-1">
@@ -377,13 +396,13 @@ export default function UserEdit() {
                             >
                               <div className="flex items-center justify-between mb-1">
                                 <span className="font-medium">
-                                  {item.from_category?.name || "—"} →{" "}
+                                  {item.from_category?.name || '—'} →{' '}
                                   {item.to_category?.name}
                                 </span>
                                 <span className="text-muted-foreground">
                                   {format(
                                     new Date(item.created_at),
-                                    "dd.MM.yyyy HH:mm"
+                                    'dd.MM.yyyy HH:mm',
                                   )}
                                 </span>
                               </div>
@@ -413,7 +432,9 @@ export default function UserEdit() {
               </div>
               <Switch
                 checked={isAdmin}
-                onCheckedChange={(checked) => toggleAdminMutation.mutate(checked)}
+                onCheckedChange={(checked) =>
+                  toggleAdminMutation.mutate(checked)
+                }
                 disabled={toggleAdminMutation.isPending}
               />
             </div>
@@ -437,7 +458,9 @@ export default function UserEdit() {
                 <div className="text-2xl font-bold">
                   {formatCurrency(stats?.total_purchases || 0)}
                 </div>
-                <div className="text-sm text-muted-foreground">Сума покупок</div>
+                <div className="text-sm text-muted-foreground">
+                  Сума покупок
+                </div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold">
@@ -449,7 +472,7 @@ export default function UserEdit() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-lg font-medium truncate">
-                  {stats?.email_domain || "—"}
+                  {stats?.email_domain || '—'}
                 </div>
                 <div className="text-sm text-muted-foreground">Домен email</div>
               </div>
@@ -500,13 +523,16 @@ export default function UserEdit() {
                         {formatCurrency(order.total)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(order.created_at), "dd.MM.yyyy", {
+                        {format(new Date(order.created_at), 'dd.MM.yyyy', {
                           locale: uk,
                         })}
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to={adminPath("orders/$orderId")} params={{ orderId: order.id }}>
+                          <Link
+                            to={adminPath('orders/$orderId')}
+                            params={{ orderId: order.id }}
+                          >
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

@@ -39,8 +39,7 @@ export function seoRoutesPlugin(options: SeoRoutesPluginOptions): Plugin {
     ) => {
       if (req.url === '/sitemap.xml') {
         try {
-          const { buildSitemapXml } =
-            await server.ssrLoadModule(sitemapModule);
+          const { buildSitemapXml } = await server.ssrLoadModule(sitemapModule);
           const xml = await buildSitemapXml();
           res.setHeader('Content-Type', 'application/xml; charset=utf-8');
           res.end(xml);

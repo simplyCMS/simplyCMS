@@ -1,29 +1,30 @@
-import { useThemeSettings } from "@simplycms/core/hooks/useThemeSettings";
-import { ImageIcon } from "lucide-react";
+import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
+import { ImageIcon } from 'lucide-react';
 
 const mockArticles = [
   {
-    id: "1",
-    title: "Як обрати ідеальний засіб для догляду",
-    excerpt: "Поради від експертів щодо підбору косметики для вашого типу шкіри.",
-    date: "15 лютого 2026",
+    id: '1',
+    title: 'Як обрати ідеальний засіб для догляду',
+    excerpt:
+      'Поради від експертів щодо підбору косметики для вашого типу шкіри.',
+    date: '15 лютого 2026',
   },
   {
-    id: "2",
-    title: "Тренди краси 2026 року",
+    id: '2',
+    title: 'Тренди краси 2026 року',
     excerpt: "Огляд найактуальніших тенденцій у світі б'юті-індустрії.",
-    date: "10 лютого 2026",
+    date: '10 лютого 2026',
   },
   {
-    id: "3",
-    title: "Догляд за шкірою взимку",
-    excerpt: "Правила зволоження та захисту шкіри в холодну пору року.",
-    date: "5 лютого 2026",
+    id: '3',
+    title: 'Догляд за шкірою взимку',
+    excerpt: 'Правила зволоження та захисту шкіри в холодну пору року.',
+    date: '5 лютого 2026',
   },
 ];
 
 export function BlogPreview() {
-  const show = useThemeSettings<boolean>("showBlogPreview");
+  const show = useThemeSettings<boolean>('showBlogPreview');
 
   if (!show) return null;
 
@@ -38,9 +39,14 @@ export function BlogPreview() {
           {mockArticles.map((article) => (
             <div key={article.id} className="group cursor-pointer">
               <div className="aspect-video rounded-md bg-muted mb-3 overflow-hidden flex items-center justify-center">
-                <ImageIcon className="h-10 w-10 text-muted-foreground/30" aria-hidden="true" />
+                <ImageIcon
+                  className="h-10 w-10 text-muted-foreground/30"
+                  aria-hidden="true"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mb-1">{article.date}</p>
+              <p className="text-xs text-muted-foreground mb-1">
+                {article.date}
+              </p>
               <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
                 {article.title}
               </h3>

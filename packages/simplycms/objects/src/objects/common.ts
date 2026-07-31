@@ -9,7 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type SortDir = "asc" | "desc";
+export type SortDir = 'asc' | 'desc';
 
 /** Сторінкована вибірка для list-операцій репозиторіїв. */
 export interface Paged<T> {

@@ -1,22 +1,41 @@
-
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { StarRating } from "./StarRating";
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { StarRating } from './StarRating';
 
 interface ReviewFormProps {
   productId: string;
-  onSubmit: (data: { rating: number; title?: string; content?: string; images?: string[] }) => void;
+  onSubmit: (data: {
+    rating: number;
+    title?: string;
+    content?: string;
+    images?: string[];
+  }) => void;
   isSubmitting?: boolean;
   /** Optional rich text editor component */
-  renderEditor?: (props: { content: string; onChange: (content: string) => void }) => React.ReactNode;
+  renderEditor?: (props: {
+    content: string;
+    onChange: (content: string) => void;
+  }) => React.ReactNode;
   /** Optional image upload component */
-  renderImageUpload?: (props: { images: string[]; onImagesChange: (images: string[]) => void; bucket: string; folder: string; maxImages: number }) => React.ReactNode;
+  renderImageUpload?: (props: {
+    images: string[];
+    onImagesChange: (images: string[]) => void;
+    bucket: string;
+    folder: string;
+    maxImages: number;
+  }) => React.ReactNode;
 }
 
-export function ReviewForm({ productId, onSubmit, isSubmitting, renderEditor, renderImageUpload }: ReviewFormProps) {
+export function ReviewForm({
+  productId,
+  onSubmit,
+  isSubmitting,
+  renderEditor,
+  renderImageUpload,
+}: ReviewFormProps) {
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [ratingError, setRatingError] = useState(false);
 
@@ -29,7 +48,7 @@ export function ReviewForm({ productId, onSubmit, isSubmitting, renderEditor, re
     onSubmit({
       rating,
       title: title.trim() || undefined,
-      content: content && content !== "<p></p>" ? content : undefined,
+      content: content && content !== '<p></p>' ? content : undefined,
       images: images.length > 0 ? images : undefined,
     });
   };
@@ -42,14 +61,21 @@ export function ReviewForm({ productId, onSubmit, isSubmitting, renderEditor, re
         <label className="text-sm font-medium">Оцiнка *</label>
         <StarRating
           value={rating}
-          onChange={(v) => { setRating(v); setRatingError(false); }}
+          onChange={(v) => {
+            setRating(v);
+            setRatingError(false);
+          }}
           size="lg"
         />
-        {ratingError && <p className="text-sm text-destructive">Оберiть оцiнку</p>}
+        {ratingError && (
+          <p className="text-sm text-destructive">Оберiть оцiнку</p>
+        )}
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="review-title" className="text-sm font-medium">Заголовок (необов&apos;язково)</label>
+        <label htmlFor="review-title" className="text-sm font-medium">
+          Заголовок (необов&apos;язково)
+        </label>
         <input
           id="review-title"
           value={title}
@@ -80,7 +106,7 @@ export function ReviewForm({ productId, onSubmit, isSubmitting, renderEditor, re
           {renderImageUpload({
             images,
             onImagesChange: setImages,
-            bucket: "review-images",
+            bucket: 'review-images',
             folder: productId,
             maxImages: 5,
           })}

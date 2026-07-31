@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
 import {
   Table,
   TableBody,
@@ -12,19 +12,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Badge } from "@simplycms/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@simplycms/ui/avatar";
-import { Search, Shield, ArrowLeft } from "lucide-react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
+} from '@simplycms/ui/select';
+import { Badge } from '@simplycms/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@simplycms/ui/avatar';
+import { Search, Shield, ArrowLeft } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
 
 interface UserWithDetails {
   user_id: string;
@@ -48,18 +48,18 @@ interface UserWithDetails {
 export default function Users() {
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   // Fetch categories for filter
   const { data: categories } = useQuery({
-    queryKey: ["user-categories"],
+    queryKey: ['user-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_categories")
-        .select("*")
-        .order("name");
+        .from('user_categories')
+        .select('*')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -67,12 +67,13 @@ export default function Users() {
 
   // Fetch users with their details
   const { data: users, isLoading } = useQuery({
-    queryKey: ["admin-users", search, categoryFilter, roleFilter],
+    queryKey: ['admin-users', search, categoryFilter, roleFilter],
     queryFn: async () => {
       // Get profiles with categories
       let query = supabase
-        .from("profiles")
-        .select(`
+        .from('profiles')
+        .select(
+          `
           user_id,
           first_name,
           last_name,
@@ -83,11 +84,12 @@ export default function Users() {
           auth_provider,
           created_at,
           category:user_categories(id, name)
-        `)
-        .order("created_at", { ascending: false });
+        `,
+        )
+        .order('created_at', { ascending: false });
 
-      if (categoryFilter && categoryFilter !== "all") {
-        query = query.eq("category_id", categoryFilter);
+      if (categoryFilter && categoryFilter !== 'all') {
+        query = query.eq('category_id', categoryFilter);
       }
 
       const { data: profiles, error: profilesError } = await query;
@@ -95,18 +97,18 @@ export default function Users() {
 
       // Get admin roles
       const { data: adminRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
       if (rolesError) throw rolesError;
 
       const adminUserIds = new Set(adminRoles?.map((r) => r.user_id) || []);
 
       // Get order stats for each user
       const { data: orderStats, error: statsError } = await supabase
-        .from("orders")
-        .select("user_id, total")
-        .not("user_id", "is", null);
+        .from('orders')
+        .select('user_id, total')
+        .not('user_id', 'is', null);
       if (statsError) throw statsError;
 
       // Calculate stats per user
@@ -120,18 +122,19 @@ export default function Users() {
       });
 
       // Combine all data
-      let result: UserWithDetails[] = profiles?.map((profile) => ({
-        ...profile,
-        category: profile.category as { id: string; name: string } | null,
-        is_admin: adminUserIds.has(profile.user_id),
-        total_orders: userStats.get(profile.user_id)?.orders || 0,
-        total_spent: userStats.get(profile.user_id)?.spent || 0,
-      })) || [];
+      let result: UserWithDetails[] =
+        profiles?.map((profile) => ({
+          ...profile,
+          category: profile.category as { id: string; name: string } | null,
+          is_admin: adminUserIds.has(profile.user_id),
+          total_orders: userStats.get(profile.user_id)?.orders || 0,
+          total_spent: userStats.get(profile.user_id)?.spent || 0,
+        })) || [];
 
       // Apply role filter
-      if (roleFilter === "admin") {
+      if (roleFilter === 'admin') {
         result = result.filter((u) => u.is_admin);
-      } else if (roleFilter === "user") {
+      } else if (roleFilter === 'user') {
         result = result.filter((u) => !u.is_admin);
       }
 
@@ -143,7 +146,7 @@ export default function Users() {
             u.email?.toLowerCase().includes(searchLower) ||
             u.first_name?.toLowerCase().includes(searchLower) ||
             u.last_name?.toLowerCase().includes(searchLower) ||
-            u.phone?.includes(search)
+            u.phone?.includes(search),
         );
       }
 
@@ -152,15 +155,17 @@ export default function Users() {
   });
 
   const getInitials = (user: UserWithDetails) => {
-    const first = user.first_name?.[0] || "";
-    const last = user.last_name?.[0] || "";
-    return (first + last).toUpperCase() || user.email?.[0]?.toUpperCase() || "?";
+    const first = user.first_name?.[0] || '';
+    const last = user.last_name?.[0] || '';
+    return (
+      (first + last).toUpperCase() || user.email?.[0]?.toUpperCase() || '?'
+    );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -249,7 +254,9 @@ export default function Users() {
                 <TableRow
                   key={user.user_id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: adminPath(`users/${user.user_id}`) })}
+                  onClick={() =>
+                    navigate({ to: adminPath(`users/${user.user_id}`) })
+                  }
                 >
                   <TableCell>
                     <Avatar className="h-10 w-10">
@@ -262,8 +269,8 @@ export default function Users() {
                       <div>
                         <div className="font-medium flex items-center gap-2">
                           {user.first_name || user.last_name
-                            ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-                            : "Без імені"}
+                            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                            : 'Без імені'}
                           {user.is_admin && (
                             <Shield className="h-4 w-4 text-primary" />
                           )}
@@ -280,7 +287,9 @@ export default function Users() {
                     <div className="text-sm">
                       {user.email && <div>{user.email}</div>}
                       {user.phone && (
-                        <div className="text-muted-foreground">{user.phone}</div>
+                        <div className="text-muted-foreground">
+                          {user.phone}
+                        </div>
                       )}
                     </div>
                   </TableCell>
@@ -292,13 +301,15 @@ export default function Users() {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    {user.total_orders > 0 ? user.total_orders : "—"}
+                    {user.total_orders > 0 ? user.total_orders : '—'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {user.total_spent > 0 ? formatCurrency(user.total_spent) : "—"}
+                    {user.total_spent > 0
+                      ? formatCurrency(user.total_spent)
+                      : '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {format(new Date(user.created_at), "dd MMM yyyy", {
+                    {format(new Date(user.created_at), 'dd MMM yyyy', {
                       locale: uk,
                     })}
                   </TableCell>

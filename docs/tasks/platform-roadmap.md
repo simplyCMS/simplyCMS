@@ -72,9 +72,12 @@
 - **Upsert рядка `hello-world` у таблицю `plugins` не підтверджено на живій БД:**
   RLS не дає анонімного INSERT, тож `bootstrapPlugins` пише рядок лише коли на
   сайт зайде адмін (у коді є гард на сесію).
-- **`prettier` відсутній у `devDependencies`:** `pnpm format` / `format:check`
-  падають із `prettier: not found`, CI їх не запускає — гейти де-факто
-  починаються з `pnpm lint`.
+- ~~**`prettier` відсутній у `devDependencies`**~~ — **закрито 2026-07-31**:
+  `prettier@3.9.6` (exact) встановлено, `format`/`format:check` розширено на весь
+  репозиторій, репо відформатовано (343 файли). `.prettierignore` виключає
+  машинний генерат (роут-трі, типи Supabase, Drizzle-схема + `drizzle/`),
+  артефакти збірки і всі `*.md`. Лишається окремим пунктом: CI досі не запускає
+  `format:check` — додати крок у `.github/workflows/workflow.yml`.
 - **i18n-міграція** (~954 warn-входження) — окремий прохід, див. чекбокс вище.
 - **`@simplycms/engine`** (обʼєднання `data-supabase` + `react-query`) — не
   робилось, обидва пакети живі окремо; див. амендмент spec §4.0.

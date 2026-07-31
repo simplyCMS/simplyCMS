@@ -1,6 +1,5 @@
-
-import { cn } from "@simplycms/ui/utils";
-import { Check, User } from "lucide-react";
+import { cn } from '@simplycms/ui/utils';
+import { Check, User } from 'lucide-react';
 
 interface RecipientCardProps {
   id: string;
@@ -22,20 +21,17 @@ export function RecipientCard({
   isDefault,
   onClick,
 }: RecipientCardProps) {
-  const maskedPhone = phone.length > 6
-    ? `${phone.slice(0, 4)}...${phone.slice(-3)}`
-    : phone;
+  const maskedPhone =
+    phone.length > 6 ? `${phone.slice(0, 4)}...${phone.slice(-3)}` : phone;
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-start p-3 rounded-lg border-2 text-left transition-all w-full",
-        "hover:border-primary/50 hover:bg-accent/50",
-        isSelected
-          ? "border-primary bg-primary/5"
-          : "border-muted bg-card"
+        'relative flex flex-col items-start p-3 rounded-lg border-2 text-left transition-all w-full',
+        'hover:border-primary/50 hover:bg-accent/50',
+        isSelected ? 'border-primary bg-primary/5' : 'border-muted bg-card',
       )}
     >
       {isSelected && (

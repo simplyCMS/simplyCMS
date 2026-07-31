@@ -1,11 +1,10 @@
-
-import { Check, X, Clock, Building } from "lucide-react";
+import { Check, X, Clock, Building } from 'lucide-react';
 import {
   useStock,
   usePickupPointsCount,
   type StockStatus,
   type StockByPoint,
-} from "@simplycms/core/hooks/useStock";
+} from '@simplycms/core/hooks/useStock';
 
 interface StockDisplayProps {
   productId?: string | null;
@@ -35,7 +34,7 @@ export function StockDisplay({
 
   const { totalQuantity, isAvailable, stockStatus, byPoint } = stockInfo;
 
-  if (stockStatus === "on_order") {
+  if (stockStatus === 'on_order') {
     return (
       <div className={className}>
         <div className="flex items-center gap-2">
@@ -49,7 +48,7 @@ export function StockDisplay({
     );
   }
 
-  if (!isAvailable || stockStatus === "out_of_stock") {
+  if (!isAvailable || stockStatus === 'out_of_stock') {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <X className="h-5 w-5 text-destructive" />
@@ -63,7 +62,7 @@ export function StockDisplay({
       <div className={`flex items-center gap-2 ${className}`}>
         <Check className="h-5 w-5 text-green-500" />
         <span className="text-green-600 font-medium">
-          В наявностi{totalQuantity > 0 ? `: ${totalQuantity} шт` : ""}
+          В наявностi{totalQuantity > 0 ? `: ${totalQuantity} шт` : ''}
         </span>
       </div>
     );
@@ -116,7 +115,7 @@ export function StockBadge({
   stockStatus: StockStatus | null;
   isAvailable: boolean;
 }) {
-  if (stockStatus === "on_order") {
+  if (stockStatus === 'on_order') {
     return (
       <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 text-xs">
         Пiд замовлення
@@ -124,7 +123,7 @@ export function StockBadge({
     );
   }
 
-  if (!isAvailable || stockStatus === "out_of_stock") {
+  if (!isAvailable || stockStatus === 'out_of_stock') {
     return (
       <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2 py-0.5 text-xs">
         Немає в наявностi

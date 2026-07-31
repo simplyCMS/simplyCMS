@@ -32,7 +32,9 @@ const SUPABASE_MIGRATIONS = join(ROOT, 'supabase', 'migrations');
 const name = process.argv[2];
 if (!name || !/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(name)) {
   console.error('❌ Потрібне імʼя міграції: pnpm db:diff <name>');
-  console.log('  💡 Дозволені символи: a-z, 0-9, "-", "_" (напр. add-product-badge)');
+  console.log(
+    '  💡 Дозволені символи: a-z, 0-9, "-", "_" (напр. add-product-badge)',
+  );
   process.exit(1);
 }
 
@@ -59,11 +61,21 @@ const before = new Set(listSql());
 try {
   execFileSync(
     'pnpm',
-    ['exec', 'drizzle-kit', 'generate', '--config', './drizzle.config.ts', '--name', name],
+    [
+      'exec',
+      'drizzle-kit',
+      'generate',
+      '--config',
+      './drizzle.config.ts',
+      '--name',
+      name,
+    ],
     { cwd: SCHEMA_DIR, stdio: 'inherit' },
   );
 } catch (error) {
-  console.error(`\n❌ drizzle-kit generate впав: ${error instanceof Error ? error.message : error}`);
+  console.error(
+    `\n❌ drizzle-kit generate впав: ${error instanceof Error ? error.message : error}`,
+  );
   process.exit(1);
 }
 
@@ -74,15 +86,22 @@ if (created.length === 0) {
   process.exit(0);
 }
 if (created.length > 1) {
-  console.error(`\n❌ drizzle-kit створив кілька файлів: ${created.join(', ')}`);
-  console.log('  💡 Стан `drizzle/` неконсистентний — розберись руками перед копіюванням.');
+  console.error(
+    `\n❌ drizzle-kit створив кілька файлів: ${created.join(', ')}`,
+  );
+  console.log(
+    '  💡 Стан `drizzle/` неконсистентний — розберись руками перед копіюванням.',
+  );
   process.exit(1);
 }
 
 // ── 2. Копія у формат Supabase CLI ──────────────────────────────────────────
 const [sqlFile] = created;
 const tag = sqlFile.replace(/\.sql$/, '');
-const target = join(SUPABASE_MIGRATIONS, `${timestampFromJournal(tag)}_${name}.sql`);
+const target = join(
+  SUPABASE_MIGRATIONS,
+  `${timestampFromJournal(tag)}_${name}.sql`,
+);
 
 if (existsSync(target)) {
   console.error(`\n❌ Файл уже існує: ${target}`);
@@ -94,13 +113,23 @@ const header = [
   '-- Джерело правди схеми — packages/simplycms/schema/src/schema.ts.',
   '',
 ].join('\n');
-writeFileSync(target, header + readFileSync(join(DRIZZLE_DIR, sqlFile), 'utf8'), 'utf8');
+writeFileSync(
+  target,
+  header + readFileSync(join(DRIZZLE_DIR, sqlFile), 'utf8'),
+  'utf8',
+);
 
 // ── 3. Підсумок ─────────────────────────────────────────────────────────────
 console.log('\n✅ Міграцію створено:');
 console.log(`  📄 supabase/migrations/${target.split('/').pop()}`);
-console.log(`  🗃️  drizzle-staging: packages/simplycms/schema/drizzle/${sqlFile} (комітиться)`);
+console.log(
+  `  🗃️  drizzle-staging: packages/simplycms/schema/drizzle/${sqlFile} (комітиться)`,
+);
 console.log('\n🔴 Переглянь SQL ПЕРЕД застосуванням:');
-console.log('  1. звір DDL з наміром (особливо DROP/RENAME — drizzle-kit не бачить перейменувань);');
-console.log('  2. RLS-політики та тригери drizzle не діфить — додай руками, якщо треба;');
+console.log(
+  '  1. звір DDL з наміром (особливо DROP/RENAME — drizzle-kit не бачить перейменувань);',
+);
+console.log(
+  '  2. RLS-політики та тригери drizzle не діфить — додай руками, якщо треба;',
+);
 console.log('  3. `pnpm db:migrate` — застосувати + оновити типи.\n');

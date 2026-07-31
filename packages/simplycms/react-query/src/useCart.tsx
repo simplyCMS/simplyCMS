@@ -6,8 +6,8 @@ import React, {
   useCallback,
   useRef,
   ReactNode,
-} from "react";
-import type { Json } from "@simplycms/objects";
+} from 'react';
+import type { Json } from '@simplycms/objects';
 
 // Клієнтський стан кошика (localStorage). Перенесено з @simplycms/core у
 // Tier-2, щоб feature-ui (cart-ui/checkout-ui) не залежали від god-package.
@@ -27,9 +27,13 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeItem: (productId: string, modificationId: string | null) => void;
-  updateQuantity: (productId: string, modificationId: string | null, quantity: number) => void;
+  updateQuantity: (
+    productId: string,
+    modificationId: string | null,
+    quantity: number,
+  ) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -39,12 +43,12 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "simplycms-cart";
+const CART_STORAGE_KEY = 'simplycms-cart';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   // Ініціалізація кошика з localStorage (SSR-safe через lazy initializer)
   const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === "undefined") return [];
+    if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
       if (stored) {
@@ -52,12 +56,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
-      console.error("Failed to load cart from localStorage:", e);
+      console.error('Failed to load cart from localStorage:', e);
     }
     return [];
   });
   const [isOpen, setIsOpen] = useState(false);
-  const isInitializedRef = useRef(typeof window !== "undefined");
+  const isInitializedRef = useRef(typeof window !== 'undefined');
 
   // Помічаємо ініціалізацію після першого рендеру на клієнті
   useEffect(() => {
@@ -70,36 +74,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
       } catch (e) {
-        console.error("Failed to save cart to localStorage:", e);
+        console.error('Failed to save cart to localStorage:', e);
       }
     }
   }, [items]);
 
-  const addItem = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
-    setItems((prev) => {
-      const existingIndex = prev.findIndex(
-        (i) => i.productId === item.productId && i.modificationId === item.modificationId,
+  const addItem = useCallback(
+    (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+      setItems((prev) => {
+        const existingIndex = prev.findIndex(
+          (i) =>
+            i.productId === item.productId &&
+            i.modificationId === item.modificationId,
+        );
+
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            quantity: updated[existingIndex].quantity + (item.quantity || 1),
+          };
+          return updated;
+        }
+
+        return [...prev, { ...item, quantity: item.quantity || 1 }];
+      });
+      setIsOpen(true);
+    },
+    [],
+  );
+
+  const removeItem = useCallback(
+    (productId: string, modificationId: string | null) => {
+      setItems((prev) =>
+        prev.filter(
+          (i) =>
+            !(i.productId === productId && i.modificationId === modificationId),
+        ),
       );
-
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + (item.quantity || 1),
-        };
-        return updated;
-      }
-
-      return [...prev, { ...item, quantity: item.quantity || 1 }];
-    });
-    setIsOpen(true);
-  }, []);
-
-  const removeItem = useCallback((productId: string, modificationId: string | null) => {
-    setItems((prev) =>
-      prev.filter((i) => !(i.productId === productId && i.modificationId === modificationId)),
-    );
-  }, []);
+    },
+    [],
+  );
 
   const updateQuantity = useCallback(
     (productId: string, modificationId: string | null, quantity: number) => {
@@ -124,7 +139,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
 
   return (
     <CartContext.Provider
@@ -148,7 +166,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 }

@@ -1,6 +1,6 @@
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "./database";
-import { resolveSupabaseKeys } from "./keys";
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from './database';
+import { resolveSupabaseKeys } from './keys';
 
 export function createClient() {
   const { url, key } = resolveSupabaseKeys(import.meta.env);

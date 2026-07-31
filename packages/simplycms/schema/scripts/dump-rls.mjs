@@ -34,10 +34,18 @@ const RLS_TABLES_SQL = `
 const client = new pg.Client({ connectionString: url });
 await client.connect();
 const policies = (await client.query(POLICIES_SQL)).rows;
-const rlsEnabledTables = (await client.query(RLS_TABLES_SQL)).rows.map((r) => r.tablename);
+const rlsEnabledTables = (await client.query(RLS_TABLES_SQL)).rows.map(
+  (r) => r.tablename,
+);
 await client.end();
 
 const out = resolve(here, '../src/__tests__/fixtures/rls-policies.json');
 mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, `${JSON.stringify({ policies, rlsEnabledTables }, null, 2)}\n`, 'utf8');
-console.log(`Записано ${policies.length} політик і ${rlsEnabledTables.length} rls-таблиць → ${out}`);
+writeFileSync(
+  out,
+  `${JSON.stringify({ policies, rlsEnabledTables }, null, 2)}\n`,
+  'utf8',
+);
+console.log(
+  `Записано ${policies.length} політик і ${rlsEnabledTables.length} rls-таблиць → ${out}`,
+);

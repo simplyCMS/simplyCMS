@@ -1,10 +1,10 @@
-import { useParams, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Card, CardContent } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Loader2, ChevronRight } from "lucide-react";
-import type { Tables } from "@simplycms/supabase";
+import { useParams, Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Card, CardContent } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Loader2, ChevronRight } from 'lucide-react';
+import type { Tables } from '@simplycms/supabase';
 
 export interface PropertyDetailPageProps {
   property?: Tables<'section_properties'>;
@@ -16,18 +16,21 @@ export default function PropertyDetailPage({
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
   const supabase = useSupabaseClient();
-  const params = useParams({ strict: false }) as Record<string, string | undefined>;
+  const params = useParams({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const propertySlug = params?.propertySlug as string | undefined;
 
   // Fetch property by slug
   const { data: property, isLoading: propertyLoading } = useQuery({
-    queryKey: ["property-by-slug-detail", propertySlug],
+    queryKey: ['property-by-slug-detail', propertySlug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .eq("slug", propertySlug!)
-        .eq("has_page", true)
+        .from('section_properties')
+        .select('*')
+        .eq('slug', propertySlug!)
+        .eq('has_page', true)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -38,13 +41,13 @@ export default function PropertyDetailPage({
 
   // Fetch options for this property
   const { data: options, isLoading: optionsLoading } = useQuery({
-    queryKey: ["property-options-public", property?.id],
+    queryKey: ['property-options-public', property?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("property_options")
-        .select("*")
-        .eq("property_id", property!.id)
-        .order("sort_order", { ascending: true });
+        .from('property_options')
+        .select('*')
+        .eq('property_id', property!.id)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -79,7 +82,10 @@ export default function PropertyDetailPage({
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link to="/properties" className="hover:text-foreground transition-colors">
+        <Link
+          to="/properties"
+          className="hover:text-foreground transition-colors"
+        >
           Властивості
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -119,7 +125,7 @@ export default function PropertyDetailPage({
                     />
                   </div>
                 )}
-                <CardContent className={option.image_url ? "pt-3" : "pt-6"}>
+                <CardContent className={option.image_url ? 'pt-3' : 'pt-6'}>
                   <p className="font-medium text-center group-hover:text-primary transition-colors">
                     {option.name}
                   </p>

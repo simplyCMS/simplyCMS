@@ -1,9 +1,9 @@
 // Доменні об'єкти каталогу (товари, розділи, характеристики).
 // Незалежні від рядків БД — host-репозиторій мапить свою схему на ці типи.
 
-import type { PageQuery } from "./common";
-import type { PriceEntry } from "./pricing";
-import type { StockStatus } from "./inventory";
+import type { PageQuery } from './common';
+import type { PriceEntry } from './pricing';
+import type { StockStatus } from './inventory';
 
 export interface ProductModification {
   id: string;

@@ -12,6 +12,6 @@ export type {
   TablesUpdate,
   Enums,
   CompositeTypes,
-} from "@simplycms/db-types";
+} from '@simplycms/db-types';
 
-export { Constants } from "@simplycms/db-types";
+export { Constants } from '@simplycms/db-types';

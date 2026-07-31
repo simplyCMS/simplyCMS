@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
 import {
   Table,
   TableBody,
@@ -9,23 +9,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@simplycms/ui/dialog";
+} from '@simplycms/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Label } from "@simplycms/ui/label";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+} from '@simplycms/ui/select';
+import { Label } from '@simplycms/ui/label';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 
 /** Тип для join-результату property з section_property_assignments */
 interface PropertyJoin {
@@ -42,29 +42,32 @@ interface SectionPropertiesTableProps {
 }
 
 const propertyTypes: Record<string, string> = {
-  text: "Текст",
-  number: "Число",
-  select: "Вибір (один)",
-  multiselect: "Вибір (декілька)",
-  range: "Діапазон",
-  color: "Колір",
-  boolean: "Так/Ні",
+  text: 'Текст',
+  number: 'Число',
+  select: 'Вибір (один)',
+  multiselect: 'Вибір (декілька)',
+  range: 'Діапазон',
+  color: 'Колір',
+  boolean: 'Так/Ні',
 };
 
-export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProps) {
+export function SectionPropertiesTable({
+  sectionId,
+}: SectionPropertiesTableProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPropertyId, setSelectedPropertyId] = useState("");
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
 
   // Fetch assigned properties for this section
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
-    queryKey: ["section-property-assignments", sectionId],
+    queryKey: ['section-property-assignments', sectionId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_property_assignments")
-        .select(`
+        .from('section_property_assignments')
+        .select(
+          `
           id,
           sort_order,
           property:property_id (
@@ -75,9 +78,10 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
             is_filterable,
             is_required
           )
-        `)
-        .eq("section_id", sectionId)
-        .order("sort_order", { ascending: true });
+        `,
+        )
+        .eq('section_id', sectionId)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -86,54 +90,74 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
 
   // Fetch all available properties
   const { data: allProperties } = useQuery({
-    queryKey: ["all-properties"],
+    queryKey: ['all-properties'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("id, name, slug, property_type")
-        .order("name", { ascending: true });
+        .from('section_properties')
+        .select('id, name, slug, property_type')
+        .order('name', { ascending: true });
       if (error) throw error;
       return data;
     },
   });
 
   // Get properties that are not yet assigned
-  const assignedIds = assignments?.map(a => (a.property as PropertyJoin | null)?.id) || [];
-  const availableProperties = allProperties?.filter(p => !assignedIds.includes(p.id)) || [];
+  const assignedIds =
+    assignments?.map((a) => (a.property as PropertyJoin | null)?.id) || [];
+  const availableProperties =
+    allProperties?.filter((p) => !assignedIds.includes(p.id)) || [];
 
   const addMutation = useMutation({
     mutationFn: async (propertyId: string) => {
       const sortOrder = assignments?.length || 0;
       const { error } = await supabase
-        .from("section_property_assignments")
-        .insert([{ section_id: sectionId, property_id: propertyId, sort_order: sortOrder }]);
+        .from('section_property_assignments')
+        .insert([
+          {
+            section_id: sectionId,
+            property_id: propertyId,
+            sort_order: sortOrder,
+          },
+        ]);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["section-property-assignments", sectionId] });
+      queryClient.invalidateQueries({
+        queryKey: ['section-property-assignments', sectionId],
+      });
       setIsDialogOpen(false);
-      setSelectedPropertyId("");
-      toast({ title: "Властивість додано" });
+      setSelectedPropertyId('');
+      toast({ title: 'Властивість додано' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const removeMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
       const { error } = await supabase
-        .from("section_property_assignments")
+        .from('section_property_assignments')
         .delete()
-        .eq("id", assignmentId);
+        .eq('id', assignmentId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["section-property-assignments", sectionId] });
-      toast({ title: "Властивість видалено з розділу" });
+      queryClient.invalidateQueries({
+        queryKey: ['section-property-assignments', sectionId],
+      });
+      toast({ title: 'Властивість видалено з розділу' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -155,7 +179,11 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Властивості розділу</h3>
-        <Button onClick={() => setIsDialogOpen(true)} size="sm" disabled={availableProperties.length === 0}>
+        <Button
+          onClick={() => setIsDialogOpen(true)}
+          size="sm"
+          disabled={availableProperties.length === 0}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Додати
         </Button>
@@ -188,7 +216,8 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
                     {property.slug}
                   </TableCell>
                   <TableCell>
-                    {propertyTypes[property.property_type] || property.property_type}
+                    {propertyTypes[property.property_type] ||
+                      property.property_type}
                   </TableCell>
                   <TableCell>
                     {property.is_filterable ? (
@@ -226,14 +255,18 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Виберіть властивість</Label>
-              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+              <Select
+                value={selectedPropertyId}
+                onValueChange={setSelectedPropertyId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Оберіть властивість..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableProperties.map((prop) => (
                     <SelectItem key={prop.id} value={prop.id}>
-                      {prop.name} ({propertyTypes[prop.property_type] || prop.property_type})
+                      {prop.name} (
+                      {propertyTypes[prop.property_type] || prop.property_type})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -243,8 +276,13 @@ export function SectionPropertiesTable({ sectionId }: SectionPropertiesTableProp
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Скасувати
               </Button>
-              <Button onClick={handleAdd} disabled={!selectedPropertyId || addMutation.isPending}>
-                {addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Button
+                onClick={handleAdd}
+                disabled={!selectedPropertyId || addMutation.isPending}
+              >
+                {addMutation.isPending && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
                 Додати
               </Button>
             </div>

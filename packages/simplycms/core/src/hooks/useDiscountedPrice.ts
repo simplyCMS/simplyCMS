@@ -1,8 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useAuth } from "./useAuth";
-import { usePriceType } from "./usePriceType";
-import { resolveDiscount, type DiscountGroup, type DiscountContext, type DiscountResult, type GroupOperator, type DiscountType } from "../lib/discountEngine";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useAuth } from './useAuth';
+import { usePriceType } from './usePriceType';
+import {
+  resolveDiscount,
+  type DiscountGroup,
+  type DiscountContext,
+  type DiscountResult,
+  type GroupOperator,
+  type DiscountType,
+} from '../lib/discountEngine';
 
 /** Loads all active discount groups for the given price type, with nested discounts/targets/conditions */
 export function useDiscountGroups() {
@@ -10,16 +17,16 @@ export function useDiscountGroups() {
   const { priceTypeId } = usePriceType();
 
   return useQuery({
-    queryKey: ["discount-groups-active", priceTypeId],
+    queryKey: ['discount-groups-active', priceTypeId],
     queryFn: async (): Promise<DiscountGroup[]> => {
       if (!priceTypeId) return [];
 
       // Fetch discounts for this price type, with their groups
       const { data: dbDiscounts, error: dErr } = await supabase
-        .from("discounts")
-        .select("*, discount_targets(*), discount_conditions(*)")
-        .eq("price_type_id", priceTypeId)
-        .eq("is_active", true);
+        .from('discounts')
+        .select('*, discount_targets(*), discount_conditions(*)')
+        .eq('price_type_id', priceTypeId)
+        .eq('is_active', true);
       if (dErr) throw dErr;
       if (!dbDiscounts?.length) return [];
 
@@ -27,10 +34,10 @@ export function useDiscountGroups() {
       const groupIds = [...new Set(dbDiscounts.map((d) => d.group_id))];
 
       const { data: dbGroups, error: gErr } = await supabase
-        .from("discount_groups")
-        .select("*")
-        .in("id", groupIds)
-        .eq("is_active", true);
+        .from('discount_groups')
+        .select('*')
+        .in('id', groupIds)
+        .eq('is_active', true);
       if (gErr) throw gErr;
       if (!dbGroups?.length) return [];
 
@@ -42,10 +49,10 @@ export function useDiscountGroups() {
       let allGroups = [...dbGroups];
       if (parentIds.length > 0) {
         const { data: parents } = await supabase
-          .from("discount_groups")
-          .select("*")
-          .in("id", parentIds)
-          .eq("is_active", true);
+          .from('discount_groups')
+          .select('*')
+          .in('id', parentIds)
+          .eq('is_active', true);
         if (parents) allGroups = [...allGroups, ...parents];
       }
 
@@ -108,13 +115,13 @@ export function useDiscountContext() {
   const { user } = useAuth();
 
   const { data: userCategoryId } = useQuery({
-    queryKey: ["user-category-id", user?.id],
+    queryKey: ['user-category-id', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await supabase
-        .from("profiles")
-        .select("category_id")
-        .eq("user_id", user.id)
+        .from('profiles')
+        .select('category_id')
+        .eq('user_id', user.id)
         .single();
       return data?.category_id || null;
     },
@@ -133,7 +140,7 @@ export function useDiscountContext() {
 export function applyDiscount(
   basePrice: number,
   groups: DiscountGroup[],
-  context: Omit<DiscountContext, "now">
+  context: Omit<DiscountContext, 'now'>,
 ): DiscountResult {
   if (!groups.length || basePrice <= 0) {
     return {

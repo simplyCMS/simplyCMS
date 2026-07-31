@@ -1,18 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useAuth } from "./useAuth";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useAuth } from './useAuth';
 
 export function usePriceType() {
   const supabase = useSupabaseClient();
   const { user } = useAuth();
 
   const { data: defaultPriceType } = useQuery({
-    queryKey: ["default-price-type"],
+    queryKey: ['default-price-type'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("price_types")
-        .select("id")
-        .eq("is_default", true)
+        .from('price_types')
+        .select('id')
+        .eq('is_default', true)
         .single();
       if (error) throw error;
       return data;
@@ -21,16 +21,19 @@ export function usePriceType() {
   });
 
   const { data: userPriceTypeId } = useQuery({
-    queryKey: ["user-price-type", user?.id],
+    queryKey: ['user-price-type', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
-        .from("profiles")
-        .select("category:user_categories(price_type_id)")
-        .eq("user_id", user.id)
+        .from('profiles')
+        .select('category:user_categories(price_type_id)')
+        .eq('user_id', user.id)
         .single();
       if (error) return null;
-      return (data?.category as { price_type_id: string | null } | null)?.price_type_id || null;
+      return (
+        (data?.category as { price_type_id: string | null } | null)
+          ?.price_type_id || null
+      );
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,

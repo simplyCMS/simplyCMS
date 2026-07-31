@@ -1,31 +1,46 @@
-import { useState, useMemo, useCallback } from "react";
-import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
+import { useState, useMemo, useCallback } from 'react';
+import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@simplycms/ui/sheet";
-import { ProductCard } from "@simplycms/core/components/catalog/ProductCard";
-import { FilterSidebar } from "@simplycms/core/components/catalog/FilterSidebar";
-import { ActiveFilters } from "@simplycms/core/components/catalog/ActiveFilters";
-import { Loader2, ChevronRight, Filter, LayoutGrid, List, FolderOpen } from "lucide-react";
-import { fetchModificationStockData, fetchModificationPropertyValues, enrichProductsWithAvailability } from "@simplycms/core/hooks/useProductsWithStock";
-import { usePriceType } from "@simplycms/core/hooks/usePriceType";
-import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
-import { useDiscountGroups, useDiscountContext, applyDiscount } from "@simplycms/core/hooks/useDiscountedPrice";
-import { useProductRatings } from "@simplycms/core/hooks/useProductReviews";
-import { SsrProductGrid } from "../components/SsrProductGrid";
-import type { ProductListItem } from "../server/product-list-item";
-import type { Tables } from "@simplycms/supabase";
+} from '@simplycms/ui/select';
+import { Sheet, SheetContent, SheetTrigger } from '@simplycms/ui/sheet';
+import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
+import { FilterSidebar } from '@simplycms/core/components/catalog/FilterSidebar';
+import { ActiveFilters } from '@simplycms/core/components/catalog/ActiveFilters';
+import {
+  Loader2,
+  ChevronRight,
+  Filter,
+  LayoutGrid,
+  List,
+  FolderOpen,
+} from 'lucide-react';
+import {
+  fetchModificationStockData,
+  fetchModificationPropertyValues,
+  enrichProductsWithAvailability,
+} from '@simplycms/core/hooks/useProductsWithStock';
+import { usePriceType } from '@simplycms/core/hooks/usePriceType';
+import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import {
+  useDiscountGroups,
+  useDiscountContext,
+  applyDiscount,
+} from '@simplycms/core/hooks/useDiscountedPrice';
+import { useProductRatings } from '@simplycms/core/hooks/useProductReviews';
+import { SsrProductGrid } from '../components/SsrProductGrid';
+import type { ProductListItem } from '../server/product-list-item';
+import type { Tables } from '@simplycms/supabase';
 
-type SortOption = "popular" | "price_asc" | "price_desc" | "newest";
+type SortOption = 'popular' | 'price_asc' | 'price_desc' | 'newest';
 
 /** Тип значення фільтра в каталозі */
 type FilterValue = boolean | number | string[] | undefined;
@@ -49,9 +64,11 @@ export default function CatalogPage({
 }: CatalogPageProps = {}) {
   const supabase = useSupabaseClient();
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
-  const [sortBy, setSortBy] = useState<SortOption>("popular");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null,
+  );
 
   /** Серверний список товарів: рендериться в SSR-HTML і в першому клієнтському
    *  рендері, доки React Query не поверне збагачені дані. */
@@ -61,16 +78,15 @@ export default function CatalogPage({
   const { data: discountGroups = [] } = useDiscountGroups();
   const discountCtx = useDiscountContext();
 
-
   // Fetch all sections
   const { data: sections } = useQuery({
-    queryKey: ["public-sections"],
+    queryKey: ['public-sections'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sections")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
+        .from('sections')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -79,23 +95,25 @@ export default function CatalogPage({
 
   // Fetch all products with modifications, prices, property values, and stock
   const { data: rawProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ["all-products"],
+    queryKey: ['all-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products")
-        .select(`
+        .from('products')
+        .select(
+          `
           *,
           sections(id, slug, name),
           product_modifications(id, stock_status, is_default, sort_order),
           product_prices(price_type_id, price, old_price, modification_id),
           product_property_values(property_id, value, numeric_value, option_id),
           stock_by_pickup_point(quantity)
-        `)
-        .eq("is_active", true);
+        `,
+        )
+        .eq('is_active', true);
       if (error) throw error;
 
-      const modificationIds = data.flatMap(p =>
-        (p.product_modifications || []).map((m) => m.id)
+      const modificationIds = data.flatMap((p) =>
+        (p.product_modifications || []).map((m) => m.id),
       );
 
       const [modPropertyValues, modStockData] = await Promise.all([
@@ -113,7 +131,7 @@ export default function CatalogPage({
 
         const allPropertyValues: CatalogPropertyValue[] = [
           ...(product.product_property_values || []),
-          ...mods.flatMap((m) => modPropertyValues[m.id] || [])
+          ...mods.flatMap((m) => modPropertyValues[m.id] || []),
         ];
 
         return {
@@ -137,12 +155,20 @@ export default function CatalogPage({
     const cartTotal = 0; // catalog view doesn't have cart context
     return rawProducts.map((p) => {
       const prices = (p.product_prices ?? []) as PriceEntry[];
-      const modId = p.has_modifications && p.modifications?.[0] ? p.modifications[0].id : null;
-      const resolved = resolvePrice(prices, priceTypeId, defaultPriceTypeId, modId);
+      const modId =
+        p.has_modifications && p.modifications?.[0]
+          ? p.modifications[0].id
+          : null;
+      const resolved = resolvePrice(
+        prices,
+        priceTypeId,
+        defaultPriceTypeId,
+        modId,
+      );
 
       const stockStatus = p.has_modifications
-        ? (p.modifications?.[0]?.stock_status ?? "in_stock")
-        : (p.stock_status ?? "in_stock");
+        ? (p.modifications?.[0]?.stock_status ?? 'in_stock')
+        : (p.stock_status ?? 'in_stock');
 
       let finalPrice = resolved.price;
       let oldPrice = resolved.oldPrice;
@@ -163,12 +189,26 @@ export default function CatalogPage({
         }
       }
 
-      return { ...p, price: finalPrice, old_price: oldPrice, stock_status: stockStatus };
+      return {
+        ...p,
+        price: finalPrice,
+        old_price: oldPrice,
+        stock_status: stockStatus,
+      };
     });
-  }, [rawProducts, priceTypeId, defaultPriceTypeId, discountGroups, discountCtx]);
+  }, [
+    rawProducts,
+    priceTypeId,
+    defaultPriceTypeId,
+    discountGroups,
+    discountCtx,
+  ]);
 
   // Product ratings
-  const ratingProductIds = useMemo(() => products?.map((p) => p.id) || [], [products]);
+  const ratingProductIds = useMemo(
+    () => products?.map((p) => p.id) || [],
+    [products],
+  );
   const { data: ratingsData } = useProductRatings(ratingProductIds);
 
   // Calculate price range
@@ -176,32 +216,54 @@ export default function CatalogPage({
     if (!products?.length) return undefined;
     const prices = products
       .map((p) => p.price)
-      .filter((p): p is number => typeof p === "number");
+      .filter((p): p is number => typeof p === 'number');
     if (prices.length === 0) return undefined;
     return { min: Math.min(...prices), max: Math.max(...prices) };
   }, [products]);
 
   // Fetch numeric properties for selected section
   const { data: numericProperties } = useQuery({
-    queryKey: ["section-numeric-properties", selectedSectionId],
+    queryKey: ['section-numeric-properties', selectedSectionId],
     queryFn: async () => {
       if (!selectedSectionId) return [];
       const { data, error } = await supabase
-        .from("section_property_assignments")
-        .select(`
+        .from('section_property_assignments')
+        .select(
+          `
           property:property_id (
             id,
             slug,
             property_type,
             is_filterable
           )
-        `)
-        .eq("section_id", selectedSectionId);
+        `,
+        )
+        .eq('section_id', selectedSectionId);
       if (error) throw error;
       return data
-        .map(a => a.property as { id: string; slug: string; property_type: string; is_filterable: boolean } | null)
-        .filter((p): p is { id: string; slug: string; property_type: string; is_filterable: boolean } =>
-          Boolean(p && p.is_filterable && (p.property_type === "number" || p.property_type === "range"))
+        .map(
+          (a) =>
+            a.property as {
+              id: string;
+              slug: string;
+              property_type: string;
+              is_filterable: boolean;
+            } | null,
+        )
+        .filter(
+          (
+            p,
+          ): p is {
+            id: string;
+            slug: string;
+            property_type: string;
+            is_filterable: boolean;
+          } =>
+            Boolean(
+              p &&
+              p.is_filterable &&
+              (p.property_type === 'number' || p.property_type === 'range'),
+            ),
         );
     },
     enabled: !!selectedSectionId,
@@ -213,14 +275,14 @@ export default function CatalogPage({
 
     // Only calculate ranges for products in the selected section
     const relevantProducts = selectedSectionId
-      ? products.filter(p => p.section?.id === selectedSectionId)
+      ? products.filter((p) => p.section?.id === selectedSectionId)
       : products;
 
     const ranges: Record<string, { min: number; max: number }> = {};
 
-    numericProperties.forEach(prop => {
+    numericProperties.forEach((prop) => {
       const values: number[] = [];
-      relevantProducts.forEach(product => {
+      relevantProducts.forEach((product) => {
         product.propertyValues.forEach((pv) => {
           if (pv.property_id === prop.id && pv.numeric_value !== null) {
             values.push(pv.numeric_value);
@@ -257,29 +319,28 @@ export default function CatalogPage({
 
     // Apply property filters (by option_id)
     Object.entries(filters).forEach(([key, value]) => {
-      if (key === "priceMin" || key === "priceMax" || key === "inStockOnly") return;
+      if (key === 'priceMin' || key === 'priceMax' || key === 'inStockOnly')
+        return;
       // Skip numeric range filters (they end with Min or Max)
-      if (key.endsWith("Min") || key.endsWith("Max")) return;
+      if (key.endsWith('Min') || key.endsWith('Max')) return;
       if (!value || (Array.isArray(value) && value.length === 0)) return;
 
       result = result.filter((product) => {
-        const propValue = product.propertyValues.find(
-          (pv) => {
-            // Find by option_id in the selected values
-            if (pv.option_id && Array.isArray(value)) {
-              // Handle comma-separated option_ids for multiselect
-              const productOptionIds = pv.option_id.split(",").filter(Boolean);
-              return productOptionIds.some((id: string) => value.includes(id));
-            }
-            return false;
+        const propValue = product.propertyValues.find((pv) => {
+          // Find by option_id in the selected values
+          if (pv.option_id && Array.isArray(value)) {
+            // Handle comma-separated option_ids for multiselect
+            const productOptionIds = pv.option_id.split(',').filter(Boolean);
+            return productOptionIds.some((id: string) => value.includes(id));
           }
-        );
+          return false;
+        });
         return !!propValue;
       });
     });
 
     // Apply numeric property filters
-    numericProperties?.forEach(prop => {
+    numericProperties?.forEach((prop) => {
       const minKey = `${prop.slug}Min`;
       const maxKey = `${prop.slug}Max`;
       const minVal = filters[minKey];
@@ -289,7 +350,7 @@ export default function CatalogPage({
         result = result.filter((product) => {
           // Find ALL matching property values (from any modification)
           const matchingValues = product.propertyValues.filter(
-            (pv) => pv.property_id === prop.id && pv.numeric_value !== null
+            (pv) => pv.property_id === prop.id && pv.numeric_value !== null,
           );
           if (matchingValues.length === 0) return false; // Filter out products without this property value
 
@@ -310,22 +371,33 @@ export default function CatalogPage({
       result = result.filter((product) => {
         const price = product.price;
         if (price === undefined || price === null) return true;
-        if (filters.priceMin !== undefined && price < (filters.priceMin as number)) return false;
-        if (filters.priceMax !== undefined && price > (filters.priceMax as number)) return false;
+        if (
+          filters.priceMin !== undefined &&
+          price < (filters.priceMin as number)
+        )
+          return false;
+        if (
+          filters.priceMax !== undefined &&
+          price > (filters.priceMax as number)
+        )
+          return false;
         return true;
       });
     }
 
     // Sort
     switch (sortBy) {
-      case "price_asc":
+      case 'price_asc':
         result.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
-      case "price_desc":
+      case 'price_desc':
         result.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
-      case "newest":
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'newest':
+        result.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
         break;
       default:
         break;
@@ -341,11 +413,11 @@ export default function CatalogPage({
 
   // Fetch property options for active filters display
   const { data: allPropertyOptions } = useQuery({
-    queryKey: ["all-property-options-for-filters", selectedSectionId],
+    queryKey: ['all-property-options-for-filters', selectedSectionId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("property_options")
-        .select("id, name, property_id, section_properties(name, slug)");
+        .from('property_options')
+        .select('id, name, property_id, section_properties(name, slug)');
       if (error) throw error;
       return data;
     },
@@ -357,7 +429,7 @@ export default function CatalogPage({
       key: string;
       label: string;
       value: string;
-      type: "option" | "range" | "price";
+      type: 'option' | 'range' | 'price';
       optionId?: string;
     }> = [];
 
@@ -365,17 +437,17 @@ export default function CatalogPage({
       if (value === undefined) return;
 
       // Price filters
-      if (key === "priceMin" || key === "priceMax") {
-        const existingPrice = result.find(f => f.type === "price");
+      if (key === 'priceMin' || key === 'priceMax') {
+        const existingPrice = result.find((f) => f.type === 'price');
         if (!existingPrice) {
           const min = filters.priceMin;
           const max = filters.priceMax;
           if (min !== undefined || max !== undefined) {
             result.push({
-              key: "price",
-              label: "Ціна",
-              value: `${min ?? priceRange?.min ?? 0} - ${max ?? priceRange?.max ?? "∞"} ₴`,
-              type: "price",
+              key: 'price',
+              label: 'Ціна',
+              value: `${min ?? priceRange?.min ?? 0} - ${max ?? priceRange?.max ?? '∞'} ₴`,
+              type: 'price',
             });
           }
         }
@@ -383,20 +455,22 @@ export default function CatalogPage({
       }
 
       // Numeric range filters
-      if (key.endsWith("Min") || key.endsWith("Max")) {
-        const propSlug = key.replace(/Min$|Max$/, "");
-        const existingRange = result.find(f => f.key === propSlug && f.type === "range");
+      if (key.endsWith('Min') || key.endsWith('Max')) {
+        const propSlug = key.replace(/Min$|Max$/, '');
+        const existingRange = result.find(
+          (f) => f.key === propSlug && f.type === 'range',
+        );
         if (!existingRange) {
           const min = filters[`${propSlug}Min`];
           const max = filters[`${propSlug}Max`];
           if (min !== undefined || max !== undefined) {
-            const prop = numericProperties?.find(p => p.slug === propSlug);
+            const prop = numericProperties?.find((p) => p.slug === propSlug);
             const propName = prop?.slug || propSlug;
             result.push({
               key: propSlug,
               label: propName,
-              value: `${min ?? numericPropertyRanges[propSlug]?.min ?? 0} - ${max ?? numericPropertyRanges[propSlug]?.max ?? "∞"}`,
-              type: "range",
+              value: `${min ?? numericPropertyRanges[propSlug]?.min ?? 0} - ${max ?? numericPropertyRanges[propSlug]?.max ?? '∞'}`,
+              type: 'range',
             });
           }
         }
@@ -406,13 +480,19 @@ export default function CatalogPage({
       // Option filters (arrays)
       if (Array.isArray(value)) {
         value.forEach((optionId: string) => {
-          const option = allPropertyOptions?.find(o => o.id === optionId);
+          const option = allPropertyOptions?.find((o) => o.id === optionId);
           if (option) {
             result.push({
               key,
-              label: (option.section_properties as { name: string; slug: string } | null)?.name || key,
+              label:
+                (
+                  option.section_properties as {
+                    name: string;
+                    slug: string;
+                  } | null
+                )?.name || key,
               value: option.name,
-              type: "option",
+              type: 'option',
               optionId,
             });
           }
@@ -421,29 +501,38 @@ export default function CatalogPage({
     });
 
     return result;
-  }, [filters, allPropertyOptions, priceRange, numericPropertyRanges, numericProperties]);
+  }, [
+    filters,
+    allPropertyOptions,
+    priceRange,
+    numericPropertyRanges,
+    numericProperties,
+  ]);
 
-  const handleRemoveFilter = useCallback((filter: { key: string; type: string; optionId?: string }) => {
-    const newFilters = { ...filters };
+  const handleRemoveFilter = useCallback(
+    (filter: { key: string; type: string; optionId?: string }) => {
+      const newFilters = { ...filters };
 
-    if (filter.type === "price") {
-      delete newFilters.priceMin;
-      delete newFilters.priceMax;
-    } else if (filter.type === "range") {
-      delete newFilters[`${filter.key}Min`];
-      delete newFilters[`${filter.key}Max`];
-    } else if (filter.type === "option" && filter.optionId) {
-      const current = newFilters[filter.key] as string[] || [];
-      const updated = current.filter(id => id !== filter.optionId);
-      if (updated.length > 0) {
-        newFilters[filter.key] = updated;
-      } else {
-        delete newFilters[filter.key];
+      if (filter.type === 'price') {
+        delete newFilters.priceMin;
+        delete newFilters.priceMax;
+      } else if (filter.type === 'range') {
+        delete newFilters[`${filter.key}Min`];
+        delete newFilters[`${filter.key}Max`];
+      } else if (filter.type === 'option' && filter.optionId) {
+        const current = (newFilters[filter.key] as string[]) || [];
+        const updated = current.filter((id) => id !== filter.optionId);
+        if (updated.length > 0) {
+          newFilters[filter.key] = updated;
+        } else {
+          delete newFilters[filter.key];
+        }
       }
-    }
 
-    setFilters(newFilters);
-  }, [filters]);
+      setFilters(newFilters);
+    },
+    [filters],
+  );
 
   const handleClearAllFilters = useCallback(() => {
     setFilters({});
@@ -471,7 +560,7 @@ export default function CatalogPage({
       {/* Section chips */}
       <div className="flex flex-wrap gap-2 mb-6">
         <Badge
-          variant={selectedSectionId === null ? "default" : "outline"}
+          variant={selectedSectionId === null ? 'default' : 'outline'}
           className="cursor-pointer px-3 py-1.5 text-sm"
           onClick={() => handleSectionClick(null)}
         >
@@ -480,7 +569,7 @@ export default function CatalogPage({
         {sections?.map((section) => (
           <Badge
             key={section.id}
-            variant={selectedSectionId === section.id ? "default" : "outline"}
+            variant={selectedSectionId === section.id ? 'default' : 'outline'}
             className="cursor-pointer px-3 py-1.5 text-sm gap-2"
             onClick={() => handleSectionClick(section.id)}
           >
@@ -511,7 +600,11 @@ export default function CatalogPage({
             onFilterChange={setFilters}
             priceRange={priceRange}
             numericPropertyRanges={numericPropertyRanges}
-            products={selectedSectionId ? products?.filter(p => p.section?.id === selectedSectionId) : products}
+            products={
+              selectedSectionId
+                ? products?.filter((p) => p.section?.id === selectedSectionId)
+                : products
+            }
           />
         </aside>
 
@@ -535,13 +628,20 @@ export default function CatalogPage({
                     onFilterChange={setFilters}
                     priceRange={priceRange}
                     numericPropertyRanges={numericPropertyRanges}
-                    products={selectedSectionId ? products?.filter(p => p.section?.id === selectedSectionId) : products}
+                    products={
+                      selectedSectionId
+                        ? products?.filter(
+                            (p) => p.section?.id === selectedSectionId,
+                          )
+                        : products
+                    }
                   />
                 </SheetContent>
               </Sheet>
 
               <span className="text-sm text-muted-foreground">
-                {products ? filteredProducts.length : ssrProducts.length} товарів
+                {products ? filteredProducts.length : ssrProducts.length}{' '}
+                товарів
               </span>
             </div>
 
@@ -563,18 +663,18 @@ export default function CatalogPage({
 
               <div className="hidden sm:flex border rounded-md">
                 <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                   size="icon"
                   className="rounded-r-none"
-                  onClick={() => setViewMode("grid")}
+                  onClick={() => setViewMode('grid')}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                   size="icon"
                   className="rounded-l-none"
-                  onClick={() => setViewMode("list")}
+                  onClick={() => setViewMode('list')}
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -599,13 +699,17 @@ export default function CatalogPage({
           ) : filteredProducts.length > 0 ? (
             <div
               className={
-                viewMode === "grid"
-                  ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                  : "flex flex-col gap-4"
+                viewMode === 'grid'
+                  ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
+                  : 'flex flex-col gap-4'
               }
             >
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} rating={ratingsData?.[product.id]} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  rating={ratingsData?.[product.id]}
+                />
               ))}
             </div>
           ) : (

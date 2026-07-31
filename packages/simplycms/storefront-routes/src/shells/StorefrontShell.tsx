@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { useActiveThemeModule } from "./useActiveThemeModule";
-import { ThemeTokens } from "./ThemeTokens";
+import type { ReactNode } from 'react';
+import { useActiveThemeModule } from './useActiveThemeModule';
+import { ThemeTokens } from './ThemeTokens';
 
 /**
  * Канонічний каркас сторфронту — заміна `theme.MainLayout`.

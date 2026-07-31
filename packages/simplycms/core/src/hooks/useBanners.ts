@@ -1,12 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { parseBannerRow } from "../lib/bannerUtils";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { parseBannerRow } from '../lib/bannerUtils';
 
 export interface BannerButton {
   text: string;
   url: string;
-  target: "_self" | "_blank";
-  variant: "primary" | "secondary" | "outline";
+  target: '_self' | '_blank';
+  variant: 'primary' | 'secondary' | 'outline';
 }
 
 export interface Banner {
@@ -50,8 +50,12 @@ function isBannerVisible(banner: Banner): boolean {
 
   // Check time range
   if (banner.schedule_time_from && banner.schedule_time_to) {
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    if (currentTime < banner.schedule_time_from || currentTime > banner.schedule_time_to) return false;
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (
+      currentTime < banner.schedule_time_from ||
+      currentTime > banner.schedule_time_to
+    )
+      return false;
   }
 
   return true;
@@ -60,17 +64,17 @@ function isBannerVisible(banner: Banner): boolean {
 export function useBanners(placement: string, sectionId?: string) {
   const supabase = useSupabaseClient();
   return useQuery({
-    queryKey: ["banners", placement, sectionId],
+    queryKey: ['banners', placement, sectionId],
     queryFn: async () => {
       let query = supabase
-        .from("banners")
-        .select("*")
-        .eq("is_active", true)
-        .eq("placement", placement)
-        .order("sort_order");
+        .from('banners')
+        .select('*')
+        .eq('is_active', true)
+        .eq('placement', placement)
+        .order('sort_order');
 
       if (sectionId) {
-        query = query.eq("section_id", sectionId);
+        query = query.eq('section_id', sectionId);
       }
 
       const { data } = await query;

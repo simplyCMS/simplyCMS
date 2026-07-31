@@ -10,17 +10,17 @@ import type {
   LinkResolver,
   MediaProvider,
   ConfigProvider,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 // Конфіг магазину (host-`defineConfig`) — окремий контур від складання
 // EngineContext нижче: він описує САЙТ, а не адаптери даних.
-export { defineConfig } from "./config";
+export { defineConfig } from './config';
 export type {
   SimplyCmsConfig,
   SimplyCmsSeoConfig,
   PluginRegistration,
   ThemeLoader,
-} from "./config";
+} from './config';
 
 /** Опис feature-модуля збірки (catalog/cart/checkout/orders/…). */
 export interface EngineModule {

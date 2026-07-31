@@ -152,9 +152,10 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   (гейти в канонічному порядку: `pnpm format:check` → `pnpm lint` → `pnpm build`
   → `pnpm typecheck` → `pnpm test`; **build перед typecheck**, бо build генерує
   `src/routeTree.gen.ts`; гейт саме `format:check` — `pnpm format` це
-  `prettier --write`, він не червоніє. 🔴 `prettier` наразі не встановлений
-  (`devDependencies` його не містить, CI format не запускає) — тож де-факто
-  гейти починаються з `lint`; це борг, а не привід писати «format зелений»);
+  `prettier --write`, він не червоніє. Обидві покривають увесь репозиторій;
+  що виключено — у `.prettierignore`: машинний генерат, артефакти збірки, `*.md`.
+  🔴 Форматування — НЕ предмет рев'ю: `format:check` або зелений, або ні; не пиши
+  знахідок про стиль, який prettier вже нормалізував);
 - вердикт: `CONFIRMED` (з confidence) / `REFUTED` (з причиною) / `PARTIAL`
   (реальне, але не так і не там, де описано) — з переформулюванням.
 

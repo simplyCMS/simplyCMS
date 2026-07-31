@@ -1,6 +1,12 @@
 import { messages as uk } from './catalogs/uk';
 import { messages as en } from './catalogs/en';
-import type { Catalog, Locale, MessageKey, MessageParams, Translator } from './types';
+import type {
+  Catalog,
+  Locale,
+  MessageKey,
+  MessageParams,
+  Translator,
+} from './types';
 
 /** Реєстр каталогів за локаллю. uk — повний, решта часткові. */
 const catalogs: Record<Locale, Catalog> = { uk, en };

@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Badge } from "@simplycms/ui/badge";
-import { Switch } from "@simplycms/ui/switch";
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Badge } from '@simplycms/ui/badge';
+import { Switch } from '@simplycms/ui/switch';
 import {
   Table,
   TableBody,
@@ -12,11 +12,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
-import { toast } from "sonner";
+} from '@simplycms/ui/table';
+import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
-import { Plus, Trash2, Globe } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
+import { Plus, Trash2, Globe } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
 
 export default function ShippingZones() {
   const supabase = useSupabaseClient();
@@ -24,51 +24,59 @@ export default function ShippingZones() {
   const queryClient = useQueryClient();
 
   const { data: zones, isLoading } = useQuery({
-    queryKey: ["shipping-zones"],
+    queryKey: ['shipping-zones'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_zones")
-        .select(`
+        .from('shipping_zones')
+        .select(
+          `
           *,
           shipping_rates (count)
-        `)
-        .order("sort_order");
+        `,
+        )
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
 
   const toggleActive = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({
+      id,
+      is_active,
+    }: {
+      id: string;
+      is_active: boolean;
+    }) => {
       const { error } = await supabase
-        .from("shipping_zones")
+        .from('shipping_zones')
         .update({ is_active })
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-zones"] });
-      toast.success("Статус оновлено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
+      toast.success('Статус оновлено');
     },
     onError: () => {
-      toast.error("Помилка оновлення статусу");
+      toast.error('Помилка оновлення статусу');
     },
   });
 
   const deleteZone = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("shipping_zones")
+        .from('shipping_zones')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipping-zones"] });
-      toast.success("Зону видалено");
+      queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
+      toast.success('Зону видалено');
     },
     onError: () => {
-      toast.error("Помилка видалення зони");
+      toast.error('Помилка видалення зони');
     },
   });
 
@@ -82,7 +90,10 @@ export default function ShippingZones() {
           </p>
         </div>
         <Button asChild>
-          <Link to={adminPath("shipping/zones/$zoneId")} params={{ zoneId: 'new' }}>
+          <Link
+            to={adminPath('shipping/zones/$zoneId')}
+            params={{ zoneId: 'new' }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Додати зону
           </Link>
@@ -118,7 +129,9 @@ export default function ShippingZones() {
                   <TableRow
                     key={zone.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate({ to: adminPath(`shipping/zones/${zone.id}`) })}
+                    onClick={() =>
+                      navigate({ to: adminPath(`shipping/zones/${zone.id}`) })
+                    }
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -142,9 +155,12 @@ export default function ShippingZones() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-muted-foreground max-w-[200px] truncate">
-                        {zone.cities && zone.cities.length > 0 
-                          ? zone.cities.slice(0, 3).join(", ") + (zone.cities.length > 3 ? ` +${zone.cities.length - 3}` : "")
-                          : "—"}
+                        {zone.cities && zone.cities.length > 0
+                          ? zone.cities.slice(0, 3).join(', ') +
+                            (zone.cities.length > 3
+                              ? ` +${zone.cities.length - 3}`
+                              : '')
+                          : '—'}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
@@ -156,7 +172,10 @@ export default function ShippingZones() {
                       <Switch
                         checked={zone.is_active}
                         onCheckedChange={(checked) =>
-                          toggleActive.mutate({ id: zone.id, is_active: checked })
+                          toggleActive.mutate({
+                            id: zone.id,
+                            is_active: checked,
+                          })
                         }
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -168,7 +187,7 @@ export default function ShippingZones() {
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm("Видалити цю зону доставки?")) {
+                            if (confirm('Видалити цю зону доставки?')) {
                               deleteZone.mutate(zone.id);
                             }
                           }}

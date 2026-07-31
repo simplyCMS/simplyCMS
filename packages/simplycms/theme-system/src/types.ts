@@ -1,5 +1,5 @@
-import type React from "react";
-import type { Banner } from "@simplycms/objects/objects";
+import type React from 'react';
+import type { Banner } from '@simplycms/objects/objects';
 
 /**
  * Паспорт теми. Тема — це встановлювана одиниця платформи, тому маніфест
@@ -27,23 +27,23 @@ export interface ThemeTokenValues {
   background?: string;
   foreground?: string;
   card?: string;
-  "card-foreground"?: string;
+  'card-foreground'?: string;
   popover?: string;
-  "popover-foreground"?: string;
+  'popover-foreground'?: string;
   primary?: string;
-  "primary-foreground"?: string;
+  'primary-foreground'?: string;
   secondary?: string;
-  "secondary-foreground"?: string;
+  'secondary-foreground'?: string;
   muted?: string;
-  "muted-foreground"?: string;
+  'muted-foreground'?: string;
   accent?: string;
-  "accent-foreground"?: string;
+  'accent-foreground'?: string;
   destructive?: string;
-  "destructive-foreground"?: string;
+  'destructive-foreground'?: string;
   success?: string;
-  "success-foreground"?: string;
+  'success-foreground'?: string;
   warning?: string;
-  "warning-foreground"?: string;
+  'warning-foreground'?: string;
   border?: string;
   input?: string;
   ring?: string;
@@ -60,7 +60,7 @@ export interface DesignTokens extends ThemeTokenValues {
 
 /** Опис одного налаштування теми для UI-генератора форми в адмінці */
 export interface ThemeSettingDefinition {
-  type: "color" | "boolean" | "select" | "text" | "number";
+  type: 'color' | 'boolean' | 'select' | 'text' | 'number';
   default: string | boolean | number;
   label: string;
   description?: string;

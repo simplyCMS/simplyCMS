@@ -1,6 +1,6 @@
-import { ProductCarousel } from "../../components/ProductCarousel";
-import { useSectionProducts } from "./queries";
-import type { HomeSection } from "./types";
+import { ProductCarousel } from '../../components/ProductCarousel';
+import { useSectionProducts } from './queries';
+import type { HomeSection } from './types';
 
 /**
  * Канонічна секція головної: товарна добірка однієї кореневої категорії.

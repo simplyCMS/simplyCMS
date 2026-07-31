@@ -1,2 +1,2 @@
 // Перенесено в @simplycms/profile-ui. Re-export для зворотної сумісності.
-export * from "@simplycms/profile-ui/AvatarUpload";
+export * from '@simplycms/profile-ui/AvatarUpload';

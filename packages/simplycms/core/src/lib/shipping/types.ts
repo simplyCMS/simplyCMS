@@ -11,4 +11,4 @@ export type {
   ShippingCalculationContext,
   ShippingCalculationResult,
   ShippingFormData,
-} from "@simplycms/objects";
+} from '@simplycms/objects';

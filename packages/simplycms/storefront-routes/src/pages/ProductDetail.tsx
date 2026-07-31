@@ -1,30 +1,43 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useParams, useNavigate, useSearch, useLocation, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Separator } from "@simplycms/ui/separator";
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import {
+  useParams,
+  useNavigate,
+  useSearch,
+  useLocation,
+  Link,
+} from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Separator } from '@simplycms/ui/separator';
 
-import { ProductGallery } from "@simplycms/core/components/catalog/ProductGallery";
-import { ModificationSelector, type ModificationStockInfo } from "@simplycms/core/components/catalog/ModificationSelector";
-import { ProductCharacteristics } from "@simplycms/core/components/catalog/ProductCharacteristics";
-import { useCart } from "@simplycms/core/hooks/useCart";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+import { ProductGallery } from '@simplycms/core/components/catalog/ProductGallery';
+import {
+  ModificationSelector,
+  type ModificationStockInfo,
+} from '@simplycms/core/components/catalog/ModificationSelector';
+import { ProductCharacteristics } from '@simplycms/core/components/catalog/ProductCharacteristics';
+import { useCart } from '@simplycms/core/hooks/useCart';
+import { useToast } from '@simplycms/core/hooks/use-toast';
 import {
   Loader2,
   ChevronRight,
   ShoppingCart,
   Heart,
   Share2,
-} from "lucide-react";
-import { StockDisplay } from "@simplycms/core/components/catalog/StockDisplay";
-import { PluginSlot } from "@simplycms/plugins/PluginSlot";
-import { ProductReviews } from "@simplycms/core/components/reviews/ProductReviews";
-import { usePriceType } from "@simplycms/core/hooks/usePriceType";
-import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
-import { useDiscountGroups, useDiscountContext, applyDiscount } from "@simplycms/core/hooks/useDiscountedPrice";
-import type { Tables } from "@simplycms/supabase";
+} from 'lucide-react';
+import { StockDisplay } from '@simplycms/core/components/catalog/StockDisplay';
+import { PluginSlot } from '@simplycms/plugins/PluginSlot';
+import { ProductReviews } from '@simplycms/core/components/reviews/ProductReviews';
+import { usePriceType } from '@simplycms/core/hooks/usePriceType';
+import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import {
+  useDiscountGroups,
+  useDiscountContext,
+  applyDiscount,
+} from '@simplycms/core/hooks/useDiscountedPrice';
+import type { Tables } from '@simplycms/supabase';
 
 /** Елемент характеристики товару з інформацією про властивість та опцію */
 interface PropertyValueItem {
@@ -33,7 +46,13 @@ interface PropertyValueItem {
   numeric_value: number | null;
   option_id: string | null;
   option: { id: string; slug: string } | null;
-  property: { id: string; name: string; slug: string; property_type: string; has_page: boolean } | null;
+  property: {
+    id: string;
+    name: string;
+    slug: string;
+    property_type: string;
+    has_page: boolean;
+  } | null;
 }
 
 export interface ProductDetailPageProps {
@@ -52,7 +71,10 @@ export default function ProductDetailPage({
   const productSlug = params.productSlug;
   const navigate = useNavigate();
   const pathname = useLocation({ select: (l) => l.pathname });
-  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const search = useSearch({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const { addItem } = useCart();
   const { toast } = useToast();
   const { priceTypeId, defaultPriceTypeId } = usePriceType();
@@ -61,10 +83,10 @@ export default function ProductDetailPage({
 
   // Fetch product with all related data
   const { data: product, isLoading } = useQuery({
-    queryKey: ["public-product", productSlug],
+    queryKey: ['public-product', productSlug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products")
+        .from('products')
         .select(
           `
           *,
@@ -79,10 +101,10 @@ export default function ProductDetailPage({
             property_options:option_id(id, slug),
             section_properties:property_id(id, name, slug, property_type, has_page)
           )
-        `
+        `,
         )
-        .eq("slug", productSlug!)
-        .eq("is_active", true)
+        .eq('slug', productSlug!)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (error) throw error;
@@ -94,17 +116,20 @@ export default function ProductDetailPage({
   // Fetch modification property values for all modifications
   const modificationIds = useMemo(() => {
     if (!product?.product_modifications) return [];
-    return (product.product_modifications as Array<{ id: string }>).map((m) => m.id);
+    return (product.product_modifications as Array<{ id: string }>).map(
+      (m) => m.id,
+    );
   }, [product]);
 
   const { data: modificationPropertyValues } = useQuery({
-    queryKey: ["modification-property-values", modificationIds],
+    queryKey: ['modification-property-values', modificationIds],
     queryFn: async () => {
       if (modificationIds.length === 0) return {};
 
       const { data, error } = await supabase
-        .from("modification_property_values")
-        .select(`
+        .from('modification_property_values')
+        .select(
+          `
           modification_id,
           property_id,
           value,
@@ -112,14 +137,15 @@ export default function ProductDetailPage({
           option_id,
           property_options:option_id(id, slug),
           section_properties:property_id(id, name, slug, property_type, has_page)
-        `)
-        .in("modification_id", modificationIds);
+        `,
+        )
+        .in('modification_id', modificationIds);
 
       if (error) throw error;
 
       // Group by modification_id
       const grouped: Record<string, PropertyValueItem[]> = {};
-      data?.forEach(v => {
+      data?.forEach((v) => {
         if (!grouped[v.modification_id]) {
           grouped[v.modification_id] = [];
         }
@@ -140,7 +166,7 @@ export default function ProductDetailPage({
 
   // Fetch stock info for all modifications
   const { data: modificationsStockData } = useQuery({
-    queryKey: ["modifications-stock", modificationIds],
+    queryKey: ['modifications-stock', modificationIds],
     queryFn: async () => {
       if (modificationIds.length === 0) return {};
 
@@ -149,7 +175,7 @@ export default function ProductDetailPage({
       // Fetch stock data for all modifications in parallel
       await Promise.all(
         modificationIds.map(async (modId: string) => {
-          const { data, error } = await supabase.rpc("get_stock_info", {
+          const { data, error } = await supabase.rpc('get_stock_info', {
             p_product_id: undefined,
             p_modification_id: modId,
           });
@@ -163,7 +189,7 @@ export default function ProductDetailPage({
           } else {
             stockMap[modId] = { totalQuantity: 0, isAvailable: false };
           }
-        })
+        }),
       );
 
       return stockMap;
@@ -196,7 +222,7 @@ export default function ProductDetailPage({
   const hasModifications = product?.has_modifications ?? true;
 
   // Selected modification - sync with URL (only for products with modifications)
-  const [selectedModId, setSelectedModId] = useState<string>("");
+  const [selectedModId, setSelectedModId] = useState<string>('');
   const modSlugFromUrl = search.mod;
 
   useEffect(() => {
@@ -227,13 +253,16 @@ export default function ProductDetailPage({
   const selectedMod = modifications.find((m) => m.id === selectedModId);
 
   // Handle modification selection with URL update
-  const handleModificationSelect = useCallback((modId: string) => {
-    const mod = modifications.find((m) => m.id === modId);
-    if (mod) {
-      setSelectedModId(modId);
-      navigate({ to: pathname, search: { mod: mod.slug }, replace: true });
-    }
-  }, [modifications, navigate, pathname]);
+  const handleModificationSelect = useCallback(
+    (modId: string) => {
+      const mod = modifications.find((m) => m.id === modId);
+      if (mod) {
+        setSelectedModId(modId);
+        navigate({ to: pathname, search: { mod: mod.slug }, replace: true });
+      }
+    },
+    [modifications, navigate, pathname],
+  );
 
   // Combine product and modification images
   const allImages = useMemo(() => {
@@ -255,14 +284,21 @@ export default function ProductDetailPage({
   // Property values with property info - combine product and selected modification properties
   const propertyValues = useMemo(() => {
     // Product-level properties
-    const rawPropValues = product?.product_property_values as Array<{
-      property_id: string;
-      value: string | null;
-      numeric_value: number | null;
-      option_id: string | null;
-      property_options: { id: string; slug: string } | null;
-      section_properties: { id: string; name: string; slug: string; property_type: string; has_page: boolean } | null;
-    }> || [];
+    const rawPropValues =
+      (product?.product_property_values as Array<{
+        property_id: string;
+        value: string | null;
+        numeric_value: number | null;
+        option_id: string | null;
+        property_options: { id: string; slug: string } | null;
+        section_properties: {
+          id: string;
+          name: string;
+          slug: string;
+          property_type: string;
+          has_page: boolean;
+        } | null;
+      }>) || [];
     const productProps: PropertyValueItem[] = rawPropValues.map((pv) => ({
       property_id: pv.property_id,
       value: pv.value,
@@ -273,9 +309,10 @@ export default function ProductDetailPage({
     }));
 
     // Modification-level properties for selected modification
-    const modProps: PropertyValueItem[] = selectedModId && modificationPropertyValues?.[selectedModId]
-      ? modificationPropertyValues[selectedModId]
-      : [];
+    const modProps: PropertyValueItem[] =
+      selectedModId && modificationPropertyValues?.[selectedModId]
+        ? modificationPropertyValues[selectedModId]
+        : [];
 
     // Combine: modification properties override product properties with same property_id
     const propMap = new Map<string, PropertyValueItem>();
@@ -286,9 +323,9 @@ export default function ProductDetailPage({
   }, [product, selectedModId, modificationPropertyValues]);
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
@@ -298,7 +335,12 @@ export default function ProductDetailPage({
     const productPrices = (product?.product_prices ?? []) as PriceEntry[];
     const map: Record<string, { price: number; oldPrice: number | null }> = {};
     modifications.forEach((mod) => {
-      const resolved = resolvePrice(productPrices, priceTypeId, defaultPriceTypeId, mod.id);
+      const resolved = resolvePrice(
+        productPrices,
+        priceTypeId,
+        defaultPriceTypeId,
+        mod.id,
+      );
       if (resolved.price !== null) {
         let modPrice = resolved.price;
         let modOldPrice = resolved.oldPrice;
@@ -323,7 +365,14 @@ export default function ProductDetailPage({
       }
     });
     return map;
-  }, [product, modifications, priceTypeId, defaultPriceTypeId, discountGroups, discountCtx]);
+  }, [
+    product,
+    modifications,
+    priceTypeId,
+    defaultPriceTypeId,
+    discountGroups,
+    discountCtx,
+  ]);
 
   if (isLoading) {
     return (
@@ -342,7 +391,11 @@ export default function ProductDetailPage({
     );
   }
 
-  const section = product.sections as { id: string; slug: string; name: string } | null;
+  const section = product.sections as {
+    id: string;
+    slug: string;
+    name: string;
+  } | null;
 
   // Get price, stock, and SKU based on product type
   let stockStatus: string | null;
@@ -353,14 +406,24 @@ export default function ProductDetailPage({
   const productPrices = (product.product_prices ?? []) as PriceEntry[];
 
   if (hasModifications) {
-    stockStatus = selectedMod?.stock_status ?? "in_stock";
-    const resolved = resolvePrice(productPrices, priceTypeId, defaultPriceTypeId, selectedMod?.id || null);
+    stockStatus = selectedMod?.stock_status ?? 'in_stock';
+    const resolved = resolvePrice(
+      productPrices,
+      priceTypeId,
+      defaultPriceTypeId,
+      selectedMod?.id || null,
+    );
     price = resolved.price ?? undefined;
     oldPrice = resolved.oldPrice;
     sku = selectedMod?.sku;
   } else {
-    stockStatus = product.stock_status ?? "in_stock";
-    const resolved = resolvePrice(productPrices, priceTypeId, defaultPriceTypeId, null);
+    stockStatus = product.stock_status ?? 'in_stock';
+    const resolved = resolvePrice(
+      productPrices,
+      priceTypeId,
+      defaultPriceTypeId,
+      null,
+    );
     price = resolved.price ?? undefined;
     oldPrice = resolved.oldPrice;
     sku = product.sku;
@@ -385,7 +448,7 @@ export default function ProductDetailPage({
     }
   }
 
-  const isInStock = stockStatus === "in_stock" || stockStatus === "on_order";
+  const isInStock = stockStatus === 'in_stock' || stockStatus === 'on_order';
 
   const discountPercent =
     oldPrice && price && oldPrice > price
@@ -428,22 +491,30 @@ export default function ProductDetailPage({
         {/* Product info */}
         <div className="space-y-6">
           {/* Plugin slot: before product info */}
-          <PluginSlot name="product.detail.before" context={{ product, selectedMod }} />
+          <PluginSlot
+            name="product.detail.before"
+            context={{ product, selectedMod }}
+          />
 
           {/* Title and badges */}
           <div>
             {discountPercent && (
-              <Badge variant="destructive" className="mb-2">-{discountPercent}%</Badge>
+              <Badge variant="destructive" className="mb-2">
+                -{discountPercent}%
+              </Badge>
             )}
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-3xl font-bold">{product.name}</h1>
               <div className="flex items-center gap-2 shrink-0 pt-1">
-                {stockStatus === "on_order" && (
-                  <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
+                {stockStatus === 'on_order' && (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
+                  >
                     Під замовлення
                   </Badge>
                 )}
-                {!isInStock && stockStatus !== "on_order" && (
+                {!isInStock && stockStatus !== 'on_order' && (
                   <Badge variant="secondary">Немає в наявності</Badge>
                 )}
                 {/* Plugin slot: product badges */}
@@ -507,23 +578,30 @@ export default function ProductDetailPage({
                   productId: product.id,
                   modificationId: hasModifications ? selectedModId : null,
                   name: product.name,
-                  modificationName: hasModifications ? selectedMod?.name : undefined,
+                  modificationName: hasModifications
+                    ? selectedMod?.name
+                    : undefined,
                   price: price,
                   basePrice: basePrice || null,
-                  discountData: currentDiscountResult && currentDiscountResult.totalDiscount > 0
-                    ? JSON.parse(JSON.stringify({
-                        appliedDiscounts: currentDiscountResult.appliedDiscounts,
-                        totalDiscount: currentDiscountResult.totalDiscount,
-                        basePrice: basePrice,
-                      }))
-                    : null,
+                  discountData:
+                    currentDiscountResult &&
+                    currentDiscountResult.totalDiscount > 0
+                      ? JSON.parse(
+                          JSON.stringify({
+                            appliedDiscounts:
+                              currentDiscountResult.appliedDiscounts,
+                            totalDiscount: currentDiscountResult.totalDiscount,
+                            basePrice: basePrice,
+                          }),
+                        )
+                      : null,
                   image: allImages[0],
                   sku: sku || undefined,
                 });
 
                 toast({
-                  title: "Додано в кошик",
-                  description: `${product.name}${hasModifications && selectedMod ? ` (${selectedMod.name})` : ""}`,
+                  title: 'Додано в кошик',
+                  description: `${product.name}${hasModifications && selectedMod ? ` (${selectedMod.name})` : ''}`,
                 });
               }}
             >
@@ -544,25 +622,41 @@ export default function ProductDetailPage({
       <div className="mt-12 sticky top-0 z-10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 border-b">
         <nav className="flex gap-1">
           <button
-            onClick={() => document.getElementById('section-description')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById('section-description')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
             Опис
           </button>
           <button
-            onClick={() => document.getElementById('section-characteristics')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById('section-characteristics')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
             Характеристики
           </button>
           <button
-            onClick={() => document.getElementById('section-availability')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById('section-availability')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
             Наявність
           </button>
           <button
-            onClick={() => document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById('section-reviews')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
             Відгуки
@@ -611,7 +705,10 @@ export default function ProductDetailPage({
       </section>
 
       {/* Plugin slot: after product content */}
-      <PluginSlot name="product.detail.after" context={{ product, selectedMod, propertyValues }} />
+      <PluginSlot
+        name="product.detail.after"
+        context={{ product, selectedMod, propertyValues }}
+      />
     </div>
   );
 }

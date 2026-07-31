@@ -1,14 +1,14 @@
-import type { Banner } from "@simplycms/objects/objects";
-import { BannerSlider } from "../components/BannerSlider";
-import { ProductCarousel } from "../components/ProductCarousel";
-import { useActiveThemeModule } from "../shells/useActiveThemeModule";
+import type { Banner } from '@simplycms/objects/objects';
+import { BannerSlider } from '../components/BannerSlider';
+import { ProductCarousel } from '../components/ProductCarousel';
+import { useActiveThemeModule } from '../shells/useActiveThemeModule';
 import {
   useFeaturedProducts,
   useNewProducts,
   useRootSections,
-} from "./home/queries";
-import { SectionProductCarousel } from "./home/SectionProductCarousel";
-import type { HomeProduct, HomeSection } from "./home/types";
+} from './home/queries';
+import { SectionProductCarousel } from './home/SectionProductCarousel';
+import type { HomeProduct, HomeSection } from './home/types';
 
 export interface HomePageProps {
   banners?: Banner[];

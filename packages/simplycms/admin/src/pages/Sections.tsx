@@ -1,9 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { adminPath } from "../lib/adminLinks";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { adminPath } from '../lib/adminLinks';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Table,
   TableBody,
@@ -11,9 +11,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { Plus, Trash2, Loader2, ImageIcon } from "lucide-react";
+} from '@simplycms/ui/table';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Plus, Trash2, Loader2, ImageIcon } from 'lucide-react';
 
 export default function Sections() {
   const supabase = useSupabaseClient();
@@ -22,12 +22,12 @@ export default function Sections() {
   const queryClient = useQueryClient();
 
   const { data: sections, isLoading } = useQuery({
-    queryKey: ["admin-sections"],
+    queryKey: ['admin-sections'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sections")
-        .select("*")
-        .order("sort_order", { ascending: true });
+        .from('sections')
+        .select('*')
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -35,15 +35,19 @@ export default function Sections() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("sections").delete().eq("id", id);
+      const { error } = await supabase.from('sections').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-sections"] });
-      toast({ title: "Розділ видалено" });
+      queryClient.invalidateQueries({ queryKey: ['admin-sections'] });
+      toast({ title: 'Розділ видалено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -62,7 +66,14 @@ export default function Sections() {
           <h1 className="text-3xl font-bold">Розділи</h1>
           <p className="text-muted-foreground">Керування розділами каталогу</p>
         </div>
-        <Button onClick={() => navigate({ to: adminPath('sections/$sectionId'), params: { sectionId: 'new' } })}>
+        <Button
+          onClick={() =>
+            navigate({
+              to: adminPath('sections/$sectionId'),
+              params: { sectionId: 'new' },
+            })
+          }
+        >
           <Plus className="h-4 w-4 mr-2" />
           Додати розділ
         </Button>
@@ -86,10 +97,12 @@ export default function Sections() {
             </TableHeader>
             <TableBody>
               {sections?.map((section) => (
-                <TableRow 
+                <TableRow
                   key={section.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: adminPath(`sections/${section.id}`) })}
+                  onClick={() =>
+                    navigate({ to: adminPath(`sections/${section.id}`) })
+                  }
                 >
                   <TableCell>
                     {section.image_url ? (
@@ -104,22 +117,27 @@ export default function Sections() {
                       />
                     ) : (
                       <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">
-                        <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                        <ImageIcon
+                          className="h-4 w-4 text-muted-foreground"
+                          aria-hidden="true"
+                        />
                       </div>
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{section.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{section.slug}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {section.slug}
+                  </TableCell>
                   <TableCell>{section.sort_order}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         section.is_active
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
                       }`}
                     >
-                      {section.is_active ? "Активний" : "Неактивний"}
+                      {section.is_active ? 'Активний' : 'Неактивний'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -128,7 +146,7 @@ export default function Sections() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm("Видалити цей розділ?")) {
+                        if (confirm('Видалити цей розділ?')) {
                           deleteMutation.mutate(section.id);
                         }
                       }}
@@ -141,7 +159,10 @@ export default function Sections() {
               ))}
               {sections?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground"
+                  >
                     Розділів ще немає
                   </TableCell>
                 </TableRow>

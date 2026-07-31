@@ -1,9 +1,9 @@
-import { ProductCard } from "@simplycms/catalog-ui/ProductCard";
-import type { ProductListItem } from "../server/product-list-item";
+import { ProductCard } from '@simplycms/catalog-ui/ProductCard';
+import type { ProductListItem } from '../server/product-list-item';
 
 interface SsrProductGridProps {
   items: ProductListItem[];
-  viewMode: "grid" | "list";
+  viewMode: 'grid' | 'list';
 }
 
 /**
@@ -15,9 +15,9 @@ export function SsrProductGrid({ items, viewMode }: SsrProductGridProps) {
   return (
     <div
       className={
-        viewMode === "grid"
-          ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-          : "flex flex-col gap-4"
+        viewMode === 'grid'
+          ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
+          : 'flex flex-col gap-4'
       }
     >
       {items.map((item) => (

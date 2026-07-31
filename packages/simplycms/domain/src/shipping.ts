@@ -5,7 +5,7 @@ import type {
   ShippingRate,
   ShippingCalculationContext,
   ShippingCalculationResult,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 export type {
   ShippingMethod,
@@ -19,7 +19,7 @@ export type {
   ShippingCalculationContext,
   ShippingCalculationResult,
   ShippingFormData,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 /**
  * Розраховує вартість доставки за конфігурацією тарифу.
@@ -40,10 +40,10 @@ export function calculateShippingCost(
   }
 
   switch (rate.calculation_type) {
-    case "flat":
+    case 'flat':
       return rate.base_cost;
 
-    case "weight": {
+    case 'weight': {
       const weight = cart.totalWeight || 0;
       if (rate.min_weight && weight < rate.min_weight) {
         return rate.base_cost;
@@ -52,19 +52,19 @@ export function calculateShippingCost(
       return rate.base_cost + weight * perKgCost;
     }
 
-    case "order_total": {
+    case 'order_total': {
       // Percentage of order total (base_cost is percentage)
       return (cart.subtotal * rate.base_cost) / 100;
     }
 
-    case "free_from": {
+    case 'free_from': {
       if (rate.free_from_amount && cart.subtotal >= rate.free_from_amount) {
         return 0;
       }
       return rate.base_cost;
     }
 
-    case "plugin":
+    case 'plugin':
       // Plugin rates are calculated via hooks
       return -1;
 
@@ -84,7 +84,7 @@ export async function calculateShipping(
 
   // For plugin methods, skip hook-based calculation in this package
   // (host app can integrate with its own plugin system)
-  if (method.type === "plugin") {
+  if (method.type === 'plugin') {
     return null;
   }
 
@@ -120,14 +120,14 @@ export async function calculateShipping(
  */
 export function formatShippingCost(cost: number | null): string {
   if (cost === null || cost < 0) {
-    return "За тарифами";
+    return 'За тарифами';
   }
   if (cost === 0) {
-    return "Безкоштовно";
+    return 'Безкоштовно';
   }
-  return new Intl.NumberFormat("uk-UA", {
-    style: "currency",
-    currency: "UAH",
+  return new Intl.NumberFormat('uk-UA', {
+    style: 'currency',
+    currency: 'UAH',
     minimumFractionDigits: 0,
   }).format(cost);
 }
@@ -162,5 +162,5 @@ export function findShippingZoneIn<
 }
 
 function normalizeString(str: string): string {
-  return str.toLowerCase().trim().replace(/\s+/g, " ");
+  return str.toLowerCase().trim().replace(/\s+/g, ' ');
 }

@@ -45,17 +45,23 @@ function checkPrerequisites() {
   console.log('🔍 Перевірка передумов...\n');
 
   try {
-    const version = execSync('supabase --version', { encoding: 'utf8' }).trim().split('\n')[0];
+    const version = execSync('supabase --version', { encoding: 'utf8' })
+      .trim()
+      .split('\n')[0];
     console.log(`  ✅ Supabase CLI: ${version}`);
   } catch {
     console.error('  ❌ Supabase CLI не знайдено!');
-    console.log('  💡 Встанови: https://supabase.com/docs/guides/cli/getting-started');
+    console.log(
+      '  💡 Встанови: https://supabase.com/docs/guides/cli/getting-started',
+    );
     return false;
   }
 
   if (!PROJECT_ID) {
     console.error('  ❌ SUPABASE_PROJECT_ID не задано!');
-    console.log('  💡 Додай у .env.local: SUPABASE_PROJECT_ID=your-project-ref');
+    console.log(
+      '  💡 Додай у .env.local: SUPABASE_PROJECT_ID=your-project-ref',
+    );
     return false;
   }
   console.log(`  ✅ Project ID: ${PROJECT_ID}`);
@@ -111,14 +117,21 @@ try {
   if (!checkPrerequisites()) process.exit(1);
 
   console.log('🔗 Підключення до проекту...\n');
-  runTolerant(`supabase link --project-ref ${PROJECT_ID}`, ['already linked', 'Finished']);
+  runTolerant(`supabase link --project-ref ${PROJECT_ID}`, [
+    'already linked',
+    'Finished',
+  ]);
 
   console.log('🔄 Застосування міграцій...\n');
   runTolerant('supabase db push --linked', ['Applied', 'up to date']);
 
   // 🔴 Ланцюжок spec §9: після успішного push типи мусять бути свіжими.
   console.log('🧬 Регенерація типів...\n');
-  execSync('pnpm db:generate-types', { cwd: ROOT, env: cliEnv(), stdio: 'inherit' });
+  execSync('pnpm db:generate-types', {
+    cwd: ROOT,
+    env: cliEnv(),
+    stdio: 'inherit',
+  });
 
   console.log('\n✅ Міграції застосовано, типи оновлено!\n');
 } catch (error) {
@@ -126,9 +139,13 @@ try {
   console.error(`\n❌ Помилка: ${msg}`);
 
   if (msg.includes('authentication') || msg.includes('token'))
-    console.log('💡 Перевір SUPABASE_ACCESS_TOKEN — можливо він протермінований');
+    console.log(
+      '💡 Перевір SUPABASE_ACCESS_TOKEN — можливо він протермінований',
+    );
   if (msg.includes('project'))
-    console.log('💡 Перевір SUPABASE_PROJECT_ID — він має відповідати вашому проекту');
+    console.log(
+      '💡 Перевір SUPABASE_PROJECT_ID — він має відповідати вашому проекту',
+    );
   if (msg.includes('network') || msg.includes('ECONNREFUSED'))
     console.log('💡 Перевір підключення до інтернету');
   if (msg.includes('password'))

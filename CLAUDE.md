@@ -74,10 +74,13 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 **🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test`.
 `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
 гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
-червоніє (обидві покривають лише `src/**`).
-🔴 **Борг:** `prettier` відсутній у `devDependencies` — обидві команди зараз
-падають із `prettier: not found`, а CI їх не запускає. Де-факто гейти
-починаються з `pnpm lint`.
+червоніє.
+`prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
+репозиторій** (`prettier --write .` / `--check .`), а не лише `src/**`.
+Що НЕ форматується — у `.prettierignore`: згенерований машиною код
+(`src/routeTree.gen.ts`, `supabase/types.ts`, Drizzle-схема і `drizzle/`),
+артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
+вирівнювання таблиць і списків без користі для коду).
 
 🔴 **`pnpm lint` = 0 errors / ~960 warnings — це НОРМА.** Warn-зона двох
 `no-restricted-syntax`-селекторів (i18n) навмисно підсвічує ще не мігровані

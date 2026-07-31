@@ -4,10 +4,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Label } from "@simplycms/ui/label";
-import { Package, PackageX, Clock } from "lucide-react";
-import type { StockStatus } from "@simplycms/core/hooks/useStock";
+} from '@simplycms/ui/select';
+import { Label } from '@simplycms/ui/label';
+import { Package, PackageX, Clock } from 'lucide-react';
+import type { StockStatus } from '@simplycms/core/hooks/useStock';
 
 interface StockStatusSelectProps {
   value: StockStatus;
@@ -16,31 +16,36 @@ interface StockStatusSelectProps {
   className?: string;
 }
 
-const statusOptions: { value: StockStatus; label: string; icon: React.ReactNode; color: string }[] = [
+const statusOptions: {
+  value: StockStatus;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+}[] = [
   {
-    value: "in_stock",
-    label: "В наявності",
+    value: 'in_stock',
+    label: 'В наявності',
     icon: <Package className="h-4 w-4" />,
-    color: "text-green-600",
+    color: 'text-green-600',
   },
   {
-    value: "out_of_stock",
-    label: "Немає в наявності",
+    value: 'out_of_stock',
+    label: 'Немає в наявності',
     icon: <PackageX className="h-4 w-4" />,
-    color: "text-destructive",
+    color: 'text-destructive',
   },
   {
-    value: "on_order",
-    label: "Під замовлення",
+    value: 'on_order',
+    label: 'Під замовлення',
     icon: <Clock className="h-4 w-4" />,
-    color: "text-amber-600",
+    color: 'text-amber-600',
   },
 ];
 
 export function StockStatusSelect({
   value,
   onChange,
-  label = "Статус наявності",
+  label = 'Статус наявності',
   className,
 }: StockStatusSelectProps) {
   const selectedOption = statusOptions.find((opt) => opt.value === value);
@@ -53,7 +58,9 @@ export function StockStatusSelect({
           <SelectValue>
             {selectedOption && (
               <div className="flex items-center gap-2">
-                <span className={selectedOption.color}>{selectedOption.icon}</span>
+                <span className={selectedOption.color}>
+                  {selectedOption.icon}
+                </span>
                 <span>{selectedOption.label}</span>
               </div>
             )}

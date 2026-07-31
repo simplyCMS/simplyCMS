@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Table,
   TableBody,
@@ -12,29 +12,29 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
+} from '@simplycms/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@simplycms/ui/select";
-import { Label } from "@simplycms/ui/label";
-import { Switch } from "@simplycms/ui/switch";
-import { useToast } from "@simplycms/core/hooks/use-toast";
+} from '@simplycms/ui/select';
+import { Label } from '@simplycms/ui/label';
+import { Switch } from '@simplycms/ui/switch';
+import { useToast } from '@simplycms/core/hooks/use-toast';
 import {
   ArrowLeft,
   Save,
   Loader2,
   Plus,
   Trash2,
-  GripVertical
-} from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
-import type { Tables } from "@simplycms/supabase";
+  GripVertical,
+} from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import type { Tables } from '@simplycms/supabase';
 
-type SectionProperty = Tables<"section_properties">;
+type SectionProperty = Tables<'section_properties'>;
 
 interface PropertyOption {
   id: string;
@@ -50,13 +50,13 @@ interface PropertyOption {
 }
 
 const propertyTypes = [
-  { value: "text", label: "Текст" },
-  { value: "number", label: "Число" },
-  { value: "select", label: "Вибір (один)" },
-  { value: "multiselect", label: "Вибір (декілька)" },
-  { value: "range", label: "Діапазон" },
-  { value: "color", label: "Колір" },
-  { value: "boolean", label: "Так/Ні" },
+  { value: 'text', label: 'Текст' },
+  { value: 'number', label: 'Число' },
+  { value: 'select', label: 'Вибір (один)' },
+  { value: 'multiselect', label: 'Вибір (декілька)' },
+  { value: 'range', label: 'Діапазон' },
+  { value: 'color', label: 'Колір' },
+  { value: 'boolean', label: 'Так/Ні' },
 ];
 
 export default function PropertyEdit() {
@@ -67,9 +67,9 @@ export default function PropertyEdit() {
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    property_type: "text" as string,
+    name: '',
+    slug: '',
+    property_type: 'text' as string,
     is_required: false,
     is_filterable: false,
     has_page: false,
@@ -78,12 +78,12 @@ export default function PropertyEdit() {
 
   // Fetch property
   const { data: property, isLoading: propertyLoading } = useQuery({
-    queryKey: ["property", propertyId],
+    queryKey: ['property', propertyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .eq("id", propertyId!)
+        .from('section_properties')
+        .select('*')
+        .eq('id', propertyId!)
         .single();
       if (error) throw error;
       return data;
@@ -93,13 +93,13 @@ export default function PropertyEdit() {
 
   // Fetch options
   const { data: options, isLoading: optionsLoading } = useQuery({
-    queryKey: ["property-options", propertyId],
+    queryKey: ['property-options', propertyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("property_options")
-        .select("*")
-        .eq("property_id", propertyId!)
-        .order("sort_order", { ascending: true });
+        .from('property_options')
+        .select('*')
+        .eq('property_id', propertyId!)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
       return data as PropertyOption[];
     },
@@ -111,9 +111,9 @@ export default function PropertyEdit() {
   if (property && property.id !== prevPropertyId) {
     setPrevPropertyId(property.id);
     setFormData({
-      name: property.name || "",
-      slug: property.slug || "",
-      property_type: property.property_type || "text",
+      name: property.name || '',
+      slug: property.slug || '',
+      property_type: property.property_type || 'text',
       is_required: property.is_required ?? false,
       is_filterable: property.is_filterable ?? false,
       has_page: property.has_page ?? false,
@@ -125,35 +125,45 @@ export default function PropertyEdit() {
   const updatePropertyMutation = useMutation({
     mutationFn: async (data: Partial<SectionProperty>) => {
       const { error } = await supabase
-        .from("section_properties")
+        .from('section_properties')
         .update(data)
-        .eq("id", propertyId!);
+        .eq('id', propertyId!);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
-      queryClient.invalidateQueries({ queryKey: ["all-properties"] });
-      toast({ title: "Властивість збережено" });
+      queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['all-properties'] });
+      toast({ title: 'Властивість збережено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
   const deleteOptionMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("property_options")
+        .from('property_options')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["property-options", propertyId] });
-      toast({ title: "Опцію видалено" });
+      queryClient.invalidateQueries({
+        queryKey: ['property-options', propertyId],
+      });
+      toast({ title: 'Опцію видалено' });
     },
     onError: (error) => {
-      toast({ variant: "destructive", title: "Помилка", description: error.message });
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: error.message,
+      });
     },
   });
 
@@ -161,15 +171,20 @@ export default function PropertyEdit() {
     e.preventDefault();
     updatePropertyMutation.mutate({
       ...formData,
-      property_type: formData.property_type as SectionProperty["property_type"],
+      property_type: formData.property_type as SectionProperty['property_type'],
     });
   };
 
-  const handleChange = (field: keyof typeof formData, value: string | number | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (
+    field: keyof typeof formData,
+    value: string | number | boolean,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const showOptions = formData.property_type === "select" || formData.property_type === "multiselect";
+  const showOptions =
+    formData.property_type === 'select' ||
+    formData.property_type === 'multiselect';
 
   if (propertyLoading) {
     return (
@@ -182,11 +197,17 @@ export default function PropertyEdit() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('properties') })}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate({ to: adminPath('properties') })}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{property?.name || "Властивість"}</h1>
+          <h1 className="text-3xl font-bold">
+            {property?.name || 'Властивість'}
+          </h1>
           <p className="text-muted-foreground">Редагування властивості</p>
         </div>
       </div>
@@ -203,7 +224,7 @@ export default function PropertyEdit() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
+                  onChange={(e) => handleChange('name', e.target.value)}
                   required
                 />
               </div>
@@ -212,7 +233,7 @@ export default function PropertyEdit() {
                 <Input
                   id="slug"
                   value={formData.slug}
-                  onChange={(e) => handleChange("slug", e.target.value)}
+                  onChange={(e) => handleChange('slug', e.target.value)}
                   required
                 />
               </div>
@@ -221,9 +242,9 @@ export default function PropertyEdit() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Тип властивості</Label>
-                <Select 
-                  value={formData.property_type} 
-                  onValueChange={(v) => handleChange("property_type", v)}
+                <Select
+                  value={formData.property_type}
+                  onValueChange={(v) => handleChange('property_type', v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -243,7 +264,9 @@ export default function PropertyEdit() {
                   id="sort_order"
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e) => handleChange("sort_order", parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleChange('sort_order', parseInt(e.target.value) || 0)
+                  }
                 />
               </div>
             </div>
@@ -253,7 +276,7 @@ export default function PropertyEdit() {
                 <Switch
                   id="is_required"
                   checked={formData.is_required}
-                  onCheckedChange={(v) => handleChange("is_required", v)}
+                  onCheckedChange={(v) => handleChange('is_required', v)}
                 />
                 <Label htmlFor="is_required">Обов'язкова</Label>
               </div>
@@ -261,7 +284,7 @@ export default function PropertyEdit() {
                 <Switch
                   id="is_filterable"
                   checked={formData.is_filterable}
-                  onCheckedChange={(v) => handleChange("is_filterable", v)}
+                  onCheckedChange={(v) => handleChange('is_filterable', v)}
                 />
                 <Label htmlFor="is_filterable">Показувати у фільтрах</Label>
               </div>
@@ -269,9 +292,11 @@ export default function PropertyEdit() {
                 <Switch
                   id="has_page"
                   checked={formData.has_page}
-                  onCheckedChange={(v) => handleChange("has_page", v)}
+                  onCheckedChange={(v) => handleChange('has_page', v)}
                 />
-                <Label htmlFor="has_page">Створювати сторінки для значень</Label>
+                <Label htmlFor="has_page">
+                  Створювати сторінки для значень
+                </Label>
               </div>
             </div>
 
@@ -292,8 +317,12 @@ export default function PropertyEdit() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Опції властивості</CardTitle>
-            <Button 
-              onClick={() => navigate({ to: adminPath(`properties/${propertyId}/options/new`) })}
+            <Button
+              onClick={() =>
+                navigate({
+                  to: adminPath(`properties/${propertyId}/options/new`),
+                })
+              }
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -318,15 +347,23 @@ export default function PropertyEdit() {
                 </TableHeader>
                 <TableBody>
                   {options?.map((option) => (
-                    <TableRow 
-                      key={option.id} 
+                    <TableRow
+                      key={option.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate({ to: adminPath(`properties/${propertyId}/options/${option.id}`) })}
+                      onClick={() =>
+                        navigate({
+                          to: adminPath(
+                            `properties/${propertyId}/options/${option.id}`,
+                          ),
+                        })
+                      }
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                       </TableCell>
-                      <TableCell className="font-medium">{option.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {option.name}
+                      </TableCell>
                       <TableCell className="text-muted-foreground font-mono text-sm">
                         {option.slug}
                       </TableCell>
@@ -336,15 +373,20 @@ export default function PropertyEdit() {
                             Заповнено
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm("Видалити цю опцію?")) {
+                            if (confirm('Видалити цю опцію?')) {
                               deleteOptionMutation.mutate(option.id);
                             }
                           }}
@@ -357,7 +399,10 @@ export default function PropertyEdit() {
                   ))}
                   {options?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground"
+                      >
                         Опцій ще немає. Додайте першу опцію.
                       </TableCell>
                     </TableRow>

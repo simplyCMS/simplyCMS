@@ -29,7 +29,9 @@ describe('isSupabaseEnvReady', () => {
 
   it('false без URL', () => {
     expect(
-      isSupabaseEnvReady({ VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_xxx' }),
+      isSupabaseEnvReady({
+        VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_xxx',
+      }),
     ).toBe(false);
   });
 

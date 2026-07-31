@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
   Package,
@@ -10,12 +10,12 @@ import {
   XCircle,
   Loader2,
   UserPlus,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Button } from "@simplycms/ui/button";
-import { Badge } from "@simplycms/ui/badge";
-import { Separator } from "@simplycms/ui/separator";
-import { Skeleton } from "@simplycms/ui/skeleton";
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { Button } from '@simplycms/ui/button';
+import { Badge } from '@simplycms/ui/badge';
+import { Separator } from '@simplycms/ui/separator';
+import { Skeleton } from '@simplycms/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,11 +26,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Json } from "@simplycms/supabase";
+} from '@simplycms/ui/alert-dialog';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import type { Json } from '@simplycms/supabase';
 
 interface OrderDetails {
   id: string;
@@ -70,19 +70,22 @@ interface OrderDetails {
 }
 
 const deliveryLabels: Record<string, string> = {
-  pickup: "Самовивіз",
-  nova_poshta: "Нова Пошта",
+  pickup: 'Самовивіз',
+  nova_poshta: 'Нова Пошта',
   courier: "Кур'єр",
 };
 
 const paymentLabels: Record<string, string> = {
-  cash: "Оплата при отриманні",
-  online: "Онлайн оплата",
+  cash: 'Оплата при отриманні',
+  online: 'Онлайн оплата',
 };
 
 export default function ProfileOrderDetailPage() {
   const supabase = useSupabaseClient();
-  const params = useParams({ strict: false }) as Record<string, string | undefined>;
+  const params = useParams({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const orderId = params?.orderId as string | undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -96,20 +99,22 @@ export default function ProfileOrderDetailPage() {
 
       try {
         const { data, error } = await supabase
-          .from("orders")
-          .select(`
+          .from('orders')
+          .select(
+            `
             *,
             status:order_statuses(id, name, code, color),
             items:order_items(id, name, price, base_price, discount_data, quantity, total)
-          `)
-          .eq("id", orderId)
-          .eq("user_id", user.id)
+          `,
+          )
+          .eq('id', orderId)
+          .eq('user_id', user.id)
           .maybeSingle();
 
         if (error) throw error;
         setOrder(data);
       } catch (error) {
-        console.error("Error loading order:", error);
+        console.error('Error loading order:', error);
       } finally {
         setIsLoading(false);
       }
@@ -119,24 +124,24 @@ export default function ProfileOrderDetailPage() {
   }, [orderId, user, supabase]);
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(new Date(dateString));
   };
 
-  const canCancel = order?.status?.code === "new";
+  const canCancel = order?.status?.code === 'new';
 
   const handleCancel = async () => {
     if (!order) return;
@@ -145,9 +150,9 @@ export default function ProfileOrderDetailPage() {
     try {
       // Get cancelled status
       const { data: cancelledStatus } = await supabase
-        .from("order_statuses")
-        .select("id")
-        .eq("code", "cancelled")
+        .from('order_statuses')
+        .select('id')
+        .eq('code', 'cancelled')
         .maybeSingle();
 
       if (!cancelledStatus) {
@@ -155,29 +160,32 @@ export default function ProfileOrderDetailPage() {
       }
 
       if (!user?.id) {
-        throw new Error("Користувач не авторизований");
+        throw new Error('Користувач не авторизований');
       }
 
       const { error } = await supabase
-        .from("orders")
+        .from('orders')
         .update({ status_id: cancelledStatus.id })
-        .eq("id", order.id)
-        .eq("user_id", user.id);
+        .eq('id', order.id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
       toast({
-        title: "Замовлення скасовано",
+        title: 'Замовлення скасовано',
         description: `Замовлення ${order.order_number} успішно скасовано`,
       });
 
-      navigate({ to: "/profile/orders" });
+      navigate({ to: '/profile/orders' });
     } catch (error: unknown) {
-      console.error("Error cancelling order:", error);
+      console.error('Error cancelling order:', error);
       toast({
-        title: "Помилка",
-        description: error instanceof Error ? error.message : "Не вдалось скасувати замовлення",
-        variant: "destructive",
+        title: 'Помилка',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Не вдалось скасувати замовлення',
+        variant: 'destructive',
       });
     } finally {
       setIsCancelling(false);
@@ -256,8 +264,8 @@ export default function ProfileOrderDetailPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Скасувати замовлення?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Ви впевнені, що хочете скасувати замовлення {order.order_number}?
-                    Цю дію неможливо буде відмінити.
+                    Ви впевнені, що хочете скасувати замовлення{' '}
+                    {order.order_number}? Цю дію неможливо буде відмінити.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -273,7 +281,7 @@ export default function ProfileOrderDetailPage() {
                         Скасування...
                       </>
                     ) : (
-                      "Так, скасувати"
+                      'Так, скасувати'
                     )}
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -304,7 +312,9 @@ export default function ProfileOrderDetailPage() {
                 </p>
                 {item.base_price && item.base_price > item.price && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    <span className="line-through">{formatPrice(item.base_price)}</span>
+                    <span className="line-through">
+                      {formatPrice(item.base_price)}
+                    </span>
                   </p>
                 )}
               </div>
@@ -334,7 +344,9 @@ export default function ProfileOrderDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground">Спосіб доставки</p>
               <p className="font-medium">
-                {deliveryLabels[order.delivery_method || ""] || order.delivery_method || "Не вказано"}
+                {deliveryLabels[order.delivery_method || ''] ||
+                  order.delivery_method ||
+                  'Не вказано'}
               </p>
             </div>
             {order.delivery_city && (

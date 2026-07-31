@@ -1,74 +1,98 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ChevronRight, ArrowLeft } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Form } from "@simplycms/ui/form";
-import { useCart } from "@simplycms/core/hooks/useCart";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import { CheckoutAuthBlock } from "@simplycms/core/components/checkout/CheckoutAuthBlock";
-import { CheckoutContactForm } from "@simplycms/core/components/checkout/CheckoutContactForm";
-import { CheckoutDeliveryForm } from "@simplycms/core/components/checkout/CheckoutDeliveryForm";
-import { CheckoutPaymentForm } from "@simplycms/core/components/checkout/CheckoutPaymentForm";
-import { CheckoutOrderSummary } from "@simplycms/core/components/checkout/CheckoutOrderSummary";
-import { CheckoutRecipientForm } from "@simplycms/core/components/checkout/CheckoutRecipientForm";
-import { PluginSlot } from "@simplycms/plugins";
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { Form } from '@simplycms/ui/form';
+import { useCart } from '@simplycms/core/hooks/useCart';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import { CheckoutAuthBlock } from '@simplycms/core/components/checkout/CheckoutAuthBlock';
+import { CheckoutContactForm } from '@simplycms/core/components/checkout/CheckoutContactForm';
+import { CheckoutDeliveryForm } from '@simplycms/core/components/checkout/CheckoutDeliveryForm';
+import { CheckoutPaymentForm } from '@simplycms/core/components/checkout/CheckoutPaymentForm';
+import { CheckoutOrderSummary } from '@simplycms/core/components/checkout/CheckoutOrderSummary';
+import { CheckoutRecipientForm } from '@simplycms/core/components/checkout/CheckoutRecipientForm';
+import { PluginSlot } from '@simplycms/plugins';
 
-const checkoutSchema = z.object({
-  firstName: z.string().min(2, "Мінімум 2 символи").max(100, "Максимум 100 символів"),
-  lastName: z.string().min(2, "Мінімум 2 символи").max(100, "Максимум 100 символів"),
-  email: z.string().email("Невірний формат email").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  shippingMethodId: z.string().min(1, "Оберіть спосіб доставки"),
-  deliveryCity: z.string().optional(),
-  deliveryAddress: z.string().optional(),
-  pickupPointId: z.string().optional(),
-  paymentMethod: z.enum(["cash", "online"], {
-    message: "Оберіть спосіб оплати",
-  }),
-  notes: z.string().optional(),
-  // Recipient fields
-  hasDifferentRecipient: z.boolean(),
-  savedRecipientId: z.string().optional(),
-  recipientFirstName: z.string().optional(),
-  recipientLastName: z.string().optional(),
-  recipientPhone: z.string().optional(),
-  recipientEmail: z.string().optional(),
-  recipientCity: z.string().optional(),
-  recipientAddress: z.string().optional(),
-  recipientNotes: z.string().optional(),
-  saveRecipient: z.boolean(),
-  // Address fields
-  savedAddressId: z.string().optional(),
-  saveAddress: z.boolean(),
-}).refine((data) => {
-  // Require at least email OR phone
-  const hasEmail = data.email && data.email.length > 0;
-  const hasPhone = data.phone && data.phone.length >= 10;
-  return hasEmail || hasPhone;
-}, {
-  message: "Вкажіть email або телефон для зв'язку",
-  path: ["phone"],
-}).refine((data) => {
-  // If different recipient is selected, require recipient details
-  if (data.hasDifferentRecipient) {
-    return (
-      data.recipientFirstName && data.recipientFirstName.length >= 2 &&
-      data.recipientLastName && data.recipientLastName.length >= 2 &&
-      data.recipientPhone && data.recipientPhone.length >= 10 &&
-      data.recipientCity && data.recipientCity.length >= 2 &&
-      data.recipientAddress && data.recipientAddress.length >= 5
-    );
-  }
-  return true;
-}, {
-  message: "Заповніть всі обов'язкові поля отримувача",
-  path: ["recipientFirstName"],
-});
+const checkoutSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(2, 'Мінімум 2 символи')
+      .max(100, 'Максимум 100 символів'),
+    lastName: z
+      .string()
+      .min(2, 'Мінімум 2 символи')
+      .max(100, 'Максимум 100 символів'),
+    email: z
+      .string()
+      .email('Невірний формат email')
+      .optional()
+      .or(z.literal('')),
+    phone: z.string().optional(),
+    shippingMethodId: z.string().min(1, 'Оберіть спосіб доставки'),
+    deliveryCity: z.string().optional(),
+    deliveryAddress: z.string().optional(),
+    pickupPointId: z.string().optional(),
+    paymentMethod: z.enum(['cash', 'online'], {
+      message: 'Оберіть спосіб оплати',
+    }),
+    notes: z.string().optional(),
+    // Recipient fields
+    hasDifferentRecipient: z.boolean(),
+    savedRecipientId: z.string().optional(),
+    recipientFirstName: z.string().optional(),
+    recipientLastName: z.string().optional(),
+    recipientPhone: z.string().optional(),
+    recipientEmail: z.string().optional(),
+    recipientCity: z.string().optional(),
+    recipientAddress: z.string().optional(),
+    recipientNotes: z.string().optional(),
+    saveRecipient: z.boolean(),
+    // Address fields
+    savedAddressId: z.string().optional(),
+    saveAddress: z.boolean(),
+  })
+  .refine(
+    (data) => {
+      // Require at least email OR phone
+      const hasEmail = data.email && data.email.length > 0;
+      const hasPhone = data.phone && data.phone.length >= 10;
+      return hasEmail || hasPhone;
+    },
+    {
+      message: "Вкажіть email або телефон для зв'язку",
+      path: ['phone'],
+    },
+  )
+  .refine(
+    (data) => {
+      // If different recipient is selected, require recipient details
+      if (data.hasDifferentRecipient) {
+        return (
+          data.recipientFirstName &&
+          data.recipientFirstName.length >= 2 &&
+          data.recipientLastName &&
+          data.recipientLastName.length >= 2 &&
+          data.recipientPhone &&
+          data.recipientPhone.length >= 10 &&
+          data.recipientCity &&
+          data.recipientCity.length >= 2 &&
+          data.recipientAddress &&
+          data.recipientAddress.length >= 5
+        );
+      }
+      return true;
+    },
+    {
+      message: "Заповніть всі обов'язкові поля отримувача",
+      path: ['recipientFirstName'],
+    },
+  );
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
@@ -83,27 +107,27 @@ export default function Checkout() {
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      shippingMethodId: "",
-      deliveryCity: "",
-      deliveryAddress: "",
-      pickupPointId: "",
-      paymentMethod: "cash",
-      notes: "",
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      shippingMethodId: '',
+      deliveryCity: '',
+      deliveryAddress: '',
+      pickupPointId: '',
+      paymentMethod: 'cash',
+      notes: '',
       hasDifferentRecipient: false,
-      savedRecipientId: "",
-      recipientFirstName: "",
-      recipientLastName: "",
-      recipientPhone: "",
-      recipientEmail: "",
-      recipientCity: "",
-      recipientAddress: "",
-      recipientNotes: "",
+      savedRecipientId: '',
+      recipientFirstName: '',
+      recipientLastName: '',
+      recipientPhone: '',
+      recipientEmail: '',
+      recipientCity: '',
+      recipientAddress: '',
+      recipientNotes: '',
       saveRecipient: false,
-      savedAddressId: "",
+      savedAddressId: '',
       saveAddress: false,
     },
   });
@@ -114,18 +138,18 @@ export default function Checkout() {
       if (!user) return;
 
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, email, phone")
-        .eq("user_id", user.id)
+        .from('profiles')
+        .select('first_name, last_name, email, phone')
+        .eq('user_id', user.id)
         .single();
 
       if (profile) {
-        form.setValue("firstName", profile.first_name || "");
-        form.setValue("lastName", profile.last_name || "");
-        form.setValue("email", profile.email || user.email || "");
-        form.setValue("phone", profile.phone || "");
+        form.setValue('firstName', profile.first_name || '');
+        form.setValue('lastName', profile.last_name || '');
+        form.setValue('email', profile.email || user.email || '');
+        form.setValue('phone', profile.phone || '');
       } else if (user.email) {
-        form.setValue("email", user.email);
+        form.setValue('email', user.email);
       }
     }
 
@@ -135,7 +159,7 @@ export default function Checkout() {
   // Redirect if cart is empty
   useEffect(() => {
     if (items.length === 0) {
-      navigate({ to: "/cart" });
+      navigate({ to: '/cart' });
     }
   }, [items, navigate]);
 
@@ -144,9 +168,9 @@ export default function Checkout() {
   const onSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
       toast({
-        title: "Кошик порожній",
-        description: "Додайте товари в кошик перед оформленням",
-        variant: "destructive",
+        title: 'Кошик порожній',
+        description: 'Додайте товари в кошик перед оформленням',
+        variant: 'destructive',
       });
       return;
     }
@@ -157,10 +181,14 @@ export default function Checkout() {
       let savedRecipientId: string | null = null;
 
       // If saving new recipient, create it first
-      if (user && data.hasDifferentRecipient && data.saveRecipient &&
-          (!data.savedRecipientId || data.savedRecipientId === "new")) {
+      if (
+        user &&
+        data.hasDifferentRecipient &&
+        data.saveRecipient &&
+        (!data.savedRecipientId || data.savedRecipientId === 'new')
+      ) {
         const { data: newRecipient, error: recipientError } = await supabase
-          .from("user_recipients")
+          .from('user_recipients')
           .insert({
             user_id: user.id,
             first_name: data.recipientFirstName!,
@@ -171,38 +199,38 @@ export default function Checkout() {
             address: data.recipientAddress!,
             notes: data.recipientNotes || null,
           })
-          .select("id")
+          .select('id')
           .single();
 
         if (recipientError) throw recipientError;
         savedRecipientId = newRecipient.id;
-      } else if (data.savedRecipientId && data.savedRecipientId !== "new") {
+      } else if (data.savedRecipientId && data.savedRecipientId !== 'new') {
         savedRecipientId = data.savedRecipientId;
       }
 
       // Get default status
       const { data: defaultStatus } = await supabase
-        .from("order_statuses")
-        .select("id")
-        .eq("is_default", true)
+        .from('order_statuses')
+        .select('id')
+        .eq('is_default', true)
         .single();
 
       // Get shipping method details
       const { data: shippingMethod } = await supabase
-        .from("shipping_methods")
-        .select("code")
-        .eq("id", data.shippingMethodId)
+        .from('shipping_methods')
+        .select('code')
+        .eq('id', data.shippingMethodId)
         .single();
 
       // Create order with all data copied as text
       const { data: order, error: orderError } = await supabase
-        .from("orders")
+        .from('orders')
         .insert({
           user_id: user?.id || null,
           first_name: data.firstName,
           last_name: data.lastName,
-          email: data.email || "",
-          phone: data.phone || "",
+          email: data.email || '',
+          phone: data.phone || '',
           delivery_method: shippingMethod?.code || null,
           delivery_city: data.deliveryCity || null,
           delivery_address: data.deliveryAddress || null,
@@ -215,13 +243,21 @@ export default function Checkout() {
           shipping_cost: shippingCost,
           pickup_point_id: data.pickupPointId || null,
           shipping_data: {},
-          order_number: "",
+          order_number: '',
           // Recipient fields - copy as text
           has_different_recipient: data.hasDifferentRecipient,
-          recipient_first_name: data.hasDifferentRecipient ? data.recipientFirstName : null,
-          recipient_last_name: data.hasDifferentRecipient ? data.recipientLastName : null,
-          recipient_phone: data.hasDifferentRecipient ? data.recipientPhone : null,
-          recipient_email: data.hasDifferentRecipient ? data.recipientEmail || null : null,
+          recipient_first_name: data.hasDifferentRecipient
+            ? data.recipientFirstName
+            : null,
+          recipient_last_name: data.hasDifferentRecipient
+            ? data.recipientLastName
+            : null,
+          recipient_phone: data.hasDifferentRecipient
+            ? data.recipientPhone
+            : null,
+          recipient_email: data.hasDifferentRecipient
+            ? data.recipientEmail || null
+            : null,
           // References for analytics (will become NULL if deleted)
           saved_recipient_id: savedRecipientId,
           saved_address_id: data.savedAddressId || null,
@@ -247,7 +283,7 @@ export default function Checkout() {
       }));
 
       const { error: itemsError } = await supabase
-        .from("order_items")
+        .from('order_items')
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
@@ -256,7 +292,7 @@ export default function Checkout() {
       clearCart();
 
       toast({
-        title: "Замовлення оформлено!",
+        title: 'Замовлення оформлено!',
         description: `Номер замовлення: ${order.order_number}`,
       });
 
@@ -274,11 +310,12 @@ export default function Checkout() {
         });
       }
     } catch (error: unknown) {
-      console.error("Order creation error:", error);
+      console.error('Order creation error:', error);
       toast({
-        title: "Помилка оформлення",
-        description: error instanceof Error ? error.message : "Спробуйте ще раз",
-        variant: "destructive",
+        title: 'Помилка оформлення',
+        description:
+          error instanceof Error ? error.message : 'Спробуйте ще раз',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -323,38 +360,50 @@ export default function Checkout() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Forms column */}
             <div className="lg:col-span-2 space-y-6">
-              <PluginSlot name="checkout.shipping.before" context={{ cart: { items, subtotal: totalPrice } }} />
+              <PluginSlot
+                name="checkout.shipping.before"
+                context={{ cart: { items, subtotal: totalPrice } }}
+              />
 
               {/* Auth block for non-logged-in users */}
-              {!user && (
-                <CheckoutAuthBlock onAuthSuccess={handleAuthSuccess} />
-              )}
+              {!user && <CheckoutAuthBlock onAuthSuccess={handleAuthSuccess} />}
 
               <CheckoutContactForm
                 values={{
-                  firstName: form.watch("firstName"),
-                  lastName: form.watch("lastName"),
-                  email: form.watch("email") || "",
-                  phone: form.watch("phone") || "",
+                  firstName: form.watch('firstName'),
+                  lastName: form.watch('lastName'),
+                  email: form.watch('email') || '',
+                  phone: form.watch('phone') || '',
                 }}
-                onChange={(field, value) => form.setValue(field as keyof CheckoutFormData, value)}
+                onChange={(field, value) =>
+                  form.setValue(field as keyof CheckoutFormData, value)
+                }
               />
               <CheckoutRecipientForm
                 values={form.watch()}
-                onChange={(field, value) => form.setValue(field as keyof CheckoutFormData, value)}
+                onChange={(field, value) =>
+                  form.setValue(field as keyof CheckoutFormData, value)
+                }
               />
               <CheckoutDeliveryForm
                 values={form.watch()}
-                onChange={(field, value) => form.setValue(field as keyof CheckoutFormData, value)}
+                onChange={(field, value) =>
+                  form.setValue(field as keyof CheckoutFormData, value)
+                }
                 subtotal={totalPrice}
                 onShippingCostChange={setShippingCost}
               />
               <CheckoutPaymentForm
-                selectedMethod={form.watch("paymentMethod")}
-                onMethodChange={(method) => form.setValue("paymentMethod", method as "cash" | "online")}
+                selectedMethod={form.watch('paymentMethod')}
+                onMethodChange={(method) =>
+                  form.setValue('paymentMethod', method as 'cash' | 'online')
+                }
               />
 
-              <PluginSlot name="checkout.shipping.after" context={{ cart: { items, subtotal: totalPrice } }} />
+              <PluginSlot
+                name="checkout.shipping.after"
+                context={{ cart: { items, subtotal: totalPrice } }}
+              />
             </div>
 
             {/* Order summary column */}
@@ -363,8 +412,8 @@ export default function Checkout() {
                 items={items}
                 totalPrice={totalPrice}
                 shippingCost={shippingCost}
-                notes={form.watch("notes") || ""}
-                onNotesChange={(notes) => form.setValue("notes", notes)}
+                notes={form.watch('notes') || ''}
+                onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}
               />
             </div>

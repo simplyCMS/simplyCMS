@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./database";
-import { resolveSupabaseKeys } from "./keys";
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './database';
+import { resolveSupabaseKeys } from './keys';
 
 /**
  * Анонімний Supabase-клієнт для публічних запитів без cookies.

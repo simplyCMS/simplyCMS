@@ -1,59 +1,70 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@simplycms/ui/tabs";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from "lucide-react";
-import { z } from "zod";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@simplycms/ui/tabs';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from 'lucide-react';
+import { z } from 'zod';
 
 const loginSchema = z.object({
-  email: z.string().email("Введіть коректний email"),
-  password: z.string().min(6, "Пароль має містити мінімум 6 символів"),
+  email: z.string().email('Введіть коректний email'),
+  password: z.string().min(6, 'Пароль має містити мінімум 6 символів'),
 });
 
-const registerSchema = z.object({
-  firstName: z.string().min(2, "Ім'я має містити мінімум 2 символи"),
-  lastName: z.string().min(2, "Прізвище має містити мінімум 2 символи"),
-  email: z.string().email("Введіть коректний email"),
-  password: z.string().min(6, "Пароль має містити мінімум 6 символів"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Паролі не співпадають",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    firstName: z.string().min(2, "Ім'я має містити мінімум 2 символи"),
+    lastName: z.string().min(2, 'Прізвище має містити мінімум 2 символи'),
+    email: z.string().email('Введіть коректний email'),
+    password: z.string().min(6, 'Пароль має містити мінімум 6 символів'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Паролі не співпадають',
+    path: ['confirmPassword'],
+  });
 
 export default function Auth() {
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const search = useSearch({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<string>(search.tab || "login");
+  const [activeTab, setActiveTab] = useState<string>(search.tab || 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   // Register form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate({ to: "/" });
+      navigate({ to: '/' });
     }
   }, [user, authLoading, navigate]);
 
@@ -63,7 +74,10 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const result = loginSchema.safeParse({ email: loginEmail, password: loginPassword });
+      const result = loginSchema.safeParse({
+        email: loginEmail,
+        password: loginPassword,
+      });
 
       if (!result.success) {
         const fieldErrors: Record<string, string> = {};
@@ -84,24 +98,25 @@ export default function Auth() {
 
       if (error) {
         toast({
-          variant: "destructive",
-          title: "Помилка входу",
-          description: error.message === "Invalid login credentials"
-            ? "Невірний email або пароль"
-            : error.message,
+          variant: 'destructive',
+          title: 'Помилка входу',
+          description:
+            error.message === 'Invalid login credentials'
+              ? 'Невірний email або пароль'
+              : error.message,
         });
       } else {
         toast({
-          title: "Успішний вхід",
-          description: "Ласкаво просимо!",
+          title: 'Успішний вхід',
+          description: 'Ласкаво просимо!',
         });
-        navigate({ to: "/" });
+        navigate({ to: '/' });
       }
     } catch {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: "Щось пішло не так. Спробуйте ще раз.",
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Щось пішло не так. Спробуйте ще раз.',
       });
     } finally {
       setIsLoading(false);
@@ -148,22 +163,22 @@ export default function Auth() {
 
       if (error) {
         toast({
-          variant: "destructive",
-          title: "Помилка реєстрації",
+          variant: 'destructive',
+          title: 'Помилка реєстрації',
           description: error.message,
         });
       } else {
         toast({
-          title: "Реєстрація успішна",
-          description: "Ваш акаунт створено!",
+          title: 'Реєстрація успішна',
+          description: 'Ваш акаунт створено!',
         });
-        navigate({ to: "/" });
+        navigate({ to: '/' });
       }
     } catch {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: "Щось пішло не так. Спробуйте ще раз.",
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Щось пішло не так. Спробуйте ще раз.',
       });
     } finally {
       setIsLoading(false);
@@ -174,7 +189,7 @@ export default function Auth() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider: 'google',
         options: {
           redirectTo: window.location.origin + '/auth/callback',
         },
@@ -182,16 +197,16 @@ export default function Auth() {
 
       if (error) {
         toast({
-          variant: "destructive",
-          title: "Помилка Google авторизації",
+          variant: 'destructive',
+          title: 'Помилка Google авторизації',
           description: error.message,
         });
       }
     } catch {
       toast({
-        variant: "destructive",
-        title: "Помилка",
-        description: "Щось пішло не так. Спробуйте ще раз.",
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Щось пішло не так. Спробуйте ще раз.',
       });
     } finally {
       setIsLoading(false);
@@ -215,24 +230,32 @@ export default function Auth() {
             <div className="p-2 bg-primary rounded-lg">
               <Zap className="h-8 w-8 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">SolarStore</span>
+            <span className="text-2xl font-bold text-foreground">
+              SolarStore
+            </span>
           </div>
-          <p className="text-muted-foreground">Альтернативна енергетика для вашого дому</p>
+          <p className="text-muted-foreground">
+            Альтернативна енергетика для вашого дому
+          </p>
         </div>
 
         <Card className="border-border/50 shadow-xl">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-2xl text-center">
-              {activeTab === "login" ? "Вхід в акаунт" : "Реєстрація"}
+              {activeTab === 'login' ? 'Вхід в акаунт' : 'Реєстрація'}
             </CardTitle>
             <CardDescription className="text-center">
-              {activeTab === "login"
-                ? "Увійдіть для доступу до особистого кабінету"
-                : "Створіть акаунт для покупок та відстеження замовлень"}
+              {activeTab === 'login'
+                ? 'Увійдіть для доступу до особистого кабінету'
+                : 'Створіть акаунт для покупок та відстеження замовлень'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Вхід</TabsTrigger>
                 <TabsTrigger value="register">Реєстрація</TabsTrigger>
@@ -251,11 +274,13 @@ export default function Auth() {
                         placeholder="your@email.com"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className={`pl-10 ${errors.email ? "border-destructive" : ""}`}
+                        className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                         disabled={isLoading}
                       />
                     </div>
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -264,11 +289,11 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-password"
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="--------"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className={`pl-10 pr-10 ${errors.password ? "border-destructive" : ""}`}
+                        className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
                         disabled={isLoading}
                       />
                       <button
@@ -276,10 +301,18 @@ export default function Auth() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                    {errors.password && (
+                      <p className="text-sm text-destructive">
+                        {errors.password}
+                      </p>
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -289,7 +322,7 @@ export default function Auth() {
                         Вхід...
                       </>
                     ) : (
-                      "Увійти"
+                      'Увійти'
                     )}
                   </Button>
                 </form>
@@ -309,11 +342,15 @@ export default function Auth() {
                           placeholder="Іван"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          className={`pl-10 ${errors.firstName ? "border-destructive" : ""}`}
+                          className={`pl-10 ${errors.firstName ? 'border-destructive' : ''}`}
                           disabled={isLoading}
                         />
                       </div>
-                      {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+                      {errors.firstName && (
+                        <p className="text-sm text-destructive">
+                          {errors.firstName}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -324,10 +361,14 @@ export default function Auth() {
                         placeholder="Петренко"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className={errors.lastName ? "border-destructive" : ""}
+                        className={errors.lastName ? 'border-destructive' : ''}
                         disabled={isLoading}
                       />
-                      {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+                      {errors.lastName && (
+                        <p className="text-sm text-destructive">
+                          {errors.lastName}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -341,11 +382,13 @@ export default function Auth() {
                         placeholder="your@email.com"
                         value={registerEmail}
                         onChange={(e) => setRegisterEmail(e.target.value)}
-                        className={`pl-10 ${errors.email ? "border-destructive" : ""}`}
+                        className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                         disabled={isLoading}
                       />
                     </div>
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -354,11 +397,11 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-password"
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="--------"
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
-                        className={`pl-10 pr-10 ${errors.password ? "border-destructive" : ""}`}
+                        className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
                         disabled={isLoading}
                       />
                       <button
@@ -366,10 +409,18 @@ export default function Auth() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                    {errors.password && (
+                      <p className="text-sm text-destructive">
+                        {errors.password}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -378,22 +429,32 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
+                        type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="--------"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={`pl-10 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                        className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
                         disabled={isLoading}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
-                    {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-destructive">
+                        {errors.confirmPassword}
+                      </p>
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -403,7 +464,7 @@ export default function Auth() {
                         Реєстрація...
                       </>
                     ) : (
-                      "Зареєструватися"
+                      'Зареєструватися'
                     )}
                   </Button>
                 </form>
@@ -450,7 +511,11 @@ export default function Auth() {
 
             {/* Back to Home */}
             <div className="mt-6 text-center">
-              <Button variant="link" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
+              <Button
+                variant="link"
+                onClick={() => navigate({ to: '/' })}
+                className="text-muted-foreground"
+              >
                 Повернутися на головну
               </Button>
             </div>

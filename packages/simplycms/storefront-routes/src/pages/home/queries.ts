@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import type { HomeProduct, HomeSection } from "./types";
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import type { HomeProduct, HomeSection } from './types';
 
 /** Скорочений select для картки товару на головній */
 const HOME_PRODUCT_SELECT =
-  "id, name, slug, images, short_description, stock_status, section_id, sections!products_section_id_fkey(slug)";
+  'id, name, slug, images, short_description, stock_status, section_id, sections!products_section_id_fkey(slug)';
 
 /** Рядок товару з `sections`-джойном */
 type ProductRow = {
@@ -34,14 +34,14 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
   const supabase = useSupabaseClient();
 
   return useQuery({
-    queryKey: ["featured-products"],
+    queryKey: ['featured-products'],
     queryFn: async (): Promise<HomeProduct[]> => {
       const { data } = await supabase
-        .from("products")
+        .from('products')
         .select(HOME_PRODUCT_SELECT)
-        .eq("is_active", true)
-        .eq("is_featured", true)
-        .order("created_at", { ascending: false })
+        .eq('is_active', true)
+        .eq('is_featured', true)
+        .order('created_at', { ascending: false })
         .limit(12);
 
       return (data ?? []).map((row) => mapProduct(row as ProductRow));
@@ -55,13 +55,13 @@ export function useNewProducts(initialData?: HomeProduct[]) {
   const supabase = useSupabaseClient();
 
   return useQuery({
-    queryKey: ["new-products"],
+    queryKey: ['new-products'],
     queryFn: async (): Promise<HomeProduct[]> => {
       const { data } = await supabase
-        .from("products")
+        .from('products')
         .select(HOME_PRODUCT_SELECT)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .limit(12);
 
       return (data ?? []).map((row) => mapProduct(row as ProductRow));
@@ -75,14 +75,14 @@ export function useRootSections(initialData?: HomeSection[]) {
   const supabase = useSupabaseClient();
 
   return useQuery({
-    queryKey: ["root-sections"],
+    queryKey: ['root-sections'],
     queryFn: async (): Promise<HomeSection[]> => {
       const { data } = await supabase
-        .from("sections")
-        .select("id, name, slug")
-        .eq("is_active", true)
-        .is("parent_id", null)
-        .order("sort_order");
+        .from('sections')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .is('parent_id', null)
+        .order('sort_order');
 
       return data ?? [];
     },
@@ -95,14 +95,14 @@ export function useSectionProducts(section: HomeSection) {
   const supabase = useSupabaseClient();
 
   return useQuery({
-    queryKey: ["section-products", section.id],
+    queryKey: ['section-products', section.id],
     queryFn: async (): Promise<HomeProduct[]> => {
       const { data } = await supabase
-        .from("products")
-        .select("id, name, slug, images, short_description, stock_status")
-        .eq("is_active", true)
-        .eq("section_id", section.id)
-        .order("created_at", { ascending: false })
+        .from('products')
+        .select('id, name, slug, images, short_description, stock_status')
+        .eq('is_active', true)
+        .eq('section_id', section.id)
+        .order('created_at', { ascending: false })
         .limit(8);
 
       return (data ?? []).map((row) => ({

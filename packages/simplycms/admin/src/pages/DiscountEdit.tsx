@@ -1,31 +1,44 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { Input } from "@simplycms/ui/input";
-import { Textarea } from "@simplycms/ui/textarea";
-import { Switch } from "@simplycms/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@simplycms/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@simplycms/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@simplycms/ui/tabs";
-import { Badge } from "@simplycms/ui/badge";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { toast } from "@simplycms/core/hooks/use-toast";
-import type { Json } from "@simplycms/supabase";
-import { adminPath } from "../lib/adminLinks";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { Input } from '@simplycms/ui/input';
+import { Textarea } from '@simplycms/ui/textarea';
+import { Switch } from '@simplycms/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@simplycms/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@simplycms/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@simplycms/ui/tabs';
+import { Badge } from '@simplycms/ui/badge';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { toast } from '@simplycms/core/hooks/use-toast';
+import type { Json } from '@simplycms/supabase';
+import { adminPath } from '../lib/adminLinks';
 
 const schema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
   description: z.string().optional(),
-  group_id: z.string().min(1, "Оберіть групу"),
-  price_type_id: z.string().min(1, "Оберіть вид ціни"),
-  discount_type: z.enum(["percent", "fixed_amount", "fixed_price"]),
-  discount_value: z.number().positive("Значення має бути додатнім"),
+  group_id: z.string().min(1, 'Оберіть групу'),
+  price_type_id: z.string().min(1, 'Оберіть вид ціни'),
+  discount_type: z.enum(['percent', 'fixed_amount', 'fixed_price']),
+  discount_value: z.number().positive('Значення має бути додатнім'),
   priority: z.number().int(),
   is_active: z.boolean(),
   starts_at: z.string().optional(),
@@ -54,7 +67,7 @@ export default function DiscountEdit() {
   const search = useSearch({ strict: false }) as Record<string, string>;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = !discountId || discountId === "new";
+  const isNew = !discountId || discountId === 'new';
 
   const [targets, setTargets] = useState<TargetRow[]>([]);
   const [conditions, setConditions] = useState<ConditionRow[]>([]);
@@ -62,60 +75,76 @@ export default function DiscountEdit() {
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: "",
-      description: "",
-      group_id: search.groupId || "",
-      price_type_id: search.priceTypeId || "",
-      discount_type: "percent",
+      name: '',
+      description: '',
+      group_id: search.groupId || '',
+      price_type_id: search.priceTypeId || '',
+      discount_type: 'percent',
       discount_value: 10,
       priority: 0,
       is_active: true,
-      starts_at: "",
-      ends_at: "",
+      starts_at: '',
+      ends_at: '',
     },
   });
 
   // Load reference data
   const { data: groups = [] } = useQuery({
-    queryKey: ["discount-groups-list"],
+    queryKey: ['discount-groups-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from("discount_groups").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from('discount_groups')
+        .select('id, name')
+        .order('name');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: priceTypes = [] } = useQuery({
-    queryKey: ["price-types"],
+    queryKey: ['price-types'],
     queryFn: async () => {
-      const { data, error } = await supabase.from("price_types").select("id, name").order("sort_order");
+      const { data, error } = await supabase
+        .from('price_types')
+        .select('id, name')
+        .order('sort_order');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products-list-simple"],
+    queryKey: ['products-list-simple'],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("id, name").order("name").limit(500);
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .order('name')
+        .limit(500);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: sections = [] } = useQuery({
-    queryKey: ["sections-list-simple"],
+    queryKey: ['sections-list-simple'],
     queryFn: async () => {
-      const { data, error } = await supabase.from("sections").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from('sections')
+        .select('id, name')
+        .order('name');
       if (error) throw error;
       return data;
     },
   });
 
   const { data: userCategories = [] } = useQuery({
-    queryKey: ["user-categories-list"],
+    queryKey: ['user-categories-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_categories").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from('user_categories')
+        .select('id, name')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -123,14 +152,24 @@ export default function DiscountEdit() {
 
   // Load existing discount
   const { data: existing } = useQuery({
-    queryKey: ["discount", discountId],
+    queryKey: ['discount', discountId],
     queryFn: async () => {
       if (isNew) return null;
-      const { data, error } = await supabase.from("discounts").select("*").eq("id", discountId!).single();
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('id', discountId!)
+        .single();
       if (error) throw error;
 
-      const { data: t } = await supabase.from("discount_targets").select("*").eq("discount_id", discountId!);
-      const { data: c } = await supabase.from("discount_conditions").select("*").eq("discount_id", discountId!);
+      const { data: t } = await supabase
+        .from('discount_targets')
+        .select('*')
+        .eq('discount_id', discountId!);
+      const { data: c } = await supabase
+        .from('discount_conditions')
+        .select('*')
+        .eq('discount_id', discountId!);
 
       return { ...data, targets: t || [], conditions: c || [] };
     },
@@ -143,15 +182,15 @@ export default function DiscountEdit() {
     setPrevExistingId(existing.id);
     form.reset({
       name: existing.name,
-      description: existing.description || "",
+      description: existing.description || '',
       group_id: existing.group_id,
       price_type_id: existing.price_type_id,
       discount_type: existing.discount_type as FormData['discount_type'],
       discount_value: Number(existing.discount_value),
       priority: existing.priority,
       is_active: existing.is_active,
-      starts_at: existing.starts_at ? existing.starts_at.slice(0, 16) : "",
-      ends_at: existing.ends_at ? existing.ends_at.slice(0, 16) : "",
+      starts_at: existing.starts_at ? existing.starts_at.slice(0, 16) : '',
+      ends_at: existing.ends_at ? existing.ends_at.slice(0, 16) : '',
     });
     setTargets(existing.targets || []);
     setConditions(existing.conditions || []);
@@ -174,177 +213,309 @@ export default function DiscountEdit() {
 
       let id = discountId;
       if (isNew) {
-        const { data: created, error } = await supabase.from("discounts").insert(payload).select("id").single();
+        const { data: created, error } = await supabase
+          .from('discounts')
+          .insert(payload)
+          .select('id')
+          .single();
         if (error) throw error;
         id = created.id;
       } else {
-        const { error } = await supabase.from("discounts").update(payload).eq("id", id!);
+        const { error } = await supabase
+          .from('discounts')
+          .update(payload)
+          .eq('id', id!);
         if (error) throw error;
       }
 
       // Sync targets
-      await supabase.from("discount_targets").delete().eq("discount_id", id!);
+      await supabase.from('discount_targets').delete().eq('discount_id', id!);
       if (targets.length > 0) {
-        const { error } = await supabase.from("discount_targets").insert(
-          targets.map((t) => ({ discount_id: id!, target_type: t.target_type as "all" | "product" | "section" | "modification", target_id: t.target_id }))
+        const { error } = await supabase.from('discount_targets').insert(
+          targets.map((t) => ({
+            discount_id: id!,
+            target_type: t.target_type as
+              'all' | 'product' | 'section' | 'modification',
+            target_id: t.target_id,
+          })),
         );
         if (error) throw error;
       }
 
       // Sync conditions
-      await supabase.from("discount_conditions").delete().eq("discount_id", id!);
+      await supabase
+        .from('discount_conditions')
+        .delete()
+        .eq('discount_id', id!);
       if (conditions.length > 0) {
-        const { error } = await supabase.from("discount_conditions").insert(
+        const { error } = await supabase.from('discount_conditions').insert(
           conditions.map((c) => ({
             discount_id: id!,
             condition_type: c.condition_type,
             operator: c.operator,
             value: c.value,
-          }))
+          })),
         );
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["discount-groups-tree"] });
-      toast({ title: isNew ? "Скидку створено" : "Скидку оновлено" });
+      queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
+      toast({ title: isNew ? 'Скидку створено' : 'Скидку оновлено' });
       navigate({ to: adminPath('discounts') });
     },
     onError: (err: Error) => {
-      toast({ title: "Помилка", description: err.message, variant: "destructive" });
+      toast({
+        title: 'Помилка',
+        description: err.message,
+        variant: 'destructive',
+      });
     },
   });
 
-  const addTarget = () => setTargets([...targets, { target_type: "all", target_id: null }]);
-  const removeTarget = (idx: number) => setTargets(targets.filter((_, i) => i !== idx));
+  const addTarget = () =>
+    setTargets([...targets, { target_type: 'all', target_id: null }]);
+  const removeTarget = (idx: number) =>
+    setTargets(targets.filter((_, i) => i !== idx));
 
-  const addCondition = () => setConditions([...conditions, { condition_type: "user_category", operator: "in", value: [] }]);
-  const removeCondition = (idx: number) => setConditions(conditions.filter((_, i) => i !== idx));
+  const addCondition = () =>
+    setConditions([
+      ...conditions,
+      { condition_type: 'user_category', operator: 'in', value: [] },
+    ]);
+  const removeCondition = (idx: number) =>
+    setConditions(conditions.filter((_, i) => i !== idx));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: adminPath('discounts') })}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate({ to: adminPath('discounts') })}
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-3xl font-bold">{isNew ? "Нова скидка" : "Редагування скидки"}</h1>
+        <h1 className="text-3xl font-bold">
+          {isNew ? 'Нова скидка' : 'Редагування скидки'}
+        </h1>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit((d) => save.mutate(d))} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit((d) => save.mutate(d))}
+          className="space-y-6"
+        >
           <Tabs defaultValue="main">
             <TabsList>
               <TabsTrigger value="main">Основні</TabsTrigger>
               <TabsTrigger value="targets">Цілі ({targets.length})</TabsTrigger>
-              <TabsTrigger value="conditions">Умови ({conditions.length})</TabsTrigger>
+              <TabsTrigger value="conditions">
+                Умови ({conditions.length})
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="main">
               <Card>
                 <CardContent className="pt-6 space-y-4">
-                  <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Назва</FormLabel>
-                      <FormControl><Input {...field} placeholder="Знижка 10% для VIP" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Опис</FormLabel>
-                      <FormControl><Textarea {...field} /></FormControl>
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="group_id" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Група</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Оберіть" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {groups.map((g) => (
-                            <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="price_type_id" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Вид ціни</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Оберіть" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {priceTypes.map((pt) => (
-                            <SelectItem key={pt.id} value={pt.id}>{pt.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="discount_type" render={({ field }) => (
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Тип знижки</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="percent">Відсоток (%)</SelectItem>
-                            <SelectItem value="fixed_amount">Фіксована сума (грн)</SelectItem>
-                            <SelectItem value="fixed_price">Фіксована ціна (= грн)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )} />
-
-                    <FormField control={form.control} name="discount_value" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Значення</FormLabel>
+                        <FormLabel>Назва</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          <Input {...field} placeholder="Знижка 10% для VIP" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
-                    )} />
-                  </div>
+                    )}
+                  />
 
-                  <FormField control={form.control} name="priority" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Пріоритет</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
-                      </FormControl>
-                    </FormItem>
-                  )} />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Опис</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="group_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Група</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Оберіть" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {groups.map((g) => (
+                              <SelectItem key={g.id} value={g.id}>
+                                {g.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="price_type_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Вид ціни</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Оберіть" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {priceTypes.map((pt) => (
+                              <SelectItem key={pt.id} value={pt.id}>
+                                {pt.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="starts_at" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Дата початку</FormLabel>
-                        <FormControl><Input type="datetime-local" {...field} /></FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="ends_at" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Дата закінчення</FormLabel>
-                        <FormControl><Input type="datetime-local" {...field} /></FormControl>
-                      </FormItem>
-                    )} />
+                    <FormField
+                      control={form.control}
+                      name="discount_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Тип знижки</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="percent">
+                                Відсоток (%)
+                              </SelectItem>
+                              <SelectItem value="fixed_amount">
+                                Фіксована сума (грн)
+                              </SelectItem>
+                              <SelectItem value="fixed_price">
+                                Фіксована ціна (= грн)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="discount_value"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Значення</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value))
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
-                  <FormField control={form.control} name="is_active" render={({ field }) => (
-                    <FormItem className="flex items-center gap-3">
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                      <FormLabel className="mt-0!">Активна</FormLabel>
-                    </FormItem>
-                  )} />
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Пріоритет</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="starts_at"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Дата початку</FormLabel>
+                          <FormControl>
+                            <Input type="datetime-local" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ends_at"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Дата закінчення</FormLabel>
+                          <FormControl>
+                            <Input type="datetime-local" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="is_active"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-3">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="mt-0!">Активна</FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -353,73 +524,99 @@ export default function DiscountEdit() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>До чого застосовується</CardTitle>
-                  <Button type="button" variant="outline" size="sm" onClick={addTarget}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTarget}
+                  >
                     <Plus className="h-4 w-4 mr-1" /> Додати ціль
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {targets.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Без цілей — застосовується до всіх товарів</p>
+                    <p className="text-sm text-muted-foreground">
+                      Без цілей — застосовується до всіх товарів
+                    </p>
                   )}
                   {targets.map((t, idx) => (
-                    <div key={idx} className="flex items-center gap-3 border rounded-md p-3">
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 border rounded-md p-3"
+                    >
                       <Select
                         value={t.target_type}
                         onValueChange={(v) => {
                           const updated = [...targets];
-                          updated[idx] = { ...t, target_type: v, target_id: v === "all" ? null : t.target_id };
+                          updated[idx] = {
+                            ...t,
+                            target_type: v,
+                            target_id: v === 'all' ? null : t.target_id,
+                          };
                           setTargets(updated);
                         }}
                       >
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Всі товари</SelectItem>
                           <SelectItem value="product">Товар</SelectItem>
                           <SelectItem value="section">Розділ</SelectItem>
-                          <SelectItem value="modification">Модифікація</SelectItem>
+                          <SelectItem value="modification">
+                            Модифікація
+                          </SelectItem>
                         </SelectContent>
                       </Select>
 
-                      {t.target_type === "product" && (
+                      {t.target_type === 'product' && (
                         <Select
-                          value={t.target_id || ""}
+                          value={t.target_id || ''}
                           onValueChange={(v) => {
                             const updated = [...targets];
                             updated[idx] = { ...t, target_id: v };
                             setTargets(updated);
                           }}
                         >
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Оберіть товар" /></SelectTrigger>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Оберіть товар" />
+                          </SelectTrigger>
                           <SelectContent>
                             {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       )}
 
-                      {t.target_type === "section" && (
+                      {t.target_type === 'section' && (
                         <Select
-                          value={t.target_id || ""}
+                          value={t.target_id || ''}
                           onValueChange={(v) => {
                             const updated = [...targets];
                             updated[idx] = { ...t, target_id: v };
                             setTargets(updated);
                           }}
                         >
-                          <SelectTrigger className="flex-1"><SelectValue placeholder="Оберіть розділ" /></SelectTrigger>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Оберіть розділ" />
+                          </SelectTrigger>
                           <SelectContent>
                             {sections.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       )}
 
-                      {t.target_type === "modification" && (
+                      {t.target_type === 'modification' && (
                         <Input
                           placeholder="UUID модифікації"
-                          value={t.target_id || ""}
+                          value={t.target_id || ''}
                           onChange={(e) => {
                             const updated = [...targets];
                             updated[idx] = { ...t, target_id: e.target.value };
@@ -429,7 +626,12 @@ export default function DiscountEdit() {
                         />
                       )}
 
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeTarget(idx)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeTarget(idx)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -442,49 +644,88 @@ export default function DiscountEdit() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Умови застосування</CardTitle>
-                  <Button type="button" variant="outline" size="sm" onClick={addCondition}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCondition}
+                  >
                     <Plus className="h-4 w-4 mr-1" /> Додати умову
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {conditions.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Без умов — застосовується завжди</p>
+                    <p className="text-sm text-muted-foreground">
+                      Без умов — застосовується завжди
+                    </p>
                   )}
                   {conditions.map((c, idx) => (
-                    <div key={idx} className="flex items-center gap-3 border rounded-md p-3">
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 border rounded-md p-3"
+                    >
                       <Select
                         value={c.condition_type}
                         onValueChange={(v) => {
                           const updated = [...conditions];
-                          updated[idx] = { ...c, condition_type: v, operator: v === "user_category" ? "in" : ">=", value: v === "user_logged_in" ? true : v === "user_category" ? [] : 0 };
+                          updated[idx] = {
+                            ...c,
+                            condition_type: v,
+                            operator: v === 'user_category' ? 'in' : '>=',
+                            value:
+                              v === 'user_logged_in'
+                                ? true
+                                : v === 'user_category'
+                                  ? []
+                                  : 0,
+                          };
                           setConditions(updated);
                         }}
                       >
-                        <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-48">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user_category">Категорія користувача</SelectItem>
-                          <SelectItem value="min_quantity">Мін. кількість</SelectItem>
-                          <SelectItem value="min_order_amount">Мін. сума замовлення</SelectItem>
-                          <SelectItem value="user_logged_in">Авторизований</SelectItem>
+                          <SelectItem value="user_category">
+                            Категорія користувача
+                          </SelectItem>
+                          <SelectItem value="min_quantity">
+                            Мін. кількість
+                          </SelectItem>
+                          <SelectItem value="min_order_amount">
+                            Мін. сума замовлення
+                          </SelectItem>
+                          <SelectItem value="user_logged_in">
+                            Авторизований
+                          </SelectItem>
                         </SelectContent>
                       </Select>
 
-                      {c.condition_type === "user_category" && (
+                      {c.condition_type === 'user_category' && (
                         <div className="flex-1 flex flex-wrap gap-1">
                           {userCategories.map((uc) => {
-                            const selected = Array.isArray(c.value) && c.value.includes(uc.id);
+                            const selected =
+                              Array.isArray(c.value) && c.value.includes(uc.id);
                             return (
                               <Badge
                                 key={uc.id}
-                                variant={selected ? "default" : "outline"}
+                                variant={selected ? 'default' : 'outline'}
                                 className="cursor-pointer"
                                 onClick={() => {
                                   const updated = [...conditions];
-                                  const vals = Array.isArray(c.value) ? [...c.value] : [];
+                                  const vals = Array.isArray(c.value)
+                                    ? [...c.value]
+                                    : [];
                                   if (selected) {
-                                    updated[idx] = { ...c, value: vals.filter((v) => v !== uc.id) };
+                                    updated[idx] = {
+                                      ...c,
+                                      value: vals.filter((v) => v !== uc.id),
+                                    };
                                   } else {
-                                    updated[idx] = { ...c, value: [...vals, uc.id] };
+                                    updated[idx] = {
+                                      ...c,
+                                      value: [...vals, uc.id],
+                                    };
                                   }
                                   setConditions(updated);
                                 }}
@@ -496,7 +737,8 @@ export default function DiscountEdit() {
                         </div>
                       )}
 
-                      {(c.condition_type === "min_quantity" || c.condition_type === "min_order_amount") && (
+                      {(c.condition_type === 'min_quantity' ||
+                        c.condition_type === 'min_order_amount') && (
                         <>
                           <Select
                             value={c.operator}
@@ -506,13 +748,15 @@ export default function DiscountEdit() {
                               setConditions(updated);
                             }}
                           >
-                            <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value=">=">≥</SelectItem>
-                              <SelectItem value=">">{">"}</SelectItem>
+                              <SelectItem value=">">{'>'}</SelectItem>
                               <SelectItem value="=">=</SelectItem>
                               <SelectItem value="<=">≤</SelectItem>
-                              <SelectItem value="<">{"<"}</SelectItem>
+                              <SelectItem value="<">{'<'}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Input
@@ -521,23 +765,28 @@ export default function DiscountEdit() {
                             value={c.value as string | number}
                             onChange={(e) => {
                               const updated = [...conditions];
-                              updated[idx] = { ...c, value: Number(e.target.value) };
+                              updated[idx] = {
+                                ...c,
+                                value: Number(e.target.value),
+                              };
                               setConditions(updated);
                             }}
                           />
                         </>
                       )}
 
-                      {c.condition_type === "user_logged_in" && (
+                      {c.condition_type === 'user_logged_in' && (
                         <Select
                           value={String(c.value)}
                           onValueChange={(v) => {
                             const updated = [...conditions];
-                            updated[idx] = { ...c, value: v === "true" };
+                            updated[idx] = { ...c, value: v === 'true' };
                             setConditions(updated);
                           }}
                         >
-                          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="true">Так</SelectItem>
                             <SelectItem value="false">Ні (гість)</SelectItem>
@@ -545,7 +794,12 @@ export default function DiscountEdit() {
                         </Select>
                       )}
 
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeCondition(idx)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCondition(idx)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -557,9 +811,13 @@ export default function DiscountEdit() {
 
           <div className="flex gap-3">
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? "Збереження..." : "Зберегти"}
+              {save.isPending ? 'Збереження...' : 'Зберегти'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => navigate({ to: adminPath('discounts') })}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate({ to: adminPath('discounts') })}
+            >
               Скасувати
             </Button>
           </div>

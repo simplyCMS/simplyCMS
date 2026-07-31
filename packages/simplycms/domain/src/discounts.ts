@@ -10,7 +10,7 @@ import type {
   DiscountResult,
   AppliedDiscount,
   RejectedDiscount,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 export type {
   DiscountType,
@@ -24,7 +24,7 @@ export type {
   AppliedDiscount,
   RejectedDiscount,
   DiscountResult,
-} from "@simplycms/objects";
+} from '@simplycms/objects';
 
 // --- Date check ---
 function isWithinDateRange(
@@ -38,14 +38,17 @@ function isWithinDateRange(
 }
 
 // --- Target matching ---
-function matchesTarget(targets: DiscountTarget[], ctx: DiscountContext): boolean {
+function matchesTarget(
+  targets: DiscountTarget[],
+  ctx: DiscountContext,
+): boolean {
   if (!targets.length) return true; // no targets = applies to all
   return targets.some((t) => {
-    if (t.target_type === "all") return true;
-    if (t.target_type === "product") return t.target_id === ctx.productId;
-    if (t.target_type === "modification")
+    if (t.target_type === 'all') return true;
+    if (t.target_type === 'product') return t.target_id === ctx.productId;
+    if (t.target_type === 'modification')
       return t.target_id === ctx.modificationId;
-    if (t.target_type === "section") return t.target_id === ctx.sectionId;
+    if (t.target_type === 'section') return t.target_id === ctx.sectionId;
     return false;
   });
 }
@@ -58,40 +61,49 @@ function evaluateCondition(
   const { condition_type, operator, value } = cond;
 
   switch (condition_type) {
-    case "user_category": {
+    case 'user_category': {
       if (!ctx.userCategoryId)
-        return { met: false, reason: "Користувач без категорії" };
-      const ids: string[] = (Array.isArray(value) ? value : [value]) as string[];
+        return { met: false, reason: 'Користувач без категорії' };
+      const ids: string[] = (
+        Array.isArray(value) ? value : [value]
+      ) as string[];
       const met =
-        operator === "in"
+        operator === 'in'
           ? ids.includes(ctx.userCategoryId)
           : !ids.includes(ctx.userCategoryId);
-      return { met, reason: met ? "" : `Категорія користувача не входить у список` };
+      return {
+        met,
+        reason: met ? '' : `Категорія користувача не входить у список`,
+      };
     }
-    case "min_quantity": {
+    case 'min_quantity': {
       const met = compareNumeric(ctx.quantity, operator, Number(value));
       return {
         met,
         reason: met
-          ? ""
+          ? ''
           : `Кількість ${ctx.quantity} не відповідає умові ${operator} ${value}`,
       };
     }
-    case "min_order_amount": {
+    case 'min_order_amount': {
       const met = compareNumeric(ctx.cartTotal, operator, Number(value));
       return {
         met,
         reason: met
-          ? ""
+          ? ''
           : `Сума кошика ${ctx.cartTotal} не відповідає умові ${operator} ${value}`,
       };
     }
-    case "user_logged_in": {
-      const expected = value === true || value === "true";
+    case 'user_logged_in': {
+      const expected = value === true || value === 'true';
       const met = ctx.isLoggedIn === expected;
       return {
         met,
-        reason: met ? "" : expected ? "Потрібна авторизація" : "Тільки для гостей",
+        reason: met
+          ? ''
+          : expected
+            ? 'Потрібна авторизація'
+            : 'Тільки для гостей',
       };
     }
     default:
@@ -105,15 +117,15 @@ function compareNumeric(
   expected: number,
 ): boolean {
   switch (operator) {
-    case ">=":
+    case '>=':
       return actual >= expected;
-    case ">":
+    case '>':
       return actual > expected;
-    case "<=":
+    case '<=':
       return actual <= expected;
-    case "<":
+    case '<':
       return actual < expected;
-    case "=":
+    case '=':
       return actual === expected;
     default:
       return false;
@@ -121,13 +133,16 @@ function compareNumeric(
 }
 
 // --- Single discount calculation ---
-function calculateDiscountAmount(basePrice: number, discount: Discount): number {
+function calculateDiscountAmount(
+  basePrice: number,
+  discount: Discount,
+): number {
   switch (discount.discount_type) {
-    case "percent":
+    case 'percent':
       return basePrice * (discount.discount_value / 100);
-    case "fixed_amount":
+    case 'fixed_amount':
       return Math.min(discount.discount_value, basePrice);
-    case "fixed_price":
+    case 'fixed_price':
       return Math.max(0, basePrice - discount.discount_value);
     default:
       return 0;
@@ -155,7 +170,7 @@ function evaluateDiscount(
       applicable: false,
       amount: 0,
       discount,
-      rejectionReasons: ["Скидка неактивна"],
+      rejectionReasons: ['Скидка неактивна'],
     };
   }
   if (!isWithinDateRange(discount.starts_at, discount.ends_at, now)) {
@@ -163,7 +178,7 @@ function evaluateDiscount(
       applicable: false,
       amount: 0,
       discount,
-      rejectionReasons: ["Скидка поза терміном дії"],
+      rejectionReasons: ['Скидка поза терміном дії'],
     };
   }
   if (!matchesTarget(discount.targets, ctx)) {
@@ -171,7 +186,7 @@ function evaluateDiscount(
       applicable: false,
       amount: 0,
       discount,
-      rejectionReasons: ["Товар не входить у цілі скидки"],
+      rejectionReasons: ['Товар не входить у цілі скидки'],
     };
   }
 
@@ -182,7 +197,12 @@ function evaluateDiscount(
   }
 
   if (reasons.length > 0) {
-    return { applicable: false, amount: 0, discount, rejectionReasons: reasons };
+    return {
+      applicable: false,
+      amount: 0,
+      discount,
+      rejectionReasons: reasons,
+    };
   }
 
   const amount = calculateDiscountAmount(basePrice, discount);
@@ -243,7 +263,7 @@ function evaluateGroup(
       rejected.push({
         id: res.discount.id,
         name: res.discount.name,
-        reason: res.rejectionReasons.join("; "),
+        reason: res.rejectionReasons.join('; '),
         groupName: group.name,
       });
     }
@@ -261,7 +281,7 @@ function evaluateGroup(
   let totalAmount = 0;
 
   switch (group.operator) {
-    case "and": {
+    case 'and': {
       // Sum all applicable
       for (const a of allAmounts) {
         totalAmount += a.amount;
@@ -269,7 +289,7 @@ function evaluateGroup(
       }
       break;
     }
-    case "or": {
+    case 'or': {
       // First applicable by priority
       const first = allAmounts[0];
       if (first) {
@@ -282,7 +302,7 @@ function evaluateGroup(
             rejected.push({
               id: s.id,
               name: s.name,
-              reason: "Оператор OR: обрано скидку з вищим пріоритетом",
+              reason: 'Оператор OR: обрано скидку з вищим пріоритетом',
               groupName: group.name,
             });
           }
@@ -290,7 +310,7 @@ function evaluateGroup(
       }
       break;
     }
-    case "not": {
+    case 'not': {
       // If any discount is applicable, NONE apply (inversion)
       if (allAmounts.length > 0) {
         for (const a of allAmounts) {
@@ -298,7 +318,7 @@ function evaluateGroup(
             rejected.push({
               id: a.source.id,
               name: a.source.name,
-              reason: "Оператор NOT: умови виконані, скидка інвертована",
+              reason: 'Оператор NOT: умови виконані, скидка інвертована',
               groupName: group.name,
             });
           }
@@ -307,7 +327,7 @@ function evaluateGroup(
       }
       break;
     }
-    case "min": {
+    case 'min': {
       // Pick minimum discount
       if (allAmounts.length > 0) {
         let minIdx = 0;
@@ -323,7 +343,7 @@ function evaluateGroup(
             rejected.push({
               id: s.id,
               name: s.name,
-              reason: "Оператор MIN: обрано меншу скидку",
+              reason: 'Оператор MIN: обрано меншу скидку',
               groupName: group.name,
             });
           }
@@ -331,7 +351,7 @@ function evaluateGroup(
       }
       break;
     }
-    case "max": {
+    case 'max': {
       // Pick maximum discount
       if (allAmounts.length > 0) {
         let maxIdx = 0;
@@ -347,7 +367,7 @@ function evaluateGroup(
             rejected.push({
               id: s.id,
               name: s.name,
-              reason: "Оператор MAX: обрано більшу скидку",
+              reason: 'Оператор MAX: обрано більшу скидку',
               groupName: group.name,
             });
           }
@@ -358,8 +378,8 @@ function evaluateGroup(
   }
 
   // Handle fixed_price conflict in AND groups: fixed_price wins
-  if (group.operator === "and") {
-    const fixedPriceDiscount = applied.find((a) => a.type === "fixed_price");
+  if (group.operator === 'and') {
+    const fixedPriceDiscount = applied.find((a) => a.type === 'fixed_price');
     if (fixedPriceDiscount) {
       // fixed_price overrides everything else
       const others = applied.filter((a) => a.id !== fixedPriceDiscount.id);
@@ -367,7 +387,7 @@ function evaluateGroup(
         rejected.push({
           id: o.id,
           name: o.name,
-          reason: "Фіксована ціна має пріоритет в групі AND",
+          reason: 'Фіксована ціна має пріоритет в групі AND',
           groupName: group.name,
         });
       }

@@ -1,10 +1,10 @@
-import { Input } from "@simplycms/ui/input";
-import { Label } from "@simplycms/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { StockStatusSelect } from "./StockStatusSelect";
-import { StockByPointManager } from "./StockByPointManager";
-import { ProductPricesEditor } from "./ProductPricesEditor";
-import type { StockStatus } from "@simplycms/core/hooks/useStock";
+import { Input } from '@simplycms/ui/input';
+import { Label } from '@simplycms/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
+import { StockStatusSelect } from './StockStatusSelect';
+import { StockByPointManager } from './StockByPointManager';
+import { ProductPricesEditor } from './ProductPricesEditor';
+import type { StockStatus } from '@simplycms/core/hooks/useStock';
 
 interface SimpleProductFieldsProps {
   productId: string;

@@ -60,44 +60,122 @@
     "vaul": "^1.0.0"
   },
   "peerDependenciesMeta": {
-    "lucide-react": { "optional": true },
-    "class-variance-authority": { "optional": true },
-    "@radix-ui/react-accordion": { "optional": true },
-    "@radix-ui/react-alert-dialog": { "optional": true },
-    "@radix-ui/react-aspect-ratio": { "optional": true },
-    "@radix-ui/react-avatar": { "optional": true },
-    "@radix-ui/react-checkbox": { "optional": true },
-    "@radix-ui/react-collapsible": { "optional": true },
-    "@radix-ui/react-context-menu": { "optional": true },
-    "@radix-ui/react-dialog": { "optional": true },
-    "@radix-ui/react-dropdown-menu": { "optional": true },
-    "@radix-ui/react-hover-card": { "optional": true },
-    "@radix-ui/react-label": { "optional": true },
-    "@radix-ui/react-menubar": { "optional": true },
-    "@radix-ui/react-navigation-menu": { "optional": true },
-    "@radix-ui/react-popover": { "optional": true },
-    "@radix-ui/react-progress": { "optional": true },
-    "@radix-ui/react-radio-group": { "optional": true },
-    "@radix-ui/react-scroll-area": { "optional": true },
-    "@radix-ui/react-select": { "optional": true },
-    "@radix-ui/react-separator": { "optional": true },
-    "@radix-ui/react-slider": { "optional": true },
-    "@radix-ui/react-slot": { "optional": true },
-    "@radix-ui/react-switch": { "optional": true },
-    "@radix-ui/react-tabs": { "optional": true },
-    "@radix-ui/react-toast": { "optional": true },
-    "@radix-ui/react-toggle": { "optional": true },
-    "@radix-ui/react-toggle-group": { "optional": true },
-    "@radix-ui/react-tooltip": { "optional": true },
-    "cmdk": { "optional": true },
-    "embla-carousel-react": { "optional": true },
-    "input-otp": { "optional": true },
-    "next-themes": { "optional": true },
-    "react-day-picker": { "optional": true },
-    "react-hook-form": { "optional": true },
-    "react-resizable-panels": { "optional": true },
-    "recharts": { "optional": true },
-    "sonner": { "optional": true },
-    "vaul": { "optional": true }
+    "lucide-react": {
+      "optional": true
+    },
+    "class-variance-authority": {
+      "optional": true
+    },
+    "@radix-ui/react-accordion": {
+      "optional": true
+    },
+    "@radix-ui/react-alert-dialog": {
+      "optional": true
+    },
+    "@radix-ui/react-aspect-ratio": {
+      "optional": true
+    },
+    "@radix-ui/react-avatar": {
+      "optional": true
+    },
+    "@radix-ui/react-checkbox": {
+      "optional": true
+    },
+    "@radix-ui/react-collapsible": {
+      "optional": true
+    },
+    "@radix-ui/react-context-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-dialog": {
+      "optional": true
+    },
+    "@radix-ui/react-dropdown-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-hover-card": {
+      "optional": true
+    },
+    "@radix-ui/react-label": {
+      "optional": true
+    },
+    "@radix-ui/react-menubar": {
+      "optional": true
+    },
+    "@radix-ui/react-navigation-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-popover": {
+      "optional": true
+    },
+    "@radix-ui/react-progress": {
+      "optional": true
+    },
+    "@radix-ui/react-radio-group": {
+      "optional": true
+    },
+    "@radix-ui/react-scroll-area": {
+      "optional": true
+    },
+    "@radix-ui/react-select": {
+      "optional": true
+    },
+    "@radix-ui/react-separator": {
+      "optional": true
+    },
+    "@radix-ui/react-slider": {
+      "optional": true
+    },
+    "@radix-ui/react-slot": {
+      "optional": true
+    },
+    "@radix-ui/react-switch": {
+      "optional": true
+    },
+    "@radix-ui/react-tabs": {
+      "optional": true
+    },
+    "@radix-ui/react-toast": {
+      "optional": true
+    },
+    "@radix-ui/react-toggle": {
+      "optional": true
+    },
+    "@radix-ui/react-toggle-group": {
+      "optional": true
+    },
+    "@radix-ui/react-tooltip": {
+      "optional": true
+    },
+    "cmdk": {
+      "optional": true
+    },
+    "embla-carousel-react": {
+      "optional": true
+    },
+    "input-otp": {
+      "optional": true
+    },
+    "next-themes": {
+      "optional": true
+    },
+    "react-day-picker": {
+      "optional": true
+    },
+    "react-hook-form": {
+      "optional": true
+    },
+    "react-resizable-panels": {
+      "optional": true
+    },
+    "recharts": {
+      "optional": true
+    },
+    "sonner": {
+      "optional": true
+    },
+    "vaul": {
+      "optional": true
+    }
   }
 }

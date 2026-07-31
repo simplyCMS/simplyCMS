@@ -1,19 +1,27 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { NavLink } from "@simplycms/core/components/NavLink";
-import { Button } from "@simplycms/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@simplycms/ui/card";
-import { Switch } from "@simplycms/ui/switch";
-import { Badge } from "@simplycms/ui/badge";
-import { Skeleton } from "@simplycms/ui/skeleton";
-import { useToast } from "@simplycms/core/hooks/use-toast";
-import { ArrowLeft, Puzzle, Settings, Trash2 } from "lucide-react";
-import { adminPath } from "../lib/adminLinks";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { NavLink } from '@simplycms/core/components/NavLink';
+import { Button } from '@simplycms/ui/button';
 import {
-  getRegisteredPluginModules,
-} from "@simplycms/plugins";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { parsePlugin, type ParsedPlugin, type Plugin } from "@simplycms/plugins/types";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@simplycms/ui/card';
+import { Switch } from '@simplycms/ui/switch';
+import { Badge } from '@simplycms/ui/badge';
+import { Skeleton } from '@simplycms/ui/skeleton';
+import { useToast } from '@simplycms/core/hooks/use-toast';
+import { ArrowLeft, Puzzle, Settings, Trash2 } from 'lucide-react';
+import { adminPath } from '../lib/adminLinks';
+import { getRegisteredPluginModules } from '@simplycms/plugins';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import {
+  parsePlugin,
+  type ParsedPlugin,
+  type Plugin,
+} from '@simplycms/plugins/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@simplycms/ui/alert-dialog";
-import { InstallPluginDialog } from "../components/InstallPluginDialog";
+} from '@simplycms/ui/alert-dialog';
+import { InstallPluginDialog } from '../components/InstallPluginDialog';
 
 export default function Plugins() {
   const supabase = useSupabaseClient();
@@ -34,12 +42,12 @@ export default function Plugins() {
   const [togglingPlugin, setTogglingPlugin] = useState<string | null>(null);
 
   const { data: plugins, isLoading } = useQuery({
-    queryKey: ["plugins"],
+    queryKey: ['plugins'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("plugins")
-        .select("*")
-        .order("display_name", { ascending: true });
+        .from('plugins')
+        .select('*')
+        .order('display_name', { ascending: true });
       if (error) throw error;
       return (data || []) as Plugin[];
     },
@@ -49,11 +57,17 @@ export default function Plugins() {
   const registeredModules = getRegisteredPluginModules();
 
   const toggleMutation = useMutation({
-    mutationFn: async ({ name, activate }: { name: string; activate: boolean }) => {
+    mutationFn: async ({
+      name,
+      activate,
+    }: {
+      name: string;
+      activate: boolean;
+    }) => {
       const { error } = await supabase
-        .from("plugins")
+        .from('plugins')
         .update({ is_active: activate, updated_at: new Date().toISOString() })
-        .eq("name", name);
+        .eq('name', name);
       if (error) throw error;
       return true;
     },
@@ -63,15 +77,15 @@ export default function Plugins() {
     onSuccess: (success, { name, activate }) => {
       if (success) {
         toast({
-          title: activate ? "Плагін активовано" : "Плагін деактивовано",
-          description: `Плагін "${name}" ${activate ? "активовано" : "деактивовано"} успішно.`,
+          title: activate ? 'Плагін активовано' : 'Плагін деактивовано',
+          description: `Плагін "${name}" ${activate ? 'активовано' : 'деактивовано'} успішно.`,
         });
-        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        queryClient.invalidateQueries({ queryKey: ['plugins'] });
       } else {
         toast({
-          title: "Помилка",
-          description: "Не вдалося змінити статус плагіна.",
-          variant: "destructive",
+          title: 'Помилка',
+          description: 'Не вдалося змінити статус плагіна.',
+          variant: 'destructive',
         });
       }
     },
@@ -83,24 +97,24 @@ export default function Plugins() {
   const uninstallMutation = useMutation({
     mutationFn: async (pluginName: string) => {
       const { error } = await supabase
-        .from("plugins")
+        .from('plugins')
         .delete()
-        .eq("name", pluginName);
+        .eq('name', pluginName);
       if (error) throw error;
       return true;
     },
     onSuccess: (_success, name) => {
       toast({
-        title: "Плагін видалено",
+        title: 'Плагін видалено',
         description: `Плагін "${name}" успішно видалено.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      queryClient.invalidateQueries({ queryKey: ['plugins'] });
     },
     onError: () => {
       toast({
-        title: "Помилка",
-        description: "Не вдалося видалити плагін.",
-        variant: "destructive",
+        title: 'Помилка',
+        description: 'Не вдалося видалити плагін.',
+        variant: 'destructive',
       });
     },
   });
@@ -142,9 +156,11 @@ export default function Plugins() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Puzzle className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Немає встановлених плагінів</h3>
+            <h3 className="text-lg font-medium mb-2">
+              Немає встановлених плагінів
+            </h3>
             <p className="text-muted-foreground text-center max-w-md">
-              Плагіни дозволяють розширювати функціональність системи. 
+              Плагіни дозволяють розширювати функціональність системи.
               Встановіть плагін, щоб додати нові можливості.
             </p>
           </CardContent>
@@ -156,7 +172,10 @@ export default function Plugins() {
             const isToggling = togglingPlugin === plugin.name;
 
             return (
-              <Card key={plugin.id} className={!plugin.is_active ? "opacity-75" : ""}>
+              <Card
+                key={plugin.id}
+                className={!plugin.is_active ? 'opacity-75' : ''}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -164,13 +183,18 @@ export default function Plugins() {
                         <Puzzle className="h-4 w-4" />
                         {plugin.display_name}
                       </CardTitle>
-                      <CardDescription>{plugin.description || "Без опису"}</CardDescription>
+                      <CardDescription>
+                        {plugin.description || 'Без опису'}
+                      </CardDescription>
                     </div>
                     <Switch
                       checked={plugin.is_active}
                       disabled={isToggling || !hasModule}
                       onCheckedChange={(checked) =>
-                        toggleMutation.mutate({ name: plugin.name, activate: checked })
+                        toggleMutation.mutate({
+                          name: plugin.name,
+                          activate: checked,
+                        })
                       }
                     />
                   </div>
@@ -191,19 +215,22 @@ export default function Plugins() {
 
                   {plugin.hooks.length > 0 && (
                     <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Хуки:</span>{" "}
-                      {plugin.hooks.map((h) => h.name).join(", ")}
+                      <span className="font-medium">Хуки:</span>{' '}
+                      {plugin.hooks.map((h) => h.name).join(', ')}
                     </div>
                   )}
 
                   <div className="flex gap-2">
-                    <NavLink to={adminPath(`plugins/${plugin.id}/settings`)} className="flex-1">
+                    <NavLink
+                      to={adminPath(`plugins/${plugin.id}/settings`)}
+                      className="flex-1"
+                    >
                       <Button variant="outline" size="sm" className="w-full">
                         <Settings className="h-4 w-4 mr-2" />
                         Налаштування
                       </Button>
                     </NavLink>
-                    
+
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -214,13 +241,16 @@ export default function Plugins() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Видалити плагін?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Плагін "{plugin.display_name}" буде видалено. Цю дію неможливо скасувати.
+                            Плагін "{plugin.display_name}" буде видалено. Цю дію
+                            неможливо скасувати.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Скасувати</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => uninstallMutation.mutate(plugin.name)}
+                            onClick={() =>
+                              uninstallMutation.mutate(plugin.name)
+                            }
                           >
                             Видалити
                           </AlertDialogAction>
@@ -245,7 +275,8 @@ export default function Plugins() {
         <CardContent>
           {registeredModules.size === 0 ? (
             <p className="text-muted-foreground">
-              Немає зареєстрованих модулів. Модулі реєструються при завантаженні застосунку.
+              Немає зареєстрованих модулів. Модулі реєструються при завантаженні
+              застосунку.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">

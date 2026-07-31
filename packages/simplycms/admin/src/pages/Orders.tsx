@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { adminPath } from "../lib/adminLinks";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import type { SupabaseClient } from "@simplycms/supabase/browser-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@simplycms/ui/card";
+import { adminPath } from '../lib/adminLinks';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
   Table,
   TableBody,
@@ -11,17 +11,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@simplycms/ui/table";
-import { Badge } from "@simplycms/ui/badge";
-import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { uk } from "date-fns/locale";
+} from '@simplycms/ui/table';
+import { Badge } from '@simplycms/ui/badge';
+import { Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
 
 async function fetchOrders(supabase: SupabaseClient) {
   const { data, error } = await supabase
-    .from("orders")
-    .select("*, order_statuses(name, color)")
-    .order("created_at", { ascending: false });
+    .from('orders')
+    .select('*, order_statuses(name, color)')
+    .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
@@ -31,7 +31,7 @@ export default function Orders() {
   const supabase = useSupabaseClient();
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["admin-orders"],
+    queryKey: ['admin-orders'],
     queryFn: () => fetchOrders(supabase),
   });
 
@@ -70,33 +70,47 @@ export default function Orders() {
                 <TableRow
                   key={order.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: adminPath(`orders/${order.id}`) })}
+                  onClick={() =>
+                    navigate({ to: adminPath(`orders/${order.id}`) })
+                  }
                 >
-                  <TableCell className="font-medium">{order.order_number}</TableCell>
+                  <TableCell className="font-medium">
+                    {order.order_number}
+                  </TableCell>
                   <TableCell>
                     <div>
-                      <div>{order.first_name} {order.last_name}</div>
-                      <div className="text-sm text-muted-foreground">{order.email}</div>
+                      <div>
+                        {order.first_name} {order.last_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {order.email}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{order.total.toLocaleString()} ₴</TableCell>
                   <TableCell>
                     <Badge
                       style={{
-                        backgroundColor: order.order_statuses?.color || "#6B7280",
+                        backgroundColor:
+                          order.order_statuses?.color || '#6B7280',
                       }}
                     >
-                      {order.order_statuses?.name || "Новий"}
+                      {order.order_statuses?.name || 'Новий'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(order.created_at), "dd MMM yyyy, HH:mm", { locale: uk })}
+                    {format(new Date(order.created_at), 'dd MMM yyyy, HH:mm', {
+                      locale: uk,
+                    })}
                   </TableCell>
                 </TableRow>
               ))}
               {orders?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground"
+                  >
                     Замовлень ще немає
                   </TableCell>
                 </TableRow>

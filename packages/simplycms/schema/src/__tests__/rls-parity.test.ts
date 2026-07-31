@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { is } from 'drizzle-orm';
-import { PgDialect, PgRole, PgTable, getTableConfig } from 'drizzle-orm/pg-core';
+import {
+  PgDialect,
+  PgRole,
+  PgTable,
+  getTableConfig,
+} from 'drizzle-orm/pg-core';
 import type { PgPolicy } from 'drizzle-orm/pg-core';
 import * as schema from '../schema';
 import fixture from './fixtures/rls-policies.json';
@@ -24,7 +29,9 @@ interface PolicyTuple {
 // Нормалізація SQL-виразу: lowercase + колапс пробілів. Форматування не дає
 // фальшивих падінь, але зміна предиката політики тест НЕ пройде.
 const normSql = (value: string | null | undefined): string | null =>
-  value === null || value === undefined ? null : value.toLowerCase().replace(/\s+/g, ' ').trim();
+  value === null || value === undefined
+    ? null
+    : value.toLowerCase().replace(/\s+/g, ' ').trim();
 
 const dialect = new PgDialect();
 const sqlOf = (value: PgPolicy['using']): string | null =>
@@ -72,7 +79,8 @@ for (const value of Object.values(schema)) {
   if (!is(value, PgTable)) continue;
   const config = getTableConfig(value);
   // У Drizzle таблиця з політиками — RLS-enabled навіть без явного `.enableRLS()`.
-  if (config.enableRLS || config.policies.length > 0) schemaRlsTables.push(config.name);
+  if (config.enableRLS || config.policies.length > 0)
+    schemaRlsTables.push(config.name);
   for (const policy of config.policies) {
     actual.set(`${config.name}|${policy.name}`, {
       table: config.name,
@@ -100,7 +108,9 @@ describe('RLS parity: жива БД ↔ packages/simplycms/schema/src/schema.ts'
 
   it('кожна політика збігається повнопольово', () => {
     for (const [key, tuple] of expected) {
-      expect(actual.get(key), `політика відсутня в schema.ts: ${key}`).toEqual(tuple);
+      expect(actual.get(key), `політика відсутня в schema.ts: ${key}`).toEqual(
+        tuple,
+      );
     }
   });
 

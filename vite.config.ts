@@ -22,10 +22,7 @@ export default {
         __dirname,
         'packages/simplycms/objects/src',
       ),
-      '@simplycms/domain': resolve(
-        __dirname,
-        'packages/simplycms/domain/src',
-      ),
+      '@simplycms/domain': resolve(__dirname, 'packages/simplycms/domain/src'),
       '@simplycms/data-supabase': resolve(
         __dirname,
         'packages/simplycms/data-supabase/src',
@@ -38,10 +35,7 @@ export default {
         __dirname,
         'packages/simplycms/storefront-routes/src',
       ),
-      '@simplycms/i18n': resolve(
-        __dirname,
-        'packages/simplycms/i18n/src',
-      ),
+      '@simplycms/i18n': resolve(__dirname, 'packages/simplycms/i18n/src'),
       '@simplycms/runtime': resolve(
         __dirname,
         'packages/simplycms/runtime/src',
@@ -74,18 +68,9 @@ export default {
         __dirname,
         'packages/simplycms/reviews-ui/src',
       ),
-      '@simplycms/core': resolve(
-        __dirname,
-        'packages/simplycms/core/src',
-      ),
-      '@simplycms/admin': resolve(
-        __dirname,
-        'packages/simplycms/admin/src',
-      ),
-      '@simplycms/ui': resolve(
-        __dirname,
-        'packages/simplycms/ui/src',
-      ),
+      '@simplycms/core': resolve(__dirname, 'packages/simplycms/core/src'),
+      '@simplycms/admin': resolve(__dirname, 'packages/simplycms/admin/src'),
+      '@simplycms/ui': resolve(__dirname, 'packages/simplycms/ui/src'),
       '@simplycms/plugins': resolve(
         __dirname,
         'packages/simplycms/plugin-system/src',

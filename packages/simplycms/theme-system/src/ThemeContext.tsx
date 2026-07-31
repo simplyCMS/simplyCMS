@@ -5,18 +5,14 @@ import React, {
   useState,
   useCallback,
   useRef,
-} from "react";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { ThemeRegistry } from "./ThemeRegistry";
-import type {
-  ThemeContextType,
-  ThemeModule,
-  ThemeRecord,
-} from "./types";
+} from 'react';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { ThemeRegistry } from './ThemeRegistry';
+import type { ThemeContextType, ThemeModule, ThemeRecord } from './types';
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-const DEFAULT_THEME_NAME = "default";
+const DEFAULT_THEME_NAME = 'default';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -36,10 +32,10 @@ export function ThemeProvider({
   const supabase = useSupabaseClient();
   const [activeTheme, setActiveTheme] = useState<ThemeModule | null>(null);
   const [themeName, setThemeName] = useState<string>(
-    initialThemeName || DEFAULT_THEME_NAME
+    initialThemeName || DEFAULT_THEME_NAME,
   );
   const [themeSettings, setThemeSettings] = useState<Record<string, unknown>>(
-    {}
+    {},
   );
   const [themeRecord, setThemeRecord] = useState<ThemeRecord | null>(null);
   const [isLoading, setIsLoading] = useState(!initialThemeName);
@@ -73,15 +69,12 @@ export function ThemeProvider({
         const savedSettings = record?.settings || {};
         setThemeSettings({ ...defaultSettings, ...savedSettings });
       } catch (err) {
-        console.error(
-          `[ThemeProvider] Failed to load theme "${name}":`,
-          err
-        );
+        console.error(`[ThemeProvider] Failed to load theme "${name}":`, err);
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
     },
-    [fallbackTheme]
+    [fallbackTheme],
   );
 
   const fetchActiveTheme = useCallback(async () => {
@@ -90,15 +83,15 @@ export function ThemeProvider({
       setError(null);
 
       const { data, error: fetchError } = await supabase
-        .from("themes")
-        .select("*")
-        .eq("is_active", true)
+        .from('themes')
+        .select('*')
+        .eq('is_active', true)
         .single();
 
       if (fetchError) {
         console.error(
-          "[ThemeProvider] Error fetching active theme:",
-          fetchError
+          '[ThemeProvider] Error fetching active theme:',
+          fetchError,
         );
         await loadTheme(fallbackTheme);
         return;
@@ -128,7 +121,7 @@ export function ThemeProvider({
       setThemeRecord(record);
       await loadTheme(record.name, record);
     } catch (err) {
-      console.error("[ThemeProvider] Failed to initialize theme:", err);
+      console.error('[ThemeProvider] Failed to initialize theme:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setIsLoading(false);
@@ -175,7 +168,7 @@ export function ThemeProvider({
 export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 }

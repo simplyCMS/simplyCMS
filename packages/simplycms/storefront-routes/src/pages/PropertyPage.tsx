@@ -1,13 +1,13 @@
-import { useMemo } from "react";
-import { useParams, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useSupabaseClient } from "@simplycms/supabase/SupabaseProvider";
-import { ProductCard } from "@simplycms/core/components/catalog/ProductCard";
-import { Loader2, ChevronRight } from "lucide-react";
-import { Button } from "@simplycms/ui/button";
-import { usePriceType } from "@simplycms/core/hooks/usePriceType";
-import { resolvePrice, type PriceEntry } from "@simplycms/core/lib/priceUtils";
-import type { Tables } from "@simplycms/supabase";
+import { useMemo } from 'react';
+import { useParams, Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
+import { Loader2, ChevronRight } from 'lucide-react';
+import { Button } from '@simplycms/ui/button';
+import { usePriceType } from '@simplycms/core/hooks/usePriceType';
+import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import type { Tables } from '@simplycms/supabase';
 
 export interface PropertyOptionPageProps {
   property?: Tables<'section_properties'> & Record<string, unknown>;
@@ -21,7 +21,10 @@ export default function PropertyPage({
   products: _initialProducts,
 }: PropertyOptionPageProps = {}) {
   const supabase = useSupabaseClient();
-  const params = useParams({ strict: false }) as Record<string, string | undefined>;
+  const params = useParams({ strict: false }) as Record<
+    string,
+    string | undefined
+  >;
   const propertySlug = params?.propertySlug as string | undefined;
   const optionSlug = params?.optionSlug as string | undefined;
 
@@ -30,13 +33,13 @@ export default function PropertyPage({
 
   // Fetch property by slug
   const { data: property } = useQuery({
-    queryKey: ["property-by-slug", propertyCode],
+    queryKey: ['property-by-slug', propertyCode],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("section_properties")
-        .select("*")
-        .eq("slug", propertyCode!)
-        .eq("has_page", true)
+        .from('section_properties')
+        .select('*')
+        .eq('slug', propertyCode!)
+        .eq('has_page', true)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -48,13 +51,13 @@ export default function PropertyPage({
 
   // Fetch option by slug (now includes page data)
   const { data: option, isLoading: optionLoading } = useQuery({
-    queryKey: ["property-option-by-slug", property?.id, optionSlug],
+    queryKey: ['property-option-by-slug', property?.id, optionSlug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("property_options")
-        .select("*")
-        .eq("property_id", property!.id)
-        .eq("slug", optionSlug!)
+        .from('property_options')
+        .select('*')
+        .eq('property_id', property!.id)
+        .eq('slug', optionSlug!)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -65,46 +68,50 @@ export default function PropertyPage({
 
   // Fetch products with this property value
   const { data: rawProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ["products-by-option", option?.id],
+    queryKey: ['products-by-option', option?.id],
     queryFn: async () => {
       if (!option?.id) return [];
 
       // Get product IDs that have this option at product level
       const { data: productLevelValues, error: pvError } = await supabase
-        .from("product_property_values")
-        .select("product_id")
-        .eq("option_id", option.id);
+        .from('product_property_values')
+        .select('product_id')
+        .eq('option_id', option.id);
 
       if (pvError) throw pvError;
 
       // Get modification IDs that have this option at modification level
       const { data: modLevelValues, error: mvError } = await supabase
-        .from("modification_property_values")
-        .select("modification_id, product_modifications!inner(product_id)")
-        .eq("option_id", option.id);
+        .from('modification_property_values')
+        .select('modification_id, product_modifications!inner(product_id)')
+        .eq('option_id', option.id);
 
       if (mvError) throw mvError;
 
       // Combine unique product IDs
       const productIds = new Set<string>();
-      productLevelValues?.forEach(pv => productIds.add(pv.product_id));
-      modLevelValues?.forEach(mv => {
-        const productId = (mv.product_modifications as { product_id: string } | null)?.product_id;
+      productLevelValues?.forEach((pv) => productIds.add(pv.product_id));
+      modLevelValues?.forEach((mv) => {
+        const productId = (
+          mv.product_modifications as { product_id: string } | null
+        )?.product_id;
         if (productId) productIds.add(productId);
       });
 
       if (productIds.size === 0) return [];
 
       const { data, error } = await supabase
-        .from("products")
-        .select(`
+        .from('products')
+        .select(
+          `
           *,
           sections(id, slug, name),
           product_modifications(id, stock_status, is_default, sort_order),
           product_prices(price_type_id, price, old_price, modification_id)
-        `)
-        .in("id", Array.from(productIds))
-        .eq("is_active", true);
+        `,
+        )
+        .in('id', Array.from(productIds))
+        .eq('is_active', true);
 
       if (error) throw error;
 
@@ -135,14 +142,24 @@ export default function PropertyPage({
       const hasModifications = p.has_modifications ?? true;
       let resolved;
       if (hasModifications && p.modifications?.[0]) {
-        resolved = resolvePrice(prices, priceTypeId, defaultPriceTypeId, p.modifications[0].id);
+        resolved = resolvePrice(
+          prices,
+          priceTypeId,
+          defaultPriceTypeId,
+          p.modifications[0].id,
+        );
       } else {
         resolved = resolvePrice(prices, priceTypeId, defaultPriceTypeId, null);
       }
       const stockStatus = hasModifications
-        ? (p.modifications?.[0]?.stock_status ?? "in_stock")
-        : (p.stock_status ?? "in_stock");
-      return { ...p, price: resolved.price, old_price: resolved.oldPrice, stock_status: stockStatus };
+        ? (p.modifications?.[0]?.stock_status ?? 'in_stock')
+        : (p.stock_status ?? 'in_stock');
+      return {
+        ...p,
+        price: resolved.price,
+        old_price: resolved.oldPrice,
+        stock_status: stockStatus,
+      };
     });
   }, [rawProducts, priceTypeId, defaultPriceTypeId]);
 
@@ -178,11 +195,18 @@ export default function PropertyPage({
           Головна
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link to="/properties" className="hover:text-foreground transition-colors">
+        <Link
+          to="/properties"
+          className="hover:text-foreground transition-colors"
+        >
           Властивості
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link to="/properties/$propertySlug" params={{ propertySlug: property?.slug ?? "" }} className="hover:text-foreground transition-colors">
+        <Link
+          to="/properties/$propertySlug"
+          params={{ propertySlug: property?.slug ?? '' }}
+          className="hover:text-foreground transition-colors"
+        >
           {property?.name}
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -216,7 +240,7 @@ export default function PropertyPage({
       {/* Products section */}
       <div>
         <h2 className="text-2xl font-bold mb-6">
-          Товари {property?.name ? `(${property.name}: ${option.name})` : ""}
+          Товари {property?.name ? `(${property.name}: ${option.name})` : ''}
         </h2>
 
         {productsLoading ? (

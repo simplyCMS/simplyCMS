@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, waitFor, cleanup } from "@testing-library/react";
-import OrderSuccess from "../pages/OrderSuccess";
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, waitFor, cleanup } from '@testing-library/react';
+import OrderSuccess from '../pages/OrderSuccess';
 
 /**
  * Task 15: guest-token не має лишатись у URL після завантаження замовлення.
@@ -13,7 +13,10 @@ import OrderSuccess from "../pages/OrderSuccess";
 const navigateMock = vi.fn();
 
 const { mockSupabase, setSingleResult } = vi.hoisted(() => {
-  let singleResult: { data: unknown; error: unknown } = { data: null, error: null };
+  let singleResult: { data: unknown; error: unknown } = {
+    data: null,
+    error: null,
+  };
   const builder = {
     eq: () => builder,
     single: async () => singleResult,
@@ -29,34 +32,34 @@ const { mockSupabase, setSingleResult } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@tanstack/react-router", () => ({
-  useParams: () => ({ orderId: "order-1" }),
-  useSearch: () => ({ token: "abc" }),
+vi.mock('@tanstack/react-router', () => ({
+  useParams: () => ({ orderId: 'order-1' }),
+  useSearch: () => ({ token: 'abc' }),
   useNavigate: () => navigateMock,
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),
 }));
 
-vi.mock("@simplycms/supabase/SupabaseProvider", () => ({
+vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => mockSupabase,
 }));
 
-vi.mock("@simplycms/core/hooks/useAuth", () => ({
+vi.mock('@simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));
 
 const orderFixture = {
-  id: "order-1",
-  order_number: "0001",
-  first_name: "Іван",
-  last_name: "Іваненко",
-  email: "test@example.com",
-  phone: "+380000000000",
-  delivery_method: "pickup",
+  id: 'order-1',
+  order_number: '0001',
+  first_name: 'Іван',
+  last_name: 'Іваненко',
+  email: 'test@example.com',
+  phone: '+380000000000',
+  delivery_method: 'pickup',
   delivery_city: null,
   delivery_address: null,
-  payment_method: "cash",
+  payment_method: 'cash',
   subtotal: 100,
   total: 100,
   created_at: new Date().toISOString(),
@@ -69,8 +72,8 @@ afterEach(() => {
   navigateMock.mockClear();
 });
 
-describe("OrderSuccess — прибирання guest-token з URL", () => {
-  it("після успішного завантаження замовлення викликає navigate і прибирає лише token", async () => {
+describe('OrderSuccess — прибирання guest-token з URL', () => {
+  it('після успішного завантаження замовлення викликає navigate і прибирає лише token', async () => {
     setSingleResult({ data: orderFixture, error: null });
 
     render(<OrderSuccess />);
@@ -82,12 +85,14 @@ describe("OrderSuccess — прибирання guest-token з URL", () => {
       replace: true,
     });
 
-    const call = navigateMock.mock.calls[0][0] as { search: (s: Record<string, string>) => Record<string, string> };
-    expect(call.search({ token: "abc", foo: "x" })).toEqual({ foo: "x" });
+    const call = navigateMock.mock.calls[0][0] as {
+      search: (s: Record<string, string>) => Record<string, string>;
+    };
+    expect(call.search({ token: 'abc', foo: 'x' })).toEqual({ foo: 'x' });
   });
 
-  it("при помилці завантаження navigate НЕ викликається", async () => {
-    setSingleResult({ data: null, error: new Error("boom") });
+  it('при помилці завантаження navigate НЕ викликається', async () => {
+    setSingleResult({ data: null, error: new Error('boom') });
 
     render(<OrderSuccess />);
 

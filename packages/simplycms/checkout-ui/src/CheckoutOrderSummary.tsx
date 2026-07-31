@@ -1,7 +1,6 @@
-
-import { ShoppingBag, Loader2 } from "lucide-react";
-import { type CartItem } from "@simplycms/react-query";
-import { formatShippingCost } from "@simplycms/domain/shipping";
+import { ShoppingBag, Loader2 } from 'lucide-react';
+import { type CartItem } from '@simplycms/react-query';
+import { formatShippingCost } from '@simplycms/domain/shipping';
 
 interface CheckoutOrderSummaryProps {
   items: CartItem[];
@@ -21,9 +20,9 @@ export function CheckoutOrderSummary({
   isSubmitting,
 }: CheckoutOrderSummaryProps) {
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("uk-UA", {
-      style: "currency",
-      currency: "UAH",
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: 'UAH',
       minimumFractionDigits: 0,
     }).format(value);
   };
@@ -69,7 +68,9 @@ export function CheckoutOrderSummary({
         {/* Totals */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Товари ({items.length})</span>
+            <span className="text-muted-foreground">
+              Товари ({items.length})
+            </span>
             <span>{formatPrice(totalPrice)}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -87,7 +88,9 @@ export function CheckoutOrderSummary({
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium mb-1 block">Коментар до замовлення</label>
+          <label className="text-sm font-medium mb-1 block">
+            Коментар до замовлення
+          </label>
           <textarea
             placeholder="Додаткова iнформацiя..."
             className="w-full px-3 py-2 border rounded-md text-sm resize-none"
@@ -109,7 +112,7 @@ export function CheckoutOrderSummary({
               Оформлення...
             </>
           ) : (
-            "Пiдтвердити замовлення"
+            'Пiдтвердити замовлення'
           )}
         </button>
 

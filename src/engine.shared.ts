@@ -14,7 +14,9 @@ import config from '../simplycms.config';
 /** Маршрути simplyCMS-вітрини. */
 export const appLinks: LinkResolver = {
   product: (p) =>
-    p.sectionSlug ? `/catalog/${p.sectionSlug}/${p.slug}` : `/catalog/${p.slug}`,
+    p.sectionSlug
+      ? `/catalog/${p.sectionSlug}/${p.slug}`
+      : `/catalog/${p.slug}`,
   section: (s) => `/catalog/${s.slug}`,
   cart: () => '/cart',
   checkout: () => '/checkout',

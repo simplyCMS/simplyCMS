@@ -1,12 +1,12 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { User, Package, Settings, LogOut } from "lucide-react";
-import { cn } from "@simplycms/ui/utils";
-import { useAuth } from "@simplycms/core/hooks/useAuth";
+import { Link, useLocation } from '@tanstack/react-router';
+import { User, Package, Settings, LogOut } from 'lucide-react';
+import { cn } from '@simplycms/ui/utils';
+import { useAuth } from '@simplycms/core/hooks/useAuth';
 
 const navItems = [
-  { to: "/profile", icon: User, label: "Профiль", end: true },
-  { to: "/profile/orders", icon: Package, label: "Мої замовлення" },
-  { to: "/profile/settings", icon: Settings, label: "Налаштування" },
+  { to: '/profile', icon: User, label: 'Профiль', end: true },
+  { to: '/profile/orders', icon: Package, label: 'Мої замовлення' },
+  { to: '/profile/settings', icon: Settings, label: 'Налаштування' },
 ];
 
 interface ProfileLayoutProps {
@@ -54,10 +54,10 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -77,9 +77,7 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0">
-          {children}
-        </main>
+        <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
   );
