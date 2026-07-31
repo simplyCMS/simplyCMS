@@ -10,7 +10,7 @@ description: 'Базові архітектурні правила SimplyCMS'
 SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first підходом для публічних сторінок. Проект складається з:
 
 - **`src/`** — TanStack Start застосунок (file-based роути, серверні функції, SEO)
-- **`packages/simplycms/`** — Ядро CMS (Git Subtree → окремий репозиторій simplyCMS-core)
+- **`packages/simplycms/`** — Ядро CMS (у монорепо; публікація на npmjs — Фаза 1+)
 - **`themes/`** — Локальні теми проекту
 - **`plugins/`** — Локальні плагіни проекту
 
@@ -59,7 +59,6 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
   - **supabase:** DB міграції, TypeScript types
 - Система тем: публічні сторінки рендеряться через `ThemeModule` (layouts, pages) з `ThemeRegistry`.
 - Система плагінів: розширення через `HookRegistry` (25+ hook points).
-- Git Subtree для синхронізації ядра: `pnpm cms:push` / `pnpm cms:pull`.
 - Конфігурація CMS через `simplycms.config.ts` (тема, плагіни, Supabase, SEO).
 
 ## ❌ NEVER

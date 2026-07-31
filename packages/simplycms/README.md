@@ -21,28 +21,16 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 ## Usage
 
-SimplyCMS core is distributed via Git Subtree. To use it in your project:
-
-```bash
-# Add remote (the project lives under the simplyCMS org)
-git remote add simplycms-core https://github.com/simplyCMS/simplyCMS-core.git
-
-# Add as subtree
-git subtree add --prefix=packages/simplycms simplycms-core main --squash
-
-# Pull updates later
-git subtree pull --prefix=packages/simplycms simplycms-core main --squash
-```
+Ці пакети живуть у монорепо SimplyCMS — окремих форків/копій у магазинах немає.
+Магазини споживають ядро як звичайні npm-залежності (публікація на npmjs —
+Фаза 1+ роадмапу платформи); розширення відбувається через плагіни й теми, а
+не форк ядра.
 
 ## Development
 
-When developing within the main SimplyCMS project, changes to `packages/simplycms/` are automatically part of the subtree. To push changes back to the core repo:
-
-```bash
-pnpm cms:push                 # push packages/simplycms → simplycms-core main
-pnpm cms:push:branch <branch> # push to a specific branch
-pnpm cms:diff                 # review local core changes before pushing
-```
+Розробка ведеться напряму в цьому монорепо: зміни в `packages/simplycms/`
+коммітяться разом з рештою проекту, окремого push у зовнішній core-репозиторій
+не потрібно.
 
 ## License
 

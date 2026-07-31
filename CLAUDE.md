@@ -18,7 +18,7 @@ pnpm test:watch       # Tests in watch mode
 
 ## What This Project Is
 
-SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages are distributed via Git Subtree from a separate repository.
+SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages live in this monorepo and are published to npmjs (Фаза 1+).
 
 **Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md). Опис нижче документує **поточний** стан коду до реструктуризації.
 
@@ -115,7 +115,7 @@ simplyCMS/
 │   ├── functions/                    # Edge Functions
 │   └── types.ts                      # Auto-generated TypeScript types
 │
-├── packages/simplycms/               # Core CMS (Git Subtree from simplyCMS-core)
+├── packages/simplycms/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
 │   ├── core/src/       @simplycms/core
 │   ├── admin/src/      @simplycms/admin
 │   ├── ui/src/         @simplycms/ui
@@ -164,24 +164,6 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 - `VITE_SITE_URL` — Public site URL (production)
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
-
-## Git Subtree Workflow
-
-> ⚠️ Виводиться з експлуатації у Фазі 0 роадмапу платформи (spec §4.1): магазини
-> більше не форкають цей репозиторій, тож окремий `simplyCMS-core` не потрібен —
-> монорепо стає єдиним джерелом, публікація ядра йде на npmjs. Команди нижче
-> чинні лише до завершення Фази 0.
-
-```bash
-pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplyCMS/simplyCMS-core
-pnpm cms:pull                  # Pull core updates from simplyCMS-core main (runs cms:remote first)
-pnpm cms:push                  # Push core changes to simplyCMS-core main (runs cms:remote first)
-pnpm cms:push:branch <branch>  # Push to a specific branch
-pnpm cms:diff                  # View local core changes
-```
-
-> The repos live under the **simplyCMS** org (`https://github.com/simplyCMS/simplyCMS-core.git`).
-> `cms:remote` is idempotent — creates the remote if missing or repoints a stale URL (e.g. the old `simplySOFTua`/`VSydorenko` ones).
 
 ## Database Commands
 

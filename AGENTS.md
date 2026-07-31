@@ -35,7 +35,7 @@ All coding rules, architecture decisions, and best practices are maintained in `
   наразі не встановлений — де-факто гейти починаються з `lint` (борг репо).
 
 Also see:
-- [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars, subtree workflow)
+- [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars)
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — MCP servers, agent registry
 - [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md) — platform architecture spec (джерело правди напряму)
 
@@ -51,8 +51,6 @@ pnpm typecheck         # TypeScript type check
 pnpm lint              # ESLint
 pnpm test              # Run tests (vitest run)
 pnpm format:check      # Prettier (check only)
-pnpm cms:pull          # Pull core updates from simplyCMS-core
-pnpm cms:push          # Push core changes to simplyCMS-core
 pnpm db:generate-types # Regenerate TypeScript types
 ```
 
@@ -74,7 +72,7 @@ src/                              # TanStack Start application
 ├── start.ts                      # createStart + request middleware (admin guard)
 └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 
-packages/simplycms/               # Core CMS (Git Subtree from simplyCMS-core)
+packages/simplycms/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
 ├── objects/        @simplycms/objects       # Contracts + ports (0 deps)
 ├── domain/         @simplycms/domain        # Pure logic (pricing/discounts/…)
 ├── data-supabase/  @simplycms/data-supabase # Repository implementations

@@ -53,7 +53,7 @@ src/                    # TanStack Start application
   routes/               # File-based routes (storefront SSR, admin SPA, profile, auth, api)
   server/               # createServerFn functions
   seo/                  # sitemap.xml / robots.txt
-packages/simplycms/     # Core CMS packages (Git Subtree from simplyCMS-core)
+packages/simplycms/     # Core CMS packages (у монорепо; публікація на npmjs — Фаза 1+)
   ├── objects/          # Domain contracts + ports (0 deps)
   ├── domain/           # Pure business logic (pricing, discounts, inventory, shipping)
   ├── data-supabase/    # Supabase repository implementations
