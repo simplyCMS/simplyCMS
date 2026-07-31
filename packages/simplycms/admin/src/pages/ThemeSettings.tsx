@@ -73,7 +73,9 @@ export default function ThemeSettings() {
       let schema: Record<string, ThemeSettingDefinition> = {};
       if (ThemeRegistry.has(theme.name)) {
         const themeModule = await ThemeRegistry.load(theme.name);
-        schema = themeModule.manifest.settings || {};
+        // Контракт v2: схема налаштувань лежить у самому модулі теми,
+        // маніфест — лише паспорт (ідентичність + сумісність із ядром).
+        schema = themeModule.settings || {};
       }
       setSettingsSchema(schema);
 

@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import HomePage from '@simplycms/storefront-routes/pages/Home';
 import { getHomePageData } from '@simplycms/storefront-routes/server/home';
 
 export const Route = createFileRoute('/_storefront/')({
@@ -18,16 +16,14 @@ export const Route = createFileRoute('/_storefront/')({
       },
     ],
   }),
-  component: HomePage,
+  component: Home,
 });
 
-function HomePage() {
+function Home() {
   const data = Route.useLoaderData();
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
 
   return (
-    <theme.pages.HomePage
+    <HomePage
       banners={data.banners}
       featuredProducts={data.featuredProducts}
       newProducts={data.newProducts}

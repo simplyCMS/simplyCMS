@@ -1,7 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import CatalogSectionPage from '@simplycms/storefront-routes/pages/CatalogSection';
 import { getSectionBySlug } from '@simplycms/storefront-routes/server/sections';
 import { getSections } from '@simplycms/storefront-routes/server/sections';
 import { getProductsBySectionId } from '@simplycms/storefront-routes/server/products';
@@ -38,16 +36,14 @@ export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
       },
     ],
   }),
-  component: CatalogSectionPage,
+  component: CatalogSection,
 });
 
-function CatalogSectionPage() {
+function CatalogSection() {
   const data = Route.useLoaderData();
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
 
   return (
-    <theme.pages.CatalogSectionPage
+    <CatalogSectionPage
       sectionSlug={data.sectionSlug}
       initialSection={data.initialSection}
       initialSections={data.initialSections}

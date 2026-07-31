@@ -1,7 +1,5 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import ProductDetailPage from '@simplycms/storefront-routes/pages/ProductDetail';
 import { getProduct } from '@simplycms/storefront-routes/server/products';
 
 const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
@@ -87,15 +85,11 @@ export const Route = createFileRoute(
       ],
     };
   },
-  component: ProductPage,
+  component: ProductDetail,
 });
 
-function ProductPage() {
+function ProductDetail() {
   const { product, sectionSlug } = Route.useLoaderData();
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
 
-  return (
-    <theme.pages.ProductPage product={product} sectionSlug={sectionSlug} />
-  );
+  return <ProductDetailPage product={product} sectionSlug={sectionSlug} />;
 }

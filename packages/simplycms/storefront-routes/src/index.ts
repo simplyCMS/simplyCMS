@@ -1,3 +1,7 @@
 // Публічний вхід пакета @simplycms/storefront-routes.
-// Наповнюється в Задачах 6-9 (server-шар, SEO, canonical pages, route-компоненти).
-export {};
+export { StorefrontShell } from "./shells/StorefrontShell";
+export { ProtectedShell } from "./shells/ProtectedShell";
+export { useActiveThemeModule } from "./shells/useActiveThemeModule";
+export { BannerSlider } from "./components/BannerSlider";
+export { ProductCarousel } from "./components/ProductCarousel";
+export { default as HomePage, type HomePageProps } from "./pages/Home";

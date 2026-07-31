@@ -100,8 +100,10 @@ export const getActiveThemeSSR = cache(
         name: resolvedName,
         display_name: theme.manifest.displayName,
         version: theme.manifest.version,
-        description: theme.manifest.description ?? null,
-        author: theme.manifest.author ?? null,
+        // Опис і автор — редакційні поля рядка `themes`, у паспорті теми
+        // (контракт v2) їх немає: коли рядка в БД нема, лишаються порожніми.
+        description: null,
+        author: null,
         preview_image: null,
         is_active: true,
         settings: {},

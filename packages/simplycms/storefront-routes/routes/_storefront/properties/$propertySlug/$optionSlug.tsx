@@ -1,7 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import PropertyOptionPage from '@simplycms/storefront-routes/pages/PropertyPage';
 import { getPropertyOption } from '@simplycms/storefront-routes/server/properties';
 
 export const Route = createFileRoute(
@@ -31,16 +29,14 @@ export const Route = createFileRoute(
       },
     ],
   }),
-  component: PropertyOptionPage,
+  component: PropertyOption,
 });
 
-function PropertyOptionPage() {
+function PropertyOption() {
   const { property, option, products } = Route.useLoaderData();
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
 
   return (
-    <theme.pages.PropertyOptionPage
+    <PropertyOptionPage
       property={property}
       option={option}
       products={products}

@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { use } from 'react';
 import { ThemeProvider } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import { ProtectedShell } from '@simplycms/storefront-routes/shells/ProtectedShell';
 import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
 import { getUser } from '@simplycms/storefront-routes/server/auth';
 
@@ -9,8 +8,8 @@ import { getUser } from '@simplycms/storefront-routes/server/auth';
  * Layout захищених маршрутів (профіль користувача).
  *
  * `beforeLoad` виконує серверну перевірку сесії та редиректить незалогінених на `/auth`.
- * Активна тема резолвиться так само, як у storefront, і профіль рендериться в межах
- * `theme.ProfileLayout` (із власними Header/Footer + бічна навігація).
+ * Активна тема резолвиться так само, як у storefront, а каркас профілю дає ядро
+ * (`ProtectedShell`): Header/Footer теми + канонічна бічна навігація.
  */
 export const Route = createFileRoute('/_protected')({
   beforeLoad: async () => {
@@ -31,7 +30,6 @@ export const Route = createFileRoute('/_protected')({
 
 function ProtectedLayout() {
   const { themeName, themeSettings } = Route.useLoaderData();
-  const theme = use(ThemeRegistry.load(themeName));
 
   return (
     <ThemeProvider
@@ -39,9 +37,9 @@ function ProtectedLayout() {
       initialThemeName={themeName}
       initialThemeSettings={themeSettings}
     >
-      <theme.ProfileLayout>
+      <ProtectedShell>
         <Outlet />
-      </theme.ProfileLayout>
+      </ProtectedShell>
     </ThemeProvider>
   );
 }

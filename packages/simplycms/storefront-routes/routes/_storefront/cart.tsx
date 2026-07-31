@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import CartPage from '@simplycms/storefront-routes/pages/Cart';
 
 export const Route = createFileRoute('/_storefront/cart')({
   ssr: false,
@@ -10,9 +8,3 @@ export const Route = createFileRoute('/_storefront/cart')({
   }),
   component: CartPage,
 });
-
-function CartPage() {
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
-  return <theme.pages.CartPage />;
-}

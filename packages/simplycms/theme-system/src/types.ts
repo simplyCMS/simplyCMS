@@ -1,16 +1,64 @@
-import React from "react";
+import type React from "react";
+import type { Banner } from "@simplycms/core/hooks/useBanners";
 
+/**
+ * Паспорт теми. Тема — це встановлювана одиниця платформи, тому маніфест
+ * мінімальний: ідентичність + діапазон сумісності з ядром.
+ */
 export interface ThemeManifest {
   name: string;
   displayName: string;
   version: string;
-  description?: string;
-  author?: string;
-  thumbnail?: string;
-  supports?: { darkMode?: boolean; customColors?: boolean };
-  settings?: Record<string, ThemeSettingDefinition>;
+  /** Semver-range сумісності з ядром, напр. `"^0.1.0"` */
+  engines: { simplycms: string };
 }
 
+/**
+ * Значення CSS-змінних теми.
+ *
+ * Ключі 1:1 відповідають НАЯВНИМ semantic-змінним shadcn (`--primary`,
+ * `--background`, `--radius`, …) — нових `--color-*` не вводимо. Значення —
+ * рядок рівно в тому вигляді, як стоїть у CSS: HSL-трійка `"221 83% 53%"`
+ * для кольорів, довжина `"0.5rem"` для радіуса.
+ *
+ * Набір ключів = фактичний набір змінних, які задають теми (`themes/<тема>/tokens.ts`).
+ */
+export interface ThemeTokenValues {
+  background?: string;
+  foreground?: string;
+  card?: string;
+  "card-foreground"?: string;
+  popover?: string;
+  "popover-foreground"?: string;
+  primary?: string;
+  "primary-foreground"?: string;
+  secondary?: string;
+  "secondary-foreground"?: string;
+  muted?: string;
+  "muted-foreground"?: string;
+  accent?: string;
+  "accent-foreground"?: string;
+  destructive?: string;
+  "destructive-foreground"?: string;
+  success?: string;
+  "success-foreground"?: string;
+  warning?: string;
+  "warning-foreground"?: string;
+  border?: string;
+  input?: string;
+  ring?: string;
+  radius?: string;
+}
+
+export interface DesignTokens extends ThemeTokenValues {
+  /**
+   * Перекриття для темного режиму — рендериться в окремий `.dark`-блок
+   * (клас на `<html>` ставить next-themes).
+   */
+  dark?: ThemeTokenValues;
+}
+
+/** Опис одного налаштування теми для UI-генератора форми в адмінці */
 export interface ThemeSettingDefinition {
   type: "color" | "boolean" | "select" | "text" | "number";
   default: string | boolean | number;
@@ -21,76 +69,36 @@ export interface ThemeSettingDefinition {
   max?: number;
 }
 
-export interface ThemePages {
-  // SSR-capable storefront pages (accept optional server-side props)
-  HomePage: React.ComponentType<Record<string, unknown>>;
-  CatalogPage: React.ComponentType<Record<string, unknown>>;
-  CatalogSectionPage: React.ComponentType<Record<string, unknown>>;
-  ProductPage: React.ComponentType<Record<string, unknown>>;
-  PropertiesPage: React.ComponentType<Record<string, unknown>>;
-  PropertyDetailPage: React.ComponentType<Record<string, unknown>>;
-  PropertyOptionPage: React.ComponentType<Record<string, unknown>>;
-  // Client-only pages (no SSR props)
-  CartPage: React.ComponentType;
-  CheckoutPage: React.ComponentType;
-  OrderSuccessPage: React.ComponentType;
-  AuthPage: React.ComponentType;
-  ProfilePage: React.ComponentType;
-  ProfileOrdersPage: React.ComponentType;
-  ProfileOrderDetailPage: React.ComponentType;
-  ProfileSettingsPage: React.ComponentType;
-  NotFoundPage: React.ComponentType;
-}
-
+/**
+ * Компоненти, які тема постачає ядру.
+ *
+ * `Header`/`Footer` обовʼязкові — на них тримається каркас
+ * (`StorefrontShell`/`ProtectedShell`). Решта — точки розширення головної.
+ */
 export interface ThemeComponents {
-  ProductCard?: React.ComponentType<ProductCardProps>;
-  FilterSidebar?: React.ComponentType<FilterSidebarProps>;
-  ProductGallery?: React.ComponentType<ProductGalleryProps>;
-  Header?: React.ComponentType;
-  Footer?: React.ComponentType;
+  Header: React.ComponentType;
+  Footer: React.ComponentType;
+  /** Hero головної. Якщо тема не задала — ядро рендерить власний `BannerSlider`. */
+  HeroBanner?: React.ComponentType<{ banners: Banner[] }>;
+  /**
+   * Унікальні секції головної, які є вибором теми (не канонічні).
+   *
+   * КОНТРАКТ СЛОТА: рендериться ПІСЛЯ канонічних секцій ядра і НЕ отримує
+   * жодних пропсів — дані компонент тягне сам (хуками / TanStack Query).
+   */
+  HomeSections?: React.ComponentType;
 }
 
+/** Модуль теми — те, що дефолтним експортом віддає пакет теми */
 export interface ThemeModule {
   manifest: ThemeManifest;
-  MainLayout: React.ComponentType<{ children?: React.ReactNode }>;
-  CatalogLayout: React.ComponentType<{ children?: React.ReactNode }>;
-  ProfileLayout: React.ComponentType<{ children?: React.ReactNode }>;
-  pages: ThemePages;
-  components?: ThemeComponents;
+  tokens: DesignTokens;
+  components: ThemeComponents;
+  /** Схема налаштувань теми; формат читає UI-генератор форми в адмінці */
+  settings?: Record<string, ThemeSettingDefinition>;
 }
 
-export interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    slug: string;
-    price: number | null;
-    old_price: number | null;
-    images: string[];
-    stock_status: string | null;
-    section_slug?: string;
-  };
-  onAddToCart?: () => void;
-}
-
-export interface FilterSidebarProps {
-  filters: Record<string, unknown>;
-  onFilterChange: (filters: Record<string, unknown>) => void;
-  properties: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    property_type: string;
-    is_filterable: boolean;
-    options?: Array<{ id: string; name: string; slug: string }>;
-  }>;
-}
-
-export interface ProductGalleryProps {
-  images: string[];
-  productName: string;
-}
-
+/** Рядок теми в БД (таблиця `themes`) */
 export interface ThemeRecord {
   id: string;
   name: string;

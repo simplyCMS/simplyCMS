@@ -58,10 +58,11 @@ export async function loadPropertyOption(
 
   const { data: products } = await client
     .from("products")
+    // Один рядковий літерал, а не конкатенація: PostgREST виводить типи рядків
+    // із ЛІТЕРАЛЬНОГО типу select-а, а `"a" + "b"` TypeScript звужує до `string`,
+    // через що результат ставав `GenericStringError[]`.
     .select(
-      "*, product_modifications!inner(" +
-        "*, modification_property_values!inner(option_id)" +
-        ")",
+      "*, product_modifications!inner(*, modification_property_values!inner(option_id))",
     )
     .eq(
       "product_modifications.modification_property_values.option_id",

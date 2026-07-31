@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import ProfileSettingsPage from '@simplycms/storefront-routes/pages/ProfileSettings';
 
 export const Route = createFileRoute('/_protected/profile/settings')({
   head: () => ({
@@ -9,9 +7,3 @@ export const Route = createFileRoute('/_protected/profile/settings')({
   }),
   component: ProfileSettingsPage,
 });
-
-function ProfileSettingsPage() {
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
-  return <theme.pages.ProfileSettingsPage />;
-}

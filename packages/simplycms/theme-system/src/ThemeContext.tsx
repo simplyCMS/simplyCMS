@@ -94,12 +94,12 @@ export function ThemeProvider({
         setActiveTheme(theme);
         setThemeName(name);
 
-        // Злиття default settings з збереженими
+        // Злиття default settings з збереженими.
+        // Контракт v2: схема налаштувань лежить у `module.settings`,
+        // а не в маніфесті (маніфест — лише паспорт теми).
         const defaultSettings: Record<string, unknown> = {};
-        if (theme.manifest.settings) {
-          for (const [key, setting] of Object.entries(
-            theme.manifest.settings
-          )) {
+        if (theme.settings) {
+          for (const [key, setting] of Object.entries(theme.settings)) {
             defaultSettings[key] = setting.default;
           }
         }

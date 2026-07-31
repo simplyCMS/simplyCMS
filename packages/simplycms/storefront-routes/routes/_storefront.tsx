@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { use } from 'react';
 import { ThemeProvider } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import { StorefrontShell } from '@simplycms/storefront-routes/shells/StorefrontShell';
 import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
 
 export const Route = createFileRoute('/_storefront')({
@@ -18,7 +17,6 @@ export const Route = createFileRoute('/_storefront')({
 
 function StorefrontLayout() {
   const { themeName, themeSettings } = Route.useLoaderData();
-  const theme = use(ThemeRegistry.load(themeName));
 
   return (
     <ThemeProvider
@@ -26,9 +24,9 @@ function StorefrontLayout() {
       initialThemeName={themeName}
       initialThemeSettings={themeSettings}
     >
-      <theme.MainLayout>
+      <StorefrontShell>
         <Outlet />
-      </theme.MainLayout>
+      </StorefrontShell>
     </ThemeProvider>
   );
 }

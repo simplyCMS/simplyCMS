@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { use } from 'react';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import ProfileOrderDetailPage from '@simplycms/storefront-routes/pages/ProfileOrderDetail';
 
 export const Route = createFileRoute('/_protected/profile/orders/$orderId')({
   head: () => ({
@@ -9,9 +7,3 @@ export const Route = createFileRoute('/_protected/profile/orders/$orderId')({
   }),
   component: ProfileOrderDetailPage,
 });
-
-function ProfileOrderDetailPage() {
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
-  return <theme.pages.ProfileOrderDetailPage />;
-}
