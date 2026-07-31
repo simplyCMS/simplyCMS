@@ -42,7 +42,7 @@
 
 ### Task 0.3: Дрібні фікси (4 minor + env-матриця)
 
-**Files:** `packages/simplycms/core/src/index.ts` (видалити мертвий блок «Supabase Client (DI)» ~91-100; deps НЕ чіпати); `.github/instructions/data-access.instructions.md` (рядок ~129 → `packages/simplycms/supabase/src/`; **+ env-матриця**: `SUPABASE_PROJECT_ID`+`ACCESS_TOKEN` → `db:generate-types`/`db:migrate`; `DATABASE_URL` → `db:pull`/`db:diff`/`db:dump-rls`); `.github/instructions/tooling.instructions.md` (аліаси += `supabase`,`i18n`,`storefront-routes`; та сама env-матриця в розділі env); `.env.example` (+`DATABASE_URL=` з приміткою «session pooler; лише db:pull/diff/dump-rls»); `packages/simplycms/schema/package.json` (+`dependencies: dotenv, pg`).
+**Files:** `packages/simplycms/core/src/index.ts` (видалити мертвий блок «Supabase Client (DI)» ~91-100; deps НЕ чіпати); `.github/instructions/data-access.instructions.md` (рядок ~129 → `packages/simplycms/supabase/src/`; **+ env-матриця**: `SUPABASE_PROJECT_ID`+`SUPABASE_ACCESS_TOKEN` → `db:generate-types`/`db:migrate`; `DATABASE_URL` → `db:pull`/`db:diff`/`db:dump-rls`); `.github/instructions/tooling.instructions.md` (аліаси += `supabase`,`i18n`,`storefront-routes`; та сама env-матриця в розділі env); `.env.example` (+`DATABASE_URL=` з приміткою «session pooler; лише db:pull/diff/dump-rls»); `packages/simplycms/schema/package.json` (+`dependencies: dotenv, pg`).
 
 - [ ] **Step 1:** всі правки; контроль: `git grep -n "core/src/supabase" -- ':!docs'` → 0.
 - [ ] **Step 2:** гейти → коміт: `chore(review): minor-знахідки ревʼю + env-матриця в інструкціях`.
@@ -59,7 +59,9 @@
 
 - [ ] **Step 1:** скопіювати поточний `supabase/types.ts` → `database.ts` пакета (зараз БД не має плагінних таблиць, крім `plg_*`-відсутніх — baseline = повний поточний генерат; зафіксувати в README, що плагінні таблиці в baseline не входять ніколи).
 - [ ] **Step 2:** усі імпорти `@simplycms/db-types` → `import type { Database, Json } from '@simplycms/supabase'`; зняти аліас із 3 конфігів; `git grep "db-types" -- ':!docs'` → 0.
-- [ ] **Step 3:** гейти → коміт: `refactor(types): baseline БД-типів у @simplycms/supabase; аліас db-types знято; генерація лишається host-owned`.
+- [ ] **Step 3 (generic-місток до host-типів):** фабрики й Provider параметризувати: `createServerSupabase<Db extends Database = Database>()`, `createBrowserSupabase<Db …>()`, `SupabaseProvider<Db>`/`useSupabaseClient<Db>()` — host, що має плагінні таблиці, підставляє СВІЙ згенерований `Database` з `supabase/types.ts` у точках створення клієнтів (`engine.shared.ts`, `start.ts`); пакети всередині лишаються на baseline. Тест: host-типізований клієнт компілюється з `.from('<таблиця з host-типів>')`.
+- [ ] **Step 4 (процедура оновлення baseline):** README пакета: «baseline регенерується ПІСЛЯ кожної core-міграції: `pnpm db:generate-types` на еталонній dev-БД без плагінів → копія в `packages/simplycms/supabase/src/database.ts`»; додати npm-скрипт `types:baseline` (копіювання + prettier-ignore перевірка). Оновити згадки в `supabase/scripts/update-types.mjs` (коментар про два файли), `tooling.instructions.md`, `CLAUDE.md`.
+- [ ] **Step 5:** гейти → коміт: `refactor(types): baseline у @simplycms/supabase + generic-місток до host-типів; аліас db-types знято`.
 
 ### Task 1.2: Consumed-subpath аудит exports
 
@@ -75,17 +77,19 @@
 
 Імпорти пакетів не збігаються з `dependencies`/`peerDependencies` (мінімум: `core` не декларує `objects` і `themes`; `plugin-system` не декларує `objects`).
 
-**Files:** Create `scripts/audit-deps.mjs` (для кожного пакета: множина `@simplycms/*`-імпортів у src ⊆ deps∪peers manifest-а); Modify manifests за результатом.
+**Files:** Create `scripts/audit-deps.mjs`; Modify manifests за результатом.
 
-- [ ] **Step 1:** скрипт + прогін → список розривів → додати відсутні `workspace:*`-deps.
-- [ ] **Step 2:** підключити до тест-гейта (як 1.2). Гейти → коміт: `fix(packaging): manifest-deps відповідають реальним імпортам (audit-deps гейт)`.
+**Обсяг аудиту (повний, за аудитом):** для кожного пакета сканувати **всі publish-roots** (`src/` **і** `routes/`), збирати **всі bare-імпорти** — і `@simplycms/*`, і зовнішні (`@tanstack/*`, `@tiptap/*`, `lucide-react`, `zod`, `@supabase/*`, …; приклад розриву: `admin` імпортує router/Tiptap/lucide/zod, а manifest їх не декларує). Кожен зовнішній класифікується: **peers** — react/react-dom/@tanstack/react-router/react-start/react-query/@supabase/* (один інстанс на host); **deps** — решта утиліт. Перевірка: множина bare-імпортів ⊆ deps∪peers.
+
+- [ ] **Step 1:** скрипт + прогін → список розривів → додати відсутні deps/peers (`workspace:*` для сиблінгів).
+- [ ] **Step 2:** підключити до тест-гейта (як 1.2). Гейти → коміт: `fix(packaging): manifest-deps покривають УСІ bare-імпорти обох publish-roots (audit-deps гейт)`.
 
 ### Task 1.4: Build + publishConfig для всіх пакетів; parity по TARBALL; окремий CI job
 
 **Files:** `packages/simplycms/{supabase,i18n,schema,storefront-routes,admin-routes,theme-system,plugin-system,ui,admin,core,cart-ui,catalog-ui,checkout-ui,profile-ui,reviews-ui}/`: `tsup.config.ts` + `package.json` (`build`, `private:false`, `publishConfig` dist-дзеркало, registry npmjs); Rewrite `tests/published-exports-parity.test.ts`; Modify `.github/workflows/workflow.yml` (+job `packaging`).
 
 - [ ] **Step 1:** tsup за зразком наявних шести (esm+dts, `splitting:false`, `external` сиблінги). **Route-пакети:** тека `routes/` їде в tarball **сирцями** (`files: ["dist","src","routes"]`, publish-export `./routes/*` → `./routes/*` без dist — генератор host-а сканує сирі `.tsx`); зафіксувати в README обох route-пакетів.
-- [ ] **Step 2:** parity-тест v2 — працює по **tarball-ах**: `pnpm pack` кожного пакета у tmp → розпакувати manifest з `.tgz` → перевірити: (а) top-level exports = publish-варіант (pnpm pack застосував publishConfig — це і перевіряємо); (б) кожен export-target існує в tarball; (в) **нуль `workspace:`** у dependencies. Тест позначити як `packaging`-suite, **виключити з дефолтного `pnpm test`** (потребує build).
+- [ ] **Step 2:** parity-тест v2 — працює по **tarball-ах**: `pnpm pack` кожного пакета у tmp → розпакувати manifest з `.tgz` → перевірити: (а) top-level exports = publish-варіант (pnpm pack застосував publishConfig — це і перевіряємо); (б) кожен export-target існує в tarball; (в) **нуль `workspace:`** у dependencies. Тест позначити як `packaging`-suite: у `vitest.config.ts` → `test.exclude += 'tests/published-exports-parity.test.ts'`; CI-job запускає його явно `vitest run tests/published-exports-parity.test.ts --config vitest.config.ts --no-file-parallelism` (потребує попереднього build).
 - [ ] **Step 3:** CI: новий job `packaging` (окремо від test-job, який dist не має): `install → build:packages → vitest run tests/published-exports-parity.test.ts` — на PR/push. Гейти → коміт: `feat(packaging): build+publishConfig для всіх пакетів; tarball-parity; CI job packaging`.
 
 ---
@@ -124,9 +128,9 @@
 - [ ] **Step 1:** `pilot-pack.mjs`: `pnpm build:packages` → `pnpm pack` кожного пакета → скопіювати template у `/tmp/simplycms-pilot/store` → підставити tarball-шляхи в overrides → `npm install` (саме npm — інший linker) → `npx vite build` → старт `node server.mjs` на вільному порту.
 - [ ] **Step 2 (Gate A — роути з node_modules):** множина route-id зі скретч-`routeTree.gen.ts` **ідентична** множині з монорепо (63 id; точний set-diff, не grep по `createFileRoute` — його в генераті немає); імпорти в генераті ведуть у `node_modules/@simplycms/…`.
 - [ ] **Step 3 (Gate B — production + server fns, #7213):** curls до запущеного скретч-сервера: `/` (200, назва товару), `/catalog` (назви+ціни — server fn з пакета в **production**-манифесті), `/admin` (guard-редірект), `/sitemap.xml`, `/robots.txt`, `/api/health`.
-- [ ] **Step 4 (Gate C — bundle-guard + splitting, по Vite manifest, не string-grep):** у client-manifest скретча: (а) жоден модуль з `server/`-тек пакетів і `server-client` не входить у клієнтський граф; (б) початковий чанк `/` (entry + його статичні імпорти) не містить модулів `@simplycms/admin`, `tiptap`, `recharts` (splitting-gate роадмапу).
+- [ ] **Step 4 (Gate C — bundle-guard + splitting, по модульному графу):** Vite manifest модулів НЕ містить — у vite.config скретча додається міні-плагін `emitBundleStats()` (hook `generateBundle`: пише `bundle-stats.json` = `{[chunkFileName]: Object.keys(chunk.modules)}`). Перевірки по stats: (а) жоден модуль з `server/`-тек пакетів і `server-client` не входить у клієнтські чанки; (б) initial-чанк `/` (entry + статичні імпорти за графом) не містить модулів `@simplycms/admin`, `@tiptap/*`, `recharts` (splitting-gate роадмапу).
 - [ ] **Step 5 (Gate D — Tailwind):** зібраний CSS скретча містить утиліти компонентів пакетів (перевірка 2-3 класів з `@simplycms/ui`); фінальна візуальна перевірка — Етап 4 (браузер).
-- [ ] **Step 6:** пілот однією командою; CI job `pilot` (workflow_dispatch + weekly). Гейти → коміт: `feat(packaging): npm-pack пілот — скретч-магазин з tarball-ів проходить gates A-D`.
+- [ ] **Step 6:** пілот однією командою; CI job `pilot` (workflow_dispatch + weekly): env скретча — з GitHub secrets `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY` (мапінг job-env → `.env` скретча в скрипті; `.env.local` в CI недоступний — задокументувати в workflow-коментарі; секрети створює власник). Гейти → коміт: `feat(packaging): npm-pack пілот — скретч-магазин з tarball-ів проходить gates A-D`.
 
 ---
 
@@ -136,7 +140,9 @@
 
 `Themes.tsx:41` постить на `/api/revalidate` (не існує з часів Next) і ігнорує відповідь; серверний кеш активної теми (5 хв TTL) ніхто не інвалідує → смок «перемкнув тему — вітрина оновилась» гарантовано падає.
 
-**Files:** Create server function `invalidateActiveTheme` (auth-guarded: тільки admin; викликає наявний `invalidateThemeCache()` з `storefront-routes/src/server/themes.ts`); Modify `packages/simplycms/admin/src/pages/Themes.tsx` (замість fetch `/api/revalidate` — виклик server fn, перевірка результату, toast при помилці); Test: unit на guard (не-адмін → відмова) + інвалідацію.
+**Placement (за аудитом — без забороненого ребра T5→T5 `admin → storefront-routes`):** інвалідація живе там, де кеш — **server route** `packages/simplycms/storefront-routes/routes/api/revalidate-theme.tsx` (POST; guard через `server/auth.isAdmin`, не-адмін → 403; викликає наявний `invalidateThemeCache()`); адмінка звертається **по HTTP** (`fetch('/api/revalidate-theme', {method:'POST'})`) — пакетної залежності не виникає.
+
+**Files:** Create `packages/simplycms/storefront-routes/routes/api/revalidate-theme.tsx`; Modify `packages/simplycms/admin/src/pages/Themes.tsx` (замість мертвого `/api/revalidate` — новий endpoint, **перевірка `response.ok`**, toast при помилці); Test: guard-тест (без сесії/не-адмін → 403; адмін → 200 + кеш скинуто).
 
 - [ ] **Step 1 (TDD)** → **Step 2** реалізація → **Step 3** гейти → коміт: `fix(themes): інвалідація кешу активної теми через auth-guarded server fn (замість мертвого /api/revalidate)`.
 
@@ -144,9 +150,9 @@
 
 `Plugins.tsx:59` оновлює `plugins.is_active` напряму → `PluginSlot` (реагує на registry) не оновиться без reload.
 
-**Files:** Modify `packages/simplycms/admin/src/pages/Plugins.tsx` — toggle викликає наявні `activatePlugin`/`deactivatePlugin` з `@simplycms/plugins` (єдиний механізм: вони і БД оновлюють, і registry мутують); Test: integration — toggle → слот зʼявився/зник без remount (розширення `slot-reactive.test.tsx`).
+**Files:** Modify `packages/simplycms/plugin-system/src/PluginLoader.ts` — **атомарний порядок** в `activatePlugin`/`deactivatePlugin`: спершу DB-update, і ТІЛЬКИ при успіху — мутація registry (зараз registry мутується до DB і без rollback — збій БД лишає «привидний» стан); Modify `packages/simplycms/admin/src/pages/Plugins.tsx` — toggle викликає ці функції (єдиний механізм); Test: розширення `slot-reactive.test.tsx` (toggle → слот без remount) + **failure-тести**: DB-помилка при activate → registry БЕЗ змін, стан toggle відкочено; те саме для deactivate.
 
-- [ ] **Step 1 (TDD)** → **Step 2** → гейти → коміт: `fix(plugins): toggle в адмінці через activate/deactivate — слоти оновлюються без reload`.
+- [ ] **Step 1 (TDD, включно з failure-кейсами)** → **Step 2** → гейти → коміт: `fix(plugins): атомарний activate/deactivate (DB → registry) — слоти оновлюються без reload, збій БД не лишає привидів`.
 
 ### Task 4.3: Живі браузерні смоки (борги Фази 0)
 
@@ -163,6 +169,17 @@
 - [ ] **DoD (spec §16):** фінальний прогін `node scripts/pilot-pack.mjs` (всі gates зелені, включно з production-curls скретча) + гейти монорепо. Коміт: `chore(phase1): Фаза 1 завершена`.
 
 ---
+
+## Changelog v3 (після другого кола: 5 знахідок — усі прийнято)
+
+Blocker: deps-аудит розширено на обидва publish-roots і ВСІ bare-імпорти з
+класифікацією deps/peers (T1.3). Major: generic-місток host-типів у supabase-пакеті
++ процедура оновлення baseline (T1.1 Steps 3-4); Gate C через emitBundleStats
+(generateBundle → модульний граф), не manifest (T3.1); theme-remediation через
+server route без ребра admin→storefront-routes, plugin-remediation з атомарним
+порядком DB→registry і failure-тестами (T4.1/T4.2). Хвости: SUPABASE_ACCESS_TOKEN
+у матриці, vitest.exclude для packaging-suite, secrets-мапінг weekly-пілота,
+update-types.mjs/tooling/CLAUDE у списку T1.1.
 
 ## Changelog v2 (після Codex-аудиту: 16 знахідок — 15 прийнято, 1 частково)
 
