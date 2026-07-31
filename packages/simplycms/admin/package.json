@@ -2,6 +2,7 @@
   "name": "@simplysoftua/admin",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
