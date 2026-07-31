@@ -7,47 +7,57 @@ description: 'Базові архітектурні правила SimplyCMS'
 
 ## Основна архітектура
 
-SimplyCMS — open-source e-commerce CMS з SSR-first підходом для публічних сторінок. Проект складається з:
+SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first підходом для публічних сторінок. Проект складається з:
 
-- **`app/`** — Next.js App Router (маршрутизація, сторінки)
-- **`packages/simplycms/`** — Ядро CMS (Git Subtree → окремий репозиторій)
+- **`src/`** — TanStack Start застосунок (file-based роути, серверні функції, SEO)
+- **`packages/simplycms/`** — Ядро CMS (Git Subtree → окремий репозиторій simplyCMS-core)
 - **`themes/`** — Локальні теми проекту
 - **`plugins/`** — Локальні плагіни проекту
-- **`temp/`** — Референсний SPA-проект (read-only, для міграції)
 
-### Пакети ядра
+### Пакети ядра (tier-архітектура)
 
-| Пакет | Alias | Призначення |
-|-------|-------|-------------|
-| `core/` | `@simplysoftua/core` | Бізнес-логіка, хуки, типи, Supabase клієнти, компоненти |
-| `admin/` | `@simplysoftua/admin` | Адмін-панель (layouts, pages, components) |
-| `ui/` | `@simplysoftua/ui` | Дизайн-система (50+ shadcn/ui компонентів) |
-| `plugin-system/` | `@simplysoftua/plugins` | HookRegistry, PluginLoader, PluginSlot |
-| `theme-system/` | `@simplysoftua/themes` | ThemeRegistry, ThemeContext, ThemeResolver |
-| `schema/` | — | Seed-міграції (reference SQL для bootstrap нових проектів) |
+| Пакет | Alias | Tier | Призначення |
+|-------|-------|------|-------------|
+| `objects/` | `@simplysoftua/objects` | T0 | Доменні контракти + порти (0 runtime deps) |
+| `domain/` | `@simplysoftua/domain` | T1 | Pure-логіка: pricing, discounts, inventory, shipping |
+| `data-supabase/` | `@simplysoftua/data-supabase` | T2 | Репозиторії на інжектованому Supabase-клієнті |
+| `react-query/` | `@simplysoftua/react-query` | T2 | `EngineProvider`/`useEngine` + data-хуки |
+| `ui/` | `@simplysoftua/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
+| `theme-system/` | `@simplysoftua/themes` | T4 | ThemeRegistry, ThemeContext, SSR-резолв теми |
+| `plugin-system/` | `@simplysoftua/plugins` | T4 | HookRegistry, PluginLoader, PluginSlot |
+| `storefront/` | `@simplysoftua/storefront` | T4 | SSR-loaders + SEO (sitemap/robots) |
+| `*-ui/` | `@simplysoftua/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
+| `admin/` | `@simplysoftua/admin` | T5 | Адмін-панель (layouts, pages, components) |
+| `core/` | `@simplysoftua/core` | — | Legacy-ядро (хуки, pages, providers; поступово розноситься по tier-ах) |
+| `runtime/` | `@simplysoftua/runtime` | T6 | `defineConfig` / збірка EngineContext |
+| `schema/` | — | — | Seed-міграції (reference SQL для bootstrap нових проектів) |
+
+Залежності — тільки вниз по tier-ах. Цільова архітектура платформи: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`.
 
 ### Rendering-стратегії
 
-| Route Group | Стратегія | Опис |
+| Route group | Стратегія | Опис |
 |-------------|-----------|------|
-| `(storefront)/` | SSR + ISR | Публічні сторінки, SEO, revalidation |
-| `(cms)/admin/` | Client-only | Адмін-панель, `'use client'` |
-| `(protected)/` | Client-only | Захищені сторінки (профіль, замовлення) |
-| `auth/` | Client-only | Форми авторизації |
-| `api/` | Server | API routes |
+| `_storefront/` | SSR | Публічні сторінки, SEO; loader надає `themeName` |
+| `admin/` | Client-only (`ssr: false`) | Адмін-панель як SPA; обовʼязковий `pendingComponent` |
+| `_protected/` | SSR guard + client | `beforeLoad` перевіряє auth, редіректить на `/auth` |
+| `auth/` | Client-only + server route | Форми авторизації; `callback` — server handler (OAuth) |
+| `api/` | Server routes | `server.handlers` (health, guest-order) |
 
 ## ✅ ALWAYS
-- Вибирай React Server Components за замовчуванням; додавай `'use client'` лише за потреби (стан, ефекти, події).
-- Використовуй пакети `@simplysoftua/*` замість локальних копій (UI, core, admin).
 - SSR для storefront-сторінок (каталог, товари, головна) — SEO критично.
-- Client-side для адмін-панелі — вся `(cms)/admin/` працює як SPA.
+- Client-side (`ssr: false`) для адмін-панелі; **завжди** додавай `pendingComponent` для `ssr:false`-роутів.
+- Route-файли — тонкі обгортки: `createFileRoute` + component з пакетів/тем; без бізнес-логіки.
+- Дані на сервері — через `createServerFn` (`src/server/*`) або route `loader`.
 - Cookie-based auth через `@supabase/ssr` (не localStorage JWT).
-- **Используй MCP сервери** для перевірки актуальних API:
-  - **context7:** Next.js, React, TanStack Query, Zod docs
+- Request-level guard для `/admin` — у `src/start.ts` (middleware).
+- Supabase-клієнт — через DI: `SupabaseProvider`/`useSupabaseClient` або репозиторії-порти; не глобальний singleton.
+- Використовуй пакети `@simplysoftua/*` замість локальних копій (UI, core, admin).
+- **Використовуй MCP сервери** для перевірки актуальних API:
+  - **context7:** TanStack Start/Router, React, TanStack Query, Zod docs
   - **shadcn:** UI компоненти перед додаванням
   - **supabase:** DB міграції, TypeScript types
-- Proxy (`proxy.ts`) для auth guards: `/admin` (admin role), `/profile` (auth).
-- Система тем: публічні сторінки рендеряться через `ThemeModule` (layouts, pages).
+- Система тем: публічні сторінки рендеряться через `ThemeModule` (layouts, pages) з `ThemeRegistry`.
 - Система плагінів: розширення через `HookRegistry` (25+ hook points).
 - Git Subtree для синхронізації ядра: `pnpm cms:push` / `pnpm cms:pull`.
 - Конфігурація CMS через `simplycms.config.ts` (тема, плагіни, Supabase, SEO).
@@ -55,27 +65,23 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом для п
 ## ❌ NEVER
 - Не розміщуй бізнес-логіку в темах (теми — лише візуальна складова).
 - Не обминай систему тем для storefront-сторінок.
-- Не редагуй файли в `temp/` — це read-only референс для міграції.
-- Не хардкодь Supabase URL/ключі — використовуй змінні оточення.
-- Не використовуй прямий `supabase-js` без `@simplysoftua/core` обгорток в клієнтському коді.
+- Не редагуй `src/routeTree.gen.ts` — автогенерований.
+- Не хардкодь Supabase URL/ключі — використовуй змінні оточення (`VITE_*`).
+- Не імпортуй глобальний supabase-клієнт — тільки DI (`useSupabaseClient`/порти).
 - **НЕ додавай shadcn/ui компоненти без перевірки через MCP** (search → examples → audit).
 - **НЕ припускай library APIs — перевіряй через MCP context7**.
-- Не ставай `'use client'` в Server Components без потреби.
-- Не виноси auth-логіку за межі `proxy.ts` та `auth/` route.
+- Не виноси auth-guard логіку за межі `src/start.ts` та `auth/`-роутів.
 - Не створюй файли > 150 рядків без розбиття.
 
 ## 📚 Коли потрібні деталі
-- Міграційний план: `BRD_SIMPLYCMS_NEXTJS.md`
-- Система тем: BRD секція 7 (ThemeModule, ThemeManifest, ThemePages)
-- Система плагінів: BRD секція 8 (PluginModule, HookRegistry, hook points)
-- SSR-стратегія: BRD секція 9 (ISR, revalidation, Server/Client Components)
-- Автентифікація: BRD секція 10 (Supabase SSR, proxy)
-- База даних: BRD секція 11 (міграції ядра vs проекту)
-- Файлове перенесення: BRD Додаток A (map temp/ → packages/)
+- Огляд проекту та структура: `CLAUDE.md`
+- Архітектура платформи (пакети, роути, плагіни, теми, міграції): `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`
+- Аналітична база рішень: `docs/architecture/platform-delivery-options.md`
+- Система тем (SSR-резолв, реєстрація): `CLAUDE.md` розділ «Theme System (SSR)»
+- SEO/faceted navigation: `docs/tasks/seo-ssr-faceted-navigation.md`
 
 ## 🔄 Робочий цикл
-1. Прочитай відповідний розділ `BRD_SIMPLYCMS_NEXTJS.md`, якщо працюєш над новою фічею.
+1. Перевір, чи існує інструкція в `.github/instructions` для твоєї сфери.
 2. Використовуй MCP для перевірки актуальних API та best practices.
-3. Перевір, чи існує інструкція в `.github/instructions` для твоєї сфери.
-4. Якщо мігруєш компонент — знайди оригінал у `temp/src/` та адаптуй.
-5. Лише після цього додавай або змінюй код.
+3. Для нових фіч звіряйся з `docs/architecture/` та відкритими задачами в `docs/tasks/`.
+4. Лише після цього додавай або змінюй код.

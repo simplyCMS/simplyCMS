@@ -20,6 +20,8 @@ pnpm test:watch       # Tests in watch mode
 
 SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages are distributed via Git Subtree from a separate repository.
 
+**Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md). Опис нижче документує **поточний** стан коду до реструктуризації.
+
 ## Mandatory Instructions
 
 All detailed coding rules, architecture decisions, and domain-specific guidelines are maintained in `.github/instructions/`. **These are mandatory and must be followed.**
@@ -38,6 +40,40 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
+
+## Agent Tooling
+
+Процесний тулінг для агентної розробки. Джерело правди — `.agents/skills/`;
+`.claude/skills/*` і `.github/prompts/*.prompt.md` — симлінки на нього, щоб
+Claude Code й Copilot читали **одні й ті самі** файли.
+
+| Шар | Що це |
+|-----|-------|
+| `.agents/skills/codebase-research/` | Як шукати в репо: `orient` (карта символів, валідація якорів плану), протокол стейл-графа, формат звіту-дельти |
+| `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
+| `.claude/agents/` | Субагенти `codebase-research`, `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
+| `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли` |
+
+```bash
+ORIENT=.agents/skills/codebase-research/scripts/orient
+$ORIENT ThemeRegistry getActiveTheme   # де лежить + хто споживає (з транзитивними через барелі)
+$ORIENT --plan docs/superpowers/plans/2026-07-31-phase0-foundation.md
+$ORIENT --doctor                       # чи є граф, чи свіжий, чи немає привидів
+```
+
+**Knowledge graph (graphify).** `graphify-out/` — локальний артефакт (gitignored),
+оновлюється post-commit хуком (AST, без LLM). `orient` працює і без графа —
+тихо падає на `ripgrep`. Семантика доків і назви спільнот хуком **не**
+оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою моделлю
+(`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
+
+**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test`.
+`build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
+гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
+червоніє (обидві покривають лише `src/**`).
+🔴 **Борг:** `prettier` відсутній у `devDependencies` — обидві команди зараз
+падають із `prettier: not found`, а CI їх не запускає. Де-факто гейти
+починаються з `pnpm lint`.
 
 ## Tech Stack
 
@@ -90,7 +126,6 @@ simplyCMS/
 ├── themes/default/                   # Default storefront theme
 ├── themes/solarstore/                # SolarStore theme (blue palette)
 ├── plugins/                          # Local plugins directory
-├── temp/                             # Reference React SPA (read-only)
 │
 ├── simplycms.config.ts               # CMS config
 ├── vite.config.ts                    # Vite + tanstackStart() + seoRoutesPlugin()
@@ -118,7 +153,7 @@ Themes use isomorphic registration + runtime DB activation:
 1. **Registration:** `src/theme-registry.ts` registers themes via `ThemeRegistry.register()` — imported as a side-effect from `__root.tsx` (works on server and client).
 2. **SSR Resolution:** `src/server/themes.ts` (`getActiveTheme` `createServerFn`) reads the active theme from the DB; the `_storefront` / `_protected` route `loader` provides `themeName` to children.
 3. **Storefront pages:** Route component does `const theme = use(ThemeRegistry.load(themeName))` → renders `theme.pages.XxxPage`.
-4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache (no Next `revalidatePath`).
+4. **Admin activation:** `themes` table `is_active` flag; switch invalidates the theme cache.
 5. **ThemeContext (client):** Accepts `initialThemeName` from the loader, avoids redundant client fetch.
 
 ## Environment Variables
@@ -132,16 +167,21 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 
 ## Git Subtree Workflow
 
+> ⚠️ Виводиться з експлуатації у Фазі 0 роадмапу платформи (spec §4.1): магазини
+> більше не форкають цей репозиторій, тож окремий `simplyCMS-core` не потрібен —
+> монорепо стає єдиним джерелом, публікація ядра йде на npmjs. Команди нижче
+> чинні лише до завершення Фази 0.
+
 ```bash
-pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplySOFTua/simplyCMS-core
+pnpm cms:remote                # Add/repoint simplycms-core remote → github.com/simplyCMS/simplyCMS-core
 pnpm cms:pull                  # Pull core updates from simplyCMS-core main (runs cms:remote first)
 pnpm cms:push                  # Push core changes to simplyCMS-core main (runs cms:remote first)
 pnpm cms:push:branch <branch>  # Push to a specific branch
 pnpm cms:diff                  # View local core changes
 ```
 
-> The core repo moved to the **simplySOFTua** org (`https://github.com/simplySOFTua/simplyCMS-core.git`).
-> `cms:remote` is idempotent — creates the remote if missing or repoints a stale URL (e.g. the old `VSydorenko` one).
+> The repos live under the **simplyCMS** org (`https://github.com/simplyCMS/simplyCMS-core.git`).
+> `cms:remote` is idempotent — creates the remote if missing or repoints a stale URL (e.g. the old `simplySOFTua`/`VSydorenko` ones).
 
 ## Database Commands
 

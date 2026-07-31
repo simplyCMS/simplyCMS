@@ -1,0 +1,25 @@
+# graphify scope для simplyCMS — лише source-код і доки, без білд-артефактів і генерату.
+# .gitignore уже виключає більшість цього; дублюємо, бо graphify читає диск, а не git-індекс.
+
+# залежності й білд
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.output/
+**/.nitro/
+**/.tanstack/
+**/build/
+**/coverage/
+**/*.tsbuildinfo
+**/*.min.js
+**/*.tgz
+
+# генерат — у графі дає тисячі шумових вузлів, які ніхто не редагує
+src/routeTree.gen.ts
+supabase/types.ts
+
+# власні артефакти graphify (інакше граф індексує сам себе)
+graphify-out/
+
+# статика й вендор
+public/

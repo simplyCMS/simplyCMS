@@ -28,9 +28,9 @@ description: "Рефакторинг React компонента в SimplyCMS"
    - Перевір keyboard navigation
    - Додай роль та семантичні елементи
 
-5. **Модернізація для Next.js**
+5. **Модернізація для TanStack Start**
    - Конвертуй у Server Component якщо можливо
-   - Оптимізуй для Next.js App Router
+   - Оптимізуй для TanStack Router (file-based routes, loaders)
    - Використовуй `next/image` замість `<img>`
 
 ## Зверни увагу на:
@@ -41,7 +41,7 @@ description: "Рефакторинг React компонента в SimplyCMS"
 - Покращення UX та accessibility
 
 ## Перевір через MCP:
-- **context7:** React patterns, Next.js best practices
+- **context7:** React patterns, TanStack Start best practices
 - **shadcn:** чи можна використати готовий UI компонент
 
 Покажи до та після, поясни зміни українською мовою.

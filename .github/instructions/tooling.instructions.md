@@ -12,18 +12,23 @@ description: 'Команди, форматування, тестування т�
 
 ## Основні команди
 
-```powershell
+```bash
 # Розробка
-pnpm dev                    # Next.js dev server (Turbopack)
-pnpm build                  # Production build
-pnpm start                  # Production server
+pnpm dev                    # Vite dev server (TanStack Start)
+pnpm build                  # Production build (vite build)
+pnpm start                  # Production server (.output/server/index.mjs)
 pnpm typecheck              # TypeScript type check
 pnpm lint                   # ESLint
 pnpm lint:fix               # ESLint (auto-fix)
+pnpm format                 # Prettier (write)
+pnpm format:check           # Prettier (check only)
 
 # Тестування
 pnpm test                   # Vitest run
 pnpm test:watch             # Vitest watch mode
+
+# Пакети ядра
+pnpm build:packages         # tsup build публікованих пакетів
 
 # Git Subtree (ядро CMS)
 pnpm cms:pull               # Підтягнути оновлення ядра
@@ -40,37 +45,33 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 
 ### TypeScript
 - Strict mode увімкнено.
-- Path aliases:
+- Path aliases (повний перелік — `tsconfig.json` + дзеркало у `vite.config.ts`):
   - `@simplysoftua/db-types` → `supabase/types.ts`
-  - `@simplysoftua/core` → `packages/simplycms/core/src`
-  - `@simplysoftua/admin` → `packages/simplycms/admin/src`
-  - `@simplysoftua/ui` → `packages/simplycms/ui/src`
-  - `@simplysoftua/plugins` → `packages/simplycms/plugin-system/src`
-  - `@simplysoftua/themes` → `packages/simplycms/theme-system/src`
-  - `@/*` → `app/*`
+  - `@simplysoftua/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
+    react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
+    storefront, runtime, cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui)
   - `@themes/*` → `themes/*`
   - `@plugins/*` → `plugins/*`
-- `temp/` виключено з компіляції.
 
 ### ESLint
-- `eslint-config-next` як базова конфігурація.
-- Flat config (`eslint.config.mjs`).
+- Flat config (`eslint.config.mjs`): typescript-eslint + eslint-plugin-react-hooks.
+- `src/routeTree.gen.ts` виключено з лінтингу (автогенерований).
+
+### Vite / TanStack Start
+- `vite.config.ts`: `tanstackStart()` + `tailwindcss()` + `seoRoutesPlugin()`.
+- `resolve.dedupe`: `react`, `react-dom`, `@tanstack/react-query`.
+- Тести мають окремий `vitest.config.ts` (з `@vitejs/plugin-react`, без tanstackStart).
 
 ### Tailwind v4
-- Конфігурація в `tailwind.config.ts`.
-- PostCSS через `@tailwindcss/postcss`.
+- Конфігурація в `tailwind.config.ts`; entry — `src/styles/globals.css` (`@import` + `@config`).
+- Vite plugin `@tailwindcss/vite`.
 - Typography plugin: `@tailwindcss/typography`.
-
-### Next.js
-- Turbopack для development.
-- `transpilePackages` для workspace packages.
-- `serverExternalPackages` для Tiptap.
-- Image optimization з Supabase remote patterns.
 
 ## Тестування
 - **Vitest** для unit та integration тестів.
-- **Testing Library** (@testing-library/react) для компонентів.
+- **Testing Library** (@testing-library/react) для компонентів (environment: jsdom per-file).
 - Тести поруч з кодом або в `__tests__/` директоріях.
+- `tests/published-exports-parity.test.ts` — guard паритету dev/publish exports пакетів.
 
 ## Git Subtree Workflow
 
@@ -89,13 +90,14 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 ## Змінні оточення
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGci...
+VITE_SITE_URL=https://example.com
 SUPABASE_PROJECT_ID=your-project-ref
 SUPABASE_ACCESS_TOKEN=sbp_xxxx
 ```
 
 - Завжди використовуй `.env.local` для локальних значень.
-- `NEXT_PUBLIC_` prefix для клієнтських змінних.
+- `VITE_` prefix для клієнтських змінних (`import.meta.env.VITE_*`).
 - `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` — для CLI (міграції, генерація типів через Management API).
 - Не комітьте `.env.local` — він в `.gitignore`.

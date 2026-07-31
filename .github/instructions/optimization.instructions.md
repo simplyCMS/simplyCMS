@@ -5,12 +5,12 @@ description: 'Правила оптимізації для SimplyCMS'
 
 # Performance Optimization
 
-## SSR & ISR (Storefront)
+## SSR & Caching (Storefront)
 
-- **ISR revalidation** для каталогу та товарних сторінок (1800s-3600s).
-- On-demand revalidation через `/api/revalidate` після змін в адмінці.
-- `next/image` для всіх зображень на storefront (lazy loading, optimization).
-- `next/font` для шрифтів (Inter з cyrillic subset).
+- Cross-request кешування серверних даних — in-memory TTL у `createServerFn`-хендлерах
+  (еталон: `src/server/themes.ts`, 5 хв TTL для активної теми).
+- Router-рівень: `staleTime` для loader-даних; інвалідація через `router.invalidate()`.
+- Lazy loading зображень (`loading="lazy"`) + явні розміри проти CLS.
 - Schema.org structured data для товарних сторінок (SEO).
 
 ## React Query & Caching (Admin)
@@ -24,11 +24,13 @@ description: 'Правила оптимізації для SimplyCMS'
 
 ## Bundle Optimization
 
-- **Dynamic imports** для важких компонентів:
-  - Tiptap editor: `next/dynamic` з `ssr: false`
-  - Recharts: `next/dynamic` з `ssr: false`
+- Роути `ssr: false` (адмінка) не потрапляють у серверний рендер; клієнтський код
+  сплітиться по роутах автоматично (file-based routing).
+- **Dynamic imports** (`React.lazy`/динамічний `import()`) для важких компонентів:
+  Tiptap editor, Recharts.
+- Теми завантажуються ліниво через `ThemeRegistry.load()` — не імпортуй теми напряму.
 - Tree shaking через правильні exports у packages.
-- `transpilePackages` в `next.config.ts` для workspace packages.
+- `resolve.dedupe` у `vite.config.ts` для react/react-dom/@tanstack/react-query.
 
 ## Database
 
@@ -39,18 +41,14 @@ description: 'Правила оптимізації для SimplyCMS'
 
 ## Error Handling
 
-- **Error Boundaries** (`app/error.tsx`) для React компонентів.
+- `errorComponent` / `notFoundComponent` на root-роуті (`src/routes/__root.tsx`).
+- `pendingComponent` для `ssr: false`-роутів — обовʼязково (усуває hydration-попередження і «білі» стани).
 - Try-catch для всіх Supabase операцій.
-- `loading.tsx` для глобального loading стану.
 - Graceful degradation при недоступності Supabase.
 
-## Server Components vs Client Components
+## SSR vs Client
 
-- Server Components за замовчуванням (менший bundle, SEO).
-- `'use client'` лише для інтерактивних елементів:
-  - Кошик (useCart, localStorage)
-  - Фільтри каталогу
-  - Форми (react-hook-form)
-  - Карусель (Embla)
-  - Все в адмін-панелі
+- Storefront-роути — SSR (`_storefront`): HTML з даними для краулерів.
+- Інтерактивні частини — звичайні React-компоненти з хуками (стан, ефекти);
+  жодних Server Components / `'use client'` — це Vite/TanStack Start, не Next.js.
 - `suppressHydrationWarning` для елементів з різним SSR/client рендером (dark mode, cart count).

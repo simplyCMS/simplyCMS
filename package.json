@@ -15,7 +15,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cms:remote": "git remote get-url simplycms-core >/dev/null 2>&1 && git remote set-url simplycms-core https://github.com/simplySOFTua/simplyCMS-core.git || git remote add simplycms-core https://github.com/simplySOFTua/simplyCMS-core.git",
+    "cms:remote": "git remote get-url simplycms-core >/dev/null 2>&1 && git remote set-url simplycms-core https://github.com/simplyCMS/simplyCMS-core.git || git remote add simplycms-core https://github.com/simplyCMS/simplyCMS-core.git",
     "cms:pull": "pnpm cms:remote && git subtree pull --prefix=packages/simplycms simplycms-core main --squash",
     "cms:push": "pnpm cms:remote && git subtree push --prefix=packages/simplycms simplycms-core main",
     "cms:push:branch": "pnpm cms:remote && git subtree push --prefix=packages/simplycms simplycms-core",

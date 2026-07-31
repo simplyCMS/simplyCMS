@@ -37,7 +37,6 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/.output/**',
-      'temp/**',
       '**/package/**', // витяги npm/pnpm pack
     ],
   },

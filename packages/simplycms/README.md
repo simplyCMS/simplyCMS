@@ -17,16 +17,15 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplysoftua/themes` | T4 | Theme system (ThemeRegistry, ThemeContext, ThemeResolver) |
 | `schema/` | — | Seed migrations (reference SQL for bootstrapping new projects) |
 
-> See `docs/architecture/core-engine-extraction.md` and
-> `docs/tasks/core-engine-extraction-implementation.md` for the engine-extraction design and status.
+> See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
 
 ## Usage
 
 SimplyCMS core is distributed via Git Subtree. To use it in your project:
 
 ```bash
-# Add remote (the project lives under the simplySOFTua org)
-git remote add simplycms-core https://github.com/simplySOFTua/simplyCMS-core.git
+# Add remote (the project lives under the simplyCMS org)
+git remote add simplycms-core https://github.com/simplyCMS/simplyCMS-core.git
 
 # Add as subtree
 git subtree add --prefix=packages/simplycms simplycms-core main --squash

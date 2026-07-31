@@ -1,5 +1,5 @@
 ---
-applyTo: "app/**/*.{ts,tsx},packages/simplycms/**/*.{ts,tsx}"
+applyTo: "src/**/*.{ts,tsx},packages/simplycms/**/*.{ts,tsx}"
 description: "Правила роботи з даними та Supabase в SimplyCMS"
 ---
 
@@ -8,37 +8,35 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- **Server Components / Server Actions:** використовуй `createServerSupabase()` з `@simplysoftua/core/supabase/server` (cookie-based).
-- **Client Components:** використовуй `supabase` з `@simplysoftua/core/supabase/client` (browser client).
-- **Proxy:** використовуй `createProxySupabaseClient()` з `@simplysoftua/core/supabase/proxy` (cookie-based session refresh + guards).
-- **API Routes:** використовуй `createServerSupabase()` для authenticated запитів.
+- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `@simplysoftua/core/supabase/server` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
+- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `@simplysoftua/core/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
+- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `@simplysoftua/core/supabase/anon` — без cookies, лише RLS `anon`-читання.
+- **Порти/репозиторії:** нові data-шляхи будуй через `@simplysoftua/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `@simplysoftua/react-query` (`useEngine()`).
 - Виконуй роботу з базою даних через MCP supabase, включаючи аналіз структури таблиць, RLS policies та виконання міграцій.
 
 ### Storefront (SSR)
-- Data fetching у Server Components для SEO-сторінок:
+- Data fetching — у route `loader` через `createServerFn` (`src/server/*`), який делегує в `@simplysoftua/storefront/loaders`:
   ```typescript
-  // app/(storefront)/catalog/[sectionSlug]/page.tsx
-  export default async function CatalogSectionPage({ params }) {
-    const { sectionSlug } = await params;
-    const supabase = await createServerSupabase();
-    const { data: products } = await supabase
-      .from('products')
-      .select('*, sections(*)')
-      .eq('section_slug', sectionSlug)
-      .eq('is_active', true);
-
-    return <ThemedCatalogSectionPage products={products} />;
-  }
+  // src/routes/_storefront/catalog/$sectionSlug/index.tsx
+  export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
+    loader: async ({ params }) => getSectionPageData({ data: params.sectionSlug }),
+    component: CatalogSectionRoute,
+  });
   ```
-- ISR revalidation через `/api/revalidate` endpoint.
-- `generateMetadata` для SEO на кожній SSR-сторінці.
+- `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
+- Кеш-інвалідація — через `staleTime`/router invalidate + in-memory TTL-кеші серверних функцій (ISR/`revalidatePath` не існує).
 
 ### Admin (Client-side)
 - TanStack React Query для data fetching в адмін-панелі:
   ```typescript
+  const supabase = useSupabaseClient();
   const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => supabase.from('products').select('*'),
+    queryKey: ['admin', 'products'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('products').select('*');
+      if (error) throw error;
+      return data;
+    },
   });
   ```
 - `useMutation` з invalidation для CUD-операцій.
@@ -58,30 +56,16 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 ## Supabase Data Patterns
 
-### SSR Fetching (storefront)
+### Server function + in-memory TTL cache (cross-request)
 ```typescript
-// Server Component
-const supabase = await createServerSupabase();
-const { data, error } = await supabase
-  .from('products')
-  .select('*, sections(name, slug)')
-  .eq('is_active', true)
-  .order('created_at', { ascending: false });
-```
+// src/server/themes.ts — еталон патерну
+const CACHE_TTL = 5 * 60 * 1000;
+let cache: { data: T | null; timestamp: number } | null = null;
 
-### Client Fetching (admin)
-```typescript
-// Client Component з TanStack Query
-const { data, isLoading } = useQuery({
-  queryKey: ['admin', 'products'],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
+export const getActiveTheme = createServerFn({ method: 'GET' }).handler(async () => {
+  if (cache && Date.now() - cache.timestamp < CACHE_TTL) return cache.data;
+  const supabase = createAnonSupabaseClient();
+  // ... запит; заповнити cache; повернути
 });
 ```
 
@@ -107,36 +91,25 @@ const mutation = useMutation({
 });
 ```
 
-### On-demand ISR
-```typescript
-// Після збереження товару в адмінці — тригер revalidation
-await fetch('/api/revalidate', {
-  method: 'POST',
-  body: JSON.stringify({ type: 'product', slug, sectionSlug }),
-});
-```
-
 ## ⚠️ Винятки
 
-### Анонімний клієнт у `unstable_cache` (getActiveThemeSSR)
-`getActiveThemeSSR()` використовує `createAnonSupabaseClient()` замість `createServerSupabase()`.
-Це **навмисний виняток**: `unstable_cache` — cross-request кеш (Data Cache), а `cookies()` —
-динамічний per-request API. Next.js забороняє виклик `cookies()` всередині `unstable_cache`,
-тому cookie-based серверний клієнт тут неможливий. Анонімний клієнт (без cookies, без auth)
-безпечний для цього кейсу, бо таблиця `themes` має RLS `SELECT` для `anon`.
+### Анонімний клієнт у SSR-резолві теми
+`getActiveTheme` / `getActiveThemeSSR` використовують `createAnonSupabaseClient()` замість
+cookie-based клієнта. Це **навмисний виняток**: результат кешується cross-request (in-memory TTL),
+тому per-request cookies тут недоречні. Анонімний клієнт (без auth) безпечний для цього кейсу,
+бо таблиця `themes` має RLS `SELECT` для `anon`.
 
 ## ❌ NEVER
 - Не створюй локальні файли міграцій — завжди через MCP supabase.
-- Не використовуй прямий `supabase-js` без обгорток з `@simplysoftua/core` (виняток: `unstable_cache`, див. вище).
+- Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client/репозиторії.
 - Не редагуй `supabase/types.ts` вручну — виключно через `pnpm db:generate-types`.
-- Не забувай ISR revalidation після змін даних в адмінці.
+- Не забувай інвалідацію query keys після мутацій в адмінці.
 - Не використовуй `queryClient.setQueryData()` для складних кейсів — invalidate замість цього.
-- Не роби DB calls з Server Components без try-catch обробки помилок.
+- Не роби DB calls у серверних функціях без обробки помилок.
 - Не хардкодь query keys — використовуй константи або фабрики.
 
 ## ℹ️ Де шукати деталі
-- `BRD_SIMPLYCMS_NEXTJS.md` секція 9 — SSR стратегія, ISR revalidation.
-- `BRD_SIMPLYCMS_NEXTJS.md` секція 10 — автентифікація та Supabase SSR.
-- `BRD_SIMPLYCMS_NEXTJS.md` секція 11 — міграції ядра vs проекту.
-- `packages/simplycms/core/src/supabase/` — клієнти Supabase.
-- `packages/simplycms/core/src/hooks/` — бізнес-хуки з data fetching.
+- `packages/simplycms/core/src/supabase/` — клієнти Supabase (server/anon/SupabaseProvider).
+- `packages/simplycms/data-supabase/src/` — репозиторії-порти.
+- `packages/simplycms/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
+- `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` — порти, DI, цільова пакетна архітектура.

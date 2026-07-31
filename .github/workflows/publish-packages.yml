@@ -1,16 +1,12 @@
 name: Publish Packages
 
-# Публікація framework-agnostic пакетів SimplyCMS у GitHub Packages.
-#
-# Реєстр: https://npm.pkg.github.com — scope @simplysoftua збігається з
-# власником репозиторію (вимога GitHub Packages), тому публікація
-# авторизується вбудованим GITHUB_TOKEN (PAT не потрібен).
-#
-# Тригери:
-#   - push semver-тегу v* (напр. v0.1.0) або ручний workflow_dispatch
-#     → build + publish;
-#   - pull_request / push гілки → лише build:packages (сплячий publish,
-#     зелений build як gate).
+# ⚠️ PUBLISH ПРИЗУПИНЕНО (2026-07-31, перенос у org simplyCMS).
+# GitHub Packages вимагає «scope = власник»: scope @simplysoftua більше НЕ
+# збігається з власником simplyCMS → публікація по тегу гарантовано падає з 403.
+# За рішенням власника (spec §4.1) публікація переїжджає на npmjs під scope
+# @simplycms — workflow переписується у Фазі 0 роадмапу разом із rename scope
+# (потрібен secret NPM_TOKEN від npm org simplycms).
+# Build-джоба лишається активною як gate на кожен PR/push.
 
 on:
   push:
@@ -36,11 +32,12 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-  # Публікація — лише на semver-тег v* або ручний workflow_dispatch.
+  # Публікація — ПРИЗУПИНЕНА до Фази 0 (див. шапку файлу). if: false — щоб
+  # випадковий тег не давав заплутаних 403 від GitHub Packages.
   publish:
     name: Build & publish
     needs: build
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read

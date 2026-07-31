@@ -1,5 +1,7 @@
 # Task: SEO / SSR storefront + Faceted Navigation (DB-driven SEO domain)
 
+> **Паралельний продуктовий трек** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)). Після Фази 0 фільтри/SEO живуть у канонічних сторінках `@simplysoftua/storefront-routes` (spec §11) — імплементувати вже там.
+
 > **Статус:** окрема продуктова задача. Повністю замінює та переписує колишню `migration-phase6-seo-domain-expansion.md` (видалена) і виносить «Phase 6 — DB-driven SEO» із загального міграційного документа `simplycms_tanstack_start_migration_task.md`.
 >
 > **Execution note:** це кодова задача поверх вже-завершеної TanStack Start архітектури (Phases 0–7 міграції закриті; проєкт повністю Start-native, див. `CLAUDE.md`). Тут не повертаємось до framework-міграції — будуємо SEO/SSR-контур і faceted navigation поверх наявної архітектури.

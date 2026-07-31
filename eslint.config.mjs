@@ -24,7 +24,6 @@ const eslintConfig = [
   },
   {
     ignores: [
-      "temp/**",
       "node_modules/**",
       "dist/**",
       "**/dist/**",
