@@ -1,22 +1,27 @@
-# Фаза 0 «Фундамент у монорепо» — імплементаційний план
+# Фаза 0 «Фундамент у монорепо» — імплементаційний план (v2, після аудиту Codex)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Перебудувати монорепо на цільову топологію платформи (spec §16 Фаза 0): роути ядра в пакетах через `physical()`, канонічні сторінки в ядрі, теми = tokens+components, плагін-контур підключено, supabase консолідовано, Drizzle-конвеєр міграцій, scope `@simplycms` — все на workspace-теках, без публікації.
 
-**Architecture:** Кожен етап лишає репозиторій зеленим (`typecheck`/`lint`/`test`/`build`) і закінчується комітом. Порядок: механічний фундамент (rename/LICENSE/subtree) → supabase → каркас роутів → тема v2 → плагіни → Drizzle → i18n → гігієна → фініш. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](../specs/2026-07-30-platform-architecture-design.md).
+**Architecture:** Порядок виправлено за аудитом: спершу консолідація supabase і **переїзд server-шару в пакет** (щоб роути, які на нього посилаються, переїжджали без зламаних відносних імпортів), потім роути через `physical()`, потім атомарний ланцюг тем. Кожне завдання лишає репозиторій зеленим (`typecheck`/`lint`/`test`/`build`) і закінчується комітом; **єдиний виняток — Task 10 (теми): 4 підетапи, одна green/commit-межа, це заявлено явно**.
 
-**Tech Stack:** TanStack Start 1.167 / Router 1.168 (`@tanstack/virtual-file-routes`), Vite 8, React 19, TS 5.9 strict, Supabase (`@supabase/ssr`), Drizzle ORM/Kit, Vitest 4, Zod 4.
+**Tech Stack:** TanStack Start / Router (pinned, див. Task 2b), Vite 8, React 19, TS 5.9 strict, Supabase (`@supabase/ssr`), Drizzle ORM/Kit (pinned), Vitest 4, Zod 4.
 
 ## Global Constraints
 
 - Strict TypeScript; без `any`; коментарі українською; файли ≤150 рядків (розбивати).
-- Жодного глобального supabase-singleton — тільки DI/порти (`useSupabaseClient()` / інжектований client).
+- Жодного глобального supabase-singleton — тільки DI/порти.
 - `ssr: false`-роути завжди мають `pendingComponent`.
 - `src/routeTree.gen.ts` не редагується руками; порядок CI: `install → build (генерація) → typecheck → test`.
-- Рішення D5 (spec §2): breaking-реструктуризація **без перехідних шимів** — старі шляхи видаляються, не re-export'яться.
-- Після КОЖНОГО завдання: `pnpm typecheck && pnpm lint && pnpm test && pnpm build` — зелені; потім коміт.
-- Комміт-меседжі: `тип(scope): опис українською` (як у git log).
+- Рішення D5 (spec §2): без перехідних шимів — старі шляхи видаляються.
+- Після кожного завдання (крім підетапів Task 10): `pnpm typecheck && pnpm lint && pnpm test && pnpm build` зелені → коміт (`git diff --check` перед комітом; чистий `git status` — ПІСЛЯ коміту).
+- Пошук по репо — тільки `git grep` (не `grep -r`): виключає node_modules/.git/генерат.
+
+**Свідомо відкладено на Фазу 1+ (зафіксовано, не прогалина):**
+- Публікація/`npm pack`/dist-exports нових пакетів і розширення `published-exports-parity.test.ts` на них — Фаза 1 (пілот пакування).
+- `server-admin-client`, `require-user`, auth-хуки в `@simplycms/supabase` (spec §10 повний контракт) — додаються, коли зʼявиться перший споживач (зараз service-role ніде не використовується; YAGNI).
+- Повна міграція UI-рядків на i18n (Task 15 — скелет + канонічні сторінки; адмінка — warn-рівень лінта + пункт роадмапу).
 
 ---
 
@@ -24,87 +29,53 @@
 
 ### Task 1: LICENSE
 
-**Files:**
-- Create: `LICENSE`
-- Modify: `package.json` (додати `"license": "MIT"`)
+**Files:** Create: `LICENSE`; Modify: `package.json`, усі workspace `package.json` без `license` (**workspace = `packages/simplycms/*` + `themes/*` + `plugins/*`** за `pnpm-workspace.yaml`; themes/plugins package.json теж).
 
-- [ ] **Step 1:** Створити `LICENSE` з текстом MIT:
-
-```
-MIT License
-
-Copyright (c) 2026 simplyCMS
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-- [ ] **Step 2:** У кореневий `package.json` після `"private": true` додати `"license": "MIT",`. Перевірити, що всі `packages/simplycms/*/package.json` мають `"license": "MIT"`; де немає (10 private-пакетів) — додати:
+- [ ] **Step 1:** Створити `LICENSE` (MIT, copyright `2026 simplyCMS`) — стандартний текст MIT без змін.
+- [ ] **Step 2:** Додати `"license": "MIT"` в кореневий `package.json` і в усі workspace-пакети, де відсутнє:
 
 ```bash
-node -e "const fs=require('fs');const g=require('path');for(const d of fs.readdirSync('packages/simplycms',{withFileTypes:true})){if(!d.isDirectory())continue;const p='packages/simplycms/'+d.name+'/package.json';if(!fs.existsSync(p))continue;const j=JSON.parse(fs.readFileSync(p,'utf8'));if(!j.license){j.license='MIT';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');console.log('added',p)}}"
+node -e "
+const fs=require('fs'),glob=['packages/simplycms','themes','plugins'];
+for(const root of glob){for(const d of fs.readdirSync(root,{withFileTypes:true})){
+  if(!d.isDirectory())continue;const p=root+'/'+d.name+'/package.json';
+  if(!fs.existsSync(p))continue;const j=JSON.parse(fs.readFileSync(p,'utf8'));
+  if(!j.license){j.license='MIT';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');console.log('added',p)}}}"
 ```
 
-- [ ] **Step 3:** Верифікація + коміт:
+- [ ] **Step 3:** Верифікація повна + коміт: `chore(license): LICENSE MIT + license-поле в усі workspace-пакети`.
+
+### Task 2: Rename scope `@simplysoftua` → `@simplycms` + registry npmjs
+
+**Files:** усі файли зі згадкою (`git grep -l '@simplysoftua'`), плюс `packages/simplycms/*/package.json` (publishConfig) і `tests/published-exports-parity.test.ts`.
+
+- [ ] **Step 1:** Заміна тільки по tracked-файлах:
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test
-git add -A && git commit -m "chore(license): LICENSE MIT у корінь + license-поле в усі пакети"
+git grep -l '@simplysoftua' | xargs sed -i 's|@simplysoftua|@simplycms|g'
 ```
 
-### Task 2: Rename scope `@simplysoftua` → `@simplycms`
+- [ ] **Step 2:** **Registry → npmjs** (spec D8; GitHub Packages більше не використовується): у 6 публікованих `package.json` (`objects`,`domain`,`data-supabase`,`react-query`,`runtime`,`storefront`) замінити `"registry": "https://npm.pkg.github.com"` → `"registry": "https://registry.npmjs.org"`; у `tests/published-exports-parity.test.ts` — те саме очікування. `.github/workflows/publish-packages.yml`: scope `@simplycms` (джоба лишається `if: false` — повне переписування на npmjs+NPM_TOKEN це Фаза 2).
+- [ ] **Step 3:** Точкові перевірки: `build:packages` filter = `"@simplycms/*"`; tsconfig paths / vite / vitest аліаси на `@simplycms/*` (включно `@simplycms/db-types`).
+- [ ] **Step 4:** `git grep -c '@simplysoftua'` → 0; `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test`; коміт: `refactor(scope): rename @simplysoftua → @simplycms + registry npmjs`.
 
-**Files:** Modify: усі файли зі згадкою `@simplysoftua` (≈390+, за прецедентом червня): `packages/**`, `src/**`, `themes/**`, `plugins/**`, `docs/**`, `.github/**`, `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `package.json`, `simplycms.config.ts`, `tests/published-exports-parity.test.ts`, `CLAUDE.md`, `AGENTS.md`.
+**Прим. (узгодження з Codex-знахідкою №3):** пакети `@simplycms/themes` і `@simplycms/plugins` зберігають наявні імена (теки `theme-system`/`plugin-system`); таблиця spec §4 виправляється під фактичні імена окремим кроком Task 17 (щоб spec не розходилась з кодом).
 
-**Прим.:** npm org `simplycms` уже створена власником; публікації в цій фазі немає, тож реєстр не задіюється.
+### Task 2b: Pin версій TanStack + прямі залежності генератора
 
-- [ ] **Step 1:** Механічна заміна (без `node_modules`/`.git`; префіксна заміна покриває і `@simplysoftua/db-types`):
+**Files:** `package.json`, `pnpm-lock.yaml`.
 
-```bash
-grep -rl '@simplysoftua' --exclude-dir=node_modules --exclude-dir=.git . \
-  | xargs sed -i 's|@simplysoftua|@simplycms|g'
-```
-
-- [ ] **Step 2:** Точкові перевірки після sed: (а) `package.json` → `build:packages` filter = `"@simplycms/*"`; (б) `.github/workflows/publish-packages.yml` → scope `@simplycms` (джоба призупинена — ок); (в) `tsconfig.json` paths і `vite.config.ts`/`vitest.config.ts` alias-ключі починаються з `@simplycms/`.
-
-- [ ] **Step 3:** Контроль нуля залишків і повна верифікація:
-
-```bash
-grep -rn '@simplysoftua' --exclude-dir=node_modules --exclude-dir=.git . | wc -l   # має бути 0
-pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test
-```
-
-- [ ] **Step 4:** Коміт: `git add -A && git commit -m "refactor(scope): rename @simplysoftua → @simplycms по всьому репо (npm org simplycms)"`
+- [ ] **Step 1:** Зафіксувати **exact**-версії (прибрати `^`) для: `@tanstack/react-router`, `@tanstack/react-start`, `@tanstack/react-router-devtools` — на поточно встановлені (`pnpm list --depth 0 | grep tanstack`).
+- [ ] **Step 2:** Додати прямими devDependencies (exact): `@tanstack/virtual-file-routes` і `@tanstack/router-generator` — версії, **сумісні зі встановленим `@tanstack/react-start`** (взяти ті, що вже в lockfile як транзитивні для router-plugin: `pnpm why @tanstack/router-generator`). Без цього імпорти в `routes.ts`/регрес-тесті не резолвляться при strict linking pnpm.
+- [ ] **Step 3:** `pnpm install --frozen-lockfile=false && pnpm build && pnpm typecheck && pnpm test`; коміт: `chore(deps): pin TanStack-набір + прямі deps virtual-file-routes/router-generator (spec §15)`.
 
 ### Task 3: Вивід git-subtree `simplyCMS-core`
 
-**Files:**
-- Modify: `package.json` (видалити скрипти `cms:remote`, `cms:pull`, `cms:push`, `cms:push:branch`, `cms:diff`)
-- Modify: `CLAUDE.md` (видалити розділ «Git Subtree Workflow» цілком; з Quick Reference прибрати cms-рядки)
-- Modify: `AGENTS.md` (прибрати `cms:pull`/`cms:push` з Quick Reference; згадку subtree в описі структури → «monorepo packages»)
-- Modify: `.github/instructions/tooling.instructions.md` (видалити розділ «Git Subtree (ядро CMS)» і «Git Subtree Workflow»)
-- Modify: `.github/instructions/architecture-core.instructions.md` (рядок «Git Subtree для синхронізації ядра…» видалити)
-- Modify: `packages/simplycms/README.md` (переписати: пакети живуть у монорепо `simplyCMS/simplyCMS`, публікуються на npmjs; блок про subtree/remote видалити)
+**Files:** `package.json` (скрипти `cms:*` геть), `CLAUDE.md` (розділ «Git Subtree Workflow» + cms-рядки Quick Reference), `AGENTS.md`, `.github/instructions/tooling.instructions.md` (subtree-розділи), `.github/instructions/architecture-core.instructions.md` (рядок про subtree), `packages/simplycms/README.md` (переписати: монорепо, npmjs).
 
-- [ ] **Step 1:** Внести всі правки вище; локальний remote: `git remote remove simplycms-core`.
-- [ ] **Step 2:** `grep -rn "subtree\|cms:pull\|cms:push\|simplycms-core" --include='*.md' --include='*.json' . | grep -v node_modules | grep -v docs/architecture` → залишки лише в історичних описах `docs/architecture/platform-delivery-options.md` (допустимо) і spec §4.1 (описує сам вивід — допустимо).
-- [ ] **Step 3:** Верифікація + коміт: `chore(repo): вивести git-subtree simplyCMS-core з експлуатації (spec §4.1)`.
-- [ ] **Step 4 (дія власника, поза репо):** архівувати `simplyCMS/simplyCMS-core` на GitHub (Settings → Archive). Зазначити в PR-описі.
+- [ ] **Step 1:** Правки за списком; remote — ідемпотентно: `git remote remove simplycms-core 2>/dev/null || true`.
+- [ ] **Step 2:** Контроль: `git grep -n "cms:pull\|cms:push\|subtree" -- '*.json' '*.md' ':!docs/architecture' ':!docs/superpowers'` → порожньо (allowlist: аналітика/спека/план описують сам вивід).
+- [ ] **Step 3:** Верифікація + коміт: `chore(repo): вивести git-subtree simplyCMS-core (spec §4.1)`. У PR-описі: власник архівує `simplyCMS/simplyCMS-core` на GitHub.
 
 ---
 
@@ -113,451 +84,236 @@ pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test
 ### Task 4: Пакет `@simplycms/supabase`
 
 **Files:**
-- Create: `packages/simplycms/supabase/package.json`, `packages/simplycms/supabase/src/{browser-client.ts,server-client.ts,anon-client.ts,keys.ts,SupabaseProvider.tsx,index.ts}`
-- Move (git mv, потім правки): вміст `packages/simplycms/core/src/supabase/{client.ts,server.ts → server-client.ts,anon.ts → anon-client.ts,SupabaseProvider.tsx,types.ts}` → `packages/simplycms/supabase/src/`
-- Modify: `tsconfig.json`, `vite.config.ts`, `vitest.config.ts` (alias `@simplycms/supabase` → `packages/simplycms/supabase/src`), усі імпорти `@simplycms/core/supabase/*` по репо
-- Modify: `.env.example`
-- Test: `packages/simplycms/supabase/src/__tests__/keys.test.ts`
+- Create: `packages/simplycms/supabase/{package.json,src/{keys.ts,browser-client.ts,server-client.ts,anon-client.ts,SupabaseProvider.tsx,index.ts,__tests__/keys.test.ts}}`
+- Move: `packages/simplycms/core/src/supabase/{client.ts→browser-client.ts, anon.ts→anon-client.ts, SupabaseProvider.tsx, types.ts→src/database.ts}`; **`src/server/supabase.ts` → `src/server-client.ts`** (справжній cookie-aware серверний клієнт живе САМЕ тут — `getRequestHeader('cookie')`/`setCookie`, зберегти сигнатуру з опційним cookie header)
+- Modify: `tsconfig.json`/`vite.config.ts`/`vitest.config.ts` (алаіс `@simplycms/supabase`), **`src/start.ts`** (імпорт `./server/supabase` → `@simplycms/supabase/server-client`), усі споживачі за таблицею нижче
+- Delete: `packages/simplycms/core/src/supabase/` (порожня після move)
 
-**Interfaces (Produces):**
-- `createBrowserSupabase(): SupabaseClient<Database>` (browser, `createBrowserClient` з `@supabase/ssr`)
-- `createServerSupabase(): SupabaseClient<Database>` (cookie-based, `getCookies`/`setCookie` з `@tanstack/react-start/server`)
-- `createAnonSupabaseClient(): SupabaseClient<Database>` (без cookies, для cross-request кешів)
-- `SupabaseProvider`, `useSupabaseClient()` (DI-контекст, як зараз)
-- `getSupabaseKeys(): { url: string; key: string }` — env-резолв
+**Мапа API старе → нове (атомарна заміна, D5 без шимів):**
 
-- [ ] **Step 1: Тест на env-резолв ключів (новий контракт нейминга):**
+| Старий імпорт | Старий експорт | Новий імпорт | Експорт (без перейменувань) |
+|---|---|---|---|
+| `@simplycms/core/supabase/client` | `createClient`, `getSupabaseBrowserClient`, тип `SupabaseClient` | `@simplycms/supabase/browser-client` | ті самі імена |
+| `src/server/supabase` (`./server/supabase`, `../server/supabase`) | `createServerSupabase` | `@simplycms/supabase/server-client` | `createServerSupabase` (сигнатура як є) |
+| `@simplycms/core/supabase/anon` | `createAnonSupabaseClient` | `@simplycms/supabase/anon-client` | те саме |
+| `@simplycms/core/supabase/SupabaseProvider` | `SupabaseProvider`, `useSupabaseClient` | `@simplycms/supabase/SupabaseProvider` | ті самі |
+| `@simplycms/core/supabase/types` | `Database`, `Json` | `@simplycms/supabase` (re-export `database.ts`) | ті самі |
 
-```ts
-// packages/simplycms/supabase/src/__tests__/keys.test.ts
-import { describe, expect, it, vi } from 'vitest';
-import { resolveSupabaseKeys } from '../keys';
-
-describe('resolveSupabaseKeys', () => {
-  it('віддає publishable key, коли задано', () => {
-    expect(
-      resolveSupabaseKeys({ VITE_SUPABASE_URL: 'https://x.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY: 'pk' }),
-    ).toEqual({ url: 'https://x.supabase.co', key: 'pk' });
-  });
-  it('fallback на legacy anon key', () => {
-    expect(
-      resolveSupabaseKeys({ VITE_SUPABASE_URL: 'https://x.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon' }),
-    ).toEqual({ url: 'https://x.supabase.co', key: 'anon' });
-  });
-  it('кидає зрозумілу помилку без ключів', () => {
-    expect(() => resolveSupabaseKeys({ VITE_SUPABASE_URL: 'https://x.supabase.co' })).toThrow(/SUPABASE.*KEY/);
-  });
-});
-```
-
-- [ ] **Step 2:** Прогнати — FAIL (модуля немає).
-- [ ] **Step 3:** Реалізувати `keys.ts` (pure-функція `resolveSupabaseKeys(env: Record<string,string|undefined>)` + обгортка `getSupabaseKeys()` на `import.meta.env`); `package.json` пакета:
-
-```json
-{
-  "name": "@simplycms/supabase",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "license": "MIT",
-  "exports": {
-    ".": "./src/index.ts",
-    "./browser-client": "./src/browser-client.ts",
-    "./server-client": "./src/server-client.ts",
-    "./anon-client": "./src/anon-client.ts",
-    "./SupabaseProvider": "./src/SupabaseProvider.tsx"
-  },
-  "peerDependencies": { "@supabase/ssr": "*", "@supabase/supabase-js": "*", "react": "*" }
-}
-```
-
-- [ ] **Step 4:** `git mv` файлів з `core/src/supabase/`, оновити їх внутрішні імпорти на `./keys`; `server-client.ts` звірити з офіційним quickstart Supabase для TanStack Start (`getCookies`/`setCookie`/`setResponseHeader`); алаіси в tsconfig/vite/vitest.
-- [ ] **Step 5:** Замінити імпорти по репо (без шимів, D5):
-
-```bash
-grep -rl "@simplycms/core/supabase" --exclude-dir=node_modules . \
-  | xargs sed -i "s|@simplycms/core/supabase/SupabaseProvider|@simplycms/supabase/SupabaseProvider|g; s|@simplycms/core/supabase/server|@simplycms/supabase/server-client|g; s|@simplycms/core/supabase/anon|@simplycms/supabase/anon-client|g; s|@simplycms/core/supabase/client|@simplycms/supabase/browser-client|g; s|@simplycms/core/supabase/types|@simplycms/supabase|g"
-```
-
-Пройти `grep -rn "core/supabase"` → 0; видалити порожню теку `core/src/supabase/`.
-- [ ] **Step 6:** `.env.example`: додати `VITE_SUPABASE_PUBLISHABLE_KEY=` з коментарем «новий нейминг; VITE_SUPABASE_ANON_KEY підтримується як legacy-fallback».
-- [ ] **Step 7:** Повна верифікація + коміт: `refactor(supabase): консолідація в @simplycms/supabase (spec §10)`.
+- [ ] **Step 1 (TDD):** `keys.test.ts` — `resolveSupabaseKeys(env)`: publishable-key пріоритетний; fallback на `VITE_SUPABASE_ANON_KEY`; без ключів — помилка з текстом `SUPABASE.*KEY` (3 кейси, код тесту як у v1 плану). FAIL → реалізація `keys.ts` → PASS.
+- [ ] **Step 2:** `package.json` пакета: exports `.`, `./browser-client`, `./server-client`, `./anon-client`, `./SupabaseProvider`; peerDeps `@supabase/ssr`, `@supabase/supabase-js`, `react`, `@tanstack/react-start` (для server-client). `git mv` за таблицею; клієнти переводяться на `resolveSupabaseKeys`.
+- [ ] **Step 3:** Заміна імпортів по репо **за мапою** (`git grep -l` по кожному старому шляху → sed конкретної пари; `./server/supabase` у `src/start.ts` — руками). Контроль: `git grep -n "core/supabase\|server/supabase"` → 0.
+- [ ] **Step 4:** `.env.example`: `VITE_SUPABASE_PUBLISHABLE_KEY=` (+ коментар про legacy anon fallback).
+- [ ] **Step 5:** Повна верифікація (`start.ts` guard працює: dev + зайти на `/admin` без сесії → редірект) + коміт: `refactor(supabase): консолідація в @simplycms/supabase (spec §10, частковий обсяг Фази 0)`.
 
 ---
 
-## Етап C — каркас роутів на `physical()`
+## Етап C — server-шар і каркас роутів
 
-### Task 5: Скелет пакетів `storefront-routes` і `admin-routes`
+### Task 5: Скелети route-пакетів
 
-**Files:**
-- Create: `packages/simplycms/storefront-routes/{package.json,routes/.gitkeep,src/.gitkeep}`
-- Create: `packages/simplycms/admin-routes/{package.json,routes/.gitkeep}`
-- Modify: `tsconfig.json`, `vite.config.ts`, `vitest.config.ts` (аліаси `@simplycms/storefront-routes`, `@simplycms/admin-routes` → відповідні `src`), `tailwind.config.ts`
+**Files:** Create: `packages/simplycms/storefront-routes/{package.json,src/index.ts,routes/.gitkeep}`, `packages/simplycms/admin-routes/{package.json,routes/.gitkeep}`; Modify: `tsconfig.json`/`vite.config.ts`/`vitest.config.ts` (алаіси), `tailwind.config.ts` (+`"./packages/simplycms/**/routes/**/*.{ts,tsx}"`).
 
-**Interfaces (Produces):** теки `routes/` обох пакетів — цілі для `physical()` (Task 6+); `storefront-routes/src/` — server-функції та сторінки (Task 8, 13).
+- [ ] **Step 1:** `storefront-routes/package.json`: exports `{".": "./src/index.ts", "./server/*": "./src/server/*.ts", "./seo/*": "./src/seo/*.ts", "./routes/*": "./routes/*"}`; `src/index.ts` — реальний файл (поки порожній export). `admin-routes/package.json`: exports **лише** `{"./routes/*": "./routes/*"}` — без `"."`, бо `src/` у нього немає (Codex №10).
+- [ ] **Step 2:** peerDeps обох: `@tanstack/react-router`, `@tanstack/react-start`, `react`. Верифікація + коміт: `feat(routes-pkg): скелети storefront-routes/admin-routes`.
 
-- [ ] **Step 1:** `package.json` (обидва однакові за формою):
-
-```json
-{
-  "name": "@simplycms/storefront-routes",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "license": "MIT",
-  "exports": { ".": "./src/index.ts", "./routes/*": "./routes/*" },
-  "peerDependencies": { "@tanstack/react-router": "*", "@tanstack/react-start": "*", "react": "*" }
-}
-```
-
-(`peerDependencies` на `@tanstack/react-start` — контракт пакета зі spec §5: у майбутньому вмикає авто-noExternal.)
-
-- [ ] **Step 2:** `tailwind.config.ts` → у `content` додати `"./packages/simplycms/**/routes/**/*.{ts,tsx}"`.
-- [ ] **Step 3:** Верифікація + коміт: `feat(routes-pkg): скелети @simplycms/storefront-routes і @simplycms/admin-routes`.
-
-### Task 6: `routes.ts` + virtualRouteConfig + пілотний роут
+### Task 6: Переїзд server-шару і SEO в `storefront-routes` (ДО роутів)
 
 **Files:**
-- Create: `routes.ts` (корінь)
-- Modify: `vite.config.ts`
-- Move: `src/routes/admin/index.tsx` → `packages/simplycms/admin-routes/routes/admin/index.tsx`
+- Move: `src/server/*.ts` (auth, themes, products, sections, home, properties, engine…) → `packages/simplycms/storefront-routes/src/server/`; `src/seo/{sitemap.ts,robots.ts,plugin.ts}` → `.../src/seo/`; `src/active-theme.ts` → `.../src/active-theme.ts`
+- Modify: **усі** імпортери: route-файли (`../../server/home` → `@simplycms/storefront-routes/server/home` — алаісні, глибина неважлива), `src/routes/__root.tsx`, `src/routes/admin.tsx` (`../server/auth` → `@simplycms/storefront-routes/server/auth`), `src/client.tsx` (active-theme, якщо є), `vite.config.ts` (імпорт `seoRoutesPlugin`)
+- Modify: `.../src/seo/plugin.ts` — **виправити hardcoded `ssrLoadModule('./src/seo/…')`** (Codex №13): шляхи модулів передавати параметром плагіна з `vite.config.ts` (`seoRoutesPlugin({ sitemapModule: '/packages/simplycms/storefront-routes/src/seo/sitemap.ts', robotsModule: '…/robots.ts' })`)
 
-- [ ] **Step 1: Зʼясувати точну назву опції плагіна** (задокументована поведінка різниться між версіями):
+- [ ] **Step 1:** `git mv` + заміна імпортів: `git grep -l "\.\./server/\|\.\./\.\./server/\|\.\./\.\./\.\./\.\./server/" -- src` → sed на алаіс; `git grep -n "server/\|seo/\|active-theme" -- src vite.config.ts src/client.tsx` → усі на алаісах.
+- [ ] **Step 2:** `pnpm dev` smoke: `/`, `/catalog`, `/admin` (guard), **`/sitemap.xml` і `/robots.txt` віддаються** (перевірка фікса плагіна).
+- [ ] **Step 3:** Повна верифікація + коміт: `refactor(storefront): server-шар і SEO переїхали в @simplycms/storefront-routes`.
 
-```bash
-grep -rn "virtualRouteConfig" node_modules/@tanstack/router-plugin/dist/esm/*.d.ts node_modules/@tanstack/start-plugin-core/dist/esm/*.d.ts | head
-grep -rn "virtualRouteConfig\|routesDirectory" node_modules/@tanstack/react-start/dist -l | head -3
-```
+### Task 7: `routes.ts` + virtualRouteConfig + пілот
 
-Очікування: опція `virtualRouteConfig` в конфігу router-generator; у `tanstackStart()` передається через блок роутер-опцій (`tsr` або `router` — взяти те, що показує `.d.ts` типу `TanStackStartInputConfig`). Якщо опція приймає **шлях до файлу** — використати `'./routes.ts'`; якщо лише обʼєкт — імпортувати `routes` у `vite.config.ts` і передати обʼєктом.
+**Files:** Create: `routes.ts`, `src/routes/my/.gitkeep`; Modify: `vite.config.ts`; Move: `src/routes/admin/index.tsx` → `packages/simplycms/admin-routes/routes/admin/index.tsx`.
 
-- [ ] **Step 2:** Створити `routes.ts`:
+- [ ] **Step 1:** Зʼясувати точну форму опції: `git grep -n "virtualRouteConfig" node_modules/@tanstack/router-plugin/dist node_modules/@tanstack/start-plugin-core/dist -- '*.d.ts'` → підставити в блок опцій `tanstackStart()` те, що показує `TanStackStartInputConfig` (`tsr`/`router`); опція приймає шлях або обʼєкт — за типом.
+- [ ] **Step 2:** `routes.ts` (код як у v1: `rootRoute('__root.tsx', [physical('/', '../../packages/simplycms/storefront-routes/routes'), physical('/', '../../packages/simplycms/admin-routes/routes'), physical('/', 'my')])`).
+- [ ] **Step 3:** Пілот: `git mv src/routes/admin/index.tsx packages/simplycms/admin-routes/routes/admin/index.tsx` → `pnpm build` → у `routeTree.gen.ts`: імпорт відносним шляхом у пакет, id `/admin/` незмінний, решта дерева без змін → `typecheck`/`test` зелені → коміт: `feat(routes): virtualRouteConfig + physical() — пілот admin/index`.
 
-```ts
-// Монтаж каркаса платформи: віртуальне дерево роутів (spec §5).
-// Виконується генератором на етапі збірки як звичайний TS-модуль.
-import { physical, rootRoute } from '@tanstack/virtual-file-routes';
+### Task 8: Переїзд усіх admin-роутів
 
-// Шляхи ВІДНОСНІ до routesDirectory (src/routes).
-const STOREFRONT = '../../packages/simplycms/storefront-routes/routes';
-const ADMIN = '../../packages/simplycms/admin-routes/routes';
+**Files:** Move: `src/routes/admin.tsx` + `src/routes/admin/**` → `packages/simplycms/admin-routes/routes/…` (імпорти вже алаісні після Task 6 — правок не потребують).
 
-export const routes = rootRoute('__root.tsx', [
-  physical('/', STOREFRONT),
-  physical('/', ADMIN),
-  physical('/', 'my'), // власні сторінки магазину (референс-стенд)
-]);
-```
+- [ ] **Step 1:** Еталон: `grep -oE "'/[^']*'" src/routeTree.gen.ts | sort -u > /tmp/ids-before.txt`.
+- [ ] **Step 2:** `git mv`; контроль відносних: `git grep -n "from '\.\." -- packages/simplycms/admin-routes` → 0.
+- [ ] **Step 3:** `pnpm build` → diff route id порожній; повна верифікація; коміт: `feat(routes): адмін-роути в @simplycms/admin-routes`.
 
-Створити `src/routes/my/.gitkeep`.
-- [ ] **Step 3:** Підключити опцію у `vite.config.ts` (за результатом Step 1) і перенести пілот: `git mv src/routes/admin/index.tsx packages/simplycms/admin-routes/routes/admin/index.tsx`.
-- [ ] **Step 4:** `pnpm build` → відкрити `src/routeTree.gen.ts`: (а) імпорт пілотного роуту йде відносним шляхом у пакет; (б) route id лишився `/admin/`; (в) решта дерева без змін. `pnpm typecheck && pnpm test` зелені.
-- [ ] **Step 5:** Коміт: `feat(routes): virtualRouteConfig + physical() — пілотний admin/index у пакеті`.
+### Task 9: Переїзд storefront/_protected/auth/api-роутів
 
-### Task 7: Переїзд усіх admin-роутів
+**Files:** Move: `src/routes/{_storefront.tsx,_storefront,_protected.tsx,_protected,auth,api}` → `packages/simplycms/storefront-routes/routes/…` (імпорти алаісні після Task 6).
 
-**Files:**
-- Move: `src/routes/admin.tsx` → `packages/simplycms/admin-routes/routes/admin.tsx`; `src/routes/admin/**` (41 файл, що лишилися) → `packages/simplycms/admin-routes/routes/admin/**`
+- [ ] **Step 1-3:** Той самий протокол, що Task 8 (еталон id → mv → нуль відносних → diff порожній → верифікація + dev smoke по сторінках). Підсумок: `ls src/routes` = `__root.tsx`, `my/`. Коміт: `feat(routes): storefront-роути в пакеті — host стиснуто до __root + my/`.
 
-- [ ] **Step 1:** Зафіксувати еталон: `grep -oE "'/[^']*'" src/routeTree.gen.ts | sort -u > /tmp/route-ids-before.txt`
-- [ ] **Step 2:** `git mv src/routes/admin.tsx packages/simplycms/admin-routes/routes/ && git mv src/routes/admin packages/simplycms/admin-routes/routes/admin` (пілотна тека вже там — mv доповнить). Імпорти в цих файлах — тільки алаісні (`@simplycms/admin/...`) — правок не потребують; перевірити: `grep -rn "from '\.\." packages/simplycms/admin-routes/routes | grep -v routeTree` → 0.
-- [ ] **Step 3:** `pnpm build` → `grep -oE "'/[^']*'" src/routeTree.gen.ts | sort -u | diff /tmp/route-ids-before.txt -` → порожньо (URL-простір не змінився). `typecheck`/`lint`/`test` зелені.
-- [ ] **Step 4:** Коміт: `feat(routes): адмін-роути переїхали в @simplycms/admin-routes`.
+### Task 9b: Регрес-тест `physical()`
 
-### Task 8: Переїзд storefront/protected/auth/api + server-шару
+**Files:** Create: `tests/virtual-routes-escape.test.ts` (код з v1 плану — Generator API, тека поза routesDirectory, перевірка `/shop/products` і шляху `pkg/routes/products` у згенерованому дереві; сигнатури `Generator`/`getConfig` звірити з `node_modules/@tanstack/router-generator/dist/esm/index.d.ts` — тепер це прямий dep після Task 2b).
 
-**Files:**
-- Move: `src/routes/{_storefront.tsx,_storefront,_protected.tsx,_protected,auth,api}` → `packages/simplycms/storefront-routes/routes/…`
-- Move: `src/server/*` → `packages/simplycms/storefront-routes/src/server/*`; `src/seo/*` → `.../src/seo/*`; `src/active-theme.ts` → `.../src/active-theme.ts`
-- Modify: відносні імпорти в перенесених route-файлах; `src/routes/__root.tsx`; `vite.config.ts` (`seoRoutesPlugin` імпорт-шлях); `src/client.tsx` (якщо імпортує active-theme)
-
-- [ ] **Step 1:** Еталон route id → `/tmp/route-ids-before.txt` (як у Task 7).
-- [ ] **Step 2:** `git mv` за списком Files. Виправити відносні імпорти в route-файлах: `../../server/home` → `../../src/server/home` **не** підійде (routes/ і src/ — сусіди в пакеті): з `routes/_storefront/index.tsx` шлях = `../../src/server/home`; з `routes/_storefront/catalog/$sectionSlug/$productSlug.tsx` = `../../../../src/server/products`; перевірити всі: `grep -rn "\.\./server\|\.\./seo\|\.\./active-theme" packages/simplycms/storefront-routes/routes` і перерахувати глибину для кожного.
-- [ ] **Step 3:** `src/routes/__root.tsx`: `'../server/themes'` → `'@simplycms/storefront-routes/src/server/themes'`? — ні: __root має бути тонким. Додати в `storefront-routes/src/index.ts` експорти `getActiveTheme`, `serializeActiveThemeScript` і імпортувати з `@simplycms/storefront-routes`. `vite.config.ts`: `import { seoRoutesPlugin } from './packages/simplycms/storefront-routes/src/seo/plugin'`.
-- [ ] **Step 4:** `pnpm build` → diff route id = порожньо; `typecheck`/`lint`/`test` зелені; `pnpm dev` вручну: `/`, `/catalog`, `/admin`, `/auth` відкриваються (smoke).
-- [ ] **Step 5:** Підсумковий стан `src/routes/` = `__root.tsx` + `my/` — перевірити `ls`. Коміт: `feat(routes): storefront/auth/api-роути й server-шар у @simplycms/storefront-routes — host стиснуто до __root + my/`.
-
-### Task 9: Регрес-тест `physical()`-механізму
-
-**Files:**
-- Create: `tests/virtual-routes-escape.test.ts`, `tests/fixtures/vfr/{routes.ts, pkg/routes/products.tssx→products.tsx, host/__root.tsx}`
-
-- [ ] **Step 1:** Тест (Generator API напряму, за зразком експерименту з дослідження):
-
-```ts
-// tests/virtual-routes-escape.test.ts
-// Регрес-гард spec §5: physical() МУСИТЬ монтувати теку поза routesDirectory.
-// Якщо апстрім зламає цю поведінку — тест упаде ДО того, як зламається платформа.
-import { describe, expect, it } from 'vitest';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-
-it('physical() монтує теку поза routesDirectory і підхоплює нові файли', async () => {
-  const { Generator, getConfig } = await import('@tanstack/router-generator');
-  const dir = mkdtempSync(join(tmpdir(), 'vfr-'));
-  const routesDir = join(dir, 'app', 'routes');
-  const pkgRoutes = join(dir, 'pkg', 'routes');
-  mkdirSync(routesDir, { recursive: true });
-  mkdirSync(pkgRoutes, { recursive: true });
-  writeFileSync(join(routesDir, '__root.tsx'), `import { createRootRoute } from '@tanstack/react-router'\nexport const Route = createRootRoute()\n`);
-  writeFileSync(join(pkgRoutes, 'products.tsx'), `import { createFileRoute } from '@tanstack/react-router'\nexport const Route = createFileRoute('/shop/products')({})\n`);
-  writeFileSync(join(dir, 'routes.ts'), `import { rootRoute, physical } from '@tanstack/virtual-file-routes'\nexport const routes = rootRoute('__root.tsx', [physical('/shop', '../../pkg/routes')])\n`);
-  const generated = join(dir, 'app', 'routeTree.gen.ts');
-  const config = getConfig({ routesDirectory: routesDir, generatedRouteTree: generated, virtualRouteConfig: join(dir, 'routes.ts') }, dir);
-  await new Generator({ config, root: dir }).run();
-  const tree = readFileSync(generated, 'utf8');
-  expect(tree).toContain('/shop/products');
-  expect(tree).toMatch(/pkg\/routes\/products/);
-});
-```
-
-- [ ] **Step 2:** Прогнати; якщо сигнатури `Generator`/`getConfig` відрізняються у встановленій версії — звірити з `node_modules/@tanstack/router-generator/dist/esm/index.d.ts` і поправити виклик (поведінка, що перевіряється, незмінна).
-- [ ] **Step 3:** Верифікація + коміт: `test(routes): регрес-гард physical() поза routesDirectory`.
+- [ ] **Step 1-2:** Тест → зелений → коміт: `test(routes): регрес-гард physical() поза routesDirectory`.
 
 ---
 
-## Етап D — контракт теми v2 + канонікалізація сторінок
+## Етап D — теми v2 + канонічні сторінки
 
-### Task 10: Типи ThemeModule v2 + аплаєр токенів
-
-**Files:**
-- Modify: `packages/simplycms/theme-system/src/types.ts` (повна заміна контракту)
-- Create: `packages/simplycms/theme-system/src/applyTokens.ts`
-- Modify: `packages/simplycms/theme-system/src/ThemeRegistry.ts` (`validateTheme` під новий контракт)
-- Test: `packages/simplycms/theme-system/src/__tests__/registry-v2.test.ts`
+### Task 10 (АТОМАРНИЙ: підетапи A-D, одна green/commit-межа — виняток з інваріанта, заявлено явно)
 
 **Interfaces (Produces):**
 
 ```ts
+// theme-system/src/types.ts — ПОВНА заміна старого контракту
 export interface ThemeManifest { name: string; displayName: string; version: string; engines: { simplycms: string } }
-export interface DesignTokens { colors?: Record<string, string>; radius?: string; fonts?: Record<string, string> } // CSS custom properties
-export interface ThemeComponents {
-  Header: React.ComponentType; Footer: React.ComponentType;
-  HeroBanner?: React.ComponentType<{ banners: Banner[] }>;
-}
-export interface ThemeModule {
-  manifest: ThemeManifest; tokens: DesignTokens; components: ThemeComponents;
-  settings?: z.ZodTypeAny;
-}
-export function applyTokens(tokens: DesignTokens): string // → рядок CSS ':root{--color-…}' для <style>
+export interface DesignTokens { /* значення для НАЯВНИХ semantic CSS-змінних shadcn: */
+  background?: string; foreground?: string; primary?: string; 'primary-foreground'?: string;
+  secondary?: string; accent?: string; border?: string; radius?: string; /* + решта наявних --vars */ }
+export interface ThemeComponents { Header: React.ComponentType; Footer: React.ComponentType;
+  HeroBanner?: React.ComponentType<{ banners: Banner[] }> }  // опційний; fallback ядра — BannerSlider
+export interface ThemeModule { manifest: ThemeManifest; tokens: DesignTokens;
+  components: ThemeComponents; settings?: z.ZodTypeAny }
+// applyTokens пише в ІСНУЮЧІ змінні (--primary, --background, --radius…), НЕ у нові --color-*
+export function applyTokens(tokens: DesignTokens): string
+export function validateThemeModule(m: unknown): asserts m is ThemeModule // публічний pure-валідатор
+// storefront-routes:
+export function StorefrontShell(props: {children: ReactNode}): JSX.Element   // Header/Footer теми + токени
+export function ProtectedShell(props: {children: ReactNode}): JSX.Element    // канонічний профіль-каркас (бічна навігація, sign-out) — заміна theme.ProfileLayout
 ```
 
-- [ ] **Step 1:** Тест: `validateTheme` приймає модуль `{manifest, tokens, components:{Header,Footer}}` і відхиляє модуль без `Header` / без `engines.simplycms`; `applyTokens({colors:{primary:'#07f'}})` містить `--color-primary: #07f`.
-- [ ] **Step 2:** FAIL → реалізація: нові типи (старі `ThemePages`/`MainLayout`-вимоги видалити повністю, D5), `validateTheme` перевіряє manifest+engines+Header+Footer, `applyTokens` — pure. `ThemeRegistry.load()` при невдачі активної теми (немає в реєстрі) → fallback `'default'` + `console.error` (деградація зі spec §8) — окремий тест.
-- [ ] **Step 3:** Тести пакета зелені (решта репо ще червона — themes/сторінки не переведені; **не комітити**, Task 10-13 — один атомарний ланцюг, коміт у Task 13).
-
-### Task 11: Канонічні сторінки в `storefront-routes`
-
-**Files:**
-- Move: `packages/simplycms/core/src/pages/*` (16 сторінок) → `packages/simplycms/storefront-routes/src/pages/*`
-- Create: `packages/simplycms/storefront-routes/src/layout/StorefrontShell.tsx`
-- Modify: route-файли `storefront-routes/routes/**` — рендерять канонічні сторінки напряму (замість `theme.pages.X`)
-
-- [ ] **Step 1:** `git mv packages/simplycms/core/src/pages packages/simplycms/storefront-routes/src/pages`; внутрішні імпорти сторінок — алаісні, виправити лише відносні (`grep -rn "from '\.\." …/src/pages`).
-- [ ] **Step 2:** `StorefrontShell.tsx` — канонічний каркас, який бере компоненти активної теми:
-
-```tsx
-// Канонічний shell вітрини: Header/Footer з активної теми, токени — інлайн-стилем.
-import { use } from 'react';
-import { ThemeRegistry, applyTokens } from '@simplycms/themes';
-import { useTheme } from '@simplycms/themes/ThemeContext';
-
-export function StorefrontShell({ children }: { children: React.ReactNode }) {
-  const { themeName } = useTheme();
-  const theme = use(ThemeRegistry.load(themeName));
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: applyTokens(theme.tokens) }} />
-      <theme.components.Header />
-      <main>{children}</main>
-      <theme.components.Footer />
-    </>
-  );
-}
-```
-
-- [ ] **Step 3:** `routes/_storefront.tsx` рендерить `StorefrontShell` з `<Outlet/>`; кожен route-файл `_storefront/**`: замість `theme.pages.XxxPage` імпортує сторінку `../../src/pages/Xxx` і рендерить її (loader-и без змін). Те саме для `_protected`/auth-роутів (Profile*/Auth сторінки).
-- [ ] **Step 4:** Прибрати з route-файлів мертві імпорти `ThemeRegistry`/`use` де більше не потрібні. Не комітити (ланцюг).
-
-### Task 12: Перебудова тем `default` і `solarstore`
-
-**Files:**
-- Modify: `themes/default/index.ts`, `themes/default/manifest.ts`; Create: `themes/default/tokens.ts`; Delete: `themes/default/{pages,layouts}` (компоненти Header/Footer лишаються в `themes/default/components/`)
-- Те саме дзеркально для `themes/solarstore` (токени — синя палітра з поточних styles)
-
-- [ ] **Step 1:** `themes/default/index.ts` → експорт нового `ThemeModule`: `{ manifest: {...engines:{simplycms:'^0.1'}}, tokens (з поточних styles/CSS-variables), components: { Header, Footer, HeroBanner } }`. Вилучити `pages/`+`layouts/` (`git rm -r`): усе, що там було унікального (не re-export core) — перенести в `components/` теми або в канонічні сторінки, звіривши diff перед видаленням (`git diff --stat`).
-- [ ] **Step 2:** Те саме для solarstore.
-- [ ] **Step 3:** `src/theme-registry.ts` без змін (лоадери ті самі). Не комітити (ланцюг).
-
-### Task 13: Зелений стан ланцюга тем + видалення legacy
-
-**Files:**
-- Modify: `packages/simplycms/core/src/providers/CMSProvider.tsx` (прибрати згадки ThemePages, якщо є), `packages/simplycms/theme-system/src/{ThemeContext.tsx,getActiveThemeSSR.ts,ThemeResolver.ts}` — під новий тип
-- Delete: невикористані re-export шими core, що торкались pages (`grep`-контроль перед видаленням)
-
-- [ ] **Step 1:** `pnpm typecheck` → виправити всі місця, що ще очікують старий контракт (компілятор — чекліст).
-- [ ] **Step 2:** `pnpm build && pnpm test && pnpm lint` зелені; `pnpm dev` smoke: `/` рендерить Header/Footer теми + канонічну головну; перемикання теми в адмінці міняє шапку/токени.
-- [ ] **Step 3:** Коміт усього ланцюга D: `feat(themes)!: контракт v2 (tokens+components) + канонічні сторінки в ядрі (spec §6, D3/D4)`.
+- [ ] **A (типи + токени, TDD):** тести на `validateThemeModule` (публічна функція, не приватний метод: приймає валідний модуль; відхиляє без `Header`/без `engines`) і `applyTokens({primary:'221 83% 53%'})` → містить `--primary: 221 83% 53%`. Реалізувати `types.ts` (старі `ThemePages`/layouts — видалити), `applyTokens.ts`, `validateThemeModule.ts`; `ThemeRegistry.load` fallback на `'default'` при відсутній темі (+тест). Fallback-виняток: якщо і `default` не зареєстровано — reject (як зараз).
+- [ ] **B (канонічні сторінки):** `git mv packages/simplycms/core/src/pages packages/simplycms/storefront-routes/src/pages` (15 сторінок); **створити канонічну `HomePage`** (в core її НЕМАЄ — перенести з `themes/default/pages/HomePage.tsx`, параметризувавши банер-блок через `theme.components.HeroBanner ?? BannerSlider`); `StorefrontShell` (код з v1) + `ProtectedShell` (перенести розмітку з `themes/default` ProfileLayout: бічна навігація, sign-out — на `@simplycms/ui` + `useSupabaseClient`); route-файли `_storefront/**`, `_protected/**`, auth: рендерять сторінки напряму, `_storefront.tsx` → `StorefrontShell`, `_protected.tsx` → `ProtectedShell` (замість `theme.ProfileLayout`).
+- [ ] **C (перебудова тем):** `themes/default/index.ts` → `ThemeModule v2` (`tokens` — значення з поточного `styles/theme.css` під наявні змінні; `components: {Header, Footer, HeroBanner: BannerSlider-адаптер}`); `git rm -r themes/default/{pages,layouts}` ПІСЛЯ `git diff --stat`-звірки, що унікальний код перенесено (B). Дзеркально solarstore (своя палітра; `HeroBanner` відсутній — опційний, fallback ядра).
+- [ ] **D (зелений стан):** `pnpm typecheck` — компілятор як чекліст залишків старого контракту (`ThemeContext`, `getActiveThemeSSR`, `ThemeResolver`, `CMSProvider`) → виправити; повна верифікація + dev smoke (головна: Header/Footer/токени теми; перемикання теми в адмінці міняє вигляд; `/profile` працює на `ProtectedShell`). **Один коміт:** `feat(themes)!: контракт v2 tokens+components + канонічні сторінки в ядрі (spec §6, D3/D4)`.
 
 ---
 
-## Етап E — плагін-контур від конфігу
+## Етап E — плагін-контур
 
-### Task 14: `simplycms.config.ts` як джерело істини + bootstrap плагінів
+### Task 11: Конфіг як джерело істини + реактивний bootstrap
 
 **Files:**
-- Modify: `packages/simplycms/runtime/src/index.ts` (тип конфіга: + `plugins`, + `themes`)
-- Modify: `simplycms.config.ts`
-- Create: `packages/simplycms/plugin-system/src/bootstrap.ts`
-- Modify: `src/routes/__root.tsx` (виклик bootstrap на клієнті)
-- Create: `plugins/hello-world/{index.ts,package.json}` (référens-плагін)
-- Test: `packages/simplycms/plugin-system/src/__tests__/bootstrap.test.ts`
+- Modify: `packages/simplycms/runtime/src/index.ts` — **єдиний канонічний `defineConfig`** (типи: + `plugins?: PluginRegistration[]`, + `themes?: Record<string, ThemeLoader>`); `simplycms.config.ts` — **перевести імпорт з `@simplycms/core/config` на `@simplycms/runtime`**; Delete: `packages/simplycms/core/src/config.ts` (legacy defineConfig, D5)
+- Modify: `packages/simplycms/plugin-system/src/HookRegistry.ts` (+підписка: `subscribe(listener): () => void`, нотифікація з `register`/`unregister`/`clear`), `PluginSlot.tsx` (**`useSyncExternalStore(hookRegistry.subscribe, …)`** — слоти реактивні до змін реєстру)
+- Create: `packages/simplycms/plugin-system/src/bootstrap.ts`; `plugins/hello-world/{package.json,index.ts}`
+- Modify: `src/routes/__root.tsx` (клієнтський bootstrap), `src/theme-registry.ts` (читає `config.themes`)
+- Test: `packages/simplycms/plugin-system/src/__tests__/{bootstrap.test.ts,slot-reactive.test.tsx}`
 
 **Interfaces (Produces):**
 
 ```ts
-// runtime
 export interface PluginRegistration { name: string; module: () => Promise<{ default: PluginModule }> }
-export interface SimplyCMSConfig { supabase: {...як є}; seo: {...}; locale: string; currency: string;
-  plugins?: PluginRegistration[]; themes?: Record<string, () => Promise<{ default: ThemeModule }>> }
-// plugin-system
 export async function bootstrapPlugins(regs: PluginRegistration[], supabase: SupabaseClient): Promise<void>
-// реєструє модулі (registerPluginModule) і вмикає активні за таблицею plugins (loadPlugins);
-// невідомий у білді активний плагін → console.error + пропуск (деградація spec §8)
+// 1) registerPluginModule для КОЖНОГО reg; 2) upsert відсутніх у таблиці plugins
+//    (name/display_name/version з manifest модуля, is_active=false) — щоб адмінка їх бачила (Codex №22);
+// 3) loadPlugins(supabase) — вмикає активні; 4) невідомий активний у БД → console.error + пропуск (spec §8)
 ```
 
-- [ ] **Step 1:** Тест `bootstrap.test.ts` з mock-supabase (см. патерн `engine-provider.test.tsx`): (а) активний у БД і зареєстрований → його hook зареєстровано в `hookRegistry`; (б) активний у БД, але НЕ зареєстрований → не кидає, пише `console.error`; (в) зареєстрований, але неактивний → hooks не зареєстровані.
-- [ ] **Step 2:** FAIL → реалізація `bootstrapPlugins`; `console.log` у `PluginLoader.ts` (3 шт.) замінити на `console.error`-only при помилках (беклог-пункт гігієни).
-- [ ] **Step 3:** `simplycms.config.ts`: `plugins: [{ name: 'hello-world', module: () => import('@plugins/hello-world') }]`; `themes:` — перенести реєстрацію з `src/theme-registry.ts` сюди, а `theme-registry.ts` зробити генерованим споживачем конфіга (читає `config.themes`, викликає `ThemeRegistry.register`).
-- [ ] **Step 4:** `plugins/hello-world/index.ts` — мінімальний `PluginModule` з одним hook на слот `dashboard.widgets` (слот уже існує в `Dashboard.tsx`). `__root.tsx`: після монтування клієнта — `bootstrapPlugins(config.plugins ?? [], supabase)` (client-only effect; для SSR-безпеки хуки сторфронту в цій фазі не вмикаємо — задокументувати коментарем).
-- [ ] **Step 5:** Верифікація повна + ручний smoke: увімкнути плагін в `/admin/plugins` → віджет зʼявився на дашборді. Коміт: `feat(plugins): контур підключено — config як джерело істини, bootstrap, референс-плагін`.
+- [ ] **Step 1 (TDD bootstrap):** mock-supabase (патерн `engine-provider.test.tsx`): (а) зареєстрований+активний → hook у registry; (б) активний у БД, незареєстрований → без падіння, `console.error`; (в) зареєстрований, неактивний → hooks нема, але **рядок upsert-нутий у plugins**; FAIL → реалізація → PASS. `console.log` у `PluginLoader` → лишити тільки error-кейси.
+- [ ] **Step 2 (TDD реактивність):** `slot-reactive.test.tsx`: рендер `PluginSlot name="admin.dashboard.widgets"` → порожньо; `hookRegistry.register('admin.dashboard.widgets', 'p', () => <b>W</b>)` → віджет зʼявився без ремаунта. FAIL → `subscribe`+`useSyncExternalStore` → PASS. **Семантика togglе в адмінці:** `activatePlugin`/`deactivatePlugin` вже викликають register/unregister — з реактивним слотом віджет зʼявляється/зникає живцем; перезавантаження не потрібне (задокументувати в коді).
+- [ ] **Step 3:** `runtime` canonical `defineConfig`; `simplycms.config.ts`: імпорт з `@simplycms/runtime`, поля як були + `plugins: [{name:'hello-world', module: () => import('@plugins/hello-world')}]`, `themes: {default: …, solarstore: …}` (перенесено з theme-registry); `src/theme-registry.ts` = тонкий споживач `config.themes`. `git grep -n "core/config"` → 0.
+- [ ] **Step 4:** `plugins/hello-world/index.ts` — `PluginModule` з hook **`admin.dashboard.widgets`** (точне імʼя з `HookName`-типу). `__root.tsx`: client-only виклик `bootstrapPlugins(...)` в effect до першого рендера слотів не блокує гідрацію — слоти реактивні, доженуть (задокументувати; SSR-слоти сторфронту в цій фазі не вмикаємо — PluginSlot і так client-effect).
+- [ ] **Step 5:** Повна верифікація + smoke: `/admin/plugins` бачить hello-world (upsert) → увімкнути → віджет на дашборді **без reload** → вимкнути → зник. Коміт: `feat(plugins): контур підключено — канонічний defineConfig, реактивні слоти, bootstrap, референс-плагін`.
 
 ---
 
-## Етап F — Drizzle-конвеєр міграцій
+## Етап F — Drizzle-конвеєр
 
-### Task 15 (spike + baseline): `@simplycms/schema` з інтроспекції
+### Task 12: Baseline з інтроспекції (spike з чіткими gate-ами)
 
-**Files:**
-- Create: `packages/simplycms/schema/drizzle.config.ts`, `packages/simplycms/schema/src/**` (згенероване), `packages/simplycms/schema/package.json`
-- Modify: кореневий `package.json` (devDeps: `drizzle-orm`, `drizzle-kit`; скрипт `db:pull`)
+**Files:** Create: `packages/simplycms/schema/{package.json,drizzle.config.ts,src/schema.ts (згенерований),drizzle/ (meta+snapshots),README.md}`; Modify: кореневий `package.json` (devDeps **exact**: `drizzle-orm`, `drizzle-kit`, `pg`; скрипт `db:pull`).
 
-- [ ] **Step 1:** `pnpm add -D drizzle-orm drizzle-kit`; `drizzle.config.ts`:
+- [ ] **Step 1:** Встановити pinned devDeps (+`pg` — драйвер, без нього pull не працює). `drizzle.config.ts`:
 
 ```ts
 import { defineConfig } from 'drizzle-kit';
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/schema.ts',
-  out: '../../../supabase/migrations',           // цільова тека міграцій магазину
-  dbCredentials: { url: process.env.DATABASE_URL! }, // supabase db url (session pooler)
+  out: './drizzle',                       // МЕТА+snapshots+staging SQL Drizzle — ОКРЕМО від supabase/migrations
+  dbCredentials: { url: process.env.DATABASE_URL! },
+  schemaFilter: ['public'],               // НЕ тягнути auth/storage/realtime
   entities: { roles: { provider: 'supabase' } },
 });
 ```
 
-- [ ] **Step 2:** `DATABASE_URL=... pnpm drizzle-kit pull --config packages/simplycms/schema/drizzle.config.ts` → згенерує `schema.ts` (+`relations.ts`). **Перевірити покриття RLS:** чи зʼявились `pgPolicy`-визначення для політик наявних таблиць. Якщо політики НЕ витягнуто — зафіксувати в `packages/simplycms/schema/README.md`: «RLS-політики керуються SQL-міграціями напряму; Drizzle покриває таблиці/індекси/FK» і не блокуватись.
-- [ ] **Step 3:** Snapshot-baseline: перший `drizzle-kit generate` після pull має дати **порожню** міграцію (схема = БД). Якщо дає діф — розібрати причини (типи, дефолти) і поправити schema.ts до нуль-діфа. Жодних змін у БД у цьому завданні.
-- [ ] **Step 4:** Верифікація + коміт: `feat(schema): Drizzle-baseline з інтроспекції наявної БД (spec §9)`.
+- [ ] **Step 2 (pull):** `DATABASE_URL=… pnpm db:pull` → drizzle-kit пише `schema.ts`/`relations.ts` у **`out`** → перемістити в `src/` (задокументувати в README цей крок; snapshot лишається в `drizzle/meta`).
+- [ ] **Step 3 (RLS — blocking gate, spec D6):** перевірити наявність `pgPolicy`/`.withRLS` у згенерованій схемі. Політики, які pull НЕ витяг, — **дописати руками** в `schema.ts` (джерело: `select * from pg_policies where schemaname='public'`). Parity-перевірка — тест `packages/simplycms/schema/src/__tests__/rls-parity.test.ts`: кількість політик у `schema.ts` (регекс по `pgPolicy(`) === кількість рядків дампа `pg_policies` (фікстура, знята в цьому кроці й закомічена; README: як оновлювати).
+- [ ] **Step 4 (нуль-diff gate):** `pnpm drizzle-kit generate --config …` → згенерований SQL **порожній/відсутній**; якщо diff є — правити `schema.ts` до нуля (типи/дефолти). Прибрати staging-артефакти цієї перевірки: `git checkout -- packages/simplycms/schema/drizzle && git clean -fd packages/simplycms/schema/drizzle` → **`git status` чистий** (відкат включає meta, Codex №29).
+- [ ] **Step 5:** Верифікація + коміт: `feat(schema): Drizzle-baseline (schema+RLS у TS, snapshot у drizzle/) — spec §9`.
 
-### Task 16: Скрипти `db:diff` / `db:migrate` + вивід `migrate.mjs`
+### Task 13: Конвеєр `db:diff`/`db:migrate` (адаптер до формату Supabase)
 
-**Files:**
-- Modify: кореневий `package.json` (скрипти); Delete: `supabase/scripts/migrate.mjs`
-- Modify: `.github/instructions/data-access.instructions.md` (розділ «Міграції» — новий флоу)
+**Files:** Create: `scripts/db-diff.mjs`, `scripts/db-migrate.mjs`; Modify: кореневий `package.json` (скрипти), `.github/instructions/data-access.instructions.md`; Delete: `supabase/scripts/migrate.mjs` (+`update-types.mjs` НЕ чіпати).
 
-- [ ] **Step 1:** Скрипти:
-
-```json
-"db:diff": "drizzle-kit generate --config packages/simplycms/schema/drizzle.config.ts",
-"db:migrate": "supabase db push",
-"db:pull": "drizzle-kit pull --config packages/simplycms/schema/drizzle.config.ts"
-```
-
-(`supabase db push` застосовує невикочені файли з `supabase/migrations` — той самий контракт, що мав `migrate.mjs`; вимагає `supabase link` — задокументувати в data-access.instructions.)
-- [ ] **Step 2:** E2e-перевірка конвеєра на копії: додати тестову колонку в `schema.ts` → `pnpm db:diff` → зʼявився SQL-файл у `supabase/migrations` з diff-ом → відкотити правку схеми, видалити згенерований файл (конвеєр працює; у БД нічого не їхало).
-- [ ] **Step 3:** `git rm supabase/scripts/migrate.mjs`; інструкції оновити: «Міграції: схема — `@simplycms/schema` (Drizzle TS); зміна схеми = правка schema.ts → `pnpm db:diff` → людське ревʼю SQL → `pnpm db:migrate` → `pnpm db:generate-types`». Прибрати «Не створюй локальні файли міграцій — завжди через MCP» → замінити на новий флоу.
-- [ ] **Step 4:** Верифікація + коміт: `feat(db): конвеєр db:diff/db:migrate на drizzle-kit + supabase CLI; migrate.mjs виведено`.
+- [ ] **Step 1:** `scripts/db-diff.mjs`: (1) `drizzle-kit generate --config packages/simplycms/schema/drizzle.config.ts --name <arg>`; (2) взяти новий `.sql` зі `schema/drizzle`, **скопіювати** в `supabase/migrations/<YYYYMMDDHHmmss>_<name>.sql` (формат Supabase CLI); (3) вивести шлях + нагадування про ревʼю. Meta/snapshot Drizzle лишаються в `schema/drizzle` (комітяться) — подвійна бухгалтерія задокументована в README схеми.
+- [ ] **Step 2:** `scripts/db-migrate.mjs` — зберегти функції старого `migrate.mjs`: load `.env.local`, перевірка `supabase` CLI, `supabase link --project-ref $SUPABASE_PROJECT_ID` (ідемпотентно), `supabase db push`, потім **`pnpm db:generate-types`** (ланцюжок зі spec §9). `package.json`: `"db:diff": "node scripts/db-diff.mjs"`, `"db:migrate": "node scripts/db-migrate.mjs"`, `db:pull` як у Task 12.
+- [ ] **Step 3 (e2e конвеєра, без БД-змін):** тестова колонка в `schema.ts` → `pnpm db:diff test-col` → файл у `supabase/migrations` з `ALTER TABLE … ADD COLUMN` → відкат: правка схеми назад, видалення згенерованого SQL у **обох** теках + відновлення meta (`git checkout -- … && git clean -fd …`) → `git status` чистий.
+- [ ] **Step 4:** `git rm supabase/scripts/migrate.mjs`; інструкції data-access: новий флоу (schema.ts → db:diff → ревʼю → db:migrate → типи), прибрати «тільки через MCP». Верифікація + коміт: `feat(db): конвеєр db:diff/db:migrate (drizzle-kit → формат Supabase CLI); migrate.mjs виведено`.
 
 ---
 
 ## Етап G — i18n-скелет
 
-### Task 17: `@simplycms/i18n` + перші каталоги + лінт
+### Task 14: `@simplycms/i18n` (request-scoped, без глобального стану)
 
-**Files:**
-- Create: `packages/simplycms/i18n/{package.json,src/{index.ts,catalogs/uk.ts,catalogs/en.ts}}`
-- Modify: `eslint.config.mjs`; 2-3 канонічні сторінки (демонстраційна міграція рядків)
-- Test: `packages/simplycms/i18n/src/__tests__/t.test.ts`
+**Files:** Create: `packages/simplycms/i18n/{package.json,src/{index.ts,catalogs/uk.ts,catalogs/en.ts,__tests__/translator.test.ts}}`; Modify: `tsconfig.json`/`vite.config.ts`/`vitest.config.ts` (алаіс), `package.json` route-пакетів (dep `@simplycms/i18n: workspace:*`), `eslint.config.mjs`, `StorefrontShell` + `pages/Cart.tsx` (демо-міграція), `simplycms.config.ts` (locale → нормалізація).
 
 **Interfaces (Produces):**
 
 ```ts
+export type Locale = 'uk' | 'en';
 export type MessageKey = keyof typeof import('./catalogs/uk').messages;
-export function t(key: MessageKey, params?: Record<string, string | number>): string;
-export function setLocale(locale: 'uk' | 'en'): void;
+export function createTranslator(locale: Locale): (key: MessageKey, params?: Record<string, string|number>) => string
+export function normalizeLocale(input: string): Locale   // 'uk-UA' → 'uk'; невідома → 'uk'
+export const I18nProvider: React.FC<{locale: Locale; children: ReactNode}>  // контекст
+export function useT(): ReturnType<typeof createTranslator>
 ```
 
-- [ ] **Step 1:** Тест: `t('cart.title')` → «Кошик» (uk дефолт); `setLocale('en')` → `Cart`; відсутній ключ у en → fallback на uk; параметри: `t('catalog.itemsCount', {count: 5})` підставляє число.
-- [ ] **Step 2:** FAIL → реалізація: типізовані каталоги-обʼєкти (uk — базовий і повний; en — Partial з fallback), `t()` — синхронний, SSR-safe (module-level locale, задається на bootstrap; коментар про майбутню per-request локаль).
-- [ ] **Step 3:** Перенести на `t()` рядки в `pages/Cart.tsx` і `StorefrontShell` (демонстрація патерну; масова міграція рядків — поза Фазою 0).
-- [ ] **Step 4:** ESLint: `no-restricted-syntax` warn для JSXText з кирилицею, scoped на канонічні сторінки:
+**БЕЗ `setLocale`/глобального mutable-стану** (SSR-safe, Codex №30): транслятор створюється per-request/per-render від локалі з конфіга.
 
-```js
-{
-  files: ['packages/simplycms/storefront-routes/**/*.tsx'],
-  rules: { 'no-restricted-syntax': ['warn', {
-    selector: 'JSXText[value=/[а-яіїєґА-ЯІЇЄҐ]/]',
-    message: 'Хардкод-рядок у канонічній сторінці — використовуй t() з @simplycms/i18n',
-  }] },
-}
-```
-
-- [ ] **Step 5:** Верифікація + коміт: `feat(i18n): скелет каталогів uk/en + t() + лінт проти хардкодів (spec §12)`.
+- [ ] **Step 1 (TDD):** тести: `createTranslator('uk')('cart.title')` → «Кошик»; `('en')` → `Cart`; відсутній ключ у en → fallback uk; параметри `{count: 5}`; **конкурентність**: два транслятори з різними локалями в interleaved-викликах не впливають один на одного; `normalizeLocale('uk-UA')` → `'uk'`. FAIL → реалізація → PASS.
+- [ ] **Step 2:** `I18nProvider` у `StorefrontShell` (locale = `normalizeLocale(config.locale)`); демо-міграція рядків `Cart.tsx` + shell на `useT()`.
+- [ ] **Step 3 (лінт):** `no-restricted-syntax` для JSXText з кирилицею: **error** для `packages/simplycms/storefront-routes/**` (сторінки мігруються тут же — порушень нуль або міграція в цьому кроці), **warn** для `packages/simplycms/admin/**` (повна міграція адмінки — пункт роадмапу Фази 1+, зафіксувати в `platform-roadmap.md`).
+- [ ] **Step 4:** `pnpm install --frozen-lockfile` (workspace-deps коректні) + повна верифікація + коміт: `feat(i18n): request-scoped транслятор uk/en + лінт хардкодів (spec §12)`.
 
 ---
 
 ## Етап H — гігієна
 
-### Task 18: Guest-token геть з URL після використання
+### Task 15: Guest-token геть з URL
 
-**Files:**
-- Modify: `packages/simplycms/storefront-routes/src/pages/OrderSuccess.tsx` (після Task 11 сторінка тут)
-- Test: `packages/simplycms/storefront-routes/src/__tests__/order-success-token.test.tsx`
+**Files:** Modify: `packages/simplycms/storefront-routes/src/pages/OrderSuccess.tsx`; Test: `.../src/__tests__/order-success-token.test.tsx`.
 
-- [ ] **Step 1:** Тест (jsdom, mock router): після успішного завантаження замовлення з `?token=abc` викликається `navigate({ search: {}, replace: true })`; при помилці завантаження — токен НЕ чіпається (можливість повторити).
-- [ ] **Step 2:** FAIL → реалізація: в effect після успішного fetch — `router.navigate({ to: '.', search: (s) => ({ ...s, token: undefined }), replace: true })`; контракт Edge Function не змінюється.
-- [ ] **Step 3:** Верифікація + коміт: `fix(security): прибрати guest-token з URL після успішного завантаження замовлення`.
+- [ ] **Step 1 (TDD):** мок `useNavigate` (з `@tanstack/react-router`): після успішного завантаження замовлення викликано `navigate({ search: expect.any(Function), replace: true })` і функція-трансформер з `{token:'abc', foo:'x'}` повертає `{foo:'x'}` (**інші параметри зберігаються, прибирається лише `token`**); при помилці завантаження navigate НЕ викликано.
+- [ ] **Step 2:** Реалізація: `const navigate = useNavigate();` в компоненті сторінки; в effect за успіхом: `navigate({ search: (s) => { const { token: _t, ...rest } = s; return rest; }, replace: true })`. Контракт Edge Function незмінний.
+- [ ] **Step 3:** Верифікація + коміт: `fix(security): guest-token прибирається з URL після використання`.
 
-### Task 19: SSR-повнота списків товарів (перевірка + фікс за потреби)
+### Task 16: SSR-повнота списків товарів (ОБОВʼЯЗКОВИЙ фікс)
 
-**Files:**
-- Create: `tests/ssr-catalog-smoke.md` НЕ створювати — перевірка ручна/скриптова, фікс залежить від результату; межі нижче.
+Відомий факт (Codex №34 + git history `ssr-product-list-enrichment.md`): `Catalog`/`CatalogSection` ігнорують серверні дані — списки НЕ в SSR-HTML. Це фікс, не «перевірка».
 
-- [ ] **Step 1:** `pnpm dev` + у сусідньому терміналі: `curl -s localhost:3000/catalog | grep -c "<назва відомого тестового товару>"` (взяти назву з БД: `catalog`-сторінка). Аналогічно `/catalog/<sectionSlug>`.
-- [ ] **Step 2:** Якщо назви/ціни Є в HTML → зафіксувати результат у PR-описі, завдання завершене без коду.
-- [ ] **Step 3 (лише якщо НЕМАЄ):** причина — клієнтський enrichment (див. видалений `ssr-product-list-enrichment.md`, git history). Фікс у межах: loader секції/каталогу віддає збагачені дані (ціна+зображення+назва) через наявні server-функції; сторінка рендерить список із loader-даних до гідрації; клієнтський React Query продовжує довантажувати stock/знижки. Без нових RPC. Тест: повторний curl → назви в HTML.
-- [ ] **Step 4:** Коміт (якщо був фікс): `fix(ssr): списки товарів рендеряться в серверному HTML`.
+**Files:** Modify: `packages/simplycms/storefront-routes/src/pages/{Catalog.tsx,CatalogSection.tsx}`, route-файли `catalog/index.tsx` і `catalog/$sectionSlug/index.tsx` (передати loader-дані як `initialProducts` у сторінки); Test: `.../src/__tests__/catalog-ssr.test.tsx`.
+
+- [ ] **Step 1 (TDD):** `renderToString(<Catalog initialProducts=[фікстура з name/price/image]/>)` (обгорнуто в мінімальні провайдери, mock supabase) → HTML містить назву і ціну товару. Те саме для `CatalogSection`. FAIL (зараз перший рендер порожній до клієнтського fetch) → фікс.
+- [ ] **Step 2:** Фікс у межах: сторінки використовують `initialProducts` як `initialData`/початковий стан рендера (назва+ціна+зображення з loader-а); клієнтський React Query далі збагачує (stock/знижки) — без нових RPC, одне джерело правди для базових полів.
+- [ ] **Step 3:** Підтвердження в реальному SSR: `pnpm dev` + `curl -s localhost:3000/catalog | grep -o "<назва товару з БД>"` → знайдено (і для `/catalog/<slug>`). Верифікація + коміт: `fix(ssr): списки товарів рендеряться в серверному HTML`.
 
 ---
 
-## Етап I — фініш фази
+## Етап I — фініш
 
-### Task 20: Зачистка мертвого + синхронізація документації + DoD
+### Task 17: Зачистка + синхронізація документації + DoD
 
-**Files:**
-- Delete: невикористані re-export шими в `packages/simplycms/core/src/` (кандидати: `lib/priceUtils`, `lib/discountEngine`, `hooks/useProductsWithStock`-шим, deep-path компонентні шими) — КОЖЕН після `grep`-перевірки використань
-- Modify: `CLAUDE.md`, `AGENTS.md`, `.github/instructions/architecture-core.instructions.md` (структура: routes-пакети, supabase-пакет, schema, i18n; прибрати згадки старого контракту тем), `docs/tasks/platform-roadmap.md` (чекбокси Фази 0)
+**Files:** Delete: невикористані шими core (кожен після `git grep`-перевірки використань); Modify: `CLAUDE.md`, `AGENTS.md`, `.github/instructions/architecture-core.instructions.md` (нова структура/пакети/контракт тем/міграційний флоу), **`docs/superpowers/specs/2026-07-30-platform-architecture-design.md` §4** (амендмент: фактичні імена `@simplycms/themes`, `@simplycms/plugins`; `@simplycms/engine` — за фактом Фази 0 лишаються `data-supabase`+`react-query`, обʼєднання — Фаза 1+), `docs/tasks/platform-roadmap.md` (чекбокси Фази 0 + пункт «i18n адмінки: warn→error»).
 
-- [ ] **Step 1:** Для кожного шима-кандидата: `grep -rn "<шлях>" --include='*.ts*' src packages themes plugins | grep -v "сам файл"` → 0 → `git rm`. Не нуль → лишити, зафіксувати споживача в описі коміту.
-- [ ] **Step 2:** Оновити документи під фактичний стан (структура `src/` = `__root.tsx`+`my/`; таблиця пакетів + `supabase`/`storefront-routes`/`admin-routes`/`i18n`; theme-контракт v2; міграційний флоу). Відмітити чекбокси Фази 0 в роадмапі.
-- [ ] **Step 3:** Фінальний DoD Фази 0 (spec §16): `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test` зелені; `pnpm dev` smoke по сторінках; регрес-тест physical() зелений; `grep -rn "@simplysoftua" .` = 0; `git status` чистий.
-- [ ] **Step 4:** Коміт: `chore(phase0): зачистка шимів + синхронізація документації — Фаза 0 завершена`.
+- [ ] **Step 1:** Шими: для кожного кандидата `git grep -n "<шлях>" -- ':!сам-файл'` → 0 → `git rm`; не нуль → лишити, зафіксувати споживача в коміті.
+- [ ] **Step 2:** Документи за списком; чекбокси роадмапу.
+- [ ] **Step 3 (DoD):** `pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test` зелені; dev smoke (головна/каталог/товар/адмінка/профіль/sitemap); регрес-тест physical() зелений; `git grep -c '@simplysoftua'` = 0; `git diff --check` чистий → коміт: `chore(phase0): зачистка + синхронізація документації — Фаза 0 завершена` → після коміту `git status` чистий.
 
 ---
 
-## Self-review (виконано при написанні)
+## Self-review v2
 
-- **Покриття spec §16 Фаза 0:** routes→Tasks 5-8; канонікалізація→10-13; плагін-wiring→14; supabase→4; Drizzle→15-16; LICENSE→1; i18n→17; гігієна→18-19; шими→20; subtree→3; rename scope→2; регрес-тест physical()→9. Прогалин немає.
-- **Відомі ризики, закладені в кроки:** назва опції virtualRouteConfig (Task 6 Step 1 — перевірка типів перед використанням); сигнатура Generator API (Task 9 Step 2); покриття RLS у drizzle pull (Task 15 Step 2 — з fallback-рішенням).
-- **Узгодженість імен між завданнями:** `@simplycms/*` (після Task 2 всюди), `bootstrapPlugins` (14), `applyTokens`/`ThemeModule` (10→11), `resolveSupabaseKeys` (4), `StorefrontShell` (11).
+- **Усі 38 знахідок Codex адресовані:** №1→T2b; №2→T2b; №3→T2-прим.+T17; №4→T2.2; №5→T3; №6-8→T4 (мапа API; §10 частково — заявлений deferral); №9,12→порядок B/C (server-шар до роутів) + T4 start.ts; №10→T5; №11→deferral (Фаза 1); №13→T6; №14→T10 tokens на наявні змінні; №15→`validateThemeModule` публічний; №16→T10.B HomePage; №17→ProtectedShell; №18→HeroBanner опційний+адаптер; №19→T11 канонічний defineConfig; №20→`admin.dashboard.widgets`; №21→реактивний PluginSlot+семантика; №22→upsert у bootstrap; №23-27→T12/13 (окремий out, RLS blocking+parity, pinned+pg+schemaFilter, адаптер формату); №28→wrapper db-migrate; №29→відкат meta; №30→createTranslator без глобального стану; №31→normalizeLocale+error/warn зони+роадмап; №32→deps/алаіси T14; №33→точний navigate API+збереження params; №34→T16 обовʼязковий+SSR-тест; №35→T1 всі workspace; №36→формулювання DoD; №37→git grep всюди; №38→T10 атомарний, заявлено в інваріанті.
+- Плейсхолдерів немає; типи/імена наскрізь узгоджені (`bootstrapPlugins`, `createTranslator`, `validateThemeModule`, `StorefrontShell`/`ProtectedShell`, мапа supabase-API).
