@@ -102,9 +102,9 @@
 
 **Files:** Create `src/server.ts` (custom entry: `createServerEntry` + SEO-інтерсептор з Task 2.2), `server.mjs` (корінь: Node-runner — `node:http` сервер, який (а) віддає статику з `dist/client` (через `sirv` — додати dep exact), (б) решту передає у fetch-handler з `dist/server`); Modify `vite.config.ts` (`server: { entry: './src/server.ts' }` — точну форму звірити з `vite.d.ts`), `package.json` (`"start": "node server.mjs"`).
 
-- [ ] **Step 1:** звірити типи: `sed -n '1,60p' node_modules/@tanstack/react-start/dist/esm/plugin/vite.d.ts` + default-entry — зафіксувати точні імена (`createServerEntry`, форма `server.entry`).
-- [ ] **Step 2:** реалізація entry + runner; `pnpm build && pnpm start` → `curl localhost:3000/api/health` (наявний server route) → 200; `curl /` → HTML з даними; `curl /catalog` → назви товарів (SSR у production-запуску).
-- [ ] **Step 3:** CLAUDE.md Quick Reference/deploy-нотатка. Гейти → коміт: `feat(server): production-запуск — server.entry + node-runner, pnpm start працює`.
+- [X] **Step 1:** звірити типи: `sed -n '1,60p' node_modules/@tanstack/react-start/dist/esm/plugin/vite.d.ts` + default-entry — зафіксувати точні імена (`createServerEntry`, форма `server.entry`).
+- [X] **Step 2:** реалізація entry + runner; `pnpm build && pnpm start` → `curl localhost:3000/api/health` (наявний server route) → 200; `curl /` → HTML з даними; `curl /catalog` → назви товарів (SSR у production-запуску).
+- [X] **Step 3:** CLAUDE.md Quick Reference/deploy-нотатка. Гейти → коміт: `feat(server): production-запуск — server.entry + node-runner, pnpm start працює`.
 
 ### Task 2.2: `sitemap.xml`/`robots.txt` у production + чесні помилки builder-а
 

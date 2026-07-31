@@ -8,7 +8,15 @@ import { seoRoutesPlugin } from './packages/simplycms/storefront-routes/src/seo/
 export default {
   plugins: [
     tailwindcss(),
-    tanstackStart({ router: { virtualRouteConfig: './routes.ts' } }),
+    tanstackStart({
+      router: { virtualRouteConfig: './routes.ts' },
+      // Кастомний серверний вхід замість дефолтного: дає точку розширення
+      // перед делегацією в Start-хендлер (див. `src/server.ts`).
+      // 🔴 Шлях резолвиться ВІД `srcDirectory` (за замовчуванням `src/`), а не
+      // від кореня — `'./src/server.ts'` тут мовчки не знайдеться і плагін
+      // відкотиться на дефолтний entry (resolve-entries.js: `from: srcDirectory`).
+      server: { entry: './server.ts' },
+    }),
     seoRoutesPlugin({
       sitemapModule: '/packages/simplycms/storefront-routes/src/seo/sitemap.ts',
       robotsModule: '/packages/simplycms/storefront-routes/src/seo/robots.ts',

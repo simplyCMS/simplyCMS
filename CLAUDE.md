@@ -6,7 +6,7 @@
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
-pnpm start            # Run production server (.output/server/index.mjs)
+pnpm start            # Run production server (node server.mjs, PORT=3000) — див. «Production Run»
 pnpm typecheck        # TypeScript type check
 pnpm lint             # ESLint
 pnpm lint:fix         # ESLint (auto-fix)
@@ -119,6 +119,7 @@ simplyCMS/
 │   ├── router.tsx                    # createRouter
 │   ├── start.ts                      # createStart + global request middleware (admin guard)
 │   ├── client.tsx                    # Client hydration entry
+│   ├── server.ts                     # Server entry: createServerEntry({ fetch }) + точка перехоплення
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
 ├── packages/simplycms/               # Ядро CMS (публікація на npmjs — Фаза 1+)
@@ -146,8 +147,9 @@ simplyCMS/
 ├── plugins/hello-world/              # Референс-плагін
 ├── tests/                            # virtual-routes-escape, published-exports-parity
 │
+├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
-├── vite.config.ts                    # tanstackStart({ virtualRouteConfig: './routes.ts' }) + seoRoutesPlugin()
+├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry }) + seoRoutesPlugin()
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```
@@ -218,6 +220,28 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 - `VITE_SITE_URL` — Public site URL (production)
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
+
+## Production Run
+
+`pnpm build` віддає **два** каталоги: `dist/client/` (статика з хешованими
+іменами) і `dist/server/server.js` — це **fetch-handler** (`{ fetch(Request) →
+Response }`), а не готовий HTTP-сервер. Теки `.output/` немає.
+
+- `src/server.ts` — server entry (`server: { entry: './server.ts' }` у
+  `vite.config.ts`). 🔴 Шлях резолвиться від `srcDirectory` (`src/`), **не** від
+  кореня: `'./src/server.ts'` мовчки не знайдеться і плагін відкотиться на
+  дефолтний entry. Тут же — точка перехоплення запиту перед делегацією в роутер.
+- `server.mjs` (корінь) — Node-runner: `sirv(dist/client)` для статики
+  (`/assets/*` → `max-age=31536000, immutable`), решта — `IncomingMessage →
+  Request → fetch-handler → ServerResponse` зі стрімінгом в обидва боки
+  (`Readable.toWeb` / `Readable.fromWeb`), тому SSR-стрімінг Start не ламається.
+- `pnpm start` = `node server.mjs`; порт — `PORT` (за замовчуванням `3000`),
+  інтерфейс — `HOST` (за замовчуванням `0.0.0.0`).
+
+**Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` +
+production-`node_modules` (потрібен рівно один рантайм-пакет — `sirv`, він у
+`dependencies`, не в dev). `VITE_*` вже вшиті в бандл на етапі `vite build`, тож
+збірку робить той самий env, що й прод.
 
 ## Database Commands
 
