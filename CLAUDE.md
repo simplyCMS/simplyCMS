@@ -167,12 +167,17 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 
 ## Database Commands
 
+Джерело правди схеми — `packages/simplycms/schema/src/schema.ts` (Drizzle).
+
 ```bash
-pnpm db:migrate                # Apply Supabase migrations
+pnpm db:pull                   # Introspect live DB → Drizzle baseline
+pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
+pnpm db:migrate                # supabase link + db push + db:generate-types
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
 ```
 
-After schema changes, always run `pnpm db:generate-types` to keep types in sync.
+🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
+для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
 
 ## CI/CD
 

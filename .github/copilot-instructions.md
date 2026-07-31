@@ -24,9 +24,10 @@
   4. After adding, run `get_audit_checklist`
 
 ### supabase - Database and Edge Functions
-- Tools: `execute_sql`, `apply_migration`, `list_tables`, `generate_typescript_types`, `search_docs`, `get_advisors`, `deploy_edge_function`
-- Use for: DB migrations, SQL queries, Edge Functions, RLS policies, TypeScript types
-- Always generate types after schema changes
+- Tools (inspection only): `execute_sql` (read-only), `list_tables`, `search_docs`, `get_advisors`, `deploy_edge_function`
+- Use for: inspecting schema/RLS, read-only queries, advisors, Edge Functions
+- 🔴 Schema changes go through the migration pipeline, NOT `apply_migration`:
+  `packages/simplycms/schema/src/schema.ts` → `pnpm db:diff <name>` → SQL review → `pnpm db:migrate` (runs `db:generate-types`)
 
 ### github - Repository Management
 - Tools: Issues, PRs, code search, file operations, releases

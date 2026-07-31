@@ -36,17 +36,32 @@ packages/simplycms/schema/
 └── scripts/dump-rls.mjs            # оновлення фікстури RLS
 ```
 
-🔴 `drizzle/` — це **не** `supabase/migrations/`. Подвійна бухгалтерія навмисна:
-Drizzle тримає свій журнал і snapshot тут, а застосовний SQL у форматі Supabase CLI
-(`<YYYYMMDDHHmmss>_<slug>.sql`) кладеться в `supabase/migrations/` адаптером
-`pnpm db:diff` (Task 13).
+### Подвійна бухгалтерія (навмисна)
+
+🔴 `drizzle/` — це **не** `supabase/migrations/`.
+
+| Тека | Хто пише | Роль |
+|------|----------|------|
+| `packages/simplycms/schema/drizzle/` | `drizzle-kit generate` | журнал `_journal.json`, snapshot-и, staging-SQL — **база порівняння** для наступного діфа |
+| `supabase/migrations/` | адаптер `scripts/db-diff.mjs` | застосовний SQL у форматі Supabase CLI (`<YYYYMMDDHHmmss>_<slug>.sql`) — те, що виконує `supabase db push` |
+
+Комітяться **обидві**: без snapshot-у drizzle згенерує наступний діф з нуля,
+без файлу в `supabase/migrations/` міграція не застосується. Timestamp імені
+береться з `when` відповідного запису журналу Drizzle — імена лишаються
+синхронізованими між теками.
 
 ### Команди
 
 ```bash
 pnpm db:pull        # інтроспекція живої БД → drizzle/ (schema.ts, relations.ts, snapshot)
+pnpm db:diff <name> # діф schema.ts vs snapshot → drizzle/ + supabase/migrations/
+pnpm db:migrate     # ревʼю пройдено → supabase db push + db:generate-types
 pnpm db:dump-rls    # оновити фікстуру RLS (лише select із pg_policies)
 ```
+
+🔴 Між `db:diff` і `db:migrate` — **обовʼязкове людське ревʼю SQL**: drizzle-kit
+не розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
+RLS-політики та тригери.
 
 🔴 `drizzle-kit` запускається з **cwd = тека цього пакета** (root-скрипти роблять це
 через `pnpm --filter @simplycms/schema`). Шляхи `schema`/`out` у конфізі мусять

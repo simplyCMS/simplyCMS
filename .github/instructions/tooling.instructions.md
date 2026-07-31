@@ -31,8 +31,10 @@ pnpm test:watch             # Vitest watch mode
 pnpm build:packages         # tsup build публікованих пакетів
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
+pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
+pnpm db:diff <name>         # schema.ts → SQL у supabase/migrations (ревʼю обовʼязкове!)
+pnpm db:migrate             # Застосувати міграції (supabase link + db push + типи)
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase
-pnpm db:migrate             # Застосувати міграції (supabase link + db push)
 ```
 
 ## Конфігурація

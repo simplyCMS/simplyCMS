@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "db:pull": "pnpm --filter @simplycms/schema run db:pull",
     "db:dump-rls": "pnpm --filter @simplycms/schema run db:dump-rls",
-    "db:migrate": "node supabase/scripts/migrate.mjs",
+    "db:diff": "node scripts/db-diff.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs",
     "db:generate-types": "node supabase/scripts/update-types.mjs"
   },
   "dependencies": {
