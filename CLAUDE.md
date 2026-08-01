@@ -16,7 +16,8 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
-pnpm pilot            # npm-pack пілот: скретч-магазин із tarball-ів, gates A-D
+pnpm pilot:pack       # npm-pack пілот: гейти пакувальності A/C/D — БЕЗ Supabase
+pnpm pilot            # той самий пілот + gate B проти живої БД (.env.local)
 pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -153,7 +154,7 @@ simplyCMS/
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
-│   └── pilot-pack.mjs   + pilot-pack/   # pack/scaffold/build + gate-a…gate-d
+│   └── pilot-pack.mjs   + pilot-pack/   # env/pack/scaffold/build + gate-a…gate-d
 ├── supabase/                         # config.toml, migrations/ (згенеровані), functions/, types.ts
 ├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
 ├── plugins/hello-world/              # Референс-плагін

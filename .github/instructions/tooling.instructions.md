@@ -30,7 +30,8 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
-pnpm pilot                  # npm-pack пілот: скретч-магазин із tarball-ів, gates A-D
+pnpm pilot:pack             # npm-pack пілот, гейти пакувальності A/C/D — без Supabase
+pnpm pilot                  # той самий пілот + gate B проти живої БД (.env.local)
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
 pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)

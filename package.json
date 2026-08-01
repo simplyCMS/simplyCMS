@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "pilot": "node scripts/pilot-pack.mjs",
+    "pilot:pack": "node scripts/pilot-pack.mjs --pack-only",
     "test:watch": "vitest",
     "db:pull": "pnpm --filter @simplycms/schema run db:pull",
     "db:dump-rls": "pnpm --filter @simplycms/schema run db:dump-rls",
