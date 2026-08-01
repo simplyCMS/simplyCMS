@@ -70,8 +70,12 @@ export function collectPackages() {
  */
 export function collectSpecifiers() {
   const pattern = '[\'"]@simplycms/[a-zA-Z0-9_-]+/[^\'"]+[\'"]';
+  // `--untracked`: сусідній audit-deps обходить ФС і бачить усе, тож без цього
+  // прапорця новий (ще не доданий у git) файл проходив би повз гейт exports.
+  // node_modules і артефакти збірки й далі відсікає `.gitignore`.
   const args = [
     'grep',
+    '--untracked',
     '-ohE',
     pattern,
     '--',

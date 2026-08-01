@@ -3,11 +3,16 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { HomeProduct, HomeSection } from '../pages/home/types';
 
 /**
  * Task 0.2: секційні каруселі головної не роблять власних клієнтських
- * запитів — товари приходять із SSR-лоадера через `initialData`.
- * Контрольний кейс (без `initialData`) фіксує старий N+1: 3 секції → 3 запити.
+ * запитів — товари приходять із SSR-лоадера.
+ *
+ * 🔴 Гард стоїть на МІСЦІ ІНТЕГРАЦІЇ: рендериться компонент роуту
+ * `/_storefront/` з даними лоадера, тож ланцюг «лоадер → props роуту →
+ * `HomePage` → `initialData` каруселі» перевіряється цілком. Перевірка самої
+ * лише каруселі пропускала б розрив у будь-якій із цих ланок.
  */
 
 /** Значення `section_id` кожного клієнтського запиту товарів */
@@ -32,16 +37,47 @@ function createSupabaseSpy() {
 
 const mockSupabase = createSupabaseSpy();
 
+/** Дані, які «віддає» лоадер роуту в поточному тесті */
+let loaderData: HomeLoaderData;
+
+vi.mock('@tanstack/react-router', () => ({
+  createFileRoute: () => (options: Record<string, unknown>) => ({
+    options,
+    useLoaderData: () => loaderData,
+  }),
+  Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+}));
+
+vi.mock('@simplycms/storefront-routes/server/home', () => ({
+  getHomePageData: async () => loaderData,
+}));
+
 vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => mockSupabase,
+}));
+
+vi.mock('../shells/useActiveThemeModule', () => ({
+  useActiveThemeModule: () => ({ components: {} }),
 }));
 
 vi.mock('../components/ProductCarousel', () => ({
   ProductCarousel: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
-import { SectionProductCarousel } from '../pages/home/SectionProductCarousel';
-import type { HomeProduct, HomeSection } from '../pages/home/types';
+vi.mock('../components/BannerSlider', () => ({
+  BannerSlider: () => null,
+}));
+
+import { Route } from '../../routes/_storefront/index';
+
+/** Форма повернення `loadHomePageData` — рівно те, що бачить компонент роуту. */
+interface HomeLoaderData {
+  banners: never[];
+  featuredProducts: HomeProduct[];
+  newProducts: HomeProduct[];
+  sections: HomeSection[];
+  sectionProducts?: Record<string, HomeProduct[]>;
+}
 
 const SECTIONS: HomeSection[] = [
   { id: 's1', name: 'Секція A', slug: 'a' },
@@ -65,39 +101,34 @@ const SECTION_PRODUCTS: Record<string, HomeProduct[]> = {
   s3: [product('p3', 'c')],
 };
 
-function wrapper({ children }: { children: ReactNode }) {
+const RouteComponent = Route.options.component as unknown as () => ReactNode;
+
+function renderRoute(withSectionProducts: boolean) {
+  loaderData = {
+    banners: [],
+    featuredProducts: [],
+    newProducts: [],
+    sections: SECTIONS,
+    sectionProducts: withSectionProducts ? SECTION_PRODUCTS : undefined,
+  };
+
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-}
-
-function renderCarousels(withInitialData: boolean) {
   return render(
-    <>
-      {SECTIONS.map((section) => (
-        <SectionProductCarousel
-          key={section.id}
-          section={section}
-          initialData={
-            withInitialData ? SECTION_PRODUCTS[section.id] : undefined
-          }
-        />
-      ))}
-    </>,
-    { wrapper },
+    <QueryClientProvider client={queryClient}>
+      <RouteComponent />
+    </QueryClientProvider>,
   );
 }
 
-describe('головна: секційні каруселі не створюють N+1', () => {
+describe('роут головної: секційні товари приходять із SSR-лоадера', () => {
   beforeEach(() => {
     sectionIdCalls.length = 0;
   });
 
-  it('3 каруселі з initialData → 0 клієнтських запитів', async () => {
-    const { container } = renderCarousels(true);
+  it('дані лоадера дійшли до каруселей → 0 клієнтських запитів', async () => {
+    const { container } = renderRoute(true);
 
     await waitFor(() => expect(container.textContent).toContain('Секція C'));
     // Даємо React Query шанс сходити в мережу — його не повинно статись.
@@ -106,8 +137,8 @@ describe('головна: секційні каруселі не створюю�
     expect(sectionIdCalls).toEqual([]);
   });
 
-  it('контроль: без initialData каруселі роблять по запиту кожна', async () => {
-    renderCarousels(false);
+  it('контроль: без sectionProducts повертається N+1 — по запиту на секцію', async () => {
+    renderRoute(false);
 
     await waitFor(() => expect(sectionIdCalls).toHaveLength(3));
     expect([...sectionIdCalls].sort()).toEqual(['s1', 's2', 's3']);

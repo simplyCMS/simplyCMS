@@ -13,24 +13,39 @@ let currentUser: { id: string } | null = null;
 let hasAdminRole = false;
 /** Скільки разів читання активної теми реально ходило в БД */
 let themeQueries = 0;
+/**
+ * Протокол запитів guard-а: таблиця + УСІ предикати `eq`. Без нього підміна
+ * `user_roles`→`profiles` чи `role:'admin'`→`'customer'` лишається безкарною.
+ */
+const adminQueries: { table: string; eq: Record<string, unknown> }[] = [];
+
+interface AdminQueryBuilder {
+  select: () => AdminQueryBuilder;
+  eq: (column: string, value: unknown) => AdminQueryBuilder;
+  maybeSingle: () => Promise<{ data: { role: string } | null; error: null }>;
+}
 
 vi.mock('@simplycms/supabase/server-client', () => ({
   createServerSupabase: () => ({
     auth: {
       getUser: async () => ({ data: { user: currentUser }, error: null }),
     },
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({
-              data: hasAdminRole ? { role: 'admin' } : null,
-              error: null,
-            }),
-          }),
+    from: (table: string) => {
+      const query = { table, eq: {} as Record<string, unknown> };
+      adminQueries.push(query);
+      const builder: AdminQueryBuilder = {
+        select: () => builder,
+        eq: (column, value) => {
+          query.eq[column] = value;
+          return builder;
+        },
+        maybeSingle: async () => ({
+          data: hasAdminRole ? { role: 'admin' } : null,
+          error: null,
         }),
-      }),
-    }),
+      };
+      return builder;
+    },
   }),
 }));
 
@@ -74,6 +89,7 @@ beforeEach(() => {
   currentUser = null;
   hasAdminRole = false;
   themeQueries = 0;
+  adminQueries.length = 0;
   invalidateThemeCache();
 });
 
@@ -119,5 +135,16 @@ describe('POST /api/revalidate-theme', () => {
     const afterInvalidation = await loadActiveTheme();
     expect(themeQueries).toBe(2);
     expect(afterInvalidation?.name).toBe('theme-2');
+  });
+
+  it('guard читає РІВНО user_roles з предикатами user_id + role=admin', async () => {
+    currentUser = { id: 'admin-1' };
+    hasAdminRole = true;
+
+    await revalidateThemeHandler();
+
+    expect(adminQueries).toEqual([
+      { table: 'user_roles', eq: { user_id: 'admin-1', role: 'admin' } },
+    ]);
   });
 });

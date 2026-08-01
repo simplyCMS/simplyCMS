@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { createServerSupabase } from '@simplycms/supabase/server-client';
 import type { createBrowserSupabase } from '@simplycms/supabase/browser-client';
@@ -10,34 +12,56 @@ import type { StoreDatabase } from '../src/engine.shared';
 // `supabase/types.ts` — з core-таблицями ПЛЮС таблицями встановлених плагінів —
 // і підставляє його в generic-параметр фабрик клієнтів.
 //
-// Гард саме компіляційний: якщо `Db` перестане доходити до
-// `createServerClient`/`createBrowserClient` (наприклад, параметр приберуть або
-// зафіксують на baseline), `.from()` нижче або втратить типізацію рядка, або
-// впаде на невідомій таблиці — `pnpm typecheck` почервоніє.
+// 🔴 Гард спирається на таблицю, якої в baseline НЕМАЄ (`__probe` — двійник
+// плагінної). Брати core-таблицю (products/themes/…) марно: вона є і в baseline,
+// тому пін `createServerClient<Database>` замість `<Db>` лишався б зеленим.
+// Тепер такий пін ламає `.from('__probe')` → `pnpm typecheck` червоніє.
 //
 // Імпорти — `import type`: server-client тягне `@tanstack/react-start/server`,
 // якому в цьому тесті немає де виконатися.
 
-type HostServerClient = ReturnType<typeof createServerSupabase<StoreDatabase>>;
-type HostBrowserClient = ReturnType<
-  typeof createBrowserSupabase<StoreDatabase>
+/** Таблиця «встановленого плагіна» — у baseline ядра її свідомо немає. */
+interface ProbeTable {
+  Row: { id: string; payload: string | null };
+  Insert: { id?: string; payload?: string | null };
+  Update: { id?: string; payload?: string | null };
+  Relationships: [];
+}
+
+/** Типи БД магазину з плагінною таблицею — рівно те, що дає `db:generate-types`. */
+type StoreDatabaseProbe = StoreDatabase & {
+  public: { Tables: { __probe: ProbeTable } };
+};
+
+type ProbeServerClient = ReturnType<
+  typeof createServerSupabase<StoreDatabaseProbe>
+>;
+type ProbeBrowserClient = ReturnType<
+  typeof createBrowserSupabase<StoreDatabaseProbe>
 >;
 
-/** Не викликається — існує заради перевірки типів компілятором. */
-function hostTypedServerQueries(client: HostServerClient) {
-  const products = client.from('products').select('id, slug, name');
-  const roles = client.from('user_roles').select('role').eq('role', 'admin');
-  return { products, roles };
+/**
+ * Не викликається — існує заради перевірки типів компілятором.
+ * Експортується, щоб не бути «мертвим кодом» для лінтера.
+ */
+export function probeQueries(
+  server: ProbeServerClient,
+  browser: ProbeBrowserClient,
+) {
+  return {
+    server: server.from('__probe').select('id, payload'),
+    browser: browser.from('__probe').select('id, payload'),
+  };
 }
 
-/** Те саме для браузерної фабрики. */
-function hostTypedBrowserQueries(client: HostBrowserClient) {
-  return client.from('themes').select('name, is_active');
-}
+const BASELINE_PATH = fileURLToPath(
+  new URL('../packages/simplycms/supabase/src/database.ts', import.meta.url),
+);
 
 describe('generic-місток типів БД host ↔ @simplycms/supabase', () => {
-  it('host-типізовані фабрики компілюються з таблицями host-типів', () => {
-    expect(typeof hostTypedServerQueries).toBe('function');
-    expect(typeof hostTypedBrowserQueries).toBe('function');
+  it('baseline ядра не знає таблиці `__probe` — компіляційний гард не самообман', () => {
+    // Якщо `__probe` колись потрапить у baseline, `.from('__probe')` вище
+    // почне компілюватися й з піном на baseline — гард стане тавтологією.
+    expect(readFileSync(BASELINE_PATH, 'utf8')).not.toContain('__probe');
   });
 });
