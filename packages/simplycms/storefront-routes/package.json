@@ -55,7 +55,8 @@
   "files": [
     "dist",
     "src",
-    "routes"
+    "routes",
+    "!src/**/__tests__/**"
   ],
   "license": "MIT",
   "repository": {

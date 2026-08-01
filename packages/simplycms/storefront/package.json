@@ -33,7 +33,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/__tests__/**"
   ],
   "license": "MIT",
   "repository": {

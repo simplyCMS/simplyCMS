@@ -27,7 +27,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/__tests__/**"
   ],
   "license": "MIT",
   "repository": {
@@ -41,11 +42,11 @@
     "db:dump-rls": "node ./scripts/dump-rls.mjs",
     "build": "tsup"
   },
-  "dependencies": {
-    "dotenv": "^17.2.4",
-    "pg": "8.22.0"
-  },
   "peerDependencies": {
     "drizzle-orm": "^0.45.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.4",
+    "pg": "8.22.0"
   }
 }
