@@ -18,6 +18,9 @@ pnpm build:packages   # tsup build публікованих пакетів яд�
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
 pnpm pilot:pack       # npm-pack пілот: гейти пакувальності A/C/D — БЕЗ Supabase
 pnpm pilot            # той самий пілот + gate B проти живої БД (.env.local)
+pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
+                      # потребує Docker; Gate B асертить точні назви із сіду
+pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
 pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -154,12 +157,16 @@ simplyCMS/
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
-│   └── pilot-pack.mjs   + pilot-pack/   # env/pack/scaffold/build + gate-a…gate-d
-├── supabase/                         # config.toml, migrations/ (згенеровані), functions/, types.ts
+│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-d
+│   │                                    # + seed-fixtures.mjs — джерело правди сіду
+│   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
+├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
+│                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
 ├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
 ├── plugins/hello-world/              # Референс-плагін
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
-│   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints
+│   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
+│   │                                 # pilot-seed (парність seed.sql і фікстур)
 │   └── pilot/store-template/         # Host-fixture пілота (виключений із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler

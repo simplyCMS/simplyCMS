@@ -1,3 +1,49 @@
 # Supabase project configuration (site-specific)
 # Лінкування через: supabase link --project-ref <your-project-id>
 project_id = "slctbhbsdxaibubqvljz"
+
+# Нижче — конфіг ЛОКАЛЬНОГО стеку (`supabase start`), який піднімає `pnpm
+# pilot:e2e`. Секції, яких тут немає (studio, storage, realtime, auth-провайдери
+# тощо), беруть значення за замовчуванням CLI — свідомо не форкаємо їх, щоб не
+# розходитися з апстрімом. Довідник ключів:
+# https://supabase.com/docs/guides/local-development/cli/config
+
+[api]
+enabled = true
+# Порт локального REST-ендпойнта (звідси береться VITE_SUPABASE_URL).
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# 🔴 Має збігатися з мажорною версією живої БД (`SHOW server_version;` → 17.6).
+major_version = 17
+
+[db.migrations]
+# supabase/migrations/ застосовуються на `supabase start` і `supabase db reset`.
+enabled = true
+schema_paths = []
+
+[db.seed]
+# Детерміністичний сід пілота — виконується ПІСЛЯ міграцій під час db reset.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+enabled = true
+# Локальний магазин пілота піднімається на 127.0.0.1; конкретний порт
+# динамічний, тож site_url тут — лише дефолт для редіректів у листах.
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+minimum_password_length = 6
+
+[auth.email]
+enable_signup = true
+# Локально пошти немає — підтвердження email вимкнено, інакше тестовий
+# користувач не зміг би залогінитись.
+enable_confirmations = false

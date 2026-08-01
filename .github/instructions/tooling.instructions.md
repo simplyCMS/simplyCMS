@@ -32,6 +32,8 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 pnpm build:packages         # tsup build публікованих пакетів
 pnpm pilot:pack             # npm-pack пілот, гейти пакувальності A/C/D — без Supabase
 pnpm pilot                  # той самий пілот + gate B проти живої БД (.env.local)
+pnpm pilot:e2e              # гейти A-D проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
+pnpm pilot:seed             # фікстури пілота → supabase/seed.sql (генерат!)
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
 pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
@@ -40,6 +42,14 @@ pnpm db:migrate             # Застосувати міграції (supabase 
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase → supabase/types.ts
 pnpm types:baseline         # Снапшот CORE-типів → packages/simplycms/supabase/src/database.ts
 ```
+
+🔴 **`supabase/seed.sql` — ГЕНЕРАТ, руками не правиться.** Джерело правди —
+`scripts/pilot-pack/seed-fixtures.mjs`; перегенерація — `pnpm pilot:seed`,
+парність стереже `tests/pilot-seed.test.ts`. Так само як `pnpm pilot:e2e` не
+переживає без Docker: він піднімає локальний стек (`supabase start` → `db reset`
+→ міграції + сід) і в Gate B асертить ТОЧНІ назви товарів із фікстур. Проти
+довільної бази (`pnpm pilot`) очікування лишаються нечіткими — назви беруться з
+живої БД, тому змінюються разом з нею.
 
 🔴 **Типів БД у репо ДВА файли.** `supabase/types.ts` — генерат МАГАЗИНУ
 (core + таблиці встановлених плагінів), проти нього типізується host-код.

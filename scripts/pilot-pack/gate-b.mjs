@@ -5,9 +5,17 @@
  * магазині кінцевого користувача) і відповідає на живі curl-и. Це доводить,
  * що `createServerFn` із пакета працює в PRODUCTION-манифесті, а не лише
  * у dev-режимі монорепо.
+ *
+ * 🔴 Два режими очікувань:
+ *  - проти ДОВІЛЬНОЇ бази (`pnpm pilot`) — назви беруться з живої БД, і
+ *    достатньо, щоб у HTML знайшлася хоч одна: більшого про чужі дані сказати
+ *    не можна;
+ *  - на СІДІ (`pnpm pilot:e2e`) — очікування точні: у HTML мають бути ВСІ
+ *    товари з `seed-fixtures.mjs`. Тільки так гейт ловить регресію рендера,
+ *    а не коливання даних.
  */
 
-/** Товари з БД — очікувані рядки для SSR-перевірок. */
+/** Товари з БД — очікувані рядки для SSR-перевірок довільної бази. */
 export async function expectedProducts(env) {
   const url = `${env.VITE_SUPABASE_URL}/rest/v1/products?select=name&is_active=eq.true&limit=50`;
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
@@ -20,10 +28,37 @@ export async function expectedProducts(env) {
     .filter((name) => typeof name === 'string' && !/[&<>"']/.test(name));
 }
 
-/** @returns {Promise<{ ok: boolean; details: string[] }>} */
-export async function gateHttp(port, env) {
+/**
+ * Чи знайшлися очікувані назви в HTML.
+ *
+ * @param {string} html
+ * @param {string[]} names
+ * @param {boolean} exact точний режим — потрібні ВСІ назви, а не хоча б одна
+ */
+function matchNames(html, names, exact) {
+  if (!exact) {
+    const hit = names.find((name) => html.includes(name));
+    return { passed: Boolean(hit), fact: `назва товару: ${hit ?? '—'}` };
+  }
+  const missing = names.filter((name) => !html.includes(name));
+  return {
+    passed: names.length > 0 && missing.length === 0,
+    fact: `товарів сіду ${names.length - missing.length}/${names.length}${
+      missing.length > 0 ? `, немає: ${missing.join(', ')}` : ''
+    }`,
+  };
+}
+
+/**
+ * @param {number} port
+ * @param {Record<string,string>} env
+ * @param {{ expectedNames?: string[] | null }} [opts] точні очікування сіду
+ * @returns {Promise<{ ok: boolean; details: string[] }>}
+ */
+export async function gateHttp(port, env, { expectedNames = null } = {}) {
   const base = `http://127.0.0.1:${port}`;
-  const names = await expectedProducts(env);
+  const exact = Array.isArray(expectedNames);
+  const names = exact ? expectedNames : await expectedProducts(env);
   const details = [];
   let ok = true;
 
@@ -34,22 +69,21 @@ export async function gateHttp(port, env) {
   };
 
   const home = await fetch(`${base}/`);
-  const homeHtml = await home.text();
-  const homeHit = names.find((name) => homeHtml.includes(name));
+  const homeMatch = matchNames(await home.text(), names, exact);
   check(
     'GET /',
-    home.status === 200 && Boolean(homeHit),
-    `${home.status}, назва товару: ${homeHit ?? '—'}`,
+    home.status === 200 && homeMatch.passed,
+    `${home.status}, ${homeMatch.fact}`,
   );
 
   const catalog = await fetch(`${base}/catalog`);
   const catalogHtml = await catalog.text();
-  const catalogHit = names.find((name) => catalogHtml.includes(name));
+  const catalogMatch = matchNames(catalogHtml, names, exact);
   const hasPrice = catalogHtml.includes('₴');
   check(
     'GET /catalog',
-    catalog.status === 200 && Boolean(catalogHit) && hasPrice,
-    `${catalog.status}, назва: ${catalogHit ?? '—'}, ціни(₴): ${hasPrice}`,
+    catalog.status === 200 && catalogMatch.passed && hasPrice,
+    `${catalog.status}, ${catalogMatch.fact}, ціни(₴): ${hasPrice}`,
   );
 
   const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
