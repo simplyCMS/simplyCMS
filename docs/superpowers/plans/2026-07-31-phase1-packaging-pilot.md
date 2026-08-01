@@ -137,9 +137,10 @@ Supabase. Розходження з текстом плану, зафіксов�
 (1) fixture додатково містить `tailwind.config.ts` — без нього `@apply border-border`
 у `globals.css` не компілюється, а `content`-глоби на `node_modules/@simplycms/**`
 і є предметом Gate D; (2) `bundle-stats.json` пише не лише `modules`, а й
-`imports`/`isEntry` — інакше initial-чанк за графом не обчислити; (3) route-id у
-`FileRoutesById` — 64 разом із `__root__` (63 роутові), гейт звіряє множини, а не
-число; (4) Gate C(а): модулі `dist/server/*.js` у клієнті Є як RPC-заглушки
+`imports`/`isEntry` — інакше initial-чанк за графом не обчислити; (3) число роутів
+у плані не фіксуємо: гейт звіряє **множини** route-id зі скретча й монорепо
+(`FileRoutesById`, разом із `__root__`), тож будь-який доданий роут — як
+`/api/revalidate-theme` з Task 4.1 — обидві множини рухає синхронно; (4) Gate C(а): модулі `dist/server/*.js` у клієнті Є як RPC-заглушки
 server-fn (так і має бути) — гейт забороняє їхній серверний ВАНТАЖ
 (`supabase/server-client`, `storefront/loaders`); (5) `StoreDatabase` у скретчі —
 baseline з `@simplycms/supabase` (свіжий магазин не має плагінних таблиць і свого
@@ -184,12 +185,53 @@ baseline з `@simplycms/supabase` (свіжий магазин не має пл�
 - [ ] **Step 3:** `/admin/plugins`: рядок `hello-world` є (upsert під адмін-сесією — звірити в БД) → увімкнути → віджет на дашборді **без reload** → вимкнути → зник.
 - [ ] **Step 4:** зняти пункти з «Боргів» роадмапу. Коміт: `docs(roadmap): живі смоки Фази 0 закрито`.
 
+🔴 **Task 4.3 лишається БОРГОМ — рішення власника (2026-07-31).** Смоки потребують
+адмінських креденшелів, яких у середовищі агентів немає; жоден Step не виконано.
+Код-передумови зняті (Task 4.1 + 4.2), борг перенесено в
+`docs/tasks/platform-roadmap.md` → «Борги, свідомо винесені за межі Фази 1».
+Не відмічати `[X]`, доки хтось не проклікає руками.
+
 ---
 
 ## Етап 5 — Фініш
 
-- [ ] Роадмап (чекбокси Фази 1), CLAUDE.md (start/пілот/типи/структура), memory-нотатка.
+- [X] Роадмап (чекбокси Фази 1 + окремий розділ «Борги»), CLAUDE.md
+      (Quick Reference, §CI/CD, §Project Structure), `tooling.instructions.md`
+      (`pnpm start` = `node server.mjs`, `test:packaging`, `pilot`),
+      канонічний порядок гейтів доповнено packaging-suite у чотирьох місцях
+      (CLAUDE.md, AGENTS.md, `code-review/SKILL.md`, `/виконай-задачу`),
+      знято стейл-твердження «CI не запускає format:check», memory-нотатка
+      `phase1-packaging-2026-07-31`.
 - [ ] **DoD (spec §16):** фінальний прогін `node scripts/pilot-pack.mjs` (всі gates зелені, включно з production-curls скретча) + гейти монорепо. Коміт: `chore(phase1): Фаза 1 завершена`.
+
+🔴 **DoD НЕ закрито: фінальний прогін пілота червоний (2026-07-31).**
+Gate A / Gate B / Gate D — PASS, **Gate C — FAIL**:
+
+```
+Gate C: FAIL
+  клієнтських чанків: 213, модулів: 2454
+  FAIL серверний вантаж у клієнті:
+       node_modules/@simplycms/supabase/dist/server-client.js
+  initial-чанків: 19, модулів у них: 301
+  OK   @simplycms/admin: у бандлі 98, в initial 0
+  OK   @tiptap/*: у бандлі 22, в initial 0
+  OK   recharts: у бандлі 0, в initial 0
+Пілот НЕ пройдено: провалено гейтів — 1.
+```
+
+Регресія зʼявилась **після** зеленого прогону Task 3.1 — її вніс Task 4.1
+(коміт `907e0fd`), і пілот між ними не переганявся. Робоча гіпотеза (НЕ
+верифікована окремим прогоном, фікс свідомо не робився — DoD-прогін лише
+фіксує факт): `routes/api/revalidate-theme.tsx` виносить хендлер **окремим
+top-level export-ом** `revalidateThemeHandler` — на відміну від сусідів
+`api/health.tsx` і `api/guest-order.tsx`, де хендлери інлайнові всередині
+`createFileRoute({ server: { handlers } })` і зникають із клієнта разом зі
+стрипнутою властивістю `server`. Живий іменований export переживає стрипінг і
+тримає в клієнтському графі ланцюг
+`revalidateThemeHandler → server/auth.checkIsAdmin → @simplycms/supabase/server-client`.
+Перевірити першим: чи зникає leak, якщо хендлер зробити інлайновим (а тест
+переписати на виклик через роут), — і чи не тягне те саме `invalidateThemeCache`
+із `server/themes`.
 
 ---
 

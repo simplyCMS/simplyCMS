@@ -12,8 +12,11 @@ pnpm lint             # ESLint
 pnpm lint:fix         # ESLint (auto-fix)
 pnpm format           # Prettier (write)
 pnpm format:check     # Prettier (check only)
-pnpm test             # Run tests (vitest run)
+pnpm test             # Run tests (vitest run; packaging-suite виключено)
 pnpm test:watch       # Tests in watch mode
+pnpm build:packages   # tsup build публікованих пакетів ядра
+pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm pilot            # npm-pack пілот: скретч-магазин із tarball-ів, gates A-D
 pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -71,8 +74,12 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою моделлю
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
-**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test`.
+**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test →
+build:packages → test:packaging`.
 `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
+packaging-suite іде **після** `pnpm test`, бо `tests/published-exports-parity.test.ts`
+виведено з дефолтного прогону (`test.exclude`) і працює по зібраних tarball-ах —
+без `pnpm build:packages` перед ним `pnpm test:packaging` не має що перевіряти.
 гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
 червоніє.
 `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
@@ -141,15 +148,24 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │
-├── scripts/                          # db-diff.mjs, db-migrate.mjs (конвеєр міграцій)
+├── scripts/                          # Тулчейн міграцій + пакування
+│   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
+│   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
+│   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
+│   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
+│   └── pilot-pack.mjs   + pilot-pack/   # pack/scaffold/build + gate-a…gate-d
 ├── supabase/                         # config.toml, migrations/ (згенеровані), functions/, types.ts
 ├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
 ├── plugins/hello-world/              # Референс-плагін
-├── tests/                            # virtual-routes-escape, published-exports-parity
+├── tests/                            # virtual-routes-escape, published-exports-parity,
+│   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints
+│   └── pilot/store-template/         # Host-fixture пілота (виключений із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
+├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
+├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```
@@ -268,6 +284,19 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/workflow.yml`) on push/PR to `main`:
-- **TypeScript job:** `pnpm install` → `pnpm build` → `pnpm typecheck` → `pnpm lint`
-- **Test job:** `pnpm install` → `pnpm test`
+GitHub Actions (`.github/workflows/workflow.yml`). Тригери: push/PR у `main`,
+`workflow_dispatch` і weekly `schedule` (`cron: '0 4 * * 1'`). Weekly-розклад існує
+лише заради job-а `pilot` — решта job-ів має `if: github.event_name != 'schedule'`.
+
+| Job | Кроки | Коли |
+|-----|-------|------|
+| `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
+| `test` | `install` → `test` | push/PR/manual |
+| `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `pilot` | `install` → `node scripts/pilot-pack.mjs` | manual + weekly |
+
+`packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
+потребує зібраних `dist/` кожного пакета. `pilot` ставить ядро справжнім `npm install`
+із tarball-ів і ходить у живу Supabase, тому не на кожен PR; env бере з секретів
+`PILOT_SUPABASE_URL` / `PILOT_SUPABASE_KEY` (мапінг у `resolvePilotEnv`), без них
+падає з явним повідомленням.

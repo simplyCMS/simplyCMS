@@ -150,8 +150,11 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - **дефолт — спростовано**: якщо доказу немає, знахідка не проходить;
 - доказ = конкретний фрагмент коду, конкретний вхід, або відтворений запуск
   (гейти в канонічному порядку: `pnpm format:check` → `pnpm lint` → `pnpm build`
-  → `pnpm typecheck` → `pnpm test`; **build перед typecheck**, бо build генерує
-  `src/routeTree.gen.ts`; гейт саме `format:check` — `pnpm format` це
+  → `pnpm typecheck` → `pnpm test` → `pnpm build:packages` → `pnpm test:packaging`;
+  **build перед typecheck**, бо build генерує `src/routeTree.gen.ts`;
+  packaging-suite — у кінці й окремо, бо `tests/published-exports-parity.test.ts`
+  виведено з `pnpm test` (`test.exclude`) і працює по зібраних tarball-ах;
+  гейт саме `format:check` — `pnpm format` це
   `prettier --write`, він не червоніє. Обидві покривають увесь репозиторій;
   що виключено — у `.prettierignore`: машинний генерат, артефакти збірки, `*.md`.
   🔴 Форматування — НЕ предмет рев'ю: `format:check` або зелений, або ні; не пиши

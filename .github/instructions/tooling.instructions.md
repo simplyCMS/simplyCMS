@@ -16,7 +16,7 @@ description: 'Команди, форматування, тестування т�
 # Розробка
 pnpm dev                    # Vite dev server (TanStack Start)
 pnpm build                  # Production build (vite build)
-pnpm start                  # Production server (.output/server/index.mjs)
+pnpm start                  # Production server (node server.mjs, PORT=3000)
 pnpm typecheck              # TypeScript type check
 pnpm lint                   # ESLint
 pnpm lint:fix               # ESLint (auto-fix)
@@ -24,11 +24,13 @@ pnpm format                 # Prettier (write)
 pnpm format:check           # Prettier (check only)
 
 # Тестування
-pnpm test                   # Vitest run
+pnpm test                   # Vitest run (packaging-suite виключено — див. нижче)
 pnpm test:watch             # Vitest watch mode
+pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
+pnpm pilot                  # npm-pack пілот: скретч-магазин із tarball-ів, gates A-D
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
 pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
@@ -80,6 +82,8 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/simply
 - **Testing Library** (@testing-library/react) для компонентів (environment: jsdom per-file).
 - Тести поруч з кодом або в `__tests__/` директоріях.
 - `tests/published-exports-parity.test.ts` — guard паритету dev/publish exports пакетів.
+  Він **виключений** із `pnpm test` (`test.exclude` у `vitest.config.ts`), бо працює по
+  зібраних tarball-ах: запускати `pnpm build:packages && pnpm test:packaging`.
 
 ## Змінні оточення
 
