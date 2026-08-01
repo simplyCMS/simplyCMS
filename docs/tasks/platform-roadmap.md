@@ -90,8 +90,7 @@
       й імпорти ведуть у `node_modules`; Gate B — production-запуск, server fns,
       SEO-ендпойнти, admin-guard; Gate C — bundle-guard і code-splitting по
       модульному графу (`emitBundleStats`); Gate D — Tailwind бачить утиліти
-      пакетів. CI job `pilot`: manual + weekly). ⚠️ Інструмент готовий і робочий,
-      але на поточному коді Gate C **червоний** — див. DoD нижче
+      пакетів. CI job `pilot`: manual + weekly)
 - [X] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
       (parity рахується по **розпакованому tarball-у**, а не по `package.json`;
       виведено з `pnpm test` у `pnpm test:packaging` + CI job `packaging`)
@@ -103,12 +102,22 @@
       `production-seo-routes-tanstack-start.md` видалено як виконану —
       політика «тільки актуальне»)
 
-**DoD:** магазин із tarball-ів проходить smoke-e2e; деплой можливий. — 🔴 **НЕ
-закрито.** Фінальний прогін `node scripts/pilot-pack.mjs` (2026-07-31): Gate A/B/D
-— PASS, **Gate C — FAIL** (`@simplycms/supabase/dist/server-client.js` потрапляє в
-клієнтський бандл). Регресія від Task 4.1 (`907e0fd`), деталі й гіпотеза причини —
-у плані `docs/superpowers/plans/2026-07-31-phase1-packaging-pilot.md`, Етап 5.
-Фаза 1 закривається лише після зеленого пілота.
+**DoD:** магазин із tarball-ів проходить smoke-e2e; деплой можливий. — ✅ **Закрито
+2026-08-01:** фінальний прогін `node scripts/pilot-pack.mjs` — gates A-D зелені,
+гейти монорепо зелені в канонічному порядку.
+
+🔴 **Урок DoD-прогону (єдиний блокер, який зловив саме пілот).** Перший прогін дав
+`Gate C: FAIL` — `@simplycms/supabase/dist/server-client.js` у клієнтському бандлі.
+Причина: Task 4.1 поклав **звичайну** функцію `checkIsAdmin` поруч із
+`createServerFn`-обгортками в `storefront-routes/src/server/auth.ts`. Start вирізає
+з клієнта тіла serverFn-хендлерів (їхній серверний імпорт стає невживаним і зникає),
+а звичайна функція лишається живим експортом — і в опублікованому пакеті, де tsup
+склеїв сусідні модулі в один чанк, клієнтський `import { getUser } from
+'…/server/auth'` тягнув за собою серверний Supabase. Фікс — окремий модуль
+`src/server/is-admin.ts`. **Правило на майбутнє:** у модулі, який імпортують
+клієнтські роути, не має бути не-`createServerFn` експортів, що торкаються
+`server-client`. У монорепо це невидиме (Vite вирізає невживане з сирців) — ловить
+лише `pnpm pilot`.
 
 ### Борги, свідомо винесені за межі Фази 1
 

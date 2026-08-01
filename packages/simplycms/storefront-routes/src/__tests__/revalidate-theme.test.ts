@@ -79,7 +79,7 @@ vi.mock('@simplycms/supabase/anon-client', () => ({
   }),
 }));
 
-import { revalidateThemeHandler } from '../../routes/api/revalidate-theme';
+import { revalidateTheme } from '../server/revalidate-theme';
 import {
   invalidateThemeCache,
   loadActiveTheme,
@@ -98,7 +98,7 @@ describe('POST /api/revalidate-theme', () => {
     await loadActiveTheme();
     expect(themeQueries).toBe(1);
 
-    const response = await revalidateThemeHandler();
+    const response = await revalidateTheme();
 
     expect(response.status).toBe(403);
     await loadActiveTheme();
@@ -110,7 +110,7 @@ describe('POST /api/revalidate-theme', () => {
     await loadActiveTheme();
     expect(themeQueries).toBe(1);
 
-    const response = await revalidateThemeHandler();
+    const response = await revalidateTheme();
 
     expect(response.status).toBe(403);
     await loadActiveTheme();
@@ -127,7 +127,7 @@ describe('POST /api/revalidate-theme', () => {
     expect(await loadActiveTheme()).toBe(first);
     expect(themeQueries).toBe(1);
 
-    const response = await revalidateThemeHandler();
+    const response = await revalidateTheme();
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ revalidated: true });
@@ -141,7 +141,7 @@ describe('POST /api/revalidate-theme', () => {
     currentUser = { id: 'admin-1' };
     hasAdminRole = true;
 
-    await revalidateThemeHandler();
+    await revalidateTheme();
 
     expect(adminQueries).toEqual([
       { table: 'user_roles', eq: { user_id: 'admin-1', role: 'admin' } },

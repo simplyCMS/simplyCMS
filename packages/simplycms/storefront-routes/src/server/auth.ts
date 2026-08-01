@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { checkIsAdmin } from './is-admin';
 
 /** Отримати поточну сесію користувача */
 export const getSession = createServerFn({ method: 'GET' }).handler(
@@ -36,31 +37,13 @@ export const getUser = createServerFn({ method: 'GET' }).handler(async () => {
 });
 
 /**
- * Чи має поточний користувач роль admin — ЗВИЧАЙНА функція.
+ * Перевірити чи поточний користувач має роль admin (serverFn для роутів/компонентів).
  *
- * Саме її викликають server-route handler-и (`server.handlers.*`): у них немає
- * контексту `createServerFn`, тому виклик serverFn-обгортки там впав би.
- * Без сесії → `false`.
+ * 🔴 Сама перевірка живе в `./is-admin` і навмисно НЕ реекспортується звідси:
+ * цей модуль клієнтські роути імпортують заради `getUser`, і будь-який живий
+ * не-serverFn експорт тут затягнув би серверний Supabase у клієнтський бандл
+ * (див. коментар у `is-admin.ts`).
  */
-export async function checkIsAdmin(): Promise<boolean> {
-  const supabase = createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return false;
-
-  const { data: role } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('role', 'admin')
-    .maybeSingle();
-
-  return !!role;
-}
-
-/** Перевірити чи поточний користувач має роль admin (serverFn для роутів/компонентів) */
 export const isAdmin = createServerFn({ method: 'GET' }).handler(async () =>
   checkIsAdmin(),
 );

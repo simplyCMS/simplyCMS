@@ -202,36 +202,42 @@ baseline з `@simplycms/supabase` (свіжий магазин не має пл�
       (CLAUDE.md, AGENTS.md, `code-review/SKILL.md`, `/виконай-задачу`),
       знято стейл-твердження «CI не запускає format:check», memory-нотатка
       `phase1-packaging-2026-07-31`.
-- [ ] **DoD (spec §16):** фінальний прогін `node scripts/pilot-pack.mjs` (всі gates зелені, включно з production-curls скретча) + гейти монорепо. Коміт: `chore(phase1): Фаза 1 завершена`.
+- [X] **DoD (spec §16):** фінальний прогін `node scripts/pilot-pack.mjs` — **gates A-D зелені**
+      (`Gate C: OK server-fn заглушок 6, серверного вантажу (server-client, loaders) — 0`),
+      гейти монорепо зелені в канонічному порядку. Коміт: `chore(phase1): Фаза 1 завершена`.
 
-🔴 **DoD НЕ закрито: фінальний прогін пілота червоний (2026-07-31).**
-Gate A / Gate B / Gate D — PASS, **Gate C — FAIL**:
+### Регресія Gate C, знайдена DoD-прогоном, і її справжня причина
 
-```
-Gate C: FAIL
-  клієнтських чанків: 213, модулів: 2454
-  FAIL серверний вантаж у клієнті:
-       node_modules/@simplycms/supabase/dist/server-client.js
-  initial-чанків: 19, модулів у них: 301
-  OK   @simplycms/admin: у бандлі 98, в initial 0
-  OK   @tiptap/*: у бандлі 22, в initial 0
-  OK   recharts: у бандлі 0, в initial 0
-Пілот НЕ пройдено: провалено гейтів — 1.
-```
+Перший DoD-прогін був **червоний**: `FAIL серверний вантаж у клієнті:
+node_modules/@simplycms/supabase/dist/server-client.js`. Регресію вніс Task 4.1
+(коміт `907e0fd`), і пілот між ним і зеленим Task 3.1 не переганявся.
 
-Регресія зʼявилась **після** зеленого прогону Task 3.1 — її вніс Task 4.1
-(коміт `907e0fd`), і пілот між ними не переганявся. Робоча гіпотеза (НЕ
-верифікована окремим прогоном, фікс свідомо не робився — DoD-прогін лише
-фіксує факт): `routes/api/revalidate-theme.tsx` виносить хендлер **окремим
-top-level export-ом** `revalidateThemeHandler` — на відміну від сусідів
-`api/health.tsx` і `api/guest-order.tsx`, де хендлери інлайнові всередині
-`createFileRoute({ server: { handlers } })` і зникають із клієнта разом зі
-стрипнутою властивістю `server`. Живий іменований export переживає стрипінг і
-тримає в клієнтському графі ланцюг
-`revalidateThemeHandler → server/auth.checkIsAdmin → @simplycms/supabase/server-client`.
-Перевірити першим: чи зникає leak, якщо хендлер зробити інлайновим (а тест
-переписати на виклик через роут), — і чи не тягне те саме `invalidateThemeCache`
-із `server/themes`.
+🔴 **Початкова гіпотеза виявилась хибною — фіксуємо обидві, щоб не ходити цим колом двічі.**
+Гіпотеза звинувачувала named export `revalidateThemeHandler` у файлі роуту.
+Виніс логіки в `src/server/revalidate-theme.ts` (файл роуту лишив єдиний export
+`Route`) leak **не прибрав** — повторний прогін дав той самий FAIL.
+
+**Справжня причина** — `checkIsAdmin` у `src/server/auth.ts`. Task 4.1 поклав
+**звичайну** функцію поруч із `createServerFn`-обгортками. Трансформація Start
+вирізає з клієнта тіла serverFn-хендлерів, після чого їхній
+`import … from '@simplycms/supabase/server-client'` стає невживаним і зникає;
+звичайна функція такого імунітету не має. В опублікованому пакеті сусідні модулі
+склеєні tsup-ом в один чанк, і `dist/server/auth.js` віддавав
+`export { checkIsAdmin, getSession, getUser, isAdmin } from '../chunk-….js'` —
+тобто `checkIsAdmin` була **живим експортом** самого subpath-у. Клієнтський
+`import { getUser, isAdmin } from '@simplycms/storefront-routes/server/auth'`
+(`admin-routes/routes/admin.tsx`, `routes/_protected.tsx`, `routes/auth/index.tsx`)
+затягував увесь чанк разом із серверним Supabase.
+
+**Фікс:** `checkIsAdmin` винесена в окремий модуль `src/server/is-admin.ts`.
+Тепер `dist/server/auth.js` — власний модуль, що експортує лише serverFn-и, а
+`checkIsAdmin` у нього тільки імпортована (для стрипнутого тіла `isAdmin`) →
+tree-shaking її прибирає. Гард від повторення: тест
+`revalidate-theme-route.test.ts` асертить `Object.keys(routeModule) === ['Route']`.
+
+🔴 **Чому це видно лише пілотом:** у монорепо Vite бачить сирці й вирізає
+невживане, тому `pnpm build` витоку не показує. Це рівно той клас блокерів,
+заради якого Фаза 1 і будувала `pnpm pilot`.
 
 ---
 
