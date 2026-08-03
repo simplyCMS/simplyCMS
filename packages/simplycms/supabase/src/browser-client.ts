@@ -2,19 +2,29 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './database';
 import { resolveSupabaseKeys } from './keys';
 
-export function createClient() {
+/**
+ * Браузерний Supabase-клієнт.
+ *
+ * `Db` — типи БД магазину. За замовчуванням — baseline core-схеми пакета;
+ * host зі своїми (плагінними) таблицями підставляє власний згенерований
+ * `Database` із `supabase/types.ts`: `createBrowserSupabase<HostDatabase>()`.
+ */
+export function createBrowserSupabase<Db extends Database = Database>() {
   const { url, key } = resolveSupabaseKeys(import.meta.env);
-  return createBrowserClient<Database>(url, key);
+  return createBrowserClient<Db>(url, key);
 }
 
-export type SupabaseClient = ReturnType<typeof createClient>;
+/** Тип браузерного клієнта; без параметра — baseline core-схеми. */
+export type SupabaseClient<Db extends Database = Database> = ReturnType<
+  typeof createBrowserSupabase<Db>
+>;
 
 // Lazy browser client (DI source for SupabaseProvider/useSupabaseClient).
-let browserClient: ReturnType<typeof createClient> | null = null;
+let browserClient: SupabaseClient | null = null;
 
-export function getSupabaseBrowserClient() {
+export function getSupabaseBrowserClient(): SupabaseClient {
   if (!browserClient) {
-    browserClient = createClient();
+    browserClient = createBrowserSupabase();
   }
   return browserClient;
 }

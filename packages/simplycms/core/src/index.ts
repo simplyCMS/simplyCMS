@@ -88,17 +88,6 @@ export type {
 // ---- Types ----
 export type { Database } from './types';
 
-// ---- Supabase Client (DI) ----
-export {
-  createClient,
-  getSupabaseBrowserClient,
-} from '@simplycms/supabase/browser-client';
-export type { SupabaseClient } from '@simplycms/supabase/browser-client';
-export {
-  SupabaseProvider,
-  useSupabaseClient,
-} from '@simplycms/supabase/SupabaseProvider';
-
 // ---- Catalog Components ----
 export { ActiveFilters } from './components/catalog/ActiveFilters';
 export type { ActiveFilter } from './components/catalog/ActiveFilters';

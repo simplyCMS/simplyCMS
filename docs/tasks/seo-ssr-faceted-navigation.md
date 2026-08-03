@@ -84,7 +84,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - Додати **розділ адмінки** для керування SEO-полями та faceted-лендингами.
 
 **Поза scope (окремі задачі / дослідження):**
-- Production transport для `sitemap.xml`/`robots.txt` — окрема задача `production-seo-routes-tanstack-start.md` (тут лише **розширюємо склад** sitemap/robots, не чіпаємо транспорт).
+- Production transport для `sitemap.xml`/`robots.txt` — **зроблено** (SEO-інтерсептор серверного входу `src/server.ts`, Фаза 1); тут лише **розширюємо склад** sitemap/robots, транспорт не чіпаємо.
 - Механізм «правил» адмін-конфіг → автогенерація лендингу/URL — див. §9 (потребує додаткового дослідження).
 
 ---
@@ -235,7 +235,6 @@ Faceted-navigation SEO — вирішена індустрією задача з
 
 ## 13. Пов'язана документація
 - `docs/tasks/simplycms_tanstack_start_migration_task.md` — загальний міграційний документ (Phase 6 винесено сюди).
-- `docs/tasks/production-seo-routes-tanstack-start.md` — транспорт sitemap.xml/robots.txt (суміжна задача).
 - `docs/tasks/migration-phase3-storefront-ssr-routes.md` — базова SSR-модель storefront routes.
 - `.github/instructions/data-access.instructions.md` — патерни data access.
 - Код: `packages/simplycms/storefront-routes/src/pages/CatalogSection.tsx`, `.../components/catalog/FilterSidebar.tsx`, `packages/simplycms/storefront-routes/src/server/properties.ts`, `packages/simplycms/storefront-routes/src/seo/sitemap.ts`, `packages/simplycms/storefront-routes/src/seo/robots.ts`, `simplycms.config.ts`.

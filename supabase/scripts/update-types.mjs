@@ -166,8 +166,14 @@ try {
   writeTypesFile(rawTypes);
 
   console.log('✅ Типи успішно оновлено!\n');
+  // Типів БД у репозиторії ДВА файли:
+  //   1. `supabase/types.ts` — host-генерат (core + плагінні таблиці магазину);
+  //      його оновлює цей скрипт, host-код типізується проти нього.
+  //   2. `packages/simplycms/supabase/src/database.ts` — baseline core-схеми,
+  //      проти якого типізуються пакети ядра; оновлюється `pnpm types:baseline`
+  //      і ЛИШЕ з еталонної dev-БД без плагінів.
   console.log(
-    '💡 Усі споживачі отримають оновлені типи через @simplycms/db-types.\n',
+    '💡 Якщо змінилася CORE-схема — онови baseline пакета: `pnpm types:baseline`.\n',
   );
 } catch (error) {
   const msg = error instanceof Error ? error.message : String(error);

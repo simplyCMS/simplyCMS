@@ -29,11 +29,19 @@ All coding rules, architecture decisions, and best practices are maintained in `
   `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`.
 - **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
   (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
-- **🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test` —
-  `build` перед `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме
-  `format:check` (`pnpm format` — це `--write`, він не червоніє). Обидві команди
-  покривають увесь репозиторій; винятки — у `.prettierignore` (машинний генерат,
-  артефакти збірки, усі `*.md`).
+- **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
+  build → typecheck → test → build:packages → test:packaging` — `build` перед
+  `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме `format:check`
+  (`pnpm format` — це `--write`, він не червоніє). Обидві команди покривають увесь
+  репозиторій; винятки — у `.prettierignore` (машинний генерат, артефакти збірки,
+  усі `*.md`).
+  🔴 `install --frozen-lockfile` обов'язковий після будь-якої правки `package.json`:
+  інші гейти `pnpm-lock.yaml` не звіряють, а звичайний `pnpm install` мовчки
+  лагодить розсинхрон. У CI frozen — дефолт, тож розсинхрон валить усі job-и
+  до першого кроку.
+  Packaging-suite іде окремо в кінці: `tests/published-exports-parity.test.ts`
+  виведено з `pnpm test` (`test.exclude`) і працює по tarball-ах, тож потребує
+  свіжого `pnpm build:packages`.
 
 Also see:
 - [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars)

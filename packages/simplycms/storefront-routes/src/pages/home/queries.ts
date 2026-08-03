@@ -36,13 +36,14 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
   return useQuery({
     queryKey: ['featured-products'],
     queryFn: async (): Promise<HomeProduct[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .select(HOME_PRODUCT_SELECT)
         .eq('is_active', true)
         .eq('is_featured', true)
         .order('created_at', { ascending: false })
         .limit(12);
+      if (error) throw error;
 
       return (data ?? []).map((row) => mapProduct(row as ProductRow));
     },
@@ -57,12 +58,13 @@ export function useNewProducts(initialData?: HomeProduct[]) {
   return useQuery({
     queryKey: ['new-products'],
     queryFn: async (): Promise<HomeProduct[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .select(HOME_PRODUCT_SELECT)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(12);
+      if (error) throw error;
 
       return (data ?? []).map((row) => mapProduct(row as ProductRow));
     },
@@ -77,12 +79,13 @@ export function useRootSections(initialData?: HomeSection[]) {
   return useQuery({
     queryKey: ['root-sections'],
     queryFn: async (): Promise<HomeSection[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('sections')
         .select('id, name, slug')
         .eq('is_active', true)
         .is('parent_id', null)
         .order('sort_order');
+      if (error) throw error;
 
       return data ?? [];
     },
@@ -90,20 +93,36 @@ export function useRootSections(initialData?: HomeSection[]) {
   });
 }
 
-/** Товари однієї категорії — для посекційної добірки */
-export function useSectionProducts(section: HomeSection) {
+/** Опції посекційної добірки: `initialData` приходить із SSR-лоадера */
+export interface SectionProductsOptions {
+  initialData?: HomeProduct[];
+}
+
+/**
+ * Товари однієї категорії — для посекційної добірки.
+ *
+ * Дані префетчить SSR-лоадер головної й передає через `initialData`: разом зі
+ * `staleTime` це прибирає N+1 (карусель більше не ходить у Supabase з клієнта).
+ */
+export function useSectionProducts(
+  section: HomeSection,
+  options?: SectionProductsOptions,
+) {
   const supabase = useSupabaseClient();
 
   return useQuery({
     queryKey: ['section-products', section.id],
+    initialData: options?.initialData,
+    staleTime: 60_000,
     queryFn: async (): Promise<HomeProduct[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .select('id, name, slug, images, short_description, stock_status')
         .eq('is_active', true)
         .eq('section_id', section.id)
         .order('created_at', { ascending: false })
         .limit(8);
+      if (error) throw error;
 
       return (data ?? []).map((row) => ({
         ...mapProduct({ ...(row as ProductRow), sections: null }),

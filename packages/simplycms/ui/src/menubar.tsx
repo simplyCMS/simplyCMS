@@ -4,7 +4,10 @@ import { Check, ChevronRight, Circle } from 'lucide-react';
 
 import { cn } from '@simplycms/ui/utils';
 
-const MenubarMenu = MenubarPrimitive.Menu;
+// Явна анотація: без неї виведений тип посилається на транзитивний
+// `@radix-ui/react-context` (не пряма залежність пакета) — і standalone-емісія
+// .d.ts падає на TS2742 «cannot be named without a reference to…».
+const MenubarMenu: typeof MenubarPrimitive.Menu = MenubarPrimitive.Menu;
 
 const MenubarGroup = MenubarPrimitive.Group;
 

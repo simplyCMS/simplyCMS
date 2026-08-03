@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/db-types': resolve(__dirname, 'supabase/types.ts'),
       '@simplycms/objects': pkg('objects/src'),
       '@simplycms/domain': pkg('domain/src'),
       '@simplycms/supabase': pkg('supabase/src'),
@@ -41,6 +40,10 @@ export default defineConfig({
       '**/dist/**',
       '**/.output/**',
       '**/package/**', // витяги npm/pnpm pack
+      // Packaging-suite: пакує кожен пакет через `pnpm pack`, тому вимагає
+      // попереднього `pnpm build:packages`. У `pnpm test` не входить —
+      // запускається окремим CI-job-ом `packaging`.
+      'tests/published-exports-parity.test.ts',
     ],
   },
 });

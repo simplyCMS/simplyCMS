@@ -75,8 +75,7 @@
   `prettier@3.9.6` (exact) встановлено, `format`/`format:check` розширено на весь
   репозиторій, репо відформатовано (343 файли). `.prettierignore` виключає
   машинний генерат (роут-трі, типи Supabase, Drizzle-схема + `drizzle/`),
-  артефакти збірки і всі `*.md`. Лишається окремим пунктом: CI досі не запускає
-  `format:check` — додати крок у `.github/workflows/workflow.yml`.
+  артефакти збірки і всі `*.md`. Крок `Format check` є в CI (job `typecheck`).
 - **i18n-міграція** (~954 warn-входження) — окремий прохід, див. чекбокс вище.
 - **`@simplycms/engine`** (обʼєднання `data-supabase` + `react-query`) — не
   робилось, обидва пакети живі окремо; див. амендмент spec §4.0.
@@ -85,14 +84,52 @@
 
 ## Фаза 1 — Пілот пакування + production-готовність
 
-- [ ] `npm pack` пілот: збірка магазину зі справжніх tarball-ів у чистому проєкті;
-      gates зі spec §15 (server fns, bundle-guard, Tailwind `@source`, splitting)
-- [ ] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
-- [ ] Server preset: працюючий `pnpm start` (обрати target під хостинг)
-- [ ] Production `sitemap.xml`/`robots.txt` через custom server entry
-      (див. [`production-seo-routes-tanstack-start.md`](./production-seo-routes-tanstack-start.md))
+- [X] `npm pack` пілот: збірка магазину зі справжніх tarball-ів у чистому проєкті;
+      gates зі spec §15 (`scripts/pilot-pack.mjs` + `tests/pilot/store-template/`:
+      Gate A — множина route-id зі скретч-`routeTree.gen.ts` збігається з монорепо
+      й імпорти ведуть у `node_modules`; Gate B — production-запуск, server fns,
+      SEO-ендпойнти, admin-guard; Gate C — bundle-guard і code-splitting по
+      модульному графу (`emitBundleStats`); Gate D — Tailwind бачить утиліти
+      пакетів. CI job `pilot`: manual + weekly)
+- [X] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
+      (parity рахується по **розпакованому tarball-у**, а не по `package.json`;
+      виведено з `pnpm test` у `pnpm test:packaging` + CI job `packaging`)
+- [X] Server preset: працюючий `pnpm start` (`src/server.ts` через
+      `server.entry` + node-runner `server.mjs`: `sirv(dist/client)` +
+      fetch-handler, `/api/health`)
+- [X] Production `sitemap.xml`/`robots.txt` через custom server entry
+      (SEO-інтерсептор у `src/server.ts`; dev-плагін знято. Задачу
+      `production-seo-routes-tanstack-start.md` видалено як виконану —
+      політика «тільки актуальне»)
 
-**DoD:** магазин із tarball-ів проходить smoke-e2e; деплой можливий.
+**DoD:** магазин із tarball-ів проходить smoke-e2e; деплой можливий. — ✅ **Закрито
+2026-08-01:** фінальний прогін `node scripts/pilot-pack.mjs` — gates A-D зелені,
+гейти монорепо зелені в канонічному порядку.
+
+🔴 **Урок DoD-прогону (єдиний блокер, який зловив саме пілот).** Перший прогін дав
+`Gate C: FAIL` — `@simplycms/supabase/dist/server-client.js` у клієнтському бандлі.
+Причина: Task 4.1 поклав **звичайну** функцію `checkIsAdmin` поруч із
+`createServerFn`-обгортками в `storefront-routes/src/server/auth.ts`. Start вирізає
+з клієнта тіла serverFn-хендлерів (їхній серверний імпорт стає невживаним і зникає),
+а звичайна функція лишається живим експортом — і в опублікованому пакеті, де tsup
+склеїв сусідні модулі в один чанк, клієнтський `import { getUser } from
+'…/server/auth'` тягнув за собою серверний Supabase. Фікс — окремий модуль
+`src/server/is-admin.ts`. **Правило на майбутнє:** у модулі, який імпортують
+клієнтські роути, не має бути не-`createServerFn` експортів, що торкаються
+`server-client`. У монорепо це невидиме (Vite вирізає невживане з сирців) — ловить
+лише `pnpm pilot`.
+
+### Борги, свідомо винесені за межі Фази 1
+
+- **Живі клікові смоки Фази 0 так і НЕ виконані** (рішення власника — лишаються
+  боргом): перемикання теми в `/admin/themes`; логін → `/profile` на
+  `ProtectedShell` → sign-out; `/admin/plugins` → увімкнути `hello-world` →
+  віджет на дашборді без reload → вимкнути. Причина — потрібні адмінські
+  креденшели, яких у середовищі агентів немає. Код-передумови зняті
+  (робоча інвалідація теми, атомарний plugin-toggle), гейти пілота покривають
+  лише HTTP-рівень.
+- **Пілот не перевіряє візуальний рендер:** Gate D звіряє наявність утиліт у
+  зібраному CSS, а не картинку — фінальна візуальна перевірка теж у боргу вище.
 
 ## Фаза 2 — CLI + скаффолдер + перший реліз
 

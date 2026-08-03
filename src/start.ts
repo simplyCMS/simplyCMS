@@ -5,6 +5,7 @@ import {
   resolveSupabaseKeys,
   type SupabaseEnv,
 } from '@simplycms/supabase/keys';
+import type { StoreDatabase } from './engine.shared';
 
 /**
  * Чи достатньо env, щоб підняти серверний Supabase-клієнт.
@@ -42,7 +43,8 @@ const adminRequestGuard = createMiddleware().server(
       // Без env Supabase guard неможливий — пропускаємо (admin однаково не запрацює).
       if (isSupabaseEnvReady(import.meta.env)) {
         // Передаємо cookie з request напряму — не залежимо від ALS getRequestHeader.
-        const supabase = createServerSupabase(
+        // Клієнт типізуємо ТИПАМИ МАГАЗИНУ (core + плагінні таблиці).
+        const supabase = createServerSupabase<StoreDatabase>(
           request.headers.get('cookie') ?? '',
         );
         const {

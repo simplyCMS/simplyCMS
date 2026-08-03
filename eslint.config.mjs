@@ -92,6 +92,10 @@ const eslintConfig = [
       '.nitro/**',
       '.tanstack/**',
       'src/routeTree.gen.ts',
+      // Fixture скретч-магазину (Task 3.1): це не код монорепо, а шаблон
+      // ЧУЖОГО проєкту — його імпорти резолвляться лише після `npm install`
+      // із tarball-ів у /tmp, а не workspace-аліасами.
+      'tests/pilot/store-template/**',
     ],
   },
 ];

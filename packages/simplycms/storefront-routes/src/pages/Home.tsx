@@ -15,6 +15,8 @@ export interface HomePageProps {
   featuredProducts?: HomeProduct[];
   newProducts?: HomeProduct[];
   sections?: HomeSection[];
+  /** Товари кореневих секцій із SSR-лоадера: `sectionId → товари` */
+  sectionProducts?: Record<string, HomeProduct[]>;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function HomePage({
   featuredProducts: initialFeatured,
   newProducts: initialNew,
   sections: initialSections,
+  sectionProducts,
 }: HomePageProps) {
   const theme = useActiveThemeModule();
   const Hero = theme.components.HeroBanner;
@@ -68,7 +71,11 @@ export default function HomePage({
       )}
 
       {rootSections?.map((section) => (
-        <SectionProductCarousel key={section.id} section={section} />
+        <SectionProductCarousel
+          key={section.id}
+          section={section}
+          initialData={sectionProducts?.[section.id]}
+        />
       ))}
 
       {ThemeHomeSections && <ThemeHomeSections />}

@@ -16,7 +16,12 @@ import { EngineProvider } from '@simplycms/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import type { EngineContext } from '@simplycms/objects';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { appLinks, appConfig, createAppMediaProvider } from './engine.shared';
+import {
+  appLinks,
+  appConfig,
+  createAppMediaProvider,
+  type StoreDatabase,
+} from './engine.shared';
 
 /** Збирає клієнтський EngineContext з браузерного Supabase-клієнта + адаптерів. */
 export function buildClientEngine(client: SupabaseClient): EngineContext {
@@ -37,7 +42,8 @@ export function buildClientEngine(client: SupabaseClient): EngineContext {
  * збираються без деференсу, запити йдуть лише на клієнті.
  */
 export function ClientEngineProvider({ children }: { children: ReactNode }) {
-  const client = useSupabaseClient();
+  // Клієнт із DI-контексту, звужений до типів МАГАЗИНУ (core + плагінні таблиці).
+  const client = useSupabaseClient<StoreDatabase>();
   const engine = useMemo(
     () => buildClientEngine(client as unknown as SupabaseClient),
     [client],

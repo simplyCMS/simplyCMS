@@ -13,6 +13,20 @@ export async function buildSitemapXml(
       .eq('is_active', true),
   ]);
 
+  // 🔴 Помилку запиту НЕ ковтаємо: sitemap із самих лише статичних URL
+  // виглядає як успіх, і cache-header (година + SWR) зафіксує цю неправду
+  // для пошукових роботів. Краще 5xx без кешу — див. SEO-інтерсептор.
+  if (sectionsRes.error) {
+    throw new Error(
+      `sitemap: запит sections впав — ${sectionsRes.error.message}`,
+    );
+  }
+  if (productsRes.error) {
+    throw new Error(
+      `sitemap: запит products впав — ${productsRes.error.message}`,
+    );
+  }
+
   const urls: string[] = [];
 
   /** Статичні сторінки */

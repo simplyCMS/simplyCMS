@@ -16,6 +16,10 @@ import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import {
+  revalidateFailureDescription,
+  revalidateTheme,
+} from '../lib/revalidateTheme';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,19 +40,6 @@ interface ThemeRecord {
   preview_image: string | null;
   is_active: boolean;
   created_at: string;
-}
-
-/** Виклик revalidation API після зміни теми (авторизація через cookie-сесію) */
-async function revalidateTheme() {
-  try {
-    await fetch('/api/revalidate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'theme' }),
-    });
-  } catch {
-    // Revalidation — best effort
-  }
 }
 
 export default function Themes() {
@@ -89,8 +80,19 @@ export default function Themes() {
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['admin-themes'] });
-      await revalidateTheme();
       setConfirmThemeId(null);
+
+      try {
+        await revalidateTheme();
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Тему активовано, але кеш вітрини не скинуто',
+          description: revalidateFailureDescription(error),
+        });
+        return;
+      }
+
       toast({
         title: 'Тему активовано',
         description: 'Зміни застосовані на сайті',

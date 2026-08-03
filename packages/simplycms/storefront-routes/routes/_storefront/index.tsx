@@ -28,6 +28,7 @@ function Home() {
       featuredProducts={data.featuredProducts}
       newProducts={data.newProducts}
       sections={data.sections}
+      sectionProducts={data.sectionProducts}
     />
   );
 }

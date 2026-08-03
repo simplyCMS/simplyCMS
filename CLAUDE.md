@@ -6,16 +6,27 @@
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
-pnpm start            # Run production server (.output/server/index.mjs)
+pnpm start            # Run production server (node server.mjs, PORT=3000) — див. «Production Run»
 pnpm typecheck        # TypeScript type check
 pnpm lint             # ESLint
 pnpm lint:fix         # ESLint (auto-fix)
 pnpm format           # Prettier (write)
 pnpm format:check     # Prettier (check only)
-pnpm test             # Run tests (vitest run)
+pnpm test             # Run tests (vitest run; packaging-suite виключено)
 pnpm test:watch       # Tests in watch mode
-pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types
-                      # Схема БД — див. «Database Commands»
+pnpm build:packages   # tsup build публікованих пакетів ядра
+pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm pilot:pack       # npm-pack пілот: гейти пакувальності A/C/D — БЕЗ Supabase
+pnpm pilot            # той самий пілот + gate B проти живої БД (.env.local)
+pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
+                      # потребує Docker; Gate B асертить точні назви із сіду
+pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
+pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
+                      # → git push → PR у main → мерж публікує на npmjs
+                      # Повний опис — docs/architecture/release-process.md
+pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
+pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
+                      # Схема БД і типи — див. «Database Commands»
 ```
 
 ## What This Project Is
@@ -71,8 +82,18 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою моделлю
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
-**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test`.
+**🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
+build → typecheck → test → build:packages → test:packaging`.
+🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
+правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
+а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
+frozen — дефолт, тож локально зелене, а на PR усі job-и падають із
+`ERR_PNPM_OUTDATED_LOCKFILE` ще до першого кроку (спіймано на PR #20: перенесення
+`pg`/`dotenv` у devDependencies без перегенерації lockfile).
 `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
+packaging-suite іде **після** `pnpm test`, бо `tests/published-exports-parity.test.ts`
+виведено з дефолтного прогону (`test.exclude`) і працює по зібраних tarball-ах —
+без `pnpm build:packages` перед ним `pnpm test:packaging` не має що перевіряти.
 гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
 червоніє.
 `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
@@ -119,6 +140,7 @@ simplyCMS/
 │   ├── router.tsx                    # createRouter
 │   ├── start.ts                      # createStart + global request middleware (admin guard)
 │   ├── client.tsx                    # Client hydration entry
+│   ├── server.ts                     # Server entry: createServerEntry({ fetch }) + точка перехоплення
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
 ├── packages/simplycms/               # Ядро CMS (публікація на npmjs — Фаза 1+)
@@ -140,14 +162,30 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │
-├── scripts/                          # db-diff.mjs, db-migrate.mjs (конвеєр міграцій)
-├── supabase/                         # config.toml, migrations/ (згенеровані), functions/, types.ts
+├── scripts/                          # Тулчейн міграцій, пакування, релізу
+│   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
+│   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
+│   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
+│   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
+│   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
+│   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
+│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-d
+│   │                                    # + seed-fixtures.mjs — джерело правди сіду
+│   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
+├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
+│                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
 ├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
 ├── plugins/hello-world/              # Референс-плагін
-├── tests/                            # virtual-routes-escape, published-exports-parity
+├── tests/                            # virtual-routes-escape, published-exports-parity,
+│   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
+│   │                                 # pilot-seed (парність seed.sql і фікстур)
+│   └── pilot/store-template/         # Host-fixture пілота (виключений із tsconfig.json і eslint.config.mjs)
 │
+├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
-├── vite.config.ts                    # tanstackStart({ virtualRouteConfig: './routes.ts' }) + seoRoutesPlugin()
+├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
+├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
+├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
 ├── tailwind.config.ts                # Tailwind v4 config
 └── pnpm-workspace.yaml               # Workspace config
 ```
@@ -161,7 +199,6 @@ simplyCMS/
 
 | Import | Path |
 |--------|------|
-| `@simplycms/db-types` | `supabase/types.ts` |
 | `@simplycms/objects` | `packages/simplycms/objects/src` |
 | `@simplycms/domain` | `packages/simplycms/domain/src` |
 | `@simplycms/supabase` | `packages/simplycms/supabase/src` |
@@ -220,6 +257,28 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
 
+## Production Run
+
+`pnpm build` віддає **два** каталоги: `dist/client/` (статика з хешованими
+іменами) і `dist/server/server.js` — це **fetch-handler** (`{ fetch(Request) →
+Response }`), а не готовий HTTP-сервер. Теки `.output/` немає.
+
+- `src/server.ts` — server entry (`server: { entry: './server.ts' }` у
+  `vite.config.ts`). 🔴 Шлях резолвиться від `srcDirectory` (`src/`), **не** від
+  кореня: `'./src/server.ts'` мовчки не знайдеться і плагін відкотиться на
+  дефолтний entry. Тут же — точка перехоплення запиту перед делегацією в роутер.
+- `server.mjs` (корінь) — Node-runner: `sirv(dist/client)` для статики
+  (`/assets/*` → `max-age=31536000, immutable`), решта — `IncomingMessage →
+  Request → fetch-handler → ServerResponse` зі стрімінгом в обидва боки
+  (`Readable.toWeb` / `Readable.fromWeb`), тому SSR-стрімінг Start не ламається.
+- `pnpm start` = `node server.mjs`; порт — `PORT` (за замовчуванням `3000`),
+  інтерфейс — `HOST` (за замовчуванням `0.0.0.0`).
+
+**Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` +
+production-`node_modules` (потрібен рівно один рантайм-пакет — `sirv`, він у
+`dependencies`, не в dev). `VITE_*` вже вшиті в бандл на етапі `vite build`, тож
+збірку робить той самий env, що й прод.
+
 ## Database Commands
 
 Джерело правди схеми — `packages/simplycms/schema/src/schema.ts` (Drizzle).
@@ -230,13 +289,62 @@ pnpm db:dump-rls               # Дамп RLS-політик із живої Б�
 pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
 pnpm db:migrate                # supabase link + db push + db:generate-types
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
+pnpm types:baseline            # Снапшот CORE-типів → @simplycms/supabase/src/database.ts
 ```
+
+🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
+встановлених плагінів); проти нього типізується host-код.
+`packages/simplycms/supabase/src/database.ts` — **baseline** core-схеми для пакетів
+ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів після
+кожної core-міграції. Магазин звужує клієнти до своїх типів через generic-параметр
+фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/simplycms/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/workflow.yml`) on push/PR to `main`:
-- **TypeScript job:** `pnpm install` → `pnpm build` → `pnpm typecheck` → `pnpm lint`
-- **Test job:** `pnpm install` → `pnpm test`
+Два workflow-файли: `workflow.yml` (перевірки) і `publish-packages.yml` (реліз).
+
+| Workflow | Job | Кроки | Коли |
+|----------|-----|-------|------|
+| `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
+| `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
+| `workflow.yml` | `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
+
+`packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
+потребує зібраних `dist/` кожного пакета.
+
+🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pilot` і
+`pilot:e2e` потребують бази — живої або локального стеку в Docker, — а це зовнішній
+стан, від дрейфу якого гейт червонів би без регресії коду. Прогін пілота перед
+релізом — відповідальність розробника (`pnpm pilot:pack` не потребує нічого, решта —
+див. Quick Reference). Передрелізний гейт у CI — детерміністичний tarball-parity.
+
+## Публікація пакетів (npmjs)
+
+Ядро публікується на npmjs під scope `@simplycms`.
+**Повна інструкція — [`docs/architecture/release-process.md`](docs/architecture/release-process.md)**
+(включно з типовими помилками 401/402/403 і чому не GitHub Packages). Стисло:
+
+- **реліз однією командою** — `pnpm release 0.2.0`: гарди (чисте дерево, версія
+  більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
+  `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
+  лишатися рішенням людини;
+- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; розходження
+  версій між ними реліз-скрипт вважає помилкою стану й падає;
+- **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
+  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
+- `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
+- 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
+  npm за замовчуванням робить приватними, а це платний план;
+- потрібен secret **`NPM_TOKEN`** — Automation або Granular-токен npm (scope
+  `@simplycms`, read+write). Обидва обходять 2FA; звичайний publish-токен у CI не
+  спрацює, якщо на акаунті ввімкнено 2FA. Без секрету job падає з явним
+  повідомленням ще до збірки.
+
+🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
+заглушений `if: false` — після переносу репо в org `simplyCMS` scope `@simplycms`
+перестав збігатися з власником, і публікація гарантовано падала з 403. Переписано
+на npmjs; старий шлях не відновлювати.

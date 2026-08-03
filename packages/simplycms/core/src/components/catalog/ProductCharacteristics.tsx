@@ -1,2 +1,5 @@
 // Перенесено в @simplycms/catalog-ui. Re-export для зворотної сумісності.
-export * from '@simplycms/catalog-ui/ProductCharacteristics';
+// 🔴 Тільки ІМЕНОВАНІ re-export-и: `export * from '<external>'` esbuild при
+// splitting лишає у спільному чанку й НЕ піднімає в entry — опублікований
+// пакет виходив без експортів (знахідка пілота Task 3.1).
+export { ProductCharacteristics } from '@simplycms/catalog-ui/ProductCharacteristics';

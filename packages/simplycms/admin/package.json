@@ -1,8 +1,8 @@
 {
   "name": "@simplycms/admin",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -11,16 +11,65 @@
     "./pages/*": "./src/pages/*",
     "./layouts/*": "./src/layouts/*"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js"
+      },
+      "./pages/*": {
+        "types": "./dist/pages/*.d.ts",
+        "import": "./dist/pages/*.js"
+      },
+      "./layouts/*": {
+        "types": "./dist/layouts/*.d.ts",
+        "import": "./dist/layouts/*.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/__tests__/**"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/admin"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",
-    "@simplycms/themes": "workspace:*"
+    "@simplycms/themes": "workspace:*",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-text-align": "^3.19.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "@tanstack/react-query": "^5.0.0"
+    "@hookform/resolvers": "^5.0.0",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@tiptap/react": "^3.0.0",
+    "@tiptap/starter-kit": "^3.0.0",
+    "date-fns": "^3.0.0 || ^4.0.0",
+    "lucide-react": ">=0.400.0",
+    "react-hook-form": "^7.0.0",
+    "sonner": "^1.0.0 || ^2.0.0",
+    "zod": "^3.0.0 || ^4.0.0"
   }
 }

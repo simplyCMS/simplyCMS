@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NavLink } from '@simplycms/core/components/NavLink';
 import { Button } from '@simplycms/ui/button';
@@ -34,15 +33,16 @@ import {
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
 import { InstallPluginDialog } from '../components/InstallPluginDialog';
+import { usePluginToggle, PLUGINS_QUERY_KEY } from '../hooks/usePluginToggle';
 
 export default function Plugins() {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [togglingPlugin, setTogglingPlugin] = useState<string | null>(null);
+  const { togglePlugin, togglingPlugin } = usePluginToggle();
 
   const { data: plugins, isLoading } = useQuery({
-    queryKey: ['plugins'],
+    queryKey: PLUGINS_QUERY_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('plugins')
@@ -55,44 +55,6 @@ export default function Plugins() {
 
   const parsedPlugins: ParsedPlugin[] = (plugins || []).map(parsePlugin);
   const registeredModules = getRegisteredPluginModules();
-
-  const toggleMutation = useMutation({
-    mutationFn: async ({
-      name,
-      activate,
-    }: {
-      name: string;
-      activate: boolean;
-    }) => {
-      const { error } = await supabase
-        .from('plugins')
-        .update({ is_active: activate, updated_at: new Date().toISOString() })
-        .eq('name', name);
-      if (error) throw error;
-      return true;
-    },
-    onMutate: ({ name }) => {
-      setTogglingPlugin(name);
-    },
-    onSuccess: (success, { name, activate }) => {
-      if (success) {
-        toast({
-          title: activate ? 'Плагін активовано' : 'Плагін деактивовано',
-          description: `Плагін "${name}" ${activate ? 'активовано' : 'деактивовано'} успішно.`,
-        });
-        queryClient.invalidateQueries({ queryKey: ['plugins'] });
-      } else {
-        toast({
-          title: 'Помилка',
-          description: 'Не вдалося змінити статус плагіна.',
-          variant: 'destructive',
-        });
-      }
-    },
-    onSettled: () => {
-      setTogglingPlugin(null);
-    },
-  });
 
   const uninstallMutation = useMutation({
     mutationFn: async (pluginName: string) => {
@@ -108,7 +70,7 @@ export default function Plugins() {
         title: 'Плагін видалено',
         description: `Плагін "${name}" успішно видалено.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['plugins'] });
+      queryClient.invalidateQueries({ queryKey: PLUGINS_QUERY_KEY });
     },
     onError: () => {
       toast({
@@ -191,7 +153,7 @@ export default function Plugins() {
                       checked={plugin.is_active}
                       disabled={isToggling || !hasModule}
                       onCheckedChange={(checked) =>
-                        toggleMutation.mutate({
+                        togglePlugin({
                           name: plugin.name,
                           activate: checked,
                         })

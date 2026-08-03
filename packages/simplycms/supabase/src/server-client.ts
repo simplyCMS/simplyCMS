@@ -15,11 +15,17 @@ import { resolveSupabaseKeys } from './keys';
  * middleware), щоб не залежати від ALS getRequestHeader.
  *
  * Викликати лише всередині createServerFn handler або middleware.
+ *
+ * `Db` — типи БД магазину. За замовчуванням — baseline core-схеми пакета;
+ * host зі своїми (плагінними) таблицями підставляє власний згенерований
+ * `Database` із `supabase/types.ts`: `createServerSupabase<HostDatabase>()`.
  */
-export function createServerSupabase(cookieHeader?: string) {
+export function createServerSupabase<Db extends Database = Database>(
+  cookieHeader?: string,
+) {
   const { url, key } = resolveSupabaseKeys(import.meta.env);
 
-  return createServerClient<Database>(url, key, {
+  return createServerClient<Db>(url, key, {
     cookies: {
       getAll() {
         const header = cookieHeader ?? getRequestHeader('cookie') ?? '';

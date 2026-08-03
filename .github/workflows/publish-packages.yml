@@ -1,47 +1,32 @@
 name: Publish Packages
 
-# ⚠️ PUBLISH ПРИЗУПИНЕНО (2026-07-31, перенос у org simplyCMS).
-# GitHub Packages вимагає «scope = власник»: scope @simplycms більше НЕ
-# збігається з власником simplyCMS → публікація по тегу гарантовано падає з 403.
-# За рішенням власника (spec §4.1) публікація переїжджає на npmjs під scope
-# @simplycms — workflow переписується у Фазі 0 роадмапу разом із rename scope
-# (потрібен secret NPM_TOKEN від npm org simplycms).
-# Build-джоба лишається активною як gate на кожен PR/push.
+# Публікація ядра на npmjs під scope @simplycms.
+#
+# Модель (рішення власника, 2026-08-01):
+#   • тригер — push у `main`; публікуються тільки ті пакети, чиєї версії ще
+#     немає в реєстрі. `pnpm publish -r` робить цю перевірку сам
+#     (`isAlreadyPublished`), тож звичайний merge без бампа версії — no-op,
+#     а не помилка;
+#   • версія у всіх пакетів СИНХРОННА, бампається вручну: `pnpm version:packages 0.2.0`
+#     (див. `scripts/version-packages.mjs`), далі звичайний PR у main;
+#   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині
+#     (частково опубліковані пакети другий раз не публікуються).
+#
+# Потрібен secret `NPM_TOKEN` — Automation або Granular-токен npm зі scope
+# @simplycms і правом read/write. Обидва типи обходять 2FA; звичайний
+# publish-токен у CI не спрацює, якщо на акаунті ввімкнено 2FA.
 
 on:
   push:
     branches: ['main']
-    tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  # Збірка публікованих пакетів — ганяється на КОЖЕН PR/push як gate.
-  build:
-    name: Build packages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build publishable packages
-        run: pnpm run build:packages
-
-  # Публікація — ПРИЗУПИНЕНА до Фази 0 (див. шапку файлу). if: false — щоб
-  # випадковий тег не давав заплутаних 403 від GitHub Packages.
   publish:
-    name: Build & publish
-    needs: build
-    if: false
+    name: Publish to npmjs
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
 
@@ -51,8 +36,20 @@ jobs:
         with:
           node-version: lts/*
           cache: 'pnpm'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@simplycms'
+          # 🔴 Без `registry-url` setup-node не створює `.npmrc`, і
+          # `NODE_AUTH_TOKEN` мовчки ігнорується → 401 при публікації.
+          registry-url: 'https://registry.npmjs.org'
+
+      # Явна перевірка перед довгою збіркою: інакше прогін падає аж на кроці
+      # публікації з невиразним 401/ENEEDAUTH.
+      - name: Перевірити наявність NPM_TOKEN
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::Немає secret NPM_TOKEN. Створи Automation/Granular-токен на npmjs (scope @simplycms, read+write) і поклади його в Settings → Secrets and variables → Actions як NPM_TOKEN."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -60,23 +57,17 @@ jobs:
       - name: Build publishable packages
         run: pnpm run build:packages
 
-      # Спершу публікуємо базовий @simplycms/objects (від нього залежать
-      # решта), щоб уникнути 404 при concurrent-публікації (pnpm не
-      # гарантує topo-порядок).
-      - name: Publish objects (base)
-        run: pnpm publish --filter @simplycms/objects --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Гейт перед публікацією: parity-suite працює по РОЗПАКОВАНИХ tarball-ах,
+      # тобто перевіряє рівно те, що поїде в реєстр (exports вказують на наявні
+      # файли, нуль `workspace:` у dependencies).
+      - name: Tarball parity gate
+        run: pnpm run test:packaging
 
-      # Далі — залежні Tier 1/2. workspace:* → конкретна версія підставляється pnpm.
-      - name: Publish dependents
-        run: >-
-          pnpm publish
-          --filter @simplycms/domain
-          --filter @simplycms/data-supabase
-          --filter @simplycms/react-query
-          --filter @simplycms/runtime
-          --filter @simplycms/storefront
-          --no-git-checks
+      # `-r` публікує рекурсивно й пропускає версії, які вже в реєстрі, тож
+      # merge без бампа — no-op. `--access public`: scoped-пакети npm за
+      # замовчуванням робить приватними, а це платний план.
+      # `--no-git-checks`: у CI HEAD detached, і pnpm інакше відмовляється.
+      - name: Publish
+        run: pnpm publish -r --access public --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

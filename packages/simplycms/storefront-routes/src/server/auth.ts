@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { checkIsAdmin } from './is-admin';
 
 /** Отримати поточну сесію користувача */
 export const getSession = createServerFn({ method: 'GET' }).handler(
@@ -35,21 +36,14 @@ export const getUser = createServerFn({ method: 'GET' }).handler(async () => {
   return user;
 });
 
-/** Перевірити чи поточний користувач має роль admin */
-export const isAdmin = createServerFn({ method: 'GET' }).handler(async () => {
-  const supabase = createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return false;
-
-  const { data: role } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('role', 'admin')
-    .maybeSingle();
-
-  return !!role;
-});
+/**
+ * Перевірити чи поточний користувач має роль admin (serverFn для роутів/компонентів).
+ *
+ * 🔴 Сама перевірка живе в `./is-admin` і навмисно НЕ реекспортується звідси:
+ * цей модуль клієнтські роути імпортують заради `getUser`, і будь-який живий
+ * не-serverFn експорт тут затягнув би серверний Supabase у клієнтський бандл
+ * (див. коментар у `is-admin.ts`).
+ */
+export const isAdmin = createServerFn({ method: 'GET' }).handler(async () =>
+  checkIsAdmin(),
+);

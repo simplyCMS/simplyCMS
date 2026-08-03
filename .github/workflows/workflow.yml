@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   typecheck:
@@ -60,3 +61,39 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+  packaging:
+    name: Packaging
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
+      # тому вимагає зібраних `dist/` кожного пакета, яких у test-job немає.
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Tarball parity
+        run: pnpm test:packaging
+
+# 🔴 Пілот пакування (`pnpm pilot:pack` / `pilot` / `pilot:e2e`) у CI НЕ ганяється
+# — рішення власника (2026-08-01). Причина: `pilot` і `pilot:e2e` потребують
+# бази (живої або локального стеку в Docker), а це зовнішній стан, від дрейфу
+# якого гейт червонів би без регресії коду. Прогін пілота — відповідальність
+# розробника перед релізом; команди й порядок — у CLAUDE.md.
+# Передрелізним гейтом у CI лишається tarball-parity (job `packaging` вище і
+# крок у `publish-packages.yml`) — він детерміністичний і бази не потребує.

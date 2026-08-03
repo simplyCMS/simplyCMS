@@ -49,6 +49,13 @@ description: "Правила роботи з даними та Supabase в Simpl
 - DB команди працюють через `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` з `.env.local` (Management API).
 - Zod schemas для валідації форм (react-hook-form + @hookform/resolvers/zod).
 
+### Env-матриця для DB команд
+
+| Змінні | Команди |
+|--------|---------|
+| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types`, `db:migrate` (Management API) |
+| `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |
+
 ### Міграції
 
 Джерело правди схеми — **`packages/simplycms/schema/src/schema.ts`** (Drizzle).
@@ -59,6 +66,8 @@ description: "Правила роботи з даними та Supabase в Simpl
 pnpm db:diff <name>       # 2. drizzle-kit generate → supabase/migrations/<ts>_<name>.sql
 #                            3. РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
 pnpm db:migrate           # 4. supabase link + db push + автоматичний db:generate-types
+pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-схема (не плагінна) —
+#                            на еталонній dev-БД без встановлених плагінів
 ```
 
 - Всі застосовні міграції живуть на рівні проекту: `supabase/migrations/`
@@ -69,6 +78,12 @@ pnpm db:migrate           # 4. supabase link + db push + автоматични�
 - Сайт може додавати власні міграції поруч з seed-файлами.
 - 🔴 Ревʼю SQL перед `db:migrate` — обовʼязкове: drizzle-kit не бачить
   перейменувань (генерує `DROP`+`ADD`) і не діфить RLS-політики/тригери.
+- 🔴 Крок 5 (`types:baseline`) — НЕ автоматизований навмисно: `db:migrate`
+  застосовується й до dev-БД із встановленими плагінами, а baseline
+  (`packages/simplycms/supabase/src/database.ts`) публікується на npm і
+  повинен містити ЛИШЕ core-таблиці. Автозапуск мовчки затягнув би плагінні
+  таблиці в опублікований пакет за одного невдалого запуску. Деталі й повний
+  розклад двох файлів типів — `packages/simplycms/supabase/README.md`.
 
 ## Supabase Data Patterns
 
@@ -126,7 +141,7 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 - Не хардкодь query keys — використовуй константи або фабрики.
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/core/src/supabase/` — клієнти Supabase (server/anon/SupabaseProvider).
+- `packages/simplycms/supabase/src/` — клієнти Supabase (server/anon/SupabaseProvider).
 - `packages/simplycms/data-supabase/src/` — репозиторії-порти.
 - `packages/simplycms/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
 - `packages/simplycms/schema/README.md` — Drizzle-baseline, RLS-parity gate, ручні правки після `pull`.

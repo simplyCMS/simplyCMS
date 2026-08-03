@@ -1,23 +1,84 @@
 {
   "name": "@simplycms/core",
   "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "private": false,
   "description": "Core business logic, hooks, and components for SimplyCMS e-commerce platform",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./providers": "./src/providers/CMSProvider.tsx",
+    "./providers/CMSProvider": "./src/providers/CMSProvider.tsx",
     "./hooks": "./src/hooks/useAuth.tsx",
     "./hooks/*": "./src/hooks/*",
+    "./lib/shipping": "./src/lib/shipping/index.ts",
     "./lib/*": "./src/lib/*",
     "./components/*": "./src/components/*",
     "./types": "./src/types/index.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./providers": {
+        "types": "./dist/providers/CMSProvider.d.ts",
+        "import": "./dist/providers/CMSProvider.js"
+      },
+      "./providers/CMSProvider": {
+        "types": "./dist/providers/CMSProvider.d.ts",
+        "import": "./dist/providers/CMSProvider.js"
+      },
+      "./hooks": {
+        "types": "./dist/hooks/useAuth.d.ts",
+        "import": "./dist/hooks/useAuth.js"
+      },
+      "./hooks/*": {
+        "types": "./dist/hooks/*.d.ts",
+        "import": "./dist/hooks/*.js"
+      },
+      "./lib/shipping": {
+        "types": "./dist/lib/shipping/index.d.ts",
+        "import": "./dist/lib/shipping/index.js"
+      },
+      "./lib/*": {
+        "types": "./dist/lib/*.d.ts",
+        "import": "./dist/lib/*.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js"
+      },
+      "./types": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/types/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms/core"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/domain": "workspace:*",
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/themes": "workspace:*",
     "@simplycms/react-query": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",
@@ -38,7 +99,7 @@
     "@tiptap/starter-kit": "^3.0.0",
     "clsx": "^2.0.0",
     "date-fns": "^3.0.0 || ^4.0.0",
-    "lucide-react": "^0.400.0",
+    "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",

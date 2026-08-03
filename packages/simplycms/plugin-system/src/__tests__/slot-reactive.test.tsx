@@ -1,37 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useEffect } from 'react';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { hookRegistry } from '../HookRegistry';
 import { PluginSlot, usePluginSlot } from '../PluginSlot';
-
-/** Лічильник монтувань сусіда — доводить, що піддерево не перемонтовується. */
-let markerMounts = 0;
-function Marker() {
-  useEffect(() => {
-    markerMounts += 1;
-  }, []);
-  return <span data-testid="marker" />;
-}
-
-/**
- * Довести, що слот стабілізувався ПІСЛЯ монтування: перший `execute()`
- * асинхронний, його `.then(commit)` робить `setState` і сам по собі спричиняє
- * зайвий рендер. Якщо реєструвати плагін до цього резолву, віджет зʼявиться
- * навіть з мертвою підпискою — тест доводив би не те. Тому спершу вичерпуємо
- * усі мікротаски й лише тоді чіпаємо реєстр.
- */
-async function settle(): Promise<void> {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-}
+import {
+  HOOK,
+  Marker,
+  markerMountCount,
+  resetMarkerMounts,
+  settle,
+} from './helpers/slot-harness';
 
 describe('PluginSlot реактивність до HookRegistry', () => {
   beforeEach(() => {
     hookRegistry.clear();
-    markerMounts = 0;
+    resetMarkerMounts();
   });
 
   afterEach(() => {
@@ -44,7 +27,7 @@ describe('PluginSlot реактивність до HookRegistry', () => {
     render(
       <div>
         <Marker />
-        <PluginSlot name="admin.dashboard.widgets" />
+        <PluginSlot name={HOOK} />
       </div>,
     );
 
@@ -55,24 +38,24 @@ describe('PluginSlot реактивність до HookRegistry', () => {
 
     // Реєстрація ПІСЛЯ стабілізації — рендер може спричинити лише підписка.
     await act(async () => {
-      hookRegistry.register('admin.dashboard.widgets', 'p', () => <b>W</b>);
+      hookRegistry.register(HOOK, 'p', () => <b>W</b>);
     });
     await settle();
 
     expect(screen.getByText('W')).toBeTruthy();
     expect(screen.getByTestId('marker')).toBe(markerBefore);
-    expect(markerMounts).toBe(1);
+    expect(markerMountCount()).toBe(1);
   });
 
   it('віджет зникає після unregister (семантика toggle в адмінці)', async () => {
-    hookRegistry.register('admin.dashboard.widgets', 'p', () => <b>W</b>);
-    render(<PluginSlot name="admin.dashboard.widgets" />);
+    hookRegistry.register(HOOK, 'p', () => <b>W</b>);
+    render(<PluginSlot name={HOOK} />);
 
     await settle();
     expect(screen.getByText('W')).toBeTruthy();
 
     await act(async () => {
-      hookRegistry.unregister('admin.dashboard.widgets', 'p');
+      hookRegistry.unregister(HOOK, 'p');
     });
     await settle();
 
@@ -93,19 +76,19 @@ describe('PluginSlot реактивність до HookRegistry', () => {
         }),
       );
 
-    const view = render(<PluginSlot name="admin.dashboard.widgets" />);
+    const view = render(<PluginSlot name={HOOK} />);
     await settle();
     expect(subscribeSpy).toHaveBeenCalled();
     expect(notified).toBe(0);
 
     await act(async () => {
-      hookRegistry.register('admin.dashboard.widgets', 'p', () => <b>W</b>);
+      hookRegistry.register(HOOK, 'p', () => <b>W</b>);
     });
     expect(notified).toBe(1);
 
     // Після розмонтування слухач знятий — нотифікації більше не доходять.
     view.unmount();
-    hookRegistry.register('admin.dashboard.widgets', 'p2', () => <b>X</b>);
+    hookRegistry.register(HOOK, 'p2', () => <b>X</b>);
     expect(notified).toBe(1);
   });
 });

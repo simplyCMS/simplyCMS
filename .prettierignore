@@ -16,8 +16,11 @@ dist-ssr
 src/routeTree.gen.ts
 
 # ── Згенеровані типи БД (Supabase CLI) ──────────────────────────────────────
-# Автор — `pnpm db:generate-types`.
+# Автор host-генерату — `pnpm db:generate-types` (повні типи магазину:
+# core + плагінні таблиці). Baseline пакета — `pnpm types:baseline` (снапшот
+# core-схеми, проти якого типізуються пакети ядра).
 supabase/types.ts
+packages/simplycms/supabase/src/database.ts
 
 # ── Згенерована Drizzle-схема та її снапшоти ────────────────────────────────
 # `schema.ts`/`relations.ts` пише `pnpm db:pull`; `drizzle/` — meta+snapshot,

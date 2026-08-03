@@ -1,7 +1,11 @@
 import { hookRegistry } from './HookRegistry';
+import {
+  deletePluginRow,
+  fetchActivePlugins,
+  setPluginActive,
+} from './pluginRepository';
 import type { Plugin, PluginModule } from './types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Json } from '@simplycms/objects';
 
 // Map of available plugins (will be populated by dynamic imports)
 const pluginModules: Map<string, PluginModule> = new Map();
@@ -16,48 +20,51 @@ export function getRegisteredPluginModules(): Map<string, PluginModule> {
   return pluginModules;
 }
 
-// Load and activate all active plugins from database
-export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
-  try {
-    const { data: plugins, error } = await supabase
-      .from('plugins')
-      .select('*')
-      .eq('is_active', true)
-      .order('installed_at', { ascending: true });
-
-    if (error) {
-      console.error('Error loading plugins:', error);
-      return [];
-    }
-
-    const loadedPlugins: Plugin[] = [];
-
-    for (const plugin of plugins || []) {
-      try {
-        const pluginModule = pluginModules.get(plugin.name);
-
-        if (pluginModule) {
-          pluginModule.register(hookRegistry);
-          loadedPlugins.push(plugin as Plugin);
-        } else {
-          // spec §8: активний у БД, але невідомий модуль — помилка + пропуск.
-          console.error(
-            `Plugin module "${plugin.name}" not found in registry — skipped`,
-          );
-        }
-      } catch (err) {
-        console.error(`Error loading plugin "${plugin.name}":`, err);
-      }
-    }
-
-    return loadedPlugins;
-  } catch (err) {
-    console.error('Error in loadPlugins:', err);
-    return [];
+/**
+ * Зняти всі хуки плагіна з реєстру. `getRegisteredHooks()` віддає снапшот імен,
+ * тому мутація реєстру під час обходу безпечна.
+ */
+function removePluginHooks(pluginName: string): void {
+  for (const hookName of hookRegistry.getRegisteredHooks()) {
+    hookRegistry.unregister(hookName, pluginName);
   }
 }
 
-// Activate a specific plugin
+// Load and activate all active plugins from database
+export async function loadPlugins(supabase: SupabaseClient): Promise<Plugin[]> {
+  const plugins = await fetchActivePlugins(supabase);
+  if (!plugins) return [];
+
+  const loadedPlugins: Plugin[] = [];
+
+  for (const plugin of plugins) {
+    const pluginModule = pluginModules.get(plugin.name);
+
+    if (!pluginModule) {
+      // spec §8: активний у БД, але невідомий модуль — помилка + пропуск.
+      console.error(
+        `Plugin module "${plugin.name}" not found in registry — skipped`,
+      );
+      continue;
+    }
+
+    try {
+      pluginModule.register(hookRegistry);
+      loadedPlugins.push(plugin);
+    } catch (err) {
+      console.error(`Error loading plugin "${plugin.name}":`, err);
+      removePluginHooks(plugin.name);
+    }
+  }
+
+  return loadedPlugins;
+}
+
+/**
+ * Активація плагіна. 🔴 Порядок атомарний: спершу БД, і ТІЛЬКИ після
+ * підтвердженого запису — мутація HookRegistry. Зворотний порядок лишав би
+ * «привидні» хуки в памʼяті, якби БД відмовила.
+ */
 export async function activatePlugin(
   supabase: SupabaseClient,
   pluginName: string,
@@ -69,131 +76,43 @@ export async function activatePlugin(
     return false;
   }
 
+  const written = await setPluginActive(supabase, pluginName, true);
+  if (!written) return false;
+
   try {
     pluginModule.register(hookRegistry);
-
-    const { error } = await supabase
-      .from('plugins')
-      .update({ is_active: true, updated_at: new Date().toISOString() })
-      .eq('name', pluginName);
-
-    if (error) {
-      console.error('Error activating plugin in database:', error);
-      return false;
-    }
-
     return true;
   } catch (err) {
     console.error(`Error activating plugin "${pluginName}":`, err);
+    // Реєстрація впала — чистимо часткові хуки й повертаємо БД у попередній стан.
+    removePluginHooks(pluginName);
+    await setPluginActive(supabase, pluginName, false);
     return false;
   }
 }
 
-// Deactivate a specific plugin
+/**
+ * Деактивація плагіна. Той самий атомарний порядок: БД → `unregister` модуля →
+ * зняття решти хуків. Відмова БД лишає реєстр незміненим.
+ */
 export async function deactivatePlugin(
   supabase: SupabaseClient,
   pluginName: string,
 ): Promise<boolean> {
+  const written = await setPluginActive(supabase, pluginName, false);
+  if (!written) return false;
+
   const pluginModule = pluginModules.get(pluginName);
 
-  if (pluginModule?.unregister) {
-    pluginModule.unregister(hookRegistry);
-  }
-
   try {
-    const { error } = await supabase
-      .from('plugins')
-      .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('name', pluginName);
-
-    if (error) {
-      console.error('Error deactivating plugin in database:', error);
-      return false;
-    }
-
-    // Remove all handlers from this plugin
-    const hooks = hookRegistry.getRegisteredHooks();
-    for (const hook of hooks) {
-      hookRegistry.unregister(hook, pluginName);
-    }
-
-    return true;
+    pluginModule?.unregister?.(hookRegistry);
   } catch (err) {
     console.error(`Error deactivating plugin "${pluginName}":`, err);
-    return false;
-  }
-}
-
-// Get all plugins from database
-export async function getAllPlugins(
-  supabase: SupabaseClient,
-): Promise<Plugin[]> {
-  const { data, error } = await supabase
-    .from('plugins')
-    .select('*')
-    .order('display_name', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching plugins:', error);
-    return [];
   }
 
-  return (data || []) as Plugin[];
-}
-
-// Update plugin configuration
-export async function updatePluginConfig(
-  supabase: SupabaseClient,
-  pluginName: string,
-  config: Record<string, unknown>,
-): Promise<boolean> {
-  const { error } = await supabase
-    .from('plugins')
-
-    .update({
-      config: config as unknown as Json,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('name', pluginName);
-
-  if (error) {
-    console.error('Error updating plugin config:', error);
-    return false;
-  }
-
+  // Хуки знімаємо в будь-якому разі: у БД плагін уже вимкнений.
+  removePluginHooks(pluginName);
   return true;
-}
-
-// Install a new plugin (add to database)
-export async function installPlugin(
-  supabase: SupabaseClient,
-  name: string,
-  displayName: string,
-  version: string,
-  description?: string,
-  author?: string,
-  hooks?: { name: string; priority?: number }[],
-): Promise<Plugin | null> {
-  const { data, error } = await supabase
-    .from('plugins')
-    .insert({
-      name,
-      display_name: displayName,
-      version,
-      description,
-      author,
-      hooks: hooks || [],
-      is_active: false,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error installing plugin:', error);
-    return null;
-  }
-
-  return data as Plugin;
 }
 
 // Uninstall a plugin (remove from database)
@@ -201,18 +120,8 @@ export async function uninstallPlugin(
   supabase: SupabaseClient,
   pluginName: string,
 ): Promise<boolean> {
-  // First deactivate
+  // First deactivate — знімає хуки з реєстру.
   await deactivatePlugin(supabase, pluginName);
 
-  const { error } = await supabase
-    .from('plugins')
-    .delete()
-    .eq('name', pluginName);
-
-  if (error) {
-    console.error('Error uninstalling plugin:', error);
-    return false;
-  }
-
-  return true;
+  return deletePluginRow(supabase, pluginName);
 }
