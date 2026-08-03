@@ -191,7 +191,10 @@ simplyCMS/
 ```
 
 🔴 `src/routes/` сканується **не** цілком: `routes.ts` монтує лише `my/`. Файл,
-покладений поруч із `__root.tsx`, роутом не стане (гард — `tests/virtual-routes-escape.test.ts`).
+покладений поруч із `__root.tsx`, роутом не стане — це семантика `virtualRouteConfig`
+(файлове сканування вимкнене), окремим тестом не асертиться.
+`tests/virtual-routes-escape.test.ts` стереже зворотну здатність: що `physical()`
+бачить теки пакетів ПОЗА `src/routes/` — саме на ній тримається монтування.
 
 ## Package Aliases (tsconfig paths + vite resolve.alias)
 
@@ -236,8 +239,9 @@ ThemeModule = { manifest, tokens, components, settings? }
    `loader` каркасних роутів віддає `themeName` дітям.
 3. **Сторінки — в ядрі:** канонічні сторінки живуть у
    `@simplycms/storefront-routes/src/pages/`. Каркаси `StorefrontShell` /
-   `ProtectedShell` беруть з теми `components` (Header/Footer/HomeSections/…)
-   і обгортають канонічну сторінку. `theme.pages.*` більше **не існує**.
+   `ProtectedShell` беруть з теми `components` лише Header/Footer і обгортають
+   канонічну сторінку; секційні компоненти (HeroBanner/HomeSections) споживає
+   сама сторінка (`pages/Home.tsx`). `theme.pages.*` більше **не існує**.
 4. **Токени:** `applyTokens(theme.tokens)` розкладає палітру в CSS-змінні —
    тема не везе власний `theme.css`.
 5. **Валідація:** `validateThemeModule` — публічний API для авторів тем;

@@ -101,7 +101,13 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       `theme-system/ThemeResolver`; шими з живими споживачами
       (`lib/priceUtils`, `lib/shipping/*`, `lib/discountEngine`, `hooks/useCart`,
       `hooks/useProductsWithStock`, частина `components/*`) лишились разом із
-      самим `core` — повне розчинення `core` перенесено на Фазу 1+
+      самим `core` — повне розчинення `core` перенесено на Фазу 1+.
+      **Перелік не вичерпний** (аудит 2026-08-03): у `core` також живуть із
+      зовнішніми споживачами `hooks/useBanners`, `useDiscountedPrice`,
+      `usePriceType`, `useProductReviews`, `useStock`, `lib/supabase.ts`
+      (auth-хелпери), `lib/bannerUtils`, `providers/CMSProvider`,
+      `components/NavLink`, `components/ThemeToggle`; а `lib/shipping/findZone.ts`
+      і частина `useProductsWithStock` — власна логіка, не re-export-шими
 - [x] Вивести з експлуатації git-subtree колишнього core-дзеркала (`cms:pull`/`cms:push`
       скрипти геть) — монорепо стає єдиним джерелом (spec §4.1); репозиторій-дзеркало
       видалено власником (2026-07-31).
@@ -130,8 +136,9 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 - **i18n-міграція** (~954 warn-входження) — окремий прохід, див. чекбокс вище.
 - **`@simplycms/engine`** (обʼєднання `data-supabase` + `react-query`) — не
   робилось, обидва пакети живі окремо; див. амендмент spec §4.0.
-- **`useAuth` лишається в `@simplycms/core/hooks`** (20 файлів-споживачів) —
-  заявлений deferral, переїзд у `@simplycms/supabase` — Фаза 1+.
+- **`useAuth` лишається в `@simplycms/core/hooks`** (22 файли-споживачі,
+  перевірено grep-ом 2026-08-03) — заявлений deferral, переїзд у
+  `@simplycms/supabase` — Фаза 1+.
 
 ## Фаза 1 — Пілот пакування + production-готовність
 
@@ -141,7 +148,8 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       й імпорти ведуть у `node_modules`; Gate B — production-запуск, server fns,
       SEO-ендпойнти, admin-guard; Gate C — bundle-guard і code-splitting по
       модульному графу (`emitBundleStats`); Gate D — Tailwind бачить утиліти
-      пакетів. CI job `pilot`: manual + weekly)
+      пакетів. CI job `pilot` існував на момент DoD, прибраний 2026-08-03 —
+      див. «Доробки» нижче)
 - [X] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
       (parity рахується по **розпакованому tarball-у**, а не по `package.json`;
       виведено з `pnpm test` у `pnpm test:packaging` + CI job `packaging`)
@@ -216,7 +224,10 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 - [ ] Реліз-потяг **v1.0** (строгий semver; `engines.simplycms` перевірка) —
       лишається за Фазою 2; зараз версія `0.1.0` і модель версіонування
       **синхронна вручну** (усі пакети одна версія). Незалежні версії
-      (Changesets) — можливий крок, коли пакети підуть різними циклами
+      (Changesets) — можливий крок, коли пакети підуть різними циклами.
+      Уточнення (2026-08-03): поле `engines.simplycms` вже існує в маніфесті
+      теми (`validateThemeModule` перевіряє лише присутність рядка); тут
+      ідеться про реальну semver-перевірку сумісності версій ядра — її немає
 
 **DoD:** сторонній розробник створює магазин двома командами; оновлення ядра —
 один `pnpm update`.
@@ -235,7 +246,9 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 - [ ] `@simplycms/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7)
 - [ ] Межа довіри: dependency-lint (плагін не імпортує повз SDK; без SupabaseClient)
-- [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) + пункт меню через слот
+- [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) — механізму в `routes.ts`
+      немає. *Пункт меню через слот уже працює з Фази 0* (`admin.sidebar.items`
+      у `AdminSidebar.tsx`, реактивний `PluginSlot`) — лишається сам монтаж роутів
 - [ ] 1-2 референс-плагіни (доставка, оплата) + авторський цикл
       (`create plugin` / `plugin:dev`)
 
