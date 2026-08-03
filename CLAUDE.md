@@ -78,8 +78,14 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою моделлю
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
-**🔴 Порядок гейтів:** `pnpm format:check → lint → build → typecheck → test →
-build:packages → test:packaging`.
+**🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
+build → typecheck → test → build:packages → test:packaging`.
+🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
+правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
+а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
+frozen — дефолт, тож локально зелене, а на PR усі job-и падають із
+`ERR_PNPM_OUTDATED_LOCKFILE` ще до першого кроку (спіймано на PR #20: перенесення
+`pg`/`dotenv` у devDependencies без перегенерації lockfile).
 `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`;
 packaging-suite іде **після** `pnpm test`, бо `tests/published-exports-parity.test.ts`
 виведено з дефолтного прогону (`test.exclude`) і працює по зібраних tarball-ах —

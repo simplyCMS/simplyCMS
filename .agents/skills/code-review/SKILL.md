@@ -149,8 +149,12 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - завдання формулюється як «**спростуй це**», а не «перевір»;
 - **дефолт — спростовано**: якщо доказу немає, знахідка не проходить;
 - доказ = конкретний фрагмент коду, конкретний вхід, або відтворений запуск
-  (гейти в канонічному порядку: `pnpm format:check` → `pnpm lint` → `pnpm build`
-  → `pnpm typecheck` → `pnpm test` → `pnpm build:packages` → `pnpm test:packaging`;
+  (гейти в канонічному порядку: `pnpm install --frozen-lockfile` →
+  `pnpm format:check` → `pnpm lint` → `pnpm build` → `pnpm typecheck` →
+  `pnpm test` → `pnpm build:packages` → `pnpm test:packaging`;
+  **frozen-lockfile першим** — якщо диф чіпав `package.json`, це єдиний гейт, що
+  ловить розсинхрон `pnpm-lock.yaml` (у CI frozen — дефолт, тож розсинхрон валить
+  усі job-и до першого кроку);
   **build перед typecheck**, бо build генерує `src/routeTree.gen.ts`;
   packaging-suite — у кінці й окремо, бо `tests/published-exports-parity.test.ts`
   виведено з `pnpm test` (`test.exclude`) і працює по зібраних tarball-ах;

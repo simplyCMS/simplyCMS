@@ -624,12 +624,13 @@ importers:
 
   packages/simplycms/schema:
     dependencies:
-      dotenv:
-        specifier: ^17.2.4
-        version: 17.2.4
       drizzle-orm:
         specifier: ^0.45.0
         version: 0.45.2(pg@8.22.0)
+    devDependencies:
+      dotenv:
+        specifier: ^17.2.4
+        version: 17.2.4
       pg:
         specifier: 8.22.0
         version: 8.22.0
