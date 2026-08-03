@@ -21,8 +21,10 @@ pnpm pilot            # той самий пілот + gate B проти жив�
 pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
                       # потребує Docker; Gate B асертить точні назви із сіду
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
-pnpm version:packages 0.2.0   # синхронний бамп версії ВСІХ публікованих пакетів
-                      # → PR у main → публікацію підхопить workflow (див. «Публікація»)
+pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
+                      # → git push → PR у main → мерж публікує на npmjs
+                      # Повний опис — docs/architecture/release-process.md
+pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
 pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -160,8 +162,10 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │
-├── scripts/                          # Тулчейн міграцій + пакування
+├── scripts/                          # Тулчейн міграцій, пакування, релізу
 │   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
+│   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
+│   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
@@ -320,11 +324,16 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 ## Публікація пакетів (npmjs)
 
-Ядро публікується на npmjs під scope `@simplycms`. Модель:
+Ядро публікується на npmjs під scope `@simplycms`.
+**Повна інструкція — [`docs/architecture/release-process.md`](docs/architecture/release-process.md)**
+(включно з типовими помилками 401/402/403 і чому не GitHub Packages). Стисло:
 
-- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; бамп:
-  `pnpm version:packages 0.2.0` (скрипт `scripts/version-packages.mjs`), далі
-  звичайний PR у `main`;
+- **реліз однією командою** — `pnpm release 0.2.0`: гарди (чисте дерево, версія
+  більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
+  `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
+  лишатися рішенням людини;
+- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; розходження
+  версій між ними реліз-скрипт вважає помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
