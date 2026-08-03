@@ -12,9 +12,13 @@ name: Publish Packages
 #   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині
 #     (частково опубліковані пакети другий раз не публікуються).
 #
-# Потрібен secret `NPM_TOKEN` — Automation або Granular-токен npm зі scope
-# @simplycms і правом read/write. Обидва типи обходять 2FA; звичайний
-# publish-токен у CI не спрацює, якщо на акаунті ввімкнено 2FA.
+# Потрібен secret `NPM_TOKEN` — **Granular Access Token із увімкненим
+# «Bypass 2FA»**, scope @simplycms, permission read+write.
+# 🔴 Токен без bypass автентифікується успішно, але `PUT` пакета npm відхиляє:
+#   403 … Two-factor authentication or granular access token with bypass 2fa
+#   enabled is required to publish packages.
+# Перевірено падінням першого релізу (2026-08-03) — деталі й решта типових
+# помилок у docs/architecture/release-process.md.
 
 on:
   push:
@@ -47,7 +51,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::Немає secret NPM_TOKEN. Створи Automation/Granular-токен на npmjs (scope @simplycms, read+write) і поклади його в Settings → Secrets and variables → Actions як NPM_TOKEN."
+            echo "::error::Немає secret NPM_TOKEN. Створи на npmjs Granular Access Token з увімкненим «Bypass 2FA» (scope @simplycms, read+write) і поклади його в Settings → Secrets and variables → Actions як NPM_TOKEN."
             exit 1
           fi
 

@@ -78,9 +78,19 @@ Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `m
 | Secret `NPM_TOKEN` | GitHub → Settings → Secrets and variables → Actions | авторизація публікації |
 | `publishConfig.access: "public"` | у кожному manifest-і | scoped-пакети npm за замовчуванням робить **приватними** (платний план) |
 
-🔴 **Токен має бути Automation або Granular** (scope `@simplycms`, read+write).
-Обидва типи обходять 2FA. Звичайний publish-токен у CI не спрацює, якщо на
-акаунті ввімкнено 2FA — і помилка буде невиразна (`401`/`ENEEDAUTH`).
+🔴 **Токен має бути Granular Access Token із увімкненим «Bypass 2FA»**
+(Packages and scopes → `@simplycms`, permission **Read and write**).
+
+Це не формальність, а перевірено падінням першого релізу (2026-08-03):
+```
+npm error code E403
+403 Forbidden - PUT https://registry.npmjs.org/@simplycms%2fi18n
+Two-factor authentication or granular access token with bypass 2fa enabled
+is required to publish packages.
+```
+Токен без цієї опції автентифікується успішно (org і scope доступні), але
+`PUT` пакета npm відхиляє. Помилка виглядає як проблема з правами на scope —
+насправді це політика 2FA.
 
 🔴 `registry-url` у `actions/setup-node` **обов'язковий**: без нього не
 створюється `.npmrc`, і `NODE_AUTH_TOKEN` мовчки ігнорується. Класична причина
@@ -100,8 +110,9 @@ Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `m
 | Симптом | Причина | Що робити |
 |---------|---------|-----------|
 | `402 Payment Required` при публікації | немає `access: "public"` — npm намагається зробити пакет приватним | додати `publishConfig.access` у manifest |
-| `401` / `ENEEDAUTH` | немає `registry-url` у setup-node, або токен не Automation/Granular при увімкненому 2FA | звірити workflow і тип токена |
-| `403 Forbidden` | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm org ls simplycms` |
+| `401` / `ENEEDAUTH` | немає `registry-url` у `actions/setup-node` — `.npmrc` не створився, і `NODE_AUTH_TOKEN` ігнорується | додати `registry-url` |
+| `403 … bypass 2fa enabled is required` | токен без «Bypass 2FA» **(спіймано на першому релізі)** | пересоздати як Granular Access Token із увімкненим Bypass 2FA, оновити secret `NPM_TOKEN` |
+| `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |
 
