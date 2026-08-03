@@ -46,6 +46,11 @@ subpath-и резолвляться, типи компілюються під `t
    релізом — відповідальність розробника.
 4. **i18n-міграція** — борг Фази 0 (~954 кириличні входження), warn-зона
    ESLint-селекторів досі warn, а не error.
+5. **Серверний env запікається в білд** — навіть `createServerSupabase`
+   (`packages/simplycms/supabase/src/server-client.ts`) читає
+   `import.meta.env`, тож ротація Supabase-ключів вимагає перезбірки.
+   Борг: перевести server-only читання на `process.env` усередині хендлерів
+   (офіційний патерн TanStack Start). Не блокує Фазу 2 (спека 2026-08-03, §8).
 
 ### Найдорожчий урок, який варто пам'ятати
 
@@ -215,9 +220,22 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ## Фаза 2 — CLI + скаффолдер + перший реліз
 
+Дизайн скаффолдера і bootstrap-у власника затверджено 2026-08-03:
+[`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md`](../superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md)
+(джерело правди скоупу v1; тут — лише трекінг).
+
+- [ ] `create-simplycms-store` (спека вище): пакет
+      `packages/create-simplycms-store/` з вбудованим шаблоном як єдиним
+      джерелом правди (пілот перебудовується споживати його — `pilot:e2e`
+      стає e2e-тестом create-флоу); версії `@simplycms/*` у генераті = версія
+      пакета; публікація тим самим реліз-потягом
+- [ ] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у
+      шаблоні — `auth.admin.inviteUserByEmail` + роль `admin` через
+      service_role з консолі розробника; без вікна «хто перший встиг», без
+      токенів у наших URL. Закриває діру «першого адміна неможливо призначити
+      без ручного SQL» (аудит 2026-08-03)
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
-      `db:diff` / `doctor`
-- [ ] `create-simplycms-store`
+      `db:diff` / `doctor` — окрема спека після скаффолдера
 - [X] **Публікація на npmjs працює** — конвеєр готовий і перевірений у бою:
       `pnpm release X.Y.Z` → PR → push у `main` публікує. `0.1.0` опубліковано
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
@@ -232,15 +250,11 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 **DoD:** сторонній розробник створює магазин двома командами; оновлення ядра —
 один `pnpm update`.
 
-**Стартова точка для наступної сесії.** Скаффолдер не треба вигадувати з нуля:
-`tests/pilot/store-template/` — це вже робочий host-fixture чужого магазину, який
-`scripts/pilot-pack/scaffold.mjs` розгортає й збирає **зі справжніх пакетів**.
-Файли, ідентичні host-овим (`__root.tsx`, `start.ts`, `server.mjs`, …), scaffold
-копіює з кореня репо, а в шаблоні лежить лише те, що реально відрізняється
-(`vite.config.ts` без workspace-аліасів, `routes.ts`, `simplycms.config.ts`,
-`engine.shared.ts`, `tailwind.config.ts`). Це і є прототип
-`create-simplycms-store` — CLI лишається обгорнути це в команду й додати
-інтерактивні питання.
+**Стартова точка.** Прототип — `tests/pilot/store-template/` +
+`scripts/pilot-pack/scaffold.mjs` (зараз scaffold копіює host-файли з кореня
+монорепо — опублікований create-пакет так не зможе). За спекою 2026-08-03
+шаблон переїжджає **всередину** пакета `create-simplycms-store`, а пілот
+перебудовується споживати його — деталі та якорі для плану в спеці, §3.2 і §9.
 
 ## Фаза 3 — Plugin SDK + референс-плагіни
 
