@@ -17,6 +17,7 @@
     "./routes/*": "./routes/*"
   },
   "publishConfig": {
+    "access": "public",
     "registry": "https://registry.npmjs.org",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",

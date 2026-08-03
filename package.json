@@ -8,6 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:packages": "pnpm --filter \"@simplycms/*\" run build",
+    "version:packages": "node scripts/version-packages.mjs",
     "start": "node server.mjs",
     "lint": "pnpm exec eslint .",
     "lint:fix": "pnpm exec eslint . --fix",

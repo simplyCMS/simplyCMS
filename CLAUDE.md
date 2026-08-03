@@ -21,6 +21,8 @@ pnpm pilot            # той самий пілот + gate B проти жив�
 pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
                       # потребує Docker; Gate B асертить точні назви із сіду
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
+pnpm version:packages 0.2.0   # синхронний бамп версії ВСІХ публікованих пакетів
+                      # → PR у main → публікацію підхопить workflow (див. «Публікація»)
 pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -298,19 +300,42 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/workflow.yml`). Тригери: push/PR у `main`,
-`workflow_dispatch` і weekly `schedule` (`cron: '0 4 * * 1'`). Weekly-розклад існує
-лише заради job-а `pilot` — решта job-ів має `if: github.event_name != 'schedule'`.
+Два workflow-файли: `workflow.yml` (перевірки) і `publish-packages.yml` (реліз).
 
-| Job | Кроки | Коли |
-|-----|-------|------|
-| `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
-| `test` | `install` → `test` | push/PR/manual |
-| `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
-| `pilot` | `install` → `node scripts/pilot-pack.mjs` | manual + weekly |
+| Workflow | Job | Кроки | Коли |
+|----------|-----|-------|------|
+| `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
+| `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
+| `workflow.yml` | `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
 
 `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
-потребує зібраних `dist/` кожного пакета. `pilot` ставить ядро справжнім `npm install`
-із tarball-ів і ходить у живу Supabase, тому не на кожен PR; env бере з секретів
-`PILOT_SUPABASE_URL` / `PILOT_SUPABASE_KEY` (мапінг у `resolvePilotEnv`), без них
-падає з явним повідомленням.
+потребує зібраних `dist/` кожного пакета.
+
+🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pilot` і
+`pilot:e2e` потребують бази — живої або локального стеку в Docker, — а це зовнішній
+стан, від дрейфу якого гейт червонів би без регресії коду. Прогін пілота перед
+релізом — відповідальність розробника (`pnpm pilot:pack` не потребує нічого, решта —
+див. Quick Reference). Передрелізний гейт у CI — детерміністичний tarball-parity.
+
+## Публікація пакетів (npmjs)
+
+Ядро публікується на npmjs під scope `@simplycms`. Модель:
+
+- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; бамп:
+  `pnpm version:packages 0.2.0` (скрипт `scripts/version-packages.mjs`), далі
+  звичайний PR у `main`;
+- **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
+  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
+- `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
+- 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
+  npm за замовчуванням робить приватними, а це платний план;
+- потрібен secret **`NPM_TOKEN`** — Automation або Granular-токен npm (scope
+  `@simplycms`, read+write). Обидва обходять 2FA; звичайний publish-токен у CI не
+  спрацює, якщо на акаунті ввімкнено 2FA. Без секрету job падає з явним
+  повідомленням ще до збірки.
+
+🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
+заглушений `if: false` — після переносу репо в org `simplyCMS` scope `@simplycms`
+перестав збігатися з власником, і публікація гарантовано падала з 403. Переписано
+на npmjs; старий шлях не відновлювати.

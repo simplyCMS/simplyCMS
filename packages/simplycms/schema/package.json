@@ -11,6 +11,7 @@
     "./relations": "./src/relations.ts"
   },
   "publishConfig": {
+    "access": "public",
     "registry": "https://registry.npmjs.org",
     "main": "./dist/schema.js",
     "types": "./dist/schema.d.ts",
