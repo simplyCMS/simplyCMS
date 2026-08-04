@@ -95,10 +95,15 @@ being exposed»*), «хто перший встиг» (n8n за замовчув
 
 ### 2.3. Стан власного коду (аудит цієї сесії)
 
-- Першого адміна зараз призначити **неможливо без ручного SQL**: тригер
-  `handle_new_user` дає роль `user`; RLS на `user_roles` і RPC
-  `toggle_user_admin` вимагають наявного адміна
-  (`supabase/migrations/20260126120345_*.sql`).
+- 🔴 **Виправлено Codex-аудитом 2026-08-04:** чинний тригер `handle_new_user`
+  **робить першого зареєстрованого користувача адміном**
+  (`supabase/migrations/20260213120000_fix_handle_new_user_trigger.sql:22-28`,
+  `IF user_count <= 1 THEN 'admin'`) — тобто діра «хто перший встиг» не
+  гіпотетична, а жива в схемі; план прибирає її новою міграцією (роль завжди
+  `user`). RLS на `user_roles` і RPC `toggle_user_admin` вимагають наявного
+  адміна для подальшого управління ролями. *(Початкова редакція цього пункту
+  стверджувала протилежне — «першого адміна неможливо призначити» — за
+  першою міграцією `20260126120345_*`, не помітивши пізнішої.)*
 - 32 міграції в `supabase/migrations/`; `supabase/seed.sql` — пілотний
   генерат, не продакшн-сід.
 - `scripts/pilot-pack/scaffold.mjs` копіює 11 host-файлів **з кореня
@@ -191,8 +196,11 @@ OWNER_EMAIL=client@shop.com SUPABASE_SERVICE_ROLE_KEY=... pnpm owner:invite
 Скрипт (standalone Node, поза Vite-збіркою; `VITE_SUPABASE_URL` читає з
 `.env.local`/env):
 
-1. `auth.admin.inviteUserByEmail(OWNER_EMAIL, { redirectTo: <site>/auth/set-password })`
-   — GoTrue створює користувача і шле лист з одноразовим посиланням.
+1. `auth.admin.inviteUserByEmail(OWNER_EMAIL)` — GoTrue створює користувача
+   і шле лист з одноразовим посиланням. *(Уточнення 2026-08-04: стандартний
+   invite-лінк несумісний із наявним `?code=`-callback — лист будується за
+   кастомним шаблоном `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/set-password`,
+   шаблон їде в `template/supabase/`, для hosted вставляється в Dashboard.)*
 2. INSERT ролі `admin` у `user_roles` для отриманого `user.id` (service_role,
    `bypassrls`).
 3. Друкує підсумок: кому надіслано, що робити далі, як перевідправити.
@@ -223,14 +231,18 @@ OWNER_EMAIL=client@shop.com SUPABASE_SERVICE_ROLE_KEY=... pnpm owner:invite
 повний флоу. Один магазин може мати кількох адмінів — наступні запрошуються
 з адмінки штатним шляхом (окрема вісь, поза цим дизайном).
 
-### 4.4. Зміна в ядрі (єдина)
+### 4.4. Зміни в ядрі
 
-Обробка invite-редіректу: сторінка «встановити пароль» після переходу за
-посиланням. Supabase invite-флоу технічно споріднений з recovery-флоу —
-першим кроком плану **перевірити через `orient`**, чи наявний auth-контур
-(`storefront-routes` `/auth*`) уже обробляє `type=invite`/`?code=` і має
-екран встановлення пароля; якщо ні — додати мінімальну канонічну сторінку в
-`@simplycms/storefront-routes`. Це єдиний runtime-код у всьому дизайні.
+*(Уточнено за Codex-аудитом 2026-08-04 — перевірка з §9 п.1 виконана:
+callback обробляє лише `?code=`, invite так не працює.)* Три зміни:
+
+1. **Міграція `first_user_no_auto_admin`** — тригер більше не дарує `admin`
+   першому зареєстрованому (див. §2.3, виправлений факт).
+2. **Серверний роут `/auth/confirm`** — `verifyOtp({ type, token_hash })` за
+   SSR-моделлю Supabase, дзеркало `callback.tsx` (той самий захист від open
+   redirect); редірект одразу прибирає токен з URL.
+3. **Канонічна сторінка `/auth/set-password`** — форма встановлення пароля
+   із сесією після confirm; успіх → `/admin`.
 
 ---
 

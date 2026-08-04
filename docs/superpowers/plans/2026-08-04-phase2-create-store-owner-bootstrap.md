@@ -32,7 +32,10 @@
 - `tests/pilot/store-template/`: `package.json` (хардкод `@simplycms/*: 0.1.0` + third-party deps + плейсхолдер overrides), `routes.ts`, `simplycms.config.ts`, `src/engine.shared.ts`, `tailwind.config.ts`, `tsconfig.json`, `vite.config.ts` (з пілотним `emitBundleStats`), `src/routes/my/.gitkeep`.
 - Auth-контур: `routes/auth/callback.tsx` вже обмінює `?code=` на сесію і редиректить на `?next=` (з захистом від open redirect). Роут-обгортки імпортують сторінки subpath-ом: `import Auth from '@simplycms/storefront-routes/pages/Auth'` (зразок — `routes/auth/index.tsx`). Зміна пароля вже є в `packages/simplycms/storefront-routes/src/pages/ProfileSettings.tsx:158` (`supabase.auth.updateUser({ password })`) — звідти ж брати спосіб отримання клієнта.
 - `user_roles`: `id` PK + `unique("user_roles_user_id_role_key").on(userId, role)` (`packages/simplycms/schema/src/schema.ts:113-124`) → upsert `onConflict: 'user_id,role'`.
-- Перший адмін зараз НЕ призначається без ручного SQL: тригер `handle_new_user` дає роль `user`; RLS на `user_roles` вимагає наявного адміна (`supabase/migrations/20260126120345_*.sql`). `service_role` обходить RLS.
+- 🔴 **Чинний тригер робить першого зареєстрованого АДМІНОМ**: `supabase/migrations/20260213120000_fix_handle_new_user_trigger.sql:22-28` (`IF user_count <= 1 THEN user_role := 'admin'`). Це жива діра «хто перший встиг» — Task 4 прибирає її новою міграцією. RLS на `user_roles` вимагає наявного адміна для управління ролями; `service_role` обходить RLS.
+- Invite-лінк за замовчуванням НЕ дає `?code=`: `routes/auth/callback.tsx` вміє лише `exchangeCodeForSession(code)`, а стандартний invite-лист веде через GoTrue `/verify` із токенами у fragment. SSR-шлях Supabase — кастомний email-шаблон із `{{ .TokenHash }}` + серверний роут із `verifyOtp({ type: 'invite', token_hash })` — його додає Task 5.
+- Пілотні гейти оркеструються в `scripts/pilot-pack/run.mjs` (`runGates`, результат — масив `[name, { ok, details }]`; `runGateB` — приватна функція там само), підсумок друкує `scripts/pilot-pack/report.mjs`. Gate E вбудовується в `run.mjs` за цим контрактом.
+- React-компонентні тести живуть у `packages/**/src/__tests__/*.test.tsx` з першим рядком `// @vitest-environment jsdom` (дефолтне середовище vitest — node); у `tests/` жодного `.test.tsx` немає.
 - i18n-каталог — плоскі ключі (`'nav.profile': 'Профіль'`) у `packages/simplycms/i18n/src/catalogs/uk.ts` (+ частковий `en.ts`).
 - Модель парність-тесту: `scripts/pilot-seed.mjs` (генерація) + `tests/pilot-seed.test.ts` (звірка) — повторити для шаблону.
 
@@ -169,7 +172,7 @@ git commit -m "feat(create-store): каркас пакета create-simplycms-st
 - Modify: `package.json` (script `template:sync`), `eslint.config.mjs` (ignores), `tsconfig.json` (exclude)
 
 **Interfaces:**
-- Produces: `TEMPLATE_DIR`, `SYNCED_FILES`, `SYNCED_DIRS` (експорти `scripts/sync-create-store-template.mjs`) — споживають парність-тест (цей Task) і пілот (Task 6). Плейсхолдери шаблону: `__STORE_NAME__`, `__SIMPLYCMS_VERSION__` у `package.json.tpl` — споживає Task 3. Перейменування при scaffold: `package.json.tpl → package.json`, `gitignore → .gitignore`, `env.example → .env.example` (npm pack ламає/виключає dot-файли — тому в шаблоні без крапки).
+- Produces: `TEMPLATE_DIR`, `SYNCED_FILES`, `SYNCED_DIRS` (експорти `scripts/sync-create-store-template.mjs`) — споживають парність-тест (цей Task) і пілот (Task 6). Плейсхолдери шаблону: `__STORE_NAME__`, `__SIMPLYCMS_VERSION__` у `package.json.tpl` — споживає Task 3. Перейменування при scaffold: `package.json.tpl → package.json`, `gitignore → .gitignore`, `env.example → .env.example` (npm при паці спеціально обробляє `.gitignore`, політика щодо інших dot-файлів різниться між менеджерами — у шаблоні тримаємо без крапки як страховку; фактичний вміст tarball-а стереже смоук Task 6).
 
 - [ ] **Step 1: Написати sync-скрипт (джерело правди переліків)**
 
@@ -284,7 +287,10 @@ Run: `pnpm vitest run tests/create-store-template-parity.test.ts` → FAIL (ша
 
 1. `pnpm template:sync` — генерує синковану частину.
 2. Статичні файли — скопіювати з `tests/pilot/store-template/` і адаптувати:
-   - `template/routes.ts`, `template/simplycms.config.ts`, `template/src/engine.shared.ts`, `template/tailwind.config.ts`, `template/tsconfig.json` — копії 1:1 з пілот-фікстури; `template/src/routes/my/.gitkeep` — порожня тека роутів магазину.
+   - `template/routes.ts`, `template/src/engine.shared.ts`, `template/tailwind.config.ts`, `template/tsconfig.json` — копії 1:1 з пілот-фікстури; `template/src/routes/my/.gitkeep` — порожня тека роутів магазину.
+   - `template/simplycms.config.ts` — НЕ 1:1: пілотна фікстура реєструє `@themes/solarstore` (`tests/pilot/store-template/simplycms.config.ts:26`), а шаблон везе лише `themes/default` — лишити в `themes:` тільки `default` (інакше згенерований магазин не збереться). Пілотна фікстура приводиться до того самого вигляду в Task 6.
+   - `template/supabase/config.toml` — мінімальний конфіг, без нього `supabase link`/`db push` із теки магазину не працюють: `project_id = "__STORE_NAME__"` + секція `[auth]` із `site_url = "http://localhost:3000"`, `additional_redirect_urls = ["http://localhost:3000"]` + `[auth.email.template.invite]` з `content_path = "./supabase/templates/invite.html"`.
+   - `template/supabase/templates/invite.html` — кастомний invite-шаблон (SSR-флоу з token_hash, див. Task 5): `<h2>Вас запрошено</h2><p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/set-password">Прийняти запрошення</a></p>`. README шаблону мусить казати: для hosted-проєкту вставити цей самий шаблон у Dashboard → Authentication → Email Templates → Invite user (локальний стек бере його з config.toml автоматично).
    - `template/vite.config.ts` — копія `tests/pilot/store-template/vite.config.ts` **мінус** пілотна діагностика: видалити імпорт `emitBundleStats` і його виклик у `plugins` (це єдина відмінність; решту не чіпати).
    - `template/package.json.tpl` — на основі `tests/pilot/store-template/package.json`: `"name": "__STORE_NAME__"`, `"private": true`, версії всіх `@simplycms/*` → `"__SIMPLYCMS_VERSION__"`, БЕЗ блоку `overrides`; у `scripts` додати `"owner:invite": "node scripts/owner-invite.mjs"` (сам скрипт — Task 4).
    - `template/env.example` — 4 змінні з `.env.example` кореня (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SITE_URL`, коментар про legacy `VITE_SUPABASE_ANON_KEY`).
@@ -416,7 +422,11 @@ export function resolveOptions(argv, env = process.env, isTTY = process.stdout.i
 import { cpSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** npm pack псує dot-файли — у шаблоні вони без крапки/із суфіксом .tpl. */
+/**
+ * Службові імена шаблону: .gitignore npm при паці обробляє спеціально,
+ * решта — страховка від розбіжних політик менеджерів. Вміст tarball-а
+ * стереже create-pkg-smoke (пілот).
+ */
 const RENAMES = {
   'package.json.tpl': 'package.json',
   gitignore: '.gitignore',
@@ -457,18 +467,19 @@ Run: `pnpm vitest run tests/create-store-cli.test.ts` → PASS.
 
 - [ ] **Step 6: Зібрати index.mjs (промпти + оркестрація)**
 
-Переписати `src/index.mjs`: `#!/usr/bin/env node`; прочитати власну версію з `package.json` пакета (`new URL('../package.json', import.meta.url)`); `resolveOptions(process.argv.slice(2))`; якщо НЕ `yes` — промпти @clack/prompts (`intro` → `text` імʼя, якщо не задане → `text` Supabase URL і key з підказкою «Dashboard → Connect; Enter — пропустити» → `confirm` «Встановити залежності?»); виклик `scaffold({ templateDir: new URL('../template', import.meta.url).pathname, targetDir: resolve(storeName), storeName, version, ... })`; далі, якщо `git` — `git init` + `git add -A` + `git commit -m "chore: init simplycms store"` (через `execSync`, `cwd: targetDir`, у try/catch — відсутність git не валить scaffold); якщо `install` — встановлення менеджером із `npm_config_user_agent` (pnpm/npm/yarn, дефолт pnpm); `outro` з трьома наступними кроками (як у README шаблону). Кожна гілка помилки — зрозуміле повідомлення і `process.exitCode = 1`. Файл ≤150 рядків; якщо не влазить — винести вивід/встановлення в `src/steps.mjs`.
+Переписати `src/index.mjs`: `#!/usr/bin/env node`; прочитати власну версію з `package.json` пакета (`new URL('../package.json', import.meta.url)`); `resolveOptions(process.argv.slice(2))`; якщо НЕ `yes` — промпти @clack/prompts (`intro` → `text` тека/імʼя, якщо не задані → `text` Supabase URL і key з підказкою «Dashboard → Connect; Enter — пропустити» → `confirm` «Встановити залежності?»). **Позиційний аргумент — це ТЕКА призначення** (може бути шляхом типу `../shops/my-shop`); імʼя пакета — `basename(resolve(targetDir))`, валідоване `/^[a-z0-9][a-z0-9._-]*$/` (інакше зрозуміла помилка «некоректне npm-імʼя»); `templateDir` — через `fileURLToPath(new URL('../template', import.meta.url))` (НЕ `.pathname` — ламається на Windows). Виклик `scaffold({ templateDir, targetDir, storeName, version, ... })`; далі, якщо `git` — `git init` + `git add -A` + `git commit -m "chore: init simplycms store"` (через `execSync`, `cwd: targetDir`, у try/catch — відсутність git не валить scaffold); якщо `install` — встановлення менеджером із `npm_config_user_agent` (pnpm/npm/yarn, дефолт pnpm); `outro` з наступними кроками (як у README шаблону, включно з нагадуванням про Invite-шаблон у Dashboard). Кожна гілка помилки — зрозуміле повідомлення і `process.exitCode = 1`. Файл ≤150 рядків; якщо не влазить — винести вивід/встановлення в `src/steps.mjs`.
 
 - [ ] **Step 7: Ручний smoke**
 
 ```bash
-node packages/create-simplycms-store/src/index.mjs /tmp/claude-smoke-shop --yes --no-install --no-git \
-  --supabase-url https://example.supabase.co --supabase-key sb_publishable_x
-ls -la /tmp/claude-smoke-shop   # package.json, .gitignore, .env.local, routes.ts, supabase/migrations/...
-rm -rf /tmp/claude-smoke-shop
+REPO="$PWD"; TMP="$(mktemp -d)"
+(cd "$TMP" && node "$REPO/packages/create-simplycms-store/src/index.mjs" smoke-shop --yes --no-install --no-git \
+  --supabase-url https://example.supabase.co --supabase-key sb_publishable_x \
+  && ls -la smoke-shop)
+rm -rf "$TMP"
 ```
 
-Expected: структура на місці, `package.json.name = claude-smoke-shop`-подібне імʼя з аргументу, версії `@simplycms/*` = версії пакета.
+Expected: структура на місці (`package.json`, `.gitignore`, `.env.local`, `routes.ts`, `supabase/config.toml`, `supabase/migrations/`, `scripts/owner-invite.mjs`), `package.json.name = "smoke-shop"` (basename, не шлях), версії `@simplycms/*` = версії пакета.
 
 - [ ] **Step 8: Повні гейти + коміт**
 
@@ -479,15 +490,50 @@ git add packages/create-simplycms-store pnpm-lock.yaml tests/create-store-cli.te
 git commit -m "feat(create-store): CLI скаффолдера — промпти, прапорці, розгортання шаблону"
 ```
 
-### Task 4: owner-invite у шаблоні
+### Task 4: Міграція «без авто-адміна» + owner-invite у шаблоні
 
 **Files:**
-- Create: `packages/create-simplycms-store/template/scripts/owner-invite-core.mjs`, `template/scripts/owner-invite.mjs`
+- Create: `supabase/migrations/<UTC-timestamp>_first_user_no_auto_admin.sql`, `packages/create-simplycms-store/template/scripts/owner-invite-core.mjs`, `template/scripts/owner-invite.mjs`
+- Modify: `packages/create-simplycms-store/template/supabase/migrations/` (регенерат `pnpm template:sync`)
 - Test: `tests/owner-invite.test.ts`
 
 **Interfaces:**
-- Consumes: шаблон Task 2 (`package.json.tpl` вже має script `owner:invite`).
-- Produces: `runOwnerInvite({ admin, email, redirectTo, log })` → `Promise<{ userId: string, invited: boolean, roleAdded: boolean }>`; `redirectTo` = `${siteUrl}/auth/callback?next=/auth/set-password` — сторінку дає Task 5.
+- Consumes: шаблон Task 2 (`package.json.tpl` вже має script `owner:invite`; лист будує GoTrue за `template/supabase/templates/invite.html` → лінк веде на `/auth/confirm`, роут дає Task 5).
+- Produces: `runOwnerInvite({ admin, email, siteUrl, resend, log })` → `Promise<{ userId: string, invited: boolean, roleAdded: boolean, resendLink?: string }>`; міграція `first_user_no_auto_admin` (Gate E Task 7 доводить її дію).
+
+- [ ] **Step 0: Міграція — тригер більше не дарує admin першому**
+
+Створити `supabase/migrations/<UTC-timestamp>_first_user_no_auto_admin.sql` (timestamp — поточний UTC `YYYYMMDDHHMMSS`; тіло — копія `20260213120000_fix_handle_new_user_trigger.sql` БЕЗ гілки `user_count`):
+
+```sql
+-- Прибирає авто-призначення admin першому зареєстрованому користувачу
+-- (жива діра «хто перший встиг», Codex-аудит 2026-08-04): роль admin
+-- відтепер призначає ЛИШЕ owner-invite (service_role) або наявний адмін.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    default_category_id UUID;
+BEGIN
+    SELECT id INTO default_category_id FROM public.user_categories WHERE is_default = true LIMIT 1;
+
+    INSERT INTO public.profiles (user_id, email, first_name, last_name, category_id)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        NEW.raw_user_meta_data ->> 'first_name',
+        NEW.raw_user_meta_data ->> 'last_name',
+        default_category_id
+    );
+
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (NEW.id, 'user'::app_role);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+```
+
+Потім `pnpm template:sync` (snapshot міграцій у шаблоні) → `pnpm vitest run tests/create-store-template-parity.test.ts` → PASS. Застосування на живу dev-БД (`pnpm db:migrate`) — окрема дія власника після мержа; локальний стек застосує міграцію сам у `pilot:e2e` (`db reset`), Gate E (Task 7) саме це й перевіряє.
 
 - [ ] **Step 1: Написати падаючі юніти з фейковим admin-клієнтом**
 
@@ -498,6 +544,10 @@ import { runOwnerInvite } from '../packages/create-simplycms-store/template/scri
 
 const makeAdmin = ({ inviteError = null, users = [] as { id: string; email: string }[] } = {}) => {
   const upsert = vi.fn().mockResolvedValue({ error: null });
+  const generateLink = vi.fn().mockResolvedValue({
+    data: { properties: { hashed_token: 'hash123' } },
+    error: null,
+  });
   return {
     client: {
       auth: {
@@ -507,20 +557,24 @@ const makeAdmin = ({ inviteError = null, users = [] as { id: string; email: stri
               ? { data: { user: null }, error: inviteError }
               : { data: { user: { id: 'new-id' } }, error: null },
           ),
-          listUsers: vi.fn().mockResolvedValue({ data: { users }, error: null }),
+          // nextPage: null — одна сторінка (тест на кілька сторінок нижче)
+          listUsers: vi.fn().mockResolvedValue({ data: { users, nextPage: null }, error: null }),
+          generateLink,
         },
       },
       from: vi.fn().mockReturnValue({ upsert }),
     },
     upsert,
+    generateLink,
   };
 };
 
 describe('owner-invite', () => {
-  it('новий email: invite + роль admin', async () => {
+  it('новий email: invite (без options) + роль admin', async () => {
     const { client, upsert } = makeAdmin();
-    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', redirectTo: 'https://s/auth/callback?next=/auth/set-password', log: () => {} });
+    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', siteUrl: 'https://s', log: () => {} });
     expect(result).toMatchObject({ userId: 'new-id', invited: true, roleAdded: true });
+    expect(client.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('o@x.com');
     expect(upsert).toHaveBeenCalledWith(
       { user_id: 'new-id', role: 'admin' },
       { onConflict: 'user_id,role', ignoreDuplicates: true },
@@ -532,13 +586,33 @@ describe('owner-invite', () => {
       inviteError: { code: 'email_exists', status: 422 },
       users: [{ id: 'old-id', email: 'o@x.com' }],
     });
-    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', redirectTo: 'r', log: () => {} });
+    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', siteUrl: 'https://s', log: () => {} });
     expect(result).toMatchObject({ userId: 'old-id', invited: false, roleAdded: true });
   });
 
-  it('інша помилка invite — кидає', async () => {
-    const { client } = makeAdmin({ inviteError: { code: 'over_email_send_rate_limit', status: 429 } });
-    await expect(runOwnerInvite({ admin: client, email: 'o@x.com', redirectTo: 'r', log: () => {} })).rejects.toThrow();
+  it('email існує + --resend: генерує одноразовий confirm-лінк', async () => {
+    const { client, generateLink } = makeAdmin({
+      inviteError: { code: 'email_exists', status: 422 },
+      users: [{ id: 'old-id', email: 'o@x.com' }],
+    });
+    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', siteUrl: 'https://s/', resend: true, log: () => {} });
+    expect(generateLink).toHaveBeenCalledWith({ type: 'magiclink', email: 'o@x.com' });
+    expect(result.resendLink).toBe('https://s/auth/confirm?token_hash=hash123&type=magiclink&next=/auth/set-password');
+  });
+
+  it('інший 422 (validation_failed) — кидає, а не маскує під email_exists', async () => {
+    const { client } = makeAdmin({ inviteError: { code: 'validation_failed', status: 422 } });
+    await expect(runOwnerInvite({ admin: client, email: 'bad', siteUrl: 'https://s', log: () => {} })).rejects.toThrow();
+  });
+
+  it('пагінація listUsers: іде за nextPage до знахідки', async () => {
+    const { client } = makeAdmin({ inviteError: { code: 'email_exists', status: 422 } });
+    client.auth.admin.listUsers = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { users: [{ id: 'a', email: 'a@x.com' }], nextPage: 2 }, error: null })
+      .mockResolvedValueOnce({ data: { users: [{ id: 'old-id', email: 'o@x.com' }], nextPage: null }, error: null });
+    const result = await runOwnerInvite({ admin: client, email: 'o@x.com', siteUrl: 'https://s', log: () => {} });
+    expect(result.userId).toBe('old-id');
   });
 });
 ```
@@ -551,28 +625,42 @@ Run: `pnpm vitest run tests/owner-invite.test.ts` → FAIL.
 // packages/create-simplycms-store/template/scripts/owner-invite-core.mjs
 // Ядро owner:invite — чиста логіка з інʼєкцією service_role-клієнта,
 // щоб тестувалась без мережі. Модель загроз — спека 2026-08-03 §4.2.
+// Лист будує GoTrue за шаблоном supabase/templates/invite.html (token_hash
+// → /auth/confirm), тому redirectTo у виклику invite не потрібен.
 
 async function findUserIdByEmail(admin, email) {
-  for (let page = 1; page <= 50; page += 1) {
+  let page = 1;
+  while (page != null) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (error) throw new Error(`listUsers: ${error.message ?? error.code}`);
     const hit = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
     if (hit) return hit.id;
-    if (data.users.length < 200) break;
+    page = data.nextPage ?? null;
   }
   throw new Error(`Користувача ${email} не знайдено попри email_exists — перевір проєкт.`);
 }
 
-export async function runOwnerInvite({ admin, email, redirectTo, log }) {
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+export async function runOwnerInvite({ admin, email, siteUrl, resend = false, log }) {
+  const { data, error } = await admin.auth.admin.inviteUserByEmail(email);
   let userId;
   let invited = false;
+  let resendLink;
   if (error) {
-    if (error.code !== 'email_exists' && error.status !== 422) {
+    // ЛИШЕ email_exists — легальний стан «уже є»; будь-який інший код
+    // (validation_failed, rate limit, …) — справжня помилка, не ковтати.
+    if (error.code !== 'email_exists') {
       throw new Error(`inviteUserByEmail: ${error.message ?? error.code}`);
     }
     log(`Користувач ${email} уже існує — invite не потрібен, перевіряю роль.`);
     userId = await findUserIdByEmail(admin, email);
+    if (resend) {
+      // Для існуючого користувача invite повторно не шлеться — даємо
+      // одноразовий magiclink на той самий /auth/confirm-роут.
+      const link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+      if (link.error) throw new Error(`generateLink: ${link.error.message ?? link.error.code}`);
+      resendLink = `${siteUrl.replace(/\/$/, '')}/auth/confirm?token_hash=${link.data.properties.hashed_token}&type=magiclink&next=/auth/set-password`;
+      log(`Одноразове посилання (передай власнику захищеним каналом, TTL ~1 год):\n  ${resendLink}`);
+    }
   } else {
     userId = data.user.id;
     invited = true;
@@ -583,7 +671,7 @@ export async function runOwnerInvite({ admin, email, redirectTo, log }) {
     .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role', ignoreDuplicates: true });
   if (roleResult.error) throw new Error(`user_roles upsert: ${roleResult.error.message}`);
   log(`Роль admin закріплена за ${email}.`);
-  return { userId, invited, roleAdded: true };
+  return { userId, invited, roleAdded: true, resendLink };
 }
 ```
 
@@ -630,7 +718,8 @@ const admin = createClient(url, serviceKey, {
 runOwnerInvite({
   admin,
   email,
-  redirectTo: `${siteUrl.replace(/\/$/, '')}/auth/callback?next=/auth/set-password`,
+  siteUrl,
+  resend: process.argv.includes('--resend'),
   log: (message) => console.log(message),
 }).catch((error) => {
   console.error(error.message);
@@ -643,20 +732,68 @@ runOwnerInvite({
 Run: `pnpm vitest run tests/owner-invite.test.ts` → PASS; повні гейти → зелені.
 
 ```bash
-git add packages/create-simplycms-store/template/scripts tests/owner-invite.test.ts
-git commit -m "feat(create-store): owner:invite — запрошення власника + роль admin через service_role"
+git add supabase/migrations packages/create-simplycms-store/template tests/owner-invite.test.ts
+git commit -m "feat(create-store): міграція без авто-адміна + owner:invite через service_role"
 ```
 
-### Task 5: Канонічна сторінка `/auth/set-password`
+### Task 5: Серверний `/auth/confirm` + канонічна сторінка `/auth/set-password`
 
 **Files:**
-- Create: `packages/simplycms/storefront-routes/routes/auth/set-password.tsx`, `packages/simplycms/storefront-routes/src/pages/AuthSetPassword.tsx`
+- Create: `packages/simplycms/storefront-routes/routes/auth/confirm.tsx`, `packages/simplycms/storefront-routes/routes/auth/set-password.tsx`, `packages/simplycms/storefront-routes/src/pages/AuthSetPassword.tsx`
 - Modify: `packages/simplycms/i18n/src/catalogs/uk.ts`, `packages/simplycms/i18n/src/catalogs/en.ts`; `packages/simplycms/storefront-routes/package.json` — ЛИШЕ якщо subpath `./pages/*` не покриває нову сторінку wildcard-ом (перевір `exports`/`publishConfig.exports`; якщо там wildcard `./pages/*` — правки не потрібні)
-- Test: `tests/auth-set-password.test.tsx`
+- Test: `packages/simplycms/storefront-routes/src/__tests__/auth-set-password.test.tsx`, `packages/simplycms/storefront-routes/src/__tests__/auth-confirm-route.test.ts`
 
 **Interfaces:**
-- Consumes: redirect-ланцюг Task 4: invite-лінк → GoTrue → `/auth/callback?next=/auth/set-password` (обмін `?code=` вже реалізований у `routes/auth/callback.tsx`) → ця сторінка з активною сесією.
-- Produces: роут `/auth/set-password`; після успіху — `navigate({ to: '/admin' })`.
+- Consumes: invite-лист із шаблону Task 2 (`invite.html`): лінк = `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/set-password`. Стандартний `?code=`-callback для invite НЕ працює (див. Довідку) — тому окремий серверний confirm-роут із `verifyOtp`.
+- Produces: GET `/auth/confirm?token_hash&type&next` → сесія в auth-cookies + 302 на `next`; роут `/auth/set-password`; після успіху — `navigate({ to: '/admin' })`. Gate E (Task 7) фетчить `/auth/confirm` напряму.
+
+- [ ] **Step 0: Серверний confirm-роут (за зразком callback.tsx)**
+
+`routes/auth/confirm.tsx`:
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { createServerSupabase } from '@simplycms/supabase/server-client';
+import type { EmailOtpType } from '@supabase/supabase-js';
+
+/**
+ * Підтвердження email-лінків (invite/magiclink/recovery) за SSR-моделлю
+ * Supabase: verifyOtp(token_hash) на сервері ставить auth-cookies і
+ * редиректить на `next`. Редірект одразу прибирає токен з URL —
+ * у History/Referer сторінок застосунку він не потрапляє.
+ */
+export const Route = createFileRoute('/auth/confirm')({
+  server: {
+    handlers: {
+      GET: async ({ request }: { request: Request }) => {
+        const { searchParams, origin } = new URL(request.url);
+        const tokenHash = searchParams.get('token_hash');
+        const type = searchParams.get('type') as EmailOtpType | null;
+
+        // Той самий захист від open redirect, що в callback.tsx.
+        const rawNext = searchParams.get('next') ?? '/';
+        const next =
+          rawNext.startsWith('/') &&
+          !rawNext.startsWith('//') &&
+          !rawNext.startsWith('/\\')
+            ? rawNext
+            : '/';
+
+        if (tokenHash && type) {
+          const supabase = createServerSupabase();
+          const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+          if (!error) {
+            return Response.redirect(`${origin}${next}`, 302);
+          }
+        }
+        return Response.redirect(`${origin}/auth?error=auth_error`, 302);
+      },
+    },
+  },
+});
+```
+
+Юніт `src/__tests__/auth-confirm-route.test.ts` — за зразком сусіднього `revalidate-theme-route.test.ts` (подивись, як там мокається `createServerSupabase` і викликається handler): (1) валідний `token_hash+type` → 302 на `next`, `verifyOtp` викликано з `{ type, token_hash }`; (2) `next=//evil.com` → редірект на `/`; (3) без `token_hash` → редірект на `/auth?error=auth_error`.
 
 - [ ] **Step 1: Розвідка перед кодом (обовʼязково)**
 
@@ -689,7 +826,7 @@ ls tests/ | grep -i "tsx"
 
 - [ ] **Step 3: Падаючий тест сторінки**
 
-`tests/auth-set-password.test.tsx` — за setup-зразком знайденого в Step 1 тесту: рендер `AuthSetPassword` з замоканим supabase-модулем (`vi.mock` на модуль, знайдений у Step 1а): (1) без сесії — показує текст `auth.setPassword.noSession`; (2) із сесією: сабміт валідної пари паролів викликає `updateUser({ password })`. Використати `I18nProvider` як у зразку (або замокати `useT` → identity). Run → FAIL.
+`packages/simplycms/storefront-routes/src/__tests__/auth-set-password.test.tsx` — React-тести живуть САМЕ тут (у `tests/` кореня `.test.tsx` немає), перший рядок обовʼязково `// @vitest-environment jsdom` (дефолтне середовище vitest — node; зразок setup — сусідній `catalog-ssr.test.tsx`). Кейси: рендер `AuthSetPassword` з замоканим supabase-модулем (`vi.mock` на модуль, знайдений у Step 1а): (1) без сесії — показує текст `auth.setPassword.noSession`; (2) із сесією: сабміт валідної пари паролів викликає `updateUser({ password })`. Використати `I18nProvider` як у зразку (або замокати `useT` → identity). Run → FAIL.
 
 - [ ] **Step 4: Сторінка**
 
@@ -711,11 +848,11 @@ export const Route = createFileRoute('/auth/set-password')({
 
 - [ ] **Step 5: Тести зелені + гейти + коміт**
 
-Run: `pnpm vitest run tests/auth-set-password.test.tsx` → PASS. Повні гейти (build згенерує роут у `routeTree.gen.ts`; typecheck підтвердить типізацію `Link`/route id). Нові кириличні warning-и НЕ мають зʼявитись (сторінка повністю на `useT`) — перевірити: `pnpm lint 2>&1 | grep -c "no-restricted-syntax"` → ті самі ≈954.
+Run: `pnpm vitest run packages/simplycms/storefront-routes/src/__tests__/auth-set-password.test.tsx packages/simplycms/storefront-routes/src/__tests__/auth-confirm-route.test.ts` → PASS. Повні гейти (build згенерує обидва роути в `routeTree.gen.ts`; typecheck підтвердить типізацію `Link`/route id). Нові кириличні warning-и НЕ мають зʼявитись (сторінка повністю на `useT`) — перевірити: `pnpm lint 2>&1 | grep -c "no-restricted-syntax"` → ті самі ≈954.
 
 ```bash
-git add packages/simplycms/storefront-routes packages/simplycms/i18n tests/auth-set-password.test.tsx
-git commit -m "feat(storefront): сторінка /auth/set-password для invite-флоу власника"
+git add packages/simplycms/storefront-routes packages/simplycms/i18n
+git commit -m "feat(storefront): /auth/confirm (verifyOtp) + /auth/set-password для invite-флоу власника"
 ```
 
 ---
@@ -739,93 +876,132 @@ git commit -m "feat(storefront): сторінка /auth/set-password для invi
   а `TEMPLATE_DIR` імпортувати з sync-скрипта.
 - Імпортувати `TEMPLATE_DIR`, `SYNCED_FILES` з `scripts/sync-create-store-template.mjs`.
 - `scaffoldStore()`: (1) скопіювати `TEMPLATE_DIR` → скретч (замість копіювання host-файлів з кореня і фікстури); (2) застосувати ті самі перейменування, що CLI (`package.json.tpl` видалити — пілот кладе власний manifest, `gitignore`/`env.example` можна ігнорувати або перейменувати — вибрати і задокументувати в коментарі); (3) поверх накласти пілотний оверлей: `tests/pilot/store-template/vite.config.ts` (з `emitBundleStats`) і `tests/pilot/store-template/package.json` (з overrides-плейсхолдером) — далі `writeManifest`/`writeEnv` працюють як зараз; (4) `themes/` і `plugins/hello-world` більше НЕ копіювати з кореня — вони вже в шаблоні.
-- Видалити з `tests/pilot/store-template/` файли, що переїхали в шаблон: `routes.ts`, `simplycms.config.ts`, `src/engine.shared.ts`, `tailwind.config.ts`, `tsconfig.json`, `src/routes/my/.gitkeep`. Оновити шапковий коментар scaffold.mjs: джерело — шаблон create-simplycms-store, оверлей — пілот.
+- Видалити з `tests/pilot/store-template/` файли, що переїхали в шаблон: `routes.ts`, `src/engine.shared.ts`, `tailwind.config.ts`, `tsconfig.json`, `src/routes/my/.gitkeep`. Оновити шапковий коментар scaffold.mjs: джерело — шаблон create-simplycms-store, оверлей — пілот.
+- **Теми:** шаблонний `simplycms.config.ts` реєструє лише `default` (Task 2), тож: `git grep -n solarstore scripts/pilot-pack tests/pilot` — якщо гейти/фікстури на solarstore не завʼязані (очікувано ні: маркери Gate D — з `@simplycms/ui`/`catalog-ui`, сід активує `default`), видалити `tests/pilot/store-template/simplycms.config.ts` з оверлею (шаблонний стає єдиним) і НЕ копіювати `themes/solarstore` у скретч. Якщо завʼязані — зафіксувати де саме і лишити пілотний конфіг в оверлеї з коментарем-причиною.
 
-- [ ] **Step 2: Верифікація пілотом**
+- [ ] **Step 2: Смоук упакованого CLI (те, чого не бачить monorepo-scaffold)**
+
+`scripts/pilot-pack/create-pkg-smoke.mjs` — пакує САМ create-пакет і запускає bin із tarball-а (ловить втрату `template/` у `files`, зламаний `bin`, зіпсуті перейменування):
+
+```js
+// Смоук опублікованого артефакту скаффолдера: pnpm pack → запуск bin
+// із розпакованого tarball-а в tmp → структура магазину на місці.
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+export function createPkgSmoke() {
+  const details = [];
+  const work = mkdtempSync(join(tmpdir(), 'create-smoke-'));
+  execFileSync('pnpm', ['--dir', 'packages/create-simplycms-store', 'pack', '--pack-destination', work], { stdio: 'pipe' });
+  const tarball = readdirSync(work).find((f) => f.endsWith('.tgz'));
+  if (!tarball) return { ok: false, details: ['tarball не створився'] };
+  execFileSync('tar', ['-xzf', join(work, tarball), '-C', work], { stdio: 'pipe' });
+  const target = join(work, 'smoke-shop');
+  execFileSync('node', [join(work, 'package/src/index.mjs'), target, '--yes', '--no-install', '--no-git'], { stdio: 'pipe' });
+  for (const file of ['package.json', '.gitignore', '.env.example', 'routes.ts', 'supabase/config.toml', 'supabase/templates/invite.html', 'scripts/owner-invite.mjs']) {
+    if (!existsSync(join(target, file))) return { ok: false, details: [...details, `✗ відсутній ${file}`] };
+    details.push(`✓ ${file}`);
+  }
+  return { ok: true, details };
+}
+```
+
+Підключення: у `scripts/pilot-pack/run.mjs` усередині `runGates` (після Gate D, до Gate B) — `step('Gate CLI — tarball скаффолдера'); results.push(['CLI', createPkgSmoke()]);` — контракт `[name, { ok, details }]` той самий, `report.mjs` підхопить без змін.
+
+- [ ] **Step 3: Верифікація пілотом**
 
 Run: `pnpm build:packages && pnpm pilot:pack`
-Expected: Gates A, C, D — PASS (це головний доказ, що шаблон пакета еквівалентний старому scaffold-у).
+Expected: Gates A, C, D, CLI — PASS (доказ, що шаблон пакета еквівалентний старому scaffold-у і що упакований CLI живий).
 
-- [ ] **Step 3: Повні гейти + коміт**
+- [ ] **Step 4: Повні гейти + коміт**
 
 Повний блок гейтів + `pnpm test:packaging` → зелені.
 
 ```bash
-git add scripts/pilot-pack/scaffold.mjs tests/pilot/store-template
-git commit -m "refactor(pilot): scaffold споживає шаблон create-simplycms-store; фікстура стиснута до оверлею"
+git add scripts/pilot-pack tests/pilot/store-template
+git commit -m "refactor(pilot): scaffold споживає шаблон create-simplycms-store + Gate CLI на tarball скаффолдера"
 ```
 
 ### Task 7: Gate E — owner-флоу в pilot:e2e
 
 **Files:**
 - Create: `scripts/pilot-pack/gate-e.mjs`
-- Modify: `scripts/pilot-pack/e2e.mjs` (видобути service_role key локального стеку), `scripts/pilot-pack.mjs` (запуск Gate E у `--e2e`), `scripts/pilot-pack/gate-b.mjs` (додати `/auth/set-password` до перевірених шляхів → очікування 200)
+- Modify: `scripts/pilot-pack/e2e.mjs` (видобути service_role + anon key локального стеку), `scripts/pilot-pack/run.mjs` (виклик Gate E у e2e-режимі за контрактом `[name, { ok, details }]`), `scripts/pilot-pack/gate-b.mjs` (додати `/auth/set-password` до перевірених шляхів → очікування 200)
 
 **Interfaces:**
-- Consumes: `template/scripts/owner-invite.mjs` (Task 4), роут `/auth/set-password` (Task 5), локальний стек `supabase start` (`e2e.mjs` вже піднімає його і робить `db reset`).
+- Consumes: `template/scripts/owner-invite.mjs` (Task 4), роути `/auth/confirm` і `/auth/set-password` (Task 5), міграція `first_user_no_auto_admin` (Task 4), локальний стек `supabase start` (`e2e.mjs` вже піднімає його і робить `db reset`).
+- Produces: `gateOwner(ctx)` → `Promise<{ ok: boolean, details: string[] }>` — стандартний контракт гейтів (`run.mjs:runGates` / `report.mjs`).
 
-- [ ] **Step 1: Видобути service_role key стеку**
+- [ ] **Step 1: Видобути ключі стеку**
 
-У `e2e.mjs` після старту стеку: `supabase status -o env` (або `supabase status --output json` — перевірити фактичний вивід встановленої версії CLI) → витягти `SERVICE_ROLE_KEY` і `API_URL`, передати в контекст гейтів поряд з наявними ключами.
+У `e2e.mjs` після старту стеку: `supabase status -o env` (або `--output json` — звірити з фактичним виводом встановленої CLI) → витягти `SERVICE_ROLE_KEY`, `ANON_KEY`, `API_URL` і передати далі в opts гейтів поряд з наявними ключами (подивись, як e2e.mjs вже дістає ключі для `writeEnv`, — розширити те саме місце).
 
-- [ ] **Step 2: gate-e.mjs**
+- [ ] **Step 2: gate-e.mjs (контракт `{ ok, details }`, як gate-a…gate-d)**
 
 ```js
 // scripts/pilot-pack/gate-e.mjs
-// Gate E: owner-флоу. Проти ЛОКАЛЬНОГО стеку (ніколи проти живої БД):
-// 1) owner-invite призначає роль admin запрошеному;
-// 2) звичайний signup ролі admin НЕ отримує;
-// 3) повторний запуск owner-invite ідемпотентний.
+// Gate E — owner-флоу проти ЛОКАЛЬНОГО стеку (ніколи проти живої БД):
+// 1) перший звичайний signup НЕ отримує admin (міграція first_user_no_auto_admin);
+// 2) owner-invite ідемпотентно призначає admin запрошеному;
+// 3) /auth/confirm обмінює token_hash на сесію і редиректить на set-password.
 import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 
-export async function runGateE({ storeDir, supabaseUrl, serviceRoleKey }) {
+export async function gateOwner({ storeDir, storeUrl, supabaseUrl, anonKey, serviceRoleKey }) {
+  const details = [];
+  const fail = (message) => ({ ok: false, details: [...details, `✗ ${message}`] });
+  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const anon = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
+
+  // 1. Перший signup — НЕ адмін (доводить дію міграції Task 4).
+  const shopper = await anon.auth.signUp({ email: 'shopper-gate-e@pilot.local', password: 'shopper-password-1' });
+  if (shopper.error) return fail(`signUp: ${shopper.error.message}`);
+  const shopperRoles = await admin.from('user_roles').select('role').eq('user_id', shopper.data.user.id);
+  if (shopperRoles.error) return fail(`user_roles read: ${shopperRoles.error.message}`);
+  if (shopperRoles.data.some((r) => r.role === 'admin')) return fail('перший signup отримав admin — діра жива');
+  details.push('✓ перший signup БЕЗ ролі admin');
+
+  // 2. owner-invite двічі — ідемпотентність + роль.
   const ownerEmail = 'owner-gate-e@pilot.local';
-  const run = () =>
-    execFileSync('node', ['scripts/owner-invite.mjs'], {
-      cwd: storeDir,
-      env: {
-        ...process.env,
-        VITE_SUPABASE_URL: supabaseUrl,
-        VITE_SITE_URL: 'http://localhost:3000',
-        SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
-        OWNER_EMAIL: ownerEmail,
-      },
-      stdio: 'pipe',
-    }).toString();
-  run();
-  run(); // ідемпотентність: другий прогін не падає
+  const env = {
+    ...process.env,
+    VITE_SUPABASE_URL: supabaseUrl,
+    VITE_SITE_URL: storeUrl,
+    SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    OWNER_EMAIL: ownerEmail,
+  };
+  execFileSync('node', ['scripts/owner-invite.mjs'], { cwd: storeDir, env, stdio: 'pipe' });
+  execFileSync('node', ['scripts/owner-invite.mjs'], { cwd: storeDir, env, stdio: 'pipe' });
+  const list = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  if (list.error) return fail(`listUsers: ${list.error.message}`);
+  const owner = list.data.users.find((u) => u.email === ownerEmail);
+  if (!owner) return fail('запрошеного немає в auth.users');
+  const ownerRoles = await admin.from('user_roles').select('role').eq('user_id', owner.id);
+  if (!ownerRoles.data?.some((r) => r.role === 'admin')) return fail('у власника немає ролі admin');
+  details.push('✓ owner-invite ідемпотентний, роль admin на місці');
 
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const owner = users.users.find((u) => u.email === ownerEmail);
-  if (!owner) throw new Error('Gate E: запрошеного користувача немає в auth.users');
-
-  const roles = await admin.from('user_roles').select('role').eq('user_id', owner.id);
-  if (!roles.data?.some((r) => r.role === 'admin')) {
-    throw new Error('Gate E: у власника немає ролі admin');
+  // 3. /auth/confirm: token_hash → auth-cookies → redirect на set-password.
+  const link = await admin.auth.admin.generateLink({ type: 'magiclink', email: ownerEmail });
+  if (link.error) return fail(`generateLink: ${link.error.message}`);
+  const confirmUrl = `${storeUrl}/auth/confirm?token_hash=${link.data.properties.hashed_token}&type=magiclink&next=/auth/set-password`;
+  const response = await fetch(confirmUrl, { redirect: 'manual' });
+  const location = response.headers.get('location') ?? '';
+  const cookies = (response.headers.getSetCookie?.() ?? []).join(';');
+  if (response.status !== 302 || !location.endsWith('/auth/set-password')) {
+    return fail(`/auth/confirm: ${response.status} → ${location || '(без Location)'}`);
   }
+  if (!cookies.includes('sb-')) return fail('/auth/confirm не поставив auth-cookies');
+  details.push('✓ /auth/confirm: 302 → /auth/set-password + auth-cookies');
 
-  const { data: shopper } = await admin.auth.admin.createUser({
-    email: 'shopper-gate-e@pilot.local',
-    password: 'shopper-password-1',
-    email_confirm: true,
-  });
-  const shopperRoles = await admin.from('user_roles').select('role').eq('user_id', shopper.user.id);
-  if (shopperRoles.data?.some((r) => r.role === 'admin')) {
-    throw new Error('Gate E: звичайний користувач отримав admin — ДІРА');
-  }
-  return 'Gate E: PASS';
+  return { ok: true, details };
 }
 ```
 
-(Сигнатуру/спосіб підключення звірити з тим, як `pilot-pack.mjs` викликає gate-a…gate-d — повторити їхній контракт: параметри, логування, формат PASS/FAIL.)
+- [ ] **Step 3: Підключити в run.mjs + gate-b доповнення**
 
-- [ ] **Step 3: Підключити + gate-b доповнення**
-
-У `pilot-pack.mjs` в `--e2e`-гілці після Gate B — виклик Gate E. У `gate-b.mjs` до списку шляхів додати `GET /auth/set-password` → очікуваний статус 200.
+У `run.mjs` (там, де вже є `results.push(['B', await runGateB(opts)])` у не-packOnly гілці) — після Gate B: `step('Gate E — owner-флоу'); results.push(['E', await gateOwner({ storeDir: opts.storeDir, storeUrl, supabaseUrl, anonKey, serviceRoleKey })]);` — точні імена полів opts звірити з тим, як `runGateB` бере адресу магазину і env; Gate E ганяти ЛИШЕ в e2e-режимі (коли serviceRoleKey присутній — інакше пропустити з явним рядком у details звіту, не мовчки). У `gate-b.mjs` до списку шляхів додати `GET /auth/set-password` → очікуваний статус 200.
 
 - [ ] **Step 4: Прогін і чесна фіксація**
 
@@ -851,15 +1027,21 @@ git commit -m "feat(pilot): Gate E — e2e owner-флоу проти локал�
 
 - [ ] **Step 2: release-process.md + роадмап + спека**
 
-- `release-process.md`: додати абзац про 22-й пакет (unscoped, без `build`-кроку, публікується тим самим `pnpm publish -r`).
-- Роадмап, Фаза 2: відмітити `[x]` пункти `create-simplycms-store` і «Bootstrap власника» з датою і посиланням на цей план; якщо Gate E не проганявся через відсутність Docker — дописати це до наявної позначки «pilot:e2e ще не запускався».
-- Спека §9: під кожним відкритим питанням дописати «**Розвʼязано (2026-08-XX):** …» — (1) callback уже обмінює code, додана сторінка set-password; (2) перелік фактично оновленого тулінгу; (3) обрано закомічені копії + `template:sync` + парність-тест.
+- `release-process.md`: додати абзац про 22-й пакет (unscoped, без `build`-кроку, публікується тим самим `pnpm publish -r`) і 🔴 **дію власника до першого релізу з новим пакетом**: чинний `NPM_TOKEN` — Granular Access Token, обмежений scope `@simplycms` (`publish-packages.yml:15`), — unscoped `create-simplycms-store` він НЕ покриє, і granular-токен не може заздалегідь включити пакет, якого ще немає в реєстрі. Власник має або видати токен з доступом «Read and write» до **всіх** пакетів акаунта (з Bypass 2FA), або опублікувати першу версію пакета вручну зі своєї машини й потім звузити токен назад.
+- Роадмап, Фаза 2: пункт `create-simplycms-store` відмітити `[x]` з датою і посиланням на план. Пункт «Bootstrap власника» відмічати `[x]` **ЛИШЕ якщо зафіксовано успішний повний `pnpm pilot:e2e` (Gates A–E зелені)**; якщо Docker недоступний — лишити `[ ]` з приміткою «код готовий, Gate E не проганявся: немає Docker, дата» (та сама політика чесності, що для наявної позначки «pilot:e2e ще не запускався»). Додати дію власника про NPM_TOKEN (див. вище).
+- Спека: (а) §2.3 — виправлення факту вже внесене окремим комітом (тригер РОБИВ першого адміном); (б) §9: під кожним відкритим питанням дописати «**Розвʼязано (2026-08-XX):** …» — (1) callback обмінює лише `?code=`, для invite додано `/auth/confirm` з `verifyOtp` + сторінка set-password; (2) перелік фактично оновленого тулінгу (workspace, bump, eslint/tsconfig); (3) обрано закомічені копії + `template:sync` + парність-тест.
 
 - [ ] **Step 3: Фінальний повний прогін**
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test \
   && pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
+```
+
+Плюс, якщо Docker доступний — обовʼязково:
+
+```bash
+pnpm pilot:e2e   # Gates A–E зелені; без цього пункт «Bootstrap власника» в роадмапі НЕ закривається
 ```
 
 Expected: усе зелене. Будь-який червоний гейт — виправити ДО коміту, не рапортувати «переважно зелено».
@@ -873,8 +1055,9 @@ git commit -m "docs: create-simplycms-store і owner:invite — синхроні
 
 ---
 
-## Верифікація плану (self-review виконано автором плану)
+## Верифікація плану
 
-- Покриття спеки: §3.1→Task 1, §3.2→Task 2 (+6), §3.3→Task 3, §4→Task 4-5, §6→Task 2/4/7, §7 DoD→Task 3 (smoke), 6 (pilot:pack), 7 (e2e), 8 (фінальний прогін + доки). §5 (pull-модель) — свідомо не в плані (спека: не v1).
-- Узгодженість імен між тасками: `TEMPLATE_DIR`/`SYNCED_FILES`/`SYNCED_DIRS` (Task 2 → 6), `renderManifest`/`scaffold`/`resolveOptions` (Task 3), `runOwnerInvite` (Task 4 → 7), redirect `/auth/callback?next=/auth/set-password` (Task 4 ↔ 5 ↔ 7).
-- Відомі точки, де виконавець МУСИТЬ звіритись із живим кодом (навмисно, бо точні рядки дрейфують): спосіб отримання supabase-клієнта сторінками (Task 5 Step 1), контракт виклику gate-* у `pilot-pack.mjs` (Task 7 Step 2), формат `supabase status` встановленої версії CLI (Task 7 Step 1).
+- Покриття спеки: §3.1→Task 1, §3.2→Task 2 (+6), §3.3→Task 3, §4→Task 4-5, §6→Task 2/4/7, §7 DoD→Task 3 (smoke), 6 (pilot:pack + Gate CLI), 7 (e2e), 8 (фінальний прогін + доки). §5 (pull-модель) — свідомо не в плані (спека: не v1).
+- Узгодженість імен між тасками: `TEMPLATE_DIR`/`SYNCED_FILES`/`SYNCED_DIRS` (Task 2 → 6), `renderManifest`/`scaffold`/`resolveOptions` (Task 3), `runOwnerInvite` (Task 4 → 7), `gateOwner`/`createPkgSmoke` (Task 6-7 → run.mjs), ланцюг invite: `invite.html` (Task 2) → `/auth/confirm?token_hash&type&next=/auth/set-password` (Task 5) → Gate E (Task 7).
+- Відомі точки, де виконавець МУСИТЬ звіритись із живим кодом (навмисно, бо точні рядки дрейфують): спосіб отримання supabase-клієнта сторінками (Task 5 Step 1), точні імена полів opts у `run.mjs` (Task 7 Step 3), формат `supabase status` встановленої версії CLI (Task 7 Step 1).
+- **Codex-аудит 2026-08-04 (adversarial, read-only):** 14 знахідок (5 blocker / 7 major / 2 minor), усі верифіковані проти коду і внесені в цю версію плану. Ключове: чинний тригер robив першого зареєстрованого адміном (→ Task 4 Step 0); invite-лінк несумісний із `?code=`-callback (→ `/auth/confirm` + email-шаблон); шаблон не збирався без `supabase/config.toml` і з `solarstore` у конфігу; Gate E приведений до контракту `run.mjs`; NPM_TOKEN не покриє unscoped пакет (→ дія власника в Task 8).
