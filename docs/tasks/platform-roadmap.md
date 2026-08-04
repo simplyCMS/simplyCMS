@@ -22,9 +22,9 @@ subpath-и резолвляться, типи компілюються під `t
 | Механізм | Команда / точка входу |
 |----------|----------------------|
 | Реліз ядра | `pnpm release X.Y.Z` → PR у `main` → push публікує на npmjs |
-| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D |
-| Пілот проти живої БД | `pnpm pilot` — + gate B, потребує `.env.local` |
-| Пілот на локальному стеку | `pnpm pilot:e2e` — потребує Docker ⚠️ **ще не запускався** |
+| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI, Gate E видимо SKIP |
+| Пілот проти живої БД | `pnpm pilot` — + Gate B, потребує `.env.local`; Gate E досі SKIP |
+| Пілот на локальному стеку | `pnpm pilot:e2e` — gates A/C/D/CLI/B/E, потребує Docker ⚠️ **ще не запускався** |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`, порт 3000) |
 | CI на PR | `typecheck` · `test` · `packaging` (tarball-parity) |
 
@@ -238,17 +238,24 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       (`verifyOtp`) + сторінка set-password. Закриває живу діру: чинний
       тригер `handle_new_user` робив АДМІНОМ першого зареєстрованого
       (`20260213120000_fix_handle_new_user_trigger.sql:22-28` — знахідка
-      Codex-аудиту 2026-08-04; міграція `first_user_no_auto_admin` це прибрала).
+      Codex-аудиту 2026-08-04; міграція `first_user_no_auto_admin` прибирає
+      це в репо — накат на живу dev-БД лишається окремою дією власника).
       🔴 **Код готовий, Gate E (owner:invite e2e проти локального стеку) не
       проганявся: немає Docker, 2026-08-04.** Позначка `[x]` — лише після
       зафіксованого зеленого `pnpm pilot:e2e` (Gates A–E)
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
       `db:diff` / `doctor` — окрема спека після скаффолдера
-- [ ] 🔴 Дія власника перед першим релізом, що публікує `create-simplycms-store`:
-      чинний `NPM_TOKEN` — Granular Access Token, обмежений scope `@simplycms`,
-      unscoped-пакет він не покриє. Видати токен «Read and write» на всі пакети
-      акаунта (Bypass 2FA) або опублікувати першу версію вручну зі своєї машини
-      — деталі в [`docs/architecture/release-process.md`](../architecture/release-process.md)
+- [ ] 🔴 **Блокер мержу цієї гілки в `main`** (не «перед першим релізом» —
+      тригер публікації це будь-який push у `main`, бампу версії не треба):
+      `create-simplycms-store` відсутній у реєстрі npm (`npm view
+      create-simplycms-store version` → `E404`), тож `isAlreadyPublished` його
+      НЕ пропустить — мерж спробує опублікувати пакет. Чинний `NPM_TOKEN` —
+      Granular Access Token, обмежений scope `@simplycms`, unscoped-пакет він
+      не покриє (job червоніє). До мержу — видати токен «Read and write» на
+      всі пакети акаунта (Bypass 2FA) і замінити secret, АБО опублікувати
+      `create-simplycms-store@0.1.0` вручну зі своєї машини і звузити токен
+      назад — деталі в
+      [`docs/architecture/release-process.md`](../architecture/release-process.md)
 - [X] **Публікація на npmjs працює** — конвеєр готовий і перевірений у бою:
       `pnpm release X.Y.Z` → PR → push у `main` публікує. `0.1.0` опубліковано
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
@@ -263,11 +270,14 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 **DoD:** сторонній розробник створює магазин двома командами; оновлення ядра —
 один `pnpm update`.
 
-**Стартова точка.** Прототип — `tests/pilot/store-template/` +
-`scripts/pilot-pack/scaffold.mjs` (зараз scaffold копіює host-файли з кореня
-монорепо — опублікований create-пакет так не зможе). За спекою 2026-08-03
-шаблон переїжджає **всередину** пакета `create-simplycms-store`, а пілот
-перебудовується споживати його — деталі та якорі для плану в спеці, §3.2 і §9.
+**Стартова точка (виконано).** Шаблон уже живе всередині пакета —
+`packages/create-simplycms-store/template/` — і є єдиним джерелом правди;
+`scripts/pilot-pack/scaffold.mjs` бере його звідти, а `tests/pilot/store-template/`
+лишився тонким оверлеєм із двох файлів (`vite.config.ts` + `package.json`).
+Деталі та якорі — у спеці, §3.2 і §9, і в плані
+[`2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md).
+Що лишається у Фазі 2: `@simplycms/cli` (`add`/`update`/`db:diff`/`doctor`) і
+дія власника з `NPM_TOKEN` вище.
 
 ## Фаза 3 — Plugin SDK + референс-плагіни
 

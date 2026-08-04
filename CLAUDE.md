@@ -352,7 +352,11 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   `packages/simplycms/*`; розходження версій між ними реліз-скрипт вважає
   помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
-  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
+  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
+  пакетів, що вже там є**. 🔴 `create-simplycms-store` у реєстрі npm ще немає
+  (`npm view create-simplycms-store version` → `E404`) — для нього мерж це НЕ
+  no-op, а спроба публікації: `pkgsToPublish` матиме рівно один елемент. Це
+  блокер мержу гілки, що вводить пакет, — див. дію власника нижче;
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
 - 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
   npm за замовчуванням робить приватними, а це платний план;
@@ -361,8 +365,10 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним
   повідомленням ще до збірки. 🔴 Цей токен обмежений scope `@simplycms` і НЕ
-  покриває unscoped `create-simplycms-store` — дію власника перед першим
-  релізом із новим пакетом див. у
+  покриває unscoped `create-simplycms-store` — обидва наслідки погані: якщо
+  токен пакет не покриває, job червоніє; якщо покриває (розширений токен),
+  мерж МОВЧКИ публікує пакет поза релізним рішенням. Дію власника ДО мержу
+  гілки, що вводить пакет, див. у
   [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
 
 🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
