@@ -29,7 +29,7 @@ pnpm create simplycms-store my-shop
 | Файл              | Призначення                                              |
 | ----------------- | -------------------------------------------------------- |
 | `src/args.mjs`    | `resolveOptions(argv, env, isTTY)` — розбір прапорців     |
-| `src/scaffold.mjs`| `scaffold()` / `renderManifest()` — розгортання шаблону   |
+| `src/scaffold.mjs`| `scaffold()` / `renderTemplate()` — розгортання шаблону   |
 | `src/steps.mjs`   | Промпти, `git init`, встановлення, наступні кроки         |
 | `src/index.mjs`   | Оркестрація й валідація імені магазину                    |
 | `template/`       | Шаблон магазину (генерат — `pnpm template:sync`)          |

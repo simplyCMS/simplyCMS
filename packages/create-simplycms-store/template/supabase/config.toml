@@ -1,7 +1,12 @@
 # Конфігурація Supabase-проєкту магазину.
 #
-# `project_id` — локальна назва проєкту; після `supabase link --project-ref <ref>`
-# CLI підставить сюди справжній ref вашого хмарного проєкту.
+# `project_id` — ЛОКАЛЬНА назва проєкту: з неї Supabase CLI будує імена
+# контейнерів, томів і мереж локального стеку (`supabase_db_<project_id>`), тож
+# у кожного магазину на машині вона має бути своя. Скаффолдер підставляє сюди
+# імʼя магазину.
+#
+# 🔴 `supabase link --project-ref <ref>` цей файл НЕ змінює: ref хмарного
+# проєкту CLI кладе у `supabase/.temp/project-ref`.
 project_id = "__STORE_NAME__"
 
 [auth]

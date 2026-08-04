@@ -20,11 +20,22 @@ const RENAMES = {
 };
 
 /**
+ * Файли з плейсхолдерами — шляхи ПІСЛЯ перейменувань (RENAMES). Саме список,
+ * а не хардкод одного `package.json`: наступний шаблонізований файл додається
+ * сюди рядком і не губиться мовчки (так `supabase/config.toml` доїжджав до
+ * користувача з `project_id = "__STORE_NAME__"`, а Supabase CLI санітизував
+ * його в спільний для всіх магазинів `STORE_NAME__`).
+ */
+const TEMPLATED_FILES = ['package.json', 'supabase/config.toml'];
+
+/**
+ * Підстановка плейсхолдерів шаблону. Назва загальна замість `renderManifest`:
+ * рендериться не лише manifest, а будь-який файл із TEMPLATED_FILES.
  * @param {string} tpl
  * @param {{ storeName: string; version: string }} vars
  * @returns {string}
  */
-export function renderManifest(tpl, { storeName, version }) {
+export function renderTemplate(tpl, { storeName, version }) {
   return tpl
     .replaceAll('__STORE_NAME__', storeName)
     .replaceAll('__SIMPLYCMS_VERSION__', version);
@@ -51,11 +62,18 @@ export async function scaffold(input) {
       renameSync(join(targetDir, from), join(targetDir, to));
     }
   }
-  const manifestPath = join(targetDir, 'package.json');
-  writeFileSync(
-    manifestPath,
-    renderManifest(readFileSync(manifestPath, 'utf8'), { storeName, version }),
-  );
+  // Відсутність шаблонізованого файлу — не «шаблон еволюціонував», а розсинхрон
+  // списку з шаблоном: мовчазний skip повернув би рівно ту ваду, від якої список.
+  for (const relative of TEMPLATED_FILES) {
+    const path = join(targetDir, relative);
+    if (!existsSync(path)) {
+      throw new Error(`Шаблонізований файл відсутній у шаблоні: ${relative}`);
+    }
+    writeFileSync(
+      path,
+      renderTemplate(readFileSync(path, 'utf8'), { storeName, version }),
+    );
+  }
   // .env.local пишемо тільки коли задані обидва значення: половинчастий файл
   // маскує «не налаштовано» під «налаштовано». service_role-ключа тут немає
   // за визначенням — він живе лише у змінній середовища на час owner:invite.

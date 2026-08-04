@@ -24,6 +24,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { findPlaceholders } from './placeholder-scan.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const CLI_PKG_DIR = join(REPO_ROOT, 'packages/create-simplycms-store');
@@ -104,6 +105,17 @@ export function createPkgSmoke() {
         details: [...details, '✗ package.json.tpl не перейменовано'],
       };
     }
+    const leftovers = findPlaceholders(target);
+    if (leftovers.length > 0) {
+      return {
+        ok: false,
+        details: [
+          ...details,
+          `✗ плейсхолдери не підставлено: ${leftovers.join(', ')}`,
+        ],
+      };
+    }
+    details.push('✓ плейсхолдерів __NAME__ не лишилось');
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
   } catch (error) {
