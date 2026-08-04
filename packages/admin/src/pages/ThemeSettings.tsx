@@ -26,7 +26,7 @@ import { ArrowLeft, Save, Palette } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import {
   revalidateFailureDescription,
-  revalidateTheme,
+  useRevalidateStorefront,
 } from '../lib/revalidateTheme';
 import { useState, useEffect } from 'react';
 import type { ThemeSettingDefinition } from '@simplycms/themes/types';
@@ -46,6 +46,7 @@ export default function ThemeSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const revalidateStorefront = useRevalidateStorefront();
   const [config, setConfig] = useState<Record<string, unknown>>({});
   const [settingsSchema, setSettingsSchema] = useState<
     Record<string, ThemeSettingDefinition>
@@ -105,7 +106,7 @@ export default function ThemeSettings() {
       queryClient.invalidateQueries({ queryKey: ['admin-theme', themeId] });
 
       try {
-        await revalidateTheme();
+        await revalidateStorefront();
       } catch (error) {
         toast({
           variant: 'destructive',

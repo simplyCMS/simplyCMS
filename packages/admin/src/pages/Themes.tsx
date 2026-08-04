@@ -17,7 +17,7 @@ import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import {
   revalidateFailureDescription,
-  revalidateTheme,
+  useRevalidateStorefront,
 } from '../lib/revalidateTheme';
 import {
   AlertDialog,
@@ -46,6 +46,7 @@ export default function Themes() {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const revalidateStorefront = useRevalidateStorefront();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
 
   const { data: themes, isLoading } = useQuery({
@@ -83,7 +84,7 @@ export default function Themes() {
       setConfirmThemeId(null);
 
       try {
-        await revalidateTheme();
+        await revalidateStorefront();
       } catch (error) {
         toast({
           variant: 'destructive',
