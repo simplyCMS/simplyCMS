@@ -244,7 +244,7 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       публікація тим самим реліз-потягом (`bump.mjs` сканує `packages/*`).
       2026-08-04, план —
       [`docs/superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md)
-- [ ] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у
+- [x] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у
       шаблоні — `auth.admin.inviteUserByEmail` + роль `admin` через
       service_role з консолі розробника; серверний `/auth/confirm`
       (`verifyOtp`) + сторінка set-password. Закриває живу діру: чинний
@@ -252,9 +252,10 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       (`20260213120000_fix_handle_new_user_trigger.sql:22-28` — знахідка
       Codex-аудиту 2026-08-04; міграція `first_user_no_auto_admin` прибирає
       це в репо — накат на живу dev-БД лишається окремою дією власника).
-      🔴 **Код готовий, Gate E (owner:invite e2e проти локального стеку) не
-      проганявся: немає Docker, 2026-08-04.** Позначка `[x]` — лише після
-      зафіксованого зеленого `pnpm pilot:e2e` (Gates A–E)
+      ✅ **Gate E прожито наживо 2026-08-04** (`pnpm pilot:e2e`, Gates A–E +
+      CLI зелені): перший signup БЕЗ ролі admin (ролей у покупця: 1);
+      `owner-invite` ідемпотентний (2 прогони → 1 користувач, рядків admin: 1);
+      `GET /auth/confirm` → 302 на `/auth/set-password` з auth-cookies
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
       `db:diff` / `doctor` — окрема спека після скаффолдера
 - [x] 🔴 **`NPM_TOKEN` розширено на `All Packages`** — 2026-08-04, блокер знято.
