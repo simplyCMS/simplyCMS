@@ -107,6 +107,34 @@ describe('auth-редіректи переживають mergeEventResponseHeade
     );
   });
 
+  // 🔴 `?next=` декодується `searchParams.get`, тож не-ASCII і CR/LF доходять
+  // до заголовка сирими. `Headers` кидає на них TypeError — і це 500 ПІСЛЯ
+  // спаленого одноразового OTP. Нормалізацію робить `new URL(...).href`
+  // у `server/redirect.ts` (раніше її давав сам `Response.redirect`).
+  it('/auth/confirm: кирилиця в next → 302 з percent-encoded Location', async () => {
+    const response = await runThroughStart(
+      confirmModule as unknown as RouteModule,
+      'http://shop.test/auth/confirm?token_hash=hash-1&type=invite&next=%2F%D0%BA%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3',
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('location')).toBe(
+      'http://shop.test/%D0%BA%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3',
+    );
+    expect(response.headers.getSetCookie()).toHaveLength(1);
+  });
+
+  it('/auth/confirm: CR/LF у next не інжектить заголовка', async () => {
+    const response = await runThroughStart(
+      confirmModule as unknown as RouteModule,
+      'http://shop.test/auth/confirm?token_hash=hash-1&type=invite&next=%2Fx%0D%0AX-Injected%3A%201',
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('x-injected')).toBeNull();
+    expect(response.headers.get('location')).not.toContain('\n');
+  });
+
   it('/auth/confirm: помилка verifyOtp → 302 на /auth?error=auth_error', async () => {
     verifyOtp.mockResolvedValue({ error: { message: 'expired' } });
 

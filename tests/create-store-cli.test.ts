@@ -112,7 +112,10 @@ describe('create-store CLI', () => {
       templateDir: 'packages/create-simplycms-store/template',
       targetDir: target,
       storeName: 'demo',
-      version: '0.1.0',
+      // 🔴 Sentinel, а НЕ поточна версія ядра: якби тут стояло `0.1.0`,
+      // літерал `"0.1.0"`, дописаний рукою в `package.json.tpl`, рендерився б
+      // у те саме значення — і асерт нижче його не відрізнив би.
+      version: '9.9.9-sentinel',
       supabaseUrl: 'https://x.supabase.co',
       supabaseKey: 'sb_pk',
     });
@@ -136,7 +139,7 @@ describe('create-store CLI', () => {
       .filter(([name]) => name.startsWith('@simplycms/'))
       .map(([, range]) => range);
     expect(core.length).toBeGreaterThan(0);
-    expect(core).toEqual(core.map(() => '0.1.0'));
+    expect(core).toEqual(core.map(() => '9.9.9-sentinel'));
   });
 
   it('scaffold: у згенерованому магазині не лишається плейсхолдерів', async () => {

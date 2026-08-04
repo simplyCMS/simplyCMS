@@ -5,8 +5,11 @@ name: Publish Packages
 # Модель (рішення власника, 2026-08-01):
 #   • тригер — push у `main`; публікуються тільки ті пакети, чиєї версії ще
 #     немає в реєстрі. `pnpm publish -r` робить цю перевірку сам
-#     (`isAlreadyPublished`), тож звичайний merge без бампа версії — no-op,
-#     а не помилка;
+#     (`isAlreadyPublished`), тож merge без бампа версії — no-op для тих, хто
+#     ВЖЕ в реєстрі;
+#     🔴 unscoped `create-simplycms-store` у реєстрі відсутній, тож перший же
+#     push у `main` спробує опублікувати його — і впаде, поки `NPM_TOKEN`
+#     обмежений scope `@simplycms`. Дія власника — docs/architecture/release-process.md;
 #   • версія у всіх пакетів СИНХРОННА, бампається вручну: `pnpm version:packages 0.2.0`
 #     (див. `scripts/version-packages.mjs`), далі звичайний PR у main;
 #   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині

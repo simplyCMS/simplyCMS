@@ -21,8 +21,13 @@
  * справжній `requestHandler`).
  */
 export function redirectResponse(location: string): Response {
+  // 🔴 `new URL(...).href` повертає нормалізацію, яку `Response.redirect()`
+  // робив сам: percent-encoding не-ASCII і зрізання CR/LF. Без неї `Headers`
+  // кидає `TypeError` на кирилицю в `?next=` (вона декодована ще
+  // `searchParams.get`) — і це 500 ПІСЛЯ спаленого одноразового OTP.
+  // Обидва виклики передають абсолютний URL, тож база `new URL` не потрібна.
   return new Response(null, {
     status: 302,
-    headers: { Location: location },
+    headers: { Location: new URL(location).href },
   });
 }
