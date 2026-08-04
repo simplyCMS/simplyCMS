@@ -116,7 +116,7 @@ i18n-міграції (роадмап, Фаза 1+).
 
 - **Framework:** TanStack Start 1.167 + TanStack Router 1.168 (Vite 8, React 19)
 - **Language:** TypeScript 5.9 (strict mode)
-- **Package Manager:** pnpm 10.26 (workspaces)
+- **Package Manager:** pnpm 11.20 (workspaces; налаштування — у `pnpm-workspace.yaml`, не в `package.json`)
 - **Database:** Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4

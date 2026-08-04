@@ -2,3 +2,22 @@ packages:
   - 'packages/*'
   - 'themes/*'
   - 'plugins/*'
+
+# 🔴 З pnpm 11 УСІ налаштування pnpm живуть тут, а не в `package.json`
+# (у `.npmrc` лишились тільки auth і registry). Поле `pnpm` у манифесті
+# мовчки ігнорується — pnpm пише про це попередження на кожній команді.
+#
+# `allowBuilds` — наступник `onlyBuiltDependencies`, формат змінився зі
+# списку на мапу. Це allowlist пакетів, яким дозволено виконувати
+# install-скрипти; без нього pnpm обриває install із
+# `ERR_PNPM_IGNORED_BUILDS`, і ці три пакети не зберуть свої нативні бінарники.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
+# `minimumReleaseAge` лишаємо за замовчуванням (1 доба): pnpm 11 не резолвить
+# пакети, опубліковані менш ніж добу тому — захист від supply-chain-атак через
+# щойно скомпрометований реліз. Нас це не стримує (ядро тут резолвиться
+# workspace-лінками, не з реєстру), але свіжий магазин зі щойно опублікованого
+# `create-simplycms-store` у перші 24 години впреться — див. README шаблону.

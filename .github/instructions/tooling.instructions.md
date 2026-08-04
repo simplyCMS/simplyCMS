@@ -6,7 +6,7 @@ description: 'Команди, форматування, тестування т�
 # Tooling Rules
 
 ## Package Manager
-- **pnpm** (v10.x) — єдиний пакетний менеджер.
+- **pnpm** (v11.x) — єдиний пакетний менеджер. 🔴 Усі налаштування pnpm живуть у `pnpm-workspace.yaml`: з v11 поле `pnpm` у `package.json` мовчки ігнорується, а `.npmrc` читається лише для auth і registry.
 - Workspace: `packages/*`, `themes/*`, `plugins/*` — усі публіковані пакети (ядро + скаффолдер) лежать в одній теці `packages/`.
 - Не використовуй `npm` або `yarn`.
 
