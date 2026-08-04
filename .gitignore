@@ -44,6 +44,7 @@ coverage
 temp/node_modules
 temp/.env.local
 /supabase/.temp
+/supabase/.branches
 
 # Package pack artifacts (npm/pnpm pack)
 *.tgz
