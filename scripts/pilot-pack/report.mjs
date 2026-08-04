@@ -5,18 +5,24 @@
  * оркестрація режимів, без форматування виводу.
  */
 
+/** Вердикт одного гейта: SKIP — окремий стан, а не тихий PASS. */
+function verdict({ ok, skipped }) {
+  if (skipped) return '[33mSKIP[0m';
+  return ok ? '[32mPASS[0m' : '[31mFAIL[0m';
+}
+
 /**
- * @param {[string, { ok: boolean; details: string[] }][]} results
+ * @param {[string, { ok: boolean; skipped?: boolean; details: string[] }][]} results
  * @param {{ scope: string }} opts опис набору гейтів для підсумкового рядка
  * @returns {number} код виходу процесу
  */
 export function report(results, { scope }) {
   console.log('\n[1m═ Підсумок пілота ═[0m');
   let failed = 0;
-  for (const [name, { ok, details }] of [...results].sort((a, b) =>
+  for (const [name, { ok, skipped, details }] of [...results].sort((a, b) =>
     a[0].localeCompare(b[0]),
   )) {
-    console.log(`\nGate ${name}: ${ok ? '[32mPASS[0m' : '[31mFAIL[0m'}`);
+    console.log(`\nGate ${name}: ${verdict({ ok, skipped })}`);
     for (const line of details) console.log(`  ${line}`);
     if (!ok) failed += 1;
   }

@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
-const pkg = (p: string) => resolve(__dirname, 'packages/simplycms', p);
+const pkg = (p: string) => resolve(__dirname, 'packages', p);
 
 // Окремий конфіг для тестів: @vitejs/plugin-react (а не tanstackStart, що
 // SSR-трансформує і ламає hook-тести) + дедуп React + ті самі workspace-аліаси,
@@ -44,6 +44,9 @@ export default defineConfig({
       // попереднього `pnpm build:packages`. У `pnpm test` не входить —
       // запускається окремим CI-job-ом `packaging`.
       'tests/published-exports-parity.test.ts',
+      // Смоук tarball-а скаффолдера: місце — саме релізний ланцюг
+      // (`test:packaging`), бо job `publish` не запускає `pnpm test`.
+      'tests/create-store-pack.test.ts',
     ],
   },
 });

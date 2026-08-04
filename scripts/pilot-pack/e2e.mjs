@@ -86,25 +86,36 @@ export function stopLocalStack() {
 }
 
 /**
- * Env скретч-магазину з живого стеку — машинно, без ручного копіювання ключів.
+ * Ключі живого стеку — машинно, без ручного копіювання.
+ *
+ * 🔴 `serviceRoleKey` повертається ОКРЕМИМ полем, а не всередині `env`: усе, що
+ * лежить в `env`, скаффолд пише у `.env` скретч-магазину, а service_role не
+ * має потрапляти у файл ніколи. Він потрібен лише Gate E, який передає його в
+ * env дочірнього процесу.
  *
  * @param {number} port порт, на якому підніметься магазин
+ * @returns {{ env: Record<string,string>; serviceRoleKey: string }}
  */
-export function readLocalStackEnv(port) {
+export function readLocalStack(port) {
   const status = readStatusJson();
   const url = status.API_URL;
   const key = status.PUBLISHABLE_KEY || status.ANON_KEY;
-  if (!url || !key) {
+  const serviceRoleKey = status.SERVICE_ROLE_KEY;
+  if (!url || !key || !serviceRoleKey) {
     throw new Error(
-      '`supabase status -o json` не віддав API_URL і ключ (PUBLISHABLE_KEY/' +
-        `ANON_KEY). Отримані ключі: ${Object.keys(status).join(', ') || '—'}`,
+      '`supabase status -o json` не віддав API_URL і ключі (PUBLISHABLE_KEY/' +
+        'ANON_KEY, SERVICE_ROLE_KEY). Отримані ключі: ' +
+        `${Object.keys(status).join(', ') || '—'}`,
     );
   }
   return {
-    VITE_SUPABASE_URL: url,
-    VITE_SUPABASE_ANON_KEY: key,
-    VITE_SUPABASE_PUBLISHABLE_KEY: key,
-    VITE_SITE_URL: `http://127.0.0.1:${port}`,
+    env: {
+      VITE_SUPABASE_URL: url,
+      VITE_SUPABASE_ANON_KEY: key,
+      VITE_SUPABASE_PUBLISHABLE_KEY: key,
+      VITE_SITE_URL: `http://127.0.0.1:${port}`,
+    },
+    serviceRoleKey,
   };
 }
 

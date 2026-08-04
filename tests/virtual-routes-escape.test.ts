@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // Гард здатності, на якій тримається весь Етап C: `physical()` у віртуальному
-// конфізі бачить теки ПОЗА `routesDirectory` (у нас — `packages/simplycms/*/routes`).
+// конфізі бачить теки ПОЗА `routesDirectory` (у нас — `packages/*/routes`).
 // Якщо апстрим колись заборонить вихід за межі теки роутів, цей тест почервоніє
 // раніше, ніж зламається збірка магазину.
 //

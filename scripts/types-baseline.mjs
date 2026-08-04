@@ -2,7 +2,7 @@
 // Оновлення baseline-типів БД пакета @simplycms/supabase.
 //
 // Джерело — host-генерат `supabase/types.ts` (`pnpm db:generate-types`).
-// Ціль — `packages/simplycms/supabase/src/database.ts`: закомічений снапшот
+// Ціль — `packages/supabase/src/database.ts`: закомічений снапшот
 // типів CORE-схеми, проти якого типізуються всі пакети ядра.
 //
 // 🔴 Запускати ЛИШЕ на еталонній dev-БД без встановлених плагінів: плагінні
@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = resolve(ROOT, 'supabase/types.ts');
-const TARGET = resolve(ROOT, 'packages/simplycms/supabase/src/database.ts');
-const TARGET_REL = 'packages/simplycms/supabase/src/database.ts';
+const TARGET = resolve(ROOT, 'packages/supabase/src/database.ts');
+const TARGET_REL = 'packages/supabase/src/database.ts';
 const PRETTIERIGNORE = resolve(ROOT, '.prettierignore');
 
 const BANNER = `// ⚠️  ЗГЕНЕРОВАНИЙ ФАЙЛ — не редагувати руками.

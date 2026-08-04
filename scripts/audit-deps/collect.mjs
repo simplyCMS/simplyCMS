@@ -9,7 +9,14 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const PACKAGES_DIR = join(ROOT, 'packages', 'simplycms');
+export const PACKAGES_DIR = join(ROOT, 'packages');
+
+/**
+ * 🔴 Аудит стосується ЛИШЕ scoped-пакетів ядра: у них є subpath-exports, які
+ * ці скрипти й звіряють. Unscoped `create-simplycms-store` лежить у тій самій
+ * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md).
+ */
+export const CORE_SCOPE = '@simplycms/';
 
 // Теки, що потрапляють у tarball і виконуються в рантаймі споживача.
 // Route-пакети везуть `routes/` сирцями — тому це теж publish-root.
@@ -41,7 +48,7 @@ const TEST_RE = /(^|[\\/])__tests__[\\/]|\.(test|spec)\.[cm]?[jt]sx?$/;
  * }} PackageInfo
  */
 
-/** Мапа `name → PackageInfo` з усіх `packages/simplycms/*\/package.json`. */
+/** Мапа `name → PackageInfo` з усіх `packages/*\/package.json`. */
 export function collectPackages() {
   /** @type {Map<string, PackageInfo>} */
   const byName = new Map();
@@ -53,6 +60,7 @@ export function collectPackages() {
 
     const json = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     if (typeof json.name !== 'string') continue;
+    if (!json.name.startsWith(CORE_SCOPE)) continue;
 
     const dependencies = json.dependencies ?? {};
     const peerDependencies = json.peerDependencies ?? {};

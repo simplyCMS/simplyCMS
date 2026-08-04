@@ -22,7 +22,8 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 | Ядро в npm-пакетах | ✅ `0.1.0`, 21 пакет |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
-| CLI `simplycms add` / `create-simplycms-store` | ⏳ Фаза 2 — ще немає |
+| `create-simplycms-store` | ✅ код готовий (`pnpm pilot:pack` гейт CLI), у npm-реєстрі ще немає |
+| CLI `simplycms add` (`@simplycms/cli`) | ⏳ Фаза 2 — ще немає |
 | Плагіни й теми як окремі npm-пакети | ⏳ Фаза 3 |
 
 Обіцянка «магазин двома командами» ще не виконана — CLI в роботі. Зараз магазин
@@ -50,9 +51,12 @@ npm install @simplycms/storefront-routes @simplycms/admin-routes \
 `virtualRouteConfig`), `routes.ts`, `simplycms.config.ts`, `tsconfig.json`,
 `tailwind.config.ts`, `src/engine.shared.ts`, `src/routes/my/` і `.env`.
 
-📁 **Готовий приклад усіх восьми — [`tests/pilot/store-template/`](tests/pilot/store-template/).**
-Це не демо, а fixture, який пілот розгортає й збирає при кожному прогоні —
-тобто він гарантовано робочий на поточній версії ядра.
+📁 **Готовий приклад усіх восьми — [`packages/create-simplycms-store/template/`](packages/create-simplycms-store/template/).**
+Це вбудований шаблон CLI-скаффолдера `create-simplycms-store` — джерело правди
+магазину, гарантовано робоче на поточній версії ядра (пілот пакування збирає
+саме його). `tests/pilot/store-template/` — це вже НЕ окрема копія каркаса, а
+тонкий оверлей із двох файлів (`vite.config.ts` + `package.json`), який
+`scaffold.mjs` накладає поверх `template/` пакета для пілота.
 
 Що ви отримуєте одразу: SSR-вітрину з каталогом, кошиком і checkout, адмінку,
 профілі користувачів, `sitemap.xml`/`robots.txt`, і теми.
@@ -97,9 +101,9 @@ Vite резолвлять те, чого немає в `exports`, а tree-shakin
 справжніх tarball-ів, без workspace-аліасів:
 
 ```bash
-pnpm pilot:pack   # gates A/C/D — роути з node_modules, bundle-guard, Tailwind. Без БД
-pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local)
-pnpm pilot:e2e    # те саме на локальному стеку Supabase із сідом (потребує Docker)
+pnpm pilot:pack   # gates A/C/D/CLI — роути з node_modules, bundle-guard, Tailwind, create-пакет. Без БД, Gate E — видимо SKIP
+pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local); Gate E — досі SKIP (потрібен --e2e)
+pnpm pilot:e2e    # gates A/C/D/CLI/B/E на локальному стеку Supabase із сідом (потребує Docker)
 ```
 
 Ганяйте його після змін в `exports`, `peerDependencies`, `tsup`-конфігах, барелях
@@ -120,7 +124,7 @@ src/                      # Host — тонка збірка магазину, 1
   routes/__root.tsx       #   root route; routes/my/ — власні сторінки магазину
   server.ts · start.ts    #   server entry (SEO-інтерсептор) · middleware (admin guard)
   engine*.ts              #   DI-контекст ядра
-packages/simplycms/       # Ядро CMS — публікується на npmjs
+packages/       # Ядро CMS — публікується на npmjs
   objects/                #   контракти + порти (0 deps)
   domain/                 #   чиста логіка: pricing, discounts, inventory, shipping
   schema/                 #   Drizzle-схема ядра + RLS у TS

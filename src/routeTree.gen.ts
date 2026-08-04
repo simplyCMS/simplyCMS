@@ -9,70 +9,72 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './../packages/simplycms/admin-routes/routes/admin'
-import { Route as StorefrontRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront'
-import { Route as ProtectedRouteImport } from './../packages/simplycms/storefront-routes/routes/_protected'
-import { Route as AuthIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/index'
-import { Route as AdminIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/index'
-import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/index'
-import { Route as AuthCallbackRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/callback'
-import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/storefront-routes/routes/api/revalidate-theme'
-import { Route as ApiHealthRouteImport } from './../packages/simplycms/storefront-routes/routes/api/health'
-import { Route as ApiGuestOrderRouteImport } from './../packages/simplycms/storefront-routes/routes/api/guest-order'
-import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/checkout'
-import { Route as StorefrontCartRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/cart'
-import { Route as AdminUsersIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/users/index'
-import { Route as AdminUserCategoriesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/user-categories/index'
-import { Route as AdminThemesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/themes/index'
-import { Route as AdminShippingIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/index'
-import { Route as AdminSettingsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/settings/index'
-import { Route as AdminServicesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/services/index'
-import { Route as AdminServiceRequestsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/service-requests/index'
-import { Route as AdminSectionsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/sections/index'
-import { Route as AdminReviewsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/reviews/index'
-import { Route as AdminPropertiesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/properties/index'
-import { Route as AdminProductsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/products/index'
-import { Route as AdminPriceValidatorIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/price-validator/index'
-import { Route as AdminPriceTypesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/price-types/index'
-import { Route as AdminPluginsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/plugins/index'
-import { Route as AdminOrdersIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/orders/index'
-import { Route as AdminOrderStatusesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/order-statuses/index'
-import { Route as AdminLanguagesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/languages/index'
-import { Route as AdminDiscountsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/discounts/index'
-import { Route as AdminBannersIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/banners/index'
-import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/properties/index'
-import { Route as StorefrontCatalogIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/catalog/index'
-import { Route as ProtectedProfileIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_protected/profile/index'
-import { Route as AdminUsersUserIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/users/$userId'
-import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/user-categories/$categoryId'
-import { Route as AdminSectionsSectionIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/sections/$sectionId'
-import { Route as AdminReviewsReviewIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/reviews/$reviewId'
-import { Route as AdminProductsProductIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/products/$productId'
-import { Route as AdminPriceTypesPriceTypeIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/price-types/$priceTypeId'
-import { Route as AdminOrdersOrderIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/orders/$orderId'
-import { Route as AdminDiscountsDiscountIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/discounts/$discountId'
-import { Route as AdminBannersBannerIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/banners/$bannerId'
-import { Route as StorefrontOrderSuccessOrderIdRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/order-success/$orderId'
-import { Route as ProtectedProfileSettingsRouteImport } from './../packages/simplycms/storefront-routes/routes/_protected/profile/settings'
-import { Route as AdminUserCategoriesRulesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/user-categories/rules/index'
-import { Route as AdminShippingZonesIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/zones/index'
-import { Route as AdminShippingPickupPointsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/pickup-points/index'
-import { Route as AdminShippingMethodsIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/methods/index'
-import { Route as AdminPropertiesPropertyIdIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/properties/$propertyId/index'
-import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/properties/$propertySlug/index'
-import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/catalog/$sectionSlug/index'
-import { Route as ProtectedProfileOrdersIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_protected/profile/orders/index'
-import { Route as AdminUserCategoriesRulesRuleIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/user-categories/rules/$ruleId'
-import { Route as AdminThemesThemeIdSettingsRouteImport } from './../packages/simplycms/admin-routes/routes/admin/themes/$themeId/settings'
-import { Route as AdminShippingZonesZoneIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/zones/$zoneId'
-import { Route as AdminShippingPickupPointsPointIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/pickup-points/$pointId'
-import { Route as AdminShippingMethodsMethodIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/shipping/methods/$methodId'
-import { Route as AdminPluginsPluginIdSettingsRouteImport } from './../packages/simplycms/admin-routes/routes/admin/plugins/$pluginId/settings'
-import { Route as AdminDiscountsGroupsGroupIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/discounts/groups/$groupId'
-import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/properties/$propertySlug/$optionSlug'
-import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/catalog/$sectionSlug/$productSlug'
-import { Route as ProtectedProfileOrdersOrderIdRouteImport } from './../packages/simplycms/storefront-routes/routes/_protected/profile/orders/$orderId'
-import { Route as AdminPropertiesPropertyIdOptionsOptionIdRouteImport } from './../packages/simplycms/admin-routes/routes/admin/properties/$propertyId/options/$optionId'
+import { Route as AdminRouteImport } from './../packages/admin-routes/routes/admin'
+import { Route as StorefrontRouteImport } from './../packages/storefront-routes/routes/_storefront'
+import { Route as ProtectedRouteImport } from './../packages/storefront-routes/routes/_protected'
+import { Route as AuthIndexRouteImport } from './../packages/storefront-routes/routes/auth/index'
+import { Route as AdminIndexRouteImport } from './../packages/admin-routes/routes/admin/index'
+import { Route as StorefrontIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/index'
+import { Route as AuthSetPasswordRouteImport } from './../packages/storefront-routes/routes/auth/set-password'
+import { Route as AuthConfirmRouteImport } from './../packages/storefront-routes/routes/auth/confirm'
+import { Route as AuthCallbackRouteImport } from './../packages/storefront-routes/routes/auth/callback'
+import { Route as ApiRevalidateThemeRouteImport } from './../packages/storefront-routes/routes/api/revalidate-theme'
+import { Route as ApiHealthRouteImport } from './../packages/storefront-routes/routes/api/health'
+import { Route as ApiGuestOrderRouteImport } from './../packages/storefront-routes/routes/api/guest-order'
+import { Route as StorefrontCheckoutRouteImport } from './../packages/storefront-routes/routes/_storefront/checkout'
+import { Route as StorefrontCartRouteImport } from './../packages/storefront-routes/routes/_storefront/cart'
+import { Route as AdminUsersIndexRouteImport } from './../packages/admin-routes/routes/admin/users/index'
+import { Route as AdminUserCategoriesIndexRouteImport } from './../packages/admin-routes/routes/admin/user-categories/index'
+import { Route as AdminThemesIndexRouteImport } from './../packages/admin-routes/routes/admin/themes/index'
+import { Route as AdminShippingIndexRouteImport } from './../packages/admin-routes/routes/admin/shipping/index'
+import { Route as AdminSettingsIndexRouteImport } from './../packages/admin-routes/routes/admin/settings/index'
+import { Route as AdminServicesIndexRouteImport } from './../packages/admin-routes/routes/admin/services/index'
+import { Route as AdminServiceRequestsIndexRouteImport } from './../packages/admin-routes/routes/admin/service-requests/index'
+import { Route as AdminSectionsIndexRouteImport } from './../packages/admin-routes/routes/admin/sections/index'
+import { Route as AdminReviewsIndexRouteImport } from './../packages/admin-routes/routes/admin/reviews/index'
+import { Route as AdminPropertiesIndexRouteImport } from './../packages/admin-routes/routes/admin/properties/index'
+import { Route as AdminProductsIndexRouteImport } from './../packages/admin-routes/routes/admin/products/index'
+import { Route as AdminPriceValidatorIndexRouteImport } from './../packages/admin-routes/routes/admin/price-validator/index'
+import { Route as AdminPriceTypesIndexRouteImport } from './../packages/admin-routes/routes/admin/price-types/index'
+import { Route as AdminPluginsIndexRouteImport } from './../packages/admin-routes/routes/admin/plugins/index'
+import { Route as AdminOrdersIndexRouteImport } from './../packages/admin-routes/routes/admin/orders/index'
+import { Route as AdminOrderStatusesIndexRouteImport } from './../packages/admin-routes/routes/admin/order-statuses/index'
+import { Route as AdminLanguagesIndexRouteImport } from './../packages/admin-routes/routes/admin/languages/index'
+import { Route as AdminDiscountsIndexRouteImport } from './../packages/admin-routes/routes/admin/discounts/index'
+import { Route as AdminBannersIndexRouteImport } from './../packages/admin-routes/routes/admin/banners/index'
+import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/properties/index'
+import { Route as StorefrontCatalogIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/catalog/index'
+import { Route as ProtectedProfileIndexRouteImport } from './../packages/storefront-routes/routes/_protected/profile/index'
+import { Route as AdminUsersUserIdRouteImport } from './../packages/admin-routes/routes/admin/users/$userId'
+import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages/admin-routes/routes/admin/user-categories/$categoryId'
+import { Route as AdminSectionsSectionIdRouteImport } from './../packages/admin-routes/routes/admin/sections/$sectionId'
+import { Route as AdminReviewsReviewIdRouteImport } from './../packages/admin-routes/routes/admin/reviews/$reviewId'
+import { Route as AdminProductsProductIdRouteImport } from './../packages/admin-routes/routes/admin/products/$productId'
+import { Route as AdminPriceTypesPriceTypeIdRouteImport } from './../packages/admin-routes/routes/admin/price-types/$priceTypeId'
+import { Route as AdminOrdersOrderIdRouteImport } from './../packages/admin-routes/routes/admin/orders/$orderId'
+import { Route as AdminDiscountsDiscountIdRouteImport } from './../packages/admin-routes/routes/admin/discounts/$discountId'
+import { Route as AdminBannersBannerIdRouteImport } from './../packages/admin-routes/routes/admin/banners/$bannerId'
+import { Route as StorefrontOrderSuccessOrderIdRouteImport } from './../packages/storefront-routes/routes/_storefront/order-success/$orderId'
+import { Route as ProtectedProfileSettingsRouteImport } from './../packages/storefront-routes/routes/_protected/profile/settings'
+import { Route as AdminUserCategoriesRulesIndexRouteImport } from './../packages/admin-routes/routes/admin/user-categories/rules/index'
+import { Route as AdminShippingZonesIndexRouteImport } from './../packages/admin-routes/routes/admin/shipping/zones/index'
+import { Route as AdminShippingPickupPointsIndexRouteImport } from './../packages/admin-routes/routes/admin/shipping/pickup-points/index'
+import { Route as AdminShippingMethodsIndexRouteImport } from './../packages/admin-routes/routes/admin/shipping/methods/index'
+import { Route as AdminPropertiesPropertyIdIndexRouteImport } from './../packages/admin-routes/routes/admin/properties/$propertyId/index'
+import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/properties/$propertySlug/index'
+import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/catalog/$sectionSlug/index'
+import { Route as ProtectedProfileOrdersIndexRouteImport } from './../packages/storefront-routes/routes/_protected/profile/orders/index'
+import { Route as AdminUserCategoriesRulesRuleIdRouteImport } from './../packages/admin-routes/routes/admin/user-categories/rules/$ruleId'
+import { Route as AdminThemesThemeIdSettingsRouteImport } from './../packages/admin-routes/routes/admin/themes/$themeId/settings'
+import { Route as AdminShippingZonesZoneIdRouteImport } from './../packages/admin-routes/routes/admin/shipping/zones/$zoneId'
+import { Route as AdminShippingPickupPointsPointIdRouteImport } from './../packages/admin-routes/routes/admin/shipping/pickup-points/$pointId'
+import { Route as AdminShippingMethodsMethodIdRouteImport } from './../packages/admin-routes/routes/admin/shipping/methods/$methodId'
+import { Route as AdminPluginsPluginIdSettingsRouteImport } from './../packages/admin-routes/routes/admin/plugins/$pluginId/settings'
+import { Route as AdminDiscountsGroupsGroupIdRouteImport } from './../packages/admin-routes/routes/admin/discounts/groups/$groupId'
+import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './../packages/storefront-routes/routes/_storefront/properties/$propertySlug/$optionSlug'
+import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './../packages/storefront-routes/routes/_storefront/catalog/$sectionSlug/$productSlug'
+import { Route as ProtectedProfileOrdersOrderIdRouteImport } from './../packages/storefront-routes/routes/_protected/profile/orders/$orderId'
+import { Route as AdminPropertiesPropertyIdOptionsOptionIdRouteImport } from './../packages/admin-routes/routes/admin/properties/$propertyId/options/$optionId'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -101,6 +103,16 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StorefrontRoute,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/auth/confirm',
+  path: '/auth/confirm',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -429,6 +441,8 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -492,6 +506,8 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -558,6 +574,8 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -625,6 +643,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/admin/'
     | '/auth/'
     | '/profile/settings'
@@ -688,6 +708,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/admin'
     | '/auth'
     | '/profile/settings'
@@ -753,6 +775,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/_storefront/'
     | '/admin/'
     | '/auth/'
@@ -818,6 +842,8 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthConfirmRoute: typeof AuthConfirmRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
@@ -864,6 +890,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof StorefrontIndexRouteImport
       parentRoute: typeof StorefrontRoute
+    }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/auth/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -1427,6 +1467,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthConfirmRoute: AuthConfirmRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -24,9 +24,9 @@ const i18nRestrictedSyntax = [
 // Файли, вже переведені на i18n: тут регрес до хардкоду — помилка.
 // Розширювати список у міру міграції (див. platform-roadmap.md).
 const I18N_MIGRATED_FILES = [
-  'packages/simplycms/storefront-routes/src/shells/StorefrontShell.tsx',
-  'packages/simplycms/storefront-routes/src/shells/ProtectedShell.tsx',
-  'packages/simplycms/storefront-routes/src/pages/Cart.tsx',
+  'packages/storefront-routes/src/shells/StorefrontShell.tsx',
+  'packages/storefront-routes/src/shells/ProtectedShell.tsx',
+  'packages/storefront-routes/src/pages/Cart.tsx',
 ];
 
 const eslintConfig = [
@@ -58,8 +58,8 @@ const eslintConfig = [
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
     files: [
-      'packages/simplycms/schema/src/schema.ts',
-      'packages/simplycms/schema/src/relations.ts',
+      'packages/schema/src/schema.ts',
+      'packages/schema/src/relations.ts',
     ],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
@@ -67,10 +67,7 @@ const eslintConfig = [
   },
   {
     // Warn-зона: решта сторфронт-роутів і адмінка — міграція попереду.
-    files: [
-      'packages/simplycms/storefront-routes/**/*.tsx',
-      'packages/simplycms/admin/**/*.tsx',
-    ],
+    files: ['packages/storefront-routes/**/*.tsx', 'packages/admin/**/*.tsx'],
     rules: {
       'no-restricted-syntax': ['warn', ...i18nRestrictedSyntax],
     },
@@ -96,6 +93,25 @@ const eslintConfig = [
       // ЧУЖОГО проєкту — його імпорти резолвляться лише після `npm install`
       // із tarball-ів у /tmp, а не workspace-аліасами.
       'tests/pilot/store-template/**',
+      // Шаблон магазину в пакеті create-simplycms-store: це не код монорепо,
+      // а файли ЧУЖОГО проєкту — його імпорти резолвляться лише після
+      // `npm install` пакетів ядра в згенерованому магазині.
+      //
+      // 🔴 Виняток — `template/scripts/**`: це НЕ синкована копія host-каркаса,
+      // а власний код шаблону (service_role-логіка owner:invite), двійника
+      // якого в монорепо немає. Обґрунтування вище до нього не застосовне: він
+      // імпортує лише node-builtin'и й `@supabase/supabase-js`, тож лінтується
+      // як звичайний .mjs і не має ховатися від гейта.
+      //
+      // 🔴 Чому не одне `template/**` + `!template/scripts/**`: патерн, що
+      // закінчується на `/**`, ESLint трактує як ігнор ЦІЛОЇ гілки дерева і
+      // жодна наступна негація його вже не скасовує (перевірено
+      // `ESLint#isPathIgnored`). Тому ігнор розкладено на рівень-1 (`/*`) плюс
+      // вкладене (`/*/**`), і кожен знято окремою негацією.
+      'packages/create-simplycms-store/template/*',
+      'packages/create-simplycms-store/template/*/**',
+      '!packages/create-simplycms-store/template/scripts',
+      '!packages/create-simplycms-store/template/scripts/**',
     ],
   },
 ];

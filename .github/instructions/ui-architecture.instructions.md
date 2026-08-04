@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/*.{ts,tsx},packages/simplycms/ui/**/*.{ts,tsx},themes/**/*.{ts,tsx}"
+applyTo: "src/**/*.{ts,tsx},packages/ui/**/*.{ts,tsx},themes/**/*.{ts,tsx}"
 description: "Правила побудови UI, система тем та shadcn/ui компоненти"
 ---
 
@@ -15,7 +15,7 @@ description: "Правила побудови UI, система тем та sha
 
 1. **Перевір MCP shadcn** — чи є компонент у реєстрі.
 2. **Переглянь приклади** — `get_item_examples_from_registries`.
-3. **Додай** — компонент в `packages/simplycms/ui/src/`.
+3. **Додай** — компонент в `packages/ui/src/`.
 4. **Аудит** — `get_audit_checklist` після додавання.
 
 ## Система тем
@@ -32,7 +32,7 @@ interface ThemeModule {
 
 🔴 Тема **не** постачає сторінок і лейаутів. `MainLayout`, `CatalogLayout`,
 `ProfileLayout`, `theme.pages` видалені (рішення D3/D4). Джерело контракту —
-`packages/simplycms/theme-system/src/types.ts`.
+`packages/theme-system/src/types.ts`.
 
 ### Структура теми
 ```
@@ -52,7 +52,7 @@ themes/default/
 з активної теми та обгортають канонічну сторінку — route-файл теми не торкається:
 
 ```typescript
-// packages/simplycms/storefront-routes/routes/_storefront.tsx (спрощено)
+// packages/storefront-routes/routes/_storefront.tsx (спрощено)
 loader: async () => ({ themeName: (await getActiveTheme())?.name ?? 'default', … })
 // component:
 <ThemeProvider fallbackTheme="default" initialThemeName={themeName} …>
@@ -98,7 +98,7 @@ AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc
 Header, Footer, HeroBanner, ProductCard (override), FilterSidebar (override)
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
+- `packages/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
 - `CLAUDE.md` розділ «Theme System (контракт v2)» — реєстрація та SSR-резолв.
-- `packages/simplycms/ui/src/` — всі shadcn/ui компоненти.
+- `packages/ui/src/` — всі shadcn/ui компоненти.
 - `themes/default/` — еталонна реалізація теми.

@@ -22,6 +22,7 @@
     "pilot:pack": "node scripts/pilot-pack.mjs --pack-only",
     "pilot:e2e": "node scripts/pilot-pack.mjs --e2e",
     "pilot:seed": "node scripts/pilot-seed.mjs",
+    "template:sync": "node scripts/sync-create-store-template.mjs",
     "test:watch": "vitest",
     "db:pull": "pnpm --filter @simplycms/schema run db:pull",
     "db:dump-rls": "pnpm --filter @simplycms/schema run db:dump-rls",

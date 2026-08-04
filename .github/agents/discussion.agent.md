@@ -102,8 +102,8 @@ SimplyCMS — open-source e-commerce CMS з SSR-first підходом:
 - ThemeRegistry.load падає на тему `default`, якщо запитаної немає
 
 ### Де шукати деталі
-- packages/simplycms/theme-system/src/types.ts — повний контракт ThemeModule
-- packages/simplycms/theme-system/src/ — реалізація
+- packages/theme-system/src/types.ts — повний контракт ThemeModule
+- packages/theme-system/src/ — реалізація
 - themes/default/ — еталонна тема
 
 ---

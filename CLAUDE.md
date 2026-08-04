@@ -16,11 +16,13 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
-pnpm pilot:pack       # npm-pack пілот: гейти пакувальності A/C/D — БЕЗ Supabase
-pnpm pilot            # той самий пілот + gate B проти живої БД (.env.local)
-pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
-                      # потребує Docker; Gate B асертить точні назви із сіду
+pnpm pilot:pack       # npm-pack пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
+pnpm pilot            # той самий пілот + Gate B проти живої БД (.env.local); Gate E — видимо skipped (потрібен --e2e)
+pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
+                      # потребує Docker; Gate B асертить точні назви із сіду,
+                      # Gate E — owner:invite (inviteUserByEmail → /auth/confirm → set-password) наживо
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
+pnpm template:sync    # регенерація шаблону create-simplycms-store з монорепо (закомічені копії, парність-тестом)
 pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
@@ -143,7 +145,12 @@ simplyCMS/
 │   ├── server.ts                     # Server entry: createServerEntry({ fetch }) + точка перехоплення
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
-├── packages/simplycms/               # Ядро CMS (публікація на npmjs — Фаза 1+)
+├── packages/               # ВСІ публіковані пакети — і ядро, і скаффолдер.
+│   │                       # 🔴 Проміжної теки `packages/simplycms/` більше немає
+│   │                       # (сплощено 2026-08-04): вона була точкою subtree-дзеркала
+│   │                       # окремого core-репо, а дзеркало вивели з експлуатації ще
+│   │                       # у Фазі 0. Тулінг тепер відрізняє ядро від скаффолдера
+│   │                       # за ІМЕНЕМ (`@simplycms/`), а не за шляхом.
 │   ├── objects/            @simplycms/objects        # Контракти + порти (0 deps)
 │   ├── domain/             @simplycms/domain         # Pure-логіка: pricing/discounts/inventory/shipping
 │   ├── schema/             @simplycms/schema         # Drizzle-схема ядра + RLS у TS + drizzle/ snapshot
@@ -160,16 +167,23 @@ simplyCMS/
 │   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins
 │   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
-│   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
+│   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
+│   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
+│   │                            # шаблон магазину (`template/`, закомічена копія,
+│   │                            # синхронізується `pnpm template:sync`). Єдиний тут без
+│   │                            # scope — саме тому тулінг фільтрує за `@simplycms/`.
+│   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
 │   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
+│   │                                    # (bump.mjs сканує packages/* — і ядро, і скаффолдер)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
-│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-d
+│   ├── sync-create-store-template.mjs   # монорепо → template/ пакета create-simplycms-store (`pnpm template:sync`)
+│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-e + create-pkg-smoke
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду
 │   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 ├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
@@ -178,8 +192,10 @@ simplyCMS/
 ├── plugins/hello-world/              # Референс-плагін
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
-│   │                                 # pilot-seed (парність seed.sql і фікстур)
-│   └── pilot/store-template/         # Host-fixture пілота (виключений із tsconfig.json і eslint.config.mjs)
+│   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону)
+│   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
+│                                     # create-simplycms-store — не власна копія host-каркаса (виключений
+│                                     # із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
@@ -191,7 +207,10 @@ simplyCMS/
 ```
 
 🔴 `src/routes/` сканується **не** цілком: `routes.ts` монтує лише `my/`. Файл,
-покладений поруч із `__root.tsx`, роутом не стане (гард — `tests/virtual-routes-escape.test.ts`).
+покладений поруч із `__root.tsx`, роутом не стане — це семантика `virtualRouteConfig`
+(файлове сканування вимкнене), окремим тестом не асертиться.
+`tests/virtual-routes-escape.test.ts` стереже зворотну здатність: що `physical()`
+бачить теки пакетів ПОЗА `src/routes/` — саме на ній тримається монтування.
 
 ## Package Aliases (tsconfig paths + vite resolve.alias)
 
@@ -199,21 +218,21 @@ simplyCMS/
 
 | Import | Path |
 |--------|------|
-| `@simplycms/objects` | `packages/simplycms/objects/src` |
-| `@simplycms/domain` | `packages/simplycms/domain/src` |
-| `@simplycms/supabase` | `packages/simplycms/supabase/src` |
-| `@simplycms/data-supabase` | `packages/simplycms/data-supabase/src` |
-| `@simplycms/react-query` | `packages/simplycms/react-query/src` |
-| `@simplycms/runtime` | `packages/simplycms/runtime/src` |
-| `@simplycms/i18n` | `packages/simplycms/i18n/src` |
-| `@simplycms/storefront` | `packages/simplycms/storefront/src` |
-| `@simplycms/storefront-routes` | `packages/simplycms/storefront-routes/src` |
-| `@simplycms/admin` | `packages/simplycms/admin/src` |
-| `@simplycms/ui` | `packages/simplycms/ui/src` |
-| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/simplycms/<name>/src` |
-| `@simplycms/plugins` | `packages/simplycms/**plugin-system**/src` |
-| `@simplycms/themes` | `packages/simplycms/**theme-system**/src` |
-| `@simplycms/core` | `packages/simplycms/core/src` (legacy-фасад) |
+| `@simplycms/objects` | `packages/objects/src` |
+| `@simplycms/domain` | `packages/domain/src` |
+| `@simplycms/supabase` | `packages/supabase/src` |
+| `@simplycms/data-supabase` | `packages/data-supabase/src` |
+| `@simplycms/react-query` | `packages/react-query/src` |
+| `@simplycms/runtime` | `packages/runtime/src` |
+| `@simplycms/i18n` | `packages/i18n/src` |
+| `@simplycms/storefront` | `packages/storefront/src` |
+| `@simplycms/storefront-routes` | `packages/storefront-routes/src` |
+| `@simplycms/admin` | `packages/admin/src` |
+| `@simplycms/ui` | `packages/ui/src` |
+| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/<name>/src` |
+| `@simplycms/plugins` | `packages/**plugin-system**/src` |
+| `@simplycms/themes` | `packages/**theme-system**/src` |
+| `@simplycms/core` | `packages/core/src` (legacy-фасад) |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
@@ -236,8 +255,9 @@ ThemeModule = { manifest, tokens, components, settings? }
    `loader` каркасних роутів віддає `themeName` дітям.
 3. **Сторінки — в ядрі:** канонічні сторінки живуть у
    `@simplycms/storefront-routes/src/pages/`. Каркаси `StorefrontShell` /
-   `ProtectedShell` беруть з теми `components` (Header/Footer/HomeSections/…)
-   і обгортають канонічну сторінку. `theme.pages.*` більше **не існує**.
+   `ProtectedShell` беруть з теми `components` лише Header/Footer і обгортають
+   канонічну сторінку; секційні компоненти (HeroBanner/HomeSections) споживає
+   сама сторінка (`pages/Home.tsx`). `theme.pages.*` більше **не існує**.
 4. **Токени:** `applyTokens(theme.tokens)` розкладає палітру в CSS-змінні —
    тема не везе власний `theme.css`.
 5. **Валідація:** `validateThemeModule` — публічний API для авторів тем;
@@ -281,7 +301,7 @@ production-`node_modules` (потрібен рівно один рантайм-�
 
 ## Database Commands
 
-Джерело правди схеми — `packages/simplycms/schema/src/schema.ts` (Drizzle).
+Джерело правди схеми — `packages/schema/src/schema.ts` (Drizzle).
 
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
@@ -294,10 +314,10 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
 встановлених плагінів); проти нього типізується host-код.
-`packages/simplycms/supabase/src/database.ts` — **baseline** core-схеми для пакетів
+`packages/supabase/src/database.ts` — **baseline** core-схеми для пакетів
 ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів після
 кожної core-міграції. Магазин звужує клієнти до своїх типів через generic-параметр
-фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/simplycms/supabase/README.md`.
+фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
@@ -332,18 +352,31 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; розходження
-  версій між ними реліз-скрипт вважає помилкою стану й падає;
+- **версія синхронна** — усі 22 пакети (21 `@simplycms/*` + unscoped
+  `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
+  сканує `packages/*` і бере все, що не `private` — після сплощення теки
+  окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає
+  помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
-  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
+  в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
+  пакетів, що вже там є**. Пакет, якого в реєстрі ще немає, мерж публікує —
+  саме так у реєстр поїхав `create-simplycms-store`;
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
 - 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
   npm за замовчуванням робить приватними, а це платний план;
 - потрібен secret **`NPM_TOKEN`** — 🔴 саме **Granular Access Token із увімкненим
-  «Bypass 2FA»** (scope `@simplycms`, read+write). Токен без bypass успішно
+  «Bypass 2FA»** і обсягом **`All Packages`** (read+write). Не scope
+  `@simplycms`: scope — це префікс в ІМЕНІ пакета, а не тека, і unscoped
+  `create-simplycms-store` (надалі ще й `simplycms` CLI) під нього не підпадає.
+  Розширено 2026-08-04. Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним
-  повідомленням ще до збірки.
+  повідомленням ще до збірки. 🔴 Цей токен обмежений scope `@simplycms` і НЕ
+  покриває unscoped `create-simplycms-store` — обидва наслідки погані: якщо
+  токен пакет не покриває, job червоніє; якщо покриває (розширений токен),
+  мерж МОВЧКИ публікує пакет поза релізним рішенням. Дію власника ДО мержу
+  гілки, що вводить пакет, див. у
+  [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
 
 🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
 заглушений `if: false` — після переносу репо в org `simplyCMS` scope `@simplycms`

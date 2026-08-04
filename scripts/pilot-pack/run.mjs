@@ -13,6 +13,8 @@ import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateTailwind } from './gate-d.mjs';
+import { gateOwner, skippedOwnerGate } from './gate-e.mjs';
+import { createPkgSmoke } from './create-pkg-smoke.mjs';
 
 /** Заголовок кроку — щоб лог пілота читався зверху вниз. */
 export function step(title) {
@@ -24,6 +26,7 @@ export function step(title) {
  *   storeDir: string; tarballDir: string; port: number;
  *   env: Record<string,string>; reuse: boolean; skipBuild: boolean;
  *   packOnly: boolean; expectedNames: string[] | null;
+ *   serviceRoleKey: string | null;
  * }} opts
  * @returns {Promise<[string, { ok: boolean; details: string[] }][]>}
  */
@@ -40,7 +43,24 @@ export async function runGates(opts) {
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
 
-  if (!opts.packOnly) results.push(['B', await runGateB(opts)]);
+  // Gate CLI не залежить ні від БД, ні від скретча — тому в гілці, яка йде
+  // завжди, включно з `--pack-only`.
+  step('Gate CLI — tarball скаффолдера');
+  results.push(['CLI', createPkgSmoke()]);
+
+  if (opts.packOnly) {
+    // Gate B у `--pack-only` не існує (сервер не піднімається), а Gate E має
+    // бути ВИДИМО пропущений: мовчазна відсутність рядка читається як «немає
+    // такого гейта», а не «не перевірялось у цьому режимі».
+    results.push([
+      'E',
+      skippedOwnerGate(
+        'Gate E — пропущено: --pack-only не піднімає ні сервер, ні БД',
+      ),
+    ]);
+  } else {
+    results.push(...(await runServerGates(opts)));
+  }
   return results;
 }
 
@@ -65,12 +85,43 @@ async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
   viteBuild(storeDir);
 }
 
-/** Gate B — підняти production-runner скретча і відпустити його в `finally`. */
-async function runGateB({ storeDir, port, env, expectedNames }) {
+/**
+ * Гейти, яким потрібен ЖИВИЙ сервер скретча — Gate B і Gate E.
+ *
+ * 🔴 Обидва ділять ОДНЕ вікно життя процесу: сервер піднімається тут і гаситься
+ * у `finally`. Викликати Gate E після повернення з окремого «runGateB» не можна
+ * — сервер там уже вбито, і `fetch('/auth/confirm')` падав би на ECONNREFUSED.
+ *
+ * @returns {Promise<[string, { ok: boolean; details: string[] }][]>}
+ */
+async function runServerGates({
+  storeDir,
+  port,
+  env,
+  expectedNames,
+  serviceRoleKey,
+}) {
   step(`Gate B — production-запуск на порту ${port}`);
   const server = await startStore(storeDir, port);
   try {
-    return await gateHttp(port, env, { expectedNames });
+    const results = [['B', await gateHttp(port, env, { expectedNames })]];
+
+    if (serviceRoleKey) {
+      step('Gate E — bootstrap власника');
+      results.push([
+        'E',
+        await gateOwner({ storeDir, port, env, serviceRoleKey }),
+      ]);
+    } else {
+      results.push([
+        'E',
+        skippedOwnerGate(
+          'Gate E — пропущено: потрібен --e2e (service_role-ключ дає лише ' +
+            'локальний стек; проти живої БД owner-флоу не ганяємо)',
+        ),
+      ]);
+    }
+    return results;
   } finally {
     server.stop();
   }

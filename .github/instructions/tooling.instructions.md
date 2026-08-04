@@ -7,7 +7,7 @@ description: 'Команди, форматування, тестування т�
 
 ## Package Manager
 - **pnpm** (v10.x) — єдиний пакетний менеджер.
-- Workspace: `packages/simplycms/*`, `themes/*`, `plugins/*`.
+- Workspace: `packages/*`, `themes/*`, `plugins/*` — усі публіковані пакети (ядро + скаффолдер) лежать в одній теці `packages/`.
 - Не використовуй `npm` або `yarn`.
 
 ## Основні команди
@@ -30,9 +30,10 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
-pnpm pilot:pack             # npm-pack пілот, гейти пакувальності A/C/D — без Supabase
-pnpm pilot                  # той самий пілот + gate B проти живої БД (.env.local)
-pnpm pilot:e2e              # гейти A-D проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
+pnpm template:sync          # регенерація шаблону create-simplycms-store з монорепо (закомічені копії)
+pnpm pilot:pack             # npm-pack пілот, гейти A/C/D/CLI — без Supabase; Gate E видимо SKIP
+pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local); Gate E досі SKIP
+pnpm pilot:e2e              # гейти A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
 pnpm pilot:seed             # фікстури пілота → supabase/seed.sql (генерат!)
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
@@ -40,7 +41,7 @@ pnpm db:pull                # Інтроспекція живої БД → Drizz
 pnpm db:diff <name>         # schema.ts → SQL у supabase/migrations (ревʼю обовʼязкове!)
 pnpm db:migrate             # Застосувати міграції (supabase link + db push + типи)
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase → supabase/types.ts
-pnpm types:baseline         # Снапшот CORE-типів → packages/simplycms/supabase/src/database.ts
+pnpm types:baseline         # Снапшот CORE-типів → packages/supabase/src/database.ts
 ```
 
 🔴 **`supabase/seed.sql` — ГЕНЕРАТ, руками не правиться.** Джерело правди —
@@ -53,19 +54,19 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/simply
 
 🔴 **Типів БД у репо ДВА файли.** `supabase/types.ts` — генерат МАГАЗИНУ
 (core + таблиці встановлених плагінів), проти нього типізується host-код.
-`packages/simplycms/supabase/src/database.ts` — **baseline** core-схеми, проти
+`packages/supabase/src/database.ts` — **baseline** core-схеми, проти
 якого типізуються пакети ядра; оновлюється `pnpm types:baseline` і ЛИШЕ з
 еталонної dev-БД без плагінів, після кожної core-міграції. Обидва — генерати:
 руками не редагуються, у `.prettierignore`. Магазин звужує клієнти до своїх
 типів через generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) —
-див. `packages/simplycms/supabase/README.md`.
+див. `packages/supabase/README.md`.
 
 ## Конфігурація
 
 ### TypeScript
 - Strict mode увімкнено.
 - Path aliases (повний перелік — `tsconfig.json` + дзеркало у `vite.config.ts`):
-  - `@simplycms/*` → `packages/simplycms/*/src` (objects, domain, data-supabase,
+  - `@simplycms/*` → `packages/*/src` (objects, domain, data-supabase,
     react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
     storefront, storefront-routes, runtime, supabase, i18n, cart-ui, catalog-ui,
     checkout-ui, profile-ui, reviews-ui)

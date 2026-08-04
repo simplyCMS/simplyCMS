@@ -283,7 +283,7 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
 ### 3.6. Поетапність (кожен крок цінний сам по собі)
 
 - **Фаза 0 (безризикова, вже можлива):** перевести `src/routes` монорепо на
-  `routes.ts` + `physical()` до **workspace-тек** (`packages/simplycms/storefront-routes`,
+  `routes.ts` + `physical()` до **workspace-тек** (`packages/storefront-routes`,
   `admin-routes`). Нічого не публікуємо; перевіряємо типи/splitting/DX на реальних
   65 роутах. Заодно: замкнути плагін-контур (loadPlugins на старті), LICENSE, i18n-скелет.
 - **Фаза 1:** npm pack пілот — 1 пакет із 2-3 роутами + server fn → чистий проєкт;

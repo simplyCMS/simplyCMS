@@ -94,6 +94,16 @@ export async function gateHttp(port, env, { expectedNames = null } = {}) {
     `${admin.status} → ${location ?? '—'}`,
   );
 
+  // Сторінка встановлення пароля з invite-флоу: гарда «залогінених геть»
+  // тут навмисно немає, тож анонімний GET мусить віддати 200. Якщо роут не
+  // приїхав із tarball-а `@simplycms/storefront-routes` — буде 404.
+  const setPassword = await fetch(`${base}/auth/set-password`);
+  check(
+    'GET /auth/set-password',
+    setPassword.status === 200,
+    `${setPassword.status}`,
+  );
+
   const sitemap = await fetch(`${base}/sitemap.xml`);
   const sitemapBody = await sitemap.text();
   check(

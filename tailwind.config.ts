@@ -5,8 +5,8 @@ export default {
   darkMode: 'class',
   content: [
     './src/**/*.{ts,tsx}',
-    './packages/simplycms/**/src/**/*.{ts,tsx}',
-    './packages/simplycms/**/routes/**/*.{ts,tsx}',
+    './packages/**/src/**/*.{ts,tsx}',
+    './packages/**/routes/**/*.{ts,tsx}',
     './themes/**/*.{ts,tsx}',
     './plugins/**/*.{ts,tsx}',
   ],

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/*.{ts,tsx},packages/simplycms/**/*.{ts,tsx}"
+applyTo: "src/**/*.{ts,tsx},packages/**/*.{ts,tsx}"
 description: "Правила роботи з даними та Supabase в SimplyCMS"
 ---
 
@@ -18,7 +18,7 @@ description: "Правила роботи з даними та Supabase в Simpl
 - Data fetching — у route `loader` через `createServerFn`
   (`@simplycms/storefront-routes/src/server/*`), який делегує в `@simplycms/storefront/loaders`:
   ```typescript
-  // packages/simplycms/storefront-routes/routes/_storefront/catalog/$sectionSlug/index.tsx
+  // packages/storefront-routes/routes/_storefront/catalog/$sectionSlug/index.tsx
   export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
     loader: async ({ params }) => getSectionPageData({ data: params.sectionSlug }),
     component: CatalogSectionRoute,
@@ -58,11 +58,11 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 ### Міграції
 
-Джерело правди схеми — **`packages/simplycms/schema/src/schema.ts`** (Drizzle).
+Джерело правди схеми — **`packages/schema/src/schema.ts`** (Drizzle).
 Флоу зміни схеми:
 
 ```bash
-# 1. правка packages/simplycms/schema/src/schema.ts
+# 1. правка packages/schema/src/schema.ts
 pnpm db:diff <name>       # 2. drizzle-kit generate → supabase/migrations/<ts>_<name>.sql
 #                            3. РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
 pnpm db:migrate           # 4. supabase link + db push + автоматичний db:generate-types
@@ -72,24 +72,24 @@ pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-с�
 
 - Всі застосовні міграції живуть на рівні проекту: `supabase/migrations/`
   (формат Supabase CLI: `<YYYYMMDDHHmmss>_<slug>.sql`).
-- Журнал і snapshot Drizzle — окремо, у `packages/simplycms/schema/drizzle/`
+- Журнал і snapshot Drizzle — окремо, у `packages/schema/drizzle/`
   (подвійна бухгалтерія навмисна, комітяться обидві теки).
-- Seed-міграції ядра (reference): `packages/simplycms/schema/seed-migrations/`.
+- Seed-міграції ядра (reference): `packages/schema/seed-migrations/`.
 - Сайт може додавати власні міграції поруч з seed-файлами.
 - 🔴 Ревʼю SQL перед `db:migrate` — обовʼязкове: drizzle-kit не бачить
   перейменувань (генерує `DROP`+`ADD`) і не діфить RLS-політики/тригери.
 - 🔴 Крок 5 (`types:baseline`) — НЕ автоматизований навмисно: `db:migrate`
   застосовується й до dev-БД із встановленими плагінами, а baseline
-  (`packages/simplycms/supabase/src/database.ts`) публікується на npm і
+  (`packages/supabase/src/database.ts`) публікується на npm і
   повинен містити ЛИШЕ core-таблиці. Автозапуск мовчки затягнув би плагінні
   таблиці в опублікований пакет за одного невдалого запуску. Деталі й повний
-  розклад двох файлів типів — `packages/simplycms/supabase/README.md`.
+  розклад двох файлів типів — `packages/supabase/README.md`.
 
 ## Supabase Data Patterns
 
 ### Server function + in-memory TTL cache (cross-request)
 ```typescript
-// packages/simplycms/storefront-routes/src/server/themes.ts — еталон патерну
+// packages/storefront-routes/src/server/themes.ts — еталон патерну
 const CACHE_TTL = 5 * 60 * 1000;
 let cache: { data: T | null; timestamp: number } | null = null;
 
@@ -132,7 +132,7 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 
 ## ❌ NEVER
 - Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm db:migrate`.
-- Не редагуй `packages/simplycms/schema/drizzle/meta/*` вручну — це snapshot drizzle-kit.
+- Не редагуй `packages/schema/drizzle/meta/*` вручну — це snapshot drizzle-kit.
 - Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client/репозиторії.
 - Не редагуй `supabase/types.ts` вручну — виключно через `pnpm db:generate-types`.
 - Не забувай інвалідацію query keys після мутацій в адмінці.
@@ -141,9 +141,9 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 - Не хардкодь query keys — використовуй константи або фабрики.
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/supabase/src/` — клієнти Supabase (server/anon/SupabaseProvider).
-- `packages/simplycms/data-supabase/src/` — репозиторії-порти.
-- `packages/simplycms/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
-- `packages/simplycms/schema/README.md` — Drizzle-baseline, RLS-parity gate, ручні правки після `pull`.
+- `packages/supabase/src/` — клієнти Supabase (server/anon/SupabaseProvider).
+- `packages/data-supabase/src/` — репозиторії-порти.
+- `packages/react-query/src/` — `EngineProvider`, query-фабрики, хуки.
+- `packages/schema/README.md` — Drizzle-baseline, RLS-parity gate, ручні правки після `pull`.
 - `scripts/db-diff.mjs`, `scripts/db-migrate.mjs` — конвеєр міграцій.
 - `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` — порти, DI, цільова пакетна архітектура.

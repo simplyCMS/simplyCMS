@@ -1,4 +1,4 @@
 packages:
-  - 'packages/simplycms/*'
+  - 'packages/*'
   - 'themes/*'
   - 'plugins/*'

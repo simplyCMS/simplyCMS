@@ -12,7 +12,13 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['tests/published-exports-parity.test.ts'],
+    // Жорсткий список: сюди входить усе, що перевіряє ОПУБЛІКОВАНІ артефакти
+    // (tarball-и), бо саме ця сюїта стоїть у релізному ланцюзі —
+    // `pnpm release` і job `publish` у publish-packages.yml.
+    include: [
+      'tests/published-exports-parity.test.ts',
+      'tests/create-store-pack.test.ts',
+    ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.
     fileParallelism: false,

@@ -1,0 +1,95 @@
+{
+  "name": "@simplycms/storefront-routes",
+  "version": "0.2.0",
+  "private": false,
+  "description": "Storefront route-компоненти, server-шар і SEO для SimplyCMS",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./active-theme": "./src/active-theme.ts",
+    "./server/*": "./src/server/*.ts",
+    "./seo/*": "./src/seo/*.ts",
+    "./pages/*": "./src/pages/*.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./shells/*": "./src/shells/*",
+    "./routes/*": "./routes/*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./active-theme": {
+        "types": "./dist/active-theme.d.ts",
+        "import": "./dist/active-theme.js"
+      },
+      "./server/*": {
+        "types": "./dist/server/*.d.ts",
+        "import": "./dist/server/*.js"
+      },
+      "./seo/*": {
+        "types": "./dist/seo/*.d.ts",
+        "import": "./dist/seo/*.js"
+      },
+      "./pages/*": {
+        "types": "./dist/pages/*.d.ts",
+        "import": "./dist/pages/*.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js"
+      },
+      "./shells/*": {
+        "types": "./dist/shells/*.d.ts",
+        "import": "./dist/shells/*.js"
+      },
+      "./routes/*": "./routes/*"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "routes",
+    "!src/**/__tests__/**"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/storefront-routes"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@simplycms/catalog-ui": "workspace:*",
+    "@simplycms/core": "workspace:*",
+    "@simplycms/domain": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
+    "@simplycms/objects": "workspace:*",
+    "@simplycms/plugins": "workspace:*",
+    "@simplycms/storefront": "workspace:*",
+    "@simplycms/supabase": "workspace:*",
+    "@simplycms/themes": "workspace:*",
+    "@simplycms/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "@hookform/resolvers": "^5.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@tanstack/react-start": "^1.0.0",
+    "embla-carousel-react": "^8.0.0",
+    "lucide-react": ">=0.400.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-hook-form": "^7.0.0",
+    "zod": "^3.0.0 || ^4.0.0"
+  }
+}

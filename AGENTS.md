@@ -80,7 +80,7 @@ src/                              # Host (тонка збірка магазин
 ├── start.ts                      # createStart + request middleware (admin guard)
 └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 
-packages/simplycms/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
+packages/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
 ├── objects/            @simplycms/objects       # Contracts + ports (0 deps)
 ├── domain/             @simplycms/domain        # Pure logic (pricing/discounts/…)
 ├── schema/             @simplycms/schema        # Drizzle-схема ядра + RLS у TS

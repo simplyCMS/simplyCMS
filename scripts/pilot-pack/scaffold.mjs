@@ -1,46 +1,47 @@
 /**
- * Крок 2 пілота: розгортання скретч-магазину з fixture-шаблону.
+ * Крок 2 пілота: розгортання скретч-магазину з шаблону `create-simplycms-store`.
  *
- * Шаблон (`tests/pilot/store-template/`) — це host ЧУЖОГО проєкту: ті самі
- * файли, що й у монорепо, але без жодного workspace-аліаса на `packages/**`.
- * Теми й плагіни копіюються з репо як власні файли магазину.
+ * 🔴 Джерело правди розкладки магазину — `packages/create-simplycms-store/template`,
+ * той самий шаблон, який отримує кінцевий користувач. Власної копії host-каркаса
+ * пілот більше не тримає: що зламається в шаблоні — зламається і в пілоті, а не
+ * сховається за форком фікстури.
  *
- * Файли, побайтово ідентичні host-у (див. `HOST_FILES`), у шаблоні НЕ
- * зберігаються — вони копіюються звідси, з кореня репо, при кожному
- * розгортанні. Це виключає розсинхрон: правка host-файлу автоматично
- * потрапляє в наступний пілот без ручного дзеркалення.
+ * `tests/pilot/store-template/` лишається тонким ОВЕРЛЕЄМ — рівно ті два файли,
+ * які в пілоті мусять відрізнятися від шаблону:
+ *  - `vite.config.ts` — плюс плагін `emitBundleStats()`, без якого немає Gate C;
+ *  - `package.json` — приватний manifest із плейсхолдером `overrides`, куди
+ *    `writeManifest` підставляє шляхи tarball-ів.
+ *
+ * Теми (`themes/default`) і `plugins/hello-world` приходять із шаблону, а не з
+ * кореня репо; їхню синхронність із монорепо стереже `pnpm template:sync` +
+ * `tests/create-store-template-parity.test.ts`.
  */
 
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { TEMPLATE_DIR } from '../sync-create-store-template.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
-const TEMPLATE_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
+const PILOT_OVERLAY_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
 
 /**
- * Шляхи (відносно кореня репо), під якими шаблон магазину буквально
- * дублює host. Тримати їх у шаблоні окремим форком — гарантований дрейф
- * після першої ж правки host-файлу, тож копіюємо напряму з кореня.
+ * Службові імена шаблону: ті самі перейменування, що робить CLI скаффолдера
+ * (`packages/create-simplycms-store/src/scaffold.mjs`). Повторюємо їх тут, щоб
+ * скретч був еквівалентом магазину, розгорнутого справжнім `pnpm create`.
+ *
+ * `package.json.tpl` до цієї мапи НЕ входить: у ньому плейсхолдери
+ * (`__STORE_NAME__`, `__SIMPLYCMS_VERSION__`), невалідні для npm, а manifest
+ * пілота приходить із оверлею — тож шаблонний просто видаляється.
  */
-const HOST_FILES = [
-  'server.mjs',
-  'server-runtime.mjs',
-  'src/styles/globals.css',
-  'src/routes/__root.tsx',
-  'src/start.ts',
-  'src/client.tsx',
-  'src/router.tsx',
-  'src/server.ts',
-  'src/server/engine.ts',
-  'src/engine-provider.tsx',
-  'src/theme-registry.ts',
-];
+const RENAMES = { gitignore: '.gitignore', 'env.example': '.env.example' };
 
 /** Ключі, які магазин чекає у своєму `.env`. */
 const ENV_KEYS = [
@@ -51,7 +52,7 @@ const ENV_KEYS = [
 ];
 
 /**
- * Розгорнути магазин: шаблон + теми/плагіни + tarball-и в manifest + `.env`.
+ * Розгорнути магазин: шаблон пакета + пілотний оверлей + tarball-и та `.env`.
  *
  * @param {{ storeDir: string; tarballs: Map<string,string>; env: Record<string,string> }} opts
  */
@@ -59,21 +60,17 @@ export function scaffoldStore({ storeDir, tarballs, env }) {
   rmSync(storeDir, { recursive: true, force: true });
   mkdirSync(storeDir, { recursive: true });
 
-  cpSync(TEMPLATE_DIR, storeDir, { recursive: true });
-  for (const relPath of HOST_FILES) {
-    const dest = join(storeDir, relPath);
-    mkdirSync(dirname(dest), { recursive: true });
-    cpSync(join(REPO_ROOT, relPath), dest);
-  }
-  cpSync(join(REPO_ROOT, 'themes'), join(storeDir, 'themes'), {
+  cpSync(join(REPO_ROOT, TEMPLATE_DIR), storeDir, {
     recursive: true,
     filter: (src) => !src.includes('node_modules'),
   });
-  cpSync(
-    join(REPO_ROOT, 'plugins/hello-world'),
-    join(storeDir, 'plugins/hello-world'),
-    { recursive: true, filter: (src) => !src.includes('node_modules') },
-  );
+  rmSync(join(storeDir, 'package.json.tpl'), { force: true });
+  for (const [from, to] of Object.entries(RENAMES)) {
+    if (existsSync(join(storeDir, from))) {
+      renameSync(join(storeDir, from), join(storeDir, to));
+    }
+  }
+  cpSync(PILOT_OVERLAY_DIR, storeDir, { recursive: true });
 
   writeManifest(storeDir, tarballs);
   writeEnv(storeDir, env);

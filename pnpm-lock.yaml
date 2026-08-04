@@ -268,7 +268,7 @@ importers:
         specifier: ^4.0.18
         version: 4.0.18(@types/node@25.2.3)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.21.0)
 
-  packages/simplycms/admin:
+  packages/admin:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -328,7 +328,7 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/admin-routes:
+  packages/admin-routes:
     dependencies:
       '@simplycms/admin':
         specifier: workspace:*
@@ -346,7 +346,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/cart-ui:
+  packages/cart-ui:
     dependencies:
       '@simplycms/react-query':
         specifier: workspace:*
@@ -361,7 +361,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/catalog-ui:
+  packages/catalog-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -385,7 +385,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/checkout-ui:
+  packages/checkout-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -415,7 +415,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/core:
+  packages/core:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -505,7 +505,13 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/data-supabase:
+  packages/create-simplycms-store:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^1.7.0
+        version: 1.7.0
+
+  packages/data-supabase:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -514,21 +520,21 @@ importers:
         specifier: ^2.0.0
         version: 2.95.3
 
-  packages/simplycms/domain:
+  packages/domain:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
         version: link:../objects
 
-  packages/simplycms/i18n:
+  packages/i18n:
     dependencies:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/objects: {}
+  packages/objects: {}
 
-  packages/simplycms/plugin-system:
+  packages/plugin-system:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -547,7 +553,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/simplycms/profile-ui:
+  packages/profile-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -571,7 +577,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/react-query:
+  packages/react-query:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -583,7 +589,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/reviews-ui:
+  packages/reviews-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -616,13 +622,13 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/runtime:
+  packages/runtime:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
         version: link:../objects
 
-  packages/simplycms/schema:
+  packages/schema:
     dependencies:
       drizzle-orm:
         specifier: ^0.45.0
@@ -635,7 +641,7 @@ importers:
         specifier: 8.22.0
         version: 8.22.0
 
-  packages/simplycms/storefront:
+  packages/storefront:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -644,7 +650,7 @@ importers:
         specifier: ^2.0.0
         version: 2.95.3
 
-  packages/simplycms/storefront-routes:
+  packages/storefront-routes:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -679,6 +685,9 @@ importers:
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.95.3
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.21(react@19.2.4)
@@ -704,7 +713,7 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/supabase:
+  packages/supabase:
     dependencies:
       '@supabase/ssr':
         specifier: ^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0
@@ -719,7 +728,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/theme-system:
+  packages/theme-system:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -731,7 +740,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/ui:
+  packages/ui:
     dependencies:
       '@radix-ui/react-accordion':
         specifier: ^1.0.0
@@ -987,6 +996,14 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@clack/core@1.4.3':
+    resolution: {integrity: sha512-/kr3UWNtdJfxZtPgDqUOmG2pvwlmcLGheex5yiZKdwbzZJxhV+HMNR9QNmyY5cGwTNV6LrR7Jtp+KjhUAP1qBQ==}
+    engines: {node: '>= 20.12.0'}
+
+  '@clack/prompts@1.7.0':
+    resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
+    engines: {node: '>= 20.12.0'}
 
   '@csstools/color-helpers@6.0.2':
     resolution: {integrity: sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q==}
@@ -3805,6 +3822,15 @@ packages:
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
 
+  fast-string-truncated-width@3.0.3:
+    resolution: {integrity: sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g==}
+
+  fast-string-width@3.0.2:
+    resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
+
+  fast-wrap-ansi@0.2.2:
+    resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
+
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
@@ -4671,6 +4697,9 @@ packages:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
 
+  sisteransi@1.0.5:
+    resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
   sonner@2.0.7:
     resolution: {integrity: sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w==}
     peerDependencies:
@@ -5280,6 +5309,18 @@ snapshots:
   '@bramus/specificity@2.4.2':
     dependencies:
       css-tree: 3.2.1
+
+  '@clack/core@1.4.3':
+    dependencies:
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 1.0.5
+
+  '@clack/prompts@1.7.0':
+    dependencies:
+      '@clack/core': 1.4.3
+      fast-string-width: 3.0.2
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 1.0.5
 
   '@csstools/color-helpers@6.0.2': {}
 
@@ -7896,6 +7937,16 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
+  fast-string-truncated-width@3.0.3: {}
+
+  fast-string-width@3.0.2:
+    dependencies:
+      fast-string-truncated-width: 3.0.3
+
+  fast-wrap-ansi@0.2.2:
+    dependencies:
+      fast-string-width: 3.0.2
+
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
       picomatch: 4.0.3
@@ -8725,6 +8776,8 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+
+  sisteransi@1.0.5: {}
 
   sonner@2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:

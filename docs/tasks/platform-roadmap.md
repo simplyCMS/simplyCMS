@@ -22,9 +22,9 @@ subpath-и резолвляться, типи компілюються під `t
 | Механізм | Команда / точка входу |
 |----------|----------------------|
 | Реліз ядра | `pnpm release X.Y.Z` → PR у `main` → push публікує на npmjs |
-| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D |
-| Пілот проти живої БД | `pnpm pilot` — + gate B, потребує `.env.local` |
-| Пілот на локальному стеку | `pnpm pilot:e2e` — потребує Docker ⚠️ **ще не запускався** |
+| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI, Gate E видимо SKIP |
+| Пілот проти живої БД | `pnpm pilot` — + Gate B, потребує `.env.local`; Gate E досі SKIP |
+| Пілот на локальному стеку | `pnpm pilot:e2e` — gates A/C/D/CLI/B/E, потребує Docker ⚠️ **ще не запускався** |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`, порт 3000) |
 | CI на PR | `typecheck` · `test` · `packaging` (tarball-parity) |
 
@@ -46,6 +46,11 @@ subpath-и резолвляться, типи компілюються під `t
    релізом — відповідальність розробника.
 4. **i18n-міграція** — борг Фази 0 (~954 кириличні входження), warn-зона
    ESLint-селекторів досі warn, а не error.
+5. **Серверний env запікається в білд** — навіть `createServerSupabase`
+   (`packages/supabase/src/server-client.ts`) читає
+   `import.meta.env`, тож ротація Supabase-ключів вимагає перезбірки.
+   Борг: перевести server-only читання на `process.env` усередині хендлерів
+   (офіційний патерн TanStack Start). Не блокує Фазу 2 (спека 2026-08-03, §8).
 
 ### Найдорожчий урок, який варто пам'ятати
 
@@ -101,7 +106,13 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       `theme-system/ThemeResolver`; шими з живими споживачами
       (`lib/priceUtils`, `lib/shipping/*`, `lib/discountEngine`, `hooks/useCart`,
       `hooks/useProductsWithStock`, частина `components/*`) лишились разом із
-      самим `core` — повне розчинення `core` перенесено на Фазу 1+
+      самим `core` — повне розчинення `core` перенесено на Фазу 1+.
+      **Перелік не вичерпний** (аудит 2026-08-03): у `core` також живуть із
+      зовнішніми споживачами `hooks/useBanners`, `useDiscountedPrice`,
+      `usePriceType`, `useProductReviews`, `useStock`, `lib/supabase.ts`
+      (auth-хелпери), `lib/bannerUtils`, `providers/CMSProvider`,
+      `components/NavLink`, `components/ThemeToggle`; а `lib/shipping/findZone.ts`
+      і частина `useProductsWithStock` — власна логіка, не re-export-шими
 - [x] Вивести з експлуатації git-subtree колишнього core-дзеркала (`cms:pull`/`cms:push`
       скрипти геть) — монорепо стає єдиним джерелом (spec §4.1); репозиторій-дзеркало
       видалено власником (2026-07-31).
@@ -115,6 +126,18 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ### Борги, свідомо винесені за межі Фази 0
 
+- ~~**Проміжна тека `packages/simplycms/`**~~ — **закрито 2026-08-04**: 21 пакет
+  ядра піднято на рівень вище, у `packages/*`, тека видалена разом із мертвим
+  `packages/simplycms/package.json` (`simplycms-packages`, `private`, з інертним
+  npm-полем `workspaces` — pnpm його не читав, у workspace він не входив).
+  Вкладеність була точкою subtree-дзеркала окремого core-репо; саме дзеркало
+  вивели з експлуатації 2026-07-31, а форму каталогу — ні. Цільова розкладка
+  `packages/*` уже стояла в спеці (§4.1). 🔴 Побічний ефект, важливіший за
+  переїзд: чотири скрипти (`release/bump.mjs`, `pack-inspect.mjs`,
+  `audit-deps/collect.mjs`, `audit-exports/collect.mjs`) відрізняли «пакет ядра»
+  за ШЛЯХОМ — тепер за ІМЕНЕМ (`@simplycms/`). Позиційний дискримінатор ламався
+  від будь-якого переїзду, іменний — ні. Виняток `STANDALONE_PACKAGE_DIRS`,
+  доданий тижнем раніше під скаффолдер, зник за непотрібністю.
 - **Живі клікові смоки не виконані** (агенти без браузера): перемикання теми в
   адмінці; `/profile` під залогіненим користувачем; `/admin/plugins` →
   увімкнути плагін → віджет на дашборді без reload → вимкнути. HTTP-смоки
@@ -130,8 +153,9 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 - **i18n-міграція** (~954 warn-входження) — окремий прохід, див. чекбокс вище.
 - **`@simplycms/engine`** (обʼєднання `data-supabase` + `react-query`) — не
   робилось, обидва пакети живі окремо; див. амендмент spec §4.0.
-- **`useAuth` лишається в `@simplycms/core/hooks`** (20 файлів-споживачів) —
-  заявлений deferral, переїзд у `@simplycms/supabase` — Фаза 1+.
+- **`useAuth` лишається в `@simplycms/core/hooks`** (22 файли-споживачі,
+  перевірено grep-ом 2026-08-03) — заявлений deferral, переїзд у
+  `@simplycms/supabase` — Фаза 1+.
 
 ## Фаза 1 — Пілот пакування + production-готовність
 
@@ -141,7 +165,8 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       й імпорти ведуть у `node_modules`; Gate B — production-запуск, server fns,
       SEO-ендпойнти, admin-guard; Gate C — bundle-guard і code-splitting по
       модульному графу (`emitBundleStats`); Gate D — Tailwind бачить утиліти
-      пакетів. CI job `pilot`: manual + weekly)
+      пакетів. CI job `pilot` існував на момент DoD, прибраний 2026-08-03 —
+      див. «Доробки» нижче)
 - [X] Розширити `published-exports-parity.test.ts` на всі пакети з роутами
       (parity рахується по **розпакованому tarball-у**, а не по `package.json`;
       виведено з `pnpm test` у `pnpm test:packaging` + CI job `packaging`)
@@ -207,35 +232,70 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ## Фаза 2 — CLI + скаффолдер + перший реліз
 
+Дизайн скаффолдера і bootstrap-у власника затверджено 2026-08-03:
+[`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md`](../superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md)
+(джерело правди скоупу v1; тут — лише трекінг).
+
+- [X] `create-simplycms-store` (спека вище): пакет
+      `packages/create-simplycms-store/` з вбудованим шаблоном як єдиним
+      джерелом правди (пілот перебудований споживати його — `scaffold.mjs`
+      бере `template/` пакета, `tests/pilot/store-template/` — тонкий оверлей
+      з двох файлів); версії `@simplycms/*` у генераті = версія пакета;
+      публікація тим самим реліз-потягом (`bump.mjs` сканує `packages/*`).
+      2026-08-04, план —
+      [`docs/superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md)
+- [ ] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у
+      шаблоні — `auth.admin.inviteUserByEmail` + роль `admin` через
+      service_role з консолі розробника; серверний `/auth/confirm`
+      (`verifyOtp`) + сторінка set-password. Закриває живу діру: чинний
+      тригер `handle_new_user` робив АДМІНОМ першого зареєстрованого
+      (`20260213120000_fix_handle_new_user_trigger.sql:22-28` — знахідка
+      Codex-аудиту 2026-08-04; міграція `first_user_no_auto_admin` прибирає
+      це в репо — накат на живу dev-БД лишається окремою дією власника).
+      🔴 **Код готовий, Gate E (owner:invite e2e проти локального стеку) не
+      проганявся: немає Docker, 2026-08-04.** Позначка `[x]` — лише після
+      зафіксованого зеленого `pnpm pilot:e2e` (Gates A–E)
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
-      `db:diff` / `doctor`
-- [ ] `create-simplycms-store`
+      `db:diff` / `doctor` — окрема спека після скаффолдера
+- [x] 🔴 **`NPM_TOKEN` розширено на `All Packages`** — 2026-08-04, блокер знято.
+      Причина була не в теках, а в просторах імен: токен на scope `@simplycms`
+      покриває будь-який `@simplycms/*` (навіть ще не створений — доведено
+      першим релізом), але unscoped `create-simplycms-store` живе в глобальному
+      просторі імен, і scope-правило до нього не дотягується; додати його в
+      granular-токен наперед npm теж не дає — вибір лише з наявних пакетів.
+      `All Packages` покриває і його, і майбутній unscoped `simplycms` CLI
+      (Фаза 3) — процедуру повторювати не доведеться. Деталі в
+      [`docs/architecture/release-process.md`](../architecture/release-process.md)
 - [X] **Публікація на npmjs працює** — конвеєр готовий і перевірений у бою:
       `pnpm release X.Y.Z` → PR → push у `main` публікує. `0.1.0` опубліковано
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
 - [ ] Реліз-потяг **v1.0** (строгий semver; `engines.simplycms` перевірка) —
       лишається за Фазою 2; зараз версія `0.1.0` і модель версіонування
       **синхронна вручну** (усі пакети одна версія). Незалежні версії
-      (Changesets) — можливий крок, коли пакети підуть різними циклами
+      (Changesets) — можливий крок, коли пакети підуть різними циклами.
+      Уточнення (2026-08-03): поле `engines.simplycms` вже існує в маніфесті
+      теми (`validateThemeModule` перевіряє лише присутність рядка); тут
+      ідеться про реальну semver-перевірку сумісності версій ядра — її немає
 
 **DoD:** сторонній розробник створює магазин двома командами; оновлення ядра —
 один `pnpm update`.
 
-**Стартова точка для наступної сесії.** Скаффолдер не треба вигадувати з нуля:
-`tests/pilot/store-template/` — це вже робочий host-fixture чужого магазину, який
-`scripts/pilot-pack/scaffold.mjs` розгортає й збирає **зі справжніх пакетів**.
-Файли, ідентичні host-овим (`__root.tsx`, `start.ts`, `server.mjs`, …), scaffold
-копіює з кореня репо, а в шаблоні лежить лише те, що реально відрізняється
-(`vite.config.ts` без workspace-аліасів, `routes.ts`, `simplycms.config.ts`,
-`engine.shared.ts`, `tailwind.config.ts`). Це і є прототип
-`create-simplycms-store` — CLI лишається обгорнути це в команду й додати
-інтерактивні питання.
+**Стартова точка (виконано).** Шаблон уже живе всередині пакета —
+`packages/create-simplycms-store/template/` — і є єдиним джерелом правди;
+`scripts/pilot-pack/scaffold.mjs` бере його звідти, а `tests/pilot/store-template/`
+лишився тонким оверлеєм із двох файлів (`vite.config.ts` + `package.json`).
+Деталі та якорі — у спеці, §3.2 і §9, і в плані
+[`2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md).
+Що лишається у Фазі 2: `@simplycms/cli` (`add`/`update`/`db:diff`/`doctor`) і
+дія власника з `NPM_TOKEN` вище.
 
 ## Фаза 3 — Plugin SDK + референс-плагіни
 
 - [ ] `@simplycms/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7)
 - [ ] Межа довіри: dependency-lint (плагін не імпортує повз SDK; без SupabaseClient)
-- [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) + пункт меню через слот
+- [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) — механізму в `routes.ts`
+      немає. *Пункт меню через слот уже працює з Фази 0* (`admin.sidebar.items`
+      у `AdminSidebar.tsx`, реактивний `PluginSlot`) — лишається сам монтаж роутів
 - [ ] 1-2 референс-плагіни (доставка, оплата) + авторський цикл
       (`create plugin` / `plugin:dev`)
 

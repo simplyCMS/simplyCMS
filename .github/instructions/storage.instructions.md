@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/simplycms/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
+applyTo: "packages/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
 description: "Правила роботи з файловим сховищем Supabase Storage в SimplyCMS"
 ---
 
@@ -38,4 +38,4 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 - Не використовуй signed URLs для публічних зображень — використовуй public URLs.
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/admin/src/components/ImageUpload.tsx` — компонент upload.
+- `packages/admin/src/components/ImageUpload.tsx` — компонент upload.

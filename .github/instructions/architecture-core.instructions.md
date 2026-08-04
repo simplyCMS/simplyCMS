@@ -11,7 +11,7 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 
 - **`routes.ts`** — `virtualRouteConfig`: дерево роутів збирається `physical()`-монтуванням route-тек пакетів; сканування `src/routes` цілком **вимкнено**
 - **`src/`** — host: тонка збірка магазину (`routes/__root.tsx` + `routes/my/`, engine-glue, `theme-registry.ts`, `start.ts`)
-- **`packages/simplycms/`** — Ядро CMS (у монорепо; публікація на npmjs — Фаза 1+): роути, канонічні сторінки, лоадери, SEO, схема БД
+- **`packages/`** — Ядро CMS (у монорепо; публікація на npmjs — Фаза 1+): роути, канонічні сторінки, лоадери, SEO, схема БД
 - **`themes/`** — Локальні теми проекту (контракт v2: `manifest + tokens + components`)
 - **`plugins/`** — Локальні плагіни проекту
 - **`scripts/`** — `db-diff.mjs` / `db-migrate.mjs` (конвеєр міграцій Drizzle → Supabase CLI)
@@ -77,7 +77,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Система тем (контракт v2): `ThemeModule = { manifest, tokens, components, settings? }`. Публічні сторінки — канонічні, з `@simplycms/storefront-routes/src/pages/`; тема дає лише `components` (Header/Footer/…) і `tokens`, які розкладає `applyTokens`.
 - Система плагінів: розширення через `HookRegistry` (25+ hook points); `PluginSlot` реактивний (`hookRegistry.subscribe` + `useSyncExternalStore`) — віджет зʼявляється без reload.
 - Конфігурація CMS через `simplycms.config.ts` (`defineConfig`: теми, плагіни, `siteUrl`, SEO) — одне джерело істини для `theme-registry.ts` і `bootstrapPlugins`.
-- Зміни схеми БД: `db:pull` → правка `packages/simplycms/schema/src/schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Supabase MCP — **лише** для інспекції.
+- Зміни схеми БД: `db:pull` → правка `packages/schema/src/schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Supabase MCP — **лише** для інспекції.
 
 ## ❌ NEVER
 - Не розміщуй бізнес-логіку в темах (теми — лише візуальна складова).
