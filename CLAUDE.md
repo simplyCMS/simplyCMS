@@ -16,11 +16,13 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
-pnpm pilot:pack       # npm-pack пілот: гейти пакувальності A/C/D — БЕЗ Supabase
-pnpm pilot            # той самий пілот + gate B проти живої БД (.env.local)
-pnpm pilot:e2e        # пілот A-D проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
-                      # потребує Docker; Gate B асертить точні назви із сіду
+pnpm pilot:pack       # npm-pack пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
+pnpm pilot            # той самий пілот + Gate B проти живої БД (.env.local); Gate E — видимо skipped (потрібен --e2e)
+pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
+                      # потребує Docker; Gate B асертить точні назви із сіду,
+                      # Gate E — owner:invite (inviteUserByEmail → /auth/confirm → set-password) наживо
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
+pnpm template:sync    # регенерація шаблону create-simplycms-store з монорепо (закомічені копії, парність-тестом)
 pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
@@ -162,14 +164,20 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │
+├── packages/create-simplycms-store/  # `create-simplycms-store` — unscoped npm-пакет: CLI-скаффолдер
+│   │                                  # (`src/`) + вбудований шаблон магазину (`template/`, закомічена
+│   │                                  # копія, синхронізується `pnpm template:sync`)
+│
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
 │   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
+│   │                                    # (bump.mjs: STANDALONE_PACKAGE_DIRS охоплює create-simplycms-store)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
-│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-d
+│   ├── sync-create-store-template.mjs   # монорепо → template/ пакета create-simplycms-store (`pnpm template:sync`)
+│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-e + create-pkg-smoke
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду
 │   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 ├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
@@ -178,8 +186,10 @@ simplyCMS/
 ├── plugins/hello-world/              # Референс-плагін
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
-│   │                                 # pilot-seed (парність seed.sql і фікстур)
-│   └── pilot/store-template/         # Host-fixture пілота (виключений із tsconfig.json і eslint.config.mjs)
+│   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону)
+│   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
+│                                     # create-simplycms-store — не власна копія host-каркаса (виключений
+│                                     # із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
@@ -336,8 +346,11 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 21 пакет завжди мають ОДНУ версію; розходження
-  версій між ними реліз-скрипт вважає помилкою стану й падає;
+- **версія синхронна** — усі 22 пакети (21 `@simplycms/*` + unscoped
+  `create-simplycms-store`) завжди мають ОДНУ версію; `STANDALONE_PACKAGE_DIRS`
+  у `scripts/release/bump.mjs` домальовує другу теку до бампу поверх
+  `packages/simplycms/*`; розходження версій між ними реліз-скрипт вважає
+  помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op, а не помилка;
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
@@ -347,7 +360,10 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   «Bypass 2FA»** (scope `@simplycms`, read+write). Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним
-  повідомленням ще до збірки.
+  повідомленням ще до збірки. 🔴 Цей токен обмежений scope `@simplycms` і НЕ
+  покриває unscoped `create-simplycms-store` — дію власника перед першим
+  релізом із новим пакетом див. у
+  [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
 
 🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
 заглушений `if: false` — після переносу репо в org `simplyCMS` scope `@simplycms`

@@ -315,10 +315,42 @@ callback обробляє лише `?code=`, invite так не працює.)* 
 
 1. Чи обробляє наявний auth-контур `type=invite` і чи є екран встановлення
    пароля (§4.4) — `orient` по `storefront-routes` auth-сторінках.
+
+   **Розв'язано (2026-08-04):** ні — наявний callback обмінював лише `?code=`
+   (PKCE), а стандартний invite-лінк GoTrue шле `token_hash` + `type=invite`,
+   з яким `?code=`-callback несумісний. Додано серверний `/auth/confirm`
+   (`verifyOtp({ token_hash, type })`) + сторінка `set-password`; лист-шаблон
+   для invite перебудований на `{{ .SiteURL }}/auth/confirm?token_hash=...&type=invite&next=/auth/set-password`
+   і їде в `template/supabase/` (для hosted — вставляється в Dashboard вручну).
+
 2. Охоплення нової теки реліз-тулінгом: `pnpm-workspace.yaml`,
    `scripts/release/bump.mjs` (лічильник «21 пакет» у гардах/доках),
    `publish-packages.yml`, `audit-deps`/`audit-exports` (чи мають бачити
    unscoped-пакет).
+
+   **Розв'язано (2026-08-04):** `pnpm-workspace.yaml` отримав окремий запис
+   `packages/create-simplycms-store` (поруч із `packages/simplycms/*`);
+   `scripts/release/bump.mjs` бампає його через `STANDALONE_PACKAGE_DIRS` —
+   `PACKAGES_DIR` лишається `packages/simplycms` незмінним, друга тека
+   домальовується окремим списком, а не переписуванням лічильника; `eslint.config.mjs`
+   і `tsconfig.json` виключають `packages/create-simplycms-store/template/**`
+   (це вміст, не код монорепо — лінтити/типізувати нема сенсу, парність із
+   монорепо стереже `create-store-template-parity.test.ts`, не eslint/tsc).
+   `publish-packages.yml` нічого не змінює — `pnpm publish -r` публікує весь
+   workspace, новий пакет підхоплюється сам через крок 1. `audit-deps`/
+   `audit-exports` **свідомо НЕ бачать** unscoped-пакет (`PACKAGES_DIR` там
+   і далі лише `packages/simplycms`) — він не імпортує ядро бare-імпортами й
+   не є залежністю, яку споживає інший пакет монорепо, тож дублювати сканування
+   не було підстав.
+
 3. Механіка снапшотів у шаблон (міграції/тема/плагін): копіювання на
    `build:packages` чи закомічені копії з парність-тестом — вирішити в плані
    (рекомендація: закомічені копії + тест, як `seed.sql`).
+
+   **Розв'язано (2026-08-04):** обрано закомічені копії. `template/` пакета
+   `create-simplycms-store` тримає версійований знімок (`themes/default`,
+   `plugins/hello-world`, `supabase/migrations`, host-файли з `src/`);
+   `pnpm template:sync` (`scripts/sync-create-store-template.mjs`)
+   регенерує його з монорепо вручну — не на `build:packages`, щоб пакування
+   лишалось детермінованим без побічного мутування вихідників; синхронність
+   стереже `tests/create-store-template-parity.test.ts`.

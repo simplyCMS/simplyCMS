@@ -1043,19 +1043,19 @@ git commit -m "feat(pilot): Gate E — e2e owner-флоу проти локал�
 **Files:**
 - Modify: `CLAUDE.md`, `docs/architecture/release-process.md`, `docs/tasks/platform-roadmap.md`, `docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` (§9)
 
-- [ ] **Step 1: CLAUDE.md**
+- [x] **Step 1: CLAUDE.md**
 
 - Quick Reference: додати `pnpm template:sync` (регенерація шаблону create-simplycms-store з монорепо).
 - Project Structure: додати `packages/create-simplycms-store/` (CLI + template) з одним рядком опису; у рядку scripts — `sync-create-store-template.mjs`.
 - Розділ «Публікація пакетів»: «усі 21 пакет» → «усі 22 пакети (21 `@simplycms/*` + unscoped `create-simplycms-store`)»; згадати, що bump охоплює обидві теки (`STANDALONE_PACKAGE_DIRS` у `bump.mjs`).
 
-- [ ] **Step 2: release-process.md + роадмап + спека**
+- [x] **Step 2: release-process.md + роадмап + спека**
 
 - `release-process.md`: додати абзац про 22-й пакет (unscoped, без `build`-кроку, публікується тим самим `pnpm publish -r`) і 🔴 **дію власника до першого релізу з новим пакетом**: чинний `NPM_TOKEN` — Granular Access Token, обмежений scope `@simplycms` (`publish-packages.yml:15`), — unscoped `create-simplycms-store` він НЕ покриє, і granular-токен не може заздалегідь включити пакет, якого ще немає в реєстрі. Власник має або видати токен з доступом «Read and write» до **всіх** пакетів акаунта (з Bypass 2FA), або опублікувати першу версію пакета вручну зі своєї машини й потім звузити токен назад.
 - Роадмап, Фаза 2: пункт `create-simplycms-store` відмітити `[x]` з датою і посиланням на план. Пункт «Bootstrap власника» відмічати `[x]` **ЛИШЕ якщо зафіксовано успішний повний `pnpm pilot:e2e` (Gates A–E зелені)**; якщо Docker недоступний — лишити `[ ]` з приміткою «код готовий, Gate E не проганявся: немає Docker, дата» (та сама політика чесності, що для наявної позначки «pilot:e2e ще не запускався»). Додати дію власника про NPM_TOKEN (див. вище).
 - Спека: (а) §2.3 — виправлення факту вже внесене окремим комітом (тригер РОБИВ першого адміном); (б) §9: під кожним відкритим питанням дописати «**Розвʼязано (2026-08-XX):** …» — (1) callback обмінює лише `?code=`, для invite додано `/auth/confirm` з `verifyOtp` + сторінка set-password; (2) перелік фактично оновленого тулінгу (workspace, bump, eslint/tsconfig); (3) обрано закомічені копії + `template:sync` + парність-тест.
 
-- [ ] **Step 3: Фінальний повний прогін**
+- [x] **Step 3: Фінальний повний прогін** — усі команди зелені (install/format:check/lint/build/typecheck/test/build:packages/test:packaging/pilot:pack); `pnpm pilot:e2e` НЕ запускався — Docker недоступний у середовищі (`docker: command not found`), 2026-08-04.
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test \
@@ -1070,7 +1070,7 @@ pnpm pilot:e2e   # Gates A–E зелені; без цього пункт «Boot
 
 Expected: усе зелене. Будь-який червоний гейт — виправити ДО коміту, не рапортувати «переважно зелено».
 
-- [ ] **Step 4: Коміт**
+- [x] **Step 4: Коміт**
 
 ```bash
 git add CLAUDE.md docs

@@ -224,20 +224,31 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 [`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md`](../superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md)
 (джерело правди скоупу v1; тут — лише трекінг).
 
-- [ ] `create-simplycms-store` (спека вище): пакет
+- [X] `create-simplycms-store` (спека вище): пакет
       `packages/create-simplycms-store/` з вбудованим шаблоном як єдиним
-      джерелом правди (пілот перебудовується споживати його — `pilot:e2e`
-      стає e2e-тестом create-флоу); версії `@simplycms/*` у генераті = версія
-      пакета; публікація тим самим реліз-потягом
+      джерелом правди (пілот перебудований споживати його — `scaffold.mjs`
+      бере `template/` пакета, `tests/pilot/store-template/` — тонкий оверлей
+      з двох файлів); версії `@simplycms/*` у генераті = версія пакета;
+      публікація тим самим реліз-потягом (`STANDALONE_PACKAGE_DIRS`).
+      2026-08-04, план —
+      [`docs/superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md)
 - [ ] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у
       шаблоні — `auth.admin.inviteUserByEmail` + роль `admin` через
       service_role з консолі розробника; серверний `/auth/confirm`
       (`verifyOtp`) + сторінка set-password. Закриває живу діру: чинний
-      тригер `handle_new_user` робить АДМІНОМ першого зареєстрованого
+      тригер `handle_new_user` робив АДМІНОМ першого зареєстрованого
       (`20260213120000_fix_handle_new_user_trigger.sql:22-28` — знахідка
-      Codex-аудиту 2026-08-04; план прибирає це міграцією)
+      Codex-аудиту 2026-08-04; міграція `first_user_no_auto_admin` це прибрала).
+      🔴 **Код готовий, Gate E (owner:invite e2e проти локального стеку) не
+      проганявся: немає Docker, 2026-08-04.** Позначка `[x]` — лише після
+      зафіксованого зеленого `pnpm pilot:e2e` (Gates A–E)
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
       `db:diff` / `doctor` — окрема спека після скаффолдера
+- [ ] 🔴 Дія власника перед першим релізом, що публікує `create-simplycms-store`:
+      чинний `NPM_TOKEN` — Granular Access Token, обмежений scope `@simplycms`,
+      unscoped-пакет він не покриє. Видати токен «Read and write» на всі пакети
+      акаунта (Bypass 2FA) або опублікувати першу версію вручну зі своєї машини
+      — деталі в [`docs/architecture/release-process.md`](../architecture/release-process.md)
 - [X] **Публікація на npmjs працює** — конвеєр готовий і перевірений у бою:
       `pnpm release X.Y.Z` → PR → push у `main` публікує. `0.1.0` опубліковано
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
