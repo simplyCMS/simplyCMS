@@ -268,13 +268,7 @@ importers:
         specifier: ^4.0.18
         version: 4.0.18(@types/node@25.2.3)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.21.0)
 
-  packages/create-simplycms-store:
-    dependencies:
-      '@clack/prompts':
-        specifier: ^1.7.0
-        version: 1.7.0
-
-  packages/simplycms/admin:
+  packages/admin:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -334,7 +328,7 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/admin-routes:
+  packages/admin-routes:
     dependencies:
       '@simplycms/admin':
         specifier: workspace:*
@@ -352,7 +346,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/cart-ui:
+  packages/cart-ui:
     dependencies:
       '@simplycms/react-query':
         specifier: workspace:*
@@ -367,7 +361,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/catalog-ui:
+  packages/catalog-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -391,7 +385,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/checkout-ui:
+  packages/checkout-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -421,7 +415,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/core:
+  packages/core:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -511,7 +505,13 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/data-supabase:
+  packages/create-simplycms-store:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^1.7.0
+        version: 1.7.0
+
+  packages/data-supabase:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -520,21 +520,21 @@ importers:
         specifier: ^2.0.0
         version: 2.95.3
 
-  packages/simplycms/domain:
+  packages/domain:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
         version: link:../objects
 
-  packages/simplycms/i18n:
+  packages/i18n:
     dependencies:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/objects: {}
+  packages/objects: {}
 
-  packages/simplycms/plugin-system:
+  packages/plugin-system:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -553,7 +553,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/simplycms/profile-ui:
+  packages/profile-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -577,7 +577,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/react-query:
+  packages/react-query:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -589,7 +589,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/reviews-ui:
+  packages/reviews-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
@@ -622,13 +622,13 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/runtime:
+  packages/runtime:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
         version: link:../objects
 
-  packages/simplycms/schema:
+  packages/schema:
     dependencies:
       drizzle-orm:
         specifier: ^0.45.0
@@ -641,7 +641,7 @@ importers:
         specifier: 8.22.0
         version: 8.22.0
 
-  packages/simplycms/storefront:
+  packages/storefront:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -650,7 +650,7 @@ importers:
         specifier: ^2.0.0
         version: 2.95.3
 
-  packages/simplycms/storefront-routes:
+  packages/storefront-routes:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
@@ -713,7 +713,7 @@ importers:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.3.6
 
-  packages/simplycms/supabase:
+  packages/supabase:
     dependencies:
       '@supabase/ssr':
         specifier: ^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0
@@ -728,7 +728,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/theme-system:
+  packages/theme-system:
     dependencies:
       '@simplycms/objects':
         specifier: workspace:*
@@ -740,7 +740,7 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.4
 
-  packages/simplycms/ui:
+  packages/ui:
     dependencies:
       '@radix-ui/react-accordion':
         specifier: ^1.0.0

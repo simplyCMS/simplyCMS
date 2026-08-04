@@ -19,67 +19,31 @@ export default {
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/objects': resolve(
-        __dirname,
-        'packages/simplycms/objects/src',
-      ),
-      '@simplycms/domain': resolve(__dirname, 'packages/simplycms/domain/src'),
+      '@simplycms/objects': resolve(__dirname, 'packages/objects/src'),
+      '@simplycms/domain': resolve(__dirname, 'packages/domain/src'),
       '@simplycms/data-supabase': resolve(
         __dirname,
-        'packages/simplycms/data-supabase/src',
+        'packages/data-supabase/src',
       ),
-      '@simplycms/supabase': resolve(
-        __dirname,
-        'packages/simplycms/supabase/src',
-      ),
+      '@simplycms/supabase': resolve(__dirname, 'packages/supabase/src'),
       '@simplycms/storefront-routes': resolve(
         __dirname,
-        'packages/simplycms/storefront-routes/src',
+        'packages/storefront-routes/src',
       ),
-      '@simplycms/i18n': resolve(__dirname, 'packages/simplycms/i18n/src'),
-      '@simplycms/runtime': resolve(
-        __dirname,
-        'packages/simplycms/runtime/src',
-      ),
-      '@simplycms/react-query': resolve(
-        __dirname,
-        'packages/simplycms/react-query/src',
-      ),
-      '@simplycms/storefront': resolve(
-        __dirname,
-        'packages/simplycms/storefront/src',
-      ),
-      '@simplycms/cart-ui': resolve(
-        __dirname,
-        'packages/simplycms/cart-ui/src',
-      ),
-      '@simplycms/catalog-ui': resolve(
-        __dirname,
-        'packages/simplycms/catalog-ui/src',
-      ),
-      '@simplycms/checkout-ui': resolve(
-        __dirname,
-        'packages/simplycms/checkout-ui/src',
-      ),
-      '@simplycms/profile-ui': resolve(
-        __dirname,
-        'packages/simplycms/profile-ui/src',
-      ),
-      '@simplycms/reviews-ui': resolve(
-        __dirname,
-        'packages/simplycms/reviews-ui/src',
-      ),
-      '@simplycms/core': resolve(__dirname, 'packages/simplycms/core/src'),
-      '@simplycms/admin': resolve(__dirname, 'packages/simplycms/admin/src'),
-      '@simplycms/ui': resolve(__dirname, 'packages/simplycms/ui/src'),
-      '@simplycms/plugins': resolve(
-        __dirname,
-        'packages/simplycms/plugin-system/src',
-      ),
-      '@simplycms/themes': resolve(
-        __dirname,
-        'packages/simplycms/theme-system/src',
-      ),
+      '@simplycms/i18n': resolve(__dirname, 'packages/i18n/src'),
+      '@simplycms/runtime': resolve(__dirname, 'packages/runtime/src'),
+      '@simplycms/react-query': resolve(__dirname, 'packages/react-query/src'),
+      '@simplycms/storefront': resolve(__dirname, 'packages/storefront/src'),
+      '@simplycms/cart-ui': resolve(__dirname, 'packages/cart-ui/src'),
+      '@simplycms/catalog-ui': resolve(__dirname, 'packages/catalog-ui/src'),
+      '@simplycms/checkout-ui': resolve(__dirname, 'packages/checkout-ui/src'),
+      '@simplycms/profile-ui': resolve(__dirname, 'packages/profile-ui/src'),
+      '@simplycms/reviews-ui': resolve(__dirname, 'packages/reviews-ui/src'),
+      '@simplycms/core': resolve(__dirname, 'packages/core/src'),
+      '@simplycms/admin': resolve(__dirname, 'packages/admin/src'),
+      '@simplycms/ui': resolve(__dirname, 'packages/ui/src'),
+      '@simplycms/plugins': resolve(__dirname, 'packages/plugin-system/src'),
+      '@simplycms/themes': resolve(__dirname, 'packages/theme-system/src'),
       '@themes': resolve(__dirname, 'themes'),
       '@plugins': resolve(__dirname, 'plugins'),
     },

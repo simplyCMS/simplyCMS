@@ -9,7 +9,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const PACKAGES_DIR = join(ROOT, 'packages', 'simplycms');
+export const PACKAGES_DIR = join(ROOT, 'packages');
+
+/**
+ * 🔴 Аудит стосується ЛИШЕ scoped-пакетів ядра: у них є subpath-exports, які
+ * ці скрипти й звіряють. Unscoped `create-simplycms-store` лежить у тій самій
+ * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md).
+ */
+export const CORE_SCOPE = '@simplycms/';
 
 // Розширення файлів, де реально бувають import/require-специфікатори.
 // `*.md` навмисно виключені: доки згадують шляхи в прозі (не імпорти), і
@@ -35,7 +42,7 @@ const EXCLUDE_PATHSPECS = [
  * }} PackageInfo
  */
 
-/** Збирає мапу `name → PackageInfo` з усіх `packages/simplycms/*\/package.json`. */
+/** Збирає мапу `name → PackageInfo` з усіх `packages/*\/package.json`. */
 export function collectPackages() {
   /** @type {Map<string, PackageInfo>} */
   const byName = new Map();
@@ -47,6 +54,7 @@ export function collectPackages() {
 
     const json = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     if (typeof json.name !== 'string') continue;
+    if (!json.name.startsWith(CORE_SCOPE)) continue;
 
     byName.set(json.name, {
       name: json.name,

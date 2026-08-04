@@ -27,7 +27,7 @@
 - Tools (inspection only): `execute_sql` (read-only), `list_tables`, `search_docs`, `get_advisors`, `deploy_edge_function`
 - Use for: inspecting schema/RLS, read-only queries, advisors, Edge Functions
 - 🔴 Schema changes go through the migration pipeline, NOT `apply_migration`:
-  `packages/simplycms/schema/src/schema.ts` → `pnpm db:diff <name>` → SQL review → `pnpm db:migrate` (runs `db:generate-types`)
+  `packages/schema/src/schema.ts` → `pnpm db:diff <name>` → SQL review → `pnpm db:migrate` (runs `db:generate-types`)
 
 ### github - Repository Management
 - Tools: Issues, PRs, code search, file operations, releases

@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
-const pkg = (p: string) => resolve(__dirname, 'packages/simplycms', p);
+const pkg = (p: string) => resolve(__dirname, 'packages', p);
 
 // Окремий конфіг для тестів: @vitejs/plugin-react (а не tanstackStart, що
 // SSR-трансформує і ламає hook-тести) + дедуп React + ті самі workspace-аліаси,

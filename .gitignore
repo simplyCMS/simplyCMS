@@ -47,7 +47,7 @@ temp/.env.local
 
 # Package pack artifacts (npm/pnpm pack)
 *.tgz
-packages/simplycms/*/package/
+packages/*/package/
 
 # Knowledge graph (graphify) — локальний артефакт, росте снапшотами по датах
 graphify-out/

@@ -55,7 +55,7 @@ export function probeQueries(
 }
 
 const BASELINE_PATH = fileURLToPath(
-  new URL('../packages/simplycms/supabase/src/database.ts', import.meta.url),
+  new URL('../packages/supabase/src/database.ts', import.meta.url),
 );
 
 describe('generic-місток типів БД host ↔ @simplycms/supabase', () => {

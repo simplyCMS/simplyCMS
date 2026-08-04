@@ -124,7 +124,7 @@ src/                      # Host — тонка збірка магазину, 1
   routes/__root.tsx       #   root route; routes/my/ — власні сторінки магазину
   server.ts · start.ts    #   server entry (SEO-інтерсептор) · middleware (admin guard)
   engine*.ts              #   DI-контекст ядра
-packages/simplycms/       # Ядро CMS — публікується на npmjs
+packages/       # Ядро CMS — публікується на npmjs
   objects/                #   контракти + порти (0 deps)
   domain/                 #   чиста логіка: pricing, discounts, inventory, shipping
   schema/                 #   Drizzle-схема ядра + RLS у TS

@@ -24,9 +24,9 @@ const i18nRestrictedSyntax = [
 // Файли, вже переведені на i18n: тут регрес до хардкоду — помилка.
 // Розширювати список у міру міграції (див. platform-roadmap.md).
 const I18N_MIGRATED_FILES = [
-  'packages/simplycms/storefront-routes/src/shells/StorefrontShell.tsx',
-  'packages/simplycms/storefront-routes/src/shells/ProtectedShell.tsx',
-  'packages/simplycms/storefront-routes/src/pages/Cart.tsx',
+  'packages/storefront-routes/src/shells/StorefrontShell.tsx',
+  'packages/storefront-routes/src/shells/ProtectedShell.tsx',
+  'packages/storefront-routes/src/pages/Cart.tsx',
 ];
 
 const eslintConfig = [
@@ -58,8 +58,8 @@ const eslintConfig = [
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
     files: [
-      'packages/simplycms/schema/src/schema.ts',
-      'packages/simplycms/schema/src/relations.ts',
+      'packages/schema/src/schema.ts',
+      'packages/schema/src/relations.ts',
     ],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
@@ -67,10 +67,7 @@ const eslintConfig = [
   },
   {
     // Warn-зона: решта сторфронт-роутів і адмінка — міграція попереду.
-    files: [
-      'packages/simplycms/storefront-routes/**/*.tsx',
-      'packages/simplycms/admin/**/*.tsx',
-    ],
+    files: ['packages/storefront-routes/**/*.tsx', 'packages/admin/**/*.tsx'],
     rules: {
       'no-restricted-syntax': ['warn', ...i18nRestrictedSyntax],
     },

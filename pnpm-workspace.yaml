@@ -1,5 +1,4 @@
 packages:
-  - 'packages/simplycms/*'
-  - 'packages/create-simplycms-store'
+  - 'packages/*'
   - 'themes/*'
   - 'plugins/*'

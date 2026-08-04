@@ -145,7 +145,12 @@ simplyCMS/
 │   ├── server.ts                     # Server entry: createServerEntry({ fetch }) + точка перехоплення
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
-├── packages/simplycms/               # Ядро CMS (публікація на npmjs — Фаза 1+)
+├── packages/               # ВСІ публіковані пакети — і ядро, і скаффолдер.
+│   │                       # 🔴 Проміжної теки `packages/simplycms/` більше немає
+│   │                       # (сплощено 2026-08-04): вона була точкою subtree-дзеркала
+│   │                       # окремого core-репо, а дзеркало вивели з експлуатації ще
+│   │                       # у Фазі 0. Тулінг тепер відрізняє ядро від скаффолдера
+│   │                       # за ІМЕНЕМ (`@simplycms/`), а не за шляхом.
 │   ├── objects/            @simplycms/objects        # Контракти + порти (0 deps)
 │   ├── domain/             @simplycms/domain         # Pure-логіка: pricing/discounts/inventory/shipping
 │   ├── schema/             @simplycms/schema         # Drizzle-схема ядра + RLS у TS + drizzle/ snapshot
@@ -162,16 +167,17 @@ simplyCMS/
 │   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins
 │   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
-│   └── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
-│
-├── packages/create-simplycms-store/  # `create-simplycms-store` — unscoped npm-пакет: CLI-скаффолдер
-│   │                                  # (`src/`) + вбудований шаблон магазину (`template/`, закомічена
-│   │                                  # копія, синхронізується `pnpm template:sync`)
+│   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
+│   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
+│   │                            # шаблон магазину (`template/`, закомічена копія,
+│   │                            # синхронізується `pnpm template:sync`). Єдиний тут без
+│   │                            # scope — саме тому тулінг фільтрує за `@simplycms/`.
+│   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
 │   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
-│   │                                    # (bump.mjs: STANDALONE_PACKAGE_DIRS охоплює create-simplycms-store)
+│   │                                    # (bump.mjs сканує packages/* — і ядро, і скаффолдер)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
 │   ├── audit-deps.mjs   + audit-deps/   # collect (bare-імпорти) + classify (deps/peers)
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
@@ -212,21 +218,21 @@ simplyCMS/
 
 | Import | Path |
 |--------|------|
-| `@simplycms/objects` | `packages/simplycms/objects/src` |
-| `@simplycms/domain` | `packages/simplycms/domain/src` |
-| `@simplycms/supabase` | `packages/simplycms/supabase/src` |
-| `@simplycms/data-supabase` | `packages/simplycms/data-supabase/src` |
-| `@simplycms/react-query` | `packages/simplycms/react-query/src` |
-| `@simplycms/runtime` | `packages/simplycms/runtime/src` |
-| `@simplycms/i18n` | `packages/simplycms/i18n/src` |
-| `@simplycms/storefront` | `packages/simplycms/storefront/src` |
-| `@simplycms/storefront-routes` | `packages/simplycms/storefront-routes/src` |
-| `@simplycms/admin` | `packages/simplycms/admin/src` |
-| `@simplycms/ui` | `packages/simplycms/ui/src` |
-| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/simplycms/<name>/src` |
-| `@simplycms/plugins` | `packages/simplycms/**plugin-system**/src` |
-| `@simplycms/themes` | `packages/simplycms/**theme-system**/src` |
-| `@simplycms/core` | `packages/simplycms/core/src` (legacy-фасад) |
+| `@simplycms/objects` | `packages/objects/src` |
+| `@simplycms/domain` | `packages/domain/src` |
+| `@simplycms/supabase` | `packages/supabase/src` |
+| `@simplycms/data-supabase` | `packages/data-supabase/src` |
+| `@simplycms/react-query` | `packages/react-query/src` |
+| `@simplycms/runtime` | `packages/runtime/src` |
+| `@simplycms/i18n` | `packages/i18n/src` |
+| `@simplycms/storefront` | `packages/storefront/src` |
+| `@simplycms/storefront-routes` | `packages/storefront-routes/src` |
+| `@simplycms/admin` | `packages/admin/src` |
+| `@simplycms/ui` | `packages/ui/src` |
+| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/<name>/src` |
+| `@simplycms/plugins` | `packages/**plugin-system**/src` |
+| `@simplycms/themes` | `packages/**theme-system**/src` |
+| `@simplycms/core` | `packages/core/src` (legacy-фасад) |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
@@ -295,7 +301,7 @@ production-`node_modules` (потрібен рівно один рантайм-�
 
 ## Database Commands
 
-Джерело правди схеми — `packages/simplycms/schema/src/schema.ts` (Drizzle).
+Джерело правди схеми — `packages/schema/src/schema.ts` (Drizzle).
 
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
@@ -308,10 +314,10 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
 встановлених плагінів); проти нього типізується host-код.
-`packages/simplycms/supabase/src/database.ts` — **baseline** core-схеми для пакетів
+`packages/supabase/src/database.ts` — **baseline** core-схеми для пакетів
 ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів після
 кожної core-міграції. Магазин звужує клієнти до своїх типів через generic-параметр
-фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/simplycms/supabase/README.md`.
+фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
@@ -347,9 +353,9 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
 - **версія синхронна** — усі 22 пакети (21 `@simplycms/*` + unscoped
-  `create-simplycms-store`) завжди мають ОДНУ версію; `STANDALONE_PACKAGE_DIRS`
-  у `scripts/release/bump.mjs` домальовує другу теку до бампу поверх
-  `packages/simplycms/*`; розходження версій між ними реліз-скрипт вважає
+  `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
+  сканує `packages/*` і бере все, що не `private` — після сплощення теки
+  окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає
   помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих

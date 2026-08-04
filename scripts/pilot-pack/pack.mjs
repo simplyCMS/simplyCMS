@@ -14,7 +14,7 @@ import { publishableDirs } from '../pack-inspect.mjs';
 import { readFileSync } from 'node:fs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
-const PACKAGES_ROOT = join(REPO_ROOT, 'packages/simplycms');
+const PACKAGES_ROOT = join(REPO_ROOT, 'packages');
 
 /** `pnpm build:packages` — `pnpm pack` збірку НЕ запускає, dist має бути готовим. */
 export function buildPackages() {

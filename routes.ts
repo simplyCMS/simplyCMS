@@ -11,8 +11,8 @@ import { physical, rootRoute } from '@tanstack/virtual-file-routes';
  * звідси `../../` для виходу в `packages/`.
  */
 export const routes = rootRoute('__root.tsx', [
-  physical('', '../../packages/simplycms/storefront-routes/routes'),
-  physical('', '../../packages/simplycms/admin-routes/routes'),
+  physical('', '../../packages/storefront-routes/routes'),
+  physical('', '../../packages/admin-routes/routes'),
   // Кастомні роути конкретного магазину. Після переїзду ядра в пакети це
   // єдина тека роутів, що лишається в host — саме вона, а не весь
   // `src/routes`: інакше будь-який файл, покладений поруч із `__root.tsx`,

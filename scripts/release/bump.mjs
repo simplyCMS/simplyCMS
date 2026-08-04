@@ -1,9 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const PACKAGES_DIR = 'packages/simplycms';
-/** Публіковані пакети поза PACKAGES_DIR (unscoped скаффолдер). */
-const STANDALONE_PACKAGE_DIRS = ['packages/create-simplycms-store'];
+const PACKAGES_DIR = 'packages';
 /** semver без пре-релізів: цього достатньо для синхронної моделі версій. */
 export const VERSION_RE = /^\d+\.\d+\.\d+$/;
 
@@ -17,11 +15,15 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-/** Манифести публікованих пакетів ядра (private — не наші). */
+/**
+ * Манифести публікованих пакетів (private — не наші).
+ *
+ * Одна тека `packages/` тримає і 21 scoped-пакет ядра, і unscoped
+ * `create-simplycms-store`; усі вони публікуються тим самим реліз-потягом
+ * і мусять мати СИНХРОННУ версію, тож дискримінатор тут — лише `private`.
+ */
 export function readPublishableManifests() {
-  const dirs = readdirSync(PACKAGES_DIR)
-    .map((dir) => join(PACKAGES_DIR, dir))
-    .concat(STANDALONE_PACKAGE_DIRS);
+  const dirs = readdirSync(PACKAGES_DIR).map((dir) => join(PACKAGES_DIR, dir));
   const result = [];
   for (const dir of dirs) {
     const path = join(dir, 'package.json');

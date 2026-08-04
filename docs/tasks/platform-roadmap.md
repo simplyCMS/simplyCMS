@@ -47,7 +47,7 @@ subpath-и резолвляться, типи компілюються під `t
 4. **i18n-міграція** — борг Фази 0 (~954 кириличні входження), warn-зона
    ESLint-селекторів досі warn, а не error.
 5. **Серверний env запікається в білд** — навіть `createServerSupabase`
-   (`packages/simplycms/supabase/src/server-client.ts`) читає
+   (`packages/supabase/src/server-client.ts`) читає
    `import.meta.env`, тож ротація Supabase-ключів вимагає перезбірки.
    Борг: перевести server-only читання на `process.env` усередині хендлерів
    (офіційний патерн TanStack Start). Не блокує Фазу 2 (спека 2026-08-03, §8).
@@ -126,6 +126,18 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ### Борги, свідомо винесені за межі Фази 0
 
+- ~~**Проміжна тека `packages/simplycms/`**~~ — **закрито 2026-08-04**: 21 пакет
+  ядра піднято на рівень вище, у `packages/*`, тека видалена разом із мертвим
+  `packages/simplycms/package.json` (`simplycms-packages`, `private`, з інертним
+  npm-полем `workspaces` — pnpm його не читав, у workspace він не входив).
+  Вкладеність була точкою subtree-дзеркала окремого core-репо; саме дзеркало
+  вивели з експлуатації 2026-07-31, а форму каталогу — ні. Цільова розкладка
+  `packages/*` уже стояла в спеці (§4.1). 🔴 Побічний ефект, важливіший за
+  переїзд: чотири скрипти (`release/bump.mjs`, `pack-inspect.mjs`,
+  `audit-deps/collect.mjs`, `audit-exports/collect.mjs`) відрізняли «пакет ядра»
+  за ШЛЯХОМ — тепер за ІМЕНЕМ (`@simplycms/`). Позиційний дискримінатор ламався
+  від будь-якого переїзду, іменний — ні. Виняток `STANDALONE_PACKAGE_DIRS`,
+  доданий тижнем раніше під скаффолдер, зник за непотрібністю.
 - **Живі клікові смоки не виконані** (агенти без браузера): перемикання теми в
   адмінці; `/profile` під залогіненим користувачем; `/admin/plugins` →
   увімкнути плагін → віджет на дашборді без reload → вимкнути. HTTP-смоки
@@ -229,7 +241,7 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       джерелом правди (пілот перебудований споживати його — `scaffold.mjs`
       бере `template/` пакета, `tests/pilot/store-template/` — тонкий оверлей
       з двох файлів); версії `@simplycms/*` у генераті = версія пакета;
-      публікація тим самим реліз-потягом (`STANDALONE_PACKAGE_DIRS`).
+      публікація тим самим реліз-потягом (`bump.mjs` сканує `packages/*`).
       2026-08-04, план —
       [`docs/superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md`](../superpowers/plans/2026-08-04-phase2-create-store-owner-bootstrap.md)
 - [ ] Bootstrap власника магазину (та сама спека): `pnpm owner:invite` у

@@ -49,7 +49,7 @@ export function gateRoutes(storeDir) {
     p.includes('node_modules/@simplycms/'),
   );
   const suspicious = imports.filter(
-    (p) => p.includes('packages/simplycms/') || p.includes('/src/'),
+    (p) => p.includes('packages/') || p.includes('/src/'),
   );
   details.push(
     `імпортів із node_modules/@simplycms: ${fromNodeModules.length}`,
