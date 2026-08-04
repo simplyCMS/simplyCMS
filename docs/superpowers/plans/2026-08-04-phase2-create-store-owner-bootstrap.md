@@ -956,11 +956,11 @@ git commit -m "refactor(pilot): scaffold споживає шаблон create-si
 - Consumes: `template/scripts/owner-invite.mjs` (Task 4), роути `/auth/confirm` і `/auth/set-password` (Task 5), міграція `first_user_no_auto_admin` (Task 4), локальний стек `supabase start` (`e2e.mjs` вже піднімає його і робить `db reset`).
 - Produces: `gateOwner(ctx)` → `Promise<{ ok: boolean, details: string[] }>` — стандартний контракт гейтів (`run.mjs:runGates` / `report.mjs`).
 
-- [ ] **Step 1: Видобути ключі стеку**
+- [X] **Step 1: Видобути ключі стеку**
 
 У `e2e.mjs` після старту стеку: `supabase status -o env` (або `--output json` — звірити з фактичним виводом встановленої CLI) → витягти `SERVICE_ROLE_KEY`, `ANON_KEY`, `API_URL` і передати далі в opts гейтів поряд з наявними ключами (подивись, як e2e.mjs вже дістає ключі для `writeEnv`, — розширити те саме місце).
 
-- [ ] **Step 2: gate-e.mjs (контракт `{ ok, details }`, як gate-a…gate-d)**
+- [X] **Step 2: gate-e.mjs (контракт `{ ok, details }`, як gate-a…gate-d)**
 
 ```js
 // scripts/pilot-pack/gate-e.mjs
@@ -1021,15 +1021,17 @@ export async function gateOwner({ storeDir, storeUrl, supabaseUrl, anonKey, serv
 }
 ```
 
-- [ ] **Step 3: Підключити в run.mjs + gate-b доповнення**
+- [X] **Step 3: Підключити в run.mjs + gate-b доповнення**
 
 У `run.mjs` (там, де вже є `results.push(['B', await runGateB(opts)])` у не-packOnly гілці) — після Gate B: `step('Gate E — owner-флоу'); results.push(['E', await gateOwner({ storeDir: opts.storeDir, storeUrl, supabaseUrl, anonKey, serviceRoleKey })]);` — точні імена полів opts звірити з тим, як `runGateB` бере адресу магазину і env; Gate E ганяти ЛИШЕ в e2e-режимі (коли serviceRoleKey присутній — інакше пропустити з явним рядком у details звіту, не мовчки). У `gate-b.mjs` до списку шляхів додати `GET /auth/set-password` → очікуваний статус 200.
 
 - [ ] **Step 4: Прогін і чесна фіксація**
 
+> НЕ виконано: Docker у середовищі сесії недоступний (`docker info` падає), тож `pnpm pilot:e2e` не запускався. Gate E не проганявся локально — немає Docker, 2026-08-04. Код гейта написаний і підключений; без стеку прогнано `pnpm pilot:pack` — зелений, Gate E у звіті позначений SKIP.
+
 Якщо Docker доступний: `pnpm pilot:e2e` → Gates A-E PASS. **Якщо Docker недоступний** — НЕ позначати крок виконаним: зафіксувати в підсумковому звіті сесії і в коміт-повідомленні «Gate E не проганявся локально — потрібен Docker» (та сама політика, що для `pilot:e2e` в роадмапі).
 
-- [ ] **Step 5: Повні гейти + коміт**
+- [X] **Step 5: Повні гейти + коміт**
 
 ```bash
 git add scripts/pilot-pack

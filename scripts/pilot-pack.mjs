@@ -15,7 +15,11 @@
  * |--------------------|-------------------|--------------|----------------------|
  * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI | нічого (плейсхолдери)|
  * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI     | `.env.local`/секрети |
- * | e2e на сіді        | `pnpm pilot:e2e`  | A-D, CLI     | стек + seed.sql      |
+ * | e2e на сіді        | `pnpm pilot:e2e`  | A-E, CLI     | стек + seed.sql      |
+ *
+ * Gate E (bootstrap власника) є ЛИШЕ в `--e2e`: він потребує service_role-ключа
+ * і пише в auth.users, а робити це проти чужої живої БД неприпустимо. В інших
+ * режимах він у звіті позначений SKIP — видимо, а не мовчки.
  *
  * A/C/D і CLI (резолв tarball-ів, route tree з node_modules, відсутність
  * серверного вантажу в клієнті, Tailwind, вміст tarball-а скаффолдера) до БД
@@ -28,7 +32,7 @@
  * Використання:
  *   node scripts/pilot-pack.mjs               # повний прогін (потрібна БД)
  *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, CLI (без БД)
- *   node scripts/pilot-pack.mjs --e2e         # gates A-D, CLI проти локального стеку
+ *   node scripts/pilot-pack.mjs --e2e         # gates A-E, CLI проти локального стеку
  *   node scripts/pilot-pack.mjs --keep        # не прибирати /tmp-магазин
  *   node scripts/pilot-pack.mjs --skip-build  # dist пакетів уже свіжий
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
@@ -40,7 +44,7 @@ import { tmpdir } from 'node:os';
 import { resolvePilotEnv } from './pilot-pack/env.mjs';
 import {
   assertLocalStackTooling,
-  readLocalStackEnv,
+  readLocalStack,
   startLocalStack,
   stopLocalStack,
 } from './pilot-pack/e2e.mjs';
@@ -67,9 +71,17 @@ const PACK_ONLY_PORT = 3000;
 
 /** Людський опис активного режиму для шапки логу. */
 function describeMode() {
-  if (packOnly) return '--pack-only (гейти A/C/D + CLI, без Supabase)';
-  if (e2e) return '--e2e (гейти A-D + CLI, локальний стек + сід)';
-  return 'повний (гейти A-D + CLI, проти живої БД)';
+  if (packOnly) return `--pack-only (${describeScope()}, без Supabase)`;
+  if (e2e) return `--e2e (${describeScope()}, локальний стек + сід)`;
+  return `повний (${describeScope()}, проти живої БД)`;
+}
+
+/** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
+function describeScope() {
+  if (packOnly) return 'гейти A/C/D + CLI';
+  // Gate E потребує service_role, який дає лише локальний стек, — тож у прогоні
+  // проти живої БД він показується як пропущений, а не як провалений.
+  return e2e ? 'гейти A-E + CLI' : 'гейти A-D + CLI (E пропускається)';
 }
 
 async function main() {
@@ -88,9 +100,11 @@ async function main() {
       startLocalStack();
       stackUp = true;
     }
-    const env = e2e
-      ? readLocalStackEnv(port)
-      : resolvePilotEnv(port, { requireSupabase: !packOnly });
+    // service_role живе лише в памʼяті процесу пілота і в env дочірнього
+    // owner-invite — у `.env` магазину він не потрапляє (див. readLocalStack).
+    const stack = e2e ? readLocalStack(port) : null;
+    const env =
+      stack?.env ?? resolvePilotEnv(port, { requireSupabase: !packOnly });
     step(`Режим: ${describeMode()}`);
 
     const results = await runGates({
@@ -102,10 +116,9 @@ async function main() {
       skipBuild,
       packOnly,
       expectedNames: e2e ? seedProductNames() : null,
+      serviceRoleKey: stack?.serviceRoleKey ?? null,
     });
-    return report(results, {
-      scope: packOnly ? 'gates A/C/D + CLI' : 'gates A-D + CLI',
-    });
+    return report(results, { scope: describeScope() });
   } finally {
     // 🔴 Стек глушимо завжди: інакше контейнери лишаться висіти після падіння.
     if (stackUp) stopLocalStack();
