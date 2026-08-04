@@ -57,6 +57,7 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
+- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI), які зони не покриті й що змінить `apps/dev-store`
 
 ## Agent Tooling
 

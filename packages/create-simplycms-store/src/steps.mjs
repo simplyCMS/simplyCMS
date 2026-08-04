@@ -53,13 +53,22 @@ export async function promptMissing(options) {
   return result;
 }
 
-/** Менеджер пакетів, яким запустили CLI (`pnpm create` → pnpm). */
-export function detectManager(env = process.env) {
+/**
+ * Магазин підтримує ЛИШЕ pnpm — і це не смак, а вимога конфігурації.
+ *
+ * 🔴 `pnpm-workspace.yaml` шаблону несе `allowBuilds`, без якого install
+ * обривається, а `packageManager` у манифесті прибиває версію. Обидва
+ * механізми pnpm-специфічні: npm/yarn їх просто ігнорують і зберуть магазин
+ * у неперевіреній конфігурації. Тому детекції менеджера тут більше немає —
+ * лише попередження, якщо CLI запустили не через pnpm.
+ */
+export const STORE_MANAGER = 'pnpm';
+
+/** Чи запущено CLI не-pnpm менеджером — привід попередити, не впасти. */
+export function detectForeignManager(env = process.env) {
   const agent = env.npm_config_user_agent ?? '';
-  if (agent.startsWith('yarn')) return 'yarn';
-  if (agent.startsWith('bun')) return 'bun';
-  if (agent.startsWith('npm')) return 'npm';
-  return 'pnpm';
+  const name = agent.split('/')[0];
+  return name && name !== 'pnpm' ? name : null;
 }
 
 /** Перший коміт. Відсутній git — привід для попередження, а не для падіння. */
@@ -79,30 +88,39 @@ export function initGit(targetDir) {
 }
 
 /** Встановлення залежностей магазину. Мережева помилка не має стирати скаффолд. */
-export function installDeps(targetDir, manager = detectManager()) {
+export function installDeps(targetDir) {
+  const foreign = detectForeignManager();
+  if (foreign) {
+    log.warn(
+      `CLI запущено через ${foreign}, але магазин налаштований під pnpm 11+ ` +
+        '(allowBuilds, packageManager). Ставлю через pnpm.',
+    );
+  }
   try {
-    execSync(`${manager} install`, { cwd: targetDir, stdio: 'inherit' });
+    execSync(`${STORE_MANAGER} install`, { cwd: targetDir, stdio: 'inherit' });
     return true;
   } catch {
     log.warn(
-      `Не вдалось встановити залежності — запусти «${manager} install».`,
+      `Не вдалось встановити залежності — запусти «${STORE_MANAGER} install». ` +
+        'Потрібен pnpm 11+; якщо реліз ядра свіжіший за добу, установка ' +
+        'впреться в minimumReleaseAge (див. pnpm-workspace.yaml магазину).',
     );
     return false;
   }
 }
 
 /** Наступні кроки — те саме, що в README згенерованого магазину. */
-export function printNextSteps({ dirLabel, manager, installed, hasEnv }) {
+export function printNextSteps({ dirLabel, installed, hasEnv }) {
   const steps = [`cd ${dirLabel}`];
-  if (!installed) steps.push(`${manager} install`);
+  if (!installed) steps.push(`${STORE_MANAGER} install`);
   if (!hasEnv)
     steps.push('cp .env.example .env.local   # ключі з Dashboard → Connect');
   steps.push('supabase link --project-ref <ref> && supabase db push');
   steps.push(
     'OWNER_EMAIL=you@example.com SUPABASE_SERVICE_ROLE_KEY=<key> ' +
-      `${manager} run owner:invite`,
+      `${STORE_MANAGER} run owner:invite`,
   );
-  steps.push(`${manager} run dev`);
+  steps.push(`${STORE_MANAGER} run dev`);
   note(steps.join('\n'), 'Наступні кроки');
   log.info(
     'Для хмарного проєкту (supabase db push накочує ЛИШЕ міграції, секція\n' +

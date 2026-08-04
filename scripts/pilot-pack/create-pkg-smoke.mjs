@@ -48,6 +48,11 @@ const EXPECTED_FILES = [
   'supabase/config.toml',
   'supabase/templates/invite.html',
   'scripts/owner-invite.mjs',
+  // 🔴 Без нього pnpm 11 обриває install (`ERR_PNPM_IGNORED_BUILDS`), а
+  // `pnpm build` перезапускає install і теж падає — магазин не збереться.
+  // Вміст стереже tests/create-store-cli.test.ts; тут — сам факт потрапляння
+  // у tarball, бо `files` у манифесті легко звузити випадково.
+  'pnpm-workspace.yaml',
 ];
 
 /**

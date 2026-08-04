@@ -37,7 +37,6 @@ describe('create-store: адреса з листа-запрошення', () => 
     try {
       printNextSteps({
         dirLabel: 'my-shop',
-        manager: 'pnpm',
         installed: true,
         hasEnv: true,
       });

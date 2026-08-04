@@ -8,7 +8,6 @@ import { intro, log, outro } from '@clack/prompts';
 import { resolveOptions } from './args.mjs';
 import { scaffold } from './scaffold.mjs';
 import {
-  detectManager,
   initGit,
   installDeps,
   printNextSteps,
@@ -68,13 +67,11 @@ async function main() {
   });
   log.success(`Магазин «${storeName}» розгорнуто: ${targetDir}`);
 
-  const manager = detectManager();
-  const installed = options.install ? installDeps(targetDir, manager) : false;
+  const installed = options.install ? installDeps(targetDir) : false;
   if (options.git) initGit(targetDir);
 
   printNextSteps({
     dirLabel: options.storeName,
-    manager,
     installed,
     hasEnv: Boolean(options.supabaseUrl && options.supabaseKey),
   });
