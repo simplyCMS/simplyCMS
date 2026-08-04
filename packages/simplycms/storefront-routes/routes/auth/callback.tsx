@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { redirectResponse } from '@simplycms/storefront-routes/server/redirect';
 
 /**
  * OAuth callback як server route handler.
@@ -28,11 +29,13 @@ export const Route = createFileRoute('/auth/callback')({
           const supabase = createServerSupabase();
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (!error) {
-            return Response.redirect(`${origin}${next}`, 302);
+            // 🔴 redirectResponse, а не Response.redirect: той дає immutable
+            // headers і Start падає, доклеюючи auth-cookies (див. хелпер).
+            return redirectResponse(`${origin}${next}`);
           }
         }
 
-        return Response.redirect(`${origin}/auth?error=auth_error`, 302);
+        return redirectResponse(`${origin}/auth?error=auth_error`);
       },
     },
   },

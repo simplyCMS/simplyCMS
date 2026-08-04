@@ -805,10 +805,12 @@ export const Route = createFileRoute('/auth/confirm')({
           const supabase = createServerSupabase();
           const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
           if (!error) {
-            return Response.redirect(`${origin}${next}`, 302);
+            // 🔴 НЕ Response.redirect: він дає immutable headers, і Start
+            // падає в mergeEventResponseHeaders, доклеюючи auth-cookies.
+            return redirectResponse(`${origin}${next}`);
           }
         }
-        return Response.redirect(`${origin}/auth?error=auth_error`, 302);
+        return redirectResponse(`${origin}/auth?error=auth_error`);
       },
     },
   },
