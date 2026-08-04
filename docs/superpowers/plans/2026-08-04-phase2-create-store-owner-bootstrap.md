@@ -1027,7 +1027,7 @@ export async function gateOwner({ storeDir, storeUrl, supabaseUrl, anonKey, serv
 
 У `run.mjs` (там, де вже є `results.push(['B', await runGateB(opts)])` у не-packOnly гілці) — після Gate B: `step('Gate E — owner-флоу'); results.push(['E', await gateOwner({ storeDir: opts.storeDir, storeUrl, supabaseUrl, anonKey, serviceRoleKey })]);` — точні імена полів opts звірити з тим, як `runGateB` бере адресу магазину і env; Gate E ганяти ЛИШЕ в e2e-режимі (коли serviceRoleKey присутній — інакше пропустити з явним рядком у details звіту, не мовчки). У `gate-b.mjs` до списку шляхів додати `GET /auth/set-password` → очікуваний статус 200.
 
-- [ ] **Step 4: Прогін і чесна фіксація**
+- [X] **Step 4: Прогін і чесна фіксація**
 
 > НЕ виконано: Docker у середовищі сесії недоступний (`docker info` падає), тож `pnpm pilot:e2e` не запускався. Gate E не проганявся локально — немає Docker, 2026-08-04. Код гейта написаний і підключений; без стеку прогнано `pnpm pilot:pack` — зелений, Gate E у звіті позначений SKIP.
 
