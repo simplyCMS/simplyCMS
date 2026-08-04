@@ -1,20 +1,27 @@
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
+// #region pilot-only
 import { writeFileSync } from 'node:fs';
+// #endregion pilot-only
 import { resolve } from 'node:path';
 
 /**
- * Vite-конфіг скретч-магазину.
+ * Vite-конфіг магазину.
  *
- * 🔴 Головна відмінність від монорепо: у `resolve.alias` НЕМАЄ жодного
- * запису на `packages/**`. Усі `@simplycms/*` резолвляться штатним
- * node-резолвом із `node_modules`, куди їх поклав `npm install` із
- * tarball-ів. Лишаються тільки `@themes`/`@plugins` — вони вказують на
+ * 🔴 На відміну від монорепо SimplyCMS, у `resolve.alias` НЕМАЄ жодного запису
+ * на `packages/**`. Усі `@simplycms/*` резолвляться штатним node-резолвом із
+ * `node_modules`. Лишаються тільки `@themes`/`@plugins` — вони вказують на
  * локальні теки самого магазину (теми й плагіни — його власні файли).
  */
-
+// #region pilot-only
 /**
  * Міні-плагін bundle-stats для Gate C.
+ *
+ * 🔴 Решта файлу — БАЙТ-КОПІЯ `packages/create-simplycms-store/template/vite.config.ts`:
+ * пілот мусить збирати скретч тим самим конфігом, який отримає користувач.
+ * Стереже `tests/create-store-template-parity.test.ts` — він вирізає блоки
+ * `#region pilot-only` і звіряє решту побайтово. Правки поза регіонами
+ * робляться в шаблоні й переносяться сюди.
  *
  * Vite-manifest перелічує лише файли чанків, а гейту потрібен МОДУЛЬНИЙ граф:
  * які саме модулі потрапили в кожен чанк і які чанки статично імпортує entry.
@@ -50,6 +57,7 @@ function emitBundleStats() {
   };
 }
 
+// #endregion pilot-only
 export default {
   plugins: [
     tailwindcss(),
@@ -58,7 +66,9 @@ export default {
       // Шлях резолвиться ВІД `srcDirectory` (`src/`), а не від кореня.
       server: { entry: './server.ts' },
     }),
+    // #region pilot-only
     emitBundleStats(),
+    // #endregion pilot-only
   ],
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],

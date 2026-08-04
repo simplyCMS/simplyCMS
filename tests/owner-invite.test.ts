@@ -107,7 +107,11 @@ describe('owner-invite', () => {
         siteUrl: 'https://s',
         log: () => {},
       }),
-    ).rejects.toThrow();
+      // 🔴 Матчер обовʼязковий: без гарда `code !== 'email_exists'` код пішов
+      // би гілкою «вже існує» і впав уже в `findUserIdByEmail` («не знайдено»)
+      // — голий `.toThrow()` прийняв би цю помилку за очікувану й лишився б
+      // зеленим під мутацією «будь-який 422 = вже існує».
+    ).rejects.toThrow(/inviteUserByEmail: /);
   });
 
   it('пагінація listUsers: іде за nextPage до знахідки', async () => {

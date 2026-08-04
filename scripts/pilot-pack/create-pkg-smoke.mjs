@@ -11,7 +11,9 @@
  * 🔴 `node_modules` розпакованого пакета — симлінк на теку пакета в репо: у
  * tarball залежностей немає, а `npm install` тут означав би похід у registry
  * заради одного `@clack/prompts`. Смоук перевіряє ВМІСТ артефакту, не його
- * інсталяцію.
+ * інсталяцію — тому рантайм-залежності асертяться ОКРЕМО, по манифесту з
+ * tarball: симлінк зробив би зелений прогін і для пакета, який у користувача
+ * впав би на `Cannot find module '@clack/prompts'`.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -19,6 +21,7 @@ import {
   existsSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   symlinkSync,
 } from 'node:fs';
@@ -28,6 +31,9 @@ import { findPlaceholders } from './placeholder-scan.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const CLI_PKG_DIR = join(REPO_ROOT, 'packages/create-simplycms-store');
+
+/** Рантайм-залежності, без яких `bin` падає в користувача на першому рядку. */
+const EXPECTED_DEPS = ['@clack/prompts'];
 
 /** Файли, без яких згенерований магазин не є магазином. */
 const EXPECTED_FILES = [
@@ -72,6 +78,21 @@ export function createPkgSmoke() {
         ok: false,
         details: [...details, '✗ у tarball немає template/'],
       };
+    }
+    const deps =
+      JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
+        .dependencies ?? {};
+    for (const dep of EXPECTED_DEPS) {
+      if (!deps[dep]) {
+        return {
+          ok: false,
+          details: [
+            ...details,
+            `✗ ${dep} не в dependencies опублікованого пакета`,
+          ],
+        };
+      }
+      details.push(`✓ dependencies: ${dep}@${deps[dep]}`);
     }
     symlinkSync(
       join(CLI_PKG_DIR, 'node_modules'),

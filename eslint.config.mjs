@@ -99,7 +99,22 @@ const eslintConfig = [
       // Шаблон магазину в пакеті create-simplycms-store: це не код монорепо,
       // а файли ЧУЖОГО проєкту — його імпорти резолвляться лише після
       // `npm install` пакетів ядра в згенерованому магазині.
-      'packages/create-simplycms-store/template/**',
+      //
+      // 🔴 Виняток — `template/scripts/**`: це НЕ синкована копія host-каркаса,
+      // а власний код шаблону (service_role-логіка owner:invite), двійника
+      // якого в монорепо немає. Обґрунтування вище до нього не застосовне: він
+      // імпортує лише node-builtin'и й `@supabase/supabase-js`, тож лінтується
+      // як звичайний .mjs і не має ховатися від гейта.
+      //
+      // 🔴 Чому не одне `template/**` + `!template/scripts/**`: патерн, що
+      // закінчується на `/**`, ESLint трактує як ігнор ЦІЛОЇ гілки дерева і
+      // жодна наступна негація його вже не скасовує (перевірено
+      // `ESLint#isPathIgnored`). Тому ігнор розкладено на рівень-1 (`/*`) плюс
+      // вкладене (`/*/**`), і кожен знято окремою негацією.
+      'packages/create-simplycms-store/template/*',
+      'packages/create-simplycms-store/template/*/**',
+      '!packages/create-simplycms-store/template/scripts',
+      '!packages/create-simplycms-store/template/scripts/**',
     ],
   },
 ];

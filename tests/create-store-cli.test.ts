@@ -12,7 +12,7 @@ import { findPlaceholders } from '../scripts/pilot-pack/placeholder-scan.mjs';
 // Чисті функції CLI-скаффолдера: розбір аргументів, підстановки в манифест,
 // розгортання шаблону. Ті самі функції викликає `src/index.mjs`.
 describe('create-store CLI', () => {
-  it('resolveOptions: прапорці перекривають промпти; CI ⇒ yes', () => {
+  it('resolveOptions: прапорці перекривають промпти', () => {
     const o = resolveOptions(
       [
         'my-shop',
@@ -23,8 +23,10 @@ describe('create-store CLI', () => {
         '--no-install',
         '--no-git',
       ],
-      { CI: 'true' },
-      false,
+      {},
+      // 🔴 isTTY = true: інакше клаузула `!isTTY` сама дає yes:true й ховає
+      // будь-яку регресію в решті джерел цього прапорця.
+      true,
     );
     expect(o).toMatchObject({
       storeName: 'my-shop',
@@ -32,8 +34,23 @@ describe('create-store CLI', () => {
       supabaseKey: 'sb_pk',
       install: false,
       git: false,
-      yes: true,
+      yes: false,
     });
+  });
+
+  // Три НЕЗАЛЕЖНІ джерела `yes`. Перевіряти їх разом не можна: у сумарному
+  // кейсі кожне маскує падіння двох інших.
+  it('resolveOptions: CI ⇒ yes навіть у TTY', () => {
+    expect(resolveOptions([], { CI: 'true' }, true).yes).toBe(true);
+  });
+
+  it('resolveOptions: --yes ⇒ yes', () => {
+    expect(resolveOptions(['--yes'], {}, true).yes).toBe(true);
+    expect(resolveOptions(['-y'], {}, true).yes).toBe(true);
+  });
+
+  it('resolveOptions: не-TTY ⇒ yes', () => {
+    expect(resolveOptions([], {}, false).yes).toBe(true);
   });
 
   it('resolveOptions: значення прапорця не з’їдає позиційний аргумент', () => {
@@ -106,9 +123,20 @@ describe('create-store CLI', () => {
     expect(readFileSync(join(target, '.env.local'), 'utf8')).toContain(
       'VITE_SUPABASE_URL=https://x.supabase.co',
     );
-    expect(
-      JSON.parse(readFileSync(join(target, 'package.json'), 'utf8')).name,
-    ).toBe('demo');
+    const manifest = JSON.parse(
+      readFileSync(join(target, 'package.json'), 'utf8'),
+    );
+    expect(manifest.name).toBe('demo');
+
+    // 🔴 СПРАВЖНІЙ `package.json.tpl`, а не синтетичний рядок: файл рукописний
+    // (`template:sync` його не чіпає), тож літеральна версія, дописана рукою
+    // разом із новою залежністю, інакше доїхала б у реліз — магазин ставив би
+    // `@simplycms/ui@0.1.0` поруч із двадцятьма `@simplycms/*@0.2.0`.
+    const core = Object.entries(manifest.dependencies as Record<string, string>)
+      .filter(([name]) => name.startsWith('@simplycms/'))
+      .map(([, range]) => range);
+    expect(core.length).toBeGreaterThan(0);
+    expect(core).toEqual(core.map(() => '0.1.0'));
   });
 
   it('scaffold: у згенерованому магазині не лишається плейсхолдерів', async () => {

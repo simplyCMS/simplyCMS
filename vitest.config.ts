@@ -44,6 +44,9 @@ export default defineConfig({
       // попереднього `pnpm build:packages`. У `pnpm test` не входить —
       // запускається окремим CI-job-ом `packaging`.
       'tests/published-exports-parity.test.ts',
+      // Смоук tarball-а скаффолдера: місце — саме релізний ланцюг
+      // (`test:packaging`), бо job `publish` не запускає `pnpm test`.
+      'tests/create-store-pack.test.ts',
     ],
   },
 });

@@ -35,6 +35,29 @@ describe('create-store template: парність із монорепо', () => 
     },
   );
 
+  // Пілотний оверлей — форк шаблонного `vite.config.ts` (плюс `emitBundleStats`
+  // для Gate C). Без цього гарда пілот збирав би скретч НЕ тим конфігом, який
+  // отримує користувач, і дрейф шаблону лишався б невидимим.
+  it('vite.config.ts пілота = шаблонний + блоки #region pilot-only', () => {
+    const stripPilotOnly = (source: string) =>
+      source.replace(
+        /^[ \t]*\/\/ #region pilot-only\n[\s\S]*?^[ \t]*\/\/ #endregion pilot-only\n/gm,
+        '',
+      );
+    const overlay = read('tests/pilot/store-template/vite.config.ts');
+    // Маркери мають бути парними й реально знайденими — інакше «парність»
+    // зійшлася б просто тому, що вирізати не було чого. Рахуємо лише
+    // маркери-РЯДКИ: згадка `#region` у прозі коментаря — не маркер.
+    const count = (re: RegExp) => (overlay.match(re) ?? []).length;
+    const opened = count(/^[ \t]*\/\/ #region pilot-only$/gm);
+    expect(opened).toBeGreaterThan(0);
+    expect(count(/^[ \t]*\/\/ #endregion pilot-only$/gm)).toBe(opened);
+    expect(overlay).toContain('emitBundleStats');
+    const stripped = stripPilotOnly(overlay);
+    expect(stripped).not.toContain('emitBundleStats');
+    expect(stripped).toBe(read(join(TEMPLATE_DIR, 'vite.config.ts')));
+  });
+
   it('deps шаблону і пілот-фікстури не розійшлися', () => {
     const tpl = JSON.parse(
       read(join(TEMPLATE_DIR, 'package.json.tpl'))
