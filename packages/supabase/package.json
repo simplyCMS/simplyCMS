@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/supabase",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "description": "Supabase clients (browser/server/anon), DI provider and DB types for SimplyCMS",
   "type": "module",

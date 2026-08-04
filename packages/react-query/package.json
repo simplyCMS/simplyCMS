@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/react-query",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "description": "TanStack Query hooks for SimplyCMS engine, wired through EngineProvider/useEngine. Data-access via injected ports — never imports supabase directly.",
   "type": "module",
