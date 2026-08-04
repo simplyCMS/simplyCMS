@@ -329,11 +329,11 @@ git commit -m "feat(create-store): шаблон магазину в пакеті
 - Consumes: `TEMPLATE_DIR`-структуру і плейсхолдери з Task 2.
 - Produces: `resolveOptions(argv, env, isTTY)` → `{ storeName?, supabaseUrl?, supabaseKey?, install: boolean, git: boolean, yes: boolean }`; `renderManifest(tpl, { storeName, version })` → string; `scaffold({ templateDir, targetDir, storeName, version, supabaseUrl?, supabaseKey? })` — розгортає магазин. Ці ж функції використовує ручний smoke і майбутні тести.
 
-- [ ] **Step 1: Додати залежність промптів**
+- [X] **Step 1: Додати залежність промптів**
 
 Run: `pnpm --dir packages/create-simplycms-store add @clack/prompts` (оновить lockfile).
 
-- [ ] **Step 2: Написати падаючі юніти на чисті функції**
+- [X] **Step 2: Написати падаючі юніти на чисті функції**
 
 ```ts
 // tests/create-store-cli.test.ts
@@ -390,7 +390,7 @@ describe('create-store CLI', () => {
 
 Run: `pnpm vitest run tests/create-store-cli.test.ts` → FAIL.
 
-- [ ] **Step 3: Імплементувати args.mjs**
+- [X] **Step 3: Імплементувати args.mjs**
 
 ```js
 // packages/create-simplycms-store/src/args.mjs
@@ -414,7 +414,7 @@ export function resolveOptions(argv, env = process.env, isTTY = process.stdout.i
 }
 ```
 
-- [ ] **Step 4: Імплементувати scaffold.mjs**
+- [X] **Step 4: Імплементувати scaffold.mjs**
 
 ```js
 // packages/create-simplycms-store/src/scaffold.mjs
@@ -461,15 +461,15 @@ export async function scaffold(input) {
 }
 ```
 
-- [ ] **Step 5: Юніти зелені**
+- [X] **Step 5: Юніти зелені**
 
 Run: `pnpm vitest run tests/create-store-cli.test.ts` → PASS.
 
-- [ ] **Step 6: Зібрати index.mjs (промпти + оркестрація)**
+- [X] **Step 6: Зібрати index.mjs (промпти + оркестрація)**
 
 Переписати `src/index.mjs`: `#!/usr/bin/env node`; прочитати власну версію з `package.json` пакета (`new URL('../package.json', import.meta.url)`); `resolveOptions(process.argv.slice(2))`; якщо НЕ `yes` — промпти @clack/prompts (`intro` → `text` тека/імʼя, якщо не задані → `text` Supabase URL і key з підказкою «Dashboard → Connect; Enter — пропустити» → `confirm` «Встановити залежності?»). **Позиційний аргумент — це ТЕКА призначення** (може бути шляхом типу `../shops/my-shop`); імʼя пакета — `basename(resolve(targetDir))`, валідоване `/^[a-z0-9][a-z0-9._-]*$/` (інакше зрозуміла помилка «некоректне npm-імʼя»); `templateDir` — через `fileURLToPath(new URL('../template', import.meta.url))` (НЕ `.pathname` — ламається на Windows). Виклик `scaffold({ templateDir, targetDir, storeName, version, ... })`; далі, якщо `git` — `git init` + `git add -A` + `git commit -m "chore: init simplycms store"` (через `execSync`, `cwd: targetDir`, у try/catch — відсутність git не валить scaffold); якщо `install` — встановлення менеджером із `npm_config_user_agent` (pnpm/npm/yarn, дефолт pnpm); `outro` з наступними кроками (як у README шаблону, включно з нагадуванням про Invite-шаблон у Dashboard). Кожна гілка помилки — зрозуміле повідомлення і `process.exitCode = 1`. Файл ≤150 рядків; якщо не влазить — винести вивід/встановлення в `src/steps.mjs`.
 
-- [ ] **Step 7: Ручний smoke**
+- [X] **Step 7: Ручний smoke**
 
 ```bash
 REPO="$PWD"; TMP="$(mktemp -d)"
@@ -481,7 +481,11 @@ rm -rf "$TMP"
 
 Expected: структура на місці (`package.json`, `.gitignore`, `.env.local`, `routes.ts`, `supabase/config.toml`, `supabase/migrations/`, `scripts/owner-invite.mjs`), `package.json.name = "smoke-shop"` (basename, не шлях), версії `@simplycms/*` = версії пакета.
 
-- [ ] **Step 8: Повні гейти + коміт**
+> Факт прогону (Task 3): усе перелічене на місці, `name = "smoke-shop"`,
+> `@simplycms/*` = `0.1.0`. Виняток — `scripts/owner-invite.mjs`: його ще немає
+> у шаблоні, він додається Task 4 (Step 2). Перевірити після Task 4.
+
+- [X] **Step 8: Повні гейти + коміт**
 
 Гейти з Global Constraints → зелені.
 
