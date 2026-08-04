@@ -57,6 +57,7 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
+- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI), які зони не покриті й що змінить `apps/dev-store`
 
 ## Agent Tooling
 
@@ -115,15 +116,29 @@ i18n-міграції (роадмап, Фаза 1+).
 ## Tech Stack
 
 - **Framework:** TanStack Start 1.167 + TanStack Router 1.168 (Vite 8, React 19)
-- **Language:** TypeScript 5.9 (strict mode)
-- **Package Manager:** pnpm 10.26 (workspaces)
+- **Language:** TypeScript 5.9 (strict mode) — 🔴 **свідомо не 6/7**, див. нижче
+- **Linting:** ESLint 10 + typescript-eslint 8
+- **Package Manager:** pnpm 11.20 (workspaces; налаштування — у `pnpm-workspace.yaml`, не в `package.json`)
 - **Database:** Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4
 - **Data Fetching:** TanStack React Query 5 (client) + route loaders / `createServerFn` (server)
 - **Rich Text:** Tiptap v3
-- **Testing:** Vitest 4 + Testing Library
+- **Testing:** Vitest 4 + Testing Library + jsdom 30
 - **Formatting:** Prettier 3
+
+🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція):
+TS 7 — нативний Go-компілятор без стабільного програмного API до 7.1, тож
+`typescript-eslint` закрив запит підтримки як **not planned** (його peer —
+`typescript <6.1.0`), а `tsup --dts` ламається повністю: генерація декларацій
+кличе Compiler API. Обидва — наші гейти (`pnpm lint`, `pnpm build:packages`).
+Апстрім пропонує тримати два компілятори (`@typescript/typescript6` для
+тулінгу) — для нас це борг без вигоди.
+TS 6 пробували: він вимагає прибрати `baseUrl`, після чого `tsup` інжектує
+власний і падає з `TS5101`, а `ignoreDeprecations: "6.0"` відкриває наступний
+шар — `TS2209` (неоднозначний корінь проєкту, потрібен явний `rootDir` у
+кожному пакеті). Це окремий міграційний проєкт, а не бамп залежності.
+**Умова перегляду:** `typescript-eslint` і `tsup` оголосять підтримку TS 7.
 
 ## Project Structure
 

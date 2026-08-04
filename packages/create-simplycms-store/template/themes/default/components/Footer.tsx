@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
-import { Facebook, Instagram } from 'lucide-react';
+import { FacebookIcon, InstagramIcon } from './SocialIcons';
 
 export function Footer() {
   const storeName = useThemeSettings<string>('storeName') || 'Beauty Store';
@@ -43,7 +43,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <Facebook className="h-5 w-5" />
+                  <FacebookIcon className="h-5 w-5" />
                 </a>
               )}
               {igUrl && (
@@ -53,7 +53,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <Instagram className="h-5 w-5" />
+                  <InstagramIcon className="h-5 w-5" />
                 </a>
               )}
             </div>

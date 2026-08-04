@@ -142,6 +142,30 @@ describe('create-store CLI', () => {
     expect(core).toEqual(core.map(() => '9.9.9-sentinel'));
   });
 
+  // 🔴 Магазин налаштований ЛИШЕ під pnpm 11+. Обидва механізми pnpm-специфічні
+  // і живуть у різних файлах, тож перевіряємо саме розгорнутий магазин, а не
+  // шаблон: `allowBuilds` без цього файлу = ERR_PNPM_IGNORED_BUILDS на install,
+  // і далі `pnpm build` (він перезапускає install) теж падає — магазин не
+  // збереться взагалі.
+  it('scaffold: магазин несе pnpm-конфіг (allowBuilds + packageManager)', async () => {
+    const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'pm');
+    await scaffold({
+      templateDir: 'packages/create-simplycms-store/template',
+      targetDir: target,
+      storeName: 'pm',
+      version: '9.9.9-sentinel',
+    });
+
+    const workspace = readFileSync(join(target, 'pnpm-workspace.yaml'), 'utf8');
+    expect(workspace).toMatch(/^allowBuilds:/m);
+    expect(workspace).toMatch(/^\s+esbuild: true$/m);
+
+    const manifest = JSON.parse(
+      readFileSync(join(target, 'package.json'), 'utf8'),
+    );
+    expect(manifest.packageManager).toMatch(/^pnpm@11\./);
+  });
+
   it('scaffold: у згенерованому магазині не лишається плейсхолдерів', async () => {
     const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'demo');
     await scaffold({
