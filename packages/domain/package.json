@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/domain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Pure commerce domain logic for SimplyCMS engine (Tier 1): pricing, discounts, inventory, shipping. No IO, no supabase, no react.",
   "type": "module",

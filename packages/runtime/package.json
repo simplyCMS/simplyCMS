@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/runtime",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "SimplyCMS engine runtime (Tier 6): defineConfig wires adapters/modules/theme/plugins into an EngineContext.",
   "type": "module",

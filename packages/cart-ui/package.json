@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/cart-ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Cart UI for SimplyCMS — presentational components + containers wired through hooks. Reference package for the feature-ui split (P7).",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/storefront",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "SSR storefront loaders + SEO generators for SimplyCMS, parameterized by an injected Supabase client. Host wires its own framework glue (createServerFn).",
   "type": "module",
