@@ -257,16 +257,14 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       зафіксованого зеленого `pnpm pilot:e2e` (Gates A–E)
 - [ ] `@simplycms/cli`: `add` / `update` (+schematics для host-файлів) /
       `db:diff` / `doctor` — окрема спека після скаффолдера
-- [ ] 🔴 **Блокер мержу цієї гілки в `main`** (не «перед першим релізом» —
-      тригер публікації це будь-який push у `main`, бампу версії не треба):
-      `create-simplycms-store` відсутній у реєстрі npm (`npm view
-      create-simplycms-store version` → `E404`), тож `isAlreadyPublished` його
-      НЕ пропустить — мерж спробує опублікувати пакет. Чинний `NPM_TOKEN` —
-      Granular Access Token, обмежений scope `@simplycms`, unscoped-пакет він
-      не покриє (job червоніє). До мержу — видати токен «Read and write» на
-      всі пакети акаунта (Bypass 2FA) і замінити secret, АБО опублікувати
-      `create-simplycms-store@0.1.0` вручну зі своєї машини і звузити токен
-      назад — деталі в
+- [x] 🔴 **`NPM_TOKEN` розширено на `All Packages`** — 2026-08-04, блокер знято.
+      Причина була не в теках, а в просторах імен: токен на scope `@simplycms`
+      покриває будь-який `@simplycms/*` (навіть ще не створений — доведено
+      першим релізом), але unscoped `create-simplycms-store` живе в глобальному
+      просторі імен, і scope-правило до нього не дотягується; додати його в
+      granular-токен наперед npm теж не дає — вибір лише з наявних пакетів.
+      `All Packages` покриває і його, і майбутній unscoped `simplycms` CLI
+      (Фаза 3) — процедуру повторювати не доведеться. Деталі в
       [`docs/architecture/release-process.md`](../architecture/release-process.md)
 - [X] **Публікація на npmjs працює** — конвеєр готовий і перевірений у бою:
       `pnpm release X.Y.Z` → PR → push у `main` публікує. `0.1.0` опубліковано

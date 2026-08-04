@@ -6,10 +6,10 @@ name: Publish Packages
 #   • тригер — push у `main`; публікуються тільки ті пакети, чиєї версії ще
 #     немає в реєстрі. `pnpm publish -r` робить цю перевірку сам
 #     (`isAlreadyPublished`), тож merge без бампа версії — no-op для тих, хто
-#     ВЖЕ в реєстрі;
-#     🔴 unscoped `create-simplycms-store` у реєстрі відсутній, тож перший же
-#     push у `main` спробує опублікувати його — і впаде, поки `NPM_TOKEN`
-#     обмежений scope `@simplycms`. Дія власника — docs/architecture/release-process.md;
+#     ВЖЕ в реєстрі; пакет, якого там немає, мерж публікує;
+#     🔴 саме тому `NPM_TOKEN` мусить бути `All Packages`, а не scope
+#     `@simplycms`: unscoped-імена (`create-simplycms-store`, надалі
+#     `simplycms` CLI) під scope не підпадають — docs/architecture/release-process.md;
 #   • версія у всіх пакетів СИНХРОННА, бампається вручну: `pnpm version:packages 0.2.0`
 #     (див. `scripts/version-packages.mjs`), далі звичайний PR у main;
 #   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині
@@ -54,7 +54,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::Немає secret NPM_TOKEN. Створи на npmjs Granular Access Token з увімкненим «Bypass 2FA» (scope @simplycms, read+write) і поклади його в Settings → Secrets and variables → Actions як NPM_TOKEN."
+            echo "::error::Немає secret NPM_TOKEN. Створи на npmjs Granular Access Token: Packages and scopes → All Packages, Read and write, Bypass 2FA. Саме All Packages — scope @simplycms не покриває unscoped-пакети (create-simplycms-store). Поклади в Settings → Secrets and variables → Actions як NPM_TOKEN."
             exit 1
           fi
 

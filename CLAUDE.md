@@ -359,15 +359,16 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   помилкою стану й падає;
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
-  пакетів, що вже там є**. 🔴 `create-simplycms-store` у реєстрі npm ще немає
-  (`npm view create-simplycms-store version` → `E404`) — для нього мерж це НЕ
-  no-op, а спроба публікації: `pkgsToPublish` матиме рівно один елемент. Це
-  блокер мержу гілки, що вводить пакет, — див. дію власника нижче;
+  пакетів, що вже там є**. Пакет, якого в реєстрі ще немає, мерж публікує —
+  саме так у реєстр поїхав `create-simplycms-store`;
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
 - 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
   npm за замовчуванням робить приватними, а це платний план;
 - потрібен secret **`NPM_TOKEN`** — 🔴 саме **Granular Access Token із увімкненим
-  «Bypass 2FA»** (scope `@simplycms`, read+write). Токен без bypass успішно
+  «Bypass 2FA»** і обсягом **`All Packages`** (read+write). Не scope
+  `@simplycms`: scope — це префікс в ІМЕНІ пакета, а не тека, і unscoped
+  `create-simplycms-store` (надалі ще й `simplycms` CLI) під нього не підпадає.
+  Розширено 2026-08-04. Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним
   повідомленням ще до збірки. 🔴 Цей токен обмежений scope `@simplycms` і НЕ
