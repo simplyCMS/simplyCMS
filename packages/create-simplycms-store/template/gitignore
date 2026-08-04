@@ -1,0 +1,22 @@
+# Залежності
+node_modules/
+
+# Артефакти збірки (vite build)
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Локальні змінні середовища — у git НЕ потрапляють
+.env
+.env.local
+.env.*.local
+
+# Згенерований роут-трі (TanStack Router): автор — `pnpm build`/`pnpm dev`
+src/routeTree.gen.ts
+
+# Локальний стан Supabase CLI
+supabase/.temp/
+
+# Логи та системне сміття
+*.log
+.DS_Store

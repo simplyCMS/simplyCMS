@@ -1,0 +1,28 @@
+# Конфігурація Supabase-проєкту магазину.
+#
+# `project_id` — локальна назва проєкту; після `supabase link --project-ref <ref>`
+# CLI підставить сюди справжній ref вашого хмарного проєкту.
+project_id = "__STORE_NAME__"
+
+[auth]
+enabled = true
+# Публічна адреса магазину: звідси GoTrue будує посилання в листах
+# (підтвердження, запрошення, скидання пароля). Для прод-домену — змінити.
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+
+[auth.email]
+enable_signup = true
+
+# Лист-запрошення власника/адміністратора (`pnpm owner:invite`).
+#
+# 🔴 Стандартний лист Supabase веде через GoTrue `/verify` з токенами у
+# fragment — серверний роут їх не бачить. Власний шаблон передає `token_hash`
+# у query, і `/auth/confirm` міняє його на сесію на СЕРВЕРІ.
+#
+# Локальний стек бере шаблон звідси автоматично. Для хмарного проєкту той
+# самий HTML треба вставити в Dashboard → Authentication → Email Templates →
+# «Invite user».
+[auth.email.template.invite]
+subject = "Вас запрошено до магазину"
+content_path = "./supabase/templates/invite.html"

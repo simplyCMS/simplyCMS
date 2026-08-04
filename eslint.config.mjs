@@ -96,6 +96,10 @@ const eslintConfig = [
       // ЧУЖОГО проєкту — його імпорти резолвляться лише після `npm install`
       // із tarball-ів у /tmp, а не workspace-аліасами.
       'tests/pilot/store-template/**',
+      // Шаблон магазину в пакеті create-simplycms-store: це не код монорепо,
+      // а файли ЧУЖОГО проєкту — його імпорти резолвляться лише після
+      // `npm install` пакетів ядра в згенерованому магазині.
+      'packages/create-simplycms-store/template/**',
     ],
   },
 ];

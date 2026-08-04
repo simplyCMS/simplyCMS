@@ -174,7 +174,7 @@ git commit -m "feat(create-store): каркас пакета create-simplycms-st
 **Interfaces:**
 - Produces: `TEMPLATE_DIR`, `SYNCED_FILES`, `SYNCED_DIRS` (експорти `scripts/sync-create-store-template.mjs`) — споживають парність-тест (цей Task) і пілот (Task 6). Плейсхолдери шаблону: `__STORE_NAME__`, `__SIMPLYCMS_VERSION__` у `package.json.tpl` — споживає Task 3. Перейменування при scaffold: `package.json.tpl → package.json`, `gitignore → .gitignore`, `env.example → .env.example` (npm при паці спеціально обробляє `.gitignore`, політика щодо інших dot-файлів різниться між менеджерами — у шаблоні тримаємо без крапки як страховку; фактичний вміст tarball-а стереже смоук Task 6).
 
-- [ ] **Step 1: Написати sync-скрипт (джерело правди переліків)**
+- [X] **Step 1: Написати sync-скрипт (джерело правди переліків)**
 
 ```js
 // scripts/sync-create-store-template.mjs
@@ -229,7 +229,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 У кореневий `package.json` (блок scripts) додати: `"template:sync": "node scripts/sync-create-store-template.mjs"`.
 
-- [ ] **Step 2: Написати падаючий парність-тест**
+- [X] **Step 2: Написати падаючий парність-тест**
 
 ```ts
 // tests/create-store-template-parity.test.ts
@@ -283,7 +283,7 @@ describe('create-store template: парність із монорепо', () => 
 
 Run: `pnpm vitest run tests/create-store-template-parity.test.ts` → FAIL (шаблону немає).
 
-- [ ] **Step 3: Наповнити шаблон**
+- [X] **Step 3: Наповнити шаблон**
 
 1. `pnpm template:sync` — генерує синковану частину.
 2. Статичні файли — скопіювати з `tests/pilot/store-template/` і адаптувати:
@@ -297,17 +297,17 @@ Run: `pnpm vitest run tests/create-store-template-parity.test.ts` → FAIL (ша
    - `template/gitignore` — `node_modules/`, `dist/`, `.env.local`, `src/routeTree.gen.ts`.
    - `template/README.md` — «наступні кроки»: 1) заповнити `.env.local` (Connect-панель Supabase Dashboard); 2) `supabase link --project-ref <ref> && supabase db push`; 3) `OWNER_EMAIL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm owner:invite`; 4) `pnpm dev`; прод — `pnpm build && pnpm start`.
 
-- [ ] **Step 4: Виключення для тулінгу**
+- [X] **Step 4: Виключення для тулінгу**
 
 - `eslint.config.mjs` → у `ignores` додати `'packages/create-simplycms-store/template/**'` (поруч із `'tests/pilot/store-template/**'`, з аналогічним коментарем).
 - `tsconfig.json` → в `exclude` додати `"packages/create-simplycms-store/template"`.
 
-- [ ] **Step 5: Тести зелені + повні гейти**
+- [X] **Step 5: Тести зелені + повні гейти**
 
 Run: `pnpm vitest run tests/create-store-template-parity.test.ts` → PASS.
 Run: повний блок гейтів із Global Constraints → зелений. Якщо `format:check` червоніє на файлах шаблону — виправити `pnpm format` і перевірити, що парність не зламалась (host-джерела вже відформатовані, тож зміни бути не повинно; якщо є — синковані файли в `.prettierignore` НЕ додавати, а розібратись, чому джерело неформатоване).
 
-- [ ] **Step 6: Коміт**
+- [X] **Step 6: Коміт**
 
 ```bash
 git add packages/create-simplycms-store/template scripts/sync-create-store-template.mjs tests/create-store-template-parity.test.ts package.json eslint.config.mjs tsconfig.json

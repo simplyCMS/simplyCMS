@@ -73,6 +73,7 @@
     "vitest.config.ts",
     "**/tsup.config.ts",
     "**/dist",
-    "tests/pilot/store-template"
+    "tests/pilot/store-template",
+    "packages/create-simplycms-store/template"
   ]
 }
