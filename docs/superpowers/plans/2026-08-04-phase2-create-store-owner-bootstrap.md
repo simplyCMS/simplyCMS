@@ -890,7 +890,7 @@ git commit -m "feat(storefront): /auth/confirm (verifyOtp) + /auth/set-password 
 **Interfaces:**
 - Consumes: `TEMPLATE_DIR` з `scripts/sync-create-store-template.mjs` (Task 2).
 
-- [ ] **Step 1: Перебудувати scaffold.mjs**
+- [X] **Step 1: Перебудувати scaffold.mjs**
 
 - ⚠️ Колізія імен: у `scripts/pilot-pack/scaffold.mjs:24` ВЖЕ є локальна
   `const TEMPLATE_DIR = join(REPO_ROOT, 'tests/pilot/store-template')` —
@@ -901,7 +901,7 @@ git commit -m "feat(storefront): /auth/confirm (verifyOtp) + /auth/set-password 
 - Видалити з `tests/pilot/store-template/` файли, що переїхали в шаблон: `routes.ts`, `src/engine.shared.ts`, `tailwind.config.ts`, `tsconfig.json`, `src/routes/my/.gitkeep`. Оновити шапковий коментар scaffold.mjs: джерело — шаблон create-simplycms-store, оверлей — пілот.
 - **Теми:** шаблонний `simplycms.config.ts` реєструє лише `default` (Task 2), тож: `git grep -n solarstore scripts/pilot-pack tests/pilot` — якщо гейти/фікстури на solarstore не завʼязані (очікувано ні: маркери Gate D — з `@simplycms/ui`/`catalog-ui`, сід активує `default`), видалити `tests/pilot/store-template/simplycms.config.ts` з оверлею (шаблонний стає єдиним) і НЕ копіювати `themes/solarstore` у скретч. Якщо завʼязані — зафіксувати де саме і лишити пілотний конфіг в оверлеї з коментарем-причиною.
 
-- [ ] **Step 2: Смоук упакованого CLI (те, чого не бачить monorepo-scaffold)**
+- [X] **Step 2: Смоук упакованого CLI (те, чого не бачить monorepo-scaffold)**
 
 `scripts/pilot-pack/create-pkg-smoke.mjs` — пакує САМ create-пакет і запускає bin із tarball-а (ловить втрату `template/` у `files`, зламаний `bin`, зіпсуті перейменування):
 
@@ -932,12 +932,12 @@ export function createPkgSmoke() {
 
 Підключення: у `scripts/pilot-pack/run.mjs` усередині `runGates` (після Gate D, до Gate B) — `step('Gate CLI — tarball скаффолдера'); results.push(['CLI', createPkgSmoke()]);` — контракт `[name, { ok, details }]` той самий, `report.mjs` підхопить без змін.
 
-- [ ] **Step 3: Верифікація пілотом**
+- [X] **Step 3: Верифікація пілотом**
 
 Run: `pnpm build:packages && pnpm pilot:pack`
 Expected: Gates A, C, D, CLI — PASS (доказ, що шаблон пакета еквівалентний старому scaffold-у і що упакований CLI живий).
 
-- [ ] **Step 4: Повні гейти + коміт**
+- [X] **Step 4: Повні гейти + коміт**
 
 Повний блок гейтів + `pnpm test:packaging` → зелені.
 

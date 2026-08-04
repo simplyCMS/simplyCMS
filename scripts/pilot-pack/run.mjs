@@ -13,6 +13,7 @@ import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateTailwind } from './gate-d.mjs';
+import { createPkgSmoke } from './create-pkg-smoke.mjs';
 
 /** Заголовок кроку — щоб лог пілота читався зверху вниз. */
 export function step(title) {
@@ -39,6 +40,11 @@ export async function runGates(opts) {
 
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
+
+  // Gate CLI не залежить ні від БД, ні від скретча — тому в гілці, яка йде
+  // завжди, включно з `--pack-only`.
+  step('Gate CLI — tarball скаффолдера');
+  results.push(['CLI', createPkgSmoke()]);
 
   if (!opts.packOnly) results.push(['B', await runGateB(opts)]);
   return results;
