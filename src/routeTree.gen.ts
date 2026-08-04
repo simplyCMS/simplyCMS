@@ -15,6 +15,8 @@ import { Route as ProtectedRouteImport } from './../packages/simplycms/storefron
 import { Route as AuthIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/index'
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/admin-routes/routes/admin/index'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/storefront-routes/routes/_storefront/index'
+import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/set-password'
+import { Route as AuthConfirmRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/confirm'
 import { Route as AuthCallbackRouteImport } from './../packages/simplycms/storefront-routes/routes/auth/callback'
 import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/storefront-routes/routes/api/revalidate-theme'
 import { Route as ApiHealthRouteImport } from './../packages/simplycms/storefront-routes/routes/api/health'
@@ -101,6 +103,16 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StorefrontRoute,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/auth/confirm',
+  path: '/auth/confirm',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -429,6 +441,8 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -492,6 +506,8 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -558,6 +574,8 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -625,6 +643,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/admin/'
     | '/auth/'
     | '/profile/settings'
@@ -688,6 +708,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/admin'
     | '/auth'
     | '/profile/settings'
@@ -753,6 +775,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/set-password'
     | '/_storefront/'
     | '/admin/'
     | '/auth/'
@@ -818,6 +842,8 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthConfirmRoute: typeof AuthConfirmRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
@@ -864,6 +890,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof StorefrontIndexRouteImport
       parentRoute: typeof StorefrontRoute
+    }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/auth/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -1427,6 +1467,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthConfirmRoute: AuthConfirmRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
 export const routeTree = rootRouteImport

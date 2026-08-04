@@ -685,6 +685,9 @@ importers:
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.95.3
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.21(react@19.2.4)

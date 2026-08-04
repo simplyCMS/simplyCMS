@@ -82,6 +82,7 @@
   },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",
+    "@supabase/supabase-js": "^2.0.0",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-start": "^1.0.0",

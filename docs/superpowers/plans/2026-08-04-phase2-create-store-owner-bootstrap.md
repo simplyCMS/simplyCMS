@@ -751,7 +751,25 @@ git commit -m "feat(create-store): міграція без авто-адміна
 - Consumes: invite-лист із шаблону Task 2 (`invite.html`): лінк = `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/set-password`. Стандартний `?code=`-callback для invite НЕ працює (див. Довідку) — тому окремий серверний confirm-роут із `verifyOtp`.
 - Produces: GET `/auth/confirm?token_hash&type&next` → сесія в auth-cookies + 302 на `next`; роут `/auth/set-password`; після успіху — `navigate({ to: '/admin' })`. Gate E (Task 7) фетчить `/auth/confirm` напряму.
 
-- [ ] **Step 0: Серверний confirm-роут (за зразком callback.tsx)**
+**Фактично (виконання 2026-08-04):**
+- `exports`/`publishConfig.exports` пакета `storefront-routes` уже мають wildcard
+  `./pages/*` — правка манифесту під нову сторінку НЕ знадобилась.
+- Натомість манифест довелось правити з іншої причини: `import type { EmailOtpType }`
+  у `confirm.tsx` — перший bare-імпорт `@supabase/supabase-js` у цьому пакеті, і
+  `tests/audit-deps.test.ts` червонів. Додано в `peerDependencies` (`^2.0.0`) —
+  так само, як у `storefront`/`data-supabase`/`plugin-system`; шаблон магазину
+  цей пакет уже везе в `dependencies`. `pnpm-lock.yaml` перегенеровано.
+- Взірець `revalidate-theme-route.test.ts` handler НЕ викликає (лише асертить
+  реєстрацію), тож виклик GET через `Route.options.server.handlers` написано з нуля;
+  інваріант «файл роуту експортує лише `Route`» перенесено зі взірця.
+- Сторінку розділено на два файли заради ліміту 150 рядків: `pages/AuthSetPassword.tsx`
+  (гейт сесії + виклик Supabase) і `components/SetPasswordForm.tsx` (схема + поля).
+- Клієнт Supabase сторінка бере хуком `useSupabaseClient` з
+  `@simplycms/supabase/SupabaseProvider` — як `ProfileSettings.tsx`.
+- `/auth/set-password` навмисно БЕЗ `beforeLoad`-редіректу залогіненого: користувач
+  приходить туди саме із сесією після `verifyOtp`.
+
+- [X] **Step 0: Серверний confirm-роут (за зразком callback.tsx)**
 
 `routes/auth/confirm.tsx`:
 
@@ -799,7 +817,7 @@ export const Route = createFileRoute('/auth/confirm')({
 
 Юніт `src/__tests__/auth-confirm-route.test.ts` — за зразком сусіднього `revalidate-theme-route.test.ts` (подивись, як там мокається `createServerSupabase` і викликається handler): (1) валідний `token_hash+type` → 302 на `next`, `verifyOtp` викликано з `{ type, token_hash }`; (2) `next=//evil.com` → редірект на `/`; (3) без `token_hash` → редірект на `/auth?error=auth_error`.
 
-- [ ] **Step 1: Розвідка перед кодом (обовʼязково)**
+- [X] **Step 1: Розвідка перед кодом (обовʼязково)**
 
 ```bash
 git grep -n "supabase" packages/simplycms/storefront-routes/src/pages/ProfileSettings.tsx | head -5
@@ -809,7 +827,7 @@ ls tests/ | grep -i "tsx"
 
 Зафіксувати: (а) як ProfileSettings отримує supabase-клієнт — використати той самий імпорт; (б) чи `exports` має wildcard `./pages/*`; (в) зразок наявного компонентного тесту (`tests/*.test.tsx`) — повторити його setup (jsdom, провайдери).
 
-- [ ] **Step 2: i18n-ключі**
+- [X] **Step 2: i18n-ключі**
 
 В `uk.ts` (формат плоский, як `'cart.title'`):
 
@@ -828,11 +846,11 @@ ls tests/ | grep -i "tsx"
 
 В `en.ts` — ті самі ключі англійською.
 
-- [ ] **Step 3: Падаючий тест сторінки**
+- [X] **Step 3: Падаючий тест сторінки**
 
 `packages/simplycms/storefront-routes/src/__tests__/auth-set-password.test.tsx` — React-тести живуть САМЕ тут (у `tests/` кореня `.test.tsx` немає), перший рядок обовʼязково `// @vitest-environment jsdom` (дефолтне середовище vitest — node; зразок setup — сусідній `catalog-ssr.test.tsx`). Кейси: рендер `AuthSetPassword` з замоканим supabase-модулем (`vi.mock` на модуль, знайдений у Step 1а): (1) без сесії — показує текст `auth.setPassword.noSession`; (2) із сесією: сабміт валідної пари паролів викликає `updateUser({ password })`. Використати `I18nProvider` як у зразку (або замокати `useT` → identity). Run → FAIL.
 
-- [ ] **Step 4: Сторінка**
+- [X] **Step 4: Сторінка**
 
 `src/pages/AuthSetPassword.tsx` (default export, як інші сторінки): `useT()`; отримання клієнта — імпорт зі Step 1а; на маунті `supabase.auth.getSession()` → без сесії рендерити `noSession`-стан із лінком на `/auth`; форма react-hook-form + zod (`z.object({ password: z.string().min(8, t('auth.setPassword.tooShort')), confirm: z.string() }).refine(d => d.password === d.confirm, { message: t('auth.setPassword.mismatch'), path: ['confirm'] })`); сабміт → `supabase.auth.updateUser({ password })` → успіх `navigate({ to: '/admin' })`, помилка — `auth.setPassword.error`. UI-примітиви — з `@simplycms/ui` (Card/Input/Button/Form — як у `Auth.tsx`). ≤150 рядків.
 
@@ -850,7 +868,7 @@ export const Route = createFileRoute('/auth/set-password')({
 
 (Якщо в `routes/auth/index.tsx` є `ssr`-опція чи інший обовʼязковий патерн — повторити його.)
 
-- [ ] **Step 5: Тести зелені + гейти + коміт**
+- [X] **Step 5: Тести зелені + гейти + коміт**
 
 Run: `pnpm vitest run packages/simplycms/storefront-routes/src/__tests__/auth-set-password.test.tsx packages/simplycms/storefront-routes/src/__tests__/auth-confirm-route.test.ts` → PASS. Повні гейти (build згенерує обидва роути в `routeTree.gen.ts`; typecheck підтвердить типізацію `Link`/route id). Нові кириличні warning-и НЕ мають зʼявитись (сторінка повністю на `useT`) — перевірити: `pnpm lint 2>&1 | grep -c "no-restricted-syntax"` → ті самі ≈954.
 
