@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PACKAGES_DIR = 'packages/simplycms';
+/** Публіковані пакети поза PACKAGES_DIR (unscoped скаффолдер). */
+const STANDALONE_PACKAGE_DIRS = ['packages/create-simplycms-store'];
 /** semver без пре-релізів: цього достатньо для синхронної моделі версій. */
 export const VERSION_RE = /^\d+\.\d+\.\d+$/;
 
@@ -17,9 +19,12 @@ export function compareVersions(a, b) {
 
 /** Манифести публікованих пакетів ядра (private — не наші). */
 export function readPublishableManifests() {
+  const dirs = readdirSync(PACKAGES_DIR)
+    .map((dir) => join(PACKAGES_DIR, dir))
+    .concat(STANDALONE_PACKAGE_DIRS);
   const result = [];
-  for (const dir of readdirSync(PACKAGES_DIR)) {
-    const path = join(PACKAGES_DIR, dir, 'package.json');
+  for (const dir of dirs) {
+    const path = join(dir, 'package.json');
     if (!existsSync(path)) continue;
     const manifest = JSON.parse(readFileSync(path, 'utf8'));
     if (manifest.private === true) continue;

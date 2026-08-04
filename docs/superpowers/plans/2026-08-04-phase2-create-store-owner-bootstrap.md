@@ -53,7 +53,7 @@
 **Interfaces:**
 - Produces: workspace-пакет `create-simplycms-store@0.1.0` (bin `create-simplycms-store` → `src/index.mjs`); `readPublishableManifests()` у `bump.mjs` повертає його разом із 21 `@simplycms/*`.
 
-- [ ] **Step 1: Написати падаючий тест покриття bump-ом**
+- [X] **Step 1: Написати падаючий тест покриття bump-ом**
 
 ```ts
 // tests/release-bump-coverage.test.ts
@@ -76,12 +76,12 @@ describe('release bump: покриття манифестів', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнати — впевнитись, що падає**
+- [X] **Step 2: Прогнати — впевнитись, що падає**
 
 Run: `pnpm vitest run tests/release-bump-coverage.test.ts`
 Expected: FAIL — `names` не містить `create-simplycms-store` (пакета ще немає).
 
-- [ ] **Step 3: Створити манифест пакета**
+- [X] **Step 3: Створити манифест пакета**
 
 `packages/create-simplycms-store/package.json` (версія = поточна версія ядра, зараз `0.1.0` — звір з `packages/simplycms/objects/package.json`):
 
@@ -112,7 +112,7 @@ console.log('create-simplycms-store: у розробці');
 
 `README.md` — 5-10 рядків: що це, `pnpm create simplycms-store my-shop`, посилання на спеку.
 
-- [ ] **Step 4: Додати теку у workspace і оновити lockfile**
+- [X] **Step 4: Додати теку у workspace і оновити lockfile**
 
 У `pnpm-workspace.yaml` додати рядок:
 
@@ -126,7 +126,7 @@ packages:
 
 Run: `pnpm install` (НЕ frozen — оновлює lockfile).
 
-- [ ] **Step 5: Розширити bump.mjs**
+- [X] **Step 5: Розширити bump.mjs**
 
 У `scripts/release/bump.mjs` замінити константу і `readPublishableManifests`:
 
@@ -153,12 +153,12 @@ export function readPublishableManifests() {
 }
 ```
 
-- [ ] **Step 6: Тест зелений + повні гейти**
+- [X] **Step 6: Тест зелений + повні гейти**
 
 Run: `pnpm vitest run tests/release-bump-coverage.test.ts` → PASS.
 Run: `pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test` → усе зелене.
 
-- [ ] **Step 7: Коміт**
+- [X] **Step 7: Коміт**
 
 ```bash
 git add packages/create-simplycms-store pnpm-workspace.yaml pnpm-lock.yaml scripts/release/bump.mjs tests/release-bump-coverage.test.ts
