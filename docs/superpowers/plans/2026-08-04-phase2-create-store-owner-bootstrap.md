@@ -505,7 +505,7 @@ git commit -m "feat(create-store): CLI скаффолдера — промпти
 - Consumes: шаблон Task 2 (`package.json.tpl` вже має script `owner:invite`; лист будує GoTrue за `template/supabase/templates/invite.html` → лінк веде на `/auth/confirm`, роут дає Task 5).
 - Produces: `runOwnerInvite({ admin, email, siteUrl, resend, log })` → `Promise<{ userId: string, invited: boolean, roleAdded: boolean, resendLink?: string }>`; міграція `first_user_no_auto_admin` (Gate E Task 7 доводить її дію).
 
-- [ ] **Step 0: Міграція — тригер більше не дарує admin першому**
+- [x] **Step 0: Міграція — тригер більше не дарує admin першому**
 
 Створити `supabase/migrations/<UTC-timestamp>_first_user_no_auto_admin.sql` (timestamp — поточний UTC `YYYYMMDDHHMMSS`; тіло — копія `20260213120000_fix_handle_new_user_trigger.sql` БЕЗ гілки `user_count`):
 
@@ -539,7 +539,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 Потім `pnpm template:sync` (snapshot міграцій у шаблоні) → `pnpm vitest run tests/create-store-template-parity.test.ts` → PASS. Застосування на живу dev-БД (`pnpm db:migrate`) — окрема дія власника після мержа; локальний стек застосує міграцію сам у `pilot:e2e` (`db reset`), Gate E (Task 7) саме це й перевіряє.
 
-- [ ] **Step 1: Написати падаючі юніти з фейковим admin-клієнтом**
+- [x] **Step 1: Написати падаючі юніти з фейковим admin-клієнтом**
 
 ```ts
 // tests/owner-invite.test.ts
@@ -623,7 +623,7 @@ describe('owner-invite', () => {
 
 Run: `pnpm vitest run tests/owner-invite.test.ts` → FAIL.
 
-- [ ] **Step 2: Імплементувати core**
+- [x] **Step 2: Імплементувати core**
 
 ```js
 // packages/create-simplycms-store/template/scripts/owner-invite-core.mjs
@@ -679,7 +679,7 @@ export async function runOwnerInvite({ admin, email, siteUrl, resend = false, lo
 }
 ```
 
-- [ ] **Step 3: CLI-обгортка**
+- [x] **Step 3: CLI-обгортка**
 
 ```js
 // packages/create-simplycms-store/template/scripts/owner-invite.mjs
@@ -731,7 +731,7 @@ runOwnerInvite({
 });
 ```
 
-- [ ] **Step 4: Тести зелені + гейти + коміт**
+- [x] **Step 4: Тести зелені + гейти + коміт**
 
 Run: `pnpm vitest run tests/owner-invite.test.ts` → PASS; повні гейти → зелені.
 
