@@ -105,8 +105,16 @@ export function printNextSteps({ dirLabel, manager, installed, hasEnv }) {
   steps.push(`${manager} run dev`);
   note(steps.join('\n'), 'Наступні кроки');
   log.info(
-    'Для хмарного проєкту продублюй supabase/templates/invite.html у\n' +
-      'Dashboard → Authentication → Email Templates → «Invite user»:\n' +
-      'стандартний лист не передає token_hash, і /auth/confirm його не побачить.',
+    'Для хмарного проєкту (supabase db push накочує ЛИШЕ міграції, секція\n' +
+      '[auth] із supabase/config.toml на хмару не потрапляє) зроби в Dashboard:\n' +
+      '1) Authentication → Email Templates → «Invite user» — продублюй\n' +
+      '   supabase/templates/invite.html: стандартний лист не передає\n' +
+      '   token_hash, і /auth/confirm його не побачить;\n' +
+      '2) Authentication → URL Configuration → Site URL = публічна адреса\n' +
+      '   магазину, її ж додай у Redirect URLs. Лінк у листі будується з\n' +
+      '   {{ .SiteURL }}, а дефолт проєкту — http://localhost:3000.\n' +
+      'CLI-альтернатива п.2 — supabase config push, але він відправляє ВЕСЬ\n' +
+      'локальний config.toml і перезапише віддалені auth-налаштування\n' +
+      'дефолтами CLI.',
   );
 }

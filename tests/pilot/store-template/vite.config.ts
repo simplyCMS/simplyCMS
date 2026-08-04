@@ -77,4 +77,11 @@ export default {
       '@plugins': resolve(__dirname, 'plugins'),
     },
   },
+  // 🔴 Порт dev-сервера прибитий до 3000 — того самого, що `pnpm start`
+  // (`server.mjs`, PORT за замовчуванням 3000) і що `[auth] site_url` у
+  // `supabase/config.toml`. Дефолт Vite — 5173, і тоді лист-запрошення
+  // `owner:invite` (лінк будується з Site URL) вів би на порожній порт.
+  // `strictPort` — щоб зайнятий 3000 падав явно, а не тихо переїжджав на 3001
+  // і знову ламав лінк.
+  server: { port: 3000, strictPort: true },
 };
