@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/catalog-ui",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Catalog UI for SimplyCMS — presentational components + containers for the product catalog (filters, product cards, gallery, stock, modifications). Feature-ui split package (P7).",
   "type": "module",

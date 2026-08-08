@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/storefront-routes",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Storefront route-компоненти, server-шар і SEO для SimplyCMS",
   "type": "module",

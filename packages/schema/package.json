@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/schema",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Drizzle-baseline схеми SimplyCMS: таблиці, енами та RLS-політики в TypeScript",
   "type": "module",

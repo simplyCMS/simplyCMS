@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/objects",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Type-only, zero runtime dependencies.",
   "type": "module",
