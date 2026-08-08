@@ -9,8 +9,13 @@
  * `tests/pilot/store-template/` лишається тонким ОВЕРЛЕЄМ — рівно ті два файли,
  * які в пілоті мусять відрізнятися від шаблону:
  *  - `vite.config.ts` — плюс плагін `emitBundleStats()`, без якого немає Gate C;
- *  - `package.json` — приватний manifest із плейсхолдером `overrides`, куди
- *    `writeManifest` підставляє шляхи tarball-ів.
+ *  - `package.json` — приватний manifest, у якому `writeManifest` замінює
+ *    версії пакетів ядра на шляхи tarball-ів.
+ *
+ * 🔴 Третього файлу в оверлеї НЕМАЄ навмисно. Примус tarball-ів живе в
+ * `pnpm-workspace.yaml`, і той приходить із ШАБЛОНУ (він везе `allowBuilds`,
+ * без якого install обривається). Оверлей копіюється поверх шаблону й затер би
+ * його, тому `writeOverrides` дописує блок у вже скопійований файл.
  *
  * Теми (`themes/default`) і `plugins/hello-world` приходять із шаблону, а не з
  * кореня репо; їхню синхронність із монорепо стереже `pnpm template:sync` +
@@ -28,6 +33,7 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { TEMPLATE_DIR } from '../sync-create-store-template.mjs';
+import { writeOverrides } from './overrides.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const PILOT_OVERLAY_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
@@ -73,20 +79,17 @@ export function scaffoldStore({ storeDir, tarballs, env }) {
   cpSync(PILOT_OVERLAY_DIR, storeDir, { recursive: true });
 
   writeManifest(storeDir, tarballs);
+  writeOverrides(storeDir, tarballs);
   writeEnv(storeDir, env);
 }
 
 /**
- * Підставити шляхи tarball-ів у manifest магазину.
+ * Підставити шляхи tarball-ів у `dependencies` магазину.
  *
- * 🔴 Дві зафіксовані вади методу (обидві свідомі):
- *  1. npm НЕ резолвить `file:`-транзитивність по імені: якщо пакет A залежить
- *     від сиблінга B за версією `0.1.0`, npm піде за ним у registry, де його
- *     ще немає. Тому ВСІ пакети ядра прописуються в `overrides` — це єдиний
- *     спосіб змусити npm узяти локальний tarball на будь-якій глибині дерева.
- *  2. Через `overrides` пілот НЕ перевіряє повноту `dependencies` у manifest-ах
- *     (недекларована залежність усе одно встановиться). Статичну повноту
- *     гарантує окремий гейт — `node scripts/audit-deps.mjs` (Task 1.3).
+ * Покриває лише ПРЯМІ залежності; транзитивні перезшиває `writeOverrides`.
+ * Строго кажучи, overrides самодостатні й для прямих (перевірено: pnpm
+ * підставляє tarball навіть коли в deps лишається версія) — цей прохід
+ * тримаємо як захист у глибину, щоб манифест не брехав про джерело.
  */
 function writeManifest(storeDir, tarballs) {
   const manifestPath = join(storeDir, 'package.json');
@@ -97,10 +100,6 @@ function writeManifest(storeDir, tarballs) {
       manifest.dependencies[name] = `file:${tarball}`;
     }
   }
-
-  manifest.overrides = Object.fromEntries(
-    [...tarballs].map(([name, tarball]) => [name, `file:${tarball}`]),
-  );
 
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 }
