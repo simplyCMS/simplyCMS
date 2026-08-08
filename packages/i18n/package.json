@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/i18n",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Request-scoped i18n for SimplyCMS: uk/en catalogs, translator factory and React provider (no global mutable state)",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/core",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "description": "Core business logic, hooks, and components for SimplyCMS e-commerce platform",
   "type": "module",
