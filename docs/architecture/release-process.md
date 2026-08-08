@@ -1,6 +1,7 @@
 # Реліз ядра: публікація пакетів на npmjs
 
-Ядро SimplyCMS — 21 пакет `@simplycms/*`, які публікуються на **npmjs** під
+Ядро SimplyCMS — 21 пакет `@simplycms/*` (плюс unscoped
+`create-simplycms-store`), які публікуються на **npmjs** під
 scope `@simplycms`, + 22-й пакет `create-simplycms-store` (unscoped, CLI-
 скаффолдер із вбудованим шаблоном магазину, `packages/create-simplycms-store/`).
 Цей документ описує, як випустити нову версію.
@@ -98,11 +99,12 @@ Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `m
 `pnpm publish -r` викликає `isAlreadyPublished`, а це `resolve()` проти реєстру
 в `try/catch` з `catch { return false }`: пакет ІДЕ в публікацію, якщо реєстр
 відповів 404 (пакета там нема), а не лише коли версія свіжіша. Для всіх 21
-`@simplycms/*@0.1.0` це no-op. 🔴 Для `create-simplycms-store` — ні: у реєстрі
-його немає (`npm view create-simplycms-store version` → `E404`), тож
-`pkgsToPublish` міститиме рівно цей один пакет незалежно від бампу версії.
-Наслідок для `NPM_TOKEN` (scope `@simplycms`, нижче) — див. розділ вище «22-й
-пакет». З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
+`@simplycms/*` поточної версії це no-op. 🔴 Так само було з
+`create-simplycms-store`, поки його не було в реєстрі: перший мерж опублікував
+його незалежно від бампу. Зараз він там є (`npm view create-simplycms-store
+version` → `0.2.1`), тож правило знову зводиться до «no-op без бампа» — але
+для БУДЬ-ЯКОГО нового пакета воно не діє, і введення такого пакета стає
+релізним рішенням у момент мержу. З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
 прогону, що впав на середині, — **для вже опублікованих** пакетів вони другий
 раз не публікуються.
 

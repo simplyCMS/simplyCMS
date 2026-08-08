@@ -5,7 +5,7 @@ import { formatGap, runAudit } from '../scripts/audit-deps.mjs';
 // (`src/` і `routes/`) має бути оголошений у `dependencies` або
 // `peerDependencies` цього ж пакета. У монорепо розрив невидимий —
 // workspace-аліаси й hoisted-корінь `node_modules` резолвлять що завгодно;
-// вилізе він лише на справжньому `npm install` з tarball-а (Етап 3, пілот)
+// вилізе він лише на справжньому `pnpm install` з tarball-а (Етап 3, пілот)
 // як `ERR_MODULE_NOT_FOUND` у споживача.
 describe('audit-deps: manifest покриває всі bare-імпорти', () => {
   it('0 недекларованих залежностей', () => {

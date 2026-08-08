@@ -6,7 +6,7 @@
  * У монорепо будь-який bare-імпорт резолвиться через workspace-аліаси
  * (`tsconfig.json` paths, `vite.config.ts` `resolve.alias`) і через
  * hoisted-корінь `node_modules` — навіть якщо пакет НЕ оголосив цю
- * залежність у своєму `package.json`. При справжньому `npm install`
+ * залежність у своєму `package.json`. При справжньому `pnpm install`
  * з tarball-а (Етап 3, пілот) така недекларована залежність просто не
  * встановиться → `ERR_MODULE_NOT_FOUND` у споживача.
  *

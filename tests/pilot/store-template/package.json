@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "build": "vite build",
     "start": "node server.mjs"
@@ -100,8 +101,5 @@
     "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-    "__SIMPLYCMS_TARBALLS__": "заповнює scripts/pilot-pack.mjs"
   }
 }

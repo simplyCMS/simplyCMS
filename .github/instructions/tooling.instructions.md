@@ -31,7 +31,7 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
 pnpm template:sync          # регенерація шаблону create-simplycms-store з монорепо (закомічені копії)
-pnpm pilot:pack             # npm-pack пілот, гейти A/C/D/CLI — без Supabase; Gate E видимо SKIP
+pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase; Gate E видимо SKIP
 pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local); Gate E досі SKIP
 pnpm pilot:e2e              # гейти A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
 pnpm pilot:seed             # фікстури пілота → supabase/seed.sql (генерат!)

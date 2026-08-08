@@ -10,7 +10,7 @@ import {
 // інваріанти опублікованого manifest-а:
 //   (а) top-level `exports` — це publish-варіант (pnpm застосував publishConfig);
 //   (б) кожна ціль export-а реально лежить у tarball-і (інакше споживач
-//       дістане ERR_MODULE_NOT_FOUND уже після `npm install`);
+//       дістане ERR_MODULE_NOT_FOUND уже після `pnpm install`);
 //   (в) жодного `workspace:` у залежностях (pnpm мусив підставити версії).
 //
 // Не входить у `pnpm test`: потребує попереднього `pnpm build:packages`

@@ -58,6 +58,33 @@ describe('create-store template: парність із монорепо', () => 
     expect(stripped).toBe(read(join(TEMPLATE_DIR, 'vite.config.ts')));
   });
 
+  // 🔴 `packageManager` визначає, ЯКИМ pnpm ставиться скретч: corepack бере
+  // поле з найближчого package.json, а оверлей затирає шаблонний манифест.
+  // Заміряно на цій машині: у теці з полем — pnpm 11.20.0, без нього — 10.33.0.
+  // Різниця смислова, а не косметична: pnpm 10 ще читає поле `pnpm` у
+  // package.json, pnpm 11 уже ні — тобто помилкова форма overrides пройшла б
+  // зелено на 10 і зламалась би в користувача на 11.
+  it('пілот ставить скретч тим самим pnpm, що й шаблон', () => {
+    const tpl = JSON.parse(
+      read(join(TEMPLATE_DIR, 'package.json.tpl'))
+        .replaceAll('__SIMPLYCMS_VERSION__', '0.0.0')
+        .replaceAll('__STORE_NAME__', 'x'),
+    );
+    const pilot = JSON.parse(read('tests/pilot/store-template/package.json'));
+    expect(tpl.packageManager).toMatch(/^pnpm@11\./);
+    expect(pilot.packageManager).toBe(tpl.packageManager);
+  });
+
+  // 🔴 npm-івський top-level `overrides` pnpm ігнорує МОВЧКИ — нуль
+  // попереджень. Повернення цієї форми не впало б на прогоні, а тихо зняло б
+  // підстановку tarball-ів, і пілот перевіряв би опубліковані пакети замість
+  // тих, що йдуть на публікацію. Місце overrides — `pnpm-workspace.yaml`
+  // скретча (дописує scaffold.mjs).
+  it('оверлей не несе npm-івського overrides', () => {
+    const pilot = JSON.parse(read('tests/pilot/store-template/package.json'));
+    expect(pilot.overrides).toBeUndefined();
+  });
+
   it('deps шаблону і пілот-фікстури не розійшлися', () => {
     const tpl = JSON.parse(
       read(join(TEMPLATE_DIR, 'package.json.tpl'))

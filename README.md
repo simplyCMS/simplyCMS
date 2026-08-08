@@ -2,7 +2,8 @@
 
 Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
 
-**Ядро опубліковане на npmjs:** [`@simplycms/*@0.1.0`](https://www.npmjs.com/search?q=%40simplycms) — 21 пакет.
+**Ядро опубліковане на npmjs:** [`@simplycms/*@0.2.1`](https://www.npmjs.com/search?q=%40simplycms) — 21 пакет,
+плюс скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store) тієї ж версії.
 
 ## Vision: e-commerce platform
 
@@ -19,44 +20,40 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ `0.1.0`, 21 пакет |
+| Ядро в npm-пакетах | ✅ `0.2.1`, 21 пакет |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
-| `create-simplycms-store` | ✅ код готовий (`pnpm pilot:pack` гейт CLI), у npm-реєстрі ще немає |
-| CLI `simplycms add` (`@simplycms/cli`) | ⏳ Фаза 2 — ще немає |
+| `create-simplycms-store` | ✅ у npm-реєстрі (`0.2.1`) — `pnpm create simplycms-store` |
+| CLI `simplycms add` / `update` (`@simplycms/cli`) | ⏳ Фаза 2 — ще немає |
 | Плагіни й теми як окремі npm-пакети | ⏳ Фаза 3 |
 
-Обіцянка «магазин двома командами» ще не виконана — CLI в роботі. Зараз магазин
-збирається вручну (нижче), і це робочий шлях, а не тимчасовий обхід: саме його
-щоразу проходить пілот пакування.
+Створення магазину вже автоматизоване скаффолдером. Незакритою лишається друга
+половина обіцянки — `@simplycms/cli` (`add`/`update`), тобто встановлення
+плагінів і оновлення ядра однією командою.
 
 ## Створити магазин на SimplyCMS
 
 Магазин — окремий проєкт, який ставить ядро з npm. Форкати цей репозиторій не треба.
 
 ```bash
-mkdir my-store && cd my-store && npm init -y
-
-# Ядро: роути, сторінки, адмінка, UI
-npm install @simplycms/storefront-routes @simplycms/admin-routes \
-            @simplycms/admin @simplycms/ui @simplycms/themes @simplycms/plugins \
-            @simplycms/supabase @simplycms/runtime @simplycms/i18n @simplycms/core \
-            @simplycms/storefront @simplycms/react-query @simplycms/data-supabase \
-            @simplycms/objects @simplycms/domain \
-            @simplycms/cart-ui @simplycms/catalog-ui @simplycms/checkout-ui \
-            @simplycms/profile-ui @simplycms/reviews-ui
+pnpm create simplycms-store my-store
+cd my-store && pnpm install && pnpm build && pnpm start
 ```
 
-Далі потрібні **8 файлів збірки**: `vite.config.ts` (з `tanstackStart` і
-`virtualRouteConfig`), `routes.ts`, `simplycms.config.ts`, `tsconfig.json`,
-`tailwind.config.ts`, `src/engine.shared.ts`, `src/routes/my/` і `.env`.
+Скаффолдер розгортає повний каркас магазину (~74 файли: host-обвʼязка, міграції
+Supabase, дефолтна тема, референс-плагін) із версіями `@simplycms/*`, що
+відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
+`pnpm-workspace.yaml` везе `allowBuilds`, без якого install обривається.
 
-📁 **Готовий приклад усіх восьми — [`packages/create-simplycms-store/template/`](packages/create-simplycms-store/template/).**
-Це вбудований шаблон CLI-скаффолдера `create-simplycms-store` — джерело правди
-магазину, гарантовано робоче на поточній версії ядра (пілот пакування збирає
-саме його). `tests/pilot/store-template/` — це вже НЕ окрема копія каркаса, а
+🔴 У перші 24 години після виходу нової версії ядра install упреться в
+`minimumReleaseAge` (дефолт pnpm 11 — 1 доба). Обхід описаний у README
+згенерованого магазину.
+
+📁 **Джерело правди каркаса — [`packages/create-simplycms-store/template/`](packages/create-simplycms-store/template/).**
+Той самий шаблон розгортає пілот пакування, тож він гарантовано робочий на
+поточній версії ядра. `tests/pilot/store-template/` — не окрема копія каркаса, а
 тонкий оверлей із двох файлів (`vite.config.ts` + `package.json`), який
-`scaffold.mjs` накладає поверх `template/` пакета для пілота.
+`scaffold.mjs` накладає поверх `template/` пакета.
 
 Що ви отримуєте одразу: SSR-вітрину з каталогом, кошиком і checkout, адмінку,
 профілі користувачів, `sitemap.xml`/`robots.txt`, і теми.
@@ -120,7 +117,7 @@ pnpm release 0.2.0     # гарди + бамп версії всіх пакет�
 ## Структура репозиторію
 
 ```
-src/                      # Host — тонка збірка магазину, 10 файлів
+src/                      # Host — тонка збірка магазину, 13 файлів
   routes/__root.tsx       #   root route; routes/my/ — власні сторінки магазину
   server.ts · start.ts    #   server entry (SEO-інтерсептор) · middleware (admin guard)
   engine*.ts              #   DI-контекст ядра

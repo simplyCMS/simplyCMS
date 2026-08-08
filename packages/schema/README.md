@@ -1,142 +1,80 @@
-# `@simplycms/schema`
+# @simplycms/schema
 
-Пакет тримає дві **різні** сутності:
+Схема БД ядра SimplyCMS у TypeScript: таблиці, енами, індекси й **RLS-політики**
+описані на Drizzle ORM. Поруч — закомічений snapshot інтроспекції, що слугує
+базою порівняння для наступного діфа міграцій.
 
-| Тека | Що це |
-|------|-------|
-| `src/` + `drizzle/` | **Drizzle-baseline** — схема БД (таблиці, енами, індекси, RLS) у TypeScript + snapshot інтроспекції |
-| `seed-migrations/` | Історична референсна копія SQL для початкового насіву (див. нижче) |
+Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
+магазин створюється скаффолдером `pnpm create simplycms-store`, який приводить
+усе ядро разом.
 
----
-
-## Drizzle-baseline (spec §9)
-
-### Версії — pinned exact
-
-`drizzle-orm@0.45.2`, `drizzle-kit@0.31.10`, `pg@8.22.0` (кореневий `package.json`).
-
-🔴 **v1-beta (`1.0.0-beta.*`) свідомо відхилено для Фази 0**: у ній змінені layout
-теки міграцій і семантика `pull --init`. Перехід — окремим завданням.
-
-### Розкладка
-
-```
-packages/schema/
-├── drizzle.config.ts               # dialect/schema/out, schemaFilter: ['public']
-├── src/
-│   ├── schema.ts                   # ЗГЕНЕРОВАНИЙ pull-ом + ручні правки (нижче)
-│   ├── relations.ts                # ЗГЕНЕРОВАНИЙ pull-ом
-│   ├── auth-users.ts               # ручний: ціль FK на auth.users
-│   └── __tests__/
-│       ├── rls-parity.test.ts      # blocking-gate RLS (spec D6)
-│       └── fixtures/rls-policies.json
-├── drizzle/                        # ← `out`: МЕТА + snapshots + staging SQL Drizzle
-│   ├── 0000_familiar_devos.sql     # reference-SQL інтроспекції (закоментований)
-│   └── meta/{_journal.json,0000_snapshot.json}
-└── scripts/dump-rls.mjs            # оновлення фікстури RLS
-```
-
-### Подвійна бухгалтерія (навмисна)
-
-🔴 `drizzle/` — це **не** `supabase/migrations/`.
-
-| Тека | Хто пише | Роль |
-|------|----------|------|
-| `packages/schema/drizzle/` | `drizzle-kit generate` | журнал `_journal.json`, snapshot-и, staging-SQL — **база порівняння** для наступного діфа |
-| `supabase/migrations/` | адаптер `scripts/db-diff.mjs` | застосовний SQL у форматі Supabase CLI (`<YYYYMMDDHHmmss>_<slug>.sql`) — те, що виконує `supabase db push` |
-
-Комітяться **обидві**: без snapshot-у drizzle згенерує наступний діф з нуля,
-без файлу в `supabase/migrations/` міграція не застосується. Timestamp імені
-береться з `when` відповідного запису журналу Drizzle — імена лишаються
-синхронізованими між теками.
-
-### Команди
+## Встановлення
 
 ```bash
-pnpm db:pull        # інтроспекція живої БД → drizzle/ (schema.ts, relations.ts, snapshot)
-pnpm db:diff <name> # діф schema.ts vs snapshot → drizzle/ + supabase/migrations/
-pnpm db:migrate     # ревʼю пройдено → supabase db push + db:generate-types
-pnpm db:dump-rls    # оновити фікстуру RLS (лише select із pg_policies)
+pnpm add @simplycms/schema
 ```
 
-🔴 Між `db:diff` і `db:migrate` — **обовʼязкове людське ревʼю SQL**: drizzle-kit
-не розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
-RLS-політики та тригери.
+Peer-залежність — `drizzle-orm@^0.45.0`.
 
-🔴 `drizzle-kit` запускається з **cwd = тека цього пакета** (root-скрипти роблять це
-через `pnpm --filter @simplycms/schema`). Шляхи `schema`/`out` у конфізі мусять
-лишатися відносними: `generate` у drizzle-kit 0.31 склеює `./${out}` і на
-абсолютному шляху падає з `ENOENT`.
+## Що всередині
 
-🔴 `.env.local` конфіг вантажить сам (drizzle-kit читає лише `.env`). `DATABASE_URL` —
-**session pooler** (`aws-1-…pooler.supabase.com:5432`); прямий `db.<ref>.supabase.co`
-резолвиться тільки в IPv6 і на CI/деві недоступний.
+| Subpath                       | Що дає                                                           |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `@simplycms/schema`           | `pgTable`-описи таблиць ядра, `pgEnum`-и та `pgPolicy`-описи RLS |
+| `@simplycms/schema/relations` | `relations(...)` між таблицями — для реляційних запитів Drizzle  |
 
-### Крок після `pull` (обов'язковий)
+Енами: `appRole`, `discountType`, `discountTargetType`, `discountGroupOperator`,
+`propertyType`, `stockStatus`, `shippingMethodType`, `shippingCalculationType`.
 
-`drizzle-kit pull` пише `schema.ts`/`relations.ts` у **`out`** (тобто в `drizzle/`).
-Їх треба перенести в `src/`, snapshot і reference-SQL лишаються в `drizzle/`:
+`auth.users` описана окремо (`src/auth-users.ts`) і **навмисно не реекспортується**
+зі `schema.ts`: інакше drizzle-kit вважатиме її «своєю» і згенерує
+`CREATE TABLE "auth"."users"`. Як імпорт вона лишається валідною ціллю `foreignKey(...)`.
 
-```bash
-pnpm db:pull
-mv packages/schema/drizzle/{schema.ts,relations.ts} packages/schema/src/
+## Приклад
+
+RLS живе в самій схемі, тож політики читаються як дані — на цьому тримається
+parity-гейт `src/__tests__/rls-parity.test.ts`:
+
+```ts
+import { is } from 'drizzle-orm';
+import { PgTable, getTableConfig } from 'drizzle-orm/pg-core';
+import * as schema from '@simplycms/schema';
+
+for (const value of Object.values(schema)) {
+  if (!is(value, PgTable)) continue;
+  const config = getTableConfig(value);
+  console.log(
+    config.name,
+    config.policies.map((policy) => policy.name),
+  );
+}
 ```
 
-### Ручні правки поверх `pull` (баги drizzle-kit 0.31)
+## 🔴 Робочий процес міграцій
 
-Після кожного `pull` їх треба відтворити — інакше впаде parity-тест або нуль-diff:
+`drizzle/` — це **не** `supabase/migrations/`. Комітяться обидві теки: перша тримає
+журнал і snapshot-и (база наступного діфа), друга — застосовний SQL для
+`supabase db push`. Команди репозиторію: `db:pull` (інтроспекція) · `db:diff <name>`
+(SQL міграції) · `db:migrate` (push + типи) · `db:dump-rls` (фікстура політик).
 
-1. **RLS-вирази.** Інтроспекція лишає `using`/`withCheck` лише в першої політики
-   таблиці. Постраждали **53 із 93** політик — і в `schema.ts`, і в
-   `drizzle/meta/0000_snapshot.json`, і в reference-SQL. Відновлюються з фікстури
-   `src/__tests__/fixtures/rls-policies.json` (джерело правди — `pg_policies`).
-2. **`auth.users`.** Поза `schemaFilter: ['public']`, тому не емітиться, а FK на неї
-   лишаються «висячими». Опис — у `src/auth-users.ts`, **без реекспорту** зі
-   `schema.ts` (інакше kit згенерує `CREATE TABLE "auth"."users"`).
-3. **`idx_product_prices_unique`.** Вираз індексу з `COALESCE(a, b)` інтроспекція
-   ріже по комі й обриває рядковий літерал. Виправлено на
-   `COALESCE(modification_id, '00000000-…-000000000000'::uuid)`; у snapshot запис
-   індексу нормалізовано під серіалізацію Drizzle (opclass `uuid_ops` — дефолтний
-   для `uuid`, тому нічого семантично не втрачено).
+- Між `db:diff` і `db:migrate` — **обовʼязкове людське ревʼю SQL**: drizzle-kit не
+  розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
+  RLS-політики та тригери.
+- `drizzle-kit` запускається з cwd = тека цього пакета, а `schema`/`out` у конфізі
+  мусять лишатися **відносними**: 0.31 у `generate` склеює `./${out}` і на
+  абсолютному шляху падає з `ENOENT`.
+- `DATABASE_URL` — **session pooler**; прямий `db.<ref>.supabase.co` резолвиться
+  лише в IPv6 і на CI недоступний.
+- Після кожного `pull` треба відтворити ручні правки поверх багів drizzle-kit 0.31
+  (RLS-вирази з фікстури `pg_policies`, `auth.users`, вираз `idx_product_prices_unique`) —
+  інакше падає parity-гейт, який звіряє політики з живою БД повнопольово й в обидва боки.
+- `drizzle-orm@1.0.0-beta` свідомо відхилено: у ній змінені layout теки міграцій і
+  семантика `pull --init`.
 
-### RLS parity — blocking gate
+У репозиторії поруч лежить `seed-migrations/` — SQL початкового насіву схеми для
+підняття БД з нуля (у npm-tarball не потрапляє).
 
-`src/__tests__/rls-parity.test.ts` звіряє **93 кортежі**
-`(table, policyname, cmd, permissive, roles, qual, with_check)` **в обидва боки**:
-фікстура ↔ `schema.ts` (читається через `getTableConfig`, SQL-вирази серіалізуються
-`PgDialect`). Нормалізація виразів — lowercase + колапс пробілів, тому зміна
-предиката політики тест **не** пройде. Плюс звіряється множина RLS-enabled таблиць
-(**40**).
+## Ліцензія
 
-Оновлення фікстури після навмисної зміни політик у БД:
-
-```bash
-pnpm db:dump-rls   # → src/__tests__/fixtures/rls-policies.json
-```
-
-### Нуль-diff інваріант
-
-`pnpm --filter @simplycms/schema run db:generate` на незміненій схемі мусить давати
-`No schema changes, nothing to migrate` і **не** створювати файлів. Якщо створив —
-baseline розійшовся з БД, і це треба лагодити, а не комітити.
-
-### Виняток щодо розміру файлів
-
-`src/schema.ts` (~1000 рядків) і `src/relations.ts` (~420) — машинно згенеровані;
-ліміт 150 рядків на них не поширюється.
-
----
-
-## `seed-migrations/` (історична референсна копія)
-
-SQL початкового насіву схеми. Використовується, коли новий сайт піднімає БД з нуля.
-
-```bash
-cp packages/schema/seed-migrations/*.sql supabase/migrations/
-pnpm db:migrate
-pnpm db:generate-types
-```
-
-- Файли **read-only** для сайту — не редагуйте їх напряму
-- Власні міграції сайт кладе в `supabase/migrations/` поруч
-- Після зміни схеми завжди запускайте `pnpm db:generate-types`
+MIT
