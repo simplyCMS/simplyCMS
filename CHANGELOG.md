@@ -30,8 +30,16 @@
   **Стосується наявних магазинів — див. «Міграція» нижче.**
 - **`@simplycms/admin`: перемикання теми не оновлювало сторінку.** Інвалідація
   зачіпала лише серверний кеш, тож клієнтський кеш роутера показував стару
-  тему до ручного перезавантаження. Додано `src/lib/revalidateTheme.ts`,
-  задіяно в `Themes` і `ThemeSettings`.
+  тему до ручного перезавантаження. Додано
+  `packages/admin/src/lib/revalidateTheme.ts`, задіяно в `Themes` і
+  `ThemeSettings`.
+- **Обхід `minimumReleaseAge`, описаний у `0.2.1`, не працював.** Радили
+  `pnpm install --minimum-release-age=0` — такого прапорця в pnpm 11 немає
+  (`Unknown option`), а робочий `--config.minimumReleaseAge=0` задачі не
+  розв'язує: `pnpm build` через `runDepsStatusCheck` сам перезапускає install
+  уже без прапорця і впирається знову. Єдиний спосіб, що працює наскрізь, —
+  тимчасовий `minimumReleaseAge: 0` у `pnpm-workspace.yaml` магазину; саме він
+  тепер і описаний у шаблоні.
 
 ### Змінено
 
@@ -111,8 +119,8 @@ export const routes = rootRoute('__root.tsx', [
 - Шаблон `create-simplycms-store` приведено до pnpm 11: конфігурація pnpm
   переїхала в `pnpm-workspace.yaml` (поле `pnpm` у `package.json` pnpm 11 більше
   не читає), додано `allowBuilds` — без нього install обривається
-  `ERR_PNPM_IGNORED_BUILDS`.
-- Опис обходу `minimumReleaseAge` у доках шаблону.
+  `ERR_PNPM_IGNORED_BUILDS`. Тоді ж у доки шаблону потрапив опис обходу
+  `minimumReleaseAge` — **хибний**, виправлено в `0.2.2`.
 
 ### Змінено
 
