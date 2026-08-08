@@ -1,22 +1,48 @@
 /**
- * Кроки 3-4 пілота: справжній `npm install` із tarball-ів і `vite build`.
+ * Кроки 3-4 пілота: справжній `pnpm install` із tarball-ів і `vite build`.
  *
- * 🔴 Саме `npm`, а не `pnpm`: у монорепо все резолвиться pnpm-симлінками й
- * hoisted-коренем. npm має інший linker (плоске дерево, реальні теки), тож
- * тільки він доводить, що пакет самодостатній.
+ * 🔴 Саме `pnpm`, а не `npm` — і це зміна від зворотного (до 2026-08-08 тут був
+ * npm). Первісний аргумент був такий: у монорепо все резолвиться
+ * pnpm-симлінками й hoisted-коренем, тож чужий linker npm (плоске дерево,
+ * реальні теки) доводить самодостатність пакета незалежно. Аргумент не
+ * витримав перевірки з двох боків:
+ *
+ *  1. Скретч — НЕ монорепо: тут немає ні workspace-лінків, ні hoisted-кореня.
+ *     Ізольована розкладка pnpm перевіряє самодостатність не гірше, а СТРОГІШЕ:
+ *     недекларована залежність під pnpm не резолвиться взагалі, тоді як плоске
+ *     дерево npm ховало її хойстингом.
+ *  2. Магазин декларує `packageManager: pnpm@11.20.0`, а політики pnpm 11
+ *     (`allowBuilds`, `minimumReleaseAge`) під npm — мовчазний no-op. Саме це
+ *     сховало дефект `allowBuilds`, який поїхав у реліз `0.2.0` і ламав збірку
+ *     магазину в реальних користувачів.
+ *
+ * Свідома втрата: плоске дерево як незалежний спосіб доказу більше не
+ * використовується. Статичний напарник на цю роль — `scripts/audit-deps.mjs`.
  */
 
 import { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { join } from 'node:path';
 
-/** `npm install` у скретчі. */
-export function npmInstall(storeDir) {
-  execFileSync(
-    'npm',
-    ['install', '--no-audit', '--no-fund', '--loglevel', 'warn'],
-    { cwd: storeDir, stdio: 'inherit' },
-  );
+/**
+ * `pnpm install` у скретчі.
+ *
+ * 🔴 `--no-frozen-lockfile` обовʼязковий: overrides записуються в lockfile
+ * окремою секцією і звіряються при frozen-install, а пілот щоразу підставляє
+ * нові абсолютні шляхи tarball-ів. У режимі `--reuse` (тека переживає прогін)
+ * frozen впав би з `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`.
+ *
+ * 🔴 Прапорців приглушення виводу тут немає навмисно: `--loglevel warn` сховав
+ * би саме те, заради чого міграція й робилась — `ERR_PNPM_IGNORED_BUILDS` і
+ * попередження про проігноровані поля конфігурації. `--ignore-scripts` теж не
+ * додавати: він обійшов би `allowBuilds`, тобто рівно ту політику, яку пілот
+ * має довести.
+ */
+export function pnpmInstall(storeDir) {
+  execFileSync('pnpm', ['install', '--no-frozen-lockfile'], {
+    cwd: storeDir,
+    stdio: 'inherit',
+  });
 }
 
 /** `vite build` у скретчі — локальним бінарником, без npx-довантажень. */

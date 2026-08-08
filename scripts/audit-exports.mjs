@@ -6,7 +6,7 @@
  * У монорепо workspace-аліаси (`tsconfig.json` paths, `vite.config.ts`
  * `resolve.alias`) резолвлять БУДЬ-ЯКИЙ subpath пакета напряму на файл у
  * `src/`/`routes/` — навіть той, якого немає в `package.json#exports`. При
- * справжньому `npm install` (tarball, без аліасів) Node різко впаде на
+ * справжньому `pnpm install` (tarball, без аліасів) Node різко впаде на
  * `ERR_PACKAGE_PATH_NOT_EXPORTED` для такого subpath-у. Цей скрипт зводить
  * докупи (а) усі реально вжиті специфікатори `@simplycms/<pkg>/<subpath>` і
  * (б) ключі `exports`/`publishConfig.exports` у manifest-і кожного пакета —

@@ -3,12 +3,13 @@
  *
  * Винесено з `pilot-pack.mjs`: там лишається лише вибір режиму (звідки взяти
  * env і чи піднімати локальний стек), тут — незмінна для всіх режимів
- * послідовність pack → scaffold → npm install → vite build → gates.
+ * послідовність pack → scaffold → pnpm install → провенанс → vite build → gates.
  */
 
 import { buildPackages, packAll } from './pack.mjs';
 import { scaffoldStore } from './scaffold.mjs';
-import { npmInstall, startStore, viteBuild } from './build.mjs';
+import { pnpmInstall, startStore, viteBuild } from './build.mjs';
+import { assertTarballProvenance } from './provenance.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
@@ -64,7 +65,7 @@ export async function runGates(opts) {
   return results;
 }
 
-/** pack → scaffold → npm install → vite build. */
+/** pack → scaffold → pnpm install → провенанс → vite build. */
 async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
   if (!skipBuild) {
     step('Збірка пакетів ядра');
@@ -78,8 +79,22 @@ async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
   step(`Розгортання скретч-магазину → ${storeDir}`);
   scaffoldStore({ storeDir, tarballs, env });
 
-  step('npm install із tarball-ів');
-  npmInstall(storeDir);
+  step('pnpm install із tarball-ів');
+  pnpmInstall(storeDir);
+
+  // 🔴 Не гейт, а ПЕРЕДУМОВА: якщо ядро приїхало з реєстру замість tarball-ів,
+  // усе далі втрачає сенс — гейти перевірятимуть уже опубліковані пакети
+  // замість тих, що йдуть на публікацію. Відмова механізму overrides під pnpm
+  // мовчазна, тому вона мусить мати власний голос саме тут.
+  step('Провенанс — ядро з локальних tarball-ів');
+  const provenance = assertTarballProvenance(storeDir, [...tarballs.keys()]);
+  for (const line of provenance.details) console.log(`  ${line}`);
+  if (!provenance.ok) {
+    throw new Error(
+      'Провенанс не підтверджено: пакети ядра приїхали не з tarball-ів. ' +
+        'Перевір блок `overrides:` у pnpm-workspace.yaml скретча.',
+    );
+  }
 
   step('vite build');
   viteBuild(storeDir);
