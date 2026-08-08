@@ -1,4 +1,39 @@
+import { realpathSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { physical, rootRoute } from '@tanstack/virtual-file-routes';
+
+const STORE_ROOT = dirname(fileURLToPath(import.meta.url));
+const ROUTES_DIR = resolve(STORE_ROOT, 'src/routes');
+
+/**
+ * Шлях до теки `routes/` пакета ядра — з РОЗГОРНУТИМ симлінком.
+ *
+ * 🔴 Чому не просто `../../node_modules/@simplycms/<pkg>/routes`. pnpm розкладає
+ * залежності ізольовано: `node_modules/@simplycms/<pkg>` — це симлінк на
+ * `node_modules/.pnpm/<pkg>@<версія>_<хеш>/node_modules/@simplycms/<pkg>`. Vite
+ * симлінки резолвить (`preserveSymlinks` за замовчуванням вимкнено), тож
+ * module-id, який доходить до плагінів, — це РЕАЛЬНИЙ шлях через `.pnpm/`.
+ *
+ * Code-splitter TanStack Router шукає роут у `TSR_ROUTES_BY_ID_MAP` саме за цим
+ * module-id, а заповнює мапу генератор — тими шляхами, які він сканував. Якщо
+ * генератору дати шлях через симлінк, ключі не збігаються, збіг не знаходиться
+ * і роут НЕ спліриться. Мовчки: збірка успішна, гейти на місці, просто весь
+ * застосунок (включно з адмінкою й редактором) їде одним initial-чанком.
+ * Заміряно на скретч-магазині: 3 чанки замість 207, уся адмінка в initial.
+ *
+ * `realpathSync` прибирає розбіжність у корені: генератор дістає той самий
+ * шлях, який Vite потім віддасть плагінам. Під плоским деревом (npm) виклик —
+ * тотожність, тож правка нічого не змінює.
+ *
+ * Слід у `src/routeTree.gen.ts` (шляхи з хешем `.pnpm`) нікого не турбує: файл
+ * генерований і лежить у `.gitignore`.
+ */
+const coreRoutes = (name: string) =>
+  relative(
+    ROUTES_DIR,
+    realpathSync(resolve(STORE_ROOT, 'node_modules', name, 'routes')),
+  );
 
 /**
  * Віртуальна конфігурація роутів магазину.
@@ -6,12 +41,10 @@ import { physical, rootRoute } from '@tanstack/virtual-file-routes';
  * Каркас (вітрина + адмінка) приходить теками роутів із `node_modules` —
  * пакетами ядра, а не файлами магазину. Файлове сканування `src/routes`
  * вимкнене: у роутер потрапляє лише явно змонтоване нижче.
- *
- * Шляхи в `physical()` відносні до `routesDirectory` (`src/routes`).
  */
 export const routes = rootRoute('__root.tsx', [
-  physical('', '../../node_modules/@simplycms/storefront-routes/routes'),
-  physical('', '../../node_modules/@simplycms/admin-routes/routes'),
+  physical('', coreRoutes('@simplycms/storefront-routes')),
+  physical('', coreRoutes('@simplycms/admin-routes')),
   // Кастомні роути цього магазину (спочатку — порожня тека).
   physical('', 'my'),
 ]);
