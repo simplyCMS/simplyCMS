@@ -16,7 +16,7 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
-pnpm pilot:pack       # npm-pack пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
+pnpm pilot:pack       # tarball-пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
 pnpm pilot            # той самий пілот + Gate B проти живої БД (.env.local); Gate E — видимо skipped (потрібен --e2e)
 pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
                       # потребує Docker; Gate B асертить точні назви із сіду,
@@ -386,11 +386,10 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   Розширено 2026-08-04. Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним
-  повідомленням ще до збірки. 🔴 Цей токен обмежений scope `@simplycms` і НЕ
-  покриває unscoped `create-simplycms-store` — обидва наслідки погані: якщо
-  токен пакет не покриває, job червоніє; якщо покриває (розширений токен),
-  мерж МОВЧКИ публікує пакет поза релізним рішенням. Дію власника ДО мержу
-  гілки, що вводить пакет, див. у
+  повідомленням ще до збірки. 🔴 Наслідок обсягу `All Packages`, про який варто
+  памʼятати: мерж у `main` публікує будь-який НОВИЙ пакет, якого ще немає в
+  реєстрі, — незалежно від бампу версії. Тобто введення нового пакета є
+  релізним рішенням саме в момент мержу. Порядок дій — у
   [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
 
 🔴 Історія: до 2026-08-01 цей workflow публікував у **GitHub Packages** і був
