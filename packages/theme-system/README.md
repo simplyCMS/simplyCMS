@@ -27,8 +27,8 @@ pnpm add @simplycms/themes
 | `@simplycms/themes/validateThemeModule` | `validateThemeModule(m)` — assert-валідатор контракту v2                         |
 | `@simplycms/themes/types`               | `ThemeModule`, `ThemeManifest`, `DesignTokens`, `ThemeComponents`, `ThemeRecord`, `ActiveThemeSSR` |
 
-Токени пишуться в **наявні** semantic-змінні shadcn (`--primary`, `--background`,
-`--radius`, …) — тема не везе власного CSS-файлу.
+Токени пишуться в **наявні** semantic-змінні shadcn (`--primary`, `--radius`, …);
+тема не везе власного CSS-файлу.
 
 ## Приклад
 
@@ -56,8 +56,7 @@ for (const [name, loader] of Object.entries(config.themes ?? {})) {
 
 Це навмисно **не** `async`-функція: React `use(ThemeRegistry.load(name))` вимагає
 стабільний проміс між рендерами, а обгортка у власний `async` створювала б новий
-проміс щорендеру — uncached promise і нескінченний suspend. Незареєстрована тема
-сторінку не валить: реєстр падає на `default`.
+проміс щорендеру — uncached promise і нескінченний suspend.
 
 ## Ліцензія
 

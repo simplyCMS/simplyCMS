@@ -54,10 +54,7 @@ export function EmptyCart({ className }: { className?: string }) {
 
 Класи компонентів живуть у зібраних `dist/*.js`, а Tailwind v4 `node_modules`
 автодетектом **не** сканує — без явного джерела компоненти приїдуть без стилів:
-
-```ts
-content: ['./src/**/*.{ts,tsx}', './node_modules/@simplycms/*/dist/**/*.js'],
-```
+`content: ['./src/**/*.{ts,tsx}', './node_modules/@simplycms/*/dist/**/*.js']`.
 
 ## Ліцензія
 

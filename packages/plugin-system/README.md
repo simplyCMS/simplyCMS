@@ -17,12 +17,12 @@ pnpm add @simplycms/plugins
 
 ## Що всередині
 
-| Subpath                         | Експорти                                                                                                                                                         |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@simplycms/plugins`            | `hookRegistry`, `bootstrapPlugins`, `loadPlugins`, `activatePlugin`, `deactivatePlugin`, `uninstallPlugin`, `getAllPlugins`, `installPlugin`, `updatePluginConfig` |
-| `@simplycms/plugins`            | 29 констант `HOOK_*` — імена точок розширення (`admin.dashboard.widgets`, `product.detail.after`, `checkout.shipping.rates`, …) — і `ALL_HOOKS`                    |
-| `@simplycms/plugins/PluginSlot` | `PluginSlot`, `usePluginSlot`, `getPluginSlotCount`                                                                                                              |
-| `@simplycms/plugins/types`      | Контракт автора плагіна: `PluginModule`, `PluginManifest`, `HookRegistryInterface`, `HookHandler`, `parsePlugin`                                                  |
+| Subpath                         | Експорти                                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `@simplycms/plugins`            | `hookRegistry`, `bootstrapPlugins`, `loadPlugins`, `activatePlugin`, `deactivatePlugin`, `uninstallPlugin` |
+| `@simplycms/plugins`            | `getAllPlugins`, `installPlugin`, `updatePluginConfig`, 29 констант `HOOK_*` і `ALL_HOOKS`                 |
+| `@simplycms/plugins/PluginSlot` | `PluginSlot`, `usePluginSlot`, `getPluginSlotCount`                                                        |
+| `@simplycms/plugins/types`      | `PluginModule`, `PluginManifest`, `HookRegistryInterface`, `HookHandler`, `parsePlugin`                    |
 
 ## Приклад
 
@@ -54,10 +54,9 @@ export default plugin;
 
 `PluginSlot` виконує хуки в ефекті й доки вони не резолвнулись — рендерить `null`,
 тож у SSR-розмітці вмісту плагіна немає. Натомість слот підписаний на реєстр через
-`useSyncExternalStore`: `activatePlugin` / `deactivatePlugin` з адмінки додають і
-прибирають віджет живцем, без перезавантаження. Через це `@simplycms/plugins` і
-`@simplycms/plugins/PluginSlot` мусять бачити **один** `hookRegistry` — два
-інстанси пакета в бандлі ламають реактивність.
+`useSyncExternalStore`, і `activatePlugin` / `deactivatePlugin` з адмінки додають
+чи прибирають віджет живцем. Через це `@simplycms/plugins` і
+`@simplycms/plugins/PluginSlot` мусять бачити **один** `hookRegistry`.
 
 ## Ліцензія
 
