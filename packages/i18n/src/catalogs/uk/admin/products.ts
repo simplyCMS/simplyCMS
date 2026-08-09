@@ -1,0 +1,87 @@
+/** Товари, модифікації, ціни, залишки та завантаження зображень. */
+export const messages = {
+  'admin.products.subtitle': 'Керування каталогом товарів',
+  'admin.products.add': 'Додати товар',
+  'admin.products.all': 'Всі товари',
+  'admin.products.empty': 'Товарів ще немає',
+  'admin.products.deleted': 'Товар видалено',
+  'admin.products.confirmDelete': 'Видалити цей товар?',
+  'admin.products.created': 'Товар створено',
+  'admin.products.updated': 'Товар оновлено',
+  'admin.products.new': 'Новий товар',
+  'admin.products.editTitle': 'Редагування товару',
+  'admin.products.newSubtitle': 'Створіть новий товар',
+  'admin.products.editSubtitle': 'Редагуйте інформацію про товар',
+  'admin.products.shortDescription': 'Короткий опис',
+  'admin.products.fullDescription': 'Повний опис',
+  'admin.products.descriptionPlaceholder': 'Введіть опис товару...',
+  'admin.products.images': 'Зображення товару',
+  'admin.products.seoTitlePlaceholder': 'Заголовок для пошукових систем',
+  'admin.products.sectionRequired': 'Розділ *',
+  'admin.products.pickSection': 'Виберіть розділ',
+  'admin.products.type': 'Тип товару',
+  'admin.products.typeSimple': 'Простий товар',
+  'admin.products.typeWithMods': 'Товар з модифікаціями',
+  'admin.products.featured': 'Рекомендований',
+  'admin.products.createdAt': 'Створено:',
+  'admin.products.updatedAt': 'Оновлено:',
+
+  // Модифікації
+  'admin.products.mods.title': 'Модифікації товару',
+  'admin.products.mods.created': 'Модифікацію створено',
+  'admin.products.mods.updated': 'Модифікацію оновлено',
+  'admin.products.mods.deleted': 'Модифікацію видалено',
+  'admin.products.mods.reorderFailed': 'Помилка зміни порядку',
+  'admin.products.mods.edit': 'Редагувати модифікацію',
+  'admin.products.mods.new': 'Нова модифікація',
+  'admin.products.mods.namePlaceholder': 'Наприклад: 100W, Синій',
+  'admin.products.mods.sku': 'Артикул (SKU)',
+  'admin.products.mods.skuShort': 'Артикул',
+  'admin.products.mods.prices': 'Ціни за видами',
+  'admin.products.mods.stock': 'Залишки по складах',
+  'admin.products.mods.properties': 'Властивості модифікації',
+  'admin.products.mods.empty':
+    'Модифікацій ще немає. Додайте першу модифікацію товару.',
+
+  // Наявність
+  'admin.products.stock.inStock': 'В наявності',
+  'admin.products.stock.none': 'Немає',
+  'admin.products.stock.onOrder': 'Під замовлення',
+  'admin.products.stock.outOfStock': 'Немає в наявності',
+  'admin.products.stock.statusLabel': 'Статус наявності',
+  'admin.products.stock.saved': 'Залишки збережено',
+  'admin.products.stock.saveFailed': 'Помилка збереження: {message}',
+  'admin.products.stock.quantityAtWarehouse': 'Кількість на складі',
+  'admin.products.stock.units': 'шт.',
+  'admin.products.stock.title': 'Залишки',
+  'admin.products.stock.warehouse': 'Склад',
+  'admin.products.stock.total': 'Загалом:',
+  'admin.products.stock.save': 'Зберегти залишки',
+
+  // Ціни
+  'admin.products.prices.saved': 'Ціни збережено',
+  'admin.products.prices.save': 'Зберегти ціни',
+  'admin.products.prices.oldPrice': 'Стара ціна',
+
+  // Завантаження зображень
+  'admin.products.upload.badFormat': 'Непідтримуваний формат',
+  'admin.products.upload.allowedFormats':
+    'Дозволені формати: JPG, PNG, WebP, GIF',
+  'admin.products.upload.tooLarge': 'Файл занадто великий',
+  'admin.products.upload.maxSize': 'Максимальний розмір: 5 МБ',
+  'admin.products.upload.failed': 'Помилка завантаження',
+  'admin.products.upload.limit': 'Ліміт досягнуто',
+  'admin.products.upload.limitHint': 'Максимум {count} зображень',
+  'admin.products.upload.done': 'Завантажено',
+  'admin.products.upload.doneHint': '{count} зображень додано',
+  'admin.products.upload.dropHere': 'Перетягніть зображення сюди',
+  'admin.products.upload.clickToPick':
+    'або натисніть для вибору (JPG, PNG, WebP, GIF до 5 МБ)',
+  'admin.products.upload.primary': 'Головне',
+  'admin.products.upload.imagesWord': 'зображень',
+
+  // Редактор тексту
+  'admin.products.editor.placeholder': 'Введіть текст...',
+  'admin.products.editor.linkUrl': 'URL посилання',
+  'admin.products.editor.imageUrl': 'URL зображення',
+} as const;

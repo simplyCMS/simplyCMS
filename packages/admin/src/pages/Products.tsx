@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
@@ -25,6 +26,7 @@ type ProductWithSection = Product & {
 };
 
 export default function Products() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -49,12 +51,12 @@ export default function Products() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast({ title: 'Товар видалено' });
+      toast({ title: t('admin.products.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -66,7 +68,7 @@ export default function Products() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('Видалити цей товар?')) {
+    if (confirm(t('admin.products.confirmDelete'))) {
       deleteMutation.mutate(id);
     }
   };
@@ -83,8 +85,10 @@ export default function Products() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Товари</h1>
-          <p className="text-muted-foreground">Керування каталогом товарів</p>
+          <h1 className="text-3xl font-bold">{t('admin.nav.products')}</h1>
+          <p className="text-muted-foreground">
+            {t('admin.products.subtitle')}
+          </p>
         </div>
         <Button
           onClick={() =>
@@ -95,22 +99,22 @@ export default function Products() {
           }
         >
           <Plus className="h-4 w-4 mr-2" />
-          Додати товар
+          {t('admin.products.add')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі товари</CardTitle>
+          <CardTitle>{t('admin.products.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16"></TableHead>
-                <TableHead>Назва</TableHead>
-                <TableHead>Розділ</TableHead>
-                <TableHead>Статус</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('admin.banners.placement.section')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
@@ -161,7 +165,9 @@ export default function Products() {
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
                         }`}
                       >
-                        {product.is_active ? 'Активний' : 'Неактивний'}
+                        {product.is_active
+                          ? t('common.activeM')
+                          : t('admin.sections.inactive')}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -183,7 +189,7 @@ export default function Products() {
                     colSpan={5}
                     className="text-center text-muted-foreground"
                   >
-                    Товарів ще немає
+                    {t('admin.products.empty')}
                   </TableCell>
                 </TableRow>
               )}

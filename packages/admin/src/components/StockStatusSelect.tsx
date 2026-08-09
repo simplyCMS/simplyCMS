@@ -8,6 +8,7 @@ import {
 import { Label } from '@simplycms/ui/label';
 import { Package, PackageX, Clock } from 'lucide-react';
 import type { StockStatus } from '@simplycms/core/hooks/useStock';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
 interface StockStatusSelectProps {
   value: StockStatus;
@@ -16,27 +17,28 @@ interface StockStatusSelectProps {
   className?: string;
 }
 
+// Мапа КЛЮЧІВ: статус наявності — enum БД, підпис резолвиться в рендері.
 const statusOptions: {
   value: StockStatus;
-  label: string;
+  labelKey: MessageKey;
   icon: React.ReactNode;
   color: string;
 }[] = [
   {
     value: 'in_stock',
-    label: 'В наявності',
+    labelKey: 'admin.products.stock.inStock',
     icon: <Package className="h-4 w-4" />,
     color: 'text-green-600',
   },
   {
     value: 'out_of_stock',
-    label: 'Немає в наявності',
+    labelKey: 'admin.products.stock.outOfStock',
     icon: <PackageX className="h-4 w-4" />,
     color: 'text-destructive',
   },
   {
     value: 'on_order',
-    label: 'Під замовлення',
+    labelKey: 'admin.products.stock.onOrder',
     icon: <Clock className="h-4 w-4" />,
     color: 'text-amber-600',
   },
@@ -45,14 +47,18 @@ const statusOptions: {
 export function StockStatusSelect({
   value,
   onChange,
-  label = 'Статус наявності',
+  label,
   className,
 }: StockStatusSelectProps) {
+  const t = useT();
+  // Дефолт підпису переїхав із деструктуризації в тіло: там уже є транслятор,
+  // а в списку параметрів його ще немає.
+  const fieldLabel = label ?? t('admin.products.stock.statusLabel');
   const selectedOption = statusOptions.find((opt) => opt.value === value);
 
   return (
     <div className={className}>
-      {label && <Label className="mb-2 block">{label}</Label>}
+      {fieldLabel && <Label className="mb-2 block">{fieldLabel}</Label>}
       <Select value={value} onValueChange={(v) => onChange(v as StockStatus)}>
         <SelectTrigger>
           <SelectValue>
@@ -61,7 +67,7 @@ export function StockStatusSelect({
                 <span className={selectedOption.color}>
                   {selectedOption.icon}
                 </span>
-                <span>{selectedOption.label}</span>
+                <span>{t(selectedOption.labelKey)}</span>
               </div>
             )}
           </SelectValue>
@@ -71,7 +77,7 @@ export function StockStatusSelect({
             <SelectItem key={option.value} value={option.value}>
               <div className="flex items-center gap-2">
                 <span className={option.color}>{option.icon}</span>
-                <span>{option.label}</span>
+                <span>{t(option.labelKey)}</span>
               </div>
             </SelectItem>
           ))}

@@ -21,13 +21,16 @@ const i18nRestrictedSyntax = [
   },
 ];
 
-// Зони, вже переведені на i18n: тут регрес до хардкоду — помилка.
-// Розширювати в міру міграції (див. platform-roadmap.md).
+// Зони, переведені на i18n: тут регрес до хардкоду — помилка.
+// Міграцію завершено, обидва пакети ядра покриті цілком.
 //
 // 🔴 Зелений лінт завершеності НЕ доводить: селектори бачать лише `JSXText` і
 // три атрибути, тобто ~64 % роботи — toast, Zod, тернарники й мапи ярликів їм
 // не видні. Повноту доводить `tests/i18n-coverage.test.ts` (AST-скан).
-const I18N_MIGRATED_FILES = ['packages/storefront-routes/**/*.tsx'];
+const I18N_MIGRATED_FILES = [
+  'packages/storefront-routes/**/*.tsx',
+  'packages/admin/**/*.tsx',
+];
 
 const eslintConfig = [
   ...tseslint.configs.recommended,
@@ -66,14 +69,8 @@ const eslintConfig = [
     },
   },
   {
-    // Warn-зона: адмінка — міграція попереду.
-    files: ['packages/admin/**/*.tsx'],
-    rules: {
-      'no-restricted-syntax': ['warn', ...i18nRestrictedSyntax],
-    },
-  },
-  {
-    // Error-зона: вже мігровані файли (блок ІДЕ ПІСЛЯ warn-зони — перекриває її).
+    // Error-зона: обидва пакети ядра цілком. Warn-зони більше немає — міграцію
+    // завершено, тож будь-який хардкод тут це помилка, а не борг.
     files: I18N_MIGRATED_FILES,
     rules: {
       'no-restricted-syntax': ['error', ...i18nRestrictedSyntax],

@@ -19,20 +19,13 @@ export const ALLOWLIST: Record<string, string> = {
 };
 
 /**
- * Файли, ще не мігровані. Список лише скорочується; етап вважається закритим,
- * коли його файли звідси зникли, а гейти зелені.
+ * Файли, ще не мігровані. Список лише скорочувався; порожній він означає, що
+ * міграцію завершено.
  *
  * Тест падає і на зайвому записі: файл без жодного кириличного рядка тут
  * лишатися не може, інакше реєстр тихо перетворився б на список-вигадку.
  */
 export const PENDING_FILES: readonly string[] = [
-  'packages/admin/src/components/ImageUpload.tsx',
-  'packages/admin/src/components/ProductModifications.tsx',
-  'packages/admin/src/components/ProductPricesEditor.tsx',
-  'packages/admin/src/components/RichTextEditor.tsx',
-  'packages/admin/src/components/SimpleProductFields.tsx',
-  'packages/admin/src/components/StockByPointManager.tsx',
-  'packages/admin/src/components/StockStatusSelect.tsx',
-  'packages/admin/src/pages/ProductEdit.tsx',
-  'packages/admin/src/pages/Products.tsx',
+  // Порожньо: міграцію завершено. Будь-який новий кириличний рядок інтерфейсу
+  // в цих пакетах тепер валить тест, а не додається сюди.
 ];
