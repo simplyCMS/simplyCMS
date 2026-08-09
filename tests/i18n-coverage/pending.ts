@@ -26,7 +26,6 @@ export const ALLOWLIST: Record<string, string> = {
  * лишатися не може, інакше реєстр тихо перетворився б на список-вигадку.
  */
 export const PENDING_FILES: readonly string[] = [
-  'packages/admin/src/components/AddProductToOrder.tsx',
   'packages/admin/src/components/ImageUpload.tsx',
   'packages/admin/src/components/ProductModifications.tsx',
   'packages/admin/src/components/ProductPricesEditor.tsx',
@@ -37,9 +36,6 @@ export const PENDING_FILES: readonly string[] = [
   'packages/admin/src/pages/DiscountEdit.tsx',
   'packages/admin/src/pages/DiscountGroupEdit.tsx',
   'packages/admin/src/pages/Discounts.tsx',
-  'packages/admin/src/pages/OrderDetail.tsx',
-  'packages/admin/src/pages/OrderStatuses.tsx',
-  'packages/admin/src/pages/Orders.tsx',
   'packages/admin/src/pages/PriceValidator.tsx',
   'packages/admin/src/pages/ProductEdit.tsx',
   'packages/admin/src/pages/Products.tsx',
