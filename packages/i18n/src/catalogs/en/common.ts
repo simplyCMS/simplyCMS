@@ -69,5 +69,6 @@ export const messages: Catalog = {
   'common.byDefaultShort': 'Default',
   'common.yes': 'Yes',
   'common.no': 'No',
+  'common.howItWorks': 'How this works:',
   'common.or': 'or',
 };

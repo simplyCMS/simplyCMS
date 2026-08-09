@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Textarea } from '@simplycms/ui/textarea';
@@ -42,25 +43,30 @@ import {
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
 
-const categorySchema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  code: z
-    .string()
-    .min(1, "Код обов'язковий")
-    .regex(/^[a-z0-9_]+$/, 'Тільки латинські літери, цифри та _'),
-  description: z.string().optional(),
-  price_type_id: z.string().optional().nullable(),
-  is_default: z.boolean(),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildCategorySchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    code: z
+      .string()
+      .min(1, t('validation.codeRequired'))
+      .regex(/^[a-z0-9_]+$/, t('validation.slug')),
+    description: z.string().optional(),
+    price_type_id: z.string().optional().nullable(),
+    is_default: z.boolean(),
+  });
 
-type CategoryFormData = z.infer<typeof categorySchema>;
+type CategoryFormData = z.infer<ReturnType<typeof buildCategorySchema>>;
 
 export default function UserCategoryEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { categoryId } = useParams({ strict: false }) as { categoryId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !categoryId || categoryId === 'new';
+
+  const categorySchema = useMemo(() => buildCategorySchema(t), [t]);
 
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -146,12 +152,16 @@ export default function UserCategoryEdit() {
       queryClient.invalidateQueries({
         queryKey: ['user-categories-with-counts'],
       });
-      toast({ title: isNew ? 'Категорію створено' : 'Зміни збережено' });
+      toast({
+        title: isNew
+          ? t('admin.users.categories.created')
+          : t('common.changesSaved'),
+      });
       navigate({ to: adminPath('user-categories') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -172,12 +182,12 @@ export default function UserCategoryEdit() {
       queryClient.invalidateQueries({
         queryKey: ['user-categories-with-counts'],
       });
-      toast({ title: 'Категорію видалено' });
+      toast({ title: t('admin.users.categories.deleted') });
       navigate({ to: adminPath('user-categories') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -185,7 +195,7 @@ export default function UserCategoryEdit() {
   });
 
   if (!isNew && isLoading)
-    return <div className="p-8 text-center">Завантаження...</div>;
+    return <div className="p-8 text-center">{t('common.loading')}</div>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -197,7 +207,9 @@ export default function UserCategoryEdit() {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Нова категорія' : 'Редагування категорії'}
+            {isNew
+              ? t('admin.users.categories.new')
+              : t('admin.users.categories.editTitle')}
           </h1>
         </div>
         {!isNew && (
@@ -209,18 +221,20 @@ export default function UserCategoryEdit() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Видалити категорію?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('admin.users.categories.deleteTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Ця дія незворотна.
+                  {t('admin.users.categories.deleteWarning')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteMutation.mutate()}
                   className="bg-destructive text-destructive-foreground"
                 >
-                  Видалити
+                  {t('common.delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -230,7 +244,7 @@ export default function UserCategoryEdit() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Інформація про категорію</CardTitle>
+          <CardTitle>{t('admin.users.categories.info')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -243,9 +257,14 @@ export default function UserCategoryEdit() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Назва</FormLabel>
+                    <FormLabel>{t('common.name')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Роздрібний клієнт" {...field} />
+                      <Input
+                        placeholder={t(
+                          'admin.users.categories.namePlaceholder',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -256,12 +275,12 @@ export default function UserCategoryEdit() {
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Код</FormLabel>
+                    <FormLabel>{t('common.code')}</FormLabel>
                     <FormControl>
                       <Input placeholder="retail" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Унікальний код (латиниця, цифри, _)
+                      {t('admin.users.categories.codeHint')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -272,9 +291,14 @@ export default function UserCategoryEdit() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Опис</FormLabel>
+                    <FormLabel>{t('common.description')}</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Опис категорії..." {...field} />
+                      <Textarea
+                        placeholder={t(
+                          'admin.users.categories.descriptionPlaceholder',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -285,7 +309,7 @@ export default function UserCategoryEdit() {
                 name="price_type_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Вид ціни</FormLabel>
+                    <FormLabel>{t('admin.users.priceType')}</FormLabel>
                     <Select
                       value={field.value || '__none__'}
                       onValueChange={(v) =>
@@ -294,22 +318,29 @@ export default function UserCategoryEdit() {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="За замовчуванням (дефолтний вид ціни)" />
+                          <SelectValue
+                            placeholder={t(
+                              'admin.users.categories.defaultPriceType',
+                            )}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="__none__">
-                          За замовчуванням
+                          {t('common.byDefault')}
                         </SelectItem>
                         {priceTypes?.map((pt) => (
                           <SelectItem key={pt.id} value={pt.id}>
-                            {pt.name} {pt.is_default ? '(дефолтний)' : ''}
+                            {pt.name}{' '}
+                            {pt.is_default
+                              ? t('admin.users.categories.defaultSuffix')
+                              : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Користувачі цієї категорії бачитимуть ціни обраного виду
+                      {t('admin.users.categories.priceTypeHint')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -322,10 +353,10 @@ export default function UserCategoryEdit() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
-                        За замовчуванням
+                        {t('common.byDefault')}
                       </FormLabel>
                       <FormDescription>
-                        Нові користувачі автоматично отримують цю категорію
+                        {t('admin.users.categories.isDefaultHint')}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -339,13 +370,15 @@ export default function UserCategoryEdit() {
               />
               <div className="flex justify-end gap-4">
                 <Button variant="outline" asChild>
-                  <Link to={adminPath('user-categories')}>Скасувати</Link>
+                  <Link to={adminPath('user-categories')}>
+                    {t('common.cancel')}
+                  </Link>
                 </Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
                   {saveMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  {isNew ? 'Створити' : 'Зберегти'}
+                  {isNew ? t('common.create') : t('common.save')}
                 </Button>
               </div>
             </form>

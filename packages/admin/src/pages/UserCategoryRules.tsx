@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import { Switch } from '@simplycms/ui/switch';
@@ -36,17 +37,19 @@ interface RuleConditions {
   rules: RuleCondition[];
 }
 
-const fieldLabels: Record<string, string> = {
-  total_purchases: 'Сума покупок',
-  registration_days: 'Днів з реєстрації',
-  orders_count: 'Кількість замовлень',
-  email_domain: 'Домен email',
-  auth_provider: 'Провайдер авторизації',
+// Мапа КЛЮЧІВ: код поля умови зберігається в БД.
+const fieldLabels: Record<string, MessageKey | string> = {
+  total_purchases: 'admin.users.totalSpent',
+  registration_days: 'admin.users.daysSince',
+  orders_count: 'admin.users.rules.field.ordersCount',
+  email_domain: 'admin.users.emailDomain',
+  auth_provider: 'admin.users.rules.field.authProvider',
   utm_source: 'UTM Source',
   utm_campaign: 'UTM Campaign',
 };
 
 export default function UserCategoryRules() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -114,15 +117,19 @@ export default function UserCategoryRules() {
       );
       if (error) throw error;
       toast({
-        title: 'Перевірку завершено',
-        description: `Змінено категорію у ${data || 0} користувачів`,
+        title: t('admin.users.rules.checkDone'),
+        description: t('admin.users.rules.checkResult', {
+          count: data || 0,
+        }),
       });
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     } catch (error: unknown) {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description:
-          error instanceof Error ? error.message : 'Невідома помилка',
+          error instanceof Error
+            ? error.message
+            : t('admin.users.rules.unknownError'),
         variant: 'destructive',
       });
     } finally {
@@ -136,11 +143,16 @@ export default function UserCategoryRules() {
       <span key={i} className="inline-flex items-center gap-1">
         {i > 0 && (
           <span className="text-muted-foreground mx-1">
-            {conditions.type === 'all' ? 'та' : 'або'}
+            {conditions.type === 'all'
+              ? t('admin.users.rules.and')
+              : t('admin.users.rules.or')}
           </span>
         )}
         <Badge variant="outline" className="font-normal">
-          {fieldLabels[r.field] || r.field} {r.operator} {r.value}
+          {fieldLabels[r.field]
+            ? t(fieldLabels[r.field] as MessageKey)
+            : r.field}{' '}
+          {r.operator} {r.value}
         </Badge>
       </span>
     ));
@@ -166,9 +178,11 @@ export default function UserCategoryRules() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Правила переходу</h1>
+            <h1 className="text-3xl font-bold">
+              {t('admin.users.categories.rules')}
+            </h1>
             <p className="text-muted-foreground">
-              Автоматична зміна категорії користувачів за умовами
+              {t('admin.users.rules.subtitle')}
             </p>
           </div>
         </div>
@@ -179,7 +193,7 @@ export default function UserCategoryRules() {
             ) : (
               <Play className="h-4 w-4 mr-2" />
             )}
-            Запустити перевірку
+            {t('admin.users.rules.run')}
           </Button>
           <Button asChild>
             <Link
@@ -187,7 +201,7 @@ export default function UserCategoryRules() {
               params={{ ruleId: 'new' }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Додати правило
+              {t('admin.users.rules.add')}
             </Link>
           </Button>
         </div>
@@ -197,24 +211,26 @@ export default function UserCategoryRules() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">Пріоритет</TableHead>
-              <TableHead>Назва</TableHead>
-              <TableHead>Перехід</TableHead>
-              <TableHead>Умови</TableHead>
-              <TableHead className="w-24 text-center">Активне</TableHead>
+              <TableHead className="w-16">{t('common.priority')}</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
+              <TableHead>{t('admin.users.rules.transition')}</TableHead>
+              <TableHead>{t('admin.users.rules.conditions')}</TableHead>
+              <TableHead className="w-24 text-center">
+                {t('common.activeN')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8">
-                  Завантаження...
+                  {t('common.loading')}
                 </TableCell>
               </TableRow>
             ) : rules?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8">
-                  Правил не знайдено
+                  {t('admin.users.rules.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -266,7 +282,7 @@ export default function UserCategoryRules() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">
-                        {rule.from_category?.name || 'Будь-яка'}
+                        {rule.from_category?.name || t('admin.users.rules.any')}
                       </Badge>
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       <Badge>{rule.to_category?.name}</Badge>
@@ -302,10 +318,8 @@ export default function UserCategoryRules() {
 
       <div className="text-sm text-muted-foreground">
         <p>
-          <strong>Як це працює:</strong> Правила перевіряються при кожному
-          завершеному замовленні (статус "completed"). Правила виконуються в
-          порядку пріоритету (вищий пріоритет = виконується першим).
-          Застосовується лише перше правило, що спрацювало.
+          <strong>{t('common.howItWorks')}</strong>{' '}
+          {t('admin.users.rules.howItWorksText')}
         </p>
       </div>
     </div>

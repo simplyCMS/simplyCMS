@@ -81,5 +81,6 @@ export const messages = {
   'common.byDefaultShort': 'За замовч.',
   'common.yes': 'Так',
   'common.no': 'Ні',
+  'common.howItWorks': 'Як це працює:',
   'common.or': 'або',
 } as const;

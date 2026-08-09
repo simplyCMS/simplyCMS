@@ -39,11 +39,4 @@ export const PENDING_FILES: readonly string[] = [
   'packages/admin/src/pages/PriceValidator.tsx',
   'packages/admin/src/pages/ProductEdit.tsx',
   'packages/admin/src/pages/Products.tsx',
-  'packages/admin/src/pages/Settings.tsx',
-  'packages/admin/src/pages/UserCategories.tsx',
-  'packages/admin/src/pages/UserCategoryEdit.tsx',
-  'packages/admin/src/pages/UserCategoryRuleEdit.tsx',
-  'packages/admin/src/pages/UserCategoryRules.tsx',
-  'packages/admin/src/pages/UserEdit.tsx',
-  'packages/admin/src/pages/Users.tsx',
 ];

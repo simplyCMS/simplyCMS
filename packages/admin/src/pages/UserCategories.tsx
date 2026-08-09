@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import {
@@ -15,6 +16,7 @@ import { ArrowLeft, Plus, Settings, Star } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 
 export default function UserCategories() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
 
@@ -55,9 +57,11 @@ export default function UserCategories() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Категорії користувачів</h1>
+            <h1 className="text-3xl font-bold">
+              {t('admin.nav.userCategories')}
+            </h1>
             <p className="text-muted-foreground">
-              Управління категоріями та правилами переходу
+              {t('admin.users.categories.subtitle')}
             </p>
           </div>
         </div>
@@ -65,7 +69,7 @@ export default function UserCategories() {
           <Button variant="outline" asChild>
             <Link to={adminPath('user-categories/rules')}>
               <Settings className="h-4 w-4 mr-2" />
-              Правила переходу
+              {t('admin.users.categories.rules')}
             </Link>
           </Button>
           <Button asChild>
@@ -74,7 +78,7 @@ export default function UserCategories() {
               params={{ categoryId: 'new' }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Додати категорію
+              {t('admin.users.categories.add')}
             </Link>
           </Button>
         </div>
@@ -84,10 +88,12 @@ export default function UserCategories() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Назва</TableHead>
-              <TableHead>Код</TableHead>
-              <TableHead>Вид ціни</TableHead>
-              <TableHead className="text-center">Користувачів</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
+              <TableHead>{t('common.code')}</TableHead>
+              <TableHead>{t('admin.users.priceType')}</TableHead>
+              <TableHead className="text-center">
+                {t('admin.users.categories.usersCount')}
+              </TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -95,13 +101,13 @@ export default function UserCategories() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8">
-                  Завантаження...
+                  {t('common.loading')}
                 </TableCell>
               </TableRow>
             ) : categories?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8">
-                  Категорій не знайдено
+                  {t('admin.users.categories.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -135,7 +141,9 @@ export default function UserCategories() {
                     {cat.price_type_name ? (
                       <Badge variant="outline">{cat.price_type_name}</Badge>
                     ) : (
-                      <span className="text-muted-foreground">За замовч.</span>
+                      <span className="text-muted-foreground">
+                        {t('common.byDefaultShort')}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-center">
@@ -143,7 +151,7 @@ export default function UserCategories() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm">
-                      Редагувати
+                      {t('common.edit')}
                     </Button>
                   </TableCell>
                 </TableRow>

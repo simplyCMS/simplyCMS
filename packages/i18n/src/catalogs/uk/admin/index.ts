@@ -16,8 +16,10 @@ import { messages as prices } from './prices';
 import { messages as properties } from './properties';
 import { messages as reviews } from './reviews';
 import { messages as sections } from './sections';
+import { messages as settings } from './settings';
 import { messages as shipping } from './shipping';
 import { messages as themes } from './themes';
+import { messages as users } from './users';
 
 export const messages = {
   ...banners,
@@ -30,6 +32,8 @@ export const messages = {
   ...properties,
   ...reviews,
   ...sections,
+  ...settings,
   ...shipping,
   ...themes,
+  ...users,
 } satisfies Record<string, string>;

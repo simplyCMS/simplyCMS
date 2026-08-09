@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import {
@@ -46,6 +47,7 @@ interface UserWithDetails {
 }
 
 export default function Users() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -179,10 +181,8 @@ export default function Users() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Користувачі</h1>
-          <p className="text-muted-foreground">
-            Управління користувачами системи
-          </p>
+          <h1 className="text-3xl font-bold">{t('admin.nav.users')}</h1>
+          <p className="text-muted-foreground">{t('admin.users.subtitle')}</p>
         </div>
       </div>
 
@@ -191,7 +191,7 @@ export default function Users() {
         <div className="relative flex-1 min-w-[250px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Пошук за email, ім'ям, телефоном..."
+            placeholder={t('admin.users.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -199,10 +199,12 @@ export default function Users() {
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Категорія" />
+            <SelectValue placeholder={t('common.category')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Всі категорії</SelectItem>
+            <SelectItem value="all">
+              {t('admin.users.allCategories')}
+            </SelectItem>
             {categories?.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
@@ -212,12 +214,12 @@ export default function Users() {
         </Select>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Роль" />
+            <SelectValue placeholder={t('admin.users.role')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Всі ролі</SelectItem>
-            <SelectItem value="admin">Адміністратори</SelectItem>
-            <SelectItem value="user">Користувачі</SelectItem>
+            <SelectItem value="all">{t('admin.users.allRoles')}</SelectItem>
+            <SelectItem value="admin">{t('admin.users.admins')}</SelectItem>
+            <SelectItem value="user">{t('admin.nav.users')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -228,25 +230,29 @@ export default function Users() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12"></TableHead>
-              <TableHead>Користувач</TableHead>
-              <TableHead>Контакти</TableHead>
-              <TableHead>Категорія</TableHead>
-              <TableHead className="text-center">Замовлень</TableHead>
-              <TableHead className="text-right">Сума покупок</TableHead>
-              <TableHead>Реєстрація</TableHead>
+              <TableHead>{t('admin.users.user')}</TableHead>
+              <TableHead>{t('admin.users.contacts')}</TableHead>
+              <TableHead>{t('common.category')}</TableHead>
+              <TableHead className="text-center">
+                {t('admin.users.ordersCount')}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('admin.users.totalSpent')}
+              </TableHead>
+              <TableHead>{t('admin.users.registered')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  Завантаження...
+                  {t('common.loading')}
                 </TableCell>
               </TableRow>
             ) : users?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  Користувачів не знайдено
+                  {t('admin.users.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -270,7 +276,7 @@ export default function Users() {
                         <div className="font-medium flex items-center gap-2">
                           {user.first_name || user.last_name
                             ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                            : 'Без імені'}
+                            : t('admin.users.noName')}
                           {user.is_admin && (
                             <Shield className="h-4 w-4 text-primary" />
                           )}

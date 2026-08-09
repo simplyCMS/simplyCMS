@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import {
   Card,
   CardContent,
@@ -26,6 +27,7 @@ interface SystemSetting {
 }
 
 export default function Settings() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
 
@@ -52,10 +54,10 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
-      toast.success('Налаштування збережено');
+      toast.success(t('common.settingsSaved'));
     },
     onError: (error: Error) => {
-      toast.error(`Помилка: ${error.message}`);
+      toast.error(t('common.errorWithMessage', { message: error.message }));
     },
   });
 
@@ -79,10 +81,10 @@ export default function Settings() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <SettingsIcon className="h-8 w-8" />
-          Налаштування
+          {t('admin.nav.settings')}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Загальні налаштування системи
+          {t('admin.settings.subtitle')}
         </p>
       </div>
 
@@ -91,10 +93,8 @@ export default function Settings() {
           <div className="flex items-center gap-3">
             <Package className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle>Управління залишками</CardTitle>
-              <CardDescription>
-                Налаштування автоматичного обліку залишків товарів
-              </CardDescription>
+              <CardTitle>{t('admin.settings.stock')}</CardTitle>
+              <CardDescription>{t('admin.settings.stockHint')}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -102,11 +102,10 @@ export default function Settings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="decrease_on_order" className="text-base">
-                Зменшувати залишки при оформленні замовлення
+                {t('admin.settings.decreaseStock')}
               </Label>
               <p className="text-sm text-muted-foreground">
-                Коли увімкнено, система автоматично зменшує кількість товару на
-                складі при створенні нового замовлення
+                {t('admin.settings.decreaseStockHint')}
               </p>
             </div>
             <Switch
@@ -120,20 +119,14 @@ export default function Settings() {
           <Separator />
 
           <div className="bg-muted/50 rounded-lg p-4">
-            <h4 className="font-medium mb-2">Як це працює:</h4>
+            <h4 className="font-medium mb-2">{t('common.howItWorks')}</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>
-                • При <strong>увімкненій</strong> опції: коли клієнт оформлює
-                замовлення, залишки автоматично зменшуються на вказану кількість
-              </li>
-              <li>
-                • При <strong>вимкненій</strong> опції: залишки не змінюються
-                автоматично, адміністратор керує ними вручну
-              </li>
-              <li>
-                • Залишки зменшуються з того складу, який вказаний у замовленні
-                (точка самовивозу), або з першого доступного
-              </li>
+              {/* 🔴 Жирне виділення «увімкненій/вимкненій» знято навмисно:
+                  розрізати речення на три ключі заради <strong> зробило б
+                  переклад крихким. Пункт лишається одним ключем. */}
+              <li>{t('admin.settings.enabledCase')}</li>
+              <li>{t('admin.settings.disabledCase')}</li>
+              <li>{t('admin.settings.warehouseNote')}</li>
             </ul>
           </div>
         </CardContent>

@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator, type MessageKey } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Textarea } from '@simplycms/ui/textarea';
@@ -41,17 +42,34 @@ import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 
-const conditionFields = [
-  { value: 'total_purchases', label: 'Сума покупок (грн)' },
-  { value: 'registration_days', label: 'Днів з реєстрації' },
-  { value: 'orders_count', label: 'Кількість замовлень' },
-  { value: 'email_domain', label: 'Домен email' },
-  { value: 'auth_provider', label: 'Провайдер авторизації' },
+// Мапи КЛЮЧІВ: коди полів і операторів зберігаються в БД. UTM-поля мають
+// латинські назви — для них ключ не потрібен, лишається сам підпис.
+const conditionFields: {
+  value: string;
+  labelKey?: MessageKey;
+  label?: string;
+}[] = [
+  {
+    value: 'total_purchases',
+    labelKey: 'admin.users.rules.field.totalPurchases',
+  },
+  { value: 'registration_days', labelKey: 'admin.users.daysSince' },
+  { value: 'orders_count', labelKey: 'admin.users.rules.field.ordersCount' },
+  { value: 'email_domain', labelKey: 'admin.users.emailDomain' },
+  {
+    value: 'auth_provider',
+    labelKey: 'admin.users.rules.field.authProvider',
+  },
   { value: 'utm_source', label: 'UTM Source' },
   { value: 'utm_campaign', label: 'UTM Campaign' },
 ];
 
-const numericOperators = [
+// Числові оператори — математичні символи, перекладу не потребують.
+const numericOperators: {
+  value: string;
+  labelKey?: MessageKey;
+  label?: string;
+}[] = [
   { value: '>=', label: '>=' },
   { value: '>', label: '>' },
   { value: '<=', label: '<=' },
@@ -59,9 +77,13 @@ const numericOperators = [
   { value: '=', label: '=' },
 ];
 
-const stringOperators = [
-  { value: '=', label: 'дорівнює' },
-  { value: 'contains', label: 'містить' },
+const stringOperators: {
+  value: string;
+  labelKey?: MessageKey;
+  label?: string;
+}[] = [
+  { value: '=', labelKey: 'admin.users.rules.op.equals' },
+  { value: 'contains', labelKey: 'admin.users.rules.op.contains' },
 ];
 
 /** Чи є поле числовим */
@@ -71,26 +93,28 @@ function isNumericField(field: string) {
   );
 }
 
-const ruleSchema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  description: z.string().optional(),
-  from_category_id: z.string().nullable(),
-  to_category_id: z.string().min(1, 'Оберіть категорію призначення'),
-  priority: z.coerce.number().int().min(0),
-  is_active: z.boolean(),
-  conditions: z.object({
-    type: z.enum(['all', 'any']),
-    rules: z.array(
-      z.object({
-        field: z.string().min(1),
-        operator: z.string().min(1),
-        value: z.string().min(1),
-      }),
-    ),
-  }),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildRuleSchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    description: z.string().optional(),
+    from_category_id: z.string().nullable(),
+    to_category_id: z.string().min(1, t('validation.targetCategoryRequired')),
+    priority: z.coerce.number().int().min(0),
+    is_active: z.boolean(),
+    conditions: z.object({
+      type: z.enum(['all', 'any']),
+      rules: z.array(
+        z.object({
+          field: z.string().min(1),
+          operator: z.string().min(1),
+          value: z.string().min(1),
+        }),
+      ),
+    }),
+  });
 
-type RuleFormData = z.infer<typeof ruleSchema>;
+type RuleFormData = z.infer<ReturnType<typeof buildRuleSchema>>;
 
 /** Рядок умови з useWatch замість form.watch */
 function ConditionRuleRow({
@@ -99,11 +123,12 @@ function ConditionRuleRow({
   onRemove,
   setValue,
 }: {
-  control: ReturnType<typeof useForm<z.infer<typeof ruleSchema>>>['control'];
+  control: ReturnType<typeof useForm<RuleFormData>>['control'];
   index: number;
   onRemove: () => void;
-  setValue: ReturnType<typeof useForm<z.infer<typeof ruleSchema>>>['setValue'];
+  setValue: ReturnType<typeof useForm<RuleFormData>>['setValue'];
 }) {
+  const t = useT();
   const fieldValue = useWatch({
     control,
     name: `conditions.rules.${index}.field`,
@@ -131,13 +156,13 @@ function ConditionRuleRow({
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Поле" />
+                  <SelectValue placeholder={t('admin.users.rules.field')} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {conditionFields.map((f) => (
                   <SelectItem key={f.value} value={f.value}>
-                    {f.label}
+                    {f.labelKey ? t(f.labelKey) : f.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,13 +180,13 @@ function ConditionRuleRow({
             <Select value={field.value} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Оператор" />
+                  <SelectValue placeholder={t('admin.users.rules.operator')} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {operators.map((op) => (
                   <SelectItem key={op.value} value={op.value}>
-                    {op.label}
+                    {op.labelKey ? t(op.labelKey) : op.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -179,7 +204,7 @@ function ConditionRuleRow({
             <FormControl>
               <Input
                 type={isNumericField(fieldValue) ? 'number' : 'text'}
-                placeholder="Значення"
+                placeholder={t('common.value')}
                 {...field}
               />
             </FormControl>
@@ -196,11 +221,14 @@ function ConditionRuleRow({
 }
 
 export default function UserCategoryRuleEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { ruleId } = useParams({ strict: false }) as { ruleId: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !ruleId || ruleId === 'new';
+
+  const ruleSchema = useMemo(() => buildRuleSchema(t), [t]);
 
   const form = useForm<RuleFormData>({
     // zodResolver + z.coerce.number() спричиняє TFieldValues mismatch
@@ -309,12 +337,16 @@ export default function UserCategoryRuleEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['category-rules'] });
       queryClient.invalidateQueries({ queryKey: ['user-categories'] });
-      toast({ title: isNew ? 'Правило створено' : 'Зміни збережено' });
+      toast({
+        title: isNew
+          ? t('admin.users.rules.created')
+          : t('common.changesSaved'),
+      });
       navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -334,12 +366,12 @@ export default function UserCategoryRuleEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['category-rules'] });
       queryClient.invalidateQueries({ queryKey: ['user-categories'] });
-      toast({ title: 'Правило видалено' });
+      toast({ title: t('admin.users.rules.deleted') });
       navigate({ to: adminPath('user-categories/rules') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -347,7 +379,7 @@ export default function UserCategoryRuleEdit() {
   });
 
   if (!isNew && isLoading) {
-    return <div className="p-8 text-center">Завантаження...</div>;
+    return <div className="p-8 text-center">{t('common.loading')}</div>;
   }
 
   return (
@@ -360,7 +392,9 @@ export default function UserCategoryRuleEdit() {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Нове правило' : 'Редагування правила'}
+            {isNew
+              ? t('admin.users.rules.new')
+              : t('admin.users.rules.editTitle')}
           </h1>
         </div>
         {!isNew && (
@@ -372,18 +406,20 @@ export default function UserCategoryRuleEdit() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Видалити правило?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('admin.users.rules.deleteTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Ця дія незворотна.
+                  {t('admin.users.categories.deleteWarning')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteMutation.mutate()}
                   className="bg-destructive text-destructive-foreground"
                 >
-                  Видалити
+                  {t('common.delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -398,7 +434,7 @@ export default function UserCategoryRuleEdit() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>Основна інформація</CardTitle>
+              <CardTitle>{t('common.basicInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -406,9 +442,12 @@ export default function UserCategoryRuleEdit() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Назва правила</FormLabel>
+                    <FormLabel>{t('admin.users.rules.nameLabel')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="VIP за сумою покупок" {...field} />
+                      <Input
+                        placeholder={t('admin.users.rules.namePlaceholder')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -420,9 +459,14 @@ export default function UserCategoryRuleEdit() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Опис</FormLabel>
+                    <FormLabel>{t('common.description')}</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Опис правила..." {...field} />
+                      <Textarea
+                        placeholder={t(
+                          'admin.users.rules.descriptionPlaceholder',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -435,12 +479,12 @@ export default function UserCategoryRuleEdit() {
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Пріоритет</FormLabel>
+                      <FormLabel>{t('common.priority')}</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Вищий пріоритет виконується першим
+                        {t('admin.users.rules.priorityHint')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -453,7 +497,7 @@ export default function UserCategoryRuleEdit() {
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel>Активне</FormLabel>
+                        <FormLabel>{t('common.activeN')}</FormLabel>
                       </div>
                       <FormControl>
                         <Switch
@@ -470,7 +514,7 @@ export default function UserCategoryRuleEdit() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Перехід між категоріями</CardTitle>
+              <CardTitle>{t('admin.users.rules.transitionSection')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
@@ -479,7 +523,9 @@ export default function UserCategoryRuleEdit() {
                   name="from_category_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>З категорії</FormLabel>
+                      <FormLabel>
+                        {t('admin.users.rules.fromCategory')}
+                      </FormLabel>
                       <Select
                         value={field.value || 'any'}
                         onValueChange={(v) =>
@@ -488,12 +534,14 @@ export default function UserCategoryRuleEdit() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Будь-яка" />
+                            <SelectValue
+                              placeholder={t('admin.users.rules.any')}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="any">
-                            Будь-яка категорія
+                            {t('admin.users.rules.anyCategory')}
                           </SelectItem>
                           {categories?.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
@@ -512,14 +560,16 @@ export default function UserCategoryRuleEdit() {
                   name="to_category_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>До категорії</FormLabel>
+                      <FormLabel>{t('admin.users.rules.toCategory')}</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Оберіть категорію" />
+                            <SelectValue
+                              placeholder={t('admin.users.pickCategory')}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -540,7 +590,7 @@ export default function UserCategoryRuleEdit() {
 
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Умови</CardTitle>
+              <CardTitle>{t('admin.users.rules.conditions')}</CardTitle>
               <FormField
                 control={form.control}
                 name="conditions.type"
@@ -550,8 +600,12 @@ export default function UserCategoryRuleEdit() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Всі умови (AND)</SelectItem>
-                      <SelectItem value="any">Будь-яка умова (OR)</SelectItem>
+                      <SelectItem value="all">
+                        {t('admin.users.rules.allConditions')}
+                      </SelectItem>
+                      <SelectItem value="any">
+                        {t('admin.users.rules.anyCondition')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -560,7 +614,7 @@ export default function UserCategoryRuleEdit() {
             <CardContent className="space-y-4">
               {fields.length === 0 && (
                 <p className="text-center text-muted-foreground py-4">
-                  Додайте хоча б одну умову
+                  {t('admin.users.rules.addAtLeastOne')}
                 </p>
               )}
 
@@ -586,20 +640,22 @@ export default function UserCategoryRuleEdit() {
                 }
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Додати умову
+                {t('admin.users.rules.addCondition')}
               </Button>
             </CardContent>
           </Card>
 
           <div className="flex justify-end gap-4">
             <Button variant="outline" asChild>
-              <Link to={adminPath('user-categories/rules')}>Скасувати</Link>
+              <Link to={adminPath('user-categories/rules')}>
+                {t('common.cancel')}
+              </Link>
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {isNew ? 'Створити' : 'Зберегти'}
+              {isNew ? t('common.create') : t('common.save')}
             </Button>
           </div>
         </form>
