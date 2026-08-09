@@ -276,6 +276,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
+      '@simplycms/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@simplycms/plugins':
         specifier: workspace:*
         version: link:../plugin-system

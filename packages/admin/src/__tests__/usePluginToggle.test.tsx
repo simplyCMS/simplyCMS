@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@simplycms/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
 import type { SupabaseClient } from '@simplycms/supabase/browser-client';
@@ -53,9 +54,13 @@ function setup(fails: boolean, isActive: boolean) {
   queryClient.setQueryData<Plugin[]>(PLUGINS_QUERY_KEY, [makePlugin(isActive)]);
   const supabase = makeSupabase(fails);
 
+  // I18nProvider — як у проді (`__root.tsx` над усіма групами роутів,
+  // включно з адмінкою): хук бере тексти toast-ів через `useT()`.
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <SupabaseProvider client={supabase}>{children}</SupabaseProvider>
+      <SupabaseProvider client={supabase}>
+        <I18nProvider locale="uk">{children}</I18nProvider>
+      </SupabaseProvider>
     </QueryClientProvider>
   );
 

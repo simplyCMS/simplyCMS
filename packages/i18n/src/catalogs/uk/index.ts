@@ -21,6 +21,7 @@ import { messages as profile } from './profile';
 import { messages as cart } from './cart';
 import { messages as checkout } from './checkout';
 import { messages as auth } from './auth';
+import { messages as admin } from './admin/index';
 
 export const messages = {
   ...common,
@@ -35,4 +36,5 @@ export const messages = {
   ...cart,
   ...checkout,
   ...auth,
+  ...admin,
 } satisfies Record<string, string>;

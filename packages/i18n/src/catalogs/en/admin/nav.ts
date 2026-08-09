@@ -1,0 +1,35 @@
+import type { Catalog } from '../../../types';
+
+/** Бічне меню адмінки — дзеркало `uk/admin/nav.ts`. */
+export const messages: Catalog = {
+  'admin.nav.group.catalog': 'Catalog',
+  'admin.nav.group.orders': 'Orders',
+  'admin.nav.group.services': 'Services',
+  'admin.nav.group.shipping': 'Shipping',
+  'admin.nav.group.content': 'Content',
+  'admin.nav.group.plugins': 'Plugins',
+  'admin.nav.group.settings': 'Settings',
+
+  'admin.nav.dashboard': 'Dashboard',
+  'admin.nav.sections': 'Sections',
+  'admin.nav.properties': 'Properties',
+  'admin.nav.products': 'Products',
+  'admin.nav.priceTypes': 'Price types',
+  'admin.nav.discounts': 'Discounts',
+  'admin.nav.priceValidator': 'Price validator',
+  'admin.nav.orders': 'Orders',
+  'admin.nav.orderStatuses': 'Statuses',
+  'admin.nav.services': 'Services',
+  'admin.nav.serviceRequests': 'Requests',
+  'admin.nav.shippingMethods': 'Shipping carriers',
+  'admin.nav.shippingZones': 'Shipping zones',
+  'admin.nav.pickupPoints': 'Pickup points',
+  'admin.nav.banners': 'Banners',
+  'admin.nav.reviews': 'Reviews',
+  'admin.nav.plugins': 'Plugins',
+  'admin.nav.themes': 'Themes',
+  'admin.nav.users': 'Users',
+  'admin.nav.userCategories': 'User categories',
+  'admin.nav.languages': 'Languages',
+  'admin.nav.settings': 'Settings',
+};

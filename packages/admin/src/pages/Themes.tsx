@@ -15,6 +15,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
+import { useT } from '@simplycms/i18n';
 import {
   revalidateFailureDescription,
   useRevalidateStorefront,
@@ -45,6 +46,7 @@ interface ThemeRecord {
 export default function Themes() {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+  const t = useT();
   const queryClient = useQueryClient();
   const revalidateStorefront = useRevalidateStorefront();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function Themes() {
         toast({
           variant: 'destructive',
           title: 'Тему активовано, але кеш вітрини не скинуто',
-          description: revalidateFailureDescription(error),
+          description: revalidateFailureDescription(t, error),
         });
         return;
       }

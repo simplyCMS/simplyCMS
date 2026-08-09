@@ -24,6 +24,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { ArrowLeft, Save, Palette } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
+import { useT } from '@simplycms/i18n';
 import {
   revalidateFailureDescription,
   useRevalidateStorefront,
@@ -45,6 +46,7 @@ export default function ThemeSettings() {
   const { themeId } = useParams({ strict: false }) as { themeId: string };
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useT();
   const queryClient = useQueryClient();
   const revalidateStorefront = useRevalidateStorefront();
   const [config, setConfig] = useState<Record<string, unknown>>({});
@@ -111,7 +113,7 @@ export default function ThemeSettings() {
         toast({
           variant: 'destructive',
           title: 'Налаштування збережено, але кеш вітрини не скинуто',
-          description: revalidateFailureDescription(error),
+          description: revalidateFailureDescription(t, error),
         });
         return;
       }

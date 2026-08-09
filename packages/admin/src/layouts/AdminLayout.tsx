@@ -10,8 +10,10 @@ import { LogOut, Home } from 'lucide-react';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { ThemeToggle } from '@simplycms/core/components/ThemeToggle';
+import { useT } from '@simplycms/i18n';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -19,8 +21,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast({
-      title: 'Вихід виконано',
-      description: 'Ви успішно вийшли з системи',
+      title: t('admin.common.signedOut'),
+      description: t('admin.common.signedOutHint'),
     });
     navigate({ to: '/' });
   };
@@ -34,7 +36,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <span className="text-sm text-muted-foreground hidden sm:inline">
-              Адмін-панель
+              {t('admin.common.title')}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -45,11 +47,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               onClick={() => navigate({ to: '/' })}
             >
               <Home className="h-4 w-4 mr-2" />
-              На сайт
+              {t('admin.common.toSite')}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Вийти
+              {t('nav.signOut')}
             </Button>
           </div>
         </header>

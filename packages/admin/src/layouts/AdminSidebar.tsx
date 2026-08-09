@@ -1,6 +1,15 @@
 import { NavLink } from '@simplycms/core/components/NavLink';
 import { adminPath } from '../lib/adminLinks';
 import { useSidebar } from '@simplycms/ui/sidebar';
+import { useT, type MessageKey } from '@simplycms/i18n';
+
+interface SidebarItem {
+  titleKey: MessageKey;
+  url: string;
+  icon: LucideIcon;
+}
+
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   FolderTree,
@@ -36,58 +45,105 @@ import {
   SidebarMenuItem,
 } from '@simplycms/ui/sidebar';
 
+// Пункти меню тримають КЛЮЧІ, не тексти: масив лишається на рівні модуля
+// (він статичний), а підпис резолвиться під час рендера через `t()`.
 const catalogItems = [
-  { title: 'Розділи', url: adminPath('sections'), icon: FolderTree },
-  { title: 'Властивості', url: adminPath('properties'), icon: ListChecks },
-  { title: 'Товари', url: adminPath('products'), icon: Package },
-  { title: 'Види цін', url: adminPath('price-types'), icon: DollarSign },
-  { title: 'Скидки', url: adminPath('discounts'), icon: Percent },
   {
-    title: 'Валідатор цін',
+    titleKey: 'admin.nav.sections',
+    url: adminPath('sections'),
+    icon: FolderTree,
+  },
+  {
+    titleKey: 'admin.nav.properties',
+    url: adminPath('properties'),
+    icon: ListChecks,
+  },
+  { titleKey: 'admin.nav.products', url: adminPath('products'), icon: Package },
+  {
+    titleKey: 'admin.nav.priceTypes',
+    url: adminPath('price-types'),
+    icon: DollarSign,
+  },
+  {
+    titleKey: 'admin.nav.discounts',
+    url: adminPath('discounts'),
+    icon: Percent,
+  },
+  {
+    titleKey: 'admin.nav.priceValidator',
     url: adminPath('price-validator'),
     icon: Calculator,
   },
-];
+] satisfies SidebarItem[];
 
 const ordersItems = [
-  { title: 'Замовлення', url: adminPath('orders'), icon: ShoppingCart },
-  { title: 'Статуси', url: adminPath('order-statuses'), icon: Tags },
-];
+  {
+    titleKey: 'admin.nav.orders',
+    url: adminPath('orders'),
+    icon: ShoppingCart,
+  },
+  {
+    titleKey: 'admin.nav.orderStatuses',
+    url: adminPath('order-statuses'),
+    icon: Tags,
+  },
+] satisfies SidebarItem[];
 
 const servicesItems = [
-  { title: 'Послуги', url: adminPath('services'), icon: Wrench },
-  { title: 'Заявки', url: adminPath('service-requests'), icon: FileText },
-];
+  { titleKey: 'admin.nav.services', url: adminPath('services'), icon: Wrench },
+  {
+    titleKey: 'admin.nav.serviceRequests',
+    url: adminPath('service-requests'),
+    icon: FileText,
+  },
+] satisfies SidebarItem[];
 
 const shippingItems = [
-  { title: 'Служби доставки', url: adminPath('shipping/methods'), icon: Truck },
-  { title: 'Зони доставки', url: adminPath('shipping/zones'), icon: Map },
   {
-    title: 'Точки самовивозу',
+    titleKey: 'admin.nav.shippingMethods',
+    url: adminPath('shipping/methods'),
+    icon: Truck,
+  },
+  {
+    titleKey: 'admin.nav.shippingZones',
+    url: adminPath('shipping/zones'),
+    icon: Map,
+  },
+  {
+    titleKey: 'admin.nav.pickupPoints',
     url: adminPath('shipping/pickup-points'),
     icon: Building,
   },
-];
+] satisfies SidebarItem[];
 
 const contentItems = [
-  { title: 'Банери', url: adminPath('banners'), icon: ImageIcon },
-  { title: 'Відгуки', url: adminPath('reviews'), icon: MessageSquare },
-];
+  { titleKey: 'admin.nav.banners', url: adminPath('banners'), icon: ImageIcon },
+  {
+    titleKey: 'admin.nav.reviews',
+    url: adminPath('reviews'),
+    icon: MessageSquare,
+  },
+] satisfies SidebarItem[];
 
 const settingsItems = [
-  { title: 'Розширення', url: adminPath('plugins'), icon: Puzzle },
-  { title: 'Теми', url: adminPath('themes'), icon: Palette },
-  { title: 'Користувачі', url: adminPath('users'), icon: Users },
+  { titleKey: 'admin.nav.plugins', url: adminPath('plugins'), icon: Puzzle },
+  { titleKey: 'admin.nav.themes', url: adminPath('themes'), icon: Palette },
+  { titleKey: 'admin.nav.users', url: adminPath('users'), icon: Users },
   {
-    title: 'Категорії користувачів',
+    titleKey: 'admin.nav.userCategories',
     url: adminPath('user-categories'),
     icon: Tags,
   },
-  { title: 'Мови', url: adminPath('languages'), icon: Globe },
-  { title: 'Налаштування', url: adminPath('settings'), icon: Settings },
-];
+  { titleKey: 'admin.nav.languages', url: adminPath('languages'), icon: Globe },
+  {
+    titleKey: 'admin.nav.settings',
+    url: adminPath('settings'),
+    icon: Settings,
+  },
+] satisfies SidebarItem[];
 
 export function AdminSidebar() {
+  const t = useT();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
 
@@ -115,7 +171,7 @@ export function AdminSidebar() {
                     activeClassName="bg-primary/10 text-primary font-medium"
                   >
                     <LayoutDashboard className="h-4 w-4" />
-                    {!collapsed && <span>Дашборд</span>}
+                    {!collapsed && <span>{t('admin.nav.dashboard')}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -125,11 +181,13 @@ export function AdminSidebar() {
 
         {/* Catalog */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Каталог'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.catalog')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {catalogItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -137,7 +195,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -148,11 +206,13 @@ export function AdminSidebar() {
 
         {/* Orders */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Замовлення'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.orders')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {ordersItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -160,7 +220,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -171,11 +231,13 @@ export function AdminSidebar() {
 
         {/* Services */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Послуги'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.services')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {servicesItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -183,7 +245,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -194,11 +256,13 @@ export function AdminSidebar() {
 
         {/* Shipping */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Доставка'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.shipping')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {shippingItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -206,7 +270,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -217,11 +281,13 @@ export function AdminSidebar() {
 
         {/* Content */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Контент'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.content')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {contentItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -229,7 +295,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -245,7 +311,7 @@ export function AdminSidebar() {
           wrapper={(children) => (
             <SidebarGroup>
               <SidebarGroupLabel>
-                {!collapsed && 'Розширення'}
+                {!collapsed && t('admin.nav.group.plugins')}
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -262,11 +328,13 @@ export function AdminSidebar() {
 
         {/* Settings */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && 'Налаштування'}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && t('admin.nav.group.settings')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -274,7 +342,7 @@ export function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
