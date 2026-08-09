@@ -9,6 +9,7 @@
  * у двох модулях перетерся б МОВЧКИ; стереже `catalog-integrity.test.ts`, який
  * звіряє суму ключів модулів із розміром зведеного обʼєкта.
  */
+import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
 import { messages as nav } from './nav';
@@ -24,6 +25,7 @@ import { messages as auth } from './auth';
 import { messages as admin } from './admin/index';
 
 export const messages = {
+  ...app,
   ...common,
   ...validation,
   ...nav,

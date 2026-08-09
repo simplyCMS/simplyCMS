@@ -106,12 +106,23 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / ~960 warnings — це НОРМА.** Warn-зона двох
-`no-restricted-syntax`-селекторів (i18n) навмисно підсвічує ще не мігровані
-кириличні рядки в `@simplycms/storefront-routes` та `@simplycms/admin`.
-Error-зона — явний список із 3 файлів у `eslint.config.mjs`. Ці ворнінги
-**не глушити** й селектори не послабляти: warn→error станеться після
-i18n-міграції (роадмап, Фаза 1+).
+🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
+після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
+стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) вже переведено
+з warn на **error** і діють на `@simplycms/storefront-routes` та
+`@simplycms/admin` цілком — новий кириличний рядок інтерфейсу в цих пакетах
+валить лінт. Селектори не послабляти.
+
+🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
+три атрибути (~64 % рядків). Доводять три committed-тести —
+`tests/i18n-coverage.test.ts` (AST-скан, порожній `PENDING_FILES`),
+`tests/i18n-catalog-parity.test.ts` (повнота `en`),
+`packages/i18n/src/__tests__/catalog-integrity.test.ts` (дублікати ключів).
+🔴 І покривають вони **лише два мігровані пакети**. Воронка покупки —
+`checkout-ui`, `profile-ui`, `catalog-ui`, `reviews-ui`, `cart-ui`,
+`core/hooks/useStock`, `core/hooks/useProductReviews` — і теми досі хардкоджені
+українською (~283 рядки + ~79 у темах). Тому `locale: 'en-US'` дає ЗМІШАНИЙ
+магазин, а не англійський. Борг заведено в роадмапі.
 
 ## Tech Stack
 
