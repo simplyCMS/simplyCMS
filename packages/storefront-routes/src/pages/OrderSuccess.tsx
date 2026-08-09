@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Separator } from '@simplycms/ui/separator';
 import { Skeleton } from '@simplycms/ui/skeleton';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { toast } from '@simplycms/core/hooks/use-toast';
 
@@ -49,18 +50,22 @@ interface OrderDetails {
   }[];
 }
 
-const deliveryLabels: Record<string, string> = {
-  pickup: 'Самовивіз',
-  nova_poshta: 'Нова Пошта',
-  courier: "Кур'єр",
+// Мапи ключів, а не текстів: код способу приходить із БД, тож розкладка
+// «код → ключ каталогу» лишається на рівні модуля, а текст резолвиться під час
+// рендера. Новий код доставки без ключа стане помилкою типізації.
+const deliveryLabels: Record<string, MessageKey> = {
+  pickup: 'checkout.shipping.pickup',
+  nova_poshta: 'checkout.shipping.novaPoshta',
+  courier: 'checkout.shipping.courier',
 };
 
-const paymentLabels: Record<string, string> = {
-  cash: 'Оплата при отриманні',
-  online: 'Онлайн оплата',
+const paymentLabels: Record<string, MessageKey> = {
+  cash: 'checkout.payment.cash',
+  online: 'checkout.payment.online',
 };
 
 export default function OrderSuccess() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
@@ -155,8 +160,8 @@ export default function OrderSuccess() {
       navigator.clipboard.writeText(order.order_number);
       setCopied(true);
       toast({
-        title: 'Скопійовано',
-        description: 'Номер замовлення скопійовано в буфер обміну',
+        title: t('checkout.success.copied'),
+        description: t('checkout.success.copiedHint'),
       });
       setTimeout(() => setCopied(false), 2000);
     }
@@ -183,13 +188,13 @@ export default function OrderSuccess() {
               <Package className="h-10 w-10 text-muted-foreground" />
             </div>
             <h2 className="text-xl font-semibold mb-2">
-              Замовлення не знайдено
+              {t('checkout.success.notFound')}
             </h2>
             <p className="text-muted-foreground mb-6">
-              Можливо, посилання недійсне або термін доступу вичерпано
+              {t('checkout.success.notFoundHint')}
             </p>
             <Button asChild>
-              <Link to="/">На головну</Link>
+              <Link to="/">{t('checkout.success.toHome')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -202,10 +207,10 @@ export default function OrderSuccess() {
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">Замовлення оформлено</span>
+        <span className="text-foreground">{t('checkout.success.title')}</span>
       </nav>
 
       <div className="max-w-2xl mx-auto">
@@ -214,9 +219,11 @@ export default function OrderSuccess() {
           <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Дякуємо за замовлення!</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {t('checkout.success.thanks')}
+          </h1>
           <p className="text-muted-foreground">
-            Ми надіслали підтвердження на {order.email}
+            {t('checkout.success.sentTo')} {order.email}
           </p>
         </div>
 
@@ -226,7 +233,7 @@ export default function OrderSuccess() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Номер замовлення
+                  {t('checkout.success.orderNumber')}
                 </p>
                 <p className="text-2xl font-bold">{order.order_number}</p>
               </div>
@@ -243,7 +250,9 @@ export default function OrderSuccess() {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: order.status?.color || '#gray' }}
               />
-              <span className="text-sm">{order.status?.name || 'Новий'}</span>
+              <span className="text-sm">
+                {order.status?.name || t('common.new')}
+              </span>
               <span className="text-sm text-muted-foreground ml-auto">
                 {formatDate(order.created_at)}
               </span>
@@ -254,7 +263,9 @@ export default function OrderSuccess() {
         {/* Order details */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Деталі замовлення</CardTitle>
+            <CardTitle className="text-lg">
+              {t('checkout.success.details')}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Items */}
@@ -275,7 +286,7 @@ export default function OrderSuccess() {
             <Separator />
 
             <div className="flex justify-between font-semibold text-lg">
-              <span>Разом</span>
+              <span>{t('common.total')}</span>
               <span className="text-primary">{formatPrice(order.total)}</span>
             </div>
           </CardContent>
@@ -286,10 +297,13 @@ export default function OrderSuccess() {
           <CardContent className="pt-6 space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Доставка</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t('cart.summary.shipping')}
+                </p>
                 <p className="font-medium">
-                  {deliveryLabels[order.delivery_method] ||
-                    order.delivery_method}
+                  {deliveryLabels[order.delivery_method]
+                    ? t(deliveryLabels[order.delivery_method])
+                    : order.delivery_method}
                 </p>
                 {order.delivery_city && (
                   <p className="text-sm text-muted-foreground">
@@ -299,9 +313,13 @@ export default function OrderSuccess() {
                 )}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Оплата</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t('checkout.success.payment')}
+                </p>
                 <p className="font-medium">
-                  {paymentLabels[order.payment_method] || order.payment_method}
+                  {paymentLabels[order.payment_method]
+                    ? t(paymentLabels[order.payment_method])
+                    : order.payment_method}
                 </p>
               </div>
             </div>
@@ -309,7 +327,9 @@ export default function OrderSuccess() {
             <Separator />
 
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Отримувач</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                {t('checkout.success.recipient')}
+              </p>
               <p className="font-medium">
                 {order.first_name} {order.last_name}
               </p>
@@ -324,14 +344,14 @@ export default function OrderSuccess() {
           <Button variant="outline" asChild>
             <Link to="/">
               <Home className="h-4 w-4 mr-2" />
-              На головну
+              {t('checkout.success.toHome')}
             </Link>
           </Button>
           {user && (
             <Button asChild>
               <Link to="/profile/orders">
                 <User className="h-4 w-4 mr-2" />
-                Мої замовлення
+                {t('nav.orders')}
               </Link>
             </Button>
           )}

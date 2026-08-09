@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,7 @@ import { Form } from '@simplycms/ui/form';
 import { useCart } from '@simplycms/core/hooks/useCart';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import { CheckoutAuthBlock } from '@simplycms/core/components/checkout/CheckoutAuthBlock';
 import { CheckoutContactForm } from '@simplycms/core/components/checkout/CheckoutContactForm';
@@ -18,91 +19,100 @@ import { CheckoutOrderSummary } from '@simplycms/core/components/checkout/Checko
 import { CheckoutRecipientForm } from '@simplycms/core/components/checkout/CheckoutRecipientForm';
 import { PluginSlot } from '@simplycms/plugins';
 
-const checkoutSchema = z
-  .object({
-    firstName: z
-      .string()
-      .min(2, 'Мінімум 2 символи')
-      .max(100, 'Максимум 100 символів'),
-    lastName: z
-      .string()
-      .min(2, 'Мінімум 2 символи')
-      .max(100, 'Максимум 100 символів'),
-    email: z
-      .string()
-      .email('Невірний формат email')
-      .optional()
-      .or(z.literal('')),
-    phone: z.string().optional(),
-    shippingMethodId: z.string().min(1, 'Оберіть спосіб доставки'),
-    deliveryCity: z.string().optional(),
-    deliveryAddress: z.string().optional(),
-    pickupPointId: z.string().optional(),
-    paymentMethod: z.enum(['cash', 'online'], {
-      message: 'Оберіть спосіб оплати',
-    }),
-    notes: z.string().optional(),
-    // Recipient fields
-    hasDifferentRecipient: z.boolean(),
-    savedRecipientId: z.string().optional(),
-    recipientFirstName: z.string().optional(),
-    recipientLastName: z.string().optional(),
-    recipientPhone: z.string().optional(),
-    recipientEmail: z.string().optional(),
-    recipientCity: z.string().optional(),
-    recipientAddress: z.string().optional(),
-    recipientNotes: z.string().optional(),
-    saveRecipient: z.boolean(),
-    // Address fields
-    savedAddressId: z.string().optional(),
-    saveAddress: z.boolean(),
-  })
-  .refine(
-    (data) => {
-      // Require at least email OR phone
-      const hasEmail = data.email && data.email.length > 0;
-      const hasPhone = data.phone && data.phone.length >= 10;
-      return hasEmail || hasPhone;
-    },
-    {
-      message: "Вкажіть email або телефон для зв'язку",
-      path: ['phone'],
-    },
-  )
-  .refine(
-    (data) => {
-      // If different recipient is selected, require recipient details
-      if (data.hasDifferentRecipient) {
-        return (
-          data.recipientFirstName &&
-          data.recipientFirstName.length >= 2 &&
-          data.recipientLastName &&
-          data.recipientLastName.length >= 2 &&
-          data.recipientPhone &&
-          data.recipientPhone.length >= 10 &&
-          data.recipientCity &&
-          data.recipientCity.length >= 2 &&
-          data.recipientAddress &&
-          data.recipientAddress.length >= 5
-        );
-      }
-      return true;
-    },
-    {
-      message: "Заповніть всі обов'язкові поля отримувача",
-      path: ['recipientFirstName'],
-    },
-  );
+/**
+ * Фабрика схеми, а не константа модуля: повідомлення валідації беруться з
+ * каталогу, а транслятор доступний лише всередині рендера (`useT`). Схема
+ * мемоїзується по `t`, тож перебудови на кожен рендер немає.
+ */
+const buildCheckoutSchema = (t: Translator) =>
+  z
+    .object({
+      firstName: z
+        .string()
+        .min(2, t('validation.min2'))
+        .max(100, t('validation.max100')),
+      lastName: z
+        .string()
+        .min(2, t('validation.min2'))
+        .max(100, t('validation.max100')),
+      email: z
+        .string()
+        .email(t('validation.emailFormat'))
+        .optional()
+        .or(z.literal('')),
+      phone: z.string().optional(),
+      shippingMethodId: z.string().min(1, t('validation.shippingRequired')),
+      deliveryCity: z.string().optional(),
+      deliveryAddress: z.string().optional(),
+      pickupPointId: z.string().optional(),
+      paymentMethod: z.enum(['cash', 'online'], {
+        message: t('validation.paymentRequired'),
+      }),
+      notes: z.string().optional(),
+      // Recipient fields
+      hasDifferentRecipient: z.boolean(),
+      savedRecipientId: z.string().optional(),
+      recipientFirstName: z.string().optional(),
+      recipientLastName: z.string().optional(),
+      recipientPhone: z.string().optional(),
+      recipientEmail: z.string().optional(),
+      recipientCity: z.string().optional(),
+      recipientAddress: z.string().optional(),
+      recipientNotes: z.string().optional(),
+      saveRecipient: z.boolean(),
+      // Address fields
+      savedAddressId: z.string().optional(),
+      saveAddress: z.boolean(),
+    })
+    .refine(
+      (data) => {
+        // Require at least email OR phone
+        const hasEmail = data.email && data.email.length > 0;
+        const hasPhone = data.phone && data.phone.length >= 10;
+        return hasEmail || hasPhone;
+      },
+      {
+        message: t('validation.contactRequired'),
+        path: ['phone'],
+      },
+    )
+    .refine(
+      (data) => {
+        // If different recipient is selected, require recipient details
+        if (data.hasDifferentRecipient) {
+          return (
+            data.recipientFirstName &&
+            data.recipientFirstName.length >= 2 &&
+            data.recipientLastName &&
+            data.recipientLastName.length >= 2 &&
+            data.recipientPhone &&
+            data.recipientPhone.length >= 10 &&
+            data.recipientCity &&
+            data.recipientCity.length >= 2 &&
+            data.recipientAddress &&
+            data.recipientAddress.length >= 5
+          );
+        }
+        return true;
+      },
+      {
+        message: t('validation.recipientRequired'),
+        path: ['recipientFirstName'],
+      },
+    );
 
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
+type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
 export default function Checkout() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shippingCost, setShippingCost] = useState<number>(0);
+
+  const checkoutSchema = useMemo(() => buildCheckoutSchema(t), [t]);
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -168,8 +178,8 @@ export default function Checkout() {
   const onSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
       toast({
-        title: 'Кошик порожній',
-        description: 'Додайте товари в кошик перед оформленням',
+        title: t('checkout.emptyCart'),
+        description: t('checkout.emptyCartHint'),
         variant: 'destructive',
       });
       return;
@@ -292,8 +302,10 @@ export default function Checkout() {
       clearCart();
 
       toast({
-        title: 'Замовлення оформлено!',
-        description: `Номер замовлення: ${order.order_number}`,
+        title: t('checkout.placed'),
+        description: t('checkout.placedNumber', {
+          number: order.order_number,
+        }),
       });
 
       // Navigate to success page
@@ -312,9 +324,9 @@ export default function Checkout() {
     } catch (error: unknown) {
       console.error('Order creation error:', error);
       toast({
-        title: 'Помилка оформлення',
+        title: t('checkout.failed'),
         description:
-          error instanceof Error ? error.message : 'Спробуйте ще раз',
+          error instanceof Error ? error.message : t('checkout.retry'),
         variant: 'destructive',
       });
     } finally {
@@ -336,14 +348,14 @@ export default function Checkout() {
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link to="/cart" className="hover:text-foreground transition-colors">
-          Кошик
+          {t('cart.title')}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">Оформлення замовлення</span>
+        <span className="text-foreground">{t('checkout.title')}</span>
       </nav>
 
       <div className="flex items-center gap-4 mb-8">
@@ -352,7 +364,7 @@ export default function Checkout() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Оформлення замовлення</h1>
+        <h1 className="text-3xl font-bold">{t('checkout.title')}</h1>
       </div>
 
       <Form {...form}>

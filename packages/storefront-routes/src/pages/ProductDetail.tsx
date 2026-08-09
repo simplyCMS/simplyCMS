@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import { Separator } from '@simplycms/ui/separator';
@@ -63,6 +64,7 @@ export interface ProductDetailPageProps {
 export default function ProductDetailPage({
   product: initialProduct,
 }: ProductDetailPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as {
     sectionSlug?: string;
@@ -385,8 +387,10 @@ export default function ProductDetailPage({
   if (!product) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Товар не знайдено</h1>
-        <Button onClick={() => window.history.back()}>Повернутись назад</Button>
+        <h1 className="text-2xl font-bold mb-4">{t('product.notFound')}</h1>
+        <Button onClick={() => window.history.back()}>
+          {t('product.goBack')}
+        </Button>
       </div>
     );
   }
@@ -460,11 +464,11 @@ export default function ProductDetailPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link to="/catalog" className="hover:text-foreground transition-colors">
-          Каталог
+          {t('catalog.title')}
         </Link>
         {section && (
           <>
@@ -511,11 +515,11 @@ export default function ProductDetailPage({
                     variant="outline"
                     className="border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
                   >
-                    Під замовлення
+                    {t('product.onOrder')}
                   </Badge>
                 )}
                 {!isInStock && stockStatus !== 'on_order' && (
-                  <Badge variant="secondary">Немає в наявності</Badge>
+                  <Badge variant="secondary">{t('product.outOfStock')}</Badge>
                 )}
                 {/* Plugin slot: product badges */}
                 <PluginSlot
@@ -527,7 +531,7 @@ export default function ProductDetailPage({
             </div>
             {sku && (
               <p className="text-sm text-muted-foreground mt-1">
-                Артикул: {sku}
+                {t('product.sku', { sku })}
               </p>
             )}
           </div>
@@ -600,13 +604,13 @@ export default function ProductDetailPage({
                 });
 
                 toast({
-                  title: 'Додано в кошик',
+                  title: t('product.addedToCart'),
                   description: `${product.name}${hasModifications && selectedMod ? ` (${selectedMod.name})` : ''}`,
                 });
               }}
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
-              Додати в кошик
+              {t('product.addToCart')}
             </Button>
             <Button size="lg" variant="outline">
               <Heart className="h-5 w-5" />
@@ -629,7 +633,7 @@ export default function ProductDetailPage({
             }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
-            Опис
+            {t('product.description')}
           </button>
           <button
             onClick={() =>
@@ -639,7 +643,7 @@ export default function ProductDetailPage({
             }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
-            Характеристики
+            {t('product.characteristics')}
           </button>
           <button
             onClick={() =>
@@ -649,7 +653,7 @@ export default function ProductDetailPage({
             }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
-            Наявність
+            {t('product.availability')}
           </button>
           <button
             onClick={() =>
@@ -659,21 +663,23 @@ export default function ProductDetailPage({
             }
             className="px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent hover:border-primary"
           >
-            Відгуки
+            {t('product.reviews')}
           </button>
         </nav>
       </div>
 
       {/* Description section */}
       <section id="section-description" className="mt-8 scroll-mt-16">
-        <h2 className="text-xl font-semibold mb-4">Опис</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {t('product.description')}
+        </h2>
         {product.description ? (
           <div
             className="prose prose-sm max-w-none dark:prose-invert"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
         ) : (
-          <p className="text-muted-foreground">Опис товару відсутній</p>
+          <p className="text-muted-foreground">{t('product.noDescription')}</p>
         )}
       </section>
 
@@ -681,7 +687,9 @@ export default function ProductDetailPage({
 
       {/* Characteristics section */}
       <section id="section-characteristics" className="scroll-mt-16">
-        <h2 className="text-xl font-semibold mb-4">Характеристики</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {t('product.characteristics')}
+        </h2>
         <ProductCharacteristics propertyValues={propertyValues} />
       </section>
 
@@ -689,7 +697,9 @@ export default function ProductDetailPage({
 
       {/* Availability section */}
       <section id="section-availability" className="scroll-mt-16">
-        <h2 className="text-xl font-semibold mb-4">Наявність на складах</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {t('product.availabilityInStores')}
+        </h2>
         <StockDisplay
           productId={hasModifications ? null : product.id}
           modificationId={hasModifications ? selectedModId : null}
@@ -700,7 +710,7 @@ export default function ProductDetailPage({
 
       {/* Reviews section */}
       <section id="section-reviews" className="scroll-mt-16">
-        <h2 className="text-xl font-semibold mb-4">Відгуки</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('product.reviews')}</h2>
         <ProductReviews productId={product.id} />
       </section>
 

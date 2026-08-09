@@ -15,9 +15,11 @@ import { messages as nav } from './nav';
 import { messages as breadcrumbs } from './breadcrumbs';
 import { messages as home } from './home';
 import { messages as catalog } from './catalog';
+import { messages as product } from './product';
 import { messages as properties } from './properties';
 import { messages as profile } from './profile';
 import { messages as cart } from './cart';
+import { messages as checkout } from './checkout';
 import { messages as auth } from './auth';
 
 export const messages = {
@@ -27,8 +29,10 @@ export const messages = {
   ...breadcrumbs,
   ...home,
   ...catalog,
+  ...product,
   ...properties,
   ...profile,
   ...cart,
+  ...checkout,
   ...auth,
 } satisfies Record<string, string>;
