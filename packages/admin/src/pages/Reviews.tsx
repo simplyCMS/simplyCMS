@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Badge } from '@simplycms/ui/badge';
 import {
   Select,
@@ -48,10 +49,11 @@ interface ReviewWithMeta {
   profile: ReviewProfile | null;
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'На модерації',
-  approved: 'Затверджено',
-  rejected: 'Відхилено',
+// Мапа КЛЮЧІВ: статус відгуку — enum БД.
+const statusLabels: Record<string, MessageKey> = {
+  pending: 'admin.reviews.status.pending',
+  approved: 'admin.reviews.status.approved',
+  rejected: 'admin.reviews.status.rejected',
 };
 const statusVariants: Record<
   string,
@@ -63,6 +65,7 @@ const statusVariants: Record<
 };
 
 export default function AdminReviews() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -124,25 +127,31 @@ export default function AdminReviews() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageSquare className="h-6 w-6" /> Відгуки
+            <MessageSquare className="h-6 w-6" /> {t('admin.nav.reviews')}
             {pendingCount > 0 && (
               <Badge variant="destructive">{pendingCount}</Badge>
             )}
           </h1>
-          <p className="text-muted-foreground">Модерація відгуків товарів</p>
+          <p className="text-muted-foreground">{t('admin.reviews.subtitle')}</p>
         </div>
       </div>
 
       <div className="flex gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Фільтр за статусом" />
+            <SelectValue placeholder={t('admin.reviews.statusFilter')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Всі</SelectItem>
-            <SelectItem value="pending">На модерації</SelectItem>
-            <SelectItem value="approved">Затверджені</SelectItem>
-            <SelectItem value="rejected">Відхилені</SelectItem>
+            <SelectItem value="all">{t('admin.reviews.all')}</SelectItem>
+            <SelectItem value="pending">
+              {t('admin.reviews.status.pending')}
+            </SelectItem>
+            <SelectItem value="approved">
+              {t('admin.reviews.approvedPlural')}
+            </SelectItem>
+            <SelectItem value="rejected">
+              {t('admin.reviews.rejectedPlural')}
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -153,7 +162,7 @@ export default function AdminReviews() {
         </div>
       ) : reviews.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">
-          Відгуків не знайдено
+          {t('admin.reviews.empty')}
         </p>
       ) : (
         <Card>
@@ -161,11 +170,11 @@ export default function AdminReviews() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Товар</TableHead>
-                  <TableHead>Автор</TableHead>
-                  <TableHead>Рейтинг</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead>Дата</TableHead>
+                  <TableHead>{t('admin.orders.product')}</TableHead>
+                  <TableHead>{t('common.author')}</TableHead>
+                  <TableHead>{t('admin.reviews.rating')}</TableHead>
+                  <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>{t('common.date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,7 +203,9 @@ export default function AdminReviews() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariants[r.status] || 'outline'}>
-                          {statusLabels[r.status] || r.status}
+                          {statusLabels[r.status]
+                            ? t(statusLabels[r.status])
+                            : r.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">

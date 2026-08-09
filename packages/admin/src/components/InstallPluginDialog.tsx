@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
@@ -24,6 +25,7 @@ interface InstallPluginDialogProps {
 }
 
 export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -75,8 +77,10 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
     },
     onSuccess: () => {
       toast({
-        title: 'Плагін встановлено',
-        description: `Плагін "${formData.displayName}" успішно додано до системи.`,
+        title: t('admin.plugins.installed'),
+        description: t('admin.plugins.installedHint', {
+          name: formData.displayName,
+        }),
       });
       queryClient.invalidateQueries({ queryKey: ['plugins'] });
       setOpen(false);
@@ -90,7 +94,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка встановлення',
+        title: t('admin.plugins.installFailed'),
         description: error.message,
         variant: 'destructive',
       });
@@ -101,8 +105,8 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
     e.preventDefault();
     if (!formData.name || !formData.displayName) {
       toast({
-        title: "Заповніть обов'язкові поля",
-        description: "Назва та відображувана назва обов'язкові",
+        title: t('admin.plugins.requiredFields'),
+        description: t('admin.plugins.requiredFieldsHint'),
         variant: 'destructive',
       });
       return;
@@ -128,17 +132,16 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
         {trigger || (
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Встановити плагін
+            {t('admin.plugins.install')}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Встановлення плагіна</DialogTitle>
+            <DialogTitle>{t('admin.plugins.installTitle')}</DialogTitle>
             <DialogDescription>
-              Додайте новий плагін до системи. Виберіть із зареєстрованих
-              модулів або введіть дані вручну.
+              {t('admin.plugins.installHint')}
             </DialogDescription>
           </DialogHeader>
 
@@ -146,7 +149,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
             {/* Available modules */}
             {availableModules.length > 0 && (
               <div className="space-y-2">
-                <Label>Доступні модулі</Label>
+                <Label>{t('admin.plugins.modules')}</Label>
                 <div className="flex flex-wrap gap-2">
                   {availableModules.map((name) => (
                     <Badge
@@ -160,7 +163,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Натисніть на модуль, щоб заповнити форму автоматично
+                  {t('admin.plugins.pickModuleHint')}
                 </p>
               </div>
             )}
@@ -168,7 +171,8 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Системна назва <span className="text-destructive">*</span>
+                  {t('admin.plugins.systemName')}{' '}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -180,18 +184,18 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Унікальна назва (латиницею, без пробілів)
+                  {t('admin.plugins.systemNameHint')}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="displayName">
-                  Відображувана назва{' '}
+                  {t('admin.plugins.displayName')}{' '}
                   <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="displayName"
-                  placeholder="Мій плагін"
+                  placeholder={t('admin.plugins.namePlaceholder')}
                   value={formData.displayName}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -206,7 +210,7 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="version">Версія</Label>
+                <Label htmlFor="version">{t('admin.plugins.version')}</Label>
                 <Input
                   id="version"
                   placeholder="1.0.0"
@@ -221,10 +225,10 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="author">Автор</Label>
+                <Label htmlFor="author">{t('common.author')}</Label>
                 <Input
                   id="author"
-                  placeholder="Ваше ім'я"
+                  placeholder={t('admin.plugins.authorPlaceholder')}
                   value={formData.author}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, author: e.target.value }))
@@ -234,10 +238,10 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Опис</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea
                 id="description"
-                placeholder="Короткий опис функціональності плагіна..."
+                placeholder={t('admin.plugins.descriptionPlaceholder')}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -252,9 +256,9 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
             {formData.name && !registeredModules.has(formData.name) && (
               <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  ⚠️ Модуль "{formData.name}" не знайдено в системі. Плагін буде
-                  зареєстровано, але для його роботи потрібно додати код модуля
-                  до проєкту.
+                  {t('admin.plugins.unknownModuleWarning', {
+                    name: formData.name,
+                  })}
                 </p>
               </div>
             )}
@@ -266,13 +270,13 @@ export function InstallPluginDialog({ trigger }: InstallPluginDialogProps) {
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Скасувати
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={installMutation.isPending}>
               {installMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Встановити
+              {t('admin.plugins.installAction')}
             </Button>
           </DialogFooter>
         </form>

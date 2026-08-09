@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
@@ -27,6 +28,7 @@ import { uk } from 'date-fns/locale';
 import { useState } from 'react';
 
 export default function AdminReviewDetail() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { reviewId } = useParams({ strict: false }) as { reviewId: string };
   const navigate = useNavigate();
@@ -86,7 +88,7 @@ export default function AdminReviewDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-review', reviewId] });
       queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
-      toast({ title: 'Статус оновлено' });
+      toast({ title: t('common.statusUpdated') });
     },
   });
 
@@ -117,7 +119,7 @@ export default function AdminReviewDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
-      toast({ title: 'Відгук видалено' });
+      toast({ title: t('admin.reviews.deleted') });
       navigate({ to: adminPath('reviews') });
     },
   });
@@ -131,7 +133,7 @@ export default function AdminReviewDetail() {
   }
 
   if (!review) {
-    return <p>Відгук не знайдено</p>;
+    return <p>{t('admin.reviews.notFound')}</p>;
   }
 
   const authorName = review.profile
@@ -149,10 +151,11 @@ export default function AdminReviewDetail() {
         .toUpperCase() || 'U'
     : 'U';
 
-  const statusLabels: Record<string, string> = {
-    pending: 'На модерації',
-    approved: 'Затверджено',
-    rejected: 'Відхилено',
+  // Мапа КЛЮЧІВ: статус відгуку — enum БД.
+  const statusLabels: Record<string, MessageKey> = {
+    pending: 'admin.reviews.status.pending',
+    approved: 'admin.reviews.status.approved',
+    rejected: 'admin.reviews.status.rejected',
   };
   const statusVariants: Record<
     string,
@@ -169,9 +172,11 @@ export default function AdminReviewDetail() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">Деталі відгуку</h1>
+        <h1 className="text-2xl font-bold">{t('admin.reviews.details')}</h1>
         <Badge variant={statusVariants[review.status] || 'outline'}>
-          {statusLabels[review.status] || review.status}
+          {statusLabels[review.status]
+            ? t(statusLabels[review.status])
+            : review.status}
         </Badge>
       </div>
 
@@ -180,7 +185,7 @@ export default function AdminReviewDetail() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">
-              Товар
+              {t('admin.orders.product')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -203,7 +208,7 @@ export default function AdminReviewDetail() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">
-              Автор
+              {t('common.author')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -256,7 +261,7 @@ export default function AdminReviewDetail() {
                 >
                   <img
                     src={url}
-                    alt={`Фото ${i + 1}`}
+                    alt={t('admin.reviews.photo', { index: i + 1 })}
                     className="absolute inset-0 w-full h-full object-cover rounded-lg border hover:opacity-80 transition-opacity"
                     loading="lazy"
                     decoding="async"
@@ -272,11 +277,11 @@ export default function AdminReviewDetail() {
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="space-y-2">
-            <Label>Коментар адміна</Label>
+            <Label>{t('admin.reviews.adminComment')}</Label>
             <Textarea
               value={adminComment}
               onChange={(e) => setAdminComment(e.target.value)}
-              placeholder="Причина відхилення або коментар..."
+              placeholder={t('admin.reviews.adminCommentPlaceholder')}
             />
           </div>
 
@@ -291,7 +296,7 @@ export default function AdminReviewDetail() {
                 }
                 disabled={updateStatus.isPending}
               >
-                <Check className="h-4 w-4 mr-1" /> Затвердити
+                <Check className="h-4 w-4 mr-1" /> {t('admin.reviews.approve')}
               </Button>
             )}
             {review.status !== 'rejected' && (
@@ -305,26 +310,28 @@ export default function AdminReviewDetail() {
                 }
                 disabled={updateStatus.isPending}
               >
-                <X className="h-4 w-4 mr-1" /> Відхилити
+                <X className="h-4 w-4 mr-1" /> {t('admin.reviews.reject')}
               </Button>
             )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
-                  <Trash2 className="h-4 w-4 mr-1" /> Видалити
+                  <Trash2 className="h-4 w-4 mr-1" /> {t('common.delete')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Видалити відгук?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t('admin.reviews.deleteTitle')}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Відгук та всі його зображення будуть видалені назавжди.
+                    {t('admin.reviews.deleteText')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={() => deleteReview.mutate()}>
-                    Видалити
+                    {t('common.delete')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -334,7 +341,7 @@ export default function AdminReviewDetail() {
           {review.admin_comment && (
             <div className="bg-muted rounded-lg p-3">
               <p className="text-sm text-muted-foreground">
-                Попередній коментар:
+                {t('admin.reviews.previousComment')}
               </p>
               <p className="text-sm">{review.admin_comment}</p>
             </div>

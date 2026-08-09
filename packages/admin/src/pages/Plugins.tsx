@@ -16,6 +16,7 @@ import { ArrowLeft, Puzzle, Settings, Trash2 } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import { getRegisteredPluginModules } from '@simplycms/plugins';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import {
   parsePlugin,
   type ParsedPlugin,
@@ -36,6 +37,7 @@ import { InstallPluginDialog } from '../components/InstallPluginDialog';
 import { usePluginToggle, PLUGINS_QUERY_KEY } from '../hooks/usePluginToggle';
 
 export default function Plugins() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,15 +69,15 @@ export default function Plugins() {
     },
     onSuccess: (_success, name) => {
       toast({
-        title: 'Плагін видалено',
-        description: `Плагін "${name}" успішно видалено.`,
+        title: t('admin.plugins.deleted'),
+        description: t('admin.plugins.deletedHint', { name }),
       });
       queryClient.invalidateQueries({ queryKey: PLUGINS_QUERY_KEY });
     },
     onError: () => {
       toast({
-        title: 'Помилка',
-        description: 'Не вдалося видалити плагін.',
+        title: t('common.error'),
+        description: t('admin.plugins.deleteFailed'),
         variant: 'destructive',
       });
     },
@@ -91,9 +93,9 @@ export default function Plugins() {
             </Button>
           </NavLink>
           <div>
-            <h1 className="text-2xl font-bold">Розширення</h1>
+            <h1 className="text-2xl font-bold">{t('admin.nav.plugins')}</h1>
             <p className="text-muted-foreground">
-              Керування плагінами та модулями системи
+              {t('admin.plugins.subtitle')}
             </p>
           </div>
         </div>
@@ -119,11 +121,10 @@ export default function Plugins() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Puzzle className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              Немає встановлених плагінів
+              {t('admin.plugins.empty')}
             </h3>
             <p className="text-muted-foreground text-center max-w-md">
-              Плагіни дозволяють розширювати функціональність системи.
-              Встановіть плагін, щоб додати нові можливості.
+              {t('admin.plugins.emptyHint')}
             </p>
           </CardContent>
         </Card>
@@ -146,7 +147,7 @@ export default function Plugins() {
                         {plugin.display_name}
                       </CardTitle>
                       <CardDescription>
-                        {plugin.description || 'Без опису'}
+                        {plugin.description || t('admin.plugins.noDescription')}
                       </CardDescription>
                     </div>
                     <Switch
@@ -168,16 +169,20 @@ export default function Plugins() {
                       <Badge variant="secondary">{plugin.author}</Badge>
                     )}
                     {!hasModule && (
-                      <Badge variant="destructive">Модуль не знайдено</Badge>
+                      <Badge variant="destructive">
+                        {t('admin.plugins.moduleMissing')}
+                      </Badge>
                     )}
                     {plugin.is_active && (
-                      <Badge variant="default">Активний</Badge>
+                      <Badge variant="default">{t('common.activeM')}</Badge>
                     )}
                   </div>
 
                   {plugin.hooks.length > 0 && (
                     <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Хуки:</span>{' '}
+                      <span className="font-medium">
+                        {t('admin.plugins.hooks')}
+                      </span>{' '}
                       {plugin.hooks.map((h) => h.name).join(', ')}
                     </div>
                   )}
@@ -189,7 +194,7 @@ export default function Plugins() {
                     >
                       <Button variant="outline" size="sm" className="w-full">
                         <Settings className="h-4 w-4 mr-2" />
-                        Налаштування
+                        {t('admin.nav.settings')}
                       </Button>
                     </NavLink>
 
@@ -201,20 +206,25 @@ export default function Plugins() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Видалити плагін?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            {t('admin.plugins.deleteTitle')}
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Плагін "{plugin.display_name}" буде видалено. Цю дію
-                            неможливо скасувати.
+                            {t('admin.plugins.deleteText', {
+                              name: plugin.display_name,
+                            })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                          <AlertDialogCancel>
+                            {t('common.cancel')}
+                          </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() =>
                               uninstallMutation.mutate(plugin.name)
                             }
                           >
-                            Видалити
+                            {t('common.delete')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -229,16 +239,13 @@ export default function Plugins() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Доступні модулі</CardTitle>
-          <CardDescription>
-            Зареєстровані модулі плагінів у системі
-          </CardDescription>
+          <CardTitle>{t('admin.plugins.modules')}</CardTitle>
+          <CardDescription>{t('admin.plugins.modulesHint')}</CardDescription>
         </CardHeader>
         <CardContent>
           {registeredModules.size === 0 ? (
             <p className="text-muted-foreground">
-              Немає зареєстрованих модулів. Модулі реєструються при завантаженні
-              застосунку.
+              {t('admin.plugins.modulesEmpty')}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
