@@ -1,4 +1,4 @@
-import type { messages as ukMessages } from './catalogs/uk';
+import type { messages as ukMessages } from './catalogs/uk/index';
 
 /** Підтримувані локалі ядра. */
 export type Locale = 'uk' | 'en';
