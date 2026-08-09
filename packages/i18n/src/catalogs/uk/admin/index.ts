@@ -13,6 +13,7 @@ import { messages as plugins } from './plugins';
 import { messages as prices } from './prices';
 import { messages as properties } from './properties';
 import { messages as sections } from './sections';
+import { messages as shipping } from './shipping';
 
 export const messages = {
   ...common,
@@ -22,4 +23,5 @@ export const messages = {
   ...prices,
   ...properties,
   ...sections,
+  ...shipping,
 } satisfies Record<string, string>;

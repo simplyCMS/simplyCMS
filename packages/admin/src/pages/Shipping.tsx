@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Button } from '@simplycms/ui/button';
 import { Truck, MapPin, Map, Building, ArrowRight } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { adminPath } from '../lib/adminLinks';
 
 export default function Shipping() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { data: methods, isLoading: methodsLoading } = useQuery({
     queryKey: ['shipping-methods'],
@@ -52,9 +54,9 @@ export default function Shipping() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Доставка</h1>
+        <h1 className="text-3xl font-bold">{t('cart.summary.shipping')}</h1>
         <p className="text-muted-foreground mt-1">
-          Управління службами доставки, зонами та точками самовивозу
+          {t('admin.shipping.subtitle')}
         </p>
       </div>
 
@@ -63,7 +65,7 @@ export default function Shipping() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Служби доставки
+              {t('admin.nav.shippingMethods')}
             </CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -74,26 +76,7 @@ export default function Shipping() {
               <>
                 <div className="text-2xl font-bold">{activeMethods}</div>
                 <p className="text-xs text-muted-foreground">
-                  активних з {methods?.length || 0}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Зони доставки</CardTitle>
-            <Map className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {zonesLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{activeZones}</div>
-                <p className="text-xs text-muted-foreground">
-                  активних з {zones?.length || 0}
+                  {t('admin.shipping.activeOf')} {methods?.length || 0}
                 </p>
               </>
             )}
@@ -103,7 +86,28 @@ export default function Shipping() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Точки самовивозу
+              {t('admin.nav.shippingZones')}
+            </CardTitle>
+            <Map className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {zonesLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{activeZones}</div>
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.shipping.activeOf')} {zones?.length || 0}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t('admin.nav.pickupPoints')}
             </CardTitle>
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -114,7 +118,7 @@ export default function Shipping() {
               <>
                 <div className="text-2xl font-bold">{activePoints}</div>
                 <p className="text-xs text-muted-foreground">
-                  активних з {pickupPoints?.length || 0}
+                  {t('admin.shipping.activeOf')} {pickupPoints?.length || 0}
                 </p>
               </>
             )}
@@ -129,16 +133,15 @@ export default function Shipping() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Служби доставки
+                {t('admin.nav.shippingMethods')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Налаштуйте способи доставки: самовивіз, кур'єр, плагіни
-                перевізників
+                {t('admin.shipping.methodsHint')}
               </p>
               <Button variant="ghost" size="sm" className="gap-1">
-                Перейти <ArrowRight className="h-4 w-4" />
+                {t('admin.shipping.go')} <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
@@ -149,15 +152,15 @@ export default function Shipping() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Map className="h-5 w-5" />
-                Зони доставки
+                {t('admin.nav.shippingZones')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Створіть географічні зони з різними тарифами доставки
+                {t('admin.shipping.zonesHint')}
               </p>
               <Button variant="ghost" size="sm" className="gap-1">
-                Перейти <ArrowRight className="h-4 w-4" />
+                {t('admin.shipping.go')} <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
@@ -168,15 +171,15 @@ export default function Shipping() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Точки самовивозу
+                {t('admin.nav.pickupPoints')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Додайте адреси магазинів та пунктів видачі замовлень
+                {t('admin.shipping.pointsHint')}
               </p>
               <Button variant="ghost" size="sm" className="gap-1">
-                Перейти <ArrowRight className="h-4 w-4" />
+                {t('admin.shipping.go')} <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
@@ -187,15 +190,15 @@ export default function Shipping() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Локації
+                {t('admin.shipping.locations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Довідник країн, областей та міст для зон доставки
+                {t('admin.shipping.locationsHint')}
               </p>
               <Button variant="ghost" size="sm" className="gap-1">
-                Перейти <ArrowRight className="h-4 w-4" />
+                {t('admin.shipping.go')} <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>

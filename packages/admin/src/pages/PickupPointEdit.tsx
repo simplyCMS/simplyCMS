@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
@@ -5,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Badge } from '@simplycms/ui/badge';
@@ -34,19 +36,22 @@ import {
   ShippingZone,
 } from '@simplycms/core/lib/shipping/types';
 
-const formSchema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  city: z.string().min(1, "Місто обов'язкове"),
-  address: z.string().min(1, "Адреса обов'язкова"),
-  phone: z.string().optional(),
-  zone_id: z.string().optional(),
-  is_active: z.boolean(),
-  sort_order: z.number().int().min(0),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildFormSchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    city: z.string().min(1, t('validation.cityRequired')),
+    address: z.string().min(1, t('validation.addressRequired')),
+    phone: z.string().optional(),
+    zone_id: z.string().optional(),
+    is_active: z.boolean(),
+    sort_order: z.number().int().min(0),
+  });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 export default function PickupPointEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { pointId } = useParams({ strict: false }) as { pointId: string };
   const navigate = useNavigate();
@@ -94,6 +99,8 @@ export default function PickupPointEdit() {
     },
   });
 
+  const formSchema = useMemo(() => buildFormSchema(t), [t]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -120,7 +127,8 @@ export default function PickupPointEdit() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!pickupMethod) throw new Error('Метод самовивозу не знайдено');
+      if (!pickupMethod)
+        throw new Error(t('admin.shipping.points.methodMissing'));
 
       const payload = {
         method_id: pickupMethod.id,
@@ -151,11 +159,13 @@ export default function PickupPointEdit() {
       if (!isNew) {
         queryClient.invalidateQueries({ queryKey: ['pickup-point', pointId] });
       }
-      toast.success(isNew ? 'Точку створено' : 'Зміни збережено');
+      toast.success(
+        isNew ? t('admin.shipping.points.created') : t('common.changesSaved'),
+      );
       navigate({ to: adminPath('shipping/pickup-points') });
     },
     onError: (error: Error) => {
-      toast.error(`Помилка: ${error.message}`);
+      toast.error(t('common.errorWithMessage', { message: error.message }));
     },
   });
 
@@ -180,21 +190,21 @@ export default function PickupPointEdit() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold">
-              {isNew ? 'Нова точка самовивозу' : point?.name}
+              {isNew ? t('admin.shipping.points.new') : point?.name}
             </h1>
             {point?.is_system && (
               <Badge variant="secondary" className="gap-1">
                 <Shield className="h-3 w-3" />
-                Системна
+                {t('admin.shipping.points.system')}
               </Badge>
             )}
           </div>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? 'Додайте нову адресу для самовивозу'
+              ? t('admin.shipping.points.newSubtitle')
               : point?.is_system
-                ? 'Системна точка — не може бути видалена'
-                : 'Редагування точки самовивозу'}
+                ? t('admin.shipping.points.systemLocked')
+                : t('admin.shipping.points.editSubtitle')}
           </p>
         </div>
       </div>
@@ -205,7 +215,7 @@ export default function PickupPointEdit() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Інформація про точку</CardTitle>
+                  <CardTitle>{t('admin.shipping.points.info')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -213,9 +223,14 @@ export default function PickupPointEdit() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Назва</FormLabel>
+                        <FormLabel>{t('common.name')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Головний офіс" {...field} />
+                          <Input
+                            placeholder={t(
+                              'admin.shipping.points.namePlaceholder',
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -228,9 +243,14 @@ export default function PickupPointEdit() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Місто</FormLabel>
+                          <FormLabel>{t('common.city')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="Київ" {...field} />
+                            <Input
+                              placeholder={t(
+                                'admin.shipping.points.cityPlaceholder',
+                              )}
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -242,7 +262,7 @@ export default function PickupPointEdit() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Телефон</FormLabel>
+                          <FormLabel>{t('common.phone')}</FormLabel>
                           <FormControl>
                             <Input placeholder="+380 44 123 45 67" {...field} />
                           </FormControl>
@@ -257,9 +277,14 @@ export default function PickupPointEdit() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Адреса</FormLabel>
+                        <FormLabel>{t('common.address')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="вул. Хрещатик, 1" {...field} />
+                          <Input
+                            placeholder={t(
+                              'admin.shipping.points.addressPlaceholder',
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -272,7 +297,9 @@ export default function PickupPointEdit() {
                       name="zone_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Зона доставки</FormLabel>
+                          <FormLabel>
+                            {t('admin.shipping.points.zoneLabel')}
+                          </FormLabel>
                           <Select
                             onValueChange={(val) =>
                               field.onChange(val === 'none' ? '' : val)
@@ -281,11 +308,17 @@ export default function PickupPointEdit() {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Оберіть зону" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'admin.shipping.points.zonePlaceholder',
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">Без зони</SelectItem>
+                              <SelectItem value="none">
+                                {t('admin.shipping.points.noZone')}
+                              </SelectItem>
                               {zones?.map((zone) => (
                                 <SelectItem key={zone.id} value={zone.id}>
                                   {zone.name}
@@ -294,7 +327,7 @@ export default function PickupPointEdit() {
                             </SelectContent>
                           </Select>
                           <FormDescription>
-                            Прив'язка до географічної зони
+                            {t('admin.shipping.points.zoneHint')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -306,7 +339,7 @@ export default function PickupPointEdit() {
                       name="sort_order"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Порядок</FormLabel>
+                          <FormLabel>{t('common.order')}</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -329,7 +362,7 @@ export default function PickupPointEdit() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Статус</CardTitle>
+                  <CardTitle>{t('common.status')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -338,9 +371,9 @@ export default function PickupPointEdit() {
                     render={({ field }) => (
                       <FormItem className="flex items-center justify-between">
                         <div>
-                          <FormLabel>Активна</FormLabel>
+                          <FormLabel>{t('common.activeF')}</FormLabel>
                           <FormDescription>
-                            Відображати точку на checkout
+                            {t('admin.shipping.points.showAtCheckout')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -365,7 +398,7 @@ export default function PickupPointEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? 'Створити' : 'Зберегти'}
+                    {isNew ? t('common.create') : t('common.save')}
                   </Button>
                 </CardContent>
               </Card>

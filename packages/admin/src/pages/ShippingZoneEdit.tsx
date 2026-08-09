@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
@@ -5,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator, type MessageKey } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Input } from '@simplycms/ui/input';
@@ -45,24 +47,27 @@ import {
 } from '@simplycms/core/lib/shipping/types';
 import { formatShippingCost } from '@simplycms/core/lib/shipping';
 
-const formSchema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  description: z.string().optional(),
-  cities: z.string().optional(),
-  regions: z.string().optional(),
-  is_active: z.boolean(),
-  is_default: z.boolean(),
-  sort_order: z.number().int().min(0),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildFormSchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    description: z.string().optional(),
+    cities: z.string().optional(),
+    regions: z.string().optional(),
+    is_active: z.boolean(),
+    is_default: z.boolean(),
+    sort_order: z.number().int().min(0),
+  });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
-const calculationTypeLabels: Record<ShippingCalculationType, string> = {
-  flat: 'Фіксована ціна',
-  weight: 'За вагою',
-  order_total: 'Відсоток від суми',
-  free_from: 'Безкоштовно від суми',
-  plugin: 'Розрахунок плагіном',
+// Мапа КЛЮЧІВ: тип розрахунку — enum БД, підпис резолвиться в рендері.
+const calculationTypeLabels: Record<ShippingCalculationType, MessageKey> = {
+  flat: 'admin.shipping.rates.calc.flat',
+  weight: 'admin.shipping.rates.calc.weight',
+  order_total: 'admin.shipping.rates.calc.percent',
+  free_from: 'admin.shipping.rates.calc.freeFrom',
+  plugin: 'admin.shipping.rates.calc.plugin',
 };
 
 // Parse comma/newline separated string into array
@@ -81,6 +86,7 @@ function arrayToString(arr: string[] | undefined): string {
 }
 
 export default function ShippingZoneEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { zoneId } = useParams({ strict: false }) as { zoneId: string };
   const navigate = useNavigate();
@@ -129,6 +135,8 @@ export default function ShippingZoneEdit() {
       return data as unknown as ShippingMethod[];
     },
   });
+
+  const formSchema = useMemo(() => buildFormSchema(t), [t]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -181,13 +189,15 @@ export default function ShippingZoneEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
-      toast.success(isNew ? 'Зону створено' : 'Зміни збережено');
+      toast.success(
+        isNew ? t('admin.shipping.zones.created') : t('common.changesSaved'),
+      );
       if (isNew) {
         navigate({ to: adminPath('shipping/zones') });
       }
     },
     onError: (error: Error) => {
-      toast.error(`Помилка: ${error.message}`);
+      toast.error(t('common.errorWithMessage', { message: error.message }));
     },
   });
 
@@ -201,10 +211,10 @@ export default function ShippingZoneEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-rates', zoneId] });
-      toast.success('Тариф видалено');
+      toast.success(t('admin.shipping.rates.deleted'));
     },
     onError: () => {
-      toast.error('Помилка видалення тарифу');
+      toast.error(t('admin.shipping.rates.deleteFailed'));
     },
   });
 
@@ -214,7 +224,7 @@ export default function ShippingZoneEdit() {
         {
           method_id: methodId,
           zone_id: zoneId,
-          name: 'Новий тариф',
+          name: t('admin.shipping.rates.newName'),
           calculation_type: 'flat',
           base_cost: 0,
         },
@@ -223,10 +233,10 @@ export default function ShippingZoneEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-rates', zoneId] });
-      toast.success('Тариф додано');
+      toast.success(t('admin.shipping.rates.added'));
     },
     onError: () => {
-      toast.error('Помилка додавання тарифу');
+      toast.error(t('admin.shipping.rates.addFailed'));
     },
   });
 
@@ -250,12 +260,12 @@ export default function ShippingZoneEdit() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Нова зона доставки' : zone?.name}
+            {isNew ? t('admin.shipping.zones.new') : zone?.name}
           </h1>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? 'Створіть нову географічну зону'
-              : 'Редагування зони та тарифів доставки'}
+              ? t('admin.shipping.zones.newSubtitle')
+              : t('admin.shipping.zones.editSubtitle')}
           </p>
         </div>
       </div>
@@ -266,7 +276,7 @@ export default function ShippingZoneEdit() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Основна інформація</CardTitle>
+                  <CardTitle>{t('common.basicInfo')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -274,9 +284,14 @@ export default function ShippingZoneEdit() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Назва</FormLabel>
+                        <FormLabel>{t('common.name')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Київ і передмістя" {...field} />
+                          <Input
+                            placeholder={t(
+                              'admin.shipping.zones.namePlaceholder',
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -288,10 +303,12 @@ export default function ShippingZoneEdit() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Опис</FormLabel>
+                        <FormLabel>{t('common.description')}</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Зона доставки для Києва та околиць"
+                            placeholder={t(
+                              'admin.shipping.zones.descriptionPlaceholder',
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -305,7 +322,9 @@ export default function ShippingZoneEdit() {
                     name="sort_order"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Пріоритет (порядок)</FormLabel>
+                        <FormLabel>
+                          {t('admin.shipping.zones.priority')}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -317,7 +336,7 @@ export default function ShippingZoneEdit() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Менший номер = вищий пріоритет при визначенні зони
+                          {t('admin.shipping.zones.priorityHint')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -329,7 +348,7 @@ export default function ShippingZoneEdit() {
               {/* Cities and Regions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Географія</CardTitle>
+                  <CardTitle>{t('admin.shipping.zones.geography')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -337,17 +356,20 @@ export default function ShippingZoneEdit() {
                     name="cities"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Міста</FormLabel>
+                        <FormLabel>
+                          {t('admin.shipping.zones.cities')}
+                        </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Київ, Бровари, Вишневе, Ірпінь"
+                            placeholder={t(
+                              'admin.shipping.zones.citiesPlaceholder',
+                            )}
                             className="min-h-[100px]"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Введіть назви міст через кому або кожне місто з нового
-                          рядка
+                          {t('admin.shipping.zones.citiesHint')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -359,16 +381,20 @@ export default function ShippingZoneEdit() {
                     name="regions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Регіони (опціонально)</FormLabel>
+                        <FormLabel>
+                          {t('admin.shipping.zones.regions')}
+                        </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Київська область"
+                            placeholder={t(
+                              'admin.shipping.zones.regionsPlaceholder',
+                            )}
                             className="min-h-[60px]"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Якщо потрібно, вкажіть регіони/області
+                          {t('admin.shipping.zones.regionsHint')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -381,13 +407,15 @@ export default function ShippingZoneEdit() {
               {!isNew && (
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Тарифи доставки</CardTitle>
+                    <CardTitle>{t('admin.shipping.rates.title')}</CardTitle>
                     <Select
                       onValueChange={(methodId) => addRate.mutate(methodId)}
                     >
                       <SelectTrigger className="w-[200px]">
                         <Plus className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Додати тариф" />
+                        <SelectValue
+                          placeholder={t('admin.shipping.rates.add')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {methods?.map((method) => (
@@ -401,16 +429,21 @@ export default function ShippingZoneEdit() {
                   <CardContent>
                     {!rates?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        Тарифи не налаштовано. Додайте тариф для кожного способу
-                        доставки.
+                        {t('admin.shipping.rates.empty')}
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Спосіб / Назва</TableHead>
-                            <TableHead>Тип розрахунку</TableHead>
-                            <TableHead className="text-right">Ціна</TableHead>
+                            <TableHead>
+                              {t('admin.shipping.rates.methodOrName')}
+                            </TableHead>
+                            <TableHead>
+                              {t('admin.shipping.rates.calcType')}
+                            </TableHead>
+                            <TableHead className="text-right">
+                              {t('common.price')}
+                            </TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -429,7 +462,11 @@ export default function ShippingZoneEdit() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline">
-                                  {calculationTypeLabels[rate.calculation_type]}
+                                  {t(
+                                    calculationTypeLabels[
+                                      rate.calculation_type
+                                    ],
+                                  )}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right font-medium">
@@ -440,7 +477,11 @@ export default function ShippingZoneEdit() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    if (confirm('Видалити цей тариф?')) {
+                                    if (
+                                      confirm(
+                                        t('admin.shipping.rates.confirmDelete'),
+                                      )
+                                    ) {
                                       deleteRate.mutate(rate.id);
                                     }
                                   }}
@@ -461,7 +502,7 @@ export default function ShippingZoneEdit() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Статус</CardTitle>
+                  <CardTitle>{t('common.status')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -470,9 +511,9 @@ export default function ShippingZoneEdit() {
                     render={({ field }) => (
                       <FormItem className="flex items-center justify-between">
                         <div>
-                          <FormLabel>Активна</FormLabel>
+                          <FormLabel>{t('common.activeF')}</FormLabel>
                           <FormDescription>
-                            Використовувати зону для розрахунку
+                            {t('admin.shipping.zones.useForCalc')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -491,9 +532,9 @@ export default function ShippingZoneEdit() {
                     render={({ field }) => (
                       <FormItem className="flex items-center justify-between">
                         <div>
-                          <FormLabel>За замовчуванням</FormLabel>
+                          <FormLabel>{t('common.byDefault')}</FormLabel>
                           <FormDescription>
-                            Застосовується, якщо місто не знайдено
+                            {t('admin.shipping.zones.defaultHint')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -518,7 +559,7 @@ export default function ShippingZoneEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? 'Створити' : 'Зберегти'}
+                    {isNew ? t('common.create') : t('common.save')}
                   </Button>
                 </CardContent>
               </Card>
