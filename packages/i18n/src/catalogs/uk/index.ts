@@ -13,6 +13,10 @@ import { messages as common } from './common';
 import { messages as validation } from './validation';
 import { messages as nav } from './nav';
 import { messages as breadcrumbs } from './breadcrumbs';
+import { messages as home } from './home';
+import { messages as catalog } from './catalog';
+import { messages as properties } from './properties';
+import { messages as profile } from './profile';
 import { messages as cart } from './cart';
 import { messages as auth } from './auth';
 
@@ -21,6 +25,10 @@ export const messages = {
   ...validation,
   ...nav,
   ...breadcrumbs,
+  ...home,
+  ...catalog,
+  ...properties,
+  ...profile,
   ...cart,
   ...auth,
 } satisfies Record<string, string>;
