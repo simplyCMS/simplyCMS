@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -28,24 +28,27 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@simplycms/ui/tabs';
 import { Badge } from '@simplycms/ui/badge';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import type { Json } from '@simplycms/supabase';
 import { adminPath } from '../lib/adminLinks';
 
-const schema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  description: z.string().optional(),
-  group_id: z.string().min(1, 'Оберіть групу'),
-  price_type_id: z.string().min(1, 'Оберіть вид ціни'),
-  discount_type: z.enum(['percent', 'fixed_amount', 'fixed_price']),
-  discount_value: z.number().positive('Значення має бути додатнім'),
-  priority: z.number().int(),
-  is_active: z.boolean(),
-  starts_at: z.string().optional(),
-  ends_at: z.string().optional(),
-});
+// Фабрика схеми: повідомлення з каталогу.
+const buildSchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    description: z.string().optional(),
+    group_id: z.string().min(1, t('validation.groupRequired')),
+    price_type_id: z.string().min(1, t('validation.priceTypeRequired')),
+    discount_type: z.enum(['percent', 'fixed_amount', 'fixed_price']),
+    discount_value: z.number().positive(t('validation.positive')),
+    priority: z.number().int(),
+    is_active: z.boolean(),
+    starts_at: z.string().optional(),
+    ends_at: z.string().optional(),
+  });
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<ReturnType<typeof buildSchema>>;
 
 interface TargetRow {
   id?: string;
@@ -62,6 +65,7 @@ interface ConditionRow {
 }
 
 export default function DiscountEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { discountId } = useParams({ strict: false }) as { discountId: string };
   const search = useSearch({ strict: false }) as Record<string, string>;
@@ -71,6 +75,8 @@ export default function DiscountEdit() {
 
   const [targets, setTargets] = useState<TargetRow[]>([]);
   const [conditions, setConditions] = useState<ConditionRow[]>([]);
+
+  const schema = useMemo(() => buildSchema(t), [t]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -232,11 +238,11 @@ export default function DiscountEdit() {
       await supabase.from('discount_targets').delete().eq('discount_id', id!);
       if (targets.length > 0) {
         const { error } = await supabase.from('discount_targets').insert(
-          targets.map((t) => ({
+          targets.map((target) => ({
             discount_id: id!,
-            target_type: t.target_type as
+            target_type: target.target_type as
               'all' | 'product' | 'section' | 'modification',
-            target_id: t.target_id,
+            target_id: target.target_id,
           })),
         );
         if (error) throw error;
@@ -261,12 +267,16 @@ export default function DiscountEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
-      toast({ title: isNew ? 'Скидку створено' : 'Скидку оновлено' });
+      toast({
+        title: isNew
+          ? t('admin.discounts.created')
+          : t('admin.discounts.updated'),
+      });
       navigate({ to: adminPath('discounts') });
     },
     onError: (err: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: err.message,
         variant: 'destructive',
       });
@@ -297,7 +307,7 @@ export default function DiscountEdit() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">
-          {isNew ? 'Нова скидка' : 'Редагування скидки'}
+          {isNew ? t('admin.discounts.new') : t('admin.discounts.editTitle')}
         </h1>
       </div>
 
@@ -308,10 +318,16 @@ export default function DiscountEdit() {
         >
           <Tabs defaultValue="main">
             <TabsList>
-              <TabsTrigger value="main">Основні</TabsTrigger>
-              <TabsTrigger value="targets">Цілі ({targets.length})</TabsTrigger>
+              <TabsTrigger value="main">
+                {t('admin.discounts.tabMain')}
+              </TabsTrigger>
+              <TabsTrigger value="targets">
+                {t('admin.discounts.tabTargets')}
+                {targets.length})
+              </TabsTrigger>
               <TabsTrigger value="conditions">
-                Умови ({conditions.length})
+                {t('admin.discounts.tabConditions')}
+                {conditions.length})
               </TabsTrigger>
             </TabsList>
 
@@ -323,9 +339,12 @@ export default function DiscountEdit() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Назва</FormLabel>
+                        <FormLabel>{t('common.name')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Знижка 10% для VIP" />
+                          <Input
+                            {...field}
+                            placeholder={t('admin.discounts.namePlaceholder')}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -337,7 +356,7 @@ export default function DiscountEdit() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Опис</FormLabel>
+                        <FormLabel>{t('common.description')}</FormLabel>
                         <FormControl>
                           <Textarea {...field} />
                         </FormControl>
@@ -350,14 +369,16 @@ export default function DiscountEdit() {
                     name="group_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Група</FormLabel>
+                        <FormLabel>{t('admin.discounts.group')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Оберіть" />
+                              <SelectValue
+                                placeholder={t('admin.discounts.pick')}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -378,14 +399,16 @@ export default function DiscountEdit() {
                     name="price_type_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Вид ціни</FormLabel>
+                        <FormLabel>{t('admin.users.priceType')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Оберіть" />
+                              <SelectValue
+                                placeholder={t('admin.discounts.pick')}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -407,7 +430,7 @@ export default function DiscountEdit() {
                       name="discount_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Тип знижки</FormLabel>
+                          <FormLabel>{t('admin.discounts.type')}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -419,13 +442,13 @@ export default function DiscountEdit() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="percent">
-                                Відсоток (%)
+                                {t('admin.discounts.type.percent')}
                               </SelectItem>
                               <SelectItem value="fixed_amount">
-                                Фіксована сума (грн)
+                                {t('admin.discounts.type.fixedAmount')}
                               </SelectItem>
                               <SelectItem value="fixed_price">
-                                Фіксована ціна (= грн)
+                                {t('admin.discounts.type.fixedPrice')}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -438,7 +461,7 @@ export default function DiscountEdit() {
                       name="discount_value"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Значення</FormLabel>
+                          <FormLabel>{t('common.value')}</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -460,7 +483,7 @@ export default function DiscountEdit() {
                     name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Пріоритет</FormLabel>
+                        <FormLabel>{t('common.priority')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -480,7 +503,7 @@ export default function DiscountEdit() {
                       name="starts_at"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Дата початку</FormLabel>
+                          <FormLabel>{t('common.dateFrom')}</FormLabel>
                           <FormControl>
                             <Input type="datetime-local" {...field} />
                           </FormControl>
@@ -492,7 +515,7 @@ export default function DiscountEdit() {
                       name="ends_at"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Дата закінчення</FormLabel>
+                          <FormLabel>{t('common.dateTo')}</FormLabel>
                           <FormControl>
                             <Input type="datetime-local" {...field} />
                           </FormControl>
@@ -512,7 +535,9 @@ export default function DiscountEdit() {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormLabel className="mt-0!">Активна</FormLabel>
+                        <FormLabel className="mt-0!">
+                          {t('common.activeF')}
+                        </FormLabel>
                       </FormItem>
                     )}
                   />
@@ -523,35 +548,36 @@ export default function DiscountEdit() {
             <TabsContent value="targets">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>До чого застосовується</CardTitle>
+                  <CardTitle>{t('admin.discounts.targets')}</CardTitle>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addTarget}
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Додати ціль
+                    <Plus className="h-4 w-4 mr-1" />{' '}
+                    {t('admin.discounts.addTarget')}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {targets.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      Без цілей — застосовується до всіх товарів
+                      {t('admin.discounts.noTargets')}
                     </p>
                   )}
-                  {targets.map((t, idx) => (
+                  {targets.map((target, idx) => (
                     <div
                       key={idx}
                       className="flex items-center gap-3 border rounded-md p-3"
                     >
                       <Select
-                        value={t.target_type}
+                        value={target.target_type}
                         onValueChange={(v) => {
                           const updated = [...targets];
                           updated[idx] = {
-                            ...t,
+                            ...target,
                             target_type: v,
-                            target_id: v === 'all' ? null : t.target_id,
+                            target_id: v === 'all' ? null : target.target_id,
                           };
                           setTargets(updated);
                         }}
@@ -560,26 +586,34 @@ export default function DiscountEdit() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Всі товари</SelectItem>
-                          <SelectItem value="product">Товар</SelectItem>
-                          <SelectItem value="section">Розділ</SelectItem>
+                          <SelectItem value="all">
+                            {t('admin.discounts.allProducts')}
+                          </SelectItem>
+                          <SelectItem value="product">
+                            {t('admin.orders.product')}
+                          </SelectItem>
+                          <SelectItem value="section">
+                            {t('admin.banners.placement.section')}
+                          </SelectItem>
                           <SelectItem value="modification">
-                            Модифікація
+                            {t('admin.discounts.modification')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
 
-                      {t.target_type === 'product' && (
+                      {target.target_type === 'product' && (
                         <Select
-                          value={t.target_id || ''}
+                          value={target.target_id || ''}
                           onValueChange={(v) => {
                             const updated = [...targets];
-                            updated[idx] = { ...t, target_id: v };
+                            updated[idx] = { ...target, target_id: v };
                             setTargets(updated);
                           }}
                         >
                           <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Оберіть товар" />
+                            <SelectValue
+                              placeholder={t('admin.discounts.pickProduct')}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {products.map((p) => (
@@ -591,17 +625,19 @@ export default function DiscountEdit() {
                         </Select>
                       )}
 
-                      {t.target_type === 'section' && (
+                      {target.target_type === 'section' && (
                         <Select
-                          value={t.target_id || ''}
+                          value={target.target_id || ''}
                           onValueChange={(v) => {
                             const updated = [...targets];
-                            updated[idx] = { ...t, target_id: v };
+                            updated[idx] = { ...target, target_id: v };
                             setTargets(updated);
                           }}
                         >
                           <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Оберіть розділ" />
+                            <SelectValue
+                              placeholder={t('admin.discounts.pickSection')}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {sections.map((s) => (
@@ -613,13 +649,16 @@ export default function DiscountEdit() {
                         </Select>
                       )}
 
-                      {t.target_type === 'modification' && (
+                      {target.target_type === 'modification' && (
                         <Input
-                          placeholder="UUID модифікації"
-                          value={t.target_id || ''}
+                          placeholder={t('admin.discounts.modificationUuid')}
+                          value={target.target_id || ''}
                           onChange={(e) => {
                             const updated = [...targets];
-                            updated[idx] = { ...t, target_id: e.target.value };
+                            updated[idx] = {
+                              ...target,
+                              target_id: e.target.value,
+                            };
                             setTargets(updated);
                           }}
                           className="flex-1"
@@ -643,20 +682,21 @@ export default function DiscountEdit() {
             <TabsContent value="conditions">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Умови застосування</CardTitle>
+                  <CardTitle>{t('admin.discounts.conditions')}</CardTitle>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addCondition}
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Додати умову
+                    <Plus className="h-4 w-4 mr-1" />{' '}
+                    {t('admin.users.rules.addCondition')}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {conditions.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      Без умов — застосовується завжди
+                      {t('admin.discounts.noConditions')}
                     </p>
                   )}
                   {conditions.map((c, idx) => (
@@ -687,16 +727,16 @@ export default function DiscountEdit() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="user_category">
-                            Категорія користувача
+                            {t('admin.users.userCategory')}
                           </SelectItem>
                           <SelectItem value="min_quantity">
-                            Мін. кількість
+                            {t('admin.discounts.minQuantity')}
                           </SelectItem>
                           <SelectItem value="min_order_amount">
-                            Мін. сума замовлення
+                            {t('admin.discounts.minTotal')}
                           </SelectItem>
                           <SelectItem value="user_logged_in">
-                            Авторизований
+                            {t('admin.discounts.authenticated')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -788,8 +828,12 @@ export default function DiscountEdit() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="true">Так</SelectItem>
-                            <SelectItem value="false">Ні (гість)</SelectItem>
+                            <SelectItem value="true">
+                              {t('common.yes')}
+                            </SelectItem>
+                            <SelectItem value="false">
+                              {t('admin.discounts.guestNo')}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -811,14 +855,14 @@ export default function DiscountEdit() {
 
           <div className="flex gap-3">
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Збереження...' : 'Зберегти'}
+              {save.isPending ? t('common.saving') : t('common.save')}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate({ to: adminPath('discounts') })}
             >
-              Скасувати
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

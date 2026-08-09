@@ -8,6 +8,7 @@
  */
 import { messages as banners } from './banners';
 import { messages as common } from './common';
+import { messages as discounts } from './discounts';
 import { messages as nav } from './nav';
 import { messages as dashboard } from './dashboard';
 import { messages as orders } from './orders';
@@ -20,10 +21,12 @@ import { messages as settings } from './settings';
 import { messages as shipping } from './shipping';
 import { messages as themes } from './themes';
 import { messages as users } from './users';
+import { messages as validator } from './validator';
 
 export const messages = {
   ...banners,
   ...common,
+  ...discounts,
   ...nav,
   ...dashboard,
   ...orders,
@@ -36,4 +39,5 @@ export const messages = {
   ...shipping,
   ...themes,
   ...users,
+  ...validator,
 } satisfies Record<string, string>;
