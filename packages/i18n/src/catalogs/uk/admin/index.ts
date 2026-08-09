@@ -6,6 +6,7 @@
  * `admin/products.ts` віддає лише `admin.products.*`
  * (`catalog-integrity.test.ts` розбирає й вкладений рівень).
  */
+import { messages as banners } from './banners';
 import { messages as common } from './common';
 import { messages as nav } from './nav';
 import { messages as dashboard } from './dashboard';
@@ -14,8 +15,10 @@ import { messages as prices } from './prices';
 import { messages as properties } from './properties';
 import { messages as sections } from './sections';
 import { messages as shipping } from './shipping';
+import { messages as themes } from './themes';
 
 export const messages = {
+  ...banners,
   ...common,
   ...nav,
   ...dashboard,
@@ -24,4 +27,5 @@ export const messages = {
   ...properties,
   ...sections,
   ...shipping,
+  ...themes,
 } satisfies Record<string, string>;

@@ -16,16 +16,19 @@ import {
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
-const PLACEMENT_LABELS: Record<string, string> = {
-  home: 'Головна',
-  catalog: 'Каталог',
-  section: 'Розділ',
-  blog: 'Блог',
-  global: 'Глобально',
+// Мапа КЛЮЧІВ: код розміщення приходить із БД.
+const PLACEMENT_LABELS: Record<string, MessageKey> = {
+  home: 'admin.banners.placement.home',
+  catalog: 'admin.banners.placement.catalog',
+  section: 'admin.banners.placement.section',
+  blog: 'admin.banners.placement.blog',
+  global: 'admin.banners.placement.global',
 };
 
 export default function Banners() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,7 +53,7 @@ export default function Banners() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
-      toast({ title: 'Банер видалено' });
+      toast({ title: t('admin.banners.deleted') });
     },
   });
 
@@ -96,7 +99,7 @@ export default function Banners() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Банери</h1>
+        <h1 className="text-2xl font-bold">{t('admin.nav.banners')}</h1>
         <Button
           onClick={() =>
             navigate({
@@ -105,7 +108,7 @@ export default function Banners() {
             })
           }
         >
-          <Plus className="h-4 w-4 mr-2" /> Додати банер
+          <Plus className="h-4 w-4 mr-2" /> {t('admin.banners.add')}
         </Button>
       </div>
 
@@ -116,7 +119,7 @@ export default function Banners() {
               className="h-12 w-12 mx-auto mb-4 opacity-30"
               aria-hidden="true"
             />
-            <p>Банерів поки немає</p>
+            <p>{t('admin.banners.empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -142,7 +145,9 @@ export default function Banners() {
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium text-sm truncate">{b.title}</p>
                     <Badge variant="secondary" className="text-xs shrink-0">
-                      {PLACEMENT_LABELS[b.placement] || b.placement}
+                      {PLACEMENT_LABELS[b.placement]
+                        ? t(PLACEMENT_LABELS[b.placement])
+                        : b.placement}
                     </Badge>
                     {hasSchedule(b) && (
                       <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

@@ -112,16 +112,16 @@ export default function ThemeSettings() {
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Налаштування збережено, але кеш вітрини не скинуто',
+          title: t('admin.themes.settingsSavedStale'),
           description: revalidateFailureDescription(t, error),
         });
         return;
       }
 
-      toast({ title: 'Налаштування збережено' });
+      toast({ title: t('common.settingsSaved') });
     },
     onError: () => {
-      toast({ variant: 'destructive', title: 'Помилка збереження' });
+      toast({ variant: 'destructive', title: t('common.saveError') });
     },
   });
 
@@ -141,9 +141,11 @@ export default function ThemeSettings() {
     return (
       <div className="text-center py-12">
         <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Тему не знайдено</h2>
+        <h2 className="text-xl font-semibold mb-2">
+          {t('admin.themes.notFound')}
+        </h2>
         <Button onClick={() => navigate({ to: adminPath('themes') })}>
-          Повернутись
+          {t('admin.themes.back')}
         </Button>
       </div>
     );
@@ -168,18 +170,22 @@ export default function ThemeSettings() {
           disabled={saveMutation.isPending}
         >
           <Save className="h-4 w-4 mr-2" />
-          Зберегти
+          {t('common.save')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Налаштування</CardTitle>
-          <CardDescription>Налаштуйте зовнішній вигляд теми</CardDescription>
+          <CardTitle>{t('admin.nav.settings')}</CardTitle>
+          <CardDescription>
+            {t('admin.themes.settingsSubtitle')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.keys(settingsSchema).length === 0 ? (
-            <p className="text-muted-foreground">Ця тема не має налаштувань</p>
+            <p className="text-muted-foreground">
+              {t('admin.themes.noSettings')}
+            </p>
           ) : (
             Object.entries(settingsSchema).map(([key, setting]) => (
               <div key={key} className="space-y-2">

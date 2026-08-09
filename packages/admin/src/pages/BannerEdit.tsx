@@ -21,6 +21,7 @@ import { ImageUpload } from '../components/ImageUpload';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import type { Json } from '@simplycms/supabase';
 import { adminPath } from '../lib/adminLinks';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
 interface BannerButton {
   text: string;
@@ -52,14 +53,15 @@ interface BannerForm {
   is_active: boolean;
 }
 
-const DAYS = [
-  { value: 1, label: 'Пн' },
-  { value: 2, label: 'Вт' },
-  { value: 3, label: 'Ср' },
-  { value: 4, label: 'Чт' },
-  { value: 5, label: 'Пт' },
-  { value: 6, label: 'Сб' },
-  { value: 0, label: 'Нд' },
+// Мапа КЛЮЧІВ: номер дня тижня фіксований, підпис резолвиться в рендері.
+const DAYS: { value: number; labelKey: MessageKey }[] = [
+  { value: 1, labelKey: 'admin.banners.weekday.mon' },
+  { value: 2, labelKey: 'admin.banners.weekday.tue' },
+  { value: 3, labelKey: 'admin.banners.weekday.wed' },
+  { value: 4, labelKey: 'admin.banners.weekday.thu' },
+  { value: 5, labelKey: 'admin.banners.weekday.fri' },
+  { value: 6, labelKey: 'admin.banners.weekday.sat' },
+  { value: 0, labelKey: 'admin.banners.weekday.sun' },
 ];
 
 const defaultForm: BannerForm = {
@@ -86,6 +88,7 @@ const defaultForm: BannerForm = {
 };
 
 export default function BannerEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { bannerId } = useParams({ strict: false }) as { bannerId: string };
   const navigate = useNavigate();
@@ -191,11 +194,11 @@ export default function BannerEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
-      toast({ title: 'Банер збережено' });
+      toast({ title: t('admin.banners.saved') });
       navigate({ to: adminPath('banners') });
     },
     onError: () => {
-      toast({ variant: 'destructive', title: 'Помилка збереження' });
+      toast({ variant: 'destructive', title: t('common.saveError') });
     },
   });
 
@@ -234,7 +237,7 @@ export default function BannerEdit() {
     update('schedule_days', days);
   };
 
-  if (isLoading) return <div className="p-6">Завантаження...</div>;
+  if (isLoading) return <div className="p-6">{t('common.loading')}</div>;
 
   return (
     <div className="space-y-6">
@@ -247,7 +250,7 @@ export default function BannerEdit() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">
-          {isNew ? 'Новий банер' : 'Редагування банера'}
+          {isNew ? t('admin.banners.new') : t('admin.banners.editTitle')}
         </h1>
       </div>
 
@@ -256,25 +259,25 @@ export default function BannerEdit() {
           {/* Main info */}
           <Card>
             <CardHeader>
-              <CardTitle>Основне</CardTitle>
+              <CardTitle>{t('admin.banners.main')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Заголовок *</Label>
+                <Label>{t('admin.banners.titleField')}</Label>
                 <Input
                   value={form.title}
                   onChange={(e) => update('title', e.target.value)}
                 />
               </div>
               <div>
-                <Label>Підзаголовок</Label>
+                <Label>{t('admin.banners.subtitle')}</Label>
                 <Input
                   value={form.subtitle}
                   onChange={(e) => update('subtitle', e.target.value)}
                 />
               </div>
               <div>
-                <Label>Зображення *</Label>
+                <Label>{t('admin.banners.imageField')}</Label>
                 <ImageUpload
                   images={form.image_url ? [form.image_url] : []}
                   onImagesChange={(imgs) => update('image_url', imgs[0] || '')}
@@ -284,7 +287,7 @@ export default function BannerEdit() {
                 />
               </div>
               <div>
-                <Label>Десктоп зображення (опціонально)</Label>
+                <Label>{t('admin.banners.imageDesktop')}</Label>
                 <ImageUpload
                   images={
                     form.desktop_image_url ? [form.desktop_image_url] : []
@@ -298,7 +301,7 @@ export default function BannerEdit() {
                 />
               </div>
               <div>
-                <Label>Мобільне зображення (опціонально)</Label>
+                <Label>{t('admin.banners.imageMobile')}</Label>
                 <ImageUpload
                   images={form.mobile_image_url ? [form.mobile_image_url] : []}
                   onImagesChange={(imgs) =>
@@ -311,7 +314,7 @@ export default function BannerEdit() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Позиція тексту</Label>
+                  <Label>{t('admin.banners.textPosition')}</Label>
                   <Select
                     value={form.text_position}
                     onValueChange={(v) => update('text_position', v)}
@@ -320,14 +323,20 @@ export default function BannerEdit() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="left">Ліворуч</SelectItem>
-                      <SelectItem value="center">По центру</SelectItem>
-                      <SelectItem value="right">Праворуч</SelectItem>
+                      <SelectItem value="left">
+                        {t('admin.banners.align.left')}
+                      </SelectItem>
+                      <SelectItem value="center">
+                        {t('admin.banners.align.center')}
+                      </SelectItem>
+                      <SelectItem value="right">
+                        {t('admin.banners.align.right')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Колір оверлею</Label>
+                  <Label>{t('admin.banners.overlayColor')}</Label>
                   <Input
                     value={form.overlay_color}
                     onChange={(e) => update('overlay_color', e.target.value)}
@@ -342,22 +351,24 @@ export default function BannerEdit() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Кнопки</CardTitle>
+                <CardTitle>{t('admin.banners.buttons')}</CardTitle>
                 <Button variant="outline" size="sm" onClick={addButton}>
-                  <Plus className="h-4 w-4 mr-1" /> Додати
+                  <Plus className="h-4 w-4 mr-1" /> {t('common.add')}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {form.buttons.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Кнопок поки немає
+                  {t('admin.banners.buttonsEmpty')}
                 </p>
               )}
               {form.buttons.map((btn, i) => (
                 <div key={i} className="border rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Кнопка {i + 1}</span>
+                    <span className="text-sm font-medium">
+                      {t('admin.banners.button')} {i + 1}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -369,7 +380,7 @@ export default function BannerEdit() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Текст</Label>
+                      <Label>{t('common.text')}</Label>
                       <Input
                         value={btn.text}
                         onChange={(e) =>
@@ -385,7 +396,7 @@ export default function BannerEdit() {
                       />
                     </div>
                     <div>
-                      <Label>Варіант</Label>
+                      <Label>{t('admin.banners.buttonVariant')}</Label>
                       <Select
                         value={btn.variant}
                         onValueChange={(v) => updateButton(i, 'variant', v)}
@@ -401,7 +412,7 @@ export default function BannerEdit() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Відкриття</Label>
+                      <Label>{t('admin.banners.buttonTarget')}</Label>
                       <Select
                         value={btn.target}
                         onValueChange={(v) => updateButton(i, 'target', v)}
@@ -410,8 +421,12 @@ export default function BannerEdit() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="_self">Поточна вкладка</SelectItem>
-                          <SelectItem value="_blank">Нова вкладка</SelectItem>
+                          <SelectItem value="_self">
+                            {t('admin.banners.targetSelf')}
+                          </SelectItem>
+                          <SelectItem value="_blank">
+                            {t('admin.banners.targetBlank')}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -424,12 +439,12 @@ export default function BannerEdit() {
           {/* Schedule */}
           <Card>
             <CardHeader>
-              <CardTitle>Розклад</CardTitle>
+              <CardTitle>{t('admin.banners.schedule')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Дата початку</Label>
+                  <Label>{t('common.dateFrom')}</Label>
                   <Input
                     type="datetime-local"
                     value={form.date_from}
@@ -437,7 +452,7 @@ export default function BannerEdit() {
                   />
                 </div>
                 <div>
-                  <Label>Дата закінчення</Label>
+                  <Label>{t('common.dateTo')}</Label>
                   <Input
                     type="datetime-local"
                     value={form.date_to}
@@ -446,7 +461,9 @@ export default function BannerEdit() {
                 </div>
               </div>
               <div>
-                <Label className="mb-2 block">Дні тижня</Label>
+                <Label className="mb-2 block">
+                  {t('admin.banners.weekdays')}
+                </Label>
                 <div className="flex gap-2 flex-wrap">
                   {DAYS.map((day) => (
                     <label
@@ -457,14 +474,14 @@ export default function BannerEdit() {
                         checked={form.schedule_days.includes(day.value)}
                         onCheckedChange={() => toggleDay(day.value)}
                       />
-                      <span className="text-sm">{day.label}</span>
+                      <span className="text-sm">{t(day.labelKey)}</span>
                     </label>
                   ))}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Час початку</Label>
+                  <Label>{t('admin.banners.timeFrom')}</Label>
                   <Input
                     type="time"
                     value={form.schedule_time_from}
@@ -474,7 +491,7 @@ export default function BannerEdit() {
                   />
                 </div>
                 <div>
-                  <Label>Час закінчення</Label>
+                  <Label>{t('admin.banners.timeTo')}</Label>
                   <Input
                     type="time"
                     value={form.schedule_time_to}
@@ -490,11 +507,11 @@ export default function BannerEdit() {
           {/* Placement */}
           <Card>
             <CardHeader>
-              <CardTitle>Розміщення</CardTitle>
+              <CardTitle>{t('admin.banners.placement')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Місце показу</Label>
+                <Label>{t('admin.banners.placementLabel')}</Label>
                 <Select
                   value={form.placement}
                   onValueChange={(v) => update('placement', v)}
@@ -503,23 +520,35 @@ export default function BannerEdit() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="home">Головна</SelectItem>
-                    <SelectItem value="catalog">Каталог</SelectItem>
-                    <SelectItem value="section">Конкретний розділ</SelectItem>
-                    <SelectItem value="blog">Блог</SelectItem>
-                    <SelectItem value="global">Глобально</SelectItem>
+                    <SelectItem value="home">
+                      {t('admin.banners.placement.home')}
+                    </SelectItem>
+                    <SelectItem value="catalog">
+                      {t('admin.banners.placement.catalog')}
+                    </SelectItem>
+                    <SelectItem value="section">
+                      {t('admin.banners.specificSection')}
+                    </SelectItem>
+                    <SelectItem value="blog">
+                      {t('admin.banners.placement.blog')}
+                    </SelectItem>
+                    <SelectItem value="global">
+                      {t('admin.banners.placement.global')}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {form.placement === 'section' && (
                 <div>
-                  <Label>Розділ</Label>
+                  <Label>{t('admin.banners.placement.section')}</Label>
                   <Select
                     value={form.section_id}
                     onValueChange={(v) => update('section_id', v)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Оберіть розділ" />
+                      <SelectValue
+                        placeholder={t('admin.banners.pickSection')}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {sections?.map((s) => (
@@ -537,11 +566,11 @@ export default function BannerEdit() {
           {/* Animation */}
           <Card>
             <CardHeader>
-              <CardTitle>Анімація</CardTitle>
+              <CardTitle>{t('admin.banners.animation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Тип анімації</Label>
+                <Label>{t('admin.banners.animationType')}</Label>
                 <Select
                   value={form.animation_type}
                   onValueChange={(v) => update('animation_type', v)}
@@ -550,15 +579,26 @@ export default function BannerEdit() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="slide">Ковзання</SelectItem>
-                    <SelectItem value="fade">Зникання</SelectItem>
-                    <SelectItem value="zoom">Збільшення</SelectItem>
-                    <SelectItem value="none">Без анімації</SelectItem>
+                    <SelectItem value="slide">
+                      {t('admin.banners.anim.slide')}
+                    </SelectItem>
+                    <SelectItem value="fade">
+                      {t('admin.banners.anim.fade')}
+                    </SelectItem>
+                    <SelectItem value="zoom">
+                      {t('admin.banners.anim.zoom')}
+                    </SelectItem>
+                    <SelectItem value="none">
+                      {t('admin.banners.anim.none')}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Тривалість анімації: {form.animation_duration} мс</Label>
+                <Label>
+                  {t('admin.banners.animationDuration')}{' '}
+                  {form.animation_duration} {t('admin.banners.ms')}
+                </Label>
                 <Slider
                   value={[form.animation_duration]}
                   onValueChange={([v]) => update('animation_duration', v)}
@@ -569,7 +609,9 @@ export default function BannerEdit() {
               </div>
               <div>
                 <Label>
-                  Час показу слайду: {(form.slide_duration / 1000).toFixed(1)} с
+                  {t('admin.banners.slideDuration')}{' '}
+                  {(form.slide_duration / 1000).toFixed(1)}{' '}
+                  {t('admin.banners.sec')}
                 </Label>
                 <Slider
                   value={[form.slide_duration]}
@@ -585,18 +627,18 @@ export default function BannerEdit() {
           {/* Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Статус</CardTitle>
+              <CardTitle>{t('common.status')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Активний</Label>
+                <Label>{t('common.activeM')}</Label>
                 <Switch
                   checked={form.is_active}
                   onCheckedChange={(v) => update('is_active', v)}
                 />
               </div>
               <div>
-                <Label>Порядок сортування</Label>
+                <Label>{t('common.sortOrder')}</Label>
                 <Input
                   type="number"
                   value={form.sort_order}
@@ -613,7 +655,7 @@ export default function BannerEdit() {
             onClick={() => saveMutation.mutate()}
             disabled={!form.title || !form.image_url || saveMutation.isPending}
           >
-            <Save className="h-4 w-4 mr-2" /> Зберегти
+            <Save className="h-4 w-4 mr-2" /> {t('common.save')}
           </Button>
         </div>
       </div>
