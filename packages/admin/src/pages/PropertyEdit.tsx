@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import type { Tables } from '@simplycms/supabase';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
 type SectionProperty = Tables<'section_properties'>;
 
@@ -49,17 +50,19 @@ interface PropertyOption {
   created_at: string;
 }
 
-const propertyTypes = [
-  { value: 'text', label: 'Текст' },
-  { value: 'number', label: 'Число' },
-  { value: 'select', label: 'Вибір (один)' },
-  { value: 'multiselect', label: 'Вибір (декілька)' },
-  { value: 'range', label: 'Діапазон' },
-  { value: 'color', label: 'Колір' },
-  { value: 'boolean', label: 'Так/Ні' },
+// Мапа ключів — та сама розкладка, що у списку властивостей.
+const propertyTypes: { value: string; labelKey: MessageKey }[] = [
+  { value: 'text', labelKey: 'admin.properties.type.text' },
+  { value: 'number', labelKey: 'admin.properties.type.number' },
+  { value: 'select', labelKey: 'admin.properties.type.select' },
+  { value: 'multiselect', labelKey: 'admin.properties.type.multiselect' },
+  { value: 'range', labelKey: 'admin.properties.type.range' },
+  { value: 'color', labelKey: 'admin.properties.type.color' },
+  { value: 'boolean', labelKey: 'admin.properties.type.boolean' },
 ];
 
 export default function PropertyEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { propertyId } = useParams({ strict: false }) as { propertyId: string };
   const navigate = useNavigate();
@@ -133,12 +136,12 @@ export default function PropertyEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
       queryClient.invalidateQueries({ queryKey: ['all-properties'] });
-      toast({ title: 'Властивість збережено' });
+      toast({ title: t('admin.properties.saved') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -156,12 +159,12 @@ export default function PropertyEdit() {
       queryClient.invalidateQueries({
         queryKey: ['property-options', propertyId],
       });
-      toast({ title: 'Опцію видалено' });
+      toast({ title: t('admin.properties.options.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -206,21 +209,23 @@ export default function PropertyEdit() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {property?.name || 'Властивість'}
+            {property?.name || t('admin.properties.fallbackTitle')}
           </h1>
-          <p className="text-muted-foreground">Редагування властивості</p>
+          <p className="text-muted-foreground">
+            {t('admin.properties.editTitle')}
+          </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Основна інформація</CardTitle>
+            <CardTitle>{t('common.basicInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Назва</Label>
+                <Label htmlFor="name">{t('common.name')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -241,7 +246,7 @@ export default function PropertyEdit() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Тип властивості</Label>
+                <Label>{t('admin.properties.typeLabel')}</Label>
                 <Select
                   value={formData.property_type}
                   onValueChange={(v) => handleChange('property_type', v)}
@@ -252,14 +257,14 @@ export default function PropertyEdit() {
                   <SelectContent>
                     {propertyTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        {t(type.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sort_order">Порядок сортування</Label>
+                <Label htmlFor="sort_order">{t('common.sortOrder')}</Label>
                 <Input
                   id="sort_order"
                   type="number"
@@ -278,7 +283,9 @@ export default function PropertyEdit() {
                   checked={formData.is_required}
                   onCheckedChange={(v) => handleChange('is_required', v)}
                 />
-                <Label htmlFor="is_required">Обов'язкова</Label>
+                <Label htmlFor="is_required">
+                  {t('admin.properties.required')}
+                </Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
@@ -286,7 +293,9 @@ export default function PropertyEdit() {
                   checked={formData.is_filterable}
                   onCheckedChange={(v) => handleChange('is_filterable', v)}
                 />
-                <Label htmlFor="is_filterable">Показувати у фільтрах</Label>
+                <Label htmlFor="is_filterable">
+                  {t('admin.properties.showInFilters')}
+                </Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
@@ -295,7 +304,7 @@ export default function PropertyEdit() {
                   onCheckedChange={(v) => handleChange('has_page', v)}
                 />
                 <Label htmlFor="has_page">
-                  Створювати сторінки для значень
+                  {t('admin.properties.hasPage')}
                 </Label>
               </div>
             </div>
@@ -306,7 +315,7 @@ export default function PropertyEdit() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 <Save className="h-4 w-4 mr-2" />
-                Зберегти
+                {t('common.save')}
               </Button>
             </div>
           </CardContent>
@@ -316,7 +325,7 @@ export default function PropertyEdit() {
       {showOptions && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Опції властивості</CardTitle>
+            <CardTitle>{t('admin.properties.options.title')}</CardTitle>
             <Button
               onClick={() =>
                 navigate({
@@ -326,7 +335,7 @@ export default function PropertyEdit() {
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Додати опцію
+              {t('admin.properties.options.add')}
             </Button>
           </CardHeader>
           <CardContent>
@@ -339,10 +348,12 @@ export default function PropertyEdit() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead>Назва</TableHead>
+                    <TableHead>{t('common.name')}</TableHead>
                     <TableHead>Slug</TableHead>
-                    <TableHead>Сторінка</TableHead>
-                    <TableHead className="text-right w-16">Дії</TableHead>
+                    <TableHead>{t('admin.properties.options.page')}</TableHead>
+                    <TableHead className="text-right w-16">
+                      {t('common.actions')}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -370,7 +381,7 @@ export default function PropertyEdit() {
                       <TableCell>
                         {option.description || option.image_url ? (
                           <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                            Заповнено
+                            {t('admin.properties.options.filled')}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">
@@ -386,7 +397,11 @@ export default function PropertyEdit() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm('Видалити цю опцію?')) {
+                            if (
+                              confirm(
+                                t('admin.properties.options.confirmDelete'),
+                              )
+                            ) {
                               deleteOptionMutation.mutate(option.id);
                             }
                           }}
@@ -403,7 +418,7 @@ export default function PropertyEdit() {
                         colSpan={5}
                         className="text-center text-muted-foreground"
                       >
-                        Опцій ще немає. Додайте першу опцію.
+                        {t('admin.properties.options.empty')}
                       </TableCell>
                     </TableRow>
                   )}

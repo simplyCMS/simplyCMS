@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { ImageUpload } from '../components/ImageUpload';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { adminPath } from '../lib/adminLinks';
+import { useT } from '@simplycms/i18n';
 
 function generateSlug(text: string): string {
   return text
@@ -23,6 +24,7 @@ function generateSlug(text: string): string {
 }
 
 export default function PropertyOptionEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { propertyId, optionId } = useParams({ strict: false }) as {
     propertyId: string;
@@ -155,7 +157,13 @@ export default function PropertyOptionEdit() {
           queryKey: ['property-option', optionId],
         });
       }
-      toast({ title: wasCreating ? 'Опцію створено' : 'Опцію збережено' });
+      toast({
+        title: t(
+          wasCreating
+            ? 'admin.properties.options.created'
+            : 'admin.properties.options.saved',
+        ),
+      });
 
       if (wasCreating && result?.id) {
         navigate({
@@ -167,7 +175,7 @@ export default function PropertyOptionEdit() {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -211,11 +219,13 @@ export default function PropertyOptionEdit() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Нова опція' : option?.name || 'Опція'}
+            {isNew
+              ? t('admin.properties.options.new')
+              : option?.name || t('admin.properties.options.fallbackTitle')}
           </h1>
           {property && (
             <p className="text-muted-foreground">
-              Властивість: {property.name}
+              {t('admin.properties.options.parent')} {property.name}
             </p>
           )}
         </div>
@@ -224,12 +234,12 @@ export default function PropertyOptionEdit() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Основна інформація</CardTitle>
+            <CardTitle>{t('common.basicInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Назва *</Label>
+                <Label htmlFor="name">{t('common.nameRequiredLabel')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -247,13 +257,13 @@ export default function PropertyOptionEdit() {
                   placeholder="samsung"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Залиште порожнім для автоматичної генерації
+                  {t('admin.properties.options.slugHint')}
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sort_order">Порядок сортування</Label>
+              <Label htmlFor="sort_order">{t('common.sortOrder')}</Label>
               <Input
                 id="sort_order"
                 type="number"
@@ -269,11 +279,11 @@ export default function PropertyOptionEdit() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Сторінка опції</CardTitle>
+            <CardTitle>{t('admin.properties.options.pageSection')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Зображення</Label>
+              <Label>{t('common.image')}</Label>
               <ImageUpload
                 images={formData.image_url ? [formData.image_url] : []}
                 onImagesChange={(urls) =>
@@ -284,7 +294,7 @@ export default function PropertyOptionEdit() {
             </div>
 
             <div className="space-y-2">
-              <Label>Опис</Label>
+              <Label>{t('common.description')}</Label>
               <RichTextEditor
                 content={formData.description}
                 onChange={(value) => handleChange('description', value)}
@@ -304,10 +314,11 @@ export default function PropertyOptionEdit() {
                 id="meta_title"
                 value={formData.meta_title}
                 onChange={(e) => handleChange('meta_title', e.target.value)}
-                placeholder="Назва для пошукових систем"
+                placeholder={t('admin.properties.options.seoTitlePlaceholder')}
               />
               <p className="text-xs text-muted-foreground">
-                {formData.meta_title.length}/60 символів
+                {formData.meta_title.length}
+                {t('admin.properties.options.titleCounter')}
               </p>
             </div>
 
@@ -319,11 +330,12 @@ export default function PropertyOptionEdit() {
                 onChange={(e) =>
                   handleChange('meta_description', e.target.value)
                 }
-                placeholder="Опис для пошукових систем"
+                placeholder={t('common.seoDescription')}
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
-                {formData.meta_description.length}/160 символів
+                {formData.meta_description.length}
+                {t('admin.properties.options.descriptionCounter')}
               </p>
             </div>
           </CardContent>
@@ -331,14 +343,14 @@ export default function PropertyOptionEdit() {
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={goBack}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={saveMutation.isPending}>
             {saveMutation.isPending && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             )}
             <Save className="h-4 w-4 mr-2" />
-            Зберегти
+            {t('common.save')}
           </Button>
         </div>
       </form>
