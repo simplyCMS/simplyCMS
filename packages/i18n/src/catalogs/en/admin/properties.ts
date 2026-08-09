@@ -1,0 +1,74 @@
+import type { Catalog } from '../../../types';
+
+/** Властивості товарів — дзеркало `uk/admin/properties.ts`. */
+export const messages: Catalog = {
+  'admin.properties.subtitle': 'Global product properties',
+  'admin.properties.add': 'Add a property',
+  'admin.properties.new': 'New property',
+  'admin.properties.all': 'All properties',
+  'admin.properties.empty': 'No properties yet',
+  'admin.properties.namePlaceholder': 'Manufacturer',
+  'admin.properties.typeLabel': 'Property type',
+  'admin.properties.required': 'Required',
+  'admin.properties.showInFilters': 'Show in filters',
+  'admin.properties.hasPage': 'Create pages for values',
+  'admin.properties.created': 'Property created',
+  'admin.properties.saved': 'Property saved',
+  'admin.properties.deleted': 'Property deleted',
+  'admin.properties.confirmDelete': 'Delete this property?',
+  'admin.properties.editTitle': 'Edit property',
+  'admin.properties.fallbackTitle': 'Property',
+
+  'admin.properties.type.text': 'Text',
+  'admin.properties.type.number': 'Number',
+  'admin.properties.type.select': 'Select (one)',
+  'admin.properties.type.multiselect': 'Select (multiple)',
+  'admin.properties.type.range': 'Range',
+  'admin.properties.type.color': 'Color',
+  'admin.properties.type.boolean': 'Yes/No',
+
+  'admin.properties.options.title': 'Property options',
+  'admin.properties.options.add': 'Add an option',
+  'admin.properties.options.empty': 'No options yet. Add the first one.',
+  'admin.properties.options.page': 'Page',
+  'admin.properties.options.filled': 'Filled in',
+  'admin.properties.options.created': 'Option created',
+  'admin.properties.options.saved': 'Option saved',
+  'admin.properties.options.deleted': 'Option deleted',
+  'admin.properties.options.confirmDelete': 'Delete this option?',
+  'admin.properties.options.new': 'New option',
+  'admin.properties.options.fallbackTitle': 'Option',
+  'admin.properties.options.parent': 'Property:',
+  'admin.properties.options.pageSection': 'Option page',
+  'admin.properties.options.slugHint': 'Leave empty to generate automatically',
+  'admin.properties.options.seoTitlePlaceholder': 'Title for search engines',
+  'admin.properties.options.titleCounter': '/60 characters',
+  'admin.properties.options.descriptionCounter': '/160 characters',
+
+  'admin.properties.section.title': 'Section properties',
+  'admin.properties.section.empty':
+    'No properties yet. Add properties to this section.',
+  'admin.properties.section.addToSection': 'Add a property to the section',
+  'admin.properties.section.notConfigured':
+    'No properties configured for this section yet',
+  'admin.properties.section.pickSection':
+    'Pick a section to configure its properties',
+  'admin.properties.section.productProps': 'Product properties',
+  'admin.properties.section.modificationProps': 'Modification properties',
+  'admin.properties.section.addForProduct': 'Add a property for products',
+  'admin.properties.section.addForModification':
+    'Add a property for modifications',
+  'admin.properties.section.pickProperty': 'Pick a property',
+  'admin.properties.section.pickPropertyPlaceholder': 'Choose a property...',
+  'admin.properties.section.allAdded': 'All properties are already added',
+  'admin.properties.section.added': 'Property added',
+  'admin.properties.section.removed': 'Property removed from the section',
+
+  'admin.properties.appliesTo.product': 'product',
+  'admin.properties.appliesTo.modification': 'modification',
+  'admin.properties.values.titleModification': 'Modification properties',
+  'admin.properties.values.pickValue': 'Choose a value',
+  'admin.properties.values.noOptions':
+    'No options found. Add options to the property.',
+  'admin.properties.values.inputPlaceholder': 'Enter {name}',
+};

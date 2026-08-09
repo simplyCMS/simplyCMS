@@ -2,6 +2,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@simplycms/ui/button';
 import { Link } from '@tanstack/react-router';
+import { useT } from '@simplycms/i18n';
 // Канонічна картка товару з пакета: та сама, що на сторінках каталогу —
 // секції головної в ядрі не мають власного варіанта картки.
 import { ProductCard } from '@simplycms/catalog-ui/ProductCard';
@@ -29,6 +30,7 @@ export function ProductCarousel({
   products,
   viewAllLink,
 }: ProductCarouselProps) {
+  const t = useT();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: 'start',
@@ -49,7 +51,7 @@ export function ProductCarousel({
               to={viewAllLink}
               className="text-sm text-primary hover:underline font-medium"
             >
-              Переглянути усі &rarr;
+              {t('catalog.viewAll')}
             </Link>
           )}
         </div>

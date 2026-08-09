@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Switch } from '@simplycms/ui/switch';
@@ -33,19 +34,22 @@ import {
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
 
-const schema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
-  code: z
-    .string()
-    .min(1, "Код обов'язковий")
-    .regex(/^[a-z0-9_]+$/, 'Тільки латинські літери, цифри та _'),
-  sort_order: z.coerce.number().int().min(0),
-  is_default: z.boolean(),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildSchema = (t: Translator) =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    code: z
+      .string()
+      .min(1, t('validation.codeRequired'))
+      .regex(/^[a-z0-9_]+$/, t('validation.slug')),
+    sort_order: z.coerce.number().int().min(0),
+    is_default: z.boolean(),
+  });
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<ReturnType<typeof buildSchema>>;
 
 export default function PriceTypeEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { priceTypeId } = useParams({ strict: false }) as {
     priceTypeId: string;
@@ -53,6 +57,8 @@ export default function PriceTypeEdit() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNew = !priceTypeId || priceTypeId === 'new';
+
+  const schema = useMemo(() => buildSchema(t), [t]);
 
   const form = useForm<FormData>({
     // zodResolver + z.coerce.number() спричиняє TFieldValues mismatch
@@ -114,12 +120,14 @@ export default function PriceTypeEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-price-types'] });
       queryClient.invalidateQueries({ queryKey: ['price-types'] });
-      toast({ title: isNew ? 'Вид ціни створено' : 'Зміни збережено' });
+      toast({
+        title: isNew ? t('admin.prices.created') : t('common.changesSaved'),
+      });
       navigate({ to: adminPath('price-types') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -136,12 +144,12 @@ export default function PriceTypeEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-price-types'] });
-      toast({ title: 'Вид ціни видалено' });
+      toast({ title: t('admin.prices.deleted') });
       navigate({ to: adminPath('price-types') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -149,7 +157,7 @@ export default function PriceTypeEdit() {
   });
 
   if (!isNew && isLoading)
-    return <div className="p-8 text-center">Завантаження...</div>;
+    return <div className="p-8 text-center">{t('common.loading')}</div>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -161,7 +169,7 @@ export default function PriceTypeEdit() {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Новий вид ціни' : 'Редагування виду ціни'}
+            {isNew ? t('admin.prices.new') : t('admin.prices.editTitle')}
           </h1>
         </div>
         {!isNew && !priceType?.is_default && (
@@ -173,18 +181,20 @@ export default function PriceTypeEdit() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Видалити вид ціни?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('admin.prices.deleteTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Ця дія незворотна. Всі ціни цього виду будуть видалені.
+                  {t('admin.prices.deleteWarning')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteMutation.mutate()}
                   className="bg-destructive text-destructive-foreground"
                 >
-                  Видалити
+                  {t('common.delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -194,7 +204,7 @@ export default function PriceTypeEdit() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Інформація</CardTitle>
+          <CardTitle>{t('common.information')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -207,9 +217,12 @@ export default function PriceTypeEdit() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Назва</FormLabel>
+                    <FormLabel>{t('common.name')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Роздрібна" {...field} />
+                      <Input
+                        placeholder={t('admin.prices.namePlaceholder')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -220,12 +233,12 @@ export default function PriceTypeEdit() {
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Код</FormLabel>
+                    <FormLabel>{t('common.code')}</FormLabel>
                     <FormControl>
                       <Input placeholder="retail" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Унікальний код (латиниця, цифри, _)
+                      {t('admin.prices.codeHint')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -236,7 +249,7 @@ export default function PriceTypeEdit() {
                 name="sort_order"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Порядок сортування</FormLabel>
+                    <FormLabel>{t('common.sortOrder')}</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" {...field} />
                     </FormControl>
@@ -251,10 +264,10 @@ export default function PriceTypeEdit() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
-                        За замовчуванням
+                        {t('common.byDefault')}
                       </FormLabel>
                       <FormDescription>
-                        Цей вид ціни буде використовуватись як фолбек
+                        {t('admin.prices.defaultHint')}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -268,13 +281,15 @@ export default function PriceTypeEdit() {
               />
               <div className="flex justify-end gap-4">
                 <Button variant="outline" asChild>
-                  <Link to={adminPath('price-types')}>Скасувати</Link>
+                  <Link to={adminPath('price-types')}>
+                    {t('common.cancel')}
+                  </Link>
                 </Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
                   {saveMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  {isNew ? 'Створити' : 'Зберегти'}
+                  {isNew ? t('common.create') : t('common.save')}
                 </Button>
               </div>
             </form>

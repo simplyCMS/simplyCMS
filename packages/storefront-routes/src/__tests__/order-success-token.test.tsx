@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@simplycms/i18n';
 import OrderSuccess from '../pages/OrderSuccess';
 
 /**
@@ -76,7 +77,11 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
   it('після успішного завантаження замовлення викликає navigate і прибирає лише token', async () => {
     setSingleResult({ data: orderFixture, error: null });
 
-    render(<OrderSuccess />);
+    render(
+      <I18nProvider locale="uk">
+        <OrderSuccess />
+      </I18nProvider>,
+    );
 
     await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(1));
 
@@ -94,7 +99,11 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
   it('при помилці завантаження navigate НЕ викликається', async () => {
     setSingleResult({ data: null, error: new Error('boom') });
 
-    render(<OrderSuccess />);
+    render(
+      <I18nProvider locale="uk">
+        <OrderSuccess />
+      </I18nProvider>,
+    );
 
     // Чекаємо завершення fetch — компонент рендерить "не знайдено".
     await waitFor(() => expect(navigateMock).not.toHaveBeenCalled());

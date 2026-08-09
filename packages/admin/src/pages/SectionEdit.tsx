@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
@@ -16,6 +17,7 @@ import { SectionPropertiesManager } from '../components/SectionPropertiesManager
 import { adminPath } from '../lib/adminLinks';
 
 export default function SectionEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { sectionId } = useParams({ strict: false }) as { sectionId: string };
   const navigate = useNavigate();
@@ -93,7 +95,9 @@ export default function SectionEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sections'] });
       queryClient.invalidateQueries({ queryKey: ['section', sectionId] });
-      toast({ title: isNew ? 'Розділ створено' : 'Розділ збережено' });
+      toast({
+        title: isNew ? t('admin.sections.created') : t('admin.sections.saved'),
+      });
       if (isNew) {
         navigate({ to: adminPath('sections') });
       }
@@ -101,7 +105,7 @@ export default function SectionEdit() {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -138,12 +142,14 @@ export default function SectionEdit() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isNew ? 'Новий розділ' : formData.name || 'Редагування розділу'}
+              {isNew
+                ? t('admin.sections.new')
+                : formData.name || t('admin.sections.editTitle')}
             </h1>
             <p className="text-muted-foreground">
               {isNew
-                ? 'Створення нового розділу каталогу'
-                : `Редагування розділу`}
+                ? t('admin.sections.newSubtitle')
+                : t('admin.sections.editTitle')}
             </p>
           </div>
         </div>
@@ -153,7 +159,7 @@ export default function SectionEdit() {
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          Зберегти
+          {t('common.save')}
         </Button>
       </div>
 
@@ -163,12 +169,12 @@ export default function SectionEdit() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Основна інформація</CardTitle>
+                <CardTitle>{t('common.basicInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Назва</Label>
+                    <Label htmlFor="name">{t('common.name')}</Label>
                     <Input
                       id="name"
                       value={formData.name}
@@ -187,11 +193,11 @@ export default function SectionEdit() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Опис</Label>
+                  <Label htmlFor="description">{t('common.description')}</Label>
                   <RichTextEditor
                     content={formData.description}
                     onChange={(content) => handleChange('description', content)}
-                    placeholder="Введіть опис розділу..."
+                    placeholder={t('admin.sections.descriptionPlaceholder')}
                   />
                 </div>
               </CardContent>
@@ -209,7 +215,7 @@ export default function SectionEdit() {
                     id="meta_title"
                     value={formData.meta_title}
                     onChange={(e) => handleChange('meta_title', e.target.value)}
-                    placeholder="Заголовок для пошукових систем"
+                    placeholder={t('admin.sections.seoTitlePlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
@@ -220,7 +226,7 @@ export default function SectionEdit() {
                     onChange={(e) =>
                       handleChange('meta_description', e.target.value)
                     }
-                    placeholder="Опис для пошукових систем"
+                    placeholder={t('common.seoDescription')}
                   />
                 </div>
               </CardContent>
@@ -231,11 +237,11 @@ export default function SectionEdit() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Налаштування</CardTitle>
+                <CardTitle>{t('admin.nav.settings')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="is_active">Активний</Label>
+                  <Label htmlFor="is_active">{t('common.activeM')}</Label>
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
@@ -246,7 +252,7 @@ export default function SectionEdit() {
                 </div>
                 <Separator />
                 <div className="space-y-2">
-                  <Label htmlFor="sort_order">Порядок сортування</Label>
+                  <Label htmlFor="sort_order">{t('common.sortOrder')}</Label>
                   <Input
                     id="sort_order"
                     type="number"
@@ -261,7 +267,7 @@ export default function SectionEdit() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Зображення</CardTitle>
+                <CardTitle>{t('common.image')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ImageUpload
@@ -279,10 +285,9 @@ export default function SectionEdit() {
         {!isNew && sectionId && (
           <Card>
             <CardHeader>
-              <CardTitle>Властивості розділу</CardTitle>
+              <CardTitle>{t('admin.properties.section.title')}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Налаштуйте які властивості доступні для товарів та модифікацій в
-                цьому розділі
+                {t('admin.sections.propertiesHint')}
               </p>
             </CardHeader>
             <CardContent>

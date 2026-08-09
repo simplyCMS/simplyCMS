@@ -15,6 +15,7 @@ import { Badge } from '@simplycms/ui/badge';
 import { Label } from '@simplycms/ui/label';
 import { Separator } from '@simplycms/ui/separator';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
 import {
   resolveDiscount,
@@ -37,6 +38,7 @@ interface ValidationStep {
 }
 
 export default function PriceValidator() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -124,7 +126,10 @@ export default function PriceValidator() {
       if (cat.price_type_id && cat.price_types) {
         priceTypeId = cat.price_type_id;
         priceTypeName = cat.price_types.name;
-        priceTypeReason = `Категорія "${cat.name}" → Вид ціни "${priceTypeName}"`;
+        priceTypeReason = t('admin.validator.categoryStep', {
+          category: cat.name,
+          priceType: priceTypeName,
+        });
       }
     }
 
@@ -132,14 +137,14 @@ export default function PriceValidator() {
       priceTypeId = defaultPriceType.id;
       priceTypeName = defaultPriceType.name;
       priceTypeReason = selectedUserId
-        ? `Користувач без категорії → За замовчуванням "${priceTypeName}"`
-        : `Гість → За замовчуванням "${priceTypeName}"`;
+        ? t('admin.validator.noCategoryStep', { priceType: priceTypeName })
+        : t('admin.validator.guestStep', { priceType: priceTypeName });
     }
 
     steps.push({
-      title: 'Вид ціни',
-      value: priceTypeName || 'Не визначено',
-      reason: priceTypeReason || 'Не знайдено жодного виду ціни',
+      title: t('admin.users.priceType'),
+      value: priceTypeName || t('admin.validator.undefined'),
+      reason: priceTypeReason || t('admin.validator.noPriceType'),
       status: priceTypeId ? 'ok' : 'error',
     });
 
@@ -158,12 +163,15 @@ export default function PriceValidator() {
     );
 
     steps.push({
-      title: 'Базова ціна',
-      value: resolved.price !== null ? `${resolved.price} грн` : 'Не знайдено',
+      title: t('admin.orders.basePrice'),
+      value:
+        resolved.price !== null
+          ? t('admin.validator.uah', { value: resolved.price })
+          : t('admin.validator.notFound'),
       reason:
         resolved.price !== null
           ? `product_prices (price_type: "${priceTypeName}", ${modId ? 'modification' : 'product'})`
-          : 'Немає ціни для цього виду ціни',
+          : t('admin.validator.noPriceForType'),
       status: resolved.price !== null ? 'ok' : 'error',
       oldPrice: resolved.oldPrice,
     });
@@ -179,17 +187,17 @@ export default function PriceValidator() {
 
       if (!dbDiscounts?.length) {
         steps.push({
-          title: 'Скидки',
-          value: 'Немає',
-          reason: 'Жодна скидка не знайдена для цього виду ціни',
+          title: t('admin.nav.discounts'),
+          value: t('admin.validator.none'),
+          reason: t('admin.validator.noDiscountForType'),
           status: 'info',
           applied: [],
           rejected: [],
         });
         steps.push({
-          title: 'Фінальна ціна',
-          value: `${resolved.price.toFixed(2)} грн`,
-          reason: `Без знижки: ${resolved.price} грн`,
+          title: t('admin.validator.finalPrice'),
+          value: t('admin.validator.uah', { value: resolved.price.toFixed(2) }),
+          reason: t('admin.validator.noDiscount', { price: resolved.price }),
           status: 'ok',
         });
         setResult(steps);
@@ -266,27 +274,33 @@ export default function PriceValidator() {
       const discountResult = resolveDiscount(resolved.price, roots, ctx);
 
       steps.push({
-        title: 'Скидки',
+        title: t('admin.nav.discounts'),
         value:
           discountResult.totalDiscount > 0
-            ? `-${discountResult.totalDiscount.toFixed(2)} грн`
-            : 'Немає',
+            ? t('admin.validator.discountSum', {
+                value: discountResult.totalDiscount.toFixed(2),
+              })
+            : t('admin.validator.none'),
         reason:
           discountResult.appliedDiscounts.length > 0
-            ? `Застосовано ${discountResult.appliedDiscounts.length} скидок`
-            : 'Жодна скидка не підходить',
+            ? t('admin.validator.appliedCount', {
+                count: discountResult.appliedDiscounts.length,
+              })
+            : t('admin.validator.noneApplies'),
         status: 'info',
         applied: discountResult.appliedDiscounts,
         rejected: discountResult.rejectedDiscounts,
       });
 
       steps.push({
-        title: 'Фінальна ціна',
-        value: `${discountResult.finalPrice.toFixed(2)} грн`,
+        title: t('admin.validator.finalPrice'),
+        value: t('admin.validator.uah', {
+          value: discountResult.finalPrice.toFixed(2),
+        }),
         reason:
           discountResult.totalDiscount > 0
             ? `${resolved.price} - ${discountResult.totalDiscount.toFixed(2)} = ${discountResult.finalPrice.toFixed(2)}`
-            : `Без знижки: ${resolved.price} грн`,
+            : t('admin.validator.noDiscount', { price: resolved.price }),
         status: 'ok',
       });
     }
@@ -297,20 +311,20 @@ export default function PriceValidator() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Валідатор цін</h1>
+        <h1 className="text-3xl font-bold">{t('admin.nav.priceValidator')}</h1>
         <p className="text-muted-foreground mt-1">
-          Перевірте ланцюжок ціноутворення для конкретного користувача та товару
+          {t('admin.validator.subtitle')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Параметри перевірки</CardTitle>
+          <CardTitle>{t('admin.validator.params')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Користувач</Label>
+              <Label>{t('admin.users.user')}</Label>
               <Select
                 value={selectedUserId || '__guest__'}
                 onValueChange={(v) =>
@@ -318,14 +332,16 @@ export default function PriceValidator() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Гість (без авторизації)" />
+                  <SelectValue placeholder={t('admin.validator.guestOption')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__guest__">Гість</SelectItem>
+                  <SelectItem value="__guest__">
+                    {t('admin.validator.guest')}
+                  </SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.user_id} value={u.user_id}>
                       {u.first_name || ''} {u.last_name || ''} (
-                      {u.email || 'без email'})
+                      {u.email || t('admin.validator.noEmail')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -333,7 +349,7 @@ export default function PriceValidator() {
             </div>
 
             <div className="space-y-2">
-              <Label>Товар</Label>
+              <Label>{t('admin.orders.product')}</Label>
               <Select
                 value={selectedProductId}
                 onValueChange={(v) => {
@@ -342,7 +358,7 @@ export default function PriceValidator() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Оберіть товар" />
+                  <SelectValue placeholder={t('admin.discounts.pickProduct')} />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((p) => (
@@ -357,7 +373,7 @@ export default function PriceValidator() {
 
           {modifications.length > 0 && (
             <div className="space-y-2">
-              <Label>Модифікація</Label>
+              <Label>{t('admin.discounts.modification')}</Label>
               <Select
                 value={selectedModificationId || '__none__'}
                 onValueChange={(v) =>
@@ -365,10 +381,14 @@ export default function PriceValidator() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Без модифікації" />
+                  <SelectValue
+                    placeholder={t('admin.validator.noModification')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Без модифікації</SelectItem>
+                  <SelectItem value="__none__">
+                    {t('admin.validator.noModification')}
+                  </SelectItem>
                   {modifications.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name}
@@ -381,7 +401,7 @@ export default function PriceValidator() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Кількість</Label>
+              <Label>{t('common.quantity')}</Label>
               <Input
                 type="number"
                 min={1}
@@ -390,7 +410,7 @@ export default function PriceValidator() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Сума кошика (грн)</Label>
+              <Label>{t('admin.validator.cartTotal')}</Label>
               <Input
                 type="number"
                 min={0}
@@ -401,7 +421,7 @@ export default function PriceValidator() {
           </div>
 
           <Button onClick={validate} disabled={!selectedProductId}>
-            <Search className="h-4 w-4 mr-2" /> Перевірити
+            <Search className="h-4 w-4 mr-2" /> {t('admin.validator.run')}
           </Button>
         </CardContent>
       </Card>
@@ -409,7 +429,7 @@ export default function PriceValidator() {
       {result && (
         <Card>
           <CardHeader>
-            <CardTitle>Результат аналізу</CardTitle>
+            <CardTitle>{t('admin.validator.result')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {result.map((step, idx) => (
@@ -434,7 +454,9 @@ export default function PriceValidator() {
                       <span className="font-bold">{step.value}</span>
                       {step.oldPrice && (
                         <span className="text-sm text-muted-foreground line-through">
-                          {step.oldPrice} грн
+                          {t('admin.validator.uah', {
+                            value: step.oldPrice,
+                          })}
                         </span>
                       )}
                     </div>
@@ -455,14 +477,18 @@ export default function PriceValidator() {
                               variant="outline"
                               className="bg-green-50 dark:bg-green-950 text-xs"
                             >
-                              Застосовано
+                              {t('admin.validator.applied')}
                             </Badge>
                             <span>
                               {d.type === 'percent'
                                 ? `-${d.value}%`
                                 : d.type === 'fixed_amount'
-                                  ? `-${d.value} грн`
-                                  : `= ${d.value} грн`}
+                                  ? t('admin.validator.discountSum', {
+                                      value: d.value,
+                                    })
+                                  : t('admin.validator.fixedUah', {
+                                      value: d.value,
+                                    })}
                             </span>
                             <span className="text-muted-foreground">
                               "{d.name}"
@@ -471,7 +497,10 @@ export default function PriceValidator() {
                               ({d.groupName})
                             </span>
                             <span className="font-medium">
-                              = -{d.calculatedAmount.toFixed(2)} грн
+                              ={' '}
+                              {t('admin.validator.discountSum', {
+                                value: d.calculatedAmount.toFixed(2),
+                              })}
                             </span>
                           </div>
                         ))}
@@ -491,7 +520,7 @@ export default function PriceValidator() {
                               variant="outline"
                               className="bg-red-50 dark:bg-red-950 text-xs"
                             >
-                              Відхилено
+                              {t('admin.validator.rejected')}
                             </Badge>
                             <span className="text-muted-foreground">
                               "{d.name}"

@@ -29,6 +29,7 @@ import {
 } from '@simplycms/ui/alert-dialog';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import type { Json } from '@simplycms/supabase';
 
@@ -69,18 +70,20 @@ interface OrderDetails {
   }[];
 }
 
-const deliveryLabels: Record<string, string> = {
-  pickup: 'Самовивіз',
-  nova_poshta: 'Нова Пошта',
-  courier: "Кур'єр",
+// Мапи ключів, а не текстів: код способу приходить із БД (див. OrderSuccess).
+const deliveryLabels: Record<string, MessageKey> = {
+  pickup: 'checkout.shipping.pickup',
+  nova_poshta: 'checkout.shipping.novaPoshta',
+  courier: 'checkout.shipping.courier',
 };
 
-const paymentLabels: Record<string, string> = {
-  cash: 'Оплата при отриманні',
-  online: 'Онлайн оплата',
+const paymentLabels: Record<string, MessageKey> = {
+  cash: 'checkout.payment.cash',
+  online: 'checkout.payment.online',
 };
 
 export default function ProfileOrderDetailPage() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
@@ -156,11 +159,11 @@ export default function ProfileOrderDetailPage() {
         .maybeSingle();
 
       if (!cancelledStatus) {
-        throw new Error("Статус 'Скасовано' не знайдено");
+        throw new Error(t('profile.order.cancel.statusMissing'));
       }
 
       if (!user?.id) {
-        throw new Error('Користувач не авторизований');
+        throw new Error(t('profile.order.cancel.notAuthorized'));
       }
 
       const { error } = await supabase
@@ -172,19 +175,21 @@ export default function ProfileOrderDetailPage() {
       if (error) throw error;
 
       toast({
-        title: 'Замовлення скасовано',
-        description: `Замовлення ${order.order_number} успішно скасовано`,
+        title: t('profile.order.cancel.done'),
+        description: t('profile.order.cancel.doneHint', {
+          number: order.order_number,
+        }),
       });
 
       navigate({ to: '/profile/orders' });
     } catch (error: unknown) {
       console.error('Error cancelling order:', error);
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description:
           error instanceof Error
             ? error.message
-            : 'Не вдалось скасувати замовлення',
+            : t('profile.order.cancel.failed'),
         variant: 'destructive',
       });
     } finally {
@@ -207,12 +212,14 @@ export default function ProfileOrderDetailPage() {
       <Card className="text-center py-12">
         <CardContent>
           <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Замовлення не знайдено</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            {t('profile.order.notFound')}
+          </h2>
           <p className="text-muted-foreground mb-4">
-            Можливо, воно було видалено або ви не маєте до нього доступу
+            {t('profile.order.notFoundHint')}
           </p>
           <Button asChild>
-            <Link to="/profile/orders">Мої замовлення</Link>
+            <Link to="/profile/orders">{t('nav.orders')}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -257,19 +264,24 @@ export default function ProfileOrderDetailPage() {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">
                   <XCircle className="h-4 w-4 mr-2" />
-                  Скасувати
+                  {t('common.cancel')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Скасувати замовлення?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t('profile.order.cancel.confirmTitle')}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Ви впевнені, що хочете скасувати замовлення{' '}
-                    {order.order_number}? Цю дію неможливо буде відмінити.
+                    {t('profile.order.cancel.confirmText', {
+                      number: order.order_number,
+                    })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Ні, залишити</AlertDialogCancel>
+                  <AlertDialogCancel>
+                    {t('profile.order.cancel.keep')}
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleCancel}
                     disabled={isCancelling}
@@ -278,10 +290,10 @@ export default function ProfileOrderDetailPage() {
                     {isCancelling ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Скасування...
+                        {t('profile.order.cancel.pending')}
                       </>
                     ) : (
-                      'Так, скасувати'
+                      t('profile.order.cancel.confirm')
                     )}
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -296,7 +308,7 @@ export default function ProfileOrderDetailPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Товари замовлення
+            {t('profile.order.items')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -325,7 +337,7 @@ export default function ProfileOrderDetailPage() {
           <Separator />
 
           <div className="flex justify-between text-lg font-semibold">
-            <span>Разом</span>
+            <span>{t('common.total')}</span>
             <span className="text-primary">{formatPrice(order.total)}</span>
           </div>
         </CardContent>
@@ -337,27 +349,33 @@ export default function ProfileOrderDetailPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Доставка
+              {t('cart.summary.shipping')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Спосіб доставки</p>
+              <p className="text-sm text-muted-foreground">
+                {t('profile.order.shippingMethod')}
+              </p>
               <p className="font-medium">
-                {deliveryLabels[order.delivery_method || ''] ||
-                  order.delivery_method ||
-                  'Не вказано'}
+                {deliveryLabels[order.delivery_method || '']
+                  ? t(deliveryLabels[order.delivery_method || ''])
+                  : order.delivery_method || t('common.notSet')}
               </p>
             </div>
             {order.delivery_city && (
               <div>
-                <p className="text-sm text-muted-foreground">Місто</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('common.city')}
+                </p>
                 <p className="font-medium">{order.delivery_city}</p>
               </div>
             )}
             {order.delivery_address && (
               <div>
-                <p className="text-sm text-muted-foreground">Адреса</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('common.address')}
+                </p>
                 <p className="font-medium">{order.delivery_address}</p>
               </div>
             )}
@@ -368,14 +386,18 @@ export default function ProfileOrderDetailPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Оплата
+              {t('checkout.success.payment')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div>
-              <p className="text-sm text-muted-foreground">Спосіб оплати</p>
+              <p className="text-sm text-muted-foreground">
+                {t('profile.order.paymentMethod')}
+              </p>
               <p className="font-medium">
-                {paymentLabels[order.payment_method] || order.payment_method}
+                {paymentLabels[order.payment_method]
+                  ? t(paymentLabels[order.payment_method])
+                  : order.payment_method}
               </p>
             </div>
           </CardContent>
@@ -387,19 +409,23 @@ export default function ProfileOrderDetailPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5" />
-            Замовник
+            {t('profile.order.customer')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Ім'я</p>
+              <p className="text-sm text-muted-foreground">
+                {t('common.firstName')}
+              </p>
               <p className="font-medium">
                 {order.first_name} {order.last_name}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Телефон</p>
+              <p className="text-sm text-muted-foreground">
+                {t('common.phone')}
+              </p>
               <p className="font-medium">{order.phone}</p>
             </div>
             <div>
@@ -416,20 +442,24 @@ export default function ProfileOrderDetailPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <UserPlus className="h-5 w-5" />
-              Отримувач
+              {t('checkout.success.recipient')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Ім'я</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('common.firstName')}
+                </p>
                 <p className="font-medium">
                   {order.recipient_first_name} {order.recipient_last_name}
                 </p>
               </div>
               {order.recipient_phone && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Телефон</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('common.phone')}
+                  </p>
                   <p className="font-medium">{order.recipient_phone}</p>
                 </div>
               )}
@@ -448,7 +478,9 @@ export default function ProfileOrderDetailPage() {
       {order.notes && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Коментар до замовлення</CardTitle>
+            <CardTitle className="text-lg">
+              {t('profile.order.comment')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">{order.notes}</p>

@@ -1,0 +1,66 @@
+import type { Catalog } from '../../../types';
+
+/** Банери — дзеркало `uk/admin/banners.ts`. */
+export const messages: Catalog = {
+  'admin.banners.add': 'Add a banner',
+  'admin.banners.empty': 'No banners yet',
+  'admin.banners.deleted': 'Banner deleted',
+  'admin.banners.saved': 'Banner saved',
+  'admin.banners.new': 'New banner',
+  'admin.banners.editTitle': 'Edit banner',
+
+  'admin.banners.placement.home': 'Home page',
+  'admin.banners.placement.catalog': 'Catalog',
+  'admin.banners.placement.section': 'Section',
+  'admin.banners.placement.blog': 'Blog',
+  'admin.banners.placement.global': 'Global',
+
+  'admin.banners.weekday.mon': 'Mon',
+  'admin.banners.weekday.tue': 'Tue',
+  'admin.banners.weekday.wed': 'Wed',
+  'admin.banners.weekday.thu': 'Thu',
+  'admin.banners.weekday.fri': 'Fri',
+  'admin.banners.weekday.sat': 'Sat',
+  'admin.banners.weekday.sun': 'Sun',
+
+  'admin.banners.main': 'General',
+  'admin.banners.titleField': 'Heading *',
+  'admin.banners.subtitle': 'Subheading',
+  'admin.banners.imageField': 'Image *',
+  'admin.banners.imageDesktop': 'Desktop image (optional)',
+  'admin.banners.imageMobile': 'Mobile image (optional)',
+  'admin.banners.textPosition': 'Text position',
+  'admin.banners.align.left': 'Left',
+  'admin.banners.align.center': 'Center',
+  'admin.banners.align.right': 'Right',
+  'admin.banners.overlayColor': 'Overlay color',
+
+  'admin.banners.buttons': 'Buttons',
+  'admin.banners.buttonsEmpty': 'No buttons yet',
+  'admin.banners.button': 'Button',
+  'admin.banners.buttonVariant': 'Variant',
+  'admin.banners.buttonTarget': 'Opens in',
+  'admin.banners.targetSelf': 'Same tab',
+  'admin.banners.targetBlank': 'New tab',
+
+  'admin.banners.schedule': 'Schedule',
+  'admin.banners.weekdays': 'Days of the week',
+  'admin.banners.timeFrom': 'Start time',
+  'admin.banners.timeTo': 'End time',
+
+  'admin.banners.placement': 'Placement',
+  'admin.banners.placementLabel': 'Where to show',
+  'admin.banners.specificSection': 'Specific section',
+  'admin.banners.pickSection': 'Choose a section',
+
+  'admin.banners.animation': 'Animation',
+  'admin.banners.animationType': 'Animation type',
+  'admin.banners.anim.slide': 'Slide',
+  'admin.banners.anim.fade': 'Fade',
+  'admin.banners.anim.zoom': 'Zoom',
+  'admin.banners.anim.none': 'No animation',
+  'admin.banners.animationDuration': 'Animation duration:',
+  'admin.banners.ms': 'ms',
+  'admin.banners.slideDuration': 'Slide duration:',
+  'admin.banners.sec': 's',
+};

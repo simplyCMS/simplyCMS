@@ -1,6 +1,7 @@
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Card, CardContent } from '@simplycms/ui/card';
 import { Button } from '@simplycms/ui/button';
 import { Loader2, ChevronRight } from 'lucide-react';
@@ -15,6 +16,7 @@ export default function PropertyDetailPage({
   property: initialProperty,
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
@@ -66,9 +68,9 @@ export default function PropertyDetailPage({
   if (!property) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Властивість не знайдено</h1>
+        <h1 className="text-2xl font-bold mb-4">{t('properties.notFound')}</h1>
         <Link to="/properties">
-          <Button>Повернутись до властивостей</Button>
+          <Button>{t('properties.backToProperties')}</Button>
         </Link>
       </div>
     );
@@ -79,14 +81,14 @@ export default function PropertyDetailPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link
           to="/properties"
           className="hover:text-foreground transition-colors"
         >
-          Властивості
+          {t('properties.title')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <span className="text-foreground">{property.name}</span>
@@ -95,9 +97,7 @@ export default function PropertyDetailPage({
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">{property.name}</h1>
-        <p className="text-muted-foreground">
-          Оберіть значення для перегляду товарів
-        </p>
+        <p className="text-muted-foreground">{t('properties.chooseValue')}</p>
       </div>
 
       {/* Options grid */}
@@ -137,7 +137,7 @@ export default function PropertyDetailPage({
       ) : (
         <div className="text-center py-12 bg-muted/30 rounded-lg">
           <p className="text-muted-foreground">
-            Значень для цієї властивості поки немає
+            {t('properties.optionsEmpty')}
           </p>
         </div>
       )}

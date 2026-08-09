@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from '@simplycms/ui/button';
@@ -20,6 +21,7 @@ export default function PropertyPage({
   option: initialOption,
   products: _initialProducts,
 }: PropertyOptionPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
@@ -174,9 +176,11 @@ export default function PropertyPage({
   if (!option) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Сторінку не знайдено</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          {t('properties.pageNotFound')}
+        </h1>
         <Link to="/catalog">
-          <Button>Повернутись до каталогу</Button>
+          <Button>{t('catalog.back')}</Button>
         </Link>
       </div>
     );
@@ -192,14 +196,14 @@ export default function PropertyPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link
           to="/properties"
           className="hover:text-foreground transition-colors"
         >
-          Властивості
+          {t('properties.title')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link
@@ -240,7 +244,12 @@ export default function PropertyPage({
       {/* Products section */}
       <div>
         <h2 className="text-2xl font-bold mb-6">
-          Товари {property?.name ? `(${property.name}: ${option.name})` : ''}
+          {property?.name
+            ? t('properties.productsFiltered', {
+                property: property.name,
+                option: option.name,
+              })
+            : t('properties.products')}
         </h2>
 
         {productsLoading ? (
@@ -256,7 +265,7 @@ export default function PropertyPage({
         ) : (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
             <p className="text-muted-foreground">
-              Товарів з цією характеристикою поки немає
+              {t('properties.productsEmpty')}
             </p>
           </div>
         )}

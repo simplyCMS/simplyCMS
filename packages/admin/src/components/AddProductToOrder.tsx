@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function AddProductToOrder({
   onAddProduct,
   isAdding,
 }: AddProductToOrderProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -169,7 +171,7 @@ export function AddProductToOrder({
           ) : (
             <Plus className="h-4 w-4 mr-2" />
           )}
-          Додати товар
+          {t('admin.orders.addItem')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -177,9 +179,11 @@ export function AddProductToOrder({
           <DialogTitle>
             {selectedProduct
               ? selectedProduct.has_modifications
-                ? `Оберіть модифікацію: ${selectedProduct.name}`
-                : `Додати: ${selectedProduct.name}`
-              : 'Додати товар до замовлення'}
+                ? t('admin.orders.pickModification', {
+                    name: selectedProduct.name,
+                  })
+                : t('admin.orders.addNamed', { name: selectedProduct.name })
+              : t('admin.orders.addItemTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -188,7 +192,7 @@ export function AddProductToOrder({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Пошук за назвою або артикулом..."
+                placeholder={t('admin.orders.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -202,11 +206,11 @@ export function AddProductToOrder({
                 </div>
               ) : search.length < 2 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Введіть мінімум 2 символи для пошуку
+                  {t('admin.orders.searchHint')}
                 </p>
               ) : products?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Товари не знайдено
+                  {t('admin.orders.searchEmpty')}
                 </p>
               ) : (
                 <div className="space-y-1">
@@ -218,9 +222,15 @@ export function AddProductToOrder({
                     >
                       <div className="font-medium">{product.name}</div>
                       <div className="text-sm text-muted-foreground flex gap-4">
-                        {product.sku && <span>Арт: {product.sku}</span>}
+                        {product.sku && (
+                          <span>
+                            {t('admin.orders.sku')} {product.sku}
+                          </span>
+                        )}
                         {product.has_modifications && (
-                          <span className="text-primary">Є модифікації</span>
+                          <span className="text-primary">
+                            {t('admin.orders.hasModifications')}
+                          </span>
                         )}
                       </div>
                     </button>
@@ -236,7 +246,7 @@ export function AddProductToOrder({
               size="sm"
               onClick={() => setSelectedProduct(null)}
             >
-              ← Назад до пошуку
+              {t('admin.orders.backToSearch')}
             </Button>
             <ScrollArea className="h-[300px]">
               {modificationsLoading ? (
@@ -245,7 +255,7 @@ export function AddProductToOrder({
                 </div>
               ) : modifications?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Модифікації не знайдено
+                  {t('admin.orders.modificationsEmpty')}
                 </p>
               ) : (
                 <div className="space-y-1">
@@ -257,7 +267,11 @@ export function AddProductToOrder({
                     >
                       <div className="font-medium">{mod.name}</div>
                       <div className="text-sm text-muted-foreground flex gap-4">
-                        {mod.sku && <span>Арт: {mod.sku}</span>}
+                        {mod.sku && (
+                          <span>
+                            {t('admin.orders.sku')} {mod.sku}
+                          </span>
+                        )}
                         <span>{mod.price.toLocaleString()} ₴</span>
                       </div>
                     </button>
@@ -273,14 +287,14 @@ export function AddProductToOrder({
               size="sm"
               onClick={() => setSelectedProduct(null)}
             >
-              ← Назад до пошуку
+              {t('admin.orders.backToSearch')}
             </Button>
             <div className="text-center py-4">
               <p className="mb-4">
-                Ціна:{' '}
+                {t('admin.orders.priceLabel')}{' '}
                 {simpleProductPrice !== null && simpleProductPrice !== undefined
                   ? `${simpleProductPrice.toLocaleString()} ₴`
-                  : 'Завантаження...'}
+                  : t('common.loading')}
               </p>
               <Button
                 onClick={handleAddSimpleProduct}
@@ -289,7 +303,7 @@ export function AddProductToOrder({
                   simpleProductPrice === undefined
                 }
               >
-                Додати до замовлення
+                {t('admin.orders.addToOrder')}
               </Button>
             </div>
           </div>

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nProvider } from '@simplycms/i18n';
 
 /**
  * Task 16, Step 3: списки товарів мають бути в серверному HTML.
@@ -85,8 +86,13 @@ function ssr(node: ReactNode): string {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // I18nProvider — як у проді (`__root.tsx` тримає його над усіма роутами):
+  // канонічні сторінки ходять по рядки через `useT()`, тож без провайдера
+  // рендер падає ще до перевірки SSR-повноти.
   return renderToString(
-    <QueryClientProvider client={client}>{node}</QueryClientProvider>,
+    <QueryClientProvider client={client}>
+      <I18nProvider locale="uk">{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

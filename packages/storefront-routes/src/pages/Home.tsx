@@ -1,4 +1,5 @@
 import type { Banner } from '@simplycms/objects/objects';
+import { useT } from '@simplycms/i18n';
 import { BannerSlider } from '../components/BannerSlider';
 import { ProductCarousel } from '../components/ProductCarousel';
 import { useActiveThemeModule } from '../shells/useActiveThemeModule';
@@ -38,6 +39,7 @@ export default function HomePage({
   sections: initialSections,
   sectionProducts,
 }: HomePageProps) {
+  const t = useT();
   const theme = useActiveThemeModule();
   const Hero = theme.components.HeroBanner;
   const ThemeHomeSections = theme.components.HomeSections;
@@ -56,7 +58,7 @@ export default function HomePage({
 
       {featuredProducts && featuredProducts.length > 0 && (
         <ProductCarousel
-          title="Лідери продажів"
+          title={t('home.featured')}
           products={featuredProducts}
           viewAllLink="/catalog"
         />
@@ -64,7 +66,7 @@ export default function HomePage({
 
       {newProducts && newProducts.length > 0 && (
         <ProductCarousel
-          title="Новинки"
+          title={t('home.new')}
           products={newProducts}
           viewAllLink="/catalog"
         />

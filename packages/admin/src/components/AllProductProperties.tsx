@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
 import { Switch } from '@simplycms/ui/switch';
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export function AllProductProperties({ productId, sectionId }: Props) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<
@@ -250,7 +252,7 @@ export function AllProductProperties({ productId, sectionId }: Props) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Властивості товару</CardTitle>
+          <CardTitle>{t('admin.properties.section.productProps')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center p-4">
@@ -265,11 +267,11 @@ export function AllProductProperties({ productId, sectionId }: Props) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Властивості товару</CardTitle>
+          <CardTitle>{t('admin.properties.section.productProps')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
-            Для цього розділу ще не налаштовані властивості
+            {t('admin.properties.section.notConfigured')}
           </div>
         </CardContent>
       </Card>
@@ -288,7 +290,9 @@ export function AllProductProperties({ productId, sectionId }: Props) {
           <Input
             value={currentValue?.value || ''}
             onChange={(e) => handleChange(property.id, e.target.value || null)}
-            placeholder={`Введіть ${property.name.toLowerCase()}`}
+            placeholder={t('admin.properties.values.inputPlaceholder', {
+              name: property.name.toLowerCase(),
+            })}
           />
         );
 
@@ -313,7 +317,9 @@ export function AllProductProperties({ productId, sectionId }: Props) {
             onValueChange={(val) => handleSelectChange(property.id, val)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Оберіть значення" />
+              <SelectValue
+                placeholder={t('admin.properties.values.pickValue')}
+              />
             </SelectTrigger>
             <SelectContent>
               {options.map((opt) => (
@@ -349,7 +355,7 @@ export function AllProductProperties({ productId, sectionId }: Props) {
             ))}
             {options.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Опцій не знайдено. Додайте опції у властивості.
+                {t('admin.properties.values.noOptions')}
               </p>
             )}
           </div>
@@ -365,7 +371,9 @@ export function AllProductProperties({ productId, sectionId }: Props) {
               }
             />
             <span className="text-sm text-muted-foreground">
-              {currentValue?.value === 'true' ? 'Так' : 'Ні'}
+              {currentValue?.value === 'true'
+                ? t('common.yes')
+                : t('common.no')}
             </span>
           </div>
         );
@@ -403,7 +411,7 @@ export function AllProductProperties({ productId, sectionId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Властивості товару</CardTitle>
+        <CardTitle>{t('admin.properties.section.productProps')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
@@ -415,7 +423,12 @@ export function AllProductProperties({ productId, sectionId }: Props) {
                   <span className="text-destructive">*</span>
                 )}
                 <span className="text-xs text-muted-foreground">
-                  ({property.applies_to === 'product' ? 'товар' : 'модифікація'}
+                  (
+                  {t(
+                    property.applies_to === 'product'
+                      ? 'admin.properties.appliesTo.product'
+                      : 'admin.properties.appliesTo.modification',
+                  )}
                   )
                 </span>
               </Label>

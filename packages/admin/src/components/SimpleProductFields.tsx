@@ -2,6 +2,7 @@ import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { StockStatusSelect } from './StockStatusSelect';
+import { useT } from '@simplycms/i18n';
 import { StockByPointManager } from './StockByPointManager';
 import { ProductPricesEditor } from './ProductPricesEditor';
 import type { StockStatus } from '@simplycms/core/hooks/useStock';
@@ -21,18 +22,20 @@ export function SimpleProductFields({
   onSkuChange,
   onStockStatusChange,
 }: SimpleProductFieldsProps) {
+  const t = useT();
+
   return (
     <>
       <ProductPricesEditor productId={productId} />
 
       <Card>
         <CardHeader>
-          <CardTitle>Наявність</CardTitle>
+          <CardTitle>{t('product.availability')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="sku">Артикул (SKU)</Label>
+              <Label htmlFor="sku">{t('admin.products.mods.sku')}</Label>
               <Input
                 id="sku"
                 value={sku}

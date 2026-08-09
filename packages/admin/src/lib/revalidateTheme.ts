@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useRouter } from '@tanstack/react-router';
+import { useT, type Translator } from '@simplycms/i18n';
 
 /**
  * Скидання серверного кешу активної теми — ЄДИНА точка для всієї адмінки.
@@ -11,11 +12,13 @@ import { useRouter } from '@tanstack/react-router';
  * Кидає на не-2xx і на мережевій помилці — мовчки ковтати відповідь не можна:
  * саме `catch {}` ховав те, що старий `/api/revalidate` взагалі не існує.
  */
-export async function revalidateTheme(): Promise<void> {
+export async function revalidateTheme(t: Translator): Promise<void> {
   const response = await fetch('/api/revalidate-theme', { method: 'POST' });
 
   if (!response.ok) {
-    throw new Error(`Сервер відповів ${response.status}`);
+    throw new Error(
+      t('admin.common.revalidate.serverError', { status: response.status }),
+    );
   }
 }
 
@@ -35,16 +38,20 @@ export async function revalidateTheme(): Promise<void> {
  * перемикання теми це невиправдана складність.
  */
 export function useRevalidateStorefront(): () => Promise<void> {
+  const t = useT();
   const router = useRouter();
 
   return useCallback(async () => {
-    await revalidateTheme();
+    await revalidateTheme(t);
     await router.invalidate();
-  }, [router]);
+  }, [router, t]);
 }
 
 /** Текст для toast-а, коли кеш вітрини скинути не вдалося (TTL — 5 хвилин). */
-export function revalidateFailureDescription(error: unknown): string {
-  const suffix = 'Зміни зʼявляться протягом 5 хвилин.';
+export function revalidateFailureDescription(
+  t: Translator,
+  error: unknown,
+): string {
+  const suffix = t('admin.common.revalidate.delay');
   return error instanceof Error ? `${error.message}. ${suffix}` : suffix;
 }

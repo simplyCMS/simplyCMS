@@ -16,6 +16,7 @@ import { Badge } from '@simplycms/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Switch } from '@simplycms/ui/switch';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import type { Tables } from '@simplycms/supabase';
 import { adminPath } from '../lib/adminLinks';
@@ -32,12 +33,13 @@ import {
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
 
-const operatorLabels: Record<string, string> = {
-  and: 'ТА (сума)',
-  or: 'АБО (перша)',
-  not: 'НЕ (інверсія)',
-  min: 'МІН (найменша)',
-  max: 'МАКС (найбільша)',
+// Мапа КЛЮЧІВ: оператор групи — enum БД.
+const operatorLabels: Record<string, MessageKey> = {
+  and: 'admin.discounts.op.and',
+  or: 'admin.discounts.op.or',
+  not: 'admin.discounts.op.not',
+  min: 'admin.discounts.op.min',
+  max: 'admin.discounts.op.max',
 };
 
 const operatorColors: Record<string, string> = {
@@ -48,10 +50,12 @@ const operatorColors: Record<string, string> = {
   max: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
 };
 
-const discountTypeLabels: Record<string, string> = {
+// Суфікс одиниці біля значення знижки. «грн» — кирилиця, тож ключ каталогу;
+// «%» лишається символом.
+const discountTypeSuffix: Record<string, MessageKey | string> = {
   percent: '%',
-  fixed_amount: 'грн',
-  fixed_price: '= грн',
+  fixed_amount: 'admin.discounts.uah',
+  fixed_price: 'admin.discounts.uahFixed',
 };
 
 /** Знижка з приєднаним видом ціни */
@@ -74,6 +78,7 @@ interface DiscountGroup {
 }
 
 export default function Discounts() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -145,7 +150,7 @@ export default function Discounts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
-      toast({ title: 'Групу видалено' });
+      toast({ title: t('admin.discounts.groupDeleted') });
     },
   });
 
@@ -156,7 +161,7 @@ export default function Discounts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discount-groups-tree'] });
-      toast({ title: 'Скидку видалено' });
+      toast({ title: t('admin.discounts.deleted') });
     },
   });
 
@@ -190,7 +195,7 @@ export default function Discounts() {
           </button>
 
           <Badge variant="outline" className={operatorColors[group.operator]}>
-            {operatorLabels[group.operator]}
+            {t(operatorLabels[group.operator])}
           </Badge>
 
           <span
@@ -234,18 +239,19 @@ export default function Discounts() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Видалити групу?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t('admin.discounts.deleteGroupTitle')}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Всі скидки та дочірні групи будуть видалені разом з цією
-                    групою.
+                    {t('admin.discounts.deleteGroupText')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => deleteGroup.mutate(group.id)}
                   >
-                    Видалити
+                    {t('common.delete')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -274,7 +280,9 @@ export default function Discounts() {
                       ? '='
                       : '-'}
                   {d.discount_value}
-                  {discountTypeLabels[d.discount_type]}
+                  {discountTypeSuffix[d.discount_type] === '%'
+                    ? '%'
+                    : t(discountTypeSuffix[d.discount_type] as MessageKey)}
                 </Badge>
                 {d.price_types && (
                   <Badge variant="secondary" className="text-xs">
@@ -303,17 +311,21 @@ export default function Discounts() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Видалити скидку?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          {t('admin.discounts.deleteTitle')}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                          Скидку «{d.name}» буде видалено назавжди.
+                          {t('admin.discounts.deleteText', { name: d.name })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                        <AlertDialogCancel>
+                          {t('common.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteDiscount.mutate(d.id)}
                         >
-                          Видалити
+                          {t('common.delete')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -333,7 +345,8 @@ export default function Discounts() {
                   params={{ discountId: 'new' }}
                   search={{ groupId: group.id }}
                 >
-                  <Plus className="h-3 w-3 mr-1" /> Скидка
+                  <Plus className="h-3 w-3 mr-1" />{' '}
+                  {t('admin.discounts.discount')}
                 </Link>
               </Button>
               <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
@@ -342,7 +355,8 @@ export default function Discounts() {
                   params={{ groupId: 'new' }}
                   search={{ parentId: group.id }}
                 >
-                  <Plus className="h-3 w-3 mr-1" /> Підгрупа
+                  <Plus className="h-3 w-3 mr-1" />{' '}
+                  {t('admin.discounts.subgroup')}
                 </Link>
               </Button>
             </div>
@@ -356,15 +370,16 @@ export default function Discounts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Скидки</h1>
+          <h1 className="text-3xl font-bold">{t('admin.nav.discounts')}</h1>
           <p className="text-muted-foreground mt-1">
-            Управління групами скидок та умовами їх застосування
+            {t('admin.discounts.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link to={adminPath('price-validator')}>
-              <DollarSign className="h-4 w-4 mr-2" /> Валідатор цін
+              <DollarSign className="h-4 w-4 mr-2" />{' '}
+              {t('admin.nav.priceValidator')}
             </Link>
           </Button>
           <Button asChild>
@@ -372,7 +387,7 @@ export default function Discounts() {
               to={adminPath('discounts/groups/$groupId')}
               params={{ groupId: 'new' }}
             >
-              <Plus className="h-4 w-4 mr-2" /> Нова група
+              <Plus className="h-4 w-4 mr-2" /> {t('admin.discounts.newGroup')}
             </Link>
           </Button>
         </div>
@@ -380,21 +395,21 @@ export default function Discounts() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Дерево скидок</CardTitle>
+          <CardTitle>{t('admin.discounts.tree')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">Завантаження...</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           ) : groups.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Ще немає груп скидок</p>
+              <p>{t('admin.discounts.empty')}</p>
               <Button variant="outline" className="mt-4" asChild>
                 <Link
                   to={adminPath('discounts/groups/$groupId')}
                   params={{ groupId: 'new' }}
                 >
-                  Створити першу групу
+                  {t('admin.discounts.createFirst')}
                 </Link>
               </Button>
             </div>

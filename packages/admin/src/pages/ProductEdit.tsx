@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
@@ -30,6 +31,7 @@ import { PluginSlot } from '@simplycms/plugins/PluginSlot';
 import { adminPath } from '../lib/adminLinks';
 
 export default function ProductEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { productId } = useParams({ strict: false }) as { productId: string };
   const navigate = useNavigate();
@@ -114,13 +116,13 @@ export default function ProductEdit() {
     },
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast({ title: 'Товар створено' });
+      toast({ title: t('admin.products.created') });
       navigate({ to: adminPath(`products/${newProduct.id}`) });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -137,12 +139,12 @@ export default function ProductEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
-      toast({ title: 'Товар оновлено' });
+      toast({ title: t('admin.products.updated') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -208,12 +210,14 @@ export default function ProductEdit() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isNew ? 'Новий товар' : formData.name || 'Редагування товару'}
+              {isNew
+                ? t('admin.products.new')
+                : formData.name || t('admin.products.editTitle')}
             </h1>
             <p className="text-muted-foreground">
               {isNew
-                ? 'Створіть новий товар'
-                : 'Редагуйте інформацію про товар'}
+                ? t('admin.products.newSubtitle')
+                : t('admin.products.editSubtitle')}
             </p>
           </div>
         </div>
@@ -223,7 +227,7 @@ export default function ProductEdit() {
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {isNew ? 'Створити' : 'Зберегти'}
+          {isNew ? t('common.create') : t('common.save')}
         </Button>
       </div>
 
@@ -238,12 +242,12 @@ export default function ProductEdit() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Основна інформація</CardTitle>
+              <CardTitle>{t('common.basicInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Назва *</Label>
+                  <Label htmlFor="name">{t('common.nameRequiredLabel')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -262,7 +266,9 @@ export default function ProductEdit() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="short_description">Короткий опис</Label>
+                <Label htmlFor="short_description">
+                  {t('admin.products.shortDescription')}
+                </Label>
                 <Input
                   id="short_description"
                   value={formData.short_description}
@@ -272,11 +278,13 @@ export default function ProductEdit() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Повний опис</Label>
+                <Label htmlFor="description">
+                  {t('admin.products.fullDescription')}
+                </Label>
                 <RichTextEditor
                   content={formData.description}
                   onChange={(content) => handleChange('description', content)}
-                  placeholder="Введіть опис товару..."
+                  placeholder={t('admin.products.descriptionPlaceholder')}
                 />
               </div>
             </CardContent>
@@ -284,7 +292,7 @@ export default function ProductEdit() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Зображення товару</CardTitle>
+              <CardTitle>{t('admin.products.images')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ImageUpload
@@ -307,7 +315,7 @@ export default function ProductEdit() {
                   id="meta_title"
                   value={formData.meta_title}
                   onChange={(e) => handleChange('meta_title', e.target.value)}
-                  placeholder="Заголовок для пошукових систем"
+                  placeholder={t('admin.products.seoTitlePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
@@ -319,7 +327,7 @@ export default function ProductEdit() {
                   onChange={(e) =>
                     handleChange('meta_description', e.target.value)
                   }
-                  placeholder="Опис для пошукових систем"
+                  placeholder={t('common.seoDescription')}
                 />
               </div>
             </CardContent>
@@ -377,17 +385,19 @@ export default function ProductEdit() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Налаштування</CardTitle>
+              <CardTitle>{t('admin.nav.settings')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Розділ *</Label>
+                <Label>{t('admin.products.sectionRequired')}</Label>
                 <Select
                   value={formData.section_id}
                   onValueChange={(value) => handleChange('section_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Виберіть розділ" />
+                    <SelectValue
+                      placeholder={t('admin.products.pickSection')}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {sections?.map((section) => (
@@ -402,7 +412,7 @@ export default function ProductEdit() {
               <Separator />
 
               <div className="space-y-2">
-                <Label>Тип товару</Label>
+                <Label>{t('admin.products.type')}</Label>
                 <RadioGroup
                   value={
                     formData.has_modifications ? 'with_modifications' : 'simple'
@@ -421,7 +431,7 @@ export default function ProductEdit() {
                       htmlFor="type_simple"
                       className="font-normal cursor-pointer"
                     >
-                      Простий товар
+                      {t('admin.products.typeSimple')}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -433,7 +443,7 @@ export default function ProductEdit() {
                       htmlFor="type_modifications"
                       className="font-normal cursor-pointer"
                     >
-                      Товар з модифікаціями
+                      {t('admin.products.typeWithMods')}
                     </Label>
                   </div>
                 </RadioGroup>
@@ -442,7 +452,7 @@ export default function ProductEdit() {
               <Separator />
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="is_active">Активний</Label>
+                <Label htmlFor="is_active">{t('common.activeM')}</Label>
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
@@ -453,7 +463,9 @@ export default function ProductEdit() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="is_featured">Рекомендований</Label>
+                <Label htmlFor="is_featured">
+                  {t('admin.products.featured')}
+                </Label>
                 <Switch
                   id="is_featured"
                   checked={formData.is_featured}
@@ -474,18 +486,18 @@ export default function ProductEdit() {
           {!isNew && (
             <Card>
               <CardHeader>
-                <CardTitle>Інформація</CardTitle>
+                <CardTitle>{t('common.information')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p>ID: {productId}</p>
                 {product && (
                   <>
                     <p>
-                      Створено:{' '}
+                      {t('admin.products.createdAt')}{' '}
                       {new Date(product.created_at).toLocaleDateString('uk-UA')}
                     </p>
                     <p>
-                      Оновлено:{' '}
+                      {t('admin.products.updatedAt')}{' '}
                       {new Date(product.updated_at).toLocaleDateString('uk-UA')}
                     </p>
                   </>

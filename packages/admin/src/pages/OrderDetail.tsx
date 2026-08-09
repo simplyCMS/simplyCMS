@@ -2,6 +2,7 @@ import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
@@ -64,6 +65,7 @@ interface OrderItem {
 }
 
 export default function OrderDetail() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { orderId } = useParams({ strict: false }) as { orderId: string };
   const navigate = useNavigate();
@@ -168,14 +170,14 @@ export default function OrderDetail() {
       setEditedItems({});
       setHasChanges(false);
       toast({
-        title: 'Замовлення оновлено',
-        description: 'Зміни успішно збережено',
+        title: t('admin.orders.updated'),
+        description: t('admin.orders.updatedHint'),
       });
     },
     onError: (error) => {
       toast({
-        title: 'Помилка',
-        description: 'Не вдалося оновити замовлення',
+        title: t('common.error'),
+        description: t('admin.orders.updateFailed'),
         variant: 'destructive',
       });
       console.error('Update error:', error);
@@ -217,14 +219,14 @@ export default function OrderDetail() {
       });
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({
-        title: 'Товар видалено',
-        description: 'Товар успішно видалено з замовлення',
+        title: t('admin.orders.itemRemoved'),
+        description: t('admin.orders.itemRemovedHint'),
       });
     },
     onError: () => {
       toast({
-        title: 'Помилка',
-        description: 'Не вдалося видалити товар',
+        title: t('common.error'),
+        description: t('admin.orders.itemRemoveFailed'),
         variant: 'destructive',
       });
     },
@@ -277,14 +279,14 @@ export default function OrderDetail() {
       });
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast({
-        title: 'Товар додано',
-        description: 'Товар успішно додано до замовлення',
+        title: t('admin.orders.itemAdded'),
+        description: t('admin.orders.itemAddedHint'),
       });
     },
     onError: () => {
       toast({
-        title: 'Помилка',
-        description: 'Не вдалося додати товар',
+        title: t('common.error'),
+        description: t('admin.orders.itemAddFailed'),
         variant: 'destructive',
       });
     },
@@ -327,12 +329,12 @@ export default function OrderDetail() {
   if (!order) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Замовлення не знайдено</p>
+        <p className="text-muted-foreground">{t('admin.orders.notFound')}</p>
         <Button
           variant="link"
           onClick={() => navigate({ to: adminPath('orders') })}
         >
-          Повернутися до списку
+          {t('admin.orders.backToList')}
         </Button>
       </div>
     );
@@ -354,10 +356,10 @@ export default function OrderDetail() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">
-              Замовлення {order.order_number}
+              {t('admin.nav.orders')} {order.order_number}
             </h1>
             <p className="text-sm text-muted-foreground">
-              від{' '}
+              {t('admin.orders.from')}{' '}
               {format(new Date(order.created_at), 'dd MMMM yyyy, HH:mm', {
                 locale: uk,
               })}
@@ -373,7 +375,7 @@ export default function OrderDetail() {
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          Зберегти зміни
+          {t('admin.orders.saveChanges')}
         </Button>
       </div>
 
@@ -382,7 +384,7 @@ export default function OrderDetail() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle>Товари замовлення</CardTitle>
+              <CardTitle>{t('admin.orders.items')}</CardTitle>
               <AddProductToOrder
                 onAddProduct={(product) => addItemMutation.mutate(product)}
                 isAdding={addItemMutation.isPending}
@@ -392,15 +394,19 @@ export default function OrderDetail() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Назва</TableHead>
+                    <TableHead>{t('common.name')}</TableHead>
                     <TableHead className="w-28 text-right">
-                      Базова ціна
+                      {t('admin.orders.basePrice')}
                     </TableHead>
-                    <TableHead className="w-24 text-right">Ціна</TableHead>
+                    <TableHead className="w-24 text-right">
+                      {t('common.price')}
+                    </TableHead>
                     <TableHead className="w-32 text-center">
-                      Кількість
+                      {t('common.quantity')}
                     </TableHead>
-                    <TableHead className="w-28 text-right">Сума</TableHead>
+                    <TableHead className="w-28 text-right">
+                      {t('common.amount')}
+                    </TableHead>
                     <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -499,21 +505,24 @@ export default function OrderDetail() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>
-                                Видалити товар?
+                                {t('admin.orders.removeItemTitle')}
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Ви впевнені, що хочете видалити "{item.name}" з
-                                замовлення?
+                                {t('admin.orders.removeItemText', {
+                                  name: item.name,
+                                })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                              <AlertDialogCancel>
+                                {t('common.cancel')}
+                              </AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() =>
                                   deleteItemMutation.mutate(item.id)
                                 }
                               >
-                                Видалити
+                                {t('common.delete')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -525,7 +534,9 @@ export default function OrderDetail() {
               </Table>
 
               <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                <span className="font-medium">Загальна сума:</span>
+                <span className="font-medium">
+                  {t('admin.orders.totalSum')}
+                </span>
                 <span className="text-xl font-bold">
                   {calculateNewTotal().toLocaleString()} ₴
                 </span>
@@ -539,7 +550,7 @@ export default function OrderDetail() {
           {/* Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Статус замовлення</CardTitle>
+              <CardTitle>{t('admin.orders.statusSection')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Select
@@ -547,7 +558,7 @@ export default function OrderDetail() {
                 onValueChange={handleStatusChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Виберіть статус">
+                  <SelectValue placeholder={t('admin.orders.pickStatus')}>
                     {currentStatus && (
                       <div className="flex items-center gap-2">
                         <div
@@ -589,11 +600,13 @@ export default function OrderDetail() {
           {/* Customer Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Інформація про клієнта</CardTitle>
+              <CardTitle>{t('admin.orders.customerInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <span className="text-muted-foreground">Ім'я:</span>
+                <span className="text-muted-foreground">
+                  {t('admin.orders.nameLabel')}
+                </span>
                 <p className="font-medium">
                   {order.first_name} {order.last_name}
                 </p>
@@ -603,7 +616,9 @@ export default function OrderDetail() {
                 <p className="font-medium">{order.email}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Телефон:</span>
+                <span className="text-muted-foreground">
+                  {t('admin.orders.phoneLabel')}
+                </span>
                 <p className="font-medium">{order.phone}</p>
               </div>
             </CardContent>
@@ -615,19 +630,23 @@ export default function OrderDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
-                  Отримувач
+                  {t('checkout.success.recipient')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Ім'я:</span>
+                  <span className="text-muted-foreground">
+                    {t('admin.orders.nameLabel')}
+                  </span>
                   <p className="font-medium">
                     {order.recipient_first_name} {order.recipient_last_name}
                   </p>
                 </div>
                 {order.recipient_phone && (
                   <div>
-                    <span className="text-muted-foreground">Телефон:</span>
+                    <span className="text-muted-foreground">
+                      {t('admin.orders.phoneLabel')}
+                    </span>
                     <p className="font-medium">{order.recipient_phone}</p>
                   </div>
                 )}
@@ -644,30 +663,36 @@ export default function OrderDetail() {
           {/* Delivery */}
           <Card>
             <CardHeader>
-              <CardTitle>Доставка</CardTitle>
+              <CardTitle>{t('cart.summary.shipping')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <span className="text-muted-foreground">Спосіб:</span>
+                <span className="text-muted-foreground">
+                  {t('admin.orders.methodLabel')}
+                </span>
                 <p className="font-medium">
                   {order.delivery_method === 'pickup'
-                    ? 'Самовивіз'
+                    ? t('checkout.shipping.pickup')
                     : order.delivery_method === 'nova_poshta'
-                      ? 'Нова Пошта'
+                      ? t('checkout.shipping.novaPoshta')
                       : order.delivery_method === 'courier'
-                        ? "Кур'єр"
+                        ? t('checkout.shipping.courier')
                         : order.delivery_method}
                 </p>
               </div>
               {order.delivery_city && (
                 <div>
-                  <span className="text-muted-foreground">Місто:</span>
+                  <span className="text-muted-foreground">
+                    {t('admin.orders.cityLabel')}
+                  </span>
                   <p className="font-medium">{order.delivery_city}</p>
                 </div>
               )}
               {order.delivery_address && (
                 <div>
-                  <span className="text-muted-foreground">Адреса:</span>
+                  <span className="text-muted-foreground">
+                    {t('admin.orders.addressLabel')}
+                  </span>
                   <p className="font-medium">{order.delivery_address}</p>
                 </div>
               )}
@@ -677,14 +702,16 @@ export default function OrderDetail() {
           {/* Payment */}
           <Card>
             <CardHeader>
-              <CardTitle>Оплата</CardTitle>
+              <CardTitle>{t('checkout.success.payment')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <span className="text-muted-foreground">Спосіб:</span>
+                <span className="text-muted-foreground">
+                  {t('admin.orders.methodLabel')}
+                </span>
                 <p className="font-medium">
                   {order.payment_method === 'cash'
-                    ? 'Оплата при отриманні'
+                    ? t('checkout.payment.cash')
                     : order.payment_method}
                 </p>
               </div>
@@ -695,7 +722,7 @@ export default function OrderDetail() {
           {order.notes && (
             <Card>
               <CardHeader>
-                <CardTitle>Коментар</CardTitle>
+                <CardTitle>{t('admin.orders.comment')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm">{order.notes}</p>

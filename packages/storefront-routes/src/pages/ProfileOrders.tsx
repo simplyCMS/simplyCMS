@@ -14,6 +14,7 @@ import {
 } from '@simplycms/ui/select';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 
 interface Order {
   id: string;
@@ -40,6 +41,7 @@ interface OrderStatus {
 }
 
 export default function ProfileOrdersPage() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -113,16 +115,18 @@ export default function ProfileOrdersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Мої замовлення</h1>
+        <h1 className="text-2xl font-bold">{t('profile.orders.title')}</h1>
 
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Всі статуси" />
+              <SelectValue placeholder={t('profile.orders.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Всі статуси</SelectItem>
+              <SelectItem value="all">
+                {t('profile.orders.allStatuses')}
+              </SelectItem>
               {statuses.map((status) => (
                 <SelectItem key={status.id} value={status.id}>
                   <div className="flex items-center gap-2">
@@ -150,18 +154,22 @@ export default function ProfileOrdersPage() {
           <CardContent className="py-12 text-center">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">
-              {selectedStatus === 'all'
-                ? 'У вас ще немає замовлень'
-                : 'Замовлень з таким статусом не знайдено'}
+              {t(
+                selectedStatus === 'all'
+                  ? 'profile.noOrders'
+                  : 'profile.orders.noneForStatus',
+              )}
             </h2>
             <p className="text-muted-foreground mb-4">
-              {selectedStatus === 'all'
-                ? 'Перегляньте наш каталог та оформіть перше замовлення'
-                : 'Спробуйте обрати інший фільтр'}
+              {t(
+                selectedStatus === 'all'
+                  ? 'profile.orders.emptyHint'
+                  : 'profile.orders.filterHint',
+              )}
             </p>
             {selectedStatus === 'all' && (
               <Button asChild>
-                <Link to="/catalog">Перейти до каталогу</Link>
+                <Link to="/catalog">{t('cart.empty.cta')}</Link>
               </Button>
             )}
           </CardContent>
@@ -209,14 +217,21 @@ export default function ProfileOrdersPage() {
                           </span>
                         ))}
                         {order.items.length > 2 && (
-                          <span> та ще {order.items.length - 2} позицій</span>
+                          <span>
+                            {' '}
+                            {t('profile.orders.moreItems', {
+                              count: order.items.length - 2,
+                            })}
+                          </span>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Сума</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t('common.amount')}
+                        </p>
                         <p className="text-xl font-bold text-primary">
                           {formatPrice(order.total)}
                         </p>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Upload, X, Loader2 } from 'lucide-react';
@@ -22,6 +23,7 @@ export function ImageUpload({
   maxImages = 10,
   disabled = false,
 }: ImageUploadProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -35,8 +37,8 @@ export function ImageUpload({
       if (!fileExt || !allowedExts.includes(fileExt)) {
         toast({
           variant: 'destructive',
-          title: 'Непідтримуваний формат',
-          description: 'Дозволені формати: JPG, PNG, WebP, GIF',
+          title: t('admin.products.upload.badFormat'),
+          description: t('admin.products.upload.allowedFormats'),
         });
         return null;
       }
@@ -44,8 +46,8 @@ export function ImageUpload({
       if (file.size > 5 * 1024 * 1024) {
         toast({
           variant: 'destructive',
-          title: 'Файл занадто великий',
-          description: 'Максимальний розмір: 5 МБ',
+          title: t('admin.products.upload.tooLarge'),
+          description: t('admin.products.upload.maxSize'),
         });
         return null;
       }
@@ -63,7 +65,7 @@ export function ImageUpload({
         console.error('Upload error:', error);
         toast({
           variant: 'destructive',
-          title: 'Помилка завантаження',
+          title: t('admin.products.upload.failed'),
           description: error.message,
         });
         return null;
@@ -86,8 +88,10 @@ export function ImageUpload({
       if (remainingSlots <= 0) {
         toast({
           variant: 'destructive',
-          title: 'Ліміт досягнуто',
-          description: `Максимум ${maxImages} зображень`,
+          title: t('admin.products.upload.limit'),
+          description: t('admin.products.upload.limitHint', {
+            count: maxImages,
+          }),
         });
         return;
       }
@@ -105,8 +109,10 @@ export function ImageUpload({
         if (successfulUploads.length > 0) {
           onImagesChange([...images, ...successfulUploads]);
           toast({
-            title: 'Завантажено',
-            description: `${successfulUploads.length} зображень додано`,
+            title: t('admin.products.upload.done'),
+            description: t('admin.products.upload.doneHint', {
+              count: successfulUploads.length,
+            }),
           });
         }
       } finally {
@@ -194,16 +200,18 @@ export function ImageUpload({
           <div className="flex items-center justify-center gap-2 py-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">
-              Завантаження...
+              {t('common.loading')}
             </span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-2">
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Перетягніть зображення сюди</p>
+              <p className="text-sm font-medium">
+                {t('admin.products.upload.dropHere')}
+              </p>
               <p className="text-xs text-muted-foreground">
-                або натисніть для вибору (JPG, PNG, WebP, GIF до 5 МБ)
+                {t('admin.products.upload.clickToPick')}
               </p>
             </div>
           </div>
@@ -271,7 +279,7 @@ export function ImageUpload({
               {/* First image badge */}
               {index === 0 && (
                 <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-                  Головне
+                  {t('admin.products.upload.primary')}
                 </span>
               )}
             </div>
@@ -280,7 +288,7 @@ export function ImageUpload({
       )}
 
       <p className="text-xs text-muted-foreground">
-        {images.length} / {maxImages} зображень
+        {images.length} / {maxImages} {t('admin.products.upload.imagesWord')}
       </p>
     </div>
   );

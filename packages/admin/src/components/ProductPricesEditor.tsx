@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Input } from '@simplycms/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
@@ -24,6 +25,7 @@ export function ProductPricesEditor({
   productId,
   modificationId = null,
 }: ProductPricesEditorProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -128,12 +130,12 @@ export function ProductPricesEditor({
         queryKey: ['product-prices-editor', productId],
       });
       queryClient.invalidateQueries({ queryKey: ['product-prices'] });
-      toast({ title: 'Ціни збережено' });
+      toast({ title: t('admin.products.prices.saved') });
     },
     onError: (error: Error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -151,7 +153,9 @@ export function ProductPricesEditor({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Ціни за видами</CardTitle>
+          <CardTitle className="text-lg">
+            {t('admin.products.mods.prices')}
+          </CardTitle>
           <Button
             size="sm"
             onClick={() => saveMutation.mutate()}
@@ -162,7 +166,7 @@ export function ProductPricesEditor({
             ) : (
               <Save className="h-4 w-4 mr-1" />
             )}
-            Зберегти ціни
+            {t('admin.products.prices.save')}
           </Button>
         </div>
       </CardHeader>
@@ -170,9 +174,9 @@ export function ProductPricesEditor({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Вид ціни</TableHead>
-              <TableHead>Ціна</TableHead>
-              <TableHead>Стара ціна</TableHead>
+              <TableHead>{t('admin.users.priceType')}</TableHead>
+              <TableHead>{t('common.price')}</TableHead>
+              <TableHead>{t('admin.products.prices.oldPrice')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -182,7 +186,7 @@ export function ProductPricesEditor({
                   {pt.name}
                   {pt.is_default && (
                     <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      За замовч.
+                      {t('common.byDefaultShort')}
                     </span>
                   )}
                 </TableCell>

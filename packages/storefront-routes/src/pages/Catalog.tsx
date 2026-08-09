@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import {
@@ -62,6 +63,7 @@ export default function CatalogPage({
   initialSections,
   initialProducts,
 }: CatalogPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [sortBy, setSortBy] = useState<SortOption>('popular');
@@ -445,7 +447,7 @@ export default function CatalogPage({
           if (min !== undefined || max !== undefined) {
             result.push({
               key: 'price',
-              label: 'Ціна',
+              label: t('common.price'),
               value: `${min ?? priceRange?.min ?? 0} - ${max ?? priceRange?.max ?? '∞'} ₴`,
               type: 'price',
             });
@@ -502,6 +504,7 @@ export default function CatalogPage({
 
     return result;
   }, [
+    t,
     filters,
     allPropertyOptions,
     priceRange,
@@ -543,18 +546,16 @@ export default function CatalogPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">Каталог</span>
+        <span className="text-foreground">{t('catalog.title')}</span>
       </nav>
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-4xl font-bold mb-2">Каталог</h1>
-        <p className="text-muted-foreground">
-          Оберіть категорію або скористайтесь фільтрами
-        </p>
+        <h1 className="text-4xl font-bold mb-2">{t('catalog.title')}</h1>
+        <p className="text-muted-foreground">{t('catalog.subtitle')}</p>
       </div>
 
       {/* Section chips */}
@@ -564,7 +565,7 @@ export default function CatalogPage({
           className="cursor-pointer px-3 py-1.5 text-sm"
           onClick={() => handleSectionClick(null)}
         >
-          Всі товари
+          {t('catalog.allProducts')}
         </Badge>
         {sections?.map((section) => (
           <Badge
@@ -618,7 +619,7 @@ export default function CatalogPage({
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" className="lg:hidden">
                     <Filter className="h-4 w-4 mr-2" />
-                    Фільтри
+                    {t('catalog.filters')}
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 overflow-y-auto">
@@ -640,8 +641,11 @@ export default function CatalogPage({
               </Sheet>
 
               <span className="text-sm text-muted-foreground">
-                {products ? filteredProducts.length : ssrProducts.length}{' '}
-                товарів
+                {t('catalog.productsCount', {
+                  count: products
+                    ? filteredProducts.length
+                    : ssrProducts.length,
+                })}
               </span>
             </div>
 
@@ -654,10 +658,18 @@ export default function CatalogPage({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="popular">За популярністю</SelectItem>
-                  <SelectItem value="newest">Новинки</SelectItem>
-                  <SelectItem value="price_asc">Дешевші</SelectItem>
-                  <SelectItem value="price_desc">Дорожчі</SelectItem>
+                  <SelectItem value="popular">
+                    {t('catalog.sort.popular')}
+                  </SelectItem>
+                  <SelectItem value="newest">
+                    {t('catalog.sort.newest')}
+                  </SelectItem>
+                  <SelectItem value="price_asc">
+                    {t('catalog.sort.priceAsc')}
+                  </SelectItem>
+                  <SelectItem value="price_desc">
+                    {t('catalog.sort.priceDesc')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -715,10 +727,10 @@ export default function CatalogPage({
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
-                Товарів за вибраними фільтрами не знайдено
+                {t('catalog.noResults')}
               </p>
               <Button variant="outline" onClick={() => setFilters({})}>
-                Скинути фільтри
+                {t('catalog.resetFilters')}
               </Button>
             </div>
           )}

@@ -1,5 +1,5 @@
-import { messages as uk } from './catalogs/uk';
-import { messages as en } from './catalogs/en';
+import { messages as uk } from './catalogs/uk/index';
+import { messages as en } from './catalogs/en/index';
 import type {
   Catalog,
   Locale,

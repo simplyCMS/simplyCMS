@@ -15,6 +15,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
+import { useT } from '@simplycms/i18n';
 import {
   revalidateFailureDescription,
   useRevalidateStorefront,
@@ -45,6 +46,7 @@ interface ThemeRecord {
 export default function Themes() {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+  const t = useT();
   const queryClient = useQueryClient();
   const revalidateStorefront = useRevalidateStorefront();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
@@ -88,23 +90,25 @@ export default function Themes() {
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Тему активовано, але кеш вітрини не скинуто',
-          description: revalidateFailureDescription(error),
+          title: t('admin.themes.activatedStale'),
+          description: revalidateFailureDescription(t, error),
         });
         return;
       }
 
       toast({
-        title: 'Тему активовано',
-        description: 'Зміни застосовані на сайті',
+        title: t('admin.themes.activated'),
+        description: t('admin.themes.appliedOnSite'),
       });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description:
-          error instanceof Error ? error.message : 'Не вдалося активувати тему',
+          error instanceof Error
+            ? error.message
+            : t('admin.themes.activateFailed'),
       });
     },
   });
@@ -121,10 +125,8 @@ export default function Themes() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Теми оформлення</h1>
-          <p className="text-muted-foreground">
-            Управління зовнішнім виглядом магазину
-          </p>
+          <h1 className="text-2xl font-bold">{t('admin.themes.title')}</h1>
+          <p className="text-muted-foreground">{t('admin.themes.subtitle')}</p>
         </div>
       </div>
 
@@ -149,10 +151,10 @@ export default function Themes() {
           <CardContent className="text-center py-12">
             <Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              Немає зареєстрованих тем
+              {t('admin.themes.empty')}
             </h3>
             <p className="text-muted-foreground">
-              Теми додаються через код проекту та міграції БД
+              {t('admin.themes.emptyHint')}
             </p>
           </CardContent>
         </Card>
@@ -181,7 +183,7 @@ export default function Themes() {
                 {theme.is_active && (
                   <Badge className="absolute top-3 right-3 gap-1">
                     <Check className="h-3 w-3" />
-                    Активна
+                    {t('common.activeF')}
                   </Badge>
                 )}
               </div>
@@ -194,7 +196,11 @@ export default function Themes() {
                   </span>
                 </CardTitle>
                 <CardDescription>
-                  {theme.author && <span>Автор: {theme.author}</span>}
+                  {theme.author && (
+                    <span>
+                      {t('admin.themes.author')} {theme.author}
+                    </span>
+                  )}
                 </CardDescription>
               </CardHeader>
 
@@ -213,7 +219,7 @@ export default function Themes() {
                         params={{ themeId: theme.id }}
                       >
                         <Settings className="h-4 w-4 mr-2" />
-                        Налаштування
+                        {t('admin.nav.settings')}
                       </Link>
                     </Button>
                   ) : (
@@ -223,7 +229,7 @@ export default function Themes() {
                         onClick={() => setConfirmThemeId(theme.id)}
                         disabled={activateMutation.isPending}
                       >
-                        Активувати
+                        {t('common.activate')}
                       </Button>
                       <Button variant="outline" size="icon" asChild>
                         <Link
@@ -249,20 +255,23 @@ export default function Themes() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Активувати тему?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('admin.themes.activateTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Тема "{themeToActivate?.display_name}" буде активована. Зміни буде
-              застосовано на сайті одразу.
+              {t('admin.themes.activateText', {
+                name: themeToActivate?.display_name ?? '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Скасувати</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 confirmThemeId && activateMutation.mutate(confirmThemeId)
               }
             >
-              Активувати
+              {t('common.activate')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

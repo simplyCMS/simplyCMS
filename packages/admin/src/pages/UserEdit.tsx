@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
@@ -48,6 +49,7 @@ import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
 export default function UserEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { userId } = useParams({ strict: false }) as { userId: string };
   const queryClient = useQueryClient();
@@ -174,13 +176,13 @@ export default function UserEdit() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast({
         title: newIsAdmin
-          ? 'Адміністратора призначено'
-          : 'Роль адміністратора знято',
+          ? t('admin.users.adminGranted')
+          : t('admin.users.adminRevoked'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -203,7 +205,7 @@ export default function UserEdit() {
           user_id: userId!,
           from_category_id: profile?.category_id,
           to_category_id: categoryId,
-          reason: 'Ручна зміна адміністратором',
+          reason: t('admin.users.manualChange'),
           changed_by: (await supabase.auth.getUser()).data.user?.id,
         });
       if (historyError) console.error('History error:', historyError);
@@ -211,11 +213,11 @@ export default function UserEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user', userId] });
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast({ title: 'Категорію змінено' });
+      toast({ title: t('admin.users.categoryChanged') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -239,15 +241,15 @@ export default function UserEdit() {
   };
 
   if (profileLoading) {
-    return <div className="p-8 text-center">Завантаження...</div>;
+    return <div className="p-8 text-center">{t('common.loading')}</div>;
   }
 
   if (!profile) {
     return (
       <div className="p-8 text-center">
-        <p>Користувача не знайдено</p>
+        <p>{t('admin.users.notFound')}</p>
         <Button asChild className="mt-4">
-          <Link to={adminPath('users')}>Назад до списку</Link>
+          <Link to={adminPath('users')}>{t('admin.users.backToList')}</Link>
         </Button>
       </div>
     );
@@ -263,7 +265,7 @@ export default function UserEdit() {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Картка користувача</h1>
+          <h1 className="text-3xl font-bold">{t('admin.users.card')}</h1>
         </div>
       </div>
 
@@ -271,7 +273,7 @@ export default function UserEdit() {
         {/* Main info */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Основна інформація</CardTitle>
+            <CardTitle>{t('common.basicInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-start gap-6">
@@ -286,12 +288,12 @@ export default function UserEdit() {
                   <h2 className="text-2xl font-semibold flex items-center gap-2">
                     {profile.first_name || profile.last_name
                       ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                      : 'Без імені'}
+                      : t('admin.users.noName')}
                     {isAdmin && <Shield className="h-5 w-5 text-primary" />}
                   </h2>
                   {profile.auth_provider && (
                     <Badge variant="outline" className="mt-1">
-                      Авторизація: {profile.auth_provider}
+                      {t('admin.users.authLabel')} {profile.auth_provider}
                     </Badge>
                   )}
                 </div>
@@ -310,7 +312,7 @@ export default function UserEdit() {
                   )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    Зареєстровано:{' '}
+                    {t('admin.users.registeredLabel')}{' '}
                     {format(new Date(profile.created_at), 'dd MMMM yyyy', {
                       locale: uk,
                     })}
@@ -324,9 +326,7 @@ export default function UserEdit() {
                 <>
                   <Separator />
                   <div>
-                    <h3 className="font-medium mb-2">
-                      UTM мітки при реєстрації
-                    </h3>
+                    <h3 className="font-medium mb-2">{t('admin.users.utm')}</h3>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(
                         profile.registration_utm as Record<string, string>,
@@ -348,11 +348,11 @@ export default function UserEdit() {
         {/* Category & Role */}
         <Card>
           <CardHeader>
-            <CardTitle>Категорія та роль</CardTitle>
+            <CardTitle>{t('admin.users.categoryAndRole')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>Категорія користувача</Label>
+              <Label>{t('admin.users.userCategory')}</Label>
               <div className="flex items-center gap-2">
                 <Select
                   value={profile.category_id || ''}
@@ -362,7 +362,7 @@ export default function UserEdit() {
                   disabled={updateCategoryMutation.isPending}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Оберіть категорію" />
+                    <SelectValue placeholder={t('admin.users.pickCategory')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories?.map((cat) => (
@@ -380,12 +380,14 @@ export default function UserEdit() {
                   </DialogTrigger>
                   <DialogContent className="max-w-lg">
                     <DialogHeader>
-                      <DialogTitle>Історія змін категорії</DialogTitle>
+                      <DialogTitle>
+                        {t('admin.users.categoryHistory')}
+                      </DialogTitle>
                     </DialogHeader>
                     <div className="max-h-100 overflow-auto">
                       {categoryHistory?.length === 0 ? (
                         <p className="text-center text-muted-foreground py-4">
-                          Історія порожня
+                          {t('admin.users.historyEmpty')}
                         </p>
                       ) : (
                         <div className="space-y-3">
@@ -425,9 +427,9 @@ export default function UserEdit() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Адміністратор</Label>
+                <Label>{t('admin.users.admin')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Доступ до адмін-панелі
+                  {t('admin.users.adminAccess')}
                 </p>
               </div>
               <Switch
@@ -444,7 +446,7 @@ export default function UserEdit() {
         {/* Stats */}
         <Card>
           <CardHeader>
-            <CardTitle>Статистика</CardTitle>
+            <CardTitle>{t('admin.users.stats')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
@@ -452,14 +454,16 @@ export default function UserEdit() {
                 <div className="text-2xl font-bold">
                   {stats?.orders_count || 0}
                 </div>
-                <div className="text-sm text-muted-foreground">Замовлень</div>
+                <div className="text-sm text-muted-foreground">
+                  {t('admin.users.ordersCount')}
+                </div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold">
                   {formatCurrency(stats?.total_purchases || 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Сума покупок
+                  {t('admin.users.totalSpent')}
                 </div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
@@ -467,14 +471,16 @@ export default function UserEdit() {
                   {stats?.registration_days || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Днів з реєстрації
+                  {t('admin.users.daysSince')}
                 </div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-lg font-medium truncate">
                   {stats?.email_domain || '—'}
                 </div>
-                <div className="text-sm text-muted-foreground">Домен email</div>
+                <div className="text-sm text-muted-foreground">
+                  {t('admin.users.emailDomain')}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -485,22 +491,24 @@ export default function UserEdit() {
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Останні замовлення
+              {t('admin.users.recentOrders')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {orders?.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                Замовлень ще немає
+                {t('admin.users.ordersEmpty')}
               </p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Номер</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead className="text-right">Сума</TableHead>
-                    <TableHead>Дата</TableHead>
+                    <TableHead>{t('admin.users.orderNumber')}</TableHead>
+                    <TableHead>{t('common.status')}</TableHead>
+                    <TableHead className="text-right">
+                      {t('common.amount')}
+                    </TableHead>
+                    <TableHead>{t('common.date')}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>

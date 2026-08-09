@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { adminPath } from '../lib/adminLinks';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
@@ -16,6 +17,7 @@ import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Plus, Trash2, Loader2, ImageIcon } from 'lucide-react';
 
 export default function Sections() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -40,12 +42,12 @@ export default function Sections() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sections'] });
-      toast({ title: 'Розділ видалено' });
+      toast({ title: t('admin.sections.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -63,8 +65,10 @@ export default function Sections() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Розділи</h1>
-          <p className="text-muted-foreground">Керування розділами каталогу</p>
+          <h1 className="text-3xl font-bold">{t('admin.nav.sections')}</h1>
+          <p className="text-muted-foreground">
+            {t('admin.sections.subtitle')}
+          </p>
         </div>
         <Button
           onClick={() =>
@@ -75,24 +79,26 @@ export default function Sections() {
           }
         >
           <Plus className="h-4 w-4 mr-2" />
-          Додати розділ
+          {t('admin.sections.add')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі розділи</CardTitle>
+          <CardTitle>{t('admin.sections.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16"></TableHead>
-                <TableHead>Назва</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
                 <TableHead>URL</TableHead>
-                <TableHead>Порядок</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead className="text-right">Дії</TableHead>
+                <TableHead>{t('common.order')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="text-right">
+                  {t('common.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,7 +143,9 @@ export default function Sections() {
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
                       }`}
                     >
-                      {section.is_active ? 'Активний' : 'Неактивний'}
+                      {section.is_active
+                        ? t('common.activeM')
+                        : t('admin.sections.inactive')}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -146,7 +154,7 @@ export default function Sections() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm('Видалити цей розділ?')) {
+                        if (confirm(t('admin.sections.confirmDelete'))) {
                           deleteMutation.mutate(section.id);
                         }
                       }}
@@ -163,7 +171,7 @@ export default function Sections() {
                     colSpan={6}
                     className="text-center text-muted-foreground"
                   >
-                    Розділів ще немає
+                    {t('admin.sections.empty')}
                   </TableCell>
                 </TableRow>
               )}

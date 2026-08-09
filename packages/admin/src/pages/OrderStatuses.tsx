@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
@@ -51,6 +52,7 @@ interface StatusFormData {
 }
 
 export default function OrderStatuses() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -101,11 +103,13 @@ export default function OrderStatuses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success('Статус створено');
+      toast.success(t('admin.orders.statuses.created'));
       handleCloseDialog();
     },
     onError: (error) => {
-      toast.error('Помилка створення статусу: ' + error.message);
+      toast.error(
+        t('admin.orders.statuses.createFailed') + ' ' + error.message,
+      );
     },
   });
 
@@ -133,11 +137,13 @@ export default function OrderStatuses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success('Статус оновлено');
+      toast.success(t('common.statusUpdated'));
       handleCloseDialog();
     },
     onError: (error) => {
-      toast.error('Помилка оновлення статусу: ' + error.message);
+      toast.error(
+        t('admin.orders.statuses.updateFailed') + ' ' + error.message,
+      );
     },
   });
 
@@ -152,11 +158,13 @@ export default function OrderStatuses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success('Статус видалено');
+      toast.success(t('admin.orders.statuses.deleted'));
       setDeleteStatus(null);
     },
     onError: (error) => {
-      toast.error('Помилка видалення статусу: ' + error.message);
+      toast.error(
+        t('admin.orders.statuses.deleteFailed') + ' ' + error.message,
+      );
     },
   });
 
@@ -195,7 +203,9 @@ export default function OrderStatuses() {
       queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
     },
     onError: (error) => {
-      toast.error('Помилка зміни порядку: ' + error.message);
+      toast.error(
+        t('admin.orders.statuses.reorderFailed') + ' ' + error.message,
+      );
     },
   });
 
@@ -236,7 +246,7 @@ export default function OrderStatuses() {
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.code.trim()) {
-      toast.error("Заповніть всі обов'язкові поля");
+      toast.error(t('admin.orders.statuses.requiredFields'));
       return;
     }
 
@@ -270,14 +280,16 @@ export default function OrderStatuses() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Статуси замовлень</h1>
+          <h1 className="text-2xl font-bold">
+            {t('admin.common.placeholder.orderStatuses')}
+          </h1>
           <p className="text-muted-foreground">
-            Управління статусами для відстеження замовлень
+            {t('admin.orders.statuses.subtitle')}
           </p>
         </div>
         <Button onClick={handleOpenCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          Додати статус
+          {t('admin.orders.statuses.add')}
         </Button>
       </div>
 
@@ -286,11 +298,11 @@ export default function OrderStatuses() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12"></TableHead>
-              <TableHead>Назва</TableHead>
-              <TableHead>Код</TableHead>
-              <TableHead>Колір</TableHead>
-              <TableHead>За замовчуванням</TableHead>
-              <TableHead className="w-32">Дії</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
+              <TableHead>{t('common.code')}</TableHead>
+              <TableHead>{t('common.color')}</TableHead>
+              <TableHead>{t('common.byDefault')}</TableHead>
+              <TableHead className="w-32">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -300,7 +312,7 @@ export default function OrderStatuses() {
                   colSpan={6}
                   className="text-center py-8 text-muted-foreground"
                 >
-                  Статуси ще не додані
+                  {t('admin.orders.statuses.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -358,7 +370,7 @@ export default function OrderStatuses() {
                   <TableCell>
                     {status.is_default && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                        За замовчуванням
+                        {t('common.byDefault')}
                       </span>
                     )}
                   </TableCell>
@@ -393,12 +405,14 @@ export default function OrderStatuses() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingStatus ? 'Редагувати статус' : 'Новий статус'}
+              {editingStatus
+                ? t('admin.orders.statuses.edit')
+                : t('admin.orders.statuses.new')}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Назва *</Label>
+              <Label htmlFor="name">{t('common.nameRequiredLabel')}</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -410,12 +424,14 @@ export default function OrderStatuses() {
                     code: prev.code || generateCode(name),
                   }));
                 }}
-                placeholder="Наприклад: В обробці"
+                placeholder={t('admin.orders.statuses.namePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="code">Код *</Label>
+              <Label htmlFor="code">
+                {t('admin.orders.statuses.codeRequired')}
+              </Label>
               <Input
                 id="code"
                 value={formData.code}
@@ -425,12 +441,12 @@ export default function OrderStatuses() {
                 placeholder="processing"
               />
               <p className="text-xs text-muted-foreground">
-                Унікальний ідентифікатор для системи (латиницею)
+                {t('admin.orders.statuses.codeHint')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="color">Колір</Label>
+              <Label htmlFor="color">{t('common.color')}</Label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -454,9 +470,9 @@ export default function OrderStatuses() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="is_default">За замовчуванням</Label>
+                <Label htmlFor="is_default">{t('common.byDefault')}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Присвоювати новим замовленням автоматично
+                  {t('admin.orders.statuses.autoAssign')}
                 </p>
               </div>
               <Switch
@@ -474,13 +490,13 @@ export default function OrderStatuses() {
                 variant="outline"
                 onClick={handleCloseDialog}
               >
-                Скасувати
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {editingStatus ? 'Зберегти' : 'Створити'}
+                {editingStatus ? t('common.save') : t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -494,22 +510,24 @@ export default function OrderStatuses() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Видалити статус?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('admin.orders.statuses.deleteTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Ви впевнені, що хочете видалити статус "{deleteStatus?.name}"? Цю
-              дію не можна скасувати. Замовлення з цим статусом залишаться без
-              статусу.
+              {t('admin.orders.statuses.deleteText', {
+                name: deleteStatus?.name ?? '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Скасувати</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 deleteStatus && deleteMutation.mutate(deleteStatus.id)
               }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Видалити
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

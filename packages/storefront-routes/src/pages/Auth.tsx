@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
@@ -16,26 +16,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@simplycms/ui/tabs';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from 'lucide-react';
 import { z } from 'zod';
+import { useT, type Translator } from '@simplycms/i18n';
 
-const loginSchema = z.object({
-  email: z.string().email('Введіть коректний email'),
-  password: z.string().min(6, 'Пароль має містити мінімум 6 символів'),
-});
-
-const registerSchema = z
-  .object({
-    firstName: z.string().min(2, "Ім'я має містити мінімум 2 символи"),
-    lastName: z.string().min(2, 'Прізвище має містити мінімум 2 символи'),
-    email: z.string().email('Введіть коректний email'),
-    password: z.string().min(6, 'Пароль має містити мінімум 6 символів'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Паролі не співпадають',
-    path: ['confirmPassword'],
+// Фабрики схем: повідомлення беруть з каталогу, тому потребують транслятора.
+const buildLoginSchema = (t: Translator) =>
+  z.object({
+    email: z.string().email(t('validation.email')),
+    password: z.string().min(6, t('validation.passwordMin6')),
   });
 
+const buildRegisterSchema = (t: Translator) =>
+  z
+    .object({
+      firstName: z.string().min(2, t('validation.firstNameMin2')),
+      lastName: z.string().min(2, t('validation.lastNameMin2')),
+      email: z.string().email(t('validation.email')),
+      password: z.string().min(6, t('validation.passwordMin6')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordMismatch'),
+      path: ['confirmPassword'],
+    });
+
 export default function Auth() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<
@@ -50,6 +55,9 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
+  const registerSchema = useMemo(() => buildRegisterSchema(t), [t]);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -99,24 +107,24 @@ export default function Auth() {
       if (error) {
         toast({
           variant: 'destructive',
-          title: 'Помилка входу',
+          title: t('auth.login.failed'),
           description:
             error.message === 'Invalid login credentials'
-              ? 'Невірний email або пароль'
+              ? t('auth.login.badCredentials')
               : error.message,
         });
       } else {
         toast({
-          title: 'Успішний вхід',
-          description: 'Ласкаво просимо!',
+          title: t('auth.login.success'),
+          description: t('auth.login.welcome'),
         });
         navigate({ to: '/' });
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Щось пішло не так. Спробуйте ще раз.',
+        title: t('common.error'),
+        description: t('auth.genericError'),
       });
     } finally {
       setIsLoading(false);
@@ -164,21 +172,21 @@ export default function Auth() {
       if (error) {
         toast({
           variant: 'destructive',
-          title: 'Помилка реєстрації',
+          title: t('auth.register.failed'),
           description: error.message,
         });
       } else {
         toast({
-          title: 'Реєстрація успішна',
-          description: 'Ваш акаунт створено!',
+          title: t('auth.register.success'),
+          description: t('auth.register.created'),
         });
         navigate({ to: '/' });
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Щось пішло не так. Спробуйте ще раз.',
+        title: t('common.error'),
+        description: t('auth.genericError'),
       });
     } finally {
       setIsLoading(false);
@@ -198,15 +206,15 @@ export default function Auth() {
       if (error) {
         toast({
           variant: 'destructive',
-          title: 'Помилка Google авторизації',
+          title: t('auth.googleFailed'),
           description: error.message,
         });
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Щось пішло не так. Спробуйте ще раз.',
+        title: t('common.error'),
+        description: t('auth.genericError'),
       });
     } finally {
       setIsLoading(false);
@@ -234,20 +242,24 @@ export default function Auth() {
               SolarStore
             </span>
           </div>
-          <p className="text-muted-foreground">
-            Альтернативна енергетика для вашого дому
-          </p>
+          <p className="text-muted-foreground">{t('auth.tagline')}</p>
         </div>
 
         <Card className="border-border/50 shadow-xl">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-2xl text-center">
-              {activeTab === 'login' ? 'Вхід в акаунт' : 'Реєстрація'}
+              {t(
+                activeTab === 'login'
+                  ? 'auth.login.title'
+                  : 'auth.register.title',
+              )}
             </CardTitle>
             <CardDescription className="text-center">
-              {activeTab === 'login'
-                ? 'Увійдіть для доступу до особистого кабінету'
-                : 'Створіть акаунт для покупок та відстеження замовлень'}
+              {t(
+                activeTab === 'login'
+                  ? 'auth.login.subtitle'
+                  : 'auth.register.subtitle',
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -257,8 +269,10 @@ export default function Auth() {
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Вхід</TabsTrigger>
-                <TabsTrigger value="register">Реєстрація</TabsTrigger>
+                <TabsTrigger value="login">{t('auth.login.tab')}</TabsTrigger>
+                <TabsTrigger value="register">
+                  {t('auth.register.title')}
+                </TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
@@ -284,7 +298,7 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Пароль</Label>
+                    <Label htmlFor="login-password">{t('auth.password')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -319,10 +333,10 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Вхід...
+                        {t('auth.login.pending')}
                       </>
                     ) : (
-                      'Увійти'
+                      t('auth.login.submit')
                     )}
                   </Button>
                 </form>
@@ -333,13 +347,13 @@ export default function Auth() {
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">Ім'я</Label>
+                      <Label htmlFor="firstName">{t('common.firstName')}</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="firstName"
                           type="text"
-                          placeholder="Іван"
+                          placeholder={t('auth.firstNamePlaceholder')}
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
                           className={`pl-10 ${errors.firstName ? 'border-destructive' : ''}`}
@@ -354,11 +368,11 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Прізвище</Label>
+                      <Label htmlFor="lastName">{t('common.lastName')}</Label>
                       <Input
                         id="lastName"
                         type="text"
-                        placeholder="Петренко"
+                        placeholder={t('auth.lastNamePlaceholder')}
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         className={errors.lastName ? 'border-destructive' : ''}
@@ -392,7 +406,9 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-password">Пароль</Label>
+                    <Label htmlFor="register-password">
+                      {t('auth.password')}
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -424,7 +440,9 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Підтвердити пароль</Label>
+                    <Label htmlFor="confirmPassword">
+                      {t('auth.passwordConfirm')}
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -461,10 +479,10 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Реєстрація...
+                        {t('auth.register.pending')}
                       </>
                     ) : (
-                      'Зареєструватися'
+                      t('auth.register.submit')
                     )}
                   </Button>
                 </form>
@@ -477,7 +495,9 @@ export default function Auth() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">або</span>
+                <span className="bg-card px-2 text-muted-foreground">
+                  {t('common.or')}
+                </span>
               </div>
             </div>
 
@@ -506,7 +526,7 @@ export default function Auth() {
                   fill="#EA4335"
                 />
               </svg>
-              Продовжити з Google
+              {t('auth.google')}
             </Button>
 
             {/* Back to Home */}
@@ -516,7 +536,7 @@ export default function Auth() {
                 onClick={() => navigate({ to: '/' })}
                 className="text-muted-foreground"
               >
-                Повернутися на головну
+                {t('auth.backHome')}
               </Button>
             </div>
           </CardContent>

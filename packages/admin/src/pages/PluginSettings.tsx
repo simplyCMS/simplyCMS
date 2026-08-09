@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
@@ -40,6 +41,7 @@ import {
 } from '@simplycms/plugins/types';
 
 export default function PluginSettings() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { pluginId } = useParams({ strict: false }) as { pluginId: string };
   const navigate = useNavigate();
@@ -103,13 +105,15 @@ export default function PluginSettings() {
       queryClient.invalidateQueries({ queryKey: ['plugin', pluginId] });
       queryClient.invalidateQueries({ queryKey: ['plugins'] });
       toast({
-        title: isActive ? 'Розширення активовано' : 'Розширення деактивовано',
+        title: isActive
+          ? t('admin.plugins.enabled')
+          : t('admin.plugins.disabled'),
       });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -128,12 +132,12 @@ export default function PluginSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plugin', pluginId] });
-      toast({ title: 'Налаштування збережено' });
+      toast({ title: t('common.settingsSaved') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -158,12 +162,12 @@ export default function PluginSettings() {
   if (!plugin) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Розширення не знайдено</p>
+        <p className="text-muted-foreground">{t('admin.plugins.notFound')}</p>
         <Button
           variant="link"
           onClick={() => navigate({ to: adminPath('plugins') })}
         >
-          Повернутися до списку
+          {t('admin.plugins.backToList')}
         </Button>
       </div>
     );
@@ -192,7 +196,9 @@ export default function PluginSettings() {
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold">{plugin.display_name}</h1>
                 <Badge variant={plugin.is_active ? 'default' : 'secondary'}>
-                  {plugin.is_active ? 'Активне' : 'Неактивне'}
+                  {plugin.is_active
+                    ? t('common.activeN')
+                    : t('admin.sections.inactive')}
                 </Badge>
               </div>
               <p className="text-muted-foreground">
@@ -214,7 +220,9 @@ export default function PluginSettings() {
             ) : (
               <Power className="h-4 w-4 mr-2" />
             )}
-            {plugin.is_active ? 'Деактивувати' : 'Активувати'}
+            {plugin.is_active
+              ? t('admin.plugins.deactivate')
+              : t('common.activate')}
           </Button>
           {settings && Object.keys(settings).length > 0 && (
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
@@ -223,7 +231,7 @@ export default function PluginSettings() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Зберегти
+              {t('common.save')}
             </Button>
           )}
         </div>
@@ -236,7 +244,7 @@ export default function PluginSettings() {
           {plugin.description && (
             <Card>
               <CardHeader>
-                <CardTitle>Опис</CardTitle>
+                <CardTitle>{t('common.description')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">{plugin.description}</p>
@@ -250,10 +258,10 @@ export default function PluginSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Налаштування
+                  {t('admin.nav.settings')}
                 </CardTitle>
                 <CardDescription>
-                  Налаштуйте параметри роботи розширення
+                  {t('admin.plugins.settingsHint')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -326,12 +334,12 @@ export default function PluginSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Налаштування
+                  {t('admin.nav.settings')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-center py-4">
-                  Це розширення не має налаштувань
+                  {t('admin.plugins.noSettings')}
                 </p>
               </CardContent>
             </Card>
@@ -343,9 +351,9 @@ export default function PluginSettings() {
           {/* Hooks */}
           <Card>
             <CardHeader>
-              <CardTitle>Зареєстровані хуки</CardTitle>
+              <CardTitle>{t('admin.plugins.registeredHooks')}</CardTitle>
               <CardDescription>
-                Точки розширення, які використовує плагін
+                {t('admin.plugins.registeredHooksHint')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -367,7 +375,7 @@ export default function PluginSettings() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-2">
-                  Немає зареєстрованих хуків
+                  {t('admin.plugins.noHooks')}
                 </p>
               )}
             </CardContent>
@@ -376,7 +384,7 @@ export default function PluginSettings() {
           {/* Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Інформація</CardTitle>
+              <CardTitle>{t('common.information')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -387,33 +395,43 @@ export default function PluginSettings() {
               </div>
               <Separator />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Назва</span>
+                <span className="text-muted-foreground">
+                  {t('common.name')}
+                </span>
                 <span className="font-mono">{plugin.name}</span>
               </div>
               <Separator />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Версія</span>
+                <span className="text-muted-foreground">
+                  {t('admin.plugins.version')}
+                </span>
                 <span>{plugin.version}</span>
               </div>
               {plugin.author && (
                 <>
                   <Separator />
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Автор</span>
+                    <span className="text-muted-foreground">
+                      {t('common.author')}
+                    </span>
                     <span>{plugin.author}</span>
                   </div>
                 </>
               )}
               <Separator />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Встановлено</span>
+                <span className="text-muted-foreground">
+                  {t('admin.plugins.installedAt')}
+                </span>
                 <span>
                   {new Date(plugin.installed_at).toLocaleDateString('uk-UA')}
                 </span>
               </div>
               <Separator />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Оновлено</span>
+                <span className="text-muted-foreground">
+                  {t('admin.plugins.updatedAt')}
+                </span>
                 <span>
                   {new Date(plugin.updated_at).toLocaleDateString('uk-UA')}
                 </span>

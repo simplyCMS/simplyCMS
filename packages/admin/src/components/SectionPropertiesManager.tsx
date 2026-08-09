@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import {
   Table,
@@ -41,19 +42,22 @@ interface SectionPropertiesManagerProps {
   sectionId: string;
 }
 
-const propertyTypes: Record<string, string> = {
-  text: 'Текст',
-  number: 'Число',
-  select: 'Вибір (один)',
-  multiselect: 'Вибір (декілька)',
-  range: 'Діапазон',
-  color: 'Колір',
-  boolean: 'Так/Ні',
+// Мапа КЛЮЧІВ: код типу приходить із БД, тож розкладка лишається на рівні
+// модуля, а підпис резолвиться в рендері.
+const propertyTypes: Record<string, MessageKey> = {
+  text: 'admin.properties.type.text',
+  number: 'admin.properties.type.number',
+  select: 'admin.properties.type.select',
+  multiselect: 'admin.properties.type.multiselect',
+  range: 'admin.properties.type.range',
+  color: 'admin.properties.type.color',
+  boolean: 'admin.properties.type.boolean',
 };
 
 export function SectionPropertiesManager({
   sectionId,
 }: SectionPropertiesManagerProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -149,12 +153,12 @@ export function SectionPropertiesManager({
       });
       setIsDialogOpen(false);
       setSelectedPropertyId('');
-      toast({ title: 'Властивість додано' });
+      toast({ title: t('admin.properties.section.added') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -172,12 +176,12 @@ export function SectionPropertiesManager({
       queryClient.invalidateQueries({
         queryKey: ['section-property-assignments', sectionId],
       });
-      toast({ title: 'Властивість видалено з розділу' });
+      toast({ title: t('admin.properties.section.removed') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -220,7 +224,7 @@ export function SectionPropertiesManager({
         </div>
         <Button onClick={() => openAddDialog(type)} size="sm" variant="outline">
           <Plus className="h-4 w-4 mr-2" />
-          Додати
+          {t('common.add')}
         </Button>
       </div>
 
@@ -228,10 +232,10 @@ export function SectionPropertiesManager({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Назва</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
               <TableHead>Slug</TableHead>
-              <TableHead>Тип</TableHead>
-              <TableHead>Фільтр</TableHead>
+              <TableHead>{t('common.type')}</TableHead>
+              <TableHead>{t('common.filter')}</TableHead>
               <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
@@ -251,14 +255,17 @@ export function SectionPropertiesManager({
                     {property.slug}
                   </TableCell>
                   <TableCell>
-                    {propertyTypes[property.property_type] ||
-                      property.property_type}
+                    {propertyTypes[property.property_type]
+                      ? t(propertyTypes[property.property_type])
+                      : property.property_type}
                   </TableCell>
                   <TableCell>
                     {property.is_filterable ? (
-                      <span className="text-green-600">Так</span>
+                      <span className="text-green-600">{t('common.yes')}</span>
                     ) : (
-                      <span className="text-muted-foreground">Ні</span>
+                      <span className="text-muted-foreground">
+                        {t('common.no')}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -278,7 +285,7 @@ export function SectionPropertiesManager({
         </Table>
       ) : (
         <div className="text-center py-6 border rounded-lg bg-muted/30">
-          <p className="text-muted-foreground">Властивостей ще немає</p>
+          <p className="text-muted-foreground">{t('admin.properties.empty')}</p>
         </div>
       )}
     </div>
@@ -290,7 +297,7 @@ export function SectionPropertiesManager({
         {/* Product Properties */}
         <div className="space-y-4">
           {renderPropertiesTable(
-            'Властивості товару',
+            t('admin.properties.section.productProps'),
             <Package className="h-5 w-5 text-primary" />,
             productAssignments,
             'product',
@@ -300,7 +307,7 @@ export function SectionPropertiesManager({
         {/* Modification Properties */}
         <div className="space-y-4">
           {renderPropertiesTable(
-            'Властивості модифікацій',
+            t('admin.properties.section.modificationProps'),
             <Layers className="h-5 w-5 text-orange-500" />,
             modificationAssignments,
             'modification',
@@ -312,38 +319,48 @@ export function SectionPropertiesManager({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Додати властивість для{' '}
-              {appliesTo === 'product' ? 'товарів' : 'модифікацій'}
+              {t(
+                appliesTo === 'product'
+                  ? 'admin.properties.section.addForProduct'
+                  : 'admin.properties.section.addForModification',
+              )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Виберіть властивість</Label>
+              <Label>{t('admin.properties.section.pickProperty')}</Label>
               <Select
                 value={selectedPropertyId}
                 onValueChange={setSelectedPropertyId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Оберіть властивість..." />
+                  <SelectValue
+                    placeholder={t(
+                      'admin.properties.section.pickPropertyPlaceholder',
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {availableProperties.map((prop) => (
                     <SelectItem key={prop.id} value={prop.id}>
                       {prop.name} (
-                      {propertyTypes[prop.property_type] || prop.property_type})
+                      {propertyTypes[prop.property_type]
+                        ? t(propertyTypes[prop.property_type])
+                        : prop.property_type}
+                      )
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {availableProperties.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Всі властивості вже додано
+                  {t('admin.properties.section.allAdded')}
                 </p>
               )}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Скасувати
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleAdd}
@@ -352,7 +369,7 @@ export function SectionPropertiesManager({
                 {addMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Додати
+                {t('common.add')}
               </Button>
             </div>
           </div>

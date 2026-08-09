@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Badge } from '@simplycms/ui/badge';
@@ -19,6 +20,7 @@ import { Plus, Trash2, Globe } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 
 export default function ShippingZones() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,10 +58,10 @@ export default function ShippingZones() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
-      toast.success('Статус оновлено');
+      toast.success(t('common.statusUpdated'));
     },
     onError: () => {
-      toast.error('Помилка оновлення статусу');
+      toast.error(t('common.statusUpdateError'));
     },
   });
 
@@ -73,10 +75,10 @@ export default function ShippingZones() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-zones'] });
-      toast.success('Зону видалено');
+      toast.success(t('admin.shipping.zones.deleted'));
     },
     onError: () => {
-      toast.error('Помилка видалення зони');
+      toast.error(t('admin.shipping.zones.deleteFailed'));
     },
   });
 
@@ -84,9 +86,9 @@ export default function ShippingZones() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Зони доставки</h1>
+          <h1 className="text-3xl font-bold">{t('admin.nav.shippingZones')}</h1>
           <p className="text-muted-foreground mt-1">
-            Географічні зони з різними тарифами доставки
+            {t('admin.shipping.zones.subtitle')}
           </p>
         </div>
         <Button asChild>
@@ -95,33 +97,39 @@ export default function ShippingZones() {
             params={{ zoneId: 'new' }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Додати зону
+            {t('admin.shipping.zones.add')}
           </Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі зони доставки</CardTitle>
+          <CardTitle>{t('admin.shipping.zones.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              Завантаження...
+              {t('common.loading')}
             </div>
           ) : !zones?.length ? (
             <div className="text-center py-8 text-muted-foreground">
-              Зони доставки не знайдено
+              {t('admin.shipping.zones.empty')}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Назва</TableHead>
-                  <TableHead>Міста</TableHead>
-                  <TableHead className="text-center">Тарифи</TableHead>
-                  <TableHead className="text-center">Активна</TableHead>
-                  <TableHead className="text-right">Дії</TableHead>
+                  <TableHead>{t('common.name')}</TableHead>
+                  <TableHead>{t('admin.shipping.zones.cities')}</TableHead>
+                  <TableHead className="text-center">
+                    {t('admin.shipping.zones.rates')}
+                  </TableHead>
+                  <TableHead className="text-center">
+                    {t('common.activeF')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('common.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -141,7 +149,7 @@ export default function ShippingZones() {
                             {zone.name}
                             {zone.is_default && (
                               <Badge variant="secondary" className="ml-2">
-                                За замовчуванням
+                                {t('common.byDefault')}
                               </Badge>
                             )}
                           </div>
@@ -187,7 +195,9 @@ export default function ShippingZones() {
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Видалити цю зону доставки?')) {
+                            if (
+                              confirm(t('admin.shipping.zones.confirmDelete'))
+                            ) {
                               deleteZone.mutate(zone.id);
                             }
                           }}

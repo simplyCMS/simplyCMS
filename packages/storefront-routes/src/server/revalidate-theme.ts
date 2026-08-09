@@ -15,10 +15,11 @@ import { invalidateThemeCache } from './themes';
  */
 export async function revalidateTheme(): Promise<Response> {
   if (!(await checkIsAdmin())) {
-    return Response.json(
-      { error: 'Доступ лише для адміністратора' },
-      { status: 403 },
-    );
+    // Машинний код, а не текст: тіло цієї відповіді не читає жоден клієнт
+    // (адмінка дивиться лише `response.ok`), а серверний обробник живе поза
+    // React і транслятора не має. Локалізувати рядок, який ніхто не показує,
+    // означало б тягнути локаль у серверний шар заради нічого.
+    return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
   invalidateThemeCache();

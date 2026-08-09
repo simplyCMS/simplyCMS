@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Loader2, ChevronRight, Tag } from 'lucide-react';
 import type { Tables } from '@simplycms/supabase';
@@ -12,6 +13,7 @@ export interface PropertiesPageProps {
 export default function PropertiesPage({
   properties: initialProperties,
 }: PropertiesPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   // Fetch properties with has_page = true
   const { data: properties, isLoading } = useQuery({
@@ -64,18 +66,16 @@ export default function PropertiesPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground">Властивості</span>
+        <span className="text-foreground">{t('properties.title')}</span>
       </nav>
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Властивості товарів</h1>
-        <p className="text-muted-foreground">
-          Перегляньте товари за характеристиками
-        </p>
+        <h1 className="text-4xl font-bold mb-2">{t('properties.pageTitle')}</h1>
+        <p className="text-muted-foreground">{t('properties.subtitle')}</p>
       </div>
 
       {/* Properties grid */}
@@ -98,7 +98,9 @@ export default function PropertiesPage({
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    {optionCounts?.[property.id] || 0} значень
+                    {t('properties.optionCount', {
+                      count: optionCounts?.[property.id] || 0,
+                    })}
                   </p>
                 </CardContent>
               </Card>
@@ -107,9 +109,7 @@ export default function PropertiesPage({
         </div>
       ) : (
         <div className="text-center py-12 bg-muted/30 rounded-lg">
-          <p className="text-muted-foreground">
-            Властивостей із сторінками поки немає
-          </p>
+          <p className="text-muted-foreground">{t('properties.empty')}</p>
         </div>
       )}
     </div>

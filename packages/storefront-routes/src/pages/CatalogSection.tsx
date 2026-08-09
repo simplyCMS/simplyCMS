@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import {
@@ -66,6 +67,7 @@ export default function CatalogSectionPage({
   initialSections,
   initialProducts,
 }: CatalogSectionPageProps = {}) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as { sectionSlug?: string };
   const sectionSlug = propSectionSlug || params.sectionSlug;
@@ -452,7 +454,7 @@ export default function CatalogSectionPage({
           if (min !== undefined || max !== undefined) {
             result.push({
               key: 'price',
-              label: 'Ціна',
+              label: t('common.price'),
               value: `${min ?? priceRange?.min ?? 0} - ${max ?? priceRange?.max ?? '∞'} ₴`,
               type: 'price',
             });
@@ -509,6 +511,7 @@ export default function CatalogSectionPage({
 
     return result;
   }, [
+    t,
     filters,
     allPropertyOptions,
     priceRange,
@@ -556,9 +559,11 @@ export default function CatalogSectionPage({
   if (!section) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Розділ не знайдено</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          {t('catalog.sectionNotFound')}
+        </h1>
         <Link to="/catalog">
-          <Button>Повернутись до каталогу</Button>
+          <Button>{t('catalog.back')}</Button>
         </Link>
       </div>
     );
@@ -569,11 +574,11 @@ export default function CatalogSectionPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-foreground transition-colors">
-          Головна
+          {t('breadcrumbs.home')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link to="/catalog" className="hover:text-foreground transition-colors">
-          Каталог
+          {t('catalog.title')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <span className="text-foreground">{section.name}</span>
@@ -582,9 +587,7 @@ export default function CatalogSectionPage({
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-4xl font-bold mb-2">{section.name}</h1>
-        <p className="text-muted-foreground">
-          Оберіть категорію або скористайтесь фільтрами
-        </p>
+        <p className="text-muted-foreground">{t('catalog.subtitle')}</p>
       </div>
 
       {/* Section chips */}
@@ -594,7 +597,7 @@ export default function CatalogSectionPage({
             variant="outline"
             className="cursor-pointer px-3 py-1.5 text-sm"
           >
-            Всі товари
+            {t('catalog.allProducts')}
           </Badge>
         </Link>
         {sections?.map((s) => (
@@ -649,7 +652,7 @@ export default function CatalogSectionPage({
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" className="lg:hidden">
                     <Filter className="h-4 w-4 mr-2" />
-                    Фільтри
+                    {t('catalog.filters')}
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 overflow-y-auto">
@@ -665,8 +668,11 @@ export default function CatalogSectionPage({
               </Sheet>
 
               <span className="text-sm text-muted-foreground">
-                {products ? filteredProducts.length : ssrProducts.length}{' '}
-                товарів
+                {t('catalog.productsCount', {
+                  count: products
+                    ? filteredProducts.length
+                    : ssrProducts.length,
+                })}
               </span>
             </div>
 
@@ -679,10 +685,18 @@ export default function CatalogSectionPage({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="popular">За популярністю</SelectItem>
-                  <SelectItem value="newest">Новинки</SelectItem>
-                  <SelectItem value="price_asc">Дешевші</SelectItem>
-                  <SelectItem value="price_desc">Дорожчі</SelectItem>
+                  <SelectItem value="popular">
+                    {t('catalog.sort.popular')}
+                  </SelectItem>
+                  <SelectItem value="newest">
+                    {t('catalog.sort.newest')}
+                  </SelectItem>
+                  <SelectItem value="price_asc">
+                    {t('catalog.sort.priceAsc')}
+                  </SelectItem>
+                  <SelectItem value="price_desc">
+                    {t('catalog.sort.priceDesc')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -740,10 +754,10 @@ export default function CatalogSectionPage({
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
-                Товарів за вибраними фільтрами не знайдено
+                {t('catalog.noResults')}
               </p>
               <Button variant="outline" onClick={() => setFilters({})}>
-                Скинути фільтри
+                {t('catalog.resetFilters')}
               </Button>
             </div>
           )}

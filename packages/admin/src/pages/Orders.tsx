@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import type { SupabaseClient } from '@simplycms/supabase/browser-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import {
@@ -28,6 +29,7 @@ async function fetchOrders(supabase: SupabaseClient) {
 
 export default function Orders() {
   const navigate = useNavigate();
+  const t = useT();
   const supabase = useSupabaseClient();
 
   const { data: orders, isLoading } = useQuery({
@@ -46,23 +48,23 @@ export default function Orders() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Замовлення</h1>
-        <p className="text-muted-foreground">Перегляд та обробка замовлень</p>
+        <h1 className="text-3xl font-bold">{t('admin.nav.orders')}</h1>
+        <p className="text-muted-foreground">{t('admin.orders.subtitle')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі замовлення</CardTitle>
+          <CardTitle>{t('admin.orders.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>№ Замовлення</TableHead>
-                <TableHead>Клієнт</TableHead>
-                <TableHead>Сума</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead>Дата</TableHead>
+                <TableHead>{t('admin.orders.number')}</TableHead>
+                <TableHead>{t('admin.orders.customer')}</TableHead>
+                <TableHead>{t('common.amount')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead>{t('common.date')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,7 +97,7 @@ export default function Orders() {
                           order.order_statuses?.color || '#6B7280',
                       }}
                     >
-                      {order.order_statuses?.name || 'Новий'}
+                      {order.order_statuses?.name || t('common.new')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -111,7 +113,7 @@ export default function Orders() {
                     colSpan={5}
                     className="text-center text-muted-foreground"
                   >
-                    Замовлень ще немає
+                    {t('admin.orders.empty')}
                   </TableCell>
                 </TableRow>
               )}

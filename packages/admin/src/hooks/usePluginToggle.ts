@@ -4,6 +4,7 @@ import { activatePlugin, deactivatePlugin } from '@simplycms/plugins';
 import type { Plugin } from '@simplycms/plugins/types';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useT } from '@simplycms/i18n';
 
 /** Спільний ключ кешу списку плагінів (сторінка + мутація toggle). */
 export const PLUGINS_QUERY_KEY = ['plugins'] as const;
@@ -24,6 +25,7 @@ interface ToggleContext {
  * `PluginSlot` не оновлювався б до перезавантаження сторінки.
  */
 export function usePluginToggle() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -35,7 +37,7 @@ export function usePluginToggle() {
         ? await activatePlugin(supabase, name)
         : await deactivatePlugin(supabase, name);
 
-      if (!ok) throw new Error(`Не вдалося змінити статус плагіна "${name}"`);
+      if (!ok) throw new Error(t('admin.plugins.toggleFailed', { name }));
     },
     onMutate: async ({ name, activate }) => {
       setTogglingPlugin(name);
@@ -57,15 +59,22 @@ export function usePluginToggle() {
         queryClient.setQueryData(PLUGINS_QUERY_KEY, context.previous);
       }
       toast({
-        title: 'Помилка',
-        description: 'Не вдалося змінити статус плагіна.',
+        title: t('common.error'),
+        description: t('admin.plugins.toggleFailedShort'),
         variant: 'destructive',
       });
     },
     onSuccess: (_data, { name, activate }) => {
       toast({
-        title: activate ? 'Плагін активовано' : 'Плагін деактивовано',
-        description: `Плагін "${name}" ${activate ? 'активовано' : 'деактивовано'} успішно.`,
+        title: t(
+          activate ? 'admin.plugins.activated' : 'admin.plugins.deactivated',
+        ),
+        description: t(
+          activate
+            ? 'admin.plugins.activatedHint'
+            : 'admin.plugins.deactivatedHint',
+          { name },
+        ),
       });
     },
     onSettled: () => {

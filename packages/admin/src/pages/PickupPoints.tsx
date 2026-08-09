@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Badge } from '@simplycms/ui/badge';
@@ -19,6 +20,7 @@ import { Plus, Trash2, Building, Shield } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 
 export default function PickupPoints() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -51,10 +53,10 @@ export default function PickupPoints() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pickup-points'] });
-      toast.success('Статус оновлено');
+      toast.success(t('common.statusUpdated'));
     },
     onError: () => {
-      toast.error('Помилка оновлення статусу');
+      toast.error(t('common.statusUpdateError'));
     },
   });
 
@@ -68,10 +70,10 @@ export default function PickupPoints() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pickup-points'] });
-      toast.success('Точку видалено');
+      toast.success(t('admin.shipping.points.deleted'));
     },
     onError: () => {
-      toast.error('Помилка видалення точки');
+      toast.error(t('admin.shipping.points.deleteFailed'));
     },
   });
 
@@ -79,9 +81,9 @@ export default function PickupPoints() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Точки самовивозу</h1>
+          <h1 className="text-3xl font-bold">{t('admin.nav.pickupPoints')}</h1>
           <p className="text-muted-foreground mt-1">
-            Адреси магазинів та пунктів видачі замовлень
+            {t('admin.shipping.points.subtitle')}
           </p>
         </div>
         <Button asChild>
@@ -90,34 +92,38 @@ export default function PickupPoints() {
             params={{ pointId: 'new' }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Додати точку
+            {t('admin.shipping.points.add')}
           </Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі точки самовивозу</CardTitle>
+          <CardTitle>{t('admin.shipping.points.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              Завантаження...
+              {t('common.loading')}
             </div>
           ) : !points?.length ? (
             <div className="text-center py-8 text-muted-foreground">
-              Точки самовивозу не знайдено
+              {t('admin.shipping.points.empty')}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Назва</TableHead>
-                  <TableHead>Місто</TableHead>
-                  <TableHead>Адреса</TableHead>
-                  <TableHead>Зона</TableHead>
-                  <TableHead className="text-center">Активна</TableHead>
-                  <TableHead className="text-right">Дії</TableHead>
+                  <TableHead>{t('common.name')}</TableHead>
+                  <TableHead>{t('common.city')}</TableHead>
+                  <TableHead>{t('common.address')}</TableHead>
+                  <TableHead>{t('admin.shipping.points.zone')}</TableHead>
+                  <TableHead className="text-center">
+                    {t('common.activeF')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('common.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -138,7 +144,7 @@ export default function PickupPoints() {
                         {point.is_system && (
                           <Badge variant="secondary" className="gap-1">
                             <Shield className="h-3 w-3" />
-                            Системна
+                            {t('admin.shipping.points.system')}
                           </Badge>
                         )}
                       </div>
@@ -175,7 +181,9 @@ export default function PickupPoints() {
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Видалити цю точку самовивозу?')) {
+                            if (
+                              confirm(t('admin.shipping.points.confirmDelete'))
+                            ) {
                               deletePoint.mutate(point.id);
                             }
                           }}

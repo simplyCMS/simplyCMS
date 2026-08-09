@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
@@ -56,6 +57,7 @@ export function ProductModifications({
   productId,
   sectionId,
 }: ProductModificationsProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [isOpen, setIsOpen] = useState(false);
   const [editingModification, setEditingModification] =
@@ -125,12 +127,12 @@ export function ProductModifications({
         queryKey: ['product-modifications', productId],
       });
       closeDialog();
-      toast({ title: 'Модифікацію створено' });
+      toast({ title: t('admin.products.mods.created') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -155,12 +157,12 @@ export function ProductModifications({
         queryKey: ['product-modifications', productId],
       });
       closeDialog();
-      toast({ title: 'Модифікацію оновлено' });
+      toast({ title: t('admin.products.mods.updated') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -178,12 +180,12 @@ export function ProductModifications({
       queryClient.invalidateQueries({
         queryKey: ['product-modifications', productId],
       });
-      toast({ title: 'Модифікацію видалено' });
+      toast({ title: t('admin.products.mods.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -232,7 +234,7 @@ export function ProductModifications({
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка зміни порядку',
+        title: t('admin.products.mods.reorderFailed'),
         description: error.message,
       });
     },
@@ -298,19 +300,19 @@ export function ProductModifications({
       case 'in_stock':
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-            В наявності
+            {t('admin.products.stock.inStock')}
           </span>
         );
       case 'out_of_stock':
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-            Немає
+            {t('admin.products.stock.none')}
           </span>
         );
       case 'on_order':
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-            Під замовлення
+            {t('admin.products.stock.onOrder')}
           </span>
         );
       default:
@@ -337,31 +339,35 @@ export function ProductModifications({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Модифікації товару</CardTitle>
+          <CardTitle className="text-lg">
+            {t('admin.products.mods.title')}
+          </CardTitle>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button size="sm" onClick={openCreate}>
                 <Plus className="h-4 w-4 mr-1" />
-                Додати
+                {t('common.add')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingModification
-                    ? 'Редагувати модифікацію'
-                    : 'Нова модифікація'}
+                    ? t('admin.products.mods.edit')
+                    : t('admin.products.mods.new')}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="mod-name">Назва *</Label>
+                    <Label htmlFor="mod-name">
+                      {t('common.nameRequiredLabel')}
+                    </Label>
                     <Input
                       id="mod-name"
                       name="name"
                       defaultValue={editingModification?.name || ''}
-                      placeholder="Наприклад: 100W, Синій"
+                      placeholder={t('admin.products.mods.namePlaceholder')}
                       required
                     />
                   </div>
@@ -378,7 +384,9 @@ export function ProductModifications({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mod-sku">Артикул (SKU)</Label>
+                  <Label htmlFor="mod-sku">
+                    {t('admin.products.mods.sku')}
+                  </Label>
                   <Input
                     id="mod-sku"
                     name="sku"
@@ -398,12 +406,12 @@ export function ProductModifications({
                     name="is_default"
                     defaultChecked={editingModification?.is_default ?? false}
                   />
-                  <Label htmlFor="mod-default">За замовчуванням</Label>
+                  <Label htmlFor="mod-default">{t('common.byDefault')}</Label>
                 </div>
 
                 {/* Images section */}
                 <div className="space-y-2">
-                  <Label>Зображення</Label>
+                  <Label>{t('common.image')}</Label>
                   <ImageUpload
                     images={images}
                     onImagesChange={setImages}
@@ -421,7 +429,9 @@ export function ProductModifications({
                         type="button"
                         className="flex w-full justify-between p-3 border rounded-lg hover:bg-muted/50"
                       >
-                        <span className="font-medium">Ціни за видами</span>
+                        <span className="font-medium">
+                          {t('admin.products.mods.prices')}
+                        </span>
                         {pricesOpen ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (
@@ -447,7 +457,9 @@ export function ProductModifications({
                         type="button"
                         className="flex w-full justify-between p-3 border rounded-lg hover:bg-muted/50"
                       >
-                        <span className="font-medium">Залишки по складах</span>
+                        <span className="font-medium">
+                          {t('admin.products.mods.stock')}
+                        </span>
                         {stockOpen ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (
@@ -477,7 +489,7 @@ export function ProductModifications({
                         className="flex w-full justify-between p-3 border rounded-lg hover:bg-muted/50"
                       >
                         <span className="font-medium">
-                          Властивості модифікації
+                          {t('admin.products.mods.properties')}
                         </span>
                         {propertiesOpen ? (
                           <ChevronUp className="h-4 w-4" />
@@ -497,7 +509,7 @@ export function ProductModifications({
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={closeDialog}>
-                    Скасувати
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     type="submit"
@@ -508,7 +520,9 @@ export function ProductModifications({
                     {(createMutation.isPending || updateMutation.isPending) && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {editingModification ? 'Зберегти' : 'Створити'}
+                    {editingModification
+                      ? t('common.save')
+                      : t('common.create')}
                   </Button>
                 </div>
               </form>
@@ -521,12 +535,12 @@ export function ProductModifications({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">Порядок</TableHead>
+                <TableHead className="w-16">{t('common.order')}</TableHead>
                 <TableHead className="w-12"></TableHead>
-                <TableHead>Назва</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead>Ціна</TableHead>
-                <TableHead>Статус</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('admin.products.mods.skuShort')}</TableHead>
+                <TableHead>{t('common.price')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -603,7 +617,7 @@ export function ProductModifications({
                       {mod.name}
                       {mod.is_default && (
                         <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                          За замовч.
+                          {t('common.byDefaultShort')}
                         </span>
                       )}
                     </TableCell>
@@ -647,7 +661,7 @@ export function ProductModifications({
           </Table>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Модифікацій ще немає. Додайте першу модифікацію товару.
+            {t('admin.products.mods.empty')}
           </p>
         )}
       </CardContent>

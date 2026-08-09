@@ -14,6 +14,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { Badge } from '@simplycms/ui/badge';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 
 interface ProfileData {
   first_name: string | null;
@@ -37,6 +38,7 @@ interface RecentOrder {
 }
 
 export default function ProfilePage() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -108,17 +110,17 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Мій профіль</h1>
+      <h1 className="text-2xl font-bold">{t('profile.title')}</h1>
 
       {/* Profile info card */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5" />
-            Особисті дані
+            {t('profile.personalData')}
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/profile/settings">Редагувати</Link>
+            <Link to="/profile/settings">{t('common.edit')}</Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -126,11 +128,13 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Ім'я</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('common.firstName')}
+                </p>
                 <p className="font-medium">
                   {profile?.first_name && profile?.last_name
                     ? `${profile.first_name} ${profile.last_name}`
-                    : 'Не вказано'}
+                    : t('common.notSet')}
                 </p>
               </div>
             </div>
@@ -140,7 +144,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="font-medium">
-                  {profile?.email || user?.email || 'Не вказано'}
+                  {profile?.email || user?.email || t('common.notSet')}
                 </p>
               </div>
             </div>
@@ -148,8 +152,12 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Phone className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Телефон</p>
-                <p className="font-medium">{profile?.phone || 'Не вказано'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('common.phone')}
+                </p>
+                <p className="font-medium">
+                  {profile?.phone || t('common.notSet')}
+                </p>
               </div>
             </div>
 
@@ -157,7 +165,9 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3">
                 <Package className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Категорія</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('common.category')}
+                  </p>
                   <Badge variant="secondary">{profile.category.name}</Badge>
                 </div>
               </div>
@@ -171,19 +181,19 @@ export default function ProfilePage() {
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Останні замовлення
+            {t('profile.recentOrders')}
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/profile/orders">Всі замовлення</Link>
+            <Link to="/profile/orders">{t('profile.allOrders')}</Link>
           </Button>
         </CardHeader>
         <CardContent>
           {recentOrders.length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">У вас ще немає замовлень</p>
+              <p className="text-muted-foreground">{t('profile.noOrders')}</p>
               <Button className="mt-4" asChild>
-                <Link to="/catalog">Перейти до каталогу</Link>
+                <Link to="/catalog">{t('cart.empty.cta')}</Link>
               </Button>
             </div>
           ) : (

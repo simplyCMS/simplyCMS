@@ -27,6 +27,7 @@ import {
   Minus,
 } from 'lucide-react';
 import { cn } from '@simplycms/core/lib/utils';
+import { useT } from '@simplycms/i18n';
 import { useCallback, useEffect } from 'react';
 
 interface RichTextEditorProps {
@@ -39,9 +40,11 @@ interface RichTextEditorProps {
 export function RichTextEditor({
   content,
   onChange,
-  placeholder: _placeholder = 'Введіть текст...',
+  // Дефолт підпису переїхав у тіло: у списку параметрів транслятора ще немає.
+  placeholder: _placeholder,
   className,
 }: RichTextEditorProps) {
+  const t = useT();
   const editor = useEditor({
     extensions: [
       // StarterKit v3 уже містить link + underline — налаштовуємо link тут,
@@ -88,7 +91,7 @@ export function RichTextEditor({
     if (!editor) return;
 
     const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL посилання', previousUrl);
+    const url = window.prompt(t('admin.products.editor.linkUrl'), previousUrl);
 
     if (url === null) return;
 
@@ -103,7 +106,7 @@ export function RichTextEditor({
   const addImage = useCallback(() => {
     if (!editor) return;
 
-    const url = window.prompt('URL зображення');
+    const url = window.prompt(t('admin.products.editor.imageUrl'));
 
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();

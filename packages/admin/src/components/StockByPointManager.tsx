@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
@@ -32,6 +33,7 @@ export function StockByPointManager({
   modificationId,
   showCard = true,
 }: StockByPointManagerProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [stockData, setStockData] = useState<Record<string, number>>({});
@@ -128,10 +130,12 @@ export function StockByPointManager({
         queryKey: ['stock-info', modificationId ?? productId],
       });
       setHasChanges(false);
-      toast.success('Залишки збережено');
+      toast.success(t('admin.products.stock.saved'));
     },
     onError: (error: Error) => {
-      toast.error(`Помилка збереження: ${error.message}`);
+      toast.error(
+        t('admin.products.stock.saveFailed', { message: error.message }),
+      );
     },
   });
 
@@ -158,7 +162,9 @@ export function StockByPointManager({
     const singlePoint = pickupPoints[0];
     const content = (
       <div className="space-y-2">
-        <Label htmlFor="stock_quantity">Кількість на складі</Label>
+        <Label htmlFor="stock_quantity">
+          {t('admin.products.stock.quantityAtWarehouse')}
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             id="stock_quantity"
@@ -175,7 +181,9 @@ export function StockByPointManager({
             }}
             className="w-32"
           />
-          <span className="text-muted-foreground">шт.</span>
+          <span className="text-muted-foreground">
+            {t('admin.products.stock.units')}
+          </span>
           {hasChanges && (
             <Button
               size="sm"
@@ -198,7 +206,9 @@ export function StockByPointManager({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Залишки</CardTitle>
+          <CardTitle className="text-base">
+            {t('admin.products.stock.title')}
+          </CardTitle>
         </CardHeader>
         <CardContent>{content}</CardContent>
       </Card>
@@ -211,9 +221,11 @@ export function StockByPointManager({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Склад</TableHead>
-            <TableHead>Місто</TableHead>
-            <TableHead className="w-32 text-right">Кількість</TableHead>
+            <TableHead>{t('admin.products.stock.warehouse')}</TableHead>
+            <TableHead>{t('common.city')}</TableHead>
+            <TableHead className="w-32 text-right">
+              {t('common.quantity')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -225,7 +237,7 @@ export function StockByPointManager({
                   <span className="font-medium">{point.name}</span>
                   {point.is_system && (
                     <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      Системний
+                      {t('common.system')}
                     </span>
                   )}
                 </div>
@@ -254,7 +266,8 @@ export function StockByPointManager({
 
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="text-sm text-muted-foreground">
-          Загалом: <strong>{totalQuantity}</strong> шт.
+          {t('admin.products.stock.total')} <strong>{totalQuantity}</strong>{' '}
+          {t('admin.products.stock.units')}
         </div>
         {hasChanges && (
           <Button
@@ -266,7 +279,7 @@ export function StockByPointManager({
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             )}
             <Save className="h-4 w-4 mr-2" />
-            Зберегти залишки
+            {t('admin.products.stock.save')}
           </Button>
         )}
       </div>
@@ -278,7 +291,9 @@ export function StockByPointManager({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Залишки по складах</CardTitle>
+        <CardTitle className="text-base">
+          {t('admin.products.mods.stock')}
+        </CardTitle>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

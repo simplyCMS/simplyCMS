@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,42 +23,48 @@ import {
 } from '@simplycms/ui/form';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import { AvatarUpload } from '@simplycms/core/components/profile/AvatarUpload';
 import { AddressesList } from '@simplycms/core/components/profile/AddressesList';
 import { RecipientsList } from '@simplycms/core/components/profile/RecipientsList';
 
-const profileSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, 'Мінімум 2 символи')
-    .max(100, 'Максимум 100 символів'),
-  lastName: z
-    .string()
-    .min(2, 'Мінімум 2 символи')
-    .max(100, 'Максимум 100 символів'),
-  phone: z
-    .string()
-    .min(10, 'Введіть коректний номер телефону')
-    .max(20, 'Максимум 20 символів')
-    .optional()
-    .or(z.literal('')),
-});
-
-const passwordSchema = z
-  .object({
-    newPassword: z.string().min(6, 'Мінімум 6 символів'),
-    confirmPassword: z.string().min(6, 'Мінімум 6 символів'),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Паролі не співпадають',
-    path: ['confirmPassword'],
+// Фабрики схем: повідомлення валідації живуть у каталозі, а транслятор
+// доступний лише в рендері. Обидві мемоїзуються по `t` у компоненті.
+const buildProfileSchema = (t: Translator) =>
+  z.object({
+    firstName: z
+      .string()
+      .min(2, t('validation.min2'))
+      .max(100, t('validation.max100')),
+    lastName: z
+      .string()
+      .min(2, t('validation.min2'))
+      .max(100, t('validation.max100')),
+    phone: z
+      .string()
+      .min(10, t('validation.phone'))
+      .max(20, t('validation.max20'))
+      .optional()
+      .or(z.literal('')),
   });
 
-type ProfileFormData = z.infer<typeof profileSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
+const buildPasswordSchema = (t: Translator) =>
+  z
+    .object({
+      newPassword: z.string().min(6, t('validation.min6')),
+      confirmPassword: z.string().min(6, t('validation.min6')),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('validation.passwordMismatch'),
+      path: ['confirmPassword'],
+    });
+
+type ProfileFormData = z.infer<ReturnType<typeof buildProfileSchema>>;
+type PasswordFormData = z.infer<ReturnType<typeof buildPasswordSchema>>;
 
 export default function ProfileSettingsPage() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +75,9 @@ export default function ProfileSettingsPage() {
     first_name?: string | null;
     last_name?: string | null;
   } | null>(null);
+
+  const profileSchema = useMemo(() => buildProfileSchema(t), [t]);
+  const passwordSchema = useMemo(() => buildPasswordSchema(t), [t]);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -135,15 +144,17 @@ export default function ProfileSettingsPage() {
       if (error) throw error;
 
       toast({
-        title: 'Збережено',
-        description: 'Ваші дані успішно оновлено',
+        title: t('profile.settings.saved'),
+        description: t('profile.settings.savedHint'),
       });
     } catch (error: unknown) {
       console.error('Error updating profile:', error);
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description:
-          error instanceof Error ? error.message : 'Не вдалось зберегти дані',
+          error instanceof Error
+            ? error.message
+            : t('profile.settings.saveFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -163,15 +174,15 @@ export default function ProfileSettingsPage() {
 
       passwordForm.reset();
       toast({
-        title: 'Пароль змінено',
-        description: 'Ваш пароль успішно оновлено',
+        title: t('profile.password.changed'),
+        description: t('profile.password.changedHint'),
       });
     } catch (error: unknown) {
       console.error('Error changing password:', error);
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description:
-          error instanceof Error ? error.message : 'Не вдалось змінити пароль',
+          error instanceof Error ? error.message : t('profile.password.failed'),
         variant: 'destructive',
       });
     } finally {
@@ -191,12 +202,14 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Налаштування</h1>
+      <h1 className="text-2xl font-bold">{t('nav.settings')}</h1>
 
       {/* Avatar */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Фото профілю</CardTitle>
+          <CardTitle className="text-lg">
+            {t('profile.settings.avatar')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <AvatarUpload
@@ -215,9 +228,11 @@ export default function ProfileSettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5" />
-            Особисті дані
+            {t('profile.personalData')}
           </CardTitle>
-          <CardDescription>Редагуйте свої контактні дані</CardDescription>
+          <CardDescription>
+            {t('profile.settings.editContacts')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...profileForm}>
@@ -231,9 +246,14 @@ export default function ProfileSettingsPage() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ім'я</FormLabel>
+                      <FormLabel>{t('common.firstName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Введіть ім'я" {...field} />
+                        <Input
+                          placeholder={t(
+                            'profile.settings.firstNamePlaceholder',
+                          )}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -244,9 +264,14 @@ export default function ProfileSettingsPage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Прізвище</FormLabel>
+                      <FormLabel>{t('common.lastName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Введіть прізвище" {...field} />
+                        <Input
+                          placeholder={t(
+                            'profile.settings.lastNamePlaceholder',
+                          )}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -262,7 +287,7 @@ export default function ProfileSettingsPage() {
                   className="mt-2 bg-muted"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Email неможливо змінити
+                  {t('profile.settings.emailLocked')}
                 </p>
               </div>
 
@@ -271,7 +296,7 @@ export default function ProfileSettingsPage() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Телефон</FormLabel>
+                    <FormLabel>{t('common.phone')}</FormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="+380" {...field} />
                     </FormControl>
@@ -284,12 +309,12 @@ export default function ProfileSettingsPage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Збереження...
+                    {t('common.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Зберегти
+                    {t('common.save')}
                   </>
                 )}
               </Button>
@@ -303,11 +328,9 @@ export default function ProfileSettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <KeyRound className="h-5 w-5" />
-            Зміна пароля
+            {t('profile.password.title')}
           </CardTitle>
-          <CardDescription>
-            Встановіть новий пароль для вашого акаунта
-          </CardDescription>
+          <CardDescription>{t('profile.password.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...passwordForm}>
@@ -320,11 +343,11 @@ export default function ProfileSettingsPage() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Новий пароль</FormLabel>
+                    <FormLabel>{t('profile.password.new')}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Мінімум 6 символів"
+                        placeholder={t('validation.min6')}
                         {...field}
                       />
                     </FormControl>
@@ -338,11 +361,11 @@ export default function ProfileSettingsPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Підтвердіть пароль</FormLabel>
+                    <FormLabel>{t('profile.password.confirm')}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Повторіть новий пароль"
+                        placeholder={t('profile.password.confirmPlaceholder')}
                         {...field}
                       />
                     </FormControl>
@@ -359,10 +382,10 @@ export default function ProfileSettingsPage() {
                 {isChangingPassword ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Зміна...
+                    {t('profile.password.pending')}
                   </>
                 ) : (
-                  'Змінити пароль'
+                  t('profile.password.submit')
                 )}
               </Button>
             </form>

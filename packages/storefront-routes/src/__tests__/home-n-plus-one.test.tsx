@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nProvider } from '@simplycms/i18n';
 import type { HomeProduct, HomeSection } from '../pages/home/types';
 
 /**
@@ -115,9 +116,12 @@ function renderRoute(withSectionProducts: boolean) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // I18nProvider — як у проді (`__root.tsx` над усіма роутами).
   return render(
     <QueryClientProvider client={queryClient}>
-      <RouteComponent />
+      <I18nProvider locale="uk">
+        <RouteComponent />
+      </I18nProvider>
     </QueryClientProvider>,
   );
 }

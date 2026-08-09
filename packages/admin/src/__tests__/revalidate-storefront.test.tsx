@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { I18nProvider } from '@simplycms/i18n';
 
 /**
  * 🔴 Гард на ОБИДВА кроки скидання теми.
@@ -23,6 +25,11 @@ vi.mock('@tanstack/react-router', () => ({
 
 import { useRevalidateStorefront } from '../lib/revalidateTheme';
 
+// I18nProvider — як у проді: текст помилки бере з каталогу через `useT()`.
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <I18nProvider locale="uk">{children}</I18nProvider>
+);
+
 describe('useRevalidateStorefront', () => {
   beforeEach(() => {
     invalidate.mockClear();
@@ -33,7 +40,9 @@ describe('useRevalidateStorefront', () => {
   });
 
   it('скидає серверний кеш І інвалідовує роутер', async () => {
-    const { result } = renderHook(() => useRevalidateStorefront());
+    const { result } = renderHook(() => useRevalidateStorefront(), {
+      wrapper,
+    });
 
     await act(async () => {
       await result.current();
@@ -50,7 +59,9 @@ describe('useRevalidateStorefront', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 403 } as Response),
     );
-    const { result } = renderHook(() => useRevalidateStorefront());
+    const { result } = renderHook(() => useRevalidateStorefront(), {
+      wrapper,
+    });
 
     await expect(result.current()).rejects.toThrow('403');
     // Інвалідація без скинутого серверного кешу лише перечитала б те саме

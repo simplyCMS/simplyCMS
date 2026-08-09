@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Input } from '@simplycms/ui/input';
@@ -31,20 +33,23 @@ import { adminPath } from '../lib/adminLinks';
 import { ShippingMethod } from '@simplycms/core/lib/shipping/types';
 import { PluginSlot } from '@simplycms/plugins/PluginSlot';
 
-const formSchema = z.object({
-  code: z.string().min(1, "Код обов'язковий").max(50),
-  name: z.string().min(1, "Назва обов'язкова"),
-  description: z.string().optional(),
-  type: z.enum(['system', 'manual', 'plugin']),
-  plugin_name: z.string().optional(),
-  is_active: z.boolean(),
-  sort_order: z.number().int().min(0),
-  icon: z.string().optional(),
-});
+// Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
+const buildFormSchema = (t: Translator) =>
+  z.object({
+    code: z.string().min(1, t('validation.codeRequired')).max(50),
+    name: z.string().min(1, t('validation.nameRequired')),
+    description: z.string().optional(),
+    type: z.enum(['system', 'manual', 'plugin']),
+    plugin_name: z.string().optional(),
+    is_active: z.boolean(),
+    sort_order: z.number().int().min(0),
+    icon: z.string().optional(),
+  });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 export default function ShippingMethodEdit() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { methodId } = useParams({ strict: false }) as { methodId: string };
   const navigate = useNavigate();
@@ -65,6 +70,8 @@ export default function ShippingMethodEdit() {
     },
     enabled: !isNew,
   });
+
+  const formSchema = useMemo(() => buildFormSchema(t), [t]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -121,11 +128,13 @@ export default function ShippingMethodEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
-      toast.success(isNew ? 'Службу створено' : 'Зміни збережено');
+      toast.success(
+        isNew ? t('admin.shipping.methods.created') : t('common.changesSaved'),
+      );
       navigate({ to: adminPath('shipping/methods') });
     },
     onError: (error: Error) => {
-      toast.error(`Помилка: ${error.message}`);
+      toast.error(t('common.errorWithMessage', { message: error.message }));
     },
   });
 
@@ -152,12 +161,12 @@ export default function ShippingMethodEdit() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {isNew ? 'Нова служба доставки' : method?.name}
+            {isNew ? t('admin.shipping.methods.new') : method?.name}
           </h1>
           <p className="text-muted-foreground mt-1">
             {isNew
-              ? 'Створіть новий спосіб доставки'
-              : 'Редагування параметрів служби доставки'}
+              ? t('admin.shipping.methods.newSubtitle')
+              : t('admin.shipping.methods.editSubtitle')}
           </p>
         </div>
       </div>
@@ -168,7 +177,7 @@ export default function ShippingMethodEdit() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Основна інформація</CardTitle>
+                  <CardTitle>{t('common.basicInfo')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -176,9 +185,14 @@ export default function ShippingMethodEdit() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Назва</FormLabel>
+                        <FormLabel>{t('common.name')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Кур'єрська доставка" {...field} />
+                          <Input
+                            placeholder={t(
+                              'admin.shipping.methods.namePlaceholder',
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -190,7 +204,7 @@ export default function ShippingMethodEdit() {
                     name="code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Код</FormLabel>
+                        <FormLabel>{t('common.code')}</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="courier"
@@ -199,7 +213,7 @@ export default function ShippingMethodEdit() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Унікальний ідентифікатор для системи
+                          {t('admin.shipping.methods.codeHint')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -211,10 +225,12 @@ export default function ShippingMethodEdit() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Опис</FormLabel>
+                        <FormLabel>{t('common.description')}</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Доставка кур'єром за вашою адресою"
+                            placeholder={t(
+                              'admin.shipping.methods.descriptionPlaceholder',
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -229,7 +245,7 @@ export default function ShippingMethodEdit() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Тип</FormLabel>
+                          <FormLabel>{t('common.type')}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -241,9 +257,15 @@ export default function ShippingMethodEdit() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="system">Системний</SelectItem>
-                              <SelectItem value="manual">Ручний</SelectItem>
-                              <SelectItem value="plugin">Плагін</SelectItem>
+                              <SelectItem value="system">
+                                {t('common.system')}
+                              </SelectItem>
+                              <SelectItem value="manual">
+                                {t('admin.shipping.source.manual')}
+                              </SelectItem>
+                              <SelectItem value="plugin">
+                                {t('admin.shipping.source.plugin')}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -257,7 +279,9 @@ export default function ShippingMethodEdit() {
                         name="plugin_name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Назва плагіна</FormLabel>
+                            <FormLabel>
+                              {t('admin.shipping.methods.pluginName')}
+                            </FormLabel>
                             <FormControl>
                               <Input placeholder="nova_poshta" {...field} />
                             </FormControl>
@@ -274,12 +298,14 @@ export default function ShippingMethodEdit() {
                       name="icon"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Іконка (Lucide)</FormLabel>
+                          <FormLabel>
+                            {t('admin.shipping.methods.icon')}
+                          </FormLabel>
                           <FormControl>
                             <Input placeholder="Truck" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Назва іконки з бібліотеки Lucide
+                            {t('admin.shipping.methods.iconHint')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -291,7 +317,7 @@ export default function ShippingMethodEdit() {
                       name="sort_order"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Порядок сортування</FormLabel>
+                          <FormLabel>{t('common.sortOrder')}</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -322,7 +348,7 @@ export default function ShippingMethodEdit() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Статус</CardTitle>
+                  <CardTitle>{t('common.status')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -331,9 +357,9 @@ export default function ShippingMethodEdit() {
                     render={({ field }) => (
                       <FormItem className="flex items-center justify-between">
                         <div>
-                          <FormLabel>Активна</FormLabel>
+                          <FormLabel>{t('common.activeF')}</FormLabel>
                           <FormDescription>
-                            Відображати на сторінці оформлення замовлення
+                            {t('admin.shipping.methods.showAtCheckout')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -358,7 +384,7 @@ export default function ShippingMethodEdit() {
                     {saveMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    {isNew ? 'Створити' : 'Зберегти'}
+                    {isNew ? t('common.create') : t('common.save')}
                   </Button>
                 </CardContent>
               </Card>

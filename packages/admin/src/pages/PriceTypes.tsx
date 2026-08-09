@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent } from '@simplycms/ui/card';
 import {
@@ -16,6 +17,7 @@ import { useToast } from '@simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 
 export default function PriceTypes() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -43,12 +45,12 @@ export default function PriceTypes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-price-types'] });
-      toast({ title: 'Вид ціни видалено' });
+      toast({ title: t('admin.prices.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -66,10 +68,8 @@ export default function PriceTypes() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Види цін</h1>
-          <p className="text-muted-foreground">
-            Управління видами цін для товарів
-          </p>
+          <h1 className="text-3xl font-bold">{t('admin.nav.priceTypes')}</h1>
+          <p className="text-muted-foreground">{t('admin.prices.subtitle')}</p>
         </div>
         <Button
           onClick={() =>
@@ -80,7 +80,7 @@ export default function PriceTypes() {
           }
         >
           <Plus className="h-4 w-4 mr-2" />
-          Додати вид ціни
+          {t('admin.prices.add')}
         </Button>
       </div>
       <Card>
@@ -88,9 +88,9 @@ export default function PriceTypes() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Назва</TableHead>
-                <TableHead>Код</TableHead>
-                <TableHead>Порядок</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('common.code')}</TableHead>
+                <TableHead>{t('common.order')}</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
@@ -124,7 +124,7 @@ export default function PriceTypes() {
                       disabled={pt.is_default || deleteMutation.isPending}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm('Видалити цей вид ціни?'))
+                        if (confirm(t('admin.prices.confirmDelete')))
                           deleteMutation.mutate(pt.id);
                       }}
                     >
@@ -139,7 +139,7 @@ export default function PriceTypes() {
                     colSpan={4}
                     className="text-center text-muted-foreground"
                   >
-                    Видів цін ще немає
+                    {t('admin.prices.empty')}
                   </TableCell>
                 </TableRow>
               )}

@@ -33,18 +33,22 @@ import { Switch } from '@simplycms/ui/switch';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import type { TablesInsert, Enums } from '@simplycms/supabase';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
-const propertyTypes = [
-  { value: 'text', label: 'Текст' },
-  { value: 'number', label: 'Число' },
-  { value: 'select', label: 'Вибір (один)' },
-  { value: 'multiselect', label: 'Вибір (декілька)' },
-  { value: 'range', label: 'Діапазон' },
-  { value: 'color', label: 'Колір' },
-  { value: 'boolean', label: 'Так/Ні' },
+// Код типу приходить із БД (enum `property_type`), тож мапа лишається на рівні
+// модуля й тримає КЛЮЧІ — підпис резолвиться в рендері.
+const propertyTypes: { value: string; labelKey: MessageKey }[] = [
+  { value: 'text', labelKey: 'admin.properties.type.text' },
+  { value: 'number', labelKey: 'admin.properties.type.number' },
+  { value: 'select', labelKey: 'admin.properties.type.select' },
+  { value: 'multiselect', labelKey: 'admin.properties.type.multiselect' },
+  { value: 'range', labelKey: 'admin.properties.type.range' },
+  { value: 'color', labelKey: 'admin.properties.type.color' },
+  { value: 'boolean', labelKey: 'admin.properties.type.boolean' },
 ];
 
 export default function Properties() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -76,12 +80,12 @@ export default function Properties() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-properties'] });
       closeDialog();
-      toast({ title: 'Властивість створено' });
+      toast({ title: t('admin.properties.created') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -97,12 +101,12 @@ export default function Properties() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-properties'] });
-      toast({ title: 'Властивість видалено' });
+      toast({ title: t('admin.properties.deleted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -148,30 +152,30 @@ export default function Properties() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Властивості</h1>
+          <h1 className="text-3xl font-bold">{t('admin.nav.properties')}</h1>
           <p className="text-muted-foreground">
-            Глобальні властивості для товарів
+            {t('admin.properties.subtitle')}
           </p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
-              Додати властивість
+              {t('admin.properties.add')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Нова властивість</DialogTitle>
+              <DialogTitle>{t('admin.properties.new')}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Назва</Label>
+                  <Label htmlFor="name">{t('common.name')}</Label>
                   <Input
                     id="name"
                     name="name"
-                    placeholder="Виробник"
+                    placeholder={t('admin.properties.namePlaceholder')}
                     required
                   />
                 </div>
@@ -187,7 +191,7 @@ export default function Properties() {
               </div>
 
               <div className="space-y-2">
-                <Label>Тип властивості</Label>
+                <Label>{t('admin.properties.typeLabel')}</Label>
                 <Select
                   value={propertyType}
                   onValueChange={(v) =>
@@ -200,7 +204,7 @@ export default function Properties() {
                   <SelectContent>
                     {propertyTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        {t(type.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -208,7 +212,7 @@ export default function Properties() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sort_order">Порядок сортування</Label>
+                <Label htmlFor="sort_order">{t('common.sortOrder')}</Label>
                 <Input
                   id="sort_order"
                   name="sort_order"
@@ -220,29 +224,33 @@ export default function Properties() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Switch id="is_required" name="is_required" />
-                  <Label htmlFor="is_required">Обов'язкова</Label>
+                  <Label htmlFor="is_required">
+                    {t('admin.properties.required')}
+                  </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch id="is_filterable" name="is_filterable" />
-                  <Label htmlFor="is_filterable">Показувати у фільтрах</Label>
+                  <Label htmlFor="is_filterable">
+                    {t('admin.properties.showInFilters')}
+                  </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch id="has_page" name="has_page" />
                   <Label htmlFor="has_page">
-                    Створювати сторінки для значень
+                    {t('admin.properties.hasPage')}
                   </Label>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={closeDialog}>
-                  Скасувати
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
                   {createMutation.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  Створити
+                  {t('common.create')}
                 </Button>
               </div>
             </form>
@@ -252,17 +260,19 @@ export default function Properties() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Всі властивості</CardTitle>
+          <CardTitle>{t('admin.properties.all')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Назва</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead>Тип</TableHead>
-                <TableHead>Фільтр</TableHead>
-                <TableHead className="text-right">Дії</TableHead>
+                <TableHead>{t('common.type')}</TableHead>
+                <TableHead>{t('common.filter')}</TableHead>
+                <TableHead className="text-right">
+                  {t('common.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -284,17 +294,21 @@ export default function Properties() {
                     {property.slug}
                   </TableCell>
                   <TableCell>
-                    {
-                      propertyTypes.find(
-                        (t) => t.value === property.property_type,
-                      )?.label
-                    }
+                    {(() => {
+                      const type = propertyTypes.find(
+                        (candidate) =>
+                          candidate.value === property.property_type,
+                      );
+                      return type ? t(type.labelKey) : null;
+                    })()}
                   </TableCell>
                   <TableCell>
                     {property.is_filterable ? (
-                      <span className="text-green-600">Так</span>
+                      <span className="text-green-600">{t('common.yes')}</span>
                     ) : (
-                      <span className="text-muted-foreground">Ні</span>
+                      <span className="text-muted-foreground">
+                        {t('common.no')}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -303,7 +317,7 @@ export default function Properties() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm('Видалити цю властивість?')) {
+                        if (confirm(t('admin.properties.confirmDelete'))) {
                           deleteMutation.mutate(property.id);
                         }
                       }}
@@ -320,7 +334,7 @@ export default function Properties() {
                     colSpan={5}
                     className="text-center text-muted-foreground"
                   >
-                    Властивостей ще немає
+                    {t('admin.properties.empty')}
                   </TableCell>
                 </TableRow>
               )}
