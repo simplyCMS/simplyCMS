@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
 import { Switch } from '@simplycms/ui/switch';
@@ -36,6 +37,7 @@ export function ProductPropertyValues({
   modificationId,
   sectionId,
 }: Props) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<
@@ -297,7 +299,7 @@ export function ProductPropertyValues({
   if (!sectionId) {
     return (
       <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
-        Оберіть розділ, щоб налаштувати властивості
+        {t('admin.properties.section.pickSection')}
       </div>
     );
   }
@@ -313,7 +315,7 @@ export function ProductPropertyValues({
   if (!properties || properties.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
-        Для цього розділу ще не налаштовані властивості
+        {t('admin.properties.section.notConfigured')}
       </div>
     );
   }
@@ -328,7 +330,9 @@ export function ProductPropertyValues({
           <Input
             value={currentValue?.value || ''}
             onChange={(e) => handleChange(property.id, e.target.value || null)}
-            placeholder={`Введіть ${property.name.toLowerCase()}`}
+            placeholder={t('admin.properties.values.inputPlaceholder', {
+              name: property.name.toLowerCase(),
+            })}
           />
         );
 
@@ -353,7 +357,9 @@ export function ProductPropertyValues({
             onValueChange={(val) => handleSelectChange(property.id, val)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Оберіть значення" />
+              <SelectValue
+                placeholder={t('admin.properties.values.pickValue')}
+              />
             </SelectTrigger>
             <SelectContent>
               {options.map((opt) => (
@@ -389,7 +395,7 @@ export function ProductPropertyValues({
             ))}
             {options.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Опцій не знайдено. Додайте опції у властивості.
+                {t('admin.properties.values.noOptions')}
               </p>
             )}
           </div>
@@ -405,7 +411,9 @@ export function ProductPropertyValues({
               }
             />
             <span className="text-sm text-muted-foreground">
-              {currentValue?.value === 'true' ? 'Так' : 'Ні'}
+              {currentValue?.value === 'true'
+                ? t('common.yes')
+                : t('common.no')}
             </span>
           </div>
         );
@@ -443,7 +451,11 @@ export function ProductPropertyValues({
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-lg">
-        Властивості {entityType === 'modification' ? 'модифікації' : 'товару'}
+        {t(
+          entityType === 'modification'
+            ? 'admin.properties.values.titleModification'
+            : 'admin.properties.section.productProps',
+        )}
       </h3>
       <div className="grid gap-4">
         {properties.map((property) => (

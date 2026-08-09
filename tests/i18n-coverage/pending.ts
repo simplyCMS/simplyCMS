@@ -27,15 +27,11 @@ export const ALLOWLIST: Record<string, string> = {
  */
 export const PENDING_FILES: readonly string[] = [
   'packages/admin/src/components/AddProductToOrder.tsx',
-  'packages/admin/src/components/AllProductProperties.tsx',
   'packages/admin/src/components/ImageUpload.tsx',
   'packages/admin/src/components/InstallPluginDialog.tsx',
   'packages/admin/src/components/ProductModifications.tsx',
   'packages/admin/src/components/ProductPricesEditor.tsx',
-  'packages/admin/src/components/ProductPropertyValues.tsx',
   'packages/admin/src/components/RichTextEditor.tsx',
-  'packages/admin/src/components/SectionPropertiesManager.tsx',
-  'packages/admin/src/components/SectionPropertiesTable.tsx',
   'packages/admin/src/components/SimpleProductFields.tsx',
   'packages/admin/src/components/StockByPointManager.tsx',
   'packages/admin/src/components/StockStatusSelect.tsx',

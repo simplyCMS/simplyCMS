@@ -44,4 +44,31 @@ export const messages: Catalog = {
   'admin.properties.options.seoTitlePlaceholder': 'Title for search engines',
   'admin.properties.options.titleCounter': '/60 characters',
   'admin.properties.options.descriptionCounter': '/160 characters',
+
+  'admin.properties.section.title': 'Section properties',
+  'admin.properties.section.empty':
+    'No properties yet. Add properties to this section.',
+  'admin.properties.section.addToSection': 'Add a property to the section',
+  'admin.properties.section.notConfigured':
+    'No properties configured for this section yet',
+  'admin.properties.section.pickSection':
+    'Pick a section to configure its properties',
+  'admin.properties.section.productProps': 'Product properties',
+  'admin.properties.section.modificationProps': 'Modification properties',
+  'admin.properties.section.addForProduct': 'Add a property for products',
+  'admin.properties.section.addForModification':
+    'Add a property for modifications',
+  'admin.properties.section.pickProperty': 'Pick a property',
+  'admin.properties.section.pickPropertyPlaceholder': 'Choose a property...',
+  'admin.properties.section.allAdded': 'All properties are already added',
+  'admin.properties.section.added': 'Property added',
+  'admin.properties.section.removed': 'Property removed from the section',
+
+  'admin.properties.appliesTo.product': 'product',
+  'admin.properties.appliesTo.modification': 'modification',
+  'admin.properties.values.titleModification': 'Modification properties',
+  'admin.properties.values.pickValue': 'Choose a value',
+  'admin.properties.values.noOptions':
+    'No options found. Add options to the property.',
+  'admin.properties.values.inputPlaceholder': 'Enter {name}',
 };

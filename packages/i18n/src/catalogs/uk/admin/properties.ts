@@ -45,4 +45,33 @@ export const messages = {
   'admin.properties.options.seoTitlePlaceholder': 'Назва для пошукових систем',
   'admin.properties.options.titleCounter': '/60 символів',
   'admin.properties.options.descriptionCounter': '/160 символів',
+
+  // Властивості розділу (призначення товарам / модифікаціям)
+  'admin.properties.section.title': 'Властивості розділу',
+  'admin.properties.section.empty':
+    'Властивостей ще немає. Додайте властивості до розділу.',
+  'admin.properties.section.addToSection': 'Додати властивість до розділу',
+  'admin.properties.section.notConfigured':
+    'Для цього розділу ще не налаштовані властивості',
+  'admin.properties.section.pickSection':
+    'Оберіть розділ, щоб налаштувати властивості',
+  'admin.properties.section.productProps': 'Властивості товару',
+  'admin.properties.section.modificationProps': 'Властивості модифікацій',
+  'admin.properties.section.addForProduct': 'Додати властивість для товарів',
+  'admin.properties.section.addForModification':
+    'Додати властивість для модифікацій',
+  'admin.properties.section.pickProperty': 'Виберіть властивість',
+  'admin.properties.section.pickPropertyPlaceholder': 'Оберіть властивість...',
+  'admin.properties.section.allAdded': 'Всі властивості вже додано',
+  'admin.properties.section.added': 'Властивість додано',
+  'admin.properties.section.removed': 'Властивість видалено з розділу',
+
+  // Значення властивостей у картці товару
+  'admin.properties.appliesTo.product': 'товар',
+  'admin.properties.appliesTo.modification': 'модифікація',
+  'admin.properties.values.titleModification': 'Властивості модифікації',
+  'admin.properties.values.pickValue': 'Оберіть значення',
+  'admin.properties.values.noOptions':
+    'Опцій не знайдено. Додайте опції у властивості.',
+  'admin.properties.values.inputPlaceholder': 'Введіть {name}',
 } as const;
