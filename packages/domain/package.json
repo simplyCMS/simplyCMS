@@ -11,7 +11,8 @@
     "./pricing": "./src/pricing.ts",
     "./discounts": "./src/discounts.ts",
     "./inventory": "./src/inventory.ts",
-    "./shipping": "./src/shipping.ts"
+    "./shipping": "./src/shipping.ts",
+    "./money": "./src/money.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -38,6 +39,10 @@
       "./shipping": {
         "types": "./dist/shipping.d.ts",
         "import": "./dist/shipping.js"
+      },
+      "./money": {
+        "types": "./dist/money.d.ts",
+        "import": "./dist/money.js"
       }
     }
   },

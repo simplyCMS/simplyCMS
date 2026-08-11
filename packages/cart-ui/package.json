@@ -41,6 +41,7 @@
     "build": "tsup"
   },
   "dependencies": {
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/react-query": "workspace:*"
   },
   "peerDependencies": {

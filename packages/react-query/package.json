@@ -43,6 +43,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
+    "@simplycms/domain": "workspace:*",
     "@simplycms/objects": "workspace:*"
   },
   "peerDependencies": {

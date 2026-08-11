@@ -43,6 +43,7 @@
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {

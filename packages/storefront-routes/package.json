@@ -75,6 +75,7 @@
     "@simplycms/i18n": "workspace:*",
     "@simplycms/objects": "workspace:*",
     "@simplycms/plugins": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
     "@simplycms/storefront": "workspace:*",
     "@simplycms/supabase": "workspace:*",
     "@simplycms/themes": "workspace:*",

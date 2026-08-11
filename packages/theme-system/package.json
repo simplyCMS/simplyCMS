@@ -11,6 +11,7 @@
     "./ThemeContext": "./src/ThemeContext.tsx",
     "./applyTokens": "./src/applyTokens.ts",
     "./validateThemeModule": "./src/validateThemeModule.ts",
+    "./useThemeT": "./src/useThemeT.ts",
     "./types": "./src/types.ts"
   },
   "publishConfig": {
@@ -39,6 +40,10 @@
         "types": "./dist/validateThemeModule.d.ts",
         "import": "./dist/validateThemeModule.js"
       },
+      "./useThemeT": {
+        "types": "./dist/useThemeT.d.ts",
+        "import": "./dist/useThemeT.js"
+      },
       "./types": {
         "types": "./dist/types.d.ts",
         "import": "./dist/types.js"
@@ -60,6 +65,7 @@
     "build": "tsup"
   },
   "dependencies": {
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/objects": "workspace:*",
     "@simplycms/supabase": "workspace:*"
   },

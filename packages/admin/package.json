@@ -53,6 +53,7 @@
     "@simplycms/core": "workspace:*",
     "@simplycms/i18n": "workspace:*",
     "@simplycms/plugins": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
     "@simplycms/supabase": "workspace:*",
     "@simplycms/themes": "workspace:*",
     "@simplycms/ui": "workspace:*",
