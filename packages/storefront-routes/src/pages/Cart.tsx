@@ -12,18 +12,15 @@ import { Separator } from '@simplycms/ui/separator';
 import { useCart } from '@simplycms/core/hooks/useCart';
 import { CartItem } from '@simplycms/core/components/cart/CartItem';
 import { useT } from '@simplycms/i18n';
+import { useFormatPrice } from '@simplycms/react-query';
 
 export default function Cart() {
   const { items, totalPrice, clearCart } = useCart();
   const t = useT();
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  // Форматування ціни — через конфіг магазину (locale/currency), а не
+  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
+  // (див. @simplycms/domain/money).
+  const formatPrice = useFormatPrice();
 
   return (
     <div className="container mx-auto px-4 py-8">

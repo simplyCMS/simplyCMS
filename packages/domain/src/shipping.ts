@@ -2,10 +2,12 @@
 // (findZone лишається у data-шарі — він робить IO; домен працює з готовими rates/zone).
 
 import type {
+  ConfigProvider,
   ShippingRate,
   ShippingCalculationContext,
   ShippingCalculationResult,
 } from '@simplycms/objects';
+import { formatPrice } from './money';
 
 export type {
   ShippingMethod,
@@ -116,20 +118,51 @@ export async function calculateShipping(
 }
 
 /**
- * Форматує вартість доставки для відображення.
+ * Підписи для двох НЕ-числових станів вартості доставки.
+ *
+ * 🔴 Передаються параметром, а не беруться з i18n усередині: `@simplycms/domain`
+ * це тір T1 (pure-логіка, нуль залежностей крім `objects`), а `@simplycms/i18n`
+ * — T2. Імпорт транслятора сюди був би ребром ВГОРУ по тірах. Тому домен
+ * володіє ЛОГІКОЮ (нуль → безкоштовно, `null`/відʼємне → за тарифами), а
+ * текстом володіє кол-сайт: `t('common.shipping.free')` тощо.
  */
-export function formatShippingCost(cost: number | null): string {
+export interface ShippingCostLabels {
+  /** Вартість невідома наперед — рахується за тарифами перевізника. */
+  byTariff: string;
+  /** Доставка безкоштовна. */
+  free: string;
+}
+
+/**
+ * Форматує вартість доставки для відображення.
+ *
+ * 🔴 `config` — обов'язковий (без дефолту), як і в `formatPrice`: це чиста
+ * T1-функція без доступу до `useEngine()`, тож локаль/валюту зобов'язаний
+ * передати кол-сайт (React-компонент бере їх з `useEngine().config`).
+ * Дефолт на кшталт `{ locale: 'uk-UA', currency: 'UAH' }` тут був би тим самим
+ * хардкодом, який цей модуль лагодить: магазин з іншою конфігурацією
+ * (`simplycms.config.ts`) мовчки отримав би не свою валюту.
+ * Раніше форматування йшло через `new Intl.NumberFormat('uk-UA', { style:
+ * 'currency', currency: 'UAH', minimumFractionDigits: 0 })` — дефолти
+ * `formatPrice` (0/2) відтворюють цей виклик побайтово (перевірено тестами).
+ *
+ * 🔴 `labels` теж обов'язкові: до 2026-08-09 функція повертала «За тарифами» і
+ * «Безкоштовно» рядковими літералами, і саме через це англомовний магазин
+ * показував українську вартість доставки в підсумку замовлення. Дефолт
+ * повернув би той самий дефект мовчки.
+ */
+export function formatShippingCost(
+  cost: number | null,
+  config: Pick<ConfigProvider, 'locale' | 'currency'>,
+  labels: ShippingCostLabels,
+): string {
   if (cost === null || cost < 0) {
-    return 'За тарифами';
+    return labels.byTariff;
   }
   if (cost === 0) {
-    return 'Безкоштовно';
+    return labels.free;
   }
-  return new Intl.NumberFormat('uk-UA', {
-    style: 'currency',
-    currency: 'UAH',
-    minimumFractionDigits: 0,
-  }).format(cost);
+  return formatPrice(cost, config);
 }
 
 /**

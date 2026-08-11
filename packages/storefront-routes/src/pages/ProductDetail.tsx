@@ -9,6 +9,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT } from '@simplycms/i18n';
+import { useFormatPrice } from '@simplycms/react-query';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import { Separator } from '@simplycms/ui/separator';
@@ -324,13 +325,10 @@ export default function ProductDetailPage({
     return Array.from(propMap.values());
   }, [product, selectedModId, modificationPropertyValues]);
 
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  // Форматування ціни — через конфіг магазину (locale/currency), а не
+  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
+  // (див. @simplycms/domain/money).
+  const formatPrice = useFormatPrice();
 
   // Build prices map for modifications (with discounts applied)
   const modPrices = useMemo(() => {

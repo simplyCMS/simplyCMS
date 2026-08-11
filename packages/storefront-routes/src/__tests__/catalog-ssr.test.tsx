@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from '@simplycms/i18n';
+import { TestEngineProvider } from './engine-stub';
 
 /**
  * Task 16, Step 3: списки товарів мають бути в серверному HTML.
@@ -89,9 +90,13 @@ function ssr(node: ReactNode): string {
   // I18nProvider — як у проді (`__root.tsx` тримає його над усіма роутами):
   // канонічні сторінки ходять по рядки через `useT()`, тож без провайдера
   // рендер падає ще до перевірки SSR-повноти.
+  // TestEngineProvider — теж «як у проді»: ціни рендеряться через
+  // `useFormatPrice()`, який бере локаль і валюту з EngineContext.
   return renderToString(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">{node}</I18nProvider>
+      <I18nProvider locale="uk">
+        <TestEngineProvider>{node}</TestEngineProvider>
+      </I18nProvider>
     </QueryClientProvider>,
   );
 }
@@ -102,6 +107,11 @@ describe('SSR-повнота списків товарів', () => {
 
     expect(html).toContain('Інвертор 5 кВт SSR');
     expect(html).toMatch(/4[\s ]*200/);
+    // 🔴 '₴' тут іде з явної мапи символів у @simplycms/domain/money, а НЕ
+    // з CLDR-даних Intl.NumberFormat({ style: 'currency' }) (саме той шлях
+    // давав "₴" на Node і "грн" у Chromium — гідраційний мисматч). Тест і
+    // далі осмислений: доводить, що SSR-розмітка містить очікуваний символ,
+    // просто джерело символу тепер детерміноване, а не рушій-залежне.
     expect(html).toContain('₴');
     expect(html).toContain('/catalog/invertory/invertor-5kw');
   });
@@ -117,6 +127,8 @@ describe('SSR-повнота списків товарів', () => {
 
     expect(html).toContain('Інвертор 5 кВт SSR');
     expect(html).toMatch(/4[\s ]*200/);
+    // 🔴 Див. коментар у тесті Catalog вище — '₴' тут гарантує мапа
+    // символів у @simplycms/domain/money, а не CLDR рушія.
     expect(html).toContain('₴');
     expect(html).toContain('/catalog/invertory/invertor-5kw');
   });
