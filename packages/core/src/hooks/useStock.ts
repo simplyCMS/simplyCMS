@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import type { Translator } from '@simplycms/i18n';
 
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -106,20 +107,27 @@ export function isProductAvailable(
   return false;
 }
 
-// Status display helpers
-export function getStockStatusLabel(status: StockStatus | null): string {
+// Status display helpers.
+// 🔴 `getStockStatusLabel` — не хук (викликається з ternary/мап поза
+// компонентом), тому `useT()` тут заборонений — транслятор приймає параметром,
+// як і решта не-хук функцій у пакеті (див. CLAUDE-інструкцію проєкту з i18n).
+export function getStockStatusLabel(
+  status: StockStatus | null,
+  t: Translator,
+): string {
   switch (status) {
     case 'in_stock':
-      return 'В наявності';
+      return t('product.inStock');
     case 'out_of_stock':
-      return 'Немає в наявності';
+      return t('product.outOfStock');
     case 'on_order':
-      return 'Під замовлення';
+      return t('product.onOrder');
     default:
-      return 'Невідомо';
+      return t('product.stockUnknown');
   }
 }
 
+// Кольорові класи ні від локалі, ні від t() не залежать — сигнатура незмінна.
 export function getStockStatusColor(status: StockStatus | null): string {
   switch (status) {
     case 'in_stock':

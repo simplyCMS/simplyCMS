@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useProductReviews } from '@simplycms/core/hooks/useProductReviews';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { StarRating } from './StarRating';
 import { ReviewCard } from './ReviewCard';
 import { ReviewForm } from './ReviewForm';
@@ -24,12 +25,29 @@ interface ProductReviewsProps {
   }) => React.ReactNode;
 }
 
+/**
+ * Українська форма множини лічильника відгуків ("відгук" / "відгуки" / "відгуків").
+ *
+ * 🔴 Наївна умова `count < 5` (яку це замінює) хибно давала "few" для
+ * 12–14 і 22–24: mod-100-виняток для 11..14 (завжди "many") має вищий
+ * пріоритет за mod-10-правило "few" для 2..4.
+ */
+function pluralReviewsKey(count: number): MessageKey {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  if (mod100 >= 11 && mod100 <= 14) return 'reviews.countMany';
+  if (mod10 === 1) return 'reviews.countOne';
+  if (mod10 >= 2 && mod10 <= 4) return 'reviews.countFew';
+  return 'reviews.countMany';
+}
+
 export function ProductReviews({
   productId,
   renderEditor,
   renderImageUpload,
 }: ProductReviewsProps) {
   const { user } = useAuth();
+  const t = useT();
   const {
     reviews,
     approvedReviews,
@@ -65,12 +83,7 @@ export function ProductReviews({
           </span>
           <StarRating value={avgRating} readonly size="md" />
           <span className="text-sm text-muted-foreground mt-1">
-            {reviewCount}{' '}
-            {reviewCount === 1
-              ? 'вiдгук'
-              : reviewCount < 5
-                ? 'вiдгуки'
-                : 'вiдгукiв'}
+            {reviewCount} {t(pluralReviewsKey(reviewCount))}
           </span>
         </div>
 
@@ -103,7 +116,7 @@ export function ProductReviews({
       {user ? (
         hasUserReview ? (
           <p className="text-sm text-muted-foreground">
-            Ви вже залишили вiдгук на цей товар.
+            {t('reviews.alreadySubmitted')}
           </p>
         ) : showForm ? (
           <ReviewForm
@@ -122,20 +135,18 @@ export function ProductReviews({
             onClick={() => setShowForm(true)}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium"
           >
-            Написати вiдгук
+            {t('reviews.writeReview')}
           </button>
         )
       ) : (
         <div className="border rounded-lg p-4 text-center space-y-2">
-          <p className="text-muted-foreground">
-            Щоб залишити вiдгук, увiйдiть в свiй акаунт
-          </p>
+          <p className="text-muted-foreground">{t('reviews.loginPrompt')}</p>
           <Link
             to="/auth"
             className="inline-flex items-center gap-2 px-4 py-2 border rounded-md text-sm"
           >
             <LogIn className="h-4 w-4" />
-            Увiйти або зареєструватись
+            {t('reviews.loginOrRegister')}
           </Link>
         </div>
       )}
@@ -153,7 +164,7 @@ export function ProductReviews({
         </div>
       ) : (
         <p className="text-muted-foreground text-center py-4">
-          Ще немає вiдгукiв. Будьте першим!
+          {t('reviews.empty')}
         </p>
       )}
     </div>

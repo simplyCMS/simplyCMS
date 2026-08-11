@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { Camera, Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
 
 interface AvatarUploadProps {
   userId: string;
@@ -21,6 +22,7 @@ export function AvatarUpload({
   email,
   onUpdate,
 }: AvatarUploadProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,10 +38,10 @@ export function AvatarUpload({
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
-        throw new Error('Пiдтримуються тiльки JPG, PNG та WebP');
+        throw new Error(t('profile.avatar.unsupportedFormat'));
       }
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Максимальний розмiр файлу 5MB');
+        throw new Error(t('profile.avatar.tooLarge'));
       }
 
       const ext = file.name.split('.').pop();
@@ -73,12 +75,12 @@ export function AvatarUpload({
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       onUpdate?.(url);
       setPreviewUrl(null);
-      toast({ title: 'Аватар оновлено' });
+      toast({ title: t('profile.avatar.updated') });
     },
     onError: (error: Error) => {
       setPreviewUrl(null);
       toast({
-        title: 'Помилка завантаження',
+        title: t('profile.avatar.uploadError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -102,11 +104,11 @@ export function AvatarUpload({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       onUpdate?.(null);
-      toast({ title: 'Аватар видалено' });
+      toast({ title: t('profile.avatar.removed') });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка видалення',
+        title: t('profile.avatar.deleteError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -131,7 +133,9 @@ export function AvatarUpload({
 
   return (
     <div className="space-y-4">
-      <label className="text-sm font-medium">Фото профiлю</label>
+      <label className="text-sm font-medium">
+        {t('profile.settings.avatar')}
+      </label>
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
@@ -170,7 +174,7 @@ export function AvatarUpload({
             disabled={isLoading}
           >
             <Camera className="h-4 w-4" />
-            Завантажити фото
+            {t('profile.avatar.uploadButton')}
           </button>
           {currentAvatarUrl && (
             <button
@@ -180,11 +184,11 @@ export function AvatarUpload({
               disabled={isLoading}
             >
               <Trash2 className="h-4 w-4" />
-              Видалити
+              {t('common.delete')}
             </button>
           )}
           <p className="text-xs text-muted-foreground">
-            JPG, PNG або WebP. Макс. 5MB.
+            {t('profile.avatar.formatHint')}
           </p>
         </div>
       </div>

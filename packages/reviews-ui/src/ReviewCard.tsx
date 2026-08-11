@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import { Trash2 } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
 import { StarRating } from './StarRating';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import type { ProductReview } from '@simplycms/core/hooks/useProductReviews';
@@ -13,16 +14,18 @@ interface ReviewCardProps {
 
 export function ReviewCard({ review, onDelete }: ReviewCardProps) {
   const { user } = useAuth();
+  const t = useT();
   const isOwn = user?.id === review.user_id;
   const isPending = review.status === 'pending';
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const anonymousAuthor = t('reviews.anonymousAuthor');
   const displayName = review.profile
     ? [review.profile.first_name, review.profile.last_name]
         .filter(Boolean)
-        .join(' ') || 'Користувач'
-    : 'Користувач';
+        .join(' ') || anonymousAuthor
+    : anonymousAuthor;
 
   const initials = review.profile
     ? [review.profile.first_name?.[0], review.profile.last_name?.[0]]
@@ -56,7 +59,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
                 <span className="font-medium text-sm">{displayName}</span>
                 {isOwn && isPending && (
                   <span className="text-xs px-2 py-0.5 rounded border">
-                    На модерацii
+                    {t('reviews.pendingBadge')}
                   </span>
                 )}
               </div>
@@ -81,16 +84,18 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
               </button>
               {confirmDelete && (
                 <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg p-4 z-10 w-64">
-                  <p className="text-sm font-medium mb-2">Видалити вiдгук?</p>
+                  <p className="text-sm font-medium mb-2">
+                    {t('reviews.delete.confirmTitle')}
+                  </p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Цю дiю неможливо скасувати.
+                    {t('reviews.delete.confirmText')}
                   </p>
                   <div className="flex gap-2 justify-end">
                     <button
                       className="px-3 py-1 border rounded text-sm"
                       onClick={() => setConfirmDelete(false)}
                     >
-                      Скасувати
+                      {t('common.cancel')}
                     </button>
                     <button
                       className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm"
@@ -99,7 +104,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
                         setConfirmDelete(false);
                       }}
                     >
-                      Видалити
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
@@ -127,7 +132,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
               >
                 <img
                   src={url}
-                  alt={`Фото ${i + 1}`}
+                  alt={t('reviews.photoAlt', { index: i + 1 })}
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
                   decoding="async"
@@ -147,7 +152,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
           <div className="relative w-full h-full">
             <img
               src={lightboxImage}
-              alt="Збiльшене фото"
+              alt={t('reviews.enlargedPhotoAlt')}
               className="absolute inset-0 w-full h-full object-contain rounded-lg"
               loading="lazy"
               decoding="async"

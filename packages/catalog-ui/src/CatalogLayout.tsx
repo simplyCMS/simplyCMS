@@ -4,6 +4,7 @@ import { Sun, User, Search } from 'lucide-react';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
 
 interface CatalogLayoutProps {
   /** Render a theme toggle button */
@@ -28,6 +29,7 @@ export function CatalogLayout({
   renderDropdownMenu,
   children,
 }: CatalogLayoutProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -38,13 +40,13 @@ export function CatalogLayout({
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Не вдалося вийти з акаунту',
+        title: t('common.error'),
+        description: t('catalog.signOut.errorDescription'),
       });
     } else {
       toast({
-        title: 'Вихiд виконано',
-        description: 'До зустрiчi!',
+        title: t('catalog.signOut.success'),
+        description: t('catalog.signOut.successDescription'),
       });
     }
   };
@@ -69,31 +71,31 @@ export function CatalogLayout({
                 to="/catalog"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                Каталог
+                {t('catalog.title')}
               </Link>
               <Link
                 to="/properties"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Бренди
+                {t('catalog.nav.brands')}
               </Link>
               <Link
                 to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Послуги
+                {t('catalog.nav.services')}
               </Link>
               <Link
                 to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Про нас
+                {t('catalog.nav.about')}
               </Link>
               <Link
                 to="."
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Контакти
+                {t('catalog.nav.contacts')}
               </Link>
             </nav>
           </div>
@@ -129,7 +131,7 @@ export function CatalogLayout({
                     to="/auth"
                     className="px-3 py-1.5 rounded-md border text-sm"
                   >
-                    Увiйти
+                    {t('auth.login.submit')}
                   </Link>
                 )}
               </>
@@ -154,7 +156,7 @@ export function CatalogLayout({
               <span className="font-semibold text-foreground">SolarStore</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              &copy; 2024 SolarStore. Всi права захищено.
+              {t('catalog.footer.copyright')}
             </p>
           </div>
         </div>

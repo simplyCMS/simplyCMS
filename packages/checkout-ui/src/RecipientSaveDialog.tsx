@@ -1,3 +1,4 @@
+import { useT } from '@simplycms/i18n';
 import { UserPlus, RefreshCw, X } from 'lucide-react';
 
 interface RecipientSaveDialogProps {
@@ -17,6 +18,8 @@ export function RecipientSaveDialog({
   onCreate,
   onCancel,
 }: RecipientSaveDialogProps) {
+  const t = useT();
+
   if (!open) return null;
 
   return (
@@ -27,10 +30,10 @@ export function RecipientSaveDialog({
       />
       <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
         <h3 className="text-lg font-semibold mb-2">
-          Зберегти данi отримувача?
+          {t('checkout.recipientSaveDialog.title')}
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Ви змiнили данi отримувача. Оберiть дiю:
+          {t('checkout.recipientSaveDialog.description')}
         </p>
 
         <div className="flex flex-col gap-2 my-4">
@@ -45,10 +48,12 @@ export function RecipientSaveDialog({
               <RefreshCw className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <div className="font-medium">
-                  Оновити &ldquo;{existingRecipientName}&rdquo;
+                  {t('checkout.saveDialog.updateTitle', {
+                    name: existingRecipientName,
+                  })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Зберегти змiни в iснуючому контактi
+                  {t('checkout.recipientSaveDialog.updateDescription')}
                 </div>
               </div>
             </button>
@@ -63,9 +68,11 @@ export function RecipientSaveDialog({
           >
             <UserPlus className="h-4 w-4 mt-0.5 text-primary" />
             <div>
-              <div className="font-medium">Створити нового отримувача</div>
+              <div className="font-medium">
+                {t('checkout.recipientSaveDialog.createTitle')}
+              </div>
               <div className="text-xs text-muted-foreground">
-                Зберегти як новий контакт в довiднику
+                {t('checkout.recipientSaveDialog.createDescription')}
               </div>
             </div>
           </button>
@@ -80,7 +87,7 @@ export function RecipientSaveDialog({
             }}
           >
             <X className="h-4 w-4" />
-            Скасувати змiни
+            {t('checkout.saveDialog.cancelChanges')}
           </button>
         </div>
       </div>

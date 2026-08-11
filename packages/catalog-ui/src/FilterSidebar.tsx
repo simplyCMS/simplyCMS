@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { X } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
 
 interface Property {
   id: string;
@@ -53,6 +54,7 @@ export function FilterSidebar({
   numericPropertyRanges = {},
   products = [],
 }: FilterSidebarProps) {
+  const t = useT();
   const supabase = useSupabaseClient();
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([
     priceRange?.min || 0,
@@ -225,14 +227,14 @@ export function FilterSidebar({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg">Фiльтри</h3>
+        <h3 className="font-semibold text-lg">{t('catalog.filters')}</h3>
         {hasActiveFilters && (
           <button
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
             onClick={handleClearFilters}
           >
             <X className="h-4 w-4" />
-            Скинути
+            {t('common.reset')}
           </button>
         )}
       </div>
@@ -255,14 +257,14 @@ export function FilterSidebar({
           htmlFor="inStockOnly"
           className="text-sm font-normal cursor-pointer"
         >
-          Тiльки в наявностi
+          {t('catalog.filters.inStockOnly')}
         </label>
       </div>
 
       {/* Price filter */}
       {priceRange && (
         <div className="space-y-2 border-b pb-4">
-          <h4 className="text-sm font-medium">Цiна</h4>
+          <h4 className="text-sm font-medium">{t('common.price')}</h4>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -342,7 +344,9 @@ export function FilterSidebar({
                   });
                 })()
               ) : (
-                <p className="text-sm text-muted-foreground">Немає опцiй</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('catalog.filters.noOptions')}
+                </p>
               )}
             </div>
           );
@@ -369,7 +373,7 @@ export function FilterSidebar({
                   htmlFor={`${property.slug}-true`}
                   className="text-sm font-normal cursor-pointer"
                 >
-                  Так
+                  {t('common.yes')}
                 </label>
               </div>
             </div>

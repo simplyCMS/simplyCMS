@@ -71,4 +71,24 @@ export const messages: Catalog = {
   'common.no': 'No',
   'common.howItWorks': 'How this works:',
   'common.or': 'or',
+
+  // Addresses and recipients — shared by checkout-ui and profile-ui.
+  // 🔴 The Ukrainian «м.» city marker has no English equivalent, so the key
+  // carries the whole line: hardcoding the prefix next to the value would
+  // render «м. Kyiv» in an English store.
+  'common.cityShort': '{city}',
+  'common.cityAddress': '{city}, {address}',
+  'common.address.new': 'New address',
+  'common.address.added': 'Address added',
+  'common.address.updated': 'Address updated',
+  'common.recipient.new': 'New recipient',
+  'common.recipient.added': 'Recipient added',
+  'common.recipient.updated': 'Recipient updated',
+
+  // Shipping cost — shared by checkout-ui and the admin rate editor.
+  // 🔴 These lived inside `@simplycms/domain/shipping` (a pure T1 package)
+  // until 2026-08-09, which is why an English store still rendered
+  // «За тарифами» in the order summary.
+  'common.shipping.byTariff': 'By carrier rates',
+  'common.shipping.free': 'Free',
 };

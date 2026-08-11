@@ -11,6 +11,7 @@ import {
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/ui/use-toast';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useT } from '@simplycms/i18n';
 
 interface Address {
   id: string;
@@ -22,6 +23,7 @@ interface Address {
 }
 
 export function AddressesList() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -95,11 +97,15 @@ export function AddressesList() {
       queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
       setDialogOpen(false);
       setEditingAddress(null);
-      toast({ title: editingAddress ? 'Адресу оновлено' : 'Адресу додано' });
+      toast({
+        title: editingAddress
+          ? t('common.address.updated')
+          : t('common.address.added'),
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -116,13 +122,13 @@ export function AddressesList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
-      toast({ title: 'Адресу видалено' });
+      toast({ title: t('profile.addresses.deleted') });
       setDeleteDialogOpen(false);
       setAddressToDelete(null);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -153,11 +159,11 @@ export function AddressesList() {
         <div className="p-4 border-b">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <MapPin className="h-5 w-5" />
-            Адреси доставки
+            {t('profile.addresses.title')}
           </h3>
         </div>
         <div className="p-4 text-center text-muted-foreground">
-          Завантаження...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -169,20 +175,20 @@ export function AddressesList() {
         <div className="p-4 border-b flex items-center justify-between">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <MapPin className="h-5 w-5" />
-            Адреси доставки
+            {t('profile.addresses.title')}
           </h3>
           <button
             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-1"
             onClick={openNewDialog}
           >
             <Plus className="h-4 w-4" />
-            Додати
+            {t('common.add')}
           </button>
         </div>
         <div className="p-4">
           {addresses?.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
-              Ви ще не додали жодної адреси
+              {t('profile.addresses.empty')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -196,16 +202,24 @@ export function AddressesList() {
                       {addr.name}
                       {addr.is_default && (
                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                          За замовчуванням
+                          {t('common.byDefault')}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      м. {addr.city}, {addr.address}
+                      {t('common.cityAddress', {
+                        city: addr.city,
+                        address: addr.address,
+                      })}
                     </p>
                     {addr.usage_count !== undefined && addr.usage_count > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Використано в {addr.usage_count} замовленнях
+                        {t(
+                          addr.usage_count === 1
+                            ? 'profile.usedInOrders.one'
+                            : 'profile.usedInOrders.many',
+                          { count: addr.usage_count },
+                        )}
                       </p>
                     )}
                   </div>
@@ -242,7 +256,9 @@ export function AddressesList() {
           />
           <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">
-              {editingAddress ? 'Редагування адреси' : 'Нова адреса'}
+              {editingAddress
+                ? t('profile.addresses.editTitle')
+                : t('common.address.new')}
             </h3>
             <form
               onSubmit={(e) => {
@@ -252,9 +268,11 @@ export function AddressesList() {
               className="space-y-4"
             >
               <div>
-                <label className="text-sm font-medium mb-1 block">Назва</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {t('common.name')}
+                </label>
                 <input
-                  placeholder="Дiм, Робота..."
+                  placeholder={t('profile.addresses.namePlaceholder')}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -262,9 +280,11 @@ export function AddressesList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Мiсто</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {t('common.city')}
+                </label>
                 <input
-                  placeholder="Київ"
+                  placeholder={t('profile.addresses.cityPlaceholder')}
                   value={formCity}
                   onChange={(e) => setFormCity(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -272,9 +292,11 @@ export function AddressesList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Адреса</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {t('common.address')}
+                </label>
                 <input
-                  placeholder="вул. Хрещатик, 1, кв. 1"
+                  placeholder={t('profile.addresses.addressPlaceholder')}
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -282,7 +304,7 @@ export function AddressesList() {
                 />
               </div>
               <label className="flex items-center justify-between rounded-lg border p-3 cursor-pointer">
-                <span className="text-sm">За замовчуванням</span>
+                <span className="text-sm">{t('common.byDefault')}</span>
                 <input
                   type="checkbox"
                   checked={formIsDefault}
@@ -296,7 +318,7 @@ export function AddressesList() {
                   className="px-4 py-2 border rounded-md text-sm"
                   onClick={() => setDialogOpen(false)}
                 >
-                  Скасувати
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -306,7 +328,7 @@ export function AddressesList() {
                   {saveMutation.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  {editingAddress ? 'Зберегти' : 'Додати'}
+                  {editingAddress ? t('common.save') : t('common.add')}
                 </button>
               </div>
             </form>
@@ -324,21 +346,27 @@ export function AddressesList() {
           <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Видалити адресу &ldquo;{addressToDelete?.name}&rdquo;?
+              {t('profile.addresses.deleteTitle', {
+                name: addressToDelete?.name ?? '',
+              })}
             </h3>
             {addressToDelete?.usage_count && addressToDelete.usage_count > 0 ? (
               <div className="text-sm text-muted-foreground space-y-2 mb-4">
                 <p>
-                  Ця адреса використовується в {addressToDelete.usage_count}{' '}
-                  замовленнях.
+                  {t(
+                    addressToDelete.usage_count === 1
+                      ? 'profile.addresses.deleteUsedOne'
+                      : 'profile.addresses.deleteUsedMany',
+                    { count: addressToDelete.usage_count },
+                  )}
                 </p>
                 <p className="text-foreground font-medium">
-                  Данi адреси в замовленнях збережуться.
+                  {t('profile.addresses.deleteKeepsData')}
                 </p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground mb-4">
-                Ви впевненi, що хочете видалити цю адресу?
+                {t('profile.addresses.deleteConfirm')}
               </p>
             )}
             <div className="flex justify-end gap-2">
@@ -346,7 +374,7 @@ export function AddressesList() {
                 className="px-4 py-2 border rounded-md text-sm"
                 onClick={() => setDeleteDialogOpen(false)}
               >
-                Скасувати
+                {t('common.cancel')}
               </button>
               <button
                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm flex items-center"
@@ -357,7 +385,7 @@ export function AddressesList() {
                 {deleteMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Видалити
+                {t('common.delete')}
               </button>
             </div>
           </div>

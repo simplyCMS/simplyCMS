@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ImageIcon, Star } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
+import { useFormatPrice } from '@simplycms/react-query';
 
 interface ProductCardProps {
   product: {
@@ -18,19 +20,13 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, rating }: ProductCardProps) {
+  const t = useT();
+  const formatPrice = useFormatPrice();
   const firstImage = product.images?.[0];
   const price = product.price ?? undefined;
   const oldPrice = product.old_price;
   const stockStatus = product.stock_status ?? 'in_stock';
   const sectionSlug = product.section?.slug || '';
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   return (
     <Link
@@ -57,12 +53,12 @@ export function ProductCard({ product, rating }: ProductCardProps) {
           )}
           {stockStatus === 'on_order' && (
             <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
-              Пiд замовлення
+              {t('product.onOrder')}
             </span>
           )}
           {stockStatus === 'out_of_stock' && (
             <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
-              Немає в наявностi
+              {t('product.outOfStock')}
             </span>
           )}
           {oldPrice && price && oldPrice > price && (

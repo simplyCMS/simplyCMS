@@ -5,6 +5,7 @@ import {
   type StockStatus,
   type StockByPoint,
 } from '@simplycms/core/hooks/useStock';
+import { useT } from '@simplycms/i18n';
 
 interface StockDisplayProps {
   productId?: string | null;
@@ -19,6 +20,7 @@ export function StockDisplay({
   showDetails = true,
   className,
 }: StockDisplayProps) {
+  const t = useT();
   const { data: stockInfo, isLoading } = useStock(productId, modificationId);
   const { data: pointsCount = 0 } = usePickupPointsCount();
 
@@ -39,7 +41,9 @@ export function StockDisplay({
       <div className={className}>
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-amber-500" />
-          <span className="text-amber-600 font-medium">Пiд замовлення</span>
+          <span className="text-amber-600 font-medium">
+            {t('product.onOrder')}
+          </span>
         </div>
         {showDetails && totalQuantity > 0 && pointsCount > 1 && (
           <StockByPointList byPoint={byPoint} />
@@ -52,7 +56,9 @@ export function StockDisplay({
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <X className="h-5 w-5 text-destructive" />
-        <span className="text-destructive font-medium">Немає в наявностi</span>
+        <span className="text-destructive font-medium">
+          {t('product.outOfStock')}
+        </span>
       </div>
     );
   }
@@ -62,7 +68,9 @@ export function StockDisplay({
       <div className={`flex items-center gap-2 ${className}`}>
         <Check className="h-5 w-5 text-green-500" />
         <span className="text-green-600 font-medium">
-          В наявностi{totalQuantity > 0 ? `: ${totalQuantity} шт` : ''}
+          {totalQuantity > 0
+            ? t('product.inStockCount', { count: totalQuantity })
+            : t('product.inStock')}
         </span>
       </div>
     );
@@ -73,7 +81,7 @@ export function StockDisplay({
       <div className="flex items-center gap-2 mb-2">
         <Check className="h-5 w-5 text-green-500" />
         <span className="text-green-600 font-medium">
-          В наявностi: {totalQuantity} шт
+          {t('product.inStockCount', { count: totalQuantity })}
         </span>
       </div>
       {showDetails && byPoint.length > 0 && (
@@ -84,6 +92,7 @@ export function StockDisplay({
 }
 
 function StockByPointList({ byPoint }: { byPoint: StockByPoint[] }) {
+  const t = useT();
   const pointsWithStock = byPoint.filter((p) => p.quantity > 0);
 
   if (pointsWithStock.length === 0) {
@@ -100,7 +109,7 @@ function StockByPointList({ byPoint }: { byPoint: StockByPoint[] }) {
           <Building className="h-3.5 w-3.5" />
           <span>{point.point_name}:</span>
           <span className="font-medium text-foreground">
-            {point.quantity} шт
+            {t('product.unitsCount', { count: point.quantity })}
           </span>
         </div>
       ))}
@@ -115,10 +124,12 @@ export function StockBadge({
   stockStatus: StockStatus | null;
   isAvailable: boolean;
 }) {
+  const t = useT();
+
   if (stockStatus === 'on_order') {
     return (
       <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 text-xs">
-        Пiд замовлення
+        {t('product.onOrder')}
       </span>
     );
   }
@@ -126,7 +137,7 @@ export function StockBadge({
   if (!isAvailable || stockStatus === 'out_of_stock') {
     return (
       <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2 py-0.5 text-xs">
-        Немає в наявностi
+        {t('product.outOfStock')}
       </span>
     );
   }

@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
 
 interface ActiveFilter {
   key: string;
@@ -77,6 +78,8 @@ export function ActiveFilters({
   renderBadge,
   renderButton,
 }: ActiveFiltersProps) {
+  const t = useT();
+
   if (filters.length === 0) return null;
 
   const Badge = renderBadge || DefaultBadge;
@@ -84,7 +87,9 @@ export function ActiveFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
-      <span className="text-sm text-muted-foreground">Активнi фiльтри:</span>
+      <span className="text-sm text-muted-foreground">
+        {t('catalog.filters.activeLabel')}
+      </span>
       {filters.map((filter, index) => (
         <Badge
           key={`${filter.key}-${filter.optionId || index}`}
@@ -96,7 +101,10 @@ export function ActiveFilters({
           <button
             onClick={() => onRemoveFilter(filter)}
             className="ml-1 hover:bg-muted rounded-full p-0.5"
-            aria-label={`Видалити фiльтр ${filter.label}: ${filter.value}`}
+            aria-label={t('catalog.filters.removeAria', {
+              label: filter.label,
+              value: filter.value,
+            })}
           >
             <X className="h-3 w-3" />
           </button>
@@ -108,7 +116,7 @@ export function ActiveFilters({
         onClick={onClearAll}
         className="h-6 text-xs"
       >
-        Скинути всi
+        {t('catalog.filters.clearAll')}
       </Button>
     </div>
   );

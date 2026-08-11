@@ -1,18 +1,29 @@
 import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
-import { useCart } from '@simplycms/react-query';
+import { useCart, useFormatPrice } from '@simplycms/react-query';
+import { useT, type MessageKey } from '@simplycms/i18n';
 import { CartItem } from './CartItem';
+
+/**
+ * Українська форма множини лічильника ("товар" / "товари" / "товарів").
+ *
+ * 🔴 Наївна умова `count < 5` (яку це замінює) хибно давала "few" для
+ * 12–14 і 22–24: mod-100-виняток для 11..14 (завжди "many") має вищий
+ * пріоритет за mod-10-правило "few" для 2..4.
+ */
+function pluralItemsKey(count: number): MessageKey {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  if (mod100 >= 11 && mod100 <= 14) return 'cart.itemsMany';
+  if (mod10 === 1) return 'cart.itemsOne';
+  if (mod10 >= 2 && mod10 <= 4) return 'cart.itemsFew';
+  return 'cart.itemsMany';
+}
 
 export function CartDrawer() {
   const { items, totalItems, totalPrice, isOpen, setIsOpen } = useCart();
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  const t = useT();
+  const formatPrice = useFormatPrice();
 
   if (!isOpen) return null;
 
@@ -28,16 +39,10 @@ export function CartDrawer() {
         <div className="p-6 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
-            Кошик
+            {t('cart.title')}
             {totalItems > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({totalItems}{' '}
-                {totalItems === 1
-                  ? 'товар'
-                  : totalItems < 5
-                    ? 'товари'
-                    : 'товарiв'}
-                )
+                ({totalItems} {t(pluralItemsKey(totalItems))})
               </span>
             )}
           </h2>
@@ -48,16 +53,16 @@ export function CartDrawer() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <ShoppingCart className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="font-medium mb-1">Кошик порожнiй</h3>
+            <h3 className="font-medium mb-1">{t('cart.empty.title')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Додайте товари для оформлення замовлення
+              {t('cart.empty.hint')}
             </p>
             <Link
               to="/catalog"
               onClick={() => setIsOpen(false)}
               className="px-4 py-2 border rounded-md text-sm"
             >
-              Перейти до каталогу
+              {t('cart.empty.cta')}
             </Link>
           </div>
         ) : (
@@ -76,11 +81,13 @@ export function CartDrawer() {
             <div className="mt-auto p-6 border-t">
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Сума</span>
+                  <span className="text-muted-foreground">
+                    {t('common.amount')}
+                  </span>
                   <span>{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between font-medium text-lg">
-                  <span>До сплати</span>
+                  <span>{t('cart.summary.total')}</span>
                   <span className="text-primary">
                     {formatPrice(totalPrice)}
                   </span>
@@ -93,14 +100,14 @@ export function CartDrawer() {
                   onClick={() => setIsOpen(false)}
                   className="flex-1 text-center px-4 py-2 border rounded-md text-sm"
                 >
-                  Переглянути кошик
+                  {t('cart.viewCart')}
                 </Link>
                 <Link
                   to="/checkout"
                   onClick={() => setIsOpen(false)}
                   className="flex-1 text-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
                 >
-                  Оформити замовлення
+                  {t('cart.summary.checkout')}
                 </Link>
               </div>
             </div>

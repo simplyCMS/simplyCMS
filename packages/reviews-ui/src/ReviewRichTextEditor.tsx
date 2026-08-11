@@ -13,6 +13,7 @@ import {
   Redo,
 } from 'lucide-react';
 import { cn } from '@simplycms/ui/utils';
+import { useT } from '@simplycms/i18n';
 import { useCallback, useEffect } from 'react';
 
 /** Кнопка тулбару редактора */
@@ -55,6 +56,7 @@ export function ReviewRichTextEditor({
   onChange,
   className,
 }: ReviewRichTextEditorProps) {
+  const t = useT();
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -92,14 +94,14 @@ export function ReviewRichTextEditor({
   const setLink = useCallback(() => {
     if (!editor) return;
     const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL посилання', previousUrl);
+    const url = window.prompt(t('reviews.editor.linkUrl'), previousUrl);
     if (url === null) return;
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  }, [editor]);
+  }, [editor, t]);
 
   if (!editor) return null;
 

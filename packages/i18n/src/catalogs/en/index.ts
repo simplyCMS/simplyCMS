@@ -22,6 +22,7 @@ import { messages as profile } from './profile';
 import { messages as cart } from './cart';
 import { messages as checkout } from './checkout';
 import { messages as auth } from './auth';
+import { messages as reviews } from './reviews';
 import { messages as admin } from './admin/index';
 
 export const messages: Catalog = {
@@ -38,5 +39,6 @@ export const messages: Catalog = {
   ...cart,
   ...checkout,
   ...auth,
+  ...reviews,
   ...admin,
 };

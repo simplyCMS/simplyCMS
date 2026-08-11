@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useAuth } from './useAuth';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
 
 export interface ProductReview {
   id: string;
@@ -27,6 +28,7 @@ export function useProductReviews(productId: string | undefined) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const t = useT();
 
   const reviewsQuery = useQuery({
     queryKey: ['product-reviews', productId],
@@ -99,7 +101,8 @@ export function useProductReviews(productId: string | undefined) {
       content?: string;
       images?: string[];
     }) => {
-      if (!user || !productId) throw new Error('Не авторизовано');
+      if (!user || !productId)
+        throw new Error(t('product.review.notAuthorized'));
       const { error } = await supabase.from('product_reviews').insert({
         product_id: productId,
         user_id: user.id,
@@ -116,14 +119,14 @@ export function useProductReviews(productId: string | undefined) {
         queryKey: ['product-reviews', productId],
       });
       toast({
-        title: 'Відгук надіслано',
-        description: "Він з'явиться після модерації",
+        title: t('product.review.submitted'),
+        description: t('product.review.submittedDescription'),
       });
     },
     onError: (err: Error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: err.message,
       });
     },
@@ -159,12 +162,12 @@ export function useProductReviews(productId: string | undefined) {
       queryClient.invalidateQueries({
         queryKey: ['product-reviews', productId],
       });
-      toast({ title: 'Відгук видалено' });
+      toast({ title: t('product.review.deleted') });
     },
     onError: (err: Error) => {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
+        title: t('common.error'),
         description: err.message,
       });
     },

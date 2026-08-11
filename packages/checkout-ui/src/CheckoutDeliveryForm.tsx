@@ -10,6 +10,8 @@ import type {
 import { formatShippingCost } from '@simplycms/domain/shipping';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
+import { useEngine } from '@simplycms/react-query';
 import { AddressCard } from './AddressCard';
 import { AddressSelectorPopup } from './AddressSelectorPopup';
 import { AddressSaveDialog } from './AddressSaveDialog';
@@ -48,6 +50,10 @@ export function CheckoutDeliveryForm({
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
+  const t = useT();
+  // Локаль і валюта для `formatShippingCost` — чистої T1-функції без доступу
+  // ні до конфігу магазину, ні до перекладів (див. коментар у shipping.ts).
+  const { config } = useEngine();
   const queryClient = useQueryClient();
   const selectedMethodId = values.shippingMethodId as string | undefined;
   const selectedAddressId = values.savedAddressId as string | undefined;
@@ -164,7 +170,7 @@ export function CheckoutDeliveryForm({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
-      toast({ title: 'Адресу оновлено' });
+      toast({ title: t('common.address.updated') });
       setOriginalAddress({
         ...originalAddress!,
         city: currentCity,
@@ -180,7 +186,7 @@ export function CheckoutDeliveryForm({
         .from('user_addresses')
         .insert({
           user_id: user.id,
-          name: 'Нова адреса',
+          name: t('common.address.new'),
           city: currentCity,
           address: currentAddress,
           is_default: false,
@@ -192,7 +198,7 @@ export function CheckoutDeliveryForm({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
-      toast({ title: 'Нову адресу створено' });
+      toast({ title: t('checkout.delivery.addressCreated') });
       if (data) {
         onChange('savedAddressId', data.id);
         setOriginalAddress(data as SavedAddress);
@@ -272,7 +278,7 @@ export function CheckoutDeliveryForm({
       <div className="border rounded-lg p-6">
         <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
           <Truck className="h-5 w-5" />
-          Спосiб доставки
+          {t('profile.order.shippingMethod')}
         </h3>
         <div className="space-y-4">
           <div className="animate-pulse h-20 w-full bg-muted rounded" />
@@ -288,7 +294,7 @@ export function CheckoutDeliveryForm({
         <div className="p-4 border-b">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Спосiб доставки
+            {t('profile.order.shippingMethod')}
           </h3>
         </div>
         <div className="p-4 space-y-4">
@@ -326,7 +332,12 @@ export function CheckoutDeliveryForm({
                     )}
                   </div>
                   <div className="font-medium text-right">
-                    {rateInfo ? formatShippingCost(rateInfo.cost) : '—'}
+                    {rateInfo
+                      ? formatShippingCost(rateInfo.cost, config, {
+                          byTariff: t('common.shipping.byTariff'),
+                          free: t('common.shipping.free'),
+                        })
+                      : '—'}
                   </div>
                 </label>
               );
@@ -336,14 +347,16 @@ export function CheckoutDeliveryForm({
           {isPickup && pickupPoints && pickupPoints.length > 0 && (
             <div className="pt-4 border-t">
               <label className="text-sm font-medium mb-1 block">
-                Оберiть пункт самовивозу *
+                {t('checkout.delivery.pickupPointLabel')}
               </label>
               <select
                 value={String(values.pickupPointId || '')}
                 onChange={(e) => onChange('pickupPointId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md text-sm"
               >
-                <option value="">Оберiть пункт</option>
+                <option value="">
+                  {t('checkout.delivery.pickupPointPlaceholder')}
+                </option>
                 {pickupPoints.map((point) => (
                   <option key={point.id} value={point.id}>
                     {point.name} - {point.city}, {point.address}
@@ -358,7 +371,7 @@ export function CheckoutDeliveryForm({
               {user && savedAddresses && savedAddresses.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Збереженi адреси
+                    {t('checkout.delivery.savedAddresses')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {visibleAddresses.map((address) => (
@@ -380,7 +393,9 @@ export function CheckoutDeliveryForm({
                       className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
                       onClick={() => setPopupOpen(true)}
                     >
-                      Показати всi ({savedAddresses.length})
+                      {t('checkout.delivery.showAll', {
+                        count: savedAddresses.length,
+                      })}
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   )}
@@ -389,10 +404,10 @@ export function CheckoutDeliveryForm({
 
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Мiсто *
+                  {t('checkout.cityLabel')}
                 </label>
                 <input
-                  placeholder="Введiть мiсто"
+                  placeholder={t('checkout.cityPlaceholder')}
                   value={currentCity || ''}
                   onChange={(e) => onChange('deliveryCity', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -401,10 +416,10 @@ export function CheckoutDeliveryForm({
 
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Адреса доставки *
+                  {t('checkout.delivery.addressLabel')}
                 </label>
                 <input
-                  placeholder="вул. Хрещатик, 1, кв. 10"
+                  placeholder={t('checkout.streetAddressPlaceholder')}
                   value={currentAddress || ''}
                   onChange={(e) => onChange('deliveryAddress', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -418,7 +433,7 @@ export function CheckoutDeliveryForm({
                     className="px-3 py-1.5 border rounded-md text-sm"
                     onClick={handleCancelChanges}
                   >
-                    Скасувати
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="button"
@@ -429,7 +444,7 @@ export function CheckoutDeliveryForm({
                     }
                   >
                     <Save className="h-4 w-4" />
-                    Зберегти адресу
+                    {t('checkout.delivery.saveAddress')}
                   </button>
                 </div>
               )}

@@ -1,6 +1,11 @@
 import { ShoppingBag, Loader2 } from 'lucide-react';
-import { type CartItem } from '@simplycms/react-query';
+import {
+  type CartItem,
+  useEngine,
+  useFormatPrice,
+} from '@simplycms/react-query';
 import { formatShippingCost } from '@simplycms/domain/shipping';
+import { useT } from '@simplycms/i18n';
 
 interface CheckoutOrderSummaryProps {
   items: CartItem[];
@@ -19,13 +24,11 @@ export function CheckoutOrderSummary({
   onNotesChange,
   isSubmitting,
 }: CheckoutOrderSummaryProps) {
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  const t = useT();
+  const formatPrice = useFormatPrice();
+  // Локаль і валюта для `formatShippingCost` — це чиста T1-функція, вона не
+  // має доступу ні до конфігу, ні до перекладів (див. коментар у shipping.ts).
+  const { config } = useEngine();
 
   const totalWithShipping = totalPrice + shippingCost;
 
@@ -34,7 +37,7 @@ export function CheckoutOrderSummary({
       <div className="p-4 border-b">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <ShoppingBag className="h-5 w-5" />
-          Ваше замовлення
+          {t('checkout.orderSummary.title')}
         </h3>
       </div>
       <div className="p-4 space-y-4">
@@ -69,30 +72,37 @@ export function CheckoutOrderSummary({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              Товари ({items.length})
+              {t('checkout.orderSummary.itemsCount', { count: items.length })}
             </span>
             <span>{formatPrice(totalPrice)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Доставка</span>
-            <span>{formatShippingCost(shippingCost)}</span>
+            <span className="text-muted-foreground">
+              {t('cart.summary.shipping')}
+            </span>
+            <span>
+              {formatShippingCost(shippingCost, config, {
+                byTariff: t('common.shipping.byTariff'),
+                free: t('common.shipping.free'),
+              })}
+            </span>
           </div>
         </div>
 
         <hr />
 
         <div className="flex justify-between font-semibold text-lg">
-          <span>Разом</span>
+          <span>{t('common.total')}</span>
           <span className="text-primary">{formatPrice(totalWithShipping)}</span>
         </div>
 
         {/* Notes */}
         <div>
           <label className="text-sm font-medium mb-1 block">
-            Коментар до замовлення
+            {t('profile.order.comment')}
           </label>
           <textarea
-            placeholder="Додаткова iнформацiя..."
+            placeholder={t('checkout.orderSummary.notesPlaceholder')}
             className="w-full px-3 py-2 border rounded-md text-sm resize-none"
             rows={3}
             value={notes}
@@ -109,15 +119,15 @@ export function CheckoutOrderSummary({
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Оформлення...
+              {t('checkout.orderSummary.submitting')}
             </>
           ) : (
-            'Пiдтвердити замовлення'
+            t('checkout.orderSummary.submit')
           )}
         </button>
 
         <p className="text-xs text-muted-foreground text-center">
-          Натискаючи кнопку, ви погоджуєтесь з умовами обслуговування
+          {t('checkout.orderSummary.terms')}
         </p>
       </div>
     </div>

@@ -14,6 +14,7 @@ import {
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/ui/use-toast';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useT } from '@simplycms/i18n';
 
 interface Recipient {
   id: string;
@@ -29,6 +30,7 @@ interface Recipient {
 }
 
 export function RecipientsList() {
+  const t = useT();
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -115,12 +117,14 @@ export function RecipientsList() {
       setDialogOpen(false);
       setEditingRecipient(null);
       toast({
-        title: editingRecipient ? 'Отримувача оновлено' : 'Отримувача додано',
+        title: editingRecipient
+          ? t('common.recipient.updated')
+          : t('common.recipient.added'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -137,13 +141,13 @@ export function RecipientsList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-recipients'] });
-      toast({ title: 'Отримувача видалено' });
+      toast({ title: t('profile.recipients.deleted') });
       setDeleteDialogOpen(false);
       setRecipientToDelete(null);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Помилка',
+        title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -182,11 +186,11 @@ export function RecipientsList() {
         <div className="p-4 border-b">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Отримувачi
+            {t('profile.recipients.title')}
           </h3>
         </div>
         <div className="p-4 text-center text-muted-foreground">
-          Завантаження...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -198,20 +202,20 @@ export function RecipientsList() {
         <div className="p-4 border-b flex items-center justify-between">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Отримувачi
+            {t('profile.recipients.title')}
           </h3>
           <button
             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-1"
             onClick={openNewDialog}
           >
             <Plus className="h-4 w-4" />
-            Додати
+            {t('common.add')}
           </button>
         </div>
         <div className="p-4">
           {recipients?.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
-              Ви ще не додали жодного отримувача
+              {t('profile.recipients.empty')}
             </p>
           ) : (
             <div className="grid gap-3">
@@ -225,7 +229,7 @@ export function RecipientsList() {
                       {r.first_name} {r.last_name}
                       {r.is_default && (
                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                          Основний
+                          {t('profile.recipients.defaultBadge')}
                         </span>
                       )}
                     </div>
@@ -243,7 +247,10 @@ export function RecipientsList() {
                     </div>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
-                      м. {r.city}, {r.address}
+                      {t('common.cityAddress', {
+                        city: r.city,
+                        address: r.address,
+                      })}
                     </p>
                     {r.notes && (
                       <p className="text-xs text-muted-foreground italic">
@@ -252,7 +259,12 @@ export function RecipientsList() {
                     )}
                     {r.usage_count !== undefined && r.usage_count > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Використано в {r.usage_count} замовленнях
+                        {t(
+                          r.usage_count === 1
+                            ? 'profile.usedInOrders.one'
+                            : 'profile.usedInOrders.many',
+                          { count: r.usage_count },
+                        )}
                       </p>
                     )}
                   </div>
@@ -289,7 +301,9 @@ export function RecipientsList() {
           />
           <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">
-              {editingRecipient ? 'Редагування отримувача' : 'Новий отримувач'}
+              {editingRecipient
+                ? t('profile.recipients.editTitle')
+                : t('common.recipient.new')}
             </h3>
             <form
               onSubmit={(e) => {
@@ -301,7 +315,7 @@ export function RecipientsList() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Iм&apos;я
+                    {t('common.firstName')}
                   </label>
                   <input
                     value={formFirstName}
@@ -312,7 +326,7 @@ export function RecipientsList() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Прiзвище
+                    {t('common.lastName')}
                   </label>
                   <input
                     value={formLastName}
@@ -325,7 +339,7 @@ export function RecipientsList() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Телефон
+                    {t('common.phone')}
                   </label>
                   <input
                     type="tel"
@@ -338,7 +352,7 @@ export function RecipientsList() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Email (необов&apos;язково)
+                    {t('profile.recipients.emailOptionalLabel')}
                   </label>
                   <input
                     type="email"
@@ -349,7 +363,9 @@ export function RecipientsList() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Мiсто</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {t('common.city')}
+                </label>
                 <input
                   value={formCity}
                   onChange={(e) => setFormCity(e.target.value)}
@@ -358,7 +374,9 @@ export function RecipientsList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Адреса</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {t('common.address')}
+                </label>
                 <input
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
@@ -368,10 +386,10 @@ export function RecipientsList() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Нотатки
+                  {t('profile.recipients.notesLabel')}
                 </label>
                 <textarea
-                  placeholder="Наприклад: Мама, колега..."
+                  placeholder={t('profile.recipients.notesPlaceholder')}
                   rows={2}
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
@@ -379,7 +397,9 @@ export function RecipientsList() {
                 />
               </div>
               <label className="flex items-center justify-between rounded-lg border p-3 cursor-pointer">
-                <span className="text-sm">Основний отримувач</span>
+                <span className="text-sm">
+                  {t('profile.recipients.defaultCheckboxLabel')}
+                </span>
                 <input
                   type="checkbox"
                   checked={formIsDefault}
@@ -393,7 +413,7 @@ export function RecipientsList() {
                   className="px-4 py-2 border rounded-md text-sm"
                   onClick={() => setDialogOpen(false)}
                 >
-                  Скасувати
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -403,7 +423,7 @@ export function RecipientsList() {
                   {saveMutation.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  {editingRecipient ? 'Зберегти' : 'Додати'}
+                  {editingRecipient ? t('common.save') : t('common.add')}
                 </button>
               </div>
             </form>
@@ -421,23 +441,29 @@ export function RecipientsList() {
           <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Видалити отримувача &ldquo;{recipientToDelete?.first_name}{' '}
-              {recipientToDelete?.last_name}&rdquo;?
+              {t('profile.recipients.deleteTitle', {
+                fullName:
+                  `${recipientToDelete?.first_name ?? ''} ${recipientToDelete?.last_name ?? ''}`.trim(),
+              })}
             </h3>
             {recipientToDelete?.usage_count &&
             recipientToDelete.usage_count > 0 ? (
               <div className="text-sm text-muted-foreground space-y-2 mb-4">
                 <p>
-                  Цей контакт використовується в {recipientToDelete.usage_count}{' '}
-                  замовленнях.
+                  {t(
+                    recipientToDelete.usage_count === 1
+                      ? 'profile.recipients.deleteUsedOne'
+                      : 'profile.recipients.deleteUsedMany',
+                    { count: recipientToDelete.usage_count },
+                  )}
                 </p>
                 <p className="text-foreground font-medium">
-                  Данi отримувача в замовленнях збережуться.
+                  {t('profile.recipients.deleteKeepsData')}
                 </p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground mb-4">
-                Ви впевненi, що хочете видалити цього отримувача?
+                {t('profile.recipients.deleteConfirm')}
               </p>
             )}
             <div className="flex justify-end gap-2">
@@ -445,7 +471,7 @@ export function RecipientsList() {
                 className="px-4 py-2 border rounded-md text-sm"
                 onClick={() => setDeleteDialogOpen(false)}
               >
-                Скасувати
+                {t('common.cancel')}
               </button>
               <button
                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm flex items-center"
@@ -457,7 +483,7 @@ export function RecipientsList() {
                 {deleteMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Видалити
+                {t('common.delete')}
               </button>
             </div>
           </div>
