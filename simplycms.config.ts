@@ -18,7 +18,11 @@ export default defineConfig({
     siteUrl: import.meta.env.VITE_SITE_URL ?? '',
     defaultDescription: 'SimplyCMS Store',
   },
-  locale: 'uk-UA',
+  // 🔴 ЛИШЕ `import.meta.env` — цей файл імпортується виключно через Vite
+  // (`src/engine.shared.ts`, `src/theme-registry.ts`), ніколи з Node; `process.env`
+  // тут зламав би клієнтський бандл. `pnpm test:e2e` (`scripts/e2e.mjs`) ставить
+  // `VITE_LOCALE`, щоб прогнати той самий магазин під uk-UA і en-US почергово.
+  locale: import.meta.env.VITE_LOCALE ?? 'uk-UA',
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },
