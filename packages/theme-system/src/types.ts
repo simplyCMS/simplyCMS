@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { Banner } from '@simplycms/objects/objects';
+import type { Locale } from '@simplycms/i18n';
 
 /**
  * Паспорт теми. Тема — це встановлювана одиниця платформи, тому маніфест
@@ -89,6 +90,20 @@ export interface ThemeComponents {
   HomeSections?: React.ComponentType;
 }
 
+/**
+ * Каталог перекладів теми: `messages[locale][key]`.
+ *
+ * `Locale` беремо з `@simplycms/i18n` — той самий тип, що й у ядрі, тож
+ * `useThemeT` (нижче) читає обидва каталоги (ядра й теми) під одну локаль.
+ * `Record<string, string>`, а НЕ union конкретних ключів: theme-system не
+ * знає наперед ключів жодної теми (кожна оголошує власний `keyof typeof
+ * messages.uk` локально) — це навмисно ширший за `MessageKey` ядра тип,
+ * інакше довелося б розширювати замкнений `MessageKey` ключами тем, а це
+ * якраз те, чого контракт уникає (втрата захисту від одруків для 961
+ * core-ключа).
+ */
+export type ThemeMessages = Partial<Record<Locale, Record<string, string>>>;
+
 /** Модуль теми — те, що дефолтним експортом віддає пакет теми */
 export interface ThemeModule {
   manifest: ThemeManifest;
@@ -96,6 +111,12 @@ export interface ThemeModule {
   components: ThemeComponents;
   /** Схема налаштувань теми; формат читає UI-генератор форми в адмінці */
   settings?: Record<string, ThemeSettingDefinition>;
+  /**
+   * Опціональний власний каталог перекладів теми (платформа §12: «теми/плагіни
+   * можуть додавати власні каталоги; ланцюжок fallback»). Відсутність поля —
+   * валідна тема: додавання не breaking.
+   */
+  messages?: ThemeMessages;
 }
 
 /** Рядок теми в БД (таблиця `themes`) */

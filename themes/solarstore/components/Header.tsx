@@ -26,16 +26,24 @@ import { useToast } from '@simplycms/core/hooks/use-toast';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
 import { useQuery } from '@tanstack/react-query';
+import { useT } from '@simplycms/i18n';
+import { useThemeT } from '@simplycms/themes/useThemeT';
+import type { SolarstoreThemeKey } from '../messages';
 
-/** Категорії з іконками для навігації */
+/** Категорії з іконками для навігації — підпис іде окремим ключем теми */
 const categoryIcons = [
-  { icon: Battery, label: 'Акумулятори' },
-  { icon: Zap, label: 'Інвертори' },
-  { icon: Sun, label: 'Сонячні панелі' },
-  { icon: Wrench, label: 'Послуги монтажу' },
-];
+  { icon: Battery, labelKey: 'theme.header.categoryBatteries' },
+  { icon: Zap, labelKey: 'theme.header.categoryInverters' },
+  { icon: Sun, labelKey: 'theme.header.categorySolarPanels' },
+  { icon: Wrench, labelKey: 'theme.header.categoryInstallation' },
+] as const satisfies ReadonlyArray<{
+  icon: typeof Battery;
+  labelKey: SolarstoreThemeKey;
+}>;
 
 export function Header() {
+  const t = useT();
+  const tt = useThemeT<SolarstoreThemeKey>();
   const supabase = useSupabaseClient();
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
@@ -62,11 +70,14 @@ export function Header() {
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Не вдалося вийти з акаунту',
+        title: t('common.error'),
+        description: tt('theme.header.signOutError'),
       });
     } else {
-      toast({ title: 'Вихід виконано', description: 'До зустрічі!' });
+      toast({
+        title: tt('theme.header.signedOut'),
+        description: tt('theme.header.seeYouSoon'),
+      });
     }
   };
 
@@ -99,7 +110,7 @@ export function Header() {
               to="/catalog"
               className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
-              Каталог
+              {t('catalog.title')}
             </Link>
             {sections?.map((s) => (
               <Link
@@ -115,13 +126,13 @@ export function Header() {
               href="#"
               className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
-              Про нас
+              {tt('theme.nav.about')}
             </a>
             <a
               href="#"
               className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
-              Контакти
+              {tt('theme.nav.contacts')}
             </a>
           </nav>
 
@@ -149,14 +160,14 @@ export function Header() {
                         onClick={() => navigate({ to: '/profile' })}
                       >
                         <User className="mr-2 h-4 w-4" />
-                        Мій кабінет
+                        {tt('theme.header.myAccount')}
                       </DropdownMenuItem>
                       {isAdmin && (
                         <DropdownMenuItem
                           onClick={() => navigate({ to: '/admin' })}
                         >
                           <Settings className="mr-2 h-4 w-4" />
-                          Адмін-панель
+                          {tt('theme.header.adminPanel')}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
@@ -165,13 +176,13 @@ export function Header() {
                         className="text-destructive"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
-                        Вийти
+                        {t('nav.signOut')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
                   <Button variant="outline" size="sm" asChild>
-                    <Link to="/auth">Увійти</Link>
+                    <Link to="/auth">{t('auth.login.submit')}</Link>
                   </Button>
                 )}
               </>
@@ -237,7 +248,7 @@ export function Header() {
                 className="block py-2 text-sm font-medium text-[hsl(var(--foreground))]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Каталог
+                {t('catalog.title')}
               </Link>
               {sections?.map((s, idx) => {
                 const Icon = getSectionIcon(idx);
@@ -258,13 +269,13 @@ export function Header() {
                 href="#"
                 className="block py-2 text-sm text-[hsl(var(--muted-foreground))]"
               >
-                Про нас
+                {tt('theme.nav.about')}
               </a>
               <a
                 href="#"
                 className="block py-2 text-sm text-[hsl(var(--muted-foreground))]"
               >
-                Контакти
+                {tt('theme.nav.contacts')}
               </a>
             </div>
           </div>

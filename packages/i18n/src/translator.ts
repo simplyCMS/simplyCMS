@@ -20,8 +20,14 @@ export function normalizeLocale(input: string): Locale {
   return SUPPORTED.find((locale) => locale === base) ?? DEFAULT_LOCALE;
 }
 
-/** Підстановка `{name}` значеннями з `params`; невідомий плейсхолдер лишається як є. */
-function interpolate(template: string, params?: MessageParams): string {
+/**
+ * Підстановка `{name}` значеннями з `params`; невідомий плейсхолдер лишається як є.
+ *
+ * 🔴 Експортована навмисно: `useThemeT` (`@simplycms/themes`) підставляє
+ * параметри в каталог ТЕМИ за тією самою семантикою, і дублювати цю функцію
+ * там означало б два джерела правди для одного форматування.
+ */
+export function interpolate(template: string, params?: MessageParams): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) => {
     const value = params[name];

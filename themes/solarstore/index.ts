@@ -8,6 +8,7 @@
 import type { ThemeModule } from '@simplycms/themes/types';
 import manifest from './manifest';
 import { tokens } from './tokens';
+import { messages } from './messages';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HeroBanner } from './components/HeroBanner';
@@ -22,6 +23,7 @@ const theme: ThemeModule = {
     HeroBanner,
     HomeSections,
   },
+  messages,
 };
 
 export default theme;

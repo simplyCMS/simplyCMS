@@ -1,7 +1,12 @@
 import { Link } from '@tanstack/react-router';
 import { Sun, Phone, Mail, MapPin } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
+import { useThemeT } from '@simplycms/themes/useThemeT';
+import type { SolarstoreThemeKey } from '../messages';
 
 export function Footer() {
+  const t = useT();
+  const tt = useThemeT<SolarstoreThemeKey>();
   return (
     <footer className="border-t border-[hsl(var(--border))]/40 bg-[hsl(var(--card))]">
       <div className="container mx-auto px-4 py-12">
@@ -17,28 +22,27 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Професійні рішення з альтернативної енергетики для вашого дому та
-              бізнесу.
+              {tt('theme.footer.description')}
             </p>
           </div>
 
           {/* Каталог */}
           <div>
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4 uppercase tracking-wider">
-              Каталог
+              {t('catalog.title')}
             </h4>
             <nav className="space-y-2">
               <Link
                 to="/catalog"
                 className="block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               >
-                Усі товари
+                {t('catalog.allProducts')}
               </Link>
               <Link
                 to="/properties"
                 className="block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               >
-                Бренди
+                {tt('theme.nav.brands')}
               </Link>
             </nav>
           </div>
@@ -46,17 +50,17 @@ export function Footer() {
           {/* Інформація */}
           <div>
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4 uppercase tracking-wider">
-              Інформація
+              {t('common.information')}
             </h4>
             <nav className="space-y-2">
               <span className="block text-sm text-[hsl(var(--muted-foreground))]">
-                Доставка і оплата
+                {tt('theme.footer.shippingPayment')}
               </span>
               <span className="block text-sm text-[hsl(var(--muted-foreground))]">
-                Гарантія
+                {tt('theme.footer.warranty')}
               </span>
               <span className="block text-sm text-[hsl(var(--muted-foreground))]">
-                Повернення
+                {tt('theme.footer.returns')}
               </span>
             </nav>
           </div>
@@ -64,7 +68,7 @@ export function Footer() {
           {/* Контакти */}
           <div>
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4 uppercase tracking-wider">
-              Контакти
+              {tt('theme.nav.contacts')}
             </h4>
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
@@ -77,7 +81,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
                 <MapPin className="h-4 w-4 shrink-0" />
-                <span>Україна</span>
+                <span>{tt('theme.footer.country')}</span>
               </div>
             </div>
           </div>
@@ -87,7 +91,7 @@ export function Footer() {
       <div className="border-t border-[hsl(var(--border))]/40">
         <div className="container mx-auto px-4 py-4 text-center">
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            &copy; {new Date().getFullYear()} SolarStore. Всі права захищено.
+            {tt('theme.footer.copyright', { year: new Date().getFullYear() })}
           </p>
         </div>
       </div>
