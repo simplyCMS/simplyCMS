@@ -13,14 +13,42 @@ export interface Hardcoded {
 const CYRILLIC = /[Ѐ-ӿ]/;
 
 /**
- * Пакети, які мігруються. Тести всередині них не скануються: кирилиця там —
- * це назви `describe`/`it` і дані фікстур («Товар p1», «Іван»), тобто не
- * інтерфейс.
+ * Мігровані зони. Тести всередині них не скануються: кирилиця там — це назви
+ * `describe`/`it` і дані фікстур («Товар p1», «Іван»), тобто не інтерфейс.
+ *
+ * 🔴 Список розширено 2026-08-09 з двох пакетів на всю воронку покупки, host і
+ * теми. До цього AST-тест доводив завершеність ЛИШЕ для `storefront-routes` і
+ * `admin`, через що 293 хардкоджені рядки в `*-ui` лишались невидимими для
+ * гейтів — борг закрили аж тоді, коли його знайшли ручним сканом по всіх
+ * теках. Тепер регрес у будь-якій із цих зон валить `pnpm test`.
  */
 export const SCANNED_ROOTS = [
+  'src',
   'packages/storefront-routes/src',
   'packages/admin/src',
+  'packages/cart-ui/src',
+  'packages/catalog-ui/src',
+  'packages/checkout-ui/src',
+  'packages/profile-ui/src',
+  'packages/reviews-ui/src',
+  'packages/core/src',
+  'packages/storefront/src',
+  'packages/theme-system/src',
+  'packages/plugin-system/src',
+  'themes/default',
+  'themes/solarstore',
 ];
+
+/**
+ * Файли, які самі Є каталогом перекладів, а не його споживачем.
+ *
+ * 🔴 Тема несе власні повідомлення (`ThemeModule.messages`, контракт v2.1), і
+ * український бік цього каталогу — кирилиця за побудовою. Сканувати його
+ * означало б вимагати перекладу від перекладу. Core-каталоги
+ * (`packages/i18n/src/catalogs/**`) у `SCANNED_ROOTS` не входять узагалі й
+ * тому окремого винятку не потребують.
+ */
+const CATALOG_FILES = /(^|\/)messages\.ts$/;
 
 function walk(dir: string, out: string[]): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -37,6 +65,7 @@ function walk(dir: string, out: string[]): string[] {
 export function sourceFiles(repoRoot: string): string[] {
   return SCANNED_ROOTS.flatMap((root) => walk(join(repoRoot, root), []))
     .map((f) => relative(repoRoot, f))
+    .filter((f) => !CATALOG_FILES.test(f))
     .sort();
 }
 

@@ -22,14 +22,26 @@ const i18nRestrictedSyntax = [
 ];
 
 // Зони, переведені на i18n: тут регрес до хардкоду — помилка.
-// Міграцію завершено, обидва пакети ядра покриті цілком.
 //
 // 🔴 Зелений лінт завершеності НЕ доводить: селектори бачать лише `JSXText` і
 // три атрибути, тобто ~64 % роботи — toast, Zod, тернарники й мапи ярликів їм
-// не видні. Повноту доводить `tests/i18n-coverage.test.ts` (AST-скан).
+// не видні. Повноту доводить `tests/i18n-coverage.test.ts` (AST-скан), і саме
+// його `SCANNED_ROOTS` — ширший за цей список, бо бачить і `.ts`.
+// Цей список — швидкий зворотний звʼязок в редакторі, не доказ.
+//
+// 🔴 Розширено 2026-08-09 з двох пакетів на всю воронку покупки, host і теми:
+// доти `checkout-ui`/`profile-ui`/`catalog-ui`/`reviews-ui`/`cart-ui` не
+// бачив ЖОДЕН гейт, і 293 хардкоджені рядки прожили там усю Фазу 1.
 const I18N_MIGRATED_FILES = [
+  'src/**/*.tsx',
   'packages/storefront-routes/**/*.tsx',
   'packages/admin/**/*.tsx',
+  'packages/cart-ui/**/*.tsx',
+  'packages/catalog-ui/**/*.tsx',
+  'packages/checkout-ui/**/*.tsx',
+  'packages/profile-ui/**/*.tsx',
+  'packages/reviews-ui/**/*.tsx',
+  'themes/*/components/**/*.tsx',
 ];
 
 const eslintConfig = [
