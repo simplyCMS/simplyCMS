@@ -53,6 +53,55 @@ function assertPlaywrightInstalled() {
   }
 }
 
+/**
+ * Порти локального стека Supabase (`supabase/config.toml`) мають бути вільні.
+ *
+ * 🔴 Без цієї перевірки прогін падає всередині `supabase start` повідомленням
+ * рівня Docker («Bind for 0.0.0.0:54322 failed»), уже піднявши й погасивши
+ * половину контейнерів. Причина майже завжди одна й та сама і НЕ стосується
+ * цього репо: на машині розробника крутиться стек ІНШОГО проєкту, що зайняв
+ * той самий порт. Тому називаємо винуватця на ім'я до того, як щось робити.
+ */
+function assertStackPortsFree() {
+  const PORTS = [
+    [54321, 'API gateway'],
+    [54322, 'PostgreSQL'],
+    [54323, 'Studio'],
+    [54324, 'Mailpit'],
+  ];
+
+  const busy = [];
+  for (const [port, role] of PORTS) {
+    let owner = '';
+    try {
+      owner = execFileSync(
+        'docker',
+        ['ps', '--filter', `publish=${port}`, '--format', '{{.Names}}'],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+    } catch {
+      // docker недоступний — це вже перевірив assertLocalStackTooling()
+    }
+    // Контейнери самого стека — не конфлікт: `supabase start` їх перевикористає.
+    if (owner && !owner.startsWith('supabase_')) {
+      busy.push(`  ${port} (${role}) — зайнято контейнером ${owner}`);
+    }
+  }
+
+  if (busy.length) {
+    throw new Error(
+      'Порти локального стека Supabase зайняті чужими контейнерами:\n' +
+        busy.join('\n') +
+        '\n\nЗвільни їх і повтори:\n' +
+        busy
+          .map((l) => `  docker stop ${l.split('контейнером ')[1]}`)
+          .join('\n') +
+        '\n\nАбо зміни порти в `supabase/config.toml` (тоді онови й\n' +
+        '`docs/architecture/test-contours.md` §6, де вони задокументовані).',
+    );
+  }
+}
+
 /** Один прогін Playwright під конкретну локаль. `true` — усе пройшло. */
 function runPlaywright(locale, { port, stackEnv }) {
   console.log(`\n[e2e] === Playwright, VITE_LOCALE=${locale} ===`);
@@ -81,6 +130,7 @@ async function main() {
   // краще впасти зрозумілим повідомленням за секунду, ніж посеред прогону.
   assertLocalStackTooling();
   assertPlaywrightInstalled();
+  assertStackPortsFree();
 
   const port = await freePort();
   let stackUp = false;
