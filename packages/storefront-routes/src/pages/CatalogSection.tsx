@@ -648,8 +648,8 @@ export default function CatalogSectionPage({
             селект сортування w-[180px]) розпирала контейнер і давала
             горизонтальний скрол сторінки на 390px. Спіймано e2e. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b">
-            <div className="flex min-w-0 items-center gap-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 pb-4 border-b">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
               {/* Mobile filter button */}
               <Sheet>
                 <SheetTrigger asChild>
