@@ -8,5 +8,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   splitting: false,
-  external: ['@simplycms/objects'],
+  external: ['@simplycms/objects', '@simplycms/domain'],
 });
