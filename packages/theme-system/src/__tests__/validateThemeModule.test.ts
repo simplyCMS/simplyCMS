@@ -62,4 +62,36 @@ describe('validateThemeModule', () => {
 
     expect(() => validateThemeModule(mod)).toThrow(/manifest/);
   });
+
+  it('приймає модуль без messages (поле опційне)', () => {
+    expect(() => validateThemeModule(makeValidModule())).not.toThrow();
+  });
+
+  it('приймає модуль із валідним messages', () => {
+    const mod = makeValidModule();
+    mod.messages = { uk: { 'theme.foo': 'бар' }, en: { 'theme.foo': 'bar' } };
+
+    expect(() => validateThemeModule(mod)).not.toThrow();
+  });
+
+  it('відхиляє messages, що не є обʼєктом', () => {
+    const mod = makeValidModule();
+    mod.messages = 'not-an-object';
+
+    expect(() => validateThemeModule(mod)).toThrow(/messages/);
+  });
+
+  it('відхиляє messages.<locale>, що не є обʼєктом', () => {
+    const mod = makeValidModule();
+    mod.messages = { uk: 'not-an-object' };
+
+    expect(() => validateThemeModule(mod)).toThrow(/messages\.uk/);
+  });
+
+  it('відхиляє messages.<locale>.<key> нерядкового типу', () => {
+    const mod = makeValidModule();
+    mod.messages = { uk: { 'theme.foo': 42 } };
+
+    expect(() => validateThemeModule(mod)).toThrow(/messages\.uk\.theme\.foo/);
+  });
 });

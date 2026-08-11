@@ -52,3 +52,9 @@ packages/*/package/
 
 # Knowledge graph (graphify) — локальний артефакт, росте снапшотами по датах
 graphify-out/
+
+# Playwright (pnpm test:e2e) — звіти й трейси прогону
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

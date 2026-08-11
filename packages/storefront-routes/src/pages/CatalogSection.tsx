@@ -643,10 +643,13 @@ export default function CatalogSectionPage({
         </aside>
 
         {/* Main content */}
-        <div className="flex-1">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b">
-            <div className="flex items-center gap-4">
+        {/* 🔴 min-w-0: без нього flex-item має min-width:auto й не стискається
+            менше за вміст — панель інструментів (фільтр + лічильник +
+            селект сортування w-[180px]) розпирала контейнер і давала
+            горизонтальний скрол сторінки на 390px. Спіймано e2e. */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 pb-4 border-b">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
               {/* Mobile filter button */}
               <Sheet>
                 <SheetTrigger asChild>
@@ -667,7 +670,7 @@ export default function CatalogSectionPage({
                 </SheetContent>
               </Sheet>
 
-              <span className="text-sm text-muted-foreground">
+              <span className="truncate text-sm text-muted-foreground">
                 {t('catalog.productsCount', {
                   count: products
                     ? filteredProducts.length
@@ -676,12 +679,16 @@ export default function CatalogSectionPage({
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Select
                 value={sortBy}
                 onValueChange={(v) => setSortBy(v as SortOption)}
               >
-                <SelectTrigger className="w-[180px]">
+                {/* 🔴 160px на мобільному, 180 від sm: при 390px повні 180 не лишали
+                    місця лічильнику товарів, і той обрізався до «4 т...». 160 — мінімум,
+                    у який ще вміщається найдовший підпис сортування
+                    («Price: low to high» = 114 px + падінги). */}
+                <SelectTrigger className="w-[160px] sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

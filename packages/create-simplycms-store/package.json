@@ -1,6 +1,6 @@
 {
   "name": "create-simplycms-store",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Скаффолдер магазину SimplyCMS: pnpm create simplycms-store my-shop",
   "type": "module",
   "license": "MIT",

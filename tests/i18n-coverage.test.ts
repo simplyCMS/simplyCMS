@@ -1,17 +1,27 @@
 import { describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { scanAll, sourceFiles } from './i18n-coverage/scan';
+import { SCANNED_ROOTS, scanAll, sourceFiles } from './i18n-coverage/scan';
 import { ALLOWLIST, PENDING_FILES } from './i18n-coverage/pending';
 
 const REPO = resolve(__dirname, '..');
 
-/** Чи стоїть рядок усередині виклику `console.*` (виклик може бути багаторядковим). */
-function insideConsoleCall(file: string, line: number): boolean {
+/**
+ * Чи стоїть рядок усередині діагностики розробника — `console.*` або
+ * `throw new Error(...)`. Виклик може бути багаторядковим, тому дивимось вікно
+ * попередніх рядків.
+ *
+ * 🔴 `throw` тут не послаблення, а необхідність: `validateThemeModule` віддає
+ * помилки АВТОРОВІ теми саме киданням, а не логом. Ризик «кинута помилка
+ * долетить до покупця через error boundary» знімається не цим предикатом, а
+ * тим, що виняток діє лише для файлів, явно перелічених в `ALLOWLIST`, — а
+ * там немає жодного JSX.
+ */
+function insideDevDiagnostic(file: string, line: number): boolean {
   const lines = readFileSync(resolve(REPO, file), 'utf8').split('\n');
   return lines
     .slice(Math.max(0, line - 3), line)
-    .some((l) => l.includes('console.'));
+    .some((l) => l.includes('console.') || /throw new \w*Error\(/.test(l));
 }
 
 /**
@@ -53,27 +63,39 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
     expect(missing, 'записи реєстру без файлу на диску').toEqual([]);
   });
 
-  it('allowlist покриває лише логи розробника', () => {
-    // Звужуємо виняток навмисно: allowlist існує для `console.*`, і будь-який
-    // інший рядок у цих файлах має мігрувати, а не ховатись за записом.
+  it('allowlist покриває лише діагностику розробника', () => {
+    // Звужуємо виняток навмисно: allowlist існує для `console.*` і `throw`, а
+    // будь-який інший рядок у цих файлах має мігрувати, а не ховатись за записом.
     const nonLog = findings
       .filter((f) => f.file in ALLOWLIST)
-      .filter((f) => !insideConsoleCall(f.file, f.line))
+      .filter((f) => !insideDevDiagnostic(f.file, f.line))
       .map((f) => `${f.file}:${f.line} ${f.text}`);
 
-    expect(nonLog, 'рядки в allowlist-файлах поза console.*').toEqual([]);
+    expect(
+      nonLog,
+      'рядки в allowlist-файлах поза console.* / throw new Error',
+    ).toEqual([]);
   });
 
-  it('скановано обидва пакети', () => {
-    const files = sourceFiles(REPO);
-    const admin = files.filter((f) => f.startsWith('packages/admin/'));
-    const storefront = files.filter((f) =>
-      f.startsWith('packages/storefront-routes/'),
-    );
-
+  it('скановано всі зони SCANNED_ROOTS', () => {
     // Страховка від мовчазного нуля: якби обхід зламався, решта перевірок
-    // стала б тривіально зеленою на порожньому наборі.
-    expect(admin.length).toBeGreaterThan(50);
-    expect(storefront.length).toBeGreaterThan(20);
+    // стала б тривіально зеленою на порожньому наборі. Асертимо кожен корінь
+    // окремо — інакше сумарний поріг сховав би корінь, що дав нуль файлів.
+    const files = sourceFiles(REPO);
+
+    const empty = SCANNED_ROOTS.filter(
+      (root) => !files.some((f) => f.startsWith(`${root}/`)),
+    );
+    expect(empty, 'корені SCANNED_ROOTS без жодного файлу').toEqual([]);
+
+    expect(
+      files.filter((f) => f.startsWith('packages/admin/')).length,
+    ).toBeGreaterThan(50);
+    expect(
+      files.filter((f) => f.startsWith('packages/storefront-routes/')).length,
+    ).toBeGreaterThan(20);
+    expect(
+      files.filter((f) => f.startsWith('packages/checkout-ui/')).length,
+    ).toBeGreaterThan(10);
   });
 });

@@ -4,8 +4,11 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@simplycms/ui/button';
 import { Link } from '@tanstack/react-router';
+import { useThemeT } from '@simplycms/themes/useThemeT';
+import type { DefaultThemeKey } from '../messages';
 
 export function BrandCarousel() {
+  const tt = useThemeT<DefaultThemeKey>();
   const supabase = useSupabaseClient();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -49,7 +52,7 @@ export function BrandCarousel() {
     <section className="py-10">
       <div className="container mx-auto px-4">
         <h2 className="text-xl font-serif font-bold text-foreground text-center mb-8 uppercase tracking-wider">
-          Бренди
+          {tt('theme.nav.brands')}
         </h2>
 
         <div className="relative group">

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/profile-ui",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": false,
   "description": "Profile UI for SimplyCMS — addresses, avatar upload, recipients and layout components. Feature-UI split package.",
   "type": "module",
@@ -43,6 +43,7 @@
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/core": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {

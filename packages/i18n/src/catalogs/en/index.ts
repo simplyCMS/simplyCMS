@@ -9,6 +9,7 @@
  * побачить той самий parity-тест.
  */
 import type { Catalog } from '../../types';
+import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
 import { messages as nav } from './nav';
@@ -21,9 +22,11 @@ import { messages as profile } from './profile';
 import { messages as cart } from './cart';
 import { messages as checkout } from './checkout';
 import { messages as auth } from './auth';
+import { messages as reviews } from './reviews';
 import { messages as admin } from './admin/index';
 
 export const messages: Catalog = {
+  ...app,
   ...common,
   ...validation,
   ...nav,
@@ -36,5 +39,6 @@ export const messages: Catalog = {
   ...cart,
   ...checkout,
   ...auth,
+  ...reviews,
   ...admin,
 };

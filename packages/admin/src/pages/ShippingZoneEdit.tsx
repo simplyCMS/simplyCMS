@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT, type Translator, type MessageKey } from '@simplycms/i18n';
+import { useEngine } from '@simplycms/react-query';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Input } from '@simplycms/ui/input';
@@ -87,6 +88,9 @@ function arrayToString(arr: string[] | undefined): string {
 
 export default function ShippingZoneEdit() {
   const t = useT();
+  // Локаль і валюта для `formatShippingCost` — чистої T1-функції без доступу
+  // ні до конфігу магазину, ні до перекладів (див. коментар у shipping.ts).
+  const { config } = useEngine();
   const supabase = useSupabaseClient();
   const { zoneId } = useParams({ strict: false }) as { zoneId: string };
   const navigate = useNavigate();
@@ -470,7 +474,10 @@ export default function ShippingZoneEdit() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right font-medium">
-                                {formatShippingCost(rate.base_cost)}
+                                {formatShippingCost(rate.base_cost, config, {
+                                  byTariff: t('common.shipping.byTariff'),
+                                  free: t('common.shipping.free'),
+                                })}
                               </TableCell>
                               <TableCell>
                                 <Button

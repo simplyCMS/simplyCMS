@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { I18nProvider } from '@simplycms/i18n';
+import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 
 /**
@@ -79,7 +80,9 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
 
     render(
       <I18nProvider locale="uk">
-        <OrderSuccess />
+        <TestEngineProvider>
+          <OrderSuccess />
+        </TestEngineProvider>
       </I18nProvider>,
     );
 
@@ -101,7 +104,9 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
 
     render(
       <I18nProvider locale="uk">
-        <OrderSuccess />
+        <TestEngineProvider>
+          <OrderSuccess />
+        </TestEngineProvider>
       </I18nProvider>,
     );
 

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/core",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": false,
   "description": "Core business logic, hooks, and components for SimplyCMS e-commerce platform",
   "type": "module",
@@ -77,6 +77,7 @@
   "dependencies": {
     "@simplycms/supabase": "workspace:*",
     "@simplycms/domain": "workspace:*",
+    "@simplycms/i18n": "workspace:*",
     "@simplycms/objects": "workspace:*",
     "@simplycms/themes": "workspace:*",
     "@simplycms/react-query": "workspace:*",

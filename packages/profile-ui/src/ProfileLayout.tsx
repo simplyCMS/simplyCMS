@@ -2,11 +2,17 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { User, Package, Settings, LogOut } from 'lucide-react';
 import { cn } from '@simplycms/ui/utils';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useT, type MessageKey } from '@simplycms/i18n';
 
-const navItems = [
-  { to: '/profile', icon: User, label: 'Профiль', end: true },
-  { to: '/profile/orders', icon: Package, label: 'Мої замовлення' },
-  { to: '/profile/settings', icon: Settings, label: 'Налаштування' },
+const navItems: {
+  to: string;
+  icon: typeof User;
+  labelKey: MessageKey;
+  end?: boolean;
+}[] = [
+  { to: '/profile', icon: User, labelKey: 'nav.profile', end: true },
+  { to: '/profile/orders', icon: Package, labelKey: 'nav.orders' },
+  { to: '/profile/settings', icon: Settings, labelKey: 'nav.settings' },
 ];
 
 interface ProfileLayoutProps {
@@ -14,6 +20,7 @@ interface ProfileLayoutProps {
 }
 
 export function ProfileLayout({ children }: ProfileLayoutProps) {
+  const t = useT();
   const { user, isLoading, signOut } = useAuth();
   const { pathname } = useLocation();
 
@@ -61,7 +68,7 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -71,7 +78,7 @@ export function ProfileLayout({ children }: ProfileLayoutProps) {
               onClick={signOut}
             >
               <LogOut className="h-5 w-5" />
-              Вийти
+              {t('nav.signOut')}
             </button>
           </nav>
         </aside>

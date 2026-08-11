@@ -1,4 +1,5 @@
 import { cn } from '@simplycms/ui/utils';
+import { useT } from '@simplycms/i18n';
 import { Check, MapPin } from 'lucide-react';
 
 interface AddressCardProps {
@@ -19,6 +20,8 @@ export function AddressCard({
   isDefault,
   onClick,
 }: AddressCardProps) {
+  const t = useT();
+
   return (
     <button
       type="button"
@@ -44,12 +47,14 @@ export function AddressCard({
         </span>
       </div>
 
-      <p className="text-xs text-muted-foreground">м. {city}</p>
+      <p className="text-xs text-muted-foreground">
+        {t('common.cityShort', { city })}
+      </p>
       <p className="text-xs text-muted-foreground truncate w-full">{address}</p>
 
       {isDefault && (
         <span className="mt-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-          За замовч.
+          {t('common.byDefaultShort')}
         </span>
       )}
     </button>

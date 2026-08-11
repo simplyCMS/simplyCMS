@@ -12,6 +12,7 @@
 import type { ThemeModule } from '@simplycms/themes/types';
 import manifest from './manifest';
 import { tokens } from './tokens';
+import { messages } from './messages';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomeSections } from './components/HomeSections';
@@ -24,6 +25,7 @@ const theme: ThemeModule = {
     Footer,
     HomeSections,
   },
+  messages,
 };
 
 export default theme;

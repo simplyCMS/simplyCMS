@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { useT } from '@simplycms/i18n';
 
 interface PropertyValue {
   property_id: string;
@@ -25,6 +26,7 @@ interface ProductCharacteristicsProps {
 export function ProductCharacteristics({
   propertyValues,
 }: ProductCharacteristicsProps) {
+  const t = useT();
   const displayableValues = propertyValues.filter(
     (pv) => pv.property && (pv.value || pv.numeric_value !== null),
   );
@@ -35,7 +37,7 @@ export function ProductCharacteristics({
 
   const formatValue = (pv: PropertyValue): string => {
     if (pv.property?.property_type === 'boolean') {
-      return pv.value === 'true' ? 'Так' : 'Нi';
+      return pv.value === 'true' ? t('common.yes') : t('common.no');
     }
     if (pv.numeric_value !== null) {
       return String(pv.numeric_value);

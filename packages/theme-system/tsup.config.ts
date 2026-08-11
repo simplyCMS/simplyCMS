@@ -7,6 +7,7 @@ export default defineConfig({
     'src/ThemeContext.tsx',
     'src/applyTokens.ts',
     'src/validateThemeModule.ts',
+    'src/useThemeT.ts',
     'src/types.ts',
   ],
   format: ['esm'],

@@ -1,3 +1,4 @@
+import { useT } from '@simplycms/i18n';
 import { MapPin, RefreshCw, X } from 'lucide-react';
 
 interface AddressSaveDialogProps {
@@ -17,6 +18,8 @@ export function AddressSaveDialog({
   onCreate,
   onCancel,
 }: AddressSaveDialogProps) {
+  const t = useT();
+
   if (!open) return null;
 
   return (
@@ -26,9 +29,11 @@ export function AddressSaveDialog({
         onClick={() => onOpenChange(false)}
       />
       <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h3 className="text-lg font-semibold mb-2">Зберегти адресу?</h3>
+        <h3 className="text-lg font-semibold mb-2">
+          {t('checkout.addressSaveDialog.title')}
+        </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Ви змiнили адресу доставки. Оберiть дiю:
+          {t('checkout.addressSaveDialog.description')}
         </p>
 
         <div className="flex flex-col gap-2 my-4">
@@ -43,10 +48,12 @@ export function AddressSaveDialog({
               <RefreshCw className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <div className="font-medium">
-                  Оновити &ldquo;{existingAddressName}&rdquo;
+                  {t('checkout.saveDialog.updateTitle', {
+                    name: existingAddressName,
+                  })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Зберегти змiни в iснуючiй адресi
+                  {t('checkout.addressSaveDialog.updateDescription')}
                 </div>
               </div>
             </button>
@@ -61,9 +68,11 @@ export function AddressSaveDialog({
           >
             <MapPin className="h-4 w-4 mt-0.5 text-primary" />
             <div>
-              <div className="font-medium">Створити нову адресу</div>
+              <div className="font-medium">
+                {t('checkout.addressSaveDialog.createTitle')}
+              </div>
               <div className="text-xs text-muted-foreground">
-                Зберегти як нову адресу в довiднику
+                {t('checkout.addressSaveDialog.createDescription')}
               </div>
             </div>
           </button>
@@ -78,7 +87,7 @@ export function AddressSaveDialog({
             }}
           >
             <X className="h-4 w-4" />
-            Скасувати змiни
+            {t('checkout.saveDialog.cancelChanges')}
           </button>
         </div>
       </div>

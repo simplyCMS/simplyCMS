@@ -7,6 +7,7 @@ export default defineConfig({
     'src/discounts.ts',
     'src/inventory.ts',
     'src/shipping.ts',
+    'src/money.ts',
   ],
   format: ['esm'],
   dts: { tsconfig: './tsconfig.json' },

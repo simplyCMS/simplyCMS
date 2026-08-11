@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useFormatPrice } from '@simplycms/react-query';
 import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
@@ -59,6 +60,7 @@ export function ProductModifications({
 }: ProductModificationsProps) {
   const t = useT();
   const supabase = useSupabaseClient();
+  const formatPrice = useFormatPrice();
   const [isOpen, setIsOpen] = useState(false);
   const [editingModification, setEditingModification] =
     useState<ProductModification | null>(null);
@@ -286,13 +288,6 @@ export function ProductModifications({
     setEditingModification(null);
     setImages([]);
     setStockStatus('in_stock');
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-    }).format(price);
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -628,11 +623,15 @@ export function ProductModifications({
                       {defaultPrice ? (
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {formatPrice(Number(defaultPrice.price))}
+                            {formatPrice(Number(defaultPrice.price), {
+                              minimumFractionDigits: 2,
+                            })}
                           </span>
                           {defaultPrice.old_price && (
                             <span className="text-xs text-muted-foreground line-through">
-                              {formatPrice(Number(defaultPrice.old_price))}
+                              {formatPrice(Number(defaultPrice.old_price), {
+                                minimumFractionDigits: 2,
+                              })}
                             </span>
                           )}
                         </div>

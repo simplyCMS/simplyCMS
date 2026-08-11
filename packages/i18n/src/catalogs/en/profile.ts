@@ -55,4 +55,53 @@ export const messages: Catalog = {
   'profile.password.changed': 'Password changed',
   'profile.password.changedHint': 'Your password has been updated',
   'profile.password.failed': 'Could not change the password',
+
+  // Shipping addresses — CRUD widget (@simplycms/profile-ui, AddressesList)
+  'profile.addresses.title': 'Shipping addresses',
+  'profile.addresses.empty': "You haven't added any addresses yet",
+  'profile.addresses.deleted': 'Address deleted',
+  'profile.addresses.editTitle': 'Edit address',
+  'profile.addresses.namePlaceholder': 'Home, Work...',
+  'profile.addresses.cityPlaceholder': 'Kyiv',
+  'profile.addresses.addressPlaceholder': '1 Khreshchatyk St, Apt 1',
+  'profile.addresses.deleteTitle': 'Delete address "{name}"?',
+  'profile.addresses.deleteUsedOne': 'This address is used in {count} order.',
+  'profile.addresses.deleteUsedMany': 'This address is used in {count} orders.',
+  'profile.addresses.deleteKeepsData':
+    'Address details on past orders will be kept.',
+  'profile.addresses.deleteConfirm':
+    'Are you sure you want to delete this address?',
+
+  // Recipients — CRUD widget (@simplycms/profile-ui, RecipientsList)
+  'profile.recipients.title': 'Recipients',
+  'profile.recipients.empty': "You haven't added any recipients yet",
+  'profile.recipients.deleted': 'Recipient deleted',
+  'profile.recipients.defaultBadge': 'Default',
+  'profile.recipients.editTitle': 'Edit recipient',
+  'profile.recipients.emailOptionalLabel': 'Email (optional)',
+  'profile.recipients.notesLabel': 'Notes',
+  'profile.recipients.notesPlaceholder': 'E.g. Mom, coworker...',
+  'profile.recipients.defaultCheckboxLabel': 'Default recipient',
+  'profile.recipients.deleteTitle': 'Delete recipient "{fullName}"?',
+  'profile.recipients.deleteUsedOne': 'This contact is used in {count} order.',
+  'profile.recipients.deleteUsedMany':
+    'This contact is used in {count} orders.',
+  'profile.recipients.deleteKeepsData':
+    'Recipient details on past orders will be kept.',
+  'profile.recipients.deleteConfirm':
+    'Are you sure you want to delete this recipient?',
+
+  // "Used in N orders" badge — shared by addresses and recipients.
+  'profile.usedInOrders.one': 'Used in {count} order',
+  'profile.usedInOrders.many': 'Used in {count} orders',
+
+  // Profile photo (@simplycms/profile-ui, AvatarUpload)
+  'profile.avatar.uploadError': 'Upload failed',
+  'profile.avatar.unsupportedFormat': 'Only JPG, PNG, and WebP are supported',
+  'profile.avatar.tooLarge': 'File size must be under 5MB',
+  'profile.avatar.updated': 'Avatar updated',
+  'profile.avatar.removed': 'Avatar removed',
+  'profile.avatar.deleteError': 'Delete failed',
+  'profile.avatar.uploadButton': 'Upload photo',
+  'profile.avatar.formatHint': 'JPG, PNG, or WebP. Max 5MB.',
 };

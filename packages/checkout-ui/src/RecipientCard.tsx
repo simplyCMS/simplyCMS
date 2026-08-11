@@ -1,4 +1,5 @@
 import { cn } from '@simplycms/ui/utils';
+import { useT } from '@simplycms/i18n';
 import { Check, User } from 'lucide-react';
 
 interface RecipientCardProps {
@@ -21,6 +22,7 @@ export function RecipientCard({
   isDefault,
   onClick,
 }: RecipientCardProps) {
+  const t = useT();
   const maskedPhone =
     phone.length > 6 ? `${phone.slice(0, 4)}...${phone.slice(-3)}` : phone;
 
@@ -50,11 +52,13 @@ export function RecipientCard({
       </div>
 
       <p className="text-xs text-muted-foreground">{maskedPhone}</p>
-      <p className="text-xs text-muted-foreground">м. {city}</p>
+      <p className="text-xs text-muted-foreground">
+        {t('common.cityShort', { city })}
+      </p>
 
       {isDefault && (
         <span className="mt-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-          За замовч.
+          {t('common.byDefaultShort')}
         </span>
       )}
     </button>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, User, Check, Plus } from 'lucide-react';
 import { cn } from '@simplycms/ui/utils';
+import { useT } from '@simplycms/i18n';
 
 interface Recipient {
   id: string;
@@ -32,6 +33,7 @@ export function RecipientSelectorPopup({
   onSelect,
   onAddNew,
 }: RecipientSelectorPopupProps) {
+  const t = useT();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('default');
 
@@ -80,13 +82,15 @@ export function RecipientSelectorPopup({
         onClick={() => onOpenChange(false)}
       />
       <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col">
-        <h3 className="text-lg font-semibold mb-4">Оберiть отримувача</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {t('checkout.recipientSelector.title')}
+        </h3>
 
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              placeholder="Пошук за iм'ям, телефоном, мiстом..."
+              placeholder={t('checkout.recipientSelector.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 border rounded-md text-sm"
@@ -97,9 +101,13 @@ export function RecipientSelectorPopup({
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="w-[140px] border rounded-md text-sm px-2"
           >
-            <option value="default">За замовч.</option>
-            <option value="name">За iм&apos;ям</option>
-            <option value="date">За датою</option>
+            <option value="default">{t('common.byDefaultShort')}</option>
+            <option value="name">
+              {t('checkout.recipientSelector.sortByName')}
+            </option>
+            <option value="date">
+              {t('checkout.recipientSelector.sortByDate')}
+            </option>
           </select>
         </div>
 
@@ -127,7 +135,7 @@ export function RecipientSelectorPopup({
                   </span>
                   {recipient.is_default && (
                     <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      За замовч.
+                      {t('common.byDefaultShort')}
                     </span>
                   )}
                 </div>
@@ -135,7 +143,10 @@ export function RecipientSelectorPopup({
                   {recipient.phone}
                 </p>
                 <p className="text-sm text-muted-foreground truncate">
-                  м. {recipient.city}, {recipient.address}
+                  {t('common.cityAddress', {
+                    city: recipient.city,
+                    address: recipient.address,
+                  })}
                 </p>
               </div>
               {selectedId === recipient.id && (
@@ -148,7 +159,9 @@ export function RecipientSelectorPopup({
 
           {filteredRecipients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              {search ? 'Нiчого не знайдено' : 'Немає збережених отримувачiв'}
+              {search
+                ? t('checkout.notFound')
+                : t('checkout.recipientSelector.emptyState')}
             </div>
           )}
         </div>
@@ -158,14 +171,14 @@ export function RecipientSelectorPopup({
             className="px-4 py-2 border rounded-md text-sm"
             onClick={() => onOpenChange(false)}
           >
-            Скасувати
+            {t('common.cancel')}
           </button>
           <button
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm flex items-center gap-2"
             onClick={onAddNew}
           >
             <Plus className="h-4 w-4" />
-            Новий отримувач
+            {t('common.recipient.new')}
           </button>
         </div>
       </div>

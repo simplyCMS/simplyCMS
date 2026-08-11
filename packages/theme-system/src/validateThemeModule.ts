@@ -16,7 +16,7 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     throw new Error('[theme] Модуль теми має бути обʼєктом');
   }
 
-  const { manifest, tokens, components, settings } = m;
+  const { manifest, tokens, components, settings, messages } = m;
 
   if (!isRecord(manifest)) {
     throw new Error('[theme] Відсутній manifest');
@@ -59,5 +59,27 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     throw new Error(
       `[theme] "${manifest.name}": settings мають бути обʼєктом схеми налаштувань`,
     );
+  }
+
+  if (messages !== undefined) {
+    if (!isRecord(messages)) {
+      throw new Error(
+        `[theme] "${manifest.name}": messages мають бути обʼєктом каталогів за локаллю`,
+      );
+    }
+    for (const [locale, catalog] of Object.entries(messages)) {
+      if (!isRecord(catalog)) {
+        throw new Error(
+          `[theme] "${manifest.name}": messages.${locale} має бути обʼєктом рядок→рядок`,
+        );
+      }
+      for (const [key, value] of Object.entries(catalog)) {
+        if (typeof value !== 'string') {
+          throw new Error(
+            `[theme] "${manifest.name}": messages.${locale}.${key} має бути рядком`,
+          );
+        }
+      }
+    }
   }
 }

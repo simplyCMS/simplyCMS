@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/storefront-routes",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": false,
   "description": "Storefront route-компоненти, server-шар і SEO для SimplyCMS",
   "type": "module",
@@ -75,6 +75,7 @@
     "@simplycms/i18n": "workspace:*",
     "@simplycms/objects": "workspace:*",
     "@simplycms/plugins": "workspace:*",
+    "@simplycms/react-query": "workspace:*",
     "@simplycms/storefront": "workspace:*",
     "@simplycms/supabase": "workspace:*",
     "@simplycms/themes": "workspace:*",

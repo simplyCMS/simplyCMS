@@ -22,6 +22,7 @@ import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from '@simplycms/i18n';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { toast } from '@simplycms/core/hooks/use-toast';
+import { useFormatPrice } from '@simplycms/react-query';
 
 interface OrderDetails {
   id: string;
@@ -137,13 +138,10 @@ export default function OrderSuccess() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate стабільний з @tanstack/react-router
   }, [orderId, token, user, supabase]);
 
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  // Форматування ціни — через конфіг магазину (locale/currency), а не
+  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
+  // (див. @simplycms/domain/money).
+  const formatPrice = useFormatPrice();
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('uk-UA', {

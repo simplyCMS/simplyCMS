@@ -4,6 +4,7 @@ import { UserPlus, ChevronRight, Save } from 'lucide-react';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
 import { RecipientCard } from './RecipientCard';
 import { RecipientSelectorPopup } from './RecipientSelectorPopup';
 import { RecipientSaveDialog } from './RecipientSaveDialog';
@@ -34,6 +35,7 @@ export function CheckoutRecipientForm({
   const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
+  const t = useT();
   const queryClient = useQueryClient();
   const hasDifferentRecipient = values.hasDifferentRecipient;
   const selectedRecipientId = values.savedRecipientId as string | undefined;
@@ -160,7 +162,7 @@ export function CheckoutRecipientForm({
       queryClient.invalidateQueries({
         queryKey: ['checkout-saved-recipients'],
       });
-      toast({ title: 'Отримувача оновлено' });
+      toast({ title: t('common.recipient.updated') });
     },
   });
 
@@ -189,7 +191,7 @@ export function CheckoutRecipientForm({
       queryClient.invalidateQueries({
         queryKey: ['checkout-saved-recipients'],
       });
-      toast({ title: 'Нового отримувача створено' });
+      toast({ title: t('checkout.recipientForm.created') });
       if (data) {
         onChange('savedRecipientId', data.id);
         setOriginalRecipient(data as SavedRecipient);
@@ -238,7 +240,7 @@ export function CheckoutRecipientForm({
         <div className="p-4 border-b">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
-            Отримувач
+            {t('checkout.success.recipient')}
           </h3>
         </div>
         <div className="p-4 space-y-4">
@@ -252,9 +254,11 @@ export function CheckoutRecipientForm({
               className="rounded mt-0.5"
             />
             <div>
-              <span className="font-medium text-sm">Iнший отримувач</span>
+              <span className="font-medium text-sm">
+                {t('checkout.recipientForm.differentRecipient')}
+              </span>
               <p className="text-sm text-muted-foreground">
-                Замовлення отримає iнша людина
+                {t('checkout.recipientForm.differentRecipientHint')}
               </p>
             </div>
           </label>
@@ -264,7 +268,7 @@ export function CheckoutRecipientForm({
               {user && savedRecipients && savedRecipients.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Збереженi отримувачi
+                    {t('checkout.recipientForm.savedRecipients')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {visibleRecipients.map((recipient) => (
@@ -287,7 +291,9 @@ export function CheckoutRecipientForm({
                       className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
                       onClick={() => setPopupOpen(true)}
                     >
-                      Показати всiх ({savedRecipients.length})
+                      {t('checkout.recipientForm.showAll', {
+                        count: savedRecipients.length,
+                      })}
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   )}
@@ -297,10 +303,10 @@ export function CheckoutRecipientForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Iм&apos;я отримувача *
+                    {t('checkout.recipientForm.firstNameLabel')}
                   </label>
                   <input
-                    placeholder="Введiть iм'я"
+                    placeholder={t('profile.settings.firstNamePlaceholder')}
                     value={currentValues.firstName || ''}
                     onChange={(e) =>
                       onChange('recipientFirstName', e.target.value)
@@ -310,10 +316,10 @@ export function CheckoutRecipientForm({
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Прiзвище отримувача *
+                    {t('checkout.recipientForm.lastNameLabel')}
                   </label>
                   <input
-                    placeholder="Введiть прiзвище"
+                    placeholder={t('profile.settings.lastNamePlaceholder')}
                     value={currentValues.lastName || ''}
                     onChange={(e) =>
                       onChange('recipientLastName', e.target.value)
@@ -325,7 +331,7 @@ export function CheckoutRecipientForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Телефон отримувача *
+                    {t('checkout.recipientForm.phoneLabel')}
                   </label>
                   <input
                     type="tel"
@@ -337,7 +343,7 @@ export function CheckoutRecipientForm({
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Email отримувача
+                    {t('checkout.recipientForm.emailLabel')}
                   </label>
                   <input
                     type="email"
@@ -351,10 +357,10 @@ export function CheckoutRecipientForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Мiсто *
+                    {t('checkout.cityLabel')}
                   </label>
                   <input
-                    placeholder="Введiть мiсто"
+                    placeholder={t('checkout.cityPlaceholder')}
                     value={currentValues.city || ''}
                     onChange={(e) => onChange('recipientCity', e.target.value)}
                     className="w-full px-3 py-2 border rounded-md text-sm"
@@ -362,10 +368,10 @@ export function CheckoutRecipientForm({
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Адреса *
+                    {t('checkout.recipientForm.addressLabel')}
                   </label>
                   <input
-                    placeholder="вул. Хрещатик, 1, кв. 10"
+                    placeholder={t('checkout.streetAddressPlaceholder')}
                     value={currentValues.address || ''}
                     onChange={(e) =>
                       onChange('recipientAddress', e.target.value)
@@ -376,10 +382,10 @@ export function CheckoutRecipientForm({
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Примiтки
+                  {t('checkout.recipientForm.notesLabel')}
                 </label>
                 <textarea
-                  placeholder="Додаткова iнформацiя про отримувача..."
+                  placeholder={t('checkout.recipientForm.notesPlaceholder')}
                   value={currentValues.notes || ''}
                   onChange={(e) => onChange('recipientNotes', e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm resize-none"
@@ -393,7 +399,7 @@ export function CheckoutRecipientForm({
                     className="px-3 py-1.5 border rounded-md text-sm"
                     onClick={handleCancelChanges}
                   >
-                    Скасувати
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="button"
@@ -404,7 +410,7 @@ export function CheckoutRecipientForm({
                     }
                   >
                     <Save className="h-4 w-4" />
-                    Зберегти змiни
+                    {t('checkout.recipientForm.saveChanges')}
                   </button>
                 </div>
               )}

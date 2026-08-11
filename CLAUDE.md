@@ -16,6 +16,11 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm test:e2e         # БРАУЗЕРНИЙ контур: Playwright по монорепо-хосту.
+                      # scripts/e2e.mjs сам піднімає локальний Supabase (Docker),
+                      # накатує сід, створює власника — і ганяє специ ДВІЧІ:
+                      # під VITE_LOCALE=uk-UA і en-US, послідовно.
+                      # У CI НЕ ганяється (Docker + ~10 ГБ образів) — як і пілот
 pnpm pilot:pack       # tarball-пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
 pnpm pilot            # той самий пілот + Gate B проти живої БД (.env.local); Gate E — видимо skipped (потрібен --e2e)
 pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
@@ -106,12 +111,37 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / ~960 warnings — це НОРМА.** Warn-зона двох
-`no-restricted-syntax`-селекторів (i18n) навмисно підсвічує ще не мігровані
-кириличні рядки в `@simplycms/storefront-routes` та `@simplycms/admin`.
-Error-зона — явний список із 3 файлів у `eslint.config.mjs`. Ці ворнінги
-**не глушити** й селектори не послабляти: warn→error станеться після
-i18n-міграції (роадмап, Фаза 1+).
+🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
+після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
+стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
+з warn на **error** і діють на host `src/`, обидва пакети роутів, усі пʼять
+`*-ui`-пакетів воронки й компоненти тем — новий кириличний рядок інтерфейсу
+там валить лінт. Селектори не послабляти.
+
+🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
+три атрибути (~64 % рядків). Доводять чотири committed-тести —
+`tests/i18n-coverage.test.ts` (AST-скан, порожній `PENDING_FILES`),
+`tests/i18n-catalog-parity.test.ts` (повнота `en`),
+`packages/i18n/src/__tests__/catalog-integrity.test.ts` (дублікати ключів),
+`tests/theme-messages-parity.test.ts` (повнота каталогів тем).
+
+**Що покрито (2026-08-09).** `SCANNED_ROOTS` у `tests/i18n-coverage/scan.ts` —
+host `src/`, обидва пакети роутів, уся воронка покупки (`cart-ui`,
+`catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), `core`, `storefront`,
+`theme-system`, `plugin-system` і обидві теми. Тобто `locale: 'en-US'` дає
+англійський магазин цілком, а не змішаний.
+
+🔴 **Каталогів тепер ДВА рівні, і плутати їх не можна.** Core-каталог
+(`packages/i18n/src/catalogs/{uk,en}/`) типізований замкненим union-ом
+`MessageKey` — саме він дає перевірку одруків. Тема несе **власний**
+каталог (`ThemeModule.messages`, `themes/<name>/messages.ts`) і читається
+хуком `useThemeT()`, а не `useT()`. Класти копірайт теми в core-каталог
+заборонено: це зламало б типізацію ядра й змішало шари. Ланцюжок:
+`theme[locale]` → `theme.uk` → сам ключ.
+
+🔴 Що ЩЕ не покрито: `plugins/hello-world` (2 рядки). Плагіни мають отримати
+власні каталоги тим самим механізмом, що й теми (спека платформи §12) — поки
+не зроблено, тому їх немає в `SCANNED_ROOTS`.
 
 ## Tech Stack
 

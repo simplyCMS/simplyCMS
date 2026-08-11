@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useFormatPrice } from '@simplycms/react-query';
 import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
@@ -49,6 +50,7 @@ interface UserWithDetails {
 export default function Users() {
   const t = useT();
   const supabase = useSupabaseClient();
+  const formatPrice = useFormatPrice();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -162,14 +164,6 @@ export default function Users() {
     return (
       (first + last).toUpperCase() || user.email?.[0]?.toUpperCase() || '?'
     );
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(amount);
   };
 
   return (
@@ -310,9 +304,7 @@ export default function Users() {
                     {user.total_orders > 0 ? user.total_orders : '—'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {user.total_spent > 0
-                      ? formatCurrency(user.total_spent)
-                      : '—'}
+                    {user.total_spent > 0 ? formatPrice(user.total_spent) : '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {format(new Date(user.created_at), 'dd MMM yyyy', {

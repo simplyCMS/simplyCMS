@@ -59,4 +59,57 @@ export const messages = {
   'profile.password.changed': 'Пароль змінено',
   'profile.password.changedHint': 'Ваш пароль успішно оновлено',
   'profile.password.failed': 'Не вдалось змінити пароль',
+
+  // Адреси доставки — CRUD-віджет у профілі (@simplycms/profile-ui, AddressesList)
+  'profile.addresses.title': 'Адреси доставки',
+  'profile.addresses.empty': 'Ви ще не додали жодної адреси',
+  'profile.addresses.deleted': 'Адресу видалено',
+  'profile.addresses.editTitle': 'Редагування адреси',
+  'profile.addresses.namePlaceholder': 'Дім, Робота...',
+  'profile.addresses.cityPlaceholder': 'Київ',
+  'profile.addresses.addressPlaceholder': 'вул. Хрещатик, 1, кв. 1',
+  'profile.addresses.deleteTitle': 'Видалити адресу «{name}»?',
+  'profile.addresses.deleteUsedOne':
+    'Ця адреса використовується в {count} замовленні.',
+  'profile.addresses.deleteUsedMany':
+    'Ця адреса використовується в {count} замовленнях.',
+  'profile.addresses.deleteKeepsData': 'Дані адреси в замовленнях збережуться.',
+  'profile.addresses.deleteConfirm':
+    'Ви впевнені, що хочете видалити цю адресу?',
+
+  // Отримувачі — CRUD-віджет у профілі (@simplycms/profile-ui, RecipientsList)
+  'profile.recipients.title': 'Отримувачі',
+  'profile.recipients.empty': 'Ви ще не додали жодного отримувача',
+  'profile.recipients.deleted': 'Отримувача видалено',
+  'profile.recipients.defaultBadge': 'Основний',
+  'profile.recipients.editTitle': 'Редагування отримувача',
+  'profile.recipients.emailOptionalLabel': "Email (необов'язково)",
+  'profile.recipients.notesLabel': 'Нотатки',
+  'profile.recipients.notesPlaceholder': 'Наприклад: Мама, колега...',
+  'profile.recipients.defaultCheckboxLabel': 'Основний отримувач',
+  'profile.recipients.deleteTitle': 'Видалити отримувача «{fullName}»?',
+  'profile.recipients.deleteUsedOne':
+    'Цей контакт використовується в {count} замовленні.',
+  'profile.recipients.deleteUsedMany':
+    'Цей контакт використовується в {count} замовленнях.',
+  'profile.recipients.deleteKeepsData':
+    'Дані отримувача в замовленнях збережуться.',
+  'profile.recipients.deleteConfirm':
+    'Ви впевнені, що хочете видалити цього отримувача?',
+
+  // Бейдж «використано в N замовленнях» — спільний для адрес і отримувачів.
+  // 🔴 Лише дві форми, не три: локатив розрізняє однину/множину, а не
+  // 1/2-4/5+ як родовий відмінок — тому «few»-форма тут не потрібна.
+  'profile.usedInOrders.one': 'Використано в {count} замовленні',
+  'profile.usedInOrders.many': 'Використано в {count} замовленнях',
+
+  // Фото профілю (@simplycms/profile-ui, AvatarUpload)
+  'profile.avatar.uploadError': 'Помилка завантаження',
+  'profile.avatar.unsupportedFormat': 'Підтримуються тільки JPG, PNG та WebP',
+  'profile.avatar.tooLarge': 'Максимальний розмір файлу 5MB',
+  'profile.avatar.updated': 'Аватар оновлено',
+  'profile.avatar.removed': 'Аватар видалено',
+  'profile.avatar.deleteError': 'Помилка видалення',
+  'profile.avatar.uploadButton': 'Завантажити фото',
+  'profile.avatar.formatHint': 'JPG, PNG або WebP. Макс. 5MB.',
 } as const;

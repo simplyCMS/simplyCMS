@@ -1,5 +1,6 @@
 import { cn } from '@simplycms/ui/utils';
 import { Check } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -33,6 +34,8 @@ export function ModificationSelector({
   prices = {},
   stockByModification = {},
 }: ModificationSelectorProps) {
+  const t = useT();
+
   if (modifications.length <= 1) {
     return null;
   }
@@ -55,7 +58,9 @@ export function ModificationSelector({
 
   return (
     <div className="space-y-3">
-      <label className="text-base font-medium">Модифiкацiя</label>
+      <label className="text-base font-medium">
+        {t('product.modification')}
+      </label>
       <div className="grid gap-3">
         {modifications.map((mod) => {
           const availability = getModificationAvailability(mod);
@@ -109,7 +114,7 @@ export function ModificationSelector({
                   </div>
                   {mod.sku && (
                     <div className="text-xs text-muted-foreground">
-                      Артикул: {mod.sku}
+                      {t('product.sku', { sku: mod.sku })}
                     </div>
                   )}
                 </div>
@@ -117,12 +122,12 @@ export function ModificationSelector({
               <div className="flex items-center gap-3">
                 {isUnavailable && (
                   <span className="text-xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
-                    Немає в наявностi
+                    {t('product.outOfStock')}
                   </span>
                 )}
                 {availability.isOnOrder && (
                   <span className="text-xs px-2 py-0.5 rounded border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
-                    Пiд замовлення
+                    {t('product.onOrder')}
                   </span>
                 )}
                 {availability.isAvailable &&
@@ -130,7 +135,9 @@ export function ModificationSelector({
                   availability.totalQuantity > 0 && (
                     <span className="text-xs px-2 py-0.5 rounded border border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20 flex items-center gap-1">
                       <Check className="h-3 w-3" />
-                      {availability.totalQuantity} шт
+                      {t('product.unitsCount', {
+                        count: availability.totalQuantity,
+                      })}
                     </span>
                   )}
 

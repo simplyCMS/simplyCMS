@@ -1,5 +1,9 @@
 import { Minus, Plus, X } from 'lucide-react';
-import type { CartItem as CartItemType } from '@simplycms/react-query';
+import {
+  type CartItem as CartItemType,
+  useFormatPrice,
+} from '@simplycms/react-query';
+import { useT } from '@simplycms/i18n';
 
 // Presentational-компонент позиції кошика: лише props, без data/стану.
 // HUB може реюзати його зі своїм контейнером.
@@ -9,19 +13,14 @@ export interface CartItemViewProps {
   onRemove: () => void;
 }
 
-function formatPrice(value: number): string {
-  return new Intl.NumberFormat('uk-UA', {
-    style: 'currency',
-    currency: 'UAH',
-    minimumFractionDigits: 0,
-  }).format(value);
-}
-
 export function CartItemView({
   item,
   onChangeQuantity,
   onRemove,
 }: CartItemViewProps) {
+  const t = useT();
+  const formatPrice = useFormatPrice();
+
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
       {/* Image */}
@@ -54,7 +53,9 @@ export function CartItemView({
               </p>
             )}
             {item.sku && (
-              <p className="text-xs text-muted-foreground">Арт: {item.sku}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('cart.itemSku', { sku: item.sku })}
+              </p>
             )}
           </div>
           <button

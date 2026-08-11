@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/ui/use-toast';
+import { useT } from '@simplycms/i18n';
 import {
   Eye,
   EyeOff,
@@ -26,6 +27,7 @@ export function CheckoutAuthBlock({
 }: CheckoutAuthBlockProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+  const t = useT();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,22 +60,24 @@ export function CheckoutAuthBlock({
       if (error) {
         let errorMessage = error.message;
         if (error.message === 'Invalid login credentials') {
-          errorMessage = 'Невiрний email або пароль.';
+          errorMessage = t('checkout.auth.invalidCredentials');
         }
         setAuthError(errorMessage);
         toast({
           variant: 'destructive',
-          title: 'Помилка входу',
+          title: t('auth.login.failed'),
           description: errorMessage,
         });
       } else {
-        setAuthSuccess('Успiшний вхiд!');
-        toast({ title: 'Успiшний вхiд!' });
+        setAuthSuccess(t('checkout.auth.loginSuccess'));
+        toast({ title: t('checkout.auth.loginSuccess') });
         onAuthSuccess?.();
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Щось пiшло не так.';
+        error instanceof Error
+          ? error.message
+          : t('checkout.auth.genericError');
       setAuthError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -107,25 +111,27 @@ export function CheckoutAuthBlock({
       if (error) {
         let errorMessage = error.message;
         if (error.message.includes('already registered')) {
-          errorMessage = 'Цей email вже зареєстровано.';
+          errorMessage = t('checkout.auth.emailAlreadyRegistered');
         }
         setAuthError(errorMessage);
         toast({
           variant: 'destructive',
-          title: 'Помилка реєстрацiї',
+          title: t('auth.register.failed'),
           description: errorMessage,
         });
       } else if (signUpData?.user && !signUpData.session) {
-        setAuthSuccess('Реєстрацiя успiшна! Перевiрте вашу пошту.');
-        toast({ title: 'Перевiрте пошту!' });
+        setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
+        toast({ title: t('checkout.auth.checkEmailToast') });
       } else if (signUpData?.user && signUpData.session) {
-        setAuthSuccess('Реєстрацiя успiшна!');
-        toast({ title: 'Реєстрацiя успiшна!' });
+        setAuthSuccess(t('checkout.auth.registerSuccess'));
+        toast({ title: t('checkout.auth.registerSuccess') });
         onAuthSuccess?.();
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Щось пiшло не так.';
+        error instanceof Error
+          ? error.message
+          : t('checkout.auth.genericError');
       setAuthError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -137,10 +143,10 @@ export function CheckoutAuthBlock({
       <div className="p-4 border-b">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <User className="h-5 w-5" />
-          Данi покупця
+          {t('checkout.auth.title')}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Увiйдiть для швидкого оформлення або продовжуйте як гiсть
+          {t('checkout.auth.subtitle')}
         </p>
       </div>
       <div className="p-4">
@@ -160,9 +166,13 @@ export function CheckoutAuthBlock({
         {/* Tabs */}
         <div className="grid grid-cols-3 gap-1 bg-muted p-1 rounded-lg mb-4">
           {[
-            { value: 'guest', icon: UserX, label: 'Гiсть' },
-            { value: 'login', icon: LogIn, label: 'Увiйти' },
-            { value: 'register', icon: UserPlus, label: 'Реєстрацiя' },
+            { value: 'guest', icon: UserX, label: t('checkout.auth.guestTab') },
+            { value: 'login', icon: LogIn, label: t('auth.login.submit') },
+            {
+              value: 'register',
+              icon: UserPlus,
+              label: t('auth.register.title'),
+            },
           ].map((tab) => (
             <button
               key={tab.value}
@@ -185,10 +195,7 @@ export function CheckoutAuthBlock({
         {/* Guest Tab */}
         {activeTab === 'guest' && (
           <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
-            <p>
-              Оформiть замовлення без реєстрацiї. Вкажiть email або телефон для
-              зв&apos;язку.
-            </p>
+            <p>{t('checkout.auth.guestHint')}</p>
           </div>
         )}
 
@@ -210,7 +217,9 @@ export function CheckoutAuthBlock({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Пароль</label>
+              <label className="text-sm font-medium mb-1 block">
+                {t('auth.password')}
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -242,7 +251,7 @@ export function CheckoutAuthBlock({
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Увiйти
+              {t('auth.login.submit')}
             </button>
           </div>
         )}
@@ -253,10 +262,10 @@ export function CheckoutAuthBlock({
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Iм&apos;я
+                  {t('common.firstName')}
                 </label>
                 <input
-                  placeholder="Iван"
+                  placeholder={t('auth.firstNamePlaceholder')}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   disabled={isLoading}
                   value={regFirstName}
@@ -265,10 +274,10 @@ export function CheckoutAuthBlock({
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Прiзвище
+                  {t('common.lastName')}
                 </label>
                 <input
-                  placeholder="Петренко"
+                  placeholder={t('auth.lastNamePlaceholder')}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   disabled={isLoading}
                   value={regLastName}
@@ -291,7 +300,9 @@ export function CheckoutAuthBlock({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Пароль</label>
+              <label className="text-sm font-medium mb-1 block">
+                {t('auth.password')}
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -323,7 +334,7 @@ export function CheckoutAuthBlock({
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Зареєструватися
+              {t('auth.register.submit')}
             </button>
           </div>
         )}

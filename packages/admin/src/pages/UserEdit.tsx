@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useFormatPrice } from '@simplycms/react-query';
 import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
@@ -51,6 +52,7 @@ import { uk } from 'date-fns/locale';
 export default function UserEdit() {
   const t = useT();
   const supabase = useSupabaseClient();
+  const formatPrice = useFormatPrice();
   const { userId } = useParams({ strict: false }) as { userId: string };
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -223,14 +225,6 @@ export default function UserEdit() {
       });
     },
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getInitials = () => {
     const first = profile?.first_name?.[0] || '';
@@ -460,7 +454,7 @@ export default function UserEdit() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold">
-                  {formatCurrency(stats?.total_purchases || 0)}
+                  {formatPrice(stats?.total_purchases || 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {t('admin.users.totalSpent')}
@@ -528,7 +522,7 @@ export default function UserEdit() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(order.total)}
+                        {formatPrice(order.total)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(new Date(order.created_at), 'dd.MM.yyyy', {

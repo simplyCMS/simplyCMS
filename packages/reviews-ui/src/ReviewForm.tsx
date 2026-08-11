@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useT } from '@simplycms/i18n';
 import { StarRating } from './StarRating';
 
 interface ReviewFormProps {
@@ -33,6 +34,7 @@ export function ReviewForm({
   renderEditor,
   renderImageUpload,
 }: ReviewFormProps) {
+  const t = useT();
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -55,10 +57,12 @@ export function ReviewForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 border rounded-lg p-4">
-      <h3 className="font-semibold text-lg">Написати вiдгук</h3>
+      <h3 className="font-semibold text-lg">{t('reviews.writeReview')}</h3>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">Оцiнка *</label>
+        <label className="text-sm font-medium">
+          {t('reviews.form.ratingLabel')}
+        </label>
         <StarRating
           value={rating}
           onChange={(v) => {
@@ -68,33 +72,37 @@ export function ReviewForm({
           size="lg"
         />
         {ratingError && (
-          <p className="text-sm text-destructive">Оберiть оцiнку</p>
+          <p className="text-sm text-destructive">
+            {t('reviews.form.ratingRequired')}
+          </p>
         )}
       </div>
 
       <div className="space-y-1">
         <label htmlFor="review-title" className="text-sm font-medium">
-          Заголовок (необов&apos;язково)
+          {t('reviews.form.titleLabel')}
         </label>
         <input
           id="review-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Коротко про враження"
+          placeholder={t('reviews.form.titlePlaceholder')}
           maxLength={200}
           className="w-full px-3 py-2 border rounded-md text-sm"
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">Текст вiдгуку</label>
+        <label className="text-sm font-medium">
+          {t('reviews.form.contentLabel')}
+        </label>
         {renderEditor ? (
           renderEditor({ content, onChange: setContent })
         ) : (
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Напишiть ваш вiдгук..."
+            placeholder={t('reviews.form.contentPlaceholder')}
             className="w-full px-3 py-2 border rounded-md text-sm resize-none min-h-[120px]"
           />
         )}
@@ -102,7 +110,9 @@ export function ReviewForm({
 
       {renderImageUpload && (
         <div className="space-y-1">
-          <label className="text-sm font-medium">Фото (до 5)</label>
+          <label className="text-sm font-medium">
+            {t('reviews.form.photosLabel')}
+          </label>
           {renderImageUpload({
             images,
             onImagesChange: setImages,
@@ -119,7 +129,7 @@ export function ReviewForm({
         className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium flex items-center"
       >
         {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        Надiслати вiдгук
+        {t('reviews.form.submit')}
       </button>
     </form>
   );

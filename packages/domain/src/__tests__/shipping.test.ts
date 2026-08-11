@@ -107,11 +107,31 @@ describe('calculateShipping', () => {
 });
 
 describe('formatShippingCost', () => {
-  it('formats edge cases', () => {
-    expect(formatShippingCost(null)).toBe('За тарифами');
-    expect(formatShippingCost(-1)).toBe('За тарифами');
-    expect(formatShippingCost(0)).toBe('Безкоштовно');
-    expect(formatShippingCost(100)).toContain('100');
+  const UA = { locale: 'uk-UA', currency: 'UAH' };
+  // Підписи передає кол-сайт: домен володіє логікою вибору стану, але не
+  // текстом. Тут беремо маркери, а не реальні переклади, — так тест падає
+  // саме на переплутаній ГІЛЦІ, а не на зміні формулювання в каталозі.
+  const LABELS = { byTariff: '<byTariff>', free: '<free>' };
+
+  it('стан визначається за значенням, а не за наявністю тексту', () => {
+    expect(formatShippingCost(null, UA, LABELS)).toBe('<byTariff>');
+    expect(formatShippingCost(-1, UA, LABELS)).toBe('<byTariff>');
+    expect(formatShippingCost(0, UA, LABELS)).toBe('<free>');
+    expect(formatShippingCost(100, UA, LABELS)).toContain('100');
+  });
+
+  /**
+   * 🔴 Регресія: до 2026-08-09 функція повертала «За тарифами»/«Безкоштовно»
+   * рядковими літералами прямо з T1-пакета, і англомовний магазин показував
+   * українську вартість доставки в підсумку замовлення. Домен більше не має
+   * права знати ЖОДНОГО тексту інтерфейсу.
+   */
+  it('не містить власного тексту інтерфейсу', () => {
+    const out = [null, -1, 0, 100].map((c) =>
+      formatShippingCost(c, UA, LABELS),
+    );
+
+    expect(out.join(' ')).not.toMatch(/[А-Яа-яЇїІіЄєҐґ]/);
   });
 });
 

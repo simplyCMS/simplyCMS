@@ -15,6 +15,8 @@ import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useT } from '@simplycms/i18n';
+import { useThemeT } from '@simplycms/themes/useThemeT';
 import { AnnouncementBar } from './AnnouncementBar';
 import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
 import { useState } from 'react';
@@ -25,8 +27,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@simplycms/ui/dropdown-menu';
+import type { DefaultThemeKey } from '../messages';
 
 export function Header() {
+  const t = useT();
+  const tt = useThemeT<DefaultThemeKey>();
   const supabase = useSupabaseClient();
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { totalItems, setIsOpen } = useCart();
@@ -52,7 +57,7 @@ export function Header() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast({ title: 'Вихід виконано' });
+    toast({ title: tt('theme.header.signedOut') });
   };
 
   return (
@@ -122,13 +127,15 @@ export function Header() {
                     <DropdownMenuItem
                       onClick={() => navigate({ to: '/profile' })}
                     >
-                      <User className="mr-2 h-4 w-4" /> Мій кабінет
+                      <User className="mr-2 h-4 w-4" />{' '}
+                      {tt('theme.header.myAccount')}
                     </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem
                         onClick={() => navigate({ to: '/admin' })}
                       >
-                        <Settings className="mr-2 h-4 w-4" /> Адмін-панель
+                        <Settings className="mr-2 h-4 w-4" />{' '}
+                        {tt('theme.header.adminPanel')}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
@@ -136,7 +143,7 @@ export function Header() {
                       onClick={handleSignOut}
                       className="text-destructive"
                     >
-                      <LogOut className="mr-2 h-4 w-4" /> Вийти
+                      <LogOut className="mr-2 h-4 w-4" /> {t('nav.signOut')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -176,7 +183,7 @@ export function Header() {
               to="/catalog"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors uppercase tracking-wider"
             >
-              Каталог
+              {t('catalog.title')}
             </Link>
             {sections?.map((s) => (
               <Link
@@ -200,7 +207,7 @@ export function Header() {
                 className="block py-2 text-sm font-medium text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Каталог
+                {t('catalog.title')}
               </Link>
               {sections?.map((s) => (
                 <Link
