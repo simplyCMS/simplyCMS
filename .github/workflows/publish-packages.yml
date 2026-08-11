@@ -13,7 +13,13 @@ name: Publish Packages
 #   • версія у всіх пакетів СИНХРОННА, бампається вручну: `pnpm version:packages 0.2.0`
 #     (див. `scripts/version-packages.mjs`), далі звичайний PR у main;
 #   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині
-#     (частково опубліковані пакети другий раз не публікуються).
+#     (частково опубліковані пакети другий раз не публікуються);
+#   • після УСПІШНОЇ публікації CI ставить анотований тег `vX.Y.Z` на
+#     поточний SHA і пушить його в origin — тег означає «опубліковано», а не
+#     «підготовлено» (версію бере з манифеста, не з імені гілки). Крок
+#     ідемпотентний: якщо тег уже є в remote (ретрай `workflow_dispatch` на
+#     вже опубліковану версію), він лише логує це й виходить — див.
+#     docs/architecture/release-process.md, розділ «Теги релізів».
 #
 # Потрібен secret `NPM_TOKEN` — **Granular Access Token із увімкненим
 # «Bypass 2FA»**, scope @simplycms, permission read+write.
@@ -33,6 +39,12 @@ jobs:
     name: Publish to npmjs
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # 🔴 Мінімально необхідний обсяг: лише `contents: write`, і лише заради
+    # push тега після публікації (крок «Tag release» нижче). Дефолт репо —
+    # read-only (permissions блоку раніше не було), тож без цього push тега
+    # падав би з 403 ще до першого релізу з тегом.
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -78,3 +90,35 @@ jobs:
         run: pnpm publish -r --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Тег ставимо ЛИШЕ після успішної публікації (цей крок не запуститься,
+      # якщо впав крок Publish — дефолтна поведінка GitHub Actions), тож
+      # тег `vX.Y.Z` означає «опубліковано», а не «підготовлено». Версію
+      # беремо з манифеста (те саме джерело правди, що й у `pnpm release`),
+      # а не з імені гілки — гілка релізу не завжди канонічна
+      # `release/vX.Y.Z` (release-process.md, крок 2).
+      #
+      # 🔴 Ідемпотентність: `workflow_dispatch` — ручний ретрай після падіння
+      # на середині. `pnpm publish -r` сам пропускає вже опубліковані версії
+      # (no-op), тож повторний прогін дійде і до цього кроку з тією самою
+      # версією. Без явної перевірки `git push origin refs/tags/vX` на вже
+      # існуючий тег впав би (non-fast-forward) — перевіряємо REMOTE
+      # (`git ls-remote`), не локальний `git tag --list`: у щойно
+      # зачекаутченому раннері локальних тегів немає в принципі, тож
+      # локальна перевірка була б завжди порожньою і сенсу не мала б.
+      - name: Tag release
+        run: |
+          set -euo pipefail
+          VERSION="$(node -e "import('./scripts/release/bump.mjs').then(m => console.log(m.currentVersion()))")"
+          TAG="v${VERSION}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null; then
+            echo "Тег ${TAG} уже є в remote — пропускаю (ретрай або no-op публікація)."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Реліз ${TAG}: опубліковано на npmjs"
+          git push origin "refs/tags/${TAG}"
+          echo "Тег ${TAG} створено і запушено."
