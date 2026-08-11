@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/runtime",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": false,
   "description": "SimplyCMS engine runtime (Tier 2): defineRuntime assembles the EngineContext from adapters; defineConfig declares the host site config.",
   "type": "module",
