@@ -30,7 +30,7 @@
 ```
 монорепо → build:packages → pnpm pack → npm registry → create-store → магазин
 └── pnpm test ┘
-└──────── pilot:pack (A/C/D/CLI) ────────┘
+└───── pilot:pack (A/C/D/CLI/TOOL) ──────┘
 └──────────── pilot:e2e (+B/E) ───────────────────────────┘
                                         └── НЕ ПОКРИТО ────────────────┘
 ```
@@ -53,6 +53,15 @@
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` | `gate-d.mjs` |
 | **E** | Перший signup НЕ отримує `admin` (міграція в живій схемі); `owner:invite` ідемпотентний; `/auth/confirm` ставить cookies і редиректить | `gate-e.mjs` |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies` | `create-pkg-smoke.mjs` |
+| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball, канон `host/` непорожній (без нього `update` — пустушка), рантайм-deps оголошені в манифесті | `tool-pkg-smoke.mjs` |
+
+🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
+**CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук
+ІНСТРУМЕНТА `@simplycms/cli` (bin `simplycms`). Обидва перевіряють упакований
+артефакт, але різні пакети — не плутати. Той самий смоук ганяється двічі:
+кроком пілота (`run.mjs` — Gate TOOL, як і Gate CLI, не потребує ні БД, ні
+скретча) і в packaging-сюїті через `tests/cli-pack.test.ts` (виключений із
+дефолтного `pnpm test`, як `create-store-pack.test.ts`).
 
 🔴 Gate E — **єдине** місце, де взагалі виконується міграція
 `first_user_no_auto_admin` і invite-флоу.

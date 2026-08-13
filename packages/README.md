@@ -27,6 +27,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/checkout-ui` | T4 | Оформлення: форми контактів, доставки, оплати, отримувача + підсумок |
 | `@simplycms/profile-ui` | T4 | Профіль: адреси, отримувачі, аватар |
 | `@simplycms/reviews-ui` | T4 | Відгуки: `ProductReviews`, `StarRating` |
+| `@simplycms/cli` | — | CLI магазину (bin `simplycms`): `doctor`/`add`/`update`/`db:diff`. `host/` — канон host-файлів; виконується в магазині, поза тірами |
 | `create-simplycms-store` | — | CLI-скаффолдер магазину (unscoped). Вбудований шаблон — джерело правди каркаса |
 
 > See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
@@ -35,8 +36,10 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 Ці пакети живуть у монорепо SimplyCMS — окремих форків/копій у магазинах немає.
 Магазини споживають ядро як звичайні npm-залежності: публікація на npmjs
-працює з 2026-08-03, поточна версія — `0.2.1` (усі 22 пакети завжди мають одну
-версію). Розширення відбувається через плагіни й теми, а не форк ядра.
+працює з 2026-08-03; версія синхронна — усі 23 пакети (22 `@simplycms/*` +
+unscoped скаффолдер) завжди мають одну версію, актуальний номер — у
+[`CHANGELOG.md`](../CHANGELOG.md). Розширення відбувається через плагіни й
+теми, а не форк ядра.
 
 Найшвидший шлях завести магазин — `pnpm create simplycms-store`: скаффолдер
 приводить усе ядро разом і в узгоджених версіях.

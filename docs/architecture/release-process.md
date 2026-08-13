@@ -1,10 +1,10 @@
 # Реліз ядра: публікація пакетів на npmjs
 
-Ядро SimplyCMS — 21 пакет `@simplycms/*` (плюс unscoped
-`create-simplycms-store`), які публікуються на **npmjs** під
-scope `@simplycms`, + 22-й пакет `create-simplycms-store` (unscoped, CLI-
-скаффолдер із вбудованим шаблоном магазину, `packages/create-simplycms-store/`).
-Цей документ описує, як випустити нову версію.
+Ядро SimplyCMS — **23 публіковані пакети**: 22 `@simplycms/*` під scope
+`@simplycms` + 1 unscoped `create-simplycms-store` (CLI-скаффолдер із
+вбудованим шаблоном магазину, `packages/create-simplycms-store/`). Лічильник
+виріс із 22 до 23 2026-08-13, коли додався `@simplycms/cli` (scoped, bin
+`simplycms`). Цей документ описує, як випустити нову версію.
 
 ## Коротко
 
@@ -19,10 +19,10 @@ gh pr create --base main --title "Реліз v0.2.0"
 
 ## Модель версіонування
 
-**Версія синхронна.** Усі 22 пакети завжди мають одну версію — споживач бачить
-одне число «версія ядра» і не звіряє таблицю сумісності 22 пакетів між собою.
+**Версія синхронна.** Усі 23 пакети завжди мають одну версію — споживач бачить
+одне число «версія ядра» і не звіряє таблицю сумісності 23 пакетів між собою.
 `scripts/release/bump.mjs` сканує одну теку `packages/*` і бампає все, що не
-позначене `private`: 21 `@simplycms/*` + unscoped `create-simplycms-store`.
+позначене `private`: 22 `@simplycms/*` + unscoped `create-simplycms-store`.
 До сплощення теки (2026-08-04) скаффолдер жив поза `packages/simplycms/` і
 потребував окремого списку-винятку — тепер він не потрібен.
 
@@ -30,9 +30,9 @@ gh pr create --base main --title "Реліз v0.2.0"
 Це свідомий компроміс на користь простоти; незалежні версії (Changesets) —
 можливий крок пізніше, коли пакети почнуть жити різними циклами.
 
-### 22-й пакет: `create-simplycms-store` (unscoped)
+### Unscoped-пакет: `create-simplycms-store`
 
-На відміну від 21 `@simplycms/*`-пакета, `create-simplycms-store` — unscoped
+На відміну від 22 `@simplycms/*`-пакетів, `create-simplycms-store` — unscoped
 (без `@simplycms/` префікса, бо `pnpm create simplycms-store` — угода іменування
 npm для `create-*` CLI). Наслідки для реліз-потяга:
 
@@ -51,8 +51,25 @@ npm для `create-*` CLI). Наслідки для реліз-потяга:
   чи `vite`, і правило «все під `@simplycms`» до нього не дотягується. Додати
   його в granular-токен наперед теж не можна: npm дає вибирати лише з
   **наявних** пакетів. Розв'язано перемиканням токена на **`All Packages`**
-  (Read and write + Bypass 2FA) — це покриває і скаффолдер, і майбутній
-  unscoped `simplycms` CLI (Фаза 3), тож повторювати процедуру не доведеться.
+  (Read and write + Bypass 2FA) — це покриває і скаффолдер, і будь-який
+  майбутній unscoped-пакет, тож повторювати процедуру не доведеться.
+  Уточнення 2026-08-13: сам CLI зрештою вийшов **під scope** —
+  `@simplycms/cli` (Фаза 2, спека CLI v1 §1), тож чинний токен покривав його
+  ще до створення; «майбутній unscoped `simplycms`» лишається хіба можливим
+  тонким пакетом-аліасом поверх `@simplycms/cli` — окремою дією власника.
+
+### Другий bin-пакет: `@simplycms/cli` (scoped)
+
+З 2026-08-13 у реліз-потягу є другий пакет із `bin` — `@simplycms/cli`
+(бінарник `simplycms`: `doctor` / `add` / `update` / `db:diff`; спека —
+[`2026-08-13-cli-v1-design.md`](../superpowers/specs/2026-08-13-cli-v1-design.md)).
+На відміну від скаффолдера він scoped, тож окремих рухів із токеном не
+потребував. Форма та сама: чистий ESM `.mjs` **без build-кроку**
+(`pnpm build:packages` його пропускає — немає скрипту `build`), у tarball
+їдуть сирці `src/` + канон host-файлів `host/` (синхронізується
+`pnpm template:sync`). Смоук упакованого пакета — **Gate TOOL**
+([`test-contours.md`](test-contours.md) §3; не плутати з Gate CLI — той про
+скаффолдер).
 
 Розходження версій між пакетами — **помилка стану**. `pnpm release` на неї
 падає й вимагає спершу вирівняти (`pnpm version:packages X.Y.Z`), бо інакше
@@ -161,13 +178,14 @@ Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `m
 **Мерж без бампа версії безпечний — але лише для пакетів, які вже в реєстрі.**
 `pnpm publish -r` викликає `isAlreadyPublished`, а це `resolve()` проти реєстру
 в `try/catch` з `catch { return false }`: пакет ІДЕ в публікацію, якщо реєстр
-відповів 404 (пакета там нема), а не лише коли версія свіжіша. Для всіх 21
-`@simplycms/*` поточної версії це no-op. 🔴 Так само було з
+відповів 404 (пакета там нема), а не лише коли версія свіжіша. Для всіх уже
+опублікованих `@simplycms/*` поточної версії це no-op. 🔴 Так само було з
 `create-simplycms-store`, поки його не було в реєстрі: перший мерж опублікував
 його незалежно від бампу. Зараз він там є (`npm view create-simplycms-store
-version` → `0.2.1`), тож правило знову зводиться до «no-op без бампа» — але
+version`), тож правило знову зводиться до «no-op без бампа» — але
 для БУДЬ-ЯКОГО нового пакета воно не діє, і введення такого пакета стає
-релізним рішенням у момент мержу. З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
+релізним рішенням у момент мержу. Саме за цим правилом їде в реєстр і
+`@simplycms/cli`: його публікує мерж гілки CLI v1 у `main` (2026-08-13). З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
 прогону, що впав на середині, — **для вже опублікованих** пакетів вони другий
 раз не публікуються.
 
@@ -182,10 +200,10 @@ version` → `0.2.1`), тож правило знову зводиться до 
 🔴 **Токен має бути Granular Access Token із увімкненим «Bypass 2FA»**
 (Packages and scopes → **`All Packages`**, permission **Read and write**).
 Саме `All Packages`, а не `Only select packages and scopes` зі scope
-`@simplycms`: у монорепо є unscoped-пакети (`create-simplycms-store`, надалі
-`simplycms` CLI), а scope-правило їх не покриває — деталі вище, в розділі про
-22-й пакет. З листопада 2025 classic/automation-токени npm прибрав, granular —
-єдиний доступний тип.
+`@simplycms`: у монорепо є unscoped-пакет (`create-simplycms-store`; CLI
+зрештою пішов під scope — `@simplycms/cli`), а scope-правило його не
+покриває — деталі вище, в розділі про unscoped-пакет. З листопада 2025
+classic/automation-токени npm прибрав, granular — єдиний доступний тип.
 
 Це не формальність, а перевірено падінням першого релізу (2026-08-03):
 ```
