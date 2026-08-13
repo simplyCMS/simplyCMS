@@ -44,6 +44,34 @@ const I18N_MIGRATED_FILES = [
   'themes/*/components/**/*.tsx',
 ];
 
+// Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ
+// з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
+// Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
+// `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
+// (див. packages/supabase/src/__tests__/env-source.test.ts).
+const IMPORT_META_ENV =
+  'MemberExpression[object.type="MetaProperty"][property.name="env"]';
+
+const serverEnvRestrictedSyntax = [
+  {
+    selector: IMPORT_META_ENV,
+    message:
+      'Серверний модуль читає env ЛИШЕ з process.env у рантаймі; import.meta.env запікається в білд. Контракт серверного env — спека CLI v1 §7 (docs/superpowers/specs/2026-08-13-cli-v1-design.md).',
+  },
+];
+
+// ТОЧНО серверні модулі контракту §7. browser-client.ts та ізоморфний код
+// (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
+// потрібне в бандлі, сюди їх НЕ додавати.
+const SERVER_ENV_FILES = [
+  'packages/supabase/src/server-client.ts',
+  'packages/supabase/src/anon-client.ts',
+  'packages/storefront-routes/src/seo/robots.ts',
+  'packages/storefront-routes/src/seo/sitemap.ts',
+  'packages/storefront-routes/routes/api/health.tsx',
+  'src/start.ts',
+];
+
 const eslintConfig = [
   ...tseslint.configs.recommended,
   {
@@ -86,6 +114,20 @@ const eslintConfig = [
     files: I18N_MIGRATED_FILES,
     rules: {
       'no-restricted-syntax': ['error', ...i18nRestrictedSyntax],
+    },
+  },
+  {
+    // Серверні модулі контракту env (§7). `health.tsx` входить і в
+    // I18N_MIGRATED_FILES, а flat config ЗАМІНЮЄ опції правила цілком, не
+    // доливає — тому i18n-селектори повторено тут явно, інакше цей блок
+    // мовчки вимкнув би їх на перетині (у `.ts`-файлах JSX-селектори інертні).
+    files: SERVER_ENV_FILES,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...i18nRestrictedSyntax,
+        ...serverEnvRestrictedSyntax,
+      ],
     },
   },
   {

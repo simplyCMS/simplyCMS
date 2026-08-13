@@ -51,7 +51,7 @@ export async function runGates(opts) {
   results.push(['CLI', createPkgSmoke()]);
 
   step('Gate TOOL — tarball @simplycms/cli');
-  results.push(['TOOL', toolPkgSmoke()]);
+  results.push(['TOOL', await toolPkgSmoke()]);
 
   if (opts.packOnly) {
     // Gate B у `--pack-only` не існує (сервер не піднімається), а Gate E має

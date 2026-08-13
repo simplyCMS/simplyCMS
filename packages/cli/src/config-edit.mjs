@@ -1,11 +1,19 @@
 // Якірне редагування simplycms.config.ts (§4.2 спеки): вставка запису
 // плагіна/теми + читання вже зареєстрованих ключів. AST-редагування свідомо
-// відкладено (§8) — якір не знайдено means чесне падіння, а не вгадування.
+// відкладено (§8), тож insertEntry розрізняє рівно три форми рядка-якоря:
+// багаторядкову (вставка після якоря), однорядкову порожню («plugins: [],» —
+// так pinned prettier згортає порожній блок; розгортаємо в багаторядкову) і
+// однорядкову непорожню — чесне падіння (§3), як і відсутність якоря.
 
 /** Якорі — точні рядки з шаблону магазину (template/simplycms.config.ts). */
 const ANCHORS = {
-  plugin: { anchor: 'plugins: [', label: 'масив plugins' },
-  theme: { anchor: 'themes: {', label: 'обʼєкт themes' },
+  plugin: {
+    anchor: 'plugins: [',
+    open: '[',
+    close: ']',
+    label: 'масив plugins',
+  },
+  theme: { anchor: 'themes: {', open: '{', close: '}', label: 'обʼєкт themes' },
 };
 
 /**
@@ -48,27 +56,58 @@ export function entryLine(type, key, pkg) {
 }
 
 /**
- * Вставка запису одразу після рядка-якоря, з відступом якоря + 2 пробіли.
- * Якір не знайдено — виняток із точним рядком для ручної вставки; джерело
- * не змінюється (падіння — до будь-якого запису на диск).
+ * Вставка запису у блок за якорем, з відступом якоря + 2 пробіли.
+ * Три гілки за формою рядка-якоря:
+ * 1) багаторядкова (блок не закривається на рядку якоря) — запис окремим
+ *    рядком одразу після якоря;
+ * 2) однорядкова ПОРОЖНЯ («plugins: [],» / «themes: {},») — блок
+ *    розгортається в багаторядкову форму зі вставленим записом; сліпа
+ *    вставка після якоря тут потрапила б ПОЗА дужки (битий TS, TS1005/TS1136);
+ * 3) однорядкова НЕПОРОЖНЯ — безпечної точки вставки немає: виняток.
+ * Гілка 3 і «якір не знайдено» — той самий механізм чесного падіння (§3):
+ * виняток із точним рядком для ручної вставки; джерело не змінюється
+ * (падіння — до будь-якого запису на диск).
  * @param {string} source
  * @param {{ type: 'plugin' | 'theme'; key: string; pkg: string }} input
  * @returns {{ source: string; line: string }}
  */
 export function insertEntry(source, { type, key, pkg }) {
-  const { anchor, label } = ANCHORS[type];
+  const { anchor, open, close, label } = ANCHORS[type];
   const entry = entryLine(type, key, pkg);
+  const manual = `Додай вручну в ${label} рядок:\n  ${entry}`;
   const lines = source.split('\n');
   const index = lines.findIndex((line) => line.includes(anchor));
   if (index === -1) {
     throw new Error(
-      `Якір «${anchor}» не знайдено в simplycms.config.ts — файл не змінено.\n` +
-        `Додай вручну в ${label} рядок:\n  ${entry}`,
+      `Якір «${anchor}» не знайдено в simplycms.config.ts — файл не змінено.\n${manual}`,
     );
   }
-  const indent = `${(lines[index].match(/^\s*/) ?? [''])[0]}  `;
-  lines.splice(index + 1, 0, indent + entry);
-  return { source: lines.join('\n'), line: indent + entry };
+  const line = lines[index];
+  const lead = (line.match(/^\s*/) ?? [''])[0];
+  const inserted = `${lead}  ${entry}`;
+  // Однорядкова форма = блок закривається на самому рядку якоря.
+  const block = sliceBlock(line, anchor, open, close);
+  if (block === null) {
+    // Гілка 1: багаторядковий блок — запис одразу після рядка-якоря.
+    lines.splice(index + 1, 0, inserted);
+  } else if (block.slice(anchor.length, -1).trim() === '') {
+    // Гілка 2: порожній однорядковий блок → багаторядкова форма із записом.
+    const start = line.indexOf(anchor);
+    lines.splice(
+      index,
+      1,
+      line.slice(0, start) + anchor,
+      inserted,
+      lead + line.slice(start + block.length - 1),
+    );
+  } else {
+    // Гілка 3: у тих самих дужках уже є вміст — вставку робить людина.
+    throw new Error(
+      `Якір «${anchor}» — однорядковий непорожній блок у simplycms.config.ts, ` +
+        `безпечної точки вставки немає — файл не змінено.\n${manual}`,
+    );
+  }
+  return { source: lines.join('\n'), line: inserted };
 }
 
 /**
@@ -92,7 +131,8 @@ function sliceBlock(source, anchor, open, close) {
 
 /** Ключі обʼєкта themes конфігу; null — якір відсутній. */
 export function configThemeKeys(source) {
-  const block = sliceBlock(source, ANCHORS.theme.anchor, '{', '}');
+  const { anchor, open, close } = ANCHORS.theme;
+  const block = sliceBlock(source, anchor, open, close);
   if (block === null) return null;
   const entries = block.matchAll(
     /(?:^|\n)\s*'?([\w][\w./-]*)'?\s*:\s*\(\)\s*=>\s*import\(/g,
@@ -102,7 +142,8 @@ export function configThemeKeys(source) {
 
 /** Імена плагінів із масиву plugins конфігу; null — якір відсутній. */
 export function configPluginNames(source) {
-  const block = sliceBlock(source, ANCHORS.plugin.anchor, '[', ']');
+  const { anchor, open, close } = ANCHORS.plugin;
+  const block = sliceBlock(source, anchor, open, close);
   if (block === null) return null;
   return [...block.matchAll(/name:\s*'([^']+)'/g)].map((match) => match[1]);
 }

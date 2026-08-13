@@ -16,12 +16,13 @@ import { toolPkgSmoke } from '../scripts/pilot-pack/tool-pkg-smoke.mjs';
 //
 // Герметичність: `pnpm pack` + `tar` + `node`, без мережі й без Docker
 // (залежності беруться симлінком, а їхня ДЕКЛАРАЦІЯ — асертом по манифесту з
-// tarball). tsup-збірки пакет не має, тож смоук самодостатній — свіжий
-// `pnpm build:packages` йому не потрібен.
+// tarball; doctor ганяється на власному скаффолді шаблону з вирізаними
+// VITE_SUPABASE_*, тож онлайн-перевірки не вмикаються). tsup-збірки пакет не
+// має, тож смоук самодостатній — свіжий `pnpm build:packages` йому не потрібен.
 
 describe('@simplycms/cli: смоук опублікованого tarball', () => {
-  it('bin відпрацьовує, host/ у tarball, deps оголошені, версія збігається', () => {
-    const { ok, details } = toolPkgSmoke();
+  it('bin відпрацьовує, host/ у tarball, deps оголошені, версія збігається, doctor живий на скаффолді', async () => {
+    const { ok, details } = await toolPkgSmoke();
     expect(ok, details.join('\n')).toBe(true);
   });
 });

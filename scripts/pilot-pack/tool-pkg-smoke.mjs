@@ -6,8 +6,9 @@
  * Тому тут `pnpm pack` пакета → розпакування в tmp → перевірки артефакту:
  * bin-мапінг `simplycms` → `src/index.mjs`, оголошені рантайм-залежності,
  * наявність непорожньої `host/` (канон для `simplycms update` — її втрата в
- * `files` зробила б команду пустушкою), запуск `--help` з розпакованого і
- * збіг `--version` із версією манифеста.
+ * `files` зробила б команду пустушкою), запуск `--help` з розпакованого,
+ * збіг `--version` із версією манифеста і `doctor` на свіжому скаффолді
+ * шаблону (крок — tool-doctor-smoke.mjs, обіцянка спеки §6).
  *
  * 🔴 `node_modules` розпакованого пакета — симлінк на теку пакета в репо: у
  * tarball залежностей немає, а `pnpm install` тут означав би похід у registry
@@ -28,6 +29,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { doctorSmoke } from './tool-doctor-smoke.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const TOOL_PKG_DIR = join(REPO_ROOT, 'packages/cli');
@@ -36,9 +38,9 @@ const TOOL_PKG_DIR = join(REPO_ROOT, 'packages/cli');
 const EXPECTED_DEPS = ['@clack/prompts'];
 
 /**
- * @returns {{ ok: boolean; details: string[] }}
+ * @returns {Promise<{ ok: boolean; details: string[] }>}
  */
-export function toolPkgSmoke() {
+export async function toolPkgSmoke() {
   const details = [];
   const work = mkdtempSync(join(tmpdir(), 'tool-smoke-'));
   try {
@@ -130,6 +132,10 @@ export function toolPkgSmoke() {
       };
     }
     details.push(`✓ --version: ${version}`);
+
+    const doctor = await doctorSmoke(pkgDir, work, manifest.version);
+    details.push(...doctor.details);
+    if (!doctor.ok) return { ok: false, details };
 
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
