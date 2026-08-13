@@ -9,13 +9,33 @@
  *
  * Запуск: `pnpm start` (порт із `PORT`, за замовчуванням 3000).
  */
+import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { parseEnv } from 'node:util';
 import sirv from 'sirv';
 
 import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
-import serverEntry from './dist/server/server.js';
+
+// Контракт серверного env (спека CLI v1 §7): єдине джерело для серверного
+// коду — `process.env`, а `.env`-файли лише НАПОВНЮЮТЬ його перед стартом
+// (це не fallback, а спосіб наповнення єдиного джерела; їхня відсутність —
+// норма). Пріоритет: реальний env процесу > `.env.local` > `.env` — тому
+// пишемо лише відсутні ключі, а `.env.local` читаємо першим. Файли шукаються
+// в теці запуску (для `pnpm start` — корінь магазину). Наслідок контракту:
+// ротація Supabase-ключів = перезапуск процесу, без перезбірки.
+for (const file of ['.env.local', '.env']) {
+  if (!existsSync(file)) continue;
+  const parsed = parseEnv(readFileSync(file, 'utf8'));
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!(key in process.env)) process.env[key] = value;
+  }
+}
+
+// Динамічний імпорт ПІСЛЯ наповнення env: статичний хоістився б вище циклу,
+// і модуль-рівневий код збірки виконався б до того, як env готовий.
+const { default: serverEntry } = await import('./dist/server/server.js');
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);

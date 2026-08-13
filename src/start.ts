@@ -41,7 +41,10 @@ const adminRequestGuard = createMiddleware().server(
 
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
       // Без env Supabase guard неможливий — пропускаємо (admin однаково не запрацює).
-      if (isSupabaseEnvReady(import.meta.env)) {
+      // Серверний контур читає ЛИШЕ `process.env` у рантаймі (контракт
+      // серверного env, спека CLI v1 §7) — джерело те саме, з якого
+      // `createServerSupabase` нижче візьме ключі.
+      if (isSupabaseEnvReady(process.env)) {
         // Передаємо cookie з request напряму — не залежимо від ALS getRequestHeader.
         // Клієнт типізуємо ТИПАМИ МАГАЗИНУ (core + плагінні таблиці).
         const supabase = createServerSupabase<StoreDatabase>(

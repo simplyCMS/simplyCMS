@@ -16,6 +16,11 @@ import { resolveSupabaseKeys } from './keys';
  *
  * Викликати лише всередині createServerFn handler або middleware.
  *
+ * Контракт серверного env (спека CLI v1, §7): env читається ЛИШЕ з
+ * `process.env` і ЛИШЕ в рантаймі (усередині фабрики, не на модуль-рівні) —
+ * тому ротація Supabase-ключів = перезапуск процесу, без перезбірки.
+ * `process.env` наповнюють `vite.config.ts` (dev) та `server.mjs` (prod).
+ *
  * `Db` — типи БД магазину. За замовчуванням — baseline core-схеми пакета;
  * host зі своїми (плагінними) таблицями підставляє власний згенерований
  * `Database` із `supabase/types.ts`: `createServerSupabase<HostDatabase>()`.
@@ -23,7 +28,7 @@ import { resolveSupabaseKeys } from './keys';
 export function createServerSupabase<Db extends Database = Database>(
   cookieHeader?: string,
 ) {
-  const { url, key } = resolveSupabaseKeys(import.meta.env);
+  const { url, key } = resolveSupabaseKeys(process.env);
 
   return createServerClient<Db>(url, key, {
     cookies: {
