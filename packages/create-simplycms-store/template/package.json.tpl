@@ -95,6 +95,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@simplycms/cli": "__SIMPLYCMS_VERSION__",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/router-generator": "1.166.32",
     "@tanstack/virtual-file-routes": "1.161.7",

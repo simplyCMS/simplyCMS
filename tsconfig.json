@@ -68,6 +68,7 @@
     "**/tsup.config.ts",
     "**/dist",
     "tests/pilot/store-template",
-    "packages/create-simplycms-store/template"
+    "packages/create-simplycms-store/template",
+    "packages/cli/host"
   ]
 }

@@ -135,11 +135,15 @@ describe('create-store CLI', () => {
     // (`template:sync` його не чіпає), тож літеральна версія, дописана рукою
     // разом із новою залежністю, інакше доїхала б у реліз — магазин ставив би
     // `@simplycms/ui@0.1.0` поруч із двадцятьма `@simplycms/*@0.2.0`.
-    const core = Object.entries(manifest.dependencies as Record<string, string>)
-      .filter(([name]) => name.startsWith('@simplycms/'))
-      .map(([, range]) => range);
-    expect(core.length).toBeGreaterThan(0);
-    expect(core).toEqual(core.map(() => '9.9.9-sentinel'));
+    // Секції ДВІ: `@simplycms/cli` живе в devDependencies — перевірка лише
+    // dependencies пропустила б рукописний літерал саме там.
+    for (const section of ['dependencies', 'devDependencies'] as const) {
+      const core = Object.entries(manifest[section] as Record<string, string>)
+        .filter(([name]) => name.startsWith('@simplycms/'))
+        .map(([, range]) => range);
+      expect(core.length).toBeGreaterThan(0);
+      expect(core).toEqual(core.map(() => '9.9.9-sentinel'));
+    }
   });
 
   // 🔴 Магазин налаштований ЛИШЕ під pnpm 11+. Обидва механізми pnpm-специфічні

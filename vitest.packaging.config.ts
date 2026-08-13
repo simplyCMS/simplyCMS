@@ -18,6 +18,7 @@ export default defineConfig({
     include: [
       'tests/published-exports-parity.test.ts',
       'tests/create-store-pack.test.ts',
+      'tests/cli-pack.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.

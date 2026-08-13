@@ -84,20 +84,25 @@ export function scaffoldStore({ storeDir, tarballs, env }) {
 }
 
 /**
- * Підставити шляхи tarball-ів у `dependencies` магазину.
+ * Підставити шляхи tarball-ів у залежності магазину.
  *
- * Покриває лише ПРЯМІ залежності; транзитивні перезшиває `writeOverrides`.
- * Строго кажучи, overrides самодостатні й для прямих (перевірено: pnpm
- * підставляє tarball навіть коли в deps лишається версія) — цей прохід
- * тримаємо як захист у глибину, щоб манифест не брехав про джерело.
+ * Покриває лише ПРЯМІ залежності, зате в ОБОХ секціях — `dependencies` і
+ * `devDependencies` (`@simplycms/cli` живе саме в dev; без підміни install
+ * скретча пішов би в реєстр за пакетом, якого там ще немає). Транзитивні
+ * перезшиває `writeOverrides`. Строго кажучи, overrides самодостатні й для
+ * прямих (перевірено: pnpm підставляє tarball навіть коли в deps лишається
+ * версія) — цей прохід тримаємо як захист у глибину, щоб манифест не брехав
+ * про джерело.
  */
 function writeManifest(storeDir, tarballs) {
   const manifestPath = join(storeDir, 'package.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-  for (const [name, tarball] of tarballs) {
-    if (manifest.dependencies[name]) {
-      manifest.dependencies[name] = `file:${tarball}`;
+  for (const section of [manifest.dependencies, manifest.devDependencies]) {
+    for (const [name, tarball] of tarballs) {
+      if (section?.[name]) {
+        section[name] = `file:${tarball}`;
+      }
     }
   }
 

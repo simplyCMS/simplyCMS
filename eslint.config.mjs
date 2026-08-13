@@ -121,6 +121,10 @@ const eslintConfig = [
       'packages/create-simplycms-store/template/*/**',
       '!packages/create-simplycms-store/template/scripts',
       '!packages/create-simplycms-store/template/scripts/**',
+      // Канон host-файлів пакета CLI (спека CLI v1 §5): та сама байт-копія
+      // host-каркаса, що й у шаблоні вище, — знімок для `simplycms update`,
+      // чиї імпорти резолвляться лише всередині згенерованого магазину.
+      'packages/cli/host/**',
     ],
   },
 ];
