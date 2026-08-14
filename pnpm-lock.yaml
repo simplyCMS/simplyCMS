@@ -725,6 +725,36 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
 
+  packages/simplycms-theme-solarstore:
+    dependencies:
+      '@simplycms/core':
+        specifier: workspace:*
+        version: link:../core
+      '@simplycms/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@simplycms/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@simplycms/themes':
+        specifier: workspace:*
+        version: link:../theme-system
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: '>=0.400.0'
+        version: 1.28.0(react@19.2.8)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
+
   packages/storefront:
     dependencies:
       '@simplycms/objects':
@@ -965,8 +995,6 @@ importers:
   plugins/hello-world: {}
 
   themes/default: {}
-
-  themes/solarstore: {}
 
 packages:
 

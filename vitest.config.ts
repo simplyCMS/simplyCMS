@@ -31,6 +31,7 @@ export default defineConfig({
       '@simplycms/plugin-sdk': pkg('plugin-sdk/src'),
       '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
       '@simplycms/themes': pkg('theme-system/src'),
+      '@simplycms/theme-solarstore': pkg('simplycms-theme-solarstore/src'),
       '@themes': resolve(__dirname, 'themes'),
       '@plugins': resolve(__dirname, 'plugins'),
     },

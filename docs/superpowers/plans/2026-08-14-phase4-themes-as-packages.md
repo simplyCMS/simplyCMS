@@ -291,31 +291,31 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ### Етап 1 — Референс-тема як пакет
 
-- [ ] **Step 1:** Перенести `themes/solarstore/*` → `packages/simplycms-theme-solarstore/src/*`
+- [x] **Step 1:** Перенести `themes/solarstore/*` → `packages/simplycms-theme-solarstore/src/*`
       (git mv; `index.ts`, `manifest.ts`, `tokens.ts`, `messages.ts`,
       `components/` — відносні імпорти всередині не змінюються). Тека
       `themes/solarstore` зникає.
-- [ ] **Step 2:** Манифест і збірка пакета за Р3: `package.json`
+- [x] **Step 2:** Манифест і збірка пакета за Р3: `package.json`
       (імʼя/версія/private:false/license/description/repository/
       publishConfig із registry+access/dual exports/files/sideEffects/
       deps+peers), `tsup.config.ts`, власний `tsconfig.json` (зразок —
       plugin-faq); `manifest.ts`: `version: '0.3.0'`.
-- [ ] **Step 3:** `pnpm install` (НЕ frozen) → коміт `pnpm-lock.yaml`
+- [x] **Step 3:** `pnpm install` (НЕ frozen) → коміт `pnpm-lock.yaml`
       (зникає importer `themes/solarstore`, зʼявляється новий пакет).
-- [ ] **Step 4:** Аліаси: `tsconfig.json` paths, `vite.config.ts`
+- [x] **Step 4:** Аліаси: `tsconfig.json` paths, `vite.config.ts`
       resolve.alias, `vitest.config.ts` — `@simplycms/theme-solarstore` →
       `packages/simplycms-theme-solarstore/src` (зразок —
       `@simplycms/plugin-faq`). Host `simplycms.config.ts`:
       `solarstore: () => import('@simplycms/theme-solarstore')`.
-- [ ] **Step 5:** Гарди (Р9): eslint `I18N_MIGRATED_FILES` +
+- [x] **Step 5:** Гарди (Р9): eslint `I18N_MIGRATED_FILES` +
       `packages/simplycms-theme-*/**/*.tsx`; `tests/i18n-coverage/scan.ts`
       — дискавер тем з диска; `tests/theme-messages-parity.test.ts` —
       обидва корені, обидві форми шляху; новий
       `tests/theme-manifest-parity.test.ts` (Р6, лише пакетні теми).
-- [ ] **Step 6:** Р13: `bump.mjs` — перезапис version-літералів маніфестів
+- [x] **Step 6:** Р13: `bump.mjs` — перезапис version-літералів маніфестів
       референс-пакетів (plugin-faq `src/index.ts` + theme `src/manifest.ts`)
       + юніт у `tests/release-bump-coverage.test.ts`.
-- [ ] **Step 7:** README пакета (структура — `simplycms-plugin-faq/README.md`);
+- [x] **Step 7:** README пакета (структура — `simplycms-plugin-faq/README.md`);
       повні гейти включно з `build:packages` + `test:packaging` і
       audit-тестами.
 

@@ -60,6 +60,9 @@
       "@simplycms/plugin-faq/*": ["./packages/simplycms-plugin-faq/src/*"],
       "@simplycms/themes": ["./packages/theme-system/src"],
       "@simplycms/themes/*": ["./packages/theme-system/src/*"],
+      "@simplycms/theme-solarstore": [
+        "./packages/simplycms-theme-solarstore/src"
+      ],
       "@themes/*": ["./themes/*"],
       "@plugins/*": ["./plugins/*"]
     },

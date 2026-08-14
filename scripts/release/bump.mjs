@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { bumpManifestVersions } from './manifest-version.mjs';
 
 const PACKAGES_DIR = 'packages';
 /** semver без пре-релізів: цього достатньо для синхронної моделі версій. */
@@ -110,6 +111,8 @@ export function bumpTo(version) {
   }
 
   bumpCoreVersionConstant(version);
+  // Version-літерали маніфестів референс-пакетів (плагіни/теми) — Р13 Фази 4.
+  bumpManifestVersions(version);
 
   return { updated, skipped };
 }

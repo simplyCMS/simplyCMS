@@ -42,6 +42,9 @@ const I18N_MIGRATED_FILES = [
   'packages/profile-ui/**/*.tsx',
   'packages/reviews-ui/**/*.tsx',
   'themes/*/components/**/*.tsx',
+  // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
+  // — доставка кодом npm-пакета вимог i18n не послаблює.
+  'packages/simplycms-theme-*/**/*.tsx',
 ];
 
 // Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ

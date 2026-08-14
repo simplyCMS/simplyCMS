@@ -30,6 +30,6 @@ export default defineConfig({
   ],
   themes: {
     default: () => import('@themes/default/index'),
-    solarstore: () => import('@themes/solarstore/index'),
+    solarstore: () => import('@simplycms/theme-solarstore'),
   },
 });
