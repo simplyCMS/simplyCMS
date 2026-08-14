@@ -24,7 +24,7 @@ describe('cli create: парсер', () => {
   });
 
   it('невідома суб-команда, відсутнє чи невалідне імʼя — гучна помилка', () => {
-    expect(() => parseCreateArgs(['theme', 'x'])).toThrow(/лише/);
+    expect(() => parseCreateArgs(['widget', 'x'])).toThrow(/лише/);
     expect(() => parseCreateArgs(['plugin'])).toThrow(/Не задано імʼя/);
     expect(() => parseCreateArgs(['plugin', 'Bad_Name'])).toThrow(
       /Невалідне імʼя/,

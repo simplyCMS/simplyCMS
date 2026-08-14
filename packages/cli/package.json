@@ -2,7 +2,7 @@
   "name": "@simplycms/cli",
   "version": "0.3.0",
   "private": false,
-  "description": "CLI магазину SimplyCMS (бінарник simplycms): doctor, add, update, db:diff",
+  "description": "CLI магазину SimplyCMS (бінарник simplycms): doctor, add, create, update, db:diff",
   "type": "module",
   "bin": {
     "simplycms": "src/index.mjs"
@@ -22,7 +22,8 @@
   "files": [
     "src",
     "host",
-    "template-plugin"
+    "template-plugin",
+    "template-theme"
   ],
   "license": "MIT",
   "engines": {

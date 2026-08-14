@@ -1,6 +1,7 @@
 import {
   appendFileSync,
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -18,6 +19,7 @@ import {
   checkHostDrift,
   checkMigrations,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
+import { checkThemes } from '../packages/cli/src/doctor-theme-checks.mjs';
 import {
   computeExitCode,
   hasSupabaseEnv,
@@ -72,6 +74,7 @@ describe('cli doctor (оффлайн)', () => {
       'routes.ts': 'ok',
       'tailwind.config.ts': 'ok',
       'simplycms.config.ts': 'ok',
+      themes: 'ok',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -139,6 +142,56 @@ describe('cli doctor (оффлайн)', () => {
     });
     expect(changed.status).toBe('error');
     expect(changed.details).toContain(shared);
+  });
+
+  it('checkThemes: нерезолвний запис — warn; warn не валить прогін без --strict', async () => {
+    const store = await scaffoldStore('doc-theme');
+    const configPath = join(store, 'simplycms.config.ts');
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        'themes: {',
+        "themes: {\n    ghost: () => import('@themes/ghost/index'),",
+      ),
+    );
+    const missing = checkThemes({ storeRoot: store });
+    expect(missing.status).toBe('warn');
+    expect(missing.details).toContain('ghost');
+    expect(computeExitCode([missing])).toBe(0);
+    expect(computeExitCode([missing], { strict: true })).toBe(1);
+  });
+
+  it('checkThemes: стороння тема без Tailwind-глоба — warn із підказкою', async () => {
+    const store = await scaffoldStore('doc-theme-glob');
+    const configPath = join(store, 'simplycms.config.ts');
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        'themes: {',
+        "themes: {\n    aurora: () => import('@acme/simplycms-theme-aurora'),",
+      ),
+    );
+    // Пакет на місці — лишається сама лише проблема глоба.
+    mkdirSync(join(store, 'node_modules/@acme/simplycms-theme-aurora'), {
+      recursive: true,
+    });
+    const hint = checkThemes({ storeRoot: store });
+    expect(hint.status).toBe('warn');
+    expect(hint.details).toContain('simplycms-theme-*');
+    expect(hint.details).not.toContain('немає ні теки');
+
+    // Референс-тема ядра підказки НЕ дає: її покриває глоб @simplycms/*.
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        '@acme/simplycms-theme-aurora',
+        '@simplycms/theme-solarstore',
+      ),
+    );
+    mkdirSync(join(store, 'node_modules/@simplycms/theme-solarstore'), {
+      recursive: true,
+    });
+    expect(checkThemes({ storeRoot: store }).status).toBe('ok');
   });
 
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {

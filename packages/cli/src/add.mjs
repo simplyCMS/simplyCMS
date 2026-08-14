@@ -1,53 +1,47 @@
 // simplycms add <pkg> (--plugin | --theme): build-time-встановлення зі спеки
 // §4.2 — pnpm add → якірний запис у simplycms.config.ts → нагадування про
-// rebuild. Тип обовʼязковий: автодетекції у v1 немає (вгадування —
-// мовчазний запасний варіант, §3).
+// rebuild. Тип обовʼязковий: автодетекції у v1 немає (§3). `--copy` (Фаза 4,
+// Р5) — друга гілка установки теми зі спеки §17.4; сценарій — add-copy.mjs.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseAddArgs } from './add-args.mjs';
+import { runThemeCopy } from './add-copy.mjs';
+import { addSteps, themeSteps } from './add-steps.mjs';
 import { deriveKey, hasPackage, insertEntry } from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
-/**
- * Розбір аргументів add. Порушення контракту прапорців — гучна помилка.
- * @param {string[]} argv
- * @returns {{ pkg: string; type: 'plugin' | 'theme'; name?: string;
- *   install: boolean; dryRun: boolean }}
- */
-export function parseAddArgs(argv) {
-  /** @type {{ pkg?: string; type?: 'plugin' | 'theme'; name?: string;
-   *   install: boolean; dryRun: boolean }} */
-  const options = { install: true, dryRun: false };
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    if (arg === '--plugin' || arg === '--theme') {
-      const type = arg === '--plugin' ? 'plugin' : 'theme';
-      if (options.type && options.type !== type)
-        throw new Error('Прапорці --plugin і --theme взаємовиключні');
-      options.type = type;
-    } else if (arg === '--name') {
-      const value = argv[i + 1];
-      if (value === undefined || value.startsWith('-'))
-        throw new Error('Прапорець --name потребує значення');
-      options.name = value;
-      i += 1;
-    } else if (arg === '--no-install') options.install = false;
-    else if (arg === '--dry-run') options.dryRun = true;
-    else if (arg.startsWith('-'))
-      throw new Error(`Невідомий прапорець add: ${arg}`);
-    else if (options.pkg) throw new Error(`Зайвий аргумент: ${arg}`);
-    else options.pkg = arg;
+// Реекспорт: парсер — частина публічної поверхні команди (юніти add).
+export { parseAddArgs };
+
+/** Гілка `--copy`: сценарій в add-copy.mjs, тут — лише вивід. */
+function reportCopy(report, { pkg, key }) {
+  if (report.status === 'done') {
+    say.success(`themes/${key} уже є і підключена в конфізі — нічого робити.`);
+    finish('Вже зроблено.');
+    return;
   }
-  if (!options.pkg)
-    throw new Error(
-      'Не задано пакет: simplycms add <pkg> (--plugin | --theme)',
+  if (report.status === 'dry-run') {
+    say.info(
+      `--dry-run: сирці ${pkg} лягли б у themes/${key}, пакет було б знято` +
+        (report.line
+          ? `, у simplycms.config.ts додався б рядок:\n+ ${report.line}`
+          : ''),
     );
-  if (!options.type)
-    throw new Error(
-      'Задай тип явно: --plugin або --theme (автодетекції у v1 немає)',
+    finish('Нічого не змінено (--dry-run).');
+    return;
+  }
+  say.success(
+    `themes/${key}: скопійовано ${report.copied.join(', ')} з ${pkg}; пакет знято.`,
+  );
+  if (report.added.length > 0) {
+    say.info(
+      `package.json: перенесено залежності теми — ${report.added.join(', ')}`,
     );
-  return { ...options, pkg: options.pkg, type: options.type };
+  }
+  showSteps(themeSteps());
+  finish('Готово.');
 }
 
 /** @param {string[]} argv */
@@ -58,9 +52,21 @@ export async function run(argv) {
   const configPath = join(storeRoot, 'simplycms.config.ts');
   if (!existsSync(configPath))
     throw new Error(`Не знайдено ${configPath} — add не має куди писати`);
-  const source = readFileSync(configPath, 'utf8');
   const key = deriveKey(options.pkg, options.name);
 
+  if (options.copy) {
+    const report = runThemeCopy({
+      storeRoot,
+      configPath,
+      pkg: options.pkg,
+      key,
+      dryRun: options.dryRun,
+    });
+    reportCopy(report, { pkg: options.pkg, key });
+    return;
+  }
+
+  const source = readFileSync(configPath, 'utf8');
   // Ідемпотентність — не fallback: повторний запуск без роботи = успіх (§3).
   if (hasPackage(source, options.pkg)) {
     say.success(`«${options.pkg}» вже в simplycms.config.ts — нічого робити.`);
@@ -95,29 +101,8 @@ export async function run(argv) {
   const kind = options.type === 'plugin' ? 'плагін' : 'тему';
   say.success(`simplycms.config.ts: додано ${kind} '${key}'.`);
 
-  const steps = [
-    'pnpm build   # конфіг — build-time, без rebuild змін не буде',
-  ];
-  if (options.type === 'plugin') {
-    // Реальний dry-run конвеєра міграцій (Фаза 3): дивимось, що плагін
-    // привіз у migrations/ свого пакета, і скільки з того магазин ще не має.
-    const { listSqlFiles, storeMigrationsDir } = await import('./db-diff.mjs');
-    const pkgMigrations = join(
-      storeRoot,
-      'node_modules',
-      options.pkg,
-      'migrations',
-    );
-    const store = listSqlFiles(storeMigrationsDir(storeRoot));
-    const missing = listSqlFiles(pkgMigrations).filter(
-      (name) => !store.includes(name),
-    );
-    if (missing.length > 0) {
-      steps.push(
-        `pnpm simplycms db:diff --write   # плагін привіз ${missing.length} міграцій — ревʼю + supabase db push`,
-      );
-    }
-  }
-  showSteps(steps);
+  showSteps(
+    await addSteps({ storeRoot, pkg: options.pkg, type: options.type }),
+  );
   finish('Готово.');
 }

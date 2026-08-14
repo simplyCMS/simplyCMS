@@ -345,29 +345,29 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ### Етап 3 — CLI: create theme, copy-in, doctor
 
-- [ ] **Step 1:** `packages/cli/template-theme/` (Р6) + `create.mjs`: kind
+- [x] **Step 1:** `packages/cli/template-theme/` (Р6) + `create.mjs`: kind
       `theme`, скаффолд у `themes/<name>/`, запис у конфіг, showSteps
       (dev-loop, активація в адмінці); `files` CLI-пакета + `template-theme`
       → `pnpm install` + коміт lockfile за правилом Р12.
-- [ ] **Step 2:** `config-edit.mjs`: нова `configThemeEntries(source)`
+- [x] **Step 2:** `config-edit.mjs`: нова `configThemeEntries(source)`
       (дзеркало `configPluginEntries`) + юніти в `tests/cli-add.test.ts`.
-- [ ] **Step 3:** `add.mjs`: прапорець `--copy` (Р5 — порядок, rollback,
+- [x] **Step 3:** `add.mjs`: прапорець `--copy` (Р5 — порядок, rollback,
       злиття deps, ідемпотентність по `@themes/<key>/index`, конфлікт із
       `--no-install`) + theme-специфічний крок у showSteps після установки
       («активуй в адмінці /admin/themes»).
-- [ ] **Step 4:** doctor: нова offline-перевірка тем рівня warn (Р6, у
+- [x] **Step 4:** doctor: нова offline-перевірка тем рівня warn (Р6, у
       `doctor-checks.mjs`/`runOfflineChecks`; №9 НЕ чіпається) — записи
       конфігу резолвляться + підказка про Tailwind-глоби.
-- [ ] **Step 5:** Тести: `tests/cli-create-theme.test.ts` (методика
+- [x] **Step 5:** Тести: `tests/cli-create-theme.test.ts` (методика
       `cli-create.test.ts`: temp-dir, плейсхолдери, transpile);
       розширення `tests/cli-add.test.ts` на `--copy` (ядро copy-логіки —
       чиста функція над фікстурним node_modules у temp-store: валідації,
       злиття deps, ідемпотентність, колізія, dry-run); `tests/cli-doctor.test.ts`
       — нова перевірка.
-- [ ] **Step 6:** Gate TOOL: `tool-pkg-smoke.mjs` — блок `template-theme/`
+- [x] **Step 6:** Gate TOOL: `tool-pkg-smoke.mjs` — блок `template-theme/`
       непорожня (зразок блоку `template-plugin/` `:108-124`), `--help`
       згадує `create theme`; `cli-pack.test.ts` — синхронно.
-- [ ] **Step 7:** Повні гейти.
+- [x] **Step 7:** Повні гейти.
 
 ### Етап 4 — Пілот і Tailwind: Gate THEME-контур
 

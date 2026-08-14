@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { coreDependencies } from './context.mjs';
 import { checkHostDrift, checkMigrations } from './doctor-fs-checks.mjs';
+import { checkThemes } from './doctor-theme-checks.mjs';
 
 /**
  * Контекст перевірок. `hostDir` — канонічна тека host/ пакета CLI;
@@ -131,5 +132,7 @@ export function runOfflineChecks(ctx) {
       ['plugins: [', 'themes: {'],
       'simplycms.config.ts має якорі plugins/themes',
     ),
+    // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
+    checkThemes(ctx),
   ];
 }

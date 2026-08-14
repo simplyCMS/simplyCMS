@@ -137,15 +137,26 @@ function sliceBlock(source, anchor, open, close) {
   return null;
 }
 
-/** Ключі обʼєкта themes конфігу; null — якір відсутній. */
-export function configThemeKeys(source) {
+/**
+ * Повні записи тем конфігу: ключ + специфікатор import(). Потрібні doctor-у
+ * (Фаза 4, Р6): ключ ≠ імʼя пакета через `--name`, а резолвити треба саме
+ * специфікатор — теку `@themes/<key>/index` або пакет у node_modules.
+ * Дзеркало `configPluginEntries`; null — якір відсутній.
+ * @returns {{ key: string; spec: string }[] | null}
+ */
+export function configThemeEntries(source) {
   const { anchor, open, close } = ANCHORS.theme;
   const block = sliceBlock(source, anchor, open, close);
   if (block === null) return null;
   const entries = block.matchAll(
-    /(?:^|\n)\s*'?([\w][\w./-]*)'?\s*:\s*\(\)\s*=>\s*import\(/g,
+    /(?:^|\n)\s*'?([\w][\w./-]*)'?\s*:\s*\(\)\s*=>\s*import\('([^']+)'\)/g,
   );
-  return [...entries].map((match) => match[1]);
+  return [...entries].map((match) => ({ key: match[1], spec: match[2] }));
+}
+
+/** Ключі обʼєкта themes конфігу; null — якір відсутній. */
+export function configThemeKeys(source) {
+  return configThemeEntries(source)?.map((entry) => entry.key) ?? null;
 }
 
 /** Імена плагінів із масиву plugins конфігу; null — якір відсутній. */

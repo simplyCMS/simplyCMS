@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { parseAddArgs } from '../packages/cli/src/add.mjs';
 import {
   configPluginNames,
+  configThemeEntries,
   configThemeKeys,
   deriveKey,
   entryLine,
@@ -65,8 +66,21 @@ describe('cli add', () => {
       type: 'plugin',
       name: 'wl',
       install: false,
+      copy: false,
       dryRun: true,
     });
+  });
+
+  it('parseAddArgs: --copy — лише для теми і лише з install', () => {
+    expect(
+      parseAddArgs(['@acme/simplycms-theme-aurora', '--theme', '--copy']).copy,
+    ).toBe(true);
+    expect(() => parseAddArgs(['pkg', '--plugin', '--copy'])).toThrow(
+      /--copy — лише для тем/,
+    );
+    expect(() =>
+      parseAddArgs(['pkg', '--theme', '--copy', '--no-install']),
+    ).toThrow(/взаємовиключні/);
   });
 
   it('parseAddArgs: порушення контракту — гучні помилки', () => {
@@ -220,5 +234,15 @@ describe('cli add', () => {
     expect(configPluginNames(templateConfig)).toEqual(['hello-world', 'faq']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();
+  });
+
+  it('configThemeEntries: ключ + специфікатор import() — обидві форми запису', () => {
+    // Саме специфікатор, а не ключ, резолвить doctor: локальна тека і пакет —
+    // різні місця на диску, а через --name ключ може не збігатися з жодним.
+    expect(configThemeEntries(hostConfig)).toEqual([
+      { key: 'default', spec: '@themes/default/index' },
+      { key: 'solarstore', spec: '@simplycms/theme-solarstore' },
+    ]);
+    expect(configThemeEntries('export default {}')).toBeNull();
   });
 });
