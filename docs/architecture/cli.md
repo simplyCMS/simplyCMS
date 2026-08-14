@@ -141,7 +141,8 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 
 ### 3.5 `simplycms create plugin <name> [--dry-run]`
 
-Авторський скаффолд плагіна (Фаза 3): тека `plugins/<name>` **магазину** —
+Авторський скаффолд плагіна (Фаза 3; механізм плагінів цілком —
+[`plugins.md`](plugins.md)): тека `plugins/<name>` **магазину** —
 аліас `@plugins/*` уже в шаблоні, тож dev-loop працює без workspace-лінків і
 build-кроку — плюс якірний запис у `simplycms.config.ts` тим самим
 `insertEntry`, що й `add`. Шаблон — `template-plugin/` у tarball CLI

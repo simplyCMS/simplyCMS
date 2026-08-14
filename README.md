@@ -2,8 +2,11 @@
 
 Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
 
-**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 22 пакети
-(включно з CLI [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli)),
+**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 24 пакети
+(включно з CLI [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
+Plugin SDK [`@simplycms/plugin-sdk`](https://www.npmjs.com/package/@simplycms/plugin-sdk)
+і референс-плагіном [`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq) — двоє останніх
+їдуть у реєстр з мержем Фази 3),
 плюс скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store) тієї ж версії.
 
 ## Vision: e-commerce platform
@@ -21,17 +24,22 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ `0.3.0`, 22 пакети |
+| Ядро в npm-пакетах | ✅ `0.3.0`, 24 пакети |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
-| CLI `simplycms` (`@simplycms/cli`) | ✅ v1: `doctor` / `add` / `update` / `db:diff` |
-| Плагіни й теми як окремі npm-пакети | ⏳ Фаза 3 (Plugin SDK) |
+| CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin` / `update` / `db:diff` |
+| Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `@simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
+| Теми як npm-пакети | ⏳ Фаза 4 |
 
 Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
 обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
-доганянням host-файлів і донесенням core-міграцій. Наступний рубіж — Фаза 3:
-Plugin SDK і перші плагіни/теми як справжні npm-пакети.
+доганянням host-файлів і донесенням міграцій (ядра і плагінів). Плагін — це
+`definePlugin` з `@simplycms/plugin-sdk`: слоти сторінок, власні таблиці
+`plg_*` (міграції їдуть у пакеті), сторінки адмінки, Zod-настройки, власний
+каталог перекладів — механізм цілком описаний у
+[`docs/architecture/plugins.md`](docs/architecture/plugins.md). Наступний
+рубіж — Фаза 4: теми як пакети + маркетплейс-індекс.
 
 ## Створити магазин на SimplyCMS
 
@@ -68,12 +76,15 @@ Supabase, дефолтна тема, референс-плагін) із вер�
 ```bash
 pnpm simplycms doctor            # діагностика: версії, env, host-файли, міграції, конфіг↔БД
 pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
+pnpm simplycms create plugin <name>         # скаффолд ВЛАСНОГО плагіна в plugins/ магазину
 pnpm simplycms update --write    # оновити всі @simplycms/* + догнати host-файли
-pnpm simplycms db:diff --write   # донести нові core-міграції (далі: git diff → supabase db push)
+pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff → supabase db push)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
-[`docs/architecture/cli.md`](docs/architecture/cli.md).
+[`docs/architecture/cli.md`](docs/architecture/cli.md); механізм плагінів
+(контракт, межа довіри, таблиці `plg_*`, i18n) —
+[`docs/architecture/plugins.md`](docs/architecture/plugins.md).
 
 ### Потрібна Supabase
 
@@ -145,10 +156,12 @@ packages/       # Ядро CMS — публікується на npmjs
   supabase/               #   клієнти + baseline типів БД
   storefront-routes/      #   роути вітрини + канонічні сторінки + SEO
   admin-routes/ admin/    #   роути адмінки + її сторінки
-  themes/ plugins/        #   ThemeRegistry · HookRegistry, PluginSlot
+  themes/ plugins/        #   ThemeRegistry · HookRegistry, PluginSlot, validatePluginModule
+  plugin-sdk/             #   definePlugin + порти плагінів (docs/architecture/plugins.md)
+  simplycms-plugin-faq/   #   референс-плагін повного контуру (@simplycms/plugin-faq)
   ui/ *-ui/               #   shadcn-примітиви + feature-UI
-  cli/                    #   simplycms CLI: doctor/add/update/db:diff (docs/architecture/cli.md)
-themes/ plugins/          # Референсні тема й плагін
+  cli/                    #   simplycms CLI: doctor/add/create plugin/update/db:diff (docs/architecture/cli.md)
+themes/ plugins/          # Референсні теми й локальні плагіни магазину (@plugins/*)
 supabase/                 # Міграції, seed, згенеровані типи, edge functions
 scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз
 ```
