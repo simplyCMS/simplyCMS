@@ -6,6 +6,7 @@ export default defineConfig({
     'src/ThemeRegistry.ts',
     'src/ThemeContext.tsx',
     'src/applyTokens.ts',
+    'src/bootstrapThemes.ts',
     'src/validateThemeModule.ts',
     'src/useThemeT.ts',
     'src/types.ts',

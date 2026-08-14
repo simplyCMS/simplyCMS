@@ -5,6 +5,9 @@ export const messages = {
   'admin.themes.empty': 'Немає зареєстрованих тем',
   'admin.themes.emptyHint': 'Теми додаються через код проекту та міграції БД',
   'admin.themes.author': 'Автор:',
+  'admin.themes.moduleMissing': 'Модуль відсутній',
+  'admin.themes.moduleMissingHint':
+    'Тема є в базі, але її модуль не зареєстровано в simplycms.config.ts — встанови пакет теми й перезбери магазин.',
   'admin.themes.activateTitle': 'Активувати тему?',
   'admin.themes.activateText':
     'Тема "{name}" буде активована. Зміни буде застосовано на сайті одразу.',

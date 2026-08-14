@@ -8,6 +8,9 @@ export const messages: Catalog = {
   'admin.themes.emptyHint':
     'Themes are added through project code and DB migrations',
   'admin.themes.author': 'Author:',
+  'admin.themes.moduleMissing': 'Module not found',
+  'admin.themes.moduleMissingHint':
+    'The theme row exists in the database, but its module is not registered in simplycms.config.ts — install the theme package and rebuild the store.',
   'admin.themes.activateTitle': 'Activate this theme?',
   'admin.themes.activateText':
     'Theme "{name}" will be activated. Changes apply to the site immediately.',

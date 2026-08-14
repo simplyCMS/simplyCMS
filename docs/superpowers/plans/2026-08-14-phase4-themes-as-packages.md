@@ -321,27 +321,27 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ### Етап 2 — bootstrapThemes + registry-awareness адмінки
 
-- [ ] **Step 1:** `packages/theme-system/src/bootstrapThemes.ts` (Р4:
+- [x] **Step 1:** `packages/theme-system/src/bootstrapThemes.ts` (Р4:
       SELECT→missing→early-return → session-гард → load → batch INSERT;
       name = ключ реєстрації, mismatch із manifest.name — warn; помилки —
       `console.error`, без throw; ідемпотентно). Експорт у ТРЬОХ місцях
       синхронно: barrel, `exports`+`publishConfig.exports`, `tsup entry`
       (пропуск третього валить published-exports-parity).
-- [ ] **Step 2:** Юніт-тести `packages/theme-system/src/__tests__/bootstrapThemes.test.ts`
+- [x] **Step 2:** Юніт-тести `packages/theme-system/src/__tests__/bootstrapThemes.test.ts`
       (mock supabase, методика плагінного bootstrap.test.ts): без missing —
       жодного load/insert і жодного getSession-виклику ПІСЛЯ select; без
       сесії — жодного load; missing → insert рівно з manifest-полями;
       помилка load однієї теми не валить решту; mismatch імен — warn.
-- [ ] **Step 3:** Wiring: `src/routes/__root.tsx` — виклик поруч із
+- [x] **Step 3:** Wiring: `src/routes/__root.tsx` — виклик поруч із
       `PluginBootstrap` (`:111-127`); `pnpm template:sync` → канон
       `packages/cli/host/` і template оновлені; `create-store-template-parity`
       зелений.
-- [ ] **Step 4:** `packages/admin/src/pages/Themes.tsx`: `ThemeRegistry.has`
+- [x] **Step 4:** `packages/admin/src/pages/Themes.tsx`: `ThemeRegistry.has`
       → бейдж «модуль відсутній» + disabled activate (зразок —
       `Plugins.tsx:137`); нові ключі каталогу `admin.themes.*` в
       `packages/i18n/src/catalogs/{uk,en}/` (дзеркально, catalog-parity);
       компонентний тест у `packages/admin/src/__tests__/` (Р9).
-- [ ] **Step 5:** Повні гейти.
+- [x] **Step 5:** Повні гейти.
 
 ### Етап 3 — CLI: create theme, copy-in, doctor
 
