@@ -28,9 +28,8 @@ function makeClient(rows: Record<string, unknown>[]) {
             calls.push({ table, op: 'order', args });
             return builder;
           },
-          then: (
-            resolve: (value: { data: unknown; error: null }) => unknown,
-          ) => resolve({ data: rows, error: null }),
+          then: (resolve: (value: { data: unknown; error: null }) => unknown) =>
+            resolve({ data: rows, error: null }),
         };
         return builder;
       },
@@ -38,7 +37,10 @@ function makeClient(rows: Record<string, unknown>[]) {
         select: () => ({
           single: () => {
             calls.push({ table, op: 'insert', args: [row] });
-            return Promise.resolve({ data: { id: 'new', ...row }, error: null });
+            return Promise.resolve({
+              data: { id: 'new', ...row },
+              error: null,
+            });
           },
         }),
       }),

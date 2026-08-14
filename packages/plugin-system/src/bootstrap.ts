@@ -95,25 +95,16 @@ export async function bootstrapPlugins(
   for (const reg of regs) {
     try {
       const loaded = await reg.module();
-      // Мʼяка політика (спека §8 «ніяких падінь»): невалідний модуль —
-      // error-лог + пропуск; попередження (зокрема несумісний
-      // engines.simplycms — warn-режим на 0.x, рішення Р5 плану Фази 3) —
-      // у консоль, реєстрація триває.
-      const report = validatePluginModule(loaded.default);
-      for (const warning of report.warnings) {
-        console.warn(`[plugins] "${reg.name}": ${warning}`);
-      }
-      if (!report.ok) {
-        console.error(
-          `[plugins] Модуль "${reg.name}" пропущено:`,
-          report.errors.join('; '),
-        );
-        continue;
-      }
+      // Мʼяка політика (спека §8 «ніяких падінь») забезпечується тут:
+      // порушення контракту валідатор кидає, catch нижче логує і пропускає
+      // модуль; попередження (зокрема несумісний engines.simplycms —
+      // warn-режим на 0.x, рішення Р5 плану Фази 3) валідатор друкує сам,
+      // реєстрація триває.
+      validatePluginModule(loaded.default);
       registerPluginModule(reg.name, loaded.default);
       modules.set(reg.name, loaded.default);
     } catch (error) {
-      console.error(`[plugins] Модуль "${reg.name}" не імпортувався:`, error);
+      console.error(`[plugins] Модуль "${reg.name}" не підключено:`, error);
     }
   }
 

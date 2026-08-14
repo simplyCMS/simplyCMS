@@ -147,3 +147,19 @@ export function configPluginNames(source) {
   if (block === null) return null;
   return [...block.matchAll(/name:\s*'([^']+)'/g)].map((match) => match[1]);
 }
+
+/**
+ * Повні записи плагінів конфігу: імʼя + специфікатор import(). Потрібні
+ * db:diff, щоб знайти теки `migrations/` встановлених плагінів (N канонів,
+ * план Фази 3 Р4); null — якір відсутній.
+ * @returns {{ name: string; spec: string }[] | null}
+ */
+export function configPluginEntries(source) {
+  const { anchor, open, close } = ANCHORS.plugin;
+  const block = sliceBlock(source, anchor, open, close);
+  if (block === null) return null;
+  const entries = block.matchAll(
+    /name:\s*'([^']+)'\s*,\s*module:\s*\(\)\s*=>\s*import\('([^']+)'\)/g,
+  );
+  return [...entries].map((match) => ({ name: match[1], spec: match[2] }));
+}

@@ -68,4 +68,3 @@ export interface SdkPluginModule extends PluginModule {
   /** Дублює `definition.messages` на верхньому рівні — симетрія з `ThemeModule.messages`. */
   messages?: PluginMessages;
 }
-

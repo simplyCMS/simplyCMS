@@ -21,6 +21,8 @@
     "@simplycms/domain": "__SIMPLYCMS_VERSION__",
     "@simplycms/i18n": "__SIMPLYCMS_VERSION__",
     "@simplycms/objects": "__SIMPLYCMS_VERSION__",
+    "@simplycms/plugin-faq": "__SIMPLYCMS_VERSION__",
+    "@simplycms/plugin-sdk": "__SIMPLYCMS_VERSION__",
     "@simplycms/plugins": "__SIMPLYCMS_VERSION__",
     "@simplycms/profile-ui": "__SIMPLYCMS_VERSION__",
     "@simplycms/react-query": "__SIMPLYCMS_VERSION__",

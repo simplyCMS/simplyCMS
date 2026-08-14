@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { validatePluginModule } from '../validatePluginModule';
 
@@ -16,43 +16,36 @@ function makeModule(overrides: Record<string, unknown> = {}) {
   };
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('validatePluginModule', () => {
-  it('не-модуль — помилка без винятку', () => {
-    expect(validatePluginModule(null).ok).toBe(false);
-    expect(validatePluginModule({}).ok).toBe(false);
+  it('не-модуль — throw (викликач вирішує, чи це skip)', () => {
+    expect(() => validatePluginModule(null)).toThrow(/register/);
+    expect(() => validatePluginModule({})).toThrow(/register/);
   });
 
-  it('legacy-модуль без manifest — ok із попередженням', () => {
-    const report = validatePluginModule({ register: () => {} });
-    expect(report.ok).toBe(true);
-    expect(report.warnings).toEqual([expect.stringContaining('без manifest')]);
+  it('legacy-модуль без manifest — прохід із попередженням', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => validatePluginModule({ register: () => {} })).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('без manifest'));
   });
 
-  it('модуль із сумісним діапазоном — чистий', () => {
-    expect(validatePluginModule(makeModule(), '0.3.0')).toEqual({
-      ok: true,
-      errors: [],
-      warnings: [],
-    });
+  it('модуль із сумісним діапазоном — чистий прохід без попереджень', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => validatePluginModule(makeModule(), '0.3.0')).not.toThrow();
+    expect(warn).not.toHaveBeenCalled();
   });
 
-  it('manifest без обовʼязкових полів — помилки поіменно', () => {
-    const report = validatePluginModule(
-      makeModule({ manifest: { name: 'demo' } }),
-      '0.3.0',
-    );
-    expect(report.ok).toBe(false);
-    expect(report.errors).toEqual([
-      expect.stringContaining('displayName'),
-      expect.stringContaining('version'),
-    ]);
-    // Відсутність engines — попередження, не помилка (legacy-модулі).
-    expect(report.warnings).toEqual([
-      expect.stringContaining('engines.simplycms відсутній'),
-    ]);
+  it('manifest без обовʼязкових полів — throw поіменно', () => {
+    expect(() =>
+      validatePluginModule(makeModule({ manifest: { name: 'demo' } }), '0.3.0'),
+    ).toThrow(/manifest\.displayName/);
   });
 
-  it('несумісний engines — попередження, НЕ помилка (Р5: warn-режим на 0.x)', () => {
+  it('несумісний engines — попередження, НЕ throw (Р5: warn-режим на 0.x)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({
       manifest: {
         name: 'demo',
@@ -61,14 +54,14 @@ describe('validatePluginModule', () => {
         engines: { simplycms: '^0.1.0' },
       },
     });
-    const report = validatePluginModule(module, '0.3.0');
-    expect(report.ok).toBe(true);
-    expect(report.warnings).toEqual([
+    expect(() => validatePluginModule(module, '0.3.0')).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('не покриває ядро 0.3.0'),
-    ]);
+    );
   });
 
   it('нерозбірливий діапазон — попередження з причиною', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({
       manifest: {
         name: 'demo',
@@ -77,35 +70,34 @@ describe('validatePluginModule', () => {
         engines: { simplycms: '>=0.1.0 <1.0.0' },
       },
     });
-    const report = validatePluginModule(module, '0.3.0');
-    expect(report.ok).toBe(true);
-    expect(report.warnings).toEqual([
+    expect(() => validatePluginModule(module, '0.3.0')).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('не розпарсився'),
-    ]);
+    );
   });
 
   it('ключ messages без префікса plugin.<name>. — попередження', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({
       messages: {
         uk: { 'plugin.demo.title': 'Заголовок', 'demo.title': 'Хибний' },
       },
     });
-    const report = validatePluginModule(module, '0.3.0');
-    expect(report.ok).toBe(true);
-    expect(report.warnings).toEqual([
+    expect(() => validatePluginModule(module, '0.3.0')).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('без префікса "plugin.demo."'),
-    ]);
+    );
   });
 
-  it('settings, що не є Zod-схемою, — помилка; справжня схема — чиста', () => {
+  it('settings, що не є Zod-схемою, — throw; справжня схема — чиста', () => {
     const invalid = makeModule({
       definition: { settings: { maxVisible: 5 } },
     });
-    expect(validatePluginModule(invalid, '0.3.0').ok).toBe(false);
+    expect(() => validatePluginModule(invalid, '0.3.0')).toThrow(/Zod-схемою/);
 
     const valid = makeModule({
       definition: { settings: z.object({ maxVisible: z.number() }) },
     });
-    expect(validatePluginModule(valid, '0.3.0').ok).toBe(true);
+    expect(() => validatePluginModule(valid, '0.3.0')).not.toThrow();
   });
 });

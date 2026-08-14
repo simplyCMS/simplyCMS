@@ -35,8 +35,14 @@ export const SCANNED_ROOTS = [
   'packages/storefront/src',
   'packages/theme-system/src',
   'packages/plugin-system/src',
+  'packages/plugin-sdk/src',
+  'packages/simplycms-plugin-faq/src',
   'themes/default',
   'themes/solarstore',
+  // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін
+  // потрапляє під скан без ручної реєстрації. Каталоги messages.ts
+  // виключає CATALOG_FILES нижче.
+  'plugins',
 ];
 
 /**

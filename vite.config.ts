@@ -63,6 +63,10 @@ export default ({ mode }: { mode: string }) => {
         '@simplycms/ui': resolve(__dirname, 'packages/ui/src'),
         '@simplycms/plugins': resolve(__dirname, 'packages/plugin-system/src'),
         '@simplycms/plugin-sdk': resolve(__dirname, 'packages/plugin-sdk/src'),
+        '@simplycms/plugin-faq': resolve(
+          __dirname,
+          'packages/simplycms-plugin-faq/src',
+        ),
         '@simplycms/themes': resolve(__dirname, 'packages/theme-system/src'),
         '@themes': resolve(__dirname, 'themes'),
         '@plugins': resolve(__dirname, 'plugins'),

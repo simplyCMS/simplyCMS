@@ -83,7 +83,10 @@ function bumpCoreVersionConstant(version) {
   if (match[1] === version) return;
   writeFileSync(
     CORE_VERSION_FILE,
-    source.replace(CORE_VERSION_RE, `export const CORE_VERSION = '${version}';`),
+    source.replace(
+      CORE_VERSION_RE,
+      `export const CORE_VERSION = '${version}';`,
+    ),
   );
 }
 

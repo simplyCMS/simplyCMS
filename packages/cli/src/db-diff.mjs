@@ -1,10 +1,20 @@
-// simplycms db:diff [--write] — порівняння міграцій магазину з міграціями
-// встановленого ядра (§4.4 спеки): нові міграції ядра — список і копіювання
-// під --write (forward-only); власні — інформаційно; спільне імʼя з різним
-// вмістом — error і жодного запису (міграції immutable). Чистий компаратор
+// simplycms db:diff [--write] — порівняння міграцій магазину з N КАНОНАМИ
+// (Фаза 3, Р4): ядро (@simplycms/schema/migrations) + кожен встановлений
+// плагін із конфігу, що везе migrations/ у пакеті. Нові міграції — список і
+// копіювання під --write (forward-only); власні (невідомі ЖОДНОМУ канону) —
+// інформаційно; спільне імʼя з різним вмістом — error і жодного запису
+// (міграції immutable). Міграції плагіна перед копіюванням проходять
+// SQL-лінт меж: лише таблиці plg_<name>_* (спека §7/§9). Чистий компаратор
 // звідси переиспользовує doctor (перевірка №7) — реалізація одна.
-import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
+import { configPluginEntries } from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { fileDiffers } from './host-drift.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
@@ -58,6 +68,111 @@ export function compareMigrations(storeDir, schemaDir) {
   };
 }
 
+/**
+ * Канони міграцій установлених плагінів: записи конфігу → тека migrations/
+ * пакета. `@plugins/<name>` — локальний плагін магазину (тека plugins/),
+ * bare-специфікатор — пакет у node_modules. Плагін без migrations/ — не
+ * помилка (плагіни без таблиць легальні), його просто немає в списку.
+ * @param {string} storeRoot
+ * @returns {{ name: string; spec: string; dir: string }[]}
+ */
+export function pluginMigrationSources(storeRoot) {
+  const configPath = join(storeRoot, 'simplycms.config.ts');
+  if (!existsSync(configPath)) return [];
+  const entries = configPluginEntries(readFileSync(configPath, 'utf8')) ?? [];
+  const sources = [];
+  for (const { name, spec } of entries) {
+    const dir = spec.startsWith('@plugins/')
+      ? join(storeRoot, 'plugins', spec.slice('@plugins/'.length), 'migrations')
+      : join(storeRoot, 'node_modules', spec, 'migrations');
+    if (existsSync(dir)) sources.push({ name, spec, dir });
+  }
+  return sources;
+}
+
+/**
+ * Порівняння магазину з N канонами (ядро + плагіни). `own` рахується по
+ * ОБʼЄДНАННЮ канонів — інакше міграція плагіна, вже скопійована в магазин,
+ * брехливо значилась би «власною». `collisions` — одне імʼя з різним вмістом
+ * у ДВОХ канонах: конфлікт джерел, який не розвʼязується копіюванням.
+ * @param {string} storeDir
+ * @param {{ name: string | null; spec: string; dir: string }[]} sources
+ */
+export function compareMigrationsMulti(storeDir, sources) {
+  const store = listSqlFiles(storeDir);
+  /** @type {Map<string, string>} імʼя → тека канону, що принесла його першою */
+  const seen = new Map();
+  const collisions = [];
+  const perSource = sources.map(({ name, spec, dir }) => {
+    const files = listSqlFiles(dir);
+    for (const file of files) {
+      const firstDir = seen.get(file);
+      if (firstDir === undefined) seen.set(file, dir);
+      else if (fileDiffers(join(firstDir, file), join(dir, file)))
+        collisions.push(file);
+    }
+    return {
+      name,
+      spec,
+      dir,
+      missing: files.filter((file) => !store.includes(file)),
+      changed: files.filter(
+        (file) =>
+          store.includes(file) &&
+          fileDiffers(join(dir, file), join(storeDir, file)),
+      ),
+    };
+  });
+  return {
+    perSource,
+    own: store.filter((file) => !seen.has(file)),
+    collisions,
+  };
+}
+
+/**
+ * SQL-лінт межі довіри (спека §7/§9): міграція плагіна сміє чіпати ЛИШЕ
+ * власні таблиці `plg_<name>_*` — включно з політиками, індексами та
+ * REFERENCES (link-поля без FK у чужі таблиці). Regexp-скан свідомо простий:
+ * це гард від помилки автора, а не парсер SQL; хитрий обхід зупинить ревʼю
+ * міграції людиною (обовʼязковий крок конвеєра).
+ * @param {string} sql
+ * @param {string} pluginName
+ * @returns {string[]} людські описи порушень; порожньо — чисто
+ */
+export function lintPluginMigrationSql(sql, pluginName) {
+  const prefix = `plg_${pluginName.replace(/-/g, '_')}_`;
+  const ident = String.raw`(?:public\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?`;
+  const targets = [
+    new RegExp(
+      String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?${ident}`,
+      'gi',
+    ),
+    new RegExp(
+      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${ident}`,
+      'gi',
+    ),
+    new RegExp(String.raw`create\s+policy\s+"[^"]+"\s+on\s+${ident}`, 'gi'),
+    new RegExp(
+      String.raw`create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?\S+\s+on\s+${ident}`,
+      'gi',
+    ),
+    new RegExp(String.raw`drop\s+table\s+(?:if\s+exists\s+)?${ident}`, 'gi'),
+    new RegExp(String.raw`references\s+${ident}`, 'gi'),
+  ];
+  const violations = [];
+  for (const re of targets) {
+    for (const match of sql.matchAll(re)) {
+      if (!match[1].startsWith(prefix)) {
+        violations.push(
+          `"${match[1]}" поза межею ${prefix}* (${match[0].trim().slice(0, 50)}…)`,
+        );
+      }
+    }
+  }
+  return violations;
+}
+
 /** Докопіювати названі міграції ядра в магазин (тільки додавання, §4.4). */
 export function copyMigrations(storeDir, schemaDir, names) {
   mkdirSync(storeDir, { recursive: true });
@@ -79,9 +194,33 @@ export async function run(argv) {
   const { write } = parseDbDiffArgs(argv);
   begin('simplycms db:diff');
   const storeRoot = findStoreRoot();
-  const schemaDir = assertSchemaMigrations(storeRoot);
   const storeDir = storeMigrationsDir(storeRoot);
-  const { missing, own, changed } = compareMigrations(storeDir, schemaDir);
+
+  // Канони: ядро (обовʼязкове) + плагіни з конфігу, що везуть migrations/.
+  const sources = [
+    {
+      name: null,
+      spec: '@simplycms/schema',
+      dir: assertSchemaMigrations(storeRoot),
+    },
+    ...pluginMigrationSources(storeRoot),
+  ];
+  const { perSource, own, collisions } = compareMigrationsMulti(
+    storeDir,
+    sources,
+  );
+
+  if (collisions.length > 0) {
+    say.error(
+      `Одне імʼя міграції з різним вмістом у двох канонах: ${collisions.join(', ')}.\n` +
+        'Конфлікт джерел не розвʼязується копіюванням — нічого не записано.',
+    );
+    process.exitCode = 1;
+    finish('Колізія канонів міграцій.');
+    return;
+  }
+
+  const changed = perSource.flatMap((s) => s.changed);
   if (changed.length > 0) {
     say.error(
       `Спільні міграції розійшлися вмістом: ${changed.join(', ')}.\n` +
@@ -91,25 +230,65 @@ export async function run(argv) {
     finish('Конфлікт вмісту міграцій.');
     return;
   }
+
+  // SQL-лінт меж для міграцій ПЛАГІНІВ (ядро свої канони не лінтить —
+  // воно і є ядро). Порушення — error без запису, --write чи ні.
+  let linted = true;
+  for (const source of perSource) {
+    if (source.name === null) continue;
+    for (const file of source.missing) {
+      const violations = lintPluginMigrationSql(
+        readFileSync(join(source.dir, file), 'utf8'),
+        source.name,
+      );
+      if (violations.length > 0) {
+        linted = false;
+        say.error(
+          `Міграція ${file} плагіна '${source.name}' порушує межу довіри:\n  ${violations.join('\n  ')}`,
+        );
+      }
+    }
+  }
+  if (!linted) {
+    process.exitCode = 1;
+    finish('Міграції плагінів не пройшли лінт меж — нічого не записано.');
+    return;
+  }
+
   if (own.length > 0)
-    say.info(`Власні міграції магазину (ядро їх не знає): ${own.join(', ')}`);
-  if (missing.length === 0) {
-    say.success('Нових міграцій ядра немає — магазин не відстає.');
+    say.info(
+      `Власні міграції магазину (жоден канон їх не знає): ${own.join(', ')}`,
+    );
+
+  const totalMissing = perSource.reduce((n, s) => n + s.missing.length, 0);
+  if (totalMissing === 0) {
+    say.success('Нових міграцій немає — магазин не відстає від канонів.');
     finish('Вже зроблено.');
     return;
   }
+
+  for (const source of perSource) {
+    if (source.missing.length === 0) continue;
+    const label = source.name === null ? 'ядра' : `плагіна '${source.name}'`;
+    if (!write) {
+      say.warn(
+        `Нові міграції ${label} (${source.missing.length}): ${source.missing.join(', ')}`,
+      );
+    } else {
+      copyMigrations(storeDir, source.dir, source.missing);
+      say.success(
+        `Скопійовано ${source.missing.length} міграцій ${label}: ${source.missing.join(', ')}`,
+      );
+    }
+  }
+
   if (!write) {
-    say.warn(`Нові міграції ядра (${missing.length}): ${missing.join(', ')}`);
     showSteps([
       'pnpm simplycms db:diff --write   # скопіювати їх у supabase/migrations/',
     ]);
     finish('Є що забрати (--write).');
     return;
   }
-  copyMigrations(storeDir, schemaDir, missing);
-  say.success(
-    `Скопійовано ${missing.length} нових міграцій ядра: ${missing.join(', ')}`,
-  );
   showSteps([
     'git diff             # ревʼю доданих міграцій',
     'supabase db push     # накатити їх на БД магазину',

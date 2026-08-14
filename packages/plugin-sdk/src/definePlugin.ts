@@ -35,10 +35,10 @@ export function definePlugin(definition: PluginDefinition): SdkPluginModule {
   const hookNames = Object.keys(definition.hooks ?? {});
   const collision = slotNames.find((slot) => hookNames.includes(slot));
   if (collision) {
+    // HookRegistry тримає один запис на пару (hook, plugin) — другий
+    // register мовчки замінив би перший, тому колізія — помилка контракту.
     throw new Error(
-      `[plugin-sdk] "${name}": "${collision}" оголошено і в slots, і в hooks — ` +
-        `HookRegistry тримає ОДИН запис на пару (hook, plugin), другий мовчки ` +
-        `замінив би перший`,
+      `[plugin-sdk] "${name}": "${collision}" оголошено і в slots, і в hooks`,
     );
   }
 

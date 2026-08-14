@@ -12,6 +12,58 @@
 
 ---
 
+## [Unreleased]
+
+Фаза 3 роадмапу — Plugin SDK v1. План і межі:
+[`docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md`](docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md).
+🔴 Мерж у `main` опублікує ДВА нові пакети (`@simplycms/plugin-sdk`,
+`@simplycms/plugin-faq`) — введення пакета є релізним рішенням у момент мержу.
+
+### Додано
+
+- **`@simplycms/plugin-sdk`** — контракт `definePlugin` (спека §7), порти
+  `usePluginTable` (CRUD лише по `plg_*`), `usePluginConfig` (настройки зі
+  схемою+дефолтами), `usePluginT` (i18n плагіна, дзеркало `useThemeT`);
+  реекспорт `validatePluginModule`.
+- **`@simplycms/plugin-faq`** — референс-плагін повного контуру: таблиця
+  `plg_faq_items` (міграція в пакеті), adminRoutes `/admin/faq`, слот
+  `product.detail.after`, Zod-settings, каталог uk/en.
+- **`simplycms create plugin <name>`** — скаффолд плагіна в `plugins/`
+  магазину (шаблон — `template-plugin/` у tarball CLI, під Gate TOOL).
+- **`simplycms db:diff` — N канонів**: ядро + міграції встановлених плагінів
+  (`own` рахується по обʼєднанню), SQL-лінт межі `plg_<name>_*`,
+  конфлікт канонів — error; doctor №7 узгоджено.
+- **Реальна semver-перевірка `engines.simplycms`** (warn-режим на 0.x):
+  `satisfies` + `CORE_VERSION` у `@simplycms/objects/semver` (новий subpath);
+  бамп константи вбудовано в release-скрипт, парність — під тестом.
+- **dependency-lint межі довіри**: eslint-зона `no-restricted-imports` на
+  `plugins/**` і `packages/simplycms-plugin-*/**` (без `@simplycms/supabase`,
+  `@simplycms/data-supabase`, `@supabase/*`); негативний контроль —
+  `tests/plugin-trust-boundary.test.ts`.
+- **i18n плагінів**: `plugins/` і референс-пакети в `SCANNED_ROOTS`;
+  парність каталогів — `tests/plugin-messages-parity.test.ts`.
+
+### Змінено
+
+- 🔴 **`@simplycms/plugins`**: `PluginManifest` розширено (`engines`,
+  `edgeFunctions`, `buckets`); `bootstrapPlugins` валідує модулі
+  (`validatePluginModule`, невалідний → skip) і пише `hooks` у рядок БД;
+  форма налаштувань в адмінці рендериться з Zod-схеми зареєстрованого
+  модуля (`z.toJSONSchema`), toggle і uninstall — лише через lifecycle.
+- 🔴 **`@simplycms/admin`**: peer `zod` звужено до `^4.0.0`
+  (`z.toJSONSchema` — Zod-4-only).
+- Маніфести тем: `engines.simplycms` — `'>=0.1.0'` (caret на 0.x не
+  покривав ядро 0.3.0; warn-перевірку додано у `validateThemeModule`).
+- `plugins/hello-world` переписано на `definePlugin` + власний каталог
+  `messages` (метадані реєстру — англійською).
+
+### Знято (breaking, 0.x, D5 — без шимів)
+
+- **`PluginSettingDefinition`** і `PluginManifest.settings` — налаштування
+  описуються Zod-схемою в `definePlugin({ settings })`.
+- **`InstallPluginDialog`** (runtime-встановлення руками) — суперечив
+  build-time lifecycle §7 (`simplycms add`).
+
 ## [0.3.0] — 2026-08-11
 
 🔴 **Три зміни публічного API** — розділ «Змінено» нижче. Жодна не має відомих

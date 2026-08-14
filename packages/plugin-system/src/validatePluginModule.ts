@@ -1,106 +1,101 @@
 import { CORE_VERSION, satisfies } from '@simplycms/objects/semver';
-
-/** Звіт валідації модуля плагіна: помилки → skip, попередження → журнал. */
-export interface PluginModuleValidation {
-  ok: boolean;
-  errors: string[];
-  warnings: string[];
-}
+import type { PluginModule } from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
 /**
- * Pure-валідатор модуля плагіна — аналог `validateThemeModule`, але з
- * МʼЯКШОЮ політикою (спека §8 «ніяких падінь»): помилки означають «модуль
- * пропустити», попередження — «зареєструвати, але записати в журнал».
- * Рішення, що робити зі звітом, — за викликачем (`bootstrapPlugins` логує
- * і пропускає; CLI може бути суворішим).
+ * Pure-валідатор модуля плагіна — той самий ідіом, що `validateThemeModule`:
+ * порушення контракту — `throw` (діагностика для АВТОРА плагіна),
+ * підозри — `console.warn`. Живе тут, а не в plugin-sdk, бо його кличе
+ * `bootstrapPlugins`; SDK лише реекспортує.
  *
- * Несумісний `engines.simplycms` на 0.x — попередження, не помилка
- * (рішення Р5 плану Фази 3): строгий фейл — політика реліз-потяга v1.0.
+ * Мʼяку політику спеки §8 («ніяких падінь») забезпечує ВИКЛИКАЧ: bootstrap
+ * ловить throw і пропускає модуль, не валячи застосунок. Несумісний
+ * `engines.simplycms` — НЕ помилка, а попередження (рішення Р5 плану Фази 3:
+ * warn-режим на 0.x; строгий фейл — політика реліз-потяга v1.0).
  */
 export function validatePluginModule(
   value: unknown,
   coreVersion: string = CORE_VERSION,
-): PluginModuleValidation {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
+): asserts value is PluginModule {
   if (!isRecord(value) || typeof value.register !== 'function') {
-    return {
-      ok: false,
-      errors: ['модуль не має register(registry) — це не PluginModule'],
-      warnings,
-    };
+    throw new Error(
+      '[plugin] модуль не має register(registry) — це не PluginModule',
+    );
   }
 
   const manifest = value.manifest;
   if (manifest === undefined) {
-    warnings.push(
-      'модуль без manifest — метадані в БД підуть дефолтами (0.0.0)',
+    console.warn(
+      '[plugin] модуль без manifest — метадані в БД підуть дефолтами (0.0.0)',
     );
-    return { ok: errors.length === 0, errors, warnings };
+    return;
   }
 
   if (!isRecord(manifest)) {
-    errors.push('manifest не є обʼєктом');
-    return { ok: false, errors, warnings };
+    throw new Error('[plugin] manifest не є обʼєктом');
   }
 
   for (const field of ['name', 'displayName', 'version'] as const) {
     if (typeof manifest[field] !== 'string' || manifest[field] === '') {
-      errors.push(`manifest.${field} обовʼязковий рядок`);
+      throw new Error(`[plugin] manifest.${field} — обовʼязковий рядок`);
     }
   }
+  const name = manifest.name as string;
 
   const engines = manifest.engines;
   if (engines === undefined) {
-    warnings.push(
-      'manifest.engines.simplycms відсутній — сумісність із ядром не декларована',
+    console.warn(
+      `[plugin] "${name}": engines.simplycms відсутній — сумісність із ядром не декларована`,
     );
   } else if (!isRecord(engines) || typeof engines.simplycms !== 'string') {
-    errors.push('manifest.engines.simplycms має бути рядком-діапазоном');
+    throw new Error(
+      `[plugin] "${name}": manifest.engines.simplycms має бути рядком-діапазоном`,
+    );
   } else {
     try {
       if (!satisfies(coreVersion, engines.simplycms)) {
-        warnings.push(
-          `engines.simplycms "${engines.simplycms}" не покриває ядро ` +
-            `${coreVersion} — плагін може бути несумісним`,
+        console.warn(
+          `[plugin] "${name}": engines.simplycms "${engines.simplycms}" не покриває ядро ${coreVersion} — плагін може бути несумісним`,
         );
       }
     } catch (error) {
-      warnings.push(
-        `engines.simplycms не розпарсився: ${
+      console.warn(
+        `[plugin] "${name}": engines.simplycms не розпарсився: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
     }
   }
 
-  const messages = value.messages ?? (value.definition as { messages?: unknown } | undefined)?.messages;
+  const messages =
+    value.messages ??
+    (value.definition as { messages?: unknown } | undefined)?.messages;
   if (messages !== undefined) {
     if (!isRecord(messages)) {
-      errors.push('messages має бути обʼєктом Partial<Record<Locale, …>>');
-    } else {
-      const name = typeof manifest.name === 'string' ? manifest.name : '';
-      const prefix = `plugin.${name}.`;
-      for (const [locale, catalog] of Object.entries(messages)) {
-        if (!isRecord(catalog)) {
-          errors.push(`messages.${locale} має бути Record<string, string>`);
-          continue;
+      throw new Error(
+        `[plugin] "${name}": messages має бути Partial<Record<Locale, Record<string, string>>>`,
+      );
+    }
+    const prefix = `plugin.${name}.`;
+    for (const [locale, catalog] of Object.entries(messages)) {
+      if (!isRecord(catalog)) {
+        throw new Error(
+          `[plugin] "${name}": messages.${locale} має бути Record<string, string>`,
+        );
+      }
+      for (const [key, text] of Object.entries(catalog)) {
+        if (typeof text !== 'string') {
+          throw new Error(
+            `[plugin] "${name}": messages.${locale}.${key} має бути рядком`,
+          );
         }
-        for (const [key, text] of Object.entries(catalog)) {
-          if (typeof text !== 'string') {
-            errors.push(`messages.${locale}.${key} має бути рядком`);
-          }
-          if (name && !key.startsWith(prefix)) {
-            warnings.push(
-              `ключ "${key}" без префікса "${prefix}" — ризик колізії ` +
-                `з MessageKey ядра чи іншим плагіном`,
-            );
-          }
+        if (!key.startsWith(prefix)) {
+          console.warn(
+            `[plugin] "${name}": ключ "${key}" без префікса "${prefix}" — ризик колізії з MessageKey ядра чи іншим плагіном`,
+          );
         }
       }
     }
@@ -112,8 +107,8 @@ export function validatePluginModule(
     settings !== undefined &&
     (!isRecord(settings) || typeof settings.safeParse !== 'function')
   ) {
-    errors.push('definition.settings має бути Zod-схемою (z.object)');
+    throw new Error(
+      `[plugin] "${name}": definition.settings має бути Zod-схемою (z.object)`,
+    );
   }
-
-  return { ok: errors.length === 0, errors, warnings };
 }

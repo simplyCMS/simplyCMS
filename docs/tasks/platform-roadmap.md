@@ -458,16 +458,78 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ## Фаза 3 — Plugin SDK + референс-плагіни
 
-- [ ] `@simplycms/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7)
-- [ ] Межа довіри: dependency-lint (плагін не імпортує повз SDK; без SupabaseClient)
-- [ ] `adminRoutes` плагінів (`/admin/<slug>` монтаж) — механізму в `routes.ts`
-      немає. *Пункт меню через слот уже працює з Фази 0* (`admin.sidebar.items`
-      у `AdminSidebar.tsx`, реактивний `PluginSlot`) — лишається сам монтаж роутів
-- [ ] 1-2 референс-плагіни (доставка, оплата) + авторський цикл
-      (`create plugin` / `plugin:dev`)
+План виконання (v1, кодова частина — 2026-08-14):
+[`docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md`](../superpowers/plans/2026-08-14-phase3-plugin-sdk.md)
+— 11 зафіксованих рішень Р0–Р11 і межі середовища (без Docker/БД).
+
+- [x] `@simplycms/plugin-sdk` (`definePlugin`, порти, Zod-настройки; spec §7) —
+      **2026-08-14**: `definePlugin` видає розширений `PluginModule`
+      (сумісність із `bootstrapPlugins` без зміни контракту), порти v1 —
+      `usePluginTable` (CRUD лише по `plg_*`, рантайм-гард префікса),
+      `usePluginConfig` (читання настройок зі схемою+дефолтами), `usePluginT`
+      (i18n, дзеркало `useThemeT`); `validatePluginModule` — ідіом
+      `validateThemeModule` (throw + warn), кличе bootstrap.
+      🔴 Разом поїхала реальна semver-перевірка `engines.simplycms`
+      (утиліта `@simplycms/objects/semver` + `CORE_VERSION`, бамп у
+      release-скрипті, парність під тестом) — у **warn-режимі на 0.x**
+      (Р5): строгий фейл лишається рішенням реліз-потяга v1.0.
+      Це закриває «механізм» відповідного пункту Фази 2; строгість — ні.
+- [x] Межа довіри: dependency-lint — **2026-08-14**: eslint-зона
+      `no-restricted-imports` на `plugins/**` і `packages/simplycms-plugin-*/**`
+      (заборона `@simplycms/supabase`, `@simplycms/data-supabase`,
+      `@supabase/*`); доводить НЕ зелений лінт, а негативний контроль
+      `tests/plugin-trust-boundary.test.ts` (синтетичне порушення в зоні й
+      поза нею). Адмінка зведена до одного шляху мутації (Р8):
+      toggle → `usePluginToggle`, uninstall → `uninstallPlugin`,
+      runtime-`InstallPluginDialog` знято (build-time lifecycle §7).
+- [x] `adminRoutes` плагінів — **2026-08-14**: механізм — `physical()`-рядок
+      у store-owned `routes.ts` (якір-коментар для CLI в host і template;
+      у магазині — через realpathSync-хелпер, інакше мовчки зникає
+      code-splitting); файли плагіна несуть запечені id `/admin/<slug>/…` і
+      стають дітьми layout `/admin`. Гард — новий кейс «два physical() під
+      спільним layout» у `tests/virtual-routes-escape.test.ts`; симетрію
+      монорепо↔скретч стереже Gate A.
+- [x] Референс-плагіни + авторський цикл — **2026-08-14, свідомо НЕ
+      «доставка/оплата»** (рішення Р0/Р11 плану: оплата захардкоджена
+      union-ом у воронці, `hookRegistry.execute` кличе лише `PluginSlot` —
+      платіжний плагін означав би прихований рефакторинг воронки).
+      Зроблено: `plugins/hello-world` → мінімальний SDK-приклад
+      (слот + власний каталог i18n); **`@simplycms/plugin-faq`**
+      (тека `packages/simplycms-plugin-faq`) — ПОВНИЙ контур: таблиця
+      `plg_faq_items` (міграція в пакеті), adminRoutes `/admin/faq` (CRUD
+      через `usePluginTable`), слот `product.detail.after`, Zod-settings,
+      каталог uk/en. `simplycms create plugin <name>` скаффолдить у
+      `plugins/` магазину (шаблон — `packages/cli/template-plugin/`, у
+      Gate TOOL); `simplycms db:diff` розширено до N канонів
+      (ядро + плагіни, `own` по обʼєднанню, SQL-лінт меж `plg_<name>_*`),
+      doctor №7 узгоджено. i18n: `plugins/` і референс-пакети в
+      `SCANNED_ROOTS`, парність — `tests/plugin-messages-parity.test.ts`.
 
 **DoD:** плагін ставиться `simplycms add`, вмикається з адмінки, везе свої
-таблиці (`plg_*`) і сторінки.
+таблиці (`plg_*`) і сторінки. — Кодова частина закрита; живий прогін
+(`pnpm pilot:e2e` + накат `…_plg_faq_items.sql` на dev-БД) — дія власника,
+разом із боргом №10 «Поточного стану».
+
+### Борги, свідомо винесені за межі Фази 3 (v1)
+
+- **`plugin:dev` не зроблено** (Р9): шаблон магазину — не pnpm-workspace, а
+  `minimumReleaseAge=24h` блокує install щойно опублікованого пакета —
+  субстрату для workspace-лінка немає. Локальний dev-loop дає
+  `create plugin` у `plugins/` через готовий аліас `@plugins/*`.
+- **Бізнес-емітери hooks відсутні** (Р0): `order.created` тощо декларуються,
+  але ядро їх не емить — `execute` кличе лише `PluginSlot`. Серверного
+  bootstrap-контуру теж немає (bootstrap — клієнтський `useEffect`).
+  Введення емітерів = окрема задача з рефакторингом воронки (клієнтський
+  `insert` замовлення повз `OrderRepository`).
+- **`events`/`storage`-порти SDK** (спека §7) — не робились: нуль споживачів,
+  таблиця `plugin_events` мертва. `edgeFunctions`/`buckets` — лише
+  декларативні поля маніфеста (§9 v1).
+- **`plugin:purge`** (спека §9) — команди немає; видалення плагіна лишає
+  його таблиці (задекларована політика), генерація purge-міграції — пізніше.
+- **`plugins.migrations_applied` ніхто не пише** — колонка-журнал готова,
+  облік накачених плагінних міграцій відкладено.
+- **Строгий semver `engines.simplycms`** — лишається за реліз-потягом v1.0
+  (зараз warn; маніфести тем переведено на `'>=0.1.0'`).
 
 ## Фаза 4 — Теми як пакети + маркетплейс-індекс
 

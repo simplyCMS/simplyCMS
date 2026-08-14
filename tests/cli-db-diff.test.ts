@@ -12,9 +12,12 @@ import { describe, expect, it } from 'vitest';
 import {
   assertSchemaMigrations,
   compareMigrations,
+  compareMigrationsMulti,
   copyMigrations,
+  lintPluginMigrationSql,
   listSqlFiles,
   parseDbDiffArgs,
+  pluginMigrationSources,
   schemaMigrationsPath,
   storeMigrationsDir,
 } from '../packages/cli/src/db-diff.mjs';
@@ -123,5 +126,109 @@ describe('cli db:diff', () => {
     writeFileSync(join(dir, 'README.md'), 'не sql');
     expect(listSqlFiles(dir)).toEqual(['1_a.sql', '2_b.sql']);
     expect(listSqlFiles(join(dir, 'nema'))).toEqual([]);
+  });
+});
+
+// N канонів (Фаза 3, Р4): ядро + міграції встановлених плагінів.
+describe('cli db:diff: мульти-канони', () => {
+  it('pluginMigrationSources: читає конфіг, бачить node_modules і @plugins/, пропускає плагіни без міграцій', async () => {
+    const store = await scaffoldStore('db-plugin-sources');
+    // Шаблон декларує hello-world (@plugins/, без migrations/) і faq
+    // (@simplycms/plugin-faq у node_modules) — створюємо теку лише faq.
+    const faqDir = join(
+      store,
+      'node_modules',
+      '@simplycms',
+      'plugin-faq',
+      'migrations',
+    );
+    mkdirSync(faqDir, { recursive: true });
+    writeFileSync(
+      join(faqDir, '20260814120000_plg_faq_items.sql'),
+      'select 1;\n',
+    );
+
+    const sources = pluginMigrationSources(store);
+    expect(sources).toEqual([
+      { name: 'faq', spec: '@simplycms/plugin-faq', dir: faqDir },
+    ]);
+  });
+
+  it('compareMigrationsMulti: own рахується по ОБʼЄДНАННЮ канонів', async () => {
+    const store = await scaffoldStore('db-multi-own');
+    const schemaDir = makeSchemaDir(store);
+    const storeDir = storeMigrationsDir(store);
+    const pluginDir = mkdtempSync(join(tmpdir(), 'cli-db-plg-'));
+    // Міграція плагіна ВЖЕ скопійована в магазин: без другого канону вона
+    // брехливо значилась би «власною».
+    writeFileSync(
+      join(pluginDir, '99999999999999_plg_faq_items.sql'),
+      'select 1;\n',
+    );
+    writeFileSync(
+      join(storeDir, '99999999999999_plg_faq_items.sql'),
+      'select 1;\n',
+    );
+    const single = compareMigrationsMulti(storeDir, [
+      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+    ]);
+    expect(single.own).toEqual(['99999999999999_plg_faq_items.sql']);
+
+    const multi = compareMigrationsMulti(storeDir, [
+      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: 'faq', spec: '@simplycms/plugin-faq', dir: pluginDir },
+    ]);
+    expect(multi.own).toEqual([]);
+    expect(multi.collisions).toEqual([]);
+    expect(multi.perSource[1].missing).toEqual([]);
+  });
+
+  it('compareMigrationsMulti: одне імʼя з різним вмістом у двох канонах — collision', async () => {
+    const store = await scaffoldStore('db-multi-collision');
+    const schemaDir = makeSchemaDir(store);
+    const a = mkdtempSync(join(tmpdir(), 'cli-db-a-'));
+    const b = mkdtempSync(join(tmpdir(), 'cli-db-b-'));
+    writeFileSync(join(a, '99999999999999_same.sql'), 'select 1;\n');
+    writeFileSync(join(b, '99999999999999_same.sql'), 'select 2;\n');
+    const { collisions } = compareMigrationsMulti(storeMigrationsDir(store), [
+      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: 'a', spec: 'a', dir: a },
+      { name: 'b', spec: 'b', dir: b },
+    ]);
+    expect(collisions).toEqual(['99999999999999_same.sql']);
+  });
+});
+
+// SQL-лінт межі довіри (спека §7/§9): лише таблиці plg_<name>_*.
+describe('cli db:diff: lintPluginMigrationSql', () => {
+  it('реальна міграція faq — чиста', () => {
+    const sql = readFileSync(
+      'packages/simplycms-plugin-faq/migrations/20260814120000_plg_faq_items.sql',
+      'utf8',
+    );
+    expect(lintPluginMigrationSql(sql, 'faq')).toEqual([]);
+  });
+
+  it('чужа таблиця в CREATE/ALTER/POLICY/REFERENCES — порушення поіменно', () => {
+    const sql = [
+      'create table public.orders (id uuid);',
+      'alter table public.plg_faq_items add column x text;',
+      'create policy "p" on public.products for select using (true);',
+      'create table plg_faq_extra (ref uuid references public.users (id));',
+    ].join('\n');
+    const violations = lintPluginMigrationSql(sql, 'faq');
+    expect(violations).toHaveLength(3);
+    expect(violations.join('\n')).toContain('"orders"');
+    expect(violations.join('\n')).toContain('"products"');
+    expect(violations.join('\n')).toContain('"users"');
+  });
+
+  it('дефіс в імені плагіна мапиться на підкреслення префікса', () => {
+    expect(
+      lintPluginMigrationSql(
+        'create table plg_hello_world_notes (id uuid);',
+        'hello-world',
+      ),
+    ).toEqual([]);
   });
 });

@@ -103,17 +103,55 @@ export async function toolPkgSmoke() {
     }
     details.push(`✓ host/: ${hostFiles.length} файлів`);
 
+    // template-plugin/ — шаблон `simplycms create plugin` (Фаза 3): та сама
+    // логіка, що для host/ — порожня тека формально «доїхала б».
+    const templatePluginDir = join(pkgDir, 'template-plugin');
+    const templatePluginFiles = existsSync(templatePluginDir)
+      ? readdirSync(templatePluginDir, {
+          recursive: true,
+          withFileTypes: true,
+        }).filter((entry) => entry.isFile())
+      : [];
+    if (templatePluginFiles.length === 0) {
+      return {
+        ok: false,
+        details: [
+          ...details,
+          '✗ template-plugin/ відсутня в tarball або порожня',
+        ],
+      };
+    }
+    details.push(`✓ template-plugin/: ${templatePluginFiles.length} файлів`);
+
     symlinkSync(
       join(TOOL_PKG_DIR, 'node_modules'),
       join(pkgDir, 'node_modules'),
       'dir',
     );
 
-    execFileSync('node', [join(pkgDir, 'src/index.mjs'), '--help'], {
-      cwd: work,
-      stdio: 'pipe',
-    });
+    const help = execFileSync(
+      'node',
+      [join(pkgDir, 'src/index.mjs'), '--help'],
+      { cwd: work, stdio: 'pipe' },
+    ).toString();
     details.push('✓ node src/index.mjs --help: exit 0');
+    // Довідка — контракт диспетчера: зникла команда означає, що модуль
+    // випав із COMMANDS або з files, і смоук мусить це побачити.
+    for (const command of [
+      'doctor',
+      'add',
+      'create plugin',
+      'update',
+      'db:diff',
+    ]) {
+      if (!help.includes(command)) {
+        return {
+          ok: false,
+          details: [...details, `✗ --help не згадує команду «${command}»`],
+        };
+      }
+    }
+    details.push('✓ --help згадує всі 5 команд');
 
     const version = execFileSync(
       'node',

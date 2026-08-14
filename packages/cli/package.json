@@ -21,7 +21,8 @@
   },
   "files": [
     "src",
-    "host"
+    "host",
+    "template-plugin"
   ],
   "license": "MIT",
   "engines": {

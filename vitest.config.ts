@@ -29,6 +29,7 @@ export default defineConfig({
       '@simplycms/ui': pkg('ui/src'),
       '@simplycms/plugins': pkg('plugin-system/src'),
       '@simplycms/plugin-sdk': pkg('plugin-sdk/src'),
+      '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
       '@simplycms/themes': pkg('theme-system/src'),
       '@themes': resolve(__dirname, 'themes'),
       '@plugins': resolve(__dirname, 'plugins'),

@@ -67,7 +67,8 @@ function useSettingsSchema(
     if (!pluginName) return undefined;
     const module = getRegisteredPluginModules().get(pluginName);
     const definition = (
-      module as { definition?: { settings?: ZodObject<ZodRawShape> } } | undefined
+      module as
+        { definition?: { settings?: ZodObject<ZodRawShape> } } | undefined
     )?.definition;
     return definition?.settings;
   }, [pluginName]);

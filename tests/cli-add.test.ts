@@ -107,7 +107,11 @@ describe('cli add', () => {
     expect(source.indexOf('wishlist')).toBeLessThan(
       source.indexOf('hello-world'),
     );
-    expect(configPluginNames(source)).toEqual(['wishlist', 'hello-world']);
+    expect(configPluginNames(source)).toEqual([
+      'wishlist',
+      'hello-world',
+      'faq',
+    ]);
   });
 
   it('insertEntry: тема вставляється і в конфіг кореня монорепо', () => {
@@ -208,7 +212,7 @@ describe('cli add', () => {
   it('парсери конфігу читають реальні ключі; без якоря — null', () => {
     expect(configThemeKeys(templateConfig)).toEqual(['default']);
     expect(configThemeKeys(hostConfig)).toEqual(['default', 'solarstore']);
-    expect(configPluginNames(templateConfig)).toEqual(['hello-world']);
+    expect(configPluginNames(templateConfig)).toEqual(['hello-world', 'faq']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();
   });

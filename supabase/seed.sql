@@ -58,7 +58,7 @@ insert into public.plugins (
   name, display_name, version, description, author, is_active, hooks
 )
 values (
-  'hello-world', 'Hello World', '0.1.0', 'Демо-плагін: віджет на дашборді адмінки.',
+  'hello-world', 'Hello World', '0.1.0', 'Demo plugin: a dashboard widget proving the plugin contour works.',
   'SimplyCMS', true, '[{"name":"admin.dashboard.widgets"}]'::jsonb
 )
 on conflict (name) do nothing;

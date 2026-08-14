@@ -34,9 +34,7 @@ describe('usePluginT', () => {
     const { result } = renderHook(() => usePluginT(messages), {
       wrapper: wrap('en'),
     });
-    expect(result.current('plugin.demo.count', { count: 3 })).toBe(
-      'Питань: 3',
-    );
+    expect(result.current('plugin.demo.count', { count: 3 })).toBe('Питань: 3');
     expect(result.current('plugin.demo.missing')).toBe('plugin.demo.missing');
   });
 

@@ -72,6 +72,33 @@ const SERVER_ENV_FILES = [
   'src/start.ts',
 ];
 
+// 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
+// @simplycms/plugin-sdk — прямі імпорти Supabase-шару звідси заборонені.
+// Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
+// (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
+// `plugin-*`: plugin-system і plugin-sdk — ядро, їх зона не покриває.
+// Селектори не послабляти; негативний контроль —
+// tests/plugin-trust-boundary.test.ts (зелений лінт сам по собі скоупінг
+// зони не доводить — урок env-контракту).
+const PLUGIN_TRUST_BOUNDARY_FILES = [
+  'plugins/**/*.{ts,tsx}',
+  'packages/simplycms-plugin-*/**/*.{ts,tsx}',
+];
+
+const pluginTrustBoundaryImports = [
+  {
+    group: [
+      '@simplycms/supabase',
+      '@simplycms/supabase/*',
+      '@simplycms/data-supabase',
+      '@simplycms/data-supabase/*',
+      '@supabase/*',
+    ],
+    message:
+      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7).',
+  },
+];
+
 const eslintConfig = [
   ...tseslint.configs.recommended,
   {
@@ -127,6 +154,18 @@ const eslintConfig = [
         'error',
         ...i18nRestrictedSyntax,
         ...serverEnvRestrictedSyntax,
+      ],
+    },
+  },
+  {
+    // Межа довіри плагінів. Окреме ПРАВИЛО (no-restricted-imports), а не
+    // селектор no-restricted-syntax — тому перетин із i18n-зоною безпечний:
+    // «заміна опцій цілком» стосується лише однойменного правила.
+    files: PLUGIN_TRUST_BOUNDARY_FILES,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: pluginTrustBoundaryImports },
       ],
     },
   },

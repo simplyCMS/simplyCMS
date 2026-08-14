@@ -40,6 +40,7 @@ import { Route as AdminPluginsIndexRouteImport } from './../packages/admin-route
 import { Route as AdminOrdersIndexRouteImport } from './../packages/admin-routes/routes/admin/orders/index'
 import { Route as AdminOrderStatusesIndexRouteImport } from './../packages/admin-routes/routes/admin/order-statuses/index'
 import { Route as AdminLanguagesIndexRouteImport } from './../packages/admin-routes/routes/admin/languages/index'
+import { Route as AdminFaqIndexRouteImport } from './../packages/simplycms-plugin-faq/routes/admin/faq/index'
 import { Route as AdminDiscountsIndexRouteImport } from './../packages/admin-routes/routes/admin/discounts/index'
 import { Route as AdminBannersIndexRouteImport } from './../packages/admin-routes/routes/admin/banners/index'
 import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/storefront-routes/routes/_storefront/properties/index'
@@ -230,6 +231,11 @@ const AdminOrderStatusesIndexRoute = AdminOrderStatusesIndexRouteImport.update({
 const AdminLanguagesIndexRoute = AdminLanguagesIndexRouteImport.update({
   id: '/languages/',
   path: '/languages/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFaqIndexRoute = AdminFaqIndexRouteImport.update({
+  id: '/faq/',
+  path: '/faq/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDiscountsIndexRoute = AdminDiscountsIndexRouteImport.update({
@@ -461,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/properties/': typeof StorefrontPropertiesIndexRoute
   '/admin/banners/': typeof AdminBannersIndexRoute
   '/admin/discounts/': typeof AdminDiscountsIndexRoute
+  '/admin/faq/': typeof AdminFaqIndexRoute
   '/admin/languages/': typeof AdminLanguagesIndexRoute
   '/admin/order-statuses/': typeof AdminOrderStatusesIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -526,6 +533,7 @@ export interface FileRoutesByTo {
   '/properties': typeof StorefrontPropertiesIndexRoute
   '/admin/banners': typeof AdminBannersIndexRoute
   '/admin/discounts': typeof AdminDiscountsIndexRoute
+  '/admin/faq': typeof AdminFaqIndexRoute
   '/admin/languages': typeof AdminLanguagesIndexRoute
   '/admin/order-statuses': typeof AdminOrderStatusesIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
@@ -595,6 +603,7 @@ export interface FileRoutesById {
   '/_storefront/properties/': typeof StorefrontPropertiesIndexRoute
   '/admin/banners/': typeof AdminBannersIndexRoute
   '/admin/discounts/': typeof AdminDiscountsIndexRoute
+  '/admin/faq/': typeof AdminFaqIndexRoute
   '/admin/languages/': typeof AdminLanguagesIndexRoute
   '/admin/order-statuses/': typeof AdminOrderStatusesIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -663,6 +672,7 @@ export interface FileRouteTypes {
     | '/properties/'
     | '/admin/banners/'
     | '/admin/discounts/'
+    | '/admin/faq/'
     | '/admin/languages/'
     | '/admin/order-statuses/'
     | '/admin/orders/'
@@ -728,6 +738,7 @@ export interface FileRouteTypes {
     | '/properties'
     | '/admin/banners'
     | '/admin/discounts'
+    | '/admin/faq'
     | '/admin/languages'
     | '/admin/order-statuses'
     | '/admin/orders'
@@ -796,6 +807,7 @@ export interface FileRouteTypes {
     | '/_storefront/properties/'
     | '/admin/banners/'
     | '/admin/discounts/'
+    | '/admin/faq/'
     | '/admin/languages/'
     | '/admin/order-statuses/'
     | '/admin/orders/'
@@ -1064,6 +1076,13 @@ declare module '@tanstack/react-router' {
       path: '/languages'
       fullPath: '/admin/languages/'
       preLoaderRoute: typeof AdminLanguagesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/faq/': {
+      id: '/admin/faq/'
+      path: '/faq'
+      fullPath: '/admin/faq/'
+      preLoaderRoute: typeof AdminFaqIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/discounts/': {
@@ -1379,6 +1398,7 @@ interface AdminRouteChildren {
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminBannersIndexRoute: typeof AdminBannersIndexRoute
   AdminDiscountsIndexRoute: typeof AdminDiscountsIndexRoute
+  AdminFaqIndexRoute: typeof AdminFaqIndexRoute
   AdminLanguagesIndexRoute: typeof AdminLanguagesIndexRoute
   AdminOrderStatusesIndexRoute: typeof AdminOrderStatusesIndexRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
@@ -1424,6 +1444,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminBannersIndexRoute: AdminBannersIndexRoute,
   AdminDiscountsIndexRoute: AdminDiscountsIndexRoute,
+  AdminFaqIndexRoute: AdminFaqIndexRoute,
   AdminLanguagesIndexRoute: AdminLanguagesIndexRoute,
   AdminOrderStatusesIndexRoute: AdminOrderStatusesIndexRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,

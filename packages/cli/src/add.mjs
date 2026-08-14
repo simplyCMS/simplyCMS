@@ -98,10 +98,26 @@ export async function run(argv) {
   const steps = [
     'pnpm build   # конфіг — build-time, без rebuild змін не буде',
   ];
-  if (options.type === 'plugin')
-    steps.push(
-      'міграції плагіна (якщо є) — вручну за README плагіна; конвеєр приїде з Plugin SDK (Фаза 3)',
+  if (options.type === 'plugin') {
+    // Реальний dry-run конвеєра міграцій (Фаза 3): дивимось, що плагін
+    // привіз у migrations/ свого пакета, і скільки з того магазин ще не має.
+    const { listSqlFiles, storeMigrationsDir } = await import('./db-diff.mjs');
+    const pkgMigrations = join(
+      storeRoot,
+      'node_modules',
+      options.pkg,
+      'migrations',
     );
+    const store = listSqlFiles(storeMigrationsDir(storeRoot));
+    const missing = listSqlFiles(pkgMigrations).filter(
+      (name) => !store.includes(name),
+    );
+    if (missing.length > 0) {
+      steps.push(
+        `pnpm simplycms db:diff --write   # плагін привіз ${missing.length} міграцій — ревʼю + supabase db push`,
+      );
+    }
+  }
   showSteps(steps);
   finish('Готово.');
 }

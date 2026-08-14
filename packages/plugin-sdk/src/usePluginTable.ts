@@ -48,7 +48,10 @@ interface PortClient {
       };
     };
     delete(): {
-      eq(column: string, value: unknown): PromiseLike<{ error: { message: string } | null }>;
+      eq(
+        column: string,
+        value: unknown,
+      ): PromiseLike<{ error: { message: string } | null }>;
     };
   };
 }
@@ -64,8 +67,10 @@ export interface PluginTablePort<Row extends Record<string, unknown>> {
   remove(id: string): Promise<void>;
 }
 
-function fail(operation: string, table: string, message: string): never {
-  throw new Error(`[plugin-sdk] ${operation} ${table}: ${message}`);
+function fail(operation: string, table: string, message?: string): never {
+  throw new Error(
+    `[plugin-sdk] ${operation} ${table}: ${message ?? 'порожня відповідь'}`,
+  );
 }
 
 /** CRUD-порт до однієї таблиці плагіна. Кидає, якщо таблиця не `plg_*`. */
@@ -105,8 +110,7 @@ export function usePluginTable<Row extends Record<string, unknown>>(
           .insert(row)
           .select()
           .single();
-        if (error || data === null)
-          fail('insert', table, error?.message ?? 'порожня відповідь');
+        if (error || data === null) fail('insert', table, error?.message);
         return data as Row;
       },
       async update(id, patch) {
@@ -116,8 +120,7 @@ export function usePluginTable<Row extends Record<string, unknown>>(
           .eq('id', id)
           .select()
           .single();
-        if (error || data === null)
-          fail('update', table, error?.message ?? 'порожня відповідь');
+        if (error || data === null) fail('update', table, error?.message);
         return data as Row;
       },
       async remove(id) {
