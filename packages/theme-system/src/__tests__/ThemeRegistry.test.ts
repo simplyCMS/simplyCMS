@@ -8,7 +8,7 @@ function makeThemeModule(name: string) {
       name,
       displayName: name,
       version: '1.0.0',
-      engines: { simplycms: '^0.1.0' },
+      engines: { simplycms: '>=0.1.0' },
     },
     tokens: { primary: '221 83% 53%' },
     components: { Header: () => null, Footer: () => null },

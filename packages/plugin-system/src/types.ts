@@ -7,10 +7,15 @@ export interface PluginManifest {
   version: string;
   description?: string;
   author?: string;
+  /** Діапазон сумісності з ядром (спека §7); перевіряється на bootstrap (warn-режим на 0.x). */
+  engines?: { simplycms: string };
   dependencies?: string[];
   hooks?: PluginHookDefinition[];
   migrations?: string[];
-  settings?: Record<string, PluginSettingDefinition>;
+  /** Декларація Edge Functions плагіна — v1 без автоматизації (спека §9). */
+  edgeFunctions?: string[];
+  /** Декларація storage-бакетів плагіна — v1 без автоматизації (спека §9). */
+  buckets?: string[];
 }
 
 export interface PluginHookDefinition {
@@ -18,12 +23,9 @@ export interface PluginHookDefinition {
   priority?: number;
 }
 
-export interface PluginSettingDefinition {
-  type: 'boolean' | 'string' | 'number' | 'select';
-  default: unknown;
-  label: string;
-  options?: { value: string; label: string }[];
-}
+// PluginSettingDefinition знято (Фаза 3, D5 — без шимів): налаштування
+// плагіна — Zod-схема в `definePlugin({ settings })`, форму адмінка рендерить
+// із `z.toJSONSchema`. Ad-hoc union до-SDK епохи не мав жодного споживача.
 
 // Database plugin record (with Json types from Supabase)
 export interface Plugin {

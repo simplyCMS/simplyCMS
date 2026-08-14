@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerPluginModule, loadPlugins } from './PluginLoader';
+import { validatePluginModule } from './validatePluginModule';
 import type { PluginModule } from './types';
 
 /** Опис плагіна в конфізі магазину: імʼя + ліниве завантаження модуля. */
@@ -15,6 +16,7 @@ interface PluginInsert {
   version: string;
   description: string | null;
   author: string | null;
+  hooks: unknown;
   is_active: boolean;
 }
 
@@ -27,6 +29,9 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
     version: manifest?.version ?? '0.0.0',
     description: manifest?.description ?? null,
     author: manifest?.author ?? null,
+    // Без hooks рядок від bootstrap був біднішим за рядок від сіду —
+    // адмінка показувала б порожній список хуків встановленого плагіна.
+    hooks: manifest?.hooks ?? [],
     is_active: false,
   };
 }
@@ -90,6 +95,21 @@ export async function bootstrapPlugins(
   for (const reg of regs) {
     try {
       const loaded = await reg.module();
+      // Мʼяка політика (спека §8 «ніяких падінь»): невалідний модуль —
+      // error-лог + пропуск; попередження (зокрема несумісний
+      // engines.simplycms — warn-режим на 0.x, рішення Р5 плану Фази 3) —
+      // у консоль, реєстрація триває.
+      const report = validatePluginModule(loaded.default);
+      for (const warning of report.warnings) {
+        console.warn(`[plugins] "${reg.name}": ${warning}`);
+      }
+      if (!report.ok) {
+        console.error(
+          `[plugins] Модуль "${reg.name}" пропущено:`,
+          report.errors.join('; '),
+        );
+        continue;
+      }
       registerPluginModule(reg.name, loaded.default);
       modules.set(reg.name, loaded.default);
     } catch (error) {

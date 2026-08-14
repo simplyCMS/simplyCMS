@@ -19,6 +19,12 @@ export {
 export { bootstrapPlugins } from './bootstrap';
 export type { PluginRegistration } from './bootstrap';
 
+// Валідація модуля плагіна (мʼяка політика: помилки → skip, warnings → журнал).
+// Живе тут, а не в plugin-sdk: bootstrap кличе її сам, а SDK лише реекспортує —
+// зворотна залежність plugin-system → plugin-sdk була б циклом.
+export { validatePluginModule } from './validatePluginModule';
+export type { PluginModuleValidation } from './validatePluginModule';
+
 // Component exports
 export { PluginSlot, usePluginSlot, getPluginSlotCount } from './PluginSlot';
 
@@ -63,7 +69,6 @@ export type {
   PluginManifest,
   PluginModule,
   PluginHookDefinition,
-  PluginSettingDefinition,
   HookHandler,
   HookRegistryInterface,
   RegisteredHook,

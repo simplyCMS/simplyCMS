@@ -14,7 +14,10 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { ArrowLeft, Puzzle, Settings, Trash2 } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
-import { getRegisteredPluginModules } from '@simplycms/plugins';
+import {
+  getRegisteredPluginModules,
+  uninstallPlugin,
+} from '@simplycms/plugins';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT } from '@simplycms/i18n';
 import {
@@ -33,7 +36,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
-import { InstallPluginDialog } from '../components/InstallPluginDialog';
 import { usePluginToggle, PLUGINS_QUERY_KEY } from '../hooks/usePluginToggle';
 
 export default function Plugins() {
@@ -59,12 +61,12 @@ export default function Plugins() {
   const registeredModules = getRegisteredPluginModules();
 
   const uninstallMutation = useMutation({
+    // Lifecycle-функція ядра, а не прямий delete: деактивація знімає хуки
+    // плагіна з HookRegistry — інакше слоти рендерили б «привида» до
+    // перезавантаження сторінки.
     mutationFn: async (pluginName: string) => {
-      const { error } = await supabase
-        .from('plugins')
-        .delete()
-        .eq('name', pluginName);
-      if (error) throw error;
+      const ok = await uninstallPlugin(supabase, pluginName);
+      if (!ok) throw new Error(pluginName);
       return true;
     },
     onSuccess: (_success, name) => {
@@ -99,7 +101,8 @@ export default function Plugins() {
             </p>
           </div>
         </div>
-        <InstallPluginDialog />
+        {/* Runtime-встановлення (InstallPluginDialog) знято: lifecycle спеки
+            §7 — build-time, `simplycms add` + запис у конфіг магазину. */}
       </div>
 
       {isLoading ? (

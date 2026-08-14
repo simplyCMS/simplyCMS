@@ -51,6 +51,8 @@
       "@simplycms/ui/*": ["./packages/ui/src/*"],
       "@simplycms/plugins": ["./packages/plugin-system/src"],
       "@simplycms/plugins/*": ["./packages/plugin-system/src/*"],
+      "@simplycms/plugin-sdk": ["./packages/plugin-sdk/src"],
+      "@simplycms/plugin-sdk/*": ["./packages/plugin-sdk/src/*"],
       "@simplycms/themes": ["./packages/theme-system/src"],
       "@simplycms/themes/*": ["./packages/theme-system/src/*"],
       "@themes/*": ["./themes/*"],

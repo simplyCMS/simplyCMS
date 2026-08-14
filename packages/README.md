@@ -14,6 +14,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/admin` | T5 | Admin panel layouts, pages, components |
 | `@simplycms/ui` | T3 | shadcn/ui component library |
 | `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
+| `@simplycms/plugin-sdk` | T2 | Plugin SDK: `definePlugin`, `validatePluginModule`, `usePluginT`, `usePluginTable` — єдина поверхня, дозволена плагіну (межа довіри, спека §7) |
 | `@simplycms/themes` | T4 | Theme system v2 (ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`) — теки `theme-system/` |
 | `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
 | `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |

@@ -9,7 +9,7 @@ const manifest: ThemeManifest = {
   name: 'default',
   displayName: 'Default Theme',
   version: '0.1.0',
-  engines: { simplycms: '^0.1.0' },
+  engines: { simplycms: '>=0.1.0' },
 };
 
 export default manifest;

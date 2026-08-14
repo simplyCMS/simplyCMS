@@ -1,3 +1,4 @@
+import { CORE_VERSION, satisfies } from '@simplycms/objects/semver';
 import type { ThemeModule } from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -36,6 +37,24 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
   if (!isRecord(engines) || typeof engines.simplycms !== 'string') {
     throw new Error(
       `[theme] "${manifest.name}": manifest.engines.simplycms обовʼязковий (діапазон сумісності з ядром)`,
+    );
+  }
+
+  // Реальна semver-перевірка діапазону — warn-режим на 0.x (рішення Р5 плану
+  // Фази 3): невідповідність не валить тему, строгий фейл — політика
+  // реліз-потяга v1.0. Нерозбірливий діапазон — теж warn, з причиною.
+  try {
+    if (!satisfies(CORE_VERSION, engines.simplycms)) {
+      console.warn(
+        `[theme] "${manifest.name}": engines.simplycms "${engines.simplycms}" ` +
+          `не покриває ядро ${CORE_VERSION} — тема може бути несумісною`,
+      );
+    }
+  } catch (error) {
+    console.warn(
+      `[theme] "${manifest.name}": engines.simplycms не розпарсився: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 

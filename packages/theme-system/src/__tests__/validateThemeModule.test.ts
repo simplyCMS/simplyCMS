@@ -8,7 +8,7 @@ function makeValidModule(): Record<string, unknown> {
       name: 'demo',
       displayName: 'Demo Theme',
       version: '1.0.0',
-      engines: { simplycms: '^0.1.0' },
+      engines: { simplycms: '>=0.1.0' },
     },
     tokens: { primary: '221 83% 53%', radius: '0.5rem' },
     components: {
