@@ -33,9 +33,17 @@ export function deriveKey(pkg, explicit) {
 }
 
 /** @param {string} pkg */
-function stripPrefixes(pkg) {
+export function stripPrefixes(pkg) {
   const base = pkg.includes('/') ? pkg.slice(pkg.indexOf('/') + 1) : pkg;
-  return base.replace(/^simplycms-(?:plugin|theme)-/, '');
+  // Обидві конвенції іменування: unscoped `simplycms-plugin-<name>` (спека
+  // §13) і scoped `@simplycms/plugin-<name>` (референс-пакети ядра). Без
+  // другого strip-а ключ для '@simplycms/plugin-faq' був би 'plugin-faq',
+  // що розсинхронився б із manifest.name ('faq') — а на ключі тримаються і
+  // рядок у таблиці plugins, і префікс plg_* для лінта міграцій
+  // (знахідки рев'ю Фази 3 №1-2).
+  return base
+    .replace(/^simplycms-(?:plugin|theme)-/, '')
+    .replace(/^(?:plugin|theme)-/, '');
 }
 
 /** Ідемпотентність add: пакет уже підключено через import('<pkg>'). */

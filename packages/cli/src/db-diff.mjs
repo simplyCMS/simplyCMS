@@ -14,7 +14,7 @@ import {
   readFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { configPluginEntries } from './config-edit.mjs';
+import { configPluginEntries, stripPrefixes } from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { fileDiffers } from './host-drift.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
@@ -85,7 +85,13 @@ export function pluginMigrationSources(storeRoot) {
     const dir = spec.startsWith('@plugins/')
       ? join(storeRoot, 'plugins', spec.slice('@plugins/'.length), 'migrations')
       : join(storeRoot, 'node_modules', spec, 'migrations');
-    if (existsSync(dir)) sources.push({ name, spec, dir });
+    // Імʼя для лінта меж — КАНОНІЧНЕ, зі специфікатора пакета, а не
+    // конфіг-ключ: --name-аліас у конфізі не повинен ламати перевірку
+    // «плагін чіпає лише plg_<name>_*» (знахідка рев'ю Фази 3 №1).
+    const lintName = stripPrefixes(
+      spec.startsWith('@plugins/') ? spec.slice('@plugins/'.length) : spec,
+    );
+    if (existsSync(dir)) sources.push({ name, spec, dir, lintName });
   }
   return sources;
 }
@@ -142,7 +148,13 @@ export function compareMigrationsMulti(storeDir, sources) {
  */
 export function lintPluginMigrationSql(sql, pluginName) {
   const prefix = `plg_${pluginName.replace(/-/g, '_')}_`;
-  const ident = String.raw`(?:public\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?`;
+  // Схема може бути в лапках (`"public"."plg_x"` — стиль supabase db diff),
+  // імʼя — теж; коментарі прибираються ДО скану, інакше `-- references
+  // products` у прозі давав би хибне порушення.
+  const stripped = sql
+    .replace(/--[^\n]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const ident = String.raw`(?:"?public"?\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?`;
   const targets = [
     new RegExp(
       String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?${ident}`,
@@ -152,17 +164,32 @@ export function lintPluginMigrationSql(sql, pluginName) {
       String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${ident}`,
       'gi',
     ),
-    new RegExp(String.raw`create\s+policy\s+"[^"]+"\s+on\s+${ident}`, 'gi'),
+    new RegExp(
+      String.raw`(?:create|drop)\s+policy\s+(?:if\s+exists\s+)?"[^"]+"\s+on\s+${ident}`,
+      'gi',
+    ),
     new RegExp(
       String.raw`create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?\S+\s+on\s+${ident}`,
       'gi',
     ),
     new RegExp(String.raw`drop\s+table\s+(?:if\s+exists\s+)?${ident}`, 'gi'),
     new RegExp(String.raw`references\s+${ident}`, 'gi'),
+    // Тригер сміє висіти лише на власній таблиці плагіна.
+    new RegExp(
+      String.raw`create\s+(?:or\s+replace\s+)?trigger\s+\S+[\s\S]*?\bon\s+${ident}`,
+      'gi',
+    ),
+    // Функції: перевизначення чужої (типово — is_admin()) — дешевий
+    // привілейований обхід; власні функції плагіна — теж під префіксом.
+    new RegExp(
+      String.raw`create\s+(?:or\s+replace\s+)?function\s+${ident}`,
+      'gi',
+    ),
+    new RegExp(String.raw`drop\s+function\s+(?:if\s+exists\s+)?${ident}`, 'gi'),
   ];
   const violations = [];
   for (const re of targets) {
-    for (const match of sql.matchAll(re)) {
+    for (const match of stripped.matchAll(re)) {
       if (!match[1].startsWith(prefix)) {
         violations.push(
           `"${match[1]}" поза межею ${prefix}* (${match[0].trim().slice(0, 50)}…)`,
@@ -239,7 +266,7 @@ export async function run(argv) {
     for (const file of source.missing) {
       const violations = lintPluginMigrationSql(
         readFileSync(join(source.dir, file), 'utf8'),
-        source.name,
+        source.lintName ?? source.name,
       );
       if (violations.length > 0) {
         linted = false;
@@ -292,6 +319,7 @@ export async function run(argv) {
   showSteps([
     'git diff             # ревʼю доданих міграцій',
     'supabase db push     # накатити їх на БД магазину',
+    '                     # (таймстамп плагінної міграції старіший за вже накачені? push --include-all)',
   ]);
   finish('Готово.');
 }

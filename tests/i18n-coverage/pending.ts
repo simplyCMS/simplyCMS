@@ -43,6 +43,8 @@ export const ALLOWLIST: Record<string, string> = {
   'packages/plugin-sdk/src/usePluginTable.ts':
     'throw new Error — межа довіри (гард plg_)',
   'packages/plugin-sdk/src/usePluginConfig.ts': 'console.warn — лог',
+  'packages/admin/src/lib/pluginSettingsFields.ts':
+    'console.warn — діагностика непредставної settings-схеми плагіна',
 };
 
 /**

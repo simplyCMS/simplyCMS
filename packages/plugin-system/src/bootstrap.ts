@@ -101,6 +101,15 @@ export async function bootstrapPlugins(
       // warn-режим на 0.x, рішення Р5 плану Фази 3) валідатор друкує сам,
       // реєстрація триває.
       validatePluginModule(loaded.default);
+      // Ключ конфігу — це і ключ рядка в таблиці plugins, і те, що плагін
+      // передає в usePluginConfig як manifest.name. Розбіжність не валить
+      // реєстрацію, але робить налаштування «мовчки не тими» — тому warn.
+      const manifestName = loaded.default.manifest?.name;
+      if (manifestName !== undefined && manifestName !== reg.name) {
+        console.warn(
+          `[plugins] Ключ конфігу '${reg.name}' ≠ manifest.name '${manifestName}' — налаштування плагіна читатимуться з іншого рядка plugins`,
+        );
+      }
       registerPluginModule(reg.name, loaded.default);
       modules.set(reg.name, loaded.default);
     } catch (error) {

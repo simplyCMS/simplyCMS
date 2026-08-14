@@ -74,6 +74,34 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     }
   });
 
+  it('ловить і ДИНАМІЧНИЙ import() у зоні (no-restricted-syntax селектор)', async () => {
+    const [result] = await eslint.lintText(
+      "const c = await import('@simplycms/supabase/server-client');\n" +
+        "const d = await import('@supabase/supabase-js');\n",
+      {
+        filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
+        warnIgnored: true,
+      },
+    );
+    const dynamicErrors = (result?.messages ?? []).filter(
+      (m) => m.ruleId === 'no-restricted-syntax',
+    );
+    expect(dynamicErrors).toHaveLength(2);
+    // Легальний динамічний import у зоні лишається чистим.
+    const [clean] = await eslint.lintText(
+      "const m = await import('@simplycms/plugin-sdk');\n",
+      {
+        filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
+        warnIgnored: true,
+      },
+    );
+    expect(
+      (clean?.messages ?? []).filter(
+        (m) => m.ruleId === 'no-restricted-syntax',
+      ),
+    ).toEqual([]);
+  });
+
   it('дозволена поверхня в зоні чиста: plugin-sdk, ui, react', async () => {
     const errors = await boundaryErrors(
       "import { definePlugin, usePluginTable } from '@simplycms/plugin-sdk';\n" +

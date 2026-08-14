@@ -99,6 +99,17 @@ const pluginTrustBoundaryImports = [
   },
 ];
 
+// no-restricted-imports НЕ бачить динамічний import() — його ловить окремий
+// селектор (знахідка рев'ю Фази 3). Регексп дзеркалить групи вище.
+const pluginTrustBoundarySyntax = [
+  {
+    selector:
+      'ImportExpression > Literal[value=/^(?:@simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
+    message:
+      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
+  },
+];
+
 const eslintConfig = [
   ...tseslint.configs.recommended,
   {
@@ -158,14 +169,21 @@ const eslintConfig = [
     },
   },
   {
-    // Межа довіри плагінів. Окреме ПРАВИЛО (no-restricted-imports), а не
-    // селектор no-restricted-syntax — тому перетин із i18n-зоною безпечний:
-    // «заміна опцій цілком» стосується лише однойменного правила.
+    // Межа довіри плагінів. Статичні імпорти/export-from — no-restricted-
+    // imports (окреме правило, перетин з i18n безпечний); динамічний
+    // import() — селектор no-restricted-syntax, і оскільки flat config
+    // ЗАМІНЮЄ опції правила цілком, i18n-селектори повторено тут явно
+    // (той самий прийом, що в env-зоні вище).
     files: PLUGIN_TRUST_BOUNDARY_FILES,
     rules: {
       'no-restricted-imports': [
         'error',
         { patterns: pluginTrustBoundaryImports },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        ...i18nRestrictedSyntax,
+        ...pluginTrustBoundarySyntax,
       ],
     },
   },

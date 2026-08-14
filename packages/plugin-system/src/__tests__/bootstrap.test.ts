@@ -64,7 +64,12 @@ function createMockSupabase(initial: PluginRow[], signedIn = true) {
 /** Фабрика тестового модуля плагіна, що чіпляється на дашборд-віджети. */
 function makeModule(name: string): PluginModule {
   return {
-    manifest: { name, displayName: `Plugin ${name}`, version: '1.2.3' },
+    manifest: {
+      name,
+      displayName: `Plugin ${name}`,
+      version: '1.2.3',
+      hooks: [{ name: 'admin.dashboard.widgets' }],
+    },
     register: (registry) =>
       registry.register('admin.dashboard.widgets', name, () => name),
     unregister: (registry) =>
@@ -81,6 +86,9 @@ describe('bootstrapPlugins', () => {
   beforeEach(() => {
     hookRegistry.clear();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    // validatePluginModule попереджає про відсутній engines у фабричних
+    // модулях — це очікувано і не має шуміти у виводі тестів.
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -133,9 +141,29 @@ describe('bootstrapPlugins', () => {
         name: 'quiet-plugin',
         display_name: 'Plugin quiet-plugin',
         version: '1.2.3',
+        // hooks їдуть із manifest — без них рядок від bootstrap був би
+        // біднішим за сідовий, і адмінка показувала б порожній список.
+        hooks: [{ name: 'admin.dashboard.widgets' }],
         is_active: false,
       }),
     ]);
+  });
+
+  it('невалідний модуль (без register) → error-лог + пропуск, решта підключається', async () => {
+    const { client, inserted } = createMockSupabase([]);
+    const broken: PluginRegistration = {
+      name: 'broken-plugin',
+      module: async () => ({ default: {} as never }),
+    };
+
+    await bootstrapPlugins([broken, makeRegistration('ok-plugin')], client);
+
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('broken-plugin'),
+      expect.anything(),
+    );
+    // Пропущений модуль не потрапив ні в реєстр, ні в БД; сусід — потрапив.
+    expect(inserted.map((row) => row.name)).toEqual(['ok-plugin']);
   });
 
   it('без сесії запис не пробується (RLS дозволяє INSERT лише адміну)', async () => {

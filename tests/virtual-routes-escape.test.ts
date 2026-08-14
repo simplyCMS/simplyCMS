@@ -149,9 +149,7 @@ describe('virtual routes: два physical() під спільним layout', () 
     const tree = readFileSync(treePath, 'utf8');
     // У дереві дітей layout-роуту /admin має бути і сторінка ядра, і
     // сторінка плагіна — обидві за префіксом id, попри різні physical().
-    const adminChildren = tree.match(
-      /AdminRouteChildren[^{]*\{[^}]*\}/,
-    )?.[0];
+    const adminChildren = tree.match(/AdminRouteChildren[^{]*\{[^}]*\}/)?.[0];
     expect(adminChildren).toBeTruthy();
     expect(adminChildren).toContain('AdminFaqIndexRoute');
     expect(adminChildren).toContain('AdminIndexRoute');

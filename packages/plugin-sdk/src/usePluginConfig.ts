@@ -56,6 +56,14 @@ export function usePluginConfig<S extends ZodObject<ZodRawShape>>(
         console.warn(
           `[plugin-sdk] usePluginConfig("${pluginName}"): ${error.message}`,
         );
+      } else if (data === null) {
+        // Рядка немає — типово розсинхрон конфіг-ключа з manifest.name
+        // (usePluginConfig читає за manifest-імʼям, а рядок створює
+        // bootstrap за ключем конфігу). Мовчати не можна: адмінка «успішно»
+        // зберігала б налаштування, які плагін ніколи не побачить.
+        console.warn(
+          `[plugin-sdk] usePluginConfig("${pluginName}"): рядка plugins із таким name немає — віддаю дефолти схеми`,
+        );
       }
       setRaw(data?.config ?? {});
       setLoading(false);

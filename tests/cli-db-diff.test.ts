@@ -149,8 +149,15 @@ describe('cli db:diff: мульти-канони', () => {
     );
 
     const sources = pluginMigrationSources(store);
+    // lintName — КАНОНІЧНЕ імʼя зі специфікатора (не конфіг-ключ): саме воно
+    // задає префікс plg_* для лінта меж, і --name-аліас його не зіб'є.
     expect(sources).toEqual([
-      { name: 'faq', spec: '@simplycms/plugin-faq', dir: faqDir },
+      {
+        name: 'faq',
+        spec: '@simplycms/plugin-faq',
+        dir: faqDir,
+        lintName: 'faq',
+      },
     ]);
   });
 

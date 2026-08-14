@@ -8,17 +8,19 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-08-13)
+## 📍 Поточний стан (оновлено 2026-08-14)
 
 **Фази 0 і 1 завершені. Ядро опубліковане на npmjs — `@simplycms/*@0.3.0` плюс
 unscoped `create-simplycms-store` тієї ж версії.**
 
-> Примітка до лічильника (2026-08-13): публікованих пакетів тепер **23** —
-> 22 `@simplycms/*` (додався `@simplycms/cli`) + 1 unscoped скаффолдер.
-> `@simplycms/cli` стає дійсним у реєстрі **в момент мержу** гілки CLI v1 у
-> `main` — за чинним правилом «введення нового пакета є релізним рішенням у
-> момент мержу». Історія змін — [`CHANGELOG.md`](../../CHANGELOG.md);
-> перевірка публікації — `pnpm verify:published X.Y.Z`.
+> Примітка до лічильника (2026-08-14): публікованих пакетів тепер **25** —
+> 24 `@simplycms/*` (Фаза 3 додала `@simplycms/plugin-sdk` і
+> `@simplycms/plugin-faq`) + 1 unscoped скаффолдер. Обидва нові пакети
+> стають дійсними в реєстрі **в момент мержу** гілки Фази 3 у `main` — за
+> чинним правилом «введення нового пакета є релізним рішенням у момент
+> мержу» (той самий шлях пройшов `@simplycms/cli` 2026-08-13). Історія
+> змін — [`CHANGELOG.md`](../../CHANGELOG.md); перевірка публікації —
+> `pnpm verify:published X.Y.Z`.
 
 Що це означає практично: магазин створюється однією командою
 (`pnpm create simplycms-store`) і збирається зі справжніх npm-пакетів, без
@@ -34,7 +36,8 @@ unscoped `create-simplycms-store` тієї ж версії.**
 | Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI/TOOL, Gate E видимо SKIP |
 | Пілот проти живої БД | `pnpm pilot` — + Gate B, потребує `.env.local`; Gate E досі SKIP |
 | Пілот на локальному стеку | `pnpm pilot:e2e` — gates A/C/D/CLI/TOOL/B/E, потребує Docker; ✅ прожито 2026-08-04 |
-| Обслуговування магазину | `pnpm simplycms doctor` / `add` / `update` / `db:diff` — `@simplycms/cli` v1, у магазині (2026-08-13) |
+| Обслуговування магазину | `pnpm simplycms doctor` / `add` / `create plugin` / `update` / `db:diff` — `@simplycms/cli`, у магазині (2026-08-13, `create plugin` і N канонів `db:diff` — Фаза 3) |
+| Плагіни (SDK) | `definePlugin` + порти `@simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq`; межа довіри — dependency-lint (2026-08-14) |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`, порт 3000) |
 | CI на PR | `typecheck` · `test` · `packaging` (tarball-parity) |
 
@@ -434,7 +437,7 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
 - [ ] Реліз-потяг **v1.0** (строгий semver; `engines.simplycms` перевірка) —
       лишається за Фазою 2; зараз версія `0.3.0` і модель версіонування
-      **синхронна вручну** (усі 23 пакети — 22 `@simplycms/*` + unscoped
+      **синхронна вручну** (усі 25 пакетів — 24 `@simplycms/*` + unscoped
       скаффолдер — одна версія; лічильник виріс 2026-08-13 із появою
       `@simplycms/cli`). Незалежні версії
       (Changesets) — можливий крок, коли пакети підуть різними циклами.

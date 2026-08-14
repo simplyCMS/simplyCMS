@@ -57,12 +57,18 @@ export function parseCreateArgs(argv) {
 }
 
 /**
- * Підстановка плейсхолдерів шаблону плагіна.
+ * Підстановка плейсхолдерів шаблону плагіна. Окремий плейсхолдер префікса
+ * таблиць: для імен із дефісом (`my-faq`) SQL-префікс — `plg_my_faq_`
+ * (підкреслення), і скласти його з `__PLUGIN_NAME__` у README не можна.
  * @param {string} tpl
  * @param {{ pluginName: string; coreRange: string }} vars
  */
 export function renderPluginTemplate(tpl, { pluginName, coreRange }) {
   return tpl
+    .replaceAll(
+      '__PLUGIN_TABLE_PREFIX__',
+      `plg_${pluginName.replace(/-/g, '_')}_`,
+    )
     .replaceAll('__PLUGIN_NAME__', pluginName)
     .replaceAll('__CORE_RANGE__', coreRange);
 }

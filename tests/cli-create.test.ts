@@ -48,12 +48,15 @@ describe('cli create: скаффолд', () => {
     expect(created).not.toContain('package.json.tpl');
     for (const rel of created) {
       const text = readFileSync(join(target, rel), 'utf8');
-      expect(text, `${rel} містить нерозгорнутий плейсхолдер`).not.toContain(
+      for (const placeholder of [
         '__PLUGIN_NAME__',
-      );
-      expect(text, `${rel} містить нерозгорнутий плейсхолдер`).not.toContain(
         '__CORE_RANGE__',
-      );
+        '__PLUGIN_TABLE_PREFIX__',
+      ]) {
+        expect(text, `${rel} містить нерозгорнутий плейсхолдер`).not.toContain(
+          placeholder,
+        );
+      }
     }
 
     const manifest = JSON.parse(
@@ -79,7 +82,13 @@ describe('cli create: скаффолд', () => {
     for (const file of ['index.ts', 'messages.ts']) {
       const output = ts.transpileModule(
         readFileSync(join(target, file), 'utf8'),
-        { compilerOptions: { module: ts.ModuleKind.ESNext }, fileName: file },
+        {
+          compilerOptions: { module: ts.ModuleKind.ESNext },
+          fileName: file,
+          // Без цього прапорця transpileModule НІКОЛИ не збирає діагностик
+          // і асерт нижче тривіально зелений (знахідка рев'ю Фази 3).
+          reportDiagnostics: true,
+        },
       );
       expect(
         output.diagnostics ?? [],
@@ -98,6 +107,10 @@ describe('cli create: скаффолд', () => {
     });
     const messages = readFileSync(join(target, 'messages.ts'), 'utf8');
     expect(messages).toContain("'plugin.shop-x.title'");
+    // Префікс таблиць для імені з дефісом — з підкресленнями (SQL-ідентифікатор).
+    const readme = readFileSync(join(target, 'README.md'), 'utf8');
+    expect(readme).toContain('plg_shop_x_');
+    expect(readme).not.toContain('plg_shop-x');
   });
 
   it('renderPluginTemplate підставляє обидва плейсхолдери', () => {

@@ -19,13 +19,22 @@ create table if not exists public.plg_faq_items (
 
 alter table public.plg_faq_items enable row level security;
 
+-- Конвенція ядра: публічно видно лише активні записи; неактивні бачить
+-- адмін (permissive-політики обʼєднуються через OR із політикою нижче).
 create policy "plg_faq_items are viewable by everyone"
   on public.plg_faq_items
   for select
-  using (true);
+  using (is_active = true or public.is_admin());
 
 create policy "plg_faq_items are managed by admins"
   on public.plg_faq_items
   for all
   using (public.is_admin())
   with check (public.is_admin());
+
+-- Тримає updated_at чесним; update_updated_at_column() — публічний хелпер
+-- ядра (та сама функція, що на core-таблицях).
+create trigger update_plg_faq_items_updated_at
+  before update on public.plg_faq_items
+  for each row
+  execute function public.update_updated_at_column();

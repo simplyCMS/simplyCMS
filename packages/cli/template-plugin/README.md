@@ -14,8 +14,8 @@
 - **Налаштування** — Zod-схема в `definePlugin({ settings })`; форму рендерить
   адмінка, значення читай `usePluginConfig`.
 - **Власні таблиці** — SQL-міграції в теці `migrations/` з іменем
-  `<YYYYMMDDHHmmss>_plg___PLUGIN_NAME___<slug>.sql`; чіпати можна ЛИШЕ
-  таблиці `plg___PLUGIN_NAME___*` (межа довіри — `simplycms db:diff` це
+  `<YYYYMMDDHHmmss>___PLUGIN_TABLE_PREFIX__<slug>.sql`; чіпати можна ЛИШЕ
+  таблиці `__PLUGIN_TABLE_PREFIX__*` (межа довіри — `simplycms db:diff` це
   лінтить). Забрати в магазин: `pnpm simplycms db:diff --write` → ревʼю →
   `supabase db push`. Доступ із коду — `usePluginTable`.
 - **Сторінки адмінки** — тека `routes/` із запеченими id

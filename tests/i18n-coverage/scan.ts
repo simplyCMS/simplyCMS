@@ -1,6 +1,7 @@
 import ts from 'typescript';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Знайдений кириличний рядок інтерфейсу. */
 export interface Hardcoded {
@@ -22,6 +23,25 @@ const CYRILLIC = /[Ѐ-ӿ]/;
  * гейтів — борг закрили аж тоді, коли його знайшли ручним сканом по всіх
  * теках. Тепер регрес у будь-якій із цих зон валить `pnpm test`.
  */
+/**
+ * Референс-пакети плагінів дискавляться з диска, а не перелічуються
+ * поіменно: наступний `packages/simplycms-plugin-*` потрапляє під скан
+ * автоматично (той самий аргумент, що в `plugin-messages-parity`).
+ */
+function pluginPackageRoots(): string[] {
+  const packagesDir = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../packages',
+  );
+  return readdirSync(packagesDir, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() && entry.name.startsWith('simplycms-plugin-'),
+    )
+    .map((entry) => `packages/${entry.name}/src`)
+    .sort();
+}
+
 export const SCANNED_ROOTS = [
   'src',
   'packages/storefront-routes/src',
@@ -36,7 +56,7 @@ export const SCANNED_ROOTS = [
   'packages/theme-system/src',
   'packages/plugin-system/src',
   'packages/plugin-sdk/src',
-  'packages/simplycms-plugin-faq/src',
+  ...pluginPackageRoots(),
   'themes/default',
   'themes/solarstore',
   // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін

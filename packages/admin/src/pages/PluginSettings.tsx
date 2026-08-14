@@ -32,26 +32,13 @@ import {
   Plug,
   Settings,
 } from 'lucide-react';
-import { z } from 'zod';
 import type { ZodObject, ZodRawShape } from 'zod';
 import { getRegisteredPluginModules } from '@simplycms/plugins';
 import { parsePlugin, type Plugin } from '@simplycms/plugins/types';
 import { adminPath } from '../lib/adminLinks';
+import { settingsFields } from '../lib/pluginSettingsFields';
 import { useState, useEffect, useMemo } from 'react';
 import { usePluginToggle } from '../hooks/usePluginToggle';
-
-/**
- * Проєкція JSON Schema, яку рендерить форма. Джерело — `z.toJSONSchema`
- * від Zod-схеми з `definePlugin({ settings })`: конвенція SDK —
- * `.describe()` дає підпис поля, `z.enum` стає select-ом, `.default()` —
- * значенням за замовчуванням.
- */
-interface SettingsField {
-  type?: string;
-  enum?: unknown[];
-  default?: unknown;
-  description?: string;
-}
 
 /**
  * Схема налаштувань береться з зареєстрованого МОДУЛЯ плагіна
@@ -59,19 +46,21 @@ interface SettingsField {
  * manifest.json: Zod-схема — код, вона несеріалізовна. Наслідок §8: якщо
  * плагін активний у БД, але модуль викинули з білда, — форма недоступна,
  * сторінка показує «немає налаштувань».
+ *
+ * Без useMemo навмисно: bootstrap наповнює реєстр асинхронно ПІСЛЯ першого
+ * рендера, і мемоїзація по pluginName закешувала б «модуля немає» назавжди
+ * (знахідка рев'ю Фази 3). Читання реєстру на кожен рендер — копійки, так
+ * само робить Plugins.tsx.
  */
-function useSettingsSchema(
+function readSettingsSchema(
   pluginName: string | undefined,
 ): ZodObject<ZodRawShape> | undefined {
-  return useMemo(() => {
-    if (!pluginName) return undefined;
-    const module = getRegisteredPluginModules().get(pluginName);
-    const definition = (
-      module as
-        { definition?: { settings?: ZodObject<ZodRawShape> } } | undefined
-    )?.definition;
-    return definition?.settings;
-  }, [pluginName]);
+  if (!pluginName) return undefined;
+  const module = getRegisteredPluginModules().get(pluginName);
+  const definition = (
+    module as { definition?: { settings?: ZodObject<ZodRawShape> } } | undefined
+  )?.definition;
+  return definition?.settings;
 }
 
 export default function PluginSettings() {
@@ -101,14 +90,8 @@ export default function PluginSettings() {
     },
   });
 
-  const schema = useSettingsSchema(plugin?.name);
-  const fields = useMemo<[string, SettingsField][]>(() => {
-    if (!schema) return [];
-    const jsonSchema = z.toJSONSchema(schema) as {
-      properties?: Record<string, SettingsField>;
-    };
-    return Object.entries(jsonSchema.properties ?? {});
-  }, [schema]);
+  const schema = readSettingsSchema(plugin?.name);
+  const fields = useMemo(() => settingsFields(schema), [schema]);
 
   useEffect(() => {
     if (plugin?.config) {
@@ -333,9 +316,15 @@ export default function PluginSettings() {
                           id={key}
                           type="number"
                           value={String(config[key] ?? field.default ?? '')}
-                          onChange={(e) =>
-                            handleConfigChange(key, parseFloat(e.target.value))
-                          }
+                          onChange={(e) => {
+                            // Порожній інпут → зняти ключ (дефолт матеріалізує
+                            // safeParse при збереженні), а не писати NaN.
+                            const parsed = parseFloat(e.target.value);
+                            handleConfigChange(
+                              key,
+                              Number.isNaN(parsed) ? undefined : parsed,
+                            );
+                          }}
                         />
                       </>
                     ) : (

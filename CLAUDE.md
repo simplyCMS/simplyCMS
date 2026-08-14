@@ -65,7 +65,7 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
-- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
+- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create plugin/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 
 ## Agent Tooling
 
@@ -128,25 +128,27 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 `tests/i18n-coverage.test.ts` (AST-скан, порожній `PENDING_FILES`),
 `tests/i18n-catalog-parity.test.ts` (повнота `en`),
 `packages/i18n/src/__tests__/catalog-integrity.test.ts` (дублікати ключів),
-`tests/theme-messages-parity.test.ts` (повнота каталогів тем).
+`tests/theme-messages-parity.test.ts` (повнота каталогів тем),
+`tests/plugin-messages-parity.test.ts` (повнота каталогів плагінів).
 
-**Що покрито (2026-08-09).** `SCANNED_ROOTS` у `tests/i18n-coverage/scan.ts` —
+**Що покрито (2026-08-14).** `SCANNED_ROOTS` у `tests/i18n-coverage/scan.ts` —
 host `src/`, обидва пакети роутів, уся воронка покупки (`cart-ui`,
 `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), `core`, `storefront`,
-`theme-system`, `plugin-system` і обидві теми. Тобто `locale: 'en-US'` дає
-англійський магазин цілком, а не змішаний.
+`theme-system`, `plugin-system`, `plugin-sdk`, обидві теми і (з Фази 3)
+плагіни: тека `plugins/` цілком плюс референс-пакети `simplycms-plugin-*`
+(дискавляться з диска). Тобто `locale: 'en-US'` дає англійський магазин
+цілком, а не змішаний.
 
-🔴 **Каталогів тепер ДВА рівні, і плутати їх не можна.** Core-каталог
+🔴 **Каталогів ТРИ рівні, і плутати їх не можна.** Core-каталог
 (`packages/i18n/src/catalogs/{uk,en}/`) типізований замкненим union-ом
 `MessageKey` — саме він дає перевірку одруків. Тема несе **власний**
 каталог (`ThemeModule.messages`, `themes/<name>/messages.ts`) і читається
-хуком `useThemeT()`, а не `useT()`. Класти копірайт теми в core-каталог
-заборонено: це зламало б типізацію ядра й змішало шари. Ланцюжок:
-`theme[locale]` → `theme.uk` → сам ключ.
-
-🔴 Що ЩЕ не покрито: `plugins/hello-world` (2 рядки). Плагіни мають отримати
-власні каталоги тим самим механізмом, що й теми (спека платформи §12) — поки
-не зроблено, тому їх немає в `SCANNED_ROOTS`.
+хуком `useThemeT()`; плагін — власний `messages` у `definePlugin`
+(ключі з префіксом `plugin.<name>.`), читається `usePluginT()` з
+`@simplycms/plugin-sdk`. Класти копірайт теми/плагіна в core-каталог
+заборонено: це зламало б типізацію ядра й змішало шари. Ланцюжок скрізь
+той самий: `[locale]` → `uk` → сам ключ. Метадані реєстру плагіна
+(manifest.description) — англійською: показуються з БД-рядка, не з каталогу.
 
 ## Tech Stack
 
@@ -214,12 +216,20 @@ simplyCMS/
 │   ├── admin-routes/       @simplycms/admin-routes   # routes/admin* (тонкі обгортки)
 │   ├── admin/              @simplycms/admin          # Сторінки/компоненти адмінки
 │   ├── theme-system/       @simplycms/themes         # ThemeRegistry, applyTokens, validateThemeModule
-│   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins
+│   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins,
+│   │                                                 # validatePluginModule
+│   ├── plugin-sdk/         @simplycms/plugin-sdk     # definePlugin + порти плагінів (usePluginTable,
+│   │                                                 # usePluginConfig, usePluginT) — ЄДИНА поверхня,
+│   │                                                 # дозволена плагіну (межа довіри §7, Фаза 3)
+│   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного контуру: plg_faq_items,
+│   │                                                 # routes/ (/admin/faq), слот, Zod-settings, i18n
 │   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
-│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/update/db:diff;
-│   │                                                 # чистий ESM без build; host/ — канон host-файлів
+│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
+│   │                                                 # create plugin/update/db:diff (N канонів);
+│   │                                                 # чистий ESM без build; host/ — канон host-файлів,
+│   │                                                 # template-plugin/ — шаблон create plugin
 │   │                                                 # (`pnpm template:sync`); виконується В МАГАЗИНІ, не тут
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
@@ -242,7 +252,7 @@ simplyCMS/
 ├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
 │                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
 ├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
-├── plugins/hello-world/              # Референс-плагін
+├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
 │   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону),
@@ -285,6 +295,8 @@ simplyCMS/
 | `@simplycms/ui` | `packages/ui/src` |
 | `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/<name>/src` |
 | `@simplycms/plugins` | `packages/**plugin-system**/src` |
+| `@simplycms/plugin-sdk` | `packages/plugin-sdk/src` |
+| `@simplycms/plugin-faq` | `packages/**simplycms-plugin-faq**/src` |
 | `@simplycms/themes` | `packages/**theme-system**/src` |
 | `@simplycms/core` | `packages/core/src` (legacy-фасад) |
 | `@themes/*` | `themes/*` |
@@ -431,7 +443,7 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 23 пакети (22 `@simplycms/*` + unscoped
+- **версія синхронна** — усі 25 пакетів (24 `@simplycms/*` — з Фазою 3 додались `plugin-sdk` і `plugin-faq` — + unscoped
   `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
   сканує `packages/*` і бере все, що не `private` — після сплощення теки
   окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає

@@ -13,7 +13,9 @@ const NAME_RE = /^[a-z][a-z0-9-]*$/;
  */
 export function definePlugin(definition: PluginDefinition): SdkPluginModule {
   const { name } = definition;
-  if (!NAME_RE.test(name)) {
+  // Явна перевірка типу: RegExp.test коерсить undefined у рядок 'undefined',
+  // який... проходить [a-z][a-z0-9-]* (знахідка рев'ю Фази 3).
+  if (typeof name !== 'string' || !NAME_RE.test(name)) {
     throw new Error(
       `[plugin-sdk] Невалідне імʼя плагіна "${name}": очікується [a-z][a-z0-9-]* ` +
         `(воно стає ключем у БД, префіксом таблиць plg_* і ключів i18n)`,
@@ -51,6 +53,8 @@ export function definePlugin(definition: PluginDefinition): SdkPluginModule {
     engines: definition.engines,
     hooks: [...slotNames, ...hookNames].map((hookName) => ({ name: hookName })),
     migrations: definition.migrations,
+    edgeFunctions: definition.edgeFunctions,
+    buckets: definition.buckets,
   };
 
   return {
