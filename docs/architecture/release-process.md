@@ -1,10 +1,12 @@
 # Реліз ядра: публікація пакетів на npmjs
 
-Ядро SimplyCMS — **25 публікованих пакетів**: 24 `@simplycms/*` під scope
+Ядро SimplyCMS — **26 публікованих пакетів**: 25 `@simplycms/*` під scope
 `@simplycms` + 1 unscoped `create-simplycms-store` (CLI-скаффолдер із
 вбудованим шаблоном магазину, `packages/create-simplycms-store/`). Лічильник
 виріс із 22 до 23 2026-08-13, коли додався `@simplycms/cli` (scoped, bin
-`simplycms`). Цей документ описує, як випустити нову версію.
+`simplycms`); до 25 — Фазою 3 (`@simplycms/plugin-sdk` + референс-плагін
+`@simplycms/plugin-faq`); до 26 — Фазою 4 (референс-тема
+`@simplycms/theme-solarstore`). Цей документ описує, як випустити нову версію.
 
 ## Коротко
 
@@ -19,10 +21,10 @@ gh pr create --base main --title "Реліз v0.2.0"
 
 ## Модель версіонування
 
-**Версія синхронна.** Усі 25 пакетів завжди мають одну версію — споживач бачить
-одне число «версія ядра» і не звіряє таблицю сумісності 25 пакетів між собою.
+**Версія синхронна.** Усі 26 пакетів завжди мають одну версію — споживач бачить
+одне число «версія ядра» і не звіряє таблицю сумісності 26 пакетів між собою.
 `scripts/release/bump.mjs` сканує одну теку `packages/*` і бампає все, що не
-позначене `private`: 24 `@simplycms/*` + unscoped `create-simplycms-store`.
+позначене `private`: 25 `@simplycms/*` + unscoped `create-simplycms-store`.
 До сплощення теки (2026-08-04) скаффолдер жив поза `packages/simplycms/` і
 потребував окремого списку-винятку — тепер він не потрібен.
 
@@ -32,7 +34,7 @@ gh pr create --base main --title "Реліз v0.2.0"
 
 ### Unscoped-пакет: `create-simplycms-store`
 
-На відміну від 24 `@simplycms/*`-пакетів, `create-simplycms-store` — unscoped
+На відміну від 25 `@simplycms/*`-пакетів, `create-simplycms-store` — unscoped
 (без `@simplycms/` префікса, бо `pnpm create simplycms-store` — угода іменування
 npm для `create-*` CLI). Наслідки для реліз-потяга:
 

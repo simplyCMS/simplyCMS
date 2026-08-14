@@ -59,6 +59,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 8 | `routes.ts`: `realpathSync` + монтування обох route-пакетів | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/@simplycms/*` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
+| 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 
 Онлайн-перевірки (лише коли env із п.5 присутній; голий `fetch` до Supabase
 REST, без клієнтських бібліотек): доступність БД; активна тема з БД присутня
@@ -68,7 +69,7 @@ REST, без клієнтських бібліотек): доступність 
 Exit-коди: `1` — є хоч один error; самі warn → `0`; `--strict` — warn теж
 валить. Стан «не вдалося перевірити» на exit-код не впливає.
 
-### 3.2 `simplycms add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]`
+### 3.2 `simplycms add <pkg> (--plugin | --theme) [--copy] [--name <key>] [--no-install] [--dry-run]`
 
 Build-time-встановлення плагіна/теми: `pnpm add <pkg>` → якірний запис у
 `simplycms.config.ts` → нагадування про rebuild. Тип обов'язковий — автодетекції
@@ -89,6 +90,15 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 - Ідемпотентність: `import('<pkg>')` уже в конфізі → успішний no-op.
 - `--dry-run` показує майбутню зміну без запису; `--no-install` пропускає
   `pnpm add` (лише конфіг).
+- 🔴 **`--copy` (лише з `--theme`, Фаза 4)** — copy-in замість голої
+  npm-залежності (shadcn-модель): `pnpm add <pkg>` ТИМЧАСОВО → валідація
+  `src/index.ts` у пакеті → злиття `dependencies` пакета в манифест
+  магазину (інакше `pnpm remove` забрав би замикання) → копія `src/*` у
+  `themes/<key>/` → запис `'<key>': () => import('@themes/<key>/index')`
+  (специфікатор copy-in-теми — НЕ npm-імʼя) → `pnpm remove <pkg>`. Провал
+  валідації — rollback `pnpm remove` + помилка. Конфлікт із `--plugin`/
+  `--no-install` — гучна помилка (copy без install неможливий). Повний
+  порядок і межі — [`themes.md`](themes.md) §3.2.
 
 ### 3.3 `simplycms update [--check | --write] [--to <version>] [--no-install]`
 
@@ -139,16 +149,19 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 Режим перегляду (без `--write`) — завжди exit 0; CI-семантику має
 `update --check`.
 
-### 3.5 `simplycms create plugin <name> [--dry-run]`
+### 3.5 `simplycms create (plugin | theme) <name> [--dry-run]`
 
 Авторський скаффолд плагіна (Фаза 3; механізм плагінів цілком —
-[`plugins.md`](plugins.md)): тека `plugins/<name>` **магазину** —
-аліас `@plugins/*` уже в шаблоні, тож dev-loop працює без workspace-лінків і
-build-кроку — плюс якірний запис у `simplycms.config.ts` тим самим
-`insertEntry`, що й `add`. Шаблон — `template-plugin/` у tarball CLI
-(плейсхолдери `__PLUGIN_NAME__`/`__CORE_RANGE__` рендеряться на копіюванні;
-діапазон сумісності — `>=<поточна версія ядра>`, бо caret на 0.x фіксує
-мінор). Обидві незворотні дії рахуються ДО першого запису (принцип §2).
+[`plugins.md`](plugins.md)) або теми (Фаза 4;
+[`themes.md`](themes.md)): тека `plugins/<name>`/`themes/<name>`
+**магазину** — аліас `@plugins/*`/`@themes/*` уже в шаблоні, тож dev-loop
+працює без workspace-лінків і build-кроку — плюс якірний запис у
+`simplycms.config.ts` тим самим `insertEntry`, що й `add`. Шаблон —
+`template-plugin/`/`template-theme/` у tarball CLI (плейсхолдери
+`__PLUGIN_NAME__`/`__THEME_NAME__`/`__THEME_DISPLAY_NAME__`/`__CORE_RANGE__`
+рендеряться на копіюванні; діапазон сумісності — `>=<поточна версія ядра>`,
+бо caret на 0.x фіксує мінор). Обидві незворотні дії рахуються ДО першого
+запису (принцип §2).
 
 ## 4. Канонічні артефакти: звідки CLI знає «як має бути»
 
@@ -246,14 +259,18 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 
 ## 9. Поза скоупом (свідомо)
 
-Стан після Фази 3 (2026-08-14): `create plugin` і файлові міграції плагінів у
-`db:diff` — зроблено (§3.4–3.5); `plugin:dev` — відкладено (шаблон магазину
-не є pnpm-workspace, `minimumReleaseAge=24h` блокує install щойно
-опублікованого пакета; локальний dev-loop дає `create plugin` через
-`@plugins/*`); монтаж `adminRoutes` плагінів — рядок `physical()` у
-store-owned `routes.ts` за якір-коментарем (автоматичну вставку в `add`
-відкладено разом із `plugin:purge` і drizzle-композицією схем); copy-in
-тем — Фаза 4; СТРОГА semver-перевірка `engines.simplycms` — реліз-потяг
-v1.0 (warn-режим уже працює); AST-редагування конфігу — усвідомлене
-спрощення (якірна вставка з чесним падінням), переглянути з ускладненням
+Стан після Фази 4 (2026-08-14): `create plugin`/`create theme` і файлові
+міграції плагінів у `db:diff` — зроблено (§3.4–3.5); `add --theme --copy` —
+зроблено (§3.2, [`themes.md`](themes.md) §3.2); `plugin:dev`/`theme:check`
+— відкладено (шаблон магазину не є pnpm-workspace,
+`minimumReleaseAge=24h` блокує install щойно опублікованого пакета;
+локальний dev-loop дає `create plugin`/`create theme` через
+`@plugins/*`/`@themes/*`; CLI — чистий ESM без TS-лоадера, глибоку
+перевірку модуля теми лишає за `validateThemeModule` на build/рантаймі);
+монтаж `adminRoutes` плагінів — рядок `physical()` у store-owned `routes.ts`
+за якір-коментарем (автоматичну вставку в `add` відкладено разом із
+`plugin:purge` і drizzle-композицією схем); СТРОГА semver-перевірка
+`engines.simplycms` — реліз-потяг v1.0 (warn-режим уже працює);
+AST-редагування конфігу — усвідомлене спрощення (якірна вставка з чесним
+падінням), переглянути з ускладненням
 конфігу.

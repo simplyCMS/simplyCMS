@@ -135,10 +135,11 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 **Що покрито (2026-08-14).** `SCANNED_ROOTS` у `tests/i18n-coverage/scan.ts` —
 host `src/`, обидва пакети роутів, уся воронка покупки (`cart-ui`,
 `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), `core`, `storefront`,
-`theme-system`, `plugin-system`, `plugin-sdk`, обидві теми і (з Фази 3)
-плагіни: тека `plugins/` цілком плюс референс-пакети `simplycms-plugin-*`
-(дискавляться з диска). Тобто `locale: 'en-US'` дає англійський магазин
-цілком, а не змішаний.
+`theme-system`, `plugin-system`, `plugin-sdk`, теми (тека `themes/` цілком
+плюс референс-пакети `simplycms-theme-*`, Фаза 4) і (з Фази 3) плагіни: тека
+`plugins/` цілком плюс референс-пакети `simplycms-plugin-*` — обидва
+дискавляться з диска, не статичним списком. Тобто `locale: 'en-US'` дає
+англійський магазин цілком, а не змішаний.
 
 🔴 **Каталогів ТРИ рівні, і плутати їх не можна.** Core-каталог
 (`packages/i18n/src/catalogs/{uk,en}/`) типізований замкненим union-ом
@@ -216,7 +217,8 @@ simplyCMS/
 │   ├── storefront-routes/  @simplycms/storefront-routes  # routes/ + канонічні pages/ + shells/ + server/
 │   ├── admin-routes/       @simplycms/admin-routes   # routes/admin* (тонкі обгортки)
 │   ├── admin/              @simplycms/admin          # Сторінки/компоненти адмінки
-│   ├── theme-system/       @simplycms/themes         # ThemeRegistry, applyTokens, validateThemeModule
+│   ├── theme-system/       @simplycms/themes         # ThemeRegistry, bootstrapThemes, applyTokens,
+│   │                                                 # validateThemeModule
 │   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins,
 │   │                                                 # validatePluginModule
 │   ├── plugin-sdk/         @simplycms/plugin-sdk     # definePlugin + порти плагінів (usePluginTable,
@@ -224,6 +226,8 @@ simplyCMS/
 │   │                                                 # дозволена плагіну (межа довіри §7, Фаза 3)
 │   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного контуру: plg_faq_items,
 │   │                                                 # routes/ (/admin/faq), слот, Zod-settings, i18n
+│   ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore  # Референс-тема повного контуру: manifest
+│   │                                                 # + tokens + components + messages (Фаза 4, npm)
 │   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
@@ -252,7 +256,8 @@ simplyCMS/
 │   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 ├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
 │                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
-├── themes/default/ · themes/solarstore/   # Теми: manifest + tokens + components (контракт v2)
+├── themes/default/                   # Локальна тема-еталон (контракт v2); solarstore — тепер
+│                                     # npm-пакет `packages/simplycms-theme-solarstore/` (Фаза 4)
 ├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
@@ -299,6 +304,7 @@ simplyCMS/
 | `@simplycms/plugin-sdk` | `packages/plugin-sdk/src` |
 | `@simplycms/plugin-faq` | `packages/**simplycms-plugin-faq**/src` |
 | `@simplycms/themes` | `packages/**theme-system**/src` |
+| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore/src` |
 | `@simplycms/core` | `packages/core/src` (legacy-фасад) |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
@@ -311,14 +317,19 @@ simplyCMS/
 ## Theme System (контракт v2)
 
 Тема постачає **лише** оформлення. Сторінок і лейаутів у ній немає.
+Повний механізм (пакування npm/copy-in, `bootstrapThemes`, conformance-kit,
+чекліст автора) — [`docs/architecture/themes.md`](docs/architecture/themes.md).
 
 ```ts
-ThemeModule = { manifest, tokens, components, settings? }
+ThemeModule = { manifest, tokens, components, settings?, messages? }
 ```
 
 1. **Реєстрація:** `src/theme-registry.ts` реєструє теми з `config.themes`
    (`simplycms.config.ts`) через `ThemeRegistry.register()` — side-effect-імпорт
-   з `__root.tsx`, працює на сервері й на клієнті.
+   з `__root.tsx`, працює на сервері й на клієнті. Тема — локальна тека
+   `themes/<name>` (аліас `@themes/*`) або npm-пакет (референс ядра —
+   `@simplycms/theme-<name>`, конвенція сторонніх — `simplycms-theme-<name>`,
+   Фаза 4).
 2. **SSR-резолв:** `getActiveThemeSSR` (`@simplycms/themes`) читає активну тему з БД;
    `loader` каркасних роутів віддає `themeName` дітям.
 3. **Сторінки — в ядрі:** канонічні сторінки живуть у
@@ -331,9 +342,18 @@ ThemeModule = { manifest, tokens, components, settings? }
 5. **Валідація:** `validateThemeModule` — публічний API для авторів тем;
    `ThemeRegistry.load` падає на тему `default`, якщо запитаної немає.
 6. **Активація з адмінки:** прапорець `is_active` у таблиці `themes`;
-   перемикання інвалідовує кеш теми.
+   перемикання інвалідовує кеш теми. `bootstrapThemes` (клієнтський
+   `useEffect` поруч із `PluginBootstrap` у `__root.tsx`, Фаза 4) дописує в
+   БД рядки для зареєстрованих-але-відсутніх тем — інакше адмінка (читає
+   лише БД) не побачила б встановлену через конфіг тему; рядок без модуля
+   в білді показує бейдж «модуль відсутній» + disabled «Активувати»
+   (registry-awareness, `Themes.tsx`).
 7. **ThemeContext (клієнт):** приймає `initialThemeName` з лоадера — зайвого
    клієнтського фетчу немає.
+8. **Установка npm-теми:** `pnpm simplycms add <pkg> --theme` (голий пакет,
+   апстрім-фікси) або `--copy` (shadcn-модель: копія `src/` у `themes/<key>`,
+   пакет знімається — повне володіння). Авторський dev-loop —
+   `pnpm simplycms create theme <name>`.
 
 ## Environment Variables
 
@@ -444,7 +464,8 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 25 пакетів (24 `@simplycms/*` — з Фазою 3 додались `plugin-sdk` і `plugin-faq` — + unscoped
+- **версія синхронна** — усі 26 пакетів (25 `@simplycms/*` — з Фазою 3 додались `plugin-sdk` і `plugin-faq`,
+  з Фази 4 — `theme-solarstore` — + unscoped
   `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
   сканує `packages/*` і бере все, що не `private` — після сплощення теки
   окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/*.{ts,tsx},packages/ui/**/*.{ts,tsx},themes/**/*.{ts,tsx}"
+applyTo: "src/**/*.{ts,tsx},packages/ui/**/*.{ts,tsx},themes/**/*.{ts,tsx},packages/simplycms-theme-*/**/*.{ts,tsx}"
 description: "Правила побудови UI, система тем та shadcn/ui компоненти"
 ---
 
@@ -36,15 +36,23 @@ interface ThemeModule {
 
 ### Структура теми
 ```
-themes/default/
+themes/default/                          # Локальна тема (dev-loop/copy-in, аліас @themes/*)
 ├── manifest.ts          # Метадані + engines.simplycms
 ├── tokens.ts            # DesignTokens (CSS-змінні, включно з dark)
 ├── components/          # Header, Footer (+ опційні HeroBanner, HomeSections)
+├── messages.ts           # Опційний каталог uk/en (контракт v2.1)
 ├── index.ts             # ThemeModule export
 └── package.json
 ```
 
 Ніяких `pages/`, `layouts/`, `styles/theme.css` — токени розкладає `applyTokens`.
+
+🔴 Тема може також бути **npm-пакетом** (Фаза 4): референс ядра —
+`packages/simplycms-theme-<name>/` (npm `@simplycms/theme-<name>`), стороння
+— `simplycms-theme-<name>`/`@vendor/simplycms-theme-<name>`. Та сама
+структура файлів, лише в `src/` пакета + tsup-збірка. Установка —
+`simplycms add <pkg> --theme` (голий пакет) або `--theme --copy`
+(копія `src/*` у `themes/<key>/`, shadcn-модель). Деталі — `docs/architecture/themes.md`.
 
 ### Де рендеряться сторінки
 Канонічні сторінки живуть у `@simplycms/storefront-routes/src/pages/`.
@@ -101,4 +109,7 @@ Header, Footer, HeroBanner, ProductCard (override), FilterSidebar (override)
 - `packages/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
 - `CLAUDE.md` розділ «Theme System (контракт v2)» — реєстрація та SSR-резолв.
 - `packages/ui/src/` — всі shadcn/ui компоненти.
-- `themes/default/` — еталонна реалізація теми.
+- `themes/default/` — еталонна реалізація локальної теми (fallback-токени);
+  `packages/simplycms-theme-solarstore/` — еталон пакетної форми (npm).
+- `docs/architecture/themes.md` — повний механізм: пакування, `bootstrapThemes`,
+  conformance-kit, чекліст автора.

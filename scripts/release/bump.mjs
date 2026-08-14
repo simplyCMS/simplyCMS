@@ -19,7 +19,7 @@ export function compareVersions(a, b) {
 /**
  * Манифести публікованих пакетів (private — не наші).
  *
- * Одна тека `packages/` тримає і 21 scoped-пакет ядра, і unscoped
+ * Одна тека `packages/` тримає і 25 scoped-пакетів ядра, і unscoped
  * `create-simplycms-store`; усі вони публікуються тим самим реліз-потягом
  * і мусять мати СИНХРОННУ версію, тож дискримінатор тут — лише `private`.
  */

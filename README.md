@@ -2,11 +2,12 @@
 
 Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
 
-**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 24 пакети
+**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 25 пакетів
 (включно з CLI [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
-Plugin SDK [`@simplycms/plugin-sdk`](https://www.npmjs.com/package/@simplycms/plugin-sdk)
-і референс-плагіном [`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq) — двоє останніх
-їдуть у реєстр з мержем Фази 3),
+Plugin SDK [`@simplycms/plugin-sdk`](https://www.npmjs.com/package/@simplycms/plugin-sdk),
+референс-плагіном [`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq)
+і референс-темою [`@simplycms/theme-solarstore`](https://www.npmjs.com/package/@simplycms/theme-solarstore)
+— останні три їдуть у реєстр з мержем відповідної фази),
 плюс скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store) тієї ж версії.
 
 ## Vision: e-commerce platform
@@ -24,13 +25,13 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ `0.3.0`, 24 пакети |
+| Ядро в npm-пакетах | ✅ `0.3.0`, 25 пакетів |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
-| CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin` / `update` / `db:diff` |
+| CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
 | Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `@simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
-| Теми як npm-пакети | ⏳ Фаза 4 |
+| Теми як npm-пакети | ✅ Фаза 4: `@simplycms/theme-solarstore` + copy-in + маркетплейс-контракт |
 
 Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
 обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
@@ -38,8 +39,12 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 `definePlugin` з `@simplycms/plugin-sdk`: слоти сторінок, власні таблиці
 `plg_*` (міграції їдуть у пакеті), сторінки адмінки, Zod-настройки, власний
 каталог перекладів — механізм цілком описаний у
-[`docs/architecture/plugins.md`](docs/architecture/plugins.md). Наступний
-рубіж — Фаза 4: теми як пакети + маркетплейс-індекс.
+[`docs/architecture/plugins.md`](docs/architecture/plugins.md). Тема — npm-пакет
+(`@simplycms/theme-solarstore` — референс ядра) або copy-in-тека `themes/<name>`
+(`simplycms add … --theme --copy`), синхронізація з БД —
+`bootstrapThemes`; механізм цілком описаний у
+[`docs/architecture/themes.md`](docs/architecture/themes.md). Контракт подачі
+стороннього пакета в маркетплейс-індекс — [`docs/marketplace/README.md`](docs/marketplace/README.md).
 
 ## Створити магазин на SimplyCMS
 
