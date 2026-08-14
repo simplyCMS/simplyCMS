@@ -27,7 +27,9 @@ pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО
                       # потребує Docker; Gate B асертить точні назви із сіду,
                       # Gate E — owner:invite (inviteUserByEmail → /auth/confirm → set-password) наживо
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
-pnpm template:sync    # регенерація шаблону create-simplycms-store з монорепо (закомічені копії, парність-тестом)
+pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
+                      # packages/cli/host/ (канон host-файлів для simplycms update),
+                      # packages/schema/migrations/ (для simplycms db:diff) — усі під парність-тестом
 pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
@@ -117,7 +119,9 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, обидва пакети роутів, усі пʼять
 `*-ui`-пакетів воронки й компоненти тем — новий кириличний рядок інтерфейсу
-там валить лінт. Селектори не послабляти.
+там валить лінт. Третя error-зона (2026-08-13) — `import.meta.env` у шести
+серверних модулях env-контракту (див. «Environment Variables»). Селектори не
+послабляти.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять чотири committed-тести —
@@ -335,6 +339,13 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 його наповнення (див. «Production Run»). `VITE_`-префікс означає «видно
 клієнту», а не «лише клієнт»: той самий `VITE_SUPABASE_URL` сервер бере з
 `process.env`. Дуального резолву немає — відсутній ключ гучно падає.
+🔴 Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
+`import.meta.env` — це Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести
+джерело env не здатен. Доводять: eslint `no-restricted-syntax` на
+`import.meta.env` у шести серверних модулях (`server-client`, `anon-client`,
+`seo/robots`, `seo/sitemap`, `api/health.tsx`, `src/start.ts`) — селектор не
+послабляти; і Gate C пілота (`server-client` + `anon-client` у
+`SERVER_PAYLOAD`).
 
 ## Production Run
 
