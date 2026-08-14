@@ -22,6 +22,10 @@ import { join } from 'node:path';
  */
 const SERVER_PAYLOAD = [
   /@simplycms\/supabase\/dist\/server-client/,
+  // Anon-клієнт читає голий `process.env` у рантаймі (контракт серверного
+  // env, спека CLI v1 §7): при витоку в клієнтський бандл він упав би вже в
+  // браузері (там `process` немає) — гейт має зловити раніше.
+  /@simplycms\/supabase\/dist\/anon-client/,
   /@simplycms\/storefront\/dist\/loaders\//,
 ];
 

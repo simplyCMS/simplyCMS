@@ -102,6 +102,19 @@ pnpm build    # dist/client + dist/server
 pnpm start    # node server.mjs (порт — PORT, за замовчуванням 3000)
 ```
 
+### 5. Перевірити себе
+
+```bash
+pnpm simplycms doctor
+```
+
+Read-only діагностика магазину: версії ядра, env, host-файли, міграції, конфіг.
+Той самий CLI (`@simplycms/cli`, уже в `devDependencies`) далі обслуговує
+магазин: `simplycms add` — встановлення плагінів/тем, `simplycms update` —
+оновлення ядра з доганянням host-файлів, `simplycms db:diff` — донесення нових
+core-міграцій. Повна інструкція —
+[docs/architecture/cli.md](https://github.com/simplyCMS/simplyCMS/blob/main/docs/architecture/cli.md).
+
 ## Що де лежить
 
 | Шлях                  | Призначення                                        |

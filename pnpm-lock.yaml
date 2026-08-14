@@ -436,6 +436,12 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
 
+  packages/cli:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^1.7.0
+        version: 1.7.0
+
   packages/core:
     dependencies:
       '@hookform/resolvers':

@@ -1,0 +1,38 @@
+{
+  "name": "@simplycms/cli",
+  "version": "0.3.0",
+  "private": false,
+  "description": "CLI магазину SimplyCMS (бінарник simplycms): doctor, add, update, db:diff",
+  "type": "module",
+  "bin": {
+    "simplycms": "src/index.mjs"
+  },
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./src/index.mjs",
+    "exports": {
+      ".": "./src/index.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "host"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/cli"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0"
+  }
+}

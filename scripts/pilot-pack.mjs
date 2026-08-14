@@ -11,19 +11,19 @@
  * 🔴 Режими розділені за ПРИРОДОЮ перевірки, бо змішувати їх — значить робити
  * детерміністичний гейт заручником даних:
  *
- * | Режим              | Команда           | Гейти        | Джерело даних        |
- * |--------------------|-------------------|--------------|----------------------|
- * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI | нічого (плейсхолдери)|
- * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI     | `.env.local`/секрети |
- * | e2e на сіді        | `pnpm pilot:e2e`  | A-E, CLI     | стек + seed.sql      |
+ * | Режим              | Команда           | Гейти              | Джерело даних        |
+ * |--------------------|-------------------|--------------------|----------------------|
+ * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI, TOOL | нічого (плейсхолдери)|
+ * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI, TOOL     | `.env.local`/секрети |
+ * | e2e на сіді        | `pnpm pilot:e2e`  | A-E, CLI, TOOL     | стек + seed.sql      |
  *
  * Gate E (bootstrap власника) є ЛИШЕ в `--e2e`: він потребує service_role-ключа
  * і пише в auth.users, а робити це проти чужої живої БД неприпустимо. В інших
  * режимах він у звіті позначений SKIP — видимо, а не мовчки.
  *
- * A/C/D і CLI (резолв tarball-ів, route tree з node_modules, відсутність
- * серверного вантажу в клієнті, Tailwind, вміст tarball-а скаффолдера) до БД
- * не звертаються — тому `--pack-only` не
+ * A/C/D, CLI і TOOL (резолв tarball-ів, route tree з node_modules, відсутність
+ * серверного вантажу в клієнті, Tailwind, вміст tarball-ів скаффолдера й
+ * @simplycms/cli) до БД не звертаються — тому `--pack-only` не
  * потребує ані ключів, ані піднятого сервера й ніколи не червоніє через зміну
  * даних. Gate B бере назви товарів із бази: у `pilot` — з чужої живої (тому
  * достатньо збігу хоч однієї назви), у `pilot:e2e` — із детерміністичного сіду
@@ -31,8 +31,8 @@
  *
  * Використання:
  *   node scripts/pilot-pack.mjs               # повний прогін (потрібна БД)
- *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, CLI (без БД)
- *   node scripts/pilot-pack.mjs --e2e         # gates A-E, CLI проти локального стеку
+ *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, CLI, TOOL (без БД)
+ *   node scripts/pilot-pack.mjs --e2e         # gates A-E, CLI, TOOL проти локального стеку
  *   node scripts/pilot-pack.mjs --keep        # не прибирати /tmp-магазин
  *   node scripts/pilot-pack.mjs --skip-build  # dist пакетів уже свіжий
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
@@ -78,10 +78,12 @@ function describeMode() {
 
 /** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
 function describeScope() {
-  if (packOnly) return 'гейти A/C/D + CLI';
+  if (packOnly) return 'гейти A/C/D + CLI/TOOL';
   // Gate E потребує service_role, який дає лише локальний стек, — тож у прогоні
   // проти живої БД він показується як пропущений, а не як провалений.
-  return e2e ? 'гейти A-E + CLI' : 'гейти A-D + CLI (E пропускається)';
+  return e2e
+    ? 'гейти A-E + CLI/TOOL'
+    : 'гейти A-D + CLI/TOOL (E пропускається)';
 }
 
 async function main() {

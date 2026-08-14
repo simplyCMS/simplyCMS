@@ -11,9 +11,12 @@ export const Route = createFileRoute('/api/health')({
       GET: async () => {
         const checks: Record<string, Record<string, unknown>> = {};
 
+        // Серверний контур читає env з `process.env` у рантаймі (контракт
+        // серверного env, спека CLI v1 §7) — перевіряємо те саме джерело,
+        // з якого `createServerSupabase` нижче візьме ключі.
         checks.envVars = {
-          VITE_SUPABASE_URL: !!import.meta.env.VITE_SUPABASE_URL,
-          VITE_SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+          VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+          VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
         };
 
         try {

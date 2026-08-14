@@ -75,6 +75,12 @@ for (const value of Object.values(schema)) {
 У репозиторії поруч лежить `seed-migrations/` — SQL початкового насіву схеми для
 підняття БД з нуля (у npm-tarball не потрапляє).
 
+Tarball пакета везе теку `migrations/` — байт-копію кореневих
+`supabase/migrations/` монорепо, синхронізовану `pnpm template:sync` і
+закріплену parity-тестом. Це джерело для `simplycms db:diff` у магазині:
+команда порівнює `supabase/migrations/` магазину з
+`node_modules/@simplycms/schema/migrations/` і докопіює нові міграції ядра.
+
 ## Ліцензія
 
 MIT

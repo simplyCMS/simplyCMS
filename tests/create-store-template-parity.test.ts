@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  CLI_HOST_DIR,
+  SCHEMA_MIGRATIONS_DIR,
   SYNCED_DIRS,
   SYNCED_FILES,
   TEMPLATE_DIR,
@@ -34,6 +36,30 @@ describe('create-store template: парність із монорепо', () => 
       }
     },
   );
+
+  // Дзеркала §5 спеки CLI v1: ті самі джерела, той самий `pnpm template:sync`.
+  // Канон host/ пакета CLI — джерело `simplycms update`; тека сама собі
+  // маніфест, тож окрім вмісту стережемо і точний склад (зайвий чи застарілий
+  // файл у каноні — теж дрейф).
+  it.each(SYNCED_FILES)('канон host/ CLI: %s байт-ідентичний', (file) => {
+    expect(read(join(CLI_HOST_DIR, file))).toBe(read(file));
+  });
+
+  it('канон host/ CLI складається рівно з SYNCED_FILES', () => {
+    expect(listFiles(CLI_HOST_DIR)).toEqual([...SYNCED_FILES].sort());
+  });
+
+  // Міграції ядра в tarball @simplycms/schema — джерело `simplycms db:diff`.
+  it('тека supabase/migrations байт-ідентична packages/schema/migrations', () => {
+    const source = listFiles('supabase/migrations');
+    expect(source.length).toBeGreaterThan(0);
+    expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual(source);
+    for (const file of source) {
+      expect(read(join(SCHEMA_MIGRATIONS_DIR, file))).toBe(
+        read(join('supabase/migrations', file)),
+      );
+    }
+  });
 
   // Пілотний оверлей — форк шаблонного `vite.config.ts` (плюс `emitBundleStats`
   // для Gate C). Без цього гарда пілот збирав би скретч НЕ тим конфігом, який

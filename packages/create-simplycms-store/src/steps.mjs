@@ -120,6 +120,8 @@ export function printNextSteps({ dirLabel, installed, hasEnv }) {
     'OWNER_EMAIL=you@example.com SUPABASE_SERVICE_ROLE_KEY=<key> ' +
       `${STORE_MANAGER} run owner:invite`,
   );
+  // Перший крок діагностики: env, host-файли, міграції — до старту dev-сервера.
+  steps.push(`${STORE_MANAGER} simplycms doctor   # діагностика магазину`);
   steps.push(`${STORE_MANAGER} run dev`);
   note(steps.join('\n'), 'Наступні кроки');
   log.info(

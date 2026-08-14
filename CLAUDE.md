@@ -27,7 +27,9 @@ pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО
                       # потребує Docker; Gate B асертить точні назви із сіду,
                       # Gate E — owner:invite (inviteUserByEmail → /auth/confirm → set-password) наживо
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
-pnpm template:sync    # регенерація шаблону create-simplycms-store з монорепо (закомічені копії, парність-тестом)
+pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
+                      # packages/cli/host/ (канон host-файлів для simplycms update),
+                      # packages/schema/migrations/ (для simplycms db:diff) — усі під парність-тестом
 pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
@@ -62,7 +64,8 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
-- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI), які зони не покриті й що змінить `apps/dev-store`
+- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
+- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 
 ## Agent Tooling
 
@@ -116,7 +119,9 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, обидва пакети роутів, усі пʼять
 `*-ui`-пакетів воронки й компоненти тем — новий кириличний рядок інтерфейсу
-там валить лінт. Селектори не послабляти.
+там валить лінт. Третя error-зона (2026-08-13) — `import.meta.env` у шести
+серверних модулях env-контракту (див. «Environment Variables»). Селектори не
+послабляти.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять чотири committed-тести —
@@ -213,6 +218,9 @@ simplyCMS/
 │   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
+│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/update/db:diff;
+│   │                                                 # чистий ESM без build; host/ — канон host-файлів
+│   │                                                 # (`pnpm template:sync`); виконується В МАГАЗИНІ, не тут
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
 │   │                            # синхронізується `pnpm template:sync`). Єдиний тут без
@@ -237,7 +245,8 @@ simplyCMS/
 ├── plugins/hello-world/              # Референс-плагін
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
-│   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону)
+│   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону),
+│   │                                 # cli-* (юніти @simplycms/cli: контекст/doctor/add/update/db-diff)
 │   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
 │                                     # create-simplycms-store — не власна копія host-каркаса (виключений
 │                                     # із tsconfig.json і eslint.config.mjs)
@@ -281,9 +290,10 @@ simplyCMS/
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
-`@simplycms/schema` і `@simplycms/admin-routes` аліасів **не мають** — вони
-резолвляться через workspace-симлінки `node_modules` (schema споживають лише
-`scripts/db-*.mjs`, admin-routes монтується шляхом у `routes.ts`).
+`@simplycms/schema`, `@simplycms/admin-routes` і `@simplycms/cli` аліасів
+**не мають** — вони резолвляться через workspace-симлінки `node_modules`
+(schema споживають лише `scripts/db-*.mjs`, admin-routes монтується шляхом у
+`routes.ts`, cli — bin-інструмент, який ніхто не імпортує як код).
 
 ## Theme System (контракт v2)
 
@@ -322,6 +332,21 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
 
+🔴 **Контурів env два, і джерела в них різні** (спека CLI v1 §7, 2026-08-13).
+Клієнтський бандл читає `import.meta.env` — значення запікаються при
+`vite build`. Серверний код (SSR, server fns, middleware, SEO) читає **лише**
+`process.env` і лише в рантаймі; `.env`/`.env.local` — не джерело, а спосіб
+його наповнення (див. «Production Run»). `VITE_`-префікс означає «видно
+клієнту», а не «лише клієнт»: той самий `VITE_SUPABASE_URL` сервер бере з
+`process.env`. Дуального резолву немає — відсутній ключ гучно падає.
+🔴 Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
+`import.meta.env` — це Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести
+джерело env не здатен. Доводять: eslint `no-restricted-syntax` на
+`import.meta.env` у шести серверних модулях (`server-client`, `anon-client`,
+`seo/robots`, `seo/sitemap`, `api/health.tsx`, `src/start.ts`) — селектор не
+послабляти; і Gate C пілота (`server-client` + `anon-client` у
+`SERVER_PAYLOAD`).
+
 ## Production Run
 
 `pnpm build` віддає **два** каталоги: `dist/client/` (статика з хешованими
@@ -341,8 +366,17 @@ Response }`), а не готовий HTTP-сервер. Теки `.output/` не
 
 **Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` +
 production-`node_modules` (потрібен рівно один рантайм-пакет — `sirv`, він у
-`dependencies`, не в dev). `VITE_*` вже вшиті в бандл на етапі `vite build`, тож
-збірку робить той самий env, що й прод.
+`dependencies`, не в dev). `VITE_*` для КЛІЄНТСЬКОГО бандла запікаються на
+етапі `vite build`, тож збірку робить той самий env, що й прод.
+
+🔴 **Контракт серверного env (2026-08-13, спека CLI v1 §7).** Серверний контур
+читає **лише** `process.env` і лише в рантаймі (усередині фабрик/хендлерів, не
+на модуль-рівні). `server.mjs` перед динамічним імпортом хендлера наповнює
+`process.env` із `.env.local`/`.env` — лише відсутні ключі, тож реальний env
+процесу завжди виграє (`process.env` > `.env.local` > `.env`); у dev те саме
+робить `loadEnv` у `vite.config.ts`. Дуального резолву немає. Наслідок:
+ротація Supabase-ключів = перезапуск процесу (`pnpm start`), БЕЗ перезбірки;
+для клієнтських значень перезбірка як була, так і лишається.
 
 ## Database Commands
 
@@ -397,7 +431,7 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 22 пакети (21 `@simplycms/*` + unscoped
+- **версія синхронна** — усі 23 пакети (22 `@simplycms/*` + unscoped
   `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
   сканує `packages/*` і бере все, що не `private` — після сплощення теки
   окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає
@@ -405,14 +439,17 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
   пакетів, що вже там є**. Пакет, якого в реєстрі ще немає, мерж публікує —
-  саме так у реєстр поїхав `create-simplycms-store`;
+  саме так у реєстр поїхав `create-simplycms-store`, і так само їде
+  `@simplycms/cli` (2026-08-13);
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
 - 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
   npm за замовчуванням робить приватними, а це платний план;
 - потрібен secret **`NPM_TOKEN`** — 🔴 саме **Granular Access Token із увімкненим
   «Bypass 2FA»** і обсягом **`All Packages`** (read+write). Не scope
   `@simplycms`: scope — це префікс в ІМЕНІ пакета, а не тека, і unscoped
-  `create-simplycms-store` (надалі ще й `simplycms` CLI) під нього не підпадає.
+  `create-simplycms-store` під нього не підпадає (CLI зрештою пішов ПІД scope —
+  `@simplycms/cli`, bin `simplycms`; unscoped `simplycms` — хіба майбутній
+  тонкий аліас, дія власника).
   Розширено 2026-08-04. Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним

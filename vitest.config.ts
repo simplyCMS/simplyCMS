@@ -47,6 +47,9 @@ export default defineConfig({
       // Смоук tarball-а скаффолдера: місце — саме релізний ланцюг
       // (`test:packaging`), бо job `publish` не запускає `pnpm test`.
       'tests/create-store-pack.test.ts',
+      // Смоук tarball-а @simplycms/cli (Gate TOOL): та сама логіка — гейт
+      // опублікованого артефакту живе в релізному ланцюзі.
+      'tests/cli-pack.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —
