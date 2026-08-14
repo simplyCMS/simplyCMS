@@ -30,6 +30,11 @@ const EXCLUDE_PATHSPECS = [
   ':!supabase/types.ts',
   ':!scripts/audit-exports/**',
   ':!scripts/audit-exports.mjs',
+  // Межа довіри плагінів (Фаза 3): ban-глоби виду '@simplycms/supabase/*' у
+  // eslint-зоні та синтетичні порушення в її негативному контролі — це
+  // специфікатори-ЗАБОРОНИ і фікстури, а не реальні імпорти.
+  ':!eslint.config.mjs',
+  ':!tests/plugin-trust-boundary.test.ts',
 ];
 
 /**

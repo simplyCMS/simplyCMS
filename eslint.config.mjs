@@ -72,6 +72,44 @@ const SERVER_ENV_FILES = [
   'src/start.ts',
 ];
 
+// 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
+// @simplycms/plugin-sdk — прямі імпорти Supabase-шару звідси заборонені.
+// Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
+// (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
+// `plugin-*`: plugin-system і plugin-sdk — ядро, їх зона не покриває.
+// Селектори не послабляти; негативний контроль —
+// tests/plugin-trust-boundary.test.ts (зелений лінт сам по собі скоупінг
+// зони не доводить — урок env-контракту).
+const PLUGIN_TRUST_BOUNDARY_FILES = [
+  'plugins/**/*.{ts,tsx}',
+  'packages/simplycms-plugin-*/**/*.{ts,tsx}',
+];
+
+const pluginTrustBoundaryImports = [
+  {
+    group: [
+      '@simplycms/supabase',
+      '@simplycms/supabase/*',
+      '@simplycms/data-supabase',
+      '@simplycms/data-supabase/*',
+      '@supabase/*',
+    ],
+    message:
+      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7).',
+  },
+];
+
+// no-restricted-imports НЕ бачить динамічний import() — його ловить окремий
+// селектор (знахідка рев'ю Фази 3). Регексп дзеркалить групи вище.
+const pluginTrustBoundarySyntax = [
+  {
+    selector:
+      'ImportExpression > Literal[value=/^(?:@simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
+    message:
+      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
+  },
+];
+
 const eslintConfig = [
   ...tseslint.configs.recommended,
   {
@@ -127,6 +165,25 @@ const eslintConfig = [
         'error',
         ...i18nRestrictedSyntax,
         ...serverEnvRestrictedSyntax,
+      ],
+    },
+  },
+  {
+    // Межа довіри плагінів. Статичні імпорти/export-from — no-restricted-
+    // imports (окреме правило, перетин з i18n безпечний); динамічний
+    // import() — селектор no-restricted-syntax, і оскільки flat config
+    // ЗАМІНЮЄ опції правила цілком, i18n-селектори повторено тут явно
+    // (той самий прийом, що в env-зоні вище).
+    files: PLUGIN_TRUST_BOUNDARY_FILES,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: pluginTrustBoundaryImports },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        ...i18nRestrictedSyntax,
+        ...pluginTrustBoundarySyntax,
       ],
     },
   },

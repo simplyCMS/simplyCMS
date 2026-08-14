@@ -23,7 +23,8 @@ export const SEED_PLUGIN = {
   name: 'hello-world',
   displayName: 'Hello World',
   version: '0.1.0',
-  description: 'Демо-плагін: віджет на дашборді адмінки.',
+  description:
+    'Demo plugin: a dashboard widget proving the plugin contour works.',
   author: 'SimplyCMS',
   hooks: [{ name: 'admin.dashboard.widgets' }],
 };

@@ -9,7 +9,7 @@ const manifest: ThemeManifest = {
   name: 'solarstore',
   displayName: 'SolarStore Default',
   version: '1.0.0',
-  engines: { simplycms: '^0.1.0' },
+  engines: { simplycms: '>=0.1.0' },
 };
 
 export default manifest;

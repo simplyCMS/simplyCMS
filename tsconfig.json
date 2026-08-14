@@ -51,6 +51,13 @@
       "@simplycms/ui/*": ["./packages/ui/src/*"],
       "@simplycms/plugins": ["./packages/plugin-system/src"],
       "@simplycms/plugins/*": ["./packages/plugin-system/src/*"],
+      "@simplycms/plugin-sdk": ["./packages/plugin-sdk/src"],
+      "@simplycms/plugin-sdk/*": ["./packages/plugin-sdk/src/*"],
+      "@simplycms/plugin-faq": ["./packages/simplycms-plugin-faq/src"],
+      "@simplycms/plugin-faq/pages/*": [
+        "./packages/simplycms-plugin-faq/src/pages/*"
+      ],
+      "@simplycms/plugin-faq/*": ["./packages/simplycms-plugin-faq/src/*"],
       "@simplycms/themes": ["./packages/theme-system/src"],
       "@simplycms/themes/*": ["./packages/theme-system/src/*"],
       "@themes/*": ["./themes/*"],

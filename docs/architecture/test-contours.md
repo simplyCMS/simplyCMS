@@ -53,7 +53,7 @@
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` | `gate-d.mjs` |
 | **E** | Перший signup НЕ отримує `admin` (міграція в живій схемі); `owner:invite` ідемпотентний; `/auth/confirm` ставить cookies і редиректить | `gate-e.mjs` |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies` | `create-pkg-smoke.mjs` |
-| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball, канон `host/` непорожній (без нього `update` — пустушка), рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
+| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 5 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/` і `template-plugin/` (шаблон `create plugin`) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
 
 🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
 **CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук

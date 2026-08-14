@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerPluginModule, loadPlugins } from './PluginLoader';
+import { validatePluginModule } from './validatePluginModule';
 import type { PluginModule } from './types';
 
 /** Опис плагіна в конфізі магазину: імʼя + ліниве завантаження модуля. */
@@ -15,6 +16,7 @@ interface PluginInsert {
   version: string;
   description: string | null;
   author: string | null;
+  hooks: unknown;
   is_active: boolean;
 }
 
@@ -27,6 +29,9 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
     version: manifest?.version ?? '0.0.0',
     description: manifest?.description ?? null,
     author: manifest?.author ?? null,
+    // Без hooks рядок від bootstrap був біднішим за рядок від сіду —
+    // адмінка показувала б порожній список хуків встановленого плагіна.
+    hooks: manifest?.hooks ?? [],
     is_active: false,
   };
 }
@@ -90,10 +95,25 @@ export async function bootstrapPlugins(
   for (const reg of regs) {
     try {
       const loaded = await reg.module();
+      // Мʼяка політика (спека §8 «ніяких падінь») забезпечується тут:
+      // порушення контракту валідатор кидає, catch нижче логує і пропускає
+      // модуль; попередження (зокрема несумісний engines.simplycms —
+      // warn-режим на 0.x, рішення Р5 плану Фази 3) валідатор друкує сам,
+      // реєстрація триває.
+      validatePluginModule(loaded.default);
+      // Ключ конфігу — це і ключ рядка в таблиці plugins, і те, що плагін
+      // передає в usePluginConfig як manifest.name. Розбіжність не валить
+      // реєстрацію, але робить налаштування «мовчки не тими» — тому warn.
+      const manifestName = loaded.default.manifest?.name;
+      if (manifestName !== undefined && manifestName !== reg.name) {
+        console.warn(
+          `[plugins] Ключ конфігу '${reg.name}' ≠ manifest.name '${manifestName}' — налаштування плагіна читатимуться з іншого рядка plugins`,
+        );
+      }
       registerPluginModule(reg.name, loaded.default);
       modules.set(reg.name, loaded.default);
     } catch (error) {
-      console.error(`[plugins] Модуль "${reg.name}" не імпортувався:`, error);
+      console.error(`[plugins] Модуль "${reg.name}" не підключено:`, error);
     }
   }
 

@@ -8,6 +8,7 @@ import { readCliVersion } from './context.mjs';
 const COMMANDS = {
   doctor: () => import('./doctor.mjs'),
   add: () => import('./add.mjs'),
+  create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
   'db:diff': () => import('./db-diff.mjs'),
 };
@@ -21,9 +22,11 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   doctor    Read-only діагностика магазину; --strict — попередження теж валять
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
+  create    Скаффолд плагіна в plugins/ магазину:
+              create plugin <name> [--dry-run]
   update    Оновити ядро і host-файли:
               update [--check | --write] [--to <version>] [--no-install]
-  db:diff   Порівняти міграції магазину з міграціями ядра: db:diff [--write]
+  db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
 
 Опції:
   --help, -h       Ця довідка

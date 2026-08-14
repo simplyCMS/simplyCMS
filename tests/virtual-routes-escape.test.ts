@@ -79,3 +79,79 @@ describe('virtual routes: physical() поза routesDirectory', () => {
     expect(tree).toContain("'/shop/products'");
   });
 });
+
+// Механізм Фази 3: adminRoutes плагіна — ДРУГЕ physical() з файлами, чиї
+// запечені id лягають ПІД layout, який приніс перший (пакет ядра). Гард
+// доводить: два монтування не колізують, і роут плагіна стає дитиною
+// чужого layout за префіксом id — рівно так /admin/faq плагіна faq
+// підвішується під layout /admin з @simplycms/admin-routes.
+describe('virtual routes: два physical() під спільним layout', () => {
+  let treePath: string;
+
+  beforeAll(async () => {
+    const routesDirectory = join(tempRoot, 'app2', 'routes');
+    const coreRoutes = join(tempRoot, 'core-pkg', 'routes');
+    const pluginRoutes = join(tempRoot, 'plugin-pkg', 'routes');
+    mkdirSync(routesDirectory, { recursive: true });
+    mkdirSync(join(coreRoutes, 'admin'), { recursive: true });
+    mkdirSync(join(pluginRoutes, 'admin', 'faq'), { recursive: true });
+
+    writeFileSync(
+      join(routesDirectory, '__root.tsx'),
+      "import { createRootRoute } from '@tanstack/react-router';\n" +
+        'export const Route = createRootRoute();\n',
+    );
+    // «Ядро»: layout /admin + одна сторінка.
+    writeFileSync(
+      join(coreRoutes, 'admin.tsx'),
+      "import { createFileRoute } from '@tanstack/react-router';\n" +
+        "export const Route = createFileRoute('/admin')({});\n",
+    );
+    writeFileSync(
+      join(coreRoutes, 'admin', 'index.tsx'),
+      "import { createFileRoute } from '@tanstack/react-router';\n" +
+        "export const Route = createFileRoute('/admin/')({});\n",
+    );
+    // «Плагін»: сторінка під тим самим layout, з іншого пакета.
+    writeFileSync(
+      join(pluginRoutes, 'admin', 'faq', 'index.tsx'),
+      "import { createFileRoute } from '@tanstack/react-router';\n" +
+        "export const Route = createFileRoute('/admin/faq/')({});\n",
+    );
+
+    treePath = join(tempRoot, 'app2', 'routeTree.gen.ts');
+    const config = getConfig(
+      {
+        routesDirectory,
+        generatedRouteTree: treePath,
+        virtualRouteConfig: rootRoute('__root.tsx', [
+          physical('', '../../core-pkg/routes'),
+          physical('', '../../plugin-pkg/routes'),
+        ]),
+        tmpDir: join(tempRoot, 'tanstack-tmp2'),
+        enableRouteTreeFormatting: false,
+        disableLogging: true,
+      },
+      join(tempRoot, 'app2'),
+    );
+    await new Generator({ config, root: join(tempRoot, 'app2') }).run();
+  });
+
+  it('роут плагіна присутній і імпортується зі СВОГО пакета', () => {
+    const tree = readFileSync(treePath, 'utf8');
+    expect(tree).toContain("'/admin/faq/'");
+    expect(tree).toMatch(
+      /from '[^']*\.\.\/plugin-pkg\/routes\/admin\/faq\/index'/,
+    );
+  });
+
+  it('роут плагіна — дитина layout /admin з пакета ядра', () => {
+    const tree = readFileSync(treePath, 'utf8');
+    // У дереві дітей layout-роуту /admin має бути і сторінка ядра, і
+    // сторінка плагіна — обидві за префіксом id, попри різні physical().
+    const adminChildren = tree.match(/AdminRouteChildren[^{]*\{[^}]*\}/)?.[0];
+    expect(adminChildren).toBeTruthy();
+    expect(adminChildren).toContain('AdminFaqIndexRoute');
+    expect(adminChildren).toContain('AdminIndexRoute');
+  });
+});

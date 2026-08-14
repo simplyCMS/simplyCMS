@@ -45,6 +45,12 @@ const coreRoutes = (name: string) =>
 export const routes = rootRoute('__root.tsx', [
   physical('', coreRoutes('@simplycms/storefront-routes')),
   physical('', coreRoutes('@simplycms/admin-routes')),
+  // plugin admin routes — місце монтажу роутів адмінки плагінів: додай сюди
+  // рядок physical() після встановлення плагіна з adminRoutes (автоматичну
+  // вставку через `simplycms add` відкладено — див. cli.md §9).
+  // 🔴 Завжди через coreRoutes: без realpathSync роути плагіна мовчки
+  // втрачають code-splitting (див. коментар вище).
+  physical('', coreRoutes('@simplycms/plugin-faq')),
   // Кастомні роути цього магазину (спочатку — порожня тека).
   physical('', 'my'),
 ]);

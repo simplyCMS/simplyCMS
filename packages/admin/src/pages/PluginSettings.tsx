@@ -32,13 +32,36 @@ import {
   Plug,
   Settings,
 } from 'lucide-react';
+import type { ZodObject, ZodRawShape } from 'zod';
+import { getRegisteredPluginModules } from '@simplycms/plugins';
+import { parsePlugin, type Plugin } from '@simplycms/plugins/types';
 import { adminPath } from '../lib/adminLinks';
-import { useState, useEffect } from 'react';
-import {
-  parsePlugin,
-  type Plugin,
-  type PluginSettingDefinition,
-} from '@simplycms/plugins/types';
+import { settingsFields } from '../lib/pluginSettingsFields';
+import { useState, useEffect, useMemo } from 'react';
+import { usePluginToggle } from '../hooks/usePluginToggle';
+
+/**
+ * Схема налаштувань береться з зареєстрованого МОДУЛЯ плагіна
+ * (`bootstrapPlugins` наповнює реєстр із конфіга магазину), а не з БД чи
+ * manifest.json: Zod-схема — код, вона несеріалізовна. Наслідок §8: якщо
+ * плагін активний у БД, але модуль викинули з білда, — форма недоступна,
+ * сторінка показує «немає налаштувань».
+ *
+ * Без useMemo навмисно: bootstrap наповнює реєстр асинхронно ПІСЛЯ першого
+ * рендера, і мемоїзація по pluginName закешувала б «модуля немає» назавжди
+ * (знахідка рев'ю Фази 3). Читання реєстру на кожен рендер — копійки, так
+ * само робить Plugins.tsx.
+ */
+function readSettingsSchema(
+  pluginName: string | undefined,
+): ZodObject<ZodRawShape> | undefined {
+  if (!pluginName) return undefined;
+  const module = getRegisteredPluginModules().get(pluginName);
+  const definition = (
+    module as { definition?: { settings?: ZodObject<ZodRawShape> } } | undefined
+  )?.definition;
+  return definition?.settings;
+}
 
 export default function PluginSettings() {
   const t = useT();
@@ -47,6 +70,7 @@ export default function PluginSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { togglePlugin, togglingPlugin } = usePluginToggle();
 
   const [config, setConfig] = useState<Record<string, unknown>>({});
 
@@ -66,58 +90,14 @@ export default function PluginSettings() {
     },
   });
 
-  // Load plugin manifest to get settings definitions
-  const { data: manifest } = useQuery({
-    queryKey: ['plugin-manifest', plugin?.name],
-    queryFn: async () => {
-      if (!plugin?.name) return null;
-      try {
-        // Специфікатор рахується у змінну навмисно: інлайн-літерал bundler
-        // намагається розгорнути в glob ще до резолверів і валить збірку
-        // пакета. Шлях `../../plugins/**` з теки пакета не існує — імпорт
-        // завжди кидає й дає null; лишається до фікса завантаження
-        // маніфестів у plugin-system.
-        const manifestPath = `../../plugins/${plugin.name}/manifest.json`;
-        const pluginModule = await import(/* @vite-ignore */ manifestPath);
-        return pluginModule.default || pluginModule;
-      } catch {
-        return null;
-      }
-    },
-    enabled: !!plugin?.name,
-  });
+  const schema = readSettingsSchema(plugin?.name);
+  const fields = useMemo(() => settingsFields(schema), [schema]);
 
   useEffect(() => {
     if (plugin?.config) {
       setConfig(plugin.config);
     }
   }, [plugin]);
-
-  const toggleMutation = useMutation({
-    mutationFn: async (isActive: boolean) => {
-      const { error } = await supabase
-        .from('plugins')
-        .update({ is_active: isActive, updated_at: new Date().toISOString() })
-        .eq('id', pluginId);
-      if (error) throw error;
-    },
-    onSuccess: (_, isActive) => {
-      queryClient.invalidateQueries({ queryKey: ['plugin', pluginId] });
-      queryClient.invalidateQueries({ queryKey: ['plugins'] });
-      toast({
-        title: isActive
-          ? t('admin.plugins.enabled')
-          : t('admin.plugins.disabled'),
-      });
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description: error.message,
-      });
-    },
-  });
 
   const saveMutation = useMutation({
     mutationFn: async (newConfig: Record<string, unknown>) => {
@@ -148,7 +128,21 @@ export default function PluginSettings() {
   };
 
   const handleSave = () => {
-    saveMutation.mutate(config);
+    if (!schema) return;
+    // Zod валідує І матеріалізує дефолти: у БД їде повний config, а не
+    // лише торкнуті поля.
+    const parsed = schema.safeParse(config);
+    if (!parsed.success) {
+      toast({
+        variant: 'destructive',
+        title: t('common.error'),
+        description: parsed.error.issues
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; '),
+      });
+      return;
+    }
+    saveMutation.mutate(parsed.data as Record<string, unknown>);
   };
 
   if (isLoading) {
@@ -173,8 +167,7 @@ export default function PluginSettings() {
     );
   }
 
-  const settings = manifest?.settings as
-    Record<string, PluginSettingDefinition> | undefined;
+  const isToggling = togglingPlugin === plugin.name;
 
   return (
     <div className="space-y-6">
@@ -210,10 +203,24 @@ export default function PluginSettings() {
         <div className="flex items-center gap-2">
           <Button
             variant={plugin.is_active ? 'outline' : 'default'}
-            onClick={() => toggleMutation.mutate(!plugin.is_active)}
-            disabled={toggleMutation.isPending}
+            onClick={() =>
+              // Єдиний механізм перемикання — usePluginToggle (БД + реєстр
+              // хуків атомарно); прямий supabase.update лишав би HookRegistry
+              // незмінним до перезавантаження сторінки.
+              togglePlugin(
+                { name: plugin.name, activate: !plugin.is_active },
+                {
+                  onSettled: () => {
+                    void queryClient.invalidateQueries({
+                      queryKey: ['plugin', pluginId],
+                    });
+                  },
+                },
+              )
+            }
+            disabled={isToggling}
           >
-            {toggleMutation.isPending ? (
+            {isToggling ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : plugin.is_active ? (
               <PowerOff className="h-4 w-4 mr-2" />
@@ -224,7 +231,7 @@ export default function PluginSettings() {
               ? t('admin.plugins.deactivate')
               : t('common.activate')}
           </Button>
-          {settings && Object.keys(settings).length > 0 && (
+          {fields.length > 0 && (
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -253,7 +260,7 @@ export default function PluginSettings() {
           )}
 
           {/* Settings */}
-          {settings && Object.keys(settings).length > 0 ? (
+          {fields.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -265,26 +272,24 @@ export default function PluginSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {Object.entries(settings).map(([key, setting]) => (
+                {fields.map(([key, field]) => (
                   <div key={key} className="space-y-2">
-                    {setting.type === 'boolean' ? (
+                    {field.type === 'boolean' ? (
                       <div className="flex items-center justify-between">
-                        <Label htmlFor={key}>{setting.label}</Label>
+                        <Label htmlFor={key}>{field.description ?? key}</Label>
                         <Switch
                           id={key}
-                          checked={Boolean(config[key] ?? setting.default)}
+                          checked={Boolean(config[key] ?? field.default)}
                           onCheckedChange={(checked) =>
                             handleConfigChange(key, checked)
                           }
                         />
                       </div>
-                    ) : setting.type === 'select' ? (
+                    ) : field.enum ? (
                       <>
-                        <Label htmlFor={key}>{setting.label}</Label>
+                        <Label htmlFor={key}>{field.description ?? key}</Label>
                         <Select
-                          value={
-                            (config[key] as string) ?? String(setting.default)
-                          }
+                          value={String(config[key] ?? field.default ?? '')}
                           onValueChange={(value) =>
                             handleConfigChange(key, value)
                           }
@@ -293,32 +298,41 @@ export default function PluginSettings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {setting.options?.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
+                            {field.enum.map((option) => (
+                              <SelectItem
+                                key={String(option)}
+                                value={String(option)}
+                              >
+                                {String(option)}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </>
-                    ) : setting.type === 'number' ? (
+                    ) : field.type === 'number' || field.type === 'integer' ? (
                       <>
-                        <Label htmlFor={key}>{setting.label}</Label>
+                        <Label htmlFor={key}>{field.description ?? key}</Label>
                         <Input
                           id={key}
                           type="number"
-                          value={String(config[key] ?? setting.default ?? '')}
-                          onChange={(e) =>
-                            handleConfigChange(key, parseFloat(e.target.value))
-                          }
+                          value={String(config[key] ?? field.default ?? '')}
+                          onChange={(e) => {
+                            // Порожній інпут → зняти ключ (дефолт матеріалізує
+                            // safeParse при збереженні), а не писати NaN.
+                            const parsed = parseFloat(e.target.value);
+                            handleConfigChange(
+                              key,
+                              Number.isNaN(parsed) ? undefined : parsed,
+                            );
+                          }}
                         />
                       </>
                     ) : (
                       <>
-                        <Label htmlFor={key}>{setting.label}</Label>
+                        <Label htmlFor={key}>{field.description ?? key}</Label>
                         <Input
                           id={key}
-                          value={String(config[key] ?? setting.default ?? '')}
+                          value={String(config[key] ?? field.default ?? '')}
                           onChange={(e) =>
                             handleConfigChange(key, e.target.value)
                           }

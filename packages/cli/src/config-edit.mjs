@@ -33,9 +33,17 @@ export function deriveKey(pkg, explicit) {
 }
 
 /** @param {string} pkg */
-function stripPrefixes(pkg) {
+export function stripPrefixes(pkg) {
   const base = pkg.includes('/') ? pkg.slice(pkg.indexOf('/') + 1) : pkg;
-  return base.replace(/^simplycms-(?:plugin|theme)-/, '');
+  // Обидві конвенції іменування: unscoped `simplycms-plugin-<name>` (спека
+  // §13) і scoped `@simplycms/plugin-<name>` (референс-пакети ядра). Без
+  // другого strip-а ключ для '@simplycms/plugin-faq' був би 'plugin-faq',
+  // що розсинхронився б із manifest.name ('faq') — а на ключі тримаються і
+  // рядок у таблиці plugins, і префікс plg_* для лінта міграцій
+  // (знахідки рев'ю Фази 3 №1-2).
+  return base
+    .replace(/^simplycms-(?:plugin|theme)-/, '')
+    .replace(/^(?:plugin|theme)-/, '');
 }
 
 /** Ідемпотентність add: пакет уже підключено через import('<pkg>'). */
@@ -146,4 +154,20 @@ export function configPluginNames(source) {
   const block = sliceBlock(source, anchor, open, close);
   if (block === null) return null;
   return [...block.matchAll(/name:\s*'([^']+)'/g)].map((match) => match[1]);
+}
+
+/**
+ * Повні записи плагінів конфігу: імʼя + специфікатор import(). Потрібні
+ * db:diff, щоб знайти теки `migrations/` встановлених плагінів (N канонів,
+ * план Фази 3 Р4); null — якір відсутній.
+ * @returns {{ name: string; spec: string }[] | null}
+ */
+export function configPluginEntries(source) {
+  const { anchor, open, close } = ANCHORS.plugin;
+  const block = sliceBlock(source, anchor, open, close);
+  if (block === null) return null;
+  const entries = block.matchAll(
+    /name:\s*'([^']+)'\s*,\s*module:\s*\(\)\s*=>\s*import\('([^']+)'\)/g,
+  );
+  return [...entries].map((match) => ({ name: match[1], spec: match[2] }));
 }

@@ -30,6 +30,7 @@ export default defineConfig({
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },
+    { name: 'faq', module: () => import('@simplycms/plugin-faq') },
   ],
   themes: {
     default: () => import('@themes/default/index'),

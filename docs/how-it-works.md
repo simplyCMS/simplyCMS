@@ -36,14 +36,22 @@
 
 ```
 simplycms add @vendor/simplycms-plugin-novaposhta
-├─ перевірка сумісності (engines.simplycms плагіна vs версія ядра)
 ├─ pnpm add …                          ← звичайний npm-механізм
-├─ запис у simplycms.config.ts         ← реєстрація
-├─ монтаж сторінок адмінки плагіна в routes.ts (якщо є)
-├─ diff-міграція БД у supabase/migrations/ НА ЛЮДСЬКЕ РЕВʼЮ (якщо плагін має схему)
-├─ регенерація типів БД
-└─ підказка: перегляньте diff → pnpm db:migrate → pnpm build
+├─ запис у simplycms.config.ts         ← реєстрація (якірна вставка)
+└─ підказки: pnpm build; якщо плагін привіз міграції — simplycms db:diff
+
+simplycms db:diff --write              ← окремий крок, ЛЮДСЬКЕ РЕВʼЮ обовʼязкове
+├─ N канонів: міграції ядра + кожного встановленого плагіна
+├─ SQL-лінт межі довіри: плагін чіпає лише свої таблиці plg_<name>_*
+└─ далі: git diff → supabase db push → регенерація типів БД
 ```
+
+Стан після Фази 3: `create plugin` (скаффолд власного плагіна в `plugins/`
+магазину) і конвеєр міграцій плагінів працюють; перевірка
+`engines.simplycms` — на bootstrap-і магазину (warn-режим до v1.0); монтаж
+сторінок адмінки плагіна — рядок `physical()` у `routes.ts` за
+якір-коментарем (автоматизація в `add` — попереду). Механізм цілком —
+[`architecture/plugins.md`](architecture/plugins.md).
 
 ## Анатомія працюючого магазину
 

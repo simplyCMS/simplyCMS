@@ -1,52 +1,43 @@
 import { createElement } from 'react';
-import type {
-  HookRegistryInterface,
-  PluginManifest,
-  PluginModule,
-} from '@simplycms/plugins/types';
+import { definePlugin, usePluginT } from '@simplycms/plugin-sdk';
+import { messages, type HelloWorldKey } from './messages';
 
 /**
- * Референс-плагін: мінімальний приклад контракту `PluginModule`.
- * Чіпляє один віджет на дашборд адмінки (`admin.dashboard.widgets`).
+ * Референс-плагін: МІНІМАЛЬНИЙ приклад контракту `definePlugin` —
+ * один слот на дашборді адмінки + власний каталог i18n. Повний приклад
+ * (таблиця plg_*, adminRoutes, Zod-settings) — `@simplycms/plugin-faq`.
  *
  * `.ts`, а не `.tsx`: плагін — це звичайний пакет без JSX-тулчейну,
  * тож розмітка будується через `createElement`.
  */
-const manifest: PluginManifest = {
-  name: 'hello-world',
-  displayName: 'Hello World',
-  version: '0.1.0',
-  description: 'Демо-плагін: віджет на дашборді адмінки.',
-  author: 'SimplyCMS',
-  hooks: [{ name: 'admin.dashboard.widgets' }],
-};
-
-const PLUGIN_NAME = manifest.name;
-const HOOK_NAME = 'admin.dashboard.widgets';
-
 function HelloWorldWidget() {
+  const t = usePluginT<HelloWorldKey>(messages);
   return createElement(
     'div',
     { className: 'rounded-lg border bg-card p-4 text-card-foreground' },
-    createElement('h3', { className: 'font-semibold' }, 'Hello, World!'),
+    createElement(
+      'h3',
+      { className: 'font-semibold' },
+      t('plugin.hello-world.title'),
+    ),
     createElement(
       'p',
       { className: 'mt-1 text-sm text-muted-foreground' },
-      'Віджет із плагіна hello-world — доказ того, що контур плагінів працює.',
+      t('plugin.hello-world.body'),
     ),
   );
 }
 
-const plugin: PluginModule = {
-  manifest,
-  register(registry: HookRegistryInterface) {
-    registry.register(HOOK_NAME, PLUGIN_NAME, () =>
-      createElement(HelloWorldWidget, { key: PLUGIN_NAME }),
-    );
-  },
-  unregister(registry: HookRegistryInterface) {
-    registry.unregister(HOOK_NAME, PLUGIN_NAME);
-  },
-};
-
-export default plugin;
+export default definePlugin({
+  name: 'hello-world',
+  displayName: 'Hello World',
+  version: '0.1.0',
+  engines: { simplycms: '>=0.3.0' },
+  // Метадані реєстру — англійською (конвенція Р6 плану Фази 3: показуються
+  // з БД-рядка, а не з каталогу повідомлень).
+  description:
+    'Demo plugin: a dashboard widget proving the plugin contour works.',
+  author: 'SimplyCMS',
+  slots: { 'admin.dashboard.widgets': HelloWorldWidget },
+  messages,
+});

@@ -334,7 +334,7 @@ importers:
         specifier: ^1.0.0 || ^2.0.0
         version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod:
-        specifier: ^3.0.0 || ^4.0.0
+        specifier: ^4.0.0
         version: 4.4.3
 
   packages/admin-routes:
@@ -564,6 +564,27 @@ importers:
 
   packages/objects: {}
 
+  packages/plugin-sdk:
+    dependencies:
+      '@simplycms/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@simplycms/objects':
+        specifier: workspace:*
+        version: link:../objects
+      '@simplycms/plugins':
+        specifier: workspace:*
+        version: link:../plugin-system
+      '@simplycms/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+
   packages/plugin-system:
     dependencies:
       '@simplycms/objects':
@@ -679,6 +700,30 @@ importers:
       pg:
         specifier: 8.22.0
         version: 8.22.0
+
+  packages/simplycms-plugin-faq:
+    dependencies:
+      '@simplycms/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      '@simplycms/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: '>=0.400.0'
+        version: 1.28.0(react@19.2.8)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
 
   packages/storefront:
     dependencies:

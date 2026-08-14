@@ -31,7 +31,9 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 | `storefront/` | `@simplycms/storefront` | T2 | SSR-loaders + SEO (sitemap/robots), Supabase-клієнт інʼєктується |
 | `ui/` | `@simplycms/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
 | `theme-system/` | `@simplycms/themes` | T4 | ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`, `getActiveThemeSSR` |
-| `plugin-system/` | `@simplycms/plugins` | T4 | HookRegistry, PluginSlot, `bootstrapPlugins` |
+| `plugin-system/` | `@simplycms/plugins` | T4 | HookRegistry, PluginSlot, `bootstrapPlugins`, `validatePluginModule` |
+| `plugin-sdk/` | `@simplycms/plugin-sdk` | T4 | `definePlugin` + порти плагінів (`usePluginTable`, `usePluginConfig`, `usePluginT`) — єдина поверхня, дозволена плагіну; `docs/architecture/plugins.md` |
+| `simplycms-plugin-faq/` | `@simplycms/plugin-faq` | T5 | Референс-плагін повного контуру (plg_-таблиця, adminRoutes, settings, i18n) |
 | `*-ui/` | `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
 | `storefront-routes/` | `@simplycms/storefront-routes` | T5 | `routes/` + канонічні `pages/` + `shells/` + server-шар + SEO-плагін |
 | `admin-routes/` | — (workspace-симлінк) | T5 | Route-файли адмінки (тонкі обгортки над `@simplycms/admin`) |
@@ -41,8 +43,11 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 Залежності — тільки вниз по tier-ах. Цільова архітектура платформи: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`
 (розбіжності факту з цільовою таблицею — амендмент §4.0 у тій же спеці).
 
-🔴 **Імʼя пакета ≠ імʼя теки** для `@simplycms/themes` (тека `theme-system/`) і
-`@simplycms/plugins` (тека `plugin-system/`). Перейменування тек не планується.
+🔴 **Імʼя пакета ≠ імʼя теки** для `@simplycms/themes` (тека `theme-system/`),
+`@simplycms/plugins` (тека `plugin-system/`) і `@simplycms/plugin-faq` (тека
+`simplycms-plugin-faq/` — префікс теки навмисний: eslint-зона межі довіри
+матчить `packages/simplycms-plugin-*/**`, не зачіпаючи plugin-system/plugin-sdk).
+Перейменування тек не планується.
 
 ### Rendering-стратегії
 
@@ -75,7 +80,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
   - **shadcn:** UI компоненти перед додаванням
   - **supabase:** DB міграції, TypeScript types
 - Система тем (контракт v2): `ThemeModule = { manifest, tokens, components, settings? }`. Публічні сторінки — канонічні, з `@simplycms/storefront-routes/src/pages/`; тема дає лише `components` (Header/Footer/…) і `tokens`, які розкладає `applyTokens`.
-- Система плагінів: розширення через `HookRegistry` (25+ hook points); `PluginSlot` реактивний (`hookRegistry.subscribe` + `useSyncExternalStore`) — віджет зʼявляється без reload.
+- Система плагінів: контракт — `definePlugin` з `@simplycms/plugin-sdk` (слоти, Zod-settings, власні таблиці `plg_*`, каталог i18n `plugin.<name>.*`); розширення через `HookRegistry`; `PluginSlot` реактивний (`hookRegistry.subscribe` + `useSyncExternalStore`) — віджет зʼявляється без reload. 🔴 Плагін НЕ імпортує Supabase-шар — лише порти SDK (dependency-lint); механізм цілком — `docs/architecture/plugins.md`.
 - Конфігурація CMS через `simplycms.config.ts` (`defineConfig`: теми, плагіни, `siteUrl`, SEO) — одне джерело істини для `theme-registry.ts` і `bootstrapPlugins`.
 - Зміни схеми БД: `db:pull` → правка `packages/schema/src/schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Supabase MCP — **лише** для інспекції.
 

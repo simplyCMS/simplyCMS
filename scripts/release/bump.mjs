@@ -55,6 +55,42 @@ export function currentVersion() {
 }
 
 /**
+ * Рантайм-константа версії ядра — оновлюється РАЗОМ із манифестами.
+ *
+ * `CORE_VERSION` живе в `@simplycms/objects` (перевірка `engines.simplycms`
+ * тем/плагінів у клієнтському бандлі, де файлової системи немає); парність
+ * із `package.json` стереже `packages/objects/src/__tests__/semver.test.ts`,
+ * тож пропущений тут крок валить `pnpm test`, а не мовчки їде в реліз.
+ */
+const CORE_VERSION_FILE = join(
+  PACKAGES_DIR,
+  'objects',
+  'src',
+  'semver',
+  'version.ts',
+);
+const CORE_VERSION_RE = /export const CORE_VERSION = '(\d+\.\d+\.\d+)';/;
+
+function bumpCoreVersionConstant(version) {
+  const source = readFileSync(CORE_VERSION_FILE, 'utf8');
+  const match = CORE_VERSION_RE.exec(source);
+  if (!match) {
+    throw new Error(
+      `Не знайдено CORE_VERSION у ${CORE_VERSION_FILE} — формат константи ` +
+        `змінився, онови CORE_VERSION_RE у scripts/release/bump.mjs`,
+    );
+  }
+  if (match[1] === version) return;
+  writeFileSync(
+    CORE_VERSION_FILE,
+    source.replace(
+      CORE_VERSION_RE,
+      `export const CORE_VERSION = '${version}';`,
+    ),
+  );
+}
+
+/**
  * Проставити версію всім публікованим пакетам.
  *
  * @returns {{ updated: string[]; skipped: string[] }}
@@ -72,6 +108,8 @@ export function bumpTo(version) {
     writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
     updated.push(manifest.name);
   }
+
+  bumpCoreVersionConstant(version);
 
   return { updated, skipped };
 }

@@ -6,7 +6,6 @@ export { AdminSidebar } from './layouts/AdminSidebar';
 export { AddProductToOrder } from './components/AddProductToOrder';
 export { AllProductProperties } from './components/AllProductProperties';
 export { ImageUpload } from './components/ImageUpload';
-export { InstallPluginDialog } from './components/InstallPluginDialog';
 export { ProductModifications } from './components/ProductModifications';
 export { ProductPricesEditor } from './components/ProductPricesEditor';
 export { ProductPropertyValues } from './components/ProductPropertyValues';

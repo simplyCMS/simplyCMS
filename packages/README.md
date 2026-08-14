@@ -14,6 +14,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/admin` | T5 | Admin panel layouts, pages, components |
 | `@simplycms/ui` | T3 | shadcn/ui component library |
 | `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
+| `@simplycms/plugin-sdk` | T2 | Plugin SDK: `definePlugin`, `validatePluginModule`, `usePluginT`, `usePluginTable` — єдина поверхня, дозволена плагіну (межа довіри, спека §7) |
 | `@simplycms/themes` | T4 | Theme system v2 (ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`) — теки `theme-system/` |
 | `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
 | `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
@@ -36,7 +37,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 Ці пакети живуть у монорепо SimplyCMS — окремих форків/копій у магазинах немає.
 Магазини споживають ядро як звичайні npm-залежності: публікація на npmjs
-працює з 2026-08-03; версія синхронна — усі 23 пакети (22 `@simplycms/*` +
+працює з 2026-08-03; версія синхронна — усі 25 пакетів (24 `@simplycms/*` — з Фазою 3 додались `plugin-sdk` і `plugin-faq` — +
 unscoped скаффолдер) завжди мають одну версію, актуальний номер — у
 [`CHANGELOG.md`](../CHANGELOG.md). Розширення відбувається через плагіни й
 теми, а не форк ядра.

@@ -2,14 +2,15 @@
   "name": "@simplycms/objects",
   "version": "0.3.0",
   "private": false,
-  "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Type-only, zero runtime dependencies.",
+  "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Zero runtime dependencies; the only runtime code is the semver micro-utility (engines.simplycms checks).",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./objects": "./src/objects/index.ts",
-    "./ports": "./src/ports/index.ts"
+    "./ports": "./src/ports/index.ts",
+    "./semver": "./src/semver/index.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -28,6 +29,10 @@
       "./ports": {
         "types": "./dist/ports/index.d.ts",
         "import": "./dist/ports/index.js"
+      },
+      "./semver": {
+        "types": "./dist/semver/index.d.ts",
+        "import": "./dist/semver/index.js"
       }
     }
   },

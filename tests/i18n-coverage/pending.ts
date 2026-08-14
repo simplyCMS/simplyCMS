@@ -33,6 +33,18 @@ export const ALLOWLIST: Record<string, string> = {
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
   'packages/theme-system/src/validateThemeModule.ts':
     'throw new Error — діагностика для автора теми',
+  // Той самий клас діагностики для контуру плагінів (Фаза 3): валідатор і
+  // definePlugin кидають на порушенні контракту, порти SDK — на зловживанні
+  // межею довіри; usePluginConfig лише попереджає в консоль розробника.
+  'packages/plugin-system/src/validatePluginModule.ts':
+    'throw + console.warn — діагностика для автора плагіна',
+  'packages/plugin-sdk/src/definePlugin.ts':
+    'throw new Error — діагностика для автора плагіна',
+  'packages/plugin-sdk/src/usePluginTable.ts':
+    'throw new Error — межа довіри (гард plg_)',
+  'packages/plugin-sdk/src/usePluginConfig.ts': 'console.warn — лог',
+  'packages/admin/src/lib/pluginSettingsFields.ts':
+    'console.warn — діагностика непредставної settings-схеми плагіна',
 };
 
 /**
@@ -43,13 +55,10 @@ export const ALLOWLIST: Record<string, string> = {
  * лишатися не може, інакше реєстр тихо перетворився б на список-вигадку.
  */
 export const PENDING_FILES: readonly string[] = [
-  // Порожньо: міграцію завершено — вітрина, адмінка, воронка покупки, host і
-  // обидві теми. Будь-який новий кириличний рядок інтерфейсу в зонах
-  // `SCANNED_ROOTS` тепер валить тест, а не додається сюди.
-  //
-  // 🔴 Що НЕ покрито й чому: `plugins/hello-world` (2 рядки — маніфест і текст
-  // віджета). Плагіни, як і теми, мають отримати ВЛАСНІ каталоги
-  // (спека платформи §12); механізм зроблено для тем (`ThemeModule.messages`),
-  // на плагіни його ще не поширено. Додавати плагінні рядки в core-каталог
-  // було б тим самим порушенням шару, якого ми уникли для тем.
+  // Порожньо: міграцію завершено — вітрина, адмінка, воронка покупки, host,
+  // обидві теми і (з Фази 3) плагіни: `plugins/` і референс-пакети
+  // `packages/simplycms-plugin-*` в `SCANNED_ROOTS`, каталоги — власні
+  // `messages` плагіна (дзеркало тем, спека §12), парність стереже
+  // `tests/plugin-messages-parity.test.ts`. Будь-який новий кириличний рядок
+  // інтерфейсу в зонах `SCANNED_ROOTS` валить тест, а не додається сюди.
 ];
