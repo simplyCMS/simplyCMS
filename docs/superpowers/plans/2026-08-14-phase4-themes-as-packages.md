@@ -387,13 +387,13 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ### Етап 5 — Контракт маркетплейс-індексу
 
-- [ ] **Step 1:** `docs/marketplace/README.md` (вимоги подачі + 🔴
+- [x] **Step 1:** `docs/marketplace/README.md` (вимоги подачі + 🔴
       ліцензійний гейт власника, Р11) і `docs/marketplace/index.sample.json`
       (два живі записи).
-- [ ] **Step 2:** `tests/marketplace-index.test.ts` — Zod-схема запису
+- [x] **Step 2:** `tests/marketplace-index.test.ts` — Zod-схема запису
       (name/type/package/description/license/engines/repository…),
       валідація семплу, унікальність пакетів, відповідність неймінгу Р1.
-- [ ] **Step 3:** Повні гейти.
+- [x] **Step 3:** Повні гейти.
 
 ### Етап 6 — Доки, синхронізація канону, трекінг
 
