@@ -2,7 +2,8 @@
 
 Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
 
-**Ядро опубліковане на npmjs:** [`@simplycms/*@0.2.1`](https://www.npmjs.com/search?q=%40simplycms) — 21 пакет,
+**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 22 пакети
+(включно з CLI [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli)),
 плюс скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store) тієї ж версії.
 
 ## Vision: e-commerce platform
@@ -20,16 +21,17 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ `0.2.1`, 21 пакет |
+| Ядро в npm-пакетах | ✅ `0.3.0`, 22 пакети |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
-| `create-simplycms-store` | ✅ у npm-реєстрі (`0.2.1`) — `pnpm create simplycms-store` |
-| CLI `simplycms add` / `update` (`@simplycms/cli`) | ⏳ Фаза 2 — ще немає |
-| Плагіни й теми як окремі npm-пакети | ⏳ Фаза 3 |
+| `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
+| CLI `simplycms` (`@simplycms/cli`) | ✅ v1: `doctor` / `add` / `update` / `db:diff` |
+| Плагіни й теми як окремі npm-пакети | ⏳ Фаза 3 (Plugin SDK) |
 
-Створення магазину вже автоматизоване скаффолдером. Незакритою лишається друга
-половина обіцянки — `@simplycms/cli` (`add`/`update`), тобто встановлення
-плагінів і оновлення ядра однією командою.
+Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
+обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
+доганянням host-файлів і донесенням core-міграцій. Наступний рубіж — Фаза 3:
+Plugin SDK і перші плагіни/теми як справжні npm-пакети.
 
 ## Створити магазин на SimplyCMS
 
@@ -57,6 +59,21 @@ Supabase, дефолтна тема, референс-плагін) із вер�
 
 Що ви отримуєте одразу: SSR-вітрину з каталогом, кошиком і checkout, адмінку,
 профілі користувачів, `sitemap.xml`/`robots.txt`, і теми.
+
+### Обслуговування магазину — `simplycms` CLI
+
+Свіжий магазин уже має [`@simplycms/cli`](packages/cli/) у `devDependencies`
+(в існуючий — `pnpm add -D @simplycms/cli`):
+
+```bash
+pnpm simplycms doctor            # діагностика: версії, env, host-файли, міграції, конфіг↔БД
+pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
+pnpm simplycms update --write    # оновити всі @simplycms/* + догнати host-файли
+pnpm simplycms db:diff --write   # донести нові core-міграції (далі: git diff → supabase db push)
+```
+
+Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
+[`docs/architecture/cli.md`](docs/architecture/cli.md).
 
 ### Потрібна Supabase
 
@@ -98,9 +115,9 @@ Vite резолвлять те, чого немає в `exports`, а tree-shakin
 справжніх tarball-ів, без workspace-аліасів:
 
 ```bash
-pnpm pilot:pack   # gates A/C/D/CLI — роути з node_modules, bundle-guard, Tailwind, create-пакет. Без БД, Gate E — видимо SKIP
+pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundle-guard, Tailwind, смоуки обох CLI-пакетів. Без БД, Gate E — видимо SKIP
 pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local); Gate E — досі SKIP (потрібен --e2e)
-pnpm pilot:e2e    # gates A/C/D/CLI/B/E на локальному стеку Supabase із сідом (потребує Docker)
+pnpm pilot:e2e    # gates A/C/D/CLI/TOOL/B/E на локальному стеку Supabase із сідом (потребує Docker)
 ```
 
 Ганяйте його після змін в `exports`, `peerDependencies`, `tsup`-конфігах, барелях
@@ -130,6 +147,7 @@ packages/       # Ядро CMS — публікується на npmjs
   admin-routes/ admin/    #   роути адмінки + її сторінки
   themes/ plugins/        #   ThemeRegistry · HookRegistry, PluginSlot
   ui/ *-ui/               #   shadcn-примітиви + feature-UI
+  cli/                    #   simplycms CLI: doctor/add/update/db:diff (docs/architecture/cli.md)
 themes/ plugins/          # Референсні тема й плагін
 supabase/                 # Міграції, seed, згенеровані типи, edge functions
 scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз
