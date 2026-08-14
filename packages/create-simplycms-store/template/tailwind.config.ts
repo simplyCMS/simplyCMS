@@ -7,12 +7,23 @@ export default {
   // `node_modules`. Tailwind v4 автодетектом node_modules НЕ сканує, тож
   // шляхи вказані явно: `dist/**/*.js` (зібрані компоненти) і `routes/**`
   // (route-пакети везуть роути сирцями).
+  //
+  // 🔴 Два останні глоби — СТОРОННІ теми (Фаза 4, Р7). Конвенція неймінгу:
+  // базове імʼя пакета теми починається з `simplycms-theme-` — і без scope
+  // (`simplycms-theme-aurora`), і під будь-яким чужим scope
+  // (`@vendor/simplycms-theme-aurora`). Референс-теми ядра
+  // (`@simplycms/theme-*`) окремого рядка не потребують: їх уже покриває
+  // глоб `@simplycms/*/dist/**`. Наслідок для авторів тем: класи мусять
+  // лишатися літералами в зібраному `dist`-JS — сирці `src/` тут не
+  // скануються навмисно (пакетна тема приходить зібраною).
   content: [
     './src/**/*.{ts,tsx}',
     './themes/**/*.{ts,tsx}',
     './plugins/**/*.{ts,tsx}',
     './node_modules/@simplycms/*/dist/**/*.js',
     './node_modules/@simplycms/*/routes/**/*.{ts,tsx}',
+    './node_modules/simplycms-theme-*/dist/**/*.js',
+    './node_modules/@*/simplycms-theme-*/dist/**/*.js',
   ],
   prefix: '',
   theme: {

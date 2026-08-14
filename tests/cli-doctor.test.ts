@@ -164,6 +164,7 @@ describe('cli doctor (оффлайн)', () => {
   it('checkThemes: стороння тема без Tailwind-глоба — warn із підказкою', async () => {
     const store = await scaffoldStore('doc-theme-glob');
     const configPath = join(store, 'simplycms.config.ts');
+    const tailwindPath = join(store, 'tailwind.config.ts');
     writeFileSync(
       configPath,
       readFileSync(configPath, 'utf8').replace(
@@ -175,12 +176,28 @@ describe('cli doctor (оффлайн)', () => {
     mkdirSync(join(store, 'node_modules/@acme/simplycms-theme-aurora'), {
       recursive: true,
     });
+    // 🔴 Свіжий магазин глоби Р7 уже має (шаблон, Фаза 4) — тож підказки тут
+    // бути НЕ повинно. Це і є перший асерт: інакше doctor шумів би на кожному
+    // новому магазині зі сторонньою темою.
+    expect(checkThemes({ storeRoot: store }).status).toBe('ok');
+
+    // Магазин, скаффолджений ДО Фази 4: `tailwind.config.ts` поза каноном
+    // host/, тож `update --write` глоби не довезе — лагодиться руками, і саме
+    // на це наводить підказка. Моделюємо станом без глобів.
+    writeFileSync(
+      tailwindPath,
+      readFileSync(tailwindPath, 'utf8').replace(
+        /^.*simplycms-theme-\*.*$\n/gm,
+        '',
+      ),
+    );
     const hint = checkThemes({ storeRoot: store });
     expect(hint.status).toBe('warn');
     expect(hint.details).toContain('simplycms-theme-*');
     expect(hint.details).not.toContain('немає ні теки');
 
-    // Референс-тема ядра підказки НЕ дає: її покриває глоб @simplycms/*.
+    // Референс-тема ядра підказки НЕ дає навіть без глобів Р7: її покриває
+    // давній глоб `@simplycms/*`.
     writeFileSync(
       configPath,
       readFileSync(configPath, 'utf8').replace(

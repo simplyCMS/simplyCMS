@@ -10,12 +10,23 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Класи-маркери: кожен існує тільки в одному файлі пакета ядра. */
+/**
+ * Класи-маркери: кожен існує тільки в одному файлі пакета ядра.
+ *
+ * 🔴 Останній маркер — ТЕМИ (Фаза 4, Р8): `md:text-6xl` живе виключно в
+ * `HeroBanner` теми solarstore, якої в шаблоні магазину немає — вона
+ * приїжджає в скретч кроком `installThemes`. Чого цей маркер НЕ доводить:
+ * через яку саме глобу він потрапив у CSS (`themes` copy-in-гілки чи
+ * `node_modules` npm-гілки) — обидві гілки в скретчі присутні
+ * одночасно. Розрізнення джерела закриває окремий доказ глобів —
+ * `tests/theme-tailwind-globs.test.ts`.
+ */
 const MARKERS = [
   { cls: 'underline-offset-4', from: '@simplycms/ui · button' },
   { cls: '[&_svg]:size-4', from: '@simplycms/ui · button' },
   { cls: 'aria-selected:opacity-100', from: '@simplycms/ui · calendar' },
   { cls: 'hover:-translate-y-1', from: '@simplycms/catalog-ui · ProductCard' },
+  { cls: 'md:text-6xl', from: '@simplycms/theme-solarstore · HeroBanner' },
 ];
 
 /** @returns {{ ok: boolean; details: string[] }} */

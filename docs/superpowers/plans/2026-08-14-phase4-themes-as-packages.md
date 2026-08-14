@@ -371,19 +371,19 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ### Етап 4 — Пілот і Tailwind: Gate THEME-контур
 
-- [ ] **Step 1:** `template/tailwind.config.ts` — глоби сторонніх тем (Р7)
+- [x] **Step 1:** `template/tailwind.config.ts` — глоби сторонніх тем (Р7)
       з поясненням-коментарем; новий `tests/theme-tailwind-globs.test.ts`
       (fs.globSync-фікстури, три конвенції + негативний src-only кейс).
-- [ ] **Step 2:** Пілот (Р8): у `run.mjs`/`scaffold.mjs` після
+- [x] **Step 2:** Пілот (Р8): у `run.mjs`/`scaffold.mjs` після
       `pnpmInstall`, до provenance — copy-in-крок
       (`… add @simplycms/theme-solarstore --theme --copy --name solarcopy`)
       і npm-крок (`… add @simplycms/theme-solarstore --theme`) встановленим
       `pnpm exec simplycms`; `gate-d.mjs` — маркер класу solarstore.
       Оверлейний package.json НЕ чіпати (parity!).
-- [ ] **Step 3:** Прогнати `pnpm pilot:pack` — A/C/D/CLI/TOOL зелені з
+- [x] **Step 3:** Прогнати `pnpm pilot:pack` — A/C/D/CLI/TOOL зелені з
       новим контуром; звірити provenance (26-й tarball локальний, обидві
       add-гілки відпрацювали).
-- [ ] **Step 4:** Повні гейти (packaging-пара обовʼязково).
+- [x] **Step 4:** Повні гейти (packaging-пара обовʼязково).
 
 ### Етап 5 — Контракт маркетплейс-індексу
 
