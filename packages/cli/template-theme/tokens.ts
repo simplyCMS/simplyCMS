@@ -38,6 +38,12 @@ export const tokens: DesignTokens = {
 
   radius: '0.5rem',
 
+  // Контракт v2.2: опційна типографіка — розкоментуй, щоб задати власний
+  // font-family stack. Значення — повний CSS-рядок (не назва шрифту),
+  // fallback лишається host-Inter, поки ключ не задано.
+  // 'font-sans': "'Manrope', system-ui, sans-serif",
+  // 'font-heading': "'Playfair Display', serif",
+
   // Перекриття темного режиму — окремий `.dark`-блок (клас на <html>).
   dark: {
     background: '222 47% 11%',

@@ -24,6 +24,14 @@ const theme: ThemeModule = {
     HomeSections,
   },
   messages,
+  // Контракт v2.2 (Р8): демонстрація fonts-контуру — Google Fonts-джерело
+  // того самого Inter, нуль візуальних змін (доводиться Step 4).
+  fonts: [
+    {
+      stylesheet:
+        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    },
+  ],
 };
 
 export default theme;
