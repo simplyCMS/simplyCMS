@@ -55,6 +55,15 @@ export const SYNCED_DIRS = [
   { from: 'supabase/migrations', to: 'supabase/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
+  // Тулінг редизайну за референсом їде в магазин цілком: скрипти інспекції й
+  // мапінгу — як є, а скіл — у `.claude/skills/` РЕАЛЬНОЮ копією (у монорепо
+  // там симлінк на `.agents/`, але `npm pack`/`cpSync` симлінки не переносять
+  // надійно, тож у шаблоні лежить файл).
+  { from: 'scripts/design-import', to: 'scripts/design-import' },
+  {
+    from: '.agents/skills/redesign-from-reference',
+    to: '.claude/skills/redesign-from-reference',
+  },
 ];
 
 /**
