@@ -35,6 +35,8 @@ interface InspectionResult {
     body: { family: string } | null;
   };
   radius: Array<{ valuePx: number }>;
+  radiusDropped: number;
+  sampleViewport: { width: number; height: number };
   fontStylesheets: string[];
 }
 
@@ -58,6 +60,16 @@ describe('lib/map.mjs — контракт mapTokens незалежно від �
     expect(proposal.tokens.background).toBeDefined();
     expect(proposal.tokens.primary).toBeDefined();
     expect(proposal.tokens['font-sans']).toBeDefined();
+  });
+
+  // Регресія Фази 1 (Р1b/Р2): нові поля контракту `inspection.json` — не
+  // просто присутні, а мають форму, яку реально пише `inspectPage`.
+  it('sampleInspection несе radiusDropped і sampleViewport (Р1b/Р2)', () => {
+    expect(sampleInspection.radiusDropped).toBeGreaterThan(0);
+    expect(sampleInspection.sampleViewport).toEqual({
+      width: 1440,
+      height: 900,
+    });
   });
 });
 
@@ -108,11 +120,35 @@ describe.skipIf(!browser)(
         expect(colorValues).toContain('#ffffff'); // фон
         expect(colorValues).toContain('#e4e4e7'); // border картки
 
+        // Регресія Р1: `scrollThrough` доводить IntersectionObserver до
+        // спрацювання — колір лінивої секції зʼявляється в семплі, а не
+        // лишається білим (як до реального скролу).
+        expect(colorValues).toContain('#10b981'); // .lazy-desktop.revealed
+
+        // Регресія Р1b: семплінг явно десктопний (`sampleViewport`), а НЕ з
+        // останнього viewport циклу скріншотів (мобільний, 390px) — на 390px
+        // `.desktop-only` мав би `display:none` і взагалі не потрапив у DOM-
+        // вибірку зі `area>0`.
+        expect(colorValues).toContain('#0ea5e9'); // .desktop-only
+        expect(inspection.sampleViewport).toEqual({ width: 1440, height: 900 });
+        // `.lazy-mobile` видима лише на 390px — семпл десктопний, тож її
+        // колір (#f43f5e) семплом навмисно НЕ перевіряється (документовано
+        // планом Р1b); скріншот `mobile.png` — окремий доказ.
+
         expect(inspection.fonts.heading?.family).toMatch(/Manrope/);
         expect(inspection.fonts.body?.family).toMatch(/Inter/);
         expect(inspection.fonts.heading?.sizePx).toBe(32);
 
         expect(inspection.radius.some((r) => r.valuePx === 8)).toBe(true);
+
+        // Регресія Р2: pill-радіус (`.pill-button`, 9999px) не потрапляє в
+        // кластери токена — ні буквальне значення, ні Tailwind-еквівалент
+        // `calc(infinity*1px)` (33554400), — а лічильник відкинутих ненульовий.
+        expect(inspection.radius.some((r) => r.valuePx === 9999)).toBe(false);
+        expect(inspection.radius.some((r) => r.valuePx === 33554400)).toBe(
+          false,
+        );
+        expect(inspection.radiusDropped).toBeGreaterThan(0);
 
         expect(inspection.fontStylesheets).toEqual(
           expect.arrayContaining([

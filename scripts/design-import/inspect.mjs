@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /**
- * CLI інспекції референс-сайту (задача §2.A, план Р1-Р4). Playwright —
- * ДИНАМІЧНИЙ import: спершу `@playwright/test`, фолбек `playwright`. Тонкий
- * файл — аргументи + IO; семплінг/скріншоти — `lib/sample.mjs`, резолюція
- * бінарника — `lib/browser.mjs`. Юзаж: `inspect.mjs <url> [--out d] [--dark]`.
+ * CLI інспекції референс-сайту (задача §2.A, план Р1-Р4). Тонкий файл —
+ * аргументи + launch chromium + IO; резолюція бінарника й `loadChromium` —
+ * `lib/browser.mjs`, скріншоти/семплінг — `lib/sample.mjs`, сама інспекція
+ * сторінки — `lib/inspect-page.mjs` (реекспортовано звідси — тести й
+ * `--dark`-контракт лишаються стабільним публічним API цього файлу).
+ * Юзаж: `inspect.mjs <url> [--out d] [--dark]`.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolveChromium } from './lib/browser.mjs';
-import { captureScreenshots, samplePalette } from './lib/sample.mjs';
+import { loadChromium, resolveChromium } from './lib/browser.mjs';
+import { inspectPage } from './lib/inspect-page.mjs';
 
-const SCHEMA_VERSION = 1;
+export { inspectPage };
+
 const USAGE =
   'node scripts/design-import/inspect.mjs <url> [--out <dir>] [--dark]';
 
@@ -38,72 +40,6 @@ export function slugify(url) {
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
   return raw || 'site';
-}
-
-/** Порівняння світлого/темного семплу за фоном+текстом — чесний `darkDetected`. */
-function paletteSignature(colors) {
-  return colors
-    .filter((c) => c.role === 'background' || c.role === 'text')
-    .map((c) => c.value)
-    .sort()
-    .join(',');
-}
-
-/**
- * Інспектувати вже завантажену сторінку (навігацію робить викликач: `main` —
- * `page.goto`, тест-фікстура — `page.setContent`): скріншоти + світлий +
- * опційно темний семпл (`--dark`). Пише `inspection.json` в `out`.
- */
-export async function inspectPage(page, { url, out, dark }) {
-  mkdirSync(out, { recursive: true });
-  const viewports = await captureScreenshots(page, out);
-  const light = await samplePalette(page);
-
-  let darkColors = null;
-  if (dark) {
-    await page.emulateMedia({ colorScheme: 'dark' });
-    const darkSample = await samplePalette(page);
-    await page.emulateMedia({ colorScheme: 'light' });
-    if (paletteSignature(light.colors) !== paletteSignature(darkSample.colors))
-      darkColors = darkSample.colors;
-  }
-  const darkDetected = darkColors !== null;
-
-  const inspection = {
-    schemaVersion: SCHEMA_VERSION,
-    url,
-    viewports,
-    colors: light.colors,
-    fonts: light.fonts,
-    radius: light.radius,
-    shadows: light.shadows,
-    spacing: light.spacing,
-    fontStylesheets: light.fontStylesheets,
-    darkDetected,
-    ...(darkColors ? { dark: { colors: darkColors } } : {}),
-  };
-
-  writeFileSync(
-    join(out, 'inspection.json'),
-    JSON.stringify(inspection, null, 2),
-    'utf8',
-  );
-  return inspection;
-}
-
-/** Резолв playwright-модуля: спершу devDep-монорепо, потім bare `playwright`. */
-async function loadChromium() {
-  for (const specifier of ['@playwright/test', 'playwright']) {
-    try {
-      return (await import(specifier)).chromium;
-    } catch {
-      // Пакета немає — пробуємо наступний, повідомлення нижче.
-    }
-  }
-  console.error(
-    '❌ Playwright не знайдено.\n  💡 pnpm add -D playwright && pnpm exec playwright install chromium',
-  );
-  process.exit(1);
 }
 
 /** Гучний exit-1 — задача §2.A: мережеві збої видимі, не порожній JSON. */
@@ -151,7 +87,9 @@ async function main() {
       dark: options.dark,
     });
     console.log(
-      `✅ ${out}/inspection.json — кольорів: ${inspection.colors.length}, radius: ${inspection.radius.length}, dark: ${inspection.darkDetected}`,
+      `✅ ${out}/inspection.json — кольорів: ${inspection.colors.length}, ` +
+        `radius: ${inspection.radius.length} (відкинуто pill/full: ${inspection.radiusDropped}), ` +
+        `dark: ${inspection.darkDetected}`,
     );
   } catch (error) {
     failLoud(error);

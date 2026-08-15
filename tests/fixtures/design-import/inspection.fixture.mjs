@@ -14,6 +14,11 @@ export const sampleInspection = {
   url: 'https://reference.example/',
   viewports: { desktop: 1440, tablet: 768, mobile: 390 },
 
+  // Р1b: явний десктопний viewport семплінгу (окремий від `viewports` вище,
+  // які описують лише скріншоти) — той самий, на якому реально семплились
+  // кольори/шрифти/radius нижче.
+  sampleViewport: { width: 1440, height: 900 },
+
   // role: 'background' | 'text' | 'border'; interactive — хоча б один
   // семпл-джерело був кнопкою/лінком (сигнал для мапінгу `primary`).
   colors: [
@@ -49,6 +54,10 @@ export const sampleInspection = {
     { valuePx: 8, frequency: 120 },
     { valuePx: 4, frequency: 20 },
   ],
+
+  // Р2: pill/full-радіус (напр. Tailwind `rounded-full` → 33554400px) вже
+  // відфільтрований з `radius` вище — тут лишається лише чесна лічильна ознака.
+  radiusDropped: 1,
 
   shadows: ['0 1px 2px rgba(0, 0, 0, 0.05)'],
   spacing: [4, 8, 16, 24, 32],

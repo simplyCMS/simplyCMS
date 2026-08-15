@@ -79,3 +79,67 @@ export function resolveChromium(chromium) {
       '  💡 pnpm add -D playwright && pnpm exec playwright install chromium',
   );
 }
+
+/**
+ * Резолв playwright-модуля: спершу devDep-монорепо (`@playwright/test`),
+ * потім bare `playwright` (план Р4 — спільний канал для `inspect.mjs` і
+ * `discover.mjs`: обидва CLI мають падати однаково, якщо пакета немає).
+ */
+export async function loadChromium() {
+  for (const specifier of ['@playwright/test', 'playwright']) {
+    try {
+      return (await import(specifier)).chromium;
+    } catch {
+      // Пакета немає — пробуємо наступний, повідомлення нижче.
+    }
+  }
+  console.error(
+    '❌ Playwright не знайдено.\n  💡 pnpm add -D playwright && pnpm exec playwright install chromium',
+  );
+  process.exit(1);
+}
+
+/** Пауза між кроками скролу (мс) — дає лінивим секціям час змонтуватись. */
+export const SCROLL_STEP_MS = 400;
+/** Ліміт ітерацій скролу — запобіжник проти нескінченного `scrollHeight`. */
+export const SCROLL_MAX_ITERATIONS = 30;
+/** Settle-пауза після повернення на верх сторінки (мс). */
+export const SCROLL_SETTLE_MS = 500;
+
+/**
+ * Прокрутити сторінку до низу кроками ~viewport, даючи час IntersectionObserver-
+ * секціям змонтуватись/проявитись (задача §2.A.1, план Р1). Стабілізація —
+ * низ досягнуто І `scrollHeight` не змінився ДВІЧІ ПОСПІЛЬ (одного разу
+ * недостатньо: секція саме на межі низу могла ще не встигнути домонтуватись
+ * до наступного кадру). Наприкінці — повернення на 0 і settle-пауза, щоб
+ * скріншот/семпл читали вже стабільний верх сторінки. Reverse-анімації
+ * (щось ховається назад при скролі вгору) — межа v1, не покриваємо.
+ * @param {import('@playwright/test').Page} page
+ */
+export async function scrollThrough(page) {
+  let previousHeight = -1;
+  let stableHits = 0;
+  for (let i = 0; i < SCROLL_MAX_ITERATIONS; i++) {
+    const { scrollHeight, viewportHeight } = await page.evaluate(() => ({
+      scrollHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+    }));
+    await page.evaluate((step) => window.scrollBy(0, step), viewportHeight);
+    await page.waitForTimeout(SCROLL_STEP_MS);
+
+    const atBottom = await page.evaluate(
+      () =>
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight - 1,
+    );
+    if (atBottom && scrollHeight === previousHeight) {
+      stableHits += 1;
+      if (stableHits >= 2) break;
+    } else {
+      stableHits = 0;
+    }
+    previousHeight = scrollHeight;
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(SCROLL_SETTLE_MS);
+}

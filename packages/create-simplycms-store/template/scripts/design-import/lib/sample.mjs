@@ -1,8 +1,11 @@
 /**
- * Семплінг computed styles сторінки + скріншоти (задача §2.A). `browserSample`
- * виконується В БРАУЗЕРІ через `page.evaluate` — самодостатня функція, без
- * замикань на модульний скоуп (Playwright серіалізує лише її toString()).
+ * Node-обгортка семплінгу computed styles + скріншоти (задача §2.A). Сама
+ * функція, що виконується В БРАУЗЕРІ через `page.evaluate` —
+ * `browser-sample.mjs` (самодостатня, без замикань на цей модуль:
+ * Playwright серіалізує лише її `toString()`).
  */
+import { browserSample } from './browser-sample.mjs';
+import { scrollThrough } from './browser.mjs';
 
 /** Ліміт елементів на семпл (задача §2.A). */
 export const SAMPLE_LIMIT = 2000;
@@ -10,127 +13,37 @@ export const SAMPLE_LIMIT = 2000;
 /** Три контрольні viewport задачі §2.A. */
 export const VIEWPORTS = { desktop: 1440, tablet: 768, mobile: 390 };
 
-/** Виконується в браузері — свій скоуп, копії констант замість замикань. */
-function browserSample(limit) {
-  const shadowTopN = 5; // копія — замикання на модульний скоуп тут недоступне
+/** Висота контрольного viewport — спільна для скріншотів і семплу (Р1b). */
+export const VIEWPORT_HEIGHT = 900;
 
-  function toHex(computed) {
-    const m = computed.match(
-      /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/,
-    );
-    if (!m) return null;
-    if (m[4] !== undefined && Number(m[4]) === 0) return null; // прозорий
-    const hex = (n) => Math.round(Number(n)).toString(16).padStart(2, '0');
-    return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
-  }
+/**
+ * Sanity-межа радіуса, px (план Р2). Карткові/кнопкові радіуси — ≤48px;
+ * усе понад цю межу — pill/full (Tailwind `rounded-full` →
+ * `calc(infinity*1px)` → computed `33554400px`). Фільтр — ТУТ, у Node-
+ * обгортці `samplePalette`, а НЕ всередині `browserSample`: та функція
+ * серіалізується в сторінковий контекст, і модульна константа там дала б
+ * `ReferenceError`.
+ */
+export const RADIUS_SANITY_MAX = 64;
 
-  function bumpColor(map, role, value, area, interactive) {
-    const key = `${role}:${value}`;
-    const e = map.get(key);
-    if (e) {
-      e.frequency += 1;
-      e.area += area;
-      if (interactive) e.interactive = true;
-    } else {
-      map.set(key, { value, role, frequency: 1, area, interactive });
-    }
-  }
-
-  // Заголовки й body-текст рахуємо окремими картами за family-ключем.
-  function bumpFont(map, style) {
-    const key = style.fontFamily;
-    const e = map.get(key) ?? {
-      family: key,
-      weight: style.fontWeight,
-      sizePx: parseFloat(style.fontSize),
-      count: 0,
-    };
-    e.count += 1;
-    map.set(key, e);
-  }
-
-  const colors = new Map();
-  const radius = new Map();
-  const shadows = new Map();
-  const spacing = new Map();
-  const headingFonts = new Map();
-  const bodyFonts = new Map();
-
-  const elements = [...document.querySelectorAll('body *')].slice(0, limit);
-
-  for (const el of elements) {
-    const style = getComputedStyle(el);
-    const rect = el.getBoundingClientRect();
-    const area = Math.round(rect.width * rect.height);
-    if (area <= 0) continue;
-
-    const interactive =
-      ['A', 'BUTTON', 'INPUT'].includes(el.tagName) ||
-      el.getAttribute('role') === 'button' ||
-      Boolean(el.closest('a,button,[role="button"]'));
-
-    const bg = toHex(style.backgroundColor);
-    if (bg) bumpColor(colors, 'background', bg, area, interactive);
-    const fg = toHex(style.color);
-    if (fg) bumpColor(colors, 'text', fg, area, interactive);
-    if (parseFloat(style.borderTopWidth) > 0) {
-      const border = toHex(style.borderTopColor);
-      if (border) bumpColor(colors, 'border', border, area, interactive);
-    }
-
-    const radiusPx = parseFloat(style.borderTopLeftRadius);
-    if (radiusPx > 0) {
-      const e = radius.get(radiusPx);
-      if (e) e.frequency += 1;
-      else radius.set(radiusPx, { valuePx: radiusPx, frequency: 1 });
-    }
-
-    if (style.boxShadow && style.boxShadow !== 'none') {
-      shadows.set(style.boxShadow, (shadows.get(style.boxShadow) ?? 0) + 1);
-    }
-
-    const marginPx = parseFloat(style.marginBottom);
-    if (marginPx > 0) spacing.set(marginPx, (spacing.get(marginPx) ?? 0) + 1);
-
-    const text = el.textContent ? el.textContent.trim() : '';
-    if (/^H[1-3]$/.test(el.tagName) && text) bumpFont(headingFonts, style);
-    else if (['P', 'SPAN', 'LI'].includes(el.tagName) && text)
-      bumpFont(bodyFonts, style);
-  }
-
-  function topFont(map) {
-    let best = null;
-    for (const e of map.values()) if (!best || e.count > best.count) best = e;
-    return best
-      ? { family: best.family, weight: best.weight, sizePx: best.sizePx }
-      : null;
-  }
-
-  const topShadows = [...shadows.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, shadowTopN)
-    .map(([value]) => value);
-
-  const fontStylesheets = [
-    ...document.querySelectorAll('link[rel="stylesheet"]'),
-  ].map((link) => link.href);
-
-  return {
-    colors: [...colors.values()],
-    fonts: { heading: topFont(headingFonts), body: topFont(bodyFonts) },
-    radius: [...radius.values()],
-    shadows: topShadows,
-    spacing: [...spacing.keys()].sort((a, b) => a - b),
-    fontStylesheets,
-  };
-}
-
-/** Семпл computed styles сторінки (Node-обгортка `page.evaluate`). */
+/**
+ * Семпл computed styles сторінки (Node-обгортка `page.evaluate`). Радіус-
+ * кластери понад `RADIUS_SANITY_MAX` — відкидаються тут (Р2), а не в
+ * `browserSample`; `radiusDropped` — чесна лічильна ознака для `inspection.json`.
+ */
 export async function samplePalette(page) {
-  return page.evaluate(browserSample, SAMPLE_LIMIT);
+  const sample = await page.evaluate(browserSample, SAMPLE_LIMIT);
+  const radius = sample.radius.filter((r) => r.valuePx <= RADIUS_SANITY_MAX);
+  const radiusDropped = sample.radius.length - radius.length;
+  return { ...sample, radius, radiusDropped };
 }
 
-/** Full-page скріншоти на 1440/768/390 → `<outDir>/{desktop,tablet,mobile}.png`. */
+/**
+ * Full-page скріншоти на 1440/768/390 → `<outDir>/{desktop,tablet,mobile}.png`.
+ * Перед КОЖНИМ знімком — `scrollThrough` (Р1): ліниві секції, видимі лише на
+ * якомусь одному з трьох viewport-ів (mobile/tablet-only лейаути), інакше
+ * лишаються нерозкритими саме там.
+ */
 export async function captureScreenshots(page, outDir) {
   const files = {
     desktop: 'desktop.png',
@@ -138,7 +51,8 @@ export async function captureScreenshots(page, outDir) {
     mobile: 'mobile.png',
   };
   for (const [key, width] of Object.entries(VIEWPORTS)) {
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+    await scrollThrough(page);
     await page.screenshot({ path: `${outDir}/${files[key]}`, fullPage: true });
   }
   return VIEWPORTS;
