@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -225,9 +225,14 @@ describe('cli add', () => {
     expect(assertThemeKeyFree(copyWired, 'solar', 'pkg-solar')).toBe(false);
   });
 
-  it('add --theme: ключ зайнято copy-in-темою — exit 1, конфіг незмінний', () => {
+  it('add --theme: ключ зайнято copy-in-темою — exit 1, конфіг незмінний, pnpm НЕ викликано', () => {
     // Дзеркальний до copy-гілки напрямок колізії: тема вже вкопійована в
     // themes/aurora, npm-установка з тим самим ключем дала б дубль ключа.
+    // 🔴 Запуск БЕЗ --no-install і зі stub-pnpm попереду PATH: інваріант Р5
+    // «незворотні дії після валідацій» тримається лише якщо гард стоїть ДО
+    // execFileSync('pnpm', ['add', …]) — порожній журнал stub-а доводить
+    // саме порядок, а не тільки exit-код (мутаційно перевірено: перенесення
+    // гарда під install валить рівно цей асерт).
     const store = mkdtempSync(join(tmpdir(), 'cli-add-theme-'));
     writeFileSync(
       join(store, 'package.json'),
@@ -242,17 +247,29 @@ describe('cli add', () => {
       "themes: {\n    'aurora': () => import('@themes/aurora/index'),",
     );
     writeFileSync(configPath, copyWired);
+    const binDir = mkdtempSync(join(tmpdir(), 'cli-stub-pnpm-'));
+    const logPath = join(binDir, 'pnpm-calls.log');
+    writeFileSync(
+      join(binDir, 'pnpm'),
+      `#!/bin/sh\necho "$@" >> ${logPath}\n`,
+      { mode: 0o755 },
+    );
     const cli = fileURLToPath(
       new URL('../packages/cli/src/index.mjs', import.meta.url),
     );
     const run = spawnSync(
       process.execPath,
-      [cli, 'add', '@acme/simplycms-theme-aurora', '--theme', '--no-install'],
-      { cwd: store, encoding: 'utf8' },
+      [cli, 'add', '@acme/simplycms-theme-aurora', '--theme'],
+      {
+        cwd: store,
+        encoding: 'utf8',
+        env: { ...process.env, PATH: `${binDir}:${process.env.PATH}` },
+      },
     );
     expect(run.status).toBe(1);
     expect(`${run.stdout}${run.stderr}`).toContain('--name');
     expect(readFileSync(configPath, 'utf8')).toBe(copyWired);
+    expect(existsSync(logPath)).toBe(false);
   });
 
   it('insertEntry: без якоря — виняток із точним рядком, без змін файлу', () => {
