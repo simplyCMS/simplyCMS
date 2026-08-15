@@ -62,6 +62,13 @@
     /* Radius */
     --radius: 0.5rem;
 
+    /* Типографіка (контракт v2.2). Fallback тут — та сама правка, що й
+       перехід tailwind.config.ts на var(): невизначена змінна робить
+       усю декларацію font-family invalid-at-computed-value-time, тож
+       чистий магазин без теми з fonts-контуром лишається на Inter. */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-heading: var(--font-sans);
+
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 25% 25%;
@@ -145,6 +152,15 @@
 
   html {
     transition: color-scheme 0.3s ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
   }
 
   :focus-visible {
