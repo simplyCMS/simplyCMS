@@ -2,6 +2,10 @@ packages:
   - 'packages/*'
   - 'themes/*'
   - 'plugins/*'
+  # apps/* — private-застосунки платформи (лендінг simplycms.dev), НЕ пакети
+  # ядра: bump.mjs/publish сканують лише packages/*, тож сюди реліз-потяг
+  # не дотягується ніколи.
+  - 'apps/*'
 
 # 🔴 З pnpm 11 УСІ налаштування pnpm живуть тут, а не в `package.json`
 # (у `.npmrc` лишились тільки auth і registry). Поле `pnpm` у манифесті
