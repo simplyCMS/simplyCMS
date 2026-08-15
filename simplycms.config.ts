@@ -29,6 +29,7 @@ export default defineConfig({
     { name: 'faq', module: () => import('@simplycms/plugin-faq') },
   ],
   themes: {
+    deo: () => import('@themes/deo/index'),
     default: () => import('@themes/default/index'),
     solarstore: () => import('@simplycms/theme-solarstore'),
   },

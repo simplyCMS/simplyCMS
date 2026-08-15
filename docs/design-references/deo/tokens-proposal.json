@@ -1,47 +1,152 @@
 {
   "schemaVersion": 1,
+  "status": "approved",
   "tokens": {
-    "background": "0 0% 100%",
+    "background": "0 0% 96%",
     "foreground": "0 0% 4%",
-    "primary": "210 20% 98%",
-    "primary-foreground": "0 0% 4%",
-    "ring": "210 20% 98%",
-    "secondary": "44 100% 50%",
-    "secondary-foreground": "0 0% 4%",
-    "accent": "44 100% 50%",
-    "accent-foreground": "0 0% 4%",
-    "card": "220 14% 96%",
+    "card": "0 0% 100%",
     "card-foreground": "0 0% 4%",
-    "popover": "220 14% 96%",
+    "popover": "0 0% 100%",
     "popover-foreground": "0 0% 4%",
-    "border": "220 14% 96%",
-    "input": "220 14% 96%",
+    "primary": "0 0% 20%",
+    "primary-foreground": "0 0% 100%",
+    "secondary": "0 0% 100%",
+    "secondary-foreground": "0 0% 20%",
+    "muted": "220 14% 96%",
+    "muted-foreground": "216 15% 34%",
+    "accent": "40 43% 52%",
+    "accent-foreground": "0 0% 4%",
+    "success": "138 76% 97%",
+    "success-foreground": "145 100% 25%",
+    "warning": "44 100% 50%",
+    "warning-foreground": "0 0% 4%",
+    "destructive": "0 72% 51%",
+    "destructive-foreground": "0 0% 100%",
+    "border": "220 13% 91%",
+    "input": "220 13% 91%",
+    "ring": "0 0% 20%",
     "radius": "1.375rem",
-    "font-sans": "\"Geist Mono\", \"Geist Mono Fallback\"",
-    "font-heading": "Geist, \"Geist Fallback\""
+    "font-sans": "Geist, system-ui, sans-serif",
+    "font-heading": "Geist, system-ui, sans-serif"
   },
-  "confidence": {
-    "background": 0.5,
-    "foreground": 0.55,
-    "primary": 0.07,
-    "secondary": 0.01,
-    "border": 0.88
+  "fonts": [
+    {
+      "stylesheet": "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap"
+    }
+  ],
+  "machineProposal": {
+    "note": "Сирий вивід map-tokens.mjs по 4 інспекціях — лишається тут як база порівняння: за ним видно, де евристика вгадала, а де рішення ухвалила людина.",
+    "tokens": {
+      "background": "0 0% 100%",
+      "foreground": "0 0% 4%",
+      "primary": "210 20% 98%",
+      "primary-foreground": "0 0% 4%",
+      "ring": "210 20% 98%",
+      "secondary": "44 100% 50%",
+      "secondary-foreground": "0 0% 4%",
+      "accent": "44 100% 50%",
+      "accent-foreground": "0 0% 4%",
+      "card": "220 14% 96%",
+      "card-foreground": "0 0% 4%",
+      "popover": "220 14% 96%",
+      "popover-foreground": "0 0% 4%",
+      "border": "220 14% 96%",
+      "input": "220 14% 96%",
+      "radius": "1.375rem",
+      "font-sans": "\"Geist Mono\", \"Geist Mono Fallback\"",
+      "font-heading": "Geist, \"Geist Fallback\""
+    },
+    "confidence": {
+      "background": 0.5,
+      "foreground": 0.55,
+      "primary": 0.07,
+      "secondary": 0.01,
+      "border": 0.88
+    },
+    "contrastWarnings": [],
+    "unmapped": [
+      "#000000",
+      "#f0fdf4",
+      "#e6e6eb",
+      "#f9f9fb",
+      "#6a7282",
+      "#99a1af",
+      "#ffffff",
+      "#4a5565",
+      "#ffb900",
+      "#d1d5dc",
+      "#b99651",
+      "#008236",
+      "#ffffff"
+    ]
   },
-  "contrastWarnings": [],
-  "unmapped": [
-    "#000000",
-    "#f0fdf4",
-    "#e6e6eb",
-    "#f9f9fb",
-    "#6a7282",
-    "#99a1af",
-    "#ffffff",
-    "#4a5565",
-    "#ffb900",
-    "#d1d5dc",
-    "#b99651",
-    "#008236",
-    "#ffffff"
+  "decisions": [
+    {
+      "token": "background / card",
+      "approved": "#f5f5f5 полотно, #ffffff картки",
+      "machine": "#ffffff полотно, #f3f4f6 картки",
+      "why": "Машина переставила ролі: #ffffff виграв за частотою (99 елементів-карток), але полотно сторінки — #f5f5f5 (площа 10.2 млн px² на home). Панелі на всіх скріншотах білі на сірому."
+    },
+    {
+      "token": "primary",
+      "approved": "0 0% 20% (#333333), foreground білий",
+      "machine": "210 20% 98% (#f9f9fb), confidence 0.07",
+      "why": "Евристика шукає НАСИЧЕНИЙ інтерактивний фон, а дизайн монохромний. Адресний вимір трьох CTA («Shop Watches», «Add to cart», «Subscribe»): background чорний з альфою 0.80 → #313131 над полотном, #333333 над білим; текст білий, 12.63:1."
+    },
+    {
+      "token": "secondary",
+      "approved": "0 0% 100% + border #e5e7eb",
+      "machine": "44 100% 50%, confidence 0.01",
+      "why": "Другорядна кнопка референсу («View Best Sellers», «Wishlist») — біла з рамкою, а не золота. Золото 0.01 — це зірки рейтингу, які евристика прийняла за акцентну поверхню."
+    },
+    {
+      "token": "border / input",
+      "approved": "220 13% 91% (#e5e7eb)",
+      "machine": "220 14% 96% (#f3f4f6)",
+      "why": "#f3f4f6 — поверхня, а не рамка. Виміряно на borderTopColor обведених кнопок: #e5e7eb."
+    },
+    {
+      "token": "muted-foreground",
+      "approved": "216 15% 34% (#4a5565)",
+      "machine": "—",
+      "why": "🔴 Свідомий відхід від референсу: його #6a7282 дає 4.39:1 на картці й 4.44:1 на полотні — нижче WCAG AA 4.5:1. #4a5565 — теж колір референсу (виміряний на картці товару), дає 6.93:1. Design transfer, не піксельна копія: доступність важить більше за буквальність."
+    },
+    {
+      "token": "accent / warning",
+      "approved": "accent #b99651, warning #ffb900, обом foreground #0a0a0a",
+      "machine": "обидва ключі → 44 100% 50%",
+      "why": "Два різні золоті: латунь бейджа BEST SELLER (#b99651) і жовтий зірок (#ffb900). 🔴 Foreground саме чорнильний: білий дає 2.78:1 на латуні й 1.72:1 на жовтому — провал AA."
+    },
+    {
+      "token": "font-sans",
+      "approved": "Geist, system-ui, sans-serif",
+      "machine": "\"Geist Mono\", \"Geist Mono Fallback\"",
+      "why": "Артефакт голосування: воно рахує ОДИН голос зі сторінки за найчастішою family серед P/SPAN/LI, а на home і listing моно-міток у картках товару більше, ніж абзаців. Адресний вимір: h1, абзаци, навігація, кнопки — Geist. Кандидат на тюнінг евристики шрифтів (зважувати площею, як кольори)."
+    },
+    {
+      "token": "Geist Mono",
+      "approved": "літеральний стек 'Geist Mono', ui-monospace, monospace у компонентах теми",
+      "machine": "—",
+      "why": "Контракт ThemeTokenValues свідомо не має font-mono (YAGNI). Моно на референсі — акцентна гарнітура даних (бренд-рядки, ціни, футер-заголовки, STAY UPDATED), і це половина характеру дизайну, тож переносимо на рівні компонентів."
+    },
+    {
+      "token": "fonts",
+      "approved": "Google Fonts: Geist + Geist Mono, ваги 400-700",
+      "machine": "— (fontStylesheets референсу — його власні Next.js-чанки)",
+      "why": "Референс роздає Geist self-hosted @font-face — тягнути його ассети заборонено правовими межами фази 0 і технічно неможливо (fonts приймає лише зовнішній https:-stylesheet). Geist/Geist Mono відкриті (Vercel, OFL) і є на Google Fonts; URL перевірено live — 200 і кириличні підмножини (критично для українського інтерфейсу)."
+    },
+    {
+      "token": "destructive",
+      "approved": "0 72% 51% / білий (дефолт ядра)",
+      "machine": "—",
+      "why": "На жодній із чотирьох сторінок референсу деструктивного стану не трапилось — не вигадуємо, лишаємо значення default-теми."
+    },
+    {
+      "token": "dark",
+      "approved": "не збираємо",
+      "machine": "darkDetected: false на всіх 4 сторінках",
+      "why": "Рішення власника на чекпойнті 1.2: сайт — світлий монохром, при dark-емуляції палітра не змінюється."
+    }
   ],
   "sources": [
     {

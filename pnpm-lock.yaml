@@ -1003,6 +1003,8 @@ importers:
 
   themes/default: {}
 
+  themes/deo: {}
+
 packages:
 
   '@adobe/css-tools@4.5.0':
