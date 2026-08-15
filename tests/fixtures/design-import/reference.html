@@ -119,6 +119,17 @@
           display: none;
         }
       }
+      /* Сучасні колірні простори: Chrome лишає їх у computed styles саме в
+         тому просторі, у якому вони записані (`oklch()`/`lab()`), і регекс
+         `rgba?()` у семплері губив їх ПОВНІСТЮ. Tailwind v4 — а отже і сам
+         SimplyCMS, і типовий сучасний референс — генерує саме такі. Очікувані
+         sRGB-еквіваленти зафіксовані в асертах смоку. */
+      .modern-surface {
+        background: oklch(0.7 0.15 250); /* → #4ba3f7 */
+        color: lab(2.75381 0 0); /* → #0a0a0a */
+        border: 1px solid lab(91.6229 -0.159115 -2.26791); /* → #e5e7eb */
+        padding: 16px;
+      }
       /* Pill-радіус (план Р2): має бути відфільтрований sanity-межею. */
       .pill-button {
         background: #111827;
@@ -154,6 +165,9 @@
     </section>
     <div class="desktop-only">
       <p>Visible only on desktop-width layouts.</p>
+    </div>
+    <div class="modern-surface">
+      <p>Surface painted with modern CSS color functions.</p>
     </div>
     <script>
       // Реальний IntersectionObserver — доводить, що `scrollThrough`

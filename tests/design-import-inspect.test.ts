@@ -138,6 +138,18 @@ describe.skipIf(!browser)(
         // колір (#f43f5e) семплом навмисно НЕ перевіряється (документовано
         // планом Р1b); скріншот `mobile.png` — окремий доказ.
 
+        // 🔴 Регресія (живий референс на Tailwind v4): семплер нормалізує
+        // колір колірним рушієм браузера, а не регексом `rgba?()`. Chrome
+        // віддає computed-значення В ТОМУ Ж просторі, у якому їх записано,
+        // тож `oklch()`/`lab()` раніше давали `null` і зникали з палітри
+        // ЦІЛКОМ — на реальному сайті домінантний текст `lab(2.75381 0 0)`
+        // (n=233) випадав, «найчастішим» ставав білий n=19, і пропозиція
+        // виходила з foreground == background (контраст 1.00:1).
+        expect(colorValues).toContain('#4ba3f7'); // oklch(0.7 0.15 250) — фон
+        expect(colorValues).toContain('#0a0a0a'); // lab(2.75381 0 0) — текст
+        expect(colorValues).toContain('#e5e7eb'); // lab(91.62 …) — border
+        expect(colorValues.every((v) => /^#[0-9a-f]{6}$/.test(v))).toBe(true);
+
         expect(inspection.fonts.heading?.family).toMatch(/Manrope/);
         expect(inspection.fonts.body?.family).toMatch(/Inter/);
         expect(inspection.fonts.heading?.sizePx).toBe(32);
