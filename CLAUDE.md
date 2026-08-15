@@ -65,7 +65,7 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
-- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create plugin/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
+- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 - [`docs/architecture/plugins.md`](docs/architecture/plugins.md) — механізм плагінів (Фаза 3): контракт `definePlugin`, рантайм-контур, межа довіри, конвеєр міграцій `plg_*`, i18n плагінів, adminRoutes, інваріант імені, межі v1
 
 ## Agent Tooling
@@ -232,10 +232,11 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
-│   │                                                 # create plugin/update/db:diff (N канонів);
+│   │                                                 # create (plugin|theme)/update/db:diff (N канонів);
 │   │                                                 # чистий ESM без build; host/ — канон host-файлів,
-│   │                                                 # template-plugin/ — шаблон create plugin
-│   │                                                 # (`pnpm template:sync`); виконується В МАГАЗИНІ, не тут
+│   │                                                 # template-plugin/ і template-theme/ — шаблони
+│   │                                                 # create plugin/create theme (`pnpm template:sync`);
+│   │                                                 # виконується В МАГАЗИНІ, не тут
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
 │   │                            # синхронізується `pnpm template:sync`). Єдиний тут без

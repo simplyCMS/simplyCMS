@@ -81,7 +81,7 @@ Supabase, дефолтна тема, референс-плагін) із вер�
 ```bash
 pnpm simplycms doctor            # діагностика: версії, env, host-файли, міграції, конфіг↔БД
 pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
-pnpm simplycms create plugin <name>         # скаффолд ВЛАСНОГО плагіна в plugins/ магазину
+pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити всі @simplycms/* + догнати host-файли
 pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff → supabase db push)
 ```
@@ -165,7 +165,7 @@ packages/       # Ядро CMS — публікується на npmjs
   plugin-sdk/             #   definePlugin + порти плагінів (docs/architecture/plugins.md)
   simplycms-plugin-faq/   #   референс-плагін повного контуру (@simplycms/plugin-faq)
   ui/ *-ui/               #   shadcn-примітиви + feature-UI
-  cli/                    #   simplycms CLI: doctor/add/create plugin/update/db:diff (docs/architecture/cli.md)
+  cli/                    #   simplycms CLI: doctor/add/create (plugin|theme)/update/db:diff (docs/architecture/cli.md)
 themes/ plugins/          # Референсні теми й локальні плагіни магазину (@plugins/*)
 supabase/                 # Міграції, seed, згенеровані типи, edge functions
 scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз

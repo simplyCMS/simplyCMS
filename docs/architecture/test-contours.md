@@ -53,7 +53,7 @@
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | **E** | Перший signup НЕ отримує `admin` (міграція в живій схемі); `owner:invite` ідемпотентний; `/auth/confirm` ставить cookies і редиректить | `gate-e.mjs` |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies` | `create-pkg-smoke.mjs` |
-| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 5 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/` і `template-plugin/` (шаблон `create plugin`) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
+| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 5 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
 
 🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
 **CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук
@@ -304,8 +304,9 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 
 **Тема.** `/admin/themes` → активувати іншу тему → перейти на вітрину
 **в межах застосунку** (не F5) → палітра змінилась.
-Як переконатись, що теми взагалі різні, а не «однакові на вигляд»: у
-`themes/*/tokens.ts` порівняти `primary`. Станом на 2026-08-04:
+Як переконатись, що теми взагалі різні, а не «однакові на вигляд»: порівняти
+`primary` у `themes/default/tokens.ts` і (з Фази 4, тема — npm-пакет)
+`packages/simplycms-theme-solarstore/src/tokens.ts`. Станом на 2026-08-14:
 `default` = `4 58% 56%` (кораловий), `solarstore` = `203 85% 47%` (синій).
 Перевірка з боку сервера — `curl -s <адреса>/ | grep -o -- '--primary: [^;]*'`:
 токени інлайняться в `<style>` через `ThemeTokens`.

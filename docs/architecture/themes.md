@@ -220,8 +220,13 @@ build-кроку й workspace-лінків.
 `ThemeRegistry.has(theme.name)` (дзеркало `hasModule` у `Plugins.tsx`):
 модуля немає в білді → бейдж «модуль відсутній» (`admin.themes.moduleMissing`)
 + disabled кнопка «Активувати» + пояснювальний текст
-(`admin.themes.moduleMissingHint`). Активація без модуля привела б до падіння
-SSR на резолві теми — краще відмовити в UI, ніж зламати вітрину.
+(`admin.themes.moduleMissingHint`). SSR на падіння тут не б'ється:
+`getActiveThemeSSR` резолвить активну тему ДО `ThemeRegistry.load` і має
+трирівневий fallback на `default`, тож вітрина без модуля тихо відрендерить
+дефолтну тему, а не впаде. Бейдж і disabled захищають від іншого —
+розсинхрону «адмінка показує тему активною, а вітрина тихо показує зовсім
+іншу (default)»: без цього гарду адмін бачив би в списку активною тему, якої
+насправді на вітрині немає.
 
 Покрито компонентним тестом (Testing Library/jsdom,
 `packages/admin/src/__tests__/`): рядок без модуля → бейдж + disabled
@@ -307,7 +312,7 @@ CLI-команда `theme:check` НЕ вводиться (§1): CLI — чист
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
 | i18n каталоги тем | `tests/theme-messages-parity.test.ts` + AST-скан `SCANNED_ROOTS` |
 | `create theme` скаффолд | `tests/cli-create-theme.test.ts` (методика `cli-create.test.ts`: temp-dir, плейсхолдери, `transpileModule`) |
-| `add --theme --copy` | `tests/cli-add.test.ts` (чиста функція `runThemeCopy`/`mergeDependencies`/`copyPreflight` над фікстурним node_modules у temp-store: валідації, злиття deps, ідемпотентність, колізія, dry-run) |
+| `add --theme --copy` | `tests/cli-add-copy.test.ts` (чиста функція `runThemeCopy`/`mergeDependencies`/`copyPreflight` над фікстурним node_modules у temp-store: валідації, злиття deps, ідемпотентність, колізія, dry-run) |
 | Doctor: записи конфігу + Tailwind-підказка | `tests/cli-doctor.test.ts` |
 | Tailwind-глоби сторонніх тем | `tests/theme-tailwind-globs.test.ts` (fs.globSync-фікстури, три конвенції + негативний src-only кейс) |
 | `bump.mjs`: version-літерал `manifest.ts` | `tests/release-bump-coverage.test.ts` (Р13) |
