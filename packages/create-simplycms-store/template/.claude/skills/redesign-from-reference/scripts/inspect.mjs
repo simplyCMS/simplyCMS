@@ -14,7 +14,7 @@ import { inspectPage } from './lib/inspect-page.mjs';
 export { inspectPage };
 
 const USAGE =
-  'node scripts/design-import/inspect.mjs <url> [--out <dir>] [--dark]';
+  'node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> [--out <dir>] [--dark]';
 
 /** Розбір argv: перший позиційний токен — URL, далі `--out <dir>`/`--dark`. */
 export function parseArgs(argv) {

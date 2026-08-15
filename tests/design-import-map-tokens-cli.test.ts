@@ -13,7 +13,10 @@ import { describe, expect, it } from 'vitest';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
 const cli = fileURLToPath(
-  new URL('../scripts/design-import/map-tokens.mjs', import.meta.url),
+  new URL(
+    '../.agents/skills/redesign-from-reference/scripts/map-tokens.mjs',
+    import.meta.url,
+  ),
 );
 
 describe('map-tokens.mjs — CLI-обгортка', () => {

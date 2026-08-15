@@ -58,7 +58,7 @@ const EXPECTED_FILES = [
   // перевіряємо тут, по розпакованому tarball-у, а не по теці шаблону в репо.
   // Скрипти — другий бік тієї ж пари: без них скіл у магазині безпорадний.
   '.claude/skills/redesign-from-reference/SKILL.md',
-  'scripts/design-import/inspect.mjs',
+  '.claude/skills/redesign-from-reference/scripts/inspect.mjs',
 ];
 
 /**

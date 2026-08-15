@@ -27,8 +27,8 @@
 
 | Скрипт | Що робить |
 |---|---|
-| `scripts/design-import/inspect.mjs` | відкриває URL у headless Chromium → скріншоти + `inspection.json` |
-| `scripts/design-import/map-tokens.mjs` | `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
+| `.claude/skills/redesign-from-reference/scripts/inspect.mjs` | відкриває URL у headless Chromium → скріншоти + `inspection.json` |
+| `.claude/skills/redesign-from-reference/scripts/map-tokens.mjs` | `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
 
 ## 2. Передумова — Playwright у магазині
 
@@ -48,7 +48,7 @@ pnpm add -D playwright && pnpm exec playwright install chromium
 ## 3. Крок 1 — інспекція референсу
 
 ```bash
-node scripts/design-import/inspect.mjs https://example.com \
+node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.com \
   [--out docs/design-references/<slug>] [--dark]
 ```
 
@@ -75,7 +75,7 @@ node scripts/design-import/inspect.mjs https://example.com \
 ## 4. Крок 2 — пропозиція токенів
 
 ```bash
-node scripts/design-import/map-tokens.mjs docs/design-references/<slug>/inspection.json \
+node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/inspection.json \
   [--out <tokens-proposal.json>]
 ```
 
@@ -159,10 +159,10 @@ pnpm simplycms create theme <slug>
 | Задача | Команда / дія |
 |---|---|
 | Поставити браузер у магазині | `pnpm add -D playwright && pnpm exec playwright install chromium` |
-| Зняти референс | `node scripts/design-import/inspect.mjs <url> [--dark]` |
-| Отримати токени | `node scripts/design-import/map-tokens.mjs docs/design-references/<slug>/inspection.json` |
+| Зняти референс | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> [--dark]` |
+| Отримати токени | `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/inspection.json` |
 | Зробити тему | `pnpm simplycms create theme <slug>` → `tokens.ts` → `pnpm build` → `/admin/themes` |
-| Порівняти результат | `node scripts/design-import/inspect.mjs http://localhost:3000 --out docs/design-references/<slug>-local` |
+| Порівняти результат | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost:3000 --out docs/design-references/<slug>-local` |
 | Запустити весь пайплайн агентом | скіл `redesign-from-reference` (у монорепо — команда `/редизайн-за-референсом <url>`) |
 
 ## 9. Чого тут немає (свідомі межі)

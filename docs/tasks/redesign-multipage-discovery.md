@@ -50,9 +50,9 @@
 2. Фікстура: pill-кнопка `border-radius: calc(infinity*1px)` (або 9999px);
    тест: `33554400` відсутній у кластерах, `radius`-пропозиція осмислена.
 
-### C. Дискаверер сторінок (`scripts/design-import/discover.mjs`)
+### C. Дискаверер сторінок (`scripts/discover.mjs` (у теці скіла))
 
-CLI: `node scripts/design-import/discover.mjs <startUrl> [--out …] [--max-visits N]`.
+CLI: `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out …] [--max-visits N]`.
 
 1. Той самий chromium (`lib/browser.mjs`): відкрити стартову, зібрати
    `a[href]` ПІСЛЯ рендера; нормалізувати (same-origin, без hash;
@@ -106,7 +106,7 @@ CLI: `node scripts/design-import/discover.mjs <startUrl> [--out …] [--max-visi
 2. `discover.mjs` проти референсу знаходить мінімум home+product+
    listing (на цьому сайті вони є) і чесно перелічує unresolved.
 3. Усі гейти в канонічному порядку зелені; template:sync (нові файли
-   їдуть у шаблон під наявні пари SYNCED_DIRS — тека scripts/design-import
+   їдуть у шаблон під наявні пари SYNCED_DIRS — тека scripts/ скіла
    вже синкується цілком).
 4. Лайв-тест агентом (окремий крок після цієї задачі) — поза DoD.
 

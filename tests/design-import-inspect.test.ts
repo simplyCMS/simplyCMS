@@ -20,9 +20,9 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { resolveChromium } from '../scripts/design-import/lib/browser.mjs';
-import { inspectPage } from '../scripts/design-import/inspect.mjs';
-import { mapTokens } from '../scripts/design-import/lib/map.mjs';
+import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
+import { inspectPage } from '../.agents/skills/redesign-from-reference/scripts/inspect.mjs';
+import { mapTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/map.mjs';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
 // `inspect.mjs` — чистий .mjs без JSDoc-типів на кожне поле (канон ≤150
@@ -73,7 +73,10 @@ describe('lib/map.mjs — контракт mapTokens незалежно від �
   });
 });
 
-const INSPECT_CLI = join(process.cwd(), 'scripts/design-import/inspect.mjs');
+const INSPECT_CLI = join(
+  process.cwd(),
+  '.agents/skills/redesign-from-reference/scripts/inspect.mjs',
+);
 
 // Регресія ревʼю: невалідний URL має падати каналом `failLoud` («❌ …»),
 // а не сирим TypeError-стектрейсом. Браузер для цього шляху не потрібен —

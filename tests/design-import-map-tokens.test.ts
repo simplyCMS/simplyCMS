@@ -6,17 +6,17 @@ import {
   parseHslTriple,
   relativeLuminance,
   rgbToHsl,
-} from '../scripts/design-import/lib/color.mjs';
+} from '../.agents/skills/redesign-from-reference/scripts/lib/color.mjs';
 import {
   CLUSTER_THRESHOLD,
   clusterColors,
-} from '../scripts/design-import/lib/cluster.mjs';
+} from '../.agents/skills/redesign-from-reference/scripts/lib/cluster.mjs';
 import {
   AA_MIN_RATIO,
   checkContrastPairs,
-} from '../scripts/design-import/lib/contrast.mjs';
-import { mapColorTokens } from '../scripts/design-import/lib/color-tokens.mjs';
-import { mapTokens } from '../scripts/design-import/lib/map.mjs';
+} from '../.agents/skills/redesign-from-reference/scripts/lib/contrast.mjs';
+import { mapColorTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/color-tokens.mjs';
+import { mapTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/map.mjs';
 import { applyTokens } from '@simplycms/themes/applyTokens';
 import { validateThemeModule } from '@simplycms/themes/validateThemeModule';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';

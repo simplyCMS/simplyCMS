@@ -3,14 +3,14 @@
  * CLI мапінгу `inspection.json` → `tokens-proposal.json` (задача §2.B, план
  * Р1/Р4). Тонкий файл — аргументи + IO; уся логіка — чиста функція `mapTokens`
  * у `lib/map.mjs`. Юзаж:
- * `node scripts/design-import/map-tokens.mjs <inspection.json> [--out <file>]`.
+ * `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json> [--out <file>]`.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { mapTokens } from './lib/map.mjs';
 
 const USAGE =
-  'node scripts/design-import/map-tokens.mjs <inspection.json> [--out <tokens-proposal.json>]';
+  'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json> [--out <tokens-proposal.json>]';
 
 /** Розбір argv: перший позиційний токен — шлях до `inspection.json`, далі `--out <file>`. */
 export function parseArgs(argv) {

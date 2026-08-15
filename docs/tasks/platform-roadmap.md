@@ -693,14 +693,14 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 [`docs/superpowers/plans/2026-08-15-redesign-from-reference-skill.md`](../superpowers/plans/2026-08-15-redesign-from-reference-skill.md).
 
 - [x] Ядро мапінгу — **2026-08-15**: чисті функції в
-      `scripts/design-import/lib/` (`color`, `cluster`, `color-tokens`,
+      `.agents/skills/redesign-from-reference/scripts/lib/` (`color`, `cluster`, `color-tokens`,
       `contrast`, `fonts`, `map`) — власна колір-математика (нуль нових
       залежностей), кластеризація за HSL-відстанню, евристики на семантичні
       токени, WCAG AA 4.5:1 по парах `*`/`*-foreground` без «самовиправлення».
       Юніти + ланцюжок-тест DoD (Р9): `applyTokens` емить рівно одну
       декларацію на КОЖЕН ключ пропозиції (невідомий ключ → червоно) +
       HSL-regex + `validateThemeModule`.
-- [x] Скрипт інспекції — **2026-08-15**: `scripts/design-import/inspect.mjs`
+- [x] Скрипт інспекції — **2026-08-15**: `…redesign-from-reference/scripts/inspect.mjs`
       (динамічний import playwright, скріншоти 1440/768/390, один
       `page.evaluate`-семплінг, `--dark` із чесним `darkDetected`,
       `fontStylesheets`, `schemaVersion: 1`). 🔴 `lib/browser.mjs`
@@ -717,7 +717,7 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       межі, анти-патерни, таблиця чесної деградації; канон тем — посиланням) +
       симлінк `.claude/skills/` + команда-обгортка
       `/редизайн-за-референсом`. У шаблон `create-simplycms-store` їдуть
-      `scripts/design-import` і скіл РЕАЛЬНОЮ копією (`SYNCED_DIRS`,
+      скіл РАЗОМ зі своїми `scripts/` РЕАЛЬНОЮ копією (`SYNCED_DIRS`,
       парність-тест); Gate CLI пілота асертить доставку dot-теки в tarball.
 - [x] Документація — **2026-08-15**:
       [`docs/guides/redesign-from-reference.md`](../guides/redesign-from-reference.md)

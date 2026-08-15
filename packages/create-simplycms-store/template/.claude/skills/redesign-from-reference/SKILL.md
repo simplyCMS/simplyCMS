@@ -17,7 +17,7 @@ description: Use when the user wants a SimplyCMS store redesigned to look like a
 немає — вони в репозиторії ядра.
 
 Інструменти скіла — два детерміністичні скрипти магазину:
-`scripts/design-import/inspect.mjs` і `scripts/design-import/map-tokens.mjs`.
+`.claude/skills/redesign-from-reference/scripts/inspect.mjs` і `.claude/skills/redesign-from-reference/scripts/map-tokens.mjs`.
 Вони не «вгадують» — вони міряють; судження лишається за тобою й користувачем.
 
 ---
@@ -52,7 +52,7 @@ description: Use when the user wants a SimplyCMS store redesigned to look like a
 ## Фаза 1 — Інспекція
 
 ```bash
-node scripts/design-import/inspect.mjs <url> [--out docs/design-references/<slug>] [--dark]
+node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> [--out docs/design-references/<slug>] [--dark]
 ```
 
 Дає скріншоти `desktop.png`/`tablet.png`/`mobile.png` (1440/768/390) та
@@ -82,7 +82,7 @@ node scripts/design-import/inspect.mjs <url> [--out docs/design-references/<slug
 ## Фаза 2 — Мапінг токенів
 
 ```bash
-node scripts/design-import/map-tokens.mjs docs/design-references/<slug>/inspection.json
+node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/inspection.json
 ```
 
 Дає `tokens-proposal.json`: `{ schemaVersion, tokens, fonts?, confidence,
