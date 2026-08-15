@@ -10,6 +10,7 @@
     "./ThemeRegistry": "./src/ThemeRegistry.ts",
     "./ThemeContext": "./src/ThemeContext.tsx",
     "./applyTokens": "./src/applyTokens.ts",
+    "./safeFontStylesheets": "./src/safeFontStylesheets.ts",
     "./bootstrapThemes": "./src/bootstrapThemes.ts",
     "./validateThemeModule": "./src/validateThemeModule.ts",
     "./useThemeT": "./src/useThemeT.ts",
@@ -36,6 +37,10 @@
       "./applyTokens": {
         "types": "./dist/applyTokens.d.ts",
         "import": "./dist/applyTokens.js"
+      },
+      "./safeFontStylesheets": {
+        "types": "./dist/safeFontStylesheets.d.ts",
+        "import": "./dist/safeFontStylesheets.js"
       },
       "./bootstrapThemes": {
         "types": "./dist/bootstrapThemes.d.ts",

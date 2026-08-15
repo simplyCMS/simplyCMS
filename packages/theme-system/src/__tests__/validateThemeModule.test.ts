@@ -94,4 +94,31 @@ describe('validateThemeModule', () => {
 
     expect(() => validateThemeModule(mod)).toThrow(/messages\.uk\.theme\.foo/);
   });
+
+  it('приймає модуль без fonts (поле опційне)', () => {
+    expect(() => validateThemeModule(makeValidModule())).not.toThrow();
+  });
+
+  it('приймає модуль із валідним fonts', () => {
+    const mod = makeValidModule();
+    mod.fonts = [
+      { stylesheet: 'https://fonts.googleapis.com/css2?family=Inter' },
+    ];
+
+    expect(() => validateThemeModule(mod)).not.toThrow();
+  });
+
+  it('відхиляє fonts, що не є масивом', () => {
+    const mod = makeValidModule();
+    mod.fonts = { stylesheet: 'https://fonts.googleapis.com' };
+
+    expect(() => validateThemeModule(mod)).toThrow(/fonts/);
+  });
+
+  it('відхиляє запис fonts без stylesheet-рядка', () => {
+    const mod = makeValidModule();
+    mod.fonts = [{ stylesheet: 42 }];
+
+    expect(() => validateThemeModule(mod)).toThrow(/fonts\[0\]/);
+  });
 });

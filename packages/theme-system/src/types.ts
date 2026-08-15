@@ -49,6 +49,14 @@ export interface ThemeTokenValues {
   input?: string;
   ring?: string;
   radius?: string;
+  /**
+   * Повний CSS `font-family` stack рядком, напр.
+   * `"'Manrope', system-ui, sans-serif"` — не назва шрифту, а готове
+   * значення для декларації. `font-mono` свідомо не вводиться (YAGNI).
+   */
+  'font-sans'?: string;
+  /** Стек для заголовків (`h1..h6`); формат — той самий, що й `font-sans`. */
+  'font-heading'?: string;
 }
 
 export interface DesignTokens extends ThemeTokenValues {
@@ -104,6 +112,18 @@ export interface ThemeComponents {
  */
 export type ThemeMessages = Partial<Record<Locale, Record<string, string>>>;
 
+/**
+ * Одне зовнішнє font stylesheet-джерело теми (контракт v2.2).
+ *
+ * Межа v2.2: лише абсолютний `https:`-URL зовнішнього stylesheet
+ * (напр. Google Fonts). Без `@font-face`-обʼєктів і роздачі файлів — npm-тема
+ * не має каналу статики. Фільтрація — `safeFontStylesheets` (субшлях-експорт
+ * `@simplycms/themes/safeFontStylesheets`).
+ */
+export interface ThemeFontSource {
+  stylesheet: string;
+}
+
 /** Модуль теми — те, що дефолтним експортом віддає пакет теми */
 export interface ThemeModule {
   manifest: ThemeManifest;
@@ -117,6 +137,8 @@ export interface ThemeModule {
    * валідна тема: додавання не breaking.
    */
   messages?: ThemeMessages;
+  /** Опціональні зовнішні font stylesheet-и теми (контракт v2.2, Р4). */
+  fonts?: ReadonlyArray<ThemeFontSource>;
 }
 
 /** Рядок теми в БД (таблиця `themes`) */

@@ -17,7 +17,7 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     throw new Error('[theme] Модуль теми має бути обʼєктом');
   }
 
-  const { manifest, tokens, components, settings, messages } = m;
+  const { manifest, tokens, components, settings, messages, fonts } = m;
 
   if (!isRecord(manifest)) {
     throw new Error('[theme] Відсутній manifest');
@@ -100,5 +100,20 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
         }
       }
     }
+  }
+
+  // Мʼяка перевірка форми `fonts` (контракт v2.2, Р4): рантайм-фільтрація
+  // валідних https:-URL — робота `safeFontStylesheets`, тут лише форма.
+  if (fonts !== undefined) {
+    if (!Array.isArray(fonts)) {
+      throw new Error(`[theme] "${manifest.name}": fonts має бути масивом`);
+    }
+    fonts.forEach((entry, index) => {
+      if (!isRecord(entry) || typeof entry.stylesheet !== 'string') {
+        throw new Error(
+          `[theme] "${manifest.name}": fonts[${index}] має бути обʼєктом { stylesheet: string }`,
+        );
+      }
+    });
   }
 }

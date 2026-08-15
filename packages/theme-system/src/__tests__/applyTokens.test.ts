@@ -54,4 +54,32 @@ describe('applyTokens', () => {
     expect(css).toContain('--primary: 221 83% 53%');
     expect(css).not.toContain('display: none');
   });
+
+  it('рендерить font-sans/font-heading — повний font-family stack рядком', () => {
+    const css = applyTokens({
+      'font-sans': "'Manrope', system-ui, sans-serif",
+      'font-heading': "'Playfair Display', serif",
+    });
+
+    expect(css).toContain("--font-sans: 'Manrope', system-ui, sans-serif");
+    expect(css).toContain("--font-heading: 'Playfair Display', serif");
+  });
+
+  it('ігнорує ключ поза TOKEN_KEYS', () => {
+    const css = applyTokens({
+      primary: '221 83% 53%',
+      // @ts-expect-error — навмисно ключ поза контрактом
+      'font-mono': "'Fira Code', monospace",
+    });
+
+    expect(css).not.toContain('--font-mono');
+  });
+
+  it('font-family stack з інʼєкцією (`;`/`}`) відкидається так само, як кольорові значення', () => {
+    const css = applyTokens({
+      'font-sans': "'Manrope', sans-serif; } body { display: none",
+    });
+
+    expect(css).toBe('');
+  });
 });

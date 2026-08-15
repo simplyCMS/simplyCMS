@@ -3,6 +3,8 @@ import type { DesignTokens, ThemeTokenValues } from './types';
 /**
  * Порядок і повний перелік CSS-змінних, які може задати тема.
  * Джерело правди — фактичний набір, який задають теми (`themes/<тема>/tokens.ts`).
+ * `font-sans`/`font-heading` (контракт v2.2) — не-кольорові токени за
+ * прецедентом `radius`: значення рядком, а не HSL-трійка.
  */
 const TOKEN_KEYS: ReadonlyArray<keyof ThemeTokenValues> = [
   'background',
@@ -29,6 +31,8 @@ const TOKEN_KEYS: ReadonlyArray<keyof ThemeTokenValues> = [
   'input',
   'ring',
   'radius',
+  'font-sans',
+  'font-heading',
 ];
 
 /**
