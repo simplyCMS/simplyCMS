@@ -12,9 +12,12 @@
  * має лишатись зеленою незалежно від того, чи доступний chromium (задача
  * §2, Фаза 2 Step 3 — «контракт між скриптами незалежно від skipIf»).
  */
+import { execFile, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
 import { resolveChromium } from '../scripts/design-import/lib/browser.mjs';
@@ -55,6 +58,22 @@ describe('lib/map.mjs — контракт mapTokens незалежно від �
     expect(proposal.tokens.background).toBeDefined();
     expect(proposal.tokens.primary).toBeDefined();
     expect(proposal.tokens['font-sans']).toBeDefined();
+  });
+});
+
+const INSPECT_CLI = join(process.cwd(), 'scripts/design-import/inspect.mjs');
+
+// Регресія ревʼю: невалідний URL має падати каналом `failLoud` («❌ …»),
+// а не сирим TypeError-стектрейсом. Браузер для цього шляху не потрібен —
+// pre-launch валідація відпрацьовує до `chromium.launch`.
+describe('inspect.mjs — pre-launch валідація (без браузера)', () => {
+  it('невалідний URL → exit 1 у форматі failLoud', () => {
+    const run = spawnSync(process.execPath, [INSPECT_CLI, 'not a valid url'], {
+      encoding: 'utf8',
+    });
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('❌');
+    expect(run.stderr).not.toContain('at slugify'); // не сирий стектрейс
   });
 });
 
@@ -109,6 +128,43 @@ describe.skipIf(!browser)(
         expect(proposal.tokens.primary).toBeDefined();
       } finally {
         rmSync(outDir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // Регресія ревʼю: `page.goto` не кидає на 4xx/5xx — без перевірки статусу
+    // 403/бот-заглушка давала б «успішний» inspection.json з кольорами
+    // сторінки-відмови. CLI ганяємо async-execFile, щоб event loop лишався
+    // вільним для локального http-сервера.
+    it('HTTP 403 від референсу → гучна відмова, без inspection.json', async () => {
+      const server = createServer((_req, res) => {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end('<h1 style="color:#ef4444">Access denied</h1>');
+      });
+      await new Promise<void>((resolve) => server.listen(0, resolve));
+      const { port } = server.address() as { port: number };
+      const outDir = mkdtempSync(join(tmpdir(), 'design-import-403-'));
+      try {
+        const run = await promisify(execFile)(
+          process.execPath,
+          [INSPECT_CLI, `http://127.0.0.1:${port}/`, '--out', outDir],
+          { encoding: 'utf8' },
+        ).then(
+          (ok) => ({ code: 0, stderr: ok.stderr }),
+          (error: { code?: number; stderr?: string }) => ({
+            code: error.code ?? -1,
+            stderr: error.stderr ?? '',
+          }),
+        );
+
+        expect(run.code).toBe(1);
+        expect(run.stderr).toContain('❌');
+        expect(run.stderr).toContain('HTTP 403');
+        expect(existsSync(join(outDir, 'inspection.json'))).toBe(false);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+        await new Promise<void>((resolve, reject) =>
+          server.close((err) => (err ? reject(err) : resolve())),
+        );
       }
     }, 60_000);
   },

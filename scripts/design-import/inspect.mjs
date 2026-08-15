@@ -114,11 +114,14 @@ function failLoud(error) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const out =
-    options.out ?? join('docs', 'design-references', slugify(options.url));
   const chromium = await loadChromium();
+  // Pre-launch валідація: і невалідний URL (`new URL` у slugify), і відсутній
+  // браузер мають падати одним каналом `failLoud`, а не сирим стектрейсом.
+  let out;
   let launchOptions;
   try {
+    out =
+      options.out ?? join('docs', 'design-references', slugify(options.url));
     launchOptions = resolveChromium(chromium);
   } catch (error) {
     failLoud(error);
@@ -128,7 +131,20 @@ async function main() {
   try {
     const page = await browser.newPage();
     console.log(`🔎 Відкриваю ${options.url}…`);
-    await page.goto(options.url, { waitUntil: 'networkidle', timeout: 30_000 });
+    const response = await page.goto(options.url, {
+      waitUntil: 'networkidle',
+      timeout: 30_000,
+    });
+    // `page.goto` НЕ кидає на 4xx/5xx (лише на мережеві збої) — без цієї
+    // перевірки 401/403/бот-заглушка давала б «успішний» inspection.json з
+    // кольорами сторінки-відмови. `response` може бути null (same-document).
+    if (!response || !response.ok()) {
+      throw new Error(
+        `HTTP ${response ? response.status() : '(без відповіді)'} від референсу — ` +
+          'інспекцію зупинено (доступ закритий або бот-захист; ' +
+          'див. «Чесна деградація» у скілі redesign-from-reference)',
+      );
+    }
     const inspection = await inspectPage(page, {
       url: options.url,
       out,

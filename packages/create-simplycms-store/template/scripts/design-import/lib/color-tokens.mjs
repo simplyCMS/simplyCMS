@@ -59,34 +59,31 @@ export function mapColorTokens(colors) {
 
   const tokens = {};
   const confidence = {};
+  // `used` тримає ПОСИЛАННЯ на кластери, не рядкові значення: однаковий hex у
+  // різних ролях (темний текст = темний фон секції) — це РІЗНІ кластери, і
+  // дедуп за значенням мовчки губив би другий із них і з tokens, і з unmapped.
   const used = new Set();
   const pick = (clusters, predicate = () => true) =>
-    clusters.find((c) => predicate(c) && !used.has(c.value)) ?? null;
+    clusters.find((c) => predicate(c) && !used.has(c)) ?? null;
 
   const bg = pick(bgClusters);
   if (bg) {
     tokens.background = hslTriple(bg.hsl);
     confidence.background = ratio(bg.frequency, totalOf(bgClusters));
-    used.add(bg.value);
+    used.add(bg);
   }
 
   const fg = pick(textClusters);
   if (fg) {
     tokens.foreground = hslTriple(fg.hsl);
     confidence.foreground = ratio(fg.frequency, totalOf(textClusters));
-    used.add(fg.value);
+    used.add(fg);
   }
 
-  const card = pick(bgClusters); // «поверхні → card»: наступна background-поверхня
-  if (card && (!bg || Math.abs(card.hsl.l - bg.hsl.l) >= MIN_CARD_GAP)) {
-    tokens.card = hslTriple(card.hsl);
-    if (fg) tokens['card-foreground'] = hslTriple(fg.hsl);
-    tokens.popover = tokens.card;
-    if (fg) tokens['popover-foreground'] = tokens['card-foreground'];
-    used.add(card.value);
-  }
-
-  // «Насичений акцент на інтерактивних елементах → primary»; ring дзеркалить primary.
+  // «Насичений акцент на інтерактивних елементах → primary»; ring дзеркалить
+  // primary. Акценти резервуються ДО card: інакше частотний CTA-колір (та сама
+  // кнопка на кожній картці каталогу) діставався б card як «наступна
+  // поверхня», і primary зникав би з пропозиції без сліду.
   const interactive = bgClusters.filter((c) => c.interactive);
   const primary = pick(
     bgClusters,
@@ -96,7 +93,7 @@ export function mapColorTokens(colors) {
     applyAccent(tokens, 'primary', primary, fg?.hsl, null);
     tokens.ring = tokens.primary;
     confidence.primary = ratio(primary.frequency, totalOf(interactive));
-    used.add(primary.value);
+    used.add(primary);
   }
 
   // «Другорядний → accent/secondary» — наступний насичений колір (без вимоги interactive).
@@ -104,7 +101,16 @@ export function mapColorTokens(colors) {
   if (secondary) {
     applyAccent(tokens, 'secondary', secondary, fg?.hsl, 'accent');
     confidence.secondary = ratio(secondary.frequency, totalOf(bgClusters));
-    used.add(secondary.value);
+    used.add(secondary);
+  }
+
+  const card = pick(bgClusters); // «поверхні → card»: наступна background-поверхня
+  if (card && (!bg || Math.abs(card.hsl.l - bg.hsl.l) >= MIN_CARD_GAP)) {
+    tokens.card = hslTriple(card.hsl);
+    if (fg) tokens['card-foreground'] = hslTriple(fg.hsl);
+    tokens.popover = tokens.card;
+    if (fg) tokens['popover-foreground'] = tokens['card-foreground'];
+    used.add(card);
   }
 
   const border = pick(borderClusters);
@@ -112,11 +118,11 @@ export function mapColorTokens(colors) {
     tokens.border = hslTriple(border.hsl);
     tokens.input = tokens.border;
     confidence.border = ratio(border.frequency, totalOf(borderClusters));
-    used.add(border.value);
+    used.add(border);
   }
 
   const unmapped = [...bgClusters, ...textClusters, ...borderClusters]
-    .filter((c) => !used.has(c.value))
+    .filter((c) => !used.has(c))
     .map((c) => c.value);
 
   return { tokens, confidence, unmapped };

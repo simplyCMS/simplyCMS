@@ -15,6 +15,7 @@ import {
   AA_MIN_RATIO,
   checkContrastPairs,
 } from '../scripts/design-import/lib/contrast.mjs';
+import { mapColorTokens } from '../scripts/design-import/lib/color-tokens.mjs';
 import { mapTokens } from '../scripts/design-import/lib/map.mjs';
 import { applyTokens } from '@simplycms/themes/applyTokens';
 import { validateThemeModule } from '@simplycms/themes/validateThemeModule';
@@ -242,5 +243,48 @@ describe('lib/map.mjs — mapTokens на фікстурному inspection (Р9 
     };
 
     expect(() => validateThemeModule(themeModule)).not.toThrow();
+  });
+});
+
+// Регресії підтверджених знахідок код-ревʼю етапу Б (лінза correctness):
+// обидва сценарії реалістичні і НЕ покриті фікстурою sampleInspection.
+describe('lib/color-tokens.mjs — регресії ревʼю', () => {
+  it('частотний CTA-колір дістається primary, а не «крадеться» card', () => {
+    // CTA-кнопка на кожній картці каталогу: другий за частотою bg-кластер.
+    const { tokens, unmapped } = mapColorTokens([
+      { role: 'background', value: '#ffffff', frequency: 200 },
+      {
+        role: 'background',
+        value: '#2563eb',
+        frequency: 80,
+        interactive: true,
+      },
+      { role: 'background', value: '#d4d4d8', frequency: 30 },
+      { role: 'text', value: '#18181b', frequency: 150 },
+    ]);
+    expect(tokens.primary).toBe('221 83% 53%');
+    expect(tokens.ring).toBe(tokens.primary);
+    expect(tokens.card).toBeDefined();
+    expect(tokens.card).not.toBe(tokens.primary);
+    expect(unmapped).toEqual([]);
+  });
+
+  it('однаковий hex у різних ролях — обидва кластери мапляться, unmapped чесний', () => {
+    // Темний текст = темний фон секції: різні кластери, той самий #111111.
+    const twoRoles = mapColorTokens([
+      { role: 'background', value: '#ffffff', frequency: 100 },
+      { role: 'background', value: '#111111', frequency: 30 },
+      { role: 'text', value: '#111111', frequency: 80 },
+    ]);
+    expect(twoRoles.tokens.card).toBe('0 0% 7%');
+    expect(twoRoles.unmapped).toEqual([]);
+
+    // Біла рамка = білий фон — border не зникає.
+    const borderCollision = mapColorTokens([
+      { role: 'background', value: '#ffffff', frequency: 100 },
+      { role: 'border', value: '#ffffff', frequency: 50 },
+    ]);
+    expect(borderCollision.tokens.border).toBe('0 0% 100%');
+    expect(borderCollision.unmapped).toEqual([]);
   });
 });
