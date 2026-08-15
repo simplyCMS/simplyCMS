@@ -2,9 +2,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readPublishableManifests } from '../scripts/release/bump.mjs';
+import {
+  currentVersion,
+  readPublishableManifests,
+} from '../scripts/release/bump.mjs';
 import {
   bumpManifestVersions,
+  manifestVersionDrift,
   manifestVersionFiles,
 } from '../scripts/release/manifest-version.mjs';
 
@@ -46,12 +50,29 @@ describe('release bump: version-літерали маніфестів', () => {
     );
   });
 
-  it('на поточній версії — no-op, і жоден літерал не «загубився»', () => {
-    // Виклик із чинною версією нічого не пише, але проганяє строгий regex по
-    // КОЖНОМУ файлу: 0 або 2+ збіги — виняток. Тобто зелений тест і є доказ,
-    // що формат літералів не поїхав.
-    const version = readPublishableManifests()[0].manifest.version;
-    expect(bumpManifestVersions(version)).toEqual([]);
+  it('літерали сирців збігаються з версією пакетів (ЧИСТА перевірка)', () => {
+    // 🔴 Тут кличеться саме `manifestVersionDrift`, а не письменник
+    // `bumpManifestVersions`: письменник у ролі чекера при дрейфі МОВЧКИ
+    // перезаписав би трекнутий сирець — правку розробника було б тихо
+    // ревертнуто, а падіння не відтворилося б на другому прогоні.
+    // Джерело еталона — currentVersion(): він сам гарантує синхронність.
+    expect(manifestVersionDrift(currentVersion())).toEqual([]);
+  });
+
+  it('дрейф у фікстурі: чиста перевірка бачить його і НЕ чіпає файл', () => {
+    const root = mkdtempSync(join(tmpdir(), 'drift-manifest-'));
+    const dir = join(root, 'packages', 'simplycms-theme-aurora', 'src');
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, 'manifest.ts');
+    const before =
+      "const manifest = {\n  name: 'aurora',\n  version: '0.3.0',\n};\n";
+    writeFileSync(path, before);
+
+    process.chdir(root);
+    expect(manifestVersionDrift('0.4.0')).toEqual([
+      join('packages', 'simplycms-theme-aurora', 'src', 'manifest.ts'),
+    ]);
+    expect(readFileSync(path, 'utf8')).toBe(before);
   });
 
   it('переписує літерал у фікстурі, зберігаючи відступ', () => {

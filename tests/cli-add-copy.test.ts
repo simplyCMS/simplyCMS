@@ -62,10 +62,25 @@ function makeStore({ withSrc = true } = {}) {
   };
 }
 
-/** Фейковий pnpm: лише пише команди в журнал (install у тестах не потрібен). */
-function fakePnpm() {
+/**
+ * Фейковий pnpm: журнал команд + ЗНІМОК залежностей магазину на момент кожної
+ * з них. Знімок доводить саме ПОРЯДОК подій (deps теми влиті ДО `remove`) —
+ * асерт по кінцевому стану манифесту доводив би лише ФАКТ злиття.
+ */
+function fakePnpm(storeRoot: string) {
   const calls: string[][] = [];
-  return { calls, run: (args: string[]) => void calls.push(args) };
+  const depsAt: string[][] = [];
+  return {
+    calls,
+    depsAt,
+    run: (args: string[]) => {
+      calls.push(args);
+      const manifest = JSON.parse(
+        readFileSync(join(storeRoot, 'package.json'), 'utf8'),
+      ) as { dependencies?: Record<string, string> };
+      depsAt.push(Object.keys(manifest.dependencies ?? {}));
+    },
+  };
 }
 
 describe('add --copy: чисті частини', () => {
@@ -86,6 +101,20 @@ describe('add --copy: чисті частини', () => {
     expect(copyPreflight({ storeRoot, key: 'aurora', source: wired })).toBe(
       'done',
     );
+  });
+
+  it('copyPreflight: ключ зайнятий npm-записом тієї ж теми — гучна помилка', () => {
+    // Магазин уже поставив тему пакетом; --copy із тим самим ключем дописав би
+    // ДРУГИЙ запис (TS1117), а фінальний remove зняв би пакет переможного
+    // запису — «Готово» на битому білді. Теки themes/aurora ще немає.
+    const { storeRoot } = makeStore();
+    const npmWired = CONFIG.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@acme/simplycms-theme-aurora'),",
+    );
+    expect(() =>
+      copyPreflight({ storeRoot, key: 'aurora', source: npmWired }),
+    ).toThrow(/--name/);
   });
 
   it('mergeDependencies: доливає лише те, чого магазин ще не має', () => {
@@ -122,7 +151,7 @@ describe('add --copy: чисті частини', () => {
 describe('add --copy: сценарій', () => {
   it('повний прохід: add → копія → конфіг → remove; deps теми перенесено', () => {
     const { storeRoot, configPath } = makeStore();
-    const pnpm = fakePnpm();
+    const pnpm = fakePnpm(storeRoot);
     const report = runThemeCopy({
       storeRoot,
       configPath,
@@ -142,6 +171,9 @@ describe('add --copy: сценарій', () => {
     expect(config).toContain("'aurora': () => import('@themes/aurora/index')");
     expect(config).not.toContain('@acme/simplycms-theme-aurora');
     // Злиття deps — ДО remove, інакше замикання залежностей забрав би pnpm.
+    // Доводить це знімок манифесту НА МОМЕНТ кожної команди, а не кінцевий стан.
+    expect(pnpm.depsAt[0]).not.toContain('aurora-charts'); // на `add` — ще ні
+    expect(pnpm.depsAt[1]).toContain('aurora-charts'); // на `remove` — уже влито
     const manifest = JSON.parse(
       readFileSync(join(storeRoot, 'package.json'), 'utf8'),
     ) as { dependencies: Record<string, string> };
@@ -151,7 +183,7 @@ describe('add --copy: сценарій', () => {
 
   it('повторний запуск — ідемпотентний: жодної команди pnpm', () => {
     const { storeRoot, configPath } = makeStore();
-    const first = fakePnpm();
+    const first = fakePnpm(storeRoot);
     runThemeCopy({
       storeRoot,
       configPath,
@@ -159,7 +191,7 @@ describe('add --copy: сценарій', () => {
       key: 'aurora',
       pnpm: first.run,
     });
-    const second = fakePnpm();
+    const second = fakePnpm(storeRoot);
     const report = runThemeCopy({
       storeRoot,
       configPath,
@@ -173,7 +205,7 @@ describe('add --copy: сценарій', () => {
 
   it('пакет без src/index.ts — помилка з відкотом pnpm remove', () => {
     const { storeRoot, configPath } = makeStore({ withSrc: false });
-    const pnpm = fakePnpm();
+    const pnpm = fakePnpm(storeRoot);
     expect(() =>
       runThemeCopy({
         storeRoot,
@@ -194,7 +226,7 @@ describe('add --copy: сценарій', () => {
 
   it('--dry-run: ані pnpm, ані запису на диск', () => {
     const { storeRoot, configPath } = makeStore();
-    const pnpm = fakePnpm();
+    const pnpm = fakePnpm(storeRoot);
     const report = runThemeCopy({
       storeRoot,
       configPath,
@@ -213,7 +245,7 @@ describe('add --copy: сценарій', () => {
   it('колізія теки: помилка ДО будь-якої дії', () => {
     const { storeRoot, configPath } = makeStore();
     mkdirSync(join(storeRoot, 'themes/aurora'), { recursive: true });
-    const pnpm = fakePnpm();
+    const pnpm = fakePnpm(storeRoot);
     expect(() =>
       runThemeCopy({
         storeRoot,
@@ -224,5 +256,27 @@ describe('add --copy: сценарій', () => {
       }),
     ).toThrow(/Нічого не змінено/);
     expect(pnpm.calls).toEqual([]);
+  });
+
+  it('колізія КЛЮЧА (тема вже стоїть пакетом): помилка ДО будь-якої дії', () => {
+    const { storeRoot, configPath } = makeStore();
+    const npmWired = CONFIG.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@acme/simplycms-theme-aurora'),",
+    );
+    writeFileSync(configPath, npmWired);
+    const pnpm = fakePnpm(storeRoot);
+    expect(() =>
+      runThemeCopy({
+        storeRoot,
+        configPath,
+        pkg: '@acme/simplycms-theme-aurora',
+        key: 'aurora',
+        pnpm: pnpm.run,
+      }),
+    ).toThrow(/--name/);
+    expect(pnpm.calls).toEqual([]);
+    expect(existsSync(join(storeRoot, 'themes/aurora'))).toBe(false);
+    expect(readFileSync(configPath, 'utf8')).toBe(npmWired);
   });
 });

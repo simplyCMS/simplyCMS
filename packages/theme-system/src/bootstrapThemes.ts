@@ -12,6 +12,23 @@ interface ThemeInsert {
   is_active: boolean;
 }
 
+/** Ліміт колонки `themes.version` — varchar(20) (packages/schema/src/schema.ts). */
+const VERSION_MAX_LENGTH = 20;
+
+/**
+ * Версія в межах колонки. Задовгий рядок (prerelease-конвенції npm цілком
+ * законно дають більше за 20 символів) інакше валив би ВЕСЬ batch INSERT —
+ * усупереч інваріанту «помилка однієї теми не заважає решті».
+ */
+function fitVersion(name: string, version: string): string {
+  if (version.length <= VERSION_MAX_LENGTH) return version;
+  console.warn(
+    `[themes] Версію теми '${name}' обрізано до ${VERSION_MAX_LENGTH} символів ` +
+      `(ліміт колонки themes.version): ${version}`,
+  );
+  return version.slice(0, VERSION_MAX_LENGTH);
+}
+
 /**
  * Рядок БД будується з маніфеста теми.
  *
@@ -24,7 +41,7 @@ function toInsert(name: string, theme: ThemeModule): ThemeInsert {
   return {
     name,
     display_name: theme.manifest.displayName,
-    version: theme.manifest.version,
+    version: fitVersion(name, theme.manifest.version),
     description: null,
     author: null,
     // Активність — рішення адміна. Крім того, `themes_active_idx` (частковий

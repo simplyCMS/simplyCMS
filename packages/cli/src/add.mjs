@@ -8,7 +8,12 @@ import { join } from 'node:path';
 import { parseAddArgs } from './add-args.mjs';
 import { runThemeCopy } from './add-copy.mjs';
 import { addSteps, themeSteps } from './add-steps.mjs';
-import { deriveKey, hasPackage, insertEntry } from './config-edit.mjs';
+import {
+  assertThemeKeyFree,
+  deriveKey,
+  hasPackage,
+  insertEntry,
+} from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
@@ -73,6 +78,11 @@ export async function run(argv) {
     finish('Вже зроблено.');
     return;
   }
+
+  // Дзеркало гарда copy-гілки: ключ теми, зайнятий іншим специфікатором
+  // (та сама тема, вже вкопійована в themes/<key>), дав би дубль ключа в
+  // обʼєкті themes — битий конфіг. Плагінів не стосується: там масив.
+  if (options.type === 'theme') assertThemeKeyFree(source, key, options.pkg);
 
   // Вставка рахується ДО install: відсутній якір валить команду, поки
   // нічого не змінено — ні конфіг, ні node_modules.

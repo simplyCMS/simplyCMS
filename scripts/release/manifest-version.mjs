@@ -56,25 +56,49 @@ export function manifestVersionFiles() {
 }
 
 /**
+ * Прочитати єдиний version-літерал маніфеста. Строгість тут і є перевіркою
+ * формату: 0 або 2+ збіги — гучна помилка, а не тихий пропуск.
+ * @param {string} path
+ * @returns {{ source: string; indent: string; current: string }}
+ */
+function readManifestVersion(path) {
+  const source = readFileSync(path, 'utf8');
+  const matches = source.match(new RegExp(MANIFEST_VERSION_RE, 'gm')) ?? [];
+  if (matches.length !== 1) {
+    throw new Error(
+      `У ${path} знайдено ${matches.length} version-літералів маніфесту ` +
+        `(очікувався рівно один вигляду "  version: 'X.Y.Z',"). Формат ` +
+        `змінився — онови MANIFEST_VERSION_RE у ` +
+        `scripts/release/manifest-version.mjs`,
+    );
+  }
+  const [, indent, current] = MANIFEST_VERSION_RE.exec(source);
+  return { source, indent, current };
+}
+
+/**
+ * ЧИСТА перевірка розсинхрону: файли, чий version-літерал ≠ `version`.
+ * Нічого не пише — саме її кличуть гарди й тести. Письменник у ролі чекера
+ * мовчки перезаписував би трекнутий сирець (тиха ревертація правки
+ * розробника, невідтворювана на другому прогоні) — знахідка рев'ю Фази 4.
+ * @param {string} version
+ * @returns {string[]} шляхи файлів із розбіжним літералом
+ */
+export function manifestVersionDrift(version) {
+  return manifestVersionFiles().filter(
+    (path) => readManifestVersion(path).current !== version,
+  );
+}
+
+/**
  * Переписати version-літерали маніфестів референс-пакетів.
  * @param {string} version
  * @returns {string[]} файли, які реально змінилися
  */
 export function bumpManifestVersions(version) {
   const changed = [];
-  for (const path of manifestVersionFiles()) {
-    const source = readFileSync(path, 'utf8');
-    const matches = source.match(new RegExp(MANIFEST_VERSION_RE, 'gm')) ?? [];
-    if (matches.length !== 1) {
-      throw new Error(
-        `У ${path} знайдено ${matches.length} version-літералів маніфесту ` +
-          `(очікувався рівно один вигляду "  version: 'X.Y.Z',"). Формат ` +
-          `змінився — онови MANIFEST_VERSION_RE у ` +
-          `scripts/release/manifest-version.mjs`,
-      );
-    }
-    const [, indent, current] = MANIFEST_VERSION_RE.exec(source);
-    if (current === version) continue;
+  for (const path of manifestVersionDrift(version)) {
+    const { source, indent } = readManifestVersion(path);
     writeFileSync(
       path,
       source.replace(MANIFEST_VERSION_RE, `${indent}version: '${version}',`),

@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { parseAddArgs } from '../packages/cli/src/add.mjs';
 import {
+  assertThemeKeyFree,
   configPluginNames,
   configThemeEntries,
   configThemeKeys,
@@ -208,6 +209,50 @@ describe('cli add', () => {
     expect(run.status).toBe(1);
     expect(`${run.stdout}${run.stderr}`).toContain('файл не змінено');
     expect(readFileSync(configPath, 'utf8')).toBe(inlineFullConfig);
+  });
+
+  it('assertThemeKeyFree: той самий spec — true, інший — виняток, вільний — false', () => {
+    const copyWired = templateConfig.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@themes/aurora/index'),",
+    );
+    expect(
+      assertThemeKeyFree(copyWired, 'aurora', '@themes/aurora/index'),
+    ).toBe(true);
+    expect(() =>
+      assertThemeKeyFree(copyWired, 'aurora', '@acme/simplycms-theme-aurora'),
+    ).toThrow(/--name/);
+    expect(assertThemeKeyFree(copyWired, 'solar', 'pkg-solar')).toBe(false);
+  });
+
+  it('add --theme: ключ зайнято copy-in-темою — exit 1, конфіг незмінний', () => {
+    // Дзеркальний до copy-гілки напрямок колізії: тема вже вкопійована в
+    // themes/aurora, npm-установка з тим самим ключем дала б дубль ключа.
+    const store = mkdtempSync(join(tmpdir(), 'cli-add-theme-'));
+    writeFileSync(
+      join(store, 'package.json'),
+      JSON.stringify({
+        name: 's',
+        dependencies: { '@simplycms/core': '0.0.0' },
+      }),
+    );
+    const configPath = join(store, 'simplycms.config.ts');
+    const copyWired = templateConfig.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@themes/aurora/index'),",
+    );
+    writeFileSync(configPath, copyWired);
+    const cli = fileURLToPath(
+      new URL('../packages/cli/src/index.mjs', import.meta.url),
+    );
+    const run = spawnSync(
+      process.execPath,
+      [cli, 'add', '@acme/simplycms-theme-aurora', '--theme', '--no-install'],
+      { cwd: store, encoding: 'utf8' },
+    );
+    expect(run.status).toBe(1);
+    expect(`${run.stdout}${run.stderr}`).toContain('--name');
+    expect(readFileSync(configPath, 'utf8')).toBe(copyWired);
   });
 
   it('insertEntry: без якоря — виняток із точним рядком, без змін файлу', () => {

@@ -21,7 +21,9 @@ interface ThemeRow {
 function createMockSupabase(initial: ThemeRow[], signedIn = true) {
   const rows: ThemeRow[] = [...initial];
   const inserted: ThemeRow[] = [];
-  const calls = { getSession: 0 };
+  // `from` рахується окремо: порожній реєстр мусить не торкатися БД ВЗАГАЛІ,
+  // а порожній `inserted` цього не доводить (SELECT теж іде через from).
+  const calls = { getSession: 0, from: 0 };
 
   const client = {
     auth: {
@@ -34,6 +36,7 @@ function createMockSupabase(initial: ThemeRow[], signedIn = true) {
       },
     },
     from(table: string) {
+      calls.from += 1;
       if (table !== 'themes') throw new Error(`unexpected table ${table}`);
       const builder = {
         select: () => builder,
@@ -58,13 +61,13 @@ function createMockSupabase(initial: ThemeRow[], signedIn = true) {
 }
 
 /** Фабрика мінімального валідного модуля теми. */
-function makeModule(name: string): ThemeModule {
+function makeModule(name: string, version = '1.2.3'): ThemeModule {
   const Stub = () => null;
   return {
     manifest: {
       name,
       displayName: `Theme ${name}`,
-      version: '1.2.3',
+      version,
       engines: { simplycms: '*' },
     },
     tokens: { primary: '221 83% 53%' },
@@ -165,11 +168,30 @@ describe('bootstrapThemes', () => {
     expect(inserted[0]).toMatchObject({ name: 'aurora' });
   });
 
-  it('порожній реєстр → жодного запиту до БД', async () => {
+  it('задовга версія обрізається до ліміту колонки varchar(20)', async () => {
+    // Prerelease-версія npm цілком законно довша за 20 символів, а колонка
+    // themes.version — varchar(20): без обрізання падав би ВЕСЬ batch INSERT.
+    const long = '1.0.0-alpha.20260814.build.12345';
+    register('aurora', async () => ({ default: makeModule('aurora', long) }));
     const { client, inserted } = createMockSupabase([]);
 
     await bootstrapThemes(client);
 
+    expect(inserted[0].version).toBe(long.slice(0, 20));
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('aurora'),
+    );
+  });
+
+  it('порожній реєстр → жодного запиту до БД', async () => {
+    const { client, inserted, calls } = createMockSupabase([]);
+
+    await bootstrapThemes(client);
+
+    // Саме `from` доводить відсутність запиту: порожній inserted сумісний і з
+    // виконаним SELECT-ом.
+    expect(calls.from).toBe(0);
+    expect(calls.getSession).toBe(0);
     expect(inserted).toHaveLength(0);
   });
 });

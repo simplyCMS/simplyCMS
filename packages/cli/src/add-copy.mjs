@@ -12,21 +12,25 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { hasPackage, insertEntry } from './config-edit.mjs';
+import { assertThemeKeyFree, hasPackage, insertEntry } from './config-edit.mjs';
 
 /** Специфікатор copy-in-теми: npm-імʼя пакета в конфізі не зʼявляється ніколи. */
 export const themeSpec = (key) => `@themes/${key}/index`;
 
 /**
- * Перед-політ ДО будь-яких дій. `done` — тека вже є і конфіг на неї вказує
+ * Перед-політ ДО будь-яких дій. Спершу — гард ключа конфігу: ключ, зайнятий
+ * ІНШИМ специфікатором (та сама тема, встановлена раніше як npm-пакет), валить
+ * команду до першої дії, бо інакше copy-гілка дописала б дубль ключа й зняла
+ * пакет переможного запису. Далі `done` — тека вже є і конфіг на неї вказує
  * (повторний запуск = успіх, §3); тека є, а конфіг на неї не вказує — гучна
  * помилка: підмінити чужу теку мовчки не можна.
  * @param {{ storeRoot: string; key: string; source: string }} input
  * @returns {'done' | 'proceed'}
  */
 export function copyPreflight({ storeRoot, key, source }) {
+  const wired = assertThemeKeyFree(source, key, themeSpec(key));
   if (!existsSync(join(storeRoot, 'themes', key))) return 'proceed';
-  if (hasPackage(source, themeSpec(key))) return 'done';
+  if (wired) return 'done';
   throw new Error(
     `Тека themes/${key} вже існує, але simplycms.config.ts на неї не вказує — ` +
       'прибери теку або задай інший ключ: --name <key>. Нічого не змінено.',
