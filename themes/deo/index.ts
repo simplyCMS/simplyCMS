@@ -5,9 +5,9 @@
  * Сторінок і лейаутів у ній немає — вони живуть у ядрі
  * (`@simplycms/storefront-routes`), а каркас бере з теми Header/Footer.
  *
- * `HeroBanner` і `HomeSections` не задані навмисно: без них ядро рендерить
- * власні канонічні секції головної. Додай їх у `components`, коли головна
- * має виглядати інакше.
+ * Задані всі чотири слоти: `Header`/`Footer` (обовʼязкові каркасу) плюс
+ * `HeroBanner` і `HomeSections` — тема бере на себе оформлення головної.
+ * Спеки кожного компонента — `docs/design-references/deo/components/`.
  */
 import type { ThemeModule } from '@simplycms/themes/types';
 import manifest from './manifest';
@@ -15,6 +15,8 @@ import { tokens } from './tokens';
 import { messages } from './messages';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+import { HeroBanner } from './components/HeroBanner';
+import { HomeSections } from './components/HomeSections';
 
 const theme: ThemeModule = {
   manifest,
@@ -22,6 +24,8 @@ const theme: ThemeModule = {
   components: {
     Header,
     Footer,
+    HeroBanner,
+    HomeSections,
   },
   messages,
   // Контракт v2.2: лише абсолютні `https:`-stylesheet-и. Референс роздає
