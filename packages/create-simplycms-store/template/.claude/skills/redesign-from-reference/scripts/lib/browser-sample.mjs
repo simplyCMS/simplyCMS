@@ -11,15 +11,42 @@
 export function browserSample(limit) {
   const shadowTopN = 5; // копія — замикання на модульний скоуп тут недоступне
 
-  function toHex(computed) {
-    const m = computed.match(
-      /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/,
-    );
-    if (!m) return null;
-    if (m[4] !== undefined && Number(m[4]) === 0) return null; // прозорий
-    const hex = (n) => Math.round(Number(n)).toString(16).padStart(2, '0');
-    return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
-  }
+  // Нормалізація CSS-кольору в `#rrggbb` КОЛІРНИМ РУШІЄМ БРАУЗЕРА, не
+  // регуляркою. 🔴 Регекс `rgba?()` мовчки губив КОЖЕН сучасний запис: Chrome
+  // віддає computed `color`/`background-color` у вихідному просторі —
+  // `lab()`, `oklab()`, `oklch()`, `color(display-p3 …)`, — а Tailwind v4
+  // (яким зроблено і сам SimplyCMS) генерує саме такі. На живому референсі це
+  // давало 5 кольорів замість справжньої палітри: домінантний текст
+  // `lab(2.75381 0 0)` (n=233, area 44.6M) зникав, «найчастішим» ставав білий
+  // n=19 — пропозиція виходила з foreground == background (контраст 1.00:1).
+  // Растеризація 1×1 віддає sRGB-байти, якими сторінка й малюється. Валідність
+  // — подвійний сентинел: невалідний рядок лишає `fillStyle` попереднім.
+  const toHex = (() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const cache = new Map(); // значення повторюються сотні разів — міряємо раз
+    const byte = (n) => n.toString(16).padStart(2, '0');
+    return (computed) => {
+      if (!computed || !ctx) return null;
+      if (cache.has(computed)) return cache.get(computed);
+      ctx.fillStyle = '#000000';
+      ctx.fillStyle = computed;
+      const fromBlack = ctx.fillStyle;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = computed;
+      let hex = null;
+      if (fromBlack === ctx.fillStyle) {
+        ctx.clearRect(0, 0, 1, 1);
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+        if (a !== 0) hex = `#${byte(r)}${byte(g)}${byte(b)}`; // прозорий → null
+      }
+      cache.set(computed, hex);
+      return hex;
+    };
+  })();
 
   function bumpColor(map, role, value, area, interactive) {
     const key = `${role}:${value}`;
