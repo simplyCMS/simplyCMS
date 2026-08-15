@@ -46,9 +46,9 @@
 
 ## Фаза 2 — Класифікатор (без браузера)
 
-- [ ] **Step 1:** `lib/classify.mjs` за Р3/Р3b/Р5: `normalizePathname`, `classifyLinks(links: {url, anchors: string[]}[], startUrl)` → `{pageTypes, unresolved}` (глобально-жадібний вибір пар, score/evidence за Р5).
-- [ ] **Step 2:** Юніти `tests/design-import-discover.test.ts`: en/uk набори; якір-only сторінка (`/koshyk` + «Кошик») класифікується; іконковий лінк через aria-label; конфлікт двох типів на URL → детермінований розвʼязок + перепідбір; нормалізація pathname (slash/index.html); порожньо; unresolved із reason.
-- [ ] **Step 3:** `pnpm template:sync` (Р10) → гейти фази.
+- [x] **Step 1:** `lib/classify.mjs` за Р3/Р3b/Р5: `normalizePathname`, `classifyLinks(links: {url, anchors: string[]}[], startUrl)` → `{pageTypes, unresolved}` (глобально-жадібний вибір пар, score/evidence за Р5).
+- [x] **Step 2:** Юніти `tests/design-import-discover.test.ts`: en/uk набори; якір-only сторінка (`/koshyk` + «Кошик») класифікується; іконковий лінк через aria-label; конфлікт двох типів на URL → детермінований розвʼязок + перепідбір; нормалізація pathname (slash/index.html); порожньо; unresolved із reason.
+- [x] **Step 3:** `pnpm template:sync` (Р10) → гейти фази.
 
 ## Фаза 3 — `discover.mjs`
 
