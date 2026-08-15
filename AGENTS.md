@@ -95,13 +95,15 @@ packages/               # Core CMS (у монорепо; публікація н
 ├── admin/              @simplycms/admin
 ├── ui/                 @simplycms/ui
 ├── plugin-system/      @simplycms/plugins
-├── theme-system/       @simplycms/themes
+├── theme-system/       @simplycms/themes        # ThemeRegistry, bootstrapThemes
+├── simplycms-theme-solarstore/ @simplycms/theme-solarstore # Референс-тема (npm, Фаза 4)
+├── simplycms-plugin-faq/       @simplycms/plugin-faq       # Референс-плагін (npm, Фаза 3)
 ├── core/               @simplycms/core          # Legacy-фасад (розчиняється; Фаза 1+)
 └── …                   # cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui
 
 scripts/                          # db-diff.mjs, db-migrate.mjs
 tests/                            # virtual-routes-escape, published-exports-parity
-themes/{default,solarstore}/      # Теми: manifest + tokens + components (контракт v2)
+themes/default/                   # Локальна тема-еталон; solarstore — npm-пакет (Фаза 4)
 plugins/hello-world/              # Референс-плагін
 supabase/                         # config.toml, migrations/, functions/, types.ts
 ```
@@ -110,7 +112,7 @@ supabase/                         # config.toml, migrations/, functions/, types.
 
 - **Routes:** дерево збирається `routes.ts` (`virtualRouteConfig`), а не скануванням `src/routes`. Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у route-теці відповідного пакета
 - **Rendering:** SSR for storefront, client-only for admin (`ssr:false` на `admin.tsx`; дочірні роути його **не** повторюють); `ssr:false` routes always define a `pendingComponent`
-- **Themes:** контракт v2 — `{ manifest, tokens, components, settings? }`. Тема **не** постачає сторінок/лейаутів; канонічні сторінки — у `@simplycms/storefront-routes/src/pages/`, каркаси — `StorefrontShell`/`ProtectedShell`. Реєстрація з `config.themes`, активація через `themes.is_active`
+- **Themes:** контракт v2 — `{ manifest, tokens, components, settings?, messages? }`. Тема **не** постачає сторінок/лейаутів; канонічні сторінки — у `@simplycms/storefront-routes/src/pages/`, каркаси — `StorefrontShell`/`ProtectedShell`. Реєстрація з `config.themes` (локальна тека `themes/*` або npm-пакет), активація через `themes.is_active` + `bootstrapThemes`. Деталі — `docs/architecture/themes.md`
 - **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
 - **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient` or repository ports
 - **DB schema:** джерело правди — `@simplycms/schema` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP

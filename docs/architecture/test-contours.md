@@ -50,10 +50,10 @@
 | **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/@simplycms/*/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
 | **B** | `createServerFn` працює в PRODUCTION-манифесті, а не лише в dev-режимі монорепо; SSR-рендер, guard `/admin`, sitemap/robots/health | `gate-b.mjs` |
 | **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest | `gate-c.mjs` |
-| **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` | `gate-d.mjs` |
+| **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | **E** | Перший signup НЕ отримує `admin` (міграція в живій схемі); `owner:invite` ідемпотентний; `/auth/confirm` ставить cookies і редиректить | `gate-e.mjs` |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies` | `create-pkg-smoke.mjs` |
-| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 5 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/` і `template-plugin/` (шаблон `create plugin`) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
+| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 5 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout | `tool-pkg-smoke.mjs` |
 
 🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
 **CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук
@@ -62,6 +62,18 @@
 кроком пілота (`run.mjs` — Gate TOOL, як і Gate CLI, не потребує ні БД, ні
 скретча) і в packaging-сюїті через `tests/cli-pack.test.ts` (виключений із
 дефолтного `pnpm test`, як `create-store-pack.test.ts`).
+
+🔴 **Gate THEME-контур (Фаза 4)** — не окремий гейт-скрипт, а крок конвеєра
+пілота: `scripts/pilot-pack/install-themes.mjs`, викликається в `run.mjs`
+між `pnpm install` скретча і провенансом. Прожовує ОБИДВІ гілки установки
+теми зі спеки §17.4 тим самим `pnpm exec simplycms`, що й користувач —
+`add @simplycms/theme-solarstore --theme --copy --name solarcopy` (copy-in)
+і `add @simplycms/theme-solarstore --theme` (npm) в одному скретчі підряд.
+Це доводять уже наявні гейти: провенанс бачить tarball теми в lockfile
+(`file:`, не реєстр), Gate D шукає маркер класу `@simplycms/theme-solarstore
+· HeroBanner`. Чого контур **не** доводить — розрізнення джерела класу між
+глобами (`themes/**` для copy-in vs `@simplycms/*/dist` для npm) — це закриває
+окремий `tests/theme-tailwind-globs.test.ts` (не пілот).
 
 🔴 Gate E — **єдине** місце, де взагалі виконується міграція
 `first_user_no_auto_admin` і invite-флоу.
@@ -292,8 +304,9 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 
 **Тема.** `/admin/themes` → активувати іншу тему → перейти на вітрину
 **в межах застосунку** (не F5) → палітра змінилась.
-Як переконатись, що теми взагалі різні, а не «однакові на вигляд»: у
-`themes/*/tokens.ts` порівняти `primary`. Станом на 2026-08-04:
+Як переконатись, що теми взагалі різні, а не «однакові на вигляд»: порівняти
+`primary` у `themes/default/tokens.ts` і (з Фази 4, тема — npm-пакет)
+`packages/simplycms-theme-solarstore/src/tokens.ts`. Станом на 2026-08-14:
 `default` = `4 58% 56%` (кораловий), `solarstore` = `203 85% 47%` (синій).
 Перевірка з боку сервера — `curl -s <адреса>/ | grep -o -- '--primary: [^;]*'`:
 токени інлайняться в `<style>` через `ThemeTokens`.

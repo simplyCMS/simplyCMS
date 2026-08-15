@@ -21,7 +21,7 @@ import { toolPkgSmoke } from '../scripts/pilot-pack/tool-pkg-smoke.mjs';
 // має, тож смоук самодостатній — свіжий `pnpm build:packages` йому не потрібен.
 
 describe('@simplycms/cli: смоук опублікованого tarball', () => {
-  it('bin відпрацьовує, host/ у tarball, deps оголошені, версія збігається, doctor живий на скаффолді', async () => {
+  it('bin відпрацьовує, host/ і обидва шаблони у tarball, deps оголошені, версія збігається, doctor живий на скаффолді', async () => {
     const { ok, details } = await toolPkgSmoke();
     expect(ok, details.join('\n')).toBe(true);
   });

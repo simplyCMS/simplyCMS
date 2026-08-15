@@ -5,4 +5,5 @@ export { ThemeProvider, useTheme, useThemeSettings } from './ThemeContext';
 export { applyTokens } from './applyTokens';
 export { validateThemeModule } from './validateThemeModule';
 export { getActiveThemeSSR } from './getActiveThemeSSR';
+export { bootstrapThemes } from './bootstrapThemes';
 export { useThemeT } from './useThemeT';

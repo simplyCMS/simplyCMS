@@ -68,6 +68,10 @@ export default ({ mode }: { mode: string }) => {
           'packages/simplycms-plugin-faq/src',
         ),
         '@simplycms/themes': resolve(__dirname, 'packages/theme-system/src'),
+        '@simplycms/theme-solarstore': resolve(
+          __dirname,
+          'packages/simplycms-theme-solarstore/src',
+        ),
         '@themes': resolve(__dirname, 'themes'),
         '@plugins': resolve(__dirname, 'plugins'),
       },

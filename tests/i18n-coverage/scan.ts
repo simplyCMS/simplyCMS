@@ -23,23 +23,40 @@ const CYRILLIC = /[Ѐ-ӿ]/;
  * гейтів — борг закрили аж тоді, коли його знайшли ручним сканом по всіх
  * теках. Тепер регрес у будь-якій із цих зон валить `pnpm test`.
  */
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** Теки першого рівня всередині `dir`, відсортовані; неіснуюча тека → `[]`. */
+function subdirs(dir: string): string[] {
+  return readdirSync(join(REPO, dir), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
 /**
  * Референс-пакети плагінів дискавляться з диска, а не перелічуються
  * поіменно: наступний `packages/simplycms-plugin-*` потрапляє під скан
  * автоматично (той самий аргумент, що в `plugin-messages-parity`).
  */
 function pluginPackageRoots(): string[] {
-  const packagesDir = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '../../packages',
-  );
-  return readdirSync(packagesDir, { withFileTypes: true })
-    .filter(
-      (entry) =>
-        entry.isDirectory() && entry.name.startsWith('simplycms-plugin-'),
-    )
-    .map((entry) => `packages/${entry.name}/src`)
-    .sort();
+  return subdirs('packages')
+    .filter((name) => name.startsWith('simplycms-plugin-'))
+    .map((name) => `packages/${name}/src`);
+}
+
+/**
+ * Теми теж дискавляться, і з ДВОХ коренів (Фаза 4): локальні `themes/<name>`
+ * (форма copy-in і еталон `default`) та референс-пакети
+ * `packages/simplycms-theme-<name>/src`. Поіменний список тут уже одного
+ * разу ставав пасткою — нова тема мовчки лишалася б поза сканом.
+ */
+function themeRoots(): string[] {
+  return [
+    ...subdirs('themes').map((name) => `themes/${name}`),
+    ...subdirs('packages')
+      .filter((name) => name.startsWith('simplycms-theme-'))
+      .map((name) => `packages/${name}/src`),
+  ];
 }
 
 export const SCANNED_ROOTS = [
@@ -57,8 +74,7 @@ export const SCANNED_ROOTS = [
   'packages/plugin-system/src',
   'packages/plugin-sdk/src',
   ...pluginPackageRoots(),
-  'themes/default',
-  'themes/solarstore',
+  ...themeRoots(),
   // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін
   // потрапляє під скан без ручної реєстрації. Каталоги messages.ts
   // виключає CATALOG_FILES нижче.

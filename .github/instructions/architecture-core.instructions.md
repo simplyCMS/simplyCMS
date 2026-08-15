@@ -12,7 +12,8 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 - **`routes.ts`** — `virtualRouteConfig`: дерево роутів збирається `physical()`-монтуванням route-тек пакетів; сканування `src/routes` цілком **вимкнено**
 - **`src/`** — host: тонка збірка магазину (`routes/__root.tsx` + `routes/my/`, engine-glue, `theme-registry.ts`, `start.ts`)
 - **`packages/`** — Ядро CMS (у монорепо; публікація на npmjs — Фаза 1+): роути, канонічні сторінки, лоадери, SEO, схема БД
-- **`themes/`** — Локальні теми проекту (контракт v2: `manifest + tokens + components`)
+- **`themes/`** — Локальні теми проекту (контракт v2: `manifest + tokens + components`;
+  теми також ставляться npm-пакетами — `docs/architecture/themes.md`)
 - **`plugins/`** — Локальні плагіни проекту
 - **`scripts/`** — `db-diff.mjs` / `db-migrate.mjs` (конвеєр міграцій Drizzle → Supabase CLI)
 
@@ -34,6 +35,7 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 | `plugin-system/` | `@simplycms/plugins` | T4 | HookRegistry, PluginSlot, `bootstrapPlugins`, `validatePluginModule` |
 | `plugin-sdk/` | `@simplycms/plugin-sdk` | T4 | `definePlugin` + порти плагінів (`usePluginTable`, `usePluginConfig`, `usePluginT`) — єдина поверхня, дозволена плагіну; `docs/architecture/plugins.md` |
 | `simplycms-plugin-faq/` | `@simplycms/plugin-faq` | T5 | Референс-плагін повного контуру (plg_-таблиця, adminRoutes, settings, i18n) |
+| `simplycms-theme-solarstore/` | `@simplycms/theme-solarstore` | T5 | Референс-тема повного контуру (npm-пакет; manifest + tokens + components + messages) |
 | `*-ui/` | `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | T5 | Feature-UI |
 | `storefront-routes/` | `@simplycms/storefront-routes` | T5 | `routes/` + канонічні `pages/` + `shells/` + server-шар + SEO-плагін |
 | `admin-routes/` | — (workspace-симлінк) | T5 | Route-файли адмінки (тонкі обгортки над `@simplycms/admin`) |

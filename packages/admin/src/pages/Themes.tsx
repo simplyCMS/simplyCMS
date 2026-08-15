@@ -1,58 +1,28 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { Button } from '@simplycms/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@simplycms/ui/card';
-import { Badge } from '@simplycms/ui/badge';
+import { Card, CardContent, CardHeader } from '@simplycms/ui/card';
 import { Skeleton } from '@simplycms/ui/skeleton';
-import { useToast } from '@simplycms/core/hooks/use-toast';
-import { Palette, Check, Settings, ArrowLeft } from 'lucide-react';
+import { Palette, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import { useT } from '@simplycms/i18n';
-import {
-  revalidateFailureDescription,
-  useRevalidateStorefront,
-} from '../lib/revalidateTheme';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@simplycms/ui/alert-dialog';
-
-interface ThemeRecord {
-  id: string;
-  name: string;
-  display_name: string;
-  version: string;
-  description: string | null;
-  author: string | null;
-  preview_image: string | null;
-  is_active: boolean;
-  created_at: string;
-}
+import { ThemeCard, type ThemeRecord } from '../components/ThemeCard';
+import { ThemeActivateDialog } from '../components/ThemeActivateDialog';
+import { useThemeActivate, THEMES_QUERY_KEY } from '../hooks/useThemeActivate';
 
 export default function Themes() {
   const supabase = useSupabaseClient();
-  const { toast } = useToast();
   const t = useT();
-  const queryClient = useQueryClient();
-  const revalidateStorefront = useRevalidateStorefront();
   const [confirmThemeId, setConfirmThemeId] = useState<string | null>(null);
+  const { activateTheme, isActivating } = useThemeActivate(() =>
+    setConfirmThemeId(null),
+  );
 
   const { data: themes, isLoading } = useQuery({
-    queryKey: ['admin-themes'],
+    queryKey: THEMES_QUERY_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('themes')
@@ -63,61 +33,10 @@ export default function Themes() {
     },
   });
 
-  const activateMutation = useMutation({
-    mutationFn: async (themeId: string) => {
-      // Деактивувати всі теми
-      const { error: deactivateError } = await supabase
-        .from('themes')
-        .update({ is_active: false })
-        .neq('id', themeId);
-
-      if (deactivateError) throw deactivateError;
-
-      // Активувати обрану тему
-      const { error: activateError } = await supabase
-        .from('themes')
-        .update({ is_active: true })
-        .eq('id', themeId);
-
-      if (activateError) throw activateError;
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-themes'] });
-      setConfirmThemeId(null);
-
-      try {
-        await revalidateStorefront();
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: t('admin.themes.activatedStale'),
-          description: revalidateFailureDescription(t, error),
-        });
-        return;
-      }
-
-      toast({
-        title: t('admin.themes.activated'),
-        description: t('admin.themes.appliedOnSite'),
-      });
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description:
-          error instanceof Error
-            ? error.message
-            : t('admin.themes.activateFailed'),
-      });
-    },
-  });
-
-  const themeToActivate = themes?.find((t) => t.id === confirmThemeId);
+  const themeToActivate = themes?.find((theme) => theme.id === confirmThemeId);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link to={adminPath('settings')}>
           <Button variant="ghost" size="icon">
@@ -130,7 +49,6 @@ export default function Themes() {
         </div>
       </div>
 
-      {/* Themes grid */}
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2].map((i) => (
@@ -161,121 +79,24 @@ export default function Themes() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {themes?.map((theme) => (
-            <Card
+            <ThemeCard
               key={theme.id}
-              className={theme.is_active ? 'ring-2 ring-primary' : ''}
-            >
-              {/* Preview image */}
-              <div className="relative h-48 bg-muted rounded-t-lg overflow-hidden">
-                {theme.preview_image ? (
-                  <img
-                    src={theme.preview_image}
-                    alt={theme.display_name}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <Palette className="h-16 w-16 text-muted-foreground/50" />
-                  </div>
-                )}
-                {theme.is_active && (
-                  <Badge className="absolute top-3 right-3 gap-1">
-                    <Check className="h-3 w-3" />
-                    {t('common.activeF')}
-                  </Badge>
-                )}
-              </div>
-
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  {theme.display_name}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    v{theme.version}
-                  </span>
-                </CardTitle>
-                <CardDescription>
-                  {theme.author && (
-                    <span>
-                      {t('admin.themes.author')} {theme.author}
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-3">
-                {theme.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {theme.description}
-                  </p>
-                )}
-
-                <div className="flex gap-2">
-                  {theme.is_active ? (
-                    <Button variant="outline" className="flex-1" asChild>
-                      <Link
-                        to={adminPath('themes/$themeId/settings')}
-                        params={{ themeId: theme.id }}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        {t('admin.nav.settings')}
-                      </Link>
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        className="flex-1"
-                        onClick={() => setConfirmThemeId(theme.id)}
-                        disabled={activateMutation.isPending}
-                      >
-                        {t('common.activate')}
-                      </Button>
-                      <Button variant="outline" size="icon" asChild>
-                        <Link
-                          to={adminPath('themes/$themeId/settings')}
-                          params={{ themeId: theme.id }}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              theme={theme}
+              // Реєстр наповнює `src/theme-registry.ts` магазину — тобто тут
+              // видно рівно ті теми, які реально встановлені в коді.
+              hasModule={ThemeRegistry.has(theme.name)}
+              isActivating={isActivating}
+              onActivate={() => setConfirmThemeId(theme.id)}
+            />
           ))}
         </div>
       )}
 
-      {/* Підтвердження активації теми */}
-      <AlertDialog
-        open={!!confirmThemeId}
+      <ThemeActivateDialog
+        themeName={themeToActivate?.display_name ?? null}
         onOpenChange={() => setConfirmThemeId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('admin.themes.activateTitle')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('admin.themes.activateText', {
-                name: themeToActivate?.display_name ?? '',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                confirmThemeId && activateMutation.mutate(confirmThemeId)
-              }
-            >
-              {t('common.activate')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={() => confirmThemeId && activateTheme(confirmThemeId)}
+      />
     </div>
   );
 }

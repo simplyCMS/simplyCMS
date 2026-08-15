@@ -2,7 +2,7 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
-🔴 **Версія у SimplyCMS синхронна:** усі 22 публіковані пакети (21
+🔴 **Версія у SimplyCMS синхронна:** усі 26 публікованих пакетів (25
 `@simplycms/*` + unscoped `create-simplycms-store`) завжди мають один номер.
 Отже підняття версії **не** означає, що змінився кожен пакет — розділи нижче
 називають, що саме змінилось і в кому. Процес випуску —
@@ -63,6 +63,56 @@
   описуються Zod-схемою в `definePlugin({ settings })`.
 - **`InstallPluginDialog`** (runtime-встановлення руками) — суперечив
   build-time lifecycle §7 (`simplycms add`).
+
+---
+
+Фаза 4 роадмапу — Теми як пакети + маркетплейс-індекс. План і межі:
+[`docs/superpowers/plans/2026-08-14-phase4-themes-as-packages.md`](docs/superpowers/plans/2026-08-14-phase4-themes-as-packages.md).
+🔴 Мерж у `main` опублікує НОВИЙ пакет (`@simplycms/theme-solarstore`) —
+введення пакета є релізним рішенням у момент мержу (той самий шлях, що
+`@simplycms/plugin-sdk`/`@simplycms/plugin-faq` вище й `@simplycms/cli`
+раніше).
+
+### Додано
+
+- **`@simplycms/theme-solarstore`** — референс-тема повного контуру як
+  npm-пакет (тека `packages/simplycms-theme-solarstore`): manifest, design
+  tokens, Header/Footer/HeroBanner/HomeSections, каталог uk/en. Host
+  споживає її як звичайну залежність (`solarstore: () => import('@simplycms/theme-solarstore')`).
+- **`bootstrapThemes`** (`@simplycms/themes`) — дзеркало плагінного
+  `syncPluginRows`: дописує в таблицю `themes` рядки для зареєстрованих,
+  але відсутніх у БД тем; без цього адмінка (читає лише БД) не бачила б
+  встановлену через конфіг тему.
+- **Registry-awareness адмінки тем** — `Themes.tsx` звіряє рядок БД з
+  `ThemeRegistry.has(name)`: модуля немає в білді → бейдж «модуль
+  відсутній» + disabled «Активувати» (дзеркало `Plugins.tsx`).
+- **`simplycms create theme <name>`** — скаффолд теми в `themes/` магазину
+  (шаблон — `template-theme/` у tarball CLI, під Gate TOOL).
+- **`simplycms add <pkg> --theme --copy`** — друга гілка установки теми зі
+  спеки §17.4: копія `src/*` пакета в `themes/<key>/` зі злиттям
+  залежностей, пакет знімається (shadcn-модель, повне володіння без
+  апстрім-фіксів).
+- **Doctor, перевірка №11 (warn)** — записи `themes`-конфігу резолвляться
+  + підказка про Tailwind-глоби сторонньої теми.
+- **Tailwind-глоби сторонніх тем** у шаблоні скаффолдера:
+  `node_modules/simplycms-theme-*/dist/**/*.js` і
+  `node_modules/@*/simplycms-theme-*/dist/**/*.js`.
+- **Контракт маркетплейс-індексу** — `docs/marketplace/README.md` (вимоги
+  подачі + гейт власника щодо ліцензії екосистеми) і
+  `docs/marketplace/index.sample.json`, під Zod-схемою
+  `tests/marketplace-index.test.ts`.
+- **`docs/architecture/themes.md`** — повний механізм тем: пакування
+  npm/copy-in, `bootstrapThemes`, conformance-kit, чекліст автора.
+
+### Змінено
+
+- 🔴 **`bump.mjs`** тепер переписує version-літерали маніфестів
+  референс-пакетів (`packages/simplycms-plugin-*/src/index.ts`,
+  `packages/simplycms-theme-*/src/manifest.ts`), не лише `package.json` —
+  наступний реліз більше не падає на власних parity-гейтах через
+  розсинхрон літерала.
+- Амендменти спеки платформи §5 (Tailwind-скан — `content`-глоби, не
+  `@source`-директиви) і §6 (`ThemeManifest` фактично несе `displayName`).
 
 ## [0.3.0] — 2026-08-11
 

@@ -22,8 +22,10 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   doctor    Read-only діагностика магазину; --strict — попередження теж валять
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
-  create    Скаффолд плагіна в plugins/ магазину:
+              --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається
+  create    Скаффолд плагіна або теми в самому магазині:
               create plugin <name> [--dry-run]
+              create theme <name> [--dry-run]
   update    Оновити ядро і host-файли:
               update [--check | --write] [--to <version>] [--no-install]
   db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]

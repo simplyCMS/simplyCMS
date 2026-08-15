@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +7,9 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { parseAddArgs } from '../packages/cli/src/add.mjs';
 import {
+  assertThemeKeyFree,
   configPluginNames,
+  configThemeEntries,
   configThemeKeys,
   deriveKey,
   entryLine,
@@ -65,8 +67,21 @@ describe('cli add', () => {
       type: 'plugin',
       name: 'wl',
       install: false,
+      copy: false,
       dryRun: true,
     });
+  });
+
+  it('parseAddArgs: --copy — лише для теми і лише з install', () => {
+    expect(
+      parseAddArgs(['@acme/simplycms-theme-aurora', '--theme', '--copy']).copy,
+    ).toBe(true);
+    expect(() => parseAddArgs(['pkg', '--plugin', '--copy'])).toThrow(
+      /--copy — лише для тем/,
+    );
+    expect(() =>
+      parseAddArgs(['pkg', '--theme', '--copy', '--no-install']),
+    ).toThrow(/взаємовиключні/);
   });
 
   it('parseAddArgs: порушення контракту — гучні помилки', () => {
@@ -196,6 +211,67 @@ describe('cli add', () => {
     expect(readFileSync(configPath, 'utf8')).toBe(inlineFullConfig);
   });
 
+  it('assertThemeKeyFree: той самий spec — true, інший — виняток, вільний — false', () => {
+    const copyWired = templateConfig.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@themes/aurora/index'),",
+    );
+    expect(
+      assertThemeKeyFree(copyWired, 'aurora', '@themes/aurora/index'),
+    ).toBe(true);
+    expect(() =>
+      assertThemeKeyFree(copyWired, 'aurora', '@acme/simplycms-theme-aurora'),
+    ).toThrow(/--name/);
+    expect(assertThemeKeyFree(copyWired, 'solar', 'pkg-solar')).toBe(false);
+  });
+
+  it('add --theme: ключ зайнято copy-in-темою — exit 1, конфіг незмінний, pnpm НЕ викликано', () => {
+    // Дзеркальний до copy-гілки напрямок колізії: тема вже вкопійована в
+    // themes/aurora, npm-установка з тим самим ключем дала б дубль ключа.
+    // 🔴 Запуск БЕЗ --no-install і зі stub-pnpm попереду PATH: інваріант Р5
+    // «незворотні дії після валідацій» тримається лише якщо гард стоїть ДО
+    // execFileSync('pnpm', ['add', …]) — порожній журнал stub-а доводить
+    // саме порядок, а не тільки exit-код (мутаційно перевірено: перенесення
+    // гарда під install валить рівно цей асерт).
+    const store = mkdtempSync(join(tmpdir(), 'cli-add-theme-'));
+    writeFileSync(
+      join(store, 'package.json'),
+      JSON.stringify({
+        name: 's',
+        dependencies: { '@simplycms/core': '0.0.0' },
+      }),
+    );
+    const configPath = join(store, 'simplycms.config.ts');
+    const copyWired = templateConfig.replace(
+      'themes: {',
+      "themes: {\n    'aurora': () => import('@themes/aurora/index'),",
+    );
+    writeFileSync(configPath, copyWired);
+    const binDir = mkdtempSync(join(tmpdir(), 'cli-stub-pnpm-'));
+    const logPath = join(binDir, 'pnpm-calls.log');
+    writeFileSync(
+      join(binDir, 'pnpm'),
+      `#!/bin/sh\necho "$@" >> ${logPath}\n`,
+      { mode: 0o755 },
+    );
+    const cli = fileURLToPath(
+      new URL('../packages/cli/src/index.mjs', import.meta.url),
+    );
+    const run = spawnSync(
+      process.execPath,
+      [cli, 'add', '@acme/simplycms-theme-aurora', '--theme'],
+      {
+        cwd: store,
+        encoding: 'utf8',
+        env: { ...process.env, PATH: `${binDir}:${process.env.PATH}` },
+      },
+    );
+    expect(run.status).toBe(1);
+    expect(`${run.stdout}${run.stderr}`).toContain('--name');
+    expect(readFileSync(configPath, 'utf8')).toBe(copyWired);
+    expect(existsSync(logPath)).toBe(false);
+  });
+
   it('insertEntry: без якоря — виняток із точним рядком, без змін файлу', () => {
     const alien = 'export default defineConfig({});\n';
     const entry = entryLine('plugin', 'x', 'pkg-x');
@@ -220,5 +296,15 @@ describe('cli add', () => {
     expect(configPluginNames(templateConfig)).toEqual(['hello-world', 'faq']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();
+  });
+
+  it('configThemeEntries: ключ + специфікатор import() — обидві форми запису', () => {
+    // Саме специфікатор, а не ключ, резолвить doctor: локальна тека і пакет —
+    // різні місця на диску, а через --name ключ може не збігатися з жодним.
+    expect(configThemeEntries(hostConfig)).toEqual([
+      { key: 'default', spec: '@themes/default/index' },
+      { key: 'solarstore', spec: '@simplycms/theme-solarstore' },
+    ]);
+    expect(configThemeEntries('export default {}')).toBeNull();
   });
 });

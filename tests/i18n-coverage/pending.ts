@@ -29,6 +29,9 @@ export const ALLOWLIST: Record<string, string> = {
   'packages/storefront/src/seo/sitemap.ts': 'throw — діагностика генерації',
   'packages/plugin-system/src/bootstrap.ts': 'console.error — лог',
   'packages/theme-system/src/getActiveThemeSSR.ts': 'console.error — лог',
+  // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає
+  // розробник магазину в консолі, а не покупець.
+  'packages/theme-system/src/bootstrapThemes.ts': 'console.error/warn — лог',
   // Повідомлення валідатора теми адресовані АВТОРОВІ теми, не покупцю: вони
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
   'packages/theme-system/src/validateThemeModule.ts':

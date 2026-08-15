@@ -123,6 +123,26 @@ export async function toolPkgSmoke() {
     }
     details.push(`✓ template-plugin/: ${templatePluginFiles.length} файлів`);
 
+    // template-theme/ — шаблон `simplycms create theme` (Фаза 4, Р6): та сама
+    // логіка, що для host/ і template-plugin/.
+    const templateThemeDir = join(pkgDir, 'template-theme');
+    const templateThemeFiles = existsSync(templateThemeDir)
+      ? readdirSync(templateThemeDir, {
+          recursive: true,
+          withFileTypes: true,
+        }).filter((entry) => entry.isFile())
+      : [];
+    if (templateThemeFiles.length === 0) {
+      return {
+        ok: false,
+        details: [
+          ...details,
+          '✗ template-theme/ відсутня в tarball або порожня',
+        ],
+      };
+    }
+    details.push(`✓ template-theme/: ${templateThemeFiles.length} файлів`);
+
     symlinkSync(
       join(TOOL_PKG_DIR, 'node_modules'),
       join(pkgDir, 'node_modules'),
@@ -141,6 +161,7 @@ export async function toolPkgSmoke() {
       'doctor',
       'add',
       'create plugin',
+      'create theme',
       'update',
       'db:diff',
     ]) {
@@ -151,7 +172,7 @@ export async function toolPkgSmoke() {
         };
       }
     }
-    details.push('✓ --help згадує всі 5 команд');
+    details.push('✓ --help згадує всі команди (включно з create theme)');
 
     const version = execFileSync(
       'node',

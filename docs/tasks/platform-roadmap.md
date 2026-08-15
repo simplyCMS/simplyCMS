@@ -13,13 +13,14 @@
 **Фази 0 і 1 завершені. Ядро опубліковане на npmjs — `@simplycms/*@0.3.0` плюс
 unscoped `create-simplycms-store` тієї ж версії.**
 
-> Примітка до лічильника (2026-08-14): публікованих пакетів тепер **25** —
-> 24 `@simplycms/*` (Фаза 3 додала `@simplycms/plugin-sdk` і
-> `@simplycms/plugin-faq`) + 1 unscoped скаффолдер. Обидва нові пакети
-> стають дійсними в реєстрі **в момент мержу** гілки Фази 3 у `main` — за
-> чинним правилом «введення нового пакета є релізним рішенням у момент
-> мержу» (той самий шлях пройшов `@simplycms/cli` 2026-08-13). Історія
-> змін — [`CHANGELOG.md`](../../CHANGELOG.md); перевірка публікації —
+> Примітка до лічильника (2026-08-14): публікованих пакетів тепер **26** —
+> 25 `@simplycms/*` (Фаза 3 додала `@simplycms/plugin-sdk` і
+> `@simplycms/plugin-faq`; Фаза 4 додала `@simplycms/theme-solarstore`) +
+> 1 unscoped скаффолдер. Усі три нові пакети стають дійсними в реєстрі **в
+> момент мержу** відповідної гілки фази у `main` — за чинним правилом
+> «введення нового пакета є релізним рішенням у момент мержу» (той самий
+> шлях пройшов `@simplycms/cli` 2026-08-13). Історія змін —
+> [`CHANGELOG.md`](../../CHANGELOG.md); перевірка публікації —
 > `pnpm verify:published X.Y.Z`.
 
 Що це означає практично: магазин створюється однією командою
@@ -36,8 +37,9 @@ unscoped `create-simplycms-store` тієї ж версії.**
 | Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI/TOOL, Gate E видимо SKIP |
 | Пілот проти живої БД | `pnpm pilot` — + Gate B, потребує `.env.local`; Gate E досі SKIP |
 | Пілот на локальному стеку | `pnpm pilot:e2e` — gates A/C/D/CLI/TOOL/B/E, потребує Docker; ✅ прожито 2026-08-04 |
-| Обслуговування магазину | `pnpm simplycms doctor` / `add` / `create plugin` / `update` / `db:diff` — `@simplycms/cli`, у магазині (2026-08-13, `create plugin` і N канонів `db:diff` — Фаза 3) |
+| Обслуговування магазину | `pnpm simplycms doctor` / `add` / `create plugin\|theme` / `update` / `db:diff` — `@simplycms/cli`, у магазині (2026-08-13, `create plugin` і N канонів `db:diff` — Фаза 3; `create theme` і `add --theme --copy` — Фаза 4) |
 | Плагіни (SDK) | `definePlugin` + порти `@simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq`; межа довіри — dependency-lint (2026-08-14) |
+| Теми як пакети | npm (`@simplycms/theme-solarstore`) або copy-in (`--theme --copy`); `bootstrapThemes` синхронізує БД, адмінка — registry-aware (2026-08-14, Фаза 4) |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`, порт 3000) |
 | CI на PR | `typecheck` · `test` · `packaging` (tarball-parity) |
 
@@ -437,9 +439,10 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
       2026-08-03 (усі 21 пакет). Процес — `docs/architecture/release-process.md`
 - [ ] Реліз-потяг **v1.0** (строгий semver; `engines.simplycms` перевірка) —
       лишається за Фазою 2; зараз версія `0.3.0` і модель версіонування
-      **синхронна вручну** (усі 25 пакетів — 24 `@simplycms/*` + unscoped
+      **синхронна вручну** (усі 26 пакетів — 25 `@simplycms/*` + unscoped
       скаффолдер — одна версія; лічильник виріс 2026-08-13 із появою
-      `@simplycms/cli`). Незалежні версії
+      `@simplycms/cli`, а 2026-08-14 — з `@simplycms/theme-solarstore`,
+      Фаза 4). Незалежні версії
       (Changesets) — можливий крок, коли пакети підуть різними циклами.
       Уточнення (2026-08-03): поле `engines.simplycms` вже існує в маніфесті
       теми (`validateThemeModule` перевіряє лише присутність рядка); тут
@@ -536,11 +539,71 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 
 ## Фаза 4 — Теми як пакети + маркетплейс-індекс
 
-- [ ] Пакування тем: npm-варіант і copy-in через реєстр (вибір автора)
-- [ ] Conformance-kit для авторів тем
-- [ ] Репозиторій `simplycms/marketplace`: JSON-індекс (подача через PR) + вітрина
+План виконання (v1, кодова частина — 2026-08-14):
+[`docs/superpowers/plans/2026-08-14-phase4-themes-as-packages.md`](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
+— 15 зафіксованих рішень Р0–Р14 і межі середовища (без Docker/БД).
 
-**DoD:** стороння тема встановлюється і перемикається з адмінки.
+- [x] Пакування тем: npm-варіант і copy-in — **2026-08-14**:
+      `@simplycms/theme-solarstore` (тека `packages/simplycms-theme-solarstore`)
+      — референс-тема повного контуру як npm-пакет, той самий виняток
+      природи, що `@simplycms/plugin-faq`; `themes/default` лишається
+      локальним еталоном fallback-токенів і зразком copy-in-форми (private,
+      поза реліз-потягом). `simplycms add <pkg> --theme` (голий пакет) і
+      `simplycms add <pkg> --theme --copy` (shadcn-модель: копія `src/*` у
+      `themes/<key>/` зі злиттям залежностей, пакет знімається) — обидва
+      шляхи зі спеки §17.4 доведені пілотом (Gate THEME-контур,
+      `scripts/pilot-pack/install-themes.mjs`) реальними CLI-командами.
+- [x] `bootstrapThemes` + registry-awareness адмінки — **2026-08-14**:
+      дзеркало плагінного `syncPluginRows` (SELECT→missing→session-гард→
+      load→batch INSERT, insert-only); `Themes.tsx` звіряє рядок БД з
+      `ThemeRegistry.has(name)` → бейдж «модуль відсутній» + disabled
+      активація (дзеркало `hasModule` у `Plugins.tsx`).
+- [x] Conformance-kit для авторів тем — **2026-08-14**: `validateThemeModule`
+      (рантайм-контракт) + doctor-перевірка №11 (warn: записи конфігу
+      резолвляться, підказка про Tailwind-глоби) + монорепо-гарди
+      `theme-manifest-parity`/`theme-messages-parity` на референс-пакети +
+      чекліст автора в [`docs/architecture/themes.md`](../architecture/themes.md).
+      `simplycms create theme <name>` — авторський скаффолд у `themes/`
+      магазину (шаблон `template-theme/`, Gate TOOL).
+- [x] Контракт маркетплейс-індексу в монорепо — **2026-08-14**:
+      `docs/marketplace/README.md` (вимоги подачі; 🔴 гейт власника —
+      подачі не приймаються, доки не ухвалено позицію щодо ліцензії
+      екосистеми, спека §13) + `index.sample.json`, форма стережеться
+      `tests/marketplace-index.test.ts` (Zod-схема). Репозиторій
+      `simplycms/marketplace` і вітрина — окремий репо, дія власника
+      (спека §4.1), поза скоупом цього монорепо.
+- [x] Реліз-міна `manifest.version`-літералів — **2026-08-14**: `bump.mjs`
+      переписує version-літерали маніфестів референс-пакетів
+      (`plugin-faq/src/index.ts`, `theme-solarstore/src/manifest.ts`), не
+      лише `package.json` — знешкоджено до того, як зламало б наступний
+      `pnpm release`.
+
+**DoD:** стороння тема встановлюється і перемикається з адмінки. — Кодова
+частина закрита (обидва шляхи установки доведені пілотом на рівні збірки);
+живий прогін і поведінка `bootstrapThemes` проти живої RLS — дія власника
+(борг нижче, разом із боргом №10 «Поточного стану»).
+
+### Борги, свідомо винесені за межі Фази 4 (v1)
+
+- **Живе перемикання встановленої теми в адмінці** (`pnpm pilot:e2e` /
+  `pnpm test:e2e`) — без Docker і живої БД у цій сесії не доводиться;
+  доказовість тут — детерміністичні гейти + `pnpm pilot:pack`.
+- **Селектор `tests/e2e/admin-smoke/theme.e2e.ts`** тисне ПЕРШУ кнопку
+  «Активувати» в списку тем — з появою disabled-рядків (тема в БД без
+  модуля) селектор може почати чіпляти не той рядок. Уточнення — дія
+  власника при живому прогоні (`docs/architecture/themes.md` §6).
+- **Межа довіри на теми не вводиться** (Р10, свідомо) — тема законно
+  споживає `@simplycms/supabase`/`@simplycms/core` за контрактом v2;
+  theme-sdk із портами (аналог `@simplycms/plugin-sdk`) — окрема фаза,
+  якщо колись знадобиться.
+- **Uninstall-рядка теми з адмінки немає** — деактивація (`is_active: false`)
+  достатня для v1; видалення «осиротілого» рядка (тема в БД без модуля,
+  наприклад `solarstore` у свіжому магазині) — SQL руками, задокументовано в
+  `docs/architecture/themes.md` §5.
+- **Строгий semver `engines.simplycms`** — лишається за реліз-потягом v1.0
+  (warn-режим уже працює, той самий компроміс, що в плагінів).
+- **Позиція щодо ліцензії екосистеми** (спека §13) — рішення власника,
+  блокує прийом реальних подач у маркетплейс-індекс.
 
 ## Паралельний продуктовий трек
 

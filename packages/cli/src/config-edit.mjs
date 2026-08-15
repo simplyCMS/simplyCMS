@@ -137,15 +137,52 @@ function sliceBlock(source, anchor, open, close) {
   return null;
 }
 
-/** Ключі обʼєкта themes конфігу; null — якір відсутній. */
-export function configThemeKeys(source) {
+/**
+ * Повні записи тем конфігу: ключ + специфікатор import(). Потрібні doctor-у
+ * (Фаза 4, Р6): ключ ≠ імʼя пакета через `--name`, а резолвити треба саме
+ * специфікатор — теку `@themes/<key>/index` або пакет у node_modules.
+ * Дзеркало `configPluginEntries`; null — якір відсутній.
+ * @returns {{ key: string; spec: string }[] | null}
+ */
+export function configThemeEntries(source) {
   const { anchor, open, close } = ANCHORS.theme;
   const block = sliceBlock(source, anchor, open, close);
   if (block === null) return null;
   const entries = block.matchAll(
-    /(?:^|\n)\s*'?([\w][\w./-]*)'?\s*:\s*\(\)\s*=>\s*import\(/g,
+    /(?:^|\n)\s*'?([\w][\w./-]*)'?\s*:\s*\(\)\s*=>\s*import\('([^']+)'\)/g,
   );
-  return [...entries].map((match) => match[1]);
+  return [...entries].map((match) => ({ key: match[1], spec: match[2] }));
+}
+
+/** Ключі обʼєкта themes конфігу; null — якір відсутній. */
+export function configThemeKeys(source) {
+  return configThemeEntries(source)?.map((entry) => entry.key) ?? null;
+}
+
+/**
+ * Гард унікальності КЛЮЧА теми перед вставкою запису.
+ *
+ * `hasPackage` звіряє лише специфікатор, тож дві гілки установки однієї теми
+ * (npm-запис `import('@simplycms/theme-x')` і copy-in `import('@themes/x/index')`)
+ * не бачили одна одну й дописували ДРУГИЙ запис із тим самим ключем: обʼєкт
+ * `themes` ставав дублікатом (TS1117), а фінальний `pnpm remove` copy-гілки
+ * знімав пакет, на який вказує переможний запис, — «✔ Готово» на битому білді.
+ *
+ * Той самий ключ із ТИМ САМИМ специфікатором — не помилка, а ідемпотентність.
+ * @param {string} source
+ * @param {string} key
+ * @param {string} spec специфікатор, який збирається вставити викликач
+ * @returns {boolean} true — запис із цим ключем і цим spec уже є
+ */
+export function assertThemeKeyFree(source, key, spec) {
+  const entry = configThemeEntries(source)?.find((item) => item.key === key);
+  if (!entry) return false;
+  if (entry.spec === spec) return true;
+  throw new Error(
+    `simplycms.config.ts уже має тему '${key}' → import('${entry.spec}') — ` +
+      'другий запис із тим самим ключем зробив би конфіг битим. Задай інший ' +
+      'ключ: --name <key>. Нічого не змінено.',
+  );
 }
 
 /** Імена плагінів із масиву plugins конфігу; null — якір відсутній. */

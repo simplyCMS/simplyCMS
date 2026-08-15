@@ -9,6 +9,7 @@
 import { buildPackages, packAll } from './pack.mjs';
 import { scaffoldStore } from './scaffold.mjs';
 import { pnpmInstall, startStore, viteBuild } from './build.mjs';
+import { installThemes } from './install-themes.mjs';
 import { assertTarballProvenance } from './provenance.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
@@ -69,7 +70,7 @@ export async function runGates(opts) {
   return results;
 }
 
-/** pack → scaffold → pnpm install → провенанс → vite build. */
+/** pack → scaffold → pnpm install → теми → провенанс → vite build. */
 async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
   if (!skipBuild) {
     step('Збірка пакетів ядра');
@@ -85,6 +86,10 @@ async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
 
   step('pnpm install із tarball-ів');
   pnpmInstall(storeDir);
+
+  // Обидві гілки §17.4 — тут і ніде інде; чому саме тут — install-themes.mjs.
+  step('Теми: simplycms add --theme --copy і simplycms add --theme');
+  installThemes(storeDir);
 
   // 🔴 Не гейт, а ПЕРЕДУМОВА: якщо ядро приїхало з реєстру замість tarball-ів,
   // усе далі втрачає сенс — гейти перевірятимуть уже опубліковані пакети

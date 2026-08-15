@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { bumpManifestVersions } from './manifest-version.mjs';
 
 const PACKAGES_DIR = 'packages';
 /** semver без пре-релізів: цього достатньо для синхронної моделі версій. */
@@ -18,7 +19,7 @@ export function compareVersions(a, b) {
 /**
  * Манифести публікованих пакетів (private — не наші).
  *
- * Одна тека `packages/` тримає і 21 scoped-пакет ядра, і unscoped
+ * Одна тека `packages/` тримає і 25 scoped-пакетів ядра, і unscoped
  * `create-simplycms-store`; усі вони публікуються тим самим реліз-потягом
  * і мусять мати СИНХРОННУ версію, тож дискримінатор тут — лише `private`.
  */
@@ -110,6 +111,8 @@ export function bumpTo(version) {
   }
 
   bumpCoreVersionConstant(version);
+  // Version-літерали маніфестів референс-пакетів (плагіни/теми) — Р13 Фази 4.
+  bumpManifestVersions(version);
 
   return { updated, skipped };
 }

@@ -11,6 +11,7 @@ import { Toaster } from '@simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from '@simplycms/plugins';
+import { bootstrapThemes } from '@simplycms/themes/bootstrapThemes';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import {
   I18nProvider,
@@ -94,6 +95,7 @@ function RootComponent() {
           >
             <CMSProvider>
               <PluginBootstrap />
+              <ThemeBootstrap />
               <ClientEngineProvider>
                 <Outlet />
                 <Toaster />
@@ -121,6 +123,25 @@ function PluginBootstrap() {
 
   useEffect(() => {
     void bootstrapPlugins(config.plugins ?? [], supabase);
+  }, [supabase]);
+
+  return null;
+}
+
+/**
+ * Клієнтський bootstrap тем: дописує в таблицю `themes` рядки для тем, які
+ * зареєстровані в `simplycms.config.ts`, але БД про них ще не знає.
+ *
+ * Без цього адмінка не побачила б встановлену пакетом тему — вона читає ЛИШЕ
+ * БД. Набір тем береться з `ThemeRegistry` (його наповнює side-effect-імпорт
+ * `../theme-registry` вище), тож окремого пропа з конфігу тут не потрібно.
+ * В ефекті — з тієї ж причини, що й плагіни: не блокувати гідрацію.
+ */
+function ThemeBootstrap() {
+  const supabase = useSupabaseClient();
+
+  useEffect(() => {
+    void bootstrapThemes(supabase);
   }, [supabase]);
 
   return null;

@@ -3,7 +3,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const THEMES_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../themes');
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * Каталог перекладів теми — `ThemeModule.messages` (опційне поле, контракт
@@ -17,21 +17,43 @@ interface ThemeMessagesModule {
 }
 
 /**
- * Теми читаються з диска, а не перелічуються списком: інакше нова тема,
- * забута в списку, мовчки лишилася б поза перевіркою — рівно той самий
- * аргумент, що й для неймспейс-модулів у `catalog-integrity.test.ts`.
+ * Теми живуть у ДВОХ коренях, і обидва читаються з диска, а не списком:
+ * інакше нова тема, забута в списку, мовчки лишилася б поза перевіркою —
+ * рівно той самий аргумент, що й для неймспейс-модулів у
+ * `catalog-integrity.test.ts`.
+ *
+ * 🔴 Форма шляху до каталогу в них РІЗНА, тож прописується явно:
+ *  - `themes/<name>/messages.ts` — локальна/copy-in-тема магазину;
+ *  - `packages/simplycms-theme-<name>/src/messages.ts` — референс-пакет
+ *    (Фаза 4).
  */
-function themeDirs(): string[] {
-  return readdirSync(THEMES_ROOT, { withFileTypes: true })
+function themeDirs(): { name: string; dir: string }[] {
+  const local = readdirSync(join(REPO_ROOT, 'themes'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+    .map((entry) => ({
+      name: entry.name,
+      dir: join(REPO_ROOT, 'themes', entry.name),
+    }));
+
+  const published = readdirSync(join(REPO_ROOT, 'packages'), {
+    withFileTypes: true,
+  })
+    .filter(
+      (entry) =>
+        entry.isDirectory() && entry.name.startsWith('simplycms-theme-'),
+    )
+    .map((entry) => ({
+      name: entry.name.slice('simplycms-theme-'.length),
+      dir: join(REPO_ROOT, 'packages', entry.name, 'src'),
+    }));
+
+  return [...local, ...published].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function loadThemeMessages(
-  themeName: string,
+  dir: string,
 ): Promise<ThemeMessagesModule['messages'] | null> {
-  const path = join(THEMES_ROOT, themeName, 'messages.ts');
+  const path = join(dir, 'messages.ts');
   if (!existsSync(path)) return null;
 
   const mod = (await import(
@@ -54,9 +76,9 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
     expect(themes.length).toBeGreaterThan(0);
   });
 
-  describe.each(themes)('тема "%s"', (themeName) => {
+  describe.each(themes)('тема "$name"', ({ name, dir }) => {
     it('якщо messages.ts існує — обидві локалі непорожні, en покриває uk 1:1', async () => {
-      const messages = await loadThemeMessages(themeName);
+      const messages = await loadThemeMessages(dir);
       if (!messages) {
         // Поле опційне: тема без власного каталогу — валідна (fallback
         // ланцюжок `useThemeT` віддасть сам ключ).
@@ -76,17 +98,15 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
       const missing = ukKeys.filter((k) => !(k in en));
       expect(
         missing,
-        `неперекладені ключі теми "${themeName}" (${missing.length})`,
+        `неперекладені ключі теми "${name}" (${missing.length})`,
       ).toEqual([]);
 
       const extra = enKeys.filter((k) => !(k in uk));
-      expect(extra, `en-ключі теми "${themeName}", яких немає в uk`).toEqual(
-        [],
-      );
+      expect(extra, `en-ключі теми "${name}", яких немає в uk`).toEqual([]);
     });
 
     it('жодне повідомлення теми не порожнє', async () => {
-      const messages = await loadThemeMessages(themeName);
+      const messages = await loadThemeMessages(dir);
       if (!messages) return;
 
       const uk = messages.uk ?? {};
@@ -100,7 +120,7 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
     });
 
     it('плейсхолдери uk і en збігаються', async () => {
-      const messages = await loadThemeMessages(themeName);
+      const messages = await loadThemeMessages(dir);
       if (!messages) return;
 
       const uk = messages.uk ?? {};
@@ -109,26 +129,24 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
         .filter((k) => k in en)
         .filter((k) => placeholders(uk[k]!) !== placeholders(en[k]!));
 
-      expect(
-        mismatched,
-        `теми "${themeName}": розбіжність плейсхолдерів`,
-      ).toEqual([]);
+      expect(mismatched, `теми "${name}": розбіжність плейсхолдерів`).toEqual(
+        [],
+      );
     });
 
     it('усі ключі теми мають префікс "theme."', async () => {
       // Захист від колізії з `MessageKey` ядра: `useThemeT` фолбечить на
       // `messages['uk'][key] → key`, і ключ без префікса міг би візуально
       // збігтися з майбутнім core-ключем.
-      const messages = await loadThemeMessages(themeName);
+      const messages = await loadThemeMessages(dir);
       if (!messages) return;
 
       const uk = messages.uk ?? {};
       const misplaced = Object.keys(uk).filter((k) => !k.startsWith('theme.'));
 
-      expect(
-        misplaced,
-        `теми "${themeName}": ключі без префікса "theme."`,
-      ).toEqual([]);
+      expect(misplaced, `теми "${name}": ключі без префікса "theme."`).toEqual(
+        [],
+      );
     });
   });
 });
