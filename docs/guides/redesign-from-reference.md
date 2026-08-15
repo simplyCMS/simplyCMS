@@ -7,7 +7,9 @@
 > у магазині-скаффолді — `.claude/skills/redesign-from-reference/SKILL.md`).
 > Механізм тем — [`../architecture/themes.md`](../architecture/themes.md),
 > практика автора теми — [`themes.md`](./themes.md).
-> Написано за підсумками етапу Б треку редизайну (2026-08-15).
+> Написано за підсумками етапу Б треку редизайну (2026-08-15); оновлено
+> інкрементом «багатосторінкове охоплення» — дискаверер сторінок, скрол
+> інспекції, мультивхід мапінгу (2026-08-15).
 
 ## 1. Що це і чого воно НЕ робить
 
@@ -20,15 +22,16 @@
 |---|---|
 | Головна (Hero/HomeSections, власні сторінки `src/routes/my/`) | може бути дуже близько до референсу |
 | Воронка покупки (каталог, товар, кошик, чекаут, профіль) | «у кольорах, шрифтах і настрої», структура — ядра |
-| Логотипи, фото, тексти, бренд-ассети референсу | **не переносяться взагалі** (розділ 6) |
+| Логотипи, фото, тексти, бренд-ассети референсу | **не переносяться взагалі** (розділ 7) |
 
-Інструментів два — обидва детерміністичні скрипти, які **міряють**, а не
+Інструментів три — усі детерміністичні скрипти, які **міряють**, а не
 вгадують; судження лишається людині (і агенту зі скілом):
 
 | Скрипт | Що робить |
 |---|---|
+| `.claude/skills/redesign-from-reference/scripts/discover.mjs` | стартовий URL → обхід лінків → `sitemap-proposal.json` (які сторінки сайту відповідають нашим канонічним типам) |
 | `.claude/skills/redesign-from-reference/scripts/inspect.mjs` | відкриває URL у headless Chromium → скріншоти + `inspection.json` |
-| `.claude/skills/redesign-from-reference/scripts/map-tokens.mjs` | `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
+| `.claude/skills/redesign-from-reference/scripts/map-tokens.mjs` | один або кілька `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
 
 ## 2. Передумова — Playwright у магазині
 
@@ -43,17 +46,53 @@ pnpm add -D playwright && pnpm exec playwright install chromium
 Скрипт резолвить модуль динамічно: спершу `@playwright/test` (він є в монорепо
 платформи), потім `playwright`. Бінарник Chromium шукається так: штатний
 `chromium.executablePath()`, а якщо файлу за ним немає — скан
-`PLAYWRIGHT_BROWSERS_PATH` по теках `chromium-<rev>` (розділ 7).
+`PLAYWRIGHT_BROWSERS_PATH` по теках `chromium-<rev>` (розділ 8).
 
-## 3. Крок 1 — інспекція референсу
+## 3. Крок 1 — які сторінки знімати (дискавері + діалог)
+
+Магазин — це не одна сторінка. Палітра, зібрана з самого герою, не
+репрезентативна, а для side-by-side порівняння потрібні пари «наш канонічний
+тип ↔ їхня сторінка». Тому спершу — дискаверер:
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.com \
-  [--out docs/design-references/<slug>] [--dark]
+node .claude/skills/redesign-from-reference/scripts/discover.mjs https://example.com \
+  --out docs/design-references/<slug>/sitemap-proposal.json [--max-visits 8]
+```
+
+Скрипт відкриває стартову сторінку, прокручує її до низу (щоб у DOM потрапили
+лінки лінивих секцій і футера), збирає `a[href]`, класифікує їх на типи
+`home | listing | product | cart | checkout | contact | about` (URL-патерни +
+тексти якорів, англ + укр) і відвідує топ-кандидатів у межах `--max-visits`
+(дефолт 8).
+
+`sitemap-proposal.json` (`schemaVersion: 1`):
+
+- `pageTypes: { <type>: { url, score, evidence, visited, title? } }` — `score`
+  тут **ціле число балів**, а не частка 0..1, як `confidence` у
+  `tokens-proposal.json`;
+- `evidence` — чим доведено тип (`urlPattern`/`anchorMatch` +
+  `source: 'anchor' | 'aria' | 'url'`);
+- `unresolved: [{ type, reason }]` — `no-candidate` або `visit-failed`
+  (кандидат був, але сторінка не віддала 2xx; тоді дискаверер бере наступного
+  за балами, і лише коли їх не лишилось — пише `unresolved`);
+- `visited: false` — кандидата знайдено, але бюджет візитів вичерпано.
+
+🔴 **Пропозицію треба переглянути очима.** Дискаверер детерміністичний, але не
+всезнаючий: службова сторінка замість репрезентативної трапляється. Агент зі
+скілом на цьому місці зобовʼязаний зупинитись і спитати по кожному
+`unresolved` — «дай URL або пропускаємо». Мовчазне продовження — заборонене.
+
+## 4. Крок 2 — інспекція підтверджених сторінок
+
+```bash
+node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.com/products/x \
+  --out docs/design-references/<slug>/product [--dark]
 ```
 
 - `--out` за замовчуванням — `docs/design-references/<slug>`, де `<slug>`
-  виводиться з host+path URL.
+  виводиться з host+path URL. Для багатосторінкового прогону задавай теку
+  типу явно (`…/<slug>/home`, `…/<slug>/listing`, `…/<slug>/product`) —
+  інакше інспекції перезапишуть одна одну.
 - `--dark` повторює семплінг з емуляцією `prefers-color-scheme: dark`; якщо
   палітра не змінилась — у JSON чесно ляже `darkDetected: false`.
 
@@ -64,7 +103,23 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.
 - `inspection.json` (`schemaVersion: 1`): кольори з частотами, площею і роллю
   (`background`/`text`/`border`, прапорець «інтерактивний»), шрифти окремо для
   h1-h3 і body, кластери `border-radius`, тіні, шкала відступів,
-  `fontStylesheets` (hrefs усіх `link[rel=stylesheet]`), `darkDetected`.
+  `fontStylesheets` (hrefs усіх `link[rel=stylesheet]`), `darkDetected`,
+  `sampleViewport`, `radiusDropped`.
+
+Три поведінки, про які варто знати наперед:
+
+- **Скрол.** Перед кожним знімком сторінка прокручується до низу — на **всіх
+  трьох** ширинах, бо ліниві секції бувають mobile-only. Без цього
+  scroll-animated сайт дає порожні секції в скріншоті й бідну палітру. Ціна —
+  час: на довгій сторінці інспекція йде в кілька разів довше за наївний
+  знімок. Це нормально, не переривай.
+- **Палітра — з десктопу.** Семплінг іде на 1440×900 (чесно записано в
+  `sampleViewport`), інакше секції, приховані на вузькому лейауті, випадали б
+  із семплу. Оформлення, що існує лише на мобілці, доведеться зафіксувати
+  очима з `mobile.png`.
+- **Радіус-sanity.** Значення понад 64px (Tailwind `rounded-full` дає
+  `33554400px`) у кластери `radius` не потрапляють; скільки відкинуто — у
+  полі `radiusDropped`.
 
 Артефакти **комітяться** — це аудитований слід рішень: за півроку видно, звідки
 взявся кожен колір теми.
@@ -72,14 +127,33 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.
 🔴 Мережеві збої і таймаут `networkidle` (30 с) — гучна помилка з кодом 1, а не
 порожній JSON. Отримав помилку — перезапусти, не мапь далі.
 
-## 4. Крок 2 — пропозиція токенів
+## 5. Крок 3 — пропозиція токенів
+
+Мапиться **весь набір інспекцій разом**: тема в магазині одна, токени в ній
+теж одні.
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/inspection.json \
-  [--out <tokens-proposal.json>]
+node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs \
+  docs/design-references/<slug>/home/inspection.json \
+  docs/design-references/<slug>/listing/inspection.json \
+  docs/design-references/<slug>/product/inspection.json \
+  --out docs/design-references/<slug>/tokens-proposal.json
 ```
 
-За замовчуванням результат лягає поруч із входом. Форма
+- При **кількох** входах `--out` обовʼязковий — вивід не можна вгадати з теки
+  однієї зі сторінок; скрипт падає з підказкою, а не здогадується.
+- Що зливається: колірні частоти й площі сумуються по парі (роль, значення),
+  «інтерактивність» — за принципом «будь-де інтерактивний → інтерактивний»,
+  `fontStylesheets` — обʼєднання, радіуси — конкатенація (вже після
+  sanity-фільтра), `darkDetected` — «хоч десь». Шрифти — **голосуванням по
+  сторінках**: кожна сторінка дає один голос за heading-сімʼю і один за body
+  (частот шрифтів інспекція не міряє).
+- Порядок файлів на результат не впливає — сортування стабільні.
+- У виводі зʼявляється `sources: [{ file, url }]` — видно, з яких сторінок
+  зібрано пропозицію.
+
+Один вхід працює як і раніше — `map-tokens.mjs <один inspection.json>`, вивід
+за замовчуванням лягає поруч із входом. Форма
 (`schemaVersion: 1`): `{ tokens, fonts?, confidence, contrastWarnings,
 unmapped }`, де `dark` — **усередині** `tokens` (форма `DesignTokens` 1:1, як у
 `tokens.ts` теми). Кольори — HSL-трійки без `hsl()`, `radius` — у `rem`,
@@ -108,7 +182,7 @@ unmapped }`, де `dark` — **усередині** `tokens` (форма `Design
 `fontStylesheets`. Інакше сімʼя йде тільки у font-stack (`font-sans`/
 `font-heading`), а stylesheet підключаєш сам.
 
-## 5. Крок 3 — тема штатним лайфсайклом
+## 6. Крок 4 — тема штатним лайфсайклом
 
 Свого скаффолда інструмент не має і не потребує:
 
@@ -128,7 +202,7 @@ pnpm simplycms create theme <slug>
 спека-файлами (фаза 4 скіла) і side-by-side верифікація: той самий
 `inspect.mjs`, але проти `http://localhost:3000`.
 
-## 6. Правові межі
+## 7. Правові межі
 
 Це частина роботи, а не формальність — скіл виносить її в перше ж питання:
 
@@ -142,7 +216,7 @@ pnpm simplycms create theme <slug>
 - якщо референс — **твій власний сайт**, межа з ассетами знімається твоїм
   рішенням, і сказати про це треба явно.
 
-## 7. Діагностика
+## 8. Діагностика
 
 | Симптом | Причина / що робити |
 |---|---|
@@ -153,23 +227,41 @@ pnpm simplycms create theme <slug>
 | Шрифт у скріншоті є, а `fontStylesheets` порожній | межа v1: збираються лише `link[rel=stylesheet]`. CSS `@import` і self-hosted `@font-face` скрипт не бачить — визнач сімʼю очима |
 | `inspection.json` майже порожній | сторінка рендериться скриптом після `networkidle` або блокує headless — перезапусти, не мапь |
 | Кольори «не ті» | дивись `confidence` і `unmapped`: евристика частотна, унікальний акцент з одного банера в неї не потрапляє за визначенням |
+| Інспекція йде довго | так і має бути: перед знімком сторінка прокручується до низу на кожній із трьох ширин (розділ 4). На довгій сторінці це в кілька разів довше за наївний знімок |
+| Оформлення з мобілки не потрапило в токени | палітра семплиться з десктопного viewport (`sampleViewport`) — mobile-only секції в семпл не входять, фіксуй їх очима з `mobile.png` |
+| `map-tokens` падає з «--out обовʼязковий» | це мультивхід (кілька `inspection.json`): вивід не можна вгадати з теки однієї зі сторінок — задай `--out …/<slug>/tokens-proposal.json` |
+| `discover.mjs` не знайшов тип | у `unresolved` буде `no-candidate` (лінка не було в DOM — наприклад, сторінка доступна лише з кроку воронки) або `visit-failed` (лінк був, сторінка не віддала 2xx). Дай URL руками або свідомо пропусти тип |
 
-## 8. Шпаргалка
+## 9. Шпаргалка
 
 | Задача | Команда / дія |
 |---|---|
 | Поставити браузер у магазині | `pnpm add -D playwright && pnpm exec playwright install chromium` |
-| Зняти референс | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> [--dark]` |
-| Отримати токени | `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/inspection.json` |
+| Знайти сторінки сайту | `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> --out docs/design-references/<slug>/sitemap-proposal.json` |
+| Зняти одну сторінку | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> --out docs/design-references/<slug>/<pageType> [--dark]` |
+| Отримати токени з кількох сторінок | `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/*/inspection.json --out docs/design-references/<slug>/tokens-proposal.json` |
 | Зробити тему | `pnpm simplycms create theme <slug>` → `tokens.ts` → `pnpm build` → `/admin/themes` |
 | Порівняти результат | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost:3000 --out docs/design-references/<slug>-local` |
 | Запустити весь пайплайн агентом | скіл `redesign-from-reference` (у монорепо — команда `/редизайн-за-референсом <url>`) |
 
-## 9. Чого тут немає (свідомі межі)
+## 10. Чого тут немає (свідомі межі)
 
 Піксельного клонування довільних сторінок; завантаження ассетів референсу;
 Firecrawl та інших зовнішніх API; автоматичного «виправлення» контрасту;
 адмінка-UI для редизайну; Playwright у devDependencies шаблону. Interaction
 sweep (ховери, scroll-driven поведінка, стани) детерміністичний скрипт не
 бачить — це робота агента з браузерним MCP або твої скріншоти; без них скіл
-чесно зупиняється після кроку 3 з робочою перефарбованою темою.
+чесно зупиняється після кроку 4 з робочою перефарбованою темою.
+
+Окремо — межі v1, про які краще знати до першого запуску:
+
+- **reverse-анімації**: скрол розкриває reveal-once секції, але сайт, який
+  ховає секцію назад при зворотному скролі, ми знімаємо як «розкриту»;
+- **сторінки за логіном** (кабінет, приватний чекаут) — не інспектуються:
+  авторизацію не проходимо, захист не обходимо;
+- **палітра — з десктопного viewport**: mobile-only оформлення в семпл не
+  потрапляє;
+- **шрифти через CSS `@import` і self-hosted `@font-face`** не ловляться —
+  `fontStylesheets` бачить лише `link[rel=stylesheet]`;
+- **структура сторінок не переноситься**: дискаверер дає пари «наш канонічний
+  тип ↔ їхня сторінка» для токенів, спек і QA — не для копіювання верстки.

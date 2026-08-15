@@ -80,7 +80,7 @@ Claude Code й Copilot читали **одні й ті самі** файли.
 |-----|-------|
 | `.agents/skills/codebase-research/` | Як шукати в репо: `orient` (карта символів, валідація якорів плану), протокол стейл-графа, формат звіту-дельти |
 | `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
-| `.agents/skills/redesign-from-reference/` | Як робити редизайн магазину за референс-сайтом: правові межі, детерміністична інспекція (`scripts/` усередині скіла), мапінг токенів, тема штатним лайфсайклом, спека-файли компонентів, side-by-side QA. Їде в шаблон скаффолдера (`pnpm template:sync`); посібник — [`docs/guides/redesign-from-reference.md`](docs/guides/redesign-from-reference.md) |
+| `.agents/skills/redesign-from-reference/` | Як робити редизайн магазину за референс-сайтом: правові межі, дискавері сторінок із обовʼязковим діалогом і детерміністична інспекція (`scripts/` усередині скіла), мапінг токенів по всіх знятих сторінках, тема штатним лайфсайклом, спека-файли компонентів, side-by-side QA. Їде в шаблон скаффолдера (`pnpm template:sync`); посібник — [`docs/guides/redesign-from-reference.md`](docs/guides/redesign-from-reference.md) |
 | `.claude/agents/` | Субагенти `codebase-research`, `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
 | `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`, `/редизайн-за-референсом` |
 
