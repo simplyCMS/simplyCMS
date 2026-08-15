@@ -52,10 +52,10 @@
 
 ## Фаза 3 — `discover.mjs`
 
-- [ ] **Step 1:** CLI за Р4/Р5/Р7 (тонкий; спільні `loadChromium`/`resolveChromium`/`scrollThrough`; failLoud-канал).
-- [ ] **Step 2:** Фікстури-«сайт» `tests/fixtures/design-import/site/` (index + product + collection + cart з перехресними лінками, БЕЗ checkout-лінка — очікування unresolved чесне; кошик — іконковий лінк з aria-label); смок у browser-gated describe з локальним http-сервером: типи класифіковано, `checkout` в unresolved з reason, visit-failed кейс (лінк на 404-сторінку → тип в unresolved), `sitemap-proposal.json` валідний.
-- [ ] **Step 3:** `EXPECTED_FILES` += `discover.mjs` (Р8) + `pnpm template:sync` (Р10).
-- [ ] **Step 4:** Гейти фази + `pnpm pilot:pack`. Жива перевірка (Р9): discover проти референсу — home+product+listing знайдені, unresolved чесний; у звіт фази.
+- [x] **Step 1:** CLI за Р4/Р5/Р7 (тонкий; спільні `loadChromium`/`resolveChromium`/`scrollThrough`; failLoud-канал).
+- [x] **Step 2:** Фікстури-«сайт» `tests/fixtures/design-import/site/` (index + product + collection + cart з перехресними лінками, БЕЗ checkout-лінка — очікування unresolved чесне; кошик — іконковий лінк з aria-label); смок у browser-gated describe з локальним http-сервером: типи класифіковано, `checkout` в unresolved з reason, visit-failed кейс (лінк на 404-сторінку → тип в unresolved), `sitemap-proposal.json` валідний.
+- [x] **Step 3:** `EXPECTED_FILES` += `discover.mjs` (Р8) + `pnpm template:sync` (Р10).
+- [x] **Step 4:** Гейти фази + `pnpm pilot:pack`. Жива перевірка (Р9): discover проти референсу — home+product+listing знайдені, unresolved чесний; у звіт фази.
 
 ## Фаза 4 — Мультисторінковий мапінг
 

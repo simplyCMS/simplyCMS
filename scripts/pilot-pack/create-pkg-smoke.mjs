@@ -59,6 +59,7 @@ const EXPECTED_FILES = [
   // Скрипти — другий бік тієї ж пари: без них скіл у магазині безпорадний.
   '.claude/skills/redesign-from-reference/SKILL.md',
   '.claude/skills/redesign-from-reference/scripts/inspect.mjs',
+  '.claude/skills/redesign-from-reference/scripts/discover.mjs',
 ];
 
 /**
