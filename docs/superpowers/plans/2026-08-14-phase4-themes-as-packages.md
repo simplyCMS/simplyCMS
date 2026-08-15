@@ -428,23 +428,23 @@ test`; packaging-пара — де етап торкається пакуван�
 
 ## 2. DoD фази (частина «цієї сесії»)
 
-- [ ] `@simplycms/theme-solarstore` — публікований пакет: гейти,
+- [x] `@simplycms/theme-solarstore` — публікований пакет: гейти,
       packaging-parity, audit, README; host споживає його як пакет;
       lockfile перегенеровано.
-- [ ] `bootstrapThemes` + registry-awareness адмінки: юніти і компонентний
+- [x] `bootstrapThemes` + registry-awareness адмінки: юніти і компонентний
       тест зелені, wiring у трьох копіях host-канону синхронний.
-- [ ] `simplycms create theme` і `simplycms add … --theme --copy` — робочі,
+- [x] `simplycms create theme` і `simplycms add … --theme --copy` — робочі,
       покриті тестами (включно зі злиттям deps і ідемпотентністю copy);
       doctor знає про теми (warn-рівень); Gate TOOL розширено.
-- [ ] Пілот доводить ОБИДВІ гілки §17.4 на рівні збірки: copy-in і npm
+- [x] Пілот доводить ОБИДВІ гілки §17.4 на рівні збірки: copy-in і npm
       реальними CLI-командами в скретчі, Gate D-маркер теми, provenance —
       зелені (`pnpm pilot:pack`); нові Tailwind-глоби доведені
       glob-тестом.
-- [ ] `bump.mjs` переписує version-літерали маніфестів референс-пакетів
+- [x] `bump.mjs` переписує version-літерали маніфестів референс-пакетів
       (Р13) — реліз-міна Фази 3 знешкоджена, тест є.
-- [ ] Контракт маркетплейс-індексу зафіксовано і стережеться тестом;
+- [x] Контракт маркетплейс-індексу зафіксовано і стережеться тестом;
       README містить ліцензійний гейт власника.
-- [ ] `docs/architecture/themes.md` існує; канон/інструкції/лічильники
+- [x] `docs/architecture/themes.md` існує; канон/інструкції/лічильники
       синхронізовані (включно з кореневим README і .github/instructions);
       амендменти спеки §5/§6 внесені; CHANGELOG попереджає про
       реліз-у-момент-мержу.
