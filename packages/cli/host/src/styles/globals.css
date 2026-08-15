@@ -1,19 +1,13 @@
 @import 'tailwindcss';
 @config "../../tailwind.config.ts";
 
-/* SolarStore Design System
-   Brand color: #1192DC (HSL: 200 85% 47%)
-   Professional e-commerce style with clean aesthetics
+/* Базові CSS-змінні магазину (контракт теми v2). Значення нижче — дефолтний
+   набір «чистого» магазину без активної теми; тема перезаписує підмножину
+   через ThemeTokens.
 */
 
 @layer base {
   :root {
-    /* Brand colors */
-    --brand: 200 85% 47%;
-    --brand-light: 200 85% 55%;
-    --brand-dark: 200 85% 35%;
-    --brand-foreground: 0 0% 100%;
-
     /* Background */
     --background: 210 20% 98%;
     --foreground: 215 25% 15%;
@@ -169,27 +163,29 @@
 }
 
 @layer utilities {
+  /* Розчинення brand-* (контракт v2.2, Р6): нутро градієнтів — на --primary,
+     імена класів зберігаються для сумісності споживачів. */
   .gradient-brand {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand)) 0%,
-      hsl(var(--brand-light)) 100%
+      hsl(var(--primary)) 0%,
+      color-mix(in oklab, hsl(var(--primary)), white 15%) 100%
     );
   }
 
   .gradient-brand-subtle {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand) / 0.1) 0%,
-      hsl(var(--brand-light) / 0.05) 100%
+      hsl(var(--primary) / 0.05) 0%,
+      hsl(var(--primary) / 0.05) 100%
     );
   }
 
   .text-gradient-brand {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand)) 0%,
-      hsl(var(--brand-light)) 100%
+      hsl(var(--primary)) 0%,
+      color-mix(in oklab, hsl(var(--primary)), white 15%) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
