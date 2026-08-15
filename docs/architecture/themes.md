@@ -5,7 +5,8 @@
 > §6 (контракт теми), §13 (маркетплейс), §17 сценарій 4; рішення імплементації —
 > [план Фази 4](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
 > (Р0–Р14). Команди CLI — [`cli.md`](cli.md) §3.2, §3.5; межі тестування —
-> [`test-contours.md`](test-contours.md).
+> [`test-contours.md`](test-contours.md). Практичний посібник (how-to для
+> розробника магазину й автора теми) — [`../guides/themes.md`](../guides/themes.md).
 
 ## 1. Роль і межі
 
