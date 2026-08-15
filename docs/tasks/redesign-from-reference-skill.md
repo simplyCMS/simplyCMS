@@ -37,9 +37,12 @@
   адмінка. Канон — `docs/architecture/themes.md`, посібник —
   `docs/guides/themes.md`.
 - **Playwright:** `@playwright/test@1.61.1` у devDeps МОНОРЕПО
-  (`playwright.config.ts`, `tests/e2e/`); Chromium у цьому середовищі
-  преінстальований (`PLAYWRIGHT_BROWSERS_PATH`). У ШАБЛОНІ магазину
-  Playwright НЕМАЄ.
+  (`playwright.config.ts`, `tests/e2e/`). 🔴 Уточнення ревʼю плану:
+  преінстальований Chromium (`PLAYWRIGHT_BROWSERS_PATH`) має rev 1194, а
+  1.61.1 очікує rev 1228 (докачування блокує проксі) — «з коробки»
+  `executablePath()` не резолвиться, але живим запуском доведено, що 1.61.1
+  водить chromium-1194 через `launch({ executablePath })` → план Р2 фіксує
+  резолвер із фолбеком. У ШАБЛОНІ магазину Playwright НЕМАЄ.
 - **Скіли репо:** джерело правди — `.agents/skills/<name>/SKILL.md`
   (frontmatter `name`+`description`, тіло markdown; зразок —
   `.agents/skills/codebase-research/`); `.claude/skills/<name>` — СИМЛІНК на
