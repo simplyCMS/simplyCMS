@@ -38,42 +38,42 @@
 
 ## Фаза 1 — Ядро мапінгу (без браузера)
 
-- [ ] **Step 1:** `scripts/design-import/lib/color.mjs` — parse (`#hex`, `rgb()`, `rgba()`) → HSL-трійка формату токенів; relative luminance; WCAG-ratio. Юніти: відомі пари (чорний/білий = 21, AA-межа).
-- [ ] **Step 2:** `scripts/design-import/lib/cluster.mjs` — кластеризація за HSL-відстанню (поріг-константа, Р7), агрегація частот/площі.
-- [ ] **Step 3:** `scripts/design-import/lib/map.mjs` — евристики мапінгу (задача §2.B.1) + шрифти → `font-sans`/`font-heading`; `fonts`-пропозиція ЛИШЕ з підтвердженням із `fontStylesheets` (Р7); вивід — `tokens-proposal` за Р4 (`dark` всередині tokens).
-- [ ] **Step 4:** `scripts/design-import/lib/contrast.mjs` — пари `*`/`*-foreground` → `contrastWarnings`.
-- [ ] **Step 5:** `tests/design-import-map-tokens.test.ts` (імпорт-зразок — `tests/audit-deps.test.ts`): юніти lib на фікстурному inspection-обʼєкті (з `fontStylesheets`) + ланцюжок-тест ЗА Р9 (applyTokens-емісія по кожному ключу + HSL-regex + очікувані ключі + validateThemeModule).
-- [ ] **Step 6:** Гейти фази (канонічний порядок; packaging не потрібен).
+- [x] **Step 1:** `scripts/design-import/lib/color.mjs` — parse (`#hex`, `rgb()`, `rgba()`) → HSL-трійка формату токенів; relative luminance; WCAG-ratio. Юніти: відомі пари (чорний/білий = 21, AA-межа).
+- [x] **Step 2:** `scripts/design-import/lib/cluster.mjs` — кластеризація за HSL-відстанню (поріг-константа, Р7), агрегація частот/площі.
+- [x] **Step 3:** `scripts/design-import/lib/map.mjs` — евристики мапінгу (задача §2.B.1) + шрифти → `font-sans`/`font-heading`; `fonts`-пропозиція ЛИШЕ з підтвердженням із `fontStylesheets` (Р7); вивід — `tokens-proposal` за Р4 (`dark` всередині tokens).
+- [x] **Step 4:** `scripts/design-import/lib/contrast.mjs` — пари `*`/`*-foreground` → `contrastWarnings`.
+- [x] **Step 5:** `tests/design-import-map-tokens.test.ts` (імпорт-зразок — `tests/audit-deps.test.ts`): юніти lib на фікстурному inspection-обʼєкті (з `fontStylesheets`) + ланцюжок-тест ЗА Р9 (applyTokens-емісія по кожному ключу + HSL-regex + очікувані ключі + validateThemeModule).
+- [x] **Step 6:** Гейти фази (канонічний порядок; packaging не потрібен).
 
 ## Фаза 2 — Скрипт інспекції
 
-- [ ] **Step 1:** `scripts/design-import/lib/browser.mjs` (`resolveChromium()`, Р2) + `scripts/design-import/inspect.mjs` — CLI за задачею §2.A: динамічний playwright, скріншоти 1440/768/390, один `page.evaluate`-семплінг (~2000 елементів; кольори+частоти+площа, шрифти h1-h3 vs body, radius/shadows/spacing, 🔴 `fontStylesheets` — hrefs `link[rel=stylesheet]`), `--dark` (емуляція `prefers-color-scheme`), `--out`, `inspection.json` `schemaVersion: 1`. Помилки — гучні.
-- [ ] **Step 2:** Фікстура `tests/fixtures/design-import/reference.html` (контрольовані кольори/два шрифти/radius/googleapis-`link`) + `tests/design-import-inspect.test.ts` — детект за Р3 (TLA + launch-probe, локальний таймаут 60с): скріншоти існують, `inspection.json` містить очікувані кольори/шрифти/radius/`fontStylesheets`.
-- [ ] **Step 3:** Наскрізний юніт БЕЗ браузера: ядро мапінгу на СИНТЕТИЧНОМУ `inspection.json`, ідентичному фікстурному — контракт між скриптами незалежно від skipIf.
-- [ ] **Step 4:** Гейти фази. 🔴 У ЦЬОМУ середовищі смок має ганятись (не skip) через executablePath-фолбек Р2 — зафіксувати в звіті, який шлях резолвера спрацював; skip тут = провал кроку.
+- [x] **Step 1:** `scripts/design-import/lib/browser.mjs` (`resolveChromium()`, Р2) + `scripts/design-import/inspect.mjs` — CLI за задачею §2.A: динамічний playwright, скріншоти 1440/768/390, один `page.evaluate`-семплінг (~2000 елементів; кольори+частоти+площа, шрифти h1-h3 vs body, radius/shadows/spacing, 🔴 `fontStylesheets` — hrefs `link[rel=stylesheet]`), `--dark` (емуляція `prefers-color-scheme`), `--out`, `inspection.json` `schemaVersion: 1`. Помилки — гучні.
+- [x] **Step 2:** Фікстура `tests/fixtures/design-import/reference.html` (контрольовані кольори/два шрифти/radius/googleapis-`link`) + `tests/design-import-inspect.test.ts` — детект за Р3 (TLA + launch-probe, локальний таймаут 60с): скріншоти існують, `inspection.json` містить очікувані кольори/шрифти/radius/`fontStylesheets`.
+- [x] **Step 3:** Наскрізний юніт БЕЗ браузера: ядро мапінгу на СИНТЕТИЧНОМУ `inspection.json`, ідентичному фікстурному — контракт між скриптами незалежно від skipIf.
+- [x] **Step 4:** Гейти фази. 🔴 У ЦЬОМУ середовищі смок має ганятись (не skip) через executablePath-фолбек Р2 — зафіксувати в звіті, який шлях резолвера спрацював; skip тут = провал кроку.
 
 ## Фаза 3 — CLI мапінгу
 
-- [ ] **Step 1:** `scripts/design-import/map-tokens.mjs` — CLI за задачею §2.B: читає `inspection.json`, кличе lib, пише `tokens-proposal.json`, підсумок у stdout українською (топ-мапінги, warnings, unmapped).
-- [ ] **Step 2:** Тест CLI-обгортки: tmp-dir + `spawnSync(process.execPath, …)` за зразком `tests/cli-add.test.ts:204` (НЕ execFile).
-- [ ] **Step 3:** Гейти фази.
+- [x] **Step 1:** `scripts/design-import/map-tokens.mjs` — CLI за задачею §2.B: читає `inspection.json`, кличе lib, пише `tokens-proposal.json`, підсумок у stdout українською (топ-мапінги, warnings, unmapped).
+- [x] **Step 2:** Тест CLI-обгортки: tmp-dir + `spawnSync(process.execPath, …)` за зразком `tests/cli-add.test.ts:204` (НЕ execFile).
+- [x] **Step 3:** Гейти фази.
 
 ## Фаза 4 — Скіл і доставка в шаблон
 
-- [ ] **Step 1:** `.agents/skills/redesign-from-reference/SKILL.md` за Р5 (включно з 🔴 заборонами: без `__ВЕЛИКИХ__`, description англійською); симлінк `.claude/skills/redesign-from-reference` (зразок — сусіди, звірити `ls -la`).
-- [ ] **Step 2:** `.claude/commands/редизайн-за-референсом.md` — обгортка (Р8).
-- [ ] **Step 3:** `scripts/sync-create-store-template.mjs` — дві пари в `SYNCED_DIRS` (Р6) + оновити коментар eslint-винятку `!template/scripts/**` (Р10) + `pnpm template:sync`; parity-тест підхоплює автоматично.
-- [ ] **Step 4:** `scripts/pilot-pack/create-pkg-smoke.mjs` — розширити `EXPECTED_FILES` (Р6).
-- [ ] **Step 5:** Гейти фази + `pnpm build:packages && pnpm test:packaging`.
-- [ ] **Step 6:** `pnpm pilot:pack` — Gate CLI з розширеними `EXPECTED_FILES`; памʼятати: placeholder-скан гейта пройдеться по нових файлах (Р5 — тому без `__ВЕЛИКИХ__`).
+- [x] **Step 1:** `.agents/skills/redesign-from-reference/SKILL.md` за Р5 (включно з 🔴 заборонами: без `__ВЕЛИКИХ__`, description англійською); симлінк `.claude/skills/redesign-from-reference` (зразок — сусіди, звірити `ls -la`).
+- [x] **Step 2:** `.claude/commands/редизайн-за-референсом.md` — обгортка (Р8).
+- [x] **Step 3:** `scripts/sync-create-store-template.mjs` — дві пари в `SYNCED_DIRS` (Р6) + оновити коментар eslint-винятку `!template/scripts/**` (Р10) + `pnpm template:sync`; parity-тест підхоплює автоматично.
+- [x] **Step 4:** `scripts/pilot-pack/create-pkg-smoke.mjs` — розширити `EXPECTED_FILES` (Р6).
+- [x] **Step 5:** Гейти фази + `pnpm build:packages && pnpm test:packaging`.
+- [x] **Step 6:** `pnpm pilot:pack` — Gate CLI з розширеними `EXPECTED_FILES`; памʼятати: placeholder-скан гейта пройдеться по нових файлах (Р5 — тому без `__ВЕЛИКИХ__`).
 
 ## Фаза 5 — Документація і фінал
 
-- [ ] **Step 1:** `docs/guides/redesign-from-reference.md` — how-to (запуск, що отримаєш, межі fidelity, установка playwright у магазині, посилання на скіл).
-- [ ] **Step 2:** `CLAUDE.md` — рядок у Agent Tooling; роадмап — 🔴 ДОПОВНИТИ наявний розділ «Трек: контракт теми v2.2 …» підрозділом етапу Б (окремий паралельний розділ НЕ створювати; за потреби перейменувати заголовок треку на «Трек: редизайн за референсом»), з боргом живого прогону.
-- [ ] **Step 3:** Ресерч `2026-08-15-website-cloner-tools.md` §6 — питання вирішені (посилання на задачу).
-- [ ] **Step 4:** Повний канонічний порядок гейтів + фінальний `pnpm pilot:pack`.
-- [ ] **Step 5:** Відмітки в задачі (DoD §3; живий прогін по реальному сайту — борг `[ ]`) і PR #32.
+- [x] **Step 1:** `docs/guides/redesign-from-reference.md` — how-to (запуск, що отримаєш, межі fidelity, установка playwright у магазині, посилання на скіл).
+- [x] **Step 2:** `CLAUDE.md` — рядок у Agent Tooling; роадмап — 🔴 ДОПОВНИТИ наявний розділ «Трек: контракт теми v2.2 …» підрозділом етапу Б (окремий паралельний розділ НЕ створювати; за потреби перейменувати заголовок треку на «Трек: редизайн за референсом»), з боргом живого прогону.
+- [x] **Step 3:** Ресерч `2026-08-15-website-cloner-tools.md` §6 — питання вирішені (посилання на задачу).
+- [x] **Step 4:** Повний канонічний порядок гейтів + фінальний `pnpm pilot:pack`.
+- [x] **Step 5:** Відмітки в задачі (DoD §3; живий прогін по реальному сайту — борг `[ ]`) і PR #32. — Опис PR оновлює власник при пуші: сесія не пушить свідомо.
 
 ## Поза скоупом плану
 
