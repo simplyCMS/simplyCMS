@@ -6,7 +6,10 @@
 > «редизайн за референсом»
 > ([`2026-08-15-website-cloner-tools.md`](../superpowers/research/2026-08-15-website-cloner-tools.md)).
 >
-> **Статус:** затверджено до виконання 2026-08-15. Гілка —
+> **Статус:** кодову частину виконано 2026-08-15 (Фази 1–5
+> [плану](../superpowers/plans/2026-08-15-theme-contract-v2_2.md); амендмент
+> спеки — §6.2, трек у [роадмапі](./platform-roadmap.md)). Відкрите — лише
+> живий браузерний смок (§3, борг власника). Гілка —
 > `claude/website-cloner-analysis-p7wf4z`, PR #32.
 >
 > **Межі:** усе в рамках чинних рішень D2–D4 спеки — сторінки/лейаути тем НЕ
@@ -161,22 +164,29 @@
 
 ## 3. Верифікація / DoD
 
-1. **Юніти `packages/theme-system`:** `applyTokens` рендерить нові ключі;
-   ключ поза `TOKEN_KEYS` ігнорується (регрес); санітизація font-stack і
-   fonts-URL (позитив/негатив); `validateThemeModule` — форма `fonts`.
-2. **Компонентний тест** рендера fonts-`<link>` (Testing Library, зразок —
-   тести `packages/admin/src/__tests__/`).
-3. **Гейти в канонічному порядку:** `pnpm install --frozen-lockfile` →
-   `format:check` → `lint` → `build` → `typecheck` → `test` →
-   `build:packages` → `test:packaging`.
-4. **`pnpm pilot:pack`** — зміни зачіпають exports/вміст пакетів теми і
-   theme-system → за законом репо (`test-contours.md`) зелений `pnpm test`
-   пакування не доводить.
-5. **Поведінковий DoD:** тема, що задає `font-sans`+`fonts`, міняє шрифт
-   вітрини перемиканням з адмінки БЕЗ перезбірки; `.gradient-brand`
-   фарбується `--primary` активної теми; чистий магазин без тем-шрифтів
-   виглядає як раніше (Inter). Живий браузерний прогін
-   (`pnpm test:e2e`/`pilot:e2e`) — за власником (Docker), як у Фазі 4.
+- [X] **Юніти `packages/theme-system`:** `applyTokens` рендерить нові ключі;
+      ключ поза `TOKEN_KEYS` ігнорується (регрес); санітизація font-stack і
+      fonts-URL (позитив/негатив); `validateThemeModule` — форма `fonts`. —
+      `packages/theme-system/src/__tests__/{applyTokens,safeFontStylesheets,validateThemeModule}.test.ts`.
+- [X] **Компонентний тест** рендера fonts-`<link>` (Testing Library, зразок —
+      тести `packages/admin/src/__tests__/`). —
+      `packages/storefront-routes/src/__tests__/theme-fonts.test.tsx` +
+      `theme-fonts-solarstore.test.tsx` (реальний модуль теми, Р9).
+- [X] **Гейти в канонічному порядку:** `pnpm install --frozen-lockfile` →
+      `format:check` → `lint` → `build` → `typecheck` → `test` →
+      `build:packages` → `test:packaging`. — зелені на завершенні Фази 5
+      (lint: 0 errors / 13 warnings — норма репо).
+- [X] **`pnpm pilot:pack`** — зміни зачіпають exports/вміст пакетів теми і
+      theme-system → за законом репо (`test-contours.md`) зелений `pnpm test`
+      пакування не доводить. — Gate A/C/D + CLI/TOOL зелені, Gate B/E
+      видимо skipped (`--pack-only` не піднімає БД).
+- [ ] **Поведінковий DoD:** тема, що задає `font-sans`+`fonts`, міняє шрифт
+      вітрини перемиканням з адмінки БЕЗ перезбірки; `.gradient-brand`
+      фарбується `--primary` активної теми; чистий магазин без тем-шрифтів
+      виглядає як раніше (Inter). Живий браузерний прогін
+      (`pnpm test:e2e`/`pilot:e2e`) — за власником (Docker), як у Фазі 4. —
+      🔴 **борг:** живими очима не перевірено; те саме стосується SSR-доказу
+      fonts-контуру в пілоті (Р9, борг у роадмапі).
 
 ---
 
@@ -197,8 +207,9 @@
    Gate D-маркер~~ — вирішено планом (Р8/Р9): fonts дає, Gate D НЕ
    розширюється (неможливо за природою гейта), доказ — компонентний тест;
    живий SSR-доказ — борг у роадмапі.
-2. Точна форма градієнтів після розчинення brand-* (зберегти
-   light/dark-відтінки через `color-mix()`? Підтримка target-браузерів —
-   перевірити; альтернатива — пари `--primary`/`--accent`).
-3. Чи потрібен `'font-mono'` токен одразу (у воронці моноширинний шрифт
-   не вживається — схиляюсь до «ні, YAGNI»).
+2. ~~Точна форма градієнтів після розчинення brand-*~~ — вирішено планом
+   (Р6): `color-mix(in oklab, hsl(var(--primary)), white 15%)` для
+   `.gradient-brand`/`.text-gradient-brand`, чиста альфа `0.05` для
+   `.gradient-brand-subtle` (мікс поверх альфи дав би молочну плівку).
+3. ~~Чи потрібен `'font-mono'` токен одразу~~ — вирішено планом (Р1): ні,
+   YAGNI; вводиться, коли зʼявиться споживач.

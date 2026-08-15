@@ -36,6 +36,9 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 - Межі довіри на теми **немає свідомо** (Р10, §7): тема, на відміну від
   плагіна, законно імпортує `@simplycms/supabase`/`@simplycms/core` — це
   контракт v2, а не діра.
+- Шрифти теми (`fonts`, контракт v2.2) — **лише зовнішні `https:`-stylesheet**;
+  `@font-face`-обʼєктів і роздачі файлів шрифтів темою немає свідомо
+  (npm-тема не має каналу статики) — §2, §8.
 - `simplycms create theme` дає лише локальний dev-loop; `theme:check` як
   окрема CLI-команда не вводиться — глибока перевірка модуля лишається за
   `validateThemeModule` на build/рантаймі (CLI — чистий ESM без TS-лоадера,
@@ -50,9 +53,30 @@ ThemeModule = {
   components: ThemeComponents; // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
   settings?: Record<string, ThemeSettingDefinition>;
   messages?: { uk: {...}, en: {...} };   // опційний каталог, контракт v2.1
+  fonts?: ReadonlyArray<{ stylesheet: string }>;  // https:-URL, контракт v2.2
 }
 ```
 
+- **Типографіка (v2.2)** — два не-кольорові токени в `tokens`: `'font-sans'`
+  і `'font-heading'`. Значення — повний CSS `font-family` stack рядком
+  (`"'Manrope', system-ui, sans-serif"`), не назва шрифту; `font-heading`
+  застосовується до `h1..h6` через `@layer base` магазину. `font-mono`
+  свідомо не вводиться (YAGNI). Fallback-значення обох змінних живуть у
+  `src/styles/globals.css`: невизначена `var()` робить УСЮ декларацію
+  `font-family` invalid-at-computed-value-time, тож чистий магазин без теми
+  лишається на Inter саме завдяки їм.
+- **`fonts` (v2.2)** — опційний масив зовнішніх stylesheet-ів теми (Google
+  Fonts і аналоги). Фільтр — `safeFontStylesheets` (субшлях-експорт
+  `@simplycms/themes/safeFontStylesheets`, НЕ barrel: barrel тягне
+  `getActiveThemeSSR` → `@simplycms/supabase/anon-client`, і з клієнтського
+  компонента це затягнуло б серверний код у бандл): приймаються лише
+  абсолютні `https:`-URL без лапок/кутових дужок/пробілів, невалідний запис
+  пропускається з `console.warn`. Рендер — `ThemeFonts` у ОБОХ каркасах
+  (`StorefrontShell`, `ProtectedShell`) поруч із `ThemeTokens`; `<link
+  rel="stylesheet">` у body валідний за HTML-спекою і працює в SSR-стрімі.
+  Базовий Inter-`<link>` у `__root.tsx` лишається — адмінка і fallback
+  вітрини. Зразок — `@simplycms/theme-solarstore` (декларує `fonts`);
+  `themes/default` `fonts` не має — опційність поля жива, не декларативна.
 - `manifest.displayName` — те, що бачить адмін у списку тем; поле фактично
   існує в контракті (`packages/theme-system/src/types.ts`), хоча спека §6
   його не називала — амендмент §6 (Р14, див. спеку).
@@ -298,6 +322,17 @@ CLI-команда `theme:check` НЕ вводиться (§1): CLI — чист
   (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Якщо колись
   зʼявиться theme-sdk із портами (аналог `@simplycms/plugin-sdk`) — це
   окрема фаза, не недогляд.
+- **`@font-face` / self-hosted шрифти теми та preconnect-оптимізації**
+  (контракт v2.2) — тема віддає лише `https:`-URL зовнішніх stylesheet-ів;
+  канал статики в npm-теми зʼявиться окремим рішенням, не недоглядом.
+- **Видимість fonts-контуру в пілоті.** `pnpm pilot:pack` його НЕ доводить, і
+  це властивість гейтів, а не пропуск: Gate D читає лише зібраний
+  `dist/client/assets/*.css` і HTML не бачить, а сід активує `default`, яка
+  `fonts` не має. DB-free доказ — компонентні тести
+  `packages/storefront-routes/src/__tests__/theme-fonts*.test.tsx` (другий —
+  на РЕАЛЬНОМУ модулі `@simplycms/theme-solarstore`). Живий SSR-доказ
+  (Gate B + `SEED_THEME='solarstore'` + перегенерація сіду + розрізнюваний
+  маркер) — борг у роадмапі.
 - **Runtime-встановлення тем** — build-time lifecycle (`simplycms add` +
   rebuild), як і плагіни (D1, спека §14).
 - **Uninstall-рядка теми з адмінки** — деактивація (`is_active: false`)
@@ -318,6 +353,8 @@ CLI-команда `theme:check` НЕ вводиться (§1): CLI — чист
 | Registry-awareness адмінки | компонентний тест `packages/admin/src/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
 | i18n каталоги тем | `tests/theme-messages-parity.test.ts` + AST-скан `SCANNED_ROOTS` |
+| Типографічні токени і фільтр `fonts` (v2.2) | юніти `packages/theme-system/src/__tests__/` (`applyTokens.test.ts`, `safeFontStylesheets.test.ts`, `validateThemeModule.test.ts`) |
+| Рендер `<link>`-ів шрифтів теми (v2.2) | `packages/storefront-routes/src/__tests__/theme-fonts.test.tsx` + `theme-fonts-solarstore.test.tsx` (реальний модуль теми) |
 | `create theme` скаффолд | `tests/cli-create-theme.test.ts` (методика `cli-create.test.ts`: temp-dir, плейсхолдери, `transpileModule`) |
 | `add --theme --copy` | `tests/cli-add-copy.test.ts` (чиста функція `runThemeCopy`/`mergeDependencies`/`copyPreflight` над фікстурним node_modules у temp-store: валідації, злиття deps, ідемпотентність, колізія, dry-run) |
 | Doctor: записи конфігу + Tailwind-підказка | `tests/cli-doctor.test.ts` |

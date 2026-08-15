@@ -317,14 +317,14 @@ simplyCMS/
 (schema споживають лише `scripts/db-*.mjs`, admin-routes монтується шляхом у
 `routes.ts`, cli — bin-інструмент, який ніхто не імпортує як код).
 
-## Theme System (контракт v2)
+## Theme System (контракт v2.2)
 
 Тема постачає **лише** оформлення. Сторінок і лейаутів у ній немає.
 Повний механізм (пакування npm/copy-in, `bootstrapThemes`, conformance-kit,
 чекліст автора) — [`docs/architecture/themes.md`](docs/architecture/themes.md).
 
 ```ts
-ThemeModule = { manifest, tokens, components, settings?, messages? }
+ThemeModule = { manifest, tokens, components, settings?, messages?, fonts? }
 ```
 
 1. **Реєстрація:** `src/theme-registry.ts` реєструє теми з `config.themes`
@@ -341,19 +341,33 @@ ThemeModule = { manifest, tokens, components, settings?, messages? }
    канонічну сторінку; секційні компоненти (HeroBanner/HomeSections) споживає
    сама сторінка (`pages/Home.tsx`). `theme.pages.*` більше **не існує**.
 4. **Токени:** `applyTokens(theme.tokens)` розкладає палітру в CSS-змінні —
-   тема не везе власний `theme.css`.
-5. **Валідація:** `validateThemeModule` — публічний API для авторів тем;
+   тема не везе власний `theme.css`. З контракту v2.2 набір містить два
+   не-кольорові типографічні ключі — `'font-sans'` і `'font-heading'`
+   (значення — повний CSS font-family stack рядком); `font-heading` б'є по
+   `h1..h6` через `@layer base`, fallback обох — `:root` у
+   `src/styles/globals.css` (🔴 невизначена `var()` у `font-family` вбиває
+   всю декларацію, тож fallback обовʼязковий). `--brand-*`/`colors.brand`
+   більше немає: `.gradient-brand*` фарбуються `--primary` активної теми.
+5. **Шрифти теми (v2.2):** опційне `fonts?: ReadonlyArray<{ stylesheet }>` —
+   лише абсолютні `https:`-URL зовнішніх stylesheet-ів (без `@font-face` і
+   роздачі файлів: npm-тема не має каналу статики). Фільтр —
+   `safeFontStylesheets` (🔴 імпорт ТІЛЬКИ субшляхом
+   `@simplycms/themes/safeFontStylesheets`: barrel тягне `getActiveThemeSSR`
+   → `anon-client` у клієнтський бандл); рендер — `ThemeFonts` в обох
+   каркасах поруч із `ThemeTokens`. Базовий Inter-`<link>` у `__root.tsx`
+   лишається (адмінка + fallback).
+6. **Валідація:** `validateThemeModule` — публічний API для авторів тем;
    `ThemeRegistry.load` падає на тему `default`, якщо запитаної немає.
-6. **Активація з адмінки:** прапорець `is_active` у таблиці `themes`;
+7. **Активація з адмінки:** прапорець `is_active` у таблиці `themes`;
    перемикання інвалідовує кеш теми. `bootstrapThemes` (клієнтський
    `useEffect` поруч із `PluginBootstrap` у `__root.tsx`, Фаза 4) дописує в
    БД рядки для зареєстрованих-але-відсутніх тем — інакше адмінка (читає
    лише БД) не побачила б встановлену через конфіг тему; рядок без модуля
    в білді показує бейдж «модуль відсутній» + disabled «Активувати»
    (registry-awareness, `Themes.tsx`).
-7. **ThemeContext (клієнт):** приймає `initialThemeName` з лоадера — зайвого
+8. **ThemeContext (клієнт):** приймає `initialThemeName` з лоадера — зайвого
    клієнтського фетчу немає.
-8. **Установка npm-теми:** `pnpm simplycms add <pkg> --theme` (голий пакет,
+9. **Установка npm-теми:** `pnpm simplycms add <pkg> --theme` (голий пакет,
    апстрім-фікси) або `--copy` (shadcn-модель: копія `src/` у `themes/<key>`,
    пакет знімається — повне володіння). Авторський dev-loop —
    `pnpm simplycms create theme <name>`.

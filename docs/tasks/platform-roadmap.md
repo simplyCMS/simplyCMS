@@ -605,6 +605,76 @@ memory-нотатці `phase1-packaging-2026-07-31` і в розділі Фаз�
 - **Позиція щодо ліцензії екосистеми** (спека §13) — рішення власника,
   блокує прийом реальних подач у маркетплейс-індекс.
 
+## Трек: контракт теми v2.2 — типографіка, шрифти теми, розчинення brand-*
+
+Не фаза платформи, а версія КОНТРАКТУ теми (після v2 «токени замість
+сторінок» і v2.1 «каталог `messages`») — передумова етапу Б скіла «редизайн
+за референсом». Обґрунтування:
+[`docs/superpowers/research/2026-08-15-theme-contract-expansion.md`](../superpowers/research/2026-08-15-theme-contract-expansion.md)
+(§5 «Горизонт 1»); задача:
+[`theme-contract-v2_2.md`](./theme-contract-v2_2.md); план виконання (v2,
+після адверсаріального ревʼю — 11 рішень Р1–Р11):
+[`docs/superpowers/plans/2026-08-15-theme-contract-v2_2.md`](../superpowers/plans/2026-08-15-theme-contract-v2_2.md).
+Амендмент спеки — §6.2.
+
+- [x] Типографічні токени — **2026-08-15**: `'font-sans'` і `'font-heading'`
+      у `ThemeTokenValues`/`TOKEN_KEYS` (значення — повний CSS
+      `font-family` stack рядком; прецедент не-кольорового токена —
+      `radius`); `h1..h6` у `@layer base` беруть `--font-heading`;
+      `tailwind.config.ts` (корінь + template) перейшов на `var()` разом із
+      обовʼязковими fallback-ами в `:root` `globals.css` — невизначена
+      `var()` у `font-family` робить УСЮ декларацію недійсною, тож без них
+      чистий магазин злетів би з Inter. Два core-заголовки Home
+      (`ProductCarousel`, `BannerSlider`) перевели з `font-serif` на
+      `font-heading` — utilities-шар Tailwind v4 виграє в base, інакше
+      токен на них не діяв би.
+- [x] `ThemeModule.fonts` — **2026-08-15**: опційний масив абсолютних
+      `https:`-URL зовнішніх stylesheet-ів; фільтр `safeFontStylesheets`
+      (субшлях-експорт `@simplycms/themes/safeFontStylesheets` — НЕ barrel,
+      бо barrel тягне `getActiveThemeSSR` → `anon-client` і затягнув би
+      серверний код у клієнтський бандл), рендер `ThemeFonts` в обох
+      каркасах поруч із `ThemeTokens`, мʼяка перевірка форми у
+      `validateThemeModule`. Носії: `@simplycms/theme-solarstore` декларує
+      `fonts` + `'font-sans'` (нуль візуальних змін), `themes/default` —
+      без `fonts` (опційність жива), `template-theme` CLI — закоментовані
+      приклади + розділ README.
+- [x] Розчинення brand-* — **2026-08-15**: `--brand-*` і `colors.brand`
+      видалені після grep-доказу нуля споживачів; три utility-класи
+      `.gradient-brand*` зберегли імена, але фарбуються `--primary`
+      активної теми (точні зупинки — Р6 плану). Наслідок для DoD: тепер
+      перемикання теми перефарбовує градієнти воронки.
+
+**DoD:** тема задає шрифт вітрини кодом і міняє його перемиканням з адмінки
+без перезбірки; градієнти воронки належать контракту теми. — Кодова
+частина закрита детерміністичними гейтами + `pnpm pilot:pack`; живий
+браузерний прогін — дія власника (Docker), як у Фазі 4.
+
+### Борги, свідомо винесені за межі v2.2
+
+- 🔴 **Живий SSR-доказ fonts-контуру в пілоті** (Р9). Зараз контур доводять
+  лише DB-free компонентні тести
+  (`packages/storefront-routes/src/__tests__/theme-fonts*.test.tsx`, другий —
+  на реальному модулі `@simplycms/theme-solarstore`). Розширити Gate D
+  НЕМОЖЛИВО за його природою — він читає лише зібраний
+  `dist/client/assets/*.css` і HTML не бачить; SSR HTML асертить лише Gate B
+  (жива БД, поза `pilot:pack`), де голий маркер `fonts.googleapis.com` до
+  того ж вічнозелений через базовий Inter-`<link>` у `__root.tsx`. Ціна
+  доказу: `SEED_THEME='solarstore'` у фікстурах пілота + перегенерація
+  `supabase/seed.sql` + розрізнюваний (не-Inter) маркер шрифту — свідомо
+  відкладено, бо чіпає сід, від якого залежать інші гейти.
+- **Горизонт 2 (page-presentation overrides) і горизонт 3 (секційна
+  модель)** — рішення-кандидати, не зобовʼязання; обґрунтування і ціна —
+  ресерч §5. Рішення D2–D4 спеки лишаються чинними: сторінок тема не несе.
+- **`@font-face`/self-hosted шрифти теми і preconnect-оптимізації** — npm-тема
+  не має каналу статики; поява такого каналу — окреме рішення.
+- **UI налаштувань шрифтів в адмінці** — тема задає шрифти кодом; `settings`
+  як канал типографіки — окрема історія.
+- **Темізація адмінки і `--sidebar-*`** — не чіпалися свідомо (адмінка темою
+  не фарбується).
+- **Реліз/бамп версій** — трек міняв `exports` і вміст tarball-ів
+  `@simplycms/themes`, `@simplycms/storefront-routes`,
+  `@simplycms/theme-solarstore`; коли це поїде в реєстр — рішення власника.
+
 ## Паралельний продуктовий трек
 
 - [`seo-ssr-faceted-navigation.md`](./seo-ssr-faceted-navigation.md) — SEO/faceted
