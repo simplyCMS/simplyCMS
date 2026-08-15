@@ -1,32 +1,43 @@
 #!/usr/bin/env node
 /**
- * CLI мапінгу `inspection.json` → `tokens-proposal.json` (задача §2.B, план
- * Р1/Р4). Тонкий файл — аргументи + IO; уся логіка — чиста функція `mapTokens`
- * у `lib/map.mjs`. Юзаж:
- * `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json> [--out <file>]`.
+ * CLI мапінгу `inspection.json` → `tokens-proposal.json` (задача §2.B/§2.D,
+ * план Р1/Р4/Р6b). Тонкий файл — аргументи + IO; кольорова/шрифтова логіка —
+ * `lib/map.mjs`, злиття мультивходу — `lib/merge.mjs`. Юзаж:
+ * `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <file>]`.
+ * 🔴 N=1 — merge-шлях ПОВНІСТЮ оминається (early return у `main`, Р6b): стара
+ * поведінка байт-у-байт, без залежності від `lib/merge.mjs`. N>1 — `--out`
+ * обовʼязковий (дефолт-здогадка з першої вхідної теки була б помилковою).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { mapTokens } from './lib/map.mjs';
+import { mergeInspections } from './lib/merge.mjs';
 
 const USAGE =
-  'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json> [--out <tokens-proposal.json>]';
+  'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <tokens-proposal.json>]';
 
-/** Розбір argv: перший позиційний токен — шлях до `inspection.json`, далі `--out <file>`. */
+/** Розбір argv: позиційні токени — шляхи до `inspection.json` (1..N), далі `--out <file>`. */
 export function parseArgs(argv) {
-  const options = {};
+  const options = { inspectionPaths: [] };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--out') options.out = argv[++i];
     else if (arg.startsWith('-'))
       throw new Error(`Невідомий прапорець: ${arg}`);
-    else if (!options.inspectionPath) options.inspectionPath = arg;
-    else throw new Error(`Зайвий аргумент: ${arg}`);
+    else options.inspectionPaths.push(arg);
   }
-  if (!options.inspectionPath)
+  if (options.inspectionPaths.length === 0)
     throw new Error(`Потрібен шлях до inspection.json: ${USAGE}`);
+  if (options.inspectionPaths.length > 1 && !options.out)
+    throw new Error(
+      `Кілька inspection.json (мультивхід, Р6b) — --out обовʼязковий, ` +
+        `бо вивід не можна вгадати з однієї з тек сторінок: ${USAGE}`,
+    );
   if (!options.out)
-    options.out = join(dirname(options.inspectionPath), 'tokens-proposal.json');
+    options.out = join(
+      dirname(options.inspectionPaths[0]),
+      'tokens-proposal.json',
+    );
   return options;
 }
 
@@ -54,22 +65,39 @@ function main() {
     return;
   }
 
-  let inspection;
+  const inspections = [];
   try {
-    inspection = JSON.parse(readFileSync(options.inspectionPath, 'utf8'));
+    for (const path of options.inspectionPaths) {
+      try {
+        inspections.push(JSON.parse(readFileSync(path, 'utf8')));
+      } catch (error) {
+        throw new Error(`Не вдалося прочитати ${path}: ${error.message}`);
+      }
+    }
   } catch (error) {
-    failLoud(
-      new Error(
-        `Не вдалося прочитати ${options.inspectionPath}: ${error.message}`,
-      ),
-    );
+    failLoud(error);
     return;
   }
 
+  // Р6b: N=1 оминає merge-шлях повністю — стара поведінка байт-у-байт.
+  const isMultiInput = inspections.length > 1;
+  const inspection = isMultiInput
+    ? mergeInspections(inspections)
+    : inspections[0];
+
   const proposal = mapTokens(inspection);
+  if (isMultiInput) {
+    proposal.sources = options.inspectionPaths.map((file, i) => ({
+      file,
+      url: inspections[i].url,
+    }));
+  }
   writeFileSync(options.out, JSON.stringify(proposal, null, 2), 'utf8');
 
   console.log(`✅ ${options.out}`);
+  if (isMultiInput) {
+    console.log(`Джерел злито: ${proposal.sources.length}`);
+  }
   console.log('Топ-мапінги:');
   console.log(summarizeMappings(proposal.tokens));
   if (proposal.tokens.dark) {

@@ -59,9 +59,9 @@
 
 ## Фаза 4 — Мультисторінковий мапінг
 
-- [ ] **Step 1:** `lib/merge.mjs` — чиста `mergeInspections(inspections)` за Р6 (окремий модуль ≤150 рядків); `map-tokens.mjs` за Р6b (N файлів; N=1 → early return на чинний шлях; N>1 → обовʼязковий `--out`, `sources`).
-- [ ] **Step 2:** Юніти: злиті частоти/OR-interactive/голосування шрифтів/union stylesheets/dark-OR; children-порядок файлів не впливає (перестановка → той самий результат); N=1 через CLI — чинні тести без правок зелені (регрес сумісності структурно за Р6b).
-- [ ] **Step 3:** `pnpm template:sync` (Р10) → гейти фази.
+- [x] **Step 1:** `lib/merge.mjs` — чиста `mergeInspections(inspections)` за Р6 (окремий модуль ≤150 рядків); `map-tokens.mjs` за Р6b (N файлів; N=1 → early return на чинний шлях; N>1 → обовʼязковий `--out`, `sources`).
+- [x] **Step 2:** Юніти: злиті частоти/OR-interactive/голосування шрифтів/union stylesheets/dark-OR; children-порядок файлів не впливає (перестановка → той самий результат); N=1 через CLI — чинні тести без правок зелені (регрес сумісності структурно за Р6b).
+- [x] **Step 3:** `pnpm template:sync` (Р10) → гейти фази.
 
 ## Фаза 5 — Скіл, гайд, фінал
 

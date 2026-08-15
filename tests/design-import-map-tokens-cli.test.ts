@@ -5,7 +5,7 @@
  * tmp-dir — щоб не смітити в репозиторії.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,5 +72,54 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
 
     expect(run.status).toBe(1);
     expect(run.stderr).toContain('Потрібен шлях');
+  });
+
+  // Р6b: мультивхід — N=1 вище лишається байт-у-байт (те саме `sampleInspection`,
+  // ті самі очікування); тут — лише поведінка при N>1.
+  it('N>1 без --out — гучний exit 1: вивід не можна вгадати з однієї з тек', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'map-tokens-multi-'));
+    const pathA = join(dir, 'a', 'inspection.json');
+    const pathB = join(dir, 'b', 'inspection.json');
+    mkdirSync(join(dir, 'a'), { recursive: true });
+    mkdirSync(join(dir, 'b'), { recursive: true });
+    writeFileSync(pathA, JSON.stringify(sampleInspection), 'utf8');
+    writeFileSync(pathB, JSON.stringify(sampleInspection), 'utf8');
+
+    const run = spawnSync(process.execPath, [cli, pathA, pathB], {
+      encoding: 'utf8',
+    });
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('обовʼязковий');
+  });
+
+  it('N>1 з --out — зливає й пише sources: [{file, url}]', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'map-tokens-multi-out-'));
+    const pathA = join(dir, 'a', 'inspection.json');
+    const pathB = join(dir, 'b', 'inspection.json');
+    mkdirSync(join(dir, 'a'), { recursive: true });
+    mkdirSync(join(dir, 'b'), { recursive: true });
+    const inspectionB = {
+      ...sampleInspection,
+      url: 'https://reference.example/product',
+    };
+    writeFileSync(pathA, JSON.stringify(sampleInspection), 'utf8');
+    writeFileSync(pathB, JSON.stringify(inspectionB), 'utf8');
+    const outPath = join(dir, 'tokens-proposal.json');
+
+    const run = spawnSync(
+      process.execPath,
+      [cli, pathA, pathB, '--out', outPath],
+      { encoding: 'utf8' },
+    );
+
+    expect(run.status).toBe(0);
+    expect(run.stdout).toContain('Джерел злито: 2');
+    const proposal = JSON.parse(readFileSync(outPath, 'utf8'));
+    expect(proposal.sources).toEqual([
+      { file: pathA, url: 'https://reference.example/' },
+      { file: pathB, url: 'https://reference.example/product' },
+    ]);
+    expect(proposal.tokens.background).toBeDefined();
   });
 });
