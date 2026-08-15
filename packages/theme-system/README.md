@@ -1,10 +1,11 @@
 # @simplycms/themes
 
-Система тем SimplyCMS (контракт v2): реєстр тем із lazy-лоадерами, SSR-резолв
+Система тем SimplyCMS (контракт v2.2): реєстр тем із lazy-лоадерами, SSR-резолв
 активної теми з БД, валідатор модуля теми і рендер її токенів у CSS-змінні.
-Тема постачає **лише оформлення** — маніфест, токени, `Header`/`Footer` та,
-опційно, власний каталог перекладів (`messages`); сторінки й каркаси
-лишаються в ядрі (`theme.pages` більше не існує).
+Тема постачає **лише оформлення** — маніфест, токени (включно з типографічними
+`font-sans`/`font-heading`), `Header`/`Footer` та, опційно, власний каталог
+перекладів (`messages`) і зовнішні stylesheet-и шрифтів (`fonts`); сторінки й
+каркаси лишаються в ядрі (`theme.pages` більше не існує).
 
 Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
@@ -26,11 +27,14 @@ pnpm add @simplycms/themes
 | `@simplycms/themes/ThemeContext`        | `ThemeProvider`, `useTheme()`, `useThemeSettings(key)`                           |
 | `@simplycms/themes/applyTokens`         | `applyTokens(tokens)` → CSS `:root { … }` (+ `.dark { … }`) для інлайн-`<style>`  |
 | `@simplycms/themes/validateThemeModule` | `validateThemeModule(m)` — assert-валідатор контракту v2                         |
+| `@simplycms/themes/safeFontStylesheets` | `safeFontStylesheets(fonts)` — фільтр `ThemeModule.fonts`: лише `https:`-URL без символів виходу з атрибута (невалідний запис — skip + `console.warn`) |
 | `@simplycms/themes/useThemeT`           | `useThemeT<K>()` — транслятор власного каталогу теми (`ThemeModule.messages`)    |
-| `@simplycms/themes/types`               | `ThemeModule`, `ThemeManifest`, `DesignTokens`, `ThemeComponents`, `ThemeMessages`, `ThemeRecord`, `ActiveThemeSSR` |
+| `@simplycms/themes/types`               | `ThemeModule`, `ThemeManifest`, `DesignTokens`, `ThemeComponents`, `ThemeMessages`, `ThemeFontSource`, `ThemeRecord`, `ActiveThemeSSR` |
 
-Токени пишуться в **наявні** semantic-змінні shadcn (`--primary`, `--radius`, …);
-тема не везе власного CSS-файлу.
+Токени пишуться в **наявні** semantic-змінні shadcn (`--primary`, `--radius`, …)
+плюс типографічні `--font-sans`/`--font-heading` (v2.2); тема не везе власного
+CSS-файлу, а шрифти довантажує декларацією `fonts` (лише `https:`-stylesheet,
+без `@font-face` — межа v2.2).
 
 ## Приклад
 

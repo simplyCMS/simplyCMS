@@ -38,48 +38,48 @@
 
 ## Фаза 1 — Контракт у `@simplycms/themes`
 
-- [ ] **Step 1:** `packages/theme-system/src/types.ts` — додати `'font-sans'?: string` і `'font-heading'?: string` у `ThemeTokenValues` (doc-коментар про формат «повний font-family stack»); тип `ThemeFontSource = { stylesheet: string }` і поле `fonts?: ReadonlyArray<ThemeFontSource>` у `ThemeModule` (doc-коментар про межі v2.2 — Р4).
-- [ ] **Step 2:** `packages/theme-system/src/applyTokens.ts` — додати обидва ключі в `TOKEN_KEYS`; оновити коментар про «фактичний набір». Санітизацію не послаблювати: юніт-тестом довести, що font-stack із лапками/комами проходить `isSafeValue`, а значення з `;`/`}` — ні.
-- [ ] **Step 3:** Новий модуль `packages/theme-system/src/safeFontStylesheets.ts`: приймає `unknown`, повертає `string[]` — лише масив обʼєктів зі `stylesheet`-рядком, кожен URL парситься `new URL(...)` з протоколом `https:`, відкидання значень із `"`/`'`/`<`/`>`/пробілами; невалідний запис — skip + `console.warn`. 🔴 Експорт СУБШЛЯХОМ (Р11): ключ у `exports` → `./src/safeFontStylesheets.ts`, дзеркальний dist-запис у `publishConfig.exports` (`types` + `import`), новий entry у `tsup.config.ts`. Barrel — не чіпати.
-- [ ] **Step 4:** `packages/theme-system/src/validateThemeModule.ts` — мʼяка перевірка форми `fonts` (масив обʼєктів зі `stylesheet: string`), тексти помилок — укр., за зразком `messages`-гілки.
-- [ ] **Step 5:** Юніти `packages/theme-system/src/__tests__/`: applyTokens (нові ключі рендеряться; ключ поза TOKEN_KEYS ігнорується; font-stack проходить, інʼєкція — ні), `safeFontStylesheets` (позитив/негатив: `http:`, відносний URL, лапки, не-масив, порожньо), validateThemeModule (валідний/битий `fonts`).
-- [ ] **Step 6:** Гейти фази: `pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm build:packages && pnpm test:packaging` (packaging — бо мінявся `exports`/tsup theme-system; парність субшляху стережуть audit-exports + published-exports-parity).
+- [x] **Step 1:** `packages/theme-system/src/types.ts` — додати `'font-sans'?: string` і `'font-heading'?: string` у `ThemeTokenValues` (doc-коментар про формат «повний font-family stack»); тип `ThemeFontSource = { stylesheet: string }` і поле `fonts?: ReadonlyArray<ThemeFontSource>` у `ThemeModule` (doc-коментар про межі v2.2 — Р4).
+- [x] **Step 2:** `packages/theme-system/src/applyTokens.ts` — додати обидва ключі в `TOKEN_KEYS`; оновити коментар про «фактичний набір». Санітизацію не послаблювати: юніт-тестом довести, що font-stack із лапками/комами проходить `isSafeValue`, а значення з `;`/`}` — ні.
+- [x] **Step 3:** Новий модуль `packages/theme-system/src/safeFontStylesheets.ts`: приймає `unknown`, повертає `string[]` — лише масив обʼєктів зі `stylesheet`-рядком, кожен URL парситься `new URL(...)` з протоколом `https:`, відкидання значень із `"`/`'`/`<`/`>`/пробілами; невалідний запис — skip + `console.warn`. 🔴 Експорт СУБШЛЯХОМ (Р11): ключ у `exports` → `./src/safeFontStylesheets.ts`, дзеркальний dist-запис у `publishConfig.exports` (`types` + `import`), новий entry у `tsup.config.ts`. Barrel — не чіпати.
+- [x] **Step 4:** `packages/theme-system/src/validateThemeModule.ts` — мʼяка перевірка форми `fonts` (масив обʼєктів зі `stylesheet: string`), тексти помилок — укр., за зразком `messages`-гілки.
+- [x] **Step 5:** Юніти `packages/theme-system/src/__tests__/`: applyTokens (нові ключі рендеряться; ключ поза TOKEN_KEYS ігнорується; font-stack проходить, інʼєкція — ні), `safeFontStylesheets` (позитив/негатив: `http:`, відносний URL, лапки, не-масив, порожньо), validateThemeModule (валідний/битий `fonts`).
+- [x] **Step 6:** Гейти фази: `pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm build:packages && pnpm test:packaging` (packaging — бо мінявся `exports`/tsup theme-system; парність субшляху стережуть audit-exports + published-exports-parity).
 
 ## Фаза 2 — Провід у host і каркасах
 
-- [ ] **Step 1:** `src/styles/globals.css` — у `:root` `@layer base`: `--font-sans: 'Inter', system-ui, sans-serif;` та `--font-heading: var(--font-sans);`; у base-layer — `h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); }` (Р3).
-- [ ] **Step 2:** `tailwind.config.ts` (корінь) — `fontFamily: { sans: ['var(--font-sans)'], heading: ['var(--font-heading)'] }`; те саме у `packages/create-simplycms-store/template/tailwind.config.ts` (Р7: правити лише fontFamily, глоби template не чіпати).
-- [ ] **Step 3:** 🔴 (Р3, ревʼю) `packages/storefront-routes/src/components/ProductCarousel.tsx:46` і `BannerSlider.tsx:146` — замінити `font-serif` → `font-heading`. `themes/default/**` не чіпати. Зафіксувати в PR-описі: серіф-заголовки Home на чистому магазині стають Inter.
-- [ ] **Step 4:** `packages/storefront-routes/src/shells/ThemeFonts.tsx` — новий компонент (зразок — `ThemeTokens.tsx`): `import { safeFontStylesheets } from '@simplycms/themes/safeFontStylesheets'` (🔴 ТІЛЬКИ субшлях, Р11) → `<link rel="stylesheet" href=…>` на кожен URL; підключити в `StorefrontShell.tsx` і `ProtectedShell.tsx` поруч із `ThemeTokens` (Р5).
-- [ ] **Step 5:** `pnpm template:sync` — розкатати `globals.css` у template і канон `packages/cli/host/`; `tests/create-store-template-parity.test.ts` зелений.
-- [ ] **Step 6:** Компонентний тест рендера `ThemeFonts` (jsdom/Testing Library): валідні URL → `<link>`-и; порожньо/відсутнє поле → нічого; битий запис відфільтровано.
-- [ ] **Step 7:** Гейти фази (повний канонічний порядок). Поведінкова звірка: чистий магазин — Inter скрізь (fallback-змінні працюють); заголовки Home (h2 каруселей/банера) реагують на зміну `--font-heading` (перевірити руками в dev або юнітом на клас `font-heading`).
+- [x] **Step 1:** `src/styles/globals.css` — у `:root` `@layer base`: `--font-sans: 'Inter', system-ui, sans-serif;` та `--font-heading: var(--font-sans);`; у base-layer — `h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); }` (Р3).
+- [x] **Step 2:** `tailwind.config.ts` (корінь) — `fontFamily: { sans: ['var(--font-sans)'], heading: ['var(--font-heading)'] }`; те саме у `packages/create-simplycms-store/template/tailwind.config.ts` (Р7: правити лише fontFamily, глоби template не чіпати).
+- [x] **Step 3:** 🔴 (Р3, ревʼю) `packages/storefront-routes/src/components/ProductCarousel.tsx:46` і `BannerSlider.tsx:146` — замінити `font-serif` → `font-heading`. `themes/default/**` не чіпати. Зафіксувати в PR-описі: серіф-заголовки Home на чистому магазині стають Inter.
+- [x] **Step 4:** `packages/storefront-routes/src/shells/ThemeFonts.tsx` — новий компонент (зразок — `ThemeTokens.tsx`): `import { safeFontStylesheets } from '@simplycms/themes/safeFontStylesheets'` (🔴 ТІЛЬКИ субшлях, Р11) → `<link rel="stylesheet" href=…>` на кожен URL; підключити в `StorefrontShell.tsx` і `ProtectedShell.tsx` поруч із `ThemeTokens` (Р5).
+- [x] **Step 5:** `pnpm template:sync` — розкатати `globals.css` у template і канон `packages/cli/host/`; `tests/create-store-template-parity.test.ts` зелений.
+- [x] **Step 6:** Компонентний тест рендера `ThemeFonts` (jsdom/Testing Library): валідні URL → `<link>`-и; порожньо/відсутнє поле → нічого; битий запис відфільтровано.
+- [x] **Step 7:** Гейти фази (повний канонічний порядок). Поведінкова звірка: чистий магазин — Inter скрізь (fallback-змінні працюють); заголовки Home (h2 каруселей/банера) реагують на зміну `--font-heading` (перевірити руками в dev або юнітом на клас `font-heading`).
 
 ## Фаза 3 — Розчинення brand-*
 
-- [ ] **Step 1:** Grep-доказ по всьому репо (`src`, `packages`, `themes`, `plugins`, template): єдині споживачі `--brand-*`/`colors.brand` — три utility-класи в `globals.css` і мапінг у двох `tailwind.config.ts`; вживань `bg-brand`/`text-brand`/`border-brand`/`from-brand`/`to-brand`/`via-brand` — нуль. Інакше — зупинка, повернення до плану.
-- [ ] **Step 2:** `src/styles/globals.css` — переписати три класи ТОЧНО за Р6 (зупинки зафіксовані там, включно із забороненою формою color-mix); видалити блок `--brand-*` із `:root`; оновити шапку-коментар файлу («SolarStore Design System» → нейтральний опис бази токенів).
-- [ ] **Step 3:** Видалити `colors.brand` з обох `tailwind.config.ts` (корінь + template).
-- [ ] **Step 4:** `pnpm template:sync` (розкат `globals.css`).
-- [ ] **Step 5:** Гейти фази. Поведінкова звірка: `CartButton`/`CatalogLayout` градієнти живі й фарбуються `--primary` (база globals — той самий синій, дельта ~нуль; під темою default кнопка стане кораловою — очікувано, у PR-опис).
-- [ ] **Step 6:** Якщо існують юніт/снепшот-тести на видалені класи чи `colors.brand` — оновити в цій же фазі.
+- [x] **Step 1:** Grep-доказ по всьому репо (`src`, `packages`, `themes`, `plugins`, template): єдині споживачі `--brand-*`/`colors.brand` — три utility-класи в `globals.css` і мапінг у двох `tailwind.config.ts`; вживань `bg-brand`/`text-brand`/`border-brand`/`from-brand`/`to-brand`/`via-brand` — нуль. Інакше — зупинка, повернення до плану.
+- [x] **Step 2:** `src/styles/globals.css` — переписати три класи ТОЧНО за Р6 (зупинки зафіксовані там, включно із забороненою формою color-mix); видалити блок `--brand-*` із `:root`; оновити шапку-коментар файлу («SolarStore Design System» → нейтральний опис бази токенів).
+- [x] **Step 3:** Видалити `colors.brand` з обох `tailwind.config.ts` (корінь + template).
+- [x] **Step 4:** `pnpm template:sync` (розкат `globals.css`).
+- [x] **Step 5:** Гейти фази. Поведінкова звірка: `CartButton`/`CatalogLayout` градієнти живі й фарбуються `--primary` (база globals — той самий синій, дельта ~нуль; під темою default кнопка стане кораловою — очікувано, у PR-опис).
+- [x] **Step 6:** Якщо існують юніт/снепшот-тести на видалені класи чи `colors.brand` — оновити в цій же фазі.
 
 ## Фаза 4 — Носії контракту: референс-тема і шаблон автора
 
-- [ ] **Step 1:** `packages/simplycms-theme-solarstore/src/`: у `tokens.ts` — `'font-sans': "'Inter', system-ui, sans-serif"`; у `index.ts` — `fonts: [{ stylesheet: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }]` (Р8).
-- [ ] **Step 2:** `packages/cli/template-theme/tokens.ts` — закоментований приклад `'font-sans'`/`'font-heading'`; `template-theme/index.ts` — закоментований приклад `fonts`; `template-theme/README.md` — розділ про типографіку.
-- [ ] **Step 3:** Перевірити `tests/cli-create-theme.test.ts` — якщо асертить точний вміст шаблону, оновити фікстури.
-- [ ] **Step 4:** (Р9) Компонентний тест із РЕАЛЬНИМ модулем `@simplycms/theme-solarstore`: `fonts` проходить `safeFontStylesheets` без відкидань, `ThemeFonts` рендерить `<link>` з очікуваним href. Gate D/B НЕ чіпати.
-- [ ] **Step 5:** Гейти фази + `pnpm build:packages && pnpm test:packaging` (мінявся вміст tarball теми).
+- [x] **Step 1:** `packages/simplycms-theme-solarstore/src/`: у `tokens.ts` — `'font-sans': "'Inter', system-ui, sans-serif"`; у `index.ts` — `fonts: [{ stylesheet: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }]` (Р8).
+- [x] **Step 2:** `packages/cli/template-theme/tokens.ts` — закоментований приклад `'font-sans'`/`'font-heading'`; `template-theme/index.ts` — закоментований приклад `fonts`; `template-theme/README.md` — розділ про типографіку.
+- [x] **Step 3:** Перевірити `tests/cli-create-theme.test.ts` — якщо асертить точний вміст шаблону, оновити фікстури.
+- [x] **Step 4:** (Р9) Компонентний тест із РЕАЛЬНИМ модулем `@simplycms/theme-solarstore`: `fonts` проходить `safeFontStylesheets` без відкидань, `ThemeFonts` рендерить `<link>` з очікуваним href. Gate D/B НЕ чіпати.
+- [x] **Step 5:** Гейти фази + `pnpm build:packages && pnpm test:packaging` (мінявся вміст tarball теми).
 
 ## Фаза 5 — Документація, амендмент спеки, фінальна верифікація
 
-- [ ] **Step 1:** Спека — «### 6.2. Амендмент за фактом v2.2 (2026-08-15)» ТОЧНО за Р10 (дата в заголовку; речення про «v2.2 ≠ фаза»; докази: юніти theme-system + grep-доказ brand-*). D2–D4 не правити.
-- [ ] **Step 2:** `docs/architecture/themes.md` §2 — контракт (`fonts`, нові токени) + §1/§8 межі v2.2 (без @font-face, fonts-контур у пілоті не видимий — борг); `docs/guides/themes.md` §3.2/§3.3 — типографіка + приклад `fonts`.
-- [ ] **Step 3:** `CLAUDE.md` (Theme System) і `.github/instructions/ui-architecture.instructions.md` — синхронізувати формулювання контракту v2.2.
-- [ ] **Step 4:** Роадмап — зафіксувати трек (виконано v2.2; посилання на ресерч/задачу/план; 🔴 борг Р9: живий SSR-доказ fonts-контуру потребує Gate B + SEED_THEME='solarstore' + перегенерації сіду + розрізнюваного маркера — свідомо відкладено; горизонти 2–3 — рішення-кандидати).
-- [ ] **Step 5:** Повний прогін гейтів у канонічному порядку + `pnpm pilot:pack` (закон репо: зелений `pnpm test` пакування не доводить).
-- [ ] **Step 6:** Оновити чекбокси в `docs/tasks/theme-contract-v2_2.md` (DoD §3) і PR #32.
+- [x] **Step 1:** Спека — «### 6.2. Амендмент за фактом v2.2 (2026-08-15)» ТОЧНО за Р10 (дата в заголовку; речення про «v2.2 ≠ фаза»; докази: юніти theme-system + grep-доказ brand-*). D2–D4 не правити.
+- [x] **Step 2:** `docs/architecture/themes.md` §2 — контракт (`fonts`, нові токени) + §1/§8 межі v2.2 (без @font-face, fonts-контур у пілоті не видимий — борг); `docs/guides/themes.md` §3.2/§3.3 — типографіка + приклад `fonts`.
+- [x] **Step 3:** `CLAUDE.md` (Theme System) і `.github/instructions/ui-architecture.instructions.md` — синхронізувати формулювання контракту v2.2.
+- [x] **Step 4:** Роадмап — зафіксувати трек (виконано v2.2; посилання на ресерч/задачу/план; 🔴 борг Р9: живий SSR-доказ fonts-контуру потребує Gate B + SEED_THEME='solarstore' + перегенерації сіду + розрізнюваного маркера — свідомо відкладено; горизонти 2–3 — рішення-кандидати).
+- [x] **Step 5:** Повний прогін гейтів у канонічному порядку + `pnpm pilot:pack` (закон репо: зелений `pnpm test` пакування не доводить).
+- [x] **Step 6:** Оновити чекбокси в `docs/tasks/theme-contract-v2_2.md` (DoD §3) і PR #32.
 
 ## Поза скоупом плану (звірено із задачею §4)
 
