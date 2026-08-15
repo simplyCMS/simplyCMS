@@ -8,6 +8,7 @@
  * поведінка байт-у-байт, без залежності від `lib/merge.mjs`. N>1 — `--out`
  * обовʼязковий (дефолт-здогадка з першої вхідної теки була б помилковою).
  */
+import { isCliEntry } from './lib/cli-entry.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { mapTokens } from './lib/map.mjs';
@@ -125,7 +126,8 @@ function main() {
   }
 }
 
-// Запускати CLI лише при прямому виконанні — не при імпорті функцій у тестах.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Запускати CLI лише при прямому виконанні (isCliEntry — realpath-сумісний
+// із канонічним симлінк-шляхом .claude/skills), не при імпорті в тестах.
+if (isCliEntry(import.meta.url)) {
   main();
 }

@@ -7,6 +7,7 @@
  * `--dark`-контракт лишаються стабільним публічним API цього файлу).
  * Юзаж: `inspect.mjs <url> [--out d] [--dark]`.
  */
+import { isCliEntry } from './lib/cli-entry.mjs';
 import { join } from 'node:path';
 import { loadChromium, resolveChromium } from './lib/browser.mjs';
 import { inspectPage } from './lib/inspect-page.mjs';
@@ -98,7 +99,8 @@ async function main() {
   }
 }
 
-// Запускати CLI лише при прямому виконанні — не при імпорті функцій у тестах.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Запускати CLI лише при прямому виконанні (isCliEntry — realpath-сумісний
+// із канонічним симлінк-шляхом .claude/skills), не при імпорті в тестах.
+if (isCliEntry(import.meta.url)) {
   main();
 }

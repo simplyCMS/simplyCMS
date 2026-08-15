@@ -75,7 +75,7 @@ describe('lib/map.mjs — контракт mapTokens незалежно від �
 
 const INSPECT_CLI = join(
   process.cwd(),
-  '.agents/skills/redesign-from-reference/scripts/inspect.mjs',
+  '.claude/skills/redesign-from-reference/scripts/inspect.mjs',
 );
 
 // Регресія ревʼю: невалідний URL має падати каналом `failLoud` («❌ …»),

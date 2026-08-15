@@ -14,7 +14,7 @@ import { sampleInspection } from './fixtures/design-import/inspection.fixture.mj
 
 const cli = fileURLToPath(
   new URL(
-    '../.agents/skills/redesign-from-reference/scripts/map-tokens.mjs',
+    '../.claude/skills/redesign-from-reference/scripts/map-tokens.mjs',
     import.meta.url,
   ),
 );

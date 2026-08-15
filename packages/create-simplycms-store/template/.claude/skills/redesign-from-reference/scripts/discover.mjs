@@ -7,6 +7,7 @@
  * `lib/sitemap.mjs`. Юзаж:
  * `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]`.
  */
+import { isCliEntry } from './lib/cli-entry.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
@@ -127,7 +128,8 @@ async function main() {
   }
 }
 
-// Запускати CLI лише при прямому виконанні — не при імпорті функцій у тестах.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Запускати CLI лише при прямому виконанні (isCliEntry — realpath-сумісний
+// із канонічним симлінк-шляхом .claude/skills), не при імпорті в тестах.
+if (isCliEntry(import.meta.url)) {
   main();
 }
