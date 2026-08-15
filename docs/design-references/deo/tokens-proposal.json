@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "tokens": {
+    "background": "0 0% 100%",
+    "foreground": "0 0% 4%",
+    "primary": "210 20% 98%",
+    "primary-foreground": "0 0% 4%",
+    "ring": "210 20% 98%",
+    "secondary": "44 100% 50%",
+    "secondary-foreground": "0 0% 4%",
+    "accent": "44 100% 50%",
+    "accent-foreground": "0 0% 4%",
+    "card": "220 14% 96%",
+    "card-foreground": "0 0% 4%",
+    "popover": "220 14% 96%",
+    "popover-foreground": "0 0% 4%",
+    "border": "220 14% 96%",
+    "input": "220 14% 96%",
+    "radius": "1.375rem",
+    "font-sans": "\"Geist Mono\", \"Geist Mono Fallback\"",
+    "font-heading": "Geist, \"Geist Fallback\""
+  },
+  "confidence": {
+    "background": 0.5,
+    "foreground": 0.55,
+    "primary": 0.07,
+    "secondary": 0.01,
+    "border": 0.88
+  },
+  "contrastWarnings": [],
+  "unmapped": [
+    "#000000",
+    "#f0fdf4",
+    "#e6e6eb",
+    "#f9f9fb",
+    "#6a7282",
+    "#99a1af",
+    "#ffffff",
+    "#4a5565",
+    "#ffb900",
+    "#d1d5dc",
+    "#b99651",
+    "#008236",
+    "#ffffff"
+  ],
+  "sources": [
+    {
+      "file": "docs/design-references/deo/home/inspection.json",
+      "url": "https://deo-ecommerce.nextjsshop-preview.workers.dev/"
+    },
+    {
+      "file": "docs/design-references/deo/listing/inspection.json",
+      "url": "https://deo-ecommerce.nextjsshop-preview.workers.dev/product"
+    },
+    {
+      "file": "docs/design-references/deo/product/inspection.json",
+      "url": "https://deo-ecommerce.nextjsshop-preview.workers.dev/product/omega-speedmaster"
+    },
+    {
+      "file": "docs/design-references/deo/about/inspection.json",
+      "url": "https://deo-ecommerce.nextjsshop-preview.workers.dev/about"
+    }
+  ]
+}

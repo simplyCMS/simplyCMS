@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "url": "https://deo-ecommerce.nextjsshop-preview.workers.dev/product",
+  "viewports": {
+    "desktop": 1440,
+    "tablet": 768,
+    "mobile": 390
+  },
+  "sampleViewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "colors": [
+    {
+      "value": "#f5f5f5",
+      "role": "background",
+      "frequency": 3,
+      "area": 4495032,
+      "interactive": false
+    },
+    {
+      "value": "#0a0a0a",
+      "role": "text",
+      "frequency": 203,
+      "area": 41473778,
+      "interactive": true
+    },
+    {
+      "value": "#ffffff",
+      "role": "background",
+      "frequency": 26,
+      "area": 4355258,
+      "interactive": true
+    },
+    {
+      "value": "#f3f4f6",
+      "role": "background",
+      "frequency": 24,
+      "area": 37810,
+      "interactive": true
+    },
+    {
+      "value": "#000000",
+      "role": "text",
+      "frequency": 51,
+      "area": 144407,
+      "interactive": true
+    },
+    {
+      "value": "#6a7282",
+      "role": "text",
+      "frequency": 102,
+      "area": 230487,
+      "interactive": true
+    },
+    {
+      "value": "#364153",
+      "role": "text",
+      "frequency": 1,
+      "area": 40,
+      "interactive": true
+    },
+    {
+      "value": "#000000",
+      "role": "background",
+      "frequency": 5,
+      "area": 1320193,
+      "interactive": true
+    },
+    {
+      "value": "#4a5565",
+      "role": "text",
+      "frequency": 21,
+      "area": 49855,
+      "interactive": true
+    },
+    {
+      "value": "#f9fafb",
+      "role": "background",
+      "frequency": 2,
+      "area": 44735,
+      "interactive": true
+    },
+    {
+      "value": "#f3f4f6",
+      "role": "border",
+      "frequency": 2,
+      "area": 100704,
+      "interactive": false
+    },
+    {
+      "value": "#ffffff",
+      "role": "text",
+      "frequency": 19,
+      "area": 58567,
+      "interactive": true
+    },
+    {
+      "value": "#f1f1f1",
+      "role": "background",
+      "frequency": 1,
+      "area": 4380480,
+      "interactive": false
+    },
+    {
+      "value": "#99a1af",
+      "role": "text",
+      "frequency": 80,
+      "area": 70390,
+      "interactive": true
+    },
+    {
+      "value": "#ffffff",
+      "role": "border",
+      "frequency": 1,
+      "area": 10383,
+      "interactive": true
+    },
+    {
+      "value": "#e5e7eb",
+      "role": "border",
+      "frequency": 1,
+      "area": 14463,
+      "interactive": true
+    },
+    {
+      "value": "#d1d5dc",
+      "role": "text",
+      "frequency": 2,
+      "area": 462,
+      "interactive": false
+    }
+  ],
+  "fonts": {
+    "heading": {
+      "family": "Geist, \"Geist Fallback\"",
+      "weight": "600",
+      "sizePx": 18
+    },
+    "body": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\"",
+      "weight": "600",
+      "sizePx": 14
+    }
+  },
+  "radius": [
+    {
+      "valuePx": 22,
+      "frequency": 2
+    },
+    {
+      "valuePx": 18,
+      "frequency": 1
+    },
+    {
+      "valuePx": 20,
+      "frequency": 18
+    },
+    {
+      "valuePx": 10,
+      "frequency": 1
+    }
+  ],
+  "radiusDropped": 1,
+  "shadows": [
+    "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+    "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px"
+  ],
+  "spacing": [
+    4,
+    8,
+    16,
+    20
+  ],
+  "fontStylesheets": [
+    "https://deo-ecommerce.nextjsshop-preview.workers.dev/_next/static/chunks/066jf0nk75nic.css",
+    "https://deo-ecommerce.nextjsshop-preview.workers.dev/_next/static/chunks/12g44yx_h408g.css"
+  ],
+  "darkDetected": false
+}
