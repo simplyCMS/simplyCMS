@@ -79,6 +79,7 @@
     "**/dist",
     "tests/pilot/store-template",
     "packages/create-simplycms-store/template",
-    "packages/cli/host"
+    "packages/cli/host",
+    "apps/www"
   ]
 }
