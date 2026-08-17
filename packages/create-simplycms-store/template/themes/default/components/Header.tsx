@@ -1,227 +1,100 @@
-import { Link, useNavigate } from '@tanstack/react-router';
-import {
-  Search,
-  User,
-  ShoppingBag,
-  Menu,
-  X,
-  Settings,
-  LogOut,
-} from 'lucide-react';
-import { Button } from '@simplycms/ui/button';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { useCart } from '@simplycms/core/hooks/useCart';
-import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useQuery } from '@tanstack/react-query';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useState } from 'react';
+import { Link, useRouterState } from '@tanstack/react-router';
+import { ShoppingBag } from 'lucide-react';
+import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
 import { useT } from '@simplycms/i18n';
 import { useThemeT } from '@simplycms/themes/useThemeT';
-import { AnnouncementBar } from './AnnouncementBar';
-import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
-import { useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@simplycms/ui/dropdown-menu';
-import type { DefaultThemeKey } from '../messages';
+import { HeaderActions } from './HeaderActions';
+import type { ThemeKey } from '../messages';
 
+/** Пункт навігаційної пігулки. Активний — заливка `muted` (виміряно #f3f4f6). */
+function navItem(isActive: boolean) {
+  return [
+    'rounded-full px-4 py-2 text-sm font-medium transition-colors',
+    isActive
+      ? 'bg-muted text-foreground'
+      : 'text-muted-foreground hover:text-foreground',
+  ].join(' ');
+}
+
+/**
+ * Header default-теми — спека: локальний артефакт
+ * `docs/design-references/…/components/Header.spec.md` (поза git).
+ *
+ * 🔴 Модель взаємодії — static + click: панель НЕ приклеюється. Референс
+ * виміряно як `position: static`, і зробити тут sticky означало б
+ * побудувати іншу модель, ніж у джерела, — найдорожча помилка цієї фази.
+ *
+ * 🔴 Навігаційна пігулка притиснута ЛІВОРУЧ, поруч із логотипом (вимір:
+ * лого x=96, перший пункт x=156), а біла — сама група; активний пункт
+ * навпаки темніший. Це розходиться з усною настановою «центрована, активний
+ * — біла пігулка», і спека фіксує саме вимір (див. §2 спеки).
+ */
 export function Header() {
   const t = useT();
-  const tt = useThemeT<DefaultThemeKey>();
-  const supabase = useSupabaseClient();
-  const { user, isLoading: authLoading, isAdmin } = useAuth();
-  const { totalItems, setIsOpen } = useCart();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const tt = useThemeT<ThemeKey>();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const logoUrl = useThemeSettings<string>('logoUrl');
-  const storeName = useThemeSettings<string>('storeName') || 'Beauty Store';
-
-  const { data: sections } = useQuery({
-    queryKey: ['sections-nav'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('sections')
-        .select('id, name, slug, parent_id')
-        .eq('is_active', true)
-        .is('parent_id', null)
-        .order('sort_order');
-      return data || [];
+  // Пункти референсу (Contact/About/Overview) не переносимо — таких сторінок
+  // у магазині немає; беремо лише наші реальні роути.
+  const links = [
+    { to: '/', label: tt('theme.nav.home'), active: pathname === '/' },
+    {
+      to: '/catalog',
+      label: t('catalog.title'),
+      active: pathname.startsWith('/catalog'),
     },
-  });
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast({ title: tt('theme.header.signedOut') });
-  };
+  ] as const;
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] border-b border-border/40">
-        <AnnouncementBar />
-
-        {/* Middle row: logo + icons */}
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          {/* Mobile menu toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
-
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={storeName}
-                width={160}
-                height={40}
-                fetchPriority="high"
-                loading="eager"
-                decoding="async"
-                className="h-10 max-w-[160px] object-contain"
-              />
-            ) : (
-              <span className="text-xl font-serif font-bold tracking-wide text-foreground">
-                {storeName}
+      <header className="w-full">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:h-20">
+          <div className="flex min-w-0 items-center gap-3 md:gap-5">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <ShoppingBag className="h-4 w-4" />
               </span>
-            )}
-          </Link>
+              <span className="truncate text-lg font-bold text-foreground">
+                {tt('theme.brand')}
+              </span>
+            </Link>
 
-          {/* Icons */}
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="text-foreground">
-              <Search className="h-5 w-5" />
-            </Button>
-
-            {!authLoading &&
-              (user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-foreground"
-                    >
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem className="text-muted-foreground text-xs">
-                      {user.email}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => navigate({ to: '/profile' })}
-                    >
-                      <User className="mr-2 h-4 w-4" />{' '}
-                      {tt('theme.header.myAccount')}
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem
-                        onClick={() => navigate({ to: '/admin' })}
-                      >
-                        <Settings className="mr-2 h-4 w-4" />{' '}
-                        {tt('theme.header.adminPanel')}
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleSignOut}
-                      className="text-destructive"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" /> {t('nav.signOut')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-foreground"
-                  asChild
+            <nav className="hidden items-center rounded-full bg-card px-2 py-1.5 md:flex">
+              {links.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={navItem(link.active)}
                 >
-                  <Link to="/auth">
-                    <User className="h-5 w-5" />
-                  </Link>
-                </Button>
+                  {link.label}
+                </Link>
               ))}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-foreground"
-              onClick={() => setIsOpen(true)}
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
+            </nav>
           </div>
+
+          <HeaderActions
+            menuOpen={menuOpen}
+            onToggleMenu={() => setMenuOpen(!menuOpen)}
+          />
         </div>
 
-        {/* Category nav — desktop */}
-        <nav className="hidden md:block border-t border-border/30">
-          <div className="container mx-auto px-4 flex items-center justify-center gap-8 h-11">
-            <Link
-              to="/catalog"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors uppercase tracking-wider"
-            >
-              {t('catalog.title')}
-            </Link>
-            {sections?.map((s) => (
-              <Link
-                key={s.id}
-                to="/catalog/$sectionSlug"
-                params={{ sectionSlug: s.slug }}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider"
-              >
-                {s.name}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border/30 bg-[hsl(var(--background))]">
-            <div className="container mx-auto px-4 py-4 space-y-2">
-              <Link
-                to="/catalog"
-                className="block py-2 text-sm font-medium text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('catalog.title')}
-              </Link>
-              {sections?.map((s) => (
+        {menuOpen && (
+          <nav className="mx-auto max-w-7xl px-4 pb-4 md:hidden">
+            <div className="flex flex-col gap-1 rounded-[--radius] bg-card p-2">
+              {links.map((link) => (
                 <Link
-                  key={s.id}
-                  to="/catalog/$sectionSlug"
-                  params={{ sectionSlug: s.slug }}
-                  className="block py-2 text-sm text-muted-foreground"
-                  onClick={() => setMobileMenuOpen(false)}
+                  key={link.to}
+                  to={link.to}
+                  className={navItem(link.active)}
+                  onClick={() => setMenuOpen(false)}
                 >
-                  {s.name}
+                  {link.label}
                 </Link>
               ))}
             </div>
-          </div>
+          </nav>
         )}
       </header>
 

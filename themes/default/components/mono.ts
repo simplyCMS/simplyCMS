@@ -8,7 +8,7 @@
  * одно треба — інакше він розповзеться копіями по трьох компонентах.
  *
  * Сам шрифт приїжджає тим самим Google-Fonts-stylesheet-ом, що й `Geist`
- * (`ThemeModule.fonts` у `themes/deo/index.ts`).
+ * (`ThemeModule.fonts` у `themes/default/index.ts`).
  */
 export const MONO_STACK = "'Geist Mono', ui-monospace, monospace";
 

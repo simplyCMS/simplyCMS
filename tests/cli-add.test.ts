@@ -143,12 +143,7 @@ describe('cli add', () => {
     expect(source).toContain(
       "'solar': () => import('@acme/simplycms-theme-solar'),",
     );
-    expect(configThemeKeys(source)).toEqual([
-      'solar',
-      'deo',
-      'default',
-      'solarstore',
-    ]);
+    expect(configThemeKeys(source)).toEqual(['solar', 'default', 'solarstore']);
   });
 
   it('insertEntry: однорядковий порожній plugins розгортається у валідний TS', () => {
@@ -297,11 +292,7 @@ describe('cli add', () => {
 
   it('парсери конфігу читають реальні ключі; без якоря — null', () => {
     expect(configThemeKeys(templateConfig)).toEqual(['default']);
-    expect(configThemeKeys(hostConfig)).toEqual([
-      'deo',
-      'default',
-      'solarstore',
-    ]);
+    expect(configThemeKeys(hostConfig)).toEqual(['default', 'solarstore']);
     expect(configPluginNames(templateConfig)).toEqual(['hello-world', 'faq']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();
@@ -311,7 +302,6 @@ describe('cli add', () => {
     // Саме специфікатор, а не ключ, резолвить doctor: локальна тека і пакет —
     // різні місця на диску, а через --name ключ може не збігатися з жодним.
     expect(configThemeEntries(hostConfig)).toEqual([
-      { key: 'deo', spec: '@themes/deo/index' },
       { key: 'default', spec: '@themes/default/index' },
       { key: 'solarstore', spec: '@simplycms/theme-solarstore' },
     ]);

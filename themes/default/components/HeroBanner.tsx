@@ -31,8 +31,8 @@ const CTA_BASE =
   'inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /**
- * HeroBanner теми «deo» — спека:
- * `docs/design-references/deo/components/HeroBanner.spec.md`.
+ * HeroBanner default-теми — спека: локальний артефакт
+ * `docs/design-references/…/components/HeroBanner.spec.md` (поза git).
  *
  * Модель взаємодії — static: жодного слайдера, автопрокрутки чи паралаксу
  * (hero референсу виміряно як фіксований блок). Ядро дає `banners`, і ми
