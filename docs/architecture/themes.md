@@ -84,8 +84,11 @@ ThemeModule = {
   (`StorefrontShell`, `ProtectedShell`) поруч із `ThemeTokens`; `<link
   rel="stylesheet">` у body валідний за HTML-спекою і працює в SSR-стрімі.
   Базовий Inter-`<link>` у `__root.tsx` лишається — адмінка і fallback
-  вітрини. Зразок — `@simplycms/theme-solarstore` (декларує `fonts`);
-  `themes/default` `fonts` не має — опційність поля жива, не декларативна.
+  вітрини. Обидві теми репозиторію декларують `fonts` (`themes/default` —
+  Geist, з 2026-08-17; `@simplycms/theme-solarstore` — власний стек);
+  опційність поля лишається контрактною: шаблон `simplycms create theme`
+  постачає `fonts` закоментованим, а `validateThemeModule` відсутність
+  поля не вважає помилкою.
 - `manifest.displayName` — те, що бачить адмін у списку тем; поле фактично
   існує в контракті (`packages/theme-system/src/types.ts`), хоча спека §6
   його не називала — амендмент §6 (Р14, див. спеку).
