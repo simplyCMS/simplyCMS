@@ -7,6 +7,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { scrollThrough } from './browser.mjs';
+import { sweepHover } from './hover-sweep.mjs';
 import { captureMotion, captureReveal } from './motion.mjs';
 import {
   captureScreenshots,
@@ -55,8 +56,12 @@ export async function inspectPage(page, { url, out, dark }) {
   const viewports = await captureScreenshots(page, out);
   await page.setViewportSize(sampleViewport);
   await scrollThrough(page);
+  // 🔴 Р5: ховер-прохід — ПІСЛЯ скріншотів (курсор не має потрапити в кадр) і
+  // ДО семплу палітри. `sweepHover` прибирає ховер за собою (курсор у
+  // нейтральну точку), інакше стан однієї кнопки протік би в кольори сайту.
+  const hover = await sweepHover(page);
   const light = await samplePalette(page);
-  const motion = await captureMotion(page, reveal);
+  const motion = await captureMotion(page, { reveal, hover });
 
   let darkColors = null;
   if (dark) {

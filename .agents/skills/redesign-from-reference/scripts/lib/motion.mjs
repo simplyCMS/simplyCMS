@@ -1,9 +1,9 @@
 /**
- * Node-обгортка motion-капчера (план Р1/Р4/Р6, Фаза 1): збирає секцію `motion`
- * для `inspection.json` із чотирьох каналів — transitions, keyframes, reveal,
- * jsLibraries. Функції, що виконуються в браузері, — `browser-motion.mjs` і
- * `browser-reveal.mjs`; чиста детекція бібліотек — `motion-detect.mjs`.
- * Місце під `motion.hover` тримає Фаза 2 плану — тут його свідомо немає.
+ * Node-обгортка motion-капчера (план Р1/Р4/Р5/Р6): збирає секцію `motion`
+ * для `inspection.json` із пʼяти каналів — transitions, keyframes, reveal,
+ * hover, jsLibraries. Функції, що виконуються в браузері, — `browser-motion.mjs`
+ * і `browser-reveal.mjs`; чиста детекція бібліотек — `motion-detect.mjs`;
+ * ховер-прохід — `hover-sweep.mjs` (Фаза 2).
  */
 import {
   browserKeyframes,
@@ -76,17 +76,22 @@ export async function captureReveal(page) {
 }
 
 /**
- * Зібрати секцію `motion` для `inspection.json`. `reveal` приходить ззовні —
- * його не можна зняти тут (див. коментар до `captureReveal`).
+ * Зібрати секцію `motion` для `inspection.json`. `reveal` і `hover` приходять
+ * ззовні з тієї самої причини — обидва звʼязані порядком кроків інспекції, і
+ * зняти їх тут, наприкінці, було б уже пізно (див. коментар до `captureReveal`
+ * і шапку `hover-sweep.mjs`).
+ * @param {import('@playwright/test').Page} page
+ * @param {{ reveal: Array<object>, hover: object }} captured
  * @returns {Promise<{
  *   transitions: Array<{ property: string, durationMs: number, easing: string, count: number }>,
  *   keyframes: { names: string[], inaccessibleSheets: number },
  *   reveal: Array<object>,
+ *   hover: { entries: Array<object>, skipped: number },
  *   jsLibraries: { detected: string[], markers: string[] },
  *   jsDrivenSuspected: boolean,
  * }>}
  */
-export async function captureMotion(page, reveal) {
+export async function captureMotion(page, { reveal, hover }) {
   const transitions = await page.evaluate(browserTransitions, SAMPLE_LIMIT);
   const keyframes = await page.evaluate(browserKeyframes);
   const markers = await page.evaluate(browserMotionMarkers, {
@@ -98,6 +103,7 @@ export async function captureMotion(page, reveal) {
     transitions,
     keyframes,
     reveal,
+    hover,
     jsLibraries: detectMotionLibraries(markers),
     jsDrivenSuspected: suspectJsDriven({ reveal, transitions, keyframes }),
   };

@@ -18,7 +18,13 @@
   • jsLibraries — `<script src>` на недосяжний CDN (`.invalid` не резолвиться
     ніколи; тест вантажить фікстуру через `setContent(…, domcontentloaded)`,
     тому мережа не тримає завантаження) + inline-глобал `window.gsap` +
-    `data-framer-*` атрибут — усі три канали детекції разом.
+    `data-framer-*` атрибут — усі три канали детекції разом;
+  • hover (Фаза 2, Р5) — три елементи з `:hover`-правилами, по одному на
+    кожен селектор відбору (`header a`, `button`, `[role="button"]`) і на різні
+    властивості (color / background-color+transform / border-color+box-shadow),
+    плюс сусіднє посилання БЕЗ `:hover` — його у виводі бути не повинно.
+    Усі ховер-транзиції ≤300 мс, тобто коротші за settle-паузу проходу:
+    інакше семпл ловив би середину переходу й два прогони розходились би.
 -->
 <html lang="en">
   <head>
@@ -43,6 +49,26 @@
       section {
         padding: 24px;
       }
+      header {
+        display: flex;
+        gap: 16px;
+        padding: 16px 24px;
+        background: #f4f4f5;
+      }
+      /* Ховер-канал: посилання зі своїм `:hover`… */
+      .nav-link {
+        color: #18181b;
+        text-decoration: none;
+        transition: color 200ms ease;
+      }
+      .nav-link:hover {
+        color: #2563eb;
+      }
+      /* …і сусіднє БЕЗ нього — контроль «елемент без дельти у виводі відсутній». */
+      .nav-plain {
+        color: #18181b;
+        text-decoration: none;
+      }
       /* Reveal-секції: до класу-маркера — невидимі й зсунуті вниз. */
       .reveal {
         opacity: 0;
@@ -62,6 +88,25 @@
         border-radius: 8px;
         padding: 8px 16px;
         transition: background-color 150ms ease-in-out;
+      }
+      .cta:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+      }
+      /* `[role="button"]` — четвертий селектор відбору. */
+      .ghost {
+        display: inline-block;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 8px 16px;
+        box-shadow: none;
+        transition:
+          box-shadow 300ms ease,
+          border-color 300ms ease;
+      }
+      .ghost:hover {
+        border-color: #2563eb;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
       }
       .card {
         border: 1px solid #e4e4e7;
@@ -117,12 +162,19 @@
     </style>
   </head>
   <body>
+    <header>
+      <nav>
+        <a class="nav-link" href="#catalog">Catalog</a>
+        <a class="nav-plain" href="#about">About</a>
+      </nav>
+    </header>
     <main>
       <section class="hero" data-framer-appear-id="hero-1">
         <h1>Motion reference</h1>
         <div class="card">
           <p>Card with a hover-ready shadow transition.</p>
           <button class="cta">Buy now</button>
+          <span class="ghost" role="button" tabindex="0">Ghost action</span>
           <span class="badge">New</span>
           <span class="no-transition">Static label</span>
           <span class="zero-transition">Zero-duration label</span>

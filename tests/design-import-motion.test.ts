@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
 import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
+import { sweepHover } from '../.agents/skills/redesign-from-reference/scripts/lib/hover-sweep.mjs';
 import { inspectPage } from '../.agents/skills/redesign-from-reference/scripts/inspect.mjs';
 
 interface TransitionCluster {
@@ -33,12 +34,24 @@ interface RevealEntry {
   transformChanged: boolean;
 }
 
+interface HoverChange {
+  property: string;
+  from: string;
+  to: string;
+}
+
+interface HoverSweep {
+  entries: { index: number; selector: string; changes: HoverChange[] }[];
+  skipped: number;
+}
+
 interface MotionInspection {
   schemaVersion: number;
   motion: {
     transitions: TransitionCluster[];
     keyframes: { names: string[]; inaccessibleSheets: number };
     reveal: RevealEntry[];
+    hover: HoverSweep;
     jsLibraries: { detected: string[]; markers: string[] };
     jsDrivenSuspected: boolean;
   };
@@ -147,11 +160,72 @@ describe.skipIf(!browser)(
       expect(motion.jsDrivenSuspected).toBe(false);
     }, 120_000);
 
-    it('два прогони на тій самій сторінці дають ідентичні transitions і keyframes', async () => {
+    // Р5: hover-канал. Дельта є рівно там, де є `:hover`-правило; сусіднє
+    // посилання без нього у виводі відсутнє (а не присутнє з порожнім changes).
+    it('hover-дельта — лише там, де є :hover-правило', async () => {
+      const { motion } = await inspectFixture();
+      const bySelector = new Map(
+        motion.hover.entries.map((entry) => [entry.selector, entry]),
+      );
+
+      // Сортування за селектором+індексом — детерміноване й абеткове.
+      expect([...bySelector.keys()]).toEqual([
+        'a.nav-link',
+        'button.cta',
+        'span.ghost',
+      ]);
+      expect(bySelector.has('a.nav-plain')).toBe(false);
+      expect(motion.hover.skipped).toBe(0);
+
+      const properties = (selector: string) =>
+        bySelector.get(selector)?.changes.map((c) => c.property);
+      // `border-color` за замовчуванням — `currentColor`, тож зміна `color`
+      // тягне за собою і його (навіть при `border-style: none`). Це не шум
+      // капчера, а реальний computed-стан: фіксуємо як є.
+      expect(properties('a.nav-link')).toEqual(['border-color', 'color']);
+      expect(properties('button.cta')).toEqual([
+        'background-color',
+        'transform',
+      ]);
+      expect(properties('span.ghost')).toEqual(['border-color', 'box-shadow']);
+
+      // Значення — саме кінцеві, а не середина переходу (settle-пауза).
+      const cta = bySelector.get('button.cta')!.changes;
+      expect(cta[0]).toMatchObject({
+        from: 'rgb(37, 99, 235)',
+        to: 'rgb(29, 78, 216)',
+      });
+      expect(cta[1].from).toBe('none');
+      expect(cta[1].to).toMatch(/^matrix\(/);
+    }, 120_000);
+
+    // Стеля відбору — саме стеля, а не «скільки є».
+    it('sweepHover поважає ліміт кандидатів', async () => {
+      const page = await browser!.newPage();
+      try {
+        await page.setContent(FIXTURE, { waitUntil: 'domcontentloaded' });
+        const all = (await sweepHover(page, { settleMs: 250 })) as HoverSweep;
+        const capped = (await sweepHover(page, {
+          limit: 1,
+          settleMs: 250,
+        })) as HoverSweep;
+
+        expect(all.entries).toHaveLength(3);
+        expect(capped.entries).toHaveLength(1);
+        // Перший кандидат у DOM-порядку — посилання шапки, а не кнопка.
+        expect(capped.entries[0].selector).toBe('a.nav-link');
+        expect(capped.skipped).toBe(0);
+      } finally {
+        await page.close();
+      }
+    }, 60_000);
+
+    it('два прогони на тій самій сторінці дають ідентичні transitions, keyframes і hover', async () => {
       const first = await inspectFixture();
       const second = await inspectFixture();
       expect(second.motion.transitions).toEqual(first.motion.transitions);
       expect(second.motion.keyframes).toEqual(first.motion.keyframes);
+      expect(second.motion.hover).toEqual(first.motion.hover);
     }, 180_000);
 
     // Р1: cross-origin аркуш — НЕ мовчазний дроп. Відповідь підмінює
