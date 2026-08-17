@@ -11,30 +11,12 @@
 import { isCliEntry } from './lib/cli-entry.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { assertSupportedVersion } from './lib/inspection-version.mjs';
 import { mapTokens } from './lib/map.mjs';
 import { mergeInspections } from './lib/merge.mjs';
 
 const USAGE =
   'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <tokens-proposal.json>]';
-
-/**
- * Версії `inspection.json`, які CLI вміє читати (Р2): 1 — до motion-капчера,
- * 2 — із секцією `motion`. Мапінг обидві споживає однаково (motion у токени НЕ
- * йде), тож гейт — саме тут, над ПРОЧИТАНИМИ файлами, а не всередині
- * `mapTokens`: при мультивході той отримує вже злитий обʼєкт, у якому поля
- * `schemaVersion` немає взагалі.
- */
-const SUPPORTED_INSPECTION_VERSIONS = [1, 2];
-
-/** Гучна відмова на незнайомій версії — краще, ніж тихо змапити чужу форму. */
-function assertSupportedVersion(path, inspection) {
-  if (SUPPORTED_INSPECTION_VERSIONS.includes(inspection?.schemaVersion)) return;
-  throw new Error(
-    `${path}: schemaVersion=${inspection?.schemaVersion} — непідтримувана ` +
-      `версія inspection.json (очікується ${SUPPORTED_INSPECTION_VERSIONS.join(' або ')}); ` +
-      'перезніміть інспекцію актуальним inspect.mjs',
-  );
-}
 
 /** Розбір argv: позиційні токени — шляхи до `inspection.json` (1..N), далі `--out <file>`. */
 export function parseArgs(argv) {

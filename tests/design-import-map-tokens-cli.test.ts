@@ -10,6 +10,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import {
+  assertSupportedVersion,
+  SUPPORTED_INSPECTION_VERSIONS,
+} from '../.agents/skills/redesign-from-reference/scripts/lib/inspection-version.mjs';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
 const cli = fileURLToPath(
@@ -177,5 +181,39 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
       { file: pathB, url: 'https://reference.example/product' },
     ]);
     expect(proposal.tokens.background).toBeDefined();
+  });
+});
+
+// Гейт версії — юніт БЕЗ `spawnSync`: процес доводить лише exit-код, а тут
+// перевіряється сама форма відмови (текст помилки читає людина в терміналі).
+describe('lib/inspection-version.mjs — assertSupportedVersion', () => {
+  it('підтримувані версії проходять мовчки', () => {
+    expect(SUPPORTED_INSPECTION_VERSIONS).toEqual([1, 2]);
+    for (const schemaVersion of SUPPORTED_INSPECTION_VERSIONS) {
+      expect(() =>
+        assertSupportedVersion('a/inspection.json', { schemaVersion }),
+      ).not.toThrow();
+    }
+  });
+
+  it('незнайома версія — гучна помилка зі шляхом, версією і підказкою', () => {
+    expect(() =>
+      assertSupportedVersion('a/inspection.json', { schemaVersion: 3 }),
+    ).toThrow(/a\/inspection\.json: schemaVersion=3/);
+    expect(() =>
+      assertSupportedVersion('a/inspection.json', { schemaVersion: 3 }),
+    ).toThrow(/1 або 2/);
+  });
+
+  // Поле може бути відсутнім (інспекція до Р2) або файл — узагалі не тим:
+  // мовчки змапити чужу форму гірше, ніж упасти.
+  it('відсутнє поле, undefined і не-число — теж помилка', () => {
+    expect(() => assertSupportedVersion('x.json', {})).toThrow(
+      /schemaVersion=undefined/,
+    );
+    expect(() => assertSupportedVersion('x.json')).toThrow(/непідтримувана/);
+    expect(() =>
+      assertSupportedVersion('x.json', { schemaVersion: '2' }),
+    ).toThrow(/schemaVersion=2/);
   });
 });

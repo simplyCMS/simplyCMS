@@ -4,7 +4,8 @@
  * канону (150 рядків), а кожна така функція має бути САМОДОСТАТНЬОЮ: Playwright
  * серіалізує лише її `toString()` у сторінковий контекст, тож замикання на
  * модульний скоуп дало б `ReferenceError` (звідси копії констант усередині).
- * Node-обгортка й чиста детекція — `motion.mjs` / `motion-detect.mjs`.
+ * Node-обгортка й чиста детекція — `motion.mjs` / `motion-detect.mjs`; решта
+ * каналів — `browser-keyframes.mjs`, `browser-reveal.mjs`, `browser-hover.mjs`.
  */
 
 /**
@@ -75,48 +76,6 @@ export function browserTransitions(limit) {
       a.durationMs - b.durationMs ||
       cmp(a.easing, b.easing),
   );
-}
-
-/**
- * Імена `@keyframes` документа + ЧЕСНИЙ лічильник недоступних аркушів (Р1):
- * cross-origin stylesheet кидає `SecurityError` на `.cssRules`, і мовчазний
- * дроп приховав би від автора теми цілий пласт анімацій.
- */
-export function browserKeyframes() {
-  const KEYFRAMES_RULE = 7; // CSSRule.KEYFRAMES_RULE — копія, не замикання
-  const names = new Set();
-  let inaccessibleSheets = 0;
-
-  // Рекурсія — бо `@keyframes` цілком легально живе всередині `@media`/
-  // `@supports`, і плаский обхід верхнього рівня їх не побачив би.
-  const walk = (rules) => {
-    for (const rule of rules) {
-      if (rule.type === KEYFRAMES_RULE && rule.name) names.add(rule.name);
-      else if (rule.cssRules) {
-        try {
-          walk(rule.cssRules);
-        } catch {
-          inaccessibleSheets += 1;
-        }
-      }
-    }
-  };
-
-  for (const sheet of document.styleSheets) {
-    let rules = null;
-    try {
-      rules = sheet.cssRules;
-    } catch {
-      rules = null;
-    }
-    if (!rules) {
-      inaccessibleSheets += 1;
-      continue;
-    }
-    walk(rules);
-  }
-
-  return { names: [...names].sort(), inaccessibleSheets };
 }
 
 /**

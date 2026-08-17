@@ -1,15 +1,12 @@
 /**
  * Node-обгортка motion-капчера (план Р1/Р4/Р5/Р6): збирає секцію `motion`
  * для `inspection.json` із пʼяти каналів — transitions, keyframes, reveal,
- * hover, jsLibraries. Функції, що виконуються в браузері, — `browser-motion.mjs`
- * і `browser-reveal.mjs`; чиста детекція бібліотек — `motion-detect.mjs`;
+ * hover, jsLibraries. Функції, що виконуються в браузері, — `browser-motion.mjs`,
+ * `browser-keyframes.mjs`, `browser-reveal.mjs`; чиста детекція — `motion-detect.mjs`;
  * ховер-прохід — `hover-sweep.mjs` (Фаза 2).
  */
-import {
-  browserKeyframes,
-  browserMotionMarkers,
-  browserTransitions,
-} from './browser-motion.mjs';
+import { browserKeyframes } from './browser-keyframes.mjs';
+import { browserMotionMarkers, browserTransitions } from './browser-motion.mjs';
 import { browserRevealSnapshot } from './browser-reveal.mjs';
 import { scrollThrough } from './browser.mjs';
 import {

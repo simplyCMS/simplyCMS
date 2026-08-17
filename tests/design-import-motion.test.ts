@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
+import { browserKeyframes } from '../.agents/skills/redesign-from-reference/scripts/lib/browser-keyframes.mjs';
 import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
 import { sweepHover } from '../.agents/skills/redesign-from-reference/scripts/lib/hover-sweep.mjs';
 import { inspectPage } from '../.agents/skills/redesign-from-reference/scripts/inspect.mjs';
@@ -43,6 +44,11 @@ interface HoverChange {
 interface HoverSweep {
   entries: { index: number; selector: string; changes: HoverChange[] }[];
   skipped: number;
+}
+
+interface Keyframes {
+  names: string[];
+  inaccessibleSheets: number;
 }
 
 interface MotionInspection {
@@ -261,5 +267,66 @@ describe.skipIf(!browser)(
         rmSync(outDir, { recursive: true, force: true });
       }
     }, 120_000);
+
+    // 🔴 `@import` — окремий шлях CSSOM: правила лежать у `rule.styleSheet`,
+    // а не в `rule.cssRules`, і в `document.styleSheets` імпортований аркуш
+    // не зʼявляється. Обидва кейси нижче б'ють у `browserKeyframes` напряму
+    // (без `inspectPage`): їхній предмет — саме обхід правил, а наскрізне
+    // склеювання з `inspection.json` уже доводить кейс із `<link>` вище.
+    it('cross-origin @import — чесний inaccessibleSheets, а не мовчазний дроп', async () => {
+      const page = await browser!.newPage();
+      try {
+        await page.route('https://cdn.example.test/**', (route) =>
+          route.fulfill({
+            contentType: 'text/css',
+            body: '@keyframes imported-spin { from { opacity: 0 } to { opacity: 1 } }',
+          }),
+        );
+        await page.setContent(
+          '<style>@import url("https://cdn.example.test/x.css");</style>' +
+            '<main><section>cross-origin import</section></main>',
+          { waitUntil: 'load' },
+        );
+
+        const keyframes = (await page.evaluate(
+          browserKeyframes,
+        )) as unknown as Keyframes;
+        expect(keyframes.names).not.toContain('imported-spin');
+        expect(keyframes.inaccessibleSheets).toBeGreaterThan(0);
+      } finally {
+        await page.close();
+      }
+    }, 60_000);
+
+    it('same-origin @import — його @keyframes потрапляють у names', async () => {
+      const page = await browser!.newPage();
+      try {
+        // Обидва ресурси — з ОДНОГО походження, тож `styleSheet.cssRules`
+        // імпортованого аркуша доступний і має бути обійдений.
+        await page.route('https://same.example.test/**', (route) =>
+          route.request().url().endsWith('.css')
+            ? route.fulfill({
+                contentType: 'text/css',
+                body: '@keyframes imported-spin { from { opacity: 0 } to { opacity: 1 } }',
+              })
+            : route.fulfill({
+                contentType: 'text/html',
+                body:
+                  '<style>@import url("/x.css");</style>' +
+                  '<style>@keyframes local-pulse { from { opacity: .5 } to { opacity: 1 } }</style>' +
+                  '<main><section>same-origin import</section></main>',
+              }),
+        );
+        await page.goto('https://same.example.test/', { waitUntil: 'load' });
+
+        const keyframes = (await page.evaluate(
+          browserKeyframes,
+        )) as unknown as Keyframes;
+        expect(keyframes.names).toEqual(['imported-spin', 'local-pulse']);
+        expect(keyframes.inaccessibleSheets).toBe(0);
+      } finally {
+        await page.close();
+      }
+    }, 60_000);
   },
 );

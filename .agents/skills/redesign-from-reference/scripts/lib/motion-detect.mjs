@@ -6,29 +6,11 @@
  */
 
 /**
- * Кандидати window-глобалів для проби на сторінці. Список тримається ТУТ (а не
- * в браузерній функції) — щоб сигнатури нижче й проба мали одне джерело правди;
- * `motion.mjs` передає його в `page.evaluate` аргументом.
- */
-export const MOTION_GLOBALS = [
-  'GreenSockGlobals',
-  'Motion',
-  'ScrollTrigger',
-  'TweenLite',
-  'TweenMax',
-  'anime',
-  'bodymovin',
-  'framerMotion',
-  'gsap',
-  'lottie',
-];
-
-/**
  * Сигнатури бібліотек: `src` скрипта / window-глобал / імʼя `data-`атрибута.
  * 🔴 Регекси БЕЗ прапорця `g` — `RegExp.test` із `g` стежить за `lastIndex` і
  * давав би через раз false на тому самому рядку.
  */
-const SIGNATURES = [
+export const SIGNATURES = [
   {
     name: 'gsap',
     src: /\bgsap\b|greensock|scrolltrigger/i,
@@ -60,6 +42,21 @@ const SIGNATURES = [
     data: /^data-anime/i,
   },
 ];
+
+/**
+ * Кандидати window-глобалів для проби на сторінці — `motion.mjs` передає список
+ * у `page.evaluate` аргументом (`browserMotionMarkers` фільтрує його по
+ * `window`).
+ *
+ * 🔴 ВИВОДИТЬСЯ із `SIGNATURES`, а не дублює їх руками: глобал, який є в
+ * сигнатурі, але випав зі списку проби, ніколи не питається у сторінки — і
+ * детекція тихо сліпне на цілу бібліотеку (напр. GSAP, підключений як
+ * `TweenMax` без `gsap`). Зворотне дублювання теж шкідливе: зайвий кандидат —
+ * це проба, яку жодна сигнатура не вміє зіставити. Інваріант під тестом.
+ */
+export const MOTION_GLOBALS = [
+  ...new Set(SIGNATURES.flatMap((signature) => signature.globals)),
+].sort();
 
 /**
  * Зіставити сирі маркери сторінки із сигнатурами (Р6).

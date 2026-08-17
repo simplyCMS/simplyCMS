@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   detectMotionLibraries,
   MOTION_GLOBALS,
+  SIGNATURES,
   suspectJsDriven,
 } from '../.agents/skills/redesign-from-reference/scripts/lib/motion-detect.mjs';
 import { diffReveal } from '../.agents/skills/redesign-from-reference/scripts/lib/motion.mjs';
@@ -67,12 +68,29 @@ describe('lib/motion-detect.mjs — detectMotionLibraries', () => {
     expect(detectMotionLibraries(raw)).toEqual(detectMotionLibraries(raw));
   });
 
-  it('MOTION_GLOBALS покриває всі глобали сигнатур', () => {
-    for (const global of ['gsap', 'framerMotion', 'lottie', 'anime']) {
+  // 🔴 Інваріант, а не спот-чек: `motion.mjs` передає в `page.evaluate` саме
+  // `MOTION_GLOBALS`, тож глобал, присутній у сигнатурі, але відсутній у
+  // списку проби, НІКОЛИ не питається у сторінки — детекція тихо сліпне на
+  // цілу бібліотеку (GSAP під `TweenMax`, framer-motion під `Motion`).
+  // Зворотний бік теж перевіряємо: зайвий кандидат — мертва проба.
+  it('MOTION_GLOBALS ≡ множина глобалів усіх сигнатур', () => {
+    const signatures = SIGNATURES as { name: string; globals: string[] }[];
+    const fromSignatures = [
+      ...new Set(signatures.flatMap((signature) => signature.globals)),
+    ].sort();
+
+    expect(fromSignatures.length).toBeGreaterThan(0);
+    for (const global of fromSignatures) {
       expect(MOTION_GLOBALS).toContain(global);
-      expect(
-        detectMotionLibraries({ globals: [global] }).detected,
-      ).toHaveLength(1);
+    }
+    expect([...MOTION_GLOBALS].sort()).toEqual(fromSignatures);
+
+    // І кожен кандидат атрибутується ОДНОЗНАЧНО: той самий глобал у двох
+    // сигнатурах дав би дві «виявлені» бібліотеки з одного маркера.
+    for (const global of MOTION_GLOBALS) {
+      expect(detectMotionLibraries({ globals: [global] }).detected).toEqual([
+        signatures.find((s) => s.globals.includes(global))!.name,
+      ]);
     }
   });
 });
