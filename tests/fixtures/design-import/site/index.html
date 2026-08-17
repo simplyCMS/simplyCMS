@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  Фікстурний «сайт» для смоку `discover.mjs` (Фаза 3, задача §2.C, план Р4).
+  Чотири сторінки (index/collection/product/cart) з перехресними лінками,
+  роздаються локальним http-сервером у тесті (не `page.setContent` — потрібні
+  РЕАЛЬНІ HTTP-статуси для перевірки `visited`/`visit-failed`, Р4). Лінк на
+  `/about` навмисно веде на неіснуючу сторінку (сервер тесту не роздає about.html)
+  — доводить кейс `visit-failed`. Лінка на checkout НЕМАЄ ніде — чесний
+  `no-candidate` для типу `checkout`.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Home — Fixture Store</title>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/collection">Shop</a>
+        <a href="/product/toy-drone">Featured product</a>
+        <a href="/about">About Us</a>
+        <!-- Іконковий лінк без видимого тексту — тип читається з aria-label (Р3b). -->
+        <a href="/cart" aria-label="Cart"
+          ><svg aria-hidden="true" width="16" height="16"></svg
+        ></a>
+      </nav>
+    </header>
+    <main>
+      <h1>Welcome to the fixture store</h1>
+    </main>
+  </body>
+</html>

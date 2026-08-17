@@ -860,6 +860,10 @@ importers:
       zod:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.4.3
+    devDependencies:
+      '@simplycms/theme-solarstore':
+        specifier: workspace:*
+        version: link:../simplycms-theme-solarstore
 
   packages/supabase:
     dependencies:

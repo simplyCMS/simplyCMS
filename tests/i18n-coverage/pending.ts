@@ -36,6 +36,10 @@ export const ALLOWLIST: Record<string, string> = {
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
   'packages/theme-system/src/validateThemeModule.ts':
     'throw new Error — діагностика для автора теми',
+  // console.warn на невалідному записі fonts — читає автор теми в консолі
+  // складання, не покупець (контракт v2.2, Р4).
+  'packages/theme-system/src/safeFontStylesheets.ts':
+    'console.warn — діагностика для автора теми',
   // Той самий клас діагностики для контуру плагінів (Фаза 3): валідатор і
   // definePlugin кидають на порушенні контракту, порти SDK — на зловживанні
   // межею довіри; usePluginConfig лише попереджає в консоль розробника.

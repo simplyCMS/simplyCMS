@@ -7,6 +7,7 @@ import { Button } from '@simplycms/ui/button';
 import { useT, type MessageKey } from '@simplycms/i18n';
 import { useActiveThemeModule } from './useActiveThemeModule';
 import { ThemeTokens } from './ThemeTokens';
+import { ThemeFonts } from './ThemeFonts';
 
 type NavItem = {
   href: string;
@@ -37,6 +38,7 @@ export function ProtectedShell({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col">
       <ThemeTokens tokens={theme.tokens} />
+      <ThemeFonts fonts={theme.fonts} />
       <Header />
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="flex flex-col md:flex-row gap-8">

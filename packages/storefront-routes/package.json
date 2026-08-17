@@ -81,6 +81,9 @@
     "@simplycms/themes": "workspace:*",
     "@simplycms/ui": "workspace:*"
   },
+  "devDependencies": {
+    "@simplycms/theme-solarstore": "workspace:*"
+  },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",
     "@supabase/supabase-js": "^2.0.0",

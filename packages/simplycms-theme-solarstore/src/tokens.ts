@@ -46,6 +46,10 @@ export const tokens: DesignTokens = {
 
   radius: '0.5rem',
 
+  // Контракт v2.2 (Р8): демонстрація fonts-контуру — той самий Inter,
+  // що й у host, тому візуальної дельти немає.
+  'font-sans': "'Inter', system-ui, sans-serif",
+
   dark: {
     background: '210 20% 8%',
     foreground: '210 15% 92%',

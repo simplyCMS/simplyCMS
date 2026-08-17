@@ -143,7 +143,7 @@ function BannerContent({
       >
         <div className="container mx-auto px-4 flex flex-col justify-center h-full">
           <div className={`max-w-lg text-white flex flex-col ${textAlign}`}>
-            <h2 className="text-2xl md:text-4xl font-serif font-bold mb-2">
+            <h2 className="text-2xl md:text-4xl font-heading font-bold mb-2">
               {banner.title}
             </h2>
             {banner.subtitle && (

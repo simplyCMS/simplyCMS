@@ -9,7 +9,8 @@ const manifest: ThemeManifest = {
   name: 'default',
   displayName: 'Default Theme',
   version: '0.1.0',
-  engines: { simplycms: '>=0.1.0' },
+  // Тема використовує fonts-канал контракту v2.2 — потрібне ядро 0.3+.
+  engines: { simplycms: '>=0.3.0' },
 };
 
 export default manifest;

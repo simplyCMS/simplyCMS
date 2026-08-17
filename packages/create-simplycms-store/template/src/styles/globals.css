@@ -1,19 +1,13 @@
 @import 'tailwindcss';
 @config "../../tailwind.config.ts";
 
-/* SolarStore Design System
-   Brand color: #1192DC (HSL: 200 85% 47%)
-   Professional e-commerce style with clean aesthetics
+/* Базові CSS-змінні магазину (контракт теми v2). Значення нижче — дефолтний
+   набір «чистого» магазину без активної теми; тема перезаписує підмножину
+   через ThemeTokens.
 */
 
 @layer base {
   :root {
-    /* Brand colors */
-    --brand: 200 85% 47%;
-    --brand-light: 200 85% 55%;
-    --brand-dark: 200 85% 35%;
-    --brand-foreground: 0 0% 100%;
-
     /* Background */
     --background: 210 20% 98%;
     --foreground: 215 25% 15%;
@@ -61,6 +55,13 @@
 
     /* Radius */
     --radius: 0.5rem;
+
+    /* Типографіка (контракт v2.2). Fallback тут — та сама правка, що й
+       перехід tailwind.config.ts на var(): невизначена змінна робить
+       усю декларацію font-family invalid-at-computed-value-time, тож
+       чистий магазин без теми з fonts-контуром лишається на Inter. */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-heading: var(--font-sans);
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
@@ -147,33 +148,44 @@
     transition: color-scheme 0.3s ease;
   }
 
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
 @layer utilities {
+  /* Розчинення brand-* (контракт v2.2, Р6): нутро градієнтів — на --primary,
+     імена класів зберігаються для сумісності споживачів. */
   .gradient-brand {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand)) 0%,
-      hsl(var(--brand-light)) 100%
+      hsl(var(--primary)) 0%,
+      color-mix(in oklab, hsl(var(--primary)), white 15%) 100%
     );
   }
 
   .gradient-brand-subtle {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand) / 0.1) 0%,
-      hsl(var(--brand-light) / 0.05) 100%
+      hsl(var(--primary) / 0.05) 0%,
+      hsl(var(--primary) / 0.05) 100%
     );
   }
 
   .text-gradient-brand {
     background: linear-gradient(
       135deg,
-      hsl(var(--brand)) 0%,
-      hsl(var(--brand-light)) 100%
+      hsl(var(--primary)) 0%,
+      color-mix(in oklab, hsl(var(--primary)), white 15%) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;

@@ -43,7 +43,7 @@ export function ProductCarousel({
     <section className="py-10">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-serif font-bold text-foreground uppercase tracking-wider">
+          <h2 className="text-xl font-heading font-bold text-foreground uppercase tracking-wider">
             {title}
           </h2>
           {viewAllLink && (

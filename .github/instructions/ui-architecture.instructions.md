@@ -20,19 +20,32 @@ description: "Правила побудови UI, система тем та sha
 
 ## Система тем
 
-### ThemeModule Contract (v2)
+### ThemeModule Contract (v2.2)
 ```typescript
 interface ThemeModule {
   manifest: ThemeManifest;                 // name, displayName, version, engines.simplycms
   tokens: DesignTokens;                    // значення НАЯВНИХ semantic-змінних shadcn + dark-перекриття
+                                           // + 'font-sans'/'font-heading' (повний font-family stack рядком)
   components: ThemeComponents;             // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
   settings?: Record<string, ThemeSettingDefinition>;
+  messages?: ThemeMessages;                // опційний каталог uk/en (v2.1)
+  fonts?: ReadonlyArray<{ stylesheet: string }>;  // абсолютні https:-URL зовнішніх stylesheet (v2.2)
 }
 ```
 
 🔴 Тема **не** постачає сторінок і лейаутів. `MainLayout`, `CatalogLayout`,
 `ProfileLayout`, `theme.pages` видалені (рішення D3/D4). Джерело контракту —
 `packages/theme-system/src/types.ts`.
+
+🔴 Типографіка і шрифти (v2.2): `font-heading` застосовується до `h1..h6`
+через `@layer base`, fallback-значення обох змінних — `:root` у
+`src/styles/globals.css` (невизначена `var()` у `font-family` робить УСЮ
+декларацію недійсною). `fonts` фільтрує `safeFontStylesheets` — імпорт
+**лише** субшляхом `@simplycms/themes/safeFontStylesheets` (barrel затягнув
+би серверний `anon-client` у клієнтський бандл); рендер — `ThemeFonts` у
+`StorefrontShell` і `ProtectedShell`. `@font-face`/self-hosted шрифти теми —
+поза межею v2.2. Brand-змінних (`--brand-*`, `colors.brand`) більше немає:
+`.gradient-brand*` фарбуються `--primary`.
 
 ### Структура теми
 ```
@@ -84,6 +97,9 @@ loader: async () => ({ themeName: (await getActiveTheme())?.name ?? 'default', �
 - Не розміщуй бізнес-логіку в темах (теми — лише візуалізація).
 - Не дублюй shadcn/ui компоненти в `src/` — вони мають бути в `@simplycms/ui`.
 - Не хардкодь кольори — використовуй CSS variables та Tailwind classes.
+- Не хардкодь шрифти й не став `font-serif`/`font-mono` у core-компонентах —
+  заголовки беруть `font-heading`, решта — `font-sans` (у темах вибір шрифту
+  утиліт-класами законний).
 - Не додавай shadcn/ui компоненти без перевірки через MCP.
 - Не використовуй inline styles — лише Tailwind CSS classes.
 

@@ -1,13 +1,18 @@
 /**
- * Default Theme — тепла бежева палітра з кораловим акцентом.
+ * Default-тема — світлий монохром із латунним акцентом.
  *
- * Контракт v2: тема постачає лише паспорт, токени і компоненти. Сторінки,
- * каркаси (Header/Footer-обгортка, профіль) і канонічні секції головної —
- * у ядрі.
+ * Дизайн знято з референсу механізмом redesign-from-reference (лайв-тест
+ * 2026-08-15/16); з 2026-08-17 це ДЕФОЛТНА тема платформи — рішення
+ * власника, попередню бежеву default-тему замінено цілком.
  *
- * `HeroBanner` навмисно НЕ заданий: ядро підставляє власний `BannerSlider`,
- * тобто рівно те, що тема рендерила раніше. Задавати його тут означало б
- * імпортувати компонент route-пакета в тему — зайва інверсія залежності.
+ * Контракт v2: тема постачає ЛИШЕ паспорт, токени і компоненти оформлення.
+ * Сторінок і лейаутів у ній немає — вони живуть у ядрі
+ * (`@simplycms/storefront-routes`), а каркас бере з теми Header/Footer.
+ *
+ * Задані всі чотири слоти: `Header`/`Footer` (обовʼязкові каркасу) плюс
+ * `HeroBanner` і `HomeSections` — тема бере на себе оформлення головної.
+ * Спеки компонентів — локальні артефакти інспекцій
+ * (`docs/design-references/`, поза git з 2026-08-17).
  */
 import type { ThemeModule } from '@simplycms/themes/types';
 import manifest from './manifest';
@@ -15,6 +20,7 @@ import { tokens } from './tokens';
 import { messages } from './messages';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+import { HeroBanner } from './components/HeroBanner';
 import { HomeSections } from './components/HomeSections';
 
 const theme: ThemeModule = {
@@ -23,9 +29,21 @@ const theme: ThemeModule = {
   components: {
     Header,
     Footer,
+    HeroBanner,
     HomeSections,
   },
   messages,
+  // Контракт v2.2: лише абсолютні `https:`-stylesheet-и. Референс роздає
+  // Geist власними Next.js-чанками (self-hosted `@font-face`) — тягнути його
+  // ассети заборонено правовими межами й технічно неможливо цим контрактом.
+  // Geist і Geist Mono відкриті (Vercel, OFL) і є на Google Fonts, причому з
+  // кириличними підмножинами — критично для українського інтерфейсу.
+  fonts: [
+    {
+      stylesheet:
+        'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap',
+    },
+  ],
 };
 
 export default theme;

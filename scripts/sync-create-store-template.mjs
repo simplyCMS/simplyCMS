@@ -55,6 +55,15 @@ export const SYNCED_DIRS = [
   { from: 'supabase/migrations', to: 'supabase/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
+  // Скіл редизайну за референсом їде в магазин ЦІЛКОМ однією парою: SKILL.md
+  // + його scripts/ («руки агента» живуть усередині скіла, прецедент —
+  // codebase-research/scripts/orient). У `.claude/skills/` — РЕАЛЬНА копія
+  // (у монорепо там симлінк на `.agents/`, але `npm pack`/`cpSync` симлінки
+  // не переносять надійно, тож у шаблоні лежать файли).
+  {
+    from: '.agents/skills/redesign-from-reference',
+    to: '.claude/skills/redesign-from-reference',
+  },
 ];
 
 /**

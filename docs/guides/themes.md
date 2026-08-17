@@ -172,6 +172,7 @@ const theme: ThemeModule = {
   components,   // Header, Footer — обовʼязкові; HeroBanner?, HomeSections?
   settings,     // опційно: схема налаштувань для форми в адмінці
   messages,     // опційно: власний каталог uk/en
+  fonts,        // опційно: зовнішні font stylesheet-и (контракт v2.2)
 };
 export default theme;
 ```
@@ -191,6 +192,43 @@ semantic-змінних shadcn (`--primary`, `--background`, `--radius`, …), �
 `applyTokens` розкладає в CSS. Темний режим — блок `dark` усередині tokens.
 Кастомні utility-класи в компонентах — звичайний Tailwind; для npm-форми є
 одна тверда вимога — див. §3.5.
+
+Типографіка (контракт v2.2) — ті самі токени, два ключі:
+
+```ts
+export const tokens: DesignTokens = {
+  // …кольори, radius
+  'font-sans': "'Manrope', system-ui, sans-serif",
+  'font-heading': "'Fraunces', Georgia, serif", // застосується до h1..h6
+};
+```
+
+🔴 Значення — **повний CSS font-family stack рядком**, не назва шрифту:
+воно потрапляє прямо в декларацію. Обидва ключі опційні; не задаси —
+магазин лишиться на своєму fallback-у (Inter), бо `--font-heading` за
+замовчуванням дорівнює `--font-sans`. Клас `font-heading` доступний і в
+компонентах теми — коли треба той самий стек поза заголовками.
+
+Сам файл шрифту тема підвантажує полем `fonts`:
+
+```ts
+const theme: ThemeModule = {
+  // …manifest, tokens, components
+  fonts: [
+    {
+      stylesheet:
+        'https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap',
+    },
+  ],
+};
+```
+
+Приймаються **лише абсолютні `https:`-URL** зовнішніх stylesheet-ів; запис
+із `http:`, відносним шляхом, лапками чи пробілами мовчки не рендериться —
+шукай `[theme] Пропущено невалідний запис fonts` у консолі. `@font-face` і
+власні файли шрифтів у теми поза межами v2.2 (npm-пакет теми не має каналу
+статики) — межа, а не баг. Ядро рендерить `<link>`-и в обох каркасах
+вітрини; адмінка лишається на базовому шрифті магазину.
 
 ### 3.4 i18n теми
 

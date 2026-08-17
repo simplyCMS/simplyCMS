@@ -24,6 +24,11 @@ const theme: ThemeModule = {
     Footer,
   },
   messages,
+  // Контракт v2.2: опційні зовнішні font stylesheet-и (напр. Google Fonts).
+  // Лише абсолютні `https:`-URL — розкоментуй і додай свій:
+  // fonts: [
+  //   { stylesheet: 'https://fonts.googleapis.com/css2?family=Manrope&display=swap' },
+  // ],
 };
 
 export default theme;

@@ -1,143 +1,117 @@
 import { Link } from '@tanstack/react-router';
+import { AtSign, MessageCircle, Rss } from 'lucide-react';
 import { useT } from '@simplycms/i18n';
 import { useThemeT } from '@simplycms/themes/useThemeT';
-import { useThemeSettings } from '@simplycms/core/hooks/useThemeSettings';
-import { FacebookIcon, InstagramIcon } from './SocialIcons';
-import type { DefaultThemeKey } from '../messages';
+import { MONO_LABEL, MONO_STACK } from './mono';
+import type { ThemeKey } from '../messages';
 
+/** Кругла соцкнопка 36×36 (спека §3). Логотипів брендів референсу не несе. */
+const SOCIAL_BUTTON =
+  'flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+const LINK =
+  'text-sm text-muted-foreground transition-colors hover:text-foreground';
+
+/**
+ * Footer default-теми — спека: локальний артефакт
+ * `docs/design-references/…/components/Footer.spec.md` (поза git).
+ *
+ * Модель взаємодії — static: жодних акордеонів навіть на 390px, колонки
+ * просто перебудовуються сіткою.
+ *
+ * 🔴 Посилання референсу (New Arrivals, Luxury, FAQ, Size Guide, Press…) не
+ * переносимо: таких сторінок у магазині немає, а мертвий лінк гірший за його
+ * відсутність — на самому референсі вони, до речі, віддають 404.
+ */
 export function Footer() {
   const t = useT();
-  const tt = useThemeT<DefaultThemeKey>();
-  const storeName = useThemeSettings<string>('storeName') || 'Beauty Store';
-  const storeSlogan = useThemeSettings<string>('storeSlogan') || '';
-  const logoUrl = useThemeSettings<string>('logoUrl');
-  const fbUrl = useThemeSettings<string>('socialFacebook');
-  const igUrl = useThemeSettings<string>('socialInstagram');
+  const tt = useThemeT<ThemeKey>();
+
+  const columns = [
+    {
+      heading: tt('theme.footer.colShop'),
+      items: [
+        { to: '/catalog', label: t('catalog.title') },
+        { to: '/cart', label: t('cart.title') },
+      ],
+    },
+    {
+      heading: tt('theme.footer.colAccount'),
+      items: [
+        { to: '/profile', label: t('nav.profile') },
+        { to: '/profile/orders', label: t('nav.orders') },
+        { to: '/profile/settings', label: t('nav.settings') },
+      ],
+    },
+    {
+      heading: tt('theme.footer.colStore'),
+      items: [
+        { to: '/', label: tt('theme.footer.linkHome') },
+        { to: '/checkout', label: tt('theme.footer.linkCheckout') },
+      ],
+    },
+  ] as const;
+
+  // 🔴 Іконки НЕЙТРАЛЬНІ, не бренд-логотипи: чужі логотипи заборонені
+  // правовими межами фази 0. Зайвим доказом — сам `lucide-react@1.28`
+  // бренд-іконок уже не експортує.
+  const socials = [
+    { icon: Rss, label: tt('theme.footer.socialFeed') },
+    { icon: MessageCircle, label: tt('theme.footer.socialCommunity') },
+    { icon: AtSign, label: tt('theme.footer.socialContact') },
+  ] as const;
 
   return (
-    <footer className="border-t border-border/40 bg-[hsl(var(--card))]">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <Link to="/" className="inline-block mb-3">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={storeName}
-                  width={160}
-                  height={40}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-8 object-contain"
-                />
-              ) : (
-                <span className="text-lg font-serif font-bold text-foreground">
-                  {storeName}
-                </span>
-              )}
-            </Link>
-            {storeSlogan && (
-              <p className="text-sm text-muted-foreground">{storeSlogan}</p>
-            )}
-            <div className="flex gap-3 mt-4">
-              {fbUrl && (
+    <footer className="w-full bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-12">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <span className="text-lg font-bold text-foreground">
+              {tt('theme.brand')}
+            </span>
+            <p className="mt-2 max-w-[240px] text-sm text-muted-foreground">
+              {tt('theme.footer.tagline')}
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              {socials.map((social) => (
                 <a
-                  href={fbUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
+                  key={social.label}
+                  href="#"
+                  className={SOCIAL_BUTTON}
+                  aria-label={social.label}
                 >
-                  <FacebookIcon className="h-5 w-5" />
+                  <social.icon className="h-4 w-4" />
                 </a>
-              )}
-              {igUrl && (
-                <a
-                  href={igUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <InstagramIcon className="h-5 w-5" />
-                </a>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* Links */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">
-              {t('catalog.title')}
-            </h4>
-            <nav className="space-y-2">
-              <Link
-                to="/catalog"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+          {columns.map((column) => (
+            <div key={column.heading}>
+              <h3
+                className={`${MONO_LABEL} text-muted-foreground`}
+                style={{ fontFamily: MONO_STACK }}
               >
-                {t('catalog.allProducts')}
-              </Link>
-              <Link
-                to="/properties"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {tt('theme.nav.brands')}
-              </Link>
-            </nav>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">
-              {t('common.information')}
-            </h4>
-            <nav className="space-y-2">
-              <span className="block text-sm text-muted-foreground">
-                {tt('theme.footer.shippingPayment')}
-              </span>
-              <span className="block text-sm text-muted-foreground">
-                {tt('theme.footer.returns')}
-              </span>
-              <span className="block text-sm text-muted-foreground">
-                {tt('theme.footer.contacts')}
-              </span>
-            </nav>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">
-              {tt('theme.footer.accountHeading')}
-            </h4>
-            <nav className="space-y-2">
-              <Link
-                to="/profile"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {tt('theme.footer.accountLink')}
-              </Link>
-              <Link
-                to="/profile/orders"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t('nav.orders')}
-              </Link>
-              <Link
-                to="/cart"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t('cart.title')}
-              </Link>
-            </nav>
-          </div>
+                {column.heading}
+              </h3>
+              <ul className="mt-4 space-y-2">
+                {column.items.map((item) => (
+                  <li key={item.to}>
+                    <Link to={item.to} className={LINK}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-      </div>
 
-      <div className="border-t border-border/40">
-        <div className="container mx-auto px-4 py-4 text-center">
-          <p className="text-xs text-muted-foreground">
-            {tt('theme.footer.copyright', {
-              year: new Date().getFullYear(),
-              storeName,
-            })}
-          </p>
+        <div className="mt-10 border-t border-border pt-6 text-center text-[13px] text-muted-foreground">
+          {tt('theme.footer.copyright').replace(
+            '{year}',
+            String(new Date().getFullYear()),
+          )}
         </div>
       </div>
     </footer>

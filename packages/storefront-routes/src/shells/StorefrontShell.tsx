@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useActiveThemeModule } from './useActiveThemeModule';
 import { ThemeTokens } from './ThemeTokens';
+import { ThemeFonts } from './ThemeFonts';
 
 /**
  * Канонічний каркас сторфронту — заміна `theme.MainLayout`.
@@ -15,6 +16,7 @@ export function StorefrontShell({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col">
       <ThemeTokens tokens={theme.tokens} />
+      <ThemeFonts fonts={theme.fonts} />
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
