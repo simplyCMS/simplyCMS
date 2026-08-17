@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Font weighting fixture</title>
+    <!--
+      Фікстура шрифт-евристики (інкремент Б.2, Фаза 3, план Р7). Відтворює
+      конфігурацію живого референсу, на якій стара частотна вага помилялась:
+
+      • 24 короткі моно-мітки (бейджі/ціни) — ЧИСЕЛЬНІ, але сумарно короткі;
+      • один короткий body-абзац із ПРЯМИМ текстом;
+      • дві пастки вкладеності: `<p class="mono-wrap">` у моно-сімʼї, всередині
+        якого лежить довгий текст у body-сімʼї (`<span class="body-copy">`).
+
+      Наслідки для трьох моделей ваги:
+      — частота (до Р7): моно 26 вузлів проти body 3 → перемагає МОНО (хибно);
+      — сумарний `textContent` (наївна сума, без прямих вузлів): моно отримує
+        текст вкладених body-спанів і 120 символів міток згори → знову МОНО;
+      — сума ПРЯМИХ текстових вузлів (Р7): body ≈ 650 проти моно 120 → BODY.
+    -->
+    <style>
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #18181b;
+        font-family: 'BodySans', system-ui, sans-serif;
+        font-size: 16px;
+      }
+      h1 {
+        font-family: 'HeadingSerif', Georgia, serif;
+        font-size: 32px;
+      }
+      .tag {
+        font-family: 'TagMono', ui-monospace, monospace;
+        font-size: 12px;
+        display: inline-block;
+        padding: 2px 4px;
+      }
+      /* Пастка вкладеності: контейнер у моно, а весь його текст — у body. */
+      .mono-wrap {
+        font-family: 'TagMono', ui-monospace, monospace;
+      }
+      .body-copy {
+        font-family: 'BodySans', system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Font weighting reference</h1>
+
+    <p>Short lead paragraph rendered directly in the body face.</p>
+
+    <p class="mono-wrap">
+      <span class="body-copy"
+        >Long running body copy that a reader actually consumes on the page:
+        several sentences of continuous prose describing the product, its
+        materials and the way it is delivered, all set in the body typeface
+        rather than in the compact label face used by the badges.</span
+      >
+    </p>
+
+    <p class="mono-wrap">
+      <span class="body-copy"
+        >A second block of continuous body copy, again long enough to outweigh
+        every short label on the page, explaining shipping terms, returns and
+        the warranty in the same reading typeface that the storefront uses for
+        its ordinary paragraphs and list items.</span
+      >
+    </p>
+
+    <div class="tags">
+      <span class="tag">SALE1</span>
+      <span class="tag">SALE2</span>
+      <span class="tag">SALE3</span>
+      <span class="tag">SALE4</span>
+      <span class="tag">SALE5</span>
+      <span class="tag">SALE6</span>
+      <span class="tag">SALE7</span>
+      <span class="tag">SALE8</span>
+      <span class="tag">SALE9</span>
+      <span class="tag">SAL10</span>
+      <span class="tag">SAL11</span>
+      <span class="tag">SAL12</span>
+      <span class="tag">SAL13</span>
+      <span class="tag">SAL14</span>
+      <span class="tag">SAL15</span>
+      <span class="tag">SAL16</span>
+      <span class="tag">SAL17</span>
+      <span class="tag">SAL18</span>
+      <span class="tag">SAL19</span>
+      <span class="tag">SAL20</span>
+      <span class="tag">SAL21</span>
+      <span class="tag">SAL22</span>
+      <span class="tag">SAL23</span>
+      <span class="tag">SAL24</span>
+    </div>
+  </body>
+</html>

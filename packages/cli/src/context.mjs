@@ -42,23 +42,44 @@ export function coreDependencies(manifest) {
 }
 
 /**
- * Корінь магазину: вгору по теках до першого `package.json` із залежностями
- * `@simplycms/*`. Не знайдено — гучна помилка: всі команди CLI мають сенс
- * лише всередині магазину.
+ * Чи є тека валідним коренем для команд CLI. Маркери РІВНОПРАВНІ, порядок —
+ * від найчастішого випадку:
+ *  1. справжній магазин — `package.json` із залежностями `@simplycms/*`;
+ *  2. корінь монорепо ядра (Р9) — `pnpm-workspace.yaml` + `simplycms.config.ts`
+ *     в ОДНІЙ теці. Залежностей `@simplycms/*` у кореневому манифесті монорепо
+ *     рівно нуль (пакети живуть у workspace), тож перший маркер його не бачив
+ *     і `create theme`/`create plugin` там падали — хоча саме там і потрібен
+ *     авторський скаффолд у `themes/`/`plugins/` кореня.
+ */
+function isStoreRoot(dir) {
+  if (existsSync(join(dir, 'package.json'))) {
+    const manifest = readStoreManifest(dir);
+    if (Object.keys(coreDependencies(manifest)).length > 0) return true;
+  }
+  // Обидва файли — саме поруч: `pnpm-workspace.yaml` сам по собі є в будь-якому
+  // pnpm-монорепо, а `simplycms.config.ts` робить його монорепо SimplyCMS.
+  return (
+    existsSync(join(dir, 'pnpm-workspace.yaml')) &&
+    existsSync(join(dir, 'simplycms.config.ts'))
+  );
+}
+
+/**
+ * Корінь магазину: вгору по теках до першої, що проходить `isStoreRoot`.
+ * Не знайдено — гучна помилка: всі команди CLI мають сенс лише всередині
+ * магазину SimplyCMS (або монорепо ядра).
  */
 export function findStoreRoot(cwd = process.cwd()) {
   let dir = resolve(cwd);
   for (;;) {
-    if (existsSync(join(dir, 'package.json'))) {
-      const manifest = readStoreManifest(dir);
-      if (Object.keys(coreDependencies(manifest)).length > 0) return dir;
-    }
+    if (isStoreRoot(dir)) return dir;
     const parent = dirname(dir);
     if (parent === dir) {
       throw new Error(
-        `Корінь магазину не знайдено: від ${resolve(cwd)} і вище немає ` +
-          'package.json із залежностями @simplycms/*. Запусти команду ' +
-          'всередині магазину SimplyCMS.',
+        `Корінь магазину не знайдено: від ${resolve(cwd)} і вище немає ні ` +
+          'package.json із залежностями @simplycms/*, ні пари ' +
+          'pnpm-workspace.yaml + simplycms.config.ts (корінь монорепо). ' +
+          'Запусти команду всередині магазину SimplyCMS.',
       );
     }
     dir = parent;

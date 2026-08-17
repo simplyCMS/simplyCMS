@@ -37,6 +37,35 @@ describe('cli context', () => {
     expect(findStoreRoot(sub)).toBe(store);
   });
 
+  // Р9 (інкремент Б.2): у кореневому package.json монорепо залежностей
+  // `@simplycms/*` РІВНО НУЛЬ — пакети живуть у workspace, — тож перший
+  // маркер його не бачив і `simplycms create theme` у самому репо падав.
+  it('findStoreRoot: корінь монорепо (pnpm-workspace.yaml + simplycms.config.ts) без @simplycms/*', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cli-ctx-monorepo-'));
+    writeFileSync(
+      join(root, 'pnpm-workspace.yaml'),
+      "packages:\n  - 'packages/*'\n",
+    );
+    writeFileSync(join(root, 'simplycms.config.ts'), 'export default {};\n');
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: 'simplycms-monorepo', devDependencies: {} }),
+    );
+    const nested = join(root, 'packages', 'ui');
+    mkdirSync(nested, { recursive: true });
+    expect(findStoreRoot(root)).toBe(root);
+    expect(findStoreRoot(nested)).toBe(root);
+  });
+
+  it('findStoreRoot: сам по собі pnpm-workspace.yaml коренем НЕ робить', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cli-ctx-workspace-only-'));
+    writeFileSync(
+      join(dir, 'pnpm-workspace.yaml'),
+      "packages:\n  - 'apps/*'\n",
+    );
+    expect(() => findStoreRoot(dir)).toThrow(/simplycms\.config\.ts/);
+  });
+
   it('findStoreRoot: поза магазином — гучна помилка з діагностикою', () => {
     const outside = mkdtempSync(join(tmpdir(), 'cli-ctx-outside-'));
     expect(() => findStoreRoot(outside)).toThrow(/@simplycms/);
