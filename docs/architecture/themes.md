@@ -20,6 +20,15 @@
 build-кроку), або **npm-пакетом** (конвенції імен: unscoped
 `simplycms-theme-<name>`, scoped `@vendor/simplycms-theme-<name>`; Р1).
 
+> 🔴 **Затверджений напрям — контракт v3 «theme views» (2026-08-17, у коді ще
+> НЕМАЄ).** Ревізія D3′/D4′: дані/роути/SEO лишаються ядром назавжди, але
+> тема зможе перевизначати view-шар пʼяти сторінок вітрини (Home, Catalog,
+> CatalogSection, ProductDetail, Cart) через типізовані view-model-и зі
+> slot-компонентами реквізитів і жорсткий conformance-гейт. Спека —
+> [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md);
+> порядок виконання — роадмап (трек A). Цей документ описує чинний контракт
+> v2.2 і буде оновлений разом з імплементацією.
+
 Два зразки задають межі форми:
 
 | | Де | Що демонструє |

@@ -127,7 +127,12 @@ CLI: `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl
       `install --frozen-lockfile → format:check → lint (0 errors) → build →
       typecheck → test (527) → build:packages → test:packaging (10)` +
       `pnpm pilot:pack` (A/C/D/CLI/TOOL зелені).
-- [ ] 4. Лайв-тест агентом (окремий крок після цієї задачі) — поза DoD.
+- [x] 4. Лайв-тест агентом (окремий крок після цієї задачі, поза DoD) —
+      ✅ виконано 2026-08-15/16: повний пайплайн фаз 0–5 проти реального
+      референсу, тема `themes/deo`, гейти 531/531. Знахідки закриті
+      хотфіксами (`lib/cli-entry.mjs`, canvas-семплер) або поїхали в
+      інкремент Б.2 роадмапу (side-by-side покриття, шрифт-евристика,
+      `findStoreRoot`, demo-дані стенда).
 
 ## 4. Поза скоупом
 

@@ -373,6 +373,13 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts? }
    пакет знімається — повне володіння). Авторський dev-loop —
    `pnpm simplycms create theme <name>`.
 
+🔴 **Напрям v3 «theme views» затверджено 2026-08-17 (у коді ще НЕМАЄ):** тема
+зможе перевизначати view-шар пʼяти канонічних сторінок вітрини (типізовані
+view-model-и + slot-компоненти реквізитів + жорсткий conformance-гейт);
+ревізія рішень D3/D4 платформної спеки. Джерело правди —
+[`docs/superpowers/specs/2026-08-17-theme-contract-v3-views-design.md`](docs/superpowers/specs/2026-08-17-theme-contract-v3-views-design.md);
+порядок виконання — роадмап, трек A (після інкремента Б.2 треку редизайну).
+
 ## Environment Variables
 
 Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VITE_` prefix:
