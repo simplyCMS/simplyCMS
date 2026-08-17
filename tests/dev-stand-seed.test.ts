@@ -4,10 +4,12 @@
  * 🔴 Що саме доводиться: (а) колонка поза allowlist-ом у вивід НЕ потрапляє;
  * (б) заборонених таблиць (профілі/замовлення/персональні дані) у виводі
  * немає й бути не може — датасет із такою таблицею падає гучно; (в) кожен
- * insert ідемпотентний (`on conflict … do update`); (г) екранування лапок,
- * зворотних слешів, юнікоду, NULL, чисел, boolean, jsonb і дат; (д)
- * генерація детермінована — двічі байт-у-байт, і не залежить від порядку
- * вхідних рядків.
+ * insert ідемпотентний, і арбітр конфлікту скрізь ОДИН — первинний ключ
+ * (природний ключ на NULLABLE-колонках під NULLS DISTINCT арбітром не
+ * працює, тож рядок із `section_id = null` ламав би повторний накат);
+ * (г) екранування лапок, зворотних слешів, юнікоду, NULL, чисел, boolean,
+ * jsonb і дат; (д) генерація детермінована — двічі байт-у-байт, і не
+ * залежить від порядку вхідних рядків.
  *
  * Живої БД тест не потребує: під ним чиста функція над фікстурою.
  */
@@ -19,6 +21,23 @@ import {
   SAMPLE_DATASET,
   SAMPLE_IDS,
 } from './fixtures/dev-stand/catalog-sample.mjs';
+
+/**
+ * Очікуваний порядок блоків у виводі. 🔴 Джерело — FK-залежності схеми
+ * (батьківська таблиця перед дочірньою), а НЕ `TABLE_SPECS`: виводити
+ * очікування з тієї самої константи, яку емітить генератор, — тавтологія,
+ * що зеленіє навіть на перестановці спек, яка ламає FK.
+ */
+const FK_TABLE_ORDER = [
+  'sections',
+  'section_properties',
+  'property_options',
+  'section_property_assignments',
+  'products',
+  'product_modifications',
+  'product_property_values',
+  'product_prices',
+];
 
 const FORBIDDEN_TABLES = [
   'profiles',
@@ -70,10 +89,28 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
     expect(upserts.length).toBe(inserts.length);
   });
 
-  it('ціль конфлікту цін дзеркалить виразний unique-індекс схеми', () => {
-    expect(sql).toContain(
-      "on conflict (price_type_id, product_id, coalesce(modification_id, '00000000-0000-0000-0000-000000000000'::uuid)) do update set",
-    );
+  it('арбітр конфлікту скрізь один — первинний ключ, а не природний', () => {
+    const targets = [...sql.matchAll(/on conflict \((.+?)\) do update set/g)];
+    expect(targets.map((match) => match[1])).toEqual([
+      'id',
+      'id',
+      'id',
+      'id',
+      'id',
+    ]);
+    expect(sql).not.toContain('coalesce(modification_id');
+  });
+
+  it('рядок із section_id = null теж ідемпотентний', () => {
+    // Глобальна властивість адмінки: за природним ключем `(section_id, slug)`
+    // upsert її не знайшов би — unique-констрейнт NULLS DISTINCT на NULL не
+    // арбітр, і повторний накат падав би на section_properties_pkey.
+    expect(sql).toContain(`('${SAMPLE_IDS.GLOBAL_PROPERTY_ID}', null, `);
+  });
+
+  it('колонки природного ключа оновлюються — перейменування підхоплюється', () => {
+    expect(sql).toContain('  slug = excluded.slug');
+    expect(sql).toContain('  section_id = excluded.section_id');
   });
 
   it('price_type_id підставляється локальним підзапитом, не id з дампу', () => {
@@ -89,10 +126,15 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   });
 
   it('таблиці — у топологічному порядку (батьки перед дітьми)', () => {
-    const order = TABLE_SPECS.map((spec) =>
-      sql.indexOf(`insert into public.${spec.table} (`),
-    ).filter((index) => index >= 0);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    const emitted = [...sql.matchAll(/insert into public\.([a-z_]+) \(/g)].map(
+      (match) => match[1],
+    );
+    expect(emitted).toEqual(FK_TABLE_ORDER.filter((t) => emitted.includes(t)));
+  });
+
+  it('allowlist не має таблиці поза відомим FK-порядком', () => {
+    const tables = TABLE_SPECS.map((spec) => spec.table);
+    expect([...tables].sort()).toEqual([...FK_TABLE_ORDER].sort());
   });
 });
 

@@ -7,18 +7,29 @@
  *
  * Секції навмисно подано дитиною ПЕРЕД батьком, а тексти містять лапки,
  * зворотний слеш і юнікод.
+ *
+ * 🔴 Слаг батька (`zzz-panels`) лексикографічно ПІСЛЯ слага дитини
+ * (`aaa-panels-mono`) — навмисно. Інакше правильний порядок «батько раніше
+ * дитини» давало б саме сортування за ключем, і тест не бачив би, чи працює
+ * топологія `orderSelfParent` взагалі (перевірено мутацією: з «природними»
+ * слагами вимкнення `orderSelfParent` лишало тест зеленим).
+ *
+ * 🔴 `section_properties` містить рядок із `section_id: null` — глобальна
+ * властивість, яку створює адмінка. Саме на ньому ламався `on conflict` за
+ * природним ключем: unique-констрейнт NULLS DISTINCT на NULL не арбітр.
  */
 
 const ROOT_ID = '11111111-1111-4111-8111-111111111111';
 const CHILD_ID = '22222222-2222-4222-8222-222222222222';
 const PRODUCT_ID = '33333333-3333-4333-8333-333333333333';
 const PROPERTY_ID = '44444444-4444-4444-8444-444444444444';
+const GLOBAL_PROPERTY_ID = '77777777-7777-4777-8777-777777777777';
 
 export const SAMPLE_DATASET = {
   sections: [
     {
       id: CHILD_ID,
-      slug: 'panels-mono',
+      slug: 'aaa-panels-mono',
       name: 'Монопанелі «Сонце»',
       description: 'Дитяча секція',
       image_url: null,
@@ -32,7 +43,7 @@ export const SAMPLE_DATASET = {
     },
     {
       id: ROOT_ID,
-      slug: 'panels',
+      slug: 'zzz-panels',
       name: "O'Brien Panels",
       description: 'Коренева секція',
       image_url: null,
@@ -55,6 +66,20 @@ export const SAMPLE_DATASET = {
       is_filterable: true,
       has_page: false,
       sort_order: 10,
+      options: null,
+      created_at: new Date('2024-01-01T00:00:00.000Z'),
+    },
+    {
+      // Глобальна властивість адмінки: секції не належить (section_id = null).
+      id: GLOBAL_PROPERTY_ID,
+      section_id: null,
+      name: 'Гарантія',
+      slug: 'warranty',
+      property_type: 'text',
+      is_required: false,
+      is_filterable: false,
+      has_page: false,
+      sort_order: 20,
       options: null,
       created_at: new Date('2024-01-01T00:00:00.000Z'),
     },
@@ -99,4 +124,10 @@ export const SAMPLE_DATASET = {
   ],
 };
 
-export const SAMPLE_IDS = { ROOT_ID, CHILD_ID, PRODUCT_ID, PROPERTY_ID };
+export const SAMPLE_IDS = {
+  ROOT_ID,
+  CHILD_ID,
+  PRODUCT_ID,
+  PROPERTY_ID,
+  GLOBAL_PROPERTY_ID,
+};
