@@ -7,6 +7,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { scrollThrough } from './browser.mjs';
+import { captureMotion, captureReveal } from './motion.mjs';
 import {
   captureScreenshots,
   samplePalette,
@@ -14,7 +15,10 @@ import {
   VIEWPORT_HEIGHT,
 } from './sample.mjs';
 
-const SCHEMA_VERSION = 1;
+// 2 (Фаза 1 інкремента Б.2) — додано верхньорівневу секцію `motion`. 🔴 Це
+// НЕ та сама версія, що `SCHEMA_VERSION` у `lib/map.mjs`: там версіонується
+// `tokens-proposal.json`, і вона лишається 1 (motion у токени не мапиться).
+const SCHEMA_VERSION = 2;
 
 /** Порівняння світлого/темного семплу за фоном+текстом — чесний `darkDetected`. */
 function paletteSignature(colors) {
@@ -33,7 +37,6 @@ function paletteSignature(colors) {
  */
 export async function inspectPage(page, { url, out, dark }) {
   mkdirSync(out, { recursive: true });
-  const viewports = await captureScreenshots(page, out);
 
   // Р1b: `captureScreenshots` лишає сторінку на останньому viewport циклу
   // (мобільний, 390px) — без явного повернення на десктоп палітра де-факто
@@ -41,9 +44,19 @@ export async function inspectPage(page, { url, out, dark }) {
   // area<=0 і випадають із семплу. Той самий viewport — і для light-, і для
   // dark-проходу, інакше вони порівнюють різні лейаути.
   const sampleViewport = { width: VIEWPORTS.desktop, height: VIEWPORT_HEIGHT };
+
+  // 🔴 Р4: reveal — ПЕРШИМ і окремим проходом, ДО скріншотів. Далі
+  // `scrollThrough` відпрацює ще щонайменше пʼять разів, а reveal-once секція
+  // після першого проходу лишається розкритою назавжди: у будь-якому
+  // пізнішому вимірі дельта opacity/transform тотожно нульова.
+  await page.setViewportSize(sampleViewport);
+  const reveal = await captureReveal(page);
+
+  const viewports = await captureScreenshots(page, out);
   await page.setViewportSize(sampleViewport);
   await scrollThrough(page);
   const light = await samplePalette(page);
+  const motion = await captureMotion(page, reveal);
 
   let darkColors = null;
   if (dark) {
@@ -68,6 +81,7 @@ export async function inspectPage(page, { url, out, dark }) {
     shadows: light.shadows,
     spacing: light.spacing,
     fontStylesheets: light.fontStylesheets,
+    motion,
     darkDetected,
     ...(darkColors ? { dark: { colors: darkColors } } : {}),
   };

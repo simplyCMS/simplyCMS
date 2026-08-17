@@ -17,6 +17,25 @@ import { mergeInspections } from './lib/merge.mjs';
 const USAGE =
   'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <tokens-proposal.json>]';
 
+/**
+ * Версії `inspection.json`, які CLI вміє читати (Р2): 1 — до motion-капчера,
+ * 2 — із секцією `motion`. Мапінг обидві споживає однаково (motion у токени НЕ
+ * йде), тож гейт — саме тут, над ПРОЧИТАНИМИ файлами, а не всередині
+ * `mapTokens`: при мультивході той отримує вже злитий обʼєкт, у якому поля
+ * `schemaVersion` немає взагалі.
+ */
+const SUPPORTED_INSPECTION_VERSIONS = [1, 2];
+
+/** Гучна відмова на незнайомій версії — краще, ніж тихо змапити чужу форму. */
+function assertSupportedVersion(path, inspection) {
+  if (SUPPORTED_INSPECTION_VERSIONS.includes(inspection?.schemaVersion)) return;
+  throw new Error(
+    `${path}: schemaVersion=${inspection?.schemaVersion} — непідтримувана ` +
+      `версія inspection.json (очікується ${SUPPORTED_INSPECTION_VERSIONS.join(' або ')}); ` +
+      'перезніміть інспекцію актуальним inspect.mjs',
+  );
+}
+
 /** Розбір argv: позиційні токени — шляхи до `inspection.json` (1..N), далі `--out <file>`. */
 export function parseArgs(argv) {
   const options = { inspectionPaths: [] };
@@ -69,11 +88,14 @@ function main() {
   const inspections = [];
   try {
     for (const path of options.inspectionPaths) {
+      let inspection;
       try {
-        inspections.push(JSON.parse(readFileSync(path, 'utf8')));
+        inspection = JSON.parse(readFileSync(path, 'utf8'));
       } catch (error) {
         throw new Error(`Не вдалося прочитати ${path}: ${error.message}`);
       }
+      assertSupportedVersion(path, inspection);
+      inspections.push(inspection);
     }
   } catch (error) {
     failLoud(error);

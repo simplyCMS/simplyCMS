@@ -58,6 +58,62 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
     expect(proposal.tokens.background).toBeDefined();
   });
 
+  // Р2: капчер підняв версію `inspection.json` до 2 (секція `motion`), але
+  // токени НЕ розширювались — мапінг споживає обидві версії однаково, а
+  // motion ігнорує. Обидва кейси нижче — про гейт версії, не про мапінг.
+  it('schemaVersion 2 (з motion) читається так само, як 1', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'map-tokens-v2-'));
+    const inspectionPath = join(dir, 'inspection.json');
+    writeFileSync(
+      inspectionPath,
+      JSON.stringify({
+        ...sampleInspection,
+        schemaVersion: 2,
+        motion: {
+          transitions: [
+            { property: 'opacity', durationMs: 600, easing: 'ease', count: 2 },
+          ],
+          keyframes: { names: ['fade-in'], inaccessibleSheets: 0 },
+          reveal: [],
+          jsLibraries: { detected: [], markers: [] },
+          jsDrivenSuspected: false,
+        },
+      }),
+      'utf8',
+    );
+
+    const run = spawnSync(process.execPath, [cli, inspectionPath], {
+      encoding: 'utf8',
+    });
+
+    expect(run.status).toBe(0);
+    const proposal = JSON.parse(
+      readFileSync(join(dir, 'tokens-proposal.json'), 'utf8'),
+    );
+    // Версія ПРОПОЗИЦІЇ — окремий лічильник, motion у токени не мапиться.
+    expect(proposal.schemaVersion).toBe(1);
+    expect(proposal).not.toHaveProperty('motion');
+    expect(proposal.tokens.background).toBeDefined();
+  });
+
+  it('незнайома schemaVersion — гучний exit 1 з поясненням', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'map-tokens-v99-'));
+    const inspectionPath = join(dir, 'inspection.json');
+    writeFileSync(
+      inspectionPath,
+      JSON.stringify({ ...sampleInspection, schemaVersion: 99 }),
+      'utf8',
+    );
+
+    const run = spawnSync(process.execPath, [cli, inspectionPath], {
+      encoding: 'utf8',
+    });
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('schemaVersion=99');
+    expect(run.stderr).toContain('1 або 2');
+  });
+
   it('відсутній файл — гучний exit 1, повідомлення в stderr', () => {
     const run = spawnSync(process.execPath, [cli, '/no/such/inspection.json'], {
       encoding: 'utf8',
