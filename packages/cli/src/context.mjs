@@ -41,49 +41,68 @@ export function coreDependencies(manifest) {
   return core;
 }
 
-/**
- * Чи є тека валідним коренем для команд CLI. Маркери РІВНОПРАВНІ, порядок —
- * від найчастішого випадку:
- *  1. справжній магазин — `package.json` із залежностями `@simplycms/*`;
- *  2. корінь монорепо ядра (Р9) — `pnpm-workspace.yaml` + `simplycms.config.ts`
- *     в ОДНІЙ теці. Залежностей `@simplycms/*` у кореневому манифесті монорепо
- *     рівно нуль (пакети живуть у workspace), тож перший маркер його не бачив
- *     і `create theme`/`create plugin` там падали — хоча саме там і потрібен
- *     авторський скаффолд у `themes/`/`plugins/` кореня.
- */
+/** Магазинний маркер: `package.json` із залежностями `@simplycms/*`. */
 function isStoreRoot(dir) {
-  if (existsSync(join(dir, 'package.json'))) {
-    const manifest = readStoreManifest(dir);
-    if (Object.keys(coreDependencies(manifest)).length > 0) return true;
-  }
-  // Обидва файли — саме поруч: `pnpm-workspace.yaml` сам по собі є в будь-якому
-  // pnpm-монорепо, а `simplycms.config.ts` робить його монорепо SimplyCMS.
+  if (!existsSync(join(dir, 'package.json'))) return false;
+  return Object.keys(coreDependencies(readStoreManifest(dir))).length > 0;
+}
+
+/**
+ * Маркер кореня монорепо ядра: обидва файли САМЕ поруч — `pnpm-workspace.yaml`
+ * сам по собі є в будь-якому pnpm-монорепо, а `simplycms.config.ts` робить
+ * його монорепо SimplyCMS. Залежностей `@simplycms/*` у кореневому манифесті
+ * монорепо рівно нуль (пакети живуть у workspace), тож магазинний маркер його
+ * не бачить.
+ */
+function isMonorepoRoot(dir) {
   return (
     existsSync(join(dir, 'pnpm-workspace.yaml')) &&
     existsSync(join(dir, 'simplycms.config.ts'))
   );
 }
 
-/**
- * Корінь магазину: вгору по теках до першої, що проходить `isStoreRoot`.
- * Не знайдено — гучна помилка: всі команди CLI мають сенс лише всередині
- * магазину SimplyCMS (або монорепо ядра).
- */
-export function findStoreRoot(cwd = process.cwd()) {
+/** Спільний підйом угору по теках; різниця між двома коренями — один прапорець. */
+function findRoot(cwd, allowMonorepo) {
   let dir = resolve(cwd);
   for (;;) {
     if (isStoreRoot(dir)) return dir;
+    if (allowMonorepo && isMonorepoRoot(dir)) return dir;
     const parent = dirname(dir);
     if (parent === dir) {
       throw new Error(
-        `Корінь магазину не знайдено: від ${resolve(cwd)} і вище немає ні ` +
-          'package.json із залежностями @simplycms/*, ні пари ' +
-          'pnpm-workspace.yaml + simplycms.config.ts (корінь монорепо). ' +
-          'Запусти команду всередині магазину SimplyCMS.',
+        `Корінь магазину не знайдено: від ${resolve(cwd)} і вище немає ` +
+          'package.json із залежностями @simplycms/*' +
+          (allowMonorepo
+            ? ', ні пари pnpm-workspace.yaml + simplycms.config.ts ' +
+              '(корінь монорепо ядра). Запусти команду в магазині SimplyCMS ' +
+              'або в корені монорепо.'
+            : '. Запусти команду всередині магазину SimplyCMS.'),
       );
     }
     dir = parent;
   }
+}
+
+/**
+ * Корінь МАГАЗИНУ — для doctor/add/update/db:diff. Корінь монорепо ядра тут
+ * коренем НЕ вважається свідомо: `doctor` видав би там три хибні помилки
+ * (`routes.ts` монтує теки шляхами, Tailwind ходить аліасами — обидва
+ * коректні за побудовою), а `update --write` копіює `packages/cli/host/` у
+ * корінь, тобто напрям істини ІНВЕРТОВАНИЙ відносно `pnpm template:sync` і
+ * правка host-файла без наступного sync мовчки відкотилася б.
+ */
+export function findStoreRoot(cwd = process.cwd()) {
+  return findRoot(cwd, false);
+}
+
+/**
+ * Корінь для СКАФФОЛДУ (`create theme` / `create plugin`, Р9): магазин або
+ * корінь монорепо ядра. Скаффолд лише створює нову теку в `themes/`/`plugins/`
+ * і дописує рядок у `simplycms.config.ts` — у монорепо це рівно те, що треба
+ * авторові теми/плагіна, і нічого наявного не переписує.
+ */
+export function findScaffoldRoot(cwd = process.cwd()) {
+  return findRoot(cwd, true);
 }
 
 /**
