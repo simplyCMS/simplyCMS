@@ -7,6 +7,9 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "dev:www": "pnpm --filter simplycms-www dev",
+    "build:www": "pnpm --filter simplycms-www build",
+    "typecheck:www": "pnpm --filter simplycms-www typecheck",
     "build:packages": "pnpm --filter \"@simplycms/*\" run build",
     "version:packages": "node scripts/version-packages.mjs",
     "verify:published": "node scripts/verify-published.mjs",

@@ -200,6 +200,9 @@ const eslintConfig = [
       '.nitro/**',
       '.tanstack/**',
       'src/routeTree.gen.ts',
+      // Лендінг apps/www: власний згенерований роут-трі (той самий автор —
+      // генератор TanStack Router, що й у host)
+      'apps/www/src/routeTree.gen.ts',
       // Fixture скретч-магазину (Task 3.1): це не код монорепо, а шаблон
       // ЧУЖОГО проєкту — його імпорти резолвляться лише після `npm install`
       // із tarball-ів у /tmp, а не workspace-аліасами.

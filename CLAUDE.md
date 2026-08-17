@@ -8,6 +8,9 @@ pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
 pnpm start            # Run production server (node server.mjs, PORT=3000) — див. «Production Run»
 pnpm typecheck        # TypeScript type check
+pnpm dev:www          # Лендінг simplycms.dev (apps/www) — dev на :3100
+pnpm build:www        # Лендінг: статичний білд (prerender) → apps/www/dist/client
+pnpm typecheck:www    # Лендінг: tsc (після build:www — потребує routeTree.gen.ts)
 pnpm lint             # ESLint
 pnpm lint:fix         # ESLint (auto-fix)
 pnpm format           # Prettier (write)
@@ -187,6 +190,14 @@ TS 6 пробували: він вимагає прибрати `baseUrl`, пі�
 ```
 simplyCMS/
 ├── routes.ts                         # virtualRouteConfig: rootRoute + physical() на теки пакетів
+├── apps/www/                         # Лендінг simplycms.dev: TanStack Start у режимі ПРЕРЕНДЕРУ
+│                                     # (статичний HTML, деплой dist/client на будь-який хостинг).
+│                                     # private, ПОЗА реліз-потягом (bump/publish сканують лише
+│                                     # packages/*). Живі метрики (зірки GitHub, downloads/версія npm)
+│                                     # тягне БРАУЗЕР відвідувача з публічних API — сторінка не
+│                                     # старіє між білдами; агрегатори під tests/www-live-stats.test.ts.
+│                                     # Виключений з root tsconfig (власний), у root eslint/prettier
+│                                     # входить (ігнор лише на routeTree.gen.ts). CI — job `www`.
 ├── src/                              # Host — тонка збірка магазину
 │   ├── routes/
 │   │   ├── __root.tsx                # Root route (html, providers, 404/error)

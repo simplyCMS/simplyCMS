@@ -62,6 +62,34 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+  www:
+    name: Landing (apps/www)
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # build ПЕРЕД typecheck — той самий інваріант, що в job typecheck:
+      # `vite build` генерує apps/www/src/routeTree.gen.ts
+      - name: Build landing (static prerender)
+        run: pnpm build:www
+
+      - name: Typecheck landing
+        run: pnpm typecheck:www
+
   packaging:
     name: Packaging
     timeout-minutes: 10
