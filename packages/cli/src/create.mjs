@@ -75,7 +75,10 @@ function nextSteps(kind, name) {
   return [
     'pnpm dev     # тема підхопиться через аліас @themes/* без build-кроку',
     '/admin/themes   # активуй тему в адмінці (рядок заводить bootstrapThemes)',
-    `themes/${name}/README.md   # що далі: токени, HomeSections, публікація`,
+    // Гейт контракту v3 має бути ВИДИМИЙ з коробки — навіть у магазині без
+    // тестового рушія (амендмент до Р8): CLI-канал працює завжди.
+    `pnpm simplycms theme:conformance ${name}   # гейт views (потребує jsdom)`,
+    `themes/${name}/README.md   # що далі: токени, views, публікація`,
   ];
 }
 

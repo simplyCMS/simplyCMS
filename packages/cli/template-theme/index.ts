@@ -29,6 +29,27 @@ const theme: ThemeModule = {
   // fonts: [
   //   { stylesheet: 'https://fonts.googleapis.com/css2?family=Manrope&display=swap' },
   // ],
+  //
+  // Контракт v3: `views` перевизначає ВЕСЬ view-шар канонічної сторінки
+  // вітрини (`Home` | `Catalog` | `CatalogSection` | `ProductDetail` | `Cart`).
+  // Дані, SEO і логіка лишаються в ядрі — тема отримує готовий view-model і
+  // РОЗСТАВЛЯЄ його слоти (комерційні реквізити), а не переписує їх:
+  //
+  // views: {
+  //   Cart: ({ itemCount, slots }: CartViewModel) =>
+  //     itemCount === 0 ? (
+  //       <EmptyCart />
+  //     ) : (
+  //       <div>
+  //         <slots.Items />
+  //         <slots.Summary />
+  //         <slots.Checkout />
+  //       </div>
+  //     ),
+  // },
+  //
+  // 🔴 Заявлений view мусить пройти conformance — інакше магазин просто
+  // втратить кнопку купівлі: `pnpm simplycms theme:conformance __THEME_NAME__`.
 };
 
 export default theme;
