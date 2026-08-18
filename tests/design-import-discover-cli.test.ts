@@ -88,8 +88,20 @@ describe.skipIf(!browser)(
         expect(existsSync(out)).toBe(true);
         const proposal = JSON.parse(readFileSync(out, 'utf8'));
 
-        expect(proposal.schemaVersion).toBe(1);
-        expect(proposal.linksSeen).toBeGreaterThan(0);
+        // Форма `schemaVersion: 2` (інкремент Б.3, Р4/V-3): замість голого
+        // числа `linksSeen` — масив `links` з тим, що бачив класифікатор.
+        expect(proposal.schemaVersion).toBe(2);
+        expect(proposal.linksSeen).toBeUndefined();
+        expect(proposal.links.length).toBeGreaterThan(0);
+        expect(proposal.links).toContainEqual({
+          pathname: '/collection',
+          anchors: ['Shop'],
+        });
+        // Дедуплікація за pathname: кожен pathname у масиві рівно один раз.
+        const pathnames = proposal.links.map(
+          (link: { pathname: string }) => link.pathname,
+        );
+        expect(new Set(pathnames).size).toBe(pathnames.length);
 
         expect(proposal.pageTypes.home).toMatchObject({
           url: baseUrl,

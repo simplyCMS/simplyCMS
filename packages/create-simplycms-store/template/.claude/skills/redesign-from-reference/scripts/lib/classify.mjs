@@ -3,24 +3,21 @@
  * Р3/Р3b/Р5). Чиста функція без браузера — вхід уже зібраний DOM-обходом
  * `discover.mjs` (Фаза 3): пара `{url, anchors}` на лінк, де `anchors` —
  * АГРЕГОВАНІ тексти лінка (textContent + aria-label + title + img[alt] —
- * іконковий лінк без видимого тексту читається саме звідси, Р3b). Словники
- * URL-патернів/якірних термінів — `classify-terms.mjs`.
+ * іконковий лінк без видимого тексту читається саме звідси, Р3b).
  *
- * Шкала (Р3): URL-патерн +2, текст якоря +2, поріг ≥2 — кожен сигнал сам
- * закриває тип. Вибір — глобально-жадібний по всіх парах (type,url):
- * стабільне сортування (score↓ → type-aware глибина `depthKey` → лексикографічно),
- * перший непроконфліктований прохід закриває і тип, і URL — програвший тип
- * бере наступну свою пару нижче в списку (перепідбір — побічний ефект
- * одного проходу, не окремий крок). Зіставлення патернів/термінів —
- * `classify-terms.mjs`.
+ * Джерел evidence три: URL-патерни й тексти якорів (словники —
+ * `classify-terms.mjs`) плюс структурний fan-out (`classify-structure.mjs`,
+ * інкремент Б.3). Збірка й ранжування пар (тип, url) — `classify-pairs.mjs`;
+ * тут лишається сама стратегія вибору.
+ *
+ * Шкала (Р3): кожен сигнал +2, поріг ≥2 — кожен сигнал сам закриває тип.
+ * Вибір — глобально-жадібний по всіх парах (type,url): перший
+ * непроконфліктований прохід відсортованого списку закриває і тип, і URL —
+ * програвший тип бере наступну свою пару нижче в списку (перепідбір —
+ * побічний ефект одного проходу, не окремий крок).
  */
-import {
-  matchAnchorTerm,
-  matchUrlPattern,
-  URL_PATTERNS,
-} from './classify-terms.mjs';
-
-const OTHER_TYPES = Object.keys(URL_PATTERNS);
+import { analyzeStructure } from './classify-structure.mjs';
+import { OTHER_TYPES, rankedPairs } from './classify-pairs.mjs';
 
 /** Нормалізація pathname: без query/hash, без trailing slash, без `index.html` (Р3b). */
 export function normalizePathname(input) {
@@ -36,27 +33,11 @@ export function normalizePathname(input) {
 }
 
 /**
- * Type-aware компонент довжини для тайбрейка при рівному балі (Р2, Б.3):
- * картка товару має slug, тож для `product` виграє ГЛИБШИЙ pathname, для решти
- * типів — коротший, як було. 🔴 Це ключ ОДНОГО елемента, а не попарна умова
- * «якщо обидва product»: попарна версія не транзитивна (дає цикл A<B<C<A), і
- * поведінка `Array#sort` на ній стає невизначеною. Наслідок, який і лагодить
- * кейс deo: при рівному балі product-пари йдуть ПЕРЕД усіма іншими (відʼємний
- * ключ < додатного), а між собою — глибша першою; тому картка
- * `/product/<slug>` закриває тип `product` РАНІШЕ, ніж розглядається мілкий
- * `/product`, і той дістається listing.
- * @param {{type: string, pathname: string}} pair
- */
-function depthKey(pair) {
-  return pair.type === 'product' ? -pair.pathname.length : pair.pathname.length;
-}
-
-/**
  * Класифікувати лінки на типи сторінок.
  * @param {Array<{url: string, anchors?: string[]}>} links
  * @param {string} startUrl
  * @returns {{
- *   pageTypes: Record<string, { url: string, score: number, evidence: Array<{urlPattern?: string, anchorMatch?: string, source: 'anchor'|'aria'|'url'}> }>,
+ *   pageTypes: Record<string, { url: string, score: number, evidence: Array<{urlPattern?: string, anchorMatch?: string, structural?: string, count?: number, source: 'anchor'|'aria'|'url'|'structure'}> }>,
  *   unresolved: Array<{ type: string, reason: 'no-candidate' }>,
  * }}
  */
@@ -95,37 +76,11 @@ export function classifyLinks(links, startUrl) {
     closedPathnames.add(startPathname);
   }
 
-  // Усі пари (type,url) з ненульовим score — крім кореня, який home уже забрав.
-  const pairs = [];
-  for (const [pathname, candidate] of candidates) {
-    if (closedPathnames.has(pathname)) continue;
-    for (const type of OTHER_TYPES) {
-      const urlMatch = matchUrlPattern(type, pathname);
-      const anchorMatch = matchAnchorTerm(type, candidate.anchors);
-      const evidence = [
-        urlMatch && { urlPattern: urlMatch, source: 'url' },
-        anchorMatch && { anchorMatch, source: 'anchor' },
-      ].filter(Boolean);
-      if (evidence.length > 0) {
-        pairs.push({
-          type,
-          pathname,
-          url: candidate.url,
-          score: evidence.length * 2,
-          evidence,
-        });
-      }
-    }
-  }
+  // Структурний розбір рахується по ПОВНОМУ набору кандидатів (разом із уже
+  // закритим коренем): форма сайту не залежить від того, який тип що забрав.
+  const structure = analyzeStructure(candidates);
 
-  // Стабільне сортування (score↓ → depthKey↑ → лексикографічно) + жадібний вибір.
-  pairs.sort(
-    (a, b) =>
-      b.score - a.score ||
-      depthKey(a) - depthKey(b) ||
-      a.pathname.localeCompare(b.pathname),
-  );
-  for (const pair of pairs) {
+  for (const pair of rankedPairs(candidates, structure, closedPathnames)) {
     if (closedTypes.has(pair.type) || closedPathnames.has(pair.pathname))
       continue;
     pageTypes[pair.type] = {

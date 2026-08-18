@@ -111,7 +111,7 @@ async function main() {
 
     console.log(
       `✅ ${out} — типів знайдено: ${Object.keys(proposal.pageTypes).length}, ` +
-        `unresolved: ${proposal.unresolved.length}, лінків побачено: ${proposal.linksSeen}`,
+        `unresolved: ${proposal.unresolved.length}, лінків побачено: ${proposal.links.length}`,
     );
     for (const [type, info] of Object.entries(proposal.pageTypes)) {
       console.log(

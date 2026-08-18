@@ -295,3 +295,79 @@ describe('lib/classify.mjs — дискаверер v2: конфліктні с�
     expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
   });
 });
+
+/**
+ * Структурний сигнал fan-out (інкремент Б.3, Фаза 2 Step 2): словник знає
+ * слова, структура знає форму сайту. Сегменти тут НАВМИСНО нейтральні — жодне
+ * зі слів не входить у `classify-terms.mjs`, тож типи закриваються виключно
+ * структурою.
+ */
+describe('lib/classify.mjs — дискаверер v2: структурний сигнал fan-out', () => {
+  it('нейтральний префікс із трьома дітьми → listing, лист → product (без словника)', () => {
+    const { pageTypes } = classifyLinks(
+      [
+        { url: 'https://a.com/wares', anchors: ['Wares'] },
+        { url: 'https://a.com/wares/alpha', anchors: ['Alpha'] },
+        { url: 'https://a.com/wares/beta', anchors: ['Beta'] },
+        { url: 'https://a.com/wares/gamma', anchors: ['Gamma'] },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing).toEqual({
+      url: 'https://a.com/wares',
+      score: 2,
+      evidence: [
+        { structural: 'prefix-fanout', count: 3, source: 'structure' },
+      ],
+    });
+    // Серед трьох рівноцінних листів виграє лексикографічно перший — вибір
+    // детермінований, а не «як прийшло».
+    expect(pageTypes.product).toEqual({
+      url: 'https://a.com/wares/alpha',
+      score: 2,
+      evidence: [{ structural: 'fanout-leaf', source: 'structure' }],
+    });
+  });
+
+  it('НЕГАТИВНИЙ КОНТРОЛЬ fan-out: із двома дітьми типи не закриваються', () => {
+    // Той самий набір без третьої дитини — сигналу немає, обидва типи
+    // лишаються unresolved. Вимкнення fan-out червонить попередній тест.
+    const { pageTypes, unresolved } = classifyLinks(
+      [
+        { url: 'https://a.com/wares', anchors: ['Wares'] },
+        { url: 'https://a.com/wares/alpha', anchors: ['Alpha'] },
+        { url: 'https://a.com/wares/beta', anchors: ['Beta'] },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing).toBeUndefined();
+    expect(pageTypes.product).toBeUndefined();
+    expect(unresolved.map((u) => u.type)).toEqual(
+      expect.arrayContaining(['listing', 'product']),
+    );
+  });
+
+  it('структура складається зі словником: /product із трьома картками → listing score 4', () => {
+    // Кейс deo в повній силі: bare-форма (URL-патерн) + fan-out дають індексу
+    // 4 бали, а картки беруть product зі структури навіть без якорів.
+    const { pageTypes } = classifyLinks(
+      [
+        { url: 'https://a.com/product', anchors: ['Product'] },
+        { url: 'https://a.com/product/deo-x1' },
+        { url: 'https://a.com/product/deo-x2' },
+        { url: 'https://a.com/product/deo-x3' },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing).toMatchObject({
+      url: 'https://a.com/product',
+      score: 4,
+    });
+    expect(pageTypes.listing.evidence).toContainEqual({
+      structural: 'prefix-fanout',
+      count: 3,
+      source: 'structure',
+    });
+    expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
+  });
+});

@@ -12,12 +12,39 @@
  * лічильник виключень на ітерацію гарантує термінацію (лінків скінченна
  * кількість). Бюджет візитів (`maxVisits`) — спільний на ВСІ типи; кандидат
  * понад бюджет лишається знайденим, але чесно `visited: false`.
+ *
+ * 🔴 `schemaVersion: 2` (інкремент Б.3, Р4/V-3): голе число `linksSeen`
+ * ЗАМІНЕНО масивом `links` — саме те, що бачив класифікатор. Без нього
+ * діагностика помилки класифікації вимагала власного зонда: з пропозиції не
+ * було видно ні які pathname зібрано, ні з якими якорями.
  */
 import { classifyLinks, normalizePathname } from './classify.mjs';
 import { URL_PATTERNS } from './classify-terms.mjs';
 
 /** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник Фази 2. */
 const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
+
+/**
+ * Запис ВХОДУ класифікатора (V-3): дедуплікований за нормалізованим pathname
+ * зріз лінків з агрегованими якорями. 🔴 Будується з вхідного набору — ДО
+ * будь-яких виключень перепідбору: це протокол того, що інструмент побачив,
+ * а не знімок робочого стану. Порядок — лексикографічний за pathname.
+ * @param {Array<{ url: string, anchors?: string[] }>} links
+ * @returns {Array<{ pathname: string, anchors: string[] }>}
+ */
+function summarizeLinks(links) {
+  const byPathname = new Map();
+  for (const link of links) {
+    const pathname = normalizePathname(link.url);
+    const texts = (link.anchors ?? []).map((a) => a.trim()).filter(Boolean);
+    const existing = byPathname.get(pathname);
+    if (existing) texts.forEach((t) => existing.add(t));
+    else byPathname.set(pathname, new Set(texts));
+  }
+  return [...byPathname]
+    .map(([pathname, anchors]) => ({ pathname, anchors: [...anchors] }))
+    .sort((a, b) => a.pathname.localeCompare(b.pathname));
+}
 
 /**
  * @param {{
@@ -27,7 +54,8 @@ const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
  *   visit: (url: string) => Promise<{ ok: boolean, title?: string | null }>,
  * }} params
  * @returns {Promise<{
- *   schemaVersion: 1, startUrl: string, linksSeen: number,
+ *   schemaVersion: 2, startUrl: string,
+ *   links: Array<{ pathname: string, anchors: string[] }>,
  *   pageTypes: Record<string, { url: string, score: number, evidence: unknown[], visited: boolean, title?: string }>,
  *   unresolved: Array<{ type: string, reason: 'no-candidate' | 'visit-failed' }>,
  * }>}
@@ -85,9 +113,9 @@ export async function buildSitemapProposal({
   );
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     startUrl,
-    linksSeen: links.length,
+    links: summarizeLinks(links),
     pageTypes: finalPageTypes,
     unresolved,
   };
