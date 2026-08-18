@@ -9,6 +9,8 @@ import { buildSitemapProposal } from '../.agents/skills/redesign-from-reference/
 
 const START = 'https://a.com/';
 
+type Probe = { jsonLdTypes: string[]; cardLinks: number };
+
 /** Fake-visit: 2xx для перелічених URL, провал для решти; лічить виклики. */
 function fakeVisit(okUrls: string[]) {
   const calls: string[] = [];
@@ -16,6 +18,23 @@ function fakeVisit(okUrls: string[]) {
     calls.push(url);
     return okUrls.includes(url)
       ? { ok: true, title: `Title of ${url}` }
+      : { ok: false };
+  };
+  return { visit, calls };
+}
+
+/**
+ * Fake-visit із контент-пробом: усі перелічені URL віддають 2xx, але разом із
+ * пробом, який `detectVisitMismatch` може відхилити. Лічить пари (url, type) —
+ * саме такою сигнатурою `sitemap.mjs` кличе візит із Фази 3.
+ */
+function fakeVisitWithProbe(probes: Record<string, Probe>) {
+  const calls: Array<[string, string]> = [];
+  const visit = async (url: string, type: string) => {
+    calls.push([url, type]);
+    const probe = probes[url];
+    return probe
+      ? { ok: true, title: `Title of ${url}`, probe }
       : { ok: false };
   };
   return { visit, calls };
@@ -174,5 +193,91 @@ describe('lib/sitemap.mjs — buildSitemapProposal: перепідбір і бю
     ).toBeGreaterThan(0);
     // Кандидат понад бюджет лишається знайденим — просто чесно не відвіданим.
     expect(proposal.pageTypes.product).toMatchObject({ visited: false });
+  });
+});
+
+describe('lib/sitemap.mjs — buildSitemapProposal: visit-mismatch', () => {
+  const HOME_PROBE: Probe = { jsonLdTypes: ['WebSite'], cardLinks: 0 };
+  // Сторінка відкрилась (2xx), але це сітка карток без Product-розмітки —
+  // прямий регрес кейсу deo: індекс колекції, що забрав тип `product`.
+  const GRID_PROBE: Probe = {
+    jsonLdTypes: ['CollectionPage', 'ItemList'],
+    cardLinks: 12,
+  };
+  const CARD_PROBE: Probe = { jsonLdTypes: ['Product'], cardLinks: 0 };
+
+  it('кандидат-колекція відхиляється, і тип перепідбирається наступним', async () => {
+    // `/products/grid` — сильніший кандидат (URL + якір «Product», score 4),
+    // але змістом це список; після відхилення тип має дістатись `/products/hoodie`.
+    const { visit, calls } = fakeVisitWithProbe({
+      'https://a.com/': HOME_PROBE,
+      'https://a.com/products/grid': GRID_PROBE,
+      'https://a.com/products/hoodie': CARD_PROBE,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/products/grid', anchors: ['Product'] },
+        { url: 'https://a.com/products/hoodie', anchors: [] },
+      ],
+      startUrl: START,
+      maxVisits: 10,
+      visit,
+    });
+
+    // Сигнатура візиту — саме `(url, type)`: без типу проб інтерпретувати нічим.
+    expect(calls).toContainEqual(['https://a.com/products/grid', 'product']);
+    expect(proposal.pageTypes.product).toMatchObject({
+      url: 'https://a.com/products/hoodie',
+      visited: true,
+    });
+    expect(proposal.unresolved.map((entry) => entry.type)).not.toContain(
+      'product',
+    );
+  });
+
+  it('без запасного кандидата — unresolved із причиною visit-mismatch', async () => {
+    // Причина мусить відрізнятись від `visit-failed`: сторінка ВІДКРИЛАСЬ,
+    // помилився класифікатор, і читач пропозиції має бачити саме це.
+    const { visit } = fakeVisitWithProbe({
+      'https://a.com/': HOME_PROBE,
+      'https://a.com/products/grid': GRID_PROBE,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/products/grid', anchors: ['Product'] },
+      ],
+      startUrl: START,
+      maxVisits: 10,
+      visit,
+    });
+
+    expect(proposal.pageTypes.product).toBeUndefined();
+    expect(proposal.unresolved).toContainEqual({
+      type: 'product',
+      reason: 'visit-mismatch',
+    });
+  });
+
+  it('2xx без mismatch лишається знайденим — проб не відхиляє «на всяк випадок»', async () => {
+    const { visit } = fakeVisitWithProbe({
+      'https://a.com/': HOME_PROBE,
+      'https://a.com/products/hoodie': CARD_PROBE,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/products/hoodie', anchors: [] },
+      ],
+      startUrl: START,
+      maxVisits: 10,
+      visit,
+    });
+
+    expect(proposal.pageTypes.product).toMatchObject({
+      url: 'https://a.com/products/hoodie',
+      visited: true,
+    });
   });
 });

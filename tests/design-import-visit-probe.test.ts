@@ -1,0 +1,119 @@
+/**
+ * Юніти ЧИСТОЇ частини контент-верифікації візиту (інкремент Б.3, Фаза 3,
+ * план Р5): `detectVisitMismatch` із `lib/visit-probe.mjs`. Браузер тут не
+ * потрібен принципово — саме заради цього зняття вимірів
+ * (`browserVisitProbe`, виконується в сторінковому контексті) і їх
+ * інтерпретація розведені по різних експортах одного модуля.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  detectVisitMismatch,
+  GRID_CARDS_MIN,
+  SPARSE_CARDS_MAX,
+} from '../.agents/skills/redesign-from-reference/scripts/lib/visit-probe.mjs';
+
+describe('lib/visit-probe.mjs — detectVisitMismatch: тип product', () => {
+  it('сітка карток без Product-розмітки — mismatch (кейс deo)', () => {
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: ['CollectionPage', 'ItemList'],
+        cardLinks: 12,
+      }),
+    ).toBe(true);
+  });
+
+  it('сітка карток, але сторінка розмічена як Product — НЕ mismatch', () => {
+    // Картка товару зі стрічкою «схожі товари» і власною розміткою: розмітка
+    // б'є лічильник, бо вона пряме твердження сторінки про себе.
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: ['BreadcrumbList', 'Product'],
+        cardLinks: 20,
+      }),
+    ).toBe(false);
+  });
+
+  it('поріг карток: нижче — ні, від порога — так', () => {
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: [],
+        cardLinks: GRID_CARDS_MIN - 1,
+      }),
+    ).toBe(false);
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: [],
+        cardLinks: GRID_CARDS_MIN,
+      }),
+    ).toBe(true);
+  });
+
+  it('Product у вигляді URL схеми зараховується (`https://schema.org/Product`)', () => {
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: ['https://schema.org/Product'],
+        cardLinks: 30,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('lib/visit-probe.mjs — detectVisitMismatch: тип listing', () => {
+  it('Product-розмітка і майже нуль карток — mismatch', () => {
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['Product'],
+        cardLinks: SPARSE_CARDS_MAX - 1,
+      }),
+    ).toBe(true);
+  });
+
+  it('Product-розмітка, але карток достатньо — НЕ mismatch', () => {
+    // Штатна вітрина: `Product` вкладені в `ItemList`, картки на місці.
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['ItemList', 'Product', 'Product'],
+        cardLinks: SPARSE_CARDS_MAX,
+      }),
+    ).toBe(false);
+  });
+
+  it('CollectionPage/ItemList — не Product, mismatch немає навіть без карток', () => {
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['CollectionPage', 'ItemList'],
+        cardLinks: 0,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('lib/visit-probe.mjs — detectVisitMismatch: межі', () => {
+  it('відсутній або порожній проб — НЕ mismatch (пробу не проводили)', () => {
+    // Чесність каналу: «не міряли» ≠ «виміряли й нічого не знайшли».
+    expect(detectVisitMismatch('product', undefined)).toBe(false);
+    expect(detectVisitMismatch('listing', null)).toBe(false);
+    expect(detectVisitMismatch('product', {})).toBe(false);
+    expect(detectVisitMismatch('listing', {})).toBe(false);
+  });
+
+  it('биті поля проба не валять функцію', () => {
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: 'Product',
+        cardLinks: 'багато',
+      }),
+    ).toBe(false);
+  });
+
+  it('решта типів не верифікується змістом взагалі', () => {
+    for (const type of ['home', 'cart', 'checkout', 'about', 'contact']) {
+      expect(
+        detectVisitMismatch(type, {
+          jsonLdTypes: ['Product'],
+          cardLinks: 99,
+        }),
+      ).toBe(false);
+    }
+  });
+});

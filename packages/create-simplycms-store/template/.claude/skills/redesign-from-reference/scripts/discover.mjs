@@ -17,9 +17,12 @@ import {
 } from './lib/browser.mjs';
 import { collectLinks } from './lib/collect-links.mjs';
 import { buildSitemapProposal } from './lib/sitemap.mjs';
+import { browserVisitProbe } from './lib/visit-probe.mjs';
 import { slugify } from './inspect.mjs';
 
 const DEFAULT_MAX_VISITS = 8;
+/** Типи, зміст яких верифікується пробом (Б.3, Р5) — решті сторінок вірять на слово. */
+const PROBED_TYPES = new Set(['listing', 'product']);
 const USAGE =
   'node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]';
 
@@ -47,8 +50,12 @@ function failLoud(error) {
   process.exit(1);
 }
 
-/** Візит кандидатної сторінки: 2xx → `{ok:true, title}`, інакше/мережева помилка → `{ok:false}`. */
-async function visitCandidate(page, url) {
+/**
+ * Візит кандидатної сторінки: 2xx → `{ok:true, title, probe?}`, інакше/мережева
+ * помилка → `{ok:false}`. Для listing/product після 2xx знімається легкий
+ * контент-проб (`browserVisitProbe`) — інтерпретує його вже `sitemap.mjs`.
+ */
+async function visitCandidate(page, url, type) {
   try {
     const response = await page.goto(url, {
       waitUntil: 'networkidle',
@@ -56,7 +63,9 @@ async function visitCandidate(page, url) {
     });
     if (!response || !response.ok()) return { ok: false };
     const title = await page.title();
-    return { ok: true, title: title || null };
+    if (!PROBED_TYPES.has(type)) return { ok: true, title: title || null };
+    const probe = await page.evaluate(browserVisitProbe);
+    return { ok: true, title: title || null, probe };
   } catch {
     return { ok: false };
   }
@@ -103,7 +112,7 @@ async function main() {
       links,
       startUrl: options.url,
       maxVisits: options.maxVisits,
-      visit: (url) => visitCandidate(page, url),
+      visit: (url, type) => visitCandidate(page, url, type),
     });
 
     mkdirSync(dirname(out), { recursive: true });

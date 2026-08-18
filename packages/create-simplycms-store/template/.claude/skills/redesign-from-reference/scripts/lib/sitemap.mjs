@@ -2,8 +2,15 @@
  * Побудова `sitemap-proposal.json` з уже зібраних лінків (задача §2.C.3-4,
  * план Р4/Р5). Чиста оркестрація — `classifyLinks` (Фаза 2, не переписуємо)
  * дає найкращого кандидата на тип; `visit` — інжектована async-функція
- * `(url) => Promise<{ok, title?}>` (у CLI — `page.goto`, у юніт-тестах —
- * фейк), тож логіка перепідбору тестується без браузера.
+ * `(url, type) => Promise<{ok, title?, probe?}>` (у CLI — `page.goto` плюс
+ * `browserVisitProbe`, у юніт-тестах — фейк), тож і перепідбір, і
+ * контент-верифікація тестуються без браузера.
+ *
+ * 🔴 Провалів візиту два роди, і шлях у них ОДИН: `visit-failed` (не-2xx або
+ * мережева помилка) і `visit-mismatch` (сторінка відкрилась, але її зміст
+ * суперечить типу — `detectVisitMismatch`, інкремент Б.3/Р5). В обох випадках
+ * кандидат відхиляється й спрацьовує той самий перепідбір; різниця лише в
+ * причині, яку бачить читач пропозиції.
  *
  * 🔴 Кандидат, чий візит НЕ ok, НЕ лишається «знайденим»: його pathname
  * виключається з робочого набору лінків і `classifyLinks` перераховується —
@@ -20,6 +27,7 @@
  */
 import { classifyLinks, normalizePathname } from './classify.mjs';
 import { URL_PATTERNS } from './classify-terms.mjs';
+import { detectVisitMismatch } from './visit-probe.mjs';
 
 /** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник Фази 2. */
 const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
@@ -51,13 +59,16 @@ function summarizeLinks(links) {
  *   links: Array<{ url: string, anchors: string[] }>,
  *   startUrl: string,
  *   maxVisits: number,
- *   visit: (url: string) => Promise<{ ok: boolean, title?: string | null }>,
+ *   visit: (url: string, type: string) => Promise<{
+ *     ok: boolean, title?: string | null,
+ *     probe?: { jsonLdTypes: string[], cardLinks: number },
+ *   }>,
  * }} params
  * @returns {Promise<{
  *   schemaVersion: 2, startUrl: string,
  *   links: Array<{ pathname: string, anchors: string[] }>,
  *   pageTypes: Record<string, { url: string, score: number, evidence: unknown[], visited: boolean, title?: string }>,
- *   unresolved: Array<{ type: string, reason: 'no-candidate' | 'visit-failed' }>,
+ *   unresolved: Array<{ type: string, reason: 'no-candidate' | 'visit-failed' | 'visit-mismatch' }>,
  * }>}
  */
 export async function buildSitemapProposal({
@@ -68,7 +79,10 @@ export async function buildSitemapProposal({
 }) {
   let workingLinks = links;
   const finalPageTypes = {};
-  const failedTypes = new Set();
+  // 🔴 Не Set, а Map: причина відмови — частина відповіді. Якщо тип провалив
+  // кілька кандидатів поспіль, лишається причина ОСТАННЬОГО — саме він і є
+  // тим, на чому перепідбір зупинився.
+  const failedTypes = new Map();
   let visitsUsed = 0;
 
   for (;;) {
@@ -86,15 +100,16 @@ export async function buildSitemapProposal({
         continue;
       }
       visitsUsed += 1;
-      const result = await visit(candidate.url);
-      if (result.ok) {
+      const result = await visit(candidate.url, type);
+      const mismatch = result.ok && detectVisitMismatch(type, result.probe);
+      if (result.ok && !mismatch) {
         finalPageTypes[type] = {
           ...candidate,
           visited: true,
           ...(result.title ? { title: result.title } : {}),
         };
       } else {
-        failedTypes.add(type);
+        failedTypes.set(type, mismatch ? 'visit-mismatch' : 'visit-failed');
         const failedPathname = normalizePathname(candidate.url);
         workingLinks = workingLinks.filter(
           (link) => normalizePathname(link.url) !== failedPathname,
@@ -108,7 +123,7 @@ export async function buildSitemapProposal({
   const unresolved = ALL_TYPES.filter((type) => !finalPageTypes[type]).map(
     (type) => ({
       type,
-      reason: failedTypes.has(type) ? 'visit-failed' : 'no-candidate',
+      reason: failedTypes.get(type) ?? 'no-candidate',
     }),
   );
 
