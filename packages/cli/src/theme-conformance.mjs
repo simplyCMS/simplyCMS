@@ -55,12 +55,18 @@ export function themeSpec(source, name) {
 }
 
 /**
- * Заявлені темою views — рядок для звіту. Тема без `views` проходить гейт
- * чесним pass-ом (перевіряти нічого), і вивід має це прямо сказати.
- * @param {{ views?: Record<string, unknown> }} theme
+ * Підсумок звіту за ФАКТИЧНО прогнаними kit-ом сторінками.
+ *
+ * 🔴 Не `Object.keys(theme.views)`: заявити view й бути перевіреним — різні
+ * речі (кейс складається явним блоком у `conformance/cases.tsx`). Друк
+ * заявленого показував би прогін, якого не було, тож джерело рядка — те, що
+ * повернув `assertThemeViewsConformance`.
+ * @param {string[]} views
  */
-export function declaredViews(theme) {
-  return Object.keys(theme?.views ?? {});
+export function conformanceSummary(views) {
+  return views.length > 0
+    ? `Conformance пройдено: views ${views.join(', ')}`
+    : 'Прогнаних views немає — перевіряти нічого (це валідно).';
 }
 
 /** @param {string[]} argv */
@@ -89,13 +95,8 @@ export async function run(argv) {
     const { assertThemeViewsConformance } = await environment.runner.import(
       '@simplycms/themes/conformance',
     );
-    await assertThemeViewsConformance(theme);
-    const views = declaredViews(theme);
-    say.success(
-      views.length > 0
-        ? `Conformance пройдено: views ${views.join(', ')}`
-        : 'Тема не заявляє views — перевіряти нічого (це валідно).',
-    );
+    const ran = await assertThemeViewsConformance(theme);
+    say.success(conformanceSummary(ran));
   } finally {
     await environment.close();
   }

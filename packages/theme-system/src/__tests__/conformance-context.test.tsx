@@ -71,7 +71,7 @@ describe('assertThemeViewsConformance — render-контекст', () => {
       { settings: { ...settingsSchema } },
     );
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
   });
 
   it('без схеми settings той самий view червоніє — доказ, що читання справжнє', async () => {
@@ -88,6 +88,6 @@ describe('assertThemeViewsConformance — render-контекст', () => {
       { messages: { uk: { 'cart.headline': 'Ваш кошик' } } },
     );
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
   });
 });

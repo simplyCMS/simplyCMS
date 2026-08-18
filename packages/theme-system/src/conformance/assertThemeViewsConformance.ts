@@ -1,5 +1,8 @@
 import type { Locale } from '@simplycms/i18n';
-import { REQUIRED_REQUISITES } from '@simplycms/objects/views';
+import {
+  REQUIRED_REQUISITES,
+  type StorefrontViewName,
+} from '@simplycms/objects/views';
 import { ThemeRegistry } from '../ThemeRegistry';
 import { validateThemeModule } from '../validateThemeModule';
 import type { ThemeModule } from '../types';
@@ -50,6 +53,13 @@ function ensureRegistered(theme: ThemeModule): boolean {
  *
  * Тема без `views` — чесний pass: перевіряти нема чого.
  *
+ * 🔴 Повертає перелік ФАКТИЧНО прогнаних сторінок (порядок — `cases`), а не
+ * заявлених темою. Різниця не косметична: заявлений ключ, для якого в
+ * `buildConformanceCases` немає блоку, не перевіряється — і звіт, зібраний із
+ * `Object.keys(theme.views)`, показав би прогін, якого не було. Тому і CLI
+ * (`simplycms theme:conformance`), і тести друкують/асертять саме це
+ * значення.
+ *
  * Потрібне DOM-середовище (`// @vitest-environment jsdom`). Якщо view теми
  * використовує `Link` із `@tanstack/react-router`, тест магазину має або
  * підняти роутер, або замокати модуль — kit роутера не піднімає навмисно
@@ -58,7 +68,7 @@ function ensureRegistered(theme: ThemeModule): boolean {
 export async function assertThemeViewsConformance(
   theme: ThemeModule,
   options: ThemeViewsConformanceOptions = {},
-): Promise<void> {
+): Promise<StorefrontViewName[]> {
   if (typeof document === 'undefined') {
     throw new Error(
       '[theme:conformance] Потрібне DOM-середовище: додайте до тесту ' +
@@ -69,7 +79,7 @@ export async function assertThemeViewsConformance(
   validateThemeModule(theme);
 
   const cases = theme.views ? buildConformanceCases(theme.views) : [];
-  if (cases.length === 0) return;
+  if (cases.length === 0) return [];
 
   const locale = options.locale ?? 'uk';
   const themeName = theme.manifest.name;
@@ -108,4 +118,6 @@ export async function assertThemeViewsConformance(
   } finally {
     if (registeredByKit) ThemeRegistry.unregister(themeName);
   }
+
+  return cases.map((item) => item.name);
 }

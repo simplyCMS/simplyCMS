@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  declaredViews,
+  conformanceSummary,
   parseThemeConformanceArgs,
   themeSpec,
 } from '../packages/cli/src/theme-conformance.mjs';
@@ -58,10 +58,18 @@ describe('cli theme:conformance: тема з конфігу', () => {
   });
 });
 
-describe('cli theme:conformance: заявлені views', () => {
-  it('порожньо для теми без views і список ключів для теми з ними', () => {
-    expect(declaredViews({})).toEqual([]);
-    expect(declaredViews({ views: { Cart: () => null } })).toEqual(['Cart']);
+describe('cli theme:conformance: підсумок звіту', () => {
+  // 🔴 Джерело рядка — те, що ПОВЕРНУВ kit, а не `Object.keys(theme.views)`:
+  // заявлений view, для якого в `conformance/cases.tsx` немає блоку, не
+  // прогониться, і звіт по заявленому показував би неіснуючий прогін.
+  it('перелічує саме прогнані сторінки', () => {
+    expect(conformanceSummary(['Catalog', 'Cart'])).toBe(
+      'Conformance пройдено: views Catalog, Cart',
+    );
+  });
+
+  it('порожній прогін називає себе порожнім, а не «пройдено»', () => {
+    expect(conformanceSummary([])).not.toMatch(/пройдено/);
   });
 });
 

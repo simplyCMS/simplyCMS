@@ -8,6 +8,14 @@ import {
   ProductDetailWithoutAddToCart,
   makeTheme,
 } from './conformance-themes';
+import {
+  CatalogSectionWithoutProductGrid,
+  CatalogWithoutProductGrid,
+  GoodCatalog,
+  GoodCatalogSection,
+  GoodHome,
+  HomeCrashingWithoutSections,
+} from './conformance-themes-pages';
 
 /**
  * Негативний контроль conformance-kit-а (Р8).
@@ -18,9 +26,7 @@ import {
  */
 describe('assertThemeViewsConformance — склад реквізитів', () => {
   it('тема без views — чесний pass: перевіряти нема чого', async () => {
-    await expect(
-      assertThemeViewsConformance(makeTheme()),
-    ).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(makeTheme())).resolves.toEqual([]);
   });
 
   it('валідна тема з views — зелено', async () => {
@@ -29,7 +35,10 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
       Cart: GoodCart,
     });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual([
+      'ProductDetail',
+      'Cart',
+    ]);
   });
 
   it('загублений slots.AddToCart — червоно, з назвою реквізиту', async () => {
@@ -51,7 +60,47 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
   it('порожній кошик без реквізитів — НЕ дефект (спека §5)', async () => {
     const theme = makeTheme({ Cart: GoodCart });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+  });
+
+  it('валідні Home/Catalog/CatalogSection — зелено, і прогнані всі три', async () => {
+    const theme = makeTheme({
+      Home: GoodHome,
+      Catalog: GoodCatalog,
+      CatalogSection: GoodCatalogSection,
+    });
+
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual([
+      'Home',
+      'Catalog',
+      'CatalogSection',
+    ]);
+  });
+
+  it('падіння головної на магазині без категорій — червоно', async () => {
+    const theme = makeTheme({ Home: HomeCrashingWithoutSections });
+
+    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+      /views\.Home[\s\S]*"edge"/,
+    );
+  });
+
+  it('каталог без slots.ProductGrid — червоно, з назвою реквізиту', async () => {
+    const theme = makeTheme({ Catalog: CatalogWithoutProductGrid });
+
+    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+      /views\.Catalog[\s\S]*catalog\.product-grid/,
+    );
+  });
+
+  it('розділ без slots.ProductGrid — червоно, з назвою реквізиту', async () => {
+    const theme = makeTheme({
+      CatalogSection: CatalogSectionWithoutProductGrid,
+    });
+
+    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+      /views\.CatalogSection[\s\S]*catalog\.product-grid/,
+    );
   });
 
   it('невідомий ключ views — падає ще на валідації контракту', async () => {

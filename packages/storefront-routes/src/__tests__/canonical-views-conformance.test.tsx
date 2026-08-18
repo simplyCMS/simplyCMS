@@ -64,9 +64,16 @@ const canonicalTheme: ThemeModule = {
 };
 
 describe('канонічні view ядра — conformance-kit', () => {
+  // 🔴 Асертиться саме ПЕРЕЛІК прогнаних сторінок, а не `undefined`: kit на
+  // порожньому списку кейсів чесно проходить, тож без цієї звірки випалий
+  // блок у `conformance/cases.tsx` лишив би тест зеленим.
   it('усі пʼять сторінок проходять гейт на фікстурах обох станів', async () => {
-    await expect(
-      assertThemeViewsConformance(canonicalTheme),
-    ).resolves.toBeUndefined();
+    await expect(assertThemeViewsConformance(canonicalTheme)).resolves.toEqual([
+      'Home',
+      'Catalog',
+      'CatalogSection',
+      'ProductDetail',
+      'Cart',
+    ]);
   });
 });
