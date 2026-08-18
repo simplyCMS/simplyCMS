@@ -10,7 +10,9 @@
     ".": "./src/index.ts",
     "./objects": "./src/objects/index.ts",
     "./ports": "./src/ports/index.ts",
-    "./semver": "./src/semver/index.ts"
+    "./semver": "./src/semver/index.ts",
+    "./views": "./src/views/index.ts",
+    "./views/fixtures": "./src/views/fixtures/index.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -33,6 +35,14 @@
       "./semver": {
         "types": "./dist/semver/index.d.ts",
         "import": "./dist/semver/index.js"
+      },
+      "./views": {
+        "types": "./dist/views/index.d.ts",
+        "import": "./dist/views/index.js"
+      },
+      "./views/fixtures": {
+        "types": "./dist/views/fixtures/index.d.ts",
+        "import": "./dist/views/fixtures/index.js"
       }
     }
   },
@@ -50,5 +60,13 @@
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "tsup"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

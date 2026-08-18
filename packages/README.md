@@ -6,7 +6,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 | Package | Tier | Description |
 |---------|------|-------------|
-| `@simplycms/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`). Type-only, 0 runtime deps. |
+| `@simplycms/objects` | T0 | Domain object contracts + ports (repositories, providers, `EngineContext`) + storefront view-models (`./views`, theme contract v3). Type-only, 0 runtime deps; `react` is an optional type-only peer used solely by the `./views` slot types (kept out of the barrel). |
 | `@simplycms/domain` | T1 | Pure commerce logic — `./pricing`, `./discounts`, `./inventory`, `./shipping`. No IO. |
 | `@simplycms/data-supabase` | T2 | Supabase implementations of the ports (DI: injected client + `ScopeResolver`) |
 | `@simplycms/react-query` | T2 | TanStack Query hooks wired through `EngineProvider`/`useEngine`. |
