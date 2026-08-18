@@ -98,7 +98,7 @@ async function main() {
     console.log(
       `🎞️  motion — transitions: ${motion.transitions.length}, ` +
         `keyframes: ${motion.keyframes.names.length}, ` +
-        `reveal: ${motion.reveal.filter((r) => r.animated).length}, ` +
+        `reveal: ${motion.reveal.filter((r) => r.animated).length} із ${motion.revealSampled} (корінь: ${motion.revealRoot}), ` +
         `hover: ${motion.hover.entries.length} (пропущено: ${motion.hover.skipped}), ` +
         `JS-driven: ${motion.jsDrivenSuspected}`,
     );

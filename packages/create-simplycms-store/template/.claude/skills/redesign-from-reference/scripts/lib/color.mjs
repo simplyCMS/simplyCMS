@@ -16,13 +16,11 @@ const RGB_RE =
 const HSL_TRIPLE_RE = /^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/;
 
 function expandHex(hex) {
-  if (hex.length === 3 || hex.length === 4) {
-    return hex
-      .split('')
-      .map((c) => c + c)
-      .join('');
-  }
-  return hex;
+  if (hex.length > 4) return hex; // HEX_RE лишає рівно {3,4,6,8}
+  return hex
+    .split('')
+    .map((c) => c + c)
+    .join('');
 }
 
 /** Розпарсити CSS-колір (`#hex`, `rgb()`, `rgba()`) → `{ r, g, b, a }` (0-255, a 0-1). */
@@ -107,6 +105,12 @@ export function hslToRgb({ h, s, l }) {
     g: Math.round(hue2rgb(hn) * 255),
     b: Math.round(hue2rgb(hn - 1 / 3) * 255),
   };
+}
+
+/** RGB (0-255) → канонічний `#rrggbb` (Р7: ключ дедупу `unmapped`). */
+export function rgbToHex({ r, g, b }) {
+  const channel = (v) => Math.round(v).toString(16).padStart(2, '0');
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
 }
 
 /** Форматувати HSL у рядок-токен `"H S% L%"`. */

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * CLI дискаверера сторінок референс-сайту (задача §2.C, план Р4/Р5/Р7).
- * Тонкий файл — аргументи + launch chromium + `page.goto`/`page.title` для
- * стартової й кандидатних сторінок; збір лінків — `lib/collect-links.mjs`,
- * побудова пропозиції (класифікація + перепідбір при невдалому візиті) —
- * `lib/sitemap.mjs`. Юзаж:
+ * Тонкий файл — аргументи + launch chromium + відкриття СТАРТОВОЇ сторінки;
+ * збір лінків — `lib/collect-links.mjs`, візит кандидата з контент-пробом —
+ * `lib/visit-candidate.mjs`, побудова пропозиції (класифікація + перепідбір
+ * при невдалому візиті) — `lib/sitemap.mjs`. Юзаж:
  * `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]`.
  */
 import { isCliEntry } from './lib/cli-entry.mjs';
@@ -17,6 +17,8 @@ import {
 } from './lib/browser.mjs';
 import { collectLinks } from './lib/collect-links.mjs';
 import { buildSitemapProposal } from './lib/sitemap.mjs';
+import { visitCandidate } from './lib/visit-candidate.mjs';
+import { browserVisitProbe } from './lib/visit-probe.mjs';
 import { slugify } from './inspect.mjs';
 
 const DEFAULT_MAX_VISITS = 8;
@@ -45,21 +47,6 @@ export function parseArgs(argv) {
 function failLoud(error) {
   console.error(`❌ ${error instanceof Error ? error.message : error}`);
   process.exit(1);
-}
-
-/** Візит кандидатної сторінки: 2xx → `{ok:true, title}`, інакше/мережева помилка → `{ok:false}`. */
-async function visitCandidate(page, url) {
-  try {
-    const response = await page.goto(url, {
-      waitUntil: 'networkidle',
-      timeout: 30_000,
-    });
-    if (!response || !response.ok()) return { ok: false };
-    const title = await page.title();
-    return { ok: true, title: title || null };
-  } catch {
-    return { ok: false };
-  }
 }
 
 async function main() {
@@ -103,7 +90,7 @@ async function main() {
       links,
       startUrl: options.url,
       maxVisits: options.maxVisits,
-      visit: (url) => visitCandidate(page, url),
+      visit: (url, type) => visitCandidate(page, url, type, browserVisitProbe),
     });
 
     mkdirSync(dirname(out), { recursive: true });
@@ -111,7 +98,7 @@ async function main() {
 
     console.log(
       `✅ ${out} — типів знайдено: ${Object.keys(proposal.pageTypes).length}, ` +
-        `unresolved: ${proposal.unresolved.length}, лінків побачено: ${proposal.linksSeen}`,
+        `unresolved: ${proposal.unresolved.length}, лінків побачено: ${proposal.links.length}`,
     );
     for (const [type, info] of Object.entries(proposal.pageTypes)) {
       console.log(

@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  Фікстура reveal-кореня для `tests/design-import-motion-root.test.ts`
+  (інкремент Б.3, Фаза 4, план Р6 / знахідка V-5). Окрема від `motion.html`
+  навмисно: та має `<main>` і фіксує ВСІ пʼять каналів руху разом — правка
+  її розмітки ламає асерти transitions/keyframes/hover; ця доводить рівно
+  одне — що канал не сліпне на розмітці без `<main>`.
+
+  Що вона доводить:
+  • `<main>` немає взагалі — старий корінь (`main` → fallback `body > section`)
+    бачив би тут РІВНО ОДНУ секцію (статичний hero) і жодного руху, тобто
+    порожній `reveal` на сторінці, яка насправді рухається (контрольний
+    дослід прогону №2: 0 → 3 вузли);
+  • три reveal-секції лежать на ярус глибше — у `div.page`, обгортці
+    верхнього рівня (типовий `#__next`/`#root` сучасного фреймворку);
+  • `body > section.hero` лишається кандидатом і при fallback — обидва ЯРУСИ
+    в одній вибірці, у DOM-порядку;
+  • інлайн-`<script>` — ВСЕРЕДИНІ тієї самої обгортки, тобто повноцінний
+    кандидат другого ярусу: контроль фільтра невізуальних тегів (у вибірці
+    його бути не повинно);
+  • рух пояснюється CSS-transition по opacity/transform, тож
+    `jsDrivenSuspected` тут — чесний `false`, а не `'unknown'`.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Design Import Reveal Root (no main)</title>
+    <style>
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #18181b;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      section {
+        padding: 24px;
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(32px);
+        transition:
+          opacity 600ms cubic-bezier(0.4, 0, 0.2, 1),
+          transform 600ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+      .filler {
+        height: 1600px;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <h1>Reveal root reference</h1>
+      <p>Top-level section: candidate even without a wrapper.</p>
+    </section>
+    <div class="page">
+      <div class="filler"></div>
+      <section class="reveal">
+        <p>First deep section revealed on scroll.</p>
+      </section>
+      <div class="filler"></div>
+      <section class="reveal">
+        <p>Second deep section revealed on scroll.</p>
+      </section>
+      <div class="filler"></div>
+      <section class="reveal">
+        <p>Third deep section revealed on scroll.</p>
+      </section>
+      <section class="tail">
+        <p>Tail section, never animated.</p>
+      </section>
+      <script>
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) entry.target.classList.add('is-visible');
+          });
+        });
+        document.querySelectorAll('.reveal').forEach(function (el) {
+          observer.observe(el);
+        });
+      </script>
+    </div>
+  </body>
+</html>

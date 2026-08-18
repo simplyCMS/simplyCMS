@@ -2,10 +2,11 @@
  * Смок `discover.mjs` у headless chromium (Фаза 3, задача §2.C, план Р4/Р5,
  * Step 2). Детект наявності браузера — та сама top-level await схема, що в
  * `design-import-inspect.test.ts` (SKIP чесно, якщо chromium недоступний).
- * Фікстурний «сайт» — `tests/fixtures/design-import/site/`, роздається
- * локальним http-сервером (прецедент — 403-тест `design-import-inspect`):
- * `page.setContent` тут не годиться, бо потрібні РЕАЛЬНІ HTTP-статуси для
- * `visited`/`visit-failed`.
+ * Фікстурні «сайти» — `tests/fixtures/design-import/site/` (базовий контур) і
+ * `site-singular/` (регрес кейсу deo: однина в сегменті, інкремент Б.3),
+ * роздаються локальним http-сервером (прецедент — 403-тест
+ * `design-import-inspect`): `page.setContent` тут не годиться, бо потрібні
+ * РЕАЛЬНІ HTTP-статуси для `visited`/`visit-failed`.
  */
 import { execFile } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -19,6 +20,10 @@ import { resolveChromium } from '../.agents/skills/redesign-from-reference/scrip
 
 const execFileAsync = promisify(execFile);
 const SITE_DIR = join(process.cwd(), 'tests/fixtures/design-import/site');
+const SINGULAR_DIR = join(
+  process.cwd(),
+  'tests/fixtures/design-import/site-singular',
+);
 const DISCOVER_CLI = join(
   process.cwd(),
   '.claude/skills/redesign-from-reference/scripts/discover.mjs',
@@ -34,12 +39,11 @@ function loadPages() {
   };
 }
 
-/** Локальний http-сервер фікстурного «сайту» — випадковий вільний порт. */
-async function startSiteServer() {
-  const pages = loadPages();
+/** Локальний http-сервер фікстури — випадковий вільний порт; маршрутизація інжектується. */
+async function startServer(resolvePage: (pathname: string) => string | null) {
   const server = createServer((req, res) => {
     const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
-    const body = pages[pathname as keyof typeof pages];
+    const body = resolvePage(pathname);
     if (body) {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(body);
@@ -51,6 +55,34 @@ async function startSiteServer() {
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const { port } = server.address() as { port: number };
   return { server, baseUrl: `http://127.0.0.1:${port}/` };
+}
+
+/** Базовий фікстурний «сайт» — статична мапа pathname → сторінка. */
+function startSiteServer() {
+  const pages = loadPages();
+  return startServer(
+    (pathname) => pages[pathname as keyof typeof pages] ?? null,
+  );
+}
+
+/**
+ * Фікстура `site-singular/`: `/product` — індекс колекції, БУДЬ-ЯКИЙ
+ * `/product/<slug>` — картка (шість слугів з головної роздаються однією
+ * сторінкою — для дискаверера важливі статуси й зміст, не унікальність тексту).
+ */
+function startSingularServer() {
+  const index = readFileSync(join(SINGULAR_DIR, 'index.html'), 'utf8');
+  const collection = readFileSync(
+    join(SINGULAR_DIR, 'collection.html'),
+    'utf8',
+  );
+  const product = readFileSync(join(SINGULAR_DIR, 'product.html'), 'utf8');
+  return startServer((pathname) => {
+    if (pathname === '/') return index;
+    if (pathname === '/product') return collection;
+    if (pathname.startsWith('/product/')) return product;
+    return null;
+  });
 }
 
 let browser: import('@playwright/test').Browser | null = null;
@@ -88,8 +120,20 @@ describe.skipIf(!browser)(
         expect(existsSync(out)).toBe(true);
         const proposal = JSON.parse(readFileSync(out, 'utf8'));
 
-        expect(proposal.schemaVersion).toBe(1);
-        expect(proposal.linksSeen).toBeGreaterThan(0);
+        // Форма `schemaVersion: 2` (інкремент Б.3, Р4/V-3): замість голого
+        // числа `linksSeen` — масив `links` з тим, що бачив класифікатор.
+        expect(proposal.schemaVersion).toBe(2);
+        expect(proposal.linksSeen).toBeUndefined();
+        expect(proposal.links.length).toBeGreaterThan(0);
+        expect(proposal.links).toContainEqual({
+          pathname: '/collection',
+          anchors: ['Shop'],
+        });
+        // Дедуплікація за pathname: кожен pathname у масиві рівно один раз.
+        const pathnames = proposal.links.map(
+          (link: { pathname: string }) => link.pathname,
+        );
+        expect(new Set(pathnames).size).toBe(pathnames.length);
 
         expect(proposal.pageTypes.home).toMatchObject({
           url: baseUrl,
@@ -121,6 +165,54 @@ describe.skipIf(!browser)(
           type: 'about',
           reason: 'visit-failed',
         });
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+        await new Promise<void>((resolve, reject) =>
+          server.close((err) => (err ? reject(err) : resolve())),
+        );
+      }
+    }, 60_000);
+
+    it('однина в сегменті: /product — listing, /product/<slug> — product (регрес deo)', async () => {
+      // Живий кейс, на якому дискаверер помилявся двічі поспіль: індекс
+      // колекції `/product` із нав-якорем «Product» забирав тип `product`, а
+      // справжній `listing` лишався невирішеним. Тут наскрізно перевіряється
+      // сума трьох правок Б.3 — bare-патерн, type-aware тайбрейк і
+      // структурний fan-out; проб візиту при цьому нікого не відхиляє.
+      const { server, baseUrl } = await startSingularServer();
+      const outDir = mkdtempSync(join(tmpdir(), 'design-import-singular-'));
+      const out = join(outDir, 'sitemap-proposal.json');
+      try {
+        const run = await execFileAsync(
+          process.execPath,
+          [DISCOVER_CLI, baseUrl, '--out', out],
+          { encoding: 'utf8' },
+        );
+        expect(run.stdout).toContain('✅');
+        const proposal = JSON.parse(readFileSync(out, 'utf8'));
+
+        expect(proposal.pageTypes.listing).toMatchObject({
+          url: `${baseUrl}product`,
+          visited: true,
+        });
+        // Тип `product` дістається найглибшій картці — тайбрейк усередині типу
+        // віддає перевагу довшому pathname (slug), а не коротшому.
+        expect(proposal.pageTypes.product).toMatchObject({
+          url: `${baseUrl}product/omega-speedmaster-professional`,
+          visited: true,
+        });
+        // Структурний сигнал у пропозиції видимий, а не мовчазний: шість
+        // дітей під префіксом — саме те, чим `/product` доведено як індекс.
+        expect(proposal.pageTypes.listing.evidence).toContainEqual({
+          structural: 'prefix-fanout',
+          count: 6,
+          source: 'structure',
+        });
+        const unresolvedTypes = proposal.unresolved.map(
+          (entry: { type: string }) => entry.type,
+        );
+        expect(unresolvedTypes).not.toContain('listing');
+        expect(unresolvedTypes).not.toContain('product');
       } finally {
         rmSync(outDir, { recursive: true, force: true });
         await new Promise<void>((resolve, reject) =>

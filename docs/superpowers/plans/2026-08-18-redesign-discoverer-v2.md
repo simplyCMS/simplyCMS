@@ -1,6 +1,8 @@
 # План: інкремент Б.3 — дискаверер v2 + чесність вимірювальних каналів
 
 > Задача (скоуп, DoD, якорі): [`docs/tasks/redesign-discoverer-v2.md`](../../tasks/redesign-discoverer-v2.md).
+> Базова гілка інкремента: `claude/redesign-increment-b3` (сесійна гілка
+> виконавця мержиться PR-ом у неї — модель інкремента Б.2).
 > Середовище: Docker/БД НЕ потрібні; браузерні тести — фікстурні
 > (`page.setContent` / локальний HTTP-сервер фікстур, патерн
 > `describe.skipIf` наявний). Ре-валідація проти живого референсу потребує
@@ -72,75 +74,80 @@
 
 ## Фаза 1 — Словники + type-aware тайбрейк
 
-- [ ] **Step 1:** `lib/classify-terms.mjs` — розширити `URL_PATTERNS` і
+- [x] **Step 1:** `lib/classify-terms.mjs` — розширити `URL_PATTERNS` і
       `ANCHOR_TERMS` за блоком A.1 задачі (listing: category/categories/
       catalogue/product-category + bare-форми `products?|items?|tovary?`;
       product: product-page, `/p/<slug>`, термінальний `/p`, сімʼя
       `p<id>`; якорі en/uk/ru). Кожен доданий патерн — коментар-джерело
       (платформа).
-- [ ] **Step 2:** type-aware тайбрейк у `classify.mjs` (Р2).
-- [ ] **Step 3:** юніти в `tests/design-import-discover.test.ts`: bare
+- [x] **Step 2:** type-aware тайбрейк у `classify.mjs` (Р2).
+- [x] **Step 3:** юніти в `tests/design-import-discover.test.ts`: bare
       `/product` → listing-кандидат; `/product/<slug>` → product; те саме
       для `tovary`/`tovar`; `p12345`-сегмент → product; конфліктний кейс
       deo (обидва URL, якір «Product») — правильна пара типів; негативний
       контроль тайбрейка (відкат Р2 → червоно).
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 2 — Структурний fan-out + schemaVersion 2
 
-- [ ] **Step 1:** новий `lib/classify-structure.mjs` (Р3) + юніти на
+- [x] **Step 1:** новий `lib/classify-structure.mjs` (Р3) + юніти на
       чисту функцію (fan-out ≥3, листи, корінь виключено, стабільність).
-- [ ] **Step 2:** інтеграція в `classifyLinks`: додаткові evidence для
+- [x] **Step 2:** інтеграція в `classifyLinks`: додаткові evidence для
       listing/product; юніт — deo-кейс класифікується правильно навіть із
       ВИРІЗАНИМИ словниковими термінами product/products (сила сигналу).
-- [ ] **Step 3:** `sitemap.mjs`: `schemaVersion: 2`, поле `links` (V-3);
+- [x] **Step 3:** `sitemap.mjs`: `schemaVersion: 2`, поле `links` (V-3);
       оновити тести форми.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 3 — Visit-probe + фікстура deo-кейсу
 
-- [ ] **Step 1:** `lib/visit-probe.mjs` (Р5) + юніти правил mismatch на
+- [x] **Step 1:** `lib/visit-probe.mjs` (Р5) + юніти правил mismatch на
       обʼєктах-результатах (без браузера).
-- [ ] **Step 2:** `discover.mjs` — виклик проба для listing/product після
+- [x] **Step 2:** `discover.mjs` — виклик проба для listing/product після
       2xx; `sitemap.mjs` — обробка `visit-mismatch` (шлях перепідбору
       `visit-failed`); юніт із fake-visit: product-кандидат зі сторінкою-
       колекцією відхиляється, тип перепідбирається наступним кандидатом.
-- [ ] **Step 3:** нова CLI-фікстура `tests/fixtures/design-import/
+- [x] **Step 3:** нова CLI-фікстура `tests/fixtures/design-import/
       site-singular/` — bare `/product` (колекція з ≥6 картками) +
       `/product/<slug>` (картка з Product JSON-LD) — прямий регрес живого
       кейсу; новий кейс у `design-import-discover-cli.test.ts`
       (skipIf-патерн наявний).
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 4 — Чесність motion і unmapped (V-5, V-6, V-7)
 
-- [ ] **Step 1:** reveal-корінь (Р6) у `lib/browser.mjs`; фікстура
-      `motion.html` доповнюється варіантом без `<main>` (секції на рівень
-      глибше) — тест: вузли знайдені; тест обсягу вибірки.
-- [ ] **Step 2:** `suspectJsDriven`/`motion` — нуль вибірки → явне
+- [x] **Step 1:** reveal-корінь (Р6) — фактично `lib/browser-reveal.mjs`
+      (план називав `lib/browser.mjs`; там живе резолвер chromium і
+      `scrollThrough`, а знімок винесено окремим модулем ще в Б.2); замість
+      правки `motion.html` (на ній тримаються наявні асерти) додано ОКРЕМУ
+      фікстуру `motion-nomain.html` — тест: вузли знайдені; тест обсягу
+      вибірки точним числом.
+- [x] **Step 2:** `suspectJsDriven`/`motion` — нуль вибірки → явне
       «невідомо» (Р6); тест відрізняє три стани: підозрюється / не
       підозрюється / невідомо.
-- [ ] **Step 3:** структурований `unmapped` із контрастом (Р7) у
+- [x] **Step 3:** структурований `unmapped` із контрастом (Р7) — новим
+      `lib/unmapped.mjs` (канон 150 рядків), підключеним із
       `lib/color-tokens.mjs`/`lib/map.mjs`; тест-кейс `#6a7282` на
       `#f5f5f5` → `belowAA: true`; оновити наявні тести форми
       tokens-proposal.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 5 — Скіл/гайд, синк, фінальні гейти, ре-валідація
 
-- [ ] **Step 1:** SKILL.md: фаза 1 — нові сигнали (structure,
+- [x] **Step 1:** SKILL.md: фаза 1 — нові сигнали (structure,
       visit-mismatch, `links`, `schemaVersion: 2`); фаза 5 — чек-лист
       браузерної перевірки фільтрів (V-8: чиста сторінка на стан,
       очікування з БД, контрольний непорожній випадок); нотатка про
       політику артефактів у монорепо (V-1).
-- [ ] **Step 2:** гайд `docs/guides/redesign-from-reference.md` і команда
+- [x] **Step 2:** гайд `docs/guides/redesign-from-reference.md` і команда
       `.claude/commands/редизайн-за-референсом.md` — звірити.
-- [ ] **Step 3:** `pnpm template:sync`; parity зелений.
+- [x] **Step 3:** `pnpm template:sync`; parity зелений.
 - [ ] **Step 4:** фінальні гейти повним ланцюгом (+ `build:packages`,
-      `test:packaging`).
+      `test:packaging`) — `format:check → lint → build → typecheck → test`
+      зелені у фазі 5; packaging-контур закриває оркестратор.
 - [ ] **Step 5:** ре-валідація проти живого референсу (Р8); результат — у
       нотатки; якщо мережі немає — чесно позначити відкладеним у задачі.
-- [ ] **Step 6:** відмітки DoD у задачі + рядок Б.3 у роадмапі.
+- [x] **Step 6:** відмітки DoD у задачі + рядок Б.3 у роадмапі.
 
 ## Верифікація (для окремого верифікаційного воркфлоу)
 
@@ -154,3 +161,32 @@
 4. Форми `schemaVersion: 2` (sitemap) і розширеного tokens-proposal — під
    тестами; старі фікстури v1 не використовуються тестами як актуальні.
 5. Скіл/гайд/команда/шаблон — узгоджені (parity + читання).
+
+### Раунд ревʼю — пройдено 2026-08-18
+
+Приземлену роботу відревʼюєно окремо; знахідки закриті трьома фазами фіксів
+(коміти поверх `12be01b..HEAD`). Чим саме закрито пункти вище:
+
+- **п. 1 (негативні контролі)** — доповнено там, де контроль був
+  тавтологічним: `SPARSE_CARDS_MAX === FANOUT_MIN_CHILDREN` під
+  інваріант-тестом (ловить повернення літерала), `revealSampled` під юнітом
+  із fake-`page` (мутант `sampled = after.nodes.length` червоніє),
+  `rgbToHex` — на злитті двох різних кольорів без `padStart`.
+- **п. 2 (deo-кейс)** — правило `visit-mismatch` перероблено після
+  підтвердженого ХИБНОГО ПОЗИТИВУ: лічильник карток тепер сімʼя
+  однопрефіксних лінків, а не «глибші за сторінку» (на Shopify/WooCommerce
+  індекс і картки на однаковій глибині); `CollectionPage`/`ItemList` знімає
+  правило `listing`; проб — після прокрутки; помилка проба не дає
+  `visit-failed`; відхилення блокує пару (тип, pathname), не сторінку.
+- **п. 4 (форми й версії)** — `inspection.json` бампнуто до `3` (reveal-поля
+  змінили форму), сумісність — `[1, 2, 3]`; три лічильники версій
+  (`inspection` / `tokens-proposal` / `sitemap-proposal`) позначені в коді
+  як незалежні.
+- **п. 5 (скіл/гайд/шаблон)** — доки звірені з фактичним кодом: `source`
+  має три значення, а не чотири (`'aria'` не існує — aria-label агрегується
+  в `anchors`), словники — англ + укр + рос, browser-gated файлів пʼять.
+  `pnpm template:sync` прогнано, parity зелений.
+- **новий пункт до п. 1** — сліпу зону CI на КОРЕНІ reveal (логіка жила лише
+  в browser-gated тесті, який у CI скіпається) закрито CI-безпечним
+  jsdom-дублем `tests/design-import-reveal-dom.test.ts`; факт зафіксовано в
+  `docs/architecture/test-contours.md` §4 п. 7.

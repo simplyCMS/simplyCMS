@@ -123,10 +123,15 @@ function main() {
       );
     }
   }
+  // Р7: у stdout — лише те, що людині корисно очима (hex, частота, провал
+  // контрасту). Роль, площа й самі відношення лишаються у JSON: рядок терміналу
+  // не місце для таблиці, а обговорювати `unmapped` агент буде з файлу.
   if (proposal.unmapped.length > 0) {
-    console.log(
-      `ℹ️  Немапованих кольорів: ${proposal.unmapped.length} — ${proposal.unmapped.join(', ')}`,
-    );
+    console.log(`ℹ️  Немапованих кольорів: ${proposal.unmapped.length}`);
+    for (const color of proposal.unmapped) {
+      const flag = color.belowAA ? ' ⚠️  контраст нижче AA' : '';
+      console.log(`  ${color.hex} (×${color.count})${flag}`);
+    }
   }
 }
 
