@@ -158,6 +158,33 @@ describe('lib/merge.mjs — mergeInspections', () => {
     ]);
   });
 
+  // 🔴 Р3: `motion` — пер-сторінкова секція за природою (тривалості, reveal і
+  // hover описують КОНКРЕТНУ сторінку, і спека компонента читає саме її
+  // `inspection.json`). Усереднення по сторінках дало б число, якого немає в
+  // жодній із них, тож `mergeInspections` motion не зливає ВЗАГАЛІ — і в
+  // зведеному виводі ключа немає. Цей тест стереже саме навмисність.
+  it('зведення N>1 НЕ містить ключа motion (Р3 — motion пер-сторінковий)', () => {
+    const withMotion = (property: string) =>
+      page({
+        schemaVersion: 2,
+        motion: {
+          transitions: [
+            { property, durationMs: 300, easing: 'ease', count: 4 },
+          ],
+          keyframes: { names: ['fade-in'], inaccessibleSheets: 0 },
+          reveal: [{ index: 0, animated: true }],
+          jsLibraries: { detected: ['gsap'], markers: ['global:gsap'] },
+          jsDrivenSuspected: false,
+        },
+      });
+
+    const merged = mergeInspections([
+      withMotion('opacity'),
+      withMotion('transform'),
+    ]);
+    expect(merged).not.toHaveProperty('motion');
+  });
+
   it('перестановка вхідних файлів дає той самий результат (Р6)', () => {
     const a = page({
       url: 'https://example.test/a',

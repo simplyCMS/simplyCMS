@@ -56,11 +56,15 @@
   комітяться скрипт, фікстурний семпл для тесту і README. Ідемпотентність
   — `on conflict do update` по slug/унікальних ключах. Без `DATABASE_URL`
   скрипт гучно падає з інструкцією — це і є чесна деградація задачі.
-- **Р9. `findStoreRoot`** (`packages/cli/src/context.mjs`) — визнає
-  корінь МОНОРЕПО валідним store root: маркер `pnpm-workspace.yaml` +
-  `simplycms.config.ts` у тому самому каталозі. Скаффолди йдуть у
-  `themes/`/`plugins/` кореня. Поведінка в справжньому магазині — без
-  змін (наявні cli-юніти лишаються зеленими як регрес-гард).
+- **Р9. Корінь скаффолду** (`packages/cli/src/context.mjs`) — маркер
+  `pnpm-workspace.yaml` + `simplycms.config.ts` у тому самому каталозі
+  робить корінь МОНОРЕПО валідним коренем скаффолду; скаффолди йдуть у
+  `themes/`/`plugins/` кореня. 🔴 Радіус — рівно команда `create`
+  (`findScaffoldRoot`); для `doctor`/`add`/`update`/`db:diff` `findStoreRoot`
+  лишається магазинним і в монорепо гучно відмовляє (інакше `update --write`
+  міг би мовчки відкотити host-файли — його напрям істини зворотний до
+  `template:sync`). Поведінка в справжньому магазині — без змін (наявні
+  cli-юніти лишаються зеленими як регрес-гард).
 - **Р10. Нумерація фаз скіла:** side-by-side лишається фазою 5
   (розширюється), «Шліфування» — нова ОПЦІЙНА фаза 6. Драбина рішень
   фази 6 — токен → setting → кастомна сторінка → прийняти канон;
@@ -72,106 +76,113 @@
 
 ## Фаза 1 — Motion-капчер: transitions, keyframes, reveal, JS-детект
 
-- [ ] **Step 1:** `lib/browser-sample.mjs` — у наявному
+- [x] **Step 1:** `lib/browser-sample.mjs` — у наявному
       `page.evaluate`-семплінгу додатково зняти computed
       `transition-property/duration/timing-function` семплованих елементів
       і зібрати сирі записи для кластеризації (property → duration/easing
       → count).
-- [ ] **Step 2:** там само (або окремим evaluate у
+- [x] **Step 2:** там само (або окремим evaluate у
       `lib/inspect-page.mjs`) — обхід `document.styleSheets` через CSSOM:
       імена `@keyframes` same-origin; cross-origin аркуші рахувати в
       `inaccessibleSheets` (try/catch на `cssRules`).
-- [ ] **Step 3:** `lib/browser.mjs` `scrollThrough()` — снапшоти
+- [x] **Step 3:** `lib/browser.mjs` `scrollThrough()` — снапшоти
       `opacity`/`transform` секцій верхнього рівня до/після кроків
       (Р4), результат повертається нагору в `inspect-page`.
-- [ ] **Step 4:** JS-детект (Р6) — окрема чиста функція
+- [x] **Step 4:** JS-детект (Р6) — окрема чиста функція
       `lib/motion-detect.mjs` (сигнатури по script src + глобалах) +
       виклик з `inspect-page`; юніти на чистій функції.
-- [ ] **Step 5:** зібрати все в секцію `motion` `inspection.json`,
+- [x] **Step 5:** зібрати все в секцію `motion` `inspection.json`,
       `schemaVersion: 2` (Р1/Р2); `map-tokens.mjs` приймає 1 і 2;
       `merge.mjs` — тест «зведення не містить motion» (Р3).
-- [ ] **Step 6:** фікстура `tests/fixtures/design-import/motion.html`
+- [x] **Step 6:** фікстура `tests/fixtures/design-import/motion.html`
       (CSS transitions + @keyframes + reveal через inline-скрипт
       IntersectionObserver + підключений фейковий «gsap»-скрипт) +
       тести `tests/design-import-inspect.test.ts` на всі чотири канали;
       стабільність сортувань — прогін двічі, глибока рівність.
-- [ ] **Step 7:** гейти фази: `format:check → lint → build → typecheck →
+- [x] **Step 7:** гейти фази: `format:check → lint → build → typecheck →
       test`.
 
 ## Фаза 2 — Hover-sweep
 
-- [ ] **Step 1:** `lib/inspect-page.mjs` — hover-прохід (Р5): відбір
+- [x] **Step 1:** `lib/inspect-page.mjs` — hover-прохід (Р5): відбір
       видимих елементів за селекторами, ліміт, `hover()` → пауза →
       дельта computed; повернення `motion.hover` (лише значущі дельти,
       стабільне сортування за селектором+індексом).
-- [ ] **Step 2:** розширити фікстуру motion.html hover-стилями
+- [x] **Step 2:** розширити фікстуру motion.html hover-стилями
       (`:hover` на кнопці й лінку) + тести: дельта є там, де є
       `:hover`-правило, і відсутня де немає.
-- [ ] **Step 3:** SKILL.md НЕ чіпати (це Фаза 5 плану); але перевірити,
+- [x] **Step 3:** SKILL.md НЕ чіпати (це Фаза 5 плану); але перевірити,
       що `inspect.mjs --help`/повідомлення CLI згадують нові дані
       коректно, якщо такий вивід існує.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
-## Фаза 3 — Беклог лайв-тесту: шрифт-вага і findStoreRoot
+## Фаза 3 — Беклог лайв-тесту: шрифт-вага і корінь скаффолду
 
-- [ ] **Step 1:** `lib/browser-sample.mjs` — вага шрифт-сімʼї за
+- [x] **Step 1:** `lib/browser-sample.mjs` — вага шрифт-сімʼї за
       `textContent` (Р7); tie-break — стара частота.
-- [ ] **Step 2:** тест-кейс лайв-тесту: фікстурна сторінка, де
+- [x] **Step 2:** тест-кейс лайв-тесту: фікстурна сторінка, де
       span-мітки в моно чисельніші за body-вузли, а body-текст довший —
       `fonts.body` = body-сімʼя (до фікса тест червоний — перевірити
       відкатом).
-- [ ] **Step 3:** `packages/cli/src/context.mjs` `findStoreRoot` —
-      маркер монорепо (Р9); `create theme`/`create plugin` скаффолдять у
-      корінь монорепо.
-- [ ] **Step 4:** юніти: новий кейс у `tests/cli-create-theme.test.ts`
-      (тимчасова тека з `pnpm-workspace.yaml` + `simplycms.config.ts`);
-      наявні cli-юніти (справжній магазин) — без змін, зелені.
-- [ ] **Step 5:** гейти фази.
+- [x] **Step 3:** `packages/cli/src/context.mjs` `findScaffoldRoot` —
+      маркер монорепо (Р9), споживач рівно один: `create theme`/
+      `create plugin` скаффолдять у корінь монорепо; `findStoreRoot`
+      (doctor/add/update/db:diff) монорепо магазином не вважає.
+- [x] **Step 4:** юніти: кейси в `tests/cli-context.test.ts`
+      (тимчасова тека з `pnpm-workspace.yaml` + `simplycms.config.ts`) —
+      позитивний на `findScaffoldRoot` і гард межі на `findStoreRoot` —
+      плюс наскрізний кейс у `tests/cli-create-theme.test.ts`; наявні
+      cli-юніти (справжній магазин) — без змін, зелені.
+- [x] **Step 5:** гейти фази.
 
 ## Фаза 4 — Demo-датасет діагностичного стенда
 
-- [ ] **Step 1:** звірити множину каталожних таблиць із
+- [x] **Step 1:** звірити множину каталожних таблиць із
       `supabase/seed.sql` (products / sections / властивості / ціни +
       зображення) — зафіксувати allowlist таблиць і колонок у коді
       дампера (Р8), санітизація за allowlist-ом (жодних users/orders).
-- [ ] **Step 2:** `scripts/dev-stand/dump-demo-data.mjs` — `pg` по
+- [x] **Step 2:** `scripts/dev-stand/dump-demo-data.mjs` — `pg` по
       `DATABASE_URL`, генерація ідемпотентного `seed-demo.sql`
       (on conflict do update); без `DATABASE_URL` — гучне падіння з
       інструкцією. `.gitignore`: `scripts/dev-stand/seed-demo.sql`.
-- [ ] **Step 3:** генерацію SQL винести в чисту функцію
+- [x] **Step 3:** генерацію SQL винести в чисту функцію
       (рядки-фікстури → SQL) + тест на фікстурному семплі
       (`scripts/dev-stand/fixtures/…` або `tests/fixtures/`):
       санітизація, ідемпотентна форма, екранування.
-- [ ] **Step 4:** `scripts/dev-stand/README.md` — як зняти дамп і
+- [x] **Step 4:** `scripts/dev-stand/README.md` — як зняти дамп і
       накотити на локальний стек ПОВЕРХ сіду пілота (psql на порт стенда);
       🔴 явно: `supabase/seed.sql` і `scripts/pilot-pack/` не чіпаються,
       стенд до клауд-БД напряму не підключається.
-- [ ] **Step 5:** гейти фази.
+- [x] **Step 5:** гейти фази.
 
 ## Фаза 5 — Скіл: фаза 5 side-by-side, нова фаза 6 «Шліфування», Motion у спеках
 
-- [ ] **Step 1:** `SKILL.md` фаза 5 — обовʼязковий side-by-side по
+- [x] **Step 1:** `SKILL.md` фаза 5 — обовʼязковий side-by-side по
       КОЖНОМУ підтвердженому типу зі `sitemap-proposal.json`
       (`_ours/<pageType>/`), класифікація кожної розбіжності
       (токен-фіксабельна / дані / структурна-за-дизайном), підсумкова
       таблиця «тип → розбіжність → клас → рішення»; заборона
-      продовжувати без пари (виняток — тип, свідомо пропущений
-      користувачем на фазі 1.2).
-- [ ] **Step 2:** `SKILL.md` фаза 4 — у дисципліни спека-файлів додати
+      продовжувати без пари (винятки — тип, свідомо пропущений
+      користувачем на фазі 1.2; `cart`/`checkout` без змоги наповнити
+      кошик; і тип, у якого сторінки в магазині немає взагалі
+      (`about`/`contact` без власної `src/routes/my/…`): усі три рядком
+      у таблиці, скріншот кошика під іменем `checkout` — заборонений
+      прямим текстом).
+- [x] **Step 2:** `SKILL.md` фаза 4 — у дисципліни спека-файлів додати
       обовʼязкову секцію **Motion** (з виміряних `motion`-даних
       інспекції: тривалості/easing-и, reveal, hover; «JS-driven —
       дивись очима» як чесна межа).
-- [ ] **Step 3:** `SKILL.md` нова фаза 6 «Шліфування» (опційна, Р10) +
+- [x] **Step 3:** `SKILL.md` нова фаза 6 «Шліфування» (опційна, Р10) +
       оновити «Межі v1»/«Чесну деградацію», якщо зачеплені.
-- [ ] **Step 4:** звірити гайд
+- [x] **Step 4:** звірити гайд
       `docs/guides/redesign-from-reference.md` і команду
       `.claude/commands/редизайн-за-референсом.md` з новим текстом скіла.
-- [ ] **Step 5:** `pnpm template:sync` (скіл їде в шаблон копією) —
+- [x] **Step 5:** `pnpm template:sync` (скіл їде в шаблон копією) —
       parity-тести зелені.
-- [ ] **Step 6:** фінальні гейти ПОВНИМ ланцюгом:
+- [x] **Step 6:** фінальні гейти ПОВНИМ ланцюгом:
       `format:check → lint → build → typecheck → test →
       build:packages → test:packaging`.
-- [ ] **Step 7:** відмітити DoD у задачі
+- [x] **Step 7:** відмітити DoD у задачі
       (`docs/tasks/redesign-mechanism-b2.md`) і рядок інкремента Б.2 у
       роадмапі (виконані пункти; «фінальна валідація прогоном» лишається
       відкритою — вона поза задачею).
@@ -179,7 +190,7 @@
 ## Верифікація плану (для окремого верифікаційного воркфлоу)
 
 1. Негативні контролі: Р7-тест червоніє на відкаті фікса семплера;
-   монорепо-кейс `findStoreRoot` червоніє на відкаті Р9.
+   монорепо-кейс `findScaffoldRoot` червоніє на відкаті Р9.
 2. `merge` N=1 — байт-сумісність із одиночним входом зберігається
    (наявний early-return тест зелений).
 3. `schemaVersion: 2` не ламає `map-tokens` на старих фікстурах v1.

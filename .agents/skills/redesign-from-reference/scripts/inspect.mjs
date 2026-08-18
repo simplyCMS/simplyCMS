@@ -92,6 +92,16 @@ async function main() {
         `radius: ${inspection.radius.length} (відкинуто pill/full: ${inspection.radiusDropped}), ` +
         `dark: ${inspection.darkDetected}`,
     );
+    // Один рядок про рух — щоб було видно, чи капчер щось узагалі зловив
+    // (порожній motion на анімованому сайті — сигнал «дивись очима»).
+    const { motion } = inspection;
+    console.log(
+      `🎞️  motion — transitions: ${motion.transitions.length}, ` +
+        `keyframes: ${motion.keyframes.names.length}, ` +
+        `reveal: ${motion.reveal.filter((r) => r.animated).length}, ` +
+        `hover: ${motion.hover.entries.length} (пропущено: ${motion.hover.skipped}), ` +
+        `JS-driven: ${motion.jsDrivenSuspected}`,
+    );
   } catch (error) {
     failLoud(error);
   } finally {

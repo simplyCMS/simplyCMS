@@ -4,6 +4,7 @@
  * `browser-sample.mjs` (самодостатня, без замикань на цей модуль:
  * Playwright серіалізує лише її `toString()`).
  */
+import { browserFonts } from './browser-fonts.mjs';
 import { browserSample } from './browser-sample.mjs';
 import { scrollThrough } from './browser.mjs';
 
@@ -30,12 +31,18 @@ export const RADIUS_SANITY_MAX = 64;
  * Семпл computed styles сторінки (Node-обгортка `page.evaluate`). Радіус-
  * кластери понад `RADIUS_SANITY_MAX` — відкидаються тут (Р2), а не в
  * `browserSample`; `radiusDropped` — чесна лічильна ознака для `inspection.json`.
+ *
+ * Шрифт-сімʼї знімає ОКРЕМИЙ evaluate (`browserFonts`, Р7): вага сімʼї —
+ * сума довжин тексту, і власний обхід текстових вузлів у `browserSample`
+ * уже не вміщався в канонні 150 рядків. Обидва проходи бачать той самий
+ * лейаут (виклик один, viewport між ними не змінюється).
  */
 export async function samplePalette(page) {
   const sample = await page.evaluate(browserSample, SAMPLE_LIMIT);
+  const fonts = await page.evaluate(browserFonts, SAMPLE_LIMIT);
   const radius = sample.radius.filter((r) => r.valuePx <= RADIUS_SANITY_MAX);
   const radiusDropped = sample.radius.length - radius.length;
-  return { ...sample, radius, radiusDropped };
+  return { ...sample, fonts, radius, radiusDropped };
 }
 
 /**

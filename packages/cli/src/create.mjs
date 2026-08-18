@@ -7,7 +7,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasPackage, insertEntry } from './config-edit.mjs';
-import { findStoreRoot, readCliVersion } from './context.mjs';
+import { findScaffoldRoot, readCliVersion } from './context.mjs';
 import {
   scaffoldPlugin,
   scaffoldTheme,
@@ -83,7 +83,9 @@ function nextSteps(kind, name) {
 export async function run(argv) {
   const { kind, name, dryRun } = parseCreateArgs(argv);
   begin(`simplycms create ${kind}`);
-  const storeRoot = findStoreRoot();
+  // Єдина команда, якій корінь монорепо ядра теж підходить (Р9): див.
+  // findScaffoldRoot у context.mjs.
+  const storeRoot = findScaffoldRoot();
   const configPath = join(storeRoot, 'simplycms.config.ts');
   if (!existsSync(configPath))
     throw new Error(`Не знайдено ${configPath} — create не має куди писати`);

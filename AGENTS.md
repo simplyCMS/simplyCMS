@@ -20,13 +20,17 @@ All coding rules, architecture decisions, and best practices are maintained in `
 ## Agent Tooling
 
 - **Скіли** (джерело правди — `.agents/skills/`, симлінки в `.claude/skills/`):
-  `codebase-research` — як шукати в репо; `code-review` — як рев'ювити.
+  `codebase-research` — як шукати в репо; `code-review` — як рев'ювити;
+  `redesign-from-reference` — редизайн магазину за референс-сайтом (фази 0-6:
+  детерміністична інспекція кольорів/типографіки/motion скриптами всередині
+  скіла, обовʼязковий side-by-side, опційне шліфування).
 - **Субагенти** (`.claude/agents/`): `codebase-research`, `code-review` (одна лінза
   за виклик), `code-review-verifier` (адверсаріальний скептик).
 - **Команди** (`.claude/commands/`, симлінки в `.github/prompts/` для Copilot):
   `/виконай-задачу` — головна; далі `/перевір-роботу-агента-кодування`,
   `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`,
-  `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`.
+  `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`,
+  `/редизайн-за-референсом`.
 - **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
   (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
 - **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →

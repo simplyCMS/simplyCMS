@@ -60,25 +60,10 @@ export function browserSample(limit) {
     }
   }
 
-  // Заголовки й body-текст рахуємо окремими картами за family-ключем.
-  function bumpFont(map, style) {
-    const key = style.fontFamily;
-    const e = map.get(key) ?? {
-      family: key,
-      weight: style.fontWeight,
-      sizePx: parseFloat(style.fontSize),
-      count: 0,
-    };
-    e.count += 1;
-    map.set(key, e);
-  }
-
   const colors = new Map();
   const radius = new Map();
   const shadows = new Map();
   const spacing = new Map();
-  const headingFonts = new Map();
-  const bodyFonts = new Map();
 
   const elements = [...document.querySelectorAll('body *')].slice(0, limit);
 
@@ -115,19 +100,6 @@ export function browserSample(limit) {
 
     const marginPx = parseFloat(style.marginBottom);
     if (marginPx > 0) spacing.set(marginPx, (spacing.get(marginPx) ?? 0) + 1);
-
-    const text = el.textContent ? el.textContent.trim() : '';
-    if (/^H[1-3]$/.test(el.tagName) && text) bumpFont(headingFonts, style);
-    else if (['P', 'SPAN', 'LI'].includes(el.tagName) && text)
-      bumpFont(bodyFonts, style);
-  }
-
-  function topFont(map) {
-    let best = null;
-    for (const e of map.values()) if (!best || e.count > best.count) best = e;
-    return best
-      ? { family: best.family, weight: best.weight, sizePx: best.sizePx }
-      : null;
   }
 
   const topShadows = [...shadows.entries()]
@@ -139,9 +111,10 @@ export function browserSample(limit) {
     ...document.querySelectorAll('link[rel="stylesheet"]'),
   ].map((link) => link.href);
 
+  // `fonts` тут навмисно НЕМАЄ: голосування за сімʼї — окремий evaluate
+  // (`browser-fonts.mjs`, Р7), результати зшиває Node-обгортка `samplePalette`.
   return {
     colors: [...colors.values()],
-    fonts: { heading: topFont(headingFonts), body: topFont(bodyFonts) },
     radius: [...radius.values()],
     shadows: topShadows,
     spacing: [...spacing.keys()].sort((a, b) => a - b),

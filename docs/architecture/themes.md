@@ -197,7 +197,11 @@ className-літерали в JS; перевірено на dist `plugin-faq`). 
 `components/Footer.tsx`/README, плейсхолдери `__THEME_NAME__`/
 `__THEME_DISPLAY_NAME__`/`__CORE_RANGE__`) + якірний запис у конфіг. Аліас
 `@themes/*` уже налаштований — правки видно після рестарту `pnpm dev`, без
-build-кроку й workspace-лінків.
+build-кроку й workspace-лінків. 🔴 Команда працює і в корені МОНОРЕПО ядра
+(маркер `pnpm-workspace.yaml` + `simplycms.config.ts` — `findScaffoldRoot`),
+скаффолдячи в `themes/` кореня: авторам тем ядра окремий магазин не потрібен.
+Радіус цього маркера — рівно `create`; `doctor`/`add`/`update`/`db:diff` у
+монорепо і далі гучно відмовляють (див. `docs/architecture/cli.md` §1).
 
 **npm-тема:** `pnpm simplycms add <pkg> --theme` (§3.1) або `--copy` (§3.2).
 Після установки — `pnpm build`, активація й налаштування — з адмінки
