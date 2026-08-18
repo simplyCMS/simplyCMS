@@ -1,7 +1,7 @@
 # План: інкремент Б.2 — шліфування механізму клонування дизайну
 
 > Задача (джерело скоупу і DoD): [`docs/tasks/redesign-mechanism-b2.md`](../../tasks/redesign-mechanism-b2.md).
-> Гілка виконання: `claude/redesign-mechanism-2026-08-17-ltekwc` (PR #34).
+> Гілка виконання: `claude/redesign-increment-b2`.
 > Середовище: Docker/жива БД НЕ потрібні (виняток — реальний дамп у Фазі 4,
 > див. Р8: чесна деградація). Фікстурні браузерні тести — за наявним
 > патерном `describe.skipIf` по launch-probe Playwright.

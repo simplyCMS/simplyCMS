@@ -824,8 +824,7 @@ visit-failed`, бо сам сайт віддає 404 на цей шлях (пе�
 PR #32; прогалини процесу — скоуп цього інкремента. Задача:
 [`redesign-mechanism-b2.md`](./redesign-mechanism-b2.md); план виконання:
 [`2026-08-17-redesign-mechanism-b2.md`](../superpowers/plans/2026-08-17-redesign-mechanism-b2.md)
-(рішення Р1–Р10; виконано в гілці `claude/redesign-mechanism-2026-08-17-ltekwc`,
-PR #34). Артефакти інспекцій (`docs/design-references/`) з
+(рішення Р1–Р10; гілка `claude/redesign-increment-b2`). Артефакти інспекцій (`docs/design-references/`) з
 2026-08-17 — локальний робочий стан, у git монорепо не комітяться (рішення
 власника; для МАГАЗИНІВ скіл і далі каже комітити їх як аудитований слід).
 
