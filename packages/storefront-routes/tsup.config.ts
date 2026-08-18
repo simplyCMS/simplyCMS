@@ -10,6 +10,8 @@ export default defineConfig({
     'src/components/*.tsx',
     'src/shells/*.ts',
     'src/shells/*.tsx',
+    'src/views/*.ts',
+    'src/views/*.tsx',
     'src/views/slots/*.tsx',
   ],
   format: ['esm'],
