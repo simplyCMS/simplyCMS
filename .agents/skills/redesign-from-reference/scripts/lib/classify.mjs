@@ -36,12 +36,14 @@ export function normalizePathname(input) {
  * Класифікувати лінки на типи сторінок.
  * @param {Array<{url: string, anchors?: string[]}>} links
  * @param {string} startUrl
+ * @param {Map<string, Set<string>>} [blockedPairs] пари (pathname → типи), уже
+ *   спростовані контент-пробом візиту (`lib/sitemap.mjs`); дефолт — порожньо
  * @returns {{
  *   pageTypes: Record<string, { url: string, score: number, evidence: Array<{urlPattern?: string, anchorMatch?: string, structural?: string, count?: number, source: 'anchor'|'aria'|'url'|'structure'}> }>,
  *   unresolved: Array<{ type: string, reason: 'no-candidate' }>,
  * }}
  */
-export function classifyLinks(links, startUrl) {
+export function classifyLinks(links, startUrl, blockedPairs) {
   const startPathname = normalizePathname(startUrl);
 
   // Р3b: групування по нормалізованому pathname — агрегація ВСІХ якірних текстів.
@@ -80,7 +82,12 @@ export function classifyLinks(links, startUrl) {
   // закритим коренем): форма сайту не залежить від того, який тип що забрав.
   const structure = analyzeStructure(candidates);
 
-  for (const pair of rankedPairs(candidates, structure, closedPathnames)) {
+  for (const pair of rankedPairs(
+    candidates,
+    structure,
+    closedPathnames,
+    blockedPairs,
+  )) {
     if (closedTypes.has(pair.type) || closedPathnames.has(pair.pathname))
       continue;
     pageTypes[pair.type] = {

@@ -11,15 +11,38 @@
  * тому вона не має замикань. CLI-смок `design-import-discover-cli` доводить,
  * що вона й у справжньому браузері не падає; тут перевіряються самі виміри.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { browserVisitProbe } from '../.agents/skills/redesign-from-reference/scripts/lib/visit-probe.mjs';
+import {
+  browserVisitProbe,
+  detectVisitMismatch,
+  GRID_CARDS_MIN,
+} from '../.agents/skills/redesign-from-reference/scripts/lib/visit-probe.mjs';
 
 /** 1×1 gif — щоб `img` був справжнім вузлом, а не мережевим запитом. */
 const PIXEL =
   'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 function render(html: string) {
+  // 🔴 Голова теж чиститься: фікстурні тести нижче підміняють увесь документ,
+  // а `browserVisitProbe` читає JSON-LD по ВСЬОМУ документу — залишок розмітки
+  // від попереднього тесту мовчки зіпсував би вимір наступного.
+  document.head.innerHTML = '';
   document.body.innerHTML = html;
+}
+
+/** Підмінити pathname сторінки, у контексті якої «виконується» проб. */
+function at(pathname: string) {
+  history.replaceState(null, '', pathname);
+}
+
+/** Замінити ВЕСЬ документ фікстурою — JSON-LD у `<head>` теж має потрапити в проб. */
+function renderDocument(html: string) {
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  document.documentElement.replaceWith(
+    document.importNode(parsed.documentElement, true),
+  );
 }
 
 function card(href: string) {
@@ -73,8 +96,9 @@ describe('lib/visit-probe.mjs — browserVisitProbe: jsonLdTypes', () => {
 });
 
 describe('lib/visit-probe.mjs — browserVisitProbe: cardLinks', () => {
-  it('рахує лінки із зображенням, що ведуть ГЛИБШЕ за поточну сторінку', () => {
-    // jsdom стоїть на корені (`/`), тож усе односегментне вже глибше.
+  it('рахує лінки із зображенням, що ділять батьківський префікс', () => {
+    // Навігація (`/`, `/product`) картинок не має і в сімʼю не потрапляє.
+    at('/');
     render(`
       <nav><a href="/">Home</a><a href="/product">Product</a></nav>
       ${card('/product/a')}${card('/product/b')}${card('/product/c')}
@@ -92,10 +116,76 @@ describe('lib/visit-probe.mjs — browserVisitProbe: cardLinks', () => {
     expect(browserVisitProbe().cardLinks).toBe(1);
   });
 
-  it('лінк тієї самої або меншої глибини — навігація, не картка', () => {
-    // Глибина рахується СЕГМЕНТАМИ: сторінка на корені має глибину 0, тож
-    // навігаційний `/` (теж 0) відсікається, а односегментна картка — ні.
-    render(`${card('/')}${card('/product')}`);
+  it('лінк на саму поточну сторінку не рахується — це логотип чи крихти', () => {
+    at('/collections/all');
+    render(`${card('/collections/all/')}${card('/products/a')}`);
     expect(browserVisitProbe().cardLinks).toBe(1);
+  });
+
+  it('береться НАЙБІЛЬША сімʼя однопрефіксних лінків, а не їх сума', () => {
+    // Різнорідне іконкове меню (`/cart`, `/about`, `/blog`) ділить префікс `/`
+    // і дає групу з трьох; сітка каталогу — свою, з чотирьох. Лічильник має
+    // віддати чотири, а не сім: він міряє повторюваність, не кількість картинок.
+    at('/collections/all');
+    render(`
+      ${card('/cart')}${card('/about')}${card('/blog')}
+      ${card('/products/a')}${card('/products/b')}
+      ${card('/products/c')}${card('/products/d')}
+    `);
+    expect(browserVisitProbe().cardLinks).toBe(4);
+  });
+
+  it('картка з двома лінками (фото + бейдж) лишається однією карткою', () => {
+    at('/collections/all');
+    render(
+      `${card('/products/a')}${card('/products/a')}${card('/products/b')}`,
+    );
+    expect(browserVisitProbe().cardLinks).toBe(2);
+  });
+});
+
+describe('lib/visit-probe.mjs — регрес: глибина сторінки не впливає на cardLinks', () => {
+  // 🔴 Прямий регрес знахідки рев'ю (дефект 1). Стара умова «лінк веде ГЛИБШЕ
+  // за поточну сторінку» перевертала цю НЕЗМІНЕНУ фікстуру самим лише URL:
+  // під `/product` вона давала 6 карток, а під двома найпоширенішими
+  // розкладками — Shopify `/collections/all` і WooCommerce
+  // `/product-category/<cat>`, де індекс і картки лежать на ОДНАКОВІЙ
+  // глибині, — рівний нуль, і тип `listing` їхав в unresolved.
+  const COLLECTION = readFileSync(
+    join(
+      process.cwd(),
+      'tests/fixtures/design-import/site-singular/collection.html',
+    ),
+    'utf8',
+  );
+
+  for (const pathname of [
+    '/product',
+    '/collections/all',
+    '/product-category/watches/',
+    '/shop',
+  ]) {
+    it(`${pathname}: шість карток видно, mismatch(listing) немає`, () => {
+      at(pathname);
+      renderDocument(COLLECTION);
+      const probe = browserVisitProbe();
+
+      expect(probe.cardLinks).toBe(6);
+      expect(probe.cardLinks).toBeGreaterThanOrEqual(GRID_CARDS_MIN);
+      expect(detectVisitMismatch('listing', probe)).toBe(false);
+    });
+  }
+
+  it('та сама розкладка без Product-розмітки викриває помилковий тип product', () => {
+    // Дзеркальна половина фікса: індекс і картки на однаковій глибині, нуль
+    // JSON-LD — саме кейс deo, і правило `product` тепер його бачить.
+    at('/product-category/watches');
+    render(
+      ['a', 'b', 'c', 'd', 'e', 'f'].map((s) => card(`/product/${s}`)).join(''),
+    );
+    const probe = browserVisitProbe();
+
+    expect(probe.cardLinks).toBe(6);
+    expect(detectVisitMismatch('product', probe)).toBe(true);
   });
 });

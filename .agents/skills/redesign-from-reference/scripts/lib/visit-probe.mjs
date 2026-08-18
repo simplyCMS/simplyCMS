@@ -30,9 +30,8 @@ export const GRID_CARDS_MIN = 6;
 
 /**
  * Нижче скількох карток сторінка «списку» вже не схожа на список. Три — бо
- * рівно стільки ж дітей вимагає структурний fan-out (`classify-structure.mjs`)
- * і тримати два різні уявлення про «мінімальний список» у одному інструменті
- * не можна.
+ * рівно стільки ж дітей вимагає структурний fan-out (`classify-structure.mjs`),
+ * а двох уявлень про «мінімальний список» в одному інструменті бути не може.
  */
 export const SPARSE_CARDS_MAX = 3;
 
@@ -72,15 +71,19 @@ export function browserVisitProbe() {
     }
   }
 
-  // Картка = лінк із зображенням-нащадком, що веде ГЛИБШЕ за поточну сторінку.
-  // 🔴 Саме глибше за КІЛЬКІСТЮ СЕГМЕНТІВ, а не «нащадок поточного шляху»:
-  // вітрина `/shop` часто веде на картки `/products/<slug>` (інший префікс), і
-  // вимога нащадка обнулила б лічильник на цілком нормальному списку. Умова
-  // глибини відсікає навігацію (шапка/футер ведуть на той самий або мілкіший
-  // рівень) — саме вона й відрізняє повторювані картки-діти від меню.
-  const depth = (pathname) => pathname.split('/').filter(Boolean).length;
-  const here = depth(location.pathname);
-  let cardLinks = 0;
+  // Картка = лінк із зображенням-нащадком, що входить у НАЙБІЛЬШУ сімʼю
+  // однопрефіксних лінків (усе до останнього `/` — спільний батьківський
+  // префікс). 🔴 Не «глибше за поточну сторінку»: на двох найпоширеніших
+  // розкладках індекс і картки лежать на ОДНАКОВІЙ глибині
+  // (`/collections/all` → `/products/<slug>`, `/product-category/<cat>` →
+  // `/product/<slug>`), тож умова глибини обнуляла лічильник рівно там, де він
+  // потрібен. Сімʼя ловить не глибину, а ПОВТОРЮВАНІСТЬ: картки каталогу
+  // завжди діляться одним префіксом, а різнорідне іконкове меню (`/cart`,
+  // `/about`, `/blog`) у велику групу не збирається. Pathname-и всередині
+  // сімʼї дедупляться — картка з двома лінками лишається однією карткою.
+  const strip = (p) => (p.length > 1 ? p.replace(/\/+$/, '') : p);
+  const here = strip(location.pathname);
+  const families = new Map();
   for (const anchor of document.querySelectorAll('a[href]')) {
     if (!anchor.querySelector('img')) continue;
     let parsed;
@@ -91,19 +94,30 @@ export function browserVisitProbe() {
     }
     // Чужий origin — партнерські банери й віджети, не картки цього каталогу.
     if (parsed.origin !== location.origin) continue;
-    if (depth(parsed.pathname) > here) cardLinks += 1;
+    const pathname = strip(parsed.pathname);
+    if (pathname === here) continue; // лінк на саму себе — логотип чи крихти
+    const prefix = pathname.slice(0, pathname.lastIndexOf('/') + 1);
+    const family = families.get(prefix);
+    if (family) family.add(pathname);
+    else families.set(prefix, new Set([pathname]));
   }
+  let cardLinks = 0;
+  for (const family of families.values())
+    cardLinks = Math.max(cardLinks, family.size);
 
   return { jsonLdTypes: types, cardLinks };
 }
 
 /** `https://schema.org/Product` і `Product` — той самий тип; порівнюємо хвіст. */
-function isProductType(value) {
+function tailIn(value, names) {
   return (
-    typeof value === 'string' &&
-    value.split('/').pop().toLowerCase() === 'product'
+    typeof value === 'string' && names.has(value.split('/').pop().toLowerCase())
   );
 }
+
+const PRODUCT_TYPES = new Set(['product']);
+/** Розмітка, якою вітрина ЗАЯВЛЯЄ себе списком, — пряме спростування типу `product`-сторінки. */
+const COLLECTION_TYPES = new Set(['collectionpage', 'itemlist']);
 
 /**
  * Чи суперечить зміст сторінки типу, який їй призначив класифікатор.
@@ -117,14 +131,18 @@ export function detectVisitMismatch(type, probe) {
   if (!probe || typeof probe !== 'object') return false;
   const jsonLdTypes = Array.isArray(probe.jsonLdTypes) ? probe.jsonLdTypes : [];
   const cardLinks = Number.isFinite(probe.cardLinks) ? probe.cardLinks : 0;
-  const hasProduct = jsonLdTypes.some(isProductType);
+  const hasProduct = jsonLdTypes.some((t) => tailIn(t, PRODUCT_TYPES));
+  const hasCollection = jsonLdTypes.some((t) => tailIn(t, COLLECTION_TYPES));
 
   // Тип `product`, а перед нами сітка карток без жодної Product-розмітки —
   // рівно кейс deo: індекс колекції, що виграв тип у справжньої картки.
   if (type === 'product') return cardLinks >= GRID_CARDS_MIN && !hasProduct;
   // Тип `listing`, а сторінка розмічена як товар і карток на ній майже немає.
-  // 🔴 Обидві умови обовʼязкові: сама лише Product-розмітка списком не керує —
-  // вітрини штатно вкладають `Product` в `ItemList`.
-  if (type === 'listing') return hasProduct && cardLinks < SPARSE_CARDS_MAX;
+  // 🔴 Правило має ловити лише сторінку, яка Є ВИКЛЮЧНО товаром, а не список,
+  // що товари згадує, — тому три умови, і колекційна розмітка серед них
+  // головна: вітрини штатно вкладають `Product` в `ItemList`, тож на
+  // коректному індексі каталогу `hasProduct` істинний за проєктом.
+  if (type === 'listing')
+    return !hasCollection && hasProduct && cardLinks < SPARSE_CARDS_MAX;
   return false;
 }

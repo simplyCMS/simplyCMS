@@ -6,18 +6,21 @@
  * `browserVisitProbe`, у юніт-тестах — фейк), тож і перепідбір, і
  * контент-верифікація тестуються без браузера.
  *
- * 🔴 Провалів візиту два роди, і шлях у них ОДИН: `visit-failed` (не-2xx або
- * мережева помилка) і `visit-mismatch` (сторінка відкрилась, але її зміст
- * суперечить типу — `detectVisitMismatch`, інкремент Б.3/Р5). В обох випадках
- * кандидат відхиляється й спрацьовує той самий перепідбір; різниця лише в
- * причині, яку бачить читач пропозиції.
+ * 🔴 Провалів візиту два роди, і виключення в них РІЗНІ за обсягом.
+ * `visit-failed` (не-2xx або мережева помилка) — сторінки немає ні для кого,
+ * тож її pathname вибуває з робочого набору лінків цілком. `visit-mismatch`
+ * (сторінка відкрилась, але зміст суперечить типу — `detectVisitMismatch`)
+ * навпаки: «це не картка товару, а сітка» — ПОЗИТИВНИЙ доказ на користь
+ * `listing`, і глобальне вирізання знищило б доказ разом із помилкою. Тому
+ * блокується лише пара (тип, pathname) — `blockedPairs` віддається
+ * `classifyLinks`, і той самий pathname лишається доступним іншим типам.
  *
- * 🔴 Кандидат, чий візит НЕ ok, НЕ лишається «знайденим»: його pathname
- * виключається з робочого набору лінків і `classifyLinks` перераховується —
- * тип отримує наступного за score кандидата, якщо він є (Р4). Цикл
- * завершується, коли черговий прохід нікого не виключив (стабілізація) —
- * лічильник виключень на ітерацію гарантує термінацію (лінків скінченна
- * кількість). Бюджет візитів (`maxVisits`) — спільний на ВСІ типи; кандидат
+ * 🔴 Кандидат, чий візит НЕ ok, НЕ лишається «знайденим»: `classifyLinks`
+ * перераховується — тип отримує наступного за score кандидата, якщо він є
+ * (Р4). Цикл завершується, коли черговий прохід нікого не виключив
+ * (стабілізація). 🔴 `excludedAny` ставиться лише коли виключення справді
+ * НОВЕ (лінк реально зник із набору / пара ще не була заблокована) — інакше
+ * повторне блокування тієї самої пари крутило б цикл вічно. Бюджет візитів (`maxVisits`) — спільний на ВСІ типи; кандидат
  * понад бюджет лишається знайденим, але чесно `visited: false`.
  *
  * 🔴 `schemaVersion: 2` (інкремент Б.3, Р4/V-3): голе число `linksSeen`
@@ -28,31 +31,10 @@
 import { classifyLinks, normalizePathname } from './classify.mjs';
 import { URL_PATTERNS } from './classify-terms.mjs';
 import { detectVisitMismatch } from './visit-probe.mjs';
+import { summarizeLinks } from './sitemap-links.mjs';
 
 /** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник Фази 2. */
 const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
-
-/**
- * Запис ВХОДУ класифікатора (V-3): дедуплікований за нормалізованим pathname
- * зріз лінків з агрегованими якорями. 🔴 Будується з вхідного набору — ДО
- * будь-яких виключень перепідбору: це протокол того, що інструмент побачив,
- * а не знімок робочого стану. Порядок — лексикографічний за pathname.
- * @param {Array<{ url: string, anchors?: string[] }>} links
- * @returns {Array<{ pathname: string, anchors: string[] }>}
- */
-function summarizeLinks(links) {
-  const byPathname = new Map();
-  for (const link of links) {
-    const pathname = normalizePathname(link.url);
-    const texts = (link.anchors ?? []).map((a) => a.trim()).filter(Boolean);
-    const existing = byPathname.get(pathname);
-    if (existing) texts.forEach((t) => existing.add(t));
-    else byPathname.set(pathname, new Set(texts));
-  }
-  return [...byPathname]
-    .map(([pathname, anchors]) => ({ pathname, anchors: [...anchors] }))
-    .sort((a, b) => a.pathname.localeCompare(b.pathname));
-}
 
 /**
  * @param {{
@@ -83,10 +65,12 @@ export async function buildSitemapProposal({
   // кілька кандидатів поспіль, лишається причина ОСТАННЬОГО — саме він і є
   // тим, на чому перепідбір зупинився.
   const failedTypes = new Map();
+  /** pathname → типи, спростовані пробом саме для цієї сторінки (Б.3, фікс рев'ю). */
+  const blockedPairs = new Map();
   let visitsUsed = 0;
 
   for (;;) {
-    const { pageTypes } = classifyLinks(workingLinks, startUrl);
+    const { pageTypes } = classifyLinks(workingLinks, startUrl, blockedPairs);
     const pending = Object.keys(pageTypes).filter(
       (type) => !finalPageTypes[type],
     );
@@ -108,13 +92,23 @@ export async function buildSitemapProposal({
           visited: true,
           ...(result.title ? { title: result.title } : {}),
         };
+      } else if (mismatch) {
+        failedTypes.set(type, 'visit-mismatch');
+        const pathname = normalizePathname(candidate.url);
+        const blocked = blockedPairs.get(pathname) ?? new Set();
+        if (!blocked.has(type)) {
+          blocked.add(type);
+          blockedPairs.set(pathname, blocked);
+          excludedAny = true;
+        }
       } else {
-        failedTypes.set(type, mismatch ? 'visit-mismatch' : 'visit-failed');
+        failedTypes.set(type, 'visit-failed');
         const failedPathname = normalizePathname(candidate.url);
+        const before = workingLinks.length;
         workingLinks = workingLinks.filter(
           (link) => normalizePathname(link.url) !== failedPathname,
         );
-        excludedAny = true;
+        if (workingLinks.length < before) excludedAny = true;
       }
     }
     if (!excludedAny) break; // усі pending або підтверджені, або бюджет вичерпано

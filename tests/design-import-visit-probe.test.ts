@@ -86,6 +86,51 @@ describe('lib/visit-probe.mjs — detectVisitMismatch: тип listing', () => {
       }),
     ).toBe(false);
   });
+
+  it('правило все ще спрацьовує на справжній картці товару', () => {
+    // Захист від вихолощення: сторінка, що Є ВИКЛЮЧНО товаром (Product +
+    // крихти, жодної колекційної розмітки, нуль карток), помилково названа
+    // listing — саме її правило й має ловити.
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['BreadcrumbList', 'Product', 'Offer'],
+        cardLinks: 0,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe('lib/visit-probe.mjs — detectVisitMismatch: виняток на колекційну розмітку', () => {
+  // 🔴 Другий фікс рев'ю (дефект 2): `hasProduct` на КОРЕКТНОМУ індексі
+  // каталогу істинний за проєктом — вітрини штатно вкладають `Product` в
+  // `ItemList`. Тому колекційний тип у розмітці знімає правило `listing`
+  // повністю, незалежно від лічильника карток: це другий запобіжник, який не
+  // залежить від того, чи побачив проб сітку.
+  for (const collectionType of [
+    'CollectionPage',
+    'ItemList',
+    'https://schema.org/ItemList',
+    'http://schema.org/CollectionPage',
+    'itemlist',
+  ]) {
+    it(`${collectionType} поруч із Product знімає правило listing`, () => {
+      expect(
+        detectVisitMismatch('listing', {
+          jsonLdTypes: [collectionType, 'Product'],
+          cardLinks: 0,
+        }),
+      ).toBe(false);
+    });
+  }
+
+  it('на тип product виняток не поширюється — там колекція, навпаки, доказ', () => {
+    expect(
+      detectVisitMismatch('product', {
+        jsonLdTypes: ['CollectionPage', 'ItemList'],
+        cardLinks: GRID_CARDS_MIN,
+      }),
+    ).toBe(true);
+  });
 });
 
 describe('lib/visit-probe.mjs — detectVisitMismatch: межі', () => {

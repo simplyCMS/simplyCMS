@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * CLI дискаверера сторінок референс-сайту (задача §2.C, план Р4/Р5/Р7).
- * Тонкий файл — аргументи + launch chromium + `page.goto`/`page.title` для
- * стартової й кандидатних сторінок; збір лінків — `lib/collect-links.mjs`,
- * побудова пропозиції (класифікація + перепідбір при невдалому візиті) —
- * `lib/sitemap.mjs`. Юзаж:
+ * Тонкий файл — аргументи + launch chromium + відкриття СТАРТОВОЇ сторінки;
+ * збір лінків — `lib/collect-links.mjs`, візит кандидата з контент-пробом —
+ * `lib/visit-candidate.mjs`, побудова пропозиції (класифікація + перепідбір
+ * при невдалому візиті) — `lib/sitemap.mjs`. Юзаж:
  * `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]`.
  */
 import { isCliEntry } from './lib/cli-entry.mjs';
@@ -17,12 +17,11 @@ import {
 } from './lib/browser.mjs';
 import { collectLinks } from './lib/collect-links.mjs';
 import { buildSitemapProposal } from './lib/sitemap.mjs';
+import { visitCandidate } from './lib/visit-candidate.mjs';
 import { browserVisitProbe } from './lib/visit-probe.mjs';
 import { slugify } from './inspect.mjs';
 
 const DEFAULT_MAX_VISITS = 8;
-/** Типи, зміст яких верифікується пробом (Б.3, Р5) — решті сторінок вірять на слово. */
-const PROBED_TYPES = new Set(['listing', 'product']);
 const USAGE =
   'node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]';
 
@@ -48,27 +47,6 @@ export function parseArgs(argv) {
 function failLoud(error) {
   console.error(`❌ ${error instanceof Error ? error.message : error}`);
   process.exit(1);
-}
-
-/**
- * Візит кандидатної сторінки: 2xx → `{ok:true, title, probe?}`, інакше/мережева
- * помилка → `{ok:false}`. Для listing/product після 2xx знімається легкий
- * контент-проб (`browserVisitProbe`) — інтерпретує його вже `sitemap.mjs`.
- */
-async function visitCandidate(page, url, type) {
-  try {
-    const response = await page.goto(url, {
-      waitUntil: 'networkidle',
-      timeout: 30_000,
-    });
-    if (!response || !response.ok()) return { ok: false };
-    const title = await page.title();
-    if (!PROBED_TYPES.has(type)) return { ok: true, title: title || null };
-    const probe = await page.evaluate(browserVisitProbe);
-    return { ok: true, title: title || null, probe };
-  } catch {
-    return { ok: false };
-  }
 }
 
 async function main() {
@@ -112,7 +90,7 @@ async function main() {
       links,
       startUrl: options.url,
       maxVisits: options.maxVisits,
-      visit: (url, type) => visitCandidate(page, url, type),
+      visit: (url, type) => visitCandidate(page, url, type, browserVisitProbe),
     });
 
     mkdirSync(dirname(out), { recursive: true });

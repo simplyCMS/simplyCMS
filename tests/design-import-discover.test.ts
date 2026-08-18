@@ -371,3 +371,47 @@ describe('lib/classify.mjs — дискаверер v2: структурний �
     expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
   });
 });
+
+describe('lib/classify.mjs — classifyLinks: блокування пар (тип, pathname)', () => {
+  // 🔴 Третій параметр — фікс рев'ю (дефект 5): контент-проб візиту
+  // (`lib/sitemap.mjs`) спростовує ПАРУ, а не сторінку. Дефолт порожній, тож
+  // усі виклики вище лишаються валідними без змін.
+  const LINKS = [
+    { url: 'https://a.com/', anchors: ['Home'] },
+    { url: 'https://a.com/product', anchors: ['Product'] },
+  ];
+
+  it('без блокування однина `/product` дістається типу product', () => {
+    const { pageTypes } = classifyLinks(LINKS, 'https://a.com/');
+    expect(pageTypes.product.url).toBe('https://a.com/product');
+  });
+
+  it('заблокована пара не пропонується, а сторінка лишається іншим типам', () => {
+    const { pageTypes, unresolved } = classifyLinks(
+      LINKS,
+      'https://a.com/',
+      new Map([['/product', new Set(['product'])]]),
+    );
+
+    // Тип, якому сторінку спростовано, більше її не бачить…
+    expect(unresolved.map((entry) => entry.type)).toContain('product');
+    // …а сама сторінка нікуди не зникла — її бере listing.
+    expect(pageTypes.listing.url).toBe('https://a.com/product');
+  });
+
+  it('блокування ВСІХ типів сторінки лишає її просто некласифікованою', () => {
+    // Саме це й гарантує термінацію циклу перепідбору в `lib/sitemap.mjs`:
+    // заблокована пара не може бути запропонована вдруге.
+    const { pageTypes, unresolved } = classifyLinks(
+      LINKS,
+      'https://a.com/',
+      new Map([['/product', new Set(['product', 'listing'])]]),
+    );
+
+    expect(pageTypes.product).toBeUndefined();
+    expect(pageTypes.listing).toBeUndefined();
+    expect(unresolved.map((entry) => entry.type)).toEqual(
+      expect.arrayContaining(['product', 'listing']),
+    );
+  });
+});

@@ -40,13 +40,25 @@ function depthKey(pair) {
  * @param {Map<string, { listing?: true, product?: true, childCount: number }>} structure
  *   результат `analyzeStructure` — третє джерело evidence
  * @param {Set<string>} closedPathnames pathname-и, уже зайняті іншим типом
+ * @param {Map<string, Set<string>>} [blockedPairs] pathname → типи, яким саме
+ *   ЦЯ сторінка вже доведено не підходить (контент-проб візиту відхилив пару).
+ *   🔴 Блокується пара, а не сторінка: «це не картка товару, а сітка» —
+ *   позитивний доказ на користь `listing`, і викидати сторінку цілком означало б
+ *   знищити доказ разом із помилкою.
  * @returns {Array<{ type: string, pathname: string, url: string, score: number, evidence: object[] }>}
  */
-export function rankedPairs(candidates, structure, closedPathnames) {
+export function rankedPairs(
+  candidates,
+  structure,
+  closedPathnames,
+  blockedPairs,
+) {
   const pairs = [];
   for (const [pathname, candidate] of candidates) {
     if (closedPathnames.has(pathname)) continue;
+    const blocked = blockedPairs?.get(pathname);
     for (const type of OTHER_TYPES) {
+      if (blocked?.has(type)) continue;
       const urlMatch = matchUrlPattern(type, pathname);
       const anchorMatch = matchAnchorTerm(type, candidate.anchors);
       const evidence = [

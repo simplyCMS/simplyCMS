@@ -281,3 +281,77 @@ describe('lib/sitemap.mjs — buildSitemapProposal: visit-mismatch', () => {
     });
   });
 });
+
+describe('lib/sitemap.mjs — buildSitemapProposal: visit-mismatch блокує ПАРУ', () => {
+  // 🔴 Фікс рев'ю (дефект 5). `visit-failed` вирізає pathname глобально —
+  // сторінки немає ні для кого. `visit-mismatch` так робити НЕ може: «це не
+  // картка товару, а сітка» — позитивний доказ на користь `listing`, і
+  // глобальне вирізання викидало б доказ разом із помилкою. Сценарій нижче —
+  // рівно той, на якому це видно: головна лінкує лише індекс `/product`,
+  // картки з неї не лінковані.
+  const HOME: Probe = { jsonLdTypes: ['WebSite'], cardLinks: 0 };
+  const GRID: Probe = {
+    jsonLdTypes: ['CollectionPage', 'ItemList'],
+    cardLinks: 12,
+  };
+
+  it('після відмови product той самий pathname дістається listing', async () => {
+    const { visit, calls } = fakeVisitWithProbe({
+      'https://a.com/': HOME,
+      'https://a.com/product': GRID,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/product', anchors: ['Product'] },
+      ],
+      startUrl: START,
+      maxVisits: 10,
+      visit,
+    });
+
+    // Пара (product, /product) спростована пробом…
+    expect(calls).toContainEqual(['https://a.com/product', 'product']);
+    expect(proposal.unresolved).toContainEqual({
+      type: 'product',
+      reason: 'visit-mismatch',
+    });
+    // …але сама сторінка з набору не зникла й закрила тип, якому вона й є.
+    expect(proposal.pageTypes.listing).toMatchObject({
+      url: 'https://a.com/product',
+      visited: true,
+    });
+    expect(proposal.links.map((link) => link.pathname)).toContain('/product');
+  });
+
+  it('термінація: заблокована пара більше не пропонується, цикл зупиняється', async () => {
+    // Обидва кандидати на `product` — сітки. Кожен блокується РІВНО раз;
+    // якби `excludedAny` ставився на повторному блокуванні тієї самої пари,
+    // перепідбір крутився б вічно (тест просто не завершився б).
+    const { visit, calls } = fakeVisitWithProbe({
+      'https://a.com/': HOME,
+      'https://a.com/products/grid-a': GRID,
+      'https://a.com/products/grid-b': GRID,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/products/grid-a', anchors: ['Product'] },
+        { url: 'https://a.com/products/grid-b', anchors: ['Product'] },
+      ],
+      startUrl: START,
+      maxVisits: 20,
+      visit,
+    });
+
+    // Жодна пара (url, тип) не відвідана двічі — саме це й доводить, що
+    // блокування накопичується, а не переграється щоітерації.
+    const seen = calls.map((pair) => pair.join('|'));
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(calls).toHaveLength(3); // home + два кандидати product
+    expect(proposal.unresolved).toContainEqual({
+      type: 'product',
+      reason: 'visit-mismatch',
+    });
+  }, 5_000);
+});
