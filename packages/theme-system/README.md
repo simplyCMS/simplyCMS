@@ -1,11 +1,16 @@
 # @simplycms/themes
 
-Система тем SimplyCMS (контракт v2.2): реєстр тем із lazy-лоадерами, SSR-резолв
-активної теми з БД, валідатор модуля теми і рендер її токенів у CSS-змінні.
-Тема постачає **лише оформлення** — маніфест, токени (включно з типографічними
+Система тем SimplyCMS (контракт v3): реєстр тем із lazy-лоадерами, SSR-резолв
+активної теми з БД, валідатор модуля теми, conformance-kit для `views` і рендер
+її токенів у CSS-змінні.
+Тема постачає оформлення — маніфест, токени (включно з типографічними
 `font-sans`/`font-heading`), `Header`/`Footer` та, опційно, власний каталог
-перекладів (`messages`) і зовнішні stylesheet-и шрифтів (`fonts`); сторінки й
-каркаси лишаються в ядрі (`theme.pages` більше не існує).
+перекладів (`messages`) і зовнішні stylesheet-и шрифтів (`fonts`). З контракту
+v3 додається опційне `views` — власна РОЗМІТКА пʼятьох сторінок вітрини
+(`Home`, `Catalog`, `CatalogSection`, `ProductDetail`, `Cart`) поверх готового
+view-model-а. Дані, лоадери, SEO й комерційні реквізити лишаються в ядрі, а
+`theme.pages` не існує й далі: view — чиста функція від `vm`, яка розставляє
+прибінджені `vm.slots`.
 
 Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
@@ -26,10 +31,11 @@ pnpm add @simplycms/themes
 | `@simplycms/themes/ThemeRegistry`       | Singleton `ThemeRegistry` (`register`/`has`/`load`/`clearCache`), `ThemeLoader`  |
 | `@simplycms/themes/ThemeContext`        | `ThemeProvider`, `useTheme()`, `useThemeSettings(key)`                           |
 | `@simplycms/themes/applyTokens`         | `applyTokens(tokens)` → CSS `:root { … }` (+ `.dark { … }`) для інлайн-`<style>`  |
-| `@simplycms/themes/validateThemeModule` | `validateThemeModule(m)` — assert-валідатор контракту v2                         |
+| `@simplycms/themes/validateThemeModule` | `validateThemeModule(m)` — assert-валідатор контракту v3                         |
 | `@simplycms/themes/safeFontStylesheets` | `safeFontStylesheets(fonts)` — фільтр `ThemeModule.fonts`: лише `https:`-URL без символів виходу з атрибута (невалідний запис — skip + `console.warn`) |
+| `@simplycms/themes/conformance`         | `assertThemeViewsConformance(theme)` — гейт заявлених `views` на фікстурах (потребує `jsdom`); повертає перелік фактично прогнаних сторінок. Плюс `CONFORMANCE_STATES`, типи `ThemeViewsConformanceOptions`/`ConformanceState` |
 | `@simplycms/themes/useThemeT`           | `useThemeT<K>()` — транслятор власного каталогу теми (`ThemeModule.messages`)    |
-| `@simplycms/themes/types`               | `ThemeModule`, `ThemeManifest`, `DesignTokens`, `ThemeComponents`, `ThemeMessages`, `ThemeFontSource`, `ThemeRecord`, `ActiveThemeSSR` |
+| `@simplycms/themes/types`               | `ThemeModule`, `ThemeManifest`, `DesignTokens`, `ThemeComponents`, `ThemeViews`, `ThemeMessages`, `ThemeFontSource`, `ThemeRecord`, `ActiveThemeSSR` |
 
 Токени пишуться в **наявні** semantic-змінні shadcn (`--primary`, `--radius`, …)
 плюс типографічні `--font-sans`/`--font-heading` (v2.2); тема не везе власного

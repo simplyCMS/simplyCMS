@@ -2,7 +2,7 @@
   "name": "@simplycms/objects",
   "version": "0.3.0",
   "private": false,
-  "description": "Headless commerce object contracts and ports for SimplyCMS engine (Tier 0). Zero runtime dependencies; the only runtime code is the semver micro-utility (engines.simplycms checks).",
+  "description": "Headless commerce object contracts, ports and storefront view-models for the SimplyCMS engine (Tier 0). Zero runtime dependencies; runtime code is limited to the semver micro-utility (engines.simplycms checks) and the ./views requisite constants plus ./views/fixtures conformance data.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

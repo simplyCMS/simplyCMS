@@ -988,7 +988,8 @@ PR #32; прогалини процесу — скоуп цього інкрем
 (`useThemeSettings`, інвалідація SSR-кешу). Спека (джерело правди):
 [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md).
 
-- [x] **Виконано 2026-08-18** (гілка `claude/theme-views-v3`).
+- [x] **Виконано 2026-08-18** (трек `claude/theme-views-v3`; фактичні
+      сесійні гілки — `claude/theme-views-v3-<suffix>`).
       Задача: [`theme-views-v3.md`](./theme-views-v3.md); план (рішення
       Р1–Р12 + амендменти Р1/Р8/Р9):
       [`2026-08-18-theme-views-v3.md`](../superpowers/plans/2026-08-18-theme-views-v3.md).
