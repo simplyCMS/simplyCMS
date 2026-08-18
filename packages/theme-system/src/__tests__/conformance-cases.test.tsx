@@ -36,11 +36,19 @@ describe('buildConformanceCases', () => {
     expect([...names].sort()).toEqual([...THEME_VIEW_KEYS].sort());
   });
 
-  it('кожен кейс несе обидва стани — повний і крайній', () => {
-    for (const item of buildConformanceCases(allViews)) {
-      for (const state of CONFORMANCE_STATES) {
-        expect(item.states[state], `${item.name}/${state}`).toBeTruthy();
-      }
+  it('кожен кейс несе РІВНО обидва стани — повний і крайній', () => {
+    // 🔴 Асерт саме на СКЛАД ключів, а не на truthy-значення: `states`
+    // типізовано `Record<ConformanceState, ReactElement>`, а JSX-елемент —
+    // завжди truthy-обʼєкт, тож перевірка `toBeTruthy()` не здатна впасти на
+    // жодній типо-коректній реалізації (пропущений стан ловить typecheck, а
+    // не тест). Склад ключів червоніє і на неповному, і на зайвому наборі.
+    const cases = buildConformanceCases(allViews);
+    expect(cases.length).toBeGreaterThan(0);
+
+    for (const item of cases) {
+      expect(Object.keys(item.states).sort(), item.name).toEqual(
+        [...CONFORMANCE_STATES].sort(),
+      );
     }
   });
 
