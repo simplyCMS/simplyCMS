@@ -10,8 +10,13 @@ import {
 import { tsconfigAliases } from '../packages/cli/src/theme-conformance-env.mjs';
 
 // simplycms theme:conformance — канонічний канал запуску conformance-гейта
-// тем v3 (амендмент до Р8). Тут — чисті функції команди; сам прогін (jsdom +
-// раннер vite + kit) доводиться смоуком Gate TOOL пілота на TARBALL-і.
+// тем v3 (амендмент до Р8). Тут — ЧИСТІ ФУНКЦІЇ команди (парсер, резолв теми з
+// конфігу, підсумок звіту, аліаси з tsconfig).
+//
+// 🔴 Живий ланцюг (jsdom + раннер vite + kit) сюди не входить, і Gate TOOL
+// пілота його теж не доводить: той смоук ганяє команду з tarball-а на ГОЛОМУ
+// скаффолді й ВИМАГАЄ падіння (exit 1) з інструкцією `pnpm add -D jsdom`.
+// Щасливий шлях — tests/cli-theme-conformance-run.test.ts.
 
 const CONFIG = `import { defineConfig } from '@simplycms/runtime';
 

@@ -68,6 +68,9 @@ describe('cli create theme: скаффолд', () => {
       'messages.ts',
       'components/Header.tsx',
       'components/Footer.tsx',
+      // Приклад view-шару v3 їде СПРАВЖНІМ `.tsx`-модулем, а не JSX у
+      // коментарі `index.ts`: JSX у `.ts` не збирає ні tsc, ні esbuild.
+      'views/Cart.tsx',
       'conformance.test.ts',
       'README.md',
     ]) {

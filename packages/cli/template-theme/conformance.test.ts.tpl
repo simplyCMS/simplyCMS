@@ -19,8 +19,11 @@
 // НЕ піднімає (він перевіряє тему, а не навігацію) — замокай модуль:
 //
 //   vi.mock('@tanstack/react-router', () => ({
-//     Link: ({ children }: { children?: ReactNode }) => <a>{children}</a>,
+//     Link: ({ children }: { children?: ReactNode }) => children,
 //   }));
+//
+// 🔴 Мок навмисно БЕЗ JSX: цей файл — `.ts`, і `<a>{children}</a>` у ньому не
+// зібрався б. Потрібна саме розмітка — перейменуй файл на `.tsx`.
 import { describe, it } from 'vitest';
 import { assertThemeViewsConformance } from '@simplycms/themes/conformance';
 import theme from './index';

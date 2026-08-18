@@ -552,7 +552,9 @@ Playwright): гейт мусить бути доступним і магазин
 | Імена/склад реквізитів ↔ типи слотів | `packages/objects/src/__tests__/views-requisites.test.ts`; фікстури ↔ типи — `views-fixtures.test.ts` |
 | Settings: merge БД-значень із default-ами (обидва шляхи ініціалізації) | `packages/theme-system/src/__tests__/ThemeContext.test.tsx` |
 | Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/admin/src/__tests__/ThemeSettings.test.tsx` |
-| CLI-канал гейта (`theme:conformance`) | `tests/cli-theme-conformance.test.ts` + Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
+| CLI-канал гейта: чисті функції команди (парсер, резолв теми з конфігу, підсумок звіту, аліаси з tsconfig) | `tests/cli-theme-conformance.test.ts` |
+| CLI-канал гейта: ЖИВИЙ ланцюг `installStoreDom → createStoreRunner → runner.import → kit` на синтетичній темі з `views` (зелений прогін + червоний на загубленому реквізиті) | `tests/cli-theme-conformance-run.test.ts` |
+| CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
 | `bootstrapThemes` | `packages/theme-system/src/__tests__/bootstrapThemes.test.ts` (mock supabase: без missing — нуль load/insert/getSession; без сесії — нуль load; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
 | Registry-awareness адмінки | компонентний тест `packages/admin/src/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
