@@ -1,0 +1,34 @@
+<!doctype html>
+<!--
+  Картка товару фікстурного «сайту» з одниною — обслуговується за будь-яким
+  `/product/<slug>` (див. index.html). Має JSON-LD `@type: "Product"`, тож
+  проб візиту підтверджує тип. Лінки «схожого» тут навмисно БЕЗ зображень і
+  на тому ж рівні глибини — вони не мають рахуватись картками-дітьми.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Omega Speedmaster Professional — Singular Fixture Store</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Omega Speedmaster Professional",
+        "offers": { "@type": "Offer", "price": "6300.00" }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/product">Back to all</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Omega Speedmaster Professional</h1>
+      <p>Price: $6300.00</p>
+      <a href="/product/tissot-prx">Tissot PRX</a>
+    </main>
+  </body>
+</html>

@@ -7,6 +7,7 @@
  */
 import { contrastRatio, hslToRgb, hslTriple } from './color.mjs';
 import { clusterColors } from './cluster.mjs';
+import { collectUnmapped } from './unmapped.mjs';
 
 /** Поріг насиченості (%), нижче якого колір вважають ахроматичним (не акцентом). */
 const SAT_THRESHOLD = 20;
@@ -48,7 +49,8 @@ function applyAccent(tokens, key, cluster, fgHsl, mirrorKey) {
  * тип `tokens` до лише тих ключів, які видно у прямих присвоєннях: ключі,
  * дописані через `applyAccent` (динамічний `tokens[key] = …`), інакше
  * лишились би невидимими для структурної інференції.
- * @returns {{ tokens: Record<string, string>, confidence: Record<string, number>, unmapped: string[] }}
+ * @returns {{ tokens: Record<string, string>, confidence: Record<string, number>,
+ *   unmapped: import('./unmapped.mjs').UnmappedEntry[] }}
  */
 export function mapColorTokens(colors) {
   const bgClusters = clusterColors(byRole(colors, 'background'));
@@ -121,9 +123,13 @@ export function mapColorTokens(colors) {
     used.add(border);
   }
 
-  const unmapped = [...bgClusters, ...textClusters, ...borderClusters]
-    .filter((c) => !used.has(c))
-    .map((c) => c.value);
+  // Р7: `unmapped` — не голий список hex, а записи з роллю, частотою, площею
+  // і контрастом на обох запропонованих поверхнях (`lib/unmapped.mjs`).
+  const unmapped = collectUnmapped(
+    { background: bgClusters, text: textClusters, border: borderClusters },
+    used,
+    tokens,
+  );
 
   return { tokens, confidence, unmapped };
 }

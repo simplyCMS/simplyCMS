@@ -158,7 +158,10 @@ describe('lib/map.mjs — mapTokens на фікстурному inspection (Р9 
   });
 
   it('форма tokens-proposal відповідає Р4 (schemaVersion/dark-усередині-tokens)', () => {
-    expect(proposal.schemaVersion).toBe(1);
+    // 2 — чесний бамп Р7 інкремента Б.3: `unmapped` став масивом записів
+    // замість масиву рядків, тобто форма зламалась. 🔴 Лічильник ПРОПОЗИЦІЇ,
+    // не `inspection.json` — вони рухаються незалежно.
+    expect(proposal.schemaVersion).toBe(2);
     expect(proposal.tokens.dark).toBeTypeOf('object');
     expect(Object.hasOwn(proposal, 'confidence')).toBe(true);
     expect(Object.hasOwn(proposal, 'contrastWarnings')).toBe(true);
@@ -194,8 +197,21 @@ describe('lib/map.mjs — mapTokens на фікстурному inspection (Р9 
     ]);
   });
 
-  it('unmapped чесно перелічує колір, що нікуди не ліг', () => {
-    expect(proposal.unmapped).toEqual(['#fbbf24']);
+  it('unmapped чесно перелічує колір, що нікуди не ліг — записом, не рядком', () => {
+    // Р7: роль + частота + площа + контраст на обох поверхнях. `#fbbf24` —
+    // фон, тож `belowAA` до нього не застосовується (контраст фону «на фоні»
+    // ≈1 засвітив би геть усе).
+    expect(proposal.unmapped).toEqual([
+      {
+        hex: '#fbbf24',
+        role: 'background',
+        count: 5,
+        area: 400,
+        contrastOnBackground: expect.any(Number),
+        contrastOnCard: expect.any(Number),
+        belowAA: false,
+      },
+    ]);
   });
 
   it('contrastWarnings ловить провальну dark-пару (не виправляє, лише сигналить)', () => {

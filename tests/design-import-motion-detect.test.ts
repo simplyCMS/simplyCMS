@@ -1,9 +1,11 @@
 /**
  * Юніти ЧИСТОЇ частини motion-капчера (інкремент Б.2, Фаза 1, план Р4/Р6):
  * `detectMotionLibraries`, `suspectJsDriven` (`lib/motion-detect.mjs`) і
- * `diffReveal` (`lib/motion.mjs`). Браузер тут не потрібен принципово — саме
- * заради цього збір сирих маркерів і зіставлення з сигнатурами розведено по
- * різних модулях; файл має лишатись зеленим і без chromium.
+ * `diffReveal` і `captureReveal` (`lib/motion.mjs`). Браузер тут не потрібен
+ * принципово — саме заради цього збір сирих маркерів і зіставлення з
+ * сигнатурами розведено по різних модулях; файл має лишатись зеленим і без
+ * chromium. `captureReveal` бере `page` параметром, тож і вона тестується
+ * фейком — без Playwright.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -12,7 +14,11 @@ import {
   SIGNATURES,
   suspectJsDriven,
 } from '../.agents/skills/redesign-from-reference/scripts/lib/motion-detect.mjs';
-import { diffReveal } from '../.agents/skills/redesign-from-reference/scripts/lib/motion.mjs';
+import { browserRevealSnapshot } from '../.agents/skills/redesign-from-reference/scripts/lib/browser-reveal.mjs';
+import {
+  captureReveal,
+  diffReveal,
+} from '../.agents/skills/redesign-from-reference/scripts/lib/motion.mjs';
 
 describe('lib/motion-detect.mjs — detectMotionLibraries', () => {
   it('gsap за src скрипта', () => {
@@ -129,9 +135,31 @@ describe('lib/motion-detect.mjs — suspectJsDriven (Р6)', () => {
     ).toBe(true);
   });
 
-  it('reveal порожній або нерухомий → підозри немає', () => {
-    expect(suspectJsDriven()).toBe(false);
+  // 🔴 Три стани, а не два (V-5): «вибірки не було» ≠ «перевірено, підозри
+  // немає». До Б.3 обидва випадки віддавали `false`, і сліпий reveal-корінь
+  // (сторінка без `<main>`) читався як чиста сторінка.
+  it('вибірка є, але нерухома → чесний false', () => {
     expect(suspectJsDriven({ reveal: [{ animated: false }] })).toBe(false);
+  });
+
+  it('нульова вибірка → unknown, а не false', () => {
+    expect(suspectJsDriven()).toBe('unknown');
+    expect(suspectJsDriven({ reveal: [] })).toBe('unknown');
+    // Навіть коли CSS-механізм на сторінці видно: пояснювати нічого — reveal
+    // не міряли взагалі.
+    expect(
+      suspectJsDriven({ reveal: [], transitions: [{ property: 'opacity' }] }),
+    ).toBe('unknown');
+  });
+
+  it('три стани попарно різні (саме розрізненність і є вимогою)', () => {
+    const states = [
+      suspectJsDriven({ reveal: [{ animated: true }] }),
+      suspectJsDriven({ reveal: [{ animated: false }] }),
+      suspectJsDriven({ reveal: [] }),
+    ];
+    expect(states).toEqual([true, false, 'unknown']);
+    expect(new Set(states).size).toBe(3);
   });
 });
 
@@ -222,5 +250,68 @@ describe('lib/motion.mjs — diffReveal (Р4)', () => {
     const diff = diffReveal(before, []);
     expect(diff.map((d) => d.animated)).toEqual([false, false]);
     expect(diff[1].opacityAfter).toBe(0);
+  });
+
+  // 🔴 Не плутати з кейсом вище: там порожній лише знімок «після» (вузли
+  // зникли), тут порожня САМА вибірка — і діф чесно порожній, бо міряти не
+  // було чого. Саме цей нуль `suspectJsDriven` тлумачить як `'unknown'`.
+  it('нульова вибірка → порожній діф (не крах і не вигадані записи)', () => {
+    expect(diffReveal([], [])).toEqual([]);
+  });
+});
+
+describe('lib/motion.mjs — captureReveal: обсяг вибірки зі знімка ДО', () => {
+  /** Вузол reveal-знімка; значення нерухомі — предмет тут лише кількість. */
+  function node(index: number) {
+    return {
+      index,
+      tag: 'section',
+      selector: `section.s${index}`,
+      opacity: 1,
+      transform: 'none',
+    };
+  }
+
+  /**
+   * Фейкова `page`: на `browserRevealSnapshot` віддає чергові знімки, на все
+   * інше (це виклики `scrollThrough`) — обʼєкт із розмірами, який той уміє і
+   * зруйнувати деструктуризацією, і прочитати як «доскролили до низу».
+   */
+  function fakePage(snapshots: ReturnType<typeof node>[][]) {
+    let taken = 0;
+    return {
+      async evaluate(fn: unknown) {
+        if (fn === browserRevealSnapshot)
+          return { root: 'main', nodes: snapshots[taken++] ?? [] };
+        return { scrollHeight: 1000, viewportHeight: 800 };
+      },
+      async waitForTimeout() {},
+    };
+  }
+
+  // 🔴 Мутаційний контроль: замініть у `captureReveal` `before.nodes.length`
+  // на `after.nodes.length` — і цей тест почервоніє. Асерт
+  // `sampled === reveal.length` таким не є: `diffReveal` — це `before.map(…)`,
+  // тобто довжини тотожні за конструкцією й мутанта не ловлять.
+  it('секція, що зʼявилась ПІД ЧАС скролу, обсяг вибірки не роздуває', async () => {
+    const before = [node(0), node(1), node(2)];
+    // Знімок «після» більший: ліниву секцію дописав IntersectionObserver.
+    const after = [...before, node(3), node(4)];
+
+    const capture = await captureReveal(fakePage([before, after]));
+
+    expect(capture.sampled).toBe(3);
+    expect(capture.sampled).not.toBe(after.length);
+    // Діф будується рівно на семпльованих вузлах — доважки з «після» в ньому
+    // не зʼявляються (їх ні з чим порівнювати).
+    expect(capture.entries.map((entry) => entry.index)).toEqual([0, 1, 2]);
+    expect(capture.root).toBe('main');
+  });
+
+  it('нульова вибірка ДО — sampled 0, навіть якщо після скролу вузли зʼявились', async () => {
+    const capture = await captureReveal(fakePage([[], [node(0), node(1)]]));
+
+    expect(capture.sampled).toBe(0);
+    expect(capture.entries).toEqual([]);
   });
 });

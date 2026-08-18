@@ -1,7 +1,7 @@
 /**
  * Смок motion-капчера в headless chromium (інкремент Б.2, Фаза 1, план
  * Р1/Р4/Р6): `inspectPage` на `tests/fixtures/design-import/motion.html` дає
- * `schemaVersion: 2` і секцію `motion` з усіма чотирма каналами.
+ * `schemaVersion: 3` і секцію `motion` з усіма чотирма каналами.
  *
  * Окремий файл, а не доважок до `design-import-inspect.test.ts` (той уже 220+
  * рядків при каноні ≤150) — і скоуп інший: там колірний контракт, тут рух.
@@ -57,9 +57,12 @@ interface MotionInspection {
     transitions: TransitionCluster[];
     keyframes: { names: string[]; inaccessibleSheets: number };
     reveal: RevealEntry[];
+    revealSampled: number;
+    revealRoot: string;
     hover: HoverSweep;
     jsLibraries: { detected: string[]; markers: string[] };
-    jsDrivenSuspected: boolean;
+    // Триставний (V-5): `'unknown'` — вибірки reveal не було взагалі.
+    jsDrivenSuspected: boolean | 'unknown';
   };
 }
 
@@ -105,9 +108,11 @@ describe.skipIf(!browser)(
     ? 'inspect.mjs — motion-капчер у headless chromium'
     : `inspect.mjs motion — SKIP: ${skipReason}`,
   () => {
-    it('чотири канали motion + schemaVersion 2', async () => {
+    it('чотири канали motion + schemaVersion 3', async () => {
       const { schemaVersion, motion } = await inspectFixture();
-      expect(schemaVersion).toBe(2);
+      // 3 — після Б.3: форма `motion` змінилась (`revealSampled`/`revealRoot`,
+      // тристанний `jsDrivenSuspected`), тож версія входу бампнута.
+      expect(schemaVersion).toBe(3);
 
       // 1. transitions: cubic-bezier із комами всередині дужок не порізаний,
       // багатозначний shorthand розкладений попарно.
@@ -163,7 +168,12 @@ describe.skipIf(!browser)(
       ).toBe(true);
 
       // reveal пояснюється CSS-transition по opacity/transform — не JS.
+      // Саме `false`, а не `'unknown'`: вибірка тут непорожня (див. нижче).
       expect(motion.jsDrivenSuspected).toBe(false);
+      // Обсяг вибірки — чесне поле: діф будується рівно на семпльованих
+      // вузлах, а корінь на цій фікстурі — `main`.
+      expect(motion.revealRoot).toBe('main');
+      expect(motion.revealSampled).toBeGreaterThan(0);
     }, 120_000);
 
     // Р5: hover-канал. Дельта є рівно там, де є `:hover`-правило; сусіднє

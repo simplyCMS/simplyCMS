@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  Фікстурний «сайт» з ОДНИНОЮ в сегменті — прямий регрес живого кейсу deo
+  (інкремент Б.3, Фаза 3 Step 3). Що саме він доводить:
+
+  1. Bare `/product` (індекс колекції) забирає тип `listing`, а НЕ `product`,
+     хоча його нав-якір буквально «Product». До Б.3 було навпаки: якір давав
+     2 бали, а тайбрейк «коротший pathname виграє» ставив мілкий `/product`
+     попереду справжньої картки — і `listing` лишався `visit-failed`.
+  2. Тип `product` дістається картці `/product/<slug>` — сумою URL-патерну і
+     структурного fan-out (шість дітей під одним префіксом).
+  3. Проб візиту (`browserVisitProbe`) не відхиляє нічого зайвого: сторінка
+     `/product` розмічена як CollectionPage з ВКЛАДЕНИМИ Product у ItemList —
+     тобто `Product` у розмітці є, — але карток на ній достатньо, тож правило
+     mismatch для `listing` мовчить, як і має.
+
+  🔴 Наявну фікстуру `site/` це НЕ замінює: там перевіряються visited/
+  visit-failed/no-candidate і aria-label, тут — конфлікт однини.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Home — Singular Fixture Store</title>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <!-- Той самий напис, що збив дискаверер на живому референсі. -->
+        <a href="/product">Product</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Featured watches</h1>
+      <!--
+        Шість карток — над порогом fan-out (FANOUT_MIN_CHILDREN = 3), тож
+        `/product` структурно виглядає індексом колекції навіть без словника.
+        Найдовший slug виграє тайбрейк усередині типу `product` (глибша
+        картка першою) — саме його й асертить тест.
+      -->
+      <section>
+        <a href="/product/omega-speedmaster-professional"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Omega Speedmaster Professional"
+            width="80"
+            height="80"
+          /><span>Omega Speedmaster Professional</span></a
+        >
+        <a href="/product/tissot-prx"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Tissot PRX"
+            width="80"
+            height="80"
+          /><span>Tissot PRX</span></a
+        >
+        <a href="/product/casio-a168"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Casio A168"
+            width="80"
+            height="80"
+          /><span>Casio A168</span></a
+        >
+        <a href="/product/seiko-5"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Seiko 5"
+            width="80"
+            height="80"
+          /><span>Seiko 5</span></a
+        >
+        <a href="/product/orient-bambino"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Orient Bambino"
+            width="80"
+            height="80"
+          /><span>Orient Bambino</span></a
+        >
+        <a href="/product/citizen-nj"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Citizen NJ"
+            width="80"
+            height="80"
+          /><span>Citizen NJ</span></a
+        >
+      </section>
+    </main>
+  </body>
+</html>

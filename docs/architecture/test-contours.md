@@ -130,19 +130,28 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    блокер, але e2e ганяється не на прод-версіях — або підтягувати, або
    свідомо зафіксувати розбіжність.
 7. **Браузерні тести скіла редизайну мовчки скіпаються в CI** (додано
-   2026-08-17, інкремент Б.2). Чотири файли `tests/design-import-*` знімають
-   фікстурні HTML справжнім headless-Chromium через `describe.skipIf(!browser)`
-   із launch-probe у top-level await: інспекція кольорів, шрифт-вага, motion
-   (transitions/keyframes/reveal/hover/JS-детект) і discover-CLI. Жоден
-   workflow браузер не ставить (`pnpm test:e2e` у CI не ганяється за рішенням
-   власника, і `playwright install` немає в жодному job), тож у GitHub Actions
-   ці describe чесно скіпаються — з причиною в назві, але скіпаються. 🔴
-   Наслідок: **зелений `pnpm test` у CI не доводить, що інспекція взагалі
-   працює** — доводить лише те, що чисті модулі (`motion-detect`,
-   `inspection-version`, `merge`, `map-tokens`, генератор dev-стенда) не
-   зламані. Реальний доказ дає локальний прогін, де Chromium є. Закриття —
-   `playwright install chromium` у job `test` (дешево) або окремий job; поки
-   цього немає, регресія в семплері доїде до `main` зеленою.
+   2026-08-17, інкремент Б.2; перелік звірено 2026-08-18, Б.3). **Пʼять**
+   файлів `tests/design-import-*` знімають фікстурні HTML справжнім
+   headless-Chromium через `describe.skipIf(!browser)` із launch-probe у
+   top-level await: `inspect` (кольори), `fonts` (шрифт-вага), `motion`
+   (transitions/keyframes/reveal/hover/JS-детект), `motion-root` (корінь
+   вибірки reveal і обсяг вибірки) і `discover-cli`. Жоден workflow браузер не
+   ставить (`pnpm test:e2e` у CI не ганяється за рішенням власника, і
+   `playwright install` немає в жодному job), тож у GitHub Actions ці describe
+   чесно скіпаються — з причиною в назві, але скіпаються. 🔴 Наслідок:
+   **зелений `pnpm test` у CI не доводить, що інспекція взагалі працює** —
+   доводить лише те, що чисті модулі (`motion-detect`, `inspection-version`,
+   `merge`, `map-tokens`, генератор dev-стенда) не зламані. Реальний доказ дає
+   локальний прогін, де Chromium є. Закриття — `playwright install chromium` у
+   job `test` (дешево) або окремий job; поки цього немає, регресія в семплері
+   доїде до `main` зеленою.
+   🔴 Одну сліпу зону з цього переліку вже закрито інакше — і це зразок, як
+   закривати решту: логіка **вибору кореня reveal** (`main` vs двоярусний
+   fallback, фільтр службових тегів, стеля вибірки) продубльована
+   CI-безпечним jsdom-тестом `tests/design-import-reveal-dom.test.ts` над тим
+   самим `lib/browser-reveal.mjs`. Тобто в CI вона більше НЕ сліпа: браузерний
+   `motion-root` лишається доказом того, що корінь працює з живим
+   `getComputedStyle`, а сам вибір кореня червоніє й без Chromium.
 
 ## 5. Роль `src/` і план `apps/dev-store`
 
