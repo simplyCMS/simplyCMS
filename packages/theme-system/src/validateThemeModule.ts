@@ -1,18 +1,8 @@
 import { CORE_VERSION, satisfies } from '@simplycms/objects/semver';
 import type { ThemeModule } from './types';
+import { validateThemeViews } from './validateThemeViews';
 
-/**
- * Відомі ключі `ThemeModule.views` (контракт v3) — рівно пʼять канонічних
- * сторінок вітрини. Список публічний: на ньому тримається і валідація форми
- * тут, і перелік фікстур conformance-kit-а.
- */
-export const THEME_VIEW_KEYS = [
-  'Home',
-  'Catalog',
-  'CatalogSection',
-  'ProductDetail',
-  'Cart',
-] as const;
+export { THEME_VIEW_KEYS } from './validateThemeViews';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -131,27 +121,6 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
   }
 
   // Мʼяка перевірка форми `views` (контракт v3) — за ідіомою блоку `fonts`:
-  // тут лише форма, семантику (реквізити, крайні стани) доводить
-  // conformance-kit. Тема без `views` валідна — поле опційне.
-  if (views !== undefined) {
-    // 🔴 `isRecord` пропускає масив (typeof [] === 'object'), а масив views —
-    // це не мапа сторінок: відсікаємо явно.
-    if (!isRecord(views) || Array.isArray(views)) {
-      throw new Error(
-        `[theme] "${manifest.name}": views мають бути обʼєктом { <сторінка>: React-компонент }`,
-      );
-    }
-    for (const [key, view] of Object.entries(views)) {
-      if (!(THEME_VIEW_KEYS as readonly string[]).includes(key)) {
-        throw new Error(
-          `[theme] "${manifest.name}": невідомий views.${key}; дозволені: ${THEME_VIEW_KEYS.join(', ')}`,
-        );
-      }
-      if (typeof view !== 'function') {
-        throw new Error(
-          `[theme] "${manifest.name}": views.${key} має бути React-компонентом`,
-        );
-      }
-    }
-  }
+  // лише форма, семантику доводить conformance-kit. Тема без `views` валідна.
+  if (views !== undefined) validateThemeViews(String(manifest.name), views);
 }

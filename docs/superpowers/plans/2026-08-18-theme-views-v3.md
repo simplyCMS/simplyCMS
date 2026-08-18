@@ -71,96 +71,163 @@
 
 ---
 
+## Амендменти за фактом виконання (2026-08-18)
+
+Спека **не** правиться (рішення власника) — усе фіксується тут.
+
+### Р1 — ухвалено: view-model-и в субшляху `@simplycms/objects/views`
+
+Обидві розглянуті форми відпали доказом, а не смаком. Структурний тип слота
+(`(props: SlotAppearanceProps) => unknown`) у JSX **неможливий**: проба дала
+`TS2786 «… is not a valid JSX element type»` — `JSX.ElementType` вимагає
+повернення `ReactNode`, а `=> any` заборонений coding-style. Виносити
+slots-типи в `@simplycms/themes` теж не вийшло б чисто: їх однаково потребує
+route-пакет, який тоді залежав би від T4 заради типів.
+
+Ухвалено: view-model-и (дані + слоти) живуть у **новому субшляху**
+`@simplycms/objects/views` (+ `./views/fixtures`), НЕ ре-експортованому з
+барелю — дзеркалить наявний `./semver`. Обіцянка барелю «без імпортів
+supabase/react» лишається правдою саме тому, що views поза ним. `react`
+додано в `peerDependencies` пакета **опційним** (`peerDependenciesMeta`) і
+лише як type-only: інакше `tests/audit-deps.test.ts` червонів би
+(`ts.preProcessFile` бачить і `import type`), а T0 лишається придатним для
+не-React споживачів (`scripts/db-*.mjs`). Інваріант «T0 — 0 RUNTIME deps»
+збережено.
+
+Механіка нового субшляху — рівно три узгоджені місця: `exports`,
+`publishConfig.exports`, `entry` у `tsup.config.ts` (tsconfig paths і
+vite-аліаси мають префіксні wildcard-и й правок не потребують).
+
+### Р8 — амендмент: канонічний канал гейта — CLI, а не тест
+
+Рішення власника 2026-08-18: **канонічний канал запуску conformance —
+команда `simplycms theme:conformance <name>`**; шаблонний
+`conformance.test.ts` лишається ДОДАТКОВОЮ формою для тих, у кого рушій
+тестів уже є. Рушій тестів у шаблон магазину не додається — та сама
+доктрина, що з Playwright: гейт мусить працювати й у магазині без vitest.
+DOM (`jsdom`) доставляється on-demand — команда друкує `pnpm add -D jsdom` і
+виходить кодом 1.
+
+Наслідок для порядку робіт: CLI-канал виконано окремою фазою (Ф7) перед
+settings-ланцюгом, тож фактичних фаз дев'ять замість восьми — «Фаза 7»
+плану (settings) приземлилась як Ф8, «Фаза 8» (доки) — як Ф9.
+
+### Р9 — (а) і (б) уже існували в коді
+
+Крок 0 знайшов обидві ланки готовими: merge default-ів робить
+`ThemeContext.loadTheme` (`{ ...defaultSettings, ...savedSettings }`), а
+інвалідацію SSR-кешу при збереженні — `packages/admin/src/pages/ThemeSettings.tsx`
+тим самим хуком `useRevalidateStorefront`, що й активація теми. Тому фаза
+звелась до **доведення** ланцюга тестами (нові `ThemeContext.test.tsx` і
+`ThemeSettings.test.tsx`), а не до переписування; production-код фази —
+нуль рядків. (в) виявилось уже покритим `conformance-context.test.tsx` із
+Ф6.
+
+Побічна знахідка, свідомо НЕ виправлена: на SSR-гілці `isLoading` стає
+`false` раніше, ніж заповнюється `themeSettings` (тік ефекту). Споживачів
+`isLoading` з `useTheme()` сьогодні немає, а зміна семантики ввела б спінер
+там, де його свідомо нема; нюанс зафіксовано коментарем у тесті.
+
+### Р7/Р2 — уточнення складу реквізитів
+
+`REQUIRED_REQUISITES.Home` — порожній, `Cart` — без `ClearCart`. Це не
+послаблення гейта, а вирівнювання з §5 спеки («Home — без обовʼязкових
+комерційних реквізитів»; для кошика названо лише позиції/сума/checkout):
+обовʼязковим може бути тільки слот, який рендериться безумовно. `QuantityPicker`
+зі спеки §5 не заводився — його немає у фактичному JSX (YAGNI, Р2).
+
+---
+
 ## Фаза 1 — Контрактні типи + фікстури
 
-- [ ] **Step 1:** view-model-и пʼяти сторінок у `@simplycms/objects`
+- [x] **Step 1:** view-model-и пʼяти сторінок у `@simplycms/objects`
       (Р1/Р2) — склад полів знятий з фактичного JSX сторінок (читання,
       без правок сторінок).
-- [ ] **Step 2:** `ThemeViews` + `views?` у `ThemeModule`
+- [x] **Step 2:** `ThemeViews` + `views?` у `ThemeModule`
       (`packages/theme-system/src/types.ts`); `validateThemeModule` —
       мʼяка перевірка форми + юніти (тема без views валідна; невідомий
       ключ — warn/error за ідіомою наявного валідатора).
-- [ ] **Step 3:** фікстурні vm (Р6) + тест парності «фікстура відповідає
+- [x] **Step 3:** фікстурні vm (Р6) + тест парності «фікстура відповідає
       типу» (компіляція + рантайм-форма).
-- [ ] **Step 4:** гейти фази (+ `build:packages`/`test:packaging` —
+- [x] **Step 4:** гейти фази (+ `build:packages`/`test:packaging` —
       exports objects/theme-system зачеплені).
 
 ## Фаза 2 — Slot-компоненти реквізитів
 
-- [ ] **Step 1:** інвентаризація реквізитів по фактичному JSX
+- [x] **Step 1:** інвентаризація реквізитів по фактичному JSX
       (ProductDetail: add-to-cart `:81`, кількість, ціна, наявність;
       Cart: позиції/сума/чекаут; Catalog/Section: картка з лінком,
       пагінація) — зафіксувати мінімальний склад константою (вона ж
       джерело для conformance Р7).
-- [ ] **Step 2:** `src/views/slots/` — компоненти з маркерами (Р3);
+- [x] **Step 2:** `src/views/slots/` — компоненти з маркерами (Р3);
       логіка перенесена, поведінка незмінна (наявні тести сторінок
       зелені ще ДО спліту — сторінки тимчасово споживають слоти прямо).
-- [ ] **Step 3:** DB-free юніти слотів (jsdom + моки engine-хуків):
+- [x] **Step 3:** DB-free юніти слотів (jsdom + моки engine-хуків):
       маркер присутній, стани рендеряться.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 3 — Спліт ProductDetail (пілотна сторінка)
 
-- [ ] **Step 1:** `ProductDetailView` (канонічний, чистий) +
+- [x] **Step 1:** `ProductDetailView` (канонічний, чистий) +
       container збирає vm зі слотами; резолв
       `theme.views?.ProductDetail ?? ProductDetailView`.
-- [ ] **Step 2:** conformance-прогін канонічного view на фікстурах
+- [x] **Step 2:** conformance-прогін канонічного view на фікстурах
       (повний + без фото) — це і тест чистоти.
-- [ ] **Step 3:** юніт резолву: синтетична тема з `views.ProductDetail`
+- [x] **Step 3:** юніт резолву: синтетична тема з `views.ProductDetail`
       рендериться ЗАМІСТЬ канонічного; без views — канонічний.
-- [ ] **Step 4:** гейти фази + `pnpm pilot:pack` (перший спліт — перша
+- [x] **Step 4:** гейти фази + `pnpm pilot:pack` (перший спліт — перша
       перевірка модульного графа).
 
 ## Фаза 4 — Спліт Catalog + CatalogSection
 
-- [ ] **Step 1:** той самий патерн, що Фаза 3 (обидві сторінки ділять
+- [x] **Step 1:** той самий патерн, що Фаза 3 (обидві сторінки ділять
       view-model `CatalogViewModel`/`CatalogSectionViewModel` — спільні
       підкомпоненти view не дублювати).
-- [ ] **Step 2:** conformance канонічних view (повний + порожня секція).
-- [ ] **Step 3:** гейти фази (+ рекомендовано pilot:pack).
+- [x] **Step 2:** conformance канонічних view (повний + порожня секція).
+- [x] **Step 3:** гейти фази (+ рекомендовано pilot:pack).
 
 ## Фаза 5 — Спліт Home + Cart
 
-- [ ] **Step 1:** Home: container уже тонкий (86 рядків) — vm збирає
+- [x] **Step 1:** Home: container уже тонкий (86 рядків) — vm збирає
       banners/секції; взаємодія з наявними theme-компонентами
       (`HeroBanner`/`HomeSections`) НЕ ламається: вони лишаються
       контрактом v2.2, канонічний HomeView їх рендерить як зараз.
-- [ ] **Step 2:** Cart: спліт + слоти позицій/суми/чекауту.
-- [ ] **Step 3:** conformance (порожній кошик — обовʼязковий крайній
+- [x] **Step 2:** Cart: спліт + слоти позицій/суми/чекауту.
+- [x] **Step 3:** conformance (порожній кошик — обовʼязковий крайній
       стан) + гейти фази (+ рекомендовано pilot:pack).
 
 ## Фаза 6 — Conformance-kit як публічний контракт
 
-- [ ] **Step 1:** `assertThemeViewsConformance` — публічний експорт
+- [x] **Step 1:** `assertThemeViewsConformance` — публічний експорт
       `@simplycms/themes` (субшлях за ідіомою `safeFontStylesheets`,
       якщо barrel тягне серверне).
-- [ ] **Step 2:** негативний контроль (Р8): зламана синтетична тема —
+- [x] **Step 2:** негативний контроль (Р8): зламана синтетична тема —
       червона; валідна — зелена.
-- [ ] **Step 3:** шаблон `create theme`: закоментований приклад `views`
+- [x] **Step 3:** шаблон `create theme`: закоментований приклад `views`
       у `index.ts` + conformance-тест з коробки + README-розділ.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 7 — Settings-ланцюг
 
-- [ ] **Step 1:** merge БД-значень із default-ами definitions (Р9а) —
+- [x] **Step 1:** merge БД-значень із default-ами definitions (Р9а) —
       з тестом (значення без запису в БД → default).
-- [ ] **Step 2:** інвалідація SSR-кешу при збереженні settings в адмінці
+- [x] **Step 2:** інвалідація SSR-кешу при збереженні settings в адмінці
       (Р9б) — дзеркало активації, з тестом на виклик інвалідації.
-- [ ] **Step 3:** conformance-провайдер default-ів (Р9в) + тест: view,
+- [x] **Step 3:** conformance-провайдер default-ів (Р9в) + тест: view,
       що читає setting, рендериться на фікстурі без БД.
-- [ ] **Step 4:** гейти фази.
+- [x] **Step 4:** гейти фази.
 
 ## Фаза 8 — Доки, синк, фінальні гейти
 
-- [ ] **Step 1:** `docs/architecture/themes.md` — v3 як фактичний стан
+- [x] **Step 1:** `docs/architecture/themes.md` — v3 як фактичний стан
       (контракт, views, conformance, settings; блок «затверджений
       напрям» знімається); `docs/guides/themes.md` — how-to автора view.
-- [ ] **Step 2:** `CLAUDE.md` (розділ Theme System → v3), роадмап
+- [x] **Step 2:** `CLAUDE.md` (розділ Theme System → v3), роадмап
       (трек A — виконано), спека — амендменти, якщо були відхилення.
-- [ ] **Step 3:** `pnpm template:sync`; parity зелений.
-- [ ] **Step 4:** фінал: повний ланцюг гейтів + `build:packages` +
+- [x] **Step 3:** `pnpm template:sync`; parity зелений.
+- [x] **Step 4:** фінал: повний ланцюг гейтів + `build:packages` +
       `test:packaging` + **`pnpm pilot:pack`**.
-- [ ] **Step 5:** відмітки DoD у задачі.
+- [x] **Step 5:** відмітки DoD у задачі.
 
 ## Верифікація (для окремого верифікаційного воркфлоу)
 

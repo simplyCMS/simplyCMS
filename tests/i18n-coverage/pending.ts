@@ -36,6 +36,9 @@ export const ALLOWLIST: Record<string, string> = {
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
   'packages/theme-system/src/validateThemeModule.ts':
     'throw new Error — діагностика для автора теми',
+  // Той самий валідатор, лише винесений блок форми `views` (контракт v3).
+  'packages/theme-system/src/validateThemeViews.ts':
+    'throw new Error — діагностика для автора теми',
   // Той самий клас: conformance-kit (контракт v3) кидає помилки АВТОРОВІ
   // теми — про відсутнє DOM-середовище, падіння view чи загублений реквізит.
   // Це вивід гейта в терміналі, а не текст інтерфейсу; JSX у файлі немає.

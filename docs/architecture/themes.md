@@ -1,6 +1,10 @@
 # Механізм тем SimplyCMS
 
-> Фактичний стан після Фази 4 (2026-08-14). Вимоги — спека платформи
+> Фактичний стан після Фази 4 (2026-08-14) і треку A — контракт v3
+> «theme views» (2026-08-18; спека
+> [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md),
+> план [`2026-08-18-theme-views-v3.md`](../superpowers/plans/2026-08-18-theme-views-v3.md),
+> рішення Р1–Р12). Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §6 (контракт теми), §13 (маркетплейс), §17 сценарій 4; рішення імплементації —
 > [план Фази 4](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
@@ -12,22 +16,18 @@
 
 Тема — встановлювана одиниця **оформлення** магазину: design-токени,
 брендові компоненти (Header/Footer обовʼязкові, HeroBanner/HomeSections —
-опційні), власний каталог перекладів. Сторінок і лейаутів тема не несе —
-канонічні сторінки живуть у `@simplycms/storefront-routes/src/pages/`
-(рішення D3/D4 спеки, свідомо поза скоупом Фази 4 — Р0).
+опційні), власний каталог перекладів і — з контракту v3 — опційний
+**view-шар** пʼяти сторінок вітрини (§2.1).
+
+Даних, роутів і SEO тема не несе ніколи: сторінки лишаються канонічними
+(`@simplycms/storefront-routes/src/pages/`), вони тягнуть дані й віддають
+темі готовий view-model. Тема перевизначає лише те, ЯК це намальовано
+(ревізія D3′/D4′ спеки v3 — попередня редакція D3/D4 забороняла темі й
+презентацію теж).
 
 Тема живе або **локально** в теці `themes/` магазину (аліас `@themes/*`, без
 build-кроку), або **npm-пакетом** (конвенції імен: unscoped
 `simplycms-theme-<name>`, scoped `@vendor/simplycms-theme-<name>`; Р1).
-
-> 🔴 **Затверджений напрям — контракт v3 «theme views» (2026-08-17, у коді ще
-> НЕМАЄ).** Ревізія D3′/D4′: дані/роути/SEO лишаються ядром назавжди, але
-> тема зможе перевизначати view-шар пʼяти сторінок вітрини (Home, Catalog,
-> CatalogSection, ProductDetail, Cart) через типізовані view-model-и зі
-> slot-компонентами реквізитів і жорсткий conformance-гейт. Спека —
-> [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md);
-> порядок виконання — роадмап (трек A). Цей документ описує чинний контракт
-> v2.2 і буде оновлений разом з імплементацією.
 
 Два зразки задають межі форми:
 
@@ -48,10 +48,14 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 - Шрифти теми (`fonts`, контракт v2.2) — **лише зовнішні `https:`-stylesheet**;
   `@font-face`-обʼєктів і роздачі файлів шрифтів темою немає свідомо
   (npm-тема не має каналу статики) — §2, §8.
-- `simplycms create theme` дає лише локальний dev-loop; `theme:check` як
-  окрема CLI-команда не вводиться — глибока перевірка модуля лишається за
-  `validateThemeModule` на build/рантаймі (CLI — чистий ESM без TS-лоадера,
-  імпортувати `index.ts` теми він не може).
+- `simplycms create theme` дає лише локальний dev-loop. Окремої команди
+  `theme:check` (глибока перевірка структури модуля) немає — це лишається за
+  `validateThemeModule` на build/рантаймі. Натомість є
+  `simplycms theme:conformance <name>` — гейт ЗАЯВЛЕНИХ темою `views`
+  (§7.1); тему в TS він завантажує vite-раннером, а DOM бере з `jsdom`,
+  який магазин доставляє on-demand.
+- `views` (v3) покривають рівно пʼять сторінок вітрини; checkout, auth і
+  профіль лишаються цілком канонічними (§8).
 
 ## 2. Контракт: `ThemeModule`
 
@@ -97,6 +101,100 @@ ThemeModule = {
   `default`, якщо запитаної немає.
 - `name` у manifest — метаданий опис; **ідентичність** теми для БД і
   резолву — ключ реєстрації в `simplycms.config.ts` (§5).
+
+### 2.1 `views` — перевизначення view-шару (контракт v3)
+
+```ts
+ThemeModule = { …, views?: ThemeViews };
+
+ThemeViews = {
+  Home?:           React.ComponentType<HomeViewModel>;
+  Catalog?:        React.ComponentType<CatalogViewModel>;
+  CatalogSection?: React.ComponentType<CatalogSectionViewModel>;
+  ProductDetail?:  React.ComponentType<ProductDetailViewModel>;
+  Cart?:           React.ComponentType<CartViewModel>;
+};
+```
+
+Обсяг — рівно пʼять сторінок вітрини. Ключ не заданий — ядро рендерить
+власний канонічний view; тема без `views` валідна цілком (усі теми v2.x
+працюють без жодної правки — поле аддитивне). Часткового перевизначення
+однієї сторінки немає: або вся сторінка темова й проходить conformance (§7.1),
+або канонічна.
+
+Розподіл відповідальності (D3′/D4′):
+
+| Ядро — непорушне | Тема — перевизначає |
+|---|---|
+| роут, лоадери, SSR-дані, SEO-теги | розмітка й порядок блоків сторінки |
+| збір view-model-а, стан сторінки, запити | оформлення, класи, адаптив |
+| логіка комерційних реквізитів (кошик, ціна, стани) | РОЗСТАВЛЕННЯ слотів у власному лейауті |
+
+**Container/view.** Кожна сторінка
+`packages/storefront-routes/src/pages/<Name>.tsx` — це **container**: тягне
+дані, тримає стан, збирає view-model і резолвить view хуком
+`useStorefrontViews({ <Name>: Canonical<Name>View })`
+(`src/views/useStorefrontViews.ts`, поверх наявного `useActiveThemeModule`).
+Канонічні view — `packages/storefront-routes/src/views/<Name>View.tsx`.
+Каркас (`StorefrontShell`) не чіпається: темовий view живе всередині нього
+так само, як канонічний.
+
+🔴 Хук повертає **мапу** і споживається як `<views.ProductDetail {...vm} />`.
+Компонент, покладений у локальну змінну (`const View = …; <View/>`), ESLint
+`react-hooks/static-components` (правила React Compiler) вважає створеним під
+час рендеру — це помилка лінта і водночас реальний перемонтаж піддерева.
+
+**View-model-и — у `@simplycms/objects/views`** (T0), субшлях **поза барелем**
+пакета. Причина не стилістична: тип прибіндженого слота мусить бути
+`ComponentType` з react (структурний `(props) => unknown` JSX не приймає —
+TS2786), тож `views` тягне type-only імпорт react. Барель `@simplycms/objects`
+обіцяє «без імпортів supabase/react», і ця обіцянка лишається правдою саме
+завдяки окремому субшляху; `react` оголошений **опційним type-only peer**
+(`peerDependenciesMeta`) — рантайм-залежностей T0 як не мав, так і не має.
+
+Структура vm — **секційна** (форвард-сумісність із треком B, спека §4):
+`ProductDetailViewModel` = `breadcrumbs` / `gallery` / `summary` /
+`description` / `characteristics` / `slots`, а не плоский мішок полів. Склад
+полів знято з фактичного JSX канонічних сторінок (YAGNI: поля «на майбутнє»
+немає).
+
+**Слоти комерційних реквізитів.** `vm.slots` — прибінджені ядром компоненти,
+які тема лише розставляє: `<slots.AddToCart />`, `<slots.PriceBlock />`,
+`<slots.Summary />`… Логіка всередині (кошик, ціни зі знижками, стани
+loading/error, toast) належить ядру — зламати воронку покупки темою
+неможливо. Пропси оформлення мінімальні (`SlotAppearanceProps` —
+`className?`); винятком є слоти, яким потрібен ідентифікатор
+(`HomeSectionSlotProps.sectionId`). Реалізації — `src/views/slots/`
+route-пакета; тема імпортує їх НЕ напряму, а отримує через vm.
+
+Кожен слот рендерить на своєму корені маркер
+`data-simplycms-requisite="<імʼя>"` (`REQUISITE_ATTRIBUTE`). Імена й
+мінімальний склад по сторінках — константи `HOME_/CATALOG_/
+PRODUCT_DETAIL_/CART_REQUISITES` і `REQUIRED_REQUISITES` у
+`@simplycms/objects/views`: їх потребують обидва боки (слот, що малює
+маркер, і kit, що його шукає), а `@simplycms/themes` не має права залежати
+від route-пакета (тіри T0→T5). Парність «слот у vm ↔ імʼя» тримає
+`satisfies Record<keyof …Slots, string>` — новий слот без імені червонить
+`pnpm typecheck`.
+
+🔴 `REQUIRED_REQUISITES.Home` — **порожній**, а `Cart` не містить
+`ClearCart`. Це не пропуск: обовʼязковим може бути лише реквізит, який
+рендериться безумовно. Головна без кореневих категорій не має жодної
+каруселі, порожній кошик структурно прибирає весь блок реквізитів разом із
+даними, а «очистити кошик» — зручність, а не функція ядра (спека §5).
+
+**Чистота view — несуча вимога, не побажання.** View мусить лишатися чистою
+функцією від vm: жодних запитів даних. Дозволений лише render-контекст —
+`useT` / `useThemeT` / `useThemeSettings`. Саме на цьому тримається
+conformance: рендер на фікстурах без БД (§7.1). Канонічні view ядра
+проходять той самий гейт — це водночас доказ їхньої чистоти.
+
+**Фікстури** — `@simplycms/objects/views/fixtures`, теж публічний субшлях (на
+них ганяє kit і автор сторонньої теми з опублікованих пакетів). Дані без
+слотів (`ViewModelData<T>`), два стани на сторінку: `full` (повні дані) і
+`edge` (товар без фото, порожня секція, порожній кошик, магазин без
+категорій). Живуть поруч із типами — тип і фікстура міняються одним PR, дрейф
+структурно неможливий.
 
 ## 3. Пакування: npm vs copy-in
 
@@ -286,6 +384,58 @@ activate.
 
 ## 7. Conformance-kit і чекліст автора теми
 
+### 7.1 Гейт заявлених `views` (контракт v3)
+
+`assertThemeViewsConformance(theme)` — публічний kit,
+`packages/theme-system/src/conformance/`, експорт **субшляхом**
+`@simplycms/themes/conformance` (барель тягне `getActiveThemeSSR` →
+anon-клієнт Supabase — та сама ідіома, що `safeFontStylesheets`).
+
+Що робить: `validateThemeModule` → тимчасова реєстрація теми в
+`ThemeRegistry` (без неї `useThemeT` не знайшов би каталог) → рендер
+КОЖНОГО заявленого темою view на фікстурах `full` і `edge` у провайдерах
+i18n + `ThemeContext` із default-ами схеми `settings` → зняття маркерів
+`data-simplycms-requisite` із DOM. Асертить два твердження:
+
+1. на стані `full` присутні всі обовʼязкові реквізити сторінки
+   (`REQUIRED_REQUISITES`);
+2. на **обох** станах рендер не падає.
+
+🔴 Склад реквізитів перевіряється лише на `full`, і це не послаблення: на
+крайньому стані сторінка законно прибирає блок реквізитів разом із даними
+(порожній кошик, магазин без категорій), і вимога «маркер завжди» червоніла б
+не на дефекті. `edge` доводить рівно те, що може довести: рендер живий.
+
+🔴 Рантайм-fallback на канонічний view при провалі **не робиться** (V3, спека
+§7): незакритий реквізит означає магазин без кнопки купівлі — це має бути
+видно на гейті, а не маскуватися в проді.
+
+Межі kit-а, які варто памʼятати, читаючи «conformance зелений»:
+
+- kit доводить, що тема **розставила** слот, а не що логіка всередині
+  працює: реальні слоти живуть у T5, тому в рендері їх підмінено стабами, які
+  малюють лише маркер. Логіку слотів доводять їхні власні юніти;
+- роутер kit не піднімає навмисно (він перевіряє тему, а не навігацію) — якщо
+  view теми використовує `Link` із `@tanstack/react-router`, тест магазину
+  мокає модуль;
+- тема без `views` — чесний pass: перевіряти нічого.
+
+**Два канали запуску, рівноцінні за змістом** (амендмент до Р8, 2026-08-18):
+
+| Канал | Коли | Що потрібно |
+|---|---|---|
+| `pnpm simplycms theme:conformance <name>` — **канонічний** | завжди, будь-який магазин | `jsdom` (`pnpm add -D jsdom`, on-demand; команда сама друкує цю інструкцію і виходить кодом 1) |
+| `themes/<name>/conformance.test.ts` — додатковий | магазин або CI автора, де рушій тестів уже є | vitest |
+
+Рушій тестів у шаблон магазину **не додається** (та сама доктрина, що з
+Playwright): гейт мусить бути доступним і магазину без vitest, тому канонічний
+канал — CLI. Механіка команди (vite-раннер, аліаси з `tsconfig.paths`, чому
+раннер рівно один) — [`cli.md`](cli.md) §3.6. Шаблон
+`simplycms create theme` везе `conformance.test.ts` з коробки; поки `views`
+немає, він зелений і нічого не перевіряє.
+
+### 7.2 Решта контуру
+
 Чесний склад, без окремого пакета-валідатора:
 
 1. **`validateThemeModule`** — публічний рантайм-контракт, вже описаний у
@@ -320,17 +470,36 @@ activate.
      показуються з БД-рядка, не з каталогу i18n);
    - `@simplycms/*` — `peerDependencies`, не `dependencies` (§3.1);
    - модуль проходить `validateThemeModule` без падіння;
+   - якщо тема заявляє `views` — зелений `simplycms theme:conformance <name>`
+     (§7.1);
    - `src/` — у `files` tarball-а (потрібно для copy-in, §3.2);
    - `repository` — публічне посилання (аудит перед подачею в індекс).
 
    Повний контракт подачі в маркетплейс-індекс —
    [`docs/marketplace/README.md`](../marketplace/README.md).
 
-CLI-команда `theme:check` НЕ вводиться (§1): CLI — чистий ESM без TS-лоадера,
-глибока перевірка лишається за `validateThemeModule` на build/рантаймі.
+Окремої команди `theme:check` (глибока перевірка структури модуля) немає
+(§1): це лишається за `validateThemeModule` на build/рантаймі. CLI-гейт
+покриває інше — заявлені `views` (§7.1).
 
 ## 8. Чого свідомо немає (v1)
 
+- **`views` поза пʼятіркою вітрини** — checkout, OrderSuccess, auth і профіль
+  тема не перевизначає (кандидати v3.1 після обкатки; спека §12). Там, де
+  розбіжність структурна й поза воронкою, чинний шлях лишається той самий —
+  власна сторінка магазину в `src/routes/my/`.
+- **Рантайм-fallback на канонічний view** при провалі conformance (V3, §7.1) —
+  дефект видно на гейті, а не в проді порожнім місцем.
+- **Часткове перевизначення сторінки** («хочу свій блок ціни, решта
+  канонічна») — одиниця перевизначення це сторінка цілком; дрібніша
+  грануляція — секційна модель треку B, не v3.
+- **Дані/SEO/роути темою** — не буде ніколи: це несуча теза D3′/D4′, з якої
+  живе можливість додавати сторінки ядром, не ламаючи тем.
+- **Тема, яка постачає `views`, у цьому репозиторії** — жодна (Р11): ні
+  `themes/default`, ні `@simplycms/theme-solarstore` контракт v3 не
+  використовують. Перший реальний споживач — прогін №4 механізму клонування
+  (фаза «Шліфування»), навмисно окремою сесією: так валідація контракту
+  відділена від валідації клона.
 - **Межа довіри, як у плагінів (Р10).** Обидві наявні теми легітимно
   імпортують `@simplycms/supabase/SupabaseProvider` і хуки `@simplycms/core`
   — тема, на відміну від плагіна, споживає DI-клієнт напряму за контрактом
@@ -364,7 +533,17 @@ CLI-команда `theme:check` НЕ вводиться (§1): CLI — чист
 
 | Що | Чим |
 |---|---|
-| Контракт `ThemeModule`/`validateThemeModule` | юніти `packages/theme-system` |
+| Контракт `ThemeModule`/`validateThemeModule` (включно з мʼякою перевіркою форми `views`) | юніти `packages/theme-system` |
+| Conformance-kit v3: валідна тема зелена, зламана (без `AddToCart` / падає на порожньому кошику) червона | `packages/theme-system/src/__tests__/conformance-requisites.test.tsx` (+ синтетичні теми `conformance-themes.tsx`) |
+| Провайдери kit-а: default-и `settings` і каталог теми доходять до view | `packages/theme-system/src/__tests__/conformance-context.test.tsx` |
+| Канонічні view ядра проходять той самий kit (доказ їхньої чистоти) | `packages/storefront-routes/src/__tests__/canonical-views-conformance.test.tsx` |
+| Чистота кожного канонічного view (рендер на фікстурах під самим `I18nProvider`) | `packages/storefront-routes/src/__tests__/{product-detail,catalog,home,cart}-view.test.tsx` |
+| Резолв `theme.views` із fallback-ом на канонічний | `packages/storefront-routes/src/__tests__/storefront-views-resolve.test.tsx` |
+| Слоти реквізитів: маркер присутній, поведінка перенесена без змін | `packages/storefront-routes/src/__tests__/{product,cart,catalog}-slots.test.tsx` |
+| Імена/склад реквізитів ↔ типи слотів | `packages/objects/src/__tests__/views-requisites.test.ts`; фікстури ↔ типи — `views-fixtures.test.ts` |
+| Settings: merge БД-значень із default-ами (обидва шляхи ініціалізації) | `packages/theme-system/src/__tests__/ThemeContext.test.tsx` |
+| Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/admin/src/__tests__/ThemeSettings.test.tsx` |
+| CLI-канал гейта (`theme:conformance`) | `tests/cli-theme-conformance.test.ts` + Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
 | `bootstrapThemes` | `packages/theme-system/src/__tests__/bootstrapThemes.test.ts` (mock supabase: без missing — нуль load/insert/getSession; без сесії — нуль load; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
 | Registry-awareness адмінки | компонентний тест `packages/admin/src/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |

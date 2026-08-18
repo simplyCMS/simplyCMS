@@ -68,7 +68,7 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
-- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
+- [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff/theme:conformance): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 - [`docs/architecture/plugins.md`](docs/architecture/plugins.md) — механізм плагінів (Фаза 3): контракт `definePlugin`, рантайм-контур, межа довіри, конвеєр міграцій `plg_*`, i18n плагінів, adminRoutes, інваріант імені, межі v1
 - [`docs/architecture/themes.md`](docs/architecture/themes.md) — механізм тем (Фаза 4): контракт `ThemeModule`, пакування npm vs copy-in, `bootstrapThemes` і БД, conformance-kit, межі v1
 - [`docs/guides/themes.md`](docs/guides/themes.md) — практичний посібник по темах для розробника магазину й автора теми (how-to поверх механізму)
@@ -219,7 +219,9 @@ simplyCMS/
 │   │                       # окремого core-репо, а дзеркало вивели з експлуатації ще
 │   │                       # у Фазі 0. Тулінг тепер відрізняє ядро від скаффолдера
 │   │                       # за ІМЕНЕМ (`@simplycms/`), а не за шляхом.
-│   ├── objects/            @simplycms/objects        # Контракти + порти (0 deps)
+│   ├── objects/            @simplycms/objects        # Контракти + порти (0 runtime deps);
+│   │                                                 # субшляхи ./views і ./views/fixtures —
+│   │                                                 # view-model-и вітрини (контракт тем v3)
 │   ├── domain/             @simplycms/domain         # Pure-логіка: pricing/discounts/inventory/shipping
 │   ├── schema/             @simplycms/schema         # Drizzle-схема ядра + RLS у TS + drizzle/ snapshot
 │   ├── supabase/           @simplycms/supabase       # browser/server/anon-клієнти, SupabaseProvider, keys
@@ -228,11 +230,14 @@ simplyCMS/
 │   ├── runtime/            @simplycms/runtime        # defineRuntime + host-defineConfig
 │   ├── i18n/               @simplycms/i18n           # createTranslator, I18nProvider, каталоги uk/en
 │   ├── storefront/         @simplycms/storefront     # SSR-лоадери + SEO-генератори (DI-клієнт)
-│   ├── storefront-routes/  @simplycms/storefront-routes  # routes/ + канонічні pages/ + shells/ + server/
+│   ├── storefront-routes/  @simplycms/storefront-routes  # routes/ + pages/ (container-и) +
+│   │                                                 # views/ (канонічні view + slots/ реквізитів,
+│   │                                                 # контракт тем v3) + shells/ + server/
 │   ├── admin-routes/       @simplycms/admin-routes   # routes/admin* (тонкі обгортки)
 │   ├── admin/              @simplycms/admin          # Сторінки/компоненти адмінки
 │   ├── theme-system/       @simplycms/themes         # ThemeRegistry, bootstrapThemes, applyTokens,
-│   │                                                 # validateThemeModule
+│   │                                                 # validateThemeModule, conformance/ (гейт views v3,
+│   │                                                 # субшлях @simplycms/themes/conformance)
 │   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins,
 │   │                                                 # validatePluginModule
 │   ├── plugin-sdk/         @simplycms/plugin-sdk     # definePlugin + порти плагінів (usePluginTable,
@@ -246,7 +251,8 @@ simplyCMS/
 │   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
 │   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
-│   │                                                 # create (plugin|theme)/update/db:diff (N канонів);
+│   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
+│   │                                                 # theme:conformance (гейт views, контракт тем v3);
 │   │                                                 # чистий ESM без build; host/ — канон host-файлів,
 │   │                                                 # template-plugin/ і template-theme/ — шаблони
 │   │                                                 # create plugin/create theme (`pnpm template:sync`);
@@ -329,14 +335,15 @@ simplyCMS/
 (schema споживають лише `scripts/db-*.mjs`, admin-routes монтується шляхом у
 `routes.ts`, cli — bin-інструмент, який ніхто не імпортує як код).
 
-## Theme System (контракт v2.2)
+## Theme System (контракт v3)
 
-Тема постачає **лише** оформлення. Сторінок і лейаутів у ній немає.
-Повний механізм (пакування npm/copy-in, `bootstrapThemes`, conformance-kit,
-чекліст автора) — [`docs/architecture/themes.md`](docs/architecture/themes.md).
+Тема постачає оформлення і — опційно — **view-шар** пʼяти сторінок вітрини.
+Дані, роути й SEO лишаються ядром завжди. Повний механізм (пакування
+npm/copy-in, `bootstrapThemes`, views/слоти, conformance-kit, чекліст автора)
+— [`docs/architecture/themes.md`](docs/architecture/themes.md).
 
 ```ts
-ThemeModule = { manifest, tokens, components, settings?, messages?, fonts? }
+ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, views? }
 ```
 
 1. **Реєстрація:** `src/theme-registry.ts` реєструє теми з `config.themes`
@@ -350,8 +357,9 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts? }
 3. **Сторінки — в ядрі:** канонічні сторінки живуть у
    `@simplycms/storefront-routes/src/pages/`. Каркаси `StorefrontShell` /
    `ProtectedShell` беруть з теми `components` лише Header/Footer і обгортають
-   канонічну сторінку; секційні компоненти (HeroBanner/HomeSections) споживає
-   сама сторінка (`pages/Home.tsx`). `theme.pages.*` більше **не існує**.
+   сторінку; секційні компоненти (HeroBanner/HomeSections) споживає сама
+   сторінка (`pages/Home.tsx`). `theme.pages.*` не існує — тема впливає на
+   сторінку лише через `views` (п. 10).
 4. **Токени:** `applyTokens(theme.tokens)` розкладає палітру в CSS-змінні —
    тема не везе власний `theme.css`. З контракту v2.2 набір містить два
    не-кольорові типографічні ключі — `'font-sans'` і `'font-heading'`
@@ -383,13 +391,31 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts? }
    апстрім-фікси) або `--copy` (shadcn-модель: копія `src/` у `themes/<key>`,
    пакет знімається — повне володіння). Авторський dev-loop —
    `pnpm simplycms create theme <name>`.
-
-🔴 **Напрям v3 «theme views» затверджено 2026-08-17 (у коді ще НЕМАЄ):** тема
-зможе перевизначати view-шар пʼяти канонічних сторінок вітрини (типізовані
-view-model-и + slot-компоненти реквізитів + жорсткий conformance-гейт);
-ревізія рішень D3/D4 платформної спеки. Джерело правди —
-[`docs/superpowers/specs/2026-08-17-theme-contract-v3-views-design.md`](docs/superpowers/specs/2026-08-17-theme-contract-v3-views-design.md);
-порядок виконання — роадмап, трек A (після інкремента Б.2 треку редизайну).
+10. **`views` (контракт v3, трек A завершено 2026-08-18):** опційне
+    перевизначення view-шару пʼяти сторінок вітрини — `Home`, `Catalog`,
+    `CatalogSection`, `ProductDetail`, `Cart`. Кожна сторінка
+    `storefront-routes/src/pages/<Name>.tsx` — **container** (дані, стан,
+    збір view-model-а) і резолвить view хуком `useStorefrontViews`
+    (🔴 повертає МАПУ: `<views.X {...vm}/>`, бо компонент у локальній
+    змінній валить `react-hooks/static-components`); канонічні view —
+    `src/views/<Name>View.tsx`. View — ЧИСТА функція від vm (жодних запитів;
+    дозволені `useT`/`useThemeT`/`useThemeSettings`).
+11. **View-model-и — `@simplycms/objects/views`** (+ фікстури
+    `@simplycms/objects/views/fixtures`), 🔴 субшлях ПОЗА барелем: тип слота
+    вимагає `ComponentType` з react (структурний тип JSX не приймає, TS2786),
+    а барель обіцяє «без імпортів react/supabase». `react` там — опційний
+    **type-only peer**, T0 лишається без рантайм-залежностей.
+12. **Слоти реквізитів:** `vm.slots` — прибінджені ядром компоненти
+    (`src/views/slots/`), тема їх лише РОЗСТАВЛЯЄ; кожен малює маркер
+    `data-simplycms-requisite`. Імена й обовʼязковий склад —
+    `REQUIRED_REQUISITES` у `@simplycms/objects/views` (🔴 `Home` порожній,
+    `Cart` без `ClearCart` — обовʼязковим може бути лише безумовний слот).
+13. **Conformance:** `assertThemeViewsConformance` —
+    `@simplycms/themes/conformance` (субшлях, як `safeFontStylesheets`):
+    рендер заявлених темою view на фікстурах (`full`/`edge`) без БД + асерт
+    реквізитів на `full`. Рантайм-fallback НЕ робиться. Два канали запуску:
+    канонічний `pnpm simplycms theme:conformance <name>` (потребує `jsdom`
+    on-demand) і додатковий `themes/<name>/conformance.test.ts` (де є vitest).
 
 ## Environment Variables
 

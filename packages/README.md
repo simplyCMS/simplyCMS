@@ -15,14 +15,14 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/ui` | T3 | shadcn/ui component library |
 | `@simplycms/plugins` | T4 | Plugin system (HookRegistry, PluginLoader, PluginSlot) |
 | `@simplycms/plugin-sdk` | T2 | Plugin SDK: `definePlugin`, `validatePluginModule`, `usePluginT`, `usePluginTable` — єдина поверхня, дозволена плагіну (межа довіри, спека §7) |
-| `@simplycms/themes` | T4 | Theme system v2 (ThemeRegistry, `bootstrapThemes`, `applyTokens`, `validateThemeModule`) — теки `theme-system/` |
+| `@simplycms/themes` | T4 | Theme system v3 (ThemeRegistry, `bootstrapThemes`, `applyTokens`, `validateThemeModule` + `./conformance` — гейт заявлених темою `views`) — тека `theme-system/` |
 | `@simplycms/theme-solarstore` | T5 | Референс-тема повного контуру: manifest + tokens + components + messages (Фаза 4, npm) — тека `simplycms-theme-solarstore/` |
 | `@simplycms/plugin-faq` | T5 | Референс-плагін повного контуру: `plg_faq_items`, `/admin/faq`, слот, Zod-settings, i18n — тека `simplycms-plugin-faq/` |
 | `@simplycms/i18n` | T2 | Request-scoped translator (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
 | `@simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
 | `@simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, типи БД |
 | `@simplycms/storefront` | T2 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
-| `@simplycms/storefront-routes` | T5 | Канонічні SSR-сторінки + route-файли storefront/protected/auth/api |
+| `@simplycms/storefront-routes` | T5 | Route-файли storefront/protected/auth/api + канонічні сторінки: `pages/` (container-и) і `views/` (канонічні view + `views/slots/` — прибінджені реквізити, контракт тем v3) |
 | `@simplycms/admin-routes` | T5 | Route-файли адмінки (тонкі обгортки `@simplycms/admin`) |
 | `@simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS (`db:pull`/`db:diff`/`db:migrate`) |
 | `@simplycms/cart-ui` | T4 | Кошик: `CartButton`, `CartDrawer`, `CartItem`, `CartItemView` |
@@ -30,7 +30,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `@simplycms/checkout-ui` | T4 | Оформлення: форми контактів, доставки, оплати, отримувача + підсумок |
 | `@simplycms/profile-ui` | T4 | Профіль: адреси, отримувачі, аватар |
 | `@simplycms/reviews-ui` | T4 | Відгуки: `ProductReviews`, `StarRating` |
-| `@simplycms/cli` | — | CLI магазину (bin `simplycms`): `doctor`/`add`/`update`/`db:diff`. `host/` — канон host-файлів; виконується в магазині, поза тірами |
+| `@simplycms/cli` | — | CLI магазину (bin `simplycms`): `doctor`/`add`/`create`/`update`/`db:diff`/`theme:conformance`. `host/` — канон host-файлів; виконується в магазині, поза тірами |
 | `create-simplycms-store` | — | CLI-скаффолдер магазину (unscoped). Вбудований шаблон — джерело правди каркаса |
 
 > See `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` for the platform architecture (packages, routes, plugins, themes, migrations).
