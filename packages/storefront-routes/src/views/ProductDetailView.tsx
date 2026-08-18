@@ -1,6 +1,6 @@
 import type { ProductDetailViewModel } from '@simplycms/objects/views';
 import { ProductGallery } from '@simplycms/core/components/catalog/ProductGallery';
-import { ProductDetailBreadcrumbs } from './ProductDetailBreadcrumbs';
+import { StorefrontBreadcrumbs } from './StorefrontBreadcrumbs';
 import { ProductDetailInfo } from './ProductDetailInfo';
 import { ProductDetailSections } from './ProductDetailSections';
 
@@ -22,7 +22,7 @@ export function ProductDetailView({
 }: ProductDetailViewModel) {
   return (
     <div className="container mx-auto px-4 py-8">
-      <ProductDetailBreadcrumbs items={breadcrumbs} />
+      <StorefrontBreadcrumbs items={breadcrumbs} />
 
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Gallery */}

@@ -4,14 +4,11 @@ import { ChevronRight } from 'lucide-react';
 import type { BreadcrumbItem } from '@simplycms/objects/views';
 
 /**
- * Хлібні крихти вітрини. Ланка без `href` — поточна сторінка: рендериться
+ * Хлібні крихти вітрини — спільний підкомпонент канонічних view (картка
+ * товару, каталог, розділ). Ланка без `href` — поточна сторінка: рендериться
  * текстом, не лінком.
  */
-export function ProductDetailBreadcrumbs({
-  items,
-}: {
-  items: BreadcrumbItem[];
-}) {
+export function StorefrontBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
     <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
       {items.map((item, index) => (
