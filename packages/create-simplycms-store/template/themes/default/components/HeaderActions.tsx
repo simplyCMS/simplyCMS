@@ -22,9 +22,21 @@ import { useT } from '@simplycms/i18n';
 import { useThemeT } from '@simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
 
-/** Кругла кнопка-іконка правої групи: 40×40, біла, pill (спека §3). */
+/**
+ * Кругла кнопка-іконка правої групи: 40×40, біла, pill (спека §3).
+ *
+ * 🔴 200 мс — з виміру: іконкові кнопки референсу в тому ж кластері `all
+ * 200ms`, що й пункти навігації (спека §7.1), а не в дефолтному 150 мс.
+ *
+ * 🔴 Пара кольорів іконки — `muted-foreground` → `primary`, як у пунктів
+ * навігації. Це вимір, а не смак: референс дає #687282 у спокої і #334153
+ * під курсором (`motion.hover`, спека §7.3). Половинчаста правка (лишити
+ * спокій `foreground` #0a0a0a і додати лише ховер `primary`) зробила б
+ * кнопку під курсором СВІТЛІШОЮ за спокій — тобто ввела б дефект замість
+ * того, щоб прибрати розбіжність.
+ */
 const ICON_BUTTON =
-  'flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+  'flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground transition-all duration-200 ease-in-out hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /**
  * Права група хедера: пошук / акаунт / кошик / бургер.
