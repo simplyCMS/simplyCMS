@@ -28,11 +28,16 @@ export interface CatalogViewModel {
   slots: CatalogSlots;
 }
 
-/** Розділ каталогу як сторінка. */
+/**
+ * Розділ каталогу як сторінка.
+ *
+ * Р2/YAGNI: канонічний `CatalogSectionView` читає лише `name` (заголовок і
+ * підзаголовок опису) та `description`. `id`/`slug` тут навмисно немає —
+ * маршрутизацію й запит несе контейнер (`pages/CatalogSection.tsx`) зі
+ * свого контексту, а не з vm.
+ */
 export interface CatalogSectionInfo {
-  id: string;
   name: string;
-  slug: string;
   /** HTML-опис розділу під списком товарів; null — блок не рендериться. */
   description: string | null;
 }

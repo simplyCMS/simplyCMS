@@ -22,9 +22,7 @@ const sectionFull: ViewModelData<CatalogSectionViewModel> = {
   ],
   productCount: 12,
   section: {
-    id: 'section-1',
     name: 'Панелі',
-    slug: 'panels',
     description: '<p>Сонячні панелі для дому й бізнесу.</p>',
   },
 };
@@ -38,9 +36,7 @@ const sectionEdge: ViewModelData<CatalogSectionViewModel> = {
   ],
   productCount: 0,
   section: {
-    id: 'section-2',
     name: 'Порожня секція',
-    slug: 'empty',
     description: null,
   },
 };

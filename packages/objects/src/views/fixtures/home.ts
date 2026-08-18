@@ -67,7 +67,7 @@ const full: ViewModelData<HomeViewModel> = {
   hero: { banners: [banner] },
   featured: { products: [product, bareProduct] },
   newArrivals: { products: [product] },
-  sections: { items: [{ id: 'section-1', name: 'Панелі', slug: 'panels' }] },
+  sections: { items: [{ id: 'section-1' }] },
 };
 
 /** Порожній магазин: ні банерів, ні добірок, ні кореневих категорій. */

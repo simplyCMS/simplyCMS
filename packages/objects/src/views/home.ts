@@ -15,11 +15,15 @@ export interface HomeCollectionViewModel {
   products: ProductCardViewModel[];
 }
 
-/** Коренева категорія каталогу — заголовок секції головної. */
+/**
+ * Коренева категорія каталогу — заголовок секції головної.
+ *
+ * Р2/YAGNI: канонічний `HomeView` читає лише `id` (ключ ітерації й пропс
+ * слота `SectionCarousel`) — назву й посилання малює сам слот зі свого
+ * контексту (`HomeBindings`), не з vm. `name`/`slug` тут навмисно немає.
+ */
 export interface HomeSectionSummary {
   id: string;
-  name: string;
-  slug: string;
 }
 
 /** Перелік кореневих категорій, для яких ядро рендерить карусель товарів. */

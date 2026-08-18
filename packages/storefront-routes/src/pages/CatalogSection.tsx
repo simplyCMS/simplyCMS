@@ -73,9 +73,7 @@ export default function CatalogSectionPage({
         breadcrumbs={buildSectionBreadcrumbs(t, section.name)}
         productCount={productCount}
         section={{
-          id: section.id,
           name: section.name,
-          slug: section.slug,
           description: section.description ?? null,
         }}
         slots={catalogSlots}
