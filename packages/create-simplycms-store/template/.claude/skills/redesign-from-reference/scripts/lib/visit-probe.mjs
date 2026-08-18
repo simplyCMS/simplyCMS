@@ -35,9 +35,12 @@ export const SPARSE_CARDS_MAX = FANOUT_MIN_CHILDREN;
 /**
  * Проб сторінки, що виконується в БРАУЗЕРІ. Повертає рівно два сирі виміри —
  * інтерпретація вся в `detectVisitMismatch`.
+ * @param {string} [candidateType] тип, під який перевіряється сторінка
+ *   (`page.evaluate(probeFn, type)`): від нього залежить, чи виключається
+ *   батьківська сімʼя (див. коментар біля відсікань нижче)
  * @returns {{ jsonLdTypes: string[], cardLinks: number }}
  */
-export function browserVisitProbe() {
+export function browserVisitProbe(candidateType) {
   // Обхід JSON-LD довільної вкладеності: масив на верхньому рівні, `@graph`,
   // `itemListElement` → `item` → `@type`. Рекурсія по всіх значеннях, а не по
   // списку відомих ключів: схеми різняться між платформами, а глибина
@@ -74,12 +77,17 @@ export function browserVisitProbe() {
   // не глибина: на `/collections/all` → `/products/<slug>` і
   // `/product-category/<cat>` → `/product/<slug>` індекс і картки лежать на
   // ОДНАКОВІЙ глибині, і умова глибини обнуляла лічильник саме там, де він
-  // потрібен. 🔴 Дві сімʼї не рахуються НІКОЛИ, інакше сітку імітує оточення
-  // самої сторінки (спіймано ревʼю — картка товару відхилялась як «сітка»):
-  // `/` (корінь — не кущ: топ-рівневі `/cart`, `/blog`, прапорці мов спільного
-  // батька не мають) і батьківський префікс ПОТОЧНОЇ сторінки (сусіди-товари
-  // «схожі»/«нещодавно переглянуті» на картці `/products/<slug>`). Цільові
-  // кейси обидва відсікання зберігають: картки там під іншим префіксом.
+  // потрібен. 🔴 Відсікання сімей, щоб оточення сторінки не імітувало сітку
+  // (спіймано ревʼю — картка товару відхилялась як «сітка»): `/` (корінь — не
+  // кущ: топ-рівневі `/cart`, `/blog`, прапорці мов спільного батька не
+  // мають) — НІКОЛИ не рахується; батьківський префікс ПОТОЧНОЇ сторінки
+  // (сусіди-товари «схожі»/«нещодавно переглянуті» на картці
+  // `/products/<slug>`) — виключається ЛИШЕ для `product`-кандидата.
+  // 🔴 Для `listing` батьківську сімʼю рахувати МОЖНА і ТРЕБА (ревʼю Б.3):
+  // флет-каталог легітимно ділить префікс зі сторінкою — `/shop/mens` із
+  // картками `/shop/product-*` інакше давав би 0 карток і хибний
+  // `visit-mismatch`. Напрямок безпечний: більший лічильник для `listing`
+  // робить mismatch лише РІДШИМ (правило вимагає cardLinks НИЖЧЕ порогу).
   const strip = (p) => (p.length > 1 ? p.replace(/\/+$/, '') : p);
   const parent = (p) => p.slice(0, p.lastIndexOf('/') + 1);
   const here = strip(location.pathname);
@@ -98,7 +106,8 @@ export function browserVisitProbe() {
     const pathname = strip(parsed.pathname);
     if (pathname === here) continue; // лінк на саму себе — логотип чи крихти
     const prefix = parent(pathname);
-    if (prefix === '/' || prefix === hereParent) continue;
+    if (prefix === '/') continue;
+    if (candidateType === 'product' && prefix === hereParent) continue;
     const family = families.get(prefix);
     if (family) family.add(pathname);
     else families.set(prefix, new Set([pathname]));

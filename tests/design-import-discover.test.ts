@@ -233,6 +233,14 @@ describe('lib/classify.mjs — дискаверер v2: конфліктні с�
     expect(vtex.pageTypes.product.url).toBe(
       'https://a.com/omega-speedmaster/p',
     );
+
+    // Негативний контроль ревʼю Б.3: службовий односегментний хвіст `/p`
+    // (без дефісного слага перед ним) карткою не вважається.
+    const service = classifyLinks(
+      [{ url: 'https://a.com/help/p' }],
+      'https://a.com/',
+    );
+    expect(service.pageTypes.product).toBeUndefined();
   });
 
   it('кейс deo: /product із якорем «Product» лишається listing, картка бере product', () => {

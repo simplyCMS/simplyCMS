@@ -44,7 +44,9 @@ export async function visitCandidate(page, url, type, probeFn) {
     // дорендеровують на скролі, і знятий одразу після `goto` проб побачив би
     // нуль карток на цілком нормальному каталозі.
     await scrollThrough(page);
-    return { ok: true, title, probe: await page.evaluate(probeFn) };
+    // Тип їде аргументом у браузер: від нього залежить відсікання батьківської
+    // сімʼї карток (лише для `product`; ревʼю Б.3, флет-каталоги для `listing`).
+    return { ok: true, title, probe: await page.evaluate(probeFn, type) };
   } catch {
     return { ok: true, title };
   }

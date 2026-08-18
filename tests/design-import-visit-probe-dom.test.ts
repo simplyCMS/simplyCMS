@@ -214,17 +214,40 @@ describe('lib/visit-probe.mjs — оточення сторінки не імі�
 
   it('карусель «схожі товари» на картці не робить її сіткою', () => {
     // Сусіди лежать під тим самим батьківським префіксом, що й сама сторінка
-    // (`/products/`), тож це не чужий кущ, а її власне оточення.
+    // (`/products/`), тож це не чужий кущ, а її власне оточення. Відсікання
+    // батьківської сімʼї діє ЛИШЕ коли проб знає, що перевіряє `product`.
     at('/products/omega-speedmaster');
     render(
       ['a', 'b', 'c', 'd', 'e', 'f']
         .map((s) => card(`/products/related-${s}`))
         .join(''),
     );
-    const probe = browserVisitProbe();
+    const probe = browserVisitProbe('product');
 
     expect(probe.cardLinks).toBe(0);
     expect(detectVisitMismatch('product', probe)).toBe(false);
+  });
+
+  it('флет-каталог: батьківська сімʼя РАХУЄТЬСЯ для listing-кандидата', () => {
+    // Ревʼю Б.3: сторінка-категорія `/shop/mens`, а картки лежать флет під
+    // тим самим `/shop/` — до фікса виняток hereParent душив легітимну сітку
+    // (0 карток) і бланк `Product`-розмітка без ItemList давала хибний
+    // visit-mismatch для цілком коректного лістинга.
+    at('/shop/mens');
+    render(
+      ['a', 'b', 'c', 'd', 'e', 'f']
+        .map((s) => card(`/shop/product-${s}`))
+        .join('') +
+        '<script type="application/ld+json">{"@type":"Product"}</script>',
+    );
+    const probe = browserVisitProbe('listing');
+
+    expect(probe.cardLinks).toBe(6);
+    expect(detectVisitMismatch('listing', probe)).toBe(false);
+
+    // Той самий DOM очима product-кандидата: батьківська сімʼя лишається
+    // виключеною — захист картки від блоку «схожі товари» не вихолощено.
+    expect(browserVisitProbe('product').cardLinks).toBe(0);
   });
 
   it('сітка під ЧУЖИМ префіксом на тій самій сторінці рахується як була', () => {
