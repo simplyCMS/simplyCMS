@@ -9,29 +9,14 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT } from '@simplycms/i18n';
-import { useFormatPrice } from '@simplycms/react-query';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import { Separator } from '@simplycms/ui/separator';
 
 import { ProductGallery } from '@simplycms/core/components/catalog/ProductGallery';
-import {
-  ModificationSelector,
-  type ModificationStockInfo,
-} from '@simplycms/core/components/catalog/ModificationSelector';
+import type { ModificationStockInfo } from '@simplycms/core/components/catalog/ModificationSelector';
 import { ProductCharacteristics } from '@simplycms/core/components/catalog/ProductCharacteristics';
-import { useCart } from '@simplycms/core/hooks/useCart';
-import { useToast } from '@simplycms/core/hooks/use-toast';
-import {
-  Loader2,
-  ChevronRight,
-  ShoppingCart,
-  Heart,
-  Share2,
-} from 'lucide-react';
-import { StockDisplay } from '@simplycms/core/components/catalog/StockDisplay';
-import { PluginSlot } from '@simplycms/plugins/PluginSlot';
-import { ProductReviews } from '@simplycms/core/components/reviews/ProductReviews';
+import { Loader2, ChevronRight, Heart, Share2 } from 'lucide-react';
 import { usePriceType } from '@simplycms/core/hooks/usePriceType';
 import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
 import {
@@ -40,6 +25,22 @@ import {
   applyDiscount,
 } from '@simplycms/core/hooks/useDiscountedPrice';
 import type { Tables } from '@simplycms/supabase';
+import {
+  ProductAddToCart,
+  type AddToCartItem,
+} from '../views/slots/ProductAddToCart';
+import {
+  ProductStockAvailability,
+  ProductReviewsBlock,
+} from '../views/slots/ProductContentSlots';
+import { ProductModificationPicker } from '../views/slots/ProductModificationPicker';
+import {
+  ProductPluginAfter,
+  ProductPluginBadges,
+  ProductPluginBefore,
+} from '../views/slots/ProductPluginSlots';
+import { ProductPriceBlock } from '../views/slots/ProductPriceBlock';
+import { ProductStockBadge } from '../views/slots/ProductStockBadge';
 
 /** Елемент характеристики товару з інформацією про властивість та опцію */
 interface PropertyValueItem {
@@ -78,8 +79,6 @@ export default function ProductDetailPage({
     string,
     string | undefined
   >;
-  const { addItem } = useCart();
-  const { toast } = useToast();
   const { priceTypeId, defaultPriceTypeId } = usePriceType();
   const { data: discountGroups = [] } = useDiscountGroups();
   const discountCtx = useDiscountContext();
@@ -325,11 +324,6 @@ export default function ProductDetailPage({
     return Array.from(propMap.values());
   }, [product, selectedModId, modificationPropertyValues]);
 
-  // Форматування ціни — через конфіг магазину (locale/currency), а не
-  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. @simplycms/domain/money).
-  const formatPrice = useFormatPrice();
-
   // Build prices map for modifications (with discounts applied)
   const modPrices = useMemo(() => {
     const productPrices = (product?.product_prices ?? []) as PriceEntry[];
@@ -457,6 +451,32 @@ export default function ProductDetailPage({
       ? Math.round(((oldPrice - price) / oldPrice) * 100)
       : null;
 
+  // Позиція для кошика: контейнер лише збирає дані, запис і toast — у слоті
+  // `ProductAddToCart` (реквізит купівлі, який тема не може зламати).
+  const cartItem: AddToCartItem | null =
+    price === undefined
+      ? null
+      : {
+          productId: product.id,
+          modificationId: hasModifications ? selectedModId : null,
+          name: product.name,
+          modificationName: hasModifications ? selectedMod?.name : undefined,
+          price: price,
+          basePrice: basePrice || null,
+          discountData:
+            currentDiscountResult && currentDiscountResult.totalDiscount > 0
+              ? JSON.parse(
+                  JSON.stringify({
+                    appliedDiscounts: currentDiscountResult.appliedDiscounts,
+                    totalDiscount: currentDiscountResult.totalDiscount,
+                    basePrice: basePrice,
+                  }),
+                )
+              : null,
+          image: allImages[0],
+          sku: sku || undefined,
+        };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumbs */}
@@ -492,11 +512,8 @@ export default function ProductDetailPage({
 
         {/* Product info */}
         <div className="space-y-6">
-          {/* Plugin slot: before product info */}
-          <PluginSlot
-            name="product.detail.before"
-            context={{ product, selectedMod }}
-          />
+          {/* Реквізит: точка розширення плагінів перед блоком інформації */}
+          <ProductPluginBefore context={{ product, selectedMod }} />
 
           {/* Title and badges */}
           <div>
@@ -508,23 +525,9 @@ export default function ProductDetailPage({
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-3xl font-bold">{product.name}</h1>
               <div className="flex items-center gap-2 shrink-0 pt-1">
-                {stockStatus === 'on_order' && (
-                  <Badge
-                    variant="outline"
-                    className="border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
-                  >
-                    {t('product.onOrder')}
-                  </Badge>
-                )}
-                {!isInStock && stockStatus !== 'on_order' && (
-                  <Badge variant="secondary">{t('product.outOfStock')}</Badge>
-                )}
-                {/* Plugin slot: product badges */}
-                <PluginSlot
-                  name="product.card.badges"
-                  context={{ product, selectedMod }}
-                  wrapper={(children) => <>{children}</>}
-                />
+                {/* Реквізити: бейдж наявності + бейджі плагінів */}
+                <ProductStockBadge stockStatus={stockStatus} />
+                <ProductPluginBadges context={{ product, selectedMod }} />
               </div>
             </div>
             {sku && (
@@ -534,19 +537,8 @@ export default function ProductDetailPage({
             )}
           </div>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            {price !== undefined && (
-              <span className="text-4xl font-bold text-primary">
-                {formatPrice(price)}
-              </span>
-            )}
-            {oldPrice && price && oldPrice > price && (
-              <span className="text-xl text-muted-foreground line-through">
-                {formatPrice(oldPrice)}
-              </span>
-            )}
-          </div>
+          {/* Реквізит: ціна */}
+          <ProductPriceBlock price={price} oldPrice={oldPrice} />
 
           <Separator />
 
@@ -555,61 +547,19 @@ export default function ProductDetailPage({
             <p className="text-muted-foreground">{product.short_description}</p>
           )}
 
-          {/* Modification selector - only for products with modifications */}
-          {hasModifications && modifications.length > 0 && (
-            <ModificationSelector
-              modifications={modifications}
-              selectedId={selectedModId}
-              onSelect={handleModificationSelect}
-              formatPrice={formatPrice}
-              prices={modPrices}
-              stockByModification={modificationsStockData}
-            />
-          )}
+          {/* Реквізит: вибір модифікації */}
+          <ProductModificationPicker
+            modifications={hasModifications ? modifications : []}
+            selectedId={selectedModId}
+            onSelect={handleModificationSelect}
+            prices={modPrices}
+            stockByModification={modificationsStockData}
+          />
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="flex-1 min-w-50"
-              disabled={!isInStock || price === undefined}
-              onClick={() => {
-                if (price === undefined) return;
-
-                addItem({
-                  productId: product.id,
-                  modificationId: hasModifications ? selectedModId : null,
-                  name: product.name,
-                  modificationName: hasModifications
-                    ? selectedMod?.name
-                    : undefined,
-                  price: price,
-                  basePrice: basePrice || null,
-                  discountData:
-                    currentDiscountResult &&
-                    currentDiscountResult.totalDiscount > 0
-                      ? JSON.parse(
-                          JSON.stringify({
-                            appliedDiscounts:
-                              currentDiscountResult.appliedDiscounts,
-                            totalDiscount: currentDiscountResult.totalDiscount,
-                            basePrice: basePrice,
-                          }),
-                        )
-                      : null,
-                  image: allImages[0],
-                  sku: sku || undefined,
-                });
-
-                toast({
-                  title: t('product.addedToCart'),
-                  description: `${product.name}${hasModifications && selectedMod ? ` (${selectedMod.name})` : ''}`,
-                });
-              }}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              {t('product.addToCart')}
-            </Button>
+            {/* Реквізит: додавання в кошик */}
+            <ProductAddToCart item={cartItem} inStock={isInStock} />
             <Button size="lg" variant="outline">
               <Heart className="h-5 w-5" />
             </Button>
@@ -698,7 +648,8 @@ export default function ProductDetailPage({
         <h2 className="text-xl font-semibold mb-4">
           {t('product.availabilityInStores')}
         </h2>
-        <StockDisplay
+        {/* Реквізит: наявність по точках видачі */}
+        <ProductStockAvailability
           productId={hasModifications ? null : product.id}
           modificationId={hasModifications ? selectedModId : null}
         />
@@ -709,14 +660,12 @@ export default function ProductDetailPage({
       {/* Reviews section */}
       <section id="section-reviews" className="scroll-mt-16">
         <h2 className="text-xl font-semibold mb-4">{t('product.reviews')}</h2>
-        <ProductReviews productId={product.id} />
+        {/* Реквізит: відгуки */}
+        <ProductReviewsBlock productId={product.id} />
       </section>
 
-      {/* Plugin slot: after product content */}
-      <PluginSlot
-        name="product.detail.after"
-        context={{ product, selectedMod, propertyValues }}
-      />
+      {/* Реквізит: точка розширення плагінів після вмісту сторінки */}
+      <ProductPluginAfter context={{ product, selectedMod, propertyValues }} />
     </div>
   );
 }

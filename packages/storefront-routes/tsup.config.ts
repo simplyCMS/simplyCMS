@@ -10,6 +10,7 @@ export default defineConfig({
     'src/components/*.tsx',
     'src/shells/*.ts',
     'src/shells/*.tsx',
+    'src/views/slots/*.tsx',
   ],
   format: ['esm'],
   // 🔴 `target: esnext` обовʼязковий (знахідка пілота Task 3.1): за нижчого

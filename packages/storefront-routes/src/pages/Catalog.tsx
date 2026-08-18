@@ -4,26 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { useT } from '@simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
-import { Badge } from '@simplycms/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@simplycms/ui/select';
 import { Sheet, SheetContent, SheetTrigger } from '@simplycms/ui/sheet';
-import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
-import { FilterSidebar } from '@simplycms/core/components/catalog/FilterSidebar';
-import { ActiveFilters } from '@simplycms/core/components/catalog/ActiveFilters';
-import {
-  Loader2,
-  ChevronRight,
-  Filter,
-  LayoutGrid,
-  List,
-  FolderOpen,
-} from 'lucide-react';
+import { ChevronRight, Filter } from 'lucide-react';
 import {
   fetchModificationStockData,
   fetchModificationPropertyValues,
@@ -37,11 +19,20 @@ import {
   applyDiscount,
 } from '@simplycms/core/hooks/useDiscountedPrice';
 import { useProductRatings } from '@simplycms/core/hooks/useProductReviews';
-import { SsrProductGrid } from '../components/SsrProductGrid';
 import type { ProductListItem } from '../server/product-list-item';
 import type { Tables } from '@simplycms/supabase';
+import { CatalogFilters } from '../views/slots/CatalogFilters';
+import { CatalogProductGrid } from '../views/slots/CatalogProductGrid';
+import { CatalogFilterChips } from '../views/slots/CatalogSectionChips';
+import {
+  CatalogActiveFilters,
+  CatalogSortSelect,
+  CatalogViewModeToggle,
+  type CatalogSortOption,
+  type CatalogViewMode,
+} from '../views/slots/CatalogToolbarSlots';
 
-type SortOption = 'popular' | 'price_asc' | 'price_desc' | 'newest';
+type SortOption = CatalogSortOption;
 
 /** Тип значення фільтра в каталозі */
 type FilterValue = boolean | number | string[] | undefined;
@@ -67,7 +58,7 @@ export default function CatalogPage({
   const supabase = useSupabaseClient();
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [sortBy, setSortBy] = useState<SortOption>('popular');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<CatalogViewMode>('grid');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     null,
   );
@@ -558,44 +549,18 @@ export default function CatalogPage({
         <p className="text-muted-foreground">{t('catalog.subtitle')}</p>
       </div>
 
-      {/* Section chips */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Badge
-          variant={selectedSectionId === null ? 'default' : 'outline'}
-          className="cursor-pointer px-3 py-1.5 text-sm"
-          onClick={() => handleSectionClick(null)}
-        >
-          {t('catalog.allProducts')}
-        </Badge>
-        {sections?.map((section) => (
-          <Badge
-            key={section.id}
-            variant={selectedSectionId === section.id ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm gap-2"
-            onClick={() => handleSectionClick(section.id)}
-          >
-            {section.image_url ? (
-              <img
-                src={section.image_url}
-                alt=""
-                width={16}
-                height={16}
-                className="rounded object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <FolderOpen className="w-3 h-3" />
-            )}
-            {section.name}
-          </Badge>
-        ))}
-      </div>
+      {/* Реквізит: чипси розділів */}
+      <CatalogFilterChips
+        sections={sections ?? []}
+        selectedId={selectedSectionId}
+        onSelect={handleSectionClick}
+      />
 
       <div className="flex gap-8">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
-          <FilterSidebar
+          {/* Реквізит: фільтри (десктоп) */}
+          <CatalogFilters
             sectionId={selectedSectionId || undefined}
             filters={filters}
             onFilterChange={setFilters}
@@ -626,7 +591,8 @@ export default function CatalogPage({
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 overflow-y-auto">
-                  <FilterSidebar
+                  {/* Той самий реквізит у мобільній шторці */}
+                  <CatalogFilters
                     sectionId={selectedSectionId || undefined}
                     filters={filters}
                     onFilterChange={setFilters}
@@ -653,94 +619,28 @@ export default function CatalogPage({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <Select
-                value={sortBy}
-                onValueChange={(v) => setSortBy(v as SortOption)}
-              >
-                {/* 🔴 160px на мобільному, 180 від sm: при 390px повні 180 не лишали
-                    місця лічильнику товарів, і той обрізався до «4 т...». 160 — мінімум,
-                    у який ще вміщається найдовший підпис сортування
-                    («Price: low to high» = 114 px + падінги). */}
-                <SelectTrigger className="w-[160px] sm:w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="popular">
-                    {t('catalog.sort.popular')}
-                  </SelectItem>
-                  <SelectItem value="newest">
-                    {t('catalog.sort.newest')}
-                  </SelectItem>
-                  <SelectItem value="price_asc">
-                    {t('catalog.sort.priceAsc')}
-                  </SelectItem>
-                  <SelectItem value="price_desc">
-                    {t('catalog.sort.priceDesc')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="hidden sm:flex border rounded-md">
-                <Button
-                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="rounded-r-none"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="rounded-l-none"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
+              {/* Реквізити: сортування і перемикач вигляду */}
+              <CatalogSortSelect value={sortBy} onChange={setSortBy} />
+              <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
 
-          {/* Active filters badges */}
-          <ActiveFilters
+          {/* Реквізит: бейджі активних фільтрів */}
+          <CatalogActiveFilters
             filters={activeFiltersList}
             onRemoveFilter={handleRemoveFilter}
             onClearAll={handleClearAllFilters}
           />
 
-          {/* Products grid: спершу серверний список, далі — збагачений клієнтський */}
-          {!products && ssrProducts.length > 0 ? (
-            <SsrProductGrid items={ssrProducts} viewMode={viewMode} />
-          ) : productsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : filteredProducts.length > 0 ? (
-            <div
-              className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
-                  : 'flex flex-col gap-4'
-              }
-            >
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  rating={ratingsData?.[product.id]}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                {t('catalog.noResults')}
-              </p>
-              <Button variant="outline" onClick={() => setFilters({})}>
-                {t('catalog.resetFilters')}
-              </Button>
-            </div>
-          )}
+          {/* Реквізит: сітка товарів з усіма станами (SSR → клієнт) */}
+          <CatalogProductGrid
+            ssrItems={ssrProducts}
+            products={products ? filteredProducts : undefined}
+            isLoading={productsLoading}
+            viewMode={viewMode}
+            ratings={ratingsData}
+            onResetFilters={handleClearAllFilters}
+          />
         </div>
       </div>
     </div>

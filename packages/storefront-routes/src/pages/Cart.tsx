@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ChevronRight, ShoppingCart, Trash2 } from 'lucide-react';
+import { ChevronRight, ShoppingCart } from 'lucide-react';
 import { Button } from '@simplycms/ui/button';
 import {
   Card,
@@ -8,19 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@simplycms/ui/card';
-import { Separator } from '@simplycms/ui/separator';
 import { useCart } from '@simplycms/core/hooks/useCart';
-import { CartItem } from '@simplycms/core/components/cart/CartItem';
 import { useT } from '@simplycms/i18n';
-import { useFormatPrice } from '@simplycms/react-query';
+import {
+  CartCheckoutButton,
+  CartClearButton,
+  CartItemsList,
+} from '../views/slots/CartSlots';
+import { CartSummary } from '../views/slots/CartSummary';
 
 export default function Cart() {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items } = useCart();
   const t = useT();
-  // Форматування ціни — через конфіг магазину (locale/currency), а не
-  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. @simplycms/domain/money).
-  const formatPrice = useFormatPrice();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -61,23 +60,10 @@ export default function Cart() {
                 <CardTitle className="text-lg">
                   {t('cart.items', { count: items.length })}
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={clearCart}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('cart.clear')}
-                </Button>
+                <CartClearButton />
               </CardHeader>
               <CardContent>
-                {items.map((item) => (
-                  <CartItem
-                    key={`${item.productId}-${item.modificationId}`}
-                    item={item}
-                  />
-                ))}
+                <CartItemsList />
               </CardContent>
             </Card>
           </div>
@@ -90,33 +76,11 @@ export default function Cart() {
                   {t('cart.summary.title')}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {t('cart.summary.itemsTotal')}
-                  </span>
-                  <span>{formatPrice(totalPrice)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {t('cart.summary.shipping')}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {t('cart.summary.shippingHint')}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>{t('cart.summary.total')}</span>
-                  <span className="text-primary">
-                    {formatPrice(totalPrice)}
-                  </span>
-                </div>
+              <CardContent>
+                <CartSummary />
               </CardContent>
               <CardFooter>
-                <Button className="w-full" size="lg" asChild>
-                  <Link to="/checkout">{t('cart.summary.checkout')}</Link>
-                </Button>
+                <CartCheckoutButton />
               </CardFooter>
             </Card>
           </div>

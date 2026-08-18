@@ -3,6 +3,7 @@
 // причина — у `slots.ts`.
 
 export * from './slots';
+export * from './requisites';
 export * from './common';
 export * from './home';
 export * from './catalog';

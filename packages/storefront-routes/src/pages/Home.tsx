@@ -8,7 +8,7 @@ import {
   useNewProducts,
   useRootSections,
 } from './home/queries';
-import { SectionProductCarousel } from './home/SectionProductCarousel';
+import { HomeSectionCarousel } from '../views/slots/HomeSectionCarousel';
 import type { HomeProduct, HomeSection } from './home/types';
 
 export interface HomePageProps {
@@ -73,7 +73,7 @@ export default function HomePage({
       )}
 
       {rootSections?.map((section) => (
-        <SectionProductCarousel
+        <HomeSectionCarousel
           key={section.id}
           section={section}
           initialData={sectionProducts?.[section.id]}
