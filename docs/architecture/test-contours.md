@@ -129,6 +129,20 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    `storage-api v1.35.3` проти `v1.67.26`. Для перевірки власної логіки не
    блокер, але e2e ганяється не на прод-версіях — або підтягувати, або
    свідомо зафіксувати розбіжність.
+7. **Браузерні тести скіла редизайну мовчки скіпаються в CI** (додано
+   2026-08-17, інкремент Б.2). Чотири файли `tests/design-import-*` знімають
+   фікстурні HTML справжнім headless-Chromium через `describe.skipIf(!browser)`
+   із launch-probe у top-level await: інспекція кольорів, шрифт-вага, motion
+   (transitions/keyframes/reveal/hover/JS-детект) і discover-CLI. Жоден
+   workflow браузер не ставить (`pnpm test:e2e` у CI не ганяється за рішенням
+   власника, і `playwright install` немає в жодному job), тож у GitHub Actions
+   ці describe чесно скіпаються — з причиною в назві, але скіпаються. 🔴
+   Наслідок: **зелений `pnpm test` у CI не доводить, що інспекція взагалі
+   працює** — доводить лише те, що чисті модулі (`motion-detect`,
+   `inspection-version`, `merge`, `map-tokens`, генератор dev-стенда) не
+   зламані. Реальний доказ дає локальний прогін, де Chromium є. Закриття —
+   `playwright install chromium` у job `test` (дешево) або окремий job; поки
+   цього немає, регресія в семплері доїде до `main` зеленою.
 
 ## 5. Роль `src/` і план `apps/dev-store`
 
