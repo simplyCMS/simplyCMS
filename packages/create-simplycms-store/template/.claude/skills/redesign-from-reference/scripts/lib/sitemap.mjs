@@ -18,9 +18,14 @@
  * 🔴 Кандидат, чий візит НЕ ok, НЕ лишається «знайденим»: `classifyLinks`
  * перераховується — тип отримує наступного за score кандидата, якщо він є
  * (Р4). Цикл завершується, коли черговий прохід нікого не виключив
- * (стабілізація). 🔴 `excludedAny` ставиться лише коли виключення справді
- * НОВЕ (лінк реально зник із набору / пара ще не була заблокована) — інакше
- * повторне блокування тієї самої пари крутило б цикл вічно. Бюджет візитів (`maxVisits`) — спільний на ВСІ типи; кандидат
+ * (стабілізація). 🔴 Термінацію дають ДВА факти, і жоден із них — не гард
+ * `excludedAny`: кожна ітерація з провалом витрачає ≥1 візит, а на
+ * `visitsUsed >= maxVisits` усі `pending` фіналізуються як `visited: false`,
+ * тож наступний прохід має порожній `pending`; плюс множина пар
+ * (тип, pathname) скінченна. Перевірки «виключення справді НОВЕ» — захисні:
+ * `classifyLinks` заблоковану пару вдруге не пропонує, тож повторного
+ * блокування на нинішній семантиці не буває (доведено інструментацією в
+ * ревʼю). Бюджет візитів (`maxVisits`) — спільний на ВСІ типи; кандидат
  * понад бюджет лишається знайденим, але чесно `visited: false`.
  *
  * 🔴 `schemaVersion: 2` (інкремент Б.3, Р4/V-3): голе число `linksSeen`
@@ -55,7 +60,7 @@ const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
  *   }>,
  * }} params
  * @returns {Promise<{
- *   schemaVersion: 2, startUrl: string,
+ *   schemaVersion: typeof SCHEMA_VERSION, startUrl: string,
  *   links: Array<{ pathname: string, anchors: string[] }>,
  *   pageTypes: Record<string, { url: string, score: number, evidence: unknown[], visited: boolean, title?: string }>,
  *   unresolved: Array<{ type: string, reason: 'no-candidate' | 'visit-failed' | 'visit-mismatch' }>,

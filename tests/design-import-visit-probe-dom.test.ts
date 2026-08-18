@@ -123,9 +123,9 @@ describe('lib/visit-probe.mjs — browserVisitProbe: cardLinks', () => {
   });
 
   it('береться НАЙБІЛЬША сімʼя однопрефіксних лінків, а не їх сума', () => {
-    // Різнорідне іконкове меню (`/cart`, `/about`, `/blog`) ділить префікс `/`
-    // і дає групу з трьох; сітка каталогу — свою, з чотирьох. Лічильник має
-    // віддати чотири, а не сім: він міряє повторюваність, не кількість картинок.
+    // Іконкове меню (`/cart`, `/about`, `/blog`) ділить префікс `/`, а він не
+    // рахується взагалі (корінь — не кущ); сітка каталогу дає свою сімʼю з
+    // чотирьох. Лічильник міряє повторюваність, не кількість картинок.
     at('/collections/all');
     render(`
       ${card('/cart')}${card('/about')}${card('/blog')}
@@ -187,5 +187,54 @@ describe('lib/visit-probe.mjs — регрес: глибина сторінки 
 
     expect(probe.cardLinks).toBe(6);
     expect(detectVisitMismatch('product', probe)).toBe(true);
+  });
+});
+
+/**
+ * Регрес другого кола ревʼю: сімʼя однопрефіксних лінків не має рахувати
+ * ОТОЧЕННЯ самої сторінки. Обидва кейси нижче до фікса давали `cardLinks = 6`
+ * і відхиляли цілком коректну картку товару як «сітку» — дзеркальна копія
+ * того дефекту, який сімʼя лагодила для `listing`.
+ */
+describe('lib/visit-probe.mjs — оточення сторінки не імітує сітку', () => {
+  it('топ-рівневе іконкове меню з шести лінків не робить картку товару сіткою', () => {
+    // Префікс усіх цих pathname — `/`, тобто спільного БАТЬКА в них немає:
+    // це корінь, а не кущ карток.
+    at('/products/omega-speedmaster');
+    render(
+      ['/cart', '/wishlist', '/account', '/blog', '/about', '/help']
+        .map(card)
+        .join(''),
+    );
+    const probe = browserVisitProbe();
+
+    expect(probe.cardLinks).toBe(0);
+    expect(detectVisitMismatch('product', probe)).toBe(false);
+  });
+
+  it('карусель «схожі товари» на картці не робить її сіткою', () => {
+    // Сусіди лежать під тим самим батьківським префіксом, що й сама сторінка
+    // (`/products/`), тож це не чужий кущ, а її власне оточення.
+    at('/products/omega-speedmaster');
+    render(
+      ['a', 'b', 'c', 'd', 'e', 'f']
+        .map((s) => card(`/products/related-${s}`))
+        .join(''),
+    );
+    const probe = browserVisitProbe();
+
+    expect(probe.cardLinks).toBe(0);
+    expect(detectVisitMismatch('product', probe)).toBe(false);
+  });
+
+  it('сітка під ЧУЖИМ префіксом на тій самій сторінці рахується як була', () => {
+    // Контроль, що відсікання не вихолостило сигнал: картки під `/product/`
+    // з боку сторінки `/products/<slug>` — інший кущ, і він лишається видимим.
+    at('/products/omega-speedmaster');
+    render(
+      ['a', 'b', 'c', 'd', 'e', 'f'].map((s) => card(`/product/${s}`)).join(''),
+    );
+
+    expect(browserVisitProbe().cardLinks).toBe(6);
   });
 });
