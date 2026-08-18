@@ -156,3 +156,142 @@ describe('lib/classify.mjs — classifyLinks', () => {
     }
   });
 });
+
+/**
+ * Дискаверер v2 (інкремент Б.3, Фаза 1): розширені словники платформ і
+ * type-aware тайбрейк. Конфліктні сегменти (`product(s)`/`item(s)`/`tovar(y)`)
+ * мають ДВІ ролі — bare-форма це індекс каталогу, форма з дитиною це картка.
+ */
+describe('lib/classify.mjs — дискаверер v2: конфліктні сегменти і тайбрейк', () => {
+  it('bare /product → listing, /product/<slug> → product (лише URL-патерни)', () => {
+    const { pageTypes } = classifyLinks(
+      [
+        { url: 'https://a.com/product' },
+        { url: 'https://a.com/product/deo-x1' },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing.url).toBe('https://a.com/product');
+    expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
+  });
+
+  it('те саме для транслітерації: /tovary і /tovar → listing, /tovar/<slug> → product', () => {
+    const plural = classifyLinks(
+      [
+        { url: 'https://a.com/tovary' },
+        { url: 'https://a.com/tovary/futbolka' },
+      ],
+      'https://a.com/',
+    );
+    expect(plural.pageTypes.listing.url).toBe('https://a.com/tovary');
+    expect(plural.pageTypes.product.url).toBe('https://a.com/tovary/futbolka');
+
+    const singular = classifyLinks(
+      [{ url: 'https://a.com/tovar' }, { url: 'https://a.com/tovar/futbolka' }],
+      'https://a.com/',
+    );
+    expect(singular.pageTypes.listing.url).toBe('https://a.com/tovar');
+    expect(singular.pageTypes.product.url).toBe('https://a.com/tovar/futbolka');
+  });
+
+  it('сімʼя літерних маркерів p<id> у сегменті → product (Rozetka/Ecwid/Prom-legacy)', () => {
+    const rozetka = classifyLinks(
+      [{ url: 'https://a.com/p123456-slug' }],
+      'https://a.com/',
+    );
+    expect(rozetka.pageTypes.product.url).toBe('https://a.com/p123456-slug');
+
+    const prom = classifyLinks(
+      [{ url: 'https://a.com/nazva-tovaru-p123' }],
+      'https://a.com/',
+    );
+    expect(prom.pageTypes.product.url).toBe('https://a.com/nazva-tovaru-p123');
+  });
+
+  it('патерни платформ: product-category → listing, product-page і <slug>/p → product', () => {
+    const woo = classifyLinks(
+      [{ url: 'https://a.com/product-category/deodorants' }],
+      'https://a.com/',
+    );
+    expect(woo.pageTypes.listing.url).toBe(
+      'https://a.com/product-category/deodorants',
+    );
+    expect(woo.pageTypes.product).toBeUndefined();
+
+    const wix = classifyLinks(
+      [{ url: 'https://a.com/product-page/omega-speedmaster' }],
+      'https://a.com/',
+    );
+    expect(wix.pageTypes.product.url).toBe(
+      'https://a.com/product-page/omega-speedmaster',
+    );
+
+    const vtex = classifyLinks(
+      [{ url: 'https://a.com/omega-speedmaster/p' }],
+      'https://a.com/',
+    );
+    expect(vtex.pageTypes.product.url).toBe(
+      'https://a.com/omega-speedmaster/p',
+    );
+  });
+
+  it('кейс deo: /product із якорем «Product» лишається listing, картка бере product', () => {
+    // Регрес живого прогону №2: індекс колекції забирав тип `product` через
+    // якір «Product» + тайбрейк «коротший виграє».
+    const { pageTypes, unresolved } = classifyLinks(
+      [
+        { url: 'https://a.com/product', anchors: ['Product'] },
+        { url: 'https://a.com/product/deo-x1', anchors: ['Deo X1 Deodorant'] },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing.url).toBe('https://a.com/product');
+    expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
+    expect(unresolved.map((u) => u.type)).not.toContain('listing');
+  });
+
+  it('російськомовні якорі каталогу → listing (кирилиця проходить normalizeText)', () => {
+    const categories = classifyLinks(
+      [{ url: 'https://a.ru/kategorii', anchors: ['Категории'] }],
+      'https://a.ru/',
+    );
+    expect(categories.pageTypes.listing).toMatchObject({
+      url: 'https://a.ru/kategorii',
+      score: 2,
+      evidence: [{ anchorMatch: 'Категории', source: 'anchor' }],
+    });
+
+    const assortment = classifyLinks(
+      [{ url: 'https://a.ru/razdel', anchors: ['Ассортимент'] }],
+      'https://a.ru/',
+    );
+    expect(assortment.pageTypes.listing.url).toBe('https://a.ru/razdel');
+
+    // `товары` містить `ы` — контроль діапазону `а-я` у фільтрі normalizeText.
+    const goods = classifyLinks(
+      [{ url: 'https://a.ru/spisok', anchors: ['Товары'] }],
+      'https://a.ru/',
+    );
+    expect(goods.pageTypes.listing.url).toBe('https://a.ru/spisok');
+  });
+
+  it('НЕГАТИВНИЙ КОНТРОЛЬ Р2: без type-aware тайбрейка product забрав би мілкий /product', () => {
+    // listing закритий окремим `/catalog` (score 4), тож на рівному балі 2
+    // змагаються лише пари типу product: мілка `/product` і глибока картка.
+    // Зі старим компаратором (`a.pathname.length - b.pathname.length`) виграла
+    // б мілка — тест червоніє при відкаті Р2.
+    const { pageTypes } = classifyLinks(
+      [
+        { url: 'https://a.com/catalog', anchors: ['Catalog'] },
+        { url: 'https://a.com/product', anchors: ['Product'] },
+        { url: 'https://a.com/product/deo-x1', anchors: ['Deo X1'] },
+      ],
+      'https://a.com/',
+    );
+    expect(pageTypes.listing).toMatchObject({
+      url: 'https://a.com/catalog',
+      score: 4,
+    });
+    expect(pageTypes.product.url).toBe('https://a.com/product/deo-x1');
+  });
+});

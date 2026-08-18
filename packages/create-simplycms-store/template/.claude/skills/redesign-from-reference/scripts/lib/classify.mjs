@@ -8,7 +8,7 @@
  *
  * Шкала (Р3): URL-патерн +2, текст якоря +2, поріг ≥2 — кожен сигнал сам
  * закриває тип. Вибір — глобально-жадібний по всіх парах (type,url):
- * стабільне сортування (score↓ → коротший pathname → лексикографічно),
+ * стабільне сортування (score↓ → type-aware глибина `depthKey` → лексикографічно),
  * перший непроконфліктований прохід закриває і тип, і URL — програвший тип
  * бере наступну свою пару нижче в списку (перепідбір — побічний ефект
  * одного проходу, не окремий крок). Зіставлення патернів/термінів —
@@ -33,6 +33,22 @@ export function normalizePathname(input) {
   pathname = pathname.replace(/\/index\.html?$/i, '/');
   if (pathname.length > 1) pathname = pathname.replace(/\/+$/, '');
   return pathname || '/';
+}
+
+/**
+ * Type-aware компонент довжини для тайбрейка при рівному балі (Р2, Б.3):
+ * картка товару має slug, тож для `product` виграє ГЛИБШИЙ pathname, для решти
+ * типів — коротший, як було. 🔴 Це ключ ОДНОГО елемента, а не попарна умова
+ * «якщо обидва product»: попарна версія не транзитивна (дає цикл A<B<C<A), і
+ * поведінка `Array#sort` на ній стає невизначеною. Наслідок, який і лагодить
+ * кейс deo: при рівному балі product-пари йдуть ПЕРЕД усіма іншими (відʼємний
+ * ключ < додатного), а між собою — глибша першою; тому картка
+ * `/product/<slug>` закриває тип `product` РАНІШЕ, ніж розглядається мілкий
+ * `/product`, і той дістається listing.
+ * @param {{type: string, pathname: string}} pair
+ */
+function depthKey(pair) {
+  return pair.type === 'product' ? -pair.pathname.length : pair.pathname.length;
 }
 
 /**
@@ -102,11 +118,11 @@ export function classifyLinks(links, startUrl) {
     }
   }
 
-  // Стабільне сортування (score↓ → коротший pathname → лексикографічно) + жадібний вибір.
+  // Стабільне сортування (score↓ → depthKey↑ → лексикографічно) + жадібний вибір.
   pairs.sort(
     (a, b) =>
       b.score - a.score ||
-      a.pathname.length - b.pathname.length ||
+      depthKey(a) - depthKey(b) ||
       a.pathname.localeCompare(b.pathname),
   );
   for (const pair of pairs) {
