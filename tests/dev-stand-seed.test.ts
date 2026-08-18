@@ -9,7 +9,9 @@
  * працює, тож рядок із `section_id = null` ламав би повторний накат);
  * (г) екранування лапок, зворотних слешів, юнікоду, NULL, чисел, boolean,
  * jsonb і дат; (д) генерація детермінована — двічі байт-у-байт, і не
- * залежить від порядку вхідних рядків.
+ * залежить від порядку вхідних рядків; (е) дедуп теж за `id`, тож два
+ * легальні рядки з однаковим природним ключем обидва доїжджають у вивід
+ * разом зі своїми дітьми.
  *
  * Живої БД тест не потребує: під ним чиста функція над фікстурою.
  */
@@ -132,9 +134,52 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
     expect(emitted).toEqual(FK_TABLE_ORDER.filter((t) => emitted.includes(t)));
   });
 
-  it('allowlist не має таблиці поза відомим FK-порядком', () => {
-    const tables = TABLE_SPECS.map((spec) => spec.table);
-    expect([...tables].sort()).toEqual([...FK_TABLE_ORDER].sort());
+  it('склад І ПОРЯДОК allowlist-у збігаються з FK-порядком', () => {
+    // 🔴 Без `.sort()` з обох боків: посортовані множини стерегли б лише
+    // склад, і перестановка спек, що ламає FK, лишалася б зеленою. Цей асерт
+    // покриває всі вісім таблиць — незалежно від того, скільки з них у
+    // фікстурі (кейс вище бачить лише ЕМІТОВАНІ).
+    expect(TABLE_SPECS.map((spec) => spec.table)).toEqual(FK_TABLE_ORDER);
+  });
+});
+
+/** Тіло `insert`-блоку однієї таблиці — щоб не плутати PK з FK у сусідів. */
+function blockOf(sql: string, table: string): string {
+  const block = sql
+    .split('insert into public.')
+    .find((part) => part.startsWith(`${table} (`));
+  return block ?? '';
+}
+
+describe('dev-stand: дедуп — за id, а не за природним ключем', () => {
+  const sql = generateSeedSql(SAMPLE_DATASET);
+
+  it('дві глобальні властивості з одним слагом — обидві у виводі', () => {
+    // Схема це ДОЗВОЛЯЄ: unique (section_id, slug) під NULLS DISTINCT два
+    // NULL-и різними не вважає, а адмінка унікальність не перевіряє взагалі.
+    const parents = blockOf(sql, 'section_properties');
+    expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_ID);
+    expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_TWIN_ID);
+    expect(parents.match(/'warranty'/g)?.length).toBe(2);
+  });
+
+  it('дочірній рядок не осиротів — його property_id є серед батьків', () => {
+    expect(blockOf(sql, 'product_property_values')).toContain(
+      SAMPLE_IDS.GLOBAL_PROPERTY_TWIN_ID,
+    );
+    expect(blockOf(sql, 'section_properties')).toContain(
+      SAMPLE_IDS.GLOBAL_PROPERTY_TWIN_ID,
+    );
+  });
+
+  it('дублікат за id все одно схлопується — сітка лишилась', () => {
+    const [first] = SAMPLE_DATASET.section_properties;
+    const doubled = {
+      ...SAMPLE_DATASET,
+      section_properties: [...SAMPLE_DATASET.section_properties, first],
+    };
+    const parents = blockOf(generateSeedSql(doubled), 'section_properties');
+    expect(parents.match(new RegExp(first.id, 'g'))?.length).toBe(1);
   });
 });
 

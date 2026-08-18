@@ -7,9 +7,7 @@
  * (`tests/dev-stand-seed.test.ts`), а дампер лишається тонким.
  *
  * Ідемпотентність: кожен блок — один `insert ... on conflict (id) do update
- * set ...`, тож повторний накат ані дублює рядки, ані падає. Арбітр — саме
- * `id` (а не природний ключ): NULLABLE-колонки природних ключів під
- * NULLS DISTINCT арбітром не працюють — обґрунтування в `table-specs.mjs`.
+ * set ...`. Чому арбітр саме `id`, а не природний ключ, — `table-specs.mjs`.
  */
 
 import {
@@ -51,9 +49,10 @@ function sanitizeRow(spec, row) {
   return clean;
 }
 
-/** Стабільний ключ сортування/дедупу за колонками унікального ключа. */
-function conflictKeyOf(spec, row) {
-  return JSON.stringify(spec.conflictKey.map((column) => row[column] ?? null));
+/** Ключ сортування: природний ключ + `id` тайбрейкером (ключ не унікальний). */
+function sortKeyOf(spec, row) {
+  const natural = spec.conflictKey.map((column) => row[column] ?? null);
+  return JSON.stringify([...natural, row.id ?? null]);
 }
 
 /**
@@ -83,17 +82,23 @@ function orderSelfParent(rows, column) {
 }
 
 /**
- * Детермінізація: санітизація → дедуп за природним ключем (два рядки з одним
- * ключем в одному `values` вбили б унікальний констрейнт таблиці) →
- * сортування за тим самим ключем → топологія самопосилання.
+ * Детермінізація: санітизація → дедуп за `id` → сортування за природним
+ * ключем із `id` тайбрейкером → топологія самопосилання.
+ *
+ * 🔴 Дедуп саме за `id` (арбітр `on conflict` — він же): схема ДОЗВОЛЯЄ два
+ * глобальні `section_properties` (`section_id = null`) з однаковим слагом —
+ * ані NULLS DISTINCT, ані адмінка їх не забороняють, — тож дедуп за природним
+ * ключем мовчки викидав би другий рядок разом із валідністю FK у дітей. За
+ * `id` він безпечний (у джерелі це PK), а ключ тепер сортує лише в парі з ним.
  */
 function prepareRows(spec, rows) {
-  const byKey = new Map();
+  const byId = new Map();
   for (const row of rows) {
     const clean = sanitizeRow(spec, row);
-    byKey.set(conflictKeyOf(spec, clean), clean);
+    byId.set(clean.id, clean);
   }
-  const sorted = [...byKey.entries()]
+  const sorted = [...byId.values()]
+    .map((row) => [sortKeyOf(spec, row), row])
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([, row]) => row);
   return spec.selfParent ? orderSelfParent(sorted, spec.selfParent) : sorted;

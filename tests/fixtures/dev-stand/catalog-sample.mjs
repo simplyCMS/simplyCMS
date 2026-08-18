@@ -17,6 +17,13 @@
  * 🔴 `section_properties` містить рядок із `section_id: null` — глобальна
  * властивість, яку створює адмінка. Саме на ньому ламався `on conflict` за
  * природним ключем: unique-констрейнт NULLS DISTINCT на NULL не арбітр.
+ *
+ * 🔴 Глобальних властивостей ДВІ, і слаг у них ОДИН (`warranty`): схема це
+ * дозволяє (NULLS DISTINCT два NULL-и різними не вважає), адмінка теж —
+ * `Properties.tsx` вставляє голим `.insert([data])` без перевірки. Близнюк
+ * стоїть ПЕРЕД оригіналом навмисно: під дедупом за природним ключем last-wins
+ * викинув би саме його, а на нього посилається дочірній
+ * `product_property_values` — осиротіння видно тестом, а не лише зникнення.
  */
 
 const ROOT_ID = '11111111-1111-4111-8111-111111111111';
@@ -24,6 +31,7 @@ const CHILD_ID = '22222222-2222-4222-8222-222222222222';
 const PRODUCT_ID = '33333333-3333-4333-8333-333333333333';
 const PROPERTY_ID = '44444444-4444-4444-8444-444444444444';
 const GLOBAL_PROPERTY_ID = '77777777-7777-4777-8777-777777777777';
+const GLOBAL_PROPERTY_TWIN_ID = '88888888-8888-4888-8888-888888888888';
 
 export const SAMPLE_DATASET = {
   sections: [
@@ -70,6 +78,20 @@ export const SAMPLE_DATASET = {
       created_at: new Date('2024-01-01T00:00:00.000Z'),
     },
     {
+      // Близнюк: той самий слаг і той самий (NULL) section_id, інший рядок.
+      id: GLOBAL_PROPERTY_TWIN_ID,
+      section_id: null,
+      name: 'Гарантія (розширена)',
+      slug: 'warranty',
+      property_type: 'text',
+      is_required: false,
+      is_filterable: false,
+      has_page: false,
+      sort_order: 30,
+      options: null,
+      created_at: new Date('2024-01-01T00:00:00.000Z'),
+    },
+    {
       // Глобальна властивість адмінки: секції не належить (section_id = null).
       id: GLOBAL_PROPERTY_ID,
       section_id: null,
@@ -112,6 +134,16 @@ export const SAMPLE_DATASET = {
       numeric_value: '450.0000',
       option_id: null,
     },
+    {
+      // Дитина близнюка: якби генератор викинув GLOBAL_PROPERTY_TWIN_ID,
+      // цей рядок лишився б у виводі осиротілим і повалив накат по FK.
+      id: '99999999-9999-4999-8999-999999999999',
+      product_id: PRODUCT_ID,
+      property_id: GLOBAL_PROPERTY_TWIN_ID,
+      value: '10 років',
+      numeric_value: null,
+      option_id: null,
+    },
   ],
   product_prices: [
     {
@@ -130,4 +162,5 @@ export const SAMPLE_IDS = {
   PRODUCT_ID,
   PROPERTY_ID,
   GLOBAL_PROPERTY_ID,
+  GLOBAL_PROPERTY_TWIN_ID,
 };
