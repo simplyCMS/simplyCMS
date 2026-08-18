@@ -1,16 +1,14 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-} from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import { ThemeRegistry } from './ThemeRegistry';
+import { ThemeContext } from './theme-context';
+import { resolveDefaultThemeSettings } from './theme-settings';
 import type { ThemeContextType, ThemeModule, ThemeRecord } from './types';
 
-const ThemeContext = createContext<ThemeContextType | null>(null);
+// Сам обʼєкт контексту й хуки читання живуть у `theme-context.ts` (модуль без
+// supabase) — тут лише провайдер. Ре-експорт нижче зберігає публічний шлях
+// `@simplycms/themes/ThemeContext` для наявних імпортів.
+export { useTheme, useThemeSettings } from './theme-context';
 
 const DEFAULT_THEME_NAME = 'default';
 
@@ -56,15 +54,10 @@ export function ThemeProvider({
         setActiveTheme(theme);
         setThemeName(name);
 
-        // Злиття default settings з збереженими.
+        // Злиття default settings зі збереженими.
         // Контракт v2: схема налаштувань лежить у `module.settings`,
         // а не в маніфесті (маніфест — лише паспорт теми).
-        const defaultSettings: Record<string, unknown> = {};
-        if (theme.settings) {
-          for (const [key, setting] of Object.entries(theme.settings)) {
-            defaultSettings[key] = setting.default;
-          }
-        }
+        const defaultSettings = resolveDefaultThemeSettings(theme.settings);
 
         const savedSettings = record?.settings || {};
         setThemeSettings({ ...defaultSettings, ...savedSettings });
@@ -163,17 +156,4 @@ export function ThemeProvider({
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
-}
-
-export function useTheme(): ThemeContextType {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-}
-
-export function useThemeSettings<T = unknown>(key: string): T | undefined {
-  const { themeSettings } = useTheme();
-  return themeSettings[key] as T | undefined;
 }
