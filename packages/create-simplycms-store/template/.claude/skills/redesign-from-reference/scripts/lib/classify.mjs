@@ -5,10 +5,13 @@
  * АГРЕГОВАНІ тексти лінка (textContent + aria-label + title + img[alt] —
  * іконковий лінк без видимого тексту читається саме звідси, Р3b).
  *
- * Джерел evidence три: URL-патерни й тексти якорів (словники —
- * `classify-terms.mjs`) плюс структурний fan-out (`classify-structure.mjs`,
- * інкремент Б.3). Збірка й ранжування пар (тип, url) — `classify-pairs.mjs`;
- * тут лишається сама стратегія вибору.
+ * Джерел evidence три — рівно стільки ж значень має `source`: URL-патерни
+ * (`'url'`) й тексти якорів (`'anchor'`; словники — `classify-terms.mjs`)
+ * плюс структурний fan-out (`'structure'`, `classify-structure.mjs`,
+ * інкремент Б.3). 🔴 Окремого `'aria'` НЕМАЄ: aria-label агрегується в
+ * `anchors` ще на зборі лінків (вище), тож іконковий лінк без видимого
+ * тексту доводиться звичайним `'anchor'`. Збірка й ранжування пар
+ * (тип, url) — `classify-pairs.mjs`; тут лишається сама стратегія вибору.
  *
  * Шкала (Р3): кожен сигнал +2, поріг ≥2 — кожен сигнал сам закриває тип.
  * Вибір — глобально-жадібний по всіх парах (type,url): перший
@@ -65,7 +68,7 @@ export function groupLinksByPathname(links, startUrl) {
  * @param {Map<string, Set<string>>} [blockedPairs] пари (pathname → типи), уже
  *   спростовані контент-пробом візиту (`lib/sitemap.mjs`); дефолт — порожньо
  * @returns {{
- *   pageTypes: Record<string, { url: string, score: number, evidence: Array<{urlPattern?: string, anchorMatch?: string, structural?: string, count?: number, source: 'anchor'|'aria'|'url'|'structure'}> }>,
+ *   pageTypes: Record<string, { url: string, score: number, evidence: Array<{urlPattern?: string, anchorMatch?: string, structural?: string, count?: number, source: 'url'|'anchor'|'structure'}> }>,
  *   unresolved: Array<{ type: string, reason: 'no-candidate' }>,
  * }}
  */
