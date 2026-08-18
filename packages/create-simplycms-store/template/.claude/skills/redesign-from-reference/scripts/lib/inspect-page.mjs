@@ -16,11 +16,18 @@ import {
   VIEWPORT_HEIGHT,
 } from './sample.mjs';
 
-// 2 (Фаза 1 інкремента Б.2) — додано верхньорівневу секцію `motion`. 🔴 Це
-// НЕ та сама версія, що `SCHEMA_VERSION` у `lib/map.mjs`: там версіонується
-// `tokens-proposal.json` (свій лічильник, уже 2 після Р7 інкремента Б.3), і
-// рухаються вони незалежно — motion у токени не мапиться взагалі.
-const SCHEMA_VERSION = 2;
+// 2 (Фаза 1 інкремента Б.2) — додано верхньорівневу секцію `motion`.
+// 3 (інкремент Б.3) — форма `motion` ЗМІНИЛАСЬ: `jsDrivenSuspected` розширив
+// домен до `boolean | 'unknown'`, додались `revealSampled`/`revealRoot`. Бамп
+// не косметичний: у файлі v2 `jsDrivenSuspected: false` при порожньому
+// `reveal` означав «нема на чому міряти», а скіл велить читати `false` як
+// «перевірено, підозри немає» — без бампа гейт пропускав би таку інспекцію
+// мовчки.
+// 🔴 Лічильників версій у інструменті ТРИ, і плутати їх не можна: тут —
+// `inspection.json` (вхід мапінгу), `lib/map.mjs` — `tokens-proposal.json`
+// (вихід мапінгу), `lib/sitemap.mjs` — `sitemap-proposal.json` (вихід
+// дискаверера). Рухаються незалежно: motion у токени не мапиться взагалі.
+const SCHEMA_VERSION = 3;
 
 /** Порівняння світлого/темного семплу за фоном+текстом — чесний `darkDetected`. */
 function paletteSignature(colors) {

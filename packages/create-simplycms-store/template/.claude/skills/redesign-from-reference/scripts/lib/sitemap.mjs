@@ -24,14 +24,22 @@
  * понад бюджет лишається знайденим, але чесно `visited: false`.
  *
  * 🔴 `schemaVersion: 2` (інкремент Б.3, Р4/V-3): голе число `linksSeen`
- * ЗАМІНЕНО масивом `links` — саме те, що бачив класифікатор. Без нього
- * діагностика помилки класифікації вимагала власного зонда: з пропозиції не
- * було видно ні які pathname зібрано, ні з якими якорями.
+ * ЗАМІНЕНО масивом `links` — саме те, що бачив класифікатор, включно зі
+ * стартовим pathname (той є кандидатом навіть без вхідних лінків на себе).
+ * Без цього поля діагностика помилки класифікації вимагала власного зонда: з
+ * пропозиції не було видно ні які pathname зібрано, ні з якими якорями.
  */
 import { classifyLinks, normalizePathname } from './classify.mjs';
 import { URL_PATTERNS } from './classify-terms.mjs';
 import { detectVisitMismatch } from './visit-probe.mjs';
 import { summarizeLinks } from './sitemap-links.mjs';
+
+// 2 (інкремент Б.3, Р4/V-3) — голе число `linksSeen` ЗАМІНЕНО масивом `links`.
+// 🔴 Це ТРЕТІЙ незалежний лічильник версій інструмента, і плутати їх не можна:
+// `lib/inspect-page.mjs` версіонує `inspection.json` (вхід інспекції),
+// `lib/map.mjs` — `tokens-proposal.json` (вихід мапінгу), тут —
+// `sitemap-proposal.json` (вихід дискаверера). Рухаються незалежно.
+const SCHEMA_VERSION = 2;
 
 /** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник Фази 2. */
 const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
@@ -122,9 +130,9 @@ export async function buildSitemapProposal({
   );
 
   return {
-    schemaVersion: 2,
+    schemaVersion: SCHEMA_VERSION,
     startUrl,
-    links: summarizeLinks(links),
+    links: summarizeLinks(links, startUrl),
     pageTypes: finalPageTypes,
     unresolved,
   };

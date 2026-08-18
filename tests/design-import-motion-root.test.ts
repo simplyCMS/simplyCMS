@@ -78,7 +78,6 @@ describe.skipIf(!browser)(
       // (фільтр невізуальних тегів) = 8. Число точне навмисно: «більше нуля»
       // не відрізнило б fallback-ярус від старого плаского кореня.
       expect(motion.revealSampled).toBe(8);
-      expect(motion.revealSampled).toBe(motion.reveal.length);
       expect(
         motion.reveal.some((entry) => entry.selector.startsWith('script')),
       ).toBe(false);

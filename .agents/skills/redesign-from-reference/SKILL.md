@@ -148,7 +148,7 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> \
 ```
 
 Дає скріншоти `desktop.png`/`tablet.png`/`mobile.png` (1440/768/390) та
-`inspection.json` (`schemaVersion: 2`): кольори з частотами й площею, шрифти
+`inspection.json` (`schemaVersion: 3`): кольори з частотами й площею, шрифти
 (h1-h3 vs body), кластери `border-radius`, тіні, шкала відступів,
 `fontStylesheets`, `darkDetected`, `sampleViewport`, `radiusDropped` — і
 секцію **`motion`** (нижче).
@@ -189,6 +189,13 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> \
 | `motion.hover` | `{ entries: [{ index, selector, changes: [{ property, from, to }] }], skipped }` — дельти `background-color`/`border-color`/`box-shadow`/`color`/`transform` під курсором; `skipped` — вузли, до яких ховер не дійшов |
 | `motion.jsLibraries` | `{ detected, markers }` — GSAP / Framer Motion / Lottie / anime.js за `script src`, window-глобалами і `data-*` |
 | `motion.jsDrivenSuspected` | **три стани**: `true` — reveal є, а ні transitions по opacity/transform, ні `@keyframes` його не пояснюють (рух крутить JS); `false` — reveal виміряно й механізм видно; `'unknown'` — вибірки не було взагалі |
+
+🔴 **`schemaVersion: 3` — саме через ці три поля.** Інспекція, знята до
+інкремента Б.3, має версію `2`, у ній `jsDrivenSuspected` завжди `boolean` і
+немає ні `revealSampled`, ні `revealRoot` — тобто «нема на чому міряти» там
+нерозрізненне з «перевірено, підозри немає». `map-tokens.mjs` такі файли
+читає (motion у токени не йде), але **motion зі старої інспекції не читай**:
+перезніми сторінку актуальним `inspect.mjs`.
 
 🔴 **Нуль вибірки — це НЕ «не підозрюється».** `revealSampled: 0` разом із
 `jsDrivenSuspected: 'unknown'` означає, що reveal-канал на цій сторінці не

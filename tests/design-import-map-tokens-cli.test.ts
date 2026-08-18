@@ -68,47 +68,56 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
     expect(proposal.tokens.background).toBeDefined();
   });
 
-  // Р2: капчер підняв версію `inspection.json` до 2 (секція `motion`), але
-  // токени НЕ розширювались — мапінг споживає обидві версії однаково, а
-  // motion ігнорує. Обидва кейси нижче — про гейт версії, не про мапінг.
-  it('schemaVersion 2 (з motion) читається так само, як 1', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'map-tokens-v2-'));
-    const inspectionPath = join(dir, 'inspection.json');
-    writeFileSync(
-      inspectionPath,
-      JSON.stringify({
-        ...sampleInspection,
-        schemaVersion: 2,
-        motion: {
-          transitions: [
-            { property: 'opacity', durationMs: 600, easing: 'ease', count: 2 },
-          ],
-          keyframes: { names: ['fade-in'], inaccessibleSheets: 0 },
-          reveal: [],
-          revealSampled: 0,
-          revealRoot: 'body-fallback',
-          jsLibraries: { detected: [], markers: [] },
-          // Нульова вибірка — саме `'unknown'` (V-5): фікстура має лишатись
-          // формою реального виводу капчера, а не історичною.
-          jsDrivenSuspected: 'unknown',
-        },
-      }),
-      'utf8',
-    );
+  // Р2: капчер підняв версію `inspection.json` до 2 (секція `motion`), Б.3 —
+  // до 3 (форма `motion` змінилась), але токени НЕ розширювались: мапінг
+  // споживає всі три версії однаково, а motion ігнорує. Кейси нижче — про
+  // гейт версії, не про мапінг.
+  it.each([2, 3])(
+    'schemaVersion %i (з motion) читається так само, як 1',
+    (schemaVersion) => {
+      const dir = mkdtempSync(join(tmpdir(), `map-tokens-v${schemaVersion}-`));
+      const inspectionPath = join(dir, 'inspection.json');
+      writeFileSync(
+        inspectionPath,
+        JSON.stringify({
+          ...sampleInspection,
+          schemaVersion,
+          motion: {
+            transitions: [
+              {
+                property: 'opacity',
+                durationMs: 600,
+                easing: 'ease',
+                count: 2,
+              },
+            ],
+            keyframes: { names: ['fade-in'], inaccessibleSheets: 0 },
+            reveal: [],
+            revealSampled: 0,
+            revealRoot: 'body-fallback',
+            jsLibraries: { detected: [], markers: [] },
+            // Нульова вибірка — саме `'unknown'` (V-5): фікстура має лишатись
+            // формою реального виводу капчера, а не історичною.
+            jsDrivenSuspected: 'unknown',
+          },
+        }),
+        'utf8',
+      );
 
-    const run = spawnSync(process.execPath, [cli, inspectionPath], {
-      encoding: 'utf8',
-    });
+      const run = spawnSync(process.execPath, [cli, inspectionPath], {
+        encoding: 'utf8',
+      });
 
-    expect(run.status).toBe(0);
-    const proposal = JSON.parse(
-      readFileSync(join(dir, 'tokens-proposal.json'), 'utf8'),
-    );
-    // Версія ПРОПОЗИЦІЇ — окремий лічильник, motion у токени не мапиться.
-    expect(proposal.schemaVersion).toBe(2);
-    expect(proposal).not.toHaveProperty('motion');
-    expect(proposal.tokens.background).toBeDefined();
-  });
+      expect(run.status).toBe(0);
+      const proposal = JSON.parse(
+        readFileSync(join(dir, 'tokens-proposal.json'), 'utf8'),
+      );
+      // Версія ПРОПОЗИЦІЇ — окремий лічильник, motion у токени не мапиться.
+      expect(proposal.schemaVersion).toBe(2);
+      expect(proposal).not.toHaveProperty('motion');
+      expect(proposal.tokens.background).toBeDefined();
+    },
+  );
 
   it('незнайома schemaVersion — гучний exit 1 з поясненням', () => {
     const dir = mkdtempSync(join(tmpdir(), 'map-tokens-v99-'));
@@ -125,7 +134,7 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
 
     expect(run.status).toBe(1);
     expect(run.stderr).toContain('schemaVersion=99');
-    expect(run.stderr).toContain('1 або 2');
+    expect(run.stderr).toContain('1, 2 або 3');
   });
 
   it('відсутній файл — гучний exit 1, повідомлення в stderr', () => {
@@ -198,7 +207,7 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
 // перевіряється сама форма відмови (текст помилки читає людина в терміналі).
 describe('lib/inspection-version.mjs — assertSupportedVersion', () => {
   it('підтримувані версії проходять мовчки', () => {
-    expect(SUPPORTED_INSPECTION_VERSIONS).toEqual([1, 2]);
+    expect(SUPPORTED_INSPECTION_VERSIONS).toEqual([1, 2, 3]);
     for (const schemaVersion of SUPPORTED_INSPECTION_VERSIONS) {
       expect(() =>
         assertSupportedVersion('a/inspection.json', { schemaVersion }),
@@ -208,11 +217,11 @@ describe('lib/inspection-version.mjs — assertSupportedVersion', () => {
 
   it('незнайома версія — гучна помилка зі шляхом, версією і підказкою', () => {
     expect(() =>
-      assertSupportedVersion('a/inspection.json', { schemaVersion: 3 }),
-    ).toThrow(/a\/inspection\.json: schemaVersion=3/);
+      assertSupportedVersion('a/inspection.json', { schemaVersion: 4 }),
+    ).toThrow(/a\/inspection\.json: schemaVersion=4/);
     expect(() =>
-      assertSupportedVersion('a/inspection.json', { schemaVersion: 3 }),
-    ).toThrow(/1 або 2/);
+      assertSupportedVersion('a/inspection.json', { schemaVersion: 4 }),
+    ).toThrow(/1, 2 або 3/);
   });
 
   // Поле може бути відсутнім (інспекція до Р2) або файл — узагалі не тим:

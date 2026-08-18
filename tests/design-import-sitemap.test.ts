@@ -97,6 +97,28 @@ describe('lib/sitemap.mjs — buildSitemapProposal: форма виводу', ()
     ]);
   });
 
+  it('links містить стартовий pathname навіть без вхідних лінків на себе', async () => {
+    // 🔴 `links` оголошено «увесь вхід класифікатора», а той реєструє
+    // стартовий URL кандидатом завжди (інакше не було б home-фолбека). Тому
+    // групування в обох місцях — ОДНА функція: друга реалізація вже
+    // розійшлася з першою рівно тут.
+    const { visit } = fakeVisit(['https://a.com/landing']);
+    const proposal = await buildSitemapProposal({
+      links: [{ url: 'https://a.com/shop', anchors: ['Shop'] }],
+      startUrl: 'https://a.com/landing',
+      maxVisits: 10,
+      visit,
+    });
+
+    expect(proposal.links.map((link) => link.pathname)).toEqual([
+      '/landing',
+      '/shop',
+    ]);
+    expect(proposal.pageTypes.home).toMatchObject({
+      url: 'https://a.com/landing',
+    });
+  });
+
   it('links — запис ВХОДУ: сторінка, відхилена перепідбором, з масиву не зникає', async () => {
     // `/about` провалив візит і його виключено з робочого набору — але
     // протокол «що інструмент побачив» має лишитись повним (V-3).
@@ -322,6 +344,39 @@ describe('lib/sitemap.mjs — buildSitemapProposal: visit-mismatch блокує 
       visited: true,
     });
     expect(proposal.links.map((link) => link.pathname)).toContain('/product');
+  });
+
+  // 🔴 Причина в `unresolved` — від ОСТАННЬОГО кандидата, на якому перепідбір
+  // зупинився, а не від першого. Мутант «зберігати першу причину» лишав усі
+  // інші тести зеленими, а читач пропозиції пішов би шукати мертвий URL
+  // замість помилки класифікації.
+  it('два провали різного роду поспіль — у причині лишається останній', async () => {
+    const { visit, calls } = fakeVisitWithProbe({
+      'https://a.com/': HOME,
+      // `/products/dead` у мапі проба немає — це 404 (`visit-failed`).
+      'https://a.com/products/grid': GRID,
+    });
+    const proposal = await buildSitemapProposal({
+      links: [
+        { url: 'https://a.com/', anchors: ['Home'] },
+        { url: 'https://a.com/products/dead', anchors: ['Product'] },
+        { url: 'https://a.com/products/grid', anchors: ['Product'] },
+      ],
+      startUrl: START,
+      maxVisits: 10,
+      visit,
+    });
+
+    // Порядок важливий: спершу 404, потім сторінка-колекція.
+    expect(calls.map(([url]) => url)).toEqual([
+      'https://a.com/',
+      'https://a.com/products/dead',
+      'https://a.com/products/grid',
+    ]);
+    expect(proposal.unresolved).toContainEqual({
+      type: 'product',
+      reason: 'visit-mismatch',
+    });
   });
 
   it('термінація: заблокована пара більше не пропонується, цикл зупиняється', async () => {

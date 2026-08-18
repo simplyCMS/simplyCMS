@@ -10,10 +10,10 @@ import { mapFonts } from './fonts.mjs';
 
 // 2 (інкремент Б.3, Р7) — `unmapped` став масивом записів
 // `{ hex, role, count, area, contrastOnBackground, contrastOnCard, belowAA }`
-// замість масиву рядків: форма ЛАМАЄТЬСЯ, тож бамп чесний. 🔴 Це НЕ та сама
-// версія, що `SCHEMA_VERSION` у `lib/inspect-page.mjs`: там версіонується
-// `inspection.json` (вхід), тут — `tokens-proposal.json` (вихід), і лічильники
-// рухаються незалежно.
+// замість масиву рядків: форма ЛАМАЄТЬСЯ, тож бамп чесний. 🔴 Лічильників
+// версій у інструменті ТРИ, і цей — не той, що в `lib/inspect-page.mjs`
+// (`inspection.json`, вхід — уже 3) і не той, що в `lib/sitemap.mjs`
+// (`sitemap-proposal.json`). Рухаються незалежно.
 const SCHEMA_VERSION = 2;
 
 /** Радіус-кластер із найбільшою частотою → `rem` (16px root, конвенція теми). */

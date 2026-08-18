@@ -33,6 +33,32 @@ export function normalizePathname(input) {
 }
 
 /**
+ * Згрупувати лінки за нормалізованим pathname з агрегацією ВСІХ якірних
+ * текстів (Р3b). 🔴 ОДНА реалізація на весь інструмент: `sitemap-links.mjs`
+ * будує з неї ж поле `links` пропозиції, і саме тому те поле є чесним
+ * записом входу класифікатора — включно зі стартовим pathname, який
+ * додається тут (сайт, що не лінкує сам на себе, інакше не мав би в наборі
+ * власної головної).
+ * @param {Array<{url: string, anchors?: string[]}>} links
+ * @param {string} startUrl
+ * @returns {Map<string, { url: string, anchors: Set<string> }>}
+ */
+export function groupLinksByPathname(links, startUrl) {
+  const candidates = new Map();
+  for (const link of links) {
+    const pathname = normalizePathname(link.url);
+    const texts = (link.anchors ?? []).map((a) => a.trim()).filter(Boolean);
+    const existing = candidates.get(pathname);
+    if (existing) texts.forEach((t) => existing.anchors.add(t));
+    else candidates.set(pathname, { url: link.url, anchors: new Set(texts) });
+  }
+  const startPathname = normalizePathname(startUrl);
+  if (!candidates.has(startPathname))
+    candidates.set(startPathname, { url: startUrl, anchors: new Set() });
+  return candidates;
+}
+
+/**
  * Класифікувати лінки на типи сторінок.
  * @param {Array<{url: string, anchors?: string[]}>} links
  * @param {string} startUrl
@@ -45,20 +71,7 @@ export function normalizePathname(input) {
  */
 export function classifyLinks(links, startUrl, blockedPairs) {
   const startPathname = normalizePathname(startUrl);
-
-  // Р3b: групування по нормалізованому pathname — агрегація ВСІХ якірних текстів.
-  const candidates = new Map();
-  const register = (url, anchors) => {
-    const pathname = normalizePathname(url);
-    const texts = (anchors ?? []).map((a) => a.trim()).filter(Boolean);
-    const existing = candidates.get(pathname);
-    if (existing) texts.forEach((t) => existing.anchors.add(t));
-    else candidates.set(pathname, { url, anchors: new Set(texts) });
-  };
-  for (const link of links) register(link.url, link.anchors);
-  // Стартовий URL — теж кандидат (навіть без вхідних лінків на себе, для home-фолбека).
-  if (!candidates.has(startPathname))
-    candidates.set(startPathname, { url: startUrl, anchors: new Set() });
+  const candidates = groupLinksByPathname(links, startUrl);
 
   const pageTypes = {};
   const closedTypes = new Set(['home']);

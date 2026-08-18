@@ -6,6 +6,7 @@
  * інтерпретація розведені по різних експортах одного модуля.
  */
 import { describe, expect, it } from 'vitest';
+import { FANOUT_MIN_CHILDREN } from '../.agents/skills/redesign-from-reference/scripts/lib/classify-structure.mjs';
 import {
   detectVisitMismatch,
   GRID_CARDS_MIN,
@@ -160,5 +161,30 @@ describe('lib/visit-probe.mjs — detectVisitMismatch: межі', () => {
         }),
       ).toBe(false);
     }
+  });
+});
+
+// 🔴 Інваріант порогів (фікс ревʼю): «мінімальний список» в інструменті ОДИН.
+// Структурний fan-out читає його як «≥3 дітей — уже індекс колекції», проб —
+// як «<3 карток — уже не список». Два незалежні літерали розійшлися б при
+// першій правці одного з них, і сторінка з трьома картками одночасно була б
+// і списком (для класифікатора), і не-списком (для проба).
+describe('lib/visit-probe.mjs — поріг списку спільний зі структурним fan-out', () => {
+  it('SPARSE_CARDS_MAX виведено з FANOUT_MIN_CHILDREN', () => {
+    expect(SPARSE_CARDS_MAX).toBe(FANOUT_MIN_CHILDREN);
+    // Межа з обох боків та сама: рівно FANOUT_MIN_CHILDREN карток — це вже
+    // список, тому mismatch на `listing` не спрацьовує.
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['Product'],
+        cardLinks: FANOUT_MIN_CHILDREN,
+      }),
+    ).toBe(false);
+    expect(
+      detectVisitMismatch('listing', {
+        jsonLdTypes: ['Product'],
+        cardLinks: FANOUT_MIN_CHILDREN - 1,
+      }),
+    ).toBe(true);
   });
 });

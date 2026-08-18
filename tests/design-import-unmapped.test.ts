@@ -94,6 +94,37 @@ describe('lib/unmapped.mjs — collectUnmapped (Р7)', () => {
     expect(entry.belowAA).toBe(false);
   });
 
+  // 🔴 Канал < 16 у hex — це рівно один нуль, який легко загубити (`rgbToHex`
+  // без `padStart`). Наслідок подвійний: людина читає у звіті ІНШИЙ колір, а
+  // ключ дедупу (`hex|role`) схлопує різні кольори в один запис.
+  it('канал < 16 не зʼїдає провідний нуль: zinc-950 лишається #09090b', () => {
+    const [entry] = collectUnmapped(
+      { text: clusters([{ value: 'rgb(9, 9, 11)', frequency: 12 }]) },
+      new Set(),
+      tokens,
+    ) as UnmappedEntry[];
+
+    expect(entry.hex).toBe('#09090b'); // без padStart було б «#99b»
+  });
+
+  it('два різні кольори з малими каналами лишаються двома записами', () => {
+    // Без `padStart` обидва дають «#1234» — і різні факти про сторінку
+    // зливаються в один рядок звіту з підсумованою частотою.
+    const entries = collectUnmapped(
+      {
+        text: [
+          ...clusters([{ value: 'rgb(1, 2, 52)', frequency: 9 }]),
+          ...clusters([{ value: 'rgb(18, 3, 4)', frequency: 7 }]),
+        ],
+      },
+      new Set(),
+      tokens,
+    ) as UnmappedEntry[];
+
+    expect(entries.map((e) => e.hex)).toEqual(['#010234', '#120304']);
+    expect(entries.map((e) => e.count)).toEqual([9, 7]);
+  });
+
   it('витрачені кластери у звіт не потрапляють (дедуп із мапінгом за посиланням)', () => {
     const bg = clusters([{ value: '#ffffff', frequency: 100 }]);
     expect(
