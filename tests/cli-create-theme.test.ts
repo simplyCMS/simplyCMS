@@ -1,11 +1,12 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import ts from 'typescript';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   parseCreateArgs,
   renderThemeTemplate,
+  run,
   scaffoldTheme,
   templateThemeDir,
   themeDisplayName,
@@ -116,6 +117,40 @@ describe('cli create theme: скаффолд', () => {
   it('themeDisplayName: ключ → людське імʼя для адмінки', () => {
     expect(themeDisplayName('aurora')).toBe('Aurora');
     expect(themeDisplayName('solar-store')).toBe('Solar Store');
+  });
+
+  // Р9: створити тему авторові треба і в самому монорепо ядра, де залежностей
+  // `@simplycms/*` у кореневому манифесті нуль. Гард знято ТІЛЬКИ для create —
+  // межу решти команд стереже tests/cli-context.test.ts.
+  it('run: корінь монорепо ядра — валідний корінь скаффолду', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'cli-theme-monorepo-'));
+    writeFileSync(
+      join(root, 'pnpm-workspace.yaml'),
+      "packages:\n  - 'packages/*'\n",
+    );
+    writeFileSync(
+      join(root, 'simplycms.config.ts'),
+      'export default defineConfig({\n  themes: {},\n  plugins: [],\n});\n',
+    );
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: 'simplycms-monorepo' }),
+    );
+    const cwd = process.cwd();
+    const silent = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    try {
+      process.chdir(root);
+      await run(['theme', 'aurora']);
+    } finally {
+      process.chdir(cwd);
+      silent.mockRestore();
+    }
+    expect(existsSync(join(root, 'themes', 'aurora', 'manifest.ts'))).toBe(
+      true,
+    );
+    expect(readFileSync(join(root, 'simplycms.config.ts'), 'utf8')).toContain(
+      "import('@themes/aurora/index')",
+    );
   });
 
   it('renderThemeTemplate: підставляє всі три плейсхолдери', () => {

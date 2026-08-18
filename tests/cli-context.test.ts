@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   coreDependencies,
+  findScaffoldRoot,
   findStoreRoot,
   readStoreEnv,
   readStoreManifest,
@@ -23,6 +24,21 @@ async function scaffoldStore(name: string) {
   return target;
 }
 
+/** Мінімальний корінь монорепо ядра: обидва маркери + манифест БЕЗ @simplycms/*. */
+function monorepoRoot() {
+  const root = mkdtempSync(join(tmpdir(), 'cli-ctx-monorepo-'));
+  writeFileSync(
+    join(root, 'pnpm-workspace.yaml'),
+    "packages:\n  - 'packages/*'\n",
+  );
+  writeFileSync(join(root, 'simplycms.config.ts'), 'export default {};\n');
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify({ name: 'simplycms-monorepo', devDependencies: {} }),
+  );
+  return root;
+}
+
 describe('cli context', () => {
   it('findStoreRoot: знаходить корінь із вкладеної теки магазину', async () => {
     const store = await scaffoldStore('ctx-root');
@@ -35,6 +51,41 @@ describe('cli context', () => {
     mkdirSync(sub);
     writeFileSync(join(sub, 'package.json'), JSON.stringify({ name: 'sub' }));
     expect(findStoreRoot(sub)).toBe(store);
+  });
+
+  // Р9 (інкремент Б.2): у кореневому package.json монорепо залежностей
+  // `@simplycms/*` РІВНО НУЛЬ — пакети живуть у workspace, — тож магазинний
+  // маркер його не бачить і `simplycms create theme` у самому репо падав.
+  it('findScaffoldRoot: корінь монорепо (pnpm-workspace.yaml + simplycms.config.ts) без @simplycms/*', () => {
+    const root = monorepoRoot();
+    const nested = join(root, 'packages', 'ui');
+    mkdirSync(nested, { recursive: true });
+    expect(findScaffoldRoot(root)).toBe(root);
+    expect(findScaffoldRoot(nested)).toBe(root);
+  });
+
+  // 🔴 Межа радіуса Р9: монорепо-маркер має рівно ОДНОГО споживача — скаффолд.
+  // Для doctor/add/update/db:diff корінь монорепо лишається «не магазином»:
+  // doctor видавав би там хибні помилки по routes.ts/tailwind.config.ts, а
+  // `update --write` мовчки відкотив би host-файли (напрям істини у нього
+  // зворотний до `pnpm template:sync`).
+  it('findStoreRoot: корінь монорепо магазином НЕ вважає — гучна відмова', () => {
+    const root = monorepoRoot();
+    const nested = join(root, 'packages', 'ui');
+    mkdirSync(nested, { recursive: true });
+    expect(() => findStoreRoot(root)).toThrow(/Корінь магазину не знайдено/);
+    expect(() => findStoreRoot(nested)).toThrow(/@simplycms/);
+    // І текст не заманює монорепо-маркером — він для цих команд не варіант.
+    expect(() => findStoreRoot(root)).not.toThrow(/pnpm-workspace\.yaml/);
+  });
+
+  it('findScaffoldRoot: сам по собі pnpm-workspace.yaml коренем НЕ робить', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cli-ctx-workspace-only-'));
+    writeFileSync(
+      join(dir, 'pnpm-workspace.yaml'),
+      "packages:\n  - 'apps/*'\n",
+    );
+    expect(() => findScaffoldRoot(dir)).toThrow(/simplycms\.config\.ts/);
   });
 
   it('findStoreRoot: поза магазином — гучна помилка з діагностикою', () => {

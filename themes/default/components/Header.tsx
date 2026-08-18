@@ -7,13 +7,28 @@ import { useThemeT } from '@simplycms/themes/useThemeT';
 import { HeaderActions } from './HeaderActions';
 import type { ThemeKey } from '../messages';
 
-/** Пункт навігаційної пігулки. Активний — заливка `muted` (виміряно #f3f4f6). */
+/**
+ * Пункт навігаційної пігулки. Активний — заливка `muted` (виміряно #f3f4f6).
+ *
+ * 🔴 Тривалість саме 200 мс, а не дефолтні 150 мс `transition-colors`:
+ * пункти меню референсу сидять у кластері `all 200ms` (`count: 29`), і це
+ * доведено адресно — клас самого вузла в `motion.hover.entries` має
+ * `transition-all duration-200 ease-in-out` (спека §7.1). Ховер-заливка —
+ * теж вимір: `background-color: transparent → #f9fafb`, найближчий токен
+ * контракту — `muted`.
+ *
+ * 🔴 Ховер тексту — `primary` (#333333), а НЕ `foreground` (#0a0a0a):
+ * виміряний ховер референсу — #334153 (`motion.hover`, спека §7.3), і з
+ * усіх токенів контракту до нього найближчий саме `primary`. Активний
+ * пункт лишається `foreground` — там вимір дає #0a0a0a.
+ */
 function navItem(isActive: boolean) {
   return [
-    'rounded-full px-4 py-2 text-sm font-medium transition-colors',
+    'rounded-full px-4 py-2 text-sm font-medium',
+    'transition-all duration-200 ease-in-out',
     isActive
       ? 'bg-muted text-foreground'
-      : 'text-muted-foreground hover:text-foreground',
+      : 'text-muted-foreground hover:bg-muted hover:text-primary',
   ].join(' ');
 }
 

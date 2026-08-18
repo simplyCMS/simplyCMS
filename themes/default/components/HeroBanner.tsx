@@ -38,9 +38,14 @@ const CTA_BASE =
  * (hero референсу виміряно як фіксований блок). Ядро дає `banners`, і ми
  * беремо звідти ЛИШЕ зображення — тексти йдуть з каталогу теми.
  *
- * 🔴 Фото — виключно з нашої БД. Немає банера із зображенням (саме так на
- * цьому стенді: у сіді банерів немає) — рендериться порожня кругла підложка.
- * Чужа картинка з референсу тут не зʼявиться за жодних умов.
+ * 🔴 Фото — виключно з нашої БД. Чужа картинка з референсу тут не зʼявиться
+ * за жодних умов.
+ *
+ * 🔴 Empty-стан (саме так на цьому стенді — банерів у сіді немає):
+ * декоративна підложка НЕ рендериться зовсім, а сітка стає одноколонковою.
+ * Рішення власника за підсумком фази 5 прогону №2: порожній білий круг на
+ * пів-екрана читався як недовантажене зображення, а не як оформлення.
+ * Поведінка З банером — незмінна (дві колонки, фото в круглій підложці).
  */
 export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
   const tt = useThemeT<ThemeKey>();
@@ -51,7 +56,9 @@ export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 md:py-20">
-      <div className="grid items-center gap-10 md:grid-cols-2">
+      <div
+        className={`grid items-center gap-10 ${image ? 'md:grid-cols-2' : ''}`}
+      >
         <div>
           <span
             className="inline-flex items-center rounded-full border border-border/80 bg-card/80 px-4 py-2 text-[13px] font-medium text-foreground"
@@ -103,20 +110,21 @@ export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
           </div>
         </div>
 
-        <div className="flex justify-center md:justify-end">
-          {/* 🔴 Підложка — `card` (біла) з рамкою, а НЕ `muted`: на полотні
-              #f5f5f5 сірий #f3f4f6 дає контраст 1.02:1 і зникає зовсім
-              (спіймано на власному скріншоті фази 5). */}
-          <div className="flex aspect-square w-full max-w-[320px] items-center justify-center overflow-hidden rounded-full border border-border bg-card md:max-w-[440px]">
-            {image && (
+        {/* 🔴 Підложка існує ЛИШЕ разом із фото (empty-стан — див. шапку).
+            Колір — `card` (біла) з рамкою, а НЕ `muted`: на полотні #f5f5f5
+            сірий #f3f4f6 дає контраст 1.02:1 і зникає зовсім (спіймано на
+            власному скріншоті фази 5 прогону №1). */}
+        {image && (
+          <div className="flex justify-center md:justify-end">
+            <div className="flex aspect-square w-full max-w-[320px] items-center justify-center overflow-hidden rounded-full border border-border bg-card md:max-w-[440px]">
               <img
                 src={image}
                 alt={banner?.title ?? ''}
                 className="h-full w-full object-cover"
               />
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

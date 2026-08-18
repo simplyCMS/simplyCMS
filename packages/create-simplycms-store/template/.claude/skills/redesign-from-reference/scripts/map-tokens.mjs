@@ -11,6 +11,7 @@
 import { isCliEntry } from './lib/cli-entry.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { assertSupportedVersion } from './lib/inspection-version.mjs';
 import { mapTokens } from './lib/map.mjs';
 import { mergeInspections } from './lib/merge.mjs';
 
@@ -69,11 +70,14 @@ function main() {
   const inspections = [];
   try {
     for (const path of options.inspectionPaths) {
+      let inspection;
       try {
-        inspections.push(JSON.parse(readFileSync(path, 'utf8')));
+        inspection = JSON.parse(readFileSync(path, 'utf8'));
       } catch (error) {
         throw new Error(`Не вдалося прочитати ${path}: ${error.message}`);
       }
+      assertSupportedVersion(path, inspection);
+      inspections.push(inspection);
     }
   } catch (error) {
     failLoud(error);
