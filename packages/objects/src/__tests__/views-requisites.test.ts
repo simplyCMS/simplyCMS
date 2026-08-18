@@ -37,7 +37,7 @@ describe('імена комерційних реквізитів', () => {
     }
   });
 
-  it('обовʼязковий склад описано для пʼяти сторінок і він непорожній', () => {
+  it('обовʼязковий склад описано для пʼяти сторінок', () => {
     const pages = Object.keys(REQUIRED_REQUISITES);
     expect(pages).toEqual([
       'Home',
@@ -47,8 +47,31 @@ describe('імена комерційних реквізитів', () => {
       'Cart',
     ]);
     for (const [page, names] of Object.entries(REQUIRED_REQUISITES)) {
-      expect(names.length, page).toBeGreaterThan(0);
       for (const name of names) expect(all, `${page}: ${name}`).toContain(name);
     }
+  });
+
+  it('Home без обовʼязкових реквізитів (спека §5) — SectionCarousel 0..N разів', () => {
+    expect(REQUIRED_REQUISITES.Home).toEqual([]);
+  });
+
+  it('решта сторінок мають непорожній обовʼязковий склад', () => {
+    for (const page of [
+      'Catalog',
+      'CatalogSection',
+      'ProductDetail',
+      'Cart',
+    ] as const) {
+      expect(REQUIRED_REQUISITES[page].length, page).toBeGreaterThan(0);
+    }
+  });
+
+  it('Cart: ClearCart — не обовʼязковий реквізит (спека §5, зручність, не ядро)', () => {
+    expect(REQUIRED_REQUISITES.Cart).not.toContain(CART_REQUISITES.ClearCart);
+    expect(REQUIRED_REQUISITES.Cart).toEqual([
+      CART_REQUISITES.Items,
+      CART_REQUISITES.Summary,
+      CART_REQUISITES.Checkout,
+    ]);
   });
 });
