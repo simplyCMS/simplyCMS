@@ -56,7 +56,8 @@ afterAll(async () => {
 describe('lib/map.mjs — контракт mapTokens незалежно від наявності браузера (Step 3)', () => {
   it('mapTokens(sampleInspection) — валідна пропозиція без chromium', () => {
     const proposal = mapTokens(sampleInspection);
-    expect(proposal.schemaVersion).toBe(1);
+    // 2 — після Р7 інкремента Б.3 (структурований `unmapped`).
+    expect(proposal.schemaVersion).toBe(2);
     expect(proposal.tokens.background).toBeDefined();
     expect(proposal.tokens.primary).toBeDefined();
     expect(proposal.tokens['font-sans']).toBeDefined();

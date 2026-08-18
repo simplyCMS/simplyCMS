@@ -57,9 +57,12 @@ interface MotionInspection {
     transitions: TransitionCluster[];
     keyframes: { names: string[]; inaccessibleSheets: number };
     reveal: RevealEntry[];
+    revealSampled: number;
+    revealRoot: string;
     hover: HoverSweep;
     jsLibraries: { detected: string[]; markers: string[] };
-    jsDrivenSuspected: boolean;
+    // Триставний (V-5): `'unknown'` — вибірки reveal не було взагалі.
+    jsDrivenSuspected: boolean | 'unknown';
   };
 }
 
@@ -163,7 +166,13 @@ describe.skipIf(!browser)(
       ).toBe(true);
 
       // reveal пояснюється CSS-transition по opacity/transform — не JS.
+      // Саме `false`, а не `'unknown'`: вибірка тут непорожня (див. нижче).
       expect(motion.jsDrivenSuspected).toBe(false);
+      // Обсяг вибірки — чесне поле: діф будується рівно на семпльованих
+      // вузлах, а корінь на цій фікстурі — `main`.
+      expect(motion.revealRoot).toBe('main');
+      expect(motion.revealSampled).toBe(motion.reveal.length);
+      expect(motion.revealSampled).toBeGreaterThan(0);
     }, 120_000);
 
     // Р5: hover-канал. Дельта є рівно там, де є `:hover`-правило; сусіднє

@@ -36,12 +36,18 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('Топ-мапінги');
     expect(run.stdout).toContain('Немапованих кольорів');
+    // Р7: у stdout — рівно те, що людині корисно очима (hex + частота), а не
+    // серіалізований запис цілком.
+    expect(run.stdout).toContain('#fbbf24 (×5)');
+    expect(run.stdout).not.toContain('contrastOnBackground');
 
     const outPath = join(dir, 'tokens-proposal.json');
     const proposal = JSON.parse(readFileSync(outPath, 'utf8'));
-    expect(proposal.schemaVersion).toBe(1);
+    expect(proposal.schemaVersion).toBe(2);
     expect(proposal.tokens.background).toBeDefined();
-    expect(proposal.unmapped).toEqual(['#fbbf24']);
+    expect(proposal.unmapped).toMatchObject([
+      { hex: '#fbbf24', role: 'background', count: 5, belowAA: false },
+    ]);
   });
 
   it('--out пише пропозицію за явним шляхом', () => {
@@ -79,8 +85,12 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
           ],
           keyframes: { names: ['fade-in'], inaccessibleSheets: 0 },
           reveal: [],
+          revealSampled: 0,
+          revealRoot: 'body-fallback',
           jsLibraries: { detected: [], markers: [] },
-          jsDrivenSuspected: false,
+          // Нульова вибірка — саме `'unknown'` (V-5): фікстура має лишатись
+          // формою реального виводу капчера, а не історичною.
+          jsDrivenSuspected: 'unknown',
         },
       }),
       'utf8',
@@ -95,7 +105,7 @@ describe('map-tokens.mjs — CLI-обгортка', () => {
       readFileSync(join(dir, 'tokens-proposal.json'), 'utf8'),
     );
     // Версія ПРОПОЗИЦІЇ — окремий лічильник, motion у токени не мапиться.
-    expect(proposal.schemaVersion).toBe(1);
+    expect(proposal.schemaVersion).toBe(2);
     expect(proposal).not.toHaveProperty('motion');
     expect(proposal.tokens.background).toBeDefined();
   });

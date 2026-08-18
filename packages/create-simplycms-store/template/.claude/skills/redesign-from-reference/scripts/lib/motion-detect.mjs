@@ -97,19 +97,29 @@ export function detectMotionLibraries(raw = {}) {
 const REVEAL_PROPERTIES = new Set(['all', 'opacity', 'transform']);
 
 /**
- * Евристика Р6: reveal на сторінці Є, а ні transitions по opacity/transform, ні
- * `@keyframes` його не пояснюють → анімацію крутить JS, і виміряних тривалостей
- * для спеки компонента не буде — автор теми має дивитись очима.
+ * Евристика Р6 у ТРЬОХ станах (V-5 інкремента Б.3): reveal на сторінці Є, а ні
+ * transitions по opacity/transform, ні `@keyframes` його не пояснюють → `true`
+ * (анімацію крутить JS, виміряних тривалостей для спеки не буде — автор теми
+ * має дивитись очима); reveal виміряно й механізм видно → `false`; вибірки не
+ * було взагалі → `'unknown'`.
+ *
+ * 🔴 Третій стан — не педантизм. До Б.3 порожня вибірка віддавала той самий
+ * `false`, що й чесно перевірена сторінка, тож сліпий reveal-корінь (розмітка
+ * без `<main>`) читався як «перевірено, підозри немає» — інструмент мовчав про
+ * власну сліпоту. Порожність вибірки видно саме за `reveal`: `diffReveal`
+ * будує рівно один запис на кожен семпльований вузол.
+ *
  * @param {{ reveal?: Array<{ animated?: boolean }>,
  *   transitions?: Array<{ property?: string }>,
  *   keyframes?: { names?: string[] } }} [input]
- * @returns {boolean}
+ * @returns {boolean | 'unknown'}
  */
 export function suspectJsDriven({
   reveal = [],
   transitions = [],
   keyframes = {},
 } = {}) {
+  if (reveal.length === 0) return 'unknown';
   if (!reveal.some((entry) => entry.animated)) return false;
   const explained =
     transitions.some((t) => REVEAL_PROPERTIES.has(t.property)) ||

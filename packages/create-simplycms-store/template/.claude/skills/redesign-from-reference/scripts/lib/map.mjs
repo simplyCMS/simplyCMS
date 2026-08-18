@@ -8,7 +8,13 @@ import { mapColorTokens } from './color-tokens.mjs';
 import { checkContrastPairs } from './contrast.mjs';
 import { mapFonts } from './fonts.mjs';
 
-const SCHEMA_VERSION = 1;
+// 2 (інкремент Б.3, Р7) — `unmapped` став масивом записів
+// `{ hex, role, count, area, contrastOnBackground, contrastOnCard, belowAA }`
+// замість масиву рядків: форма ЛАМАЄТЬСЯ, тож бамп чесний. 🔴 Це НЕ та сама
+// версія, що `SCHEMA_VERSION` у `lib/inspect-page.mjs`: там версіонується
+// `inspection.json` (вхід), тут — `tokens-proposal.json` (вихід), і лічильники
+// рухаються незалежно.
+const SCHEMA_VERSION = 2;
 
 /** Радіус-кластер із найбільшою частотою → `rem` (16px root, конвенція теми). */
 function pickRadius(radiusEntries) {
@@ -23,12 +29,12 @@ function pickRadius(radiusEntries) {
  * Мапити `inspection.json`-подібний обʼєкт (Р4) → `tokens-proposal.json`
  * (`{ schemaVersion, tokens, fonts?, confidence, contrastWarnings, unmapped }`).
  * @returns {{
- *   schemaVersion: 1,
+ *   schemaVersion: 2,
  *   tokens: Record<string, string> & { dark?: Record<string, string> },
  *   fonts?: Array<{ stylesheet: string }>,
  *   confidence: Record<string, number>,
  *   contrastWarnings: Array<{ pair: string, ratio: number, required: number }>,
- *   unmapped: string[],
+ *   unmapped: import('./unmapped.mjs').UnmappedEntry[],
  * }}
  */
 export function mapTokens(inspection) {
