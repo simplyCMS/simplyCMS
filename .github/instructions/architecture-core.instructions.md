@@ -12,7 +12,7 @@ SimplyCMS — open-source e-commerce CMS на TanStack Start з SSR-first під
 - **`routes.ts`** — `virtualRouteConfig`: дерево роутів збирається `physical()`-монтуванням route-тек пакетів; сканування `src/routes` цілком **вимкнено**
 - **`src/`** — host: тонка збірка магазину (`routes/__root.tsx` + `routes/my/`, engine-glue, `theme-registry.ts`, `start.ts`)
 - **`packages/`** — Ядро CMS (у монорепо; публікація на npmjs — Фаза 1+): роути, канонічні сторінки, лоадери, SEO, схема БД
-- **`themes/`** — Локальні теми проекту (контракт v2: `manifest + tokens + components`;
+- **`themes/`** — Локальні теми проекту (контракт v3: `manifest + tokens + components + views?`;
   теми також ставляться npm-пакетами — `docs/architecture/themes.md`)
 - **`plugins/`** — Локальні плагіни проекту
 - **`scripts/`** — `db-diff.mjs` / `db-migrate.mjs` (конвеєр міграцій Drizzle → Supabase CLI)
@@ -81,7 +81,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
   - **context7:** TanStack Start/Router, React, TanStack Query, Zod docs
   - **shadcn:** UI компоненти перед додаванням
   - **supabase:** DB міграції, TypeScript types
-- Система тем (контракт v2): `ThemeModule = { manifest, tokens, components, settings? }`. Публічні сторінки — канонічні, з `@simplycms/storefront-routes/src/pages/`; тема дає лише `components` (Header/Footer/…) і `tokens`, які розкладає `applyTokens`.
+- Система тем (контракт v3): `ThemeModule = { manifest, tokens, components, settings?, views? }`. Дані, SEO й лоадери публічних сторінок лишаються ядром (`@simplycms/storefront-routes/src/pages/`); тема дає `components` (Header/Footer/…) і `tokens`, які розкладає `applyTokens`, а опційно — `views` для пʼятьох сторінок вітрини (`Home`, `Catalog`, `CatalogSection`, `ProductDetail`, `Cart`): лише розмітка поверх готових `vm.slots`, під гейтом `pnpm simplycms theme:conformance <slug>`.
 - Система плагінів: контракт — `definePlugin` з `@simplycms/plugin-sdk` (слоти, Zod-settings, власні таблиці `plg_*`, каталог i18n `plugin.<name>.*`); розширення через `HookRegistry`; `PluginSlot` реактивний (`hookRegistry.subscribe` + `useSyncExternalStore`) — віджет зʼявляється без reload. 🔴 Плагін НЕ імпортує Supabase-шар — лише порти SDK (dependency-lint); механізм цілком — `docs/architecture/plugins.md`.
 - Конфігурація CMS через `simplycms.config.ts` (`defineConfig`: теми, плагіни, `siteUrl`, SEO) — одне джерело істини для `theme-registry.ts` і `bootstrapPlugins`.
 - Зміни схеми БД: `db:pull` → правка `packages/schema/src/schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Supabase MCP — **лише** для інспекції.
@@ -104,7 +104,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Огляд проекту та структура: `CLAUDE.md`
 - Архітектура платформи (пакети, роути, плагіни, теми, міграції): `docs/superpowers/specs/2026-07-30-platform-architecture-design.md`
 - Аналітична база рішень: `docs/architecture/platform-delivery-options.md`
-- Система тем (контракт v2, реєстрація, токени): `CLAUDE.md` розділ «Theme System (контракт v2)»
+- Система тем (контракт v3, реєстрація, токени, views): `CLAUDE.md` розділ «Theme System (контракт v3)», механізм — `docs/architecture/themes.md`
 - Стан і борги Фази 0: `docs/tasks/platform-roadmap.md`
 - SEO/faceted navigation: `docs/tasks/seo-ssr-faceted-navigation.md`
 

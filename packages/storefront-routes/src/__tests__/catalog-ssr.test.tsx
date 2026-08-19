@@ -43,6 +43,12 @@ vi.mock('@simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));
 
+// Сторінки резолвлять view через активну тему (контракт v3): у SSR-тесті
+// теми немає — мок віддає модуль без `views`, тобто канонічний view ядра.
+vi.mock('../shells/useActiveThemeModule', () => ({
+  useActiveThemeModule: () => ({ components: {} }),
+}));
+
 import CatalogPage from '../pages/Catalog';
 import CatalogSectionPage, {
   type CatalogSectionPageProps,

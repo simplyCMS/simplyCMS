@@ -1,14 +1,14 @@
 import type { Banner } from '@simplycms/objects/objects';
-import { useT } from '@simplycms/i18n';
-import { BannerSlider } from '../components/BannerSlider';
-import { ProductCarousel } from '../components/ProductCarousel';
-import { useActiveThemeModule } from '../shells/useActiveThemeModule';
+import { HomeView } from '../views/HomeView';
+import { useStorefrontViews } from '../views/useStorefrontViews';
 import {
   useFeaturedProducts,
   useNewProducts,
   useRootSections,
 } from './home/queries';
-import { SectionProductCarousel } from './home/SectionProductCarousel';
+import { HomeSlotBindings } from './home/slot-context';
+import { homeSlots } from './home/slots';
+import { toCardViewModel } from './home/toCardViewModel';
 import type { HomeProduct, HomeSection } from './home/types';
 
 export interface HomePageProps {
@@ -21,16 +21,8 @@ export interface HomePageProps {
 }
 
 /**
- * Канонічна головна сторінка ядра.
- *
- * Склад body зафіксовано контрактом (spec §6, D3/D4), щоб секції не
- * дублювалися між ядром і темами:
- *   1) hero — `theme.components.HeroBanner`, а якщо тема його не дала, ядро
- *      рендерить власний `BannerSlider`;
- *   2) канонічні секції — товарні добірки (популярні, новинки) і категорії:
- *      вони однакові для всіх тем, тому живуть у ядрі;
- *   3) `theme.components.HomeSections` — унікальні секції теми (бренди,
- *      розсилка, блог тощо), ПІСЛЯ канонічних і без пропсів.
+ * Контейнер головної: тягне добірки й кореневі секції — і віддає готовий
+ * view-model view (темовому, якщо тема заявила `Home`, інакше канонічному).
  */
 export default function HomePage({
   banners,
@@ -39,48 +31,31 @@ export default function HomePage({
   sections: initialSections,
   sectionProducts,
 }: HomePageProps) {
-  const t = useT();
-  const theme = useActiveThemeModule();
-  const Hero = theme.components.HeroBanner;
-  const ThemeHomeSections = theme.components.HomeSections;
-
   const { data: featuredProducts } = useFeaturedProducts(initialFeatured);
   const { data: newProducts } = useNewProducts(initialNew);
   const { data: rootSections } = useRootSections(initialSections);
+  const views = useStorefrontViews({ Home: HomeView });
+
+  const sections = rootSections ?? [];
 
   return (
-    <>
-      {Hero ? (
-        <Hero banners={banners ?? []} />
-      ) : (
-        <BannerSlider banners={banners} />
-      )}
-
-      {featuredProducts && featuredProducts.length > 0 && (
-        <ProductCarousel
-          title={t('home.featured')}
-          products={featuredProducts}
-          viewAllLink="/catalog"
-        />
-      )}
-
-      {newProducts && newProducts.length > 0 && (
-        <ProductCarousel
-          title={t('home.new')}
-          products={newProducts}
-          viewAllLink="/catalog"
-        />
-      )}
-
-      {rootSections?.map((section) => (
-        <SectionProductCarousel
-          key={section.id}
-          section={section}
-          initialData={sectionProducts?.[section.id]}
-        />
-      ))}
-
-      {ThemeHomeSections && <ThemeHomeSections />}
-    </>
+    <HomeSlotBindings
+      value={{
+        sections: Object.fromEntries(
+          sections.map((section) => [
+            section.id,
+            { section, initialData: sectionProducts?.[section.id] },
+          ]),
+        ),
+      }}
+    >
+      <views.Home
+        hero={{ banners: banners ?? [] }}
+        featured={{ products: toCardViewModel(featuredProducts ?? []) }}
+        newArrivals={{ products: toCardViewModel(newProducts ?? []) }}
+        sections={{ items: sections }}
+        slots={homeSlots}
+      />
+    </HomeSlotBindings>
   );
 }

@@ -6,8 +6,18 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Службові перейменування шаблону (той самий прийом, що в скаффолдері магазину). */
-const RENAMES = { 'package.json.tpl': 'package.json' };
+/**
+ * Службові перейменування шаблону (той самий прийом, що в скаффолдері магазину).
+ *
+ * 🔴 `conformance.test.ts` їде під суфіксом `.tpl` не для краси: кореневий
+ * `vitest.config.ts` монорепо НЕ виключає `packages/cli/template-theme/`, тож
+ * файл із назвою `*.test.ts` підхопився б `pnpm test` і прогнався проти
+ * НЕРОЗГОРНУТИХ плейсхолдерів `__THEME_NAME__`.
+ */
+const RENAMES = {
+  'package.json.tpl': 'package.json',
+  'conformance.test.ts.tpl': 'conformance.test.ts',
+};
 
 /** @param {string} name */
 const templateDir = (name) =>

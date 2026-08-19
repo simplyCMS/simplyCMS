@@ -1,5 +1,12 @@
 import type React from 'react';
 import type { Banner } from '@simplycms/objects/objects';
+import type {
+  CartViewModel,
+  CatalogSectionViewModel,
+  CatalogViewModel,
+  HomeViewModel,
+  ProductDetailViewModel,
+} from '@simplycms/objects/views';
 import type { Locale } from '@simplycms/i18n';
 
 /**
@@ -99,6 +106,27 @@ export interface ThemeComponents {
 }
 
 /**
+ * View-и, якими тема ПЕРЕВИЗНАЧАЄ презентаційний шар канонічних сторінок
+ * вітрини (контракт v3).
+ *
+ * Кожен ключ опційний: не заданий — ядро рендерить власний канонічний view.
+ * View отримує готовий view-model (дані + прибінджені slot-компоненти
+ * реквізитів) і мусить лишатися ЧИСТОЮ функцією від нього: жодних запитів
+ * даних, лише render-контекст (`useT`/`useThemeT`/`useThemeSettings`). На
+ * цьому тримається conformance — рендер на фікстурах без БД.
+ *
+ * Обсяг v3 — рівно пʼять сторінок вітрини; checkout/auth/profile свідомо поза
+ * контрактом (кандидати v3.1).
+ */
+export interface ThemeViews {
+  Home?: React.ComponentType<HomeViewModel>;
+  Catalog?: React.ComponentType<CatalogViewModel>;
+  CatalogSection?: React.ComponentType<CatalogSectionViewModel>;
+  ProductDetail?: React.ComponentType<ProductDetailViewModel>;
+  Cart?: React.ComponentType<CartViewModel>;
+}
+
+/**
  * Каталог перекладів теми: `messages[locale][key]`.
  *
  * `Locale` беремо з `@simplycms/i18n` — той самий тип, що й у ядрі, тож
@@ -139,6 +167,11 @@ export interface ThemeModule {
   messages?: ThemeMessages;
   /** Опціональні зовнішні font stylesheet-и теми (контракт v2.2, Р4). */
   fonts?: ReadonlyArray<ThemeFontSource>;
+  /**
+   * Опціональні перевизначення view-шару канонічних сторінок (контракт v3).
+   * Відсутність поля — валідна тема: усі теми v2.x працюють без правок.
+   */
+  views?: ThemeViews;
 }
 
 /** Рядок теми в БД (таблиця `themes`) */

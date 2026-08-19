@@ -6,6 +6,8 @@ export default defineConfig({
     'src/objects/index.ts',
     'src/ports/index.ts',
     'src/semver/index.ts',
+    'src/views/index.ts',
+    'src/views/fixtures/index.ts',
   ],
   format: ['esm'],
   dts: { tsconfig: './tsconfig.json' },
