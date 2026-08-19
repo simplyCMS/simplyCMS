@@ -22,6 +22,9 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HeroBanner } from './components/HeroBanner';
 import { HomeSections } from './components/HomeSections';
+import { CatalogView } from './views/CatalogView';
+import { CatalogSectionView } from './views/CatalogSectionView';
+import { ProductDetailView } from './views/ProductDetailView';
 
 const theme: ThemeModule = {
   manifest,
@@ -31,6 +34,18 @@ const theme: ThemeModule = {
     Footer,
     HeroBanner,
     HomeSections,
+  },
+  // Контракт v3: власний view-шар трьох сторінок вітрини. Сторінка, ключа
+  // якої тут немає (`Home`, `Cart`), лишається канонічною — перевизначення
+  // посторінкове й цілісне. Дані, роути й SEO лишаються за ядром: view —
+  // чиста функція від view-model-а, а комерційні реквізити тема лише
+  // РОЗСТАВЛЯЄ (`vm.slots`). Гейт заявленого набору:
+  //   pnpm simplycms theme:conformance default
+  // (другий канал — `themes/default/conformance.test.tsx`, їде в `pnpm test`).
+  views: {
+    Catalog: CatalogView,
+    CatalogSection: CatalogSectionView,
+    ProductDetail: ProductDetailView,
   },
   messages,
   // Контракт v2.2: лише абсолютні `https:`-stylesheet-и. Референс роздає

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { catalogKeys } from '@simplycms/react-query';
 import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
 import type { HomeProduct, HomeSection } from './types';
 
@@ -111,7 +112,10 @@ export function useSectionProducts(
   const supabase = useSupabaseClient();
 
   return useQuery({
-    queryKey: ['section-products', section.id],
+    // Іменований namespace `catalogKeys` — щоб добірка головної не ділила
+    // ключ кешу з `useCatalogProductsQuery` (сторінка розділу): той самий
+    // `sectionId` під різними формами вибірки колись підмінював дані.
+    queryKey: catalogKeys.sectionProducts(section.id),
     initialData: options?.initialData,
     staleTime: 60_000,
     queryFn: async (): Promise<HomeProduct[]> => {

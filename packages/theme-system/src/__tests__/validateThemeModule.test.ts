@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateThemeModule } from '../validateThemeModule';
+import { viewModelFixtures } from '@simplycms/objects/views/fixtures';
+import { THEME_VIEW_KEYS, validateThemeModule } from '../validateThemeModule';
 
 /** Фабрика валідного модуля теми v2 (свіжий обʼєкт на кожен тест). */
 function makeValidModule(): Record<string, unknown> {
@@ -120,5 +121,55 @@ describe('validateThemeModule', () => {
     mod.fonts = [{ stylesheet: 42 }];
 
     expect(() => validateThemeModule(mod)).toThrow(/fonts\[0\]/);
+  });
+  it('приймає модуль без views (поле опційне — теми v2.x не міняються)', () => {
+    expect(() => validateThemeModule(makeValidModule())).not.toThrow();
+  });
+
+  it('приймає модуль із валідним views', () => {
+    const mod = makeValidModule();
+    mod.views = { ProductDetail: () => null, Cart: () => null };
+
+    expect(() => validateThemeModule(mod)).not.toThrow();
+  });
+
+  it('відхиляє views, що не є обʼєктом', () => {
+    const mod = makeValidModule();
+    mod.views = [];
+
+    expect(() => validateThemeModule(mod)).toThrow(/views/);
+  });
+
+  it('відхиляє невідомий ключ views', () => {
+    const mod = makeValidModule();
+    mod.views = { Checkout: () => null };
+
+    expect(() => validateThemeModule(mod)).toThrow(/Checkout/);
+  });
+
+  it('відхиляє views.<сторінка> нефункціонального типу', () => {
+    const mod = makeValidModule();
+    mod.views = { Home: 'HomeView' };
+
+    expect(() => validateThemeModule(mod)).toThrow(/views\.Home/);
+  });
+
+  it('THEME_VIEW_KEYS перелічує рівно пʼять канонічних сторінок', () => {
+    expect([...THEME_VIEW_KEYS]).toEqual([
+      'Home',
+      'Catalog',
+      'CatalogSection',
+      'ProductDetail',
+      'Cart',
+    ]);
+  });
+
+  // Звірка двох списків: ключі контракту (тут) і ключі фікстур (у T0
+  // `@simplycms/objects`). Новий view без фікстури — червоний тест ще до
+  // conformance-kit-а.
+  it('кожен ключ контракту має фікстурний view-model', () => {
+    expect(Object.keys(viewModelFixtures).sort()).toEqual(
+      [...THEME_VIEW_KEYS].sort(),
+    );
   });
 });

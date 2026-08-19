@@ -59,6 +59,20 @@ export const messages = {
     'theme.newsletter.thanksTitle': 'Дякуємо за підписку',
     'theme.newsletter.thanksDescription':
       'Ми надішлемо листа, щойно зʼявиться щось варте уваги.',
+
+    // View-шар контракту v3 (картка товару й каталог). Рядки, що вже є в
+    // ядрі (`catalog.title`, `product.description`, `product.sku`…), беруться
+    // через `useT()` — дублювати їх сюди не можна.
+    'theme.view.back': 'Назад до каталогу',
+    'theme.view.noImage': 'Фото немає',
+    'theme.view.photo': 'Фото {number}',
+
+    'theme.product.trustAuthentic': 'Тільки оригінал',
+    'theme.product.trustAuthenticNote': 'Перевірено вручну',
+    'theme.product.trustShipping': 'Швидка доставка',
+    'theme.product.trustShippingNote': 'З відстеженням',
+    'theme.product.trustReturns': 'Прості повернення',
+    'theme.product.trustReturnsNote': '14 днів без пояснень',
   },
   en: {
     'theme.brand': 'SimplyCMS Store',
@@ -106,6 +120,17 @@ export const messages = {
     'theme.newsletter.thanksTitle': 'Thanks for subscribing',
     'theme.newsletter.thanksDescription':
       'We will write as soon as there is something worth your time.',
+
+    'theme.view.back': 'Back to catalog',
+    'theme.view.noImage': 'No photo',
+    'theme.view.photo': 'Photo {number}',
+
+    'theme.product.trustAuthentic': 'Genuine only',
+    'theme.product.trustAuthenticNote': 'Checked by hand',
+    'theme.product.trustShipping': 'Fast delivery',
+    'theme.product.trustShippingNote': 'With tracking',
+    'theme.product.trustReturns': 'Easy returns',
+    'theme.product.trustReturnsNote': '14 days, no questions',
   },
 } satisfies ThemeMessages;
 

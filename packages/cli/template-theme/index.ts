@@ -15,6 +15,8 @@ import { tokens } from './tokens';
 import { messages } from './messages';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+// Контракт v3 (опційно) — див. коментар нижче й `views/Cart.tsx`:
+// import { CartView } from './views/Cart';
 
 const theme: ThemeModule = {
   manifest,
@@ -29,6 +31,20 @@ const theme: ThemeModule = {
   // fonts: [
   //   { stylesheet: 'https://fonts.googleapis.com/css2?family=Manrope&display=swap' },
   // ],
+  //
+  // Контракт v3: `views` перевизначає ВЕСЬ view-шар канонічної сторінки
+  // вітрини (`Home` | `Catalog` | `CatalogSection` | `ProductDetail` | `Cart`).
+  // Дані, SEO і логіка лишаються в ядрі — тема отримує готовий view-model і
+  // РОЗСТАВЛЯЄ його слоти (комерційні реквізити), а не переписує їх.
+  //
+  // Готовий приклад — `views/Cart.tsx` у цій же теці (окремий `.tsx`-модуль:
+  // JSX у `.ts`-файлі не збирається). Щоб увімкнути, розкоментуй імпорт
+  // `CartView` угорі файла і рядок нижче:
+  //
+  // views: { Cart: CartView },
+  //
+  // 🔴 Заявлений view мусить пройти conformance — інакше магазин просто
+  // втратить кнопку купівлі: `pnpm simplycms theme:conformance __THEME_NAME__`.
 };
 
 export default theme;

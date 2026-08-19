@@ -1,8 +1,9 @@
 # @simplycms/objects
 
-Контракти доменних об'єктів (`Product`, `Order`, `DiscountGroup`, …) і порти рушія —
-інтерфейси репозиторіїв та провайдерів, які реалізує шар даних. Tier 0: тільки типи,
-нуль залежностей, без Supabase й React.
+Контракти доменних об'єктів (`Product`, `Order`, `DiscountGroup`, …), порти рушія —
+інтерфейси репозиторіїв та провайдерів, які реалізує шар даних, — і view-model-и
+канонічних сторінок вітрини (контракт тем v3). Tier 0: нуль рантайм-залежностей,
+без Supabase; `react` — опційний type-only peer лише для slot-типів `./views`.
 
 Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
@@ -22,6 +23,8 @@ pnpm add @simplycms/objects
 | `@simplycms/objects` | Усе разом — реекспорт `./objects` і `./ports` |
 | `@simplycms/objects/objects` | Об'єкти домену: `Product`, `ProductModification`, `Section`, `Property`, `Order`, `CreateOrderInput`, `PriceEntry`, `PriceType`, `Discount`, `DiscountGroup`, `StockInfo`, `ShippingZone`, `ShippingRate`, `PickupPoint`, `Banner`, `Identity`, `SeoConfig`, `Paged<T>` |
 | `@simplycms/objects/ports` | Порти: `CatalogRepository`, `OrderRepository`, `IdentityProvider`, `LinkResolver`, `MediaProvider`, `ConfigProvider`, `ScopeResolver` — і контейнер `EngineContext`, який їх зводить докупи |
+| `@simplycms/objects/views` | View-model-и пʼятьох сторінок вітрини (`HomeViewModel`, `CatalogViewModel`, `CatalogSectionViewModel`, `ProductDetailViewModel`, `CartViewModel`) + рантайм-константи реквізитів (`REQUISITE_ATTRIBUTE`, `HOME_REQUISITES`, `CATALOG_REQUISITES`, `PRODUCT_DETAIL_REQUISITES`, `CART_REQUISITES`, `REQUIRED_REQUISITES`) |
+| `@simplycms/objects/views/fixtures` | Фікстури view-model-ів для conformance-kit-а тем — рантайм-обʼєкти, не типи |
 
 ## Приклад
 
@@ -42,10 +45,13 @@ export const appLinks: LinkResolver = {
 };
 ```
 
-## 🔴 Рантайм-експортів тут немає жодного
+## 🔴 Рантайм тут мінімальний, але він є
 
-Усе, що віддає пакет, — `interface` і `type`; імпортуйте через `import type`.
-Значень, які можна викликати чи покласти в бандл, у ньому не існує.
+`./objects` і `./ports` — суто `interface` і `type`: імпортуйте їх через
+`import type`. Рантайм-значення живуть лише у двох субшляхах: `./views` віддає
+константи реквізитів (їх читає conformance-kit тем), а `./views/fixtures` —
+обʼєкти-фікстури. Інваріант тіру це не порушує: рантайм-**залежностей** у
+пакеті нуль, `react` лишається опційним type-only peer-ом.
 
 ## Ліцензія
 
