@@ -9,6 +9,7 @@ export default defineConfig({
     'src/safeFontStylesheets.ts',
     'src/bootstrapThemes.ts',
     'src/validateThemeModule.ts',
+    'src/conformance/index.ts',
     'src/useThemeT.ts',
     'src/types.ts',
   ],

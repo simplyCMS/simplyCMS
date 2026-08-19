@@ -11,6 +11,7 @@ const COMMANDS = {
   create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
   'db:diff': () => import('./db-diff.mjs'),
+  'theme:conformance': () => import('./theme-conformance.mjs'),
 };
 
 const HELP = `simplycms — CLI обслуговування магазину SimplyCMS
@@ -29,6 +30,9 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   update    Оновити ядро і host-файли:
               update [--check | --write] [--to <version>] [--no-install]
   db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
+  theme:conformance
+            Conformance-гейт контракту тем v3: theme:conformance <name>
+            (<name> — ключ теми в simplycms.config.ts; потребує jsdom)
 
 Опції:
   --help, -h       Ця довідка

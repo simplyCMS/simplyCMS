@@ -20,7 +20,7 @@ description: "Правила побудови UI, система тем та sha
 
 ## Система тем
 
-### ThemeModule Contract (v2.2)
+### ThemeModule Contract (v3)
 ```typescript
 interface ThemeModule {
   manifest: ThemeManifest;                 // name, displayName, version, engines.simplycms
@@ -30,12 +30,37 @@ interface ThemeModule {
   settings?: Record<string, ThemeSettingDefinition>;
   messages?: ThemeMessages;                // опційний каталог uk/en (v2.1)
   fonts?: ReadonlyArray<{ stylesheet: string }>;  // абсолютні https:-URL зовнішніх stylesheet (v2.2)
+  views?: ThemeViews;                      // опційний view-шар пʼяти сторінок вітрини (v3):
+                                           // Home | Catalog | CatalogSection | ProductDetail | Cart
 }
 ```
 
-🔴 Тема **не** постачає сторінок і лейаутів. `MainLayout`, `CatalogLayout`,
-`ProfileLayout`, `theme.pages` видалені (рішення D3/D4). Джерело контракту —
+🔴 Тема **не** постачає даних, роутів і SEO. `MainLayout`, `CatalogLayout`,
+`ProfileLayout`, `theme.pages` видалені (D3/D4). З контракту v3 (ревізія
+D3′/D4′) тема може перевизначити **презентацію** пʼяти сторінок вітрини через
+`views` — див. «Контракт v3» нижче. Джерело контракту —
 `packages/theme-system/src/types.ts`.
+
+### Контракт v3: `views`, слоти, conformance
+
+- **Container/view.** `packages/storefront-routes/src/pages/<Name>.tsx` —
+  container (дані, стан, збір view-model-а); канонічний view —
+  `src/views/<Name>View.tsx`. Резолв — `useStorefrontViews({ <Name>: … })`;
+  🔴 хук повертає МАПУ і споживається як `<views.X {...vm}/>` — компонент у
+  локальній змінній валить `react-hooks/static-components`.
+- **View — чиста функція від vm.** Жодних запитів даних усередині view;
+  дозволені лише `useT`/`useThemeT`/`useThemeSettings`. На цьому тримається
+  conformance (рендер на фікстурах без БД).
+- **View-model-и** — `@simplycms/objects/views` (секційна структура,
+  форвард-сумісність із треком B); фікстури — `@simplycms/objects/views/fixtures`.
+  🔴 Субшлях ПОЗА барелем пакета: тип слота вимагає `ComponentType` з react.
+- **Слоти реквізитів** — `src/views/slots/` route-пакета, приїжджають темі в
+  `vm.slots`; кожен малює `data-simplycms-requisite="<name>"`. Тема слоти
+  РОЗСТАВЛЯЄ, логіку всередині не переписує; імпортувати їх напряму темі не
+  можна. Обовʼязковий склад — `REQUIRED_REQUISITES`.
+- **Гейт** — `assertThemeViewsConformance` (`@simplycms/themes/conformance`);
+  запуск: `simplycms theme:conformance <name>` або `conformance.test.ts` теми.
+  Рантайм-fallback на канонічний view НЕ робиться свідомо.
 
 🔴 Типографіка і шрифти (v2.2): `font-heading` застосовується до `h1..h6`
 через `@layer base`, fallback-значення обох змінних — `:root` у
@@ -54,11 +79,14 @@ themes/default/                          # Локальна тема (dev-loop/c
 ├── tokens.ts            # DesignTokens (CSS-змінні, включно з dark)
 ├── components/          # Header, Footer (+ опційні HeroBanner, HomeSections)
 ├── messages.ts           # Опційний каталог uk/en (контракт v2.1)
+├── views/               # Опційно (v3): власні view сторінок вітрини
+├── conformance.test.ts  # Гейт заявлених views (скаффолд везе з коробки)
 ├── index.ts             # ThemeModule export
 └── package.json
 ```
 
-Ніяких `pages/`, `layouts/`, `styles/theme.css` — токени розкладає `applyTokens`.
+Ніяких `pages/`, `layouts/`, `styles/theme.css` — токени розкладає `applyTokens`,
+а `views/` перемальовує КАНОНІЧНУ сторінку, не заводить нову.
 
 🔴 Тема може також бути **npm-пакетом** (Фаза 4): референс ядра —
 `packages/simplycms-theme-<name>/` (npm `@simplycms/theme-<name>`), стороння
@@ -81,7 +109,12 @@ loader: async () => ({ themeName: (await getActiveTheme())?.name ?? 'default', �
 </ThemeProvider>
 ```
 
-Валідація модуля теми для авторів — `validateThemeModule` з `@simplycms/themes`.
+Каркас обгортає САМ view — канонічний або темовий (`views`, v3): резолв
+відбувається всередині container-а сторінки, каркаса це не стосується.
+
+Валідація модуля теми для авторів — `validateThemeModule` з `@simplycms/themes`;
+гейт заявлених `views` — `assertThemeViewsConformance`
+(`@simplycms/themes/conformance`) або `simplycms theme:conformance <name>`.
 
 ## ✅ ALWAYS
 - Використовуй `@simplycms/ui` компоненти, не створюй дублікати.
@@ -119,11 +152,13 @@ Button, Input, Dialog, Table, Card, Select, Tabs, Form, etc.
 AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc.
 
 ### themes/* (theme-specific)
-Header, Footer, HeroBanner, ProductCard (override), FilterSidebar (override)
+Header, Footer, HeroBanner, HomeSections + опційні `views` (v3): власна
+розмітка Home / Catalog / CatalogSection / ProductDetail / Cart.
 
 ## ℹ️ Де шукати деталі
-- `packages/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings?`, без `pages`).
-- `CLAUDE.md` розділ «Theme System (контракт v2)» — реєстрація та SSR-резолв.
+- `packages/theme-system/src/types.ts` — контракт `ThemeModule` (`manifest + tokens + components + settings? + views?`, без `pages`).
+- `packages/objects/src/views/` — view-model-и, слот-типи, імена реквізитів.
+- `CLAUDE.md` розділ «Theme System (контракт v3)» — реєстрація, SSR-резолв, views.
 - `packages/ui/src/` — всі shadcn/ui компоненти.
 - `themes/default/` — еталонна реалізація локальної теми (fallback-токени);
   `packages/simplycms-theme-solarstore/` — еталон пакетної форми (npm).

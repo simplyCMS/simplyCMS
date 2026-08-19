@@ -54,6 +54,11 @@ describe('cli create theme: скаффолд', () => {
 
     expect(created).toContain('package.json');
     expect(created).not.toContain('package.json.tpl');
+    // Гейт контракту v3 їде з коробки. 🔴 Суфікс `.tpl` тут не косметика:
+    // кореневий vitest монорепо не виключає template-theme/, тож файл із
+    // назвою `*.test.ts` прогнався б проти нерозгорнутих плейсхолдерів.
+    expect(created).toContain('conformance.test.ts');
+    expect(created).not.toContain('conformance.test.ts.tpl');
     // Контракт v2 у повному складі: паспорт, токени, каталог, обидва
     // обовʼязкові компоненти.
     for (const file of [
@@ -63,6 +68,10 @@ describe('cli create theme: скаффолд', () => {
       'messages.ts',
       'components/Header.tsx',
       'components/Footer.tsx',
+      // Приклад view-шару v3 їде СПРАВЖНІМ `.tsx`-модулем, а не JSX у
+      // коментарі `index.ts`: JSX у `.ts` не збирає ні tsc, ні esbuild.
+      'views/Cart.tsx',
+      'conformance.test.ts',
       'README.md',
     ]) {
       expect(created, `у шаблоні немає ${file}`).toContain(file);

@@ -18,7 +18,7 @@
  * впав би на `Cannot find module '@clack/prompts'`.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
@@ -164,6 +164,7 @@ export async function toolPkgSmoke() {
       'create theme',
       'update',
       'db:diff',
+      'theme:conformance',
     ]) {
       if (!help.includes(command)) {
         return {
@@ -172,7 +173,9 @@ export async function toolPkgSmoke() {
         };
       }
     }
-    details.push('✓ --help згадує всі команди (включно з create theme)');
+    details.push(
+      '✓ --help згадує всі команди (включно з create theme і theme:conformance)',
+    );
 
     const version = execFileSync(
       'node',
@@ -196,6 +199,10 @@ export async function toolPkgSmoke() {
     details.push(...doctor.details);
     if (!doctor.ok) return { ok: false, details };
 
+    const conformance = conformanceSmoke(pkgDir, join(work, 'doctor-store'));
+    details.push(...conformance.details);
+    if (!conformance.ok) return { ok: false, details };
+
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
   } catch (error) {
@@ -205,4 +212,53 @@ export async function toolPkgSmoke() {
       details: [...details, `✗ ${error.message}`, `робоча тека: ${work}`],
     };
   }
+}
+
+/**
+ * Крок Gate TOOL для `theme:conformance` — канонічного каналу запуску
+ * conformance-гейта тем v3 (амендмент до Р8, 2026-08-18).
+ *
+ * Скаффолд шаблону голий: ні node_modules, ні jsdom. Саме це тут і потрібно —
+ * доводиться не зелений прогін гейта (для нього потрібен встановлений
+ * магазин), а те, що команда з ОПУБЛІКОВАНОГО tarball-а доїжджає, знаходить
+ * тему в конфізі й чесно падає з ТОЧНОЮ командою донавантаження, а не
+ * мовчазним fallback-ом. Тека скаффолда — та сама, що в doctor-кроці.
+ *
+ * @param {string} pkgDir Тека розпакованого tarball-а `@simplycms/cli`.
+ * @param {string} storeDir Скаффолд шаблону, створений doctor-кроком.
+ * @returns {{ ok: boolean; details: string[] }}
+ */
+function conformanceSmoke(pkgDir, storeDir) {
+  // 🔴 NODE_PATH вирізається: pnpm ставить його на `.pnpm/node_modules`
+  // монорепо, і з ним `jsdom`/`vite` резолвляться навіть у голому скаффолді —
+  // смоук був би зелений на брехні (у магазині користувача NODE_PATH немає).
+  // Той самий прийом, що вирізання VITE_SUPABASE_* у doctor-кроці.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => name !== 'NODE_PATH'),
+  );
+  const run = spawnSync(
+    'node',
+    [join(pkgDir, 'src/index.mjs'), 'theme:conformance', 'default'],
+    { cwd: storeDir, encoding: 'utf8', env },
+  );
+  const output = `${run.stdout ?? ''}${run.stderr ?? ''}`;
+  if (run.status !== 1) {
+    return {
+      ok: false,
+      details: [
+        `✗ theme:conformance на голому скаффолді дав exit ${run.status}, ` +
+          'очікувався 1 (немає jsdom)',
+      ],
+    };
+  }
+  for (const marker of ["import('@themes/default/index')", 'pnpm add -D jsdom'])
+    if (!output.includes(marker))
+      return {
+        ok: false,
+        details: [`✗ у виводі theme:conformance немає маркера «${marker}»`],
+      };
+  return {
+    ok: true,
+    details: ['✓ theme:conformance: тема з конфігу знайдена, інструкція jsdom'],
+  };
 }

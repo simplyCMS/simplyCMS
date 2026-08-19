@@ -1,5 +1,8 @@
 import { CORE_VERSION, satisfies } from '@simplycms/objects/semver';
 import type { ThemeModule } from './types';
+import { validateThemeViews } from './validateThemeViews';
+
+export { THEME_VIEW_KEYS } from './validateThemeViews';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -17,7 +20,7 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     throw new Error('[theme] Модуль теми має бути обʼєктом');
   }
 
-  const { manifest, tokens, components, settings, messages, fonts } = m;
+  const { manifest, tokens, components, settings, messages, fonts, views } = m;
 
   if (!isRecord(manifest)) {
     throw new Error('[theme] Відсутній manifest');
@@ -116,4 +119,8 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
       }
     });
   }
+
+  // Мʼяка перевірка форми `views` (контракт v3) — за ідіомою блоку `fonts`:
+  // лише форма, семантику доводить conformance-kit. Тема без `views` валідна.
+  if (views !== undefined) validateThemeViews(String(manifest.name), views);
 }

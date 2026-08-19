@@ -20,7 +20,9 @@ pnpm simplycms doctor
 | Команда | Що робить |
 | ------- | --------- |
 | `simplycms doctor [--strict]` | Read-only діагностика магазину: версії ядра, pnpm-конфіг, env, host-файли, міграції, якорі конфігу; з env — ще й звірка активної теми/плагінів проти Supabase. Exit 1 при помилках; `--strict` — попередження теж валять |
-| `simplycms add <pkg> (--plugin \| --theme) [--name <key>] [--no-install] [--dry-run]` | `pnpm add <pkg>` + якірний запис у `simplycms.config.ts`. Тип обовʼязковий — автодетекції немає |
+| `simplycms add <pkg> (--plugin \| --theme) [--name <key>] [--copy] [--no-install] [--dry-run]` | `pnpm add <pkg>` + якірний запис у `simplycms.config.ts`. Тип обовʼязковий — автодетекції немає; `--copy` (лише з `--theme`) — copy-in: сирці теми лягають у `themes/<key>`, а пакет знімається |
+| `simplycms create (plugin \| theme) <name> [--dry-run]` | Скаффолд плагіна або теми в самому магазині: тека `plugins/<name>` / `themes/<name>` із шаблону + якірний запис у `simplycms.config.ts` |
+| `simplycms theme:conformance <name>` | Conformance-гейт контракту тем v3: рендерить заявлені темою `views` на фікстурах ядра й падає, якщо загублено комерційний реквізит. `<name>` — ключ теми в `simplycms.config.ts`; потребує `jsdom` у магазині (`pnpm add -D jsdom`) |
 | `simplycms update [--check \| --write] [--to <version>] [--no-install]` | Оновлення всіх `@simplycms/*` до `--to` або latest із реєстру + доганяння host-файлів (канон — тека `host/` цього пакета). `--check` (дефолт) — exit 1 при дрейфі, придатне для CI |
 | `simplycms db:diff [--write]` | Порівняння `supabase/migrations/` магазину з міграціями встановленого `@simplycms/schema`: нові міграції ядра `--write` докопіює (forward-only); змінений спільний файл — error без запису |
 
@@ -41,6 +43,13 @@ pnpm build && pnpm start         # rebuild
 pnpm simplycms add @acme/simplycms-plugin-wishlist --plugin
 pnpm simplycms add @acme/simplycms-theme-solar --theme --name solar --dry-run
 pnpm build   # активація й налаштування — далі з адмінки, без перезбірки
+```
+
+Власна тема з нуля (і гейт, якщо вона заявляє `views`):
+
+```bash
+pnpm simplycms create theme solar        # скаффолд themes/solar + запис у конфіг
+pnpm simplycms theme:conformance solar   # гейт views (потребує jsdom)
 ```
 
 ## Як влаштовано доганяння host-файлів
