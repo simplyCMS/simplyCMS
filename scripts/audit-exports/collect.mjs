@@ -42,6 +42,12 @@ const EXCLUDE_PATHSPECS = [
   // специфікатори-ЗАБОРОНИ і фікстури, а не реальні імпорти.
   ':!eslint.config.mjs',
   ':!tests/plugin-trust-boundary.test.ts',
+  // Те саме для тір-зон напрямку шарів (ПК3, К0): таблиця зон складає
+  // ban-глоби `simplycms/<тека>`, а негативний контроль годує ESLint
+  // синтетичними порушеннями (включно з `simplycms/…` у прикладі команди в
+  // докблоці). Реальних імпортів там немає.
+  ':!eslint.tier-zones.mjs',
+  ':!tests/tier-boundary.test.ts',
 ];
 
 /**

@@ -1,5 +1,6 @@
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -200,6 +201,14 @@ const eslintConfig = [
       ],
     },
   },
+  // Тір-зони напрямку шарів (ПК3, К0): по блоку на теку флагмана. Таблиця й
+  // обґрунтування — `eslint.tier-zones.mjs` (винесено окремим модулем, щоб
+  // конфіг лишався читним). Правило тут `no-restricted-imports`, тож перетину
+  // опцій з i18n/env-зонами `no-restricted-syntax` немає; зона межі довіри
+  // плагінів теж не перетинається — її глоби (`plugins/**`,
+  // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
+  // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
+  ...tierZoneConfigs,
   {
     ignores: [
       'node_modules/**',

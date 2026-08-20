@@ -172,10 +172,10 @@ rg -l -F "@simplycms/objects" -g '*.ts' -g '*.tsx' -g '*.mjs' \
 - Modify: `eslint.config.mjs`
 - Test: `tests/tier-boundary.test.ts` (новий, механіка `tests/plugin-trust-boundary.test.ts`)
 
-- [ ] **Step 1:** зняти ФАКТИЧНІ легальні межі: `for d in contracts domain schema supabase data-supabase react-query runtime i18n storefront ui themes plugins plugin-sdk core admin storefront-routes; do echo "== $d"; rg -o "from 'simplycms/[a-z-]+" packages/simplycms/src/$d 2>/dev/null | sort -u; done` — зони фіксують статус-кво, НЕ вводять нових обмежень.
-- [ ] **Step 2:** зони для ВСІХ тірів T0→T5 (не лише нижніх): `contracts` — без `simplycms/*` (крім типів react у views — чинне правило T0); `domain` — лише contracts; T2-теки — без T3+; `ui` — без data/сторінок; `themes`/`plugins` (T4) — без `admin`/`storefront-routes` (T5); same-tier-заборони — лише ті, що підтверджені Step 1 (нуль фактичних імпортів).
-- [ ] **Step 3:** `tests/tier-boundary.test.ts`: мінімум по одному негативному кейсу НА КОЖНУ зону (синтетичне порушення → рівно 1 помилка; той самий код поза зоною → 0; окремий кейс — зону не з'їв ignores).
-- [ ] **Step 4:** повний ланцюг. Commit: `feat(k0): eslint тір-зони T0→T5 з негативними контролями`.
+- [x] **Step 1:** зняти ФАКТИЧНІ легальні межі: `for d in contracts domain schema supabase data-supabase react-query runtime i18n storefront ui themes plugins plugin-sdk core admin storefront-routes; do echo "== $d"; rg -o "from 'simplycms/[a-z-]+" packages/simplycms/src/$d 2>/dev/null | sort -u; done` — зони фіксують статус-кво, НЕ вводять нових обмежень.
+- [x] **Step 2:** зони для ВСІХ тірів T0→T5 (не лише нижніх): `contracts` — без `simplycms/*` (крім типів react у views — чинне правило T0); `domain` — лише contracts; T2-теки — без T3+; `ui` — без data/сторінок; `themes`/`plugins` (T4) — без `admin`/`storefront-routes` (T5); same-tier-заборони — лише ті, що підтверджені Step 1 (нуль фактичних імпортів).
+- [x] **Step 3:** `tests/tier-boundary.test.ts`: мінімум по одному негативному кейсу НА КОЖНУ зону (синтетичне порушення → рівно 1 помилка; той самий код поза зоною → 0; окремий кейс — зону не з'їв ignores).
+- [x] **Step 4:** повний ланцюг. Commit: `feat(k0): eslint тір-зони T0→T5 з негативними контролями`.
 
 ### Task 5: Скіл у пакет + симлінки монорепо
 
