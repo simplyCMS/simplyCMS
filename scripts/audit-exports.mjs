@@ -8,7 +8,8 @@
  * `src/`/`routes/` — навіть той, якого немає в `package.json#exports`. При
  * справжньому `pnpm install` (tarball, без аліасів) Node різко впаде на
  * `ERR_PACKAGE_PATH_NOT_EXPORTED` для такого subpath-у. Цей скрипт зводить
- * докупи (а) усі реально вжиті специфікатори `@simplycms/<pkg>/<subpath>` і
+ * докупи (а) усі реально вжиті субшлях-специфікатори ядра
+ * (`@simplycms/<pkg>/<subpath>` і `simplycms/<subpath>`) і
  * (б) ключі `exports`/`publishConfig.exports` у manifest-і кожного пакета —
  * і друкує розриви.
  *
@@ -43,10 +44,12 @@ export function runAudit() {
   const unresolved = [];
 
   for (const specifier of specifiers) {
-    const match = /^@simplycms\/([a-zA-Z0-9_-]+)\/(.+)$/.exec(specifier);
+    // Дві гілки імені ядра: scoped-сателіт і unscoped-флагман (К0).
+    const match = /^(@simplycms\/[a-zA-Z0-9_-]+|simplycms)\/(.+)$/.exec(
+      specifier,
+    );
     if (!match) continue;
-    const [, pkgSegment, subpath] = match;
-    const pkgName = `@simplycms/${pkgSegment}`;
+    const [, pkgName, subpath] = match;
     const info = packages.get(pkgName);
 
     if (!info) {
@@ -91,7 +94,7 @@ if (isMain) {
   const { scanned, missing, unresolved } = runAudit();
 
   console.log(
-    `[audit-exports] Проскановано ${scanned} унікальних специфікаторів @simplycms/<pkg>/<subpath>.`,
+    `[audit-exports] Проскановано ${scanned} унікальних субшлях-специфікаторів ядра.`,
   );
 
   if (unresolved.length > 0) {

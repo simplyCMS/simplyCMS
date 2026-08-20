@@ -736,6 +736,8 @@ importers:
         specifier: 8.22.0
         version: 8.22.0
 
+  packages/simplycms: {}
+
   packages/simplycms-plugin-faq:
     dependencies:
       '@simplycms/plugin-sdk':

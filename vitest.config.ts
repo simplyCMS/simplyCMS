@@ -32,6 +32,10 @@ export default defineConfig({
       '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
       '@simplycms/themes': pkg('theme-system/src'),
       '@simplycms/theme-solarstore': pkg('simplycms-theme-solarstore/src'),
+      // 🔴 Навмисно `resolve`, а не хелпер `pkg`: рядок у лапках, що
+      // починається з імені флагмана й слеша, audit-exports читає як
+      // субшлях-специфікатор ядра й вимагає для нього ключ у exports.
+      simplycms: resolve(__dirname, 'packages/simplycms/src'),
       '@themes': resolve(__dirname, 'themes'),
       '@plugins': resolve(__dirname, 'plugins'),
     },

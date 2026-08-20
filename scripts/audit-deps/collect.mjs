@@ -12,11 +12,18 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const PACKAGES_DIR = join(ROOT, 'packages');
 
 /**
- * 🔴 Аудит стосується ЛИШЕ scoped-пакетів ядра: у них є subpath-exports, які
- * ці скрипти й звіряють. Unscoped `create-simplycms-store` лежить у тій самій
- * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md).
+ * 🔴 Аудит стосується ЛИШЕ пакетів ядра: у них є subpath-exports, які ці
+ * скрипти й звіряють. Це scoped-сателіти `@simplycms/*` і unscoped-флагман
+ * `simplycms` (К0). Unscoped `create-simplycms-store` лежить у тій самій
+ * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md); саме тому
+ * імʼя флагмана звіряється ТОЧНО, а не префіксом.
  */
 export const CORE_SCOPE = '@simplycms/';
+export const CORE_FLAGSHIP = 'simplycms';
+
+/** Чи це пакет ядра (scoped-сателіт або unscoped-флагман). */
+export const isCorePackage = (name) =>
+  name.startsWith(CORE_SCOPE) || name === CORE_FLAGSHIP;
 
 // Теки, що потрапляють у tarball і виконуються в рантаймі споживача.
 // Route-пакети везуть `routes/` сирцями — тому це теж publish-root.
@@ -60,7 +67,7 @@ export function collectPackages() {
 
     const json = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     if (typeof json.name !== 'string') continue;
-    if (!json.name.startsWith(CORE_SCOPE)) continue;
+    if (!isCorePackage(json.name)) continue;
 
     const dependencies = json.dependencies ?? {};
     const peerDependencies = json.peerDependencies ?? {};

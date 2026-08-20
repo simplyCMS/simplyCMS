@@ -1,5 +1,5 @@
 {
-  "name": "simplycms",
+  "name": "simplycms-monorepo",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
@@ -10,7 +10,7 @@
     "dev:www": "pnpm --filter simplycms-www dev",
     "build:www": "pnpm --filter simplycms-www build",
     "typecheck:www": "pnpm --filter simplycms-www typecheck",
-    "build:packages": "pnpm --filter \"@simplycms/*\" run build",
+    "build:packages": "pnpm --filter \"@simplycms/*\" --filter simplycms run build",
     "version:packages": "node scripts/version-packages.mjs",
     "verify:published": "node scripts/verify-published.mjs",
     "release": "node scripts/release.mjs",

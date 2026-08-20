@@ -1,0 +1,41 @@
+{
+  "name": "simplycms",
+  "version": "0.3.0",
+  "private": false,
+  "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "routes",
+    "skills",
+    "migrations",
+    "!src/**/__tests__/**"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup"
+  }
+}

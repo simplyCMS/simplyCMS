@@ -63,6 +63,8 @@
       "@simplycms/theme-solarstore": [
         "./packages/simplycms-theme-solarstore/src"
       ],
+      "simplycms": ["./packages/simplycms/src"],
+      "simplycms/*": ["./packages/simplycms/src/*"],
       "@themes/*": ["./themes/*"],
       "@plugins/*": ["./plugins/*"]
     },

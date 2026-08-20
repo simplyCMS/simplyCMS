@@ -37,6 +37,11 @@ const each = (assert: (name: string, entry: Entry) => void) => () => {
 describe('published packages: tarball parity', () => {
   it('пакетів для публікації знайдено', () => {
     expect(packed.size).toBeGreaterThanOrEqual(20);
+    // К0: unscoped-флагман мусить проходити той самий гейт, що й сателіти.
+    // Дискримінатор `pack-inspect` — `private === false` І імʼя ядра; без
+    // явного `"private": false` пакет мовчки випадає з parity-suite (тест не
+    // червоніє, просто нічого не перевіряє). Тому асерт саме на присутність.
+    expect(packed.has('simplycms')).toBe(true);
   });
 
   it(
