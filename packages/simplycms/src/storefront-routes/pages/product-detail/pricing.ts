@@ -1,12 +1,9 @@
 // Чисті обчислення цін картки товару (перенесено з контейнера без зміни
 // логіки — контракт тем v3, Фаза 3).
 
-import { applyDiscount } from '@simplycms/core/hooks/useDiscountedPrice';
-import type {
-  DiscountGroup,
-  DiscountResult,
-} from '@simplycms/core/lib/discountEngine';
-import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import { applyDiscount } from 'simplycms/core/hooks/useDiscountedPrice';
+import type { DiscountGroup, DiscountResult } from 'simplycms/domain/discounts';
+import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 import type {
   CurrentPricing,
   DiscountUserContext,

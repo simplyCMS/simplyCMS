@@ -3,11 +3,11 @@ import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
-import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
+import { ProductCard } from 'simplycms/core/components/catalog/ProductCard';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
-import { usePriceType } from '@simplycms/core/hooks/usePriceType';
-import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import { usePriceType } from 'simplycms/core/hooks/usePriceType';
+import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 import type { Tables } from 'simplycms/supabase';
 
 export interface PropertyOptionPageProps {

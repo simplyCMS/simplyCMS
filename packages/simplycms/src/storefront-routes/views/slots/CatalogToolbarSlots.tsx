@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { LayoutGrid, List } from 'lucide-react';
 import { CATALOG_REQUISITES } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
-import { ActiveFilters } from '@simplycms/core/components/catalog/ActiveFilters';
+import { ActiveFilters } from 'simplycms/core/components/catalog/ActiveFilters';
 import { Button } from 'simplycms/ui/button';
 import {
   Select,

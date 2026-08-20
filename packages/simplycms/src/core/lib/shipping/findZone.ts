@@ -1,5 +1,5 @@
 import { getSupabaseBrowserClient } from 'simplycms/supabase/browser-client';
-import { ShippingZone } from './types';
+import type { ShippingZone } from 'simplycms/contracts';
 
 /**
  * Find the most specific shipping zone for a customer city

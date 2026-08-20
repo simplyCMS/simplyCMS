@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from 'simplycms/ui/select';
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,

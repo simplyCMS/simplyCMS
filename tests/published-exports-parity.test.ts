@@ -35,19 +35,22 @@ const each = (assert: (name: string, entry: Entry) => void) => () => {
 };
 
 describe('published packages: tarball parity', () => {
-  it('пакетів для публікації знайдено', () => {
-    // Поріг перехідний: К0 Task 3 (частина А) злив ще одинадцять пакетів
-    // T3–T5 (17 → 5: флагман, `core`, `cli`, `plugin-faq`,
-    // `theme-solarstore`). 🔴 `create-simplycms-store` тут не рахується
-    // ніколи — `publishableDirs()` відсікає його за іменем (немає
-    // `publishConfig.exports`, звіряти нічого). Після розчинення `core`
-    // набір стане ТОЧНИМ і поріг зникне — це вже чотири пакети, не пʼять.
-    expect(packed.size).toBeGreaterThanOrEqual(5);
-    // К0: unscoped-флагман мусить проходити той самий гейт, що й сателіти.
-    // Дискримінатор `pack-inspect` — `private === false` І імʼя ядра; без
-    // явного `"private": false` пакет мовчки випадає з parity-suite (тест не
-    // червоніє, просто нічого не перевіряє). Тому асерт саме на присутність.
-    expect(packed.has('simplycms')).toBe(true);
+  it('пакетів для публікації знайдено — точний набір топології К0', () => {
+    // 🔴 Набір ТОЧНИЙ, не поріг: К0 звів ядро до флагмана + трьох сателітів.
+    // `create-simplycms-store` тут не рахується ніколи — `publishableDirs()`
+    // відсікає його за іменем (немає `publishConfig.exports`, звіряти
+    // нічого), тож у реліз-потязі пакетів пʼять, а в цій suite — чотири.
+    //
+    // Присутність флагмана перелік доводить заодно: дискримінатор
+    // `pack-inspect` — `private === false` І імʼя ядра, тож без явного
+    // `"private": false` пакет мовчки випав би з suite (тест не червонів би,
+    // просто нічого не перевіряв).
+    expect([...packed.keys()].sort()).toEqual([
+      '@simplycms/cli',
+      '@simplycms/plugin-faq',
+      '@simplycms/theme-solarstore',
+      'simplycms',
+    ]);
   });
 
   it(

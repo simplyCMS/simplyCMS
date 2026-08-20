@@ -4,7 +4,7 @@ import type {
   ProductDetailSlots,
 } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
-import { ProductCharacteristics } from '@simplycms/core/components/catalog/ProductCharacteristics';
+import { ProductCharacteristics } from 'simplycms/core/components/catalog/ProductCharacteristics';
 import { ViewPanel, ViewPanelHeading } from '../parts/ViewPanel';
 
 /**

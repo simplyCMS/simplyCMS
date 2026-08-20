@@ -73,7 +73,7 @@ export const SCANNED_ROOTS = [
   'packages/simplycms/src/checkout-ui',
   'packages/simplycms/src/profile-ui',
   'packages/simplycms/src/reviews-ui',
-  'packages/core/src',
+  'packages/simplycms/src/core',
   'packages/simplycms/src/storefront',
   'packages/simplycms/src/themes',
   'packages/simplycms/src/plugins',

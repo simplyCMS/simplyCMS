@@ -39,7 +39,7 @@ vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   }),
 }));
 
-vi.mock('@simplycms/core/hooks/useAuth', () => ({
+vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));
 

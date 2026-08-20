@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { useT } from 'simplycms/i18n';
 import {
   revalidateFailureDescription,

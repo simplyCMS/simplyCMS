@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { StarRating } from '@simplycms/core/components/reviews/StarRating';
+import { StarRating } from 'simplycms/core/components/reviews/StarRating';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';

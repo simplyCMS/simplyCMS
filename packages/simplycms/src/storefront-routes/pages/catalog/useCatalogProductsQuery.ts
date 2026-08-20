@@ -6,7 +6,7 @@ import {
   fetchModificationStockData,
   fetchModificationPropertyValues,
   enrichProductsWithAvailability,
-} from '@simplycms/core/hooks/useProductsWithStock';
+} from 'simplycms/core/hooks/useProductsWithStock';
 import type { CatalogPropertyValue } from './types';
 
 const CATALOG_PRODUCTS_SELECT = `

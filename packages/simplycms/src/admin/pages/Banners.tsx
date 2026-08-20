@@ -5,7 +5,7 @@ import { Card, CardContent } from 'simplycms/ui/card';
 import { Switch } from 'simplycms/ui/switch';
 import { Badge } from 'simplycms/ui/badge';
 import { Skeleton } from 'simplycms/ui/skeleton';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import {
   Plus,
   Trash2,

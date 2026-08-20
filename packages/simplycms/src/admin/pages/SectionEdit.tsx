@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
 import { Separator } from 'simplycms/ui/separator';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { ImageUpload } from '../components/ImageUpload';
 import { RichTextEditor } from '../components/RichTextEditor';

@@ -9,7 +9,7 @@ const toast = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }));
-vi.mock('@simplycms/core/hooks/use-toast', () => ({
+vi.mock('simplycms/core/hooks/use-toast', () => ({
   useToast: () => ({ toast }),
 }));
 

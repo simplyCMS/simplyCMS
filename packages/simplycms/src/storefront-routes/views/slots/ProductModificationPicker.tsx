@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
 import { useFormatPrice } from 'simplycms/react-query';
-import { ModificationSelector } from '@simplycms/core/components/catalog/ModificationSelector';
+import { ModificationSelector } from 'simplycms/core/components/catalog/ModificationSelector';
 
 type SelectorProps = ComponentProps<typeof ModificationSelector>;
 

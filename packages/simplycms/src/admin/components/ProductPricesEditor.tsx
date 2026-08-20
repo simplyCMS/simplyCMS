@@ -14,7 +14,7 @@ import {
 } from 'simplycms/ui/table';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, Save } from 'lucide-react';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 
 interface ProductPricesEditorProps {
   productId: string;

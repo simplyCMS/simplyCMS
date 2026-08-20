@@ -20,8 +20,8 @@ import { Separator } from 'simplycms/ui/separator';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from 'simplycms/i18n';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 
 interface OrderDetails {

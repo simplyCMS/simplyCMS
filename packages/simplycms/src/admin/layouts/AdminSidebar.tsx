@@ -1,4 +1,4 @@
-import { NavLink } from '@simplycms/core/components/NavLink';
+import { NavLink } from 'simplycms/core/components/NavLink';
 import { adminPath } from '../lib/adminLinks';
 import { useSidebar } from 'simplycms/ui/sidebar';
 import { useT, type MessageKey } from 'simplycms/i18n';

@@ -30,7 +30,7 @@ import {
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
-import { ShippingMethod } from '@simplycms/core/lib/shipping/types';
+import { ShippingMethod } from 'simplycms/contracts';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 
 // Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.

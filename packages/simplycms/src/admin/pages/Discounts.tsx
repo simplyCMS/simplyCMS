@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Switch } from 'simplycms/ui/switch';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from 'simplycms/i18n';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import type { Tables } from 'simplycms/supabase';
 import { adminPath } from '../lib/adminLinks';
 

@@ -1,7 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { User, Package, Settings, LogOut } from 'lucide-react';
 import { cn } from 'simplycms/ui/utils';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT, type MessageKey } from 'simplycms/i18n';
 
 const navItems: {

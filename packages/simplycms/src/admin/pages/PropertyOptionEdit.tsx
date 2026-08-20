@@ -7,7 +7,7 @@ import { Input } from 'simplycms/ui/input';
 import { Textarea } from 'simplycms/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Label } from 'simplycms/ui/label';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { ImageUpload } from '../components/ImageUpload';
 import { RichTextEditor } from '../components/RichTextEditor';

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { activatePlugin, deactivatePlugin } from 'simplycms/plugins';
 import type { Plugin } from 'simplycms/plugins/types';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { useT } from 'simplycms/i18n';
 
 /** Спільний ключ кешу списку плагінів (сторінка + мутація toggle). */

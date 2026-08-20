@@ -39,7 +39,7 @@ import {
   AlertDialogTrigger,
 } from 'simplycms/ui/alert-dialog';
 import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 
 // Мапи КЛЮЧІВ: коди полів і операторів зберігаються в БД. UTM-поля мають

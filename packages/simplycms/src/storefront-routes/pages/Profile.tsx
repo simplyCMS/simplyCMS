@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { Badge } from 'simplycms/ui/badge';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';

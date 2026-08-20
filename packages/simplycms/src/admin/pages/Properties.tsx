@@ -30,7 +30,7 @@ import {
 } from 'simplycms/ui/select';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import type { TablesInsert, Enums } from 'simplycms/supabase';
 import { useT, type MessageKey } from 'simplycms/i18n';

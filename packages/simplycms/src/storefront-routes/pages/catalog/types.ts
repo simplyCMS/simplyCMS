@@ -4,7 +4,7 @@
 // фільтри → сортування), тому типи, хуки й підкомпоненти view у них СПІЛЬНІ,
 // а розходження зведені до параметрів.
 
-import type { FilterValue } from '@simplycms/core/components/catalog/FilterSidebar';
+import type { FilterValue } from 'simplycms/core/components/catalog/FilterSidebar';
 
 export type { FilterValue };
 

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { User, Package, Settings, LogOut, type LucideIcon } from 'lucide-react';
-import { cn } from '@simplycms/core/lib/utils';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { cn } from 'simplycms/ui/utils';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { Button } from 'simplycms/ui/button';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { useActiveThemeModule } from './useActiveThemeModule';

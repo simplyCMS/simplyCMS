@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/core': pkg('core/src'),
       '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
       '@simplycms/theme-solarstore': pkg('simplycms-theme-solarstore/src'),
       // 🔴 Навмисно `resolve`, а не хелпер `pkg`: рядок у лапках, що

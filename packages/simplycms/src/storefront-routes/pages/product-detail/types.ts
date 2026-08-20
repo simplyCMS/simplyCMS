@@ -1,6 +1,6 @@
 // Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
 
-import type { DiscountResult } from '@simplycms/core/lib/discountEngine';
+import type { DiscountResult } from 'simplycms/domain/discounts';
 import type { Tables } from 'simplycms/supabase';
 
 /**

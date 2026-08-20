@@ -8,8 +8,8 @@ import { AdminSidebar } from './AdminSidebar';
 import { Button } from 'simplycms/ui/button';
 import { LogOut, Home } from 'lucide-react';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { useToast } from '@simplycms/core/hooks/use-toast';
-import { ThemeToggle } from '@simplycms/core/components/ThemeToggle';
+import { useToast } from 'simplycms/core/hooks/use-toast';
+import { ThemeToggle } from 'simplycms/core/components/ThemeToggle';
 import { useT } from 'simplycms/i18n';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

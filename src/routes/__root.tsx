@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
-import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
+import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';

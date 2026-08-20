@@ -9,7 +9,7 @@ import {
   type DiscountResult,
   type GroupOperator,
   type DiscountType,
-} from '../lib/discountEngine';
+} from 'simplycms/domain/discounts';
 
 /** Loads all active discount groups for the given price type, with nested discounts/targets/conditions */
 export function useDiscountGroups() {

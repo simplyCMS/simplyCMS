@@ -13,7 +13,7 @@ import {
   TableRow,
 } from 'simplycms/ui/table';
 import { Plus, Trash2, Star, Loader2 } from 'lucide-react';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 
 export default function PriceTypes() {

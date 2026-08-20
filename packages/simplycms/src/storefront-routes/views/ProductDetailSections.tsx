@@ -5,7 +5,7 @@ import type {
 } from 'simplycms/contracts/views';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { Separator } from 'simplycms/ui/separator';
-import { ProductCharacteristics } from '@simplycms/core/components/catalog/ProductCharacteristics';
+import { ProductCharacteristics } from 'simplycms/core/components/catalog/ProductCharacteristics';
 
 const NAV_SECTIONS = [
   { id: 'section-description', labelKey: 'product.description' },

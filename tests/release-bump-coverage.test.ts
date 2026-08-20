@@ -15,20 +15,21 @@ import {
 // Гард синхронної моделі версій: реліз-бамп мусить бачити ВСІ публіковані
 // пакети, інакше версії розійдуться на першому ж релізі після появи пакета.
 describe('release bump: покриття манифестів', () => {
-  it('бачить обидва unscoped-пакети і решту @simplycms/*', () => {
+  it('бачить рівно пʼять пакетів топології К0', () => {
     const names = readPublishableManifests().map(
       ({ manifest }) => manifest.name,
     );
-    expect(names).toContain('create-simplycms-store');
-    // 🔴 Флагман К0 — unscoped, тож під фільтр scope він не підпадає й
-    // потребує окремого асерту: пропущений тут, він мовчки випав би з бампу.
-    expect(names).toContain('simplycms');
-    // Поріг перехідний: К0 Task 3 (частина А) злив ще одинадцять пакетів
-    // T3–T5 (16 → 4: `core`, `cli`, `plugin-faq`, `theme-solarstore`).
-    // Розчинення `core` дасть ТОЧНИЙ набір із пʼяти — тоді поріг зникне.
-    expect(
-      names.filter((n) => n.startsWith('@simplycms/')).length,
-    ).toBeGreaterThanOrEqual(4);
+    // 🔴 Набір ТОЧНИЙ, а не поріг: К0 звів топологію до пʼяти пакетів, і
+    // порогова перевірка мовчки пропустила б як зайвий (невидалений) пакет,
+    // так і випадковий новий. Флагман тут unscoped — під фільтр scope він не
+    // підпадає, тож переліком він захищений заодно.
+    expect([...names].sort()).toEqual([
+      '@simplycms/cli',
+      '@simplycms/plugin-faq',
+      '@simplycms/theme-solarstore',
+      'create-simplycms-store',
+      'simplycms',
+    ]);
   });
 
   it('версія одна на всіх (синхронна модель)', () => {

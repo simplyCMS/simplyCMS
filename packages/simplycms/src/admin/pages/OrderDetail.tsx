@@ -37,7 +37,7 @@ import {
 import { ArrowLeft, Trash2, Save, Loader2, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { useState } from 'react';
 import { AddProductToOrder } from '../components/AddProductToOrder';
 

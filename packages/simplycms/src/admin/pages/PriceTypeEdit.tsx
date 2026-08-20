@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from 'simplycms/ui/form';
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 import {
   AlertDialog,

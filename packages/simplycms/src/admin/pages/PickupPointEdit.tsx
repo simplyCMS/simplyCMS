@@ -30,11 +30,7 @@ import {
 } from 'simplycms/ui/select';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Shield } from 'lucide-react';
-import {
-  PickupPoint,
-  ShippingMethod,
-  ShippingZone,
-} from '@simplycms/core/lib/shipping/types';
+import { PickupPoint, ShippingMethod, ShippingZone } from 'simplycms/contracts';
 
 // Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
 const buildFormSchema = (t: Translator) =>

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useToast } from 'simplycms/ui/use-toast';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT } from 'simplycms/i18n';
 
 interface Address {

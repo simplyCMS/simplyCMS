@@ -1,11 +1,11 @@
 // Ціни картки товару: рушій знижок + тип ціни покупця.
 
 import { useMemo } from 'react';
-import { usePriceType } from '@simplycms/core/hooks/usePriceType';
+import { usePriceType } from 'simplycms/core/hooks/usePriceType';
 import {
   useDiscountGroups,
   useDiscountContext,
-} from '@simplycms/core/hooks/useDiscountedPrice';
+} from 'simplycms/core/hooks/useDiscountedPrice';
 import { buildModificationPrices, resolveCurrentPricing } from './pricing';
 import type {
   CurrentPricing,

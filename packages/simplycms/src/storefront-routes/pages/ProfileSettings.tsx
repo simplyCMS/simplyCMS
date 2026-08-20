@@ -21,13 +21,13 @@ import {
   FormLabel,
   FormMessage,
 } from 'simplycms/ui/form';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type Translator } from 'simplycms/i18n';
-import { toast } from '@simplycms/core/hooks/use-toast';
-import { AvatarUpload } from '@simplycms/core/components/profile/AvatarUpload';
-import { AddressesList } from '@simplycms/core/components/profile/AddressesList';
-import { RecipientsList } from '@simplycms/core/components/profile/RecipientsList';
+import { toast } from 'simplycms/core/hooks/use-toast';
+import { AvatarUpload } from 'simplycms/core/components/profile/AvatarUpload';
+import { AddressesList } from 'simplycms/core/components/profile/AddressesList';
+import { RecipientsList } from 'simplycms/core/components/profile/RecipientsList';
 
 // Фабрики схем: повідомлення валідації живуть у каталозі, а транслятор
 // доступний лише в рендері. Обидві мемоїзуються по `t` у компоненті.

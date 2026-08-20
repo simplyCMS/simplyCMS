@@ -28,7 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from 'simplycms/ui/collapsible';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import {
   Plus,
   Trash2,
@@ -45,7 +45,7 @@ import { StockStatusSelect } from './StockStatusSelect';
 import { StockByPointManager } from './StockByPointManager';
 import { ProductPricesEditor } from './ProductPricesEditor';
 import type { Tables, TablesInsert } from 'simplycms/supabase';
-import type { StockStatus } from '@simplycms/core/hooks/useStock';
+import type { StockStatus } from 'simplycms/core/hooks/useStock';
 
 type ProductModification = Tables<'product_modifications'>;
 

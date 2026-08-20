@@ -15,8 +15,6 @@
     "incremental": true,
 
     "paths": {
-      "@simplycms/core": ["./packages/core/src"],
-      "@simplycms/core/*": ["./packages/core/src/*"],
       "@simplycms/plugin-faq": ["./packages/simplycms-plugin-faq/src"],
       "@simplycms/plugin-faq/pages/*": [
         "./packages/simplycms-plugin-faq/src/pages/*"

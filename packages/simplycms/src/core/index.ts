@@ -1,3 +1,12 @@
+// Тір `core` — те, що лишилося від однойменного пакета після К0: власні
+// провайдери, хуки й компоненти, які ще не розселені по цільових тірах.
+//
+// 🔴 Фасадної ролі тут БІЛЬШЕ НЕМАЄ. Реекспорти чужого (pricing, discounts,
+// shipping, `cn`, `Database`) знято разом із розчиненням пакета: споживач
+// бере їх із джерела — `simplycms/domain/*`, `simplycms/contracts`,
+// `simplycms/ui/utils`, `simplycms/supabase`. Повне розселення власних
+// модулів по тірах — свідомо поза К0.
+
 // ---- Providers ----
 export { CMSProvider } from './providers/CMSProvider';
 
@@ -37,23 +46,6 @@ export {
 export type { StockStatus, StockByPoint, StockInfo } from './hooks/useStock';
 
 // ---- Lib ----
-export { cn } from './lib/utils';
-export { resolvePrice } from './lib/priceUtils';
-export type { PriceEntry } from './lib/priceUtils';
-export { resolveDiscount } from './lib/discountEngine';
-export type {
-  DiscountType,
-  GroupOperator,
-  TargetType,
-  DiscountTarget,
-  DiscountCondition,
-  Discount,
-  DiscountGroup,
-  DiscountContext,
-  AppliedDiscount,
-  RejectedDiscount,
-  DiscountResult,
-} from './lib/discountEngine';
 export {
   signUp,
   signIn,
@@ -63,30 +55,7 @@ export {
   getSession,
   getUser,
 } from './lib/supabase';
-
-// ---- Shipping ----
-export {
-  calculateShippingCost,
-  calculateShipping,
-  formatShippingCost,
-  findShippingZone,
-} from './lib/shipping';
-export type {
-  ShippingMethodType,
-  ShippingCalculationType,
-  ShippingMethod,
-  ShippingZone,
-  ShippingRate,
-  PickupPoint,
-  WorkingHours,
-  Coordinates,
-  ShippingCalculationContext,
-  ShippingCalculationResult,
-  ShippingFormData,
-} from './lib/shipping';
-
-// ---- Types ----
-export type { Database } from './types';
+export { findShippingZone } from './lib/shipping/findZone';
 
 // ---- Catalog Components ----
 export { ActiveFilters } from './components/catalog/ActiveFilters';

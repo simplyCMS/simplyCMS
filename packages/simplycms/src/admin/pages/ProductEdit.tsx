@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'simplycms/ui/select';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { ImageUpload } from '../components/ImageUpload';
 import { RichTextEditor } from '../components/RichTextEditor';

@@ -1,4 +1,4 @@
-import { useBanners } from '@simplycms/core/hooks/useBanners';
+import { useBanners } from 'simplycms/core/hooks/useBanners';
 import type { Banner, BannerButton } from 'simplycms/contracts/objects';
 import useEmblaCarousel from 'embla-carousel-react';
 import { useCallback, useEffect, useState } from 'react';

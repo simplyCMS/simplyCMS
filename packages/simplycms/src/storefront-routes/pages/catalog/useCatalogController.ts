@@ -2,7 +2,7 @@
 // (контракт тем v3, Фаза 4).
 
 import { useCallback, useMemo, useState } from 'react';
-import { useProductRatings } from '@simplycms/core/hooks/useProductReviews';
+import { useProductRatings } from 'simplycms/core/hooks/useProductReviews';
 import type { ProductListItem } from '../../server/product-list-item';
 import type {
   CatalogSortOption,

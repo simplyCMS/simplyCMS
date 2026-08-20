@@ -8,7 +8,7 @@ import type {
   PickupPoint,
 } from 'simplycms/domain/shipping';
 import { formatShippingCost } from 'simplycms/domain/shipping';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 import { useEngine } from 'simplycms/react-query';

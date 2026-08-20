@@ -1,7 +1,7 @@
 // Прив'язки slot-компонентів картки товару (контракт тем v3, Фаза 3).
 
 import { createContext, useContext, type ReactNode } from 'react';
-import type { ModificationStockInfo } from '@simplycms/core/components/catalog/ModificationSelector';
+import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type { ModificationPrice, ProductModificationRow } from './types';
 

@@ -69,6 +69,13 @@
     "./admin/components/*": "./src/admin/components/*",
     "./admin/pages/*": "./src/admin/pages/*",
     "./admin/layouts/*": "./src/admin/layouts/*",
+    "./core": "./src/core/index.ts",
+    "./core/providers": "./src/core/providers/CMSProvider.tsx",
+    "./core/providers/CMSProvider": "./src/core/providers/CMSProvider.tsx",
+    "./core/hooks": "./src/core/hooks/useAuth.tsx",
+    "./core/hooks/*": "./src/core/hooks/*",
+    "./core/lib/*": "./src/core/lib/*",
+    "./core/components/*": "./src/core/components/*",
     "./storefront-routes": "./src/storefront-routes/index.ts",
     "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
     "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
@@ -334,6 +341,34 @@
         "types": "./dist/admin/layouts/*.d.ts",
         "import": "./dist/admin/layouts/*.js"
       },
+      "./core": {
+        "types": "./dist/core/index.d.ts",
+        "import": "./dist/core/index.js"
+      },
+      "./core/providers": {
+        "types": "./dist/core/providers/CMSProvider.d.ts",
+        "import": "./dist/core/providers/CMSProvider.js"
+      },
+      "./core/providers/CMSProvider": {
+        "types": "./dist/core/providers/CMSProvider.d.ts",
+        "import": "./dist/core/providers/CMSProvider.js"
+      },
+      "./core/hooks": {
+        "types": "./dist/core/hooks/useAuth.d.ts",
+        "import": "./dist/core/hooks/useAuth.js"
+      },
+      "./core/hooks/*": {
+        "types": "./dist/core/hooks/*.d.ts",
+        "import": "./dist/core/hooks/*.js"
+      },
+      "./core/lib/*": {
+        "types": "./dist/core/lib/*.d.ts",
+        "import": "./dist/core/lib/*.js"
+      },
+      "./core/components/*": {
+        "types": "./dist/core/components/*.d.ts",
+        "import": "./dist/core/components/*.js"
+      },
       "./storefront-routes": {
         "types": "./dist/storefront-routes/index.d.ts",
         "import": "./dist/storefront-routes/index.js"
@@ -451,7 +486,6 @@
     "pg": "8.22.0"
   },
   "dependencies": {
-    "@simplycms/core": "workspace:*",
     "@tiptap/extension-image": "^3.29.2",
     "@tiptap/extension-text-align": "^3.29.2",
     "clsx": "^2.1.1",

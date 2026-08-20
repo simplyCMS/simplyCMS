@@ -8,9 +8,9 @@ import { Badge } from 'simplycms/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Textarea } from 'simplycms/ui/textarea';
 import { Label } from 'simplycms/ui/label';
-import { StarRating } from '@simplycms/core/components/reviews/StarRating';
+import { StarRating } from 'simplycms/core/components/reviews/StarRating';
 import { Avatar, AvatarFallback, AvatarImage } from 'simplycms/ui/avatar';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,

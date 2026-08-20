@@ -20,7 +20,7 @@ import type { TablesInsert } from 'simplycms/supabase';
 import {
   usePickupPointsCount,
   usePickupPoints,
-} from '@simplycms/core/hooks/useStock';
+} from 'simplycms/core/hooks/useStock';
 
 interface StockByPointManagerProps {
   productId?: string | null;

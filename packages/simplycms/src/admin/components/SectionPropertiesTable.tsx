@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from 'simplycms/ui/select';
 import { Label } from 'simplycms/ui/label';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 
 /** Тип для join-результату property з section_property_assignments */

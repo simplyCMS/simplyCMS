@@ -20,11 +20,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'simplycms/ui/dropdown-menu';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { useCart } from '@simplycms/core/hooks/useCart';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
+import { useCart } from 'simplycms/core/hooks/useCart';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
+import { CartDrawer } from 'simplycms/core/components/cart/CartDrawer';
 import { useQuery } from '@tanstack/react-query';
 import { useT } from 'simplycms/i18n';
 import { useThemeT } from 'simplycms/themes/useThemeT';

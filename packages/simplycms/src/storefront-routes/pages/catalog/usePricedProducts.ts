@@ -1,13 +1,13 @@
 // Резолв цін вибірки каталогу під тип ціни покупця й знижки (Фаза 4).
 
 import { useMemo } from 'react';
-import { usePriceType } from '@simplycms/core/hooks/usePriceType';
-import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import { usePriceType } from 'simplycms/core/hooks/usePriceType';
+import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 import {
   useDiscountGroups,
   useDiscountContext,
   applyDiscount,
-} from '@simplycms/core/hooks/useDiscountedPrice';
+} from 'simplycms/core/hooks/useDiscountedPrice';
 import type { RawCatalogProduct } from './useCatalogProductsQuery';
 
 /**

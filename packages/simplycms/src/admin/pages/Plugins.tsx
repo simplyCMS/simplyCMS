@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { NavLink } from '@simplycms/core/components/NavLink';
+import { NavLink } from 'simplycms/core/components/NavLink';
 import { Button } from 'simplycms/ui/button';
 import {
   Card,
@@ -11,7 +11,7 @@ import {
 import { Switch } from 'simplycms/ui/switch';
 import { Badge } from 'simplycms/ui/badge';
 import { Skeleton } from 'simplycms/ui/skeleton';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ArrowLeft, Puzzle, Settings, Trash2 } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import { getRegisteredPluginModules, uninstallPlugin } from 'simplycms/plugins';

@@ -45,8 +45,8 @@ import {
   ShippingRate,
   ShippingMethod,
   ShippingCalculationType,
-} from '@simplycms/core/lib/shipping/types';
-import { formatShippingCost } from '@simplycms/core/lib/shipping';
+} from 'simplycms/contracts';
+import { formatShippingCost } from 'simplycms/domain/shipping';
 
 // Фабрика схеми: повідомлення з каталогу, транслятор живе в рендері.
 const buildFormSchema = (t: Translator) =>

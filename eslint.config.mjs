@@ -86,7 +86,7 @@ const SERVER_ENV_FILES = [
 ];
 
 // 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
-// @simplycms/plugin-sdk — прямі імпорти Supabase-шару звідси заборонені.
+// `simplycms/plugin-sdk` — прямі імпорти Supabase-шару звідси заборонені.
 // Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
 // (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
 // `plugin-*`: plugin-system і plugin-sdk — ядро, їх зона не покриває.
@@ -108,7 +108,7 @@ const pluginTrustBoundaryImports = [
       '@supabase/*',
     ],
     message:
-      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7).',
+      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
   },
 ];
 
@@ -119,7 +119,7 @@ const pluginTrustBoundarySyntax = [
     selector:
       'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
     message:
-      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
+      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
 ];
 

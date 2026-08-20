@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'simplycms/ui/select';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ImageUpload } from '../components/ImageUpload';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import type { Json } from 'simplycms/supabase';

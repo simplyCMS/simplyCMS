@@ -5,7 +5,7 @@ import { StockStatusSelect } from './StockStatusSelect';
 import { useT } from 'simplycms/i18n';
 import { StockByPointManager } from './StockByPointManager';
 import { ProductPricesEditor } from './ProductPricesEditor';
-import type { StockStatus } from '@simplycms/core/hooks/useStock';
+import type { StockStatus } from 'simplycms/core/hooks/useStock';
 
 interface SimpleProductFieldsProps {
   productId: string;

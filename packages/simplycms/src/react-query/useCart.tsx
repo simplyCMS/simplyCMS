@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import type { Json } from 'simplycms/contracts';
 
-// Клієнтський стан кошика (localStorage). Перенесено з @simplycms/core у
+// Клієнтський стан кошика (localStorage). Перенесено з тіру `simplycms/core` у
 // Tier-2, щоб feature-ui (cart-ui/checkout-ui) не залежали від god-package.
 
 export interface CartItem {

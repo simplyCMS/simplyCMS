@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from 'simplycms/ui/tabs';
 import { Badge } from 'simplycms/ui/badge';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type Translator } from 'simplycms/i18n';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import type { Json } from 'simplycms/supabase';
 import { adminPath } from '../lib/adminLinks';
 

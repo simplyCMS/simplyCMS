@@ -44,7 +44,7 @@ import {
   History,
   ExternalLink,
 } from 'lucide-react';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';

@@ -35,8 +35,10 @@ const base = {
  * затирав корінь пакета. Ключ фіксує вихідний шлях явно й тримає `dist/`
  * дзеркалом `publishConfig.exports`.
  *
- * Порожній результат — не помилка: теки тірів наповнюються поетапно
- * (К0 Task 2–3), профіль без entry просто відсіюється нижче.
+ * 🔴 Порожній результат — ПОМИЛКА: після К0 Task 3 усі тіри на місці, тож
+ * глоб без збігів означає одруку чи забутий перенос, і tsup мусить впасти
+ * гучно («No input files found»), а не мовчки зібрати пакет без entry.
+ * Перехідний фільтр порожніх профілів (риштування Task 1) знято.
  */
 const entries = (patterns: string[]): Record<string, string> =>
   Object.fromEntries(
@@ -50,7 +52,7 @@ const entries = (patterns: string[]): Record<string, string> =>
       ]),
   );
 
-/** Профіль tsup із гарантовано мапним `entry` (потрібен для фільтра нижче). */
+/** Профіль tsup із гарантовано мапним `entry` (обʼєктна форма — див. вище). */
 type Profile = Options & { entry: Record<string, string> };
 
 const profile = (
@@ -83,7 +85,7 @@ const profiles: Profile[] = [
   // `storefront-routes/pages/catalog/*`) мусить лишитися чанком, а не стати
   // окремим entry — інакше `dist/` перестає бути дзеркалом exports-мапи.
   profile(
-    'core',
+    'tiers',
     [
       'src/index.ts',
       'src/domain/*.ts',
@@ -119,6 +121,16 @@ const profiles: Profile[] = [
       'src/{cart,catalog,checkout,profile,reviews}-ui/*.tsx',
       'src/admin/index.ts',
       'src/admin/{components,pages,layouts}/*.tsx',
+      // Тір `core` (залишок розчиненого фасаду): `lib/**` і `components/**`
+      // рекурсивні — wildcard-входи `./core/lib/*` і `./core/components/*`
+      // накривають і вкладені шляхи (`lib/shipping/findZone`,
+      // `components/catalog/ProductCard`).
+      'src/core/index.ts',
+      'src/core/providers/CMSProvider.tsx',
+      'src/core/hooks/*.ts',
+      'src/core/hooks/*.tsx',
+      'src/core/lib/**/*.ts',
+      'src/core/components/**/*.tsx',
     ],
     { splitting: true },
   ),
@@ -142,6 +154,6 @@ const profiles: Profile[] = [
     ],
     { splitting: true, target: 'esnext' },
   ),
-].filter((item) => Object.keys(item.entry).length > 0);
+];
 
 export default defineConfig(profiles);

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from 'simplycms/ui/select';
 import { Skeleton } from 'simplycms/ui/skeleton';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ArrowLeft, Save, Palette } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
 import { useT } from 'simplycms/i18n';

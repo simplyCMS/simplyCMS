@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
 import { Plus, Trash2, Truck } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
-import { ShippingMethod } from '@simplycms/core/lib/shipping/types';
+import { ShippingMethod } from 'simplycms/contracts';
 import { icons } from 'lucide-react';
 
 const getMethodIcon = (

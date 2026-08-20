@@ -22,7 +22,7 @@ import {
 } from 'simplycms/ui/select';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import {
   ArrowLeft,
   Save,

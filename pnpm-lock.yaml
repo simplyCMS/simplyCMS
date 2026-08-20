@@ -308,63 +308,6 @@ importers:
         specifier: ^1.7.0
         version: 1.7.0
 
-  packages/core:
-    dependencies:
-      '@hookform/resolvers':
-        specifier: ^5.0.0
-        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.84.0(react@19.2.8))(zod@4.4.3)
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-link':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
-      '@tiptap/extension-underline':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
-      '@tiptap/react':
-        specifier: ^3.0.0
-        version: 3.29.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/starter-kit':
-        specifier: ^3.0.0
-        version: 3.29.2
-      clsx:
-        specifier: ^2.0.0
-        version: 2.1.1
-      date-fns:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.0
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      next-themes:
-        specifier: ^0.3.0 || ^0.4.0
-        version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      react-dom:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8(react@19.2.8)
-      react-hook-form:
-        specifier: ^7.0.0
-        version: 7.84.0(react@19.2.8)
-      simplycms:
-        specifier: workspace:*
-        version: link:../simplycms
-      tailwind-merge:
-        specifier: ^2.0.0 || ^3.0.0
-        version: 3.6.0
-      zod:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.3
-
   packages/create-simplycms-store:
     dependencies:
       '@clack/prompts':
@@ -457,9 +400,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.0.0
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
       '@supabase/ssr':
         specifier: '>=0.5.0 <1.0.0'
         version: 0.12.4(@supabase/supabase-js@2.112.0)
@@ -572,18 +512,16 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
-      simplycms:
-        specifier: workspace:*
-        version: link:../simplycms
       zod:
         specifier: ^4.0.0
         version: 4.4.3
+    devDependencies:
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   packages/simplycms-theme-solarstore:
     dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.101.4(react@19.2.8)
@@ -596,6 +534,7 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+    devDependencies:
       simplycms:
         specifier: workspace:*
         version: link:../simplycms
@@ -4042,11 +3981,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@0.563.0:
-    resolution: {integrity: sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   lucide-react@1.28.0:
     resolution: {integrity: sha512-fARAFJULsGuDDydjp6+6blekG/sBIM29TerzLjc9bQUKAcEfrSc4ZQKb25KRz4OMKd87cZTb5dgq0w/T6KufVg==}
@@ -8089,10 +8023,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@0.563.0(react@19.2.8):
-    dependencies:
-      react: 19.2.8
 
   lucide-react@1.28.0(react@19.2.8):
     dependencies:

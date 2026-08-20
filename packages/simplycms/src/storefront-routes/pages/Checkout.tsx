@@ -6,17 +6,17 @@ import { z } from 'zod';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
-import { useCart } from '@simplycms/core/hooks/useCart';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useCart } from 'simplycms/core/hooks/useCart';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type Translator } from 'simplycms/i18n';
-import { toast } from '@simplycms/core/hooks/use-toast';
-import { CheckoutAuthBlock } from '@simplycms/core/components/checkout/CheckoutAuthBlock';
-import { CheckoutContactForm } from '@simplycms/core/components/checkout/CheckoutContactForm';
-import { CheckoutDeliveryForm } from '@simplycms/core/components/checkout/CheckoutDeliveryForm';
-import { CheckoutPaymentForm } from '@simplycms/core/components/checkout/CheckoutPaymentForm';
-import { CheckoutOrderSummary } from '@simplycms/core/components/checkout/CheckoutOrderSummary';
-import { CheckoutRecipientForm } from '@simplycms/core/components/checkout/CheckoutRecipientForm';
+import { toast } from 'simplycms/core/hooks/use-toast';
+import { CheckoutAuthBlock } from 'simplycms/core/components/checkout/CheckoutAuthBlock';
+import { CheckoutContactForm } from 'simplycms/core/components/checkout/CheckoutContactForm';
+import { CheckoutDeliveryForm } from 'simplycms/core/components/checkout/CheckoutDeliveryForm';
+import { CheckoutPaymentForm } from 'simplycms/core/components/checkout/CheckoutPaymentForm';
+import { CheckoutOrderSummary } from 'simplycms/core/components/checkout/CheckoutOrderSummary';
+import { CheckoutRecipientForm } from 'simplycms/core/components/checkout/CheckoutRecipientForm';
 import { PluginSlot } from 'simplycms/plugins';
 
 /**

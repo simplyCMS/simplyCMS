@@ -32,7 +32,6 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
-        '@simplycms/core': resolve(__dirname, 'packages/core/src'),
         '@simplycms/plugin-faq': resolve(
           __dirname,
           'packages/simplycms-plugin-faq/src',

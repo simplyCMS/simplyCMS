@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { useToast } from '@simplycms/core/hooks/use-toast';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Plus, Trash2, Loader2, ImageIcon } from 'lucide-react';
 import type { Tables } from 'simplycms/supabase';
 import type { Json } from 'simplycms/supabase';

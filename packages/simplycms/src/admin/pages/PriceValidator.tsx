@@ -16,7 +16,7 @@ import { Label } from 'simplycms/ui/label';
 import { Separator } from 'simplycms/ui/separator';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
-import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
+import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 import {
   resolveDiscount,
   type DiscountGroup,
@@ -24,7 +24,7 @@ import {
   type GroupOperator,
   type AppliedDiscount,
   type RejectedDiscount,
-} from '@simplycms/core/lib/discountEngine';
+} from 'simplycms/domain/discounts';
 
 /** Крок валідації ціни */
 interface ValidationStep {

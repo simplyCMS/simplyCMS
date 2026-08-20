@@ -23,7 +23,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { adminPath } from '../lib/adminLinks';
 
 interface RuleCondition {

@@ -26,7 +26,7 @@ import {
   Code,
   Minus,
 } from 'lucide-react';
-import { cn } from '@simplycms/core/lib/utils';
+import { cn } from 'simplycms/ui/utils';
 import { useT } from 'simplycms/i18n';
 import { useCallback, useEffect } from 'react';
 

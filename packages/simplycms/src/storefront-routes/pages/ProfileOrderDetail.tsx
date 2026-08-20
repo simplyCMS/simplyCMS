@@ -27,10 +27,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'simplycms/ui/alert-dialog';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from 'simplycms/i18n';
-import { toast } from '@simplycms/core/hooks/use-toast';
+import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import type { Json } from 'simplycms/supabase';
 

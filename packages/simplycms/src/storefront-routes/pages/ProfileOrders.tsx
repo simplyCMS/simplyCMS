@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'simplycms/ui/select';
-import { useAuth } from '@simplycms/core/hooks/useAuth';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';

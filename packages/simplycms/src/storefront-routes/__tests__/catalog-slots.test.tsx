@@ -21,7 +21,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 // Панель фільтрів і карусель роблять власні запити — тут перевіряється
 // внесок САМОГО слота: маркер і прокидання пропсів усередину.
-vi.mock('@simplycms/core/components/catalog/FilterSidebar', () => ({
+vi.mock('simplycms/core/components/catalog/FilterSidebar', () => ({
   FilterSidebar: () => <div data-testid="filter-sidebar" />,
 }));
 vi.mock('../pages/home/SectionProductCarousel', () => ({
