@@ -183,11 +183,11 @@ rg -l -F "@simplycms/objects" -g '*.ts' -g '*.tsx' -g '*.mjs' \
 - Move: `.agents/skills/redesign-from-reference/` → `packages/simplycms/skills/redesign-from-reference/`
 - Create: симлінки `.agents/skills/redesign-from-reference` і `.claude/skills/redesign-from-reference` → `../../packages/simplycms/skills/redesign-from-reference` (обидва ПРЯМІ)
 
-- [ ] **Step 1:** `git mv` байт-в-байт; нуль правок вмісту (SKILL.md-шляхи `.claude/skills/…` лишаються валідними через симлінк).
-- [ ] **Step 2:** обидва симлінки (старий `.claude/…`-ланцюг замінити прямим); `git add` (mode 120000).
-- [ ] **Step 3:** `pnpm vitest run tests/design-import-*` — зелені без правок.
-- [ ] **Step 4:** tarball: `pnpm --dir packages/simplycms pack --pack-destination /tmp/k0-pack` → **точна парність файлів**: `tar -tzf /tmp/k0-pack/*.tgz | grep -c 'package/skills/'` == `find packages/simplycms/skills -type f | wc -l` (сьогодні 35; не «кілька grep-ів», а рівність множин — цю саму перевірку Task 7 вносить у `create-pkg-smoke`).
-- [ ] **Step 5:** повний ланцюг. Commit: `feat(k0): скіл redesign-from-reference у skills/ пакета`.
+- [x] **Step 1:** `git mv` байт-в-байт; нуль правок вмісту (SKILL.md-шляхи `.claude/skills/…` лишаються валідними через симлінк).
+- [x] **Step 2:** обидва симлінки (старий `.claude/…`-ланцюг замінити прямим); `git add` (mode 120000).
+- [x] **Step 3:** `pnpm vitest run tests/design-import-*` — зелені без правок.
+- [x] **Step 4:** tarball: `pnpm --dir packages/simplycms pack --pack-destination /tmp/k0-pack` → **точна парність файлів**: `tar -tzf /tmp/k0-pack/*.tgz | grep -c 'package/skills/'` == `find packages/simplycms/skills -type f | wc -l` (сьогодні 35; не «кілька grep-ів», а рівність множин — цю саму перевірку Task 7 вносить у `create-pkg-smoke`).
+- [x] **Step 5:** повний ланцюг. Commit: `feat(k0): скіл redesign-from-reference у skills/ пакета`.
 
 ### Task 6: Шаблон, скаффолдер, CLI
 
