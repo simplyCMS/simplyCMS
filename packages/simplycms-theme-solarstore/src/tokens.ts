@@ -1,4 +1,4 @@
-import type { DesignTokens } from '@simplycms/themes/types';
+import type { DesignTokens } from 'simplycms/themes/types';
 
 /**
  * Токени SolarStore — синя палітра (#1192DC) зі світлим і темним режимами.

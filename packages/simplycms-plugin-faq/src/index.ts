@@ -1,4 +1,4 @@
-import { definePlugin } from '@simplycms/plugin-sdk';
+import { definePlugin } from 'simplycms/plugin-sdk';
 import { FaqSlot } from './FaqSlot';
 import { messages } from './messages';
 import { settings } from './settings';

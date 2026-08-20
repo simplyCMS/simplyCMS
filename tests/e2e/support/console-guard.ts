@@ -14,7 +14,7 @@ const ALLOWLIST: RegExp[] = [
   // `/admin/orders` і `/admin/reviews`.
   //
   // Доказ, що це не регресія гілки: жодну з цих сторінок гілка не змінювала
-  // (`git diff main..HEAD -- packages/admin/src/pages/Orders.tsx` порожній).
+  // (`git diff main..HEAD -- packages/simplycms/src/admin/pages/Orders.tsx` порожній).
   //
   // 🔴 Чому allowlist, а не фікс тут: корінь спільний для десятка сторінок і
   // потребує окремого розслідування з живим React DevTools — усередині гілки,

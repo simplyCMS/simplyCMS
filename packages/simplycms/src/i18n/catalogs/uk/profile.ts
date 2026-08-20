@@ -60,7 +60,7 @@ export const messages = {
   'profile.password.changedHint': 'Ваш пароль успішно оновлено',
   'profile.password.failed': 'Не вдалось змінити пароль',
 
-  // Адреси доставки — CRUD-віджет у профілі (@simplycms/profile-ui, AddressesList)
+  // Адреси доставки — CRUD-віджет у профілі (simplycms/profile-ui, AddressesList)
   'profile.addresses.title': 'Адреси доставки',
   'profile.addresses.empty': 'Ви ще не додали жодної адреси',
   'profile.addresses.deleted': 'Адресу видалено',
@@ -77,7 +77,7 @@ export const messages = {
   'profile.addresses.deleteConfirm':
     'Ви впевнені, що хочете видалити цю адресу?',
 
-  // Отримувачі — CRUD-віджет у профілі (@simplycms/profile-ui, RecipientsList)
+  // Отримувачі — CRUD-віджет у профілі (simplycms/profile-ui, RecipientsList)
   'profile.recipients.title': 'Отримувачі',
   'profile.recipients.empty': 'Ви ще не додали жодного отримувача',
   'profile.recipients.deleted': 'Отримувача видалено',
@@ -103,7 +103,7 @@ export const messages = {
   'profile.usedInOrders.one': 'Використано в {count} замовленні',
   'profile.usedInOrders.many': 'Використано в {count} замовленнях',
 
-  // Фото профілю (@simplycms/profile-ui, AvatarUpload)
+  // Фото профілю (simplycms/profile-ui, AvatarUpload)
   'profile.avatar.uploadError': 'Помилка завантаження',
   'profile.avatar.unsupportedFormat': 'Підтримуються тільки JPG, PNG та WebP',
   'profile.avatar.tooLarge': 'Максимальний розмір файлу 5MB',

@@ -47,8 +47,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@simplycms/plugin-sdk": "workspace:*",
-    "@simplycms/ui": "workspace:*"
+    "simplycms": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

@@ -19,9 +19,12 @@
  */
 export const ALLOWLIST: Record<string, string> = {
   // Логи сервера: дивиться розробник у терміналі.
-  'packages/storefront-routes/src/server/auth.ts': 'console.error — лог',
-  'packages/storefront-routes/src/server/themes.ts': 'console.error — лог',
-  'packages/storefront-routes/src/seo/interceptor.ts': 'console.error — лог',
+  'packages/simplycms/src/storefront-routes/server/auth.ts':
+    'console.error — лог',
+  'packages/simplycms/src/storefront-routes/server/themes.ts':
+    'console.error — лог',
+  'packages/simplycms/src/storefront-routes/seo/interceptor.ts':
+    'console.error — лог',
   'packages/simplycms/src/storefront/loaders/pricing.ts': 'console.error — лог',
   'packages/simplycms/src/storefront/loaders/products.ts':
     'console.error — лог',
@@ -31,38 +34,39 @@ export const ALLOWLIST: Record<string, string> = {
     'console.error — лог',
   'packages/simplycms/src/storefront/seo/sitemap.ts':
     'throw — діагностика генерації',
-  'packages/plugin-system/src/bootstrap.ts': 'console.error — лог',
-  'packages/theme-system/src/getActiveThemeSSR.ts': 'console.error — лог',
+  'packages/simplycms/src/plugins/bootstrap.ts': 'console.error — лог',
+  'packages/simplycms/src/themes/getActiveThemeSSR.ts': 'console.error — лог',
   // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає
   // розробник магазину в консолі, а не покупець.
-  'packages/theme-system/src/bootstrapThemes.ts': 'console.error/warn — лог',
+  'packages/simplycms/src/themes/bootstrapThemes.ts':
+    'console.error/warn — лог',
   // Повідомлення валідатора теми адресовані АВТОРОВІ теми, не покупцю: вони
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
-  'packages/theme-system/src/validateThemeModule.ts':
+  'packages/simplycms/src/themes/validateThemeModule.ts':
     'throw new Error — діагностика для автора теми',
   // Той самий валідатор, лише винесений блок форми `views` (контракт v3).
-  'packages/theme-system/src/validateThemeViews.ts':
+  'packages/simplycms/src/themes/validateThemeViews.ts':
     'throw new Error — діагностика для автора теми',
   // Той самий клас: conformance-kit (контракт v3) кидає помилки АВТОРОВІ
   // теми — про відсутнє DOM-середовище, падіння view чи загублений реквізит.
   // Це вивід гейта в терміналі, а не текст інтерфейсу; JSX у файлі немає.
-  'packages/theme-system/src/conformance/assertThemeViewsConformance.ts':
+  'packages/simplycms/src/themes/conformance/assertThemeViewsConformance.ts':
     'throw new Error — діагностика для автора теми',
   // console.warn на невалідному записі fonts — читає автор теми в консолі
   // складання, не покупець (контракт v2.2, Р4).
-  'packages/theme-system/src/safeFontStylesheets.ts':
+  'packages/simplycms/src/themes/safeFontStylesheets.ts':
     'console.warn — діагностика для автора теми',
   // Той самий клас діагностики для контуру плагінів (Фаза 3): валідатор і
   // definePlugin кидають на порушенні контракту, порти SDK — на зловживанні
   // межею довіри; usePluginConfig лише попереджає в консоль розробника.
-  'packages/plugin-system/src/validatePluginModule.ts':
+  'packages/simplycms/src/plugins/validatePluginModule.ts':
     'throw + console.warn — діагностика для автора плагіна',
-  'packages/plugin-sdk/src/definePlugin.ts':
+  'packages/simplycms/src/plugin-sdk/definePlugin.ts':
     'throw new Error — діагностика для автора плагіна',
-  'packages/plugin-sdk/src/usePluginTable.ts':
+  'packages/simplycms/src/plugin-sdk/usePluginTable.ts':
     'throw new Error — межа довіри (гард plg_)',
-  'packages/plugin-sdk/src/usePluginConfig.ts': 'console.warn — лог',
-  'packages/admin/src/lib/pluginSettingsFields.ts':
+  'packages/simplycms/src/plugin-sdk/usePluginConfig.ts': 'console.warn — лог',
+  'packages/simplycms/src/admin/lib/pluginSettingsFields.ts':
     'console.warn — діагностика непредставної settings-схеми плагіна',
 };
 

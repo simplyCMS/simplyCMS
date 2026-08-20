@@ -12,19 +12,8 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/storefront-routes': pkg('storefront-routes/src'),
-      '@simplycms/cart-ui': pkg('cart-ui/src'),
-      '@simplycms/catalog-ui': pkg('catalog-ui/src'),
-      '@simplycms/checkout-ui': pkg('checkout-ui/src'),
-      '@simplycms/profile-ui': pkg('profile-ui/src'),
-      '@simplycms/reviews-ui': pkg('reviews-ui/src'),
       '@simplycms/core': pkg('core/src'),
-      '@simplycms/admin': pkg('admin/src'),
-      '@simplycms/ui': pkg('ui/src'),
-      '@simplycms/plugins': pkg('plugin-system/src'),
-      '@simplycms/plugin-sdk': pkg('plugin-sdk/src'),
       '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
-      '@simplycms/themes': pkg('theme-system/src'),
       '@simplycms/theme-solarstore': pkg('simplycms-theme-solarstore/src'),
       // 🔴 Навмисно `resolve`, а не хелпер `pkg`: рядок у лапках, що
       // починається з імені флагмана й слеша, audit-exports читає як

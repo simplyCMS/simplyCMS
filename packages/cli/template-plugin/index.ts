@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { definePlugin, usePluginT } from '@simplycms/plugin-sdk';
+import { definePlugin, usePluginT } from 'simplycms/plugin-sdk';
 import { messages, type PluginKey } from './messages';
 
 // Стартовий каркас плагіна: один слот на дашборді адмінки. Повний приклад

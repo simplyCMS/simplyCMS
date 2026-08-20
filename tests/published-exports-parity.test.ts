@@ -36,9 +36,13 @@ const each = (assert: (name: string, entry: Entry) => void) => () => {
 
 describe('published packages: tarball parity', () => {
   it('пакетів для публікації знайдено', () => {
-    // Поріг перехідний: К0 Task 2 злив дев'ять пакетів T0–T2 у флагман
-    // (26 → 17), Task 3 замінить його ТОЧНИМ набором із пʼяти.
-    expect(packed.size).toBeGreaterThanOrEqual(17);
+    // Поріг перехідний: К0 Task 3 (частина А) злив ще одинадцять пакетів
+    // T3–T5 (17 → 5: флагман, `core`, `cli`, `plugin-faq`,
+    // `theme-solarstore`). 🔴 `create-simplycms-store` тут не рахується
+    // ніколи — `publishableDirs()` відсікає його за іменем (немає
+    // `publishConfig.exports`, звіряти нічого). Після розчинення `core`
+    // набір стане ТОЧНИМ і поріг зникне — це вже чотири пакети, не пʼять.
+    expect(packed.size).toBeGreaterThanOrEqual(5);
     // К0: unscoped-флагман мусить проходити той самий гейт, що й сателіти.
     // Дискримінатор `pack-inspect` — `private === false` І імʼя ядра; без
     // явного `"private": false` пакет мовчки випадає з parity-suite (тест не

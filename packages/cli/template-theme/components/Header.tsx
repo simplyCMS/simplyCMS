@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
 
 /**

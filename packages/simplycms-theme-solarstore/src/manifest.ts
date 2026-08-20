@@ -1,4 +1,4 @@
-import type { ThemeManifest } from '@simplycms/themes/types';
+import type { ThemeManifest } from 'simplycms/themes/types';
 
 /**
  * Паспорт теми SolarStore (контракт v2): ідентичність + діапазон сумісності

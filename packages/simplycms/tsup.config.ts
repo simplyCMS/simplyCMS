@@ -77,7 +77,11 @@ const profiles: Profile[] = [
   // Node/React-тіри (domain, schema, supabase, i18n, ui, admin, теми, …):
   // спільні чанки обовʼязкові — модулі зі станом мусять лишатися ОДНИМ
   // інстансом для всіх subpath-entry пакета.
-  // Теки решти тірів додаються сюди в К0 Task 3 за знімком exports.
+  //
+  // 🔴 Патерни ДЗЕРКАЛЯТЬ `exports`, а не «усе, що є в теці»: сусідній модуль
+  // без export-входу (`themes/getActiveThemeSSR.ts`, `admin/lib/*`,
+  // `storefront-routes/pages/catalog/*`) мусить лишитися чанком, а не стати
+  // окремим entry — інакше `dist/` перестає бути дзеркалом exports-мапи.
   profile(
     'core',
     [
@@ -96,6 +100,25 @@ const profiles: Profile[] = [
       'src/i18n/index.ts',
       'src/storefront/index.ts',
       'src/storefront/*/index.ts',
+      'src/ui/*.ts',
+      'src/ui/*.tsx',
+      'src/themes/index.ts',
+      'src/themes/ThemeRegistry.ts',
+      'src/themes/ThemeContext.tsx',
+      'src/themes/applyTokens.ts',
+      'src/themes/safeFontStylesheets.ts',
+      'src/themes/bootstrapThemes.ts',
+      'src/themes/validateThemeModule.ts',
+      'src/themes/conformance/index.ts',
+      'src/themes/useThemeT.ts',
+      'src/themes/types.ts',
+      'src/plugins/index.ts',
+      'src/plugins/PluginSlot.tsx',
+      'src/plugins/types.ts',
+      'src/{cart,catalog,checkout,profile,reviews}-ui/index.ts',
+      'src/{cart,catalog,checkout,profile,reviews}-ui/*.tsx',
+      'src/admin/index.ts',
+      'src/admin/{components,pages,layouts}/*.tsx',
     ],
     { splitting: true },
   ),
@@ -106,10 +129,16 @@ const profiles: Profile[] = [
     'storefront-routes',
     [
       'src/storefront-routes/index.ts',
-      'src/storefront-routes/*.ts',
-      'src/storefront-routes/*/*.ts',
-      'src/storefront-routes/*/*.tsx',
-      'src/storefront-routes/*/*/*.tsx',
+      'src/storefront-routes/active-theme.ts',
+      'src/storefront-routes/server/*.ts',
+      'src/storefront-routes/seo/*.ts',
+      'src/storefront-routes/pages/*.tsx',
+      'src/storefront-routes/components/*.tsx',
+      'src/storefront-routes/shells/*.ts',
+      'src/storefront-routes/shells/*.tsx',
+      'src/storefront-routes/views/*.ts',
+      'src/storefront-routes/views/*.tsx',
+      'src/storefront-routes/views/slots/*.tsx',
     ],
     { splitting: true, target: 'esnext' },
   ),

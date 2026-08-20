@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useToast } from '@simplycms/core/hooks/use-toast';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import { MONO_LABEL, MONO_STACK } from './mono';
 import type { ThemeKey } from '../messages';
 

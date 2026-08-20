@@ -1,12 +1,12 @@
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { Button } from '@simplycms/ui/button';
+import { Button } from 'simplycms/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@simplycms/ui/dropdown-menu';
+} from 'simplycms/ui/dropdown-menu';
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();

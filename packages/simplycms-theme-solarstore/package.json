@@ -39,9 +39,7 @@
   },
   "dependencies": {
     "@simplycms/core": "workspace:*",
-    "simplycms": "workspace:*",
-    "@simplycms/themes": "workspace:*",
-    "@simplycms/ui": "workspace:*"
+    "simplycms": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

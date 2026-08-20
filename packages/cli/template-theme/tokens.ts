@@ -1,4 +1,4 @@
-import type { DesignTokens } from '@simplycms/themes/types';
+import type { DesignTokens } from 'simplycms/themes/types';
 
 /**
  * Токени теми — значення НАЯВНИХ semantic-змінних shadcn (`--primary`,

@@ -61,18 +61,23 @@ function themeRoots(): string[] {
 
 export const SCANNED_ROOTS = [
   'src',
-  'packages/storefront-routes/src',
-  'packages/admin/src',
-  'packages/cart-ui/src',
-  'packages/catalog-ui/src',
-  'packages/checkout-ui/src',
-  'packages/profile-ui/src',
-  'packages/reviews-ui/src',
+  // К0: тіри ядра — теки флагмана. Перелічені саме теки, а не
+  // `packages/simplycms/src` цілком: core-каталоги
+  // (`src/i18n/catalogs/**`) — кирилиця за побудовою, і суцільний корінь
+  // вимагав би перекладу від перекладу (той самий аргумент, що для
+  // `messages.ts` тем).
+  'packages/simplycms/src/storefront-routes',
+  'packages/simplycms/src/admin',
+  'packages/simplycms/src/cart-ui',
+  'packages/simplycms/src/catalog-ui',
+  'packages/simplycms/src/checkout-ui',
+  'packages/simplycms/src/profile-ui',
+  'packages/simplycms/src/reviews-ui',
   'packages/core/src',
   'packages/simplycms/src/storefront',
-  'packages/theme-system/src',
-  'packages/plugin-system/src',
-  'packages/plugin-sdk/src',
+  'packages/simplycms/src/themes',
+  'packages/simplycms/src/plugins',
+  'packages/simplycms/src/plugin-sdk',
   ...pluginPackageRoots(),
   ...themeRoots(),
   // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін
@@ -87,8 +92,8 @@ export const SCANNED_ROOTS = [
  * 🔴 Тема несе власні повідомлення (`ThemeModule.messages`, контракт v2.1), і
  * український бік цього каталогу — кирилиця за побудовою. Сканувати його
  * означало б вимагати перекладу від перекладу. Core-каталоги
- * (`packages/simplycms/src/i18n/catalogs/**`) у `SCANNED_ROOTS` не входять узагалі й
- * тому окремого винятку не потребують.
+ * (`packages/simplycms/src/i18n/catalogs/**`) у `SCANNED_ROOTS` не входять
+ * узагалі й тому окремого винятку не потребують.
  */
 const CATALOG_FILES = /(^|\/)messages\.ts$/;
 

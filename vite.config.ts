@@ -32,28 +32,11 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
-        '@simplycms/storefront-routes': resolve(
-          __dirname,
-          'packages/storefront-routes/src',
-        ),
-        '@simplycms/cart-ui': resolve(__dirname, 'packages/cart-ui/src'),
-        '@simplycms/catalog-ui': resolve(__dirname, 'packages/catalog-ui/src'),
-        '@simplycms/checkout-ui': resolve(
-          __dirname,
-          'packages/checkout-ui/src',
-        ),
-        '@simplycms/profile-ui': resolve(__dirname, 'packages/profile-ui/src'),
-        '@simplycms/reviews-ui': resolve(__dirname, 'packages/reviews-ui/src'),
         '@simplycms/core': resolve(__dirname, 'packages/core/src'),
-        '@simplycms/admin': resolve(__dirname, 'packages/admin/src'),
-        '@simplycms/ui': resolve(__dirname, 'packages/ui/src'),
-        '@simplycms/plugins': resolve(__dirname, 'packages/plugin-system/src'),
-        '@simplycms/plugin-sdk': resolve(__dirname, 'packages/plugin-sdk/src'),
         '@simplycms/plugin-faq': resolve(
           __dirname,
           'packages/simplycms-plugin-faq/src',
         ),
-        '@simplycms/themes': resolve(__dirname, 'packages/theme-system/src'),
         '@simplycms/theme-solarstore': resolve(
           __dirname,
           'packages/simplycms-theme-solarstore/src',

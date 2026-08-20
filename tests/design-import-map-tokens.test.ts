@@ -17,8 +17,8 @@ import {
 } from '../.agents/skills/redesign-from-reference/scripts/lib/contrast.mjs';
 import { mapColorTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/color-tokens.mjs';
 import { mapTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/map.mjs';
-import { applyTokens } from '@simplycms/themes/applyTokens';
-import { validateThemeModule } from '@simplycms/themes/validateThemeModule';
+import { applyTokens } from 'simplycms/themes/applyTokens';
+import { validateThemeModule } from 'simplycms/themes/validateThemeModule';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
 // Формат токена контракту тем (`packages/theme-system/src/types.ts`):

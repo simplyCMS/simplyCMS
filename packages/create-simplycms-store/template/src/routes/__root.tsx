@@ -7,11 +7,11 @@ import {
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@simplycms/ui/toaster';
+import { Toaster } from 'simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
-import { bootstrapPlugins } from '@simplycms/plugins';
-import { bootstrapThemes } from '@simplycms/themes/bootstrapThemes';
+import { bootstrapPlugins } from 'simplycms/plugins';
+import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import {
   I18nProvider,
@@ -20,8 +20,8 @@ import {
 } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import config from '../../simplycms.config';
-import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';
-import { serializeActiveThemeScript } from '@simplycms/storefront-routes/active-theme';
+import { getActiveTheme } from 'simplycms/storefront-routes/server/themes';
+import { serializeActiveThemeScript } from 'simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)

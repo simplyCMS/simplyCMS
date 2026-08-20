@@ -89,13 +89,16 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
     expect(empty, 'корені SCANNED_ROOTS без жодного файлу').toEqual([]);
 
     expect(
-      files.filter((f) => f.startsWith('packages/admin/')).length,
+      files.filter((f) => f.startsWith('packages/simplycms/src/admin/')).length,
     ).toBeGreaterThan(50);
     expect(
-      files.filter((f) => f.startsWith('packages/storefront-routes/')).length,
+      files.filter((f) =>
+        f.startsWith('packages/simplycms/src/storefront-routes/'),
+      ).length,
     ).toBeGreaterThan(20);
     expect(
-      files.filter((f) => f.startsWith('packages/checkout-ui/')).length,
+      files.filter((f) => f.startsWith('packages/simplycms/src/checkout-ui/'))
+        .length,
     ).toBeGreaterThan(10);
   });
 });

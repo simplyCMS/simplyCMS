@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useAuth } from './useAuth';
-import { useToast } from '@simplycms/ui/use-toast';
+import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 
 export interface ProductReview {

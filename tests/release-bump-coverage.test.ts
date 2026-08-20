@@ -23,11 +23,12 @@ describe('release bump: покриття манифестів', () => {
     // 🔴 Флагман К0 — unscoped, тож під фільтр scope він не підпадає й
     // потребує окремого асерту: пропущений тут, він мовчки випав би з бампу.
     expect(names).toContain('simplycms');
-    // Поріг перехідний: К0 Task 2 злив дев'ять пакетів T0–T2 у флагман
-    // (21 → 16), Task 3 замінить поріг ТОЧНИМ набором із пʼяти.
+    // Поріг перехідний: К0 Task 3 (частина А) злив ще одинадцять пакетів
+    // T3–T5 (16 → 4: `core`, `cli`, `plugin-faq`, `theme-solarstore`).
+    // Розчинення `core` дасть ТОЧНИЙ набір із пʼяти — тоді поріг зникне.
     expect(
       names.filter((n) => n.startsWith('@simplycms/')).length,
-    ).toBeGreaterThanOrEqual(16);
+    ).toBeGreaterThanOrEqual(4);
   });
 
   it('версія одна на всіх (синхронна модель)', () => {

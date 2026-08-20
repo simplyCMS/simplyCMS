@@ -15,35 +15,13 @@
     "incremental": true,
 
     "paths": {
-      "@simplycms/storefront-routes": ["./packages/storefront-routes/src"],
-      "@simplycms/storefront-routes/*": ["./packages/storefront-routes/src/*"],
-      "@simplycms/cart-ui": ["./packages/cart-ui/src"],
-      "@simplycms/cart-ui/*": ["./packages/cart-ui/src/*"],
-      "@simplycms/catalog-ui": ["./packages/catalog-ui/src"],
-      "@simplycms/catalog-ui/*": ["./packages/catalog-ui/src/*"],
-      "@simplycms/checkout-ui": ["./packages/checkout-ui/src"],
-      "@simplycms/checkout-ui/*": ["./packages/checkout-ui/src/*"],
-      "@simplycms/profile-ui": ["./packages/profile-ui/src"],
-      "@simplycms/profile-ui/*": ["./packages/profile-ui/src/*"],
-      "@simplycms/reviews-ui": ["./packages/reviews-ui/src"],
-      "@simplycms/reviews-ui/*": ["./packages/reviews-ui/src/*"],
       "@simplycms/core": ["./packages/core/src"],
       "@simplycms/core/*": ["./packages/core/src/*"],
-      "@simplycms/admin": ["./packages/admin/src"],
-      "@simplycms/admin/*": ["./packages/admin/src/*"],
-      "@simplycms/ui": ["./packages/ui/src"],
-      "@simplycms/ui/*": ["./packages/ui/src/*"],
-      "@simplycms/plugins": ["./packages/plugin-system/src"],
-      "@simplycms/plugins/*": ["./packages/plugin-system/src/*"],
-      "@simplycms/plugin-sdk": ["./packages/plugin-sdk/src"],
-      "@simplycms/plugin-sdk/*": ["./packages/plugin-sdk/src/*"],
       "@simplycms/plugin-faq": ["./packages/simplycms-plugin-faq/src"],
       "@simplycms/plugin-faq/pages/*": [
         "./packages/simplycms-plugin-faq/src/pages/*"
       ],
       "@simplycms/plugin-faq/*": ["./packages/simplycms-plugin-faq/src/*"],
-      "@simplycms/themes": ["./packages/theme-system/src"],
-      "@simplycms/themes/*": ["./packages/theme-system/src/*"],
       "@simplycms/theme-solarstore": [
         "./packages/simplycms-theme-solarstore/src"
       ],

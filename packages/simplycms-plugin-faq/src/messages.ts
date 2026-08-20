@@ -1,4 +1,4 @@
-import type { PluginMessages } from '@simplycms/plugin-sdk';
+import type { PluginMessages } from 'simplycms/plugin-sdk';
 
 /** Каталог плагіна faq. Префікс `plugin.faq.` — обовʼязковий неймспейс. */
 export const messages = {

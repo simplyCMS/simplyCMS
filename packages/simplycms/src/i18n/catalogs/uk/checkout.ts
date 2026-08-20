@@ -34,7 +34,7 @@ export const messages = {
   'checkout.success.recipient': 'Отримувач',
   'checkout.success.payment': 'Оплата',
 
-  // Дані покупця — CheckoutAuthBlock (@simplycms/checkout-ui)
+  // Дані покупця — CheckoutAuthBlock (simplycms/checkout-ui)
   'checkout.auth.title': 'Дані покупця',
   'checkout.auth.subtitle':
     'Увійдіть для швидкого оформлення або продовжуйте як гість',

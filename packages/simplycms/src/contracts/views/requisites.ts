@@ -7,7 +7,7 @@
 // фікстурах + пошук обовʼязкових реквізитів у DOM).
 //
 // 🔴 Чому імена живуть у T0, а не поруч зі слотами
-// (`@simplycms/storefront-routes`) чи поруч із kit-ом (`@simplycms/themes`):
+// (`simplycms/storefront-routes`) чи поруч із kit-ом (`simplycms/themes`):
 // їх потребують ОБИДВА боки — слот, що малює маркер, і kit, що його шукає, —
 // а theme-system не має права залежати від route-пакета (тіри T0→T5).
 //

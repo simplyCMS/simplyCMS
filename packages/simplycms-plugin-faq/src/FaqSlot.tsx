@@ -3,7 +3,7 @@ import {
   usePluginConfig,
   usePluginT,
   usePluginTable,
-} from '@simplycms/plugin-sdk';
+} from 'simplycms/plugin-sdk';
 import { messages, type FaqKey } from './messages';
 import { settings } from './settings';
 import type { FaqItem } from './types';

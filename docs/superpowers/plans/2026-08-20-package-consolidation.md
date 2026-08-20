@@ -158,10 +158,10 @@ rg -l -F "@simplycms/objects" -g '*.ts' -g '*.tsx' -g '*.mjs' \
 - Produces: повна exports-мапа; `@simplycms/*`-специфікатори живуть лише в
   4 сателітах; реліз-гарди знають топологію 5.
 
-- [ ] **Step 1:** інвентаризація exports 12 пакетів (як Task 2 Step 1) + злиття їхніх зовнішніх deps у флагман (`@tiptap/*` з admin, `clsx`/`tailwind-merge` з ui, …).
-- [ ] **Step 2:** move + exports + кодмод 11 мапінгів (без core; порядок довших імен!).
+- [x] **Step 1:** інвентаризація exports 12 пакетів (як Task 2 Step 1) + злиття їхніх зовнішніх deps у флагман (`@tiptap/*` з admin, `clsx`/`tailwind-merge` з ui, …).
+- [x] **Step 2:** move + exports + кодмод 11 мапінгів (без core; порядок довших імен!).
 - [ ] **Step 3 (core):** зняти барель `packages/core/src/index.ts`: (а) реекспорти ЧУЖОГО (pricing/shipping/домен тощо) — кодмод споживачів на справжні джерела (джерело кожного символу видно в барелі; помічник `ORIENT=.agents/skills/codebase-research/scripts/orient; $ORIENT <Символ>`); (б) ВЛАСНІ модулі (`providers/CMSProvider`, `hooks/useAuth|useCart|useBanners|use-toast|…`, `components/`, `lib/`, `types/`) — `git mv` → `src/core/`, барель лишається лише для власного; споживачі `@simplycms/core` кодмодяться на `simplycms/core`; (в) `rg -F "@simplycms/core" -g '*.ts*' -g '*.mjs' src packages themes plugins tests` → нуль; видалити пакет.
-- [ ] **Step 4:** `routes.ts` монорепо: physical на `./packages/simplycms/routes/storefront` і `…/admin` (точну чинну форму звірити з файлом, рядки ~14–20). `tests/virtual-routes-escape.test.ts` — БЕЗ змін (він синтетичний, tmp-дерево; коректність routes.ts доводять build/routeTree.gen + пілот).
+- [x] **Step 4:** `routes.ts` монорепо: physical на `./packages/simplycms/routes/storefront` і `…/admin` (точну чинну форму звірити з файлом, рядки ~14–20). `tests/virtual-routes-escape.test.ts` — БЕЗ змін (він синтетичний, tmp-дерево; коректність routes.ts доводять build/routeTree.gen + пілот).
 - [ ] **Step 5:** межа довіри + trust-boundary-тест (нові специфікатори; прогнати окремо), реліз-гарди (`release-bump-coverage`, `published-exports-parity` — точні набори), сателіти на peer (ПК6).
 - [ ] **Step 6:** `pnpm install` → повний ланцюг (найважча задача; очікувані хвости — i18n-зони, parity по новій мапі, audit-*).
 - [ ] **Step 7:** Commit: `refactor(k0): перенос T3–T5, розчинення фасаду core — топологія 26→5`.

@@ -43,7 +43,7 @@ const SECTION_PRODUCT_SELECT =
  * Кореневий розділ каталогу у виборці фази 1.
  *
  * Експортується, бо тече у публічний тип `loadHomePageData`: без цього
- * споживач (`@simplycms/storefront-routes`) не може іменувати тип під час
+ * споживач (`simplycms/storefront-routes`) не може іменувати тип під час
  * емісії власних `.d.ts` (TS4023).
  */
 export interface RootSection {

@@ -14,8 +14,8 @@
  * і друкує розриви.
  *
  * Мапа "імʼя пакета → тека" будується з поля `name` у `package.json`, НЕ з
- * імені теки: `@simplycms/plugins` живе в `plugin-system/`, `@simplycms/themes`
- * — у `theme-system/`.
+ * імені теки: `@simplycms/plugin-faq` живе в `simplycms-plugin-faq/`,
+ * `@simplycms/theme-solarstore` — у `simplycms-theme-solarstore/`.
  *
  * Використання:
  *   node scripts/audit-exports.mjs           # CLI: список розривів, exit 1 якщо є

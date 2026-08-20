@@ -4,7 +4,7 @@ import type {
   ProductDetailGallery,
   ProductDetailSummary,
 } from 'simplycms/contracts/views';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import { MONO_STACK } from '../../components/mono';
 import type { ThemeKey } from '../../messages';
 

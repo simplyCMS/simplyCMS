@@ -6,9 +6,9 @@ import { createServerEntry } from '@tanstack/react-start/server-entry';
 import {
   createSeoInterceptor,
   withSeoInterceptor,
-} from '@simplycms/storefront-routes/seo/interceptor';
-import { buildRobotsTxt } from '@simplycms/storefront-routes/seo/robots';
-import { buildSitemapXml } from '@simplycms/storefront-routes/seo/sitemap';
+} from 'simplycms/storefront-routes/seo/interceptor';
+import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
+import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 
 /**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).

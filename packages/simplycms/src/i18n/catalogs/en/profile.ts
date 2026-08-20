@@ -56,7 +56,7 @@ export const messages: Catalog = {
   'profile.password.changedHint': 'Your password has been updated',
   'profile.password.failed': 'Could not change the password',
 
-  // Shipping addresses — CRUD widget (@simplycms/profile-ui, AddressesList)
+  // Shipping addresses — CRUD widget (simplycms/profile-ui, AddressesList)
   'profile.addresses.title': 'Shipping addresses',
   'profile.addresses.empty': "You haven't added any addresses yet",
   'profile.addresses.deleted': 'Address deleted',
@@ -72,7 +72,7 @@ export const messages: Catalog = {
   'profile.addresses.deleteConfirm':
     'Are you sure you want to delete this address?',
 
-  // Recipients — CRUD widget (@simplycms/profile-ui, RecipientsList)
+  // Recipients — CRUD widget (simplycms/profile-ui, RecipientsList)
   'profile.recipients.title': 'Recipients',
   'profile.recipients.empty': "You haven't added any recipients yet",
   'profile.recipients.deleted': 'Recipient deleted',
@@ -95,7 +95,7 @@ export const messages: Catalog = {
   'profile.usedInOrders.one': 'Used in {count} order',
   'profile.usedInOrders.many': 'Used in {count} orders',
 
-  // Profile photo (@simplycms/profile-ui, AvatarUpload)
+  // Profile photo (simplycms/profile-ui, AvatarUpload)
   'profile.avatar.uploadError': 'Upload failed',
   'profile.avatar.unsupportedFormat': 'Only JPG, PNG, and WebP are supported',
   'profile.avatar.tooLarge': 'File size must be under 5MB',

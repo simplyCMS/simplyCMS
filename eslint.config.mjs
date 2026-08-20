@@ -34,13 +34,23 @@ const i18nRestrictedSyntax = [
 // бачив ЖОДЕН гейт, і 293 хардкоджені рядки прожили там усю Фазу 1.
 const I18N_MIGRATED_FILES = [
   'src/**/*.tsx',
-  'packages/storefront-routes/**/*.tsx',
-  'packages/admin/**/*.tsx',
-  'packages/cart-ui/**/*.tsx',
-  'packages/catalog-ui/**/*.tsx',
-  'packages/checkout-ui/**/*.tsx',
-  'packages/profile-ui/**/*.tsx',
-  'packages/reviews-ui/**/*.tsx',
+  // К0: тіри вітрини й адмінки живуть теками флагмана. Зона перелічує саме
+  // теки, а не `packages/simplycms/**`: каталоги `src/i18n/catalogs/uk` —
+  // кирилиця за побудовою, і повний глоб зробив би error-зону самосуперечною.
+  //
+  // 🔴 `routes/storefront`, а не `routes/**`: межа зони — статус-кво до К0.
+  // Тека `routes/admin` приїхала з пакета `@simplycms/admin-routes`, якого в
+  // зоні не було ніколи, і в `routes/admin/admin.tsx` досі живе хардкоджений
+  // рядок. Розширення зони — окреме рішення з міграцією рядка, не побічний
+  // ефект переносу тек.
+  'packages/simplycms/routes/storefront/**/*.tsx',
+  'packages/simplycms/src/storefront-routes/**/*.tsx',
+  'packages/simplycms/src/admin/**/*.tsx',
+  'packages/simplycms/src/cart-ui/**/*.tsx',
+  'packages/simplycms/src/catalog-ui/**/*.tsx',
+  'packages/simplycms/src/checkout-ui/**/*.tsx',
+  'packages/simplycms/src/profile-ui/**/*.tsx',
+  'packages/simplycms/src/reviews-ui/**/*.tsx',
   'themes/*/components/**/*.tsx',
   // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
@@ -69,9 +79,9 @@ const serverEnvRestrictedSyntax = [
 const SERVER_ENV_FILES = [
   'packages/simplycms/src/supabase/server-client.ts',
   'packages/simplycms/src/supabase/anon-client.ts',
-  'packages/storefront-routes/src/seo/robots.ts',
-  'packages/storefront-routes/src/seo/sitemap.ts',
-  'packages/storefront-routes/routes/api/health.tsx',
+  'packages/simplycms/src/storefront-routes/seo/robots.ts',
+  'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
+  'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
 ];
 

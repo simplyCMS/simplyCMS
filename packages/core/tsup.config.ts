@@ -19,6 +19,6 @@ export default defineConfig({
   // лишатися ОДНИМ інстансом для всіх subpath-entry пакета.
   splitting: true,
   // Сиблінги ядра — завжди зовнішні, включно з subpath-імпортами
-  // (`@simplycms/ui/button`): регекс, а не список імен.
+  // (`simplycms/ui/button`): регекс, а не список імен.
   external: [/^simplycms(\/|$)/, /^@simplycms\//],
 });

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import { Button } from '@simplycms/ui/button';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { Button } from 'simplycms/ui/button';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { SolarstoreThemeKey } from '../messages';
 
 /**
