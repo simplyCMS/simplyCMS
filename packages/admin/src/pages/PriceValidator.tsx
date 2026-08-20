@@ -14,8 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Badge } from '@simplycms/ui/badge';
 import { Label } from '@simplycms/ui/label';
 import { Separator } from '@simplycms/ui/separator';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import { resolvePrice, type PriceEntry } from '@simplycms/core/lib/priceUtils';
 import {
   resolveDiscount,

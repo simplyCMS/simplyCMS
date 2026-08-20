@@ -1,4 +1,4 @@
-import type { CatalogSlots } from '@simplycms/objects/views';
+import type { CatalogSlots } from 'simplycms/contracts/views';
 import { CatalogToolbar } from './CatalogToolbar';
 
 /** Заголовок сторінки вибірки: назва й підпис. */

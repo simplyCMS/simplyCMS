@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
-import { interpolate, useLocale, type MessageParams } from '@simplycms/i18n';
+import { interpolate, useLocale, type MessageParams } from 'simplycms/i18n';
 import type { PluginMessages } from './types';
 
 /**
  * Транслятор каталогу ПЛАГІНА (не ядра) — двійник `useThemeT`.
  *
  * Ланцюжок fallback — `messages[locale][key] → messages.uk[key] → сам key`;
- * підстановка `{param}` — та сама `interpolate` з `@simplycms/i18n`.
+ * підстановка `{param}` — та сама `interpolate` з `simplycms/i18n`.
  *
  * Каталог передається АРГУМЕНТОМ (компонент плагіна імпортує власний
  * `messages.ts`), а не читається з реєстру плагінів: реєстр наповнюється в

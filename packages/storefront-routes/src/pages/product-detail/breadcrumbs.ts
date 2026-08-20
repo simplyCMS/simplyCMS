@@ -1,7 +1,7 @@
 // Хлібні крихти картки товару.
 
-import type { Translator } from '@simplycms/i18n';
-import type { BreadcrumbItem } from '@simplycms/objects/views';
+import type { Translator } from 'simplycms/i18n';
+import type { BreadcrumbItem } from 'simplycms/contracts/views';
 import type { ProductSectionRef } from './types';
 
 /**

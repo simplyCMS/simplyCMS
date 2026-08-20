@@ -1,5 +1,5 @@
-import type { CatalogSectionViewModel } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import type { CatalogSectionViewModel } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { CatalogLayout, CatalogPageHeader } from './CatalogLayout';
 import { StorefrontBreadcrumbs } from './StorefrontBreadcrumbs';
 

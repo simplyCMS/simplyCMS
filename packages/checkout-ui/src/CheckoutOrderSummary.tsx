@@ -3,9 +3,9 @@ import {
   type CartItem,
   useEngine,
   useFormatPrice,
-} from '@simplycms/react-query';
-import { formatShippingCost } from '@simplycms/domain/shipping';
-import { useT } from '@simplycms/i18n';
+} from 'simplycms/react-query';
+import { formatShippingCost } from 'simplycms/domain/shipping';
+import { useT } from 'simplycms/i18n';
 
 interface CheckoutOrderSummaryProps {
   items: CartItem[];

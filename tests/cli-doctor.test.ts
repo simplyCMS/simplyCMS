@@ -55,7 +55,7 @@ function makeCtx(storeRoot: string) {
     hostDir: join(storeRoot, 'no-canon'), // відсутня тека → skip
     schemaMigrationsDir: join(
       storeRoot,
-      'node_modules/@simplycms/schema/migrations',
+      'node_modules/simplycms/schema/migrations',
     ),
   };
 }

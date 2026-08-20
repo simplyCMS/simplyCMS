@@ -1,5 +1,5 @@
-import { useCart } from '@simplycms/react-query';
-import { useT } from '@simplycms/i18n';
+import { useCart } from 'simplycms/react-query';
+import { useT } from 'simplycms/i18n';
 import { CartView } from '../views/CartView';
 import { useStorefrontViews } from '../views/useStorefrontViews';
 import { buildCartBreadcrumbs } from './cart/breadcrumbs';

@@ -2,9 +2,9 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
-import { HOME_REQUISITES, type HomeSlots } from '@simplycms/objects/views';
-import { homeViewModelFixtures } from '@simplycms/objects/views/fixtures';
+import { I18nProvider } from 'simplycms/i18n';
+import { HOME_REQUISITES, type HomeSlots } from 'simplycms/contracts/views';
+import { homeViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
 /**
  * Conformance-прогін канонічного `HomeView` на фікстурах (контракт тем v3,

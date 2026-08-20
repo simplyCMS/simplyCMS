@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, screen, fireEvent } from '@testing-library/react';
-import { PRODUCT_DETAIL_REQUISITES } from '@simplycms/objects/views';
+import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
 
 const toast = vi.fn();
 

@@ -49,8 +49,8 @@ describe('create-store template: парність із монорепо', () => 
     expect(listFiles(CLI_HOST_DIR)).toEqual([...SYNCED_FILES].sort());
   });
 
-  // Міграції ядра в tarball @simplycms/schema — джерело `simplycms db:diff`.
-  it('тека supabase/migrations байт-ідентична packages/schema/migrations', () => {
+  // Міграції ядра в tarball simplycms/schema — джерело `simplycms db:diff`.
+  it('тека supabase/migrations байт-ідентична packages/simplycms/migrations', () => {
     const source = listFiles('supabase/migrations');
     expect(source.length).toBeGreaterThan(0);
     expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual(source);

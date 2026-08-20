@@ -8,7 +8,7 @@ import {
 import { Label } from '@simplycms/ui/label';
 import { Package, PackageX, Clock } from 'lucide-react';
 import type { StockStatus } from '@simplycms/core/hooks/useStock';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 
 interface StockStatusSelectProps {
   value: StockStatus;

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
-import { useCart, useFormatPrice } from '@simplycms/react-query';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useCart, useFormatPrice } from 'simplycms/react-query';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { CartItem } from './CartItem';
 
 /**

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import {
   Card,
   CardContent,

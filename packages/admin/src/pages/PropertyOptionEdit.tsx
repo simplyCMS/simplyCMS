@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
 import { Textarea } from '@simplycms/ui/textarea';
@@ -12,7 +12,7 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { ImageUpload } from '../components/ImageUpload';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { adminPath } from '../lib/adminLinks';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 function generateSlug(text: string): string {
   return text

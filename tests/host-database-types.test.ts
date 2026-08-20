@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { createServerSupabase } from '@simplycms/supabase/server-client';
-import type { createBrowserSupabase } from '@simplycms/supabase/browser-client';
+import type { createServerSupabase } from 'simplycms/supabase/server-client';
+import type { createBrowserSupabase } from 'simplycms/supabase/browser-client';
 import type { StoreDatabase } from '../src/engine.shared';
 
 // Generic-місток типів БД (Task 1.1).
 //
 // Пакети ядра типізуються проти baseline-снапшота core-схеми
-// (`@simplycms/supabase/database`). Магазин має ВЛАСНИЙ генерат
+// (`simplycms/supabase/database`). Магазин має ВЛАСНИЙ генерат
 // `supabase/types.ts` — з core-таблицями ПЛЮС таблицями встановлених плагінів —
 // і підставляє його в generic-параметр фабрик клієнтів.
 //
@@ -55,10 +55,10 @@ export function probeQueries(
 }
 
 const BASELINE_PATH = fileURLToPath(
-  new URL('../packages/supabase/src/database.ts', import.meta.url),
+  new URL('../packages/simplycms/src/supabase/database.ts', import.meta.url),
 );
 
-describe('generic-місток типів БД host ↔ @simplycms/supabase', () => {
+describe('generic-місток типів БД host ↔ simplycms/supabase', () => {
   it('baseline ядра не знає таблиці `__probe` — компіляційний гард не самообман', () => {
     // Якщо `__probe` колись потрапить у baseline, `.from('__probe')` вище
     // почне компілюватися й з піном на baseline — гард стане тавтологією.

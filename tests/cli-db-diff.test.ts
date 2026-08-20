@@ -177,12 +177,12 @@ describe('cli db:diff: мульти-канони', () => {
       'select 1;\n',
     );
     const single = compareMigrationsMulti(storeDir, [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
     ]);
     expect(single.own).toEqual(['99999999999999_plg_faq_items.sql']);
 
     const multi = compareMigrationsMulti(storeDir, [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
       { name: 'faq', spec: '@simplycms/plugin-faq', dir: pluginDir },
     ]);
     expect(multi.own).toEqual([]);
@@ -198,7 +198,7 @@ describe('cli db:diff: мульти-канони', () => {
     writeFileSync(join(a, '99999999999999_same.sql'), 'select 1;\n');
     writeFileSync(join(b, '99999999999999_same.sql'), 'select 2;\n');
     const { collisions } = compareMigrationsMulti(storeMigrationsDir(store), [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
       { name: 'a', spec: 'a', dir: a },
       { name: 'b', spec: 'b', dir: b },
     ]);

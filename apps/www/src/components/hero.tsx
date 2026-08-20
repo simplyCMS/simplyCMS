@@ -161,18 +161,19 @@ function MetricsStrip() {
 
 /** Фолбек-склад тікера, поки живий список пакетів не приїхав. */
 const FALLBACK_TICKER = [
+  // 🔴 Це імена ОПУБЛІКОВАНИХ пакетів, не субшляхи: К0 злив T0–T2
+  // (`objects`/`schema`/`supabase`/`i18n`/`domain`/…) у флагман `simplycms`.
+  'simplycms',
   '@simplycms/storefront-routes',
   '@simplycms/admin-routes',
   '@simplycms/plugin-sdk',
   '@simplycms/themes',
-  '@simplycms/schema',
-  '@simplycms/supabase',
   '@simplycms/cli',
   'create-simplycms-store',
   '@simplycms/checkout-ui',
   '@simplycms/catalog-ui',
-  '@simplycms/i18n',
-  '@simplycms/domain',
+  '@simplycms/ui',
+  '@simplycms/admin',
 ];
 
 function PackageTicker() {

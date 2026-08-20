@@ -11,7 +11,7 @@ import type {
   CatalogSlots,
   CatalogViewModel,
   HomeViewModel,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 
 /**
  * Спільне тіло каталогу: обидві сторінки мають однаковий набір слотів, тому

@@ -41,12 +41,9 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@simplycms/supabase": "workspace:*",
+    "simplycms": "workspace:*",
     "@simplycms/core": "workspace:*",
-    "@simplycms/ui": "workspace:*",
-    "@simplycms/react-query": "workspace:*",
-    "@simplycms/domain": "workspace:*",
-    "@simplycms/i18n": "workspace:*"
+    "@simplycms/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

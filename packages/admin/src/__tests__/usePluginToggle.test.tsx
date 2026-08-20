@@ -2,10 +2,10 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { hookRegistry, registerPluginModule } from '@simplycms/plugins';
 import type { Plugin } from '@simplycms/plugins/types';
 import { usePluginToggle, PLUGINS_QUERY_KEY } from '../hooks/usePluginToggle';

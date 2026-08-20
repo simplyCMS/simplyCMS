@@ -69,7 +69,7 @@ export const SCANNED_ROOTS = [
   'packages/profile-ui/src',
   'packages/reviews-ui/src',
   'packages/core/src',
-  'packages/storefront/src',
+  'packages/simplycms/src/storefront',
   'packages/theme-system/src',
   'packages/plugin-system/src',
   'packages/plugin-sdk/src',
@@ -87,7 +87,7 @@ export const SCANNED_ROOTS = [
  * 🔴 Тема несе власні повідомлення (`ThemeModule.messages`, контракт v2.1), і
  * український бік цього каталогу — кирилиця за побудовою. Сканувати його
  * означало б вимагати перекладу від перекладу. Core-каталоги
- * (`packages/i18n/src/catalogs/**`) у `SCANNED_ROOTS` не входять узагалі й
+ * (`packages/simplycms/src/i18n/catalogs/**`) у `SCANNED_ROOTS` не входять узагалі й
  * тому окремого винятку не потребують.
  */
 const CATALOG_FILES = /(^|\/)messages\.ts$/;

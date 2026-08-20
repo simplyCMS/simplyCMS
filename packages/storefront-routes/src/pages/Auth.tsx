@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { Button } from '@simplycms/ui/button';
 import { Input } from '@simplycms/ui/input';
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@simplycms/ui/tabs';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from 'lucide-react';
 import { z } from 'zod';
-import { useT, type Translator } from '@simplycms/i18n';
+import { useT, type Translator } from 'simplycms/i18n';
 
 // Фабрики схем: повідомлення беруть з каталогу, тому потребують транслятора.
 const buildLoginSchema = (t: Translator) =>

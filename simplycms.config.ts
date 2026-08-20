@@ -1,4 +1,4 @@
-import { defineConfig } from '@simplycms/runtime';
+import { defineConfig } from 'simplycms/runtime';
 
 /**
  * Конфіг магазину — єдине джерело істини.

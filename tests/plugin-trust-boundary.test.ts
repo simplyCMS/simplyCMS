@@ -39,7 +39,7 @@ async function boundaryErrors(
 
 describe('межа довіри плагінів (no-restricted-imports)', () => {
   const violation =
-    "import { createServerSupabase } from '@simplycms/supabase/server-client';\n";
+    "import { createServerSupabase } from 'simplycms/supabase/server-client';\n";
 
   it('ловить пряме імпортування Supabase-шару в plugins/**', async () => {
     const errors = await boundaryErrors(
@@ -52,8 +52,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
 
   it('ловить у packages/simplycms-plugin-*/** — усі три заборонені групи', async () => {
     for (const bad of [
-      "import { x } from '@simplycms/supabase';",
-      "import { y } from '@simplycms/data-supabase/orderRepository';",
+      "import { x } from 'simplycms/supabase';",
+      "import { y } from 'simplycms/data-supabase/orderRepository';",
       "import { createClient } from '@supabase/supabase-js';",
     ]) {
       const errors = await boundaryErrors(
@@ -76,7 +76,7 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
 
   it('ловить і ДИНАМІЧНИЙ import() у зоні (no-restricted-syntax селектор)', async () => {
     const [result] = await eslint.lintText(
-      "const c = await import('@simplycms/supabase/server-client');\n" +
+      "const c = await import('simplycms/supabase/server-client');\n" +
         "const d = await import('@supabase/supabase-js');\n",
       {
         filePath: join(REPO, 'plugins/hello-world/fixture.ts'),

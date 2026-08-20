@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { Camera, Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@simplycms/ui/use-toast';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 interface AvatarUploadProps {
   userId: string;

@@ -1,7 +1,7 @@
 import { ShoppingCart } from 'lucide-react';
-import { PRODUCT_DETAIL_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
-import { useCart, type CartItem } from '@simplycms/react-query';
+import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
+import { useCart, type CartItem } from 'simplycms/react-query';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { Button } from '@simplycms/ui/button';
 import { cn } from '@simplycms/ui/utils';

@@ -1,5 +1,5 @@
-import { PRODUCT_DETAIL_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { Badge } from '@simplycms/ui/badge';
 import { cn } from '@simplycms/ui/utils';
 

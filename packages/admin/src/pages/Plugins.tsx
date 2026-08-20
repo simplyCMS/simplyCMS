@@ -18,8 +18,8 @@ import {
   getRegisteredPluginModules,
   uninstallPlugin,
 } from '@simplycms/plugins';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import {
   parsePlugin,
   type ParsedPlugin,

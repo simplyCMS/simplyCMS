@@ -1,5 +1,5 @@
-import { createAnonSupabaseClient } from '@simplycms/supabase/anon-client';
-import { buildSitemapXml as buildSitemap } from '@simplycms/storefront/seo';
+import { createAnonSupabaseClient } from 'simplycms/supabase/anon-client';
+import { buildSitemapXml as buildSitemap } from 'simplycms/storefront/seo';
 
 /**
  * Базовий URL сайту — ЛІНИВО з `process.env` у момент виклику (контракт

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { Badge } from '@simplycms/ui/badge';
 import {

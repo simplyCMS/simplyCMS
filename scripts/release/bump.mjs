@@ -58,15 +58,16 @@ export function currentVersion() {
 /**
  * Рантайм-константа версії ядра — оновлюється РАЗОМ із манифестами.
  *
- * `CORE_VERSION` живе в `@simplycms/objects` (перевірка `engines.simplycms`
+ * `CORE_VERSION` живе в `simplycms/contracts` (перевірка `engines.simplycms`
  * тем/плагінів у клієнтському бандлі, де файлової системи немає); парність
- * із `package.json` стереже `packages/objects/src/__tests__/semver.test.ts`,
+ * із `package.json` стереже `packages/simplycms/src/contracts/__tests__/semver.test.ts`,
  * тож пропущений тут крок валить `pnpm test`, а не мовчки їде в реліз.
  */
 const CORE_VERSION_FILE = join(
   PACKAGES_DIR,
-  'objects',
+  'simplycms',
   'src',
+  'contracts',
   'semver',
   'version.ts',
 );

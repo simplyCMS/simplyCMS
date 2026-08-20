@@ -1,8 +1,8 @@
-import type { Locale } from '@simplycms/i18n';
+import type { Locale } from 'simplycms/i18n';
 import {
   REQUIRED_REQUISITES,
   type StorefrontViewName,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 import { ThemeRegistry } from '../ThemeRegistry';
 import { validateThemeModule } from '../validateThemeModule';
 import type { ThemeModule } from '../types';

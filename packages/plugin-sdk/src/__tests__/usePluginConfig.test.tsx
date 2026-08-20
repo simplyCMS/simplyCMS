@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { z } from 'zod';
-import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { usePluginConfig } from '../usePluginConfig';
 
 const schema = z.object({

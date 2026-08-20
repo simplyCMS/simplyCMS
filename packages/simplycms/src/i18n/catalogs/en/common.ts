@@ -1,0 +1,94 @@
+import type { Catalog } from '../../types';
+
+/** Спільна лексика інтерфейсу — дзеркало `uk/common.ts`. */
+export const messages: Catalog = {
+  'common.save': 'Save',
+  'common.saving': 'Saving...',
+  'common.cancel': 'Cancel',
+  'common.delete': 'Delete',
+  'common.create': 'Create',
+  'common.add': 'Add',
+  'common.edit': 'Edit',
+  'common.activate': 'Activate',
+  'common.reset': 'Reset',
+
+  'common.loading': 'Loading...',
+  'common.error': 'Error',
+  'common.errorWithMessage': 'Error: {message}',
+  'common.saveError': 'Could not save',
+  'common.changesSaved': 'Changes saved',
+  'common.settingsSaved': 'Settings saved',
+  'common.statusUpdated': 'Status updated',
+  'common.statusUpdateError': 'Could not update the status',
+  'common.none': 'None',
+  'common.notSet': 'Not set',
+  'common.new': 'New',
+
+  'common.name': 'Name',
+  'common.nameRequiredLabel': 'Name *',
+  'common.description': 'Description',
+  'common.seoDescription': 'Search engine description',
+  'common.code': 'Code',
+  'common.type': 'Type',
+  'common.status': 'Status',
+  'common.actions': 'Actions',
+  'common.value': 'Value',
+  'common.price': 'Price',
+  'common.amount': 'Amount',
+  'common.quantity': 'Quantity',
+  'common.total': 'Total',
+  'common.color': 'Color',
+  'common.image': 'Image',
+  'common.text': 'Text',
+  'common.number': 'Number',
+  'common.date': 'Date',
+  'common.dateFrom': 'Start date',
+  'common.dateTo': 'End date',
+  'common.category': 'Category',
+  'common.information': 'Information',
+  'common.basicInfo': 'Basic information',
+  'common.filter': 'Filter',
+  'common.priority': 'Priority',
+  'common.order': 'Order',
+  'common.sortOrder': 'Sort order',
+
+  'common.firstName': 'First name',
+  'common.lastName': 'Last name',
+  'common.phone': 'Phone',
+  'common.city': 'City',
+  'common.address': 'Address',
+  'common.author': 'Author',
+
+  // Три роди українського «активний» англійською збігаються — це очікувано:
+  // каталог не зобовʼязаний зберігати граматичні розрізнення джерела.
+  'common.activeM': 'Active',
+  'common.activeF': 'Active',
+  'common.activeN': 'Active',
+  'common.system': 'System',
+  'common.byDefault': 'Default',
+  'common.byDefaultShort': 'Default',
+  'common.yes': 'Yes',
+  'common.no': 'No',
+  'common.howItWorks': 'How this works:',
+  'common.or': 'or',
+
+  // Addresses and recipients — shared by checkout-ui and profile-ui.
+  // 🔴 The Ukrainian «м.» city marker has no English equivalent, so the key
+  // carries the whole line: hardcoding the prefix next to the value would
+  // render «м. Kyiv» in an English store.
+  'common.cityShort': '{city}',
+  'common.cityAddress': '{city}, {address}',
+  'common.address.new': 'New address',
+  'common.address.added': 'Address added',
+  'common.address.updated': 'Address updated',
+  'common.recipient.new': 'New recipient',
+  'common.recipient.added': 'Recipient added',
+  'common.recipient.updated': 'Recipient updated',
+
+  // Shipping cost — shared by checkout-ui and the admin rate editor.
+  // 🔴 These lived inside `simplycms/domain/shipping` (a pure T1 package)
+  // until 2026-08-09, which is why an English store still rendered
+  // «За тарифами» in the order summary.
+  'common.shipping.byTariff': 'By carrier rates',
+  'common.shipping.free': 'Free',
+};

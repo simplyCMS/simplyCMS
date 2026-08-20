@@ -32,24 +32,10 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
-        '@simplycms/objects': resolve(__dirname, 'packages/objects/src'),
-        '@simplycms/domain': resolve(__dirname, 'packages/domain/src'),
-        '@simplycms/data-supabase': resolve(
-          __dirname,
-          'packages/data-supabase/src',
-        ),
-        '@simplycms/supabase': resolve(__dirname, 'packages/supabase/src'),
         '@simplycms/storefront-routes': resolve(
           __dirname,
           'packages/storefront-routes/src',
         ),
-        '@simplycms/i18n': resolve(__dirname, 'packages/i18n/src'),
-        '@simplycms/runtime': resolve(__dirname, 'packages/runtime/src'),
-        '@simplycms/react-query': resolve(
-          __dirname,
-          'packages/react-query/src',
-        ),
-        '@simplycms/storefront': resolve(__dirname, 'packages/storefront/src'),
         '@simplycms/cart-ui': resolve(__dirname, 'packages/cart-ui/src'),
         '@simplycms/catalog-ui': resolve(__dirname, 'packages/catalog-ui/src'),
         '@simplycms/checkout-ui': resolve(

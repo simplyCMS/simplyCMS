@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from '@simplycms/i18n';
-import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { I18nProvider } from 'simplycms/i18n';
+import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 
 /**

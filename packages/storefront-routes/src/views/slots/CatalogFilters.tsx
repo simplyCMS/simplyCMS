@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { CATALOG_REQUISITES } from '@simplycms/objects/views';
+import { CATALOG_REQUISITES } from 'simplycms/contracts/views';
 import { FilterSidebar } from '@simplycms/core/components/catalog/FilterSidebar';
 import { cn } from '@simplycms/ui/utils';
 

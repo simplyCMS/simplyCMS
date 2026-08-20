@@ -1,1 +1,1 @@
-export type { Database } from '@simplycms/supabase';
+export type { Database } from 'simplycms/supabase';

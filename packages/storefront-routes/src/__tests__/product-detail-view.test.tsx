@@ -2,13 +2,13 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import {
   PRODUCT_DETAIL_REQUISITES,
   REQUIRED_REQUISITES,
   type ProductDetailSlots,
-} from '@simplycms/objects/views';
-import { productDetailViewModelFixtures } from '@simplycms/objects/views/fixtures';
+} from 'simplycms/contracts/views';
+import { productDetailViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
 /**
  * Conformance-прогін канонічного `ProductDetailView` на фікстурах

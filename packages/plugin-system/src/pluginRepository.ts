@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Json } from '@simplycms/objects';
+import type { Json } from 'simplycms/contracts';
 import type { Plugin } from './types';
 
 /**

@@ -1,7 +1,7 @@
 import { Suspense, act, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { I18nProvider, type Locale } from '@simplycms/i18n';
-import { REQUISITE_ATTRIBUTE } from '@simplycms/objects/views';
+import { I18nProvider, type Locale } from 'simplycms/i18n';
+import { REQUISITE_ATTRIBUTE } from 'simplycms/contracts/views';
 import { ThemeContext } from '../theme-context';
 import { resolveDefaultThemeSettings } from '../theme-settings';
 import type { ThemeContextType, ThemeModule } from '../types';

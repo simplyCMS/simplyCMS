@@ -7,7 +7,7 @@ import type {
   MediaProvider,
   ConfigProvider,
   ImageOpts,
-} from '@simplycms/objects';
+} from 'simplycms/contracts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import config from '../simplycms.config';
 
@@ -15,13 +15,13 @@ import config from '../simplycms.config';
  * Типи БД ЦЬОГО магазину.
  *
  * Свіжий магазин ще не має жодної плагінної таблиці, тож `StoreDatabase` — це
- * baseline core-схеми з `@simplycms/supabase`. Щойно магазин поставить плагін
+ * baseline core-схеми з `simplycms/supabase`. Щойно магазин поставить плагін
  * зі своїми таблицями, він згенерує власний `supabase/types.ts`
  * (`pnpm db:generate-types`) і підставить його тут — generic-місток фабрик
  * (`createServerSupabase<StoreDatabase>()`) саме для цього й існує.
  * Тип-онлі реекспорт — у бандл не потрапляє.
  */
-export type { Database as StoreDatabase } from '@simplycms/supabase';
+export type { Database as StoreDatabase } from 'simplycms/supabase';
 
 /** Маршрути simplyCMS-вітрини. */
 export const appLinks: LinkResolver = {

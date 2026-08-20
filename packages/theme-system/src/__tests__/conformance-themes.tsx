@@ -7,7 +7,7 @@
 import type {
   CartViewModel,
   ProductDetailViewModel,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 import type { ThemeModule, ThemeViews } from '../types';
 
 function Stub() {

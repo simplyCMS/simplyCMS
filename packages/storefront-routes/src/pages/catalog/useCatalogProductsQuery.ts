@@ -1,7 +1,7 @@
 // Запит вибірки товарів каталогу (контракт тем v3, Фаза 4).
 
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import {
   fetchModificationStockData,
   fetchModificationPropertyValues,

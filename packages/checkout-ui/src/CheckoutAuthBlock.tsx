@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useToast } from '@simplycms/ui/use-toast';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import {
   Eye,
   EyeOff,

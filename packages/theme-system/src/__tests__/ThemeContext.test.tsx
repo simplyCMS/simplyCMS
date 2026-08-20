@@ -2,8 +2,8 @@
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { ThemeProvider } from '../ThemeContext';
 import { useTheme } from '../theme-context';
 import { ThemeRegistry } from '../ThemeRegistry';

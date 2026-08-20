@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import type { CartViewModel } from '@simplycms/objects/views';
+import type { CartViewModel } from 'simplycms/contracts/views';
 import { assertThemeViewsConformance } from '../conformance';
 import { useThemeSettings } from '../theme-context';
 import { useThemeT } from '../useThemeT';

@@ -13,8 +13,8 @@ export const NPM_ORG_URL = 'https://www.npmjs.com/org/simplycms';
 export const NPM_SEARCH_URL =
   'https://www.npmjs.com/search?q=%40simplycms%20create-simplycms-store';
 
-/** Unscoped-пакети платформи поза scope `@simplycms` (скаффолдер). */
-const UNSCOPED_PACKAGES = new Set(['create-simplycms-store']);
+/** Unscoped-пакети платформи поза scope `@simplycms` (флагман і скаффолдер). */
+const UNSCOPED_PACKAGES = new Set(['simplycms', 'create-simplycms-store']);
 
 export interface NpmSearchObject {
   package: { name: string; version: string };

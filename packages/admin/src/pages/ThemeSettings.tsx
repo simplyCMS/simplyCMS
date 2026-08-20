@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { Button } from '@simplycms/ui/button';
 import {
@@ -24,7 +24,7 @@ import { Skeleton } from '@simplycms/ui/skeleton';
 import { useToast } from '@simplycms/core/hooks/use-toast';
 import { ArrowLeft, Save, Palette } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import {
   revalidateFailureDescription,
   useRevalidateStorefront,

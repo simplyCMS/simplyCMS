@@ -18,7 +18,7 @@ import { tsconfigAliases } from '../packages/cli/src/theme-conformance-env.mjs';
 // скаффолді й ВИМАГАЄ падіння (exit 1) з інструкцією `pnpm add -D jsdom`.
 // Щасливий шлях — tests/cli-theme-conformance-run.test.ts.
 
-const CONFIG = `import { defineConfig } from '@simplycms/runtime';
+const CONFIG = `import { defineConfig } from 'simplycms/runtime';
 
 export default defineConfig({
   plugins: [],

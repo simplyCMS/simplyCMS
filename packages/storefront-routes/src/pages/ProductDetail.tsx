@@ -1,6 +1,6 @@
 import { useParams } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import { ProductDetailView } from '../views/ProductDetailView';
 import { useStorefrontViews } from '../views/useStorefrontViews';

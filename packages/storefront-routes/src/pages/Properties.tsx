@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Loader2, ChevronRight, Tag } from 'lucide-react';
-import type { Tables } from '@simplycms/supabase';
+import type { Tables } from 'simplycms/supabase';
 
 export interface PropertiesPageProps {
   properties?: Tables<'section_properties'>[];

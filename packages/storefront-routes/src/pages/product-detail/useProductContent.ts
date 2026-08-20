@@ -1,7 +1,7 @@
 // Зображення й характеристики картки: обидва залежать від вибраної модифікації.
 
 import { useMemo } from 'react';
-import type { ProductPropertyValueViewModel } from '@simplycms/objects/views';
+import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
 export interface ProductContentInput {

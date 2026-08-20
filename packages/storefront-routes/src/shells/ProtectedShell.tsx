@@ -4,7 +4,7 @@ import { User, Package, Settings, LogOut, type LucideIcon } from 'lucide-react';
 import { cn } from '@simplycms/core/lib/utils';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { Button } from '@simplycms/ui/button';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { useActiveThemeModule } from './useActiveThemeModule';
 import { ThemeTokens } from './ThemeTokens';
 import { ThemeFonts } from './ThemeFonts';

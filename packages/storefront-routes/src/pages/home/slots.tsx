@@ -1,7 +1,10 @@
 // Слот секційної каруселі, прибінджений до контейнера (контракт тем v3,
 // Фаза 5).
 
-import type { HomeSectionSlotProps, HomeSlots } from '@simplycms/objects/views';
+import type {
+  HomeSectionSlotProps,
+  HomeSlots,
+} from 'simplycms/contracts/views';
 import { HomeSectionCarousel } from '../../views/slots/HomeSectionCarousel';
 import { useHomeBindings } from './slot-context';
 

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { ZodObject, ZodRawShape } from 'zod';
-import type { Locale } from '@simplycms/i18n';
+import type { Locale } from 'simplycms/i18n';
 import type {
   HookHandler,
   PluginManifest,

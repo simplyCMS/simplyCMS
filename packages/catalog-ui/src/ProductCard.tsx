@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ImageIcon, Star } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
-import { useFormatPrice } from '@simplycms/react-query';
+import { useT } from 'simplycms/i18n';
+import { useFormatPrice } from 'simplycms/react-query';
 
 interface ProductCardProps {
   product: {

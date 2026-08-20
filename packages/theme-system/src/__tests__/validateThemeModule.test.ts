@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { viewModelFixtures } from '@simplycms/objects/views/fixtures';
+import { viewModelFixtures } from 'simplycms/contracts/views/fixtures';
 import { THEME_VIEW_KEYS, validateThemeModule } from '../validateThemeModule';
 
 /** Фабрика валідного модуля теми v2 (свіжий обʼєкт на кожен тест). */
@@ -165,7 +165,7 @@ describe('validateThemeModule', () => {
   });
 
   // Звірка двох списків: ключі контракту (тут) і ключі фікстур (у T0
-  // `@simplycms/objects`). Новий view без фікстури — червоний тест ще до
+  // `simplycms/contracts`). Новий view без фікстури — червоний тест ще до
   // conformance-kit-а.
   it('кожен ключ контракту має фікстурний view-model', () => {
     expect(Object.keys(viewModelFixtures).sort()).toEqual(

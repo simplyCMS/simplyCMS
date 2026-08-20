@@ -75,12 +75,8 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@simplycms/supabase": "workspace:*",
-    "@simplycms/domain": "workspace:*",
-    "@simplycms/i18n": "workspace:*",
-    "@simplycms/objects": "workspace:*",
+    "simplycms": "workspace:*",
     "@simplycms/themes": "workspace:*",
-    "@simplycms/react-query": "workspace:*",
     "@simplycms/ui": "workspace:*",
     "@simplycms/plugins": "workspace:*",
     "@simplycms/cart-ui": "workspace:*",

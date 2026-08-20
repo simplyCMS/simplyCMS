@@ -18,11 +18,11 @@ import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Separator } from '@simplycms/ui/separator';
 import { Skeleton } from '@simplycms/ui/skeleton';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { toast } from '@simplycms/core/hooks/use-toast';
-import { useFormatPrice } from '@simplycms/react-query';
+import { useFormatPrice } from 'simplycms/react-query';
 
 interface OrderDetails {
   id: string;
@@ -140,7 +140,7 @@ export default function OrderSuccess() {
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. @simplycms/domain/money).
+  // (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
   const formatDate = (dateString: string) => {

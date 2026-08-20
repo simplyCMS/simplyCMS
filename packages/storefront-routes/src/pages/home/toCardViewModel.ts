@@ -1,6 +1,6 @@
 // Мапінг товару головної в картку каталогу (контракт тем v3, Фаза 5).
 
-import type { ProductCardViewModel } from '@simplycms/objects/views';
+import type { ProductCardViewModel } from 'simplycms/contracts/views';
 import type { HomeProduct } from './types';
 
 /**

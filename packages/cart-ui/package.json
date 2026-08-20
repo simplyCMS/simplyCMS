@@ -41,8 +41,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@simplycms/i18n": "workspace:*",
-    "@simplycms/react-query": "workspace:*"
+    "simplycms": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",

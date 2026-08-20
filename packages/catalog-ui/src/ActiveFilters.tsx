@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 interface ActiveFilter {
   key: string;

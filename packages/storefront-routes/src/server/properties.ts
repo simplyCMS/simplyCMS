@@ -4,8 +4,8 @@ import {
   loadProperties,
   loadPropertyBySlug,
   loadPropertyOption,
-} from '@simplycms/storefront/loaders';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+} from 'simplycms/storefront/loaders';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 /** Отримати всі характеристики з has_page=true */
 export const getProperties = createServerFn({ method: 'GET' }).handler(

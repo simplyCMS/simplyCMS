@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { X } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 interface Property {
   id: string;

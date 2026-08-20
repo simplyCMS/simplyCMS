@@ -1,4 +1,4 @@
-import { HOME_REQUISITES } from '@simplycms/objects/views';
+import { HOME_REQUISITES } from 'simplycms/contracts/views';
 import { cn } from '@simplycms/ui/utils';
 import {
   SectionProductCarousel,

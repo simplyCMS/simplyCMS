@@ -1,6 +1,6 @@
 import { cn } from '@simplycms/ui/utils';
 import { Check } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 

@@ -1,7 +1,7 @@
 // Хлібні крихти каталогу й сторінки розділу.
 
-import type { Translator } from '@simplycms/i18n';
-import type { BreadcrumbItem } from '@simplycms/objects/views';
+import type { Translator } from 'simplycms/i18n';
+import type { BreadcrumbItem } from 'simplycms/contracts/views';
 
 /** Головна → каталог (остання ланка без `href` — рендериться текстом). */
 export function buildCatalogBreadcrumbs(t: Translator): BreadcrumbItem[] {

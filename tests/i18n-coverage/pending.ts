@@ -22,11 +22,15 @@ export const ALLOWLIST: Record<string, string> = {
   'packages/storefront-routes/src/server/auth.ts': 'console.error — лог',
   'packages/storefront-routes/src/server/themes.ts': 'console.error — лог',
   'packages/storefront-routes/src/seo/interceptor.ts': 'console.error — лог',
-  'packages/storefront/src/loaders/pricing.ts': 'console.error — лог',
-  'packages/storefront/src/loaders/products.ts': 'console.error — лог',
-  'packages/storefront/src/loaders/properties.ts': 'console.error — лог',
-  'packages/storefront/src/loaders/sections.ts': 'console.error — лог',
-  'packages/storefront/src/seo/sitemap.ts': 'throw — діагностика генерації',
+  'packages/simplycms/src/storefront/loaders/pricing.ts': 'console.error — лог',
+  'packages/simplycms/src/storefront/loaders/products.ts':
+    'console.error — лог',
+  'packages/simplycms/src/storefront/loaders/properties.ts':
+    'console.error — лог',
+  'packages/simplycms/src/storefront/loaders/sections.ts':
+    'console.error — лог',
+  'packages/simplycms/src/storefront/seo/sitemap.ts':
+    'throw — діагностика генерації',
   'packages/plugin-system/src/bootstrap.ts': 'console.error — лог',
   'packages/theme-system/src/getActiveThemeSSR.ts': 'console.error — лог',
   // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає

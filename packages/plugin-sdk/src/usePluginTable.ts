@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 
 /**
  * Порт даних плагіна: вузький CRUD-фасад над ВЛАСНИМИ таблицями
  * (`plg_<name>_*`, спека §7/§9).
  *
- * Це і є межа довіри в дії: плагін НЕ імпортує `@simplycms/supabase`
+ * Це і є межа довіри в дії: плагін НЕ імпортує `simplycms/supabase`
  * (dependency-lint це забороняє) — клієнт бере SDK, довірений код ядра,
  * а назовні віддає лише перелічувану поверхню. Гард префікса `plg_` —
  * рантаймний: чужі таблиці цим портом недосяжні за іменем.
  *
  * Типи рядків — generic-параметр викликача: таблиці плагіна свідомо НЕ
- * входять у core-baseline (`packages/supabase/src/database.ts`), тож
+ * входять у core-baseline (`packages/simplycms/src/supabase/database.ts`), тож
  * узгодженість типу з реальною схемою — відповідальність автора плагіна.
  */
 

@@ -1,17 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Truck, ChevronRight, Save, icons } from 'lucide-react';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import type {
   ShippingMethod,
   ShippingRate,
   PickupPoint,
-} from '@simplycms/domain/shipping';
-import { formatShippingCost } from '@simplycms/domain/shipping';
+} from 'simplycms/domain/shipping';
+import { formatShippingCost } from 'simplycms/domain/shipping';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useToast } from '@simplycms/ui/use-toast';
-import { useT } from '@simplycms/i18n';
-import { useEngine } from '@simplycms/react-query';
+import { useT } from 'simplycms/i18n';
+import { useEngine } from 'simplycms/react-query';
 import { AddressCard } from './AddressCard';
 import { AddressSelectorPopup } from './AddressSelectorPopup';
 import { AddressSaveDialog } from './AddressSaveDialog';

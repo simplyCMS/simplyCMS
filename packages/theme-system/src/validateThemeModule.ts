@@ -1,4 +1,4 @@
-import { CORE_VERSION, satisfies } from '@simplycms/objects/semver';
+import { CORE_VERSION, satisfies } from 'simplycms/contracts/semver';
 import type { ThemeModule } from './types';
 import { validateThemeViews } from './validateThemeViews';
 

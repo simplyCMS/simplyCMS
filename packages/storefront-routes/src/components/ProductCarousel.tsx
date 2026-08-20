@@ -2,7 +2,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@simplycms/ui/button';
 import { Link } from '@tanstack/react-router';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 // Канонічна картка товару з пакета: та сама, що на сторінках каталогу —
 // секції головної в ядрі не мають власного варіанта картки.
 import { ProductCard } from '@simplycms/catalog-ui/ProductCard';

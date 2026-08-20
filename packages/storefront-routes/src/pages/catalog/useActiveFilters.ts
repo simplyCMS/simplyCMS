@@ -1,7 +1,7 @@
 // Бейджі активних фільтрів і їх зняття (контракт тем v3, Фаза 4).
 
 import { useCallback, useMemo } from 'react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import {
   buildActiveFilterChips,
   type ChipSources,

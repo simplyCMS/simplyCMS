@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 import { checkIsAdmin } from './is-admin';
 
 /** Отримати поточну сесію користувача */

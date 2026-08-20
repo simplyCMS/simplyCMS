@@ -25,7 +25,7 @@ interface AdminQueryBuilder {
   maybeSingle: () => Promise<{ data: { role: string } | null; error: null }>;
 }
 
-vi.mock('@simplycms/supabase/server-client', () => ({
+vi.mock('simplycms/supabase/server-client', () => ({
   createServerSupabase: () => ({
     auth: {
       getUser: async () => ({ data: { user: currentUser }, error: null }),
@@ -49,7 +49,7 @@ vi.mock('@simplycms/supabase/server-client', () => ({
   }),
 }));
 
-vi.mock('@simplycms/supabase/anon-client', () => ({
+vi.mock('simplycms/supabase/anon-client', () => ({
   createAnonSupabaseClient: () => ({
     from: () => ({
       select: () => ({

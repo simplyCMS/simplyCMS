@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent, CardHeader } from '@simplycms/ui/card';
 import { Skeleton } from '@simplycms/ui/skeleton';
 import { Palette, ArrowLeft } from 'lucide-react';
 import { adminPath } from '../lib/adminLinks';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { ThemeCard, type ThemeRecord } from '../components/ThemeCard';
 import { ThemeActivateDialog } from '../components/ThemeActivateDialog';
 import { useThemeActivate, THEMES_QUERY_KEY } from '../hooks/useThemeActivate';

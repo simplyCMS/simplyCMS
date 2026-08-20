@@ -12,8 +12,8 @@
  *
  * Дві додаткові цілі того самого механізму: `SYNCED_FILES` → `packages/cli/host/`
  * (канон для `simplycms update`, зі збереженням відносних шляхів) і
- * `supabase/migrations/` → `packages/schema/migrations/` (джерело для
- * `simplycms db:diff` — tarball @simplycms/schema везе міграції ядра).
+ * `supabase/migrations/` → `packages/simplycms/migrations/` (джерело для
+ * `simplycms db:diff` — tarball `simplycms` везе міграції ядра).
  *
  * Статичні файли шаблону (`package.json.tpl`, `vite.config.ts`, `routes.ts`,
  * `README.md`, `supabase/config.toml` тощо) скрипт НЕ чіпає — їхнє джерело
@@ -32,8 +32,8 @@ export const TEMPLATE_DIR = 'packages/create-simplycms-store/template';
 /** Канон host-файлів пакета CLI — тека сама собі маніфест для `simplycms update`. */
 export const CLI_HOST_DIR = 'packages/cli/host';
 
-/** Міграції ядра в tarball @simplycms/schema — джерело `simplycms db:diff`. */
-export const SCHEMA_MIGRATIONS_DIR = 'packages/schema/migrations';
+/** Міграції ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
+export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
 
 /** Host-файли: байт-ідентичні кореню монорепо (та сама 11-ка, що в пілоті). */
 export const SYNCED_FILES = [
@@ -92,7 +92,7 @@ export function syncTemplate(root = REPO_ROOT) {
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(root, file), target);
   }
-  // Міграції ядра для tarball @simplycms/schema — байт-копія supabase/migrations.
+  // Міграції ядра для tarball `simplycms` — байт-копія supabase/migrations.
   const migrationsTarget = join(root, SCHEMA_MIGRATIONS_DIR);
   rmSync(migrationsTarget, { recursive: true, force: true });
   cpSync(join(root, 'supabase/migrations'), migrationsTarget, {

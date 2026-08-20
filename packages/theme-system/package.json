@@ -80,9 +80,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@simplycms/i18n": "workspace:*",
-    "@simplycms/objects": "workspace:*",
-    "@simplycms/supabase": "workspace:*"
+    "simplycms": "workspace:*"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.0.0",

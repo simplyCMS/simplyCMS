@@ -10,4 +10,7 @@ export default defineConfig({
   // Без code-splitting: кожен entry самодостатній (інакше .d.ts ре-експортує
   // з hash-чанка через .js → ламає moduleResolution:node у споживачів).
   splitting: false,
+  // Сиблінги ядра — завжди зовнішні, включно з субшляхами флагмана
+  // (`simplycms/i18n`): регекс, а не список імен.
+  external: [/^simplycms(\/|$)/, /^@simplycms\//],
 });

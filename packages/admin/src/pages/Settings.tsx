@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import {
   Card,
   CardContent,
@@ -13,7 +13,7 @@ import { Label } from '@simplycms/ui/label';
 import { Separator } from '@simplycms/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Settings as SettingsIcon, Package } from 'lucide-react';
-import type { Json } from '@simplycms/supabase';
+import type { Json } from 'simplycms/supabase';
 
 interface StockManagementSettings {
   decrease_on_order: boolean;

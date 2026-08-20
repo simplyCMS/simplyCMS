@@ -1,4 +1,4 @@
-import { PRODUCT_DETAIL_REQUISITES } from '@simplycms/objects/views';
+import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
 import { StockDisplay } from '@simplycms/core/components/catalog/StockDisplay';
 import { ProductReviews } from '@simplycms/core/components/reviews/ProductReviews';
 import { cn } from '@simplycms/ui/utils';

@@ -2,13 +2,13 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import {
   CART_REQUISITES,
   REQUIRED_REQUISITES,
   type CartSlots,
-} from '@simplycms/objects/views';
-import { cartViewModelFixtures } from '@simplycms/objects/views/fixtures';
+} from 'simplycms/contracts/views';
+import { cartViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
 /**
  * Conformance-прогін канонічного `CartView` на фікстурах (контракт тем v3,

@@ -28,11 +28,11 @@ import {
   AlertDialogTrigger,
 } from '@simplycms/ui/alert-dialog';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
-import { useFormatPrice } from '@simplycms/react-query';
-import type { Json } from '@simplycms/supabase';
+import { useFormatPrice } from 'simplycms/react-query';
+import type { Json } from 'simplycms/supabase';
 
 interface OrderDetails {
   id: string;
@@ -129,7 +129,7 @@ export default function ProfileOrderDetailPage() {
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. @simplycms/domain/money).
+  // (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
   const formatDate = (dateString: string) => {

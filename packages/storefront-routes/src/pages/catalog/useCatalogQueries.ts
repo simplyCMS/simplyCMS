@@ -2,8 +2,8 @@
 // характеристик (контракт тем v3, Фаза 4).
 
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import type { Tables } from '@simplycms/supabase';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import type { Tables } from 'simplycms/supabase';
 import type { NumericProperty } from './types';
 
 /** Рядок розділу у формі, яку віддає SSR-лоадер і споживають чипси. */

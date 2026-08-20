@@ -1,5 +1,5 @@
-import { PRODUCT_DETAIL_REQUISITES } from '@simplycms/objects/views';
-import { useFormatPrice } from '@simplycms/react-query';
+import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import { useFormatPrice } from 'simplycms/react-query';
 import { cn } from '@simplycms/ui/utils';
 
 export interface ProductPriceBlockProps {

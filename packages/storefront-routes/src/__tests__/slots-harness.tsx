@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from '@simplycms/i18n';
-import { CartProvider } from '@simplycms/react-query';
+import { I18nProvider } from 'simplycms/i18n';
+import { CartProvider } from 'simplycms/react-query';
 import { TestEngineProvider } from './engine-stub';
 
 /**

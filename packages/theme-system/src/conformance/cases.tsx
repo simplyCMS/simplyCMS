@@ -8,8 +8,8 @@
 // vm — червоний `pnpm typecheck`.
 
 import type { ReactElement } from 'react';
-import type { StorefrontViewName } from '@simplycms/objects/views';
-import { viewModelFixtures } from '@simplycms/objects/views/fixtures';
+import type { StorefrontViewName } from 'simplycms/contracts/views';
+import { viewModelFixtures } from 'simplycms/contracts/views/fixtures';
 import type { ThemeViews } from '../types';
 import {
   cartSlotStubs,

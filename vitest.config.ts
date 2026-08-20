@@ -12,12 +12,6 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/objects': pkg('objects/src'),
-      '@simplycms/domain': pkg('domain/src'),
-      '@simplycms/supabase': pkg('supabase/src'),
-      '@simplycms/i18n': pkg('i18n/src'),
-      '@simplycms/react-query': pkg('react-query/src'),
-      '@simplycms/storefront': pkg('storefront/src'),
       '@simplycms/storefront-routes': pkg('storefront-routes/src'),
       '@simplycms/cart-ui': pkg('cart-ui/src'),
       '@simplycms/catalog-ui': pkg('catalog-ui/src'),

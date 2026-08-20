@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import type { ProductDetailViewModel } from '@simplycms/objects/views';
+import type { ProductDetailViewModel } from 'simplycms/contracts/views';
 import { useThemeT } from '@simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
 import { ViewBreadcrumbs } from './parts/ViewBreadcrumbs';

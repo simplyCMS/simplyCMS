@@ -1,6 +1,6 @@
-import { CART_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
-import { useCart, useFormatPrice } from '@simplycms/react-query';
+import { CART_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
+import { useCart, useFormatPrice } from 'simplycms/react-query';
 import { Separator } from '@simplycms/ui/separator';
 import { cn } from '@simplycms/ui/utils';
 

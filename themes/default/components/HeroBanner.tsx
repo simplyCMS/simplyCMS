@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
-import type { Banner } from '@simplycms/objects/objects';
+import type { Banner } from 'simplycms/contracts/objects';
 import { useThemeT } from '@simplycms/themes/useThemeT';
 import { MONO_STACK } from './mono';
 import type { ThemeKey } from '../messages';

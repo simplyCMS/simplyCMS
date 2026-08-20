@@ -36,7 +36,9 @@ const each = (assert: (name: string, entry: Entry) => void) => () => {
 
 describe('published packages: tarball parity', () => {
   it('пакетів для публікації знайдено', () => {
-    expect(packed.size).toBeGreaterThanOrEqual(20);
+    // Поріг перехідний: К0 Task 2 злив дев'ять пакетів T0–T2 у флагман
+    // (26 → 17), Task 3 замінить його ТОЧНИМ набором із пʼяти.
+    expect(packed.size).toBeGreaterThanOrEqual(17);
     // К0: unscoped-флагман мусить проходити той самий гейт, що й сателіти.
     // Дискримінатор `pack-inspect` — `private === false` І імʼя ядра; без
     // явного `"private": false` пакет мовчки випадає з parity-suite (тест не

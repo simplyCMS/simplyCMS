@@ -2,8 +2,8 @@ import type {
   ProductDetailCharacteristics,
   ProductDetailDescription,
   ProductDetailSlots,
-} from '@simplycms/objects/views';
-import { useT, type MessageKey } from '@simplycms/i18n';
+} from 'simplycms/contracts/views';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { Separator } from '@simplycms/ui/separator';
 import { ProductCharacteristics } from '@simplycms/core/components/catalog/ProductCharacteristics';
 

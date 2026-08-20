@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from '@simplycms/i18n';
-import { CartProvider } from '@simplycms/react-query';
+import { I18nProvider } from 'simplycms/i18n';
+import { CartProvider } from 'simplycms/react-query';
 import type { ThemeModule } from '@simplycms/themes/types';
 import { TestEngineProvider } from './engine-stub';
 
@@ -36,7 +36,7 @@ vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
 }));
 
-vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
+vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => ({
     from: () => ({ select: () => ({ eq: () => ({}) }) }),
   }),

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { ShoppingBag } from 'lucide-react';
 import { CartDrawer } from '@simplycms/core/components/cart/CartDrawer';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { useThemeT } from '@simplycms/themes/useThemeT';
 import { HeaderActions } from './HeaderActions';
 import type { ThemeKey } from '../messages';

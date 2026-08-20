@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { Badge } from '@simplycms/ui/badge';
 import {
   Select,

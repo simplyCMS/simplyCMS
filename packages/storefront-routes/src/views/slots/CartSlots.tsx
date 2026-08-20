@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import { Trash2 } from 'lucide-react';
-import { CART_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
-import { useCart } from '@simplycms/react-query';
+import { CART_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
+import { useCart } from 'simplycms/react-query';
 import { CartItem } from '@simplycms/core/components/cart/CartItem';
 import { Button } from '@simplycms/ui/button';
 import { cn } from '@simplycms/ui/utils';

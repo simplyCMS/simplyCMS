@@ -8,7 +8,7 @@ import { invalidateThemeCache } from './themes';
  * 🔴 Логіка живе тут, а не у файлі роуту, і це не косметика: named export із
  * `routes/api/*.tsx` переживає стрипінг властивості `server`, який робить
  * TanStack Start, і тягне в КЛІЄНТСЬКИЙ бандл увесь ланцюг
- * `checkIsAdmin → createServerSupabase → @simplycms/supabase/server-client`.
+ * `checkIsAdmin → createServerSupabase → simplycms/supabase/server-client`.
  * Роут лишає єдиний export `Route`, тому імпорт цього модуля після стрипінгу
  * стає невживаним і зникає при tree-shaking. Регресію спіймав Gate C пілота
  * (`node scripts/pilot-pack.mjs`) — у монорепо-збірці витоку не видно.

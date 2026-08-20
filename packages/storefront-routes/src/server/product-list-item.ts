@@ -1,4 +1,4 @@
-import { resolvePrice, type PriceEntry } from '@simplycms/domain/pricing';
+import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 
 /**
  * Контекст цін для серверного резолву. SSR рендериться анонімно, тож ціни

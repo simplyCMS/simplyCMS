@@ -33,7 +33,7 @@ function isSafeHttpsUrl(value: unknown): value is string {
  *
  * 🔴 Субшлях-експорт (Р11): цей модуль НЕ реекспортується з barrel-а
  * `index.ts` — barrel тягне `getActiveThemeSSR` →
- * `@simplycms/supabase/anon-client`, і імпорт barrel-а з клієнтського
+ * `simplycms/supabase/anon-client`, і імпорт barrel-а з клієнтського
  * `ThemeFonts` затягнув би серверний код у клієнтський бандл. Єдиний
  * дозволений імпорт — `@simplycms/themes/safeFontStylesheets`.
  */

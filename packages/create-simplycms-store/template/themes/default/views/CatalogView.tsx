@@ -1,5 +1,5 @@
-import type { CatalogViewModel } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import type { CatalogViewModel } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { CatalogShell } from './catalog/CatalogShell';
 
 /**

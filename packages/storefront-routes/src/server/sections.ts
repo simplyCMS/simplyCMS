@@ -4,8 +4,8 @@ import {
   loadSections,
   loadSectionBySlug,
   loadRootSections,
-} from '@simplycms/storefront/loaders';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+} from 'simplycms/storefront/loaders';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 /** Отримати всі активні секції */
 export const getSections = createServerFn({ method: 'GET' }).handler(async () =>

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
-import type { CartViewModel } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import type { CartViewModel } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { Button } from '@simplycms/ui/button';
 import {
   Card,

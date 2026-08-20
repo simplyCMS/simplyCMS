@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { ThemeRegistry } from './ThemeRegistry';
 import { ThemeContext } from './theme-context';
 import { resolveDefaultThemeSettings } from './theme-settings';

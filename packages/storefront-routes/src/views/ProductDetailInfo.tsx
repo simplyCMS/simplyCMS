@@ -2,8 +2,8 @@ import { Heart, Share2 } from 'lucide-react';
 import type {
   ProductDetailSlots,
   ProductDetailSummary,
-} from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+} from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { Badge } from '@simplycms/ui/badge';
 import { Button } from '@simplycms/ui/button';
 import { Separator } from '@simplycms/ui/separator';

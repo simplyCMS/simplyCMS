@@ -13,5 +13,5 @@ export default defineConfig({
   splitting: false,
   // Ядро приїжджає до магазину окремими пакетами — вбудовувати його копію
   // в бандл теми означало б дубль React-контекстів (SupabaseProvider тощо).
-  external: [/^@simplycms\//],
+  external: [/^simplycms(\/|$)/, /^@simplycms\//],
 });

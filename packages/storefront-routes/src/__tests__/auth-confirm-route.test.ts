@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const verifyOtp = vi.fn();
 
-vi.mock('@simplycms/supabase/server-client', () => ({
+vi.mock('simplycms/supabase/server-client', () => ({
   createServerSupabase: () => ({ auth: { verifyOtp } }),
 }));
 

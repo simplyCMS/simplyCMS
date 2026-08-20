@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import type { Translator } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import type { Translator } from 'simplycms/i18n';
 
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 

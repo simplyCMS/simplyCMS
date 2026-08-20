@@ -7,7 +7,35 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts/index.ts",
+    "./contracts/objects": "./src/contracts/objects/index.ts",
+    "./contracts/ports": "./src/contracts/ports/index.ts",
+    "./contracts/semver": "./src/contracts/semver/index.ts",
+    "./contracts/views": "./src/contracts/views/index.ts",
+    "./contracts/views/fixtures": "./src/contracts/views/fixtures/index.ts",
+    "./domain": "./src/domain/index.ts",
+    "./domain/pricing": "./src/domain/pricing.ts",
+    "./domain/discounts": "./src/domain/discounts.ts",
+    "./domain/inventory": "./src/domain/inventory.ts",
+    "./domain/shipping": "./src/domain/shipping.ts",
+    "./domain/money": "./src/domain/money.ts",
+    "./schema": "./src/schema/schema.ts",
+    "./schema/relations": "./src/schema/relations.ts",
+    "./supabase": "./src/supabase/index.ts",
+    "./supabase/keys": "./src/supabase/keys.ts",
+    "./supabase/browser-client": "./src/supabase/browser-client.ts",
+    "./supabase/server-client": "./src/supabase/server-client.ts",
+    "./supabase/anon-client": "./src/supabase/anon-client.ts",
+    "./supabase/SupabaseProvider": "./src/supabase/SupabaseProvider.tsx",
+    "./data-supabase": "./src/data-supabase/index.ts",
+    "./react-query": "./src/react-query/index.ts",
+    "./react-query/queries": "./src/react-query/queries.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./storefront": "./src/storefront/index.ts",
+    "./storefront/loaders": "./src/storefront/loaders/index.ts",
+    "./storefront/seo": "./src/storefront/seo/index.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -18,6 +46,118 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./contracts": {
+        "types": "./dist/contracts/index.d.ts",
+        "import": "./dist/contracts/index.js"
+      },
+      "./contracts/objects": {
+        "types": "./dist/contracts/objects/index.d.ts",
+        "import": "./dist/contracts/objects/index.js"
+      },
+      "./contracts/ports": {
+        "types": "./dist/contracts/ports/index.d.ts",
+        "import": "./dist/contracts/ports/index.js"
+      },
+      "./contracts/semver": {
+        "types": "./dist/contracts/semver/index.d.ts",
+        "import": "./dist/contracts/semver/index.js"
+      },
+      "./contracts/views": {
+        "types": "./dist/contracts/views/index.d.ts",
+        "import": "./dist/contracts/views/index.js"
+      },
+      "./contracts/views/fixtures": {
+        "types": "./dist/contracts/views/fixtures/index.d.ts",
+        "import": "./dist/contracts/views/fixtures/index.js"
+      },
+      "./domain": {
+        "types": "./dist/domain/index.d.ts",
+        "import": "./dist/domain/index.js"
+      },
+      "./domain/pricing": {
+        "types": "./dist/domain/pricing.d.ts",
+        "import": "./dist/domain/pricing.js"
+      },
+      "./domain/discounts": {
+        "types": "./dist/domain/discounts.d.ts",
+        "import": "./dist/domain/discounts.js"
+      },
+      "./domain/inventory": {
+        "types": "./dist/domain/inventory.d.ts",
+        "import": "./dist/domain/inventory.js"
+      },
+      "./domain/shipping": {
+        "types": "./dist/domain/shipping.d.ts",
+        "import": "./dist/domain/shipping.js"
+      },
+      "./domain/money": {
+        "types": "./dist/domain/money.d.ts",
+        "import": "./dist/domain/money.js"
+      },
+      "./schema": {
+        "types": "./dist/schema/schema.d.ts",
+        "import": "./dist/schema/schema.js"
+      },
+      "./schema/relations": {
+        "types": "./dist/schema/relations.d.ts",
+        "import": "./dist/schema/relations.js"
+      },
+      "./supabase": {
+        "types": "./dist/supabase/index.d.ts",
+        "import": "./dist/supabase/index.js"
+      },
+      "./supabase/keys": {
+        "types": "./dist/supabase/keys.d.ts",
+        "import": "./dist/supabase/keys.js"
+      },
+      "./supabase/browser-client": {
+        "types": "./dist/supabase/browser-client.d.ts",
+        "import": "./dist/supabase/browser-client.js"
+      },
+      "./supabase/server-client": {
+        "types": "./dist/supabase/server-client.d.ts",
+        "import": "./dist/supabase/server-client.js"
+      },
+      "./supabase/anon-client": {
+        "types": "./dist/supabase/anon-client.d.ts",
+        "import": "./dist/supabase/anon-client.js"
+      },
+      "./supabase/SupabaseProvider": {
+        "types": "./dist/supabase/SupabaseProvider.d.ts",
+        "import": "./dist/supabase/SupabaseProvider.js"
+      },
+      "./data-supabase": {
+        "types": "./dist/data-supabase/index.d.ts",
+        "import": "./dist/data-supabase/index.js"
+      },
+      "./react-query": {
+        "types": "./dist/react-query/index.d.ts",
+        "import": "./dist/react-query/index.js"
+      },
+      "./react-query/queries": {
+        "types": "./dist/react-query/queries.d.ts",
+        "import": "./dist/react-query/queries.js"
+      },
+      "./runtime": {
+        "types": "./dist/runtime/index.d.ts",
+        "import": "./dist/runtime/index.js"
+      },
+      "./i18n": {
+        "types": "./dist/i18n/index.d.ts",
+        "import": "./dist/i18n/index.js"
+      },
+      "./storefront": {
+        "types": "./dist/storefront/index.d.ts",
+        "import": "./dist/storefront/index.js"
+      },
+      "./storefront/loaders": {
+        "types": "./dist/storefront/loaders/index.d.ts",
+        "import": "./dist/storefront/loaders/index.js"
+      },
+      "./storefront/seo": {
+        "types": "./dist/storefront/seo/index.d.ts",
+        "import": "./dist/storefront/seo/index.js"
       }
     }
   },
@@ -36,6 +176,21 @@
     "directory": "packages/simplycms"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup"
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
+    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "db:dump-rls": "node ./scripts/dump-rls.mjs"
+  },
+  "peerDependencies": {
+    "@supabase/ssr": ">=0.5.0 <1.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-start": "^1.0.0",
+    "drizzle-orm": "^0.45.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "pg": "8.22.0"
   }
 }

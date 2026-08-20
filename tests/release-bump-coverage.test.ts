@@ -15,14 +15,19 @@ import {
 // Гард синхронної моделі версій: реліз-бамп мусить бачити ВСІ публіковані
 // пакети, інакше версії розійдуться на першому ж релізі після появи пакета.
 describe('release bump: покриття манифестів', () => {
-  it('бачить create-simplycms-store і всі @simplycms/*', () => {
+  it('бачить обидва unscoped-пакети і решту @simplycms/*', () => {
     const names = readPublishableManifests().map(
       ({ manifest }) => manifest.name,
     );
     expect(names).toContain('create-simplycms-store');
+    // 🔴 Флагман К0 — unscoped, тож під фільтр scope він не підпадає й
+    // потребує окремого асерту: пропущений тут, він мовчки випав би з бампу.
+    expect(names).toContain('simplycms');
+    // Поріг перехідний: К0 Task 2 злив дев'ять пакетів T0–T2 у флагман
+    // (21 → 16), Task 3 замінить поріг ТОЧНИМ набором із пʼяти.
     expect(
       names.filter((n) => n.startsWith('@simplycms/')).length,
-    ).toBeGreaterThanOrEqual(21);
+    ).toBeGreaterThanOrEqual(16);
   });
 
   it('версія одна на всіх (синхронна модель)', () => {

@@ -1,4 +1,4 @@
-import type { ProductDetailViewModel } from '@simplycms/objects/views';
+import type { ProductDetailViewModel } from 'simplycms/contracts/views';
 import { ProductGallery } from '@simplycms/core/components/catalog/ProductGallery';
 import { StorefrontBreadcrumbs } from './StorefrontBreadcrumbs';
 import { ProductDetailInfo } from './ProductDetailInfo';

@@ -17,8 +17,8 @@ import {
 import { useAuth } from '@simplycms/core/hooks/useAuth';
 import { useCart } from '@simplycms/core/hooks/useCart';
 import { useToast } from '@simplycms/core/hooks/use-toast';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
 import { useThemeT } from '@simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
 

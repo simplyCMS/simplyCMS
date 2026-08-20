@@ -22,8 +22,8 @@ import {
   FormMessage,
 } from '@simplycms/ui/form';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type Translator } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 import { AvatarUpload } from '@simplycms/core/components/profile/AvatarUpload';
 import { AddressesList } from '@simplycms/core/components/profile/AddressesList';

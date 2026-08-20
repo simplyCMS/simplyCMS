@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
 
 interface ReviewFormProps {

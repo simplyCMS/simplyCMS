@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { FolderOpen } from 'lucide-react';
-import { CATALOG_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import { CATALOG_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { Badge } from '@simplycms/ui/badge';
 import { cn } from '@simplycms/ui/utils';
 

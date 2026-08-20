@@ -1,4 +1,4 @@
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { UserPlus, RefreshCw, X } from 'lucide-react';
 
 interface RecipientSaveDialogProps {

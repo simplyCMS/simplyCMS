@@ -5,7 +5,7 @@ import {
   type StockStatus,
   type StockByPoint,
 } from '@simplycms/core/hooks/useStock';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 interface StockDisplayProps {
   productId?: string | null;

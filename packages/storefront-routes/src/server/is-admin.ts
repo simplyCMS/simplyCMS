@@ -1,4 +1,4 @@
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 /**
  * Чи має поточний користувач роль admin — ЗВИЧАЙНА функція.
@@ -10,7 +10,7 @@ import { createServerSupabase } from '@simplycms/supabase/server-client';
  * 🔴 Живе в ОКРЕМОМУ модулі, а не поруч із serverFn-ами в `auth.ts`, і це не
  * косметика. Трансформація TanStack Start вирізає з клієнтського бандла тіла
  * `createServerFn`-хендлерів, після чого їхній `import ... from
- * '@simplycms/supabase/server-client'` стає невживаним і зникає. Звичайна
+ * 'simplycms/supabase/server-client'` стає невживаним і зникає. Звичайна
  * функція такого імунітету не має: як живий експортований символ вона тримає
  * серверний імпорт живим, а в опублікованому пакеті сусідні модулі вже склеєні
  * в один tsup-чанк — тож клієнтський `import { getUser } from '…/server/auth'`

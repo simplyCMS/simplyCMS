@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '@simplycms/supabase/browser-client';
+import { getSupabaseBrowserClient } from 'simplycms/supabase/browser-client';
 
 // Auth helper functions (client-side). Клієнт беремо з браузерної фабрики,
 // а не з глобального singleton.

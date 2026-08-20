@@ -1,4 +1,4 @@
-import { buildRobotsTxt as buildRobots } from '@simplycms/storefront/seo';
+import { buildRobotsTxt as buildRobots } from 'simplycms/storefront/seo';
 
 /**
  * Базовий URL сайту — ЛІНИВО з `process.env` у момент виклику (контракт

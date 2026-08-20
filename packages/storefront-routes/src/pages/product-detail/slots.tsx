@@ -7,7 +7,7 @@
 import type {
   ProductDetailSlots,
   SlotAppearanceProps,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 import { ProductAddToCart } from '../../views/slots/ProductAddToCart';
 import {
   ProductStockAvailability,

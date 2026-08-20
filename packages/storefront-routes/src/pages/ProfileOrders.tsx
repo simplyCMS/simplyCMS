@@ -13,9 +13,9 @@ import {
   SelectValue,
 } from '@simplycms/ui/select';
 import { useAuth } from '@simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT } from '@simplycms/i18n';
-import { useFormatPrice } from '@simplycms/react-query';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT } from 'simplycms/i18n';
+import { useFormatPrice } from 'simplycms/react-query';
 
 interface Order {
   id: string;
@@ -97,7 +97,7 @@ export default function ProfileOrdersPage() {
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. @simplycms/domain/money).
+  // (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
   const formatDate = (dateString: string) => {

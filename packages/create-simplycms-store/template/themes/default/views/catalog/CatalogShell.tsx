@@ -1,6 +1,6 @@
 import { ChevronDown, SlidersHorizontal } from 'lucide-react';
-import type { BreadcrumbItem, CatalogSlots } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import type { BreadcrumbItem, CatalogSlots } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { MONO_STACK } from '../../components/mono';
 import { ViewBreadcrumbs } from '../parts/ViewBreadcrumbs';
 

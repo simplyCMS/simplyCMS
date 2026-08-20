@@ -12,12 +12,12 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from '@simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from '@simplycms/plugins';
 import { bootstrapThemes } from '@simplycms/themes/bootstrapThemes';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import {
   I18nProvider,
   createTranslator,
   normalizeLocale,
-} from '@simplycms/i18n';
+} from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import config from '../../simplycms.config';
 import { getActiveTheme } from '@simplycms/storefront-routes/server/themes';

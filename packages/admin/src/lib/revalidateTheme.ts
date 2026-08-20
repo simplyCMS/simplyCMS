@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { useT, type Translator } from '@simplycms/i18n';
+import { useT, type Translator } from 'simplycms/i18n';
 
 /**
  * Скидання серверного кешу активної теми — ЄДИНА точка для всієї адмінки.

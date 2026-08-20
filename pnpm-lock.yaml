@@ -310,18 +310,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       '@simplycms/plugins':
         specifier: workspace:*
         version: link:../plugin-system
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/themes':
         specifier: workspace:*
         version: link:../theme-system
@@ -361,6 +352,9 @@ importers:
       react-hook-form:
         specifier: ^7.0.0
         version: 7.84.0(react@19.2.8)
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
       sonner:
         specifier: ^1.0.0 || ^2.0.0
         version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -388,12 +382,6 @@ importers:
 
   packages/cart-ui:
     dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -403,21 +391,15 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   packages/catalog-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
@@ -433,24 +415,15 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   packages/checkout-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
@@ -466,6 +439,9 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   packages/cli:
     dependencies:
@@ -487,30 +463,15 @@ importers:
       '@simplycms/checkout-ui':
         specifier: workspace:*
         version: link:../checkout-ui
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
       '@simplycms/plugins':
         specifier: workspace:*
         version: link:../plugin-system
       '@simplycms/profile-ui':
         specifier: workspace:*
         version: link:../profile-ui
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
       '@simplycms/reviews-ui':
         specifier: workspace:*
         version: link:../reviews-ui
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/themes':
         specifier: workspace:*
         version: link:../theme-system
@@ -559,6 +520,9 @@ importers:
       react-hook-form:
         specifier: ^7.0.0
         version: 7.84.0(react@19.2.8)
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
       tailwind-merge:
         specifier: ^2.0.0 || ^3.0.0
         version: 3.6.0
@@ -572,65 +536,32 @@ importers:
         specifier: ^1.7.0
         version: 1.7.0
 
-  packages/data-supabase:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-
-  packages/domain:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-
-  packages/i18n:
-    dependencies:
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/objects:
-    dependencies:
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
   packages/plugin-sdk:
     dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
       '@simplycms/plugins':
         specifier: workspace:*
         version: link:../plugin-system
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
       zod:
         specifier: ^4.0.0
         version: 4.4.3
 
   packages/plugin-system:
     dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.112.0
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
     devDependencies:
       '@types/react':
         specifier: ^19.2.18
@@ -644,12 +575,6 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
@@ -665,30 +590,15 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
-
-  packages/react-query:
-    dependencies:
-      '@simplycms/domain':
+      simplycms:
         specifier: workspace:*
-        version: link:../domain
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
+        version: link:../simplycms
 
   packages/reviews-ui:
     dependencies:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       '@simplycms/ui':
         specifier: workspace:*
         version: link:../ui
@@ -716,18 +626,30 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
-
-  packages/runtime:
-    dependencies:
-      '@simplycms/objects':
+      simplycms:
         specifier: workspace:*
-        version: link:../objects
+        version: link:../simplycms
 
-  packages/schema:
+  packages/simplycms:
     dependencies:
+      '@supabase/ssr':
+        specifier: '>=0.5.0 <1.0.0'
+        version: 0.12.4(@supabase/supabase-js@2.112.0)
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.112.0
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-start':
+        specifier: ^1.0.0
+        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
       drizzle-orm:
         specifier: ^0.45.0
         version: 0.45.2(pg@8.22.0)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
     devDependencies:
       dotenv:
         specifier: ^17.4.2
@@ -735,8 +657,6 @@ importers:
       pg:
         specifier: 8.22.0
         version: 8.22.0
-
-  packages/simplycms: {}
 
   packages/simplycms-plugin-faq:
     dependencies:
@@ -767,12 +687,6 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/themes':
         specifier: workspace:*
         version: link:../theme-system
@@ -791,15 +705,9 @@ importers:
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
-
-  packages/storefront:
-    dependencies:
-      '@simplycms/objects':
+      simplycms:
         specifier: workspace:*
-        version: link:../objects
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
+        version: link:../simplycms
 
   packages/storefront-routes:
     dependencies:
@@ -812,27 +720,9 @@ importers:
       '@simplycms/core':
         specifier: workspace:*
         version: link:../core
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
       '@simplycms/plugins':
         specifier: workspace:*
         version: link:../plugin-system
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/storefront':
-        specifier: workspace:*
-        version: link:../storefront
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@simplycms/themes':
         specifier: workspace:*
         version: link:../theme-system
@@ -863,6 +753,9 @@ importers:
       react-hook-form:
         specifier: ^7.0.0
         version: 7.84.0(react@19.2.8)
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
       zod:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.4.3
@@ -871,32 +764,8 @@ importers:
         specifier: workspace:*
         version: link:../simplycms-theme-solarstore
 
-  packages/supabase:
-    dependencies:
-      '@supabase/ssr':
-        specifier: '>=0.5.0 <1.0.0'
-        version: 0.12.4(@supabase/supabase-js@2.112.0)
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      '@tanstack/react-start':
-        specifier: ^1.0.0
-        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
   packages/theme-system:
     dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.112.0
@@ -906,6 +775,9 @@ importers:
       react-dom:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8(react@19.2.8)
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   packages/ui:
     dependencies:

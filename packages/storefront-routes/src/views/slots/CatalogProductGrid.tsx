@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { Loader2 } from 'lucide-react';
-import { CATALOG_REQUISITES } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import { CATALOG_REQUISITES } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { ProductCard } from '@simplycms/core/components/catalog/ProductCard';
 import { Button } from '@simplycms/ui/button';
 import { cn } from '@simplycms/ui/utils';

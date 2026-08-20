@@ -1,7 +1,7 @@
 // Запит товару картки (винесено з контейнера без зміни поведінки).
 
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import type { ProductDetailProduct } from './types';
 
 const PRODUCT_SELECT = `

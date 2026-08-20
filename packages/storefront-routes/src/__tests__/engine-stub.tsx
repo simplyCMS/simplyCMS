@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { EngineContext } from '@simplycms/objects';
-import { EngineProvider } from '@simplycms/react-query';
+import type { EngineContext } from 'simplycms/contracts';
+import { EngineProvider } from 'simplycms/react-query';
 
 /**
  * Мінімальний EngineContext для рендер-тестів сторінок.

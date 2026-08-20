@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { globSync } from 'node:fs';
 import { defineConfig, type Options } from 'tsup';
 
 // Флагманський пакет тримає всі тіри T0→T5 в одній теці `src/`, а вимоги до
@@ -27,24 +27,37 @@ const base = {
 } satisfies Options;
 
 /**
- * Відсіює entry-глоби, чиєї теки ще немає на диску.
+ * Розгортає глоби у мапу entry: `<шлях у dist без розширення> → <файл>`.
  *
- * 🔴 tsup кидає `Cannot find …`, якщо глоб не дав жодного файлу, а теки тірів
- * наповнюються поетапно (К0 Task 2–3). Фільтр працює по КАТАЛОГУ (частина
- * шляху до першого `*`), тож він не маскує порожній глоб усередині наявної
- * теки: там збірка чесно впаде.
+ * 🔴 Обʼєктна форма entry обовʼязкова, спискова — ні. За списковою esbuild
+ * бере outbase = спільний предок entry-шляхів ПРОФІЛЮ, тож профіль
+ * `contracts` (усі entry під `src/contracts/`) писав би `dist/index.js` і
+ * затирав корінь пакета. Ключ фіксує вихідний шлях явно й тримає `dist/`
+ * дзеркалом `publishConfig.exports`.
+ *
+ * Порожній результат — не помилка: теки тірів наповнюються поетапно
+ * (К0 Task 2–3), профіль без entry просто відсіюється нижче.
  */
-const present = (patterns: string[]) =>
-  patterns.filter((pattern) => existsSync(pattern.split('/*')[0]));
+const entries = (patterns: string[]): Record<string, string> =>
+  Object.fromEntries(
+    globSync(patterns)
+      .map((file) => file.split('\\').join('/'))
+      .filter((file) => !file.includes('__tests__'))
+      .sort()
+      .map((file) => [
+        file.replace(/^src\//, '').replace(/\.tsx?$/, ''),
+        `./${file}`,
+      ]),
+  );
 
-/** Профіль tsup із гарантовано списковим `entry` (потрібен для фільтра нижче). */
-type Profile = Options & { entry: string[] };
+/** Профіль tsup із гарантовано мапним `entry` (потрібен для фільтра нижче). */
+type Profile = Options & { entry: Record<string, string> };
 
 const profile = (
   name: string,
-  entry: string[],
+  patterns: string[],
   extra: Partial<Options> = {},
-): Profile => ({ ...base, ...extra, name, entry: present(entry) });
+): Profile => ({ ...base, ...extra, name, entry: entries(patterns) });
 
 const profiles: Profile[] = [
   // T0-контракти: без code-splitting — кожен entry самодостатній (інакше
@@ -61,11 +74,31 @@ const profiles: Profile[] = [
   ),
   // Поверхня плагінів: та сама причина відмови від splitting.
   profile('plugin-sdk', ['src/plugin-sdk/index.ts'], { splitting: false }),
-  // Node/React-тіри (schema, supabase, i18n, ui, admin, теми, плагіни, …):
+  // Node/React-тіри (domain, schema, supabase, i18n, ui, admin, теми, …):
   // спільні чанки обовʼязкові — модулі зі станом мусять лишатися ОДНИМ
   // інстансом для всіх subpath-entry пакета.
-  // Теки тірів додаються сюди в К0 Task 2–3 за знімком exports.
-  profile('runtime', ['src/index.ts'], { splitting: true }),
+  // Теки решти тірів додаються сюди в К0 Task 3 за знімком exports.
+  profile(
+    'core',
+    [
+      'src/index.ts',
+      'src/domain/*.ts',
+      'src/schema/schema.ts',
+      'src/schema/relations.ts',
+      'src/supabase/index.ts',
+      'src/supabase/keys.ts',
+      'src/supabase/*-client.ts',
+      'src/supabase/SupabaseProvider.tsx',
+      'src/data-supabase/index.ts',
+      'src/react-query/index.ts',
+      'src/react-query/queries.ts',
+      'src/runtime/index.ts',
+      'src/i18n/index.ts',
+      'src/storefront/index.ts',
+      'src/storefront/*/index.ts',
+    ],
+    { splitting: true },
+  ),
   // Route-шар вітрини: 🔴 `target: esnext` обовʼязковий — за нижчого таргета
   // esbuild лоуерить `import.meta` у `var import_meta = {}`, і опублікований
   // dist падає на `{}.env.VITE_…` ще до першого запиту.
@@ -80,6 +113,6 @@ const profiles: Profile[] = [
     ],
     { splitting: true, target: 'esnext' },
   ),
-].filter((item) => item.entry.length > 0);
+].filter((item) => Object.keys(item.entry).length > 0);
 
 export default defineConfig(profiles);

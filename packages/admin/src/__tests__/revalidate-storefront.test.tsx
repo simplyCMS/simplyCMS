@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 
 /**
  * 🔴 Гард на ОБИДВА кроки скидання теми.

@@ -12,7 +12,7 @@ interface ThemeInsert {
   is_active: boolean;
 }
 
-/** Ліміт колонки `themes.version` — varchar(20) (packages/schema/src/schema.ts). */
+/** Ліміт колонки `themes.version` — varchar(20) (packages/simplycms/src/schema/schema.ts). */
 const VERSION_MAX_LENGTH = 20;
 
 /**

@@ -2,8 +2,8 @@ import type {
   ProductDetailCharacteristics,
   ProductDetailSlots,
   ProductDetailSummary,
-} from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+} from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { MONO_STACK } from '../../components/mono';
 import { ProductHighlights } from './ProductHighlights';
 import { ProductTrustRow } from './ProductTrustRow';

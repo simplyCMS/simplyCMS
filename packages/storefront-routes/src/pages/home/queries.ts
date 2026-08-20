@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { catalogKeys } from '@simplycms/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { catalogKeys } from 'simplycms/react-query';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import type { HomeProduct, HomeSection } from './types';
 
 /** Скорочений select для картки товару на головній */

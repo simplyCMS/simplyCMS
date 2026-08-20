@@ -1,4 +1,4 @@
-import type { Banner } from '@simplycms/objects/objects';
+import type { Banner } from 'simplycms/contracts/objects';
 import { HomeView } from '../views/HomeView';
 import { useStorefrontViews } from '../views/useStorefrontViews';
 import {

@@ -138,13 +138,13 @@ rg -l -F "@simplycms/objects" -g '*.ts' -g '*.tsx' -g '*.mjs' \
   T3–T5-пакетів, що лишаються, отримують `"simplycms": "workspace:*"`
   замість deps на перенесені (структурна правка, НЕ sed).
 
-- [ ] **Step 1 (інвентаризація):** зняти знімок exports 9 пакетів у файл: `for p in objects domain schema supabase data-supabase react-query runtime i18n storefront; do node -e "console.log('$p', JSON.stringify(require('./packages/$p/package.json').exports))"; done > /tmp/k0-exports-t0t2.txt` — це нормативна ціль мапи субшляхів.
-- [ ] **Step 2 (злиття deps):** згенерувати об'єднання зовнішніх залежностей: `node -e "const m={};for(const p of ['objects','domain','schema','supabase','data-supabase','react-query','runtime','i18n','storefront']){const j=require('./packages/'+p+'/package.json');for(const k of ['dependencies','peerDependencies'])for(const [n,v] of Object.entries(j[k]??{}))if(!n.startsWith('@simplycms'))(m[k]??={})[n]=v}console.log(JSON.stringify(m,null,2))"` → перенести у манифест флагмана (конфлікти версій — взяти новішу, зафіксувати в коміт-повідомленні).
-- [ ] **Step 3:** `git mv` за мапою (включно зі schema-тулінгом поза src) + exports (+`publishConfig.exports`).
-- [ ] **Step 4:** кодмод 9 мапінгів (лише кодові файли; порядок!); залишки: `rg -F "@simplycms/<p>" -g '*.ts' -g '*.tsx' -g '*.mjs' src packages themes plugins tests scripts` → нуль для кожного.
-- [ ] **Step 5:** структурно оновити manifest-и T3–T5, тестів/скриптів шляхи, env-зону, i18n-файли — за списком Files.
-- [ ] **Step 6:** `pnpm install` → повний ланцюг. 🔴 Звірити, що `db:pull`/`db:dump-rls`/`db:diff` хоча б стартують (dry: `pnpm db:diff --help` чи еквівалент) — DB-тулінг найлегше зламати мовчки.
-- [ ] **Step 7:** Commit: `refactor(k0): перенос T0–T2 + schema-тулінг у simplycms`.
+- [x] **Step 1 (інвентаризація):** зняти знімок exports 9 пакетів у файл: `for p in objects domain schema supabase data-supabase react-query runtime i18n storefront; do node -e "console.log('$p', JSON.stringify(require('./packages/$p/package.json').exports))"; done > /tmp/k0-exports-t0t2.txt` — це нормативна ціль мапи субшляхів.
+- [x] **Step 2 (злиття deps):** згенерувати об'єднання зовнішніх залежностей: `node -e "const m={};for(const p of ['objects','domain','schema','supabase','data-supabase','react-query','runtime','i18n','storefront']){const j=require('./packages/'+p+'/package.json');for(const k of ['dependencies','peerDependencies'])for(const [n,v] of Object.entries(j[k]??{}))if(!n.startsWith('@simplycms'))(m[k]??={})[n]=v}console.log(JSON.stringify(m,null,2))"` → перенести у манифест флагмана (конфлікти версій — взяти новішу, зафіксувати в коміт-повідомленні).
+- [x] **Step 3:** `git mv` за мапою (включно зі schema-тулінгом поза src) + exports (+`publishConfig.exports`).
+- [x] **Step 4:** кодмод 9 мапінгів (лише кодові файли; порядок!); залишки: `rg -F "@simplycms/<p>" -g '*.ts' -g '*.tsx' -g '*.mjs' src packages themes plugins tests scripts` → нуль для кожного.
+- [x] **Step 5:** структурно оновити manifest-и T3–T5, тестів/скриптів шляхи, env-зону, i18n-файли — за списком Files.
+- [x] **Step 6:** `pnpm install` → повний ланцюг. 🔴 Звірити, що `db:pull`/`db:dump-rls`/`db:diff` хоча б стартують (dry: `pnpm db:diff --help` чи еквівалент) — DB-тулінг найлегше зламати мовчки.
+- [x] **Step 7:** Commit: `refactor(k0): перенос T0–T2 + schema-тулінг у simplycms`.
 
 ### Task 3: Перенос T3–T5 + розчинення core + роут-монтування + реліз-гарди
 

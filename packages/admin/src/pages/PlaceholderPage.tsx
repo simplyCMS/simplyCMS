@@ -1,7 +1,7 @@
 import { useLocation } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@simplycms/ui/card';
 import { Construction } from 'lucide-react';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 
 // Мапа ключів: сегмент URL → підпис розділу. Здебільшого збігається з бічним
 // меню, тож ключі беруться звідти; два розділи мають на заглушці довшу назву.

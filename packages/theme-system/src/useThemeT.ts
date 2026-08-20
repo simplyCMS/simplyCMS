@@ -1,5 +1,5 @@
 import { use, useCallback } from 'react';
-import { interpolate, useLocale, type MessageParams } from '@simplycms/i18n';
+import { interpolate, useLocale, type MessageParams } from 'simplycms/i18n';
 import { useTheme } from './ThemeContext';
 import { ThemeRegistry } from './ThemeRegistry';
 
@@ -9,7 +9,7 @@ import { ThemeRegistry } from './ThemeRegistry';
  * Ланцюжок fallback — `messages[locale][key] → messages['uk'][key] → сам key`
  * (видимий сигнал про пропущений переклад, як і в core-транслятора
  * `createTranslator`). Підстановка `{param}` — та сама функція `interpolate`
- * з `@simplycms/i18n`: дублювати її тут означало б два джерела правди для
+ * з `simplycms/i18n`: дублювати її тут означало б два джерела правди для
  * одного форматування.
  *
  * Generic `K extends string` — це навмисно НЕ `MessageKey` ядра: кожна тема

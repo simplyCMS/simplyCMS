@@ -7,7 +7,7 @@ import {
   cleanup,
   fireEvent,
 } from '@testing-library/react';
-import { I18nProvider, createTranslator } from '@simplycms/i18n';
+import { I18nProvider, createTranslator } from 'simplycms/i18n';
 
 // Очікувані рядки беремо з публічного транслятора, а не з каталогу напряму:
 // підкаталог `catalogs/*` не в `exports` пакета (audit-exports це стереже).
@@ -32,7 +32,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
+vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => ({ auth: { getSession, updateUser } }),
 }));
 

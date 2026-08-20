@@ -7,7 +7,7 @@
 import type {
   CatalogSlots,
   SlotAppearanceProps,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 import { CatalogFilters } from '../../views/slots/CatalogFilters';
 import { CatalogProductGrid } from '../../views/slots/CatalogProductGrid';
 import {

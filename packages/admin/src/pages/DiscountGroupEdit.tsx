@@ -26,8 +26,8 @@ import {
   FormControl,
   FormMessage,
 } from '@simplycms/ui/form';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type Translator } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from '@simplycms/core/hooks/use-toast';
 
 // Фабрика схеми: повідомлення з каталогу.

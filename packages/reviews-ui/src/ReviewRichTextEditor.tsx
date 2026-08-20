@@ -13,7 +13,7 @@ import {
   Redo,
 } from 'lucide-react';
 import { cn } from '@simplycms/ui/utils';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { useCallback, useEffect } from 'react';
 
 /** Кнопка тулбару редактора */

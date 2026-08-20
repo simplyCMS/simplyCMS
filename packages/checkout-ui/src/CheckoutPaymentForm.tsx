@@ -1,4 +1,4 @@
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { CreditCard, Banknote } from 'lucide-react';
 
 interface CheckoutPaymentFormProps {

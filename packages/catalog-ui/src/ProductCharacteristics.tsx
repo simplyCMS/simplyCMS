@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 
 interface PropertyValue {
   property_id: string;

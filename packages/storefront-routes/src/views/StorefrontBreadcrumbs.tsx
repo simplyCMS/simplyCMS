@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import type { BreadcrumbItem } from '@simplycms/objects/views';
+import type { BreadcrumbItem } from 'simplycms/contracts/views';
 
 /**
  * Хлібні крихти вітрини — спільний підкомпонент канонічних view (картка

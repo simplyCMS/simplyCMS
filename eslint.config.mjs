@@ -12,12 +12,12 @@ const i18nRestrictedSyntax = [
   {
     selector: CYRILLIC_JSX_TEXT,
     message:
-      "Хардкоджений UI-рядок у JSX. Використай t('ключ') із @simplycms/i18n.",
+      "Хардкоджений UI-рядок у JSX. Використай t('ключ') із simplycms/i18n.",
   },
   {
     selector: CYRILLIC_JSX_ATTRIBUTE,
     message:
-      "Хардкоджений UI-рядок у JSX-атрибуті (placeholder/title/aria-*). Використай t('ключ') із @simplycms/i18n.",
+      "Хардкоджений UI-рядок у JSX-атрибуті (placeholder/title/aria-*). Використай t('ключ') із simplycms/i18n.",
   },
 ];
 
@@ -51,7 +51,7 @@ const I18N_MIGRATED_FILES = [
 // з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
 // Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
 // `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
-// (див. packages/supabase/src/__tests__/env-source.test.ts).
+// (див. packages/simplycms/src/supabase/__tests__/env-source.test.ts).
 const IMPORT_META_ENV =
   'MemberExpression[object.type="MetaProperty"][property.name="env"]';
 
@@ -67,8 +67,8 @@ const serverEnvRestrictedSyntax = [
 // (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
 // потрібне в бандлі, сюди їх НЕ додавати.
 const SERVER_ENV_FILES = [
-  'packages/supabase/src/server-client.ts',
-  'packages/supabase/src/anon-client.ts',
+  'packages/simplycms/src/supabase/server-client.ts',
+  'packages/simplycms/src/supabase/anon-client.ts',
   'packages/storefront-routes/src/seo/robots.ts',
   'packages/storefront-routes/src/seo/sitemap.ts',
   'packages/storefront-routes/routes/api/health.tsx',
@@ -91,10 +91,10 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 const pluginTrustBoundaryImports = [
   {
     group: [
-      '@simplycms/supabase',
-      '@simplycms/supabase/*',
-      '@simplycms/data-supabase',
-      '@simplycms/data-supabase/*',
+      'simplycms/supabase',
+      'simplycms/supabase/*',
+      'simplycms/data-supabase',
+      'simplycms/data-supabase/*',
       '@supabase/*',
     ],
     message:
@@ -107,7 +107,7 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:@simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
     message:
       'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
@@ -142,8 +142,8 @@ const eslintConfig = [
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
     files: [
-      'packages/schema/src/schema.ts',
-      'packages/schema/src/relations.ts',
+      'packages/simplycms/src/schema/schema.ts',
+      'packages/simplycms/src/schema/relations.ts',
     ],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',

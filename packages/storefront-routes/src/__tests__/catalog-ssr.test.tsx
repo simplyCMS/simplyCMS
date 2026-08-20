@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 
 /**
@@ -33,7 +33,7 @@ vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ sectionSlug: 'invertory' }),
 }));
 
-vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
+vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => ({
     from: () => ({ select: () => ({ eq: () => ({}) }) }),
   }),
@@ -113,7 +113,7 @@ describe('SSR-повнота списків товарів', () => {
 
     expect(html).toContain('Інвертор 5 кВт SSR');
     expect(html).toMatch(/4[\s ]*200/);
-    // 🔴 '₴' тут іде з явної мапи символів у @simplycms/domain/money, а НЕ
+    // 🔴 '₴' тут іде з явної мапи символів у simplycms/domain/money, а НЕ
     // з CLDR-даних Intl.NumberFormat({ style: 'currency' }) (саме той шлях
     // давав "₴" на Node і "грн" у Chromium — гідраційний мисматч). Тест і
     // далі осмислений: доводить, що SSR-розмітка містить очікуваний символ,
@@ -134,7 +134,7 @@ describe('SSR-повнота списків товарів', () => {
     expect(html).toContain('Інвертор 5 кВт SSR');
     expect(html).toMatch(/4[\s ]*200/);
     // 🔴 Див. коментар у тесті Catalog вище — '₴' тут гарантує мапа
-    // символів у @simplycms/domain/money, а не CLDR рушія.
+    // символів у simplycms/domain/money, а не CLDR рушія.
     expect(html).toContain('₴');
     expect(html).toContain('/catalog/invertory/invertor-5kw');
   });

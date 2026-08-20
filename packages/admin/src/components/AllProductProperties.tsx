@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { Input } from '@simplycms/ui/input';
 import { Label } from '@simplycms/ui/label';
 import { Switch } from '@simplycms/ui/switch';
@@ -15,7 +15,7 @@ import {
 import { Checkbox } from '@simplycms/ui/checkbox';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import type { Tables } from '@simplycms/supabase';
+import type { Tables } from 'simplycms/supabase';
 
 type SectionProperty = Tables<'section_properties'>;
 

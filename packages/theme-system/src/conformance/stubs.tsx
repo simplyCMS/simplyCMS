@@ -19,7 +19,7 @@ import {
   type CatalogSlots,
   type HomeSlots,
   type ProductDetailSlots,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 
 /** Атрибут-маркер береться з контракту, а не дублюється рядком. */
 function markerProps(name: string): Record<string, string> {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 
@@ -43,7 +43,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
+vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => mockSupabase,
 }));
 

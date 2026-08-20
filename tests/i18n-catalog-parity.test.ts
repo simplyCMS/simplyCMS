@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { messages as uk } from '../packages/i18n/src/catalogs/uk/index';
-import { messages as en } from '../packages/i18n/src/catalogs/en/index';
+import { messages as uk } from '../packages/simplycms/src/i18n/catalogs/uk/index';
+import { messages as en } from '../packages/simplycms/src/i18n/catalogs/en/index';
 
 /**
  * Повнота англійського каталогу.

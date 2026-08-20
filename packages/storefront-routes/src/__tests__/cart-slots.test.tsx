@@ -2,7 +2,7 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import { CART_REQUISITES } from '@simplycms/objects/views';
+import { CART_REQUISITES } from 'simplycms/contracts/views';
 
 type LinkMockProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;

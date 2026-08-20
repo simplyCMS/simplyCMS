@@ -2,8 +2,8 @@ import { Check } from 'lucide-react';
 import type {
   ProductDetailCharacteristics,
   ProductPropertyValueViewModel,
-} from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+} from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 
 /** Значення характеристики рядком — та сама логіка, що в каноні ядра. */
 function formatValue(

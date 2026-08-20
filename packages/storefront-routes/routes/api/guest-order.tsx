@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 interface GuestOrderItem {
   modification_id: string;

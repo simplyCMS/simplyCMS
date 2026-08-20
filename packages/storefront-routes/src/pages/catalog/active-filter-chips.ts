@@ -1,7 +1,7 @@
 // Складання бейджів активних фільтрів (контракт тем v3, Фаза 4).
 // Чиста функція «стан фільтрів → що показати над вибіркою».
 
-import type { Translator } from '@simplycms/i18n';
+import type { Translator } from 'simplycms/i18n';
 import type {
   ActiveFilterChip,
   CatalogFiltersState,

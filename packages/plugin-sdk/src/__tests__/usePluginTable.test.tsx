@@ -2,8 +2,8 @@
 import type { ReactNode } from 'react';
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
-import { SupabaseProvider } from '@simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from '@simplycms/supabase/browser-client';
+import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
+import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { usePluginTable } from '../usePluginTable';
 
 interface Call {

@@ -1,10 +1,7 @@
 import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
-import {
-  resolveSupabaseKeys,
-  type SupabaseEnv,
-} from '@simplycms/supabase/keys';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
+import { resolveSupabaseKeys, type SupabaseEnv } from 'simplycms/supabase/keys';
 import type { StoreDatabase } from './engine.shared';
 
 /**

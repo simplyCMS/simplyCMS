@@ -42,7 +42,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 const mockSupabase = createFailingSupabase();
 
-vi.mock('@simplycms/supabase/SupabaseProvider', () => ({
+vi.mock('simplycms/supabase/SupabaseProvider', () => ({
   useSupabaseClient: () => mockSupabase,
 }));
 

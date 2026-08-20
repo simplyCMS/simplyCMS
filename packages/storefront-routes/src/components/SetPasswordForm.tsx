@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useT } from '@simplycms/i18n';
-import type { Translator } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import type { Translator } from 'simplycms/i18n';
 import {
   Form,
   FormControl,

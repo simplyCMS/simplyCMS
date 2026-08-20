@@ -11,5 +11,5 @@ export default defineConfig({
   // та `@simplycms/plugins/PluginSlot` мусять бачити ОДИН реєстр.
   splitting: true,
   // Сиблінги ядра — завжди зовнішні, включно з subpath-імпортами: регекс.
-  external: [/^@simplycms\//],
+  external: [/^simplycms(\/|$)/, /^@simplycms\//],
 });

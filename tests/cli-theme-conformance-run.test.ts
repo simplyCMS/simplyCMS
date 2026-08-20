@@ -45,7 +45,7 @@ const BROKEN_CART = `<div>
     </div>`;
 
 function themeSource(name: string, cart: string): string {
-  return `import type { CartViewModel } from '@simplycms/objects/views';
+  return `import type { CartViewModel } from 'simplycms/contracts/views';
 
 function Stub() {
   return <div />;

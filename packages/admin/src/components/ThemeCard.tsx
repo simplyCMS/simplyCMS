@@ -9,7 +9,7 @@ import {
 } from '@simplycms/ui/card';
 import { Badge } from '@simplycms/ui/badge';
 import { Palette, Check, Settings } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import { adminPath } from '../lib/adminLinks';
 
 /** Рядок таблиці `themes` у тому обсязі, який показує адмінка. */

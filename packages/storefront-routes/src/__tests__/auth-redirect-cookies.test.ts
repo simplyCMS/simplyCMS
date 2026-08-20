@@ -21,7 +21,7 @@ import { requestHandler, setCookie } from '@tanstack/react-start/server';
 const verifyOtp = vi.fn();
 const exchangeCodeForSession = vi.fn();
 
-vi.mock('@simplycms/supabase/server-client', () => ({
+vi.mock('simplycms/supabase/server-client', () => ({
   createServerSupabase: () => ({
     auth: { verifyOtp, exchangeCodeForSession },
   }),

@@ -1,4 +1,4 @@
-import { useT } from '@simplycms/i18n';
+import { useT } from 'simplycms/i18n';
 import type { ProductListItem } from '../server/product-list-item';
 import { CatalogView } from '../views/CatalogView';
 import { useStorefrontViews } from '../views/useStorefrontViews';

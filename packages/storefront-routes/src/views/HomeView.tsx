@@ -1,5 +1,5 @@
-import type { HomeViewModel } from '@simplycms/objects/views';
-import { useT } from '@simplycms/i18n';
+import type { HomeViewModel } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { BannerSlider } from '../components/BannerSlider';
 import { ProductCarousel } from '../components/ProductCarousel';
 import { useActiveThemeModule } from '../shells/useActiveThemeModule';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTranslator } from '@simplycms/i18n';
+import { createTranslator } from 'simplycms/i18n';
 import {
   buildActiveFilterChips,
   type ChipSources,

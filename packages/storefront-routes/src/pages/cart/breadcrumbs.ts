@@ -1,7 +1,7 @@
 // Хлібні крихти кошика.
 
-import type { Translator } from '@simplycms/i18n';
-import type { BreadcrumbItem } from '@simplycms/objects/views';
+import type { Translator } from 'simplycms/i18n';
+import type { BreadcrumbItem } from 'simplycms/contracts/views';
 
 /** Головна → сам кошик (остання ланка без `href` — рендериться текстом). */
 export function buildCartBreadcrumbs(t: Translator): BreadcrumbItem[] {

@@ -5,8 +5,8 @@ import {
   loadProducts,
   loadProductsBySectionId,
   loadDefaultPriceTypeId,
-} from '@simplycms/storefront/loaders';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+} from 'simplycms/storefront/loaders';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 import {
   toProductListItem,
   type PriceContext,

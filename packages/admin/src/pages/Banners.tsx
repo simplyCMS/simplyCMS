@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { Button } from '@simplycms/ui/button';
 import { Card, CardContent } from '@simplycms/ui/card';
 import { Switch } from '@simplycms/ui/switch';
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 
 // Мапа КЛЮЧІВ: код розміщення приходить із БД.
 const PLACEMENT_LABELS: Record<string, MessageKey> = {

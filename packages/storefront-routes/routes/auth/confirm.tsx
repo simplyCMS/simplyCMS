@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 import { redirectResponse } from '@simplycms/storefront-routes/server/redirect';
 import type { EmailOtpType } from '@supabase/supabase-js';
 

@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@simplycms/ui/card';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import {
   Package,
   FolderTree,
@@ -18,7 +18,7 @@ import {
 import { PluginSlot } from '@simplycms/plugins/PluginSlot';
 import { Link } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
-import { useT, type MessageKey } from '@simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 
 export default function Dashboard() {
   const t = useT();

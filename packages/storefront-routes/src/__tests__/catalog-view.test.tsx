@@ -2,16 +2,16 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import {
   CATALOG_REQUISITES,
   REQUIRED_REQUISITES,
   type CatalogSlots,
-} from '@simplycms/objects/views';
+} from 'simplycms/contracts/views';
 import {
   catalogViewModelFixtures,
   catalogSectionViewModelFixtures,
-} from '@simplycms/objects/views/fixtures';
+} from 'simplycms/contracts/views/fixtures';
 
 /**
  * Conformance-прогін канонічних `CatalogView` і `CatalogSectionView` на

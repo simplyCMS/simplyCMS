@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { z, ZodObject, ZodRawShape } from 'zod';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 
 /**
  * Читання ВЛАСНОГО конфіга плагіна з рядка `plugins.config` (RLS: select

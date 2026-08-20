@@ -2,9 +2,9 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from '@simplycms/supabase/SupabaseProvider';
+import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import type { ModificationStockInfo } from '@simplycms/core/components/catalog/ModificationSelector';
-import type { ProductPropertyValueViewModel } from '@simplycms/objects/views';
+import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
 export interface ModificationData {
