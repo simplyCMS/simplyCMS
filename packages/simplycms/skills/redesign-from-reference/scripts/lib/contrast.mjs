@@ -11,7 +11,7 @@ export const AA_MIN_RATIO = 4.5;
 
 /**
  * Канонічні пари `*`/`*-foreground` контракту тем
- * (`packages/theme-system/src/types.ts`, 23 кольорові ключі). `border`/
+ * (`packages/simplycms/src/themes/types.ts`, 23 кольорові ключі). `border`/
  * `input`/`ring` пари не мають — контракт не визначає для них `-foreground`.
  */
 export const CONTRAST_PAIRS = [

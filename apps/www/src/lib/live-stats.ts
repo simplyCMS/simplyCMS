@@ -158,7 +158,7 @@ export const FALLBACK: LiveStats = {
   github: { stars: 0, forks: 0, openIssues: 1 },
   tsShare: null,
   npm: {
-    packageCount: 26,
+    packageCount: 5,
     monthlyDownloads: 15429,
     version: '0.3.0',
     packages: [],

@@ -19,9 +19,11 @@ export function compareVersions(a, b) {
 /**
  * Манифести публікованих пакетів (private — не наші).
  *
- * Одна тека `packages/` тримає і 25 scoped-пакетів ядра, і unscoped
- * `create-simplycms-store`; усі вони публікуються тим самим реліз-потягом
- * і мусять мати СИНХРОННУ версію, тож дискримінатор тут — лише `private`.
+ * Після К0 тека `packages/` тримає рівно пʼять пакетів: unscoped флагман
+ * `simplycms`, три сателіти `@simplycms/*` і unscoped `create-simplycms-store`;
+ * усі вони публікуються тим самим реліз-потягом і мусять мати СИНХРОННУ
+ * версію, тож дискримінатор тут — лише `private`. Точний набір (не поріг)
+ * асертить `tests/release-bump-coverage.test.ts`.
  */
 export function readPublishableManifests() {
   const dirs = readdirSync(PACKAGES_DIR).map((dir) => join(PACKAGES_DIR, dir));

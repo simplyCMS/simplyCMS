@@ -243,7 +243,7 @@ const FEATURES: Feature[] = [
     title: 'Plugin SDK with a trust boundary',
     body: (
       <>
-        Plugins use ports from <code>@simplycms/plugin-sdk</code> — never a raw
+        Plugins use ports from <code>simplycms/plugin-sdk</code> — never a raw
         database client. Own tables live under a <code>plg_*</code> namespace;
         migrations ship inside the package and land as reviewed SQL.
       </>

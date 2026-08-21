@@ -105,7 +105,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Не повертай у теми сторінки/лейаути (`theme.pages`, `MainLayout`, `CatalogLayout`, `ProfileLayout` видалені свідомо, рішення D3/D4).
 - Не редагуй `src/routeTree.gen.ts` — автогенерований.
 - Не повертай re-export-шими в `simplycms/core` — фасадну роль розчинено К0 (рішення D5): тека тримає лише ВЛАСНІ модулі, чуже імпортується з джерела.
-- Не глуши i18n-ворнінги `no-restricted-syntax` і не послаблюй селектори — ~960 warn це очікуваний стан до i18n-міграції.
+- Не глуши i18n-селектори `no-restricted-syntax` і не послаблюй їх — після завершення міграції це **error**-зона, а не борг. Норма прогону — `pnpm lint` = 0 errors / 13 warnings (`react-hooks/*` і `no-unused-vars`, поза i18n).
 - Не застосовуй міграції через Supabase MCP (`apply_migration`) і не пиши SQL повз `db:diff`.
 - Не хардкодь Supabase URL/ключі — використовуй змінні оточення (`VITE_*`).
 - Не імпортуй глобальний supabase-клієнт — тільки DI (`useSupabaseClient`/порти).

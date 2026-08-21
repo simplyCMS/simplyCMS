@@ -2,7 +2,7 @@
   "name": "@simplycms/plugin-faq",
   "version": "0.4.0",
   "private": false,
-  "description": "Reference FAQ plugin for SimplyCMS built with @simplycms/plugin-sdk: plg_faq_items table (migration in-package), /admin/faq CRUD routes, product-detail slot, Zod settings, uk/en i18n catalog.",
+  "description": "Reference FAQ plugin for SimplyCMS built with simplycms/plugin-sdk: plg_faq_items table (migration in-package), /admin/faq CRUD routes, product-detail slot, Zod settings, uk/en i18n catalog.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

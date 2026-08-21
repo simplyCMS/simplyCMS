@@ -85,10 +85,11 @@ const FOOTER_DOCS = [
 ] as const;
 
 const FOOTER_PACKAGES = [
+  [LINKS.npmCore, 'simplycms'],
   [LINKS.npmScaffolder, 'create-simplycms-store'],
   [LINKS.npmCli, '@simplycms/cli'],
-  [LINKS.npmPluginSdk, '@simplycms/plugin-sdk'],
   [LINKS.npmTheme, '@simplycms/theme-solarstore'],
+  [LINKS.npmPluginFaq, '@simplycms/plugin-faq'],
 ] as const;
 
 export function Footer() {

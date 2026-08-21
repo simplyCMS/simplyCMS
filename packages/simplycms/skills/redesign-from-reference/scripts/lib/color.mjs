@@ -12,7 +12,7 @@
 const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const RGB_RE =
   /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i;
-/** Формат токена (`packages/theme-system/src/types.ts`): `"H S% L%"` без `hsl()`. */
+/** Формат токена (`packages/simplycms/src/themes/types.ts`): `"H S% L%"` без `hsl()`. */
 const HSL_TRIPLE_RE = /^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/;
 
 function expandHex(hex) {
