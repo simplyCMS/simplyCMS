@@ -19,6 +19,13 @@
 //   • `core` (legacy-фасад, у README поза тірами) стоїть T5 поруч з `admin` і
 //     `storefront-routes`; при цьому пʼять `*-ui` (T4) тягнуть `core` вгору —
 //     зустрічний цикл, борг розселення `core` по тірах поза К0.
+//
+// Кожна заборона виражена ДВОМА формами специфікатора — bare-субшляхом
+// `simplycms/<тека>` і відносним шляхом (`../<тека>`, `../../<тека>`, …):
+// правило матчить рядок, а не резолвлений модуль. Деталі й бюджет рівнів
+// `../` — в `eslint.tier-relative.mjs`.
+
+import { relativeForms } from './eslint.tier-relative.mjs';
 
 // 🔴 Межа зони — СТАТИЧНИЙ імпорт/`export … from`: `no-restricted-imports`
 // динамічний `import()` не бачить (той самий урок, що дав окремий селектор
@@ -83,6 +90,11 @@ const TIER_LAYER = Object.fromEntries(
   ]),
 );
 
+// Тека кожного тіру — потрібна, щоб порахувати відносну форму специфікатора.
+const TIER_DIR = Object.fromEntries(
+  TIER_ZONES.filter(([, , name]) => name).map(([dir, , name]) => [name, dir]),
+);
+
 // Кореневий барель зсередини пакета — цикл модулів, тож заборонений скрізь.
 // 🔴 Саме `paths` (точне імʼя), а не `patterns`: групи `no-restricted-imports`
 // — gitignore-подібні, і запис `simplycms` там матчив би ВСЕ дерево субшляхів,
@@ -96,14 +108,22 @@ const ROOT_BARREL = {
 /** Зони напрямку шарів для `eslint.config.mjs` (по одному блоку на теку). */
 export const tierZoneConfigs = TIER_ZONES.map(
   ([dir, layer, name, upward, alsoForbidden = []]) => {
-    const forbidden = Object.entries(TIER_LAYER)
+    const targets = Object.entries(TIER_LAYER)
       .filter(
         ([other, otherLayer]) =>
           other !== name &&
           (otherLayer >= layer || alsoForbidden.includes(other)) &&
           !upward.includes(other),
       )
-      .map(([other]) => `simplycms/${other}`);
+      .map(([other]) => other);
+
+    // 🔴 Обидві форми того самого імпорту: bare-субшлях і відносний шлях.
+    // Свій тір у `targets` не потрапляє ніколи, тож `../<своя тека>/…`
+    // усередині зони лишається легальним.
+    const forbidden = targets.flatMap((other) => [
+      `simplycms/${other}`,
+      ...relativeForms(`${PKG}/${dir}`, `${PKG}/${TIER_DIR[other]}`),
+    ]);
 
     return {
       files: [`${PKG}/${dir}/**/*.{ts,tsx}`],

@@ -1,22 +1,24 @@
-# @simplycms/data-supabase
+# simplycms/data-supabase
 
 Supabase-реалізації портів рушія SimplyCMS: каталог, замовлення, ідентичність.
 Клієнт і `ScopeResolver` інжектуються у фабрику — глобального singleton немає.
 
-Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
-магазин створюється скаффолдером `pnpm create simplycms-store`, який приводить
-усе ядро разом.
+Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
+створюється скаффолдером `pnpm create simplycms-store`.
 
 ## Встановлення
 
 ```bash
-pnpm add @simplycms/data-supabase
+pnpm add simplycms
 ```
+
+Вхід цього шару — субшлях `simplycms/data-supabase`.
 
 ## Що всередині
 
-Експорт один — корінь пакета; самі контракти портів — у `@simplycms/objects`.
+Експорт один — корінь пакета; самі контракти портів — у `simplycms/contracts`.
 
 | Символ | Що робить |
 |--------|-----------|
@@ -37,9 +39,9 @@ import {
   createSupabaseOrderRepository,
   createSupabaseIdentityProvider,
   singleTenantScope,
-} from '@simplycms/data-supabase';
-import { defineRuntime } from '@simplycms/runtime';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+} from 'simplycms/data-supabase';
+import { defineRuntime } from 'simplycms/runtime';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 const client = createServerSupabase(cookieHeader);
 

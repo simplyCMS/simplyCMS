@@ -64,7 +64,7 @@ export function UpdatesSection() {
             </div>
             <div className="diff-body">
               <span className="diff-line plus">
-                + pnpm update &quot;@simplycms/*&quot;
+                + pnpm update simplycms &quot;@simplycms/*&quot;
               </span>
               <span className="diff-line plus">+ pnpm build</span>
               <span className="diff-line ctx">
@@ -167,7 +167,9 @@ export function HowItWorksSection() {
             </p>
             <pre className="step-code">
               <span className="g">❯</span>{' '}
-              <span className="w">pnpm update &quot;@simplycms/*&quot;</span>
+              <span className="w">
+                pnpm update simplycms &quot;@simplycms/*&quot;
+              </span>
               {'\n'}
               <span className="g">❯</span>{' '}
               <span className="w">pnpm simplycms doctor</span>{' '}

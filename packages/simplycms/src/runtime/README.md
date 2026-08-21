@@ -1,20 +1,22 @@
-# @simplycms/runtime
+# simplycms/runtime
 
 Складання магазину SimplyCMS: `defineRuntime` збирає `EngineContext` з
 інжектованих адаптерів (репозиторії, identity, links, media, config), а
 `defineConfig` типізує `simplycms.config.ts`. Залежить лише від контрактів
-`@simplycms/objects` — Supabase та `import.meta.env` усередині немає.
+`simplycms/contracts` — Supabase та `import.meta.env` усередині немає.
 
-Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
-магазин створюється скаффолдером `pnpm create simplycms-store`, який приводить
-усе ядро разом.
+Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
+створюється скаффолдером `pnpm create simplycms-store`.
 
 ## Встановлення
 
 ```bash
-pnpm add @simplycms/runtime
+pnpm add simplycms
 ```
+
+Вхід цього шару — субшлях `simplycms/runtime`.
 
 ## Що всередині
 
@@ -29,7 +31,7 @@ pnpm add @simplycms/runtime
 
 ```ts
 // src/server/engine.ts магазину — серверний рантайм на одному Supabase-клієнті
-import { defineRuntime, type SimplyCmsRuntime } from '@simplycms/runtime';
+import { defineRuntime, type SimplyCmsRuntime } from 'simplycms/runtime';
 
 export function createServerRuntime(cookieHeader?: string): SimplyCmsRuntime {
   const client = createServerSupabase(cookieHeader);

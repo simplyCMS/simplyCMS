@@ -1,9 +1,12 @@
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { ESLint } from 'eslint';
-import { beforeAll, describe, expect, it } from 'vitest';
-
-const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { REPO, eslint, restrictedImports } from './tier-boundary/lint';
+import {
+  LEGAL_RELATIVE,
+  OUTSIDE,
+  ZONES,
+  toRelative,
+} from './tier-boundary/zones';
 
 /**
  * Негативний контроль тір-зон напрямку шарів (ПК3, трек К0).
@@ -17,142 +20,12 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
  * контракт серверного env: ESLint годується СИНТЕТИЧНИМ порушенням із
  * filePath усередині зони й поза нею.
  *
- * Таблиця зон — `eslint.tier-zones.mjs`; тут очікування задані РУКАМИ, щоб
- * тест не переказував ту саму структуру, з якої зібраний конфіг.
+ * 🔴 Форм крос-тірного імпорту ДВІ, і зона мусить ловити обидві: bare-субшлях
+ * `simplycms/<тека>` і відносний шлях `../<тека>`. До К0 другу форму тримала
+ * межа npm-пакета; після злиття тек вона стала синтаксично короткою й тому
+ * ймовірною. Таблиця зон — `eslint.tier-zones.mjs`, очікування — у
+ * `./tier-boundary/zones`.
  */
-
-// [тека зони, заборонений специфікатор, легальний специфікатор]
-const ZONES: ReadonlyArray<readonly [string, string, string]> = [
-  ['packages/simplycms/src/contracts', 'simplycms/domain/pricing', 'react'],
-  ['packages/simplycms/src/domain', 'simplycms/schema', 'simplycms/contracts'],
-  [
-    'packages/simplycms/src/schema',
-    'simplycms/supabase',
-    'simplycms/contracts',
-  ],
-  [
-    'packages/simplycms/src/supabase',
-    'simplycms/data-supabase',
-    'simplycms/contracts',
-  ],
-  [
-    'packages/simplycms/src/data-supabase',
-    'simplycms/supabase/browser-client',
-    'simplycms/contracts/ports',
-  ],
-  [
-    'packages/simplycms/src/react-query',
-    'simplycms/supabase',
-    'simplycms/domain/money',
-  ],
-  [
-    'packages/simplycms/src/runtime',
-    'simplycms/ui/button',
-    'simplycms/contracts',
-  ],
-  [
-    'packages/simplycms/src/i18n',
-    'simplycms/react-query',
-    'simplycms/contracts',
-  ],
-  [
-    'packages/simplycms/src/storefront',
-    'simplycms/supabase/server-client',
-    'simplycms/contracts',
-  ],
-  ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
-  [
-    'packages/simplycms/src/themes',
-    'simplycms/admin/pages/Themes',
-    'simplycms/supabase/anon-client',
-  ],
-  [
-    'packages/simplycms/src/plugins',
-    'simplycms/plugin-sdk',
-    'simplycms/contracts/semver',
-  ],
-  [
-    'packages/simplycms/src/plugin-sdk',
-    'simplycms/admin',
-    'simplycms/plugins/types',
-  ],
-  [
-    'packages/simplycms/src/cart-ui',
-    'simplycms/core/hooks/useCart',
-    'simplycms/react-query',
-  ],
-  [
-    'packages/simplycms/src/catalog-ui',
-    'simplycms/storefront-routes/pages/Catalog',
-    'simplycms/core/hooks/useAuth',
-  ],
-  [
-    'packages/simplycms/src/checkout-ui',
-    'simplycms/admin',
-    'simplycms/core/hooks/useAuth',
-  ],
-  [
-    'packages/simplycms/src/profile-ui',
-    'simplycms/storefront-routes/pages/Profile',
-    'simplycms/core/hooks/useAuth',
-  ],
-  [
-    'packages/simplycms/src/reviews-ui',
-    'simplycms/admin',
-    'simplycms/core/hooks/useAuth',
-  ],
-  [
-    'packages/simplycms/src/core',
-    'simplycms/storefront-routes/pages/Home',
-    'simplycms/themes/ThemeContext',
-  ],
-  [
-    'packages/simplycms/src/admin',
-    'simplycms/storefront-routes/pages/Home',
-    'simplycms/core/hooks/use-toast',
-  ],
-  [
-    'packages/simplycms/src/storefront-routes',
-    'simplycms/admin/pages/Products',
-    'simplycms/core/hooks/useAuth',
-  ],
-  [
-    'packages/simplycms/routes/storefront',
-    'simplycms/admin/pages/Products',
-    'simplycms/storefront-routes/pages/Home',
-  ],
-  [
-    'packages/simplycms/routes/admin',
-    'simplycms/core/hooks/useAuth',
-    'simplycms/admin/pages/Products',
-  ],
-];
-
-// Контрольна точка ПОЗА всіма тір-зонами: host-код магазину. Той самий
-// синтетичний імпорт тут має бути чистим — інакше зона не зона, а глобальна
-// заборона.
-const OUTSIDE = 'src/__tier-fixture.ts';
-
-let eslint: ESLint;
-
-beforeAll(() => {
-  eslint = new ESLint({ cwd: REPO });
-});
-
-async function restrictedImports(
-  specifier: string,
-  filePath: string,
-): Promise<string[]> {
-  const [result] = await eslint.lintText(
-    `import { probe } from '${specifier}';\nexport const used = probe;\n`,
-    { filePath: join(REPO, filePath), warnIgnored: true },
-  );
-  // Файл, зʼїдений ignores, дав би 0 повідомлень і хибно-зелений тест —
-  // тому скоупінг зон окремо асертиться останнім кейсом.
-  return (result?.messages ?? [])
-    .filter((m) => m.ruleId === 'no-restricted-imports')
-    .map((m) => m.message);
-}
 
 describe('тір-зони напрямку шарів (no-restricted-imports)', () => {
   it.each(ZONES)(
@@ -176,6 +49,49 @@ describe('тір-зони напрямку шарів (no-restricted-imports)', 
       ).toEqual([]);
     },
   );
+
+  it.each(ZONES)(
+    '%s — ВІДНОСНА форма того самого імпорту теж ловиться',
+    async (dir, forbidden) => {
+      const relative = toRelative(dir, forbidden);
+
+      const errors = await restrictedImports(
+        relative,
+        `${dir}/__tier-fixture.ts`,
+      );
+      expect(errors, `${relative} у ${dir}`).toHaveLength(1);
+      expect(errors[0]).toContain('Тір-зона ПК3');
+
+      expect(
+        await restrictedImports(relative, OUTSIDE),
+        `${relative} поза зоною`,
+      ).toEqual([]);
+    },
+  );
+
+  it.each(LEGAL_RELATIVE)(
+    '%s — відносний імпорт %s лишається легальним',
+    async (dir, specifier) => {
+      expect(
+        await restrictedImports(specifier, `${dir}/__tier-fixture.ts`),
+      ).toEqual([]);
+    },
+  );
+
+  it('глибші рівні `../` теж під зоною (файл у підтеці зони)', async () => {
+    const fixture =
+      'packages/simplycms/src/storefront-routes/__tier-fixture.ts';
+    for (const specifier of [
+      '../admin/pages/Products',
+      '../../admin/pages/Products',
+      '../../../admin/pages/Products',
+    ]) {
+      expect(
+        await restrictedImports(specifier, fixture),
+        specifier,
+      ).toHaveLength(1);
+    }
+  });
 
   it.each(ZONES)(
     '%s — кореневий барель simplycms заборонений зсередини пакета',
@@ -210,7 +126,7 @@ describe('тір-зони напрямку шарів (no-restricted-imports)', 
     );
     for (const code of [
       "import type { X } from 'simplycms/admin';\n",
-      "export { X } from 'simplycms/admin';\n",
+      "export { X } from '../admin';\n",
     ]) {
       const [result] = await eslint.lintText(code, {
         filePath: fixture,

@@ -1,19 +1,21 @@
-# @simplycms/react-query
+# simplycms/react-query
 
 TanStack Query-хуки й фабрики query-опцій для рушія SimplyCMS. Дані беруться
 виключно з портів `EngineContext` (`CatalogRepository`, `OrderRepository`) —
 пакет ніколи не імпортує Supabase напряму.
 
-Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
-магазин створюється скаффолдером `pnpm create simplycms-store`, який приводить
-усе ядро разом.
+Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
+створюється скаффолдером `pnpm create simplycms-store`.
 
 ## Встановлення
 
 ```bash
-pnpm add @simplycms/react-query
+pnpm add simplycms
 ```
+
+Вхід цього шару — субшлях `simplycms/react-query`.
 
 `react` (18/19) і `@tanstack/react-query` (5.x) — peer-залежності.
 
@@ -21,14 +23,14 @@ pnpm add @simplycms/react-query
 
 | Subpath | Що дає |
 |---------|--------|
-| `@simplycms/react-query` | `EngineProvider` / `useEngine` — інжекція `EngineContext` у дерево React; `CartProvider` / `useCart` + тип `CartItem` — клієнтський кошик у `localStorage` (SSR-safe); хуки `useProduct`, `useProducts`, `useSections`, `useProperties`, `useStockInfo`, `useOrder`, `useOrders` |
-| `@simplycms/react-query/queries` | `catalogQueries` / `orderQueries` — фабрики query-опцій поверх портів; `catalogKeys` / `orderKeys` — стабільний namespace ключів кешу. React не потрібен — придатне для лоадерів і тестів |
+| `simplycms/react-query` | `EngineProvider` / `useEngine` — інжекція `EngineContext` у дерево React; `CartProvider` / `useCart` + тип `CartItem` — клієнтський кошик у `localStorage` (SSR-safe); хуки `useProduct`, `useProducts`, `useSections`, `useProperties`, `useStockInfo`, `useOrder`, `useOrders` |
+| `simplycms/react-query/queries` | `catalogQueries` / `orderQueries` — фабрики query-опцій поверх портів; `catalogKeys` / `orderKeys` — стабільний namespace ключів кешу. React не потрібен — придатне для лоадерів і тестів |
 
 ## Приклад
 
 ```tsx
 // src/engine-provider.tsx магазину — монтування рушія в дереві React
-import { EngineProvider } from '@simplycms/react-query';
+import { EngineProvider } from 'simplycms/react-query';
 
 export function ClientEngineProvider({ children }: { children: ReactNode }) {
   const client = useSupabaseClient();

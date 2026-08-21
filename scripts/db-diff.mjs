@@ -109,8 +109,8 @@ if (existsSync(target)) {
 }
 
 const header = [
-  `-- Згенеровано \`pnpm db:diff ${name}\` з packages/schema/drizzle/${sqlFile}.`,
-  '-- Джерело правди схеми — packages/schema/src/schema.ts.',
+  `-- Згенеровано \`pnpm db:diff ${name}\` з packages/simplycms/drizzle/${sqlFile}.`,
+  '-- Джерело правди схеми — packages/simplycms/src/schema/schema.ts.',
   '',
 ].join('\n');
 writeFileSync(
@@ -123,7 +123,7 @@ writeFileSync(
 console.log('\n✅ Міграцію створено:');
 console.log(`  📄 supabase/migrations/${target.split('/').pop()}`);
 console.log(
-  `  🗃️  drizzle-staging: packages/schema/drizzle/${sqlFile} (комітиться)`,
+  `  🗃️  drizzle-staging: packages/simplycms/drizzle/${sqlFile} (комітиться)`,
 );
 console.log('\n🔴 Переглянь SQL ПЕРЕД застосуванням:');
 console.log(

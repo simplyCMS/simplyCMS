@@ -1,45 +1,49 @@
-# @simplycms/schema
+# simplycms/schema
 
 Схема БД ядра SimplyCMS у TypeScript: таблиці, енами, індекси й **RLS-політики**
 описані на Drizzle ORM. Поруч — закомічений snapshot інтроспекції, що слугує
 базою порівняння для наступного діфа міграцій.
 
-Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремо ставити зазвичай не треба:
-магазин створюється скаффолдером `pnpm create simplycms-store`, який приводить
-усе ядро разом.
+Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
+створюється скаффолдером `pnpm create simplycms-store`.
 
 ## Встановлення
 
 ```bash
-pnpm add @simplycms/schema
+pnpm add simplycms
 ```
 
-Peer-залежність — `drizzle-orm@^0.45.0`.
+Вхід цього шару — субшлях `simplycms/schema`.
+
+Peer-залежність — `drizzle-orm@^0.45.0`, і вона **опційна**
+(`peerDependenciesMeta`): drizzle тут потрібен лише тулінгу схеми, рантайм
+магазину його не імпортує.
 
 ## Що всередині
 
 | Subpath                       | Що дає                                                           |
 | ----------------------------- | ---------------------------------------------------------------- |
-| `@simplycms/schema`           | `pgTable`-описи таблиць ядра, `pgEnum`-и та `pgPolicy`-описи RLS |
-| `@simplycms/schema/relations` | `relations(...)` між таблицями — для реляційних запитів Drizzle  |
+| `simplycms/schema`           | `pgTable`-описи таблиць ядра, `pgEnum`-и та `pgPolicy`-описи RLS |
+| `simplycms/schema/relations` | `relations(...)` між таблицями — для реляційних запитів Drizzle  |
 
 Енами: `appRole`, `discountType`, `discountTargetType`, `discountGroupOperator`,
 `propertyType`, `stockStatus`, `shippingMethodType`, `shippingCalculationType`.
 
-`auth.users` описана окремо (`src/auth-users.ts`) і **навмисно не реекспортується**
+`auth.users` описана окремо (`src/schema/auth-users.ts`) і **навмисно не реекспортується**
 зі `schema.ts`: інакше drizzle-kit вважатиме її «своєю» і згенерує
 `CREATE TABLE "auth"."users"`. Як імпорт вона лишається валідною ціллю `foreignKey(...)`.
 
 ## Приклад
 
 RLS живе в самій схемі, тож політики читаються як дані — на цьому тримається
-parity-гейт `src/__tests__/rls-parity.test.ts`:
+parity-гейт `src/schema/__tests__/rls-parity.test.ts`:
 
 ```ts
 import { is } from 'drizzle-orm';
 import { PgTable, getTableConfig } from 'drizzle-orm/pg-core';
-import * as schema from '@simplycms/schema';
+import * as schema from 'simplycms/schema';
 
 for (const value of Object.values(schema)) {
   if (!is(value, PgTable)) continue;
@@ -79,7 +83,7 @@ Tarball пакета везе теку `migrations/` — байт-копію к�
 `supabase/migrations/` монорепо, синхронізовану `pnpm template:sync` і
 закріплену parity-тестом. Це джерело для `simplycms db:diff` у магазині:
 команда порівнює `supabase/migrations/` магазину з
-`node_modules/@simplycms/schema/migrations/` і докопіює нові міграції ядра.
+`node_modules/simplycms/migrations/` і докопіює нові міграції ядра.
 
 ## Ліцензія
 
