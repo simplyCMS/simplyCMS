@@ -13,28 +13,37 @@ import { join } from 'node:path';
 /**
  * Серверний ВАНТАЖ, якому в клієнтському бандлі не місце.
  *
- * 🔴 Уточнення до формулювання плану: самі модулі `dist/server/*.js` пакетів у
- * клієнтських чанках Є — і так і має бути. Це `createServerFn`-модулі, які
+ * 🔴 Уточнення до формулювання плану: самі модулі `dist/<тека>/server/` пакета
+ * у клієнтських чанках Є — і так і має бути. Це `createServerFn`-модулі, які
  * Start на клієнті перетворює на RPC-заглушки (роути мусять на них
  * посилатися). Справжній інваріант — щоб разом із ними НЕ приїхало те, що
  * заглушка викидає: фабрика серверного Supabase-клієнта (читає cookie запиту)
  * і серверні лоадери даних. Саме це й перевіряємо.
  */
 const SERVER_PAYLOAD = [
-  /@simplycms\/supabase\/dist\/server-client/,
+  /simplycms\/dist\/supabase\/server-client/,
   // Anon-клієнт читає голий `process.env` у рантаймі (контракт серверного
   // env, спека CLI v1 §7): при витоку в клієнтський бандл він упав би вже в
   // браузері (там `process` немає) — гейт має зловити раніше.
-  /@simplycms\/supabase\/dist\/anon-client/,
-  /@simplycms\/storefront\/dist\/loaders\//,
+  /simplycms\/dist\/supabase\/anon-client/,
+  /simplycms\/dist\/storefront\/loaders\//,
 ];
 
-/** Маркер того, що заглушки server-fn у бандлі взагалі є (гейт не вхолосту). */
-const SERVER_FN_STUB = /@simplycms\/[^/]+\/dist\/server\//;
+/**
+ * Маркер того, що заглушки server-fn у бандлі взагалі є (гейт не вхолосту).
+ *
+ * 🔴 `simplycms/dist/<тека>/server/` — форма ОДНОГО unscoped-пакета (топологія
+ * 5): `<тека>` тут `storefront-routes`. Вона ж навмисно не збігається з
+ * сателітами: у module-id `@simplycms/plugin-faq/dist/…` підрядка
+ * `simplycms/dist/` немає, тож заглушка плагіна за ядро не зарахується.
+ */
+const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
 
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
-  { label: '@simplycms/admin', rx: /@simplycms\/admin\// },
+  // 🔴 Саме `dist/admin/`, а не `dist/admin`: `dist/admin-routes/` — тонкі
+  // обгортки роутів, вони в initial-чанку бути МАЮТЬ.
+  { label: 'simplycms/admin', rx: /simplycms\/dist\/admin\// },
   { label: '@tiptap/*', rx: /@tiptap\// },
   { label: 'recharts', rx: /\/recharts\// },
 ];

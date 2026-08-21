@@ -49,6 +49,9 @@ export function packAll(destDir) {
     });
 
     // Імʼя файлу детерміноване: `@scope/name` → `scope-name-version.tgz`.
+    // 🔴 Unscoped-флагман формулу НЕ ламає: у `simplycms` немає ні `@`, ні
+    // `/`, тож обидва `replace` — тотожність, і виходить `simplycms-<v>.tgz`.
+    // Звірено фактом (`pnpm pack` у packages/simplycms): саме таке імʼя.
     const file = `${name.replace('@', '').replace('/', '-')}-${version}.tgz`;
     tarballs.set(name, join(destDir, file));
   }

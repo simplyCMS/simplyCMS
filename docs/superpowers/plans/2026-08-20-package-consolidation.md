@@ -239,10 +239,10 @@ export const routes = rootRoute('__root.tsx', [
 **Files:**
 - Modify: `scripts/pilot-pack/pack.mjs` (ім'я tarball-а для unscoped: `simplycms-<v>.tgz` — звірити генерацію `:51`), `provenance.mjs` (scope-парсинг: unscoped-пакет НЕ ігнорується), `gate-a.mjs:49` (route-id: `node_modules/simplycms/routes` замість `@simplycms/`), `gate-c.mjs` (regex-и layout-у), `tool-pkg-smoke.mjs`/`tool-doctor-smoke.mjs` (scoped-згадки), `scaffold.mjs`+`overrides.mjs` (`writeManifest`: file:-tarball-и 5 пакетів, devDeps включно), `create-pkg-smoke.mjs:56-63` (нові інваріанти), **FAQ-контур (ПК7): пілотний scratch-магазин ДОВСТАНОВЛЮЄ `@simplycms/plugin-faq`** (dep + запис у config + physical-mount — кроком пілота, бо з шаблону FAQ знято, а гейти B/E та plugin-тести його потребують)
 
-- [ ] **Step 1:** `create-pkg-smoke`: (а) tarball скаффолдера БЕЗ `template/.claude/**`; (б) `package.json.tpl`: deps == `simplycms`, без `plugin-faq`; (в) після скаффолду лінки скілів існують з очікуваним target-ом; (г) tarball `simplycms`: **точна парність `skills/**`** (рівність кількості й множини файлів із `packages/simplycms/skills/`).
-- [ ] **Step 2:** гейти/провенанс/pack під unscoped + FAQ-довстановлення кроком пілота.
-- [ ] **Step 3:** `pnpm pilot:pack` зелений; у робочій теці пілота: `head -3 <store>/.claude/skills/redesign-from-reference/SKILL.md` (резолв через лінк).
-- [ ] **Step 4:** Commit: `test(k0): пілот під unscoped-флагман, FAQ-контур, скіл-інваріанти`.
+- [x] **Step 1:** `create-pkg-smoke`: (а) tarball скаффолдера БЕЗ `template/.claude/**`; (б) `package.json.tpl`: deps == `simplycms`, без `plugin-faq`; (в) після скаффолду лінки скілів існують з очікуваним target-ом; (г) tarball `simplycms`: **точна парність `skills/**`** (рівність кількості й множини файлів із `packages/simplycms/skills/`).
+- [x] **Step 2:** гейти/провенанс/pack під unscoped + FAQ-довстановлення кроком пілота.
+- [x] **Step 3:** `pnpm pilot:pack` зелений; у робочій теці пілота: `head -3 <store>/.claude/skills/redesign-from-reference/SKILL.md` (резолв через лінк).
+- [x] **Step 4:** Commit: `test(k0): пілот під unscoped-флагман, FAQ-контур, скіл-інваріанти`.
 
 ### Task 8: Документація чинного стану + реліз-підготовка
 

@@ -4,7 +4,8 @@
  * Tailwind v4 автодетектом `node_modules` НЕ сканує, тож магазин мусить явно
  * вказати теки пакетів у `content` (див. `tailwind.config.ts` шаблону).
  * Гейт перевіряє результат: у зібраному CSS є утиліти, які зустрічаються
- * ВИКЛЮЧНО в компонентах `@simplycms/*`, а не в файлах самого магазину.
+ * ВИКЛЮЧНО в компонентах ядра й теми з `node_modules`, а не у файлах самого
+ * магазину.
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -13,7 +14,14 @@ import { join } from 'node:path';
 /**
  * Класи-маркери: кожен існує тільки в одному файлі пакета ядра.
  *
- * 🔴 Останній маркер — ТЕМИ (Фаза 4, Р8): `md:text-6xl` живе виключно в
+ * 🔴 Підпис `from` навмисно НЕ у формі специфікатора (`simplycms · ui/button`,
+ * а не `simplycms/ui · button`): `scripts/audit-exports` збирає з коду будь-який
+ * рядок у лапках, що починається з `simplycms/`, і прийняв би підпис за
+ * реальний імпорт неіснуючого субшляху.
+ *
+ * 🔴 Перші чотири — ОДИН unscoped-пакет ядра (топологія 5, трек К0): вони
+ * доводять глобу `./node_modules/simplycms/dist/**` у `tailwind.config.ts`
+ * магазину. Останній маркер — ТЕМИ (Фаза 4, Р8): `md:text-6xl` живе виключно в
  * `HeroBanner` теми solarstore, якої в шаблоні магазину немає — вона
  * приїжджає в скретч кроком `installThemes`. Чого цей маркер НЕ доводить:
  * через яку саме глобу він потрапив у CSS (`themes` copy-in-гілки чи
@@ -22,10 +30,10 @@ import { join } from 'node:path';
  * `tests/theme-tailwind-globs.test.ts`.
  */
 const MARKERS = [
-  { cls: 'underline-offset-4', from: '@simplycms/ui · button' },
-  { cls: '[&_svg]:size-4', from: '@simplycms/ui · button' },
-  { cls: 'aria-selected:opacity-100', from: '@simplycms/ui · calendar' },
-  { cls: 'hover:-translate-y-1', from: '@simplycms/catalog-ui · ProductCard' },
+  { cls: 'underline-offset-4', from: 'simplycms · ui/button' },
+  { cls: '[&_svg]:size-4', from: 'simplycms · ui/button' },
+  { cls: 'aria-selected:opacity-100', from: 'simplycms · ui/calendar' },
+  { cls: 'hover:-translate-y-1', from: 'simplycms · catalog-ui/ProductCard' },
   { cls: 'md:text-6xl', from: '@simplycms/theme-solarstore · HeroBanner' },
 ];
 

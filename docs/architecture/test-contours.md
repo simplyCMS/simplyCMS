@@ -12,9 +12,9 @@
 
 | | Монорепо (`pnpm dev`, `pnpm test`) | Справжній магазин |
 |---|---|---|
-| Рядок у коді | `import '@simplycms/ui'` | той самий |
+| Рядок у коді | `import 'simplycms/ui'` | той самий |
 | Резолв | `vite resolve.alias` + `tsconfig paths` | node-резолв + `exports`-мапа |
-| Куди веде | `packages/ui/src/button.tsx` — **сирці** | `node_modules/@simplycms/ui/dist/button.js` — **збірка** |
+| Куди веде | `packages/simplycms/src/ui/button.tsx` — **сирці** | `node_modules/simplycms/dist/ui/button.js` — **збірка** |
 
 🔴 Усе, що лежить між цими двома шляхами, у монорепо **не виконується жодного
 разу**: збірка `tsup`, коректність `exports` і `publishConfig.exports`,
@@ -47,12 +47,12 @@
 
 | Гейт | Доводить | Джерело |
 |---|---|---|
-| **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/@simplycms/*/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
+| **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/simplycms/routes/{storefront,admin}` (з К0 — підтеки одного флагмана) плюс роут-теку плагіна `node_modules/@simplycms/plugin-faq/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
 | **B** | `createServerFn` працює в PRODUCTION-манифесті, а не лише в dev-режимі монорепо; SSR-рендер, guard `/admin`, sitemap/robots/health | `gate-b.mjs` |
 | **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest | `gate-c.mjs` |
-| **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `@simplycms/*` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
+| **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `simplycms/dist/**` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | **E** | Перший signup НЕ отримує `admin` (міграція в живій схемі); `owner:invite` ідемпотентний; `/auth/confirm` ставить cookies і редиректить | `gate-e.mjs` |
-| **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies` | `create-pkg-smoke.mjs` |
+| **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; з К0 — ще й інваріанти топології 5 і доставки скілів: у tarball немає `template/.claude/**`, deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/` | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs` |
 | **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 6 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout, `theme:conformance default` на тому ж голому скаффолді доїжджає до теми з конфігу й чесно падає (exit 1) з точною командою `pnpm add -D jsdom` замість мовчазного обходу | `tool-pkg-smoke.mjs` |
 
 🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
@@ -63,9 +63,20 @@
 скретча) і в packaging-сюїті через `tests/cli-pack.test.ts` (виключений із
 дефолтного `pnpm test`, як `create-store-pack.test.ts`).
 
+🔴 **FAQ-контур і скіл-лінки (трек К0)** — так само кроки конвеєра, а не
+гейти. З шаблону магазину знято референс-плагін FAQ (ПК7) і копію скілів
+(ПК9), тож скретч добирає їх сам: `install-faq.mjs` ставить
+`@simplycms/plugin-faq` тим самим `simplycms add --plugin`, що й користувач, і
+дописує `physical()`-монтаж у `routes.ts` (автовставку спека CLI v1 §9
+відклала); `link-skills.mjs` створює симлінки функцією СКАФФОЛДЕРА
+(`createSkillLinks`) і читає `SKILL.md` наскрізь. Без FAQ Gate A чесно впав би
+на різних множинах route-id; скіл-крок — єдине місце, де взагалі перевіряється,
+що ціль лінка існує в pnpm-ізольованому дереві (у Gate CLI лінк висить за
+побудовою: скаффолд іде з `--no-install`).
+
 🔴 **Gate THEME-контур (Фаза 4)** — не окремий гейт-скрипт, а крок конвеєра
-пілота: `scripts/pilot-pack/install-themes.mjs`, викликається в `run.mjs`
-між `pnpm install` скретча і провенансом. Прожовує ОБИДВІ гілки установки
+пілота: `scripts/pilot-pack/install-themes.mjs`, викликається в
+`prepare-store.mjs` між `pnpm install` скретча і провенансом. Прожовує ОБИДВІ гілки установки
 теми зі спеки §17.4 тим самим `pnpm exec simplycms`, що й користувач —
 `add @simplycms/theme-solarstore --theme --copy --name solarcopy` (copy-in)
 і `add @simplycms/theme-solarstore --theme` (npm) в одному скретчі підряд.

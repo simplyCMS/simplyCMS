@@ -2,15 +2,13 @@
  * Складання скретч-магазину й прогін гейтів.
  *
  * Винесено з `pilot-pack.mjs`: там лишається лише вибір режиму (звідки взяти
- * env і чи піднімати локальний стек), тут — незмінна для всіх режимів
- * послідовність pack → scaffold → pnpm install → провенанс → vite build → gates.
+ * env і чи піднімати локальний стек), тут — прогін гейтів у порядку, спільному
+ * для всіх режимів. Підготовку самого магазину робить `prepare-store.mjs`.
  */
 
-import { buildPackages, packAll } from './pack.mjs';
-import { scaffoldStore } from './scaffold.mjs';
-import { pnpmInstall, startStore, viteBuild } from './build.mjs';
-import { installThemes } from './install-themes.mjs';
-import { assertTarballProvenance } from './provenance.mjs';
+import { startStore } from './build.mjs';
+import { prepareStore } from './prepare-store.mjs';
+import { step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
@@ -18,11 +16,6 @@ import { gateTailwind } from './gate-d.mjs';
 import { gateOwner, skippedOwnerGate } from './gate-e.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
 import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
-
-/** Заголовок кроку — щоб лог пілота читався зверху вниз. */
-export function step(title) {
-  console.log(`\n[1m▸ ${title}[0m`);
-}
 
 /**
  * @param {{
@@ -68,45 +61,6 @@ export async function runGates(opts) {
     results.push(...(await runServerGates(opts)));
   }
   return results;
-}
-
-/** pack → scaffold → pnpm install → теми → провенанс → vite build. */
-async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
-  if (!skipBuild) {
-    step('Збірка пакетів ядра');
-    buildPackages();
-  }
-
-  step('pnpm pack — tarball-и');
-  const tarballs = packAll(tarballDir);
-  console.log(`  спаковано ${tarballs.size} пакетів → ${tarballDir}`);
-
-  step(`Розгортання скретч-магазину → ${storeDir}`);
-  scaffoldStore({ storeDir, tarballs, env });
-
-  step('pnpm install із tarball-ів');
-  pnpmInstall(storeDir);
-
-  // Обидві гілки §17.4 — тут і ніде інде; чому саме тут — install-themes.mjs.
-  step('Теми: simplycms add --theme --copy і simplycms add --theme');
-  installThemes(storeDir);
-
-  // 🔴 Не гейт, а ПЕРЕДУМОВА: якщо ядро приїхало з реєстру замість tarball-ів,
-  // усе далі втрачає сенс — гейти перевірятимуть уже опубліковані пакети
-  // замість тих, що йдуть на публікацію. Відмова механізму overrides під pnpm
-  // мовчазна, тому вона мусить мати власний голос саме тут.
-  step('Провенанс — ядро з локальних tarball-ів');
-  const provenance = assertTarballProvenance(storeDir, [...tarballs.keys()]);
-  for (const line of provenance.details) console.log(`  ${line}`);
-  if (!provenance.ok) {
-    throw new Error(
-      'Провенанс не підтверджено: пакети ядра приїхали не з tarball-ів. ' +
-        'Перевір блок `overrides:` у pnpm-workspace.yaml скретча.',
-    );
-  }
-
-  step('vite build');
-  viteBuild(storeDir);
 }
 
 /**
