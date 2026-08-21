@@ -9,14 +9,14 @@ description: "Створити UI компонент для дизайн-сис�
 ## Специфікація компонента:
 
 **Назва:** [Назва компонента]
-**Пакет:** [@simplycms/ui | @simplycms/core | themes/default]
+**Тека ядра:** [simplycms/ui | simplycms/<feature>-ui | themes/default]
 **Призначення:** [Опис що робить компонент]
 
 ## Правила розміщення:
 
-- **@simplycms/ui** — базові UI компоненти (shadcn/ui based): Button, Input, Dialog, etc.
-- **@simplycms/core** — бізнес-компоненти: ProductCard, CartItem, CheckoutForm, etc.
-- **@simplycms/admin** — адмін-компоненти: ImageUpload, ProductPricesEditor, etc.
+- **`simplycms/ui`** (T3) — базові UI компоненти (shadcn/ui based): Button, Input, Dialog, etc.
+- **`simplycms/{cart,catalog,checkout,profile,reviews}-ui`** (T4) — бізнес-компоненти: ProductCard, CartItem, CheckoutForm, etc.
+- **`simplycms/admin`** (T5) — адмін-компоненти: ImageUpload, ProductPricesEditor, etc.
 - **themes/default** — theme-specific компоненти: Header, Footer, HeroBanner, etc.
 
 ## Вимоги:
@@ -29,7 +29,7 @@ description: "Створити UI компонент для дизайн-сис�
 2. **Стилізація**
    - Використовуй Tailwind CSS класи
    - Реалізуй варіанти через `class-variance-authority`
-   - `cn()` з `@simplycms/core` для злиття класів
+   - `cn()` з `simplycms/ui` для злиття класів
    - Responsive дизайн (mobile-first)
    - Dark mode підтримка через CSS variables
 

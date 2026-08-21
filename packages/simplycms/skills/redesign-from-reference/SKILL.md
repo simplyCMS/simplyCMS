@@ -428,7 +428,7 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost
 контекст браузера й робить рівно `page.goto` + семпл, тож кошик там завжди
 порожній. `/cart` віддасть порожню сторінку — порівнювати нема з чим;
 `/checkout` при порожньому кошику **редиректить на `/cart`**
-(`packages/storefront-routes/src/pages/Checkout.tsx`, «Redirect if cart is
+(`packages/simplycms/src/storefront-routes/pages/Checkout.tsx`, «Redirect if cart is
 empty»), а в `inspection.json` пишеться ЗАПИТАНИЙ URL, не кінцевий. Тобто
 наївний запуск кладе в `_ours/checkout/` скріншоти кошика з полем
 `url: …/checkout` — мислабельований артефакт, на якому потім будуються

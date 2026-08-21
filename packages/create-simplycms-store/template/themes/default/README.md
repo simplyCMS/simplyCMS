@@ -32,7 +32,7 @@ Tailwind-глоб `./themes/**/*.{ts,tsx}` уже налаштовані, окр
   ВАШОГО магазину; міняється тут, без правок компонентів.
 
 Сторінок і лейаутів тема НЕ постачає: вони канонічні
-(`@simplycms/storefront-routes`).
+(`simplycms/storefront-routes`).
 
 ## Що далі
 
@@ -44,6 +44,6 @@ Tailwind-глоб `./themes/**/*.{ts,tsx}` уже налаштовані, окр
   адмінка.
 - **Публікація** — щоб віддати тему іншим магазинам, зроби з теки пакет за
   конвенцією `simplycms-theme-<name>` (або `@vendor/simplycms-theme-<name>`),
-  винеси код у `src/`, залиш `src` у `files` і оголоси `@simplycms/*` як
-  **peerDependencies**. Установка в чужому магазині —
+  винеси код у `src/`, залиш `src` у `files` і оголоси `simplycms` як
+  **peerDependency**. Установка в чужому магазині —
   `simplycms add <pkg> --theme` (npm) або `--theme --copy` (copy-in).

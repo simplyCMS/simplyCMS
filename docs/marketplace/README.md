@@ -38,8 +38,8 @@
 | `license` | Валідний непорожній рядок у `package.json` (SPDX-ідентифікатор, напр. `MIT`). |
 | `engines.simplycms` | Діапазон сумісності з ядром у маніфесті (`ThemeManifest`/`PluginManifest`, полі `engines`) — окреме поле від `engines` у `package.json` Node. |
 | `description` | Англійською в `package.json` — це рядок, який бачить користувач у реєстрі/індексі, не UI-каталог i18n. |
-| Для тем — валідний `ThemeModule` | Проходить `validateThemeModule` (`@simplycms/themes`) без падіння: `manifest` + `tokens` + `components` за контрактом v2. |
-| Для тем — конвенція залежностей | `@simplycms/*` — **peerDependencies**, не `dependencies` (стороння тема не в реліз-потягу ядра; дублювання в `dependencies` подвоює React-контексти на кшталт `SupabaseProvider`). Деталі — план Фази 4, Р3. |
+| Для тем — валідний `ThemeModule` | Проходить `validateThemeModule` (`simplycms/themes`) без падіння: `manifest` + `tokens` + `components` за контрактом v2. |
+| Для тем — конвенція залежностей | `simplycms` — **peerDependencies**, не `dependencies` (стороння тема не в реліз-потягу ядра; дублювання в `dependencies` подвоює React-контексти на кшталт `SupabaseProvider`). Деталі — план Фази 4, Р3. |
 | `repository` | Публічне посилання на джерело (для аудиту й довіри перед додаванням). |
 
 Ці вимоги перевіряє тільки **формат запису індексу** (Zod-схема в
@@ -52,7 +52,7 @@
 2. Відкрити PR у репозиторій індексу (`simplycms/marketplace`, окремий репо
    — власника) з новим записом за схемою з `index.sample.json`.
 3. Огляд власником: неймінг, ліцензія, `engines.simplycms`, для тем —
-   ручна перевірка `validateThemeModule` і відсутність `@simplycms/*` у
+   ручна перевірка `validateThemeModule` і відсутність `simplycms` у
    `dependencies`.
 4. Мердж PR публікує запис у живому індексі — окремому від цього монорепо.
 

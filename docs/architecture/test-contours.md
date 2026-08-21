@@ -379,8 +379,8 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 `staleTime: 5 * 60_000`, тож перехід на вітрину в межах застосунку до п'яти
 хвилин показував стару тему, а тост стверджував «Зміни застосовані на сайті».
 Ловилось лише hard-refresh-ем. Фікс — `useRevalidateStorefront()`
-(`packages/admin/src/lib/revalidateTheme.ts`), яка робить обидва кроки;
-гард — `packages/admin/src/__tests__/revalidate-storefront.test.tsx`.
+(`packages/simplycms/src/admin/lib/revalidateTheme.ts`), яка робить обидва кроки;
+гард — `packages/simplycms/src/admin/__tests__/revalidate-storefront.test.tsx`.
 
 Це і є аргумент за ручний смок: механіка була зелена в усіх гейтах, а
 користувач бачив стару тему.
@@ -479,7 +479,7 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 регресії коду.
 
 Список сторінок адмінки для `layout-overflow` виводиться зі структури файлів
-(`tests/e2e/support/admin-routes.ts` сканує `packages/admin-routes/routes/admin/**`),
+(`tests/e2e/support/admin-routes.ts` сканує `packages/simplycms/routes/admin/**`),
 а не захардкоджений — новий роут пакета потрапляє в обхід автоматично, без
 правки специфікації.
 
@@ -501,7 +501,7 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 | Знахідка | Чому гейти її не бачили |
 |---|---|
 | **Гідраційний мисматч цін.** `Intl.NumberFormat` зі `style:'currency'` віддає «4 200 ₴» у Node і «4 200 грн» у Chromium — різні CLDR. Помилка на КОЖНІЙ картці товару | Усі гейти виконуються в ОДНОМУ рантаймі; розбіжність двох ICU видно лише коли SSR і клієнт порівнюються між собою |
-| **`formatShippingCost` повертав «За тарифами»/«Безкоштовно»** з `@simplycms/domain` — англійський магазин показував українську вартість доставки | `packages/domain` не в `SCANNED_ROOTS` i18n-скану й бути там не може: T1-домен не має права знати про i18n |
+| **`formatShippingCost` повертав «За тарифами»/«Безкоштовно»** з `simplycms/domain` — англійський магазин показував українську вартість доставки | тека `domain` не в `SCANNED_ROOTS` i18n-скану й бути там не може: T1-домен не має права знати про i18n |
 | **Горизонтальний скрол на `/catalog` при 390 px** (`scrollWidth` 393 при 390) — `flex-1` без `min-w-0` | Жоден автотест не рендерив сторінку в браузері з реальним viewport |
 | **Обрізаний текст** лічильника товарів і «Percentage (%)» у формі знижок | Те саме |
 | **React-попередження «state update on a component that hasn't mounted yet»** на ~13 сторінках адмінки | Пре-існуюче; jsdom-тести його не відтворюють. Тимчасово в `ALLOWLIST`, борг у роадмапі |

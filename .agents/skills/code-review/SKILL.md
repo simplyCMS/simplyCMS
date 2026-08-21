@@ -68,7 +68,7 @@ Severity — рівно три значення (довільні написан
 | **correctness** | завжди | баги в самих змінах: edge cases, `null`/`undefined`, межі, помилкові умови. Читає **лише диф** плюс мінімум контексту — глибоке занурення тут дає нітпіки |
 | **test-honesty** | диф торкнувся тестів | чи тест справді впаде, якщо зламати код (мутаційна перевірка); чи фікстури й моки відповідають **реальним** типам БД і формам виклику |
 | **drift** | є план/спека/доки | розходження написаного з кодом: невиконані пункти, відмічені `[x]` без коду, застарілі твердження в `docs/superpowers/{plans,specs}`, `docs/tasks`, `AGENTS.md`, `CLAUDE.md`, `.github/instructions/*` |
-| **architecture** | зачеплено >2 пакети `packages/*` або межа src↔пакети | легасі й подвійні кодошляхи «старий+новий», dead code, порушення конвенцій репо й напрямку залежностей |
+| **architecture** | зачеплено >2 теки ядра (`packages/simplycms/src/*`) або межа src↔пакети | легасі й подвійні кодошляхи «старий+новий», dead code, порушення конвенцій репо й напрямку залежностей |
 | **data-layer** | зачеплено БД, міграції, кеш TanStack Query, RLS, Storage | схема, типи, інвалідація, доступ (деталі нижче) |
 | **history** | змінено давній або гарячий код | `git log -p`/`git blame` по змінених місцях: що вже фіксили тут раніше і чи не відкочується той фікс |
 
@@ -84,19 +84,26 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 `ui-architecture`, `coding-style`, `optimization`, `storage`, `editor`, `tooling`):
 
 - `architecture` — напрямок залежностей **за тірами з
-  `packages/README.md`** (це джерело, не переказуй по пам'яті):
-  T0 `objects` → T1 `domain` → T2 `data-supabase`/`react-query`/`storefront` →
-  T3 `ui` → T4 `plugins`/`themes` → T5 `admin`. 🔴 Два факти, без яких лінза дає
-  хибні спрацювання: пакети одного тіру — **сиблінги**, а не ланка ланцюга
-  (`data-supabase` і `react-query` обидва залежать лише від `objects`, один від
-  одного — ні); `core` — **legacy-фасад поза тірами**, що декомпозується, і його
-  наявні ребра (`core → plugins`, `core → *-ui`, `theme-system → core`) — відомий
-  борг, а не свіже порушення: позначай їх, лише якщо диф їх **додає** або
-  поглиблює. Далі — server/client розділення (`createServerFn` у `src/server`, route
+  `packages/README.md`** (це джерело, не переказуй по пам'яті). 🔴 Після треку К0
+  тір — це **тека** в `packages/simplycms/src/`, а не окремий npm-пакет:
+  T0 `contracts` → T1 `domain`/`schema` → T2 `data-supabase`/`react-query`/`storefront` →
+  T3 `ui` → T4 `plugins`/`themes`/`plugin-sdk`/`*-ui` → T5 `core`/`admin`/`storefront-routes`.
+  Межу тримає не `dependencies`, а eslint-тір-зони (`eslint.tier-zones.mjs` +
+  `eslint.tier-relative.mjs`) — тож порушення напрямку в нормі валить лінт; якщо
+  диф його додав, а лінт мовчить, це знахідка про зону, не лише про імпорт.
+  🔴 Два факти, без яких лінза дає хибні спрацювання: теки одного тіру —
+  **сиблінги**, а не ланка ланцюга (`data-supabase` і `react-query` обидва
+  залежать лише від `contracts`, один від одного — ні); дві розбіжності
+  таблиці з зонами зафіксовані **фактом**, а не виправлені кодом — `plugin-sdk`
+  стоїть T4 (імпортує `plugins`), а пʼять `*-ui` (T4) тягнуть `core` (T5),
+  зустрічний цикл і борг розселення `core`. Це відомий борг, а не свіже
+  порушення: позначай, лише якщо диф його **додає** або поглиблює.
+  Далі — server/client розділення (`createServerFn` у `src/server`, route
   loaders, middleware у `src/start.ts`) проти client-only адмінки (`ssr: false`
-  **завжди** з `pendingComponent`); теми — презентація, логіки не містять; імпорти
-  пакетів через аліаси, не відносними шляхами; барелі не змішують server-only й
-  client-safe експорти; `src/routeTree.gen.ts` руками не редагується.
+  **завжди** з `pendingComponent`); теми — презентація, логіки не містять; ядро
+  імпортується субшляхом `simplycms/<тека>`, не відносними шляхами через межу
+  тіру; барелі не змішують server-only й client-safe експорти;
+  `src/routeTree.gen.ts` руками не редагується.
 - `data-layer` — зміни схеми йдуть **локальними міграціями** в
   `supabase/migrations/` + `pnpm db:migrate` (Supabase MCP — лише інспекція:
   `list_tables`, read-only `execute_sql`, `get_advisors`).
@@ -108,7 +115,7 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   (`pnpm db:generate-types`, `supabase/types.ts` руками не правиться);
   RLS-політики на кожній зачепленій таблиці; **жодного глобального
   supabase-singleton** — DI через `SupabaseProvider`/`useSupabaseClient` або
-  порти-репозиторії з `objects`; Zod-валідація входу на сервері; інвалідація
+  порти-репозиторії з `contracts`; Zod-валідація входу на сервері; інвалідація
   TanStack Query (стабільні `queryKey`, адекватний `staleTime`,
   `router.invalidate()`) відповідає тому, що змінили; типи БД проти реальних
   PostgREST-відповідей; N+1.
@@ -117,13 +124,13 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 
 | Зона | За чим перевіряти |
 | ---- | ----------------- |
-| `storefront-routes/routes/_storefront*` | SSR: route loaders, дані з `storefront-routes/src/server`, каркас `StorefrontShell`, SEO (`storefront-routes/src/seo`) |
-| `admin-routes/routes/*` | client-only: `ssr: false` **лише** на `admin.tsx` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
-| `storefront-routes/routes/{_protected*,auth,api}` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
-| `*/src/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
+| `simplycms/routes/storefront/_storefront*` | SSR: route loaders, дані з `src/storefront-routes/server`, каркас `StorefrontShell`, SEO (`src/storefront-routes/seo`) |
+| `simplycms/routes/admin/*` | client-only: `ssr: false` **лише** на `admin.tsx` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
+| `simplycms/routes/storefront/{_protected*,auth,api}` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
+| `src/server`, `src/storefront-routes/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
 | `routes.ts`, `src/routes/` | дерево збирає `virtualRouteConfig`; host тримає лише `__root.tsx` + `my/` (гард — `tests/virtual-routes-escape.test.ts`) |
-| `packages/*` | межі пакетів і напрям залежностей, публічні барелі, ліміт 150 рядків, відсутність прив'язки до `src/` |
-| `themes/*`, `plugins/*` | контракт теми v2 (`manifest+tokens+components`, без сторінок/лейаутів), реєстрація з `config.themes`, нуль бізнес-логіки й прямих запитів до БД |
+| `packages/simplycms/src/*` | напрям тірів (eslint-зони), публічні барелі й вхід у `exports`, ліміт 150 рядків, відсутність прив'язки до host-`src/` |
+| `themes/*`, `plugins/*` | контракт теми v3 (`manifest+tokens+components` + опційні `views`, без сторінок/лейаутів), реєстрація з `config.themes`, нуль бізнес-логіки й прямих запитів до БД |
 
 **Два правила для формулювання «як лагодити»:**
 

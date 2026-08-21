@@ -2,13 +2,17 @@
 
 Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
 
-**Ядро опубліковане на npmjs:** [`@simplycms/*@0.3.0`](https://www.npmjs.com/search?q=%40simplycms) — 25 пакетів
-(включно з CLI [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
-Plugin SDK [`@simplycms/plugin-sdk`](https://www.npmjs.com/package/@simplycms/plugin-sdk),
-референс-плагіном [`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq)
-і референс-темою [`@simplycms/theme-solarstore`](https://www.npmjs.com/package/@simplycms/theme-solarstore)
-— останні три їдуть у реєстр з мержем відповідної фази),
-плюс скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store) тієї ж версії.
+**Ядро постачається пʼятьма npm-пакетами** (трек К0): unscoped фреймворк
+`simplycms` — увесь двигун одним пакетом, шар береться субшляхом
+(`simplycms/ui`, `simplycms/plugin-sdk`, `simplycms/contracts/views`, …) —
+плюс сателіти [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
+[`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq),
+[`@simplycms/theme-solarstore`](https://www.npmjs.com/package/@simplycms/theme-solarstore)
+і скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store).
+Версія в усіх пʼятьох одна.
+🔴 У [реєстрі](https://www.npmjs.com/search?q=%40simplycms) поки лежить
+ПОПЕРЕДНЯ топологія (`@simplycms/*@0.3.0`, 25 пакетів) — нова їде з мержем
+гілки К0, після чого 22 злиті імені отримають `npm deprecate`.
 
 ## Vision: e-commerce platform
 
@@ -25,18 +29,18 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ `0.3.0`, 25 пакетів |
+| Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу К0) |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && pnpm start` |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
 | CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
-| Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `@simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
+| Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
 | Теми як npm-пакети | ✅ Фаза 4: `@simplycms/theme-solarstore` + copy-in + маркетплейс-контракт |
 
 Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
 обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
 доганянням host-файлів і донесенням міграцій (ядра і плагінів). Плагін — це
-`definePlugin` з `@simplycms/plugin-sdk`: слоти сторінок, власні таблиці
+`definePlugin` з `simplycms/plugin-sdk`: слоти сторінок, власні таблиці
 `plg_*` (міграції їдуть у пакеті), сторінки адмінки, Zod-настройки, власний
 каталог перекладів — механізм цілком описаний у
 [`docs/architecture/plugins.md`](docs/architecture/plugins.md). Тема — npm-пакет
@@ -55,9 +59,8 @@ pnpm create simplycms-store my-store
 cd my-store && pnpm install && pnpm build && pnpm start
 ```
 
-Скаффолдер розгортає повний каркас магазину (~74 файли: host-обвʼязка, міграції
-Supabase, дефолтна тема, референс-плагін) із версіями `@simplycms/*`, що
-відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
+Скаффолдер розгортає повний каркас магазину (host-обвʼязка, міграції
+Supabase, дефолтна тема) із версіями ядра, що відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
 `pnpm-workspace.yaml` везе `allowBuilds`, без якого install обривається.
 
 🔴 У перші 24 години після виходу нової версії ядра install упреться в
@@ -82,7 +85,7 @@ Supabase, дефолтна тема, референс-плагін) із вер�
 pnpm simplycms doctor            # діагностика: версії, env, host-файли, міграції, конфіг↔БД
 pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
-pnpm simplycms update --write    # оновити всі @simplycms/* + догнати host-файли
+pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
 pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff → supabase db push)
 ```
 
@@ -154,18 +157,23 @@ src/                      # Host — тонка збірка магазину, 1
   routes/__root.tsx       #   root route; routes/my/ — власні сторінки магазину
   server.ts · start.ts    #   server entry (SEO-інтерсептор) · middleware (admin guard)
   engine*.ts              #   DI-контекст ядра
-packages/       # Ядро CMS — публікується на npmjs
-  objects/                #   контракти + порти (0 deps)
-  domain/                 #   чиста логіка: pricing, discounts, inventory, shipping
-  schema/                 #   Drizzle-схема ядра + RLS у TS
-  supabase/               #   клієнти + baseline типів БД
-  storefront-routes/      #   роути вітрини + канонічні сторінки + SEO
-  admin-routes/ admin/    #   роути адмінки + її сторінки
-  themes/ plugins/        #   ThemeRegistry · HookRegistry, PluginSlot, validatePluginModule
-  plugin-sdk/             #   definePlugin + порти плагінів (docs/architecture/plugins.md)
-  simplycms-plugin-faq/   #   референс-плагін повного контуру (@simplycms/plugin-faq)
-  ui/ *-ui/               #   shadcn-примітиви + feature-UI
-  cli/                    #   simplycms CLI: doctor/add/create (plugin|theme)/update/db:diff (docs/architecture/cli.md)
+packages/       # Публіковані пакети — рівно пʼять
+  simplycms/              # ФЛАГМАН: увесь двигун, тіри T0→T5 теками src/*
+    src/contracts/        #   контракти + порти (0 deps) + view-model-и вітрини
+    src/domain/           #   чиста логіка: pricing, discounts, inventory, shipping
+    src/schema/           #   Drizzle-схема ядра + RLS у TS
+    src/supabase/         #   клієнти + baseline типів БД
+    src/storefront-routes/#   канонічні сторінки (pages/ + views/) + shells + SEO
+    src/admin/            #   сторінки й компоненти адмінки
+    src/themes/ plugins/  #   ThemeRegistry · HookRegistry, PluginSlot, validatePluginModule
+    src/plugin-sdk/       #   definePlugin + порти плагінів (docs/architecture/plugins.md)
+    src/ui/ *-ui/         #   shadcn-примітиви + feature-UI
+    routes/{storefront,admin}/  #   роут-файли — монтуються physical()
+    migrations/ skills/   #   канон core-міграцій · агентні скіли для магазинів
+  cli/                    # simplycms CLI: doctor/add/create (plugin|theme)/update/db:diff (docs/architecture/cli.md)
+  simplycms-plugin-faq/   # референс-плагін повного контуру (@simplycms/plugin-faq)
+  simplycms-theme-solarstore/  # референс-тема повного контуру (@simplycms/theme-solarstore)
+  create-simplycms-store/ # скаффолдер + вбудований шаблон магазину
 themes/ plugins/          # Референсні теми й локальні плагіни магазину (@plugins/*)
 supabase/                 # Міграції, seed, згенеровані типи, edge functions
 scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз

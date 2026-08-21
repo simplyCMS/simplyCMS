@@ -7,7 +7,7 @@ description: 'Команди, форматування, тестування т�
 
 ## Package Manager
 - **pnpm** (v11.x) — єдиний пакетний менеджер. 🔴 Усі налаштування pnpm живуть у `pnpm-workspace.yaml`: з v11 поле `pnpm` у `package.json` мовчки ігнорується, а `.npmrc` читається лише для auth і registry.
-- Workspace: `packages/*`, `themes/*`, `plugins/*` — усі публіковані пакети (ядро + скаффолдер) лежать в одній теці `packages/`.
+- Workspace: `packages/*`, `themes/*`, `plugins/*` — усі публіковані пакети лежать в одній теці `packages/`. Після К0 їх рівно пʼять: unscoped флагман `simplycms` (усе ядро теками `src/*`), `@simplycms/cli`, `@simplycms/theme-solarstore`, `@simplycms/plugin-faq`, `create-simplycms-store`.
 - Не використовуй `npm` або `yarn`.
 
 ## Основні команди
@@ -41,7 +41,7 @@ pnpm db:pull                # Інтроспекція живої БД → Drizz
 pnpm db:diff <name>         # schema.ts → SQL у supabase/migrations (ревʼю обовʼязкове!)
 pnpm db:migrate             # Застосувати міграції (supabase link + db push + типи)
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase → supabase/types.ts
-pnpm types:baseline         # Снапшот CORE-типів → packages/supabase/src/database.ts
+pnpm types:baseline         # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```
 
 🔴 **`supabase/seed.sql` — ГЕНЕРАТ, руками не правиться.** Джерело правди —
@@ -54,28 +54,38 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/supaba
 
 🔴 **Типів БД у репо ДВА файли.** `supabase/types.ts` — генерат МАГАЗИНУ
 (core + таблиці встановлених плагінів), проти нього типізується host-код.
-`packages/supabase/src/database.ts` — **baseline** core-схеми, проти
+`packages/simplycms/src/supabase/database.ts` — **baseline** core-схеми, проти
 якого типізуються пакети ядра; оновлюється `pnpm types:baseline` і ЛИШЕ з
 еталонної dev-БД без плагінів, після кожної core-міграції. Обидва — генерати:
 руками не редагуються, у `.prettierignore`. Магазин звужує клієнти до своїх
 типів через generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) —
-див. `packages/supabase/README.md`.
+див. `packages/simplycms/src/supabase/README.md`.
 
 ## Конфігурація
 
 ### TypeScript
 - Strict mode увімкнено.
 - Path aliases (повний перелік — `tsconfig.json` + дзеркало у `vite.config.ts`):
-  - `@simplycms/*` → `packages/*/src` (objects, domain, data-supabase,
-    react-query, core, admin, ui, plugins → plugin-system, themes → theme-system,
-    storefront, storefront-routes, runtime, supabase, i18n, cart-ui, catalog-ui,
-    checkout-ui, profile-ui, reviews-ui)
+  - `simplycms` / `simplycms/*` → `packages/simplycms/src` / `packages/simplycms/src/*`
+    — 🔴 ОДНА пара покриває весь T0–T5: аліасів злитих пакетів після К0 немає,
+    конкретний шар — це субшлях (`simplycms/contracts`, `simplycms/ui`,
+    `simplycms/themes/conformance`, …)
+  - `@simplycms/theme-solarstore`, `@simplycms/plugin-faq` → `packages/simplycms-*/src`
+    (сателіти; `@simplycms/cli` аліаса не має — bin-інструмент)
   - `@themes/*` → `themes/*`
   - `@plugins/*` → `plugins/*`
+  🔴 У Vite/vitest ключ ОДИН — `simplycms` (base-prefix): `@rollup/plugin-alias`
+  матчить і корінь, і субшляхи, але **не** `simplycms-*`, тож сторонні
+  `simplycms-theme-*`/`simplycms-plugin-*` не перехоплюються.
 
 ### ESLint
 - Flat config (`eslint.config.mjs`): typescript-eslint + eslint-plugin-react-hooks.
 - `src/routeTree.gen.ts` виключено з лінтингу (автогенерований).
+- 🔴 Тір-зони ядра — `eslint.tier-zones.mjs` + `eslint.tier-relative.mjs`
+  (трек К0): імпорт УГОРУ по тірах усередині пакета `simplycms` — error,
+  в обох формах специфікатора (bare-субшлях `simplycms/<тека>` і відносний
+  `../<тека>`). Після злиття пакетів межу `dependencies` не тримає ніщо, тож
+  селектори не послаблювати; негативний контроль — `tests/tier-boundary.test.ts`.
 
 ### Vite / TanStack Start
 - `vite.config.ts`: `tanstackStart({ router.virtualRouteConfig, server.entry })` + `tailwindcss()`.

@@ -51,7 +51,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 **Перевір відповідність патернам:**
 
 - **Package Structure:**
-  - [ ] Код розміщено у правильному пакеті (@simplycms/core, admin, ui, plugins, themes)
+  - [ ] Код розміщено в правильній теці ядра (`simplycms/{ui,*-ui,admin,core,plugins,themes}`) і не порушує напрям тірів T0→T5
   - [ ] Бізнес-логіка НЕ в темах (теми — лише візуалізація)
   - [ ] Відсутність circular dependencies між пакетами
 

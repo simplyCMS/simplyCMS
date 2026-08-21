@@ -8,7 +8,7 @@ description: 'Правила оптимізації для SimplyCMS'
 ## SSR & Caching (Storefront)
 
 - Cross-request кешування серверних даних — in-memory TTL у `createServerFn`-хендлерах
-  (еталон: `@simplycms/storefront-routes/src/server/themes.ts`, 5 хв TTL для активної теми).
+  (еталон: `packages/simplycms/src/storefront-routes/server/themes.ts`, 5 хв TTL для активної теми).
 - Router-рівень: `staleTime` для loader-даних; інвалідація через `router.invalidate()`.
 - Lazy loading зображень (`loading="lazy"`) + явні розміри проти CLS.
 - Schema.org structured data для товарних сторінок (SEO).

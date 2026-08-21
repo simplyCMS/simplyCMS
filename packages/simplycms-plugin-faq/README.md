@@ -1,7 +1,7 @@
 # @simplycms/plugin-faq
 
 Референс-плагін SimplyCMS **повного контуру SDK**: демонструє все, що вміє
-`@simplycms/plugin-sdk`, і слугує acceptance-фікстурою механізмів Фази 3.
+`simplycms/plugin-sdk`, і слугує acceptance-фікстурою механізмів Фази 3.
 
 | Поверхня | Тут |
 |----------|-----|
