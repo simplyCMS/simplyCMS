@@ -46,7 +46,7 @@ export function renderTemplate(tpl, { storeName, version }) {
  * @property {string} templateDir
  * @property {string} targetDir
  * @property {string} storeName Імʼя npm-пакета магазину.
- * @property {string} version Версія пакетів `@simplycms/*`.
+ * @property {string} version Версія пакетів ядра (`simplycms`, `@simplycms/*`).
  * @property {string} [supabaseUrl]
  * @property {string} [supabaseKey]
  */

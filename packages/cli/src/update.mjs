@@ -1,14 +1,16 @@
 // simplycms update [--check | --write] [--to <version>] [--no-install] —
-// сценарій 2 батьківської спеки (§4.3): підняти всі @simplycms/* магазину на
-// цільову версію (deps і devDeps окремо, шаблон пінить точні версії) і
-// догнати host-файли до канону з теки host/ цього пакета.
+// сценарій 2 батьківської спеки (§4.3): підняти всі пакети ядра магазину
+// (`simplycms` + сателіти) на цільову версію (deps і devDeps окремо, шаблон
+// пінить точні версії), полагодити лінки агентних скілів і догнати
+// host-файли до канону з теки host/ цього пакета.
 import { execFileSync } from 'node:child_process';
-import { readStoreManifest, findStoreRoot } from './context.mjs';
+import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
 import {
   CANON_HOST_DIR,
   findHostDrift,
   writeHostFiles,
 } from './host-drift.mjs';
+import { syncSkillLinks } from './skill-links.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
 /** @param {string[]} argv */
@@ -69,8 +71,9 @@ export function resolveTargetVersion(to, query = queryRegistryVersion) {
 }
 
 /**
- * Специфікації `pnpm add` для всіх @simplycms/* манифеста: deps і devDeps
- * ОКРЕМО — devDeps ставляться через `pnpm add -D`, інакше переїдуть у deps.
+ * Специфікації `pnpm add` для всіх пакетів ядра манифеста — unscoped
+ * `simplycms` і scoped сателітів (`isCorePackage`): deps і devDeps ОКРЕМО —
+ * devDeps ставляться через `pnpm add -D`, інакше переїдуть у deps.
  * @param {{ dependencies?: Record<string, string>;
  *   devDependencies?: Record<string, string> }} manifest
  * @param {string} version
@@ -78,7 +81,7 @@ export function resolveTargetVersion(to, query = queryRegistryVersion) {
 export function planCoreInstall(manifest, version) {
   const pick = (source) =>
     Object.keys(source ?? {})
-      .filter((name) => name.startsWith('@simplycms/'))
+      .filter(isCorePackage)
       .sort()
       .map((name) => `${name}@${version}`);
   return {
@@ -113,6 +116,9 @@ export async function run(argv) {
   } else {
     say.info('--no-install: пакети не чіпаю, лише host-файли.');
   }
+  // Лінки скілів лагодяться завжди й тихо: на exit-код вони не впливають,
+  // бо після цього кроку стану «є що зробити» не лишається.
+  syncSkillLinks(storeRoot);
   const { files, drifted } = findHostDrift(storeRoot);
   if (files.length === 0)
     throw new Error(

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { intro, log, outro } from '@clack/prompts';
 import { resolveOptions } from './args.mjs';
 import { scaffold } from './scaffold.mjs';
+import { linkSkills } from './skill-links.mjs';
 import {
   initGit,
   installDeps,
@@ -18,7 +19,7 @@ import {
 const TEMPLATE_DIR = fileURLToPath(new URL('../template', import.meta.url));
 const PACKAGE_JSON = fileURLToPath(new URL('../package.json', import.meta.url));
 
-/** Версія пакетів `@simplycms/*` = версія самого скаффолдера (реліз синхронний). */
+/** Версія пакетів ядра = версія самого скаффолдера (реліз синхронний). */
 function readVersion() {
   return JSON.parse(readFileSync(PACKAGE_JSON, 'utf8')).version;
 }
@@ -68,12 +69,18 @@ async function main() {
   log.success(`Магазин «${storeName}» розгорнуто: ${targetDir}`);
 
   const installed = options.install ? installDeps(targetDir) : false;
+  // Лінки скілів — саме тут, після install: див. коментар у skill-links.mjs.
+  // git init після них, щоб лінки потрапили в перший коміт магазину.
+  const skills = linkSkills(targetDir, installed);
+  if (skills.created.length > 0)
+    log.success(`Скіли для агентів підключено: ${skills.created.join(', ')}`);
   if (options.git) initGit(targetDir);
 
   printNextSteps({
     dirLabel: options.storeName,
     installed,
     hasEnv: Boolean(options.supabaseUrl && options.supabaseKey),
+    skillsPending: skills.pending,
   });
   outro('Готово.');
 }

@@ -96,14 +96,16 @@ describe('create-store CLI', () => {
     ).toThrow(/--supabase-key потребує значення/);
   });
 
-  it('renderTemplate підставляє імʼя і версію в усі @simplycms/*', () => {
+  it('renderTemplate підставляє імʼя і версію в пакети ядра', () => {
     const tpl =
-      '{"name":"__STORE_NAME__","dependencies":{"@simplycms/ui":"__SIMPLYCMS_VERSION__"}}';
+      '{"name":"__STORE_NAME__","dependencies":{"simplycms":"__SIMPLYCMS_VERSION__"},' +
+      '"devDependencies":{"@simplycms/cli":"__SIMPLYCMS_VERSION__"}}';
     const out = JSON.parse(
       renderTemplate(tpl, { storeName: 'shop', version: '0.1.0' }),
     );
     expect(out.name).toBe('shop');
-    expect(out.dependencies['@simplycms/ui']).toBe('0.1.0');
+    expect(out.dependencies.simplycms).toBe('0.1.0');
+    expect(out.devDependencies['@simplycms/cli']).toBe('0.1.0');
   });
 
   it('scaffold: перейменовує tpl/gitignore/env.example і пише .env.local', async () => {
@@ -134,12 +136,15 @@ describe('create-store CLI', () => {
     // 🔴 СПРАВЖНІЙ `package.json.tpl`, а не синтетичний рядок: файл рукописний
     // (`template:sync` його не чіпає), тож літеральна версія, дописана рукою
     // разом із новою залежністю, інакше доїхала б у реліз — магазин ставив би
-    // `@simplycms/ui@0.1.0` поруч із двадцятьма `@simplycms/*@0.2.0`.
-    // Секції ДВІ: `@simplycms/cli` живе в devDependencies — перевірка лише
-    // dependencies пропустила б рукописний літерал саме там.
+    // `simplycms@0.1.0` поруч із `@simplycms/cli@0.2.0`.
+    // Секції ДВІ: ядро — unscoped `simplycms` у dependencies, CLI лишається
+    // scoped-сателітом у devDependencies; перевірка однієї секції пропустила
+    // б рукописний літерал у другій.
     for (const section of ['dependencies', 'devDependencies'] as const) {
       const core = Object.entries(manifest[section] as Record<string, string>)
-        .filter(([name]) => name.startsWith('@simplycms/'))
+        .filter(
+          ([name]) => name === 'simplycms' || name.startsWith('@simplycms/'),
+        )
         .map(([, range]) => range);
       expect(core.length).toBeGreaterThan(0);
       expect(core).toEqual(core.map(() => '9.9.9-sentinel'));

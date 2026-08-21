@@ -227,12 +227,12 @@ export const routes = rootRoute('__root.tsx', [
 ]);
 ```
 
-- [ ] **Step 1 (RED):** parity-тест: «шаблон БЕЗ `template/.claude/`», «deps == `simplycms` (+зовнішні), без `plugin-faq`», «`template/routes.ts` монтує `simplycms/routes/{storefront,admin}`» — червоний на чинному шаблоні.
-- [ ] **Step 2:** шаблон за списком Files + `pnpm template:sync`; parity зелений.
-- [ ] **Step 3 (RED→GREEN):** юніт `createSkillLinks` (стаб `node_modules/simplycms/skills/x/SKILL.md` у tmp; обидва лінки резолвляться) → реалізація + виклик після install → зелений.
-- [ ] **Step 4 (RED→GREEN):** CLI: юніти на `planCoreInstall` з `simplycms`, `schemaMigrationsPath`, doctor-перевірки (route/tailwind/лінки), reconcile в `update` — розширити чинні `tests/cli-*`.
-- [ ] **Step 5:** O1 — за рекомендацією спеки: обидві теки лінків завжди, БЕЗ сіду `AGENTS.md`/`CLAUDE.md` (власник може перевизначити до виконання).
-- [ ] **Step 6:** повний ланцюг. Commit: `feat(k0): шаблон/скаффолдер/CLI під топологію 5 + симлінкова доставка скілів`.
+- [x] **Step 1 (RED):** parity-тест: «шаблон БЕЗ `template/.claude/`», «deps == `simplycms` (+зовнішні), без `plugin-faq`», «`template/routes.ts` монтує `simplycms/routes/{storefront,admin}`» — червоний на чинному шаблоні.
+- [x] **Step 2:** шаблон за списком Files + `pnpm template:sync`; parity зелений.
+- [x] **Step 3 (RED→GREEN):** юніт `createSkillLinks` (стаб `node_modules/simplycms/skills/x/SKILL.md` у tmp; обидва лінки резолвляться) → реалізація + виклик після install → зелений.
+- [x] **Step 4 (RED→GREEN):** CLI: юніти на `planCoreInstall` з `simplycms`, `schemaMigrationsPath`, doctor-перевірки (route/tailwind/лінки), reconcile в `update` — розширити чинні `tests/cli-*`.
+- [x] **Step 5:** O1 — за рекомендацією спеки: обидві теки лінків завжди, БЕЗ сіду `AGENTS.md`/`CLAUDE.md` (власник може перевизначити до виконання).
+- [x] **Step 6:** повний ланцюг. Commit: `feat(k0): шаблон/скаффолдер/CLI під топологію 5 + симлінкова доставка скілів`.
 
 ### Task 7: Пілот — гейти під unscoped + FAQ-контур + нові інваріанти
 

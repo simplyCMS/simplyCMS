@@ -1,5 +1,5 @@
 // simplycms db:diff [--write] — порівняння міграцій магазину з N КАНОНАМИ
-// (Фаза 3, Р4): ядро (@simplycms/schema/migrations) + кожен встановлений
+// (Фаза 3, Р4): ядро (simplycms/migrations) + кожен встановлений
 // плагін із конфігу, що везе migrations/ у пакеті. Нові міграції — список і
 // копіювання під --write (forward-only); власні (невідомі ЖОДНОМУ канону) —
 // інформаційно; спільне імʼя з різним вмістом — error і жодного запису
@@ -23,16 +23,22 @@ import { begin, finish, say, showSteps } from './ui.mjs';
 export const storeMigrationsDir = (storeRoot) =>
   join(storeRoot, 'supabase', 'migrations');
 
-/** Тека міграцій встановленого ядра (tarball @simplycms/schema). */
+/**
+ * Тека міграцій встановленого ядра.
+ *
+ * 🔴 Саме `node_modules/simplycms/migrations` — міграції лежать на РІВНІ
+ * пакета (`files: [… "migrations"]`), а не в підтеці схеми: після злиття
+ * пакетів (трек К0) `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
+ */
 export const schemaMigrationsPath = (storeRoot) =>
-  join(storeRoot, 'node_modules', '@simplycms', 'schema', 'migrations');
+  join(storeRoot, 'node_modules', 'simplycms', 'migrations');
 
 /** Та сама тека, але з гучною перевіркою наявності — для команди db:diff. */
 export function assertSchemaMigrations(storeRoot) {
   const dir = schemaMigrationsPath(storeRoot);
   if (!existsSync(dir))
     throw new Error(
-      `Не знайдено ${dir}: встановлений @simplycms/schema не везе migrations/ — ` +
+      `Не знайдено ${dir}: встановлений пакет simplycms не везе migrations/ — ` +
         'це стара версія ядра. Онови його (pnpm simplycms update) і повтори.',
     );
   return dir;
@@ -227,7 +233,7 @@ export async function run(argv) {
   const sources = [
     {
       name: null,
-      spec: '@simplycms/schema',
+      spec: 'simplycms',
       dir: assertSchemaMigrations(storeRoot),
     },
     ...pluginMigrationSources(storeRoot),

@@ -29,19 +29,31 @@ export function readStoreManifest(storeRoot) {
   }
 }
 
-/** Усі `@simplycms/*`-залежності манифеста (dependencies + devDependencies). */
+/**
+ * Чи це пакет ядра — тобто той, що йде в релізному потязі SimplyCMS.
+ *
+ * 🔴 Дві форми, і обидві обовʼязкові (топологія 5, трек К0): сам фреймворк —
+ * UNSCOPED `simplycms`, сателіти (CLI, референс-тема, референс-плагін) —
+ * scoped `@simplycms/*`. Імʼя `simplycms` перевіряється ТОЧНО: префіксом воно
+ * зачепило б `simplycms-theme-aurora` — сторонню тему з власним циклом релізу.
+ * @param {string} name
+ */
+export const isCorePackage = (name) =>
+  name === 'simplycms' || name.startsWith('@simplycms/');
+
+/** Усі залежності ядра в манифесті (dependencies + devDependencies). */
 export function coreDependencies(manifest) {
   /** @type {Record<string, string>} */
   const core = {};
   for (const source of [manifest.dependencies, manifest.devDependencies]) {
     for (const [name, range] of Object.entries(source ?? {})) {
-      if (name.startsWith('@simplycms/')) core[name] = range;
+      if (isCorePackage(name)) core[name] = range;
     }
   }
   return core;
 }
 
-/** Магазинний маркер: `package.json` із залежностями `@simplycms/*`. */
+/** Магазинний маркер: `package.json` із залежностями ядра. */
 function isStoreRoot(dir) {
   if (!existsSync(join(dir, 'package.json'))) return false;
   return Object.keys(coreDependencies(readStoreManifest(dir))).length > 0;
@@ -50,9 +62,9 @@ function isStoreRoot(dir) {
 /**
  * Маркер кореня монорепо ядра: обидва файли САМЕ поруч — `pnpm-workspace.yaml`
  * сам по собі є в будь-якому pnpm-монорепо, а `simplycms.config.ts` робить
- * його монорепо SimplyCMS. Залежностей `@simplycms/*` у кореневому манифесті
- * монорепо рівно нуль (пакети живуть у workspace), тож магазинний маркер його
- * не бачить.
+ * його монорепо SimplyCMS. Залежностей ядра в кореневому манифесті монорепо
+ * рівно нуль (пакети живуть у workspace), тож магазинний маркер його не
+ * бачить.
  */
 function isMonorepoRoot(dir) {
   return (
@@ -71,7 +83,7 @@ function findRoot(cwd, allowMonorepo) {
     if (parent === dir) {
       throw new Error(
         `Корінь магазину не знайдено: від ${resolve(cwd)} і вище немає ` +
-          'package.json із залежностями @simplycms/*' +
+          'package.json із залежностями ядра (simplycms / @simplycms/*)' +
           (allowMonorepo
             ? ', ні пари pnpm-workspace.yaml + simplycms.config.ts ' +
               '(корінь монорепо ядра). Запусти команду в магазині SimplyCMS ' +

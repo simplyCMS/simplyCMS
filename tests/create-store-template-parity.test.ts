@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -8,6 +8,7 @@ import {
   SYNCED_FILES,
   TEMPLATE_DIR,
 } from '../scripts/sync-create-store-template.mjs';
+import { BUNDLED_SKILLS } from '../packages/create-simplycms-store/src/skill-links.mjs';
 
 // Шаблон create-simplycms-store — генерат: дрейф із монорепо лагодиться
 // `pnpm template:sync`, а не руками (модель tests/pilot-seed.test.ts).
@@ -124,5 +125,75 @@ describe('create-store template: парність із монорепо', () => 
     expect(Object.keys(tpl.devDependencies).sort()).toEqual(
       Object.keys(pilot.devDependencies).sort(),
     );
+  });
+
+  // 🔴 Топологія 5 (трек К0): магазин ставить ОДИН пакет ядра — unscoped
+  // `simplycms`. Будь-який `@simplycms/*` у dependencies шаблону означає,
+  // що злитий пакет ожив рукою: install дав би два інстанси ядра.
+  it('deps шаблону — рівно один пакет ядра, unscoped simplycms', () => {
+    const tpl = JSON.parse(
+      read(join(TEMPLATE_DIR, 'package.json.tpl'))
+        .replaceAll('__SIMPLYCMS_VERSION__', '0.0.0')
+        .replaceAll('__STORE_NAME__', 'x'),
+    );
+    expect(tpl.dependencies.simplycms).toBe('0.0.0');
+    expect(
+      Object.keys(tpl.dependencies).filter((name) =>
+        name.startsWith('@simplycms/'),
+      ),
+    ).toEqual([]);
+    // ПК7: FAQ — референс-плагін, а не частина стартового магазину.
+    expect(tpl.dependencies['@simplycms/plugin-faq']).toBeUndefined();
+    expect(read(join(TEMPLATE_DIR, 'simplycms.config.ts'))).not.toContain(
+      'plugin-faq',
+    );
+    // CLI лишається scoped-сателітом і живе в devDependencies.
+    expect(tpl.devDependencies['@simplycms/cli']).toBe('0.0.0');
+  });
+
+  // routes.ts магазину монтує роут-теки ОДНОГО пакета підшляхами, а не два
+  // окремі route-пакети; `realpathSync` лишається (без нього роути мовчки
+  // втрачають code-splitting).
+  it('routes.ts шаблону монтує simplycms/routes/{storefront,admin}', () => {
+    const source = read(join(TEMPLATE_DIR, 'routes.ts'));
+    expect(source).toContain('realpathSync');
+    expect(source).toContain("'simplycms'");
+    expect(source).toContain("coreRoutes('storefront')");
+    expect(source).toContain("coreRoutes('admin')");
+    expect(source).not.toContain('@simplycms/storefront-routes');
+    expect(source).not.toContain('@simplycms/admin-routes');
+    expect(source).not.toContain('plugin-faq');
+  });
+
+  // Tailwind магазину має бачити класи ядра з ОДНОГО пакета; scoped-глоби
+  // лишаються — ними живуть npm-теми й плагіни сателітів і сторонніх.
+  it('tailwind.config.ts шаблону сканує dist і routes пакета simplycms', () => {
+    const source = read(join(TEMPLATE_DIR, 'tailwind.config.ts'));
+    expect(source).toContain('./node_modules/simplycms/dist/**/*.js');
+    expect(source).toContain('./node_modules/simplycms/routes/**/*.{ts,tsx}');
+    expect(source).toContain('./node_modules/@simplycms/*/dist/**/*.js');
+  });
+
+  // Скіли їдуть у магазин СИМЛІНКАМИ на `node_modules/simplycms/skills/`
+  // (створює скаффолдер, лагодить `simplycms update`) — копії в шаблоні
+  // більше немає, інакше магазин ніс би форк скіла, що старіє мовчки.
+  it('шаблон не несе копії скілів', () => {
+    expect(existsSync(join(TEMPLATE_DIR, '.claude'))).toBe(false);
+    expect(existsSync(join(TEMPLATE_DIR, '.agents'))).toBe(false);
+    expect(SYNCED_DIRS.some(({ to }) => to.includes('skills'))).toBe(false);
+  });
+
+  // Список скілів у скаффолдері — резерв на випадок «install пропущено»
+  // (теки node_modules ще немає, а лінк створюється наперед). Дрейф проти
+  // теки пакета зробив би резерв мовчки неповним.
+  it('BUNDLED_SKILLS скаффолдера збігається зі skills/ пакета', () => {
+    const packaged = readdirSync('packages/simplycms/skills', {
+      withFileTypes: true,
+    })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    expect(packaged.length).toBeGreaterThan(0);
+    expect([...BUNDLED_SKILLS].sort()).toEqual(packaged);
   });
 });

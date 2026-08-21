@@ -53,13 +53,9 @@ const EXPECTED_FILES = [
   // Вміст стереже tests/create-store-cli.test.ts; тут — сам факт потрапляння
   // у tarball, бо `files` у манифесті легко звузити випадково.
   'pnpm-workspace.yaml',
-  // 🔴 Тулінг редизайну за референсом: скіл лежить у DOT-теці `.claude/`, а
-  // npm при паці обробляє dot-імена окремими правилами — саме тому доставку
-  // перевіряємо тут, по розпакованому tarball-у, а не по теці шаблону в репо.
-  // Скрипти — другий бік тієї ж пари: без них скіл у магазині безпорадний.
-  '.claude/skills/redesign-from-reference/SKILL.md',
-  '.claude/skills/redesign-from-reference/scripts/inspect.mjs',
-  '.claude/skills/redesign-from-reference/scripts/discover.mjs',
+  // 🔴 Скілів у шаблоні НЕМАЄ (трек К0): вони їдуть текою `skills/` пакета
+  // `simplycms`, а магазин отримує симлінки від скаффолдера. Інваріанти
+  // доставки скілів — окремим кроком гейта (Task 7 плану К0).
 ];
 
 /**
