@@ -18,6 +18,7 @@
     "lint": "pnpm exec eslint .",
     "lint:fix": "pnpm exec eslint . --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:template": "tsc -p tsconfig.template.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

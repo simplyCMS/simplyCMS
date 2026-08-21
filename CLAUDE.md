@@ -115,7 +115,8 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
 **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-build → typecheck → test → build:packages → test:packaging`.
+build → typecheck → test → build:packages → typecheck:template →
+test:packaging`.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
@@ -128,6 +129,17 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 без `pnpm build:packages` перед ним `pnpm test:packaging` не має що перевіряти.
 гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
 червоніє.
+
+🔴 **`typecheck:template` — окремий гейт, і саме після `build:packages`.**
+Кореневий `tsconfig.json` ВИКЛЮЧАЄ `packages/create-simplycms-store/template`
+(його імпорти резолвляться з `node_modules` магазину, не workspace-аліасами),
+тому `pnpm typecheck` шаблону не бачить. Розрив був не теоретичний: помилка
+типів у `template/routes.ts` проходила `tsc`, `lint`, `test`, `build:packages`
+і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого в CI
+немає. `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
+що бачить магазин), тому потребує `build:packages` перед собою. Список файлів
+під ним стереже `tests/template-typecheck-coverage.test.ts`.
+
 `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
 репозиторій** (`prettier --write .` / `--check .`), а не лише `src/**`.
 Що НЕ форматується — у `.prettierignore`: згенерований машиною код

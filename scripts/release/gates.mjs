@@ -15,6 +15,11 @@ export const GATES = [
   { name: 'typecheck', cmd: 'pnpm typecheck' },
   { name: 'test', cmd: 'pnpm test' },
   { name: 'build:packages', cmd: 'pnpm build:packages' },
+  // 🔴 Після `build:packages`, бо типізує шаблон проти зібраного `dist` —
+  // рівно того, що бачить магазин. Кореневий `typecheck` шаблон не бачить
+  // (він виключений із `tsconfig.json`), тож без цього кроку в реєстр їде
+  // шаблон, з якого магазин може не зібратись.
+  { name: 'typecheck:template', cmd: 'pnpm typecheck:template' },
   { name: 'test:packaging', cmd: 'pnpm test:packaging' },
 ];
 

@@ -106,6 +106,13 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/simply
 - `tests/published-exports-parity.test.ts` — guard паритету dev/publish exports пакетів.
   Він **виключений** із `pnpm test` (`test.exclude` у `vitest.config.ts`), бо працює по
   зібраних tarball-ах: запускати `pnpm build:packages && pnpm test:packaging`.
+- 🔴 `pnpm typecheck:template` — між ними. Кореневий `tsconfig.json` виключає
+  `packages/create-simplycms-store/template`, тож `pnpm typecheck` шаблону НЕ
+  бачить: помилка типів у `template/routes.ts` проходить усі інші гейти
+  зеленими, а магазин із такого шаблону не збирається. Гейт типізує шаблон
+  проти зібраного `dist` — того самого, що бачить магазин, — тому йде після
+  `build:packages`. Покриття списку файлів стереже
+  `tests/template-typecheck-coverage.test.ts`.
 
 ## Змінні оточення
 

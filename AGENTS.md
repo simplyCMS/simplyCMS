@@ -37,7 +37,8 @@ All coding rules, architecture decisions, and best practices are maintained in `
 - **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
   (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
 - **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-  build → typecheck → test → build:packages → test:packaging` — `build` перед
+  build → typecheck → test → build:packages → typecheck:template →
+  test:packaging` — `build` перед
   `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме `format:check`
   (`pnpm format` — це `--write`, він не червоніє). Обидві команди покривають увесь
   репозиторій; винятки — у `.prettierignore` (машинний генерат, артефакти збірки,
