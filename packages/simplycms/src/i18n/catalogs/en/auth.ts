@@ -15,6 +15,7 @@ export const messages: Catalog = {
   'auth.setPassword.backToAuth': 'Go to sign in',
   'auth.setPassword.error': 'Could not save the password. Please try again.',
 
+  'auth.brand': 'SimplyCMS Store',
   'auth.tagline': 'Renewable energy for your home',
   'auth.login.title': 'Sign in',
   'auth.login.subtitle': 'Sign in to access your account',

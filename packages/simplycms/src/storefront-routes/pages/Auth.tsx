@@ -239,7 +239,7 @@ export default function Auth() {
               <Zap className="h-8 w-8 text-primary-foreground" />
             </div>
             <span className="text-2xl font-bold text-foreground">
-              SolarStore
+              {t('auth.brand')}
             </span>
           </div>
           <p className="text-muted-foreground">{t('auth.tagline')}</p>

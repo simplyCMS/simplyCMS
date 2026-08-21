@@ -16,7 +16,7 @@ export const messages = {
 
   'admin.dashboard.aboutTitle': 'Про систему управління',
   'admin.dashboard.aboutText':
-    'Ласкаво просимо до адмін-панелі SolarStore CMS. Тут ви можете керувати каталогом товарів, обробляти замовлення та налаштовувати систему.',
+    'Ласкаво просимо до адмін-панелі SimplyCMS. Тут ви можете керувати каталогом товарів, обробляти замовлення та налаштовувати систему.',
   'admin.dashboard.version': 'Версія CMS:',
   'admin.dashboard.status': 'Статус:',
 } as const;

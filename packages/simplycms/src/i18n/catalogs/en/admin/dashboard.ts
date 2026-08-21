@@ -18,7 +18,7 @@ export const messages: Catalog = {
 
   'admin.dashboard.aboutTitle': 'About this CMS',
   'admin.dashboard.aboutText':
-    'Welcome to the SolarStore CMS admin panel. Here you can manage the product catalog, process orders and configure the system.',
+    'Welcome to the SimplyCMS admin panel. Here you can manage the product catalog, process orders and configure the system.',
   'admin.dashboard.version': 'CMS version:',
   'admin.dashboard.status': 'Status:',
 };
