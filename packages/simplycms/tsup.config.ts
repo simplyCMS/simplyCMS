@@ -19,7 +19,14 @@ const external = [/^simplycms(\/|$)/, /^@simplycms\//];
 // раз, до запуску tsup.
 const base = {
   format: ['esm'],
-  dts: { tsconfig: './tsconfig.json' },
+  dts: true,
+  // 🔴 Валідна форма — ТОП-РІВНЕВИЙ `tsconfig` (тип `string`). Вкладений
+  // `dts: { tsconfig }` типу `DtsConfig` не має: до 2026-08-21 він жив тут
+  // німим no-op-ом, бо tsup і так вантажить `./tsconfig.json` із cwd (а
+  // `build:packages` запускає його з теки пакета). Явний ключ робить вибір
+  // конфігу незалежним від cwd; помилку тепер ловить `pnpm typecheck`
+  // (tsup-конфіги знято з `exclude` кореневого tsconfig).
+  tsconfig: './tsconfig.json',
   sourcemap: true,
   treeshake: true,
   clean: false,

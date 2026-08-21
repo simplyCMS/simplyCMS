@@ -11,8 +11,9 @@
  * встановиться → `ERR_MODULE_NOT_FOUND` у споживача.
  *
  * Скрипт для КОЖНОГО пакета `packages/*`:
- *   1) сканує ВСІ publish-root-и — `src/` **і** `routes/` (route-пакети
- *      везуть `routes/` сирцями);
+ *   1) сканує ВСІ publish-root-и — `src/`, `routes/` (route-пакети везуть
+ *      `routes/` сирцями) і `skills/` (скіли виконуються з
+ *      `node_modules/simplycms/`); список — `PUBLISH_ROOTS` у collect.mjs;
  *   2) збирає ВСІ bare-імпорти — і сиблінги `@simplycms/*`, і зовнішні
  *      (`@tanstack/*`, `@tiptap/*`, `lucide-react`, `zod`, `@supabase/*`, …);
  *   3) нормалізує subpath до імені пакета, відкидає `node:*`/вбудовані;
@@ -30,6 +31,7 @@ import {
   toPackageName,
 } from './audit-deps/classify.mjs';
 import {
+  PUBLISH_ROOTS,
   collectImports,
   collectPackages,
   collectRootVersions,
@@ -122,7 +124,7 @@ if (isMain) {
   const { scanned, packages, missing } = runAudit();
 
   console.log(
-    `[audit-deps] Проскановано ${scanned} bare-імпорт(ів) у ${packages} пакетах (publish-roots: src/, routes/).`,
+    `[audit-deps] Проскановано ${scanned} bare-імпорт(ів) у ${packages} пакетах (publish-roots: ${PUBLISH_ROOTS.map((r) => `${r}/`).join(', ')}).`,
   );
 
   if (missing.length === 0) {

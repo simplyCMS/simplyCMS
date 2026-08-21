@@ -25,9 +25,11 @@ export const CORE_FLAGSHIP = 'simplycms';
 export const isCorePackage = (name) =>
   name.startsWith(CORE_SCOPE) || name === CORE_FLAGSHIP;
 
-// Теки, що потрапляють у tarball і виконуються в рантаймі споживача.
-// Route-пакети везуть `routes/` сирцями — тому це теж publish-root.
-const PUBLISH_ROOTS = ['src', 'routes'];
+// Теки, що їдуть у tarball і виконуються в рантаймі споживача ЗВІДТИ Ж —
+// їхні bare-імпорти резолвляться проти manifest-а ЦЬОГО пакета: `routes/`
+// (роути сирцями) і `skills/` (скіл виконується з `node_modules/simplycms/`;
+// теку додано 2026-08-21 — доти список суперечив власному критерію).
+export const PUBLISH_ROOTS = ['src', 'routes', 'skills'];
 
 const CODE_EXT = new Set([
   '.ts',
