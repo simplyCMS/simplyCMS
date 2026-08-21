@@ -39,6 +39,9 @@ export default defineConfig({
       // Смоук tarball-а @simplycms/cli (Gate TOOL): та сама логіка — гейт
       // опублікованого артефакту живе в релізному ланцюзі.
       'tests/cli-pack.test.ts',
+      // Гард лоуереного `import.meta` у dist: читає артефакт збірки, тому
+      // без `pnpm build:packages` перевіряв би вчорашній (або порожній) dist.
+      'tests/dist-import-meta.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —

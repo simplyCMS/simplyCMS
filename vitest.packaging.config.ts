@@ -19,6 +19,9 @@ export default defineConfig({
       'tests/published-exports-parity.test.ts',
       'tests/create-store-pack.test.ts',
       'tests/cli-pack.test.ts',
+      // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
+      // потребує свіжого `pnpm build:packages`, тож місце — тут.
+      'tests/dist-import-meta.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.

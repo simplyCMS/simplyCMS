@@ -24,6 +24,26 @@ const base = {
   treeshake: true,
   clean: false,
   external,
+  // 🔴 `target: esnext` живе у СПІЛЬНОМУ base, а не в окремому профілі
+  // (знахідка пілота Task 3.1). За нижчого таргета — а дефолт tsup бере з
+  // tsconfig, тобто `ES2017` — esbuild лоуерить `import.meta` у
+  // `var import_meta = {}`, і опублікований dist читає `{}.env.VITE_…`:
+  // TypeError на гідрації ще до дружнього throw про відсутній ключ. Форму
+  // `import.meta.env` треба ЗБЕРЕГТИ, щоб її підставив бандлер магазину.
+  //
+  // Тримати опцію на рівні профілю вже показало себе крихким: модуль-читач
+  // (`supabase/browser-client.ts`) їде профілем `tiers`, і при злитті 21
+  // конфігу в К0 опція вціліла лише в `storefront-routes`. Профілі — це
+  // розкладка entry по чанках, а не політика синтаксису.
+  //
+  // Для решти профілів це безпечно: усі вони віддають ESM, що доїжджає до
+  // браузера ЛИШЕ через бандлер магазину (Vite сам зводить синтаксис до
+  // свого `build.target`), а серверний контур виконує Node ≥ 20. esnext тут
+  // означає «нічого не лоуерити», а не «емітити синтаксис, якого ніхто не
+  // зрозуміє»: рівень вихідного коду задає TS-джерело, не ця опція.
+  //
+  // Гард — `tests/dist-import-meta.test.ts` (packaging-suite).
+  target: 'esnext',
 } satisfies Options;
 
 /**
@@ -134,9 +154,7 @@ const profiles: Profile[] = [
     ],
     { splitting: true },
   ),
-  // Route-шар вітрини: 🔴 `target: esnext` обовʼязковий — за нижчого таргета
-  // esbuild лоуерить `import.meta` у `var import_meta = {}`, і опублікований
-  // dist падає на `{}.env.VITE_…` ще до першого запиту.
+  // Route-шар вітрини (`target: esnext` — у base, див. вище).
   profile(
     'storefront-routes',
     [
@@ -152,7 +170,7 @@ const profiles: Profile[] = [
       'src/storefront-routes/views/*.tsx',
       'src/storefront-routes/views/slots/*.tsx',
     ],
-    { splitting: true, target: 'esnext' },
+    { splitting: true },
   ),
 ];
 
