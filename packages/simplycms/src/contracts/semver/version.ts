@@ -12,4 +12,4 @@
  * bootstrap), де файлової системи немає, а JSON-імпорт манифесту тягнув би
  * в бандл весь `package.json`.
  */
-export const CORE_VERSION = '0.3.0';
+export const CORE_VERSION = '0.4.0';

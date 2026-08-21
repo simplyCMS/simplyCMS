@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/theme-solarstore",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": false,
   "description": "Reference SimplyCMS theme (contract v2): manifest, design tokens, Header/Footer/HeroBanner/HomeSections components and a uk/en message catalog for an alternative-energy storefront.",
   "type": "module",

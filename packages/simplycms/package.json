@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
