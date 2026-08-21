@@ -117,11 +117,16 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
  * лише СИНТАКСИС; що саме заборонено, лишається заданим руками в `ZONES`.
  * `routes/*` лежить на рівень вище `src/`, тож у нього своя форма.
  */
-export function toRelative(dir: string, specifier: string): string {
+export function toRelativeForms(dir: string, specifier: string): string[] {
   const tail = specifier.replace(/^simplycms\//, '');
-  return dir.startsWith('packages/simplycms/routes/')
-    ? `../../src/${tail}`
-    : `../${tail}`;
+  // 🔴 Форм на ту саму ціль дві, і обидві мусять ловитись: коротка — через
+  // теку-контейнер тіру (`src`), довша — через корінь пакета. Друга вилізла
+  // ревʼю К0 (коло 2): гард закривав лише першу. Для зон під `routes/` обидві
+  // збігаються в один рядок, тому набір дедуплікується.
+  const forms = dir.startsWith('packages/simplycms/routes/')
+    ? [`../../src/${tail}`]
+    : [`../${tail}`, `../../src/${tail}`];
+  return [...new Set(forms)];
 }
 
 /**

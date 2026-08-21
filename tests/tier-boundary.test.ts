@@ -5,7 +5,7 @@ import {
   LEGAL_RELATIVE,
   OUTSIDE,
   ZONES,
-  toRelative,
+  toRelativeForms,
 } from './tier-boundary/zones';
 
 /**
@@ -53,19 +53,22 @@ describe('тір-зони напрямку шарів (no-restricted-imports)', 
   it.each(ZONES)(
     '%s — ВІДНОСНА форма того самого імпорту теж ловиться',
     async (dir, forbidden) => {
-      const relative = toRelative(dir, forbidden);
+      // Кожне резолвне написання, не лише найкоротше: `../admin` і
+      // `../../src/admin` ведуть в одну теку, але для `no-restricted-imports`
+      // це різні рядки.
+      for (const relative of toRelativeForms(dir, forbidden)) {
+        const errors = await restrictedImports(
+          relative,
+          `${dir}/__tier-fixture.ts`,
+        );
+        expect(errors, `${relative} у ${dir}`).toHaveLength(1);
+        expect(errors[0]).toContain('Тір-зона ПК3');
 
-      const errors = await restrictedImports(
-        relative,
-        `${dir}/__tier-fixture.ts`,
-      );
-      expect(errors, `${relative} у ${dir}`).toHaveLength(1);
-      expect(errors[0]).toContain('Тір-зона ПК3');
-
-      expect(
-        await restrictedImports(relative, OUTSIDE),
-        `${relative} поза зоною`,
-      ).toEqual([]);
+        expect(
+          await restrictedImports(relative, OUTSIDE),
+          `${relative} поза зоною`,
+        ).toEqual([]);
+      }
     },
   );
 

@@ -45,10 +45,17 @@ export const getHomePageData = createServerFn({ method: 'GET' }).handler(
 import { createAnonSupabaseClient } from 'simplycms/supabase/anon-client';
 import { buildSitemapXml as buildSitemap } from 'simplycms/storefront/seo';
 
-const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
+// 🔴 Базовий URL — ЛІНИВО з `process.env` у момент виклику, а не константою
+// на модуль-рівні: це серверний модуль, а серверний контур читає env лише з
+// `process.env` і лише в рантаймі (контракт CLI v1 §7). `import.meta.env`
+// запікся б у білд, а модуль-рівнева константа зафіксувала б значення на
+// момент імпорту — ротація ключів перестала б діяти без перезбірки.
+function siteUrl(): string {
+  return process.env.VITE_SITE_URL || 'https://example.com';
+}
 
 export function buildSitemapXml(): Promise<string> {
-  return buildSitemap(createAnonSupabaseClient(), BASE_URL);
+  return buildSitemap(createAnonSupabaseClient(), siteUrl());
 }
 ```
 
