@@ -4,6 +4,7 @@ export const messages = {
   'admin.common.toSite': 'На сайт',
   'admin.common.signedOut': 'Вихід виконано',
   'admin.common.signedOutHint': 'Ви успішно вийшли з системи',
+  'admin.common.loading': 'Завантаження адмінки…',
 
   // Сторінки-заглушки (розділи, яких ще немає)
   'admin.common.placeholder.fallback': 'Сторінка',

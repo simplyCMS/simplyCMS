@@ -78,6 +78,14 @@ export const SCANNED_ROOTS = [
   'packages/simplycms/src/themes',
   'packages/simplycms/src/plugins',
   'packages/simplycms/src/plugin-sdk',
+  // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
+  // у `SCANNED_ROOTS` їх не було, а eslint-зона `I18N_MIGRATED_FILES` бачить
+  // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
+  // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
+  // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
+  // Самі рядки поки в `PENDING_FILES`: перекласти їх нічим — `head()` це
+  // звичайна функція поза React-контекстом, а локаль магазину ядру недоступна.
+  'packages/simplycms/routes',
   ...pluginPackageRoots(),
   ...themeRoots(),
   // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін

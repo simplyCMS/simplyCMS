@@ -19,10 +19,10 @@ export const Route = createFileRoute('/auth/')({
   },
   head: () => ({
     meta: [
-      { title: 'Авторизація | SolarStore' },
+      { title: 'Авторизація — SimplyCMS Store' },
       {
         name: 'description',
-        content: 'Вхід або реєстрація в інтернет-магазині SolarStore',
+        content: 'Вхід або реєстрація в інтернет-магазині SimplyCMS Store',
       },
     ],
   }),

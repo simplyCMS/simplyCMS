@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
+import { useT } from 'simplycms/i18n';
 import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
 
 /**
@@ -38,11 +39,21 @@ function AdminRoot() {
   );
 }
 
-/** Fallback під час client-side guard/завантаження адмінки */
+/**
+ * Fallback під час client-side guard/завантаження адмінки.
+ *
+ * `useT()` тут безпечний: `pendingComponent` рендериться на тому самому місці
+ * дерева, що й `component` цього ж роуту, тобто всередині `I18nProvider` з
+ * host-`__root.tsx` (той самий контекст, який уже споживає `AdminLayout`).
+ */
 function AdminPending() {
+  const t = useT();
+
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-muted-foreground">Завантаження адмінки…</p>
+      <p className="text-sm text-muted-foreground">
+        {t('admin.common.loading')}
+      </p>
     </div>
   );
 }

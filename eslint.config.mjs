@@ -39,12 +39,12 @@ const I18N_MIGRATED_FILES = [
   // теки, а не `packages/simplycms/**`: каталоги `src/i18n/catalogs/uk` —
   // кирилиця за побудовою, і повний глоб зробив би error-зону самосуперечною.
   //
-  // 🔴 `routes/storefront`, а не `routes/**`: межа зони — статус-кво до К0.
-  // Тека `routes/admin` приїхала з пакета `@simplycms/admin-routes`, якого в
-  // зоні не було ніколи, і в `routes/admin/admin.tsx` досі живе хардкоджений
-  // рядок. Розширення зони — окреме рішення з міграцією рядка, не побічний
-  // ефект переносу тек.
+  // Обидві роут-теки ядра. `routes/admin` приїхала з пакета
+  // `@simplycms/admin-routes`, якого в зоні не було ніколи, — борг закрито
+  // 2026-08-21 разом із міграцією єдиного хардкоду (`AdminPending` →
+  // `admin.common.loading`), тож зона більше не обривається на `storefront`.
   'packages/simplycms/routes/storefront/**/*.tsx',
+  'packages/simplycms/routes/admin/**/*.tsx',
   'packages/simplycms/src/storefront-routes/**/*.tsx',
   'packages/simplycms/src/admin/**/*.tsx',
   'packages/simplycms/src/cart-ui/**/*.tsx',

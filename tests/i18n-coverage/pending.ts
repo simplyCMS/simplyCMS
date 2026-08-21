@@ -78,10 +78,42 @@ export const ALLOWLIST: Record<string, string> = {
  * лишатися не може, інакше реєстр тихо перетворився б на список-вигадку.
  */
 export const PENDING_FILES: readonly string[] = [
-  // Порожньо: міграцію завершено — вітрина, адмінка, воронка покупки, host,
-  // обидві теми і (з Фази 3) плагіни: `plugins/` і референс-пакети
+  // Решта зон порожня: міграцію завершено — вітрина, адмінка, воронка покупки,
+  // host, обидві теми і (з Фази 3) плагіни: `plugins/` і референс-пакети
   // `packages/simplycms-plugin-*` в `SCANNED_ROOTS`, каталоги — власні
   // `messages` плагіна (дзеркало тем, спека §12), парність стереже
   // `tests/plugin-messages-parity.test.ts`. Будь-який новий кириличний рядок
-  // інтерфейсу в зонах `SCANNED_ROOTS` валить тест, а не додається сюди.
+  // інтерфейсу в цих зонах валить тест, а не додається сюди.
+  //
+  // 🔴 Єдиний незакритий борг — `<title>`/`<meta description>` роутів вітрини
+  // (`head()`), внесені сюди 2026-08-21 разом із додаванням
+  // `packages/simplycms/routes` у `SCANNED_ROOTS`. До того їх не бачив ЖОДЕН
+  // гейт: у скані теки не було, а eslint-селектори бачать лише `JSXText` і три
+  // атрибути — властивість обʼєкта `meta: [{ title }]` для них невидима.
+  // Причина, чому це облік, а не переклад: `head()` — звичайна функція поза
+  // React-контекстом, тож `useT()` там непридатний, а `createTranslator(locale)`
+  // потребує локалі з `simplycms.config.ts` МАГАЗИНУ, до якої ядро доступу не
+  // має (`defineConfig` — типізована тотожність, глобального акцесора немає).
+  // Закриття боргу = рішення про спосіб доставки локалі в ядро, не механічна
+  // правка. Список лише скорочується.
+  'packages/simplycms/routes/storefront/_protected/profile/index.tsx',
+  'packages/simplycms/routes/storefront/_protected/profile/orders/$orderId.tsx',
+  'packages/simplycms/routes/storefront/_protected/profile/orders/index.tsx',
+  'packages/simplycms/routes/storefront/_protected/profile/settings.tsx',
+  'packages/simplycms/routes/storefront/_storefront/cart.tsx',
+  'packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx',
+  'packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index.tsx',
+  'packages/simplycms/routes/storefront/_storefront/catalog/index.tsx',
+  'packages/simplycms/routes/storefront/_storefront/checkout.tsx',
+  'packages/simplycms/routes/storefront/_storefront/index.tsx',
+  'packages/simplycms/routes/storefront/_storefront/order-success/$orderId.tsx',
+  'packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/index.tsx',
+  'packages/simplycms/routes/storefront/_storefront/properties/index.tsx',
+  'packages/simplycms/routes/storefront/auth/index.tsx',
+  'packages/simplycms/routes/storefront/auth/set-password.tsx',
+  // Не `head()`, але той самий блокер плюс власний: fallback назви позиції
+  // (`item.name ?? 'Товар'`) у гостьовому замовленні — це серверний
+  // Request-хендлер (React-контексту немає) І значення, яке ЗАПИСУЄТЬСЯ в
+  // `order_items.name`, тобто дані рядка БД, а не текст рендера.
+  'packages/simplycms/routes/storefront/api/guest-order.tsx',
 ];

@@ -150,14 +150,14 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
 після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
-з warn на **error** і діють на host `src/`, теки `routes/storefront`,
-`src/storefront-routes`, `src/admin` і пʼять `src/*-ui` пакета ядра плюс
-компоненти тем — новий кириличний рядок інтерфейсу там валить лінт.
-🔴 `routes/storefront`, а НЕ `routes/**`: тека `routes/admin` приїхала з
-пакета `@simplycms/admin-routes`, якого в зоні не було ніколи, і в
-`routes/admin/admin.tsx` досі живе хардкоджений рядок «Завантаження
-адмінки…». Це пре-існуюча діра покриття, не регресія К0; розширення зони =
-міграція рядка, окреме рішення (роадмап, борг К0-1).
+з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
+(`routes/storefront` і `routes/admin`), `src/storefront-routes`, `src/admin`
+і пʼять `src/*-ui` пакета ядра плюс компоненти тем — новий кириличний рядок
+інтерфейсу там валить лінт.
+🔴 `routes/admin` увійшла в зону 2026-08-21 (борг К0-1 закрито): єдиний
+хардкод «Завантаження адмінки…» переведено на ключ `admin.common.loading`
+(`AdminPending` — React-компонент на тому ж місці дерева, що й `AdminLayout`,
+тобто всередині `I18nProvider`, тож `useT()` там штатний).
 Третя error-зона (2026-08-13) — `import.meta.env` у шести
 серверних модулях env-контракту (див. «Environment Variables»).
 Четверта (2026-08-20, трек К0) — **тір-зони напрямку шарів**:
@@ -169,7 +169,10 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять чотири committed-тести —
-`tests/i18n-coverage.test.ts` (AST-скан, порожній `PENDING_FILES`),
+`tests/i18n-coverage.test.ts` (AST-скан по `SCANNED_ROOTS` проти реєстру
+`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 16 роут-файлів
+ядра, чиї `<title>`/`<meta description>` у `head()` перекласти нічим:
+`head()` — функція поза React-контекстом, а локаль магазину ядру недоступна),
 `tests/i18n-catalog-parity.test.ts` (повнота `en`),
 `packages/simplycms/src/i18n/__tests__/catalog-integrity.test.ts` (дублікати ключів),
 `tests/theme-messages-parity.test.ts` (повнота каталогів тем),
