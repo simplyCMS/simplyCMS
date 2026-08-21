@@ -20,11 +20,15 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-08-19)
+## 📍 Поточний стан (оновлено 2026-08-20)
 
-**Фази 0–4 і трек «теми + клонування дизайну» завершені. Ядро опубліковане
-на npmjs — 26 пакетів однією версією `0.3.0`** (25 `@simplycms/*` +
-unscoped `create-simplycms-store`). Магазин створюється
+**Фази 0–4, трек «теми + клонування дизайну» і трек К0 завершені.**
+🔴 **Стан коду і стан реєстру зараз РІЗНІ.** У реєстрі npm — стара топологія
+`0.3.0`: 26 пакетів (25 `@simplycms/*` + unscoped `create-simplycms-store`).
+У коді (гілка К0) — **5 пакетів**: unscoped фреймворк `simplycms` (усе ядро
+T0–T5 теками) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` +
+`create-simplycms-store`. Зведення відбудеться релізом `0.4.0` і мержем у
+`main` — це дія власника (Task 9 плану К0). Магазин створюється
 `pnpm create simplycms-store` і збирається зі справжніх npm-пакетів; CLI
 (`simplycms doctor/add/create/update/db:diff/theme:conformance`), плагіни
 (SDK + референси), теми за контрактом v3 (tokens/fonts + опційні views
@@ -41,11 +45,11 @@ unscoped `create-simplycms-store`). Магазин створюється
 | Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI/TOOL |
 | Пілот проти живої БД / локального стека | `pnpm pilot` / `pnpm pilot:e2e` (Docker) |
 | Браузерний e2e | `pnpm test:e2e` (Playwright, локальний стек, 2 локалі) |
-| Обслуговування магазину | `pnpm simplycms doctor / add [--theme\|--plugin] [--copy] / create plugin\|theme / update / db:diff` |
-| Плагіни | `definePlugin` + порти `@simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq`; межа довіри — dependency-lint |
-| Теми | контракт v3: v2.2 (tokens+components+messages+fonts) + опційні `views` пʼяти сторінок (`@simplycms/objects/views`); npm або copy-in; `bootstrapThemes` |
-| Conformance тем | `pnpm simplycms theme:conformance` + kit `@simplycms/themes/conformance` (негативний контроль живим експериментом) |
-| Редизайн за референсом | скіл `redesign-from-reference` (дискавері → інспекція → мапінг → side-by-side → шліфування) |
+| Обслуговування магазину | `pnpm simplycms doctor (12 перевірок) / add [--theme\|--plugin] [--copy] / create plugin\|theme / update (версії + host-файли + лінки скілів) / db:diff` |
+| Плагіни | `definePlugin` + порти `simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq` (🔴 з шаблону знято, ставиться `simplycms add`); межа довіри — dependency-lint |
+| Теми | контракт v3: v2.2 (tokens+components+messages+fonts) + опційні `views` пʼяти сторінок (`simplycms/contracts/views`); npm або copy-in; `bootstrapThemes` |
+| Conformance тем | `pnpm simplycms theme:conformance` + kit `simplycms/themes/conformance` (негативний контроль живим експериментом) |
+| Редизайн за референсом | скіл `redesign-from-reference` (дискавері → інспекція → мапінг → side-by-side → шліфування); доставка в магазини — симлінки на `node_modules/simplycms/skills/` |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`) |
 | CI на PR | `typecheck` · `test` · `packaging` · `www` |
 
@@ -83,16 +87,18 @@ unscoped `create-simplycms-store`). Магазин створюється
    https://deo-ecommerce.nextjsshop-preview.workers.dev/ — очікування
    `listing = /product`, `product = /product/<slug>` без ручних правок.
    Дрібне, потребує мережі; фікстурний регрес уже в CI.
-2. **[2026-08-20] Трек К0 — консолідація пакетів + доставка скілів** (спека
-   [`2026-08-20-package-consolidation-design.md`](../superpowers/specs/2026-08-20-package-consolidation-design.md)):
-   механічна консолідація 26 → 5 пакетів (unscoped `simplycms` + сателіти
-   `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`);
-   `plugin-sdk` стає субшляхом фреймворка; скіли переїжджають у `skills/`
-   пакета `simplycms` і доставляються магазину прямими симлінками через
-   скаффолдер/`simplycms update`/`doctor`; `plugin-faq` знімається з
-   преінсталу шаблону. Без зміни поведінки, даних чи контрактів рантайму.
-   🔴 Умова старту — мерж паралельної гілки механізму скіла (конфлікт
-   move-vs-edit по `scripts/**`). DoD — спека §8.
+2. ✅ **[2026-08-20] Трек К0 — консолідація пакетів + доставка скілів**
+   (спека
+   [`2026-08-20-package-consolidation-design.md`](../superpowers/specs/2026-08-20-package-consolidation-design.md),
+   [план](../superpowers/plans/2026-08-20-package-consolidation.md)):
+   **код виконано в гілці** — Tasks 1–8 закриті. 26 → 5 пакетів; `plugin-sdk`
+   — субшлях фреймворка; скіли в `skills/` пакета `simplycms` із доставкою
+   прямими симлінками; `plugin-faq` знято з преінсталу шаблону. Поведінка,
+   дані й контракти рантайму не змінені.
+   🔴 **Лишилось (дія власника, Task 9):** реліз `0.4.0` → мерж у `main`
+   (публікує 5 пакетів і незворотно займає unscoped-ім'я `simplycms`) →
+   `npm deprecate` 22 злитих імен → жива перевірка з реєстру. Борги треку —
+   К0-1…К0-6 у розділі «Відкриті борги». DoD — спека §8.
 3. **Трек V2 — Бекенд-контракт v2** (спека 2026-08-19; імплементаційний
    план перед стартом). Контури К1–К6 зі спеки §4:
    - [ ] К1 Фундамент: db-шар (Drizzle-рантайм), Better Auth (сесії,
@@ -192,14 +198,53 @@ unscoped `create-simplycms-store`). Магазин створюється
 9. **Незарелізені зміни tarball-ів**: треки редизайну і A міняли
    `exports`/вміст `@simplycms/themes`, `@simplycms/storefront-routes`,
    `@simplycms/theme-solarstore`, `@simplycms/objects`, `@simplycms/cli` —
-   коли це їде в реєстр, рішення власника (⚠️ з урахуванням V2 попереду
-   реліз до V2 може не мати сенсу).
+   коли це їде в реєстр, рішення власника. ⚠️ **Поглинуто релізом `0.4.0`
+   треку К0** (Task 9): він везе ці зміни в реєстр разом із новою
+   топологією, тож окремого рішення борг більше не потребує.
 10. **`bootstrapPlugins`/`bootstrapThemes` — клієнтський `useEffect` без
     серверного контуру; бізнес-емітери hooks (`order.created`) не
     емляться; `plugin:purge` і облік `plugins.migrations_applied`
     відсутні** — переглядаються в V2-К5.
 11. **Живий SSR-доказ fonts-контуру** (Р9 етапу А редизайну) — потребує
     `SEED_THEME` у сіді пілота; переглянути після V2-К6 (сід міняється).
+
+**Борги треку К0** (2026-08-20; перелічені чесно — жоден не блокує реліз,
+але жоден і не закритий):
+
+К0-1. **Хардкоджений рядок «Завантаження адмінки…»** у
+   `packages/simplycms/routes/admin/admin.tsx` — поза i18n-зоною. 🔴 Не
+   регресія К0: тека приїхала з пакета `@simplycms/admin-routes`, якого в
+   `I18N_MIGRATED_FILES` не було НІКОЛИ, тож це пре-існуюча діра покриття.
+   Зона свідомо лишена на `routes/storefront`, а не `routes/**`: розширення
+   = міграція рядка, окреме рішення.
+
+К0-2. **Gate B / Gate E пілота під FAQ-контур фактично не прогнані** —
+   потребують живої БД (`pnpm pilot`) або Docker (`pnpm pilot:e2e`). Крок
+   довстановлення FAQ (`install-faq.mjs`) написаний і зелений у `pilot:pack`,
+   але самі гейти B/E там видимо skipped. Дія власника.
+
+К0-3. **Розселення власних модулів `core` по тірах** — свідомо поза К0
+   (семантична робота). Сьогодні `core` стоїть T5 поруч з `admin`, а пʼять
+   `*-ui` (T4) тягнуть його вгору — зустрічний цикл, зафіксований у
+   тір-зонах фактом.
+
+К0-4. **Межа довіри плагінів звужена за побудовою.** ESLint-зона банить лише
+   Supabase-шар (`simplycms/supabase`, `simplycms/data-supabase`,
+   `@supabase/*`). 🔴 Зона НЕ звужувалась — вона байт-ідентична стану до К0;
+   але зник ТЕРТЄВИЙ крок: раніше звернення плагіна до іншого шару ядра
+   вимагало вписати новий `@simplycms/*` у власний манифест і було видиме в
+   ревʼю, а тепер усе ядро — субшляхи однієї залежності. Розширення зони до
+   allowlist дозволеної поверхні — окреме рішення.
+
+К0-5. **Дубль логіки симлінків** у скаффолдері
+   (`create-simplycms-store/src/skill-links.mjs`) і CLI
+   (`cli/src/skill-links.mjs`) — пакети не можуть імпортувати одне одного
+   (різні цикли установки в магазині). 🔴 win32-гілка (junction + абсолютна
+   ціль) перевірена лише підміною `process.platform`, наживо на Windows — ні.
+
+К0-6. **Task 9 не виконано**: реліз `0.4.0`, мерж (публікація 5 пакетів +
+   заняття unscoped-імені), `npm deprecate` 22 злитих імен, жива перевірка
+   `pnpm create simplycms-store` з реального реєстру. Усе — дії власника.
 
 ### Найдорожчі уроки (не забувати)
 
@@ -300,6 +345,27 @@ side-by-side обовʼязковий, фаза шліфування; тема �
 fan-out, контент-проба візиту, чесність reveal-каналу; два раунди рев'ю
 закрили два хибні позитиви). Живі прогони: 2026-08-15/16 і 2026-08-18.
 Хвіст — ре-валідація (черга №1); борги — №7, №9, №11.
+
+**Трек К0 — консолідація пакетів 26→5 + доставка скілів** (2026-08-20,
+[спека](../superpowers/specs/2026-08-20-package-consolidation-design.md),
+[план](../superpowers/plans/2026-08-20-package-consolidation.md); код у
+гілці, реліз — Task 9): 22 scoped-пакети ядра зведено в unscoped
+фреймворк-пакет `simplycms` (теки `src/*` = тіри, `routes/{storefront,admin}`,
+`migrations/`, `skills/`); публічні входи стали субшляхами за правилом 1:1
+(79 входів `exports`-мапи); фасад `@simplycms/core` розчинено — реекспорти
+чужого кодмоднуто на джерела, власні 38 модулів лишились текою `src/core`;
+аліаси злитих пакетів прибрано (лишились `simplycms`/`simplycms/*` +
+сателіти + `@themes`/`@plugins`); межу шарів, яку раніше тримала межа
+npm-пакета, повернуто eslint-тір-зонами (23 зони, дві форми специфікатора,
+негативний контроль `tests/tier-boundary.test.ts`); скіл
+`redesign-from-reference` переїхав байт-в-байт у `skills/` пакета й
+доставляється магазинам симлінками (скаффолдер після install, `update`
+лагодить, `doctor` №12 звітує) — копії в шаблоні більше немає; шаблон
+магазину має ОДНУ залежність ядра, `plugin-faq` знято з преінсталу (ПК7).
+🔴 Знахідка ревʼю: при злитті 21 tsup-конфігу загубився `target: 'esnext'`
+— esbuild лоуерив `import.meta` у `{}`, і опублікований `dist` убивав
+браузерний Supabase-клієнт на гідрації; опцію піднято у спільний `base`,
+гард — `tests/dist-import-meta.test.ts`. Борги — К0-1…К0-6.
 
 **Трек A — контракт тем v3 «theme views»** (2026-08-18/19,
 [задача](./theme-views-v3.md),

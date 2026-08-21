@@ -28,8 +28,10 @@ CLI — інструмент **магазину**: він виконується
 `pnpm template:sync`, і мовчки відкотив би щойно зроблену правку host-файла.
 
 - Пакет — **`@simplycms/cli`** (scoped, під чинним NPM_TOKEN і реліз-потягом),
-  бінарник — **`simplycms`**. Unscoped npm-ім'я `simplycms` вільне і
-  зарезервоване як можливий майбутній тонкий аліас (дія власника).
+  бінарник — **`simplycms`**. 🔴 Після треку К0 unscoped npm-ім'я `simplycms`
+  зайняте самим **фреймворк-пакетом** (усе ядро одним пакетом), а CLI лишився
+  одним із чотирьох сателітів — тонкого аліаса не буде: імʼя пакета й імʼя
+  бінарника збігаються лише текстуально.
 - Форма — чистий ESM `.mjs` без build-кроку (прецедент
   `create-simplycms-store`): нуль транспіляції = нуль способів зламатися в
   оточенні користувача, де немає гарантій тулчейна.
@@ -61,17 +63,18 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 
 | # | Перевірка | Рівень |
 |---|-----------|--------|
-| 1 | корінь магазину знайдено (`package.json` із залежностями `@simplycms/*`) | error |
-| 2 | усі `@simplycms/*` — одна версія; версія CLI збігається | error / warn |
+| 1 | корінь магазину знайдено (`package.json` із залежностями ядра — `simplycms` та/або `@simplycms/*`) | error |
+| 2 | усі пакети ядра (`simplycms` + сателіти `@simplycms/*`) — одна версія; версія CLI збігається | error / warn |
 | 3 | `packageManager` — pnpm 11 | warn |
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
 | 5 | env: `VITE_SUPABASE_URL` + publishable/anon-ключ у `process.env` або `.env.local`/`.env` | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
-| 7 | міграції: відставання від `@simplycms/schema/migrations` | warn → `db:diff --write`; змінений спільний файл — error |
-| 8 | `routes.ts`: `realpathSync` + монтування обох route-пакетів | error |
-| 9 | `tailwind.config.ts`: `content` покриває `node_modules/@simplycms/*` | error |
+| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error |
+| 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
+| 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
+| 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 
 Онлайн-перевірки (лише коли env із п.5 присутній; голий `fetch` до Supabase
 REST, без клієнтських бібліотек): доступність БД; активна тема з БД присутня
@@ -119,18 +122,27 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 1. **Версії.** Магазин пінить точні версії, тож звичайний `pnpm update` — no-op.
    Команда бере цільову версію з `--to` або питає реєстр
    (`pnpm view @simplycms/cli version`); реєстр недоступний → exit 1 із
-   підказкою `--to`. Далі `pnpm add` для **всіх** `@simplycms/*` із
-   `package.json` магазину (dependencies і devDependencies окремо) на цільову
-   версію. `--no-install` пропускає цей крок.
+   підказкою `--to`. Далі `pnpm add` для **всіх** пакетів ядра з `package.json`
+   магазину — unscoped `simplycms` і сателітів `@simplycms/*`, dependencies і
+   devDependencies окремо — на цільову версію (`isCorePackage`: точне імʼя
+   `simplycms` 🔴 плюс scope-префікс; префіксом `simplycms` зачепило б сторонні
+   `simplycms-theme-*` з власним циклом релізу). `--no-install` пропускає цей
+   крок.
 2. **Host-файли.** Канон — тека `host/` пакета CLI (див. §4). `--check`
    (дефолт) — перелік файлів, що розійшлися, exit 1 при дрейфі (придатне для
    CI магазину); `--write` — перезапис канонічними версіями. Магазин —
    git-репозиторій: ревʼю дрейфу = `git diff`.
+3. **Лінки скілів** (трек К0). Після кроку версій `update` звіряє
+   `.agents/skills/`+`.claude/skills/` з текою `skills/` встановленого ядра:
+   доробляє відсутні й биті, прибирає осиротілі (лінк у пакет, якому вже
+   нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не
+   чіпається взагалі — форк сильніший за пакетний скіл. Нічого лагодити —
+   мовчить. Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
 
 ### 3.4 `simplycms db:diff [--write]`
 
 Доносить нові міграції **канонів** у магазин. Канонів із Фази 3 — N:
-`node_modules/@simplycms/schema/migrations/` (ядро, обовʼязковий) плюс тека
+`node_modules/simplycms/migrations/` (ядро, обовʼязковий) плюс тека
 `migrations/` кожного встановленого плагіна з `simplycms.config.ts`
 (`@plugins/<name>` → локальна тека магазину, bare-специфікатор →
 `node_modules/<pkg>/migrations/`; плагін без міграцій — не помилка).
@@ -188,7 +200,7 @@ Conformance-гейт контракту тем **v3** (`views`) — КАНОНІ
 текою, ні з іменем пакета — резолвиться саме запис конфігу).
 
 Команда бере модуль теми, віддає його `assertThemeViewsConformance` із
-`@simplycms/themes/conformance` і падає кодом 1 на першому ж заявленому view,
+`simplycms/themes/conformance` і падає кодом 1 на першому ж заявленому view,
 який не розставив обовʼязкові реквізити або впав на крайньому стані. Тема без
 `views` — чесний pass.
 
@@ -216,7 +228,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | Джерело (корінь монорепо) | Закомічена копія | Споживач |
 |---|---|---|
 | `SYNCED_FILES` (11 host-файлів глю) | `packages/cli/host/**` | `update`, `doctor` §6 |
-| `supabase/migrations/` | `packages/schema/migrations/` | `db:diff`, `doctor` §7 |
+| `supabase/migrations/` | `packages/simplycms/migrations/` | `db:diff`, `doctor` §7 |
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
   обхід теки, дубльованого списку немає. Це ті самі 11 файлів, що
@@ -238,7 +250,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 
 ```bash
 pnpm simplycms doctor            # стартова діагностика
-pnpm simplycms update            # бамп @simplycms/* до latest + звіт дрейфу host-файлів
+pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
 supabase db push                 # накатити міграції (після ревʼю!)
@@ -264,6 +276,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
 
 Назви гейтів не плутати: **Gate CLI** — смоук скаффолдера
@@ -297,7 +310,7 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 - Версія CLI завжди дорівнює версії ядра; `scripts/release/bump.mjs` підхоплює
   пакет автоматично (сканує `packages/*`, критерій — не-`private`).
 - `pnpm build:packages` пакет пропускає (немає скрипту `build` — як
-  `admin-routes`); tarball-parity, audit-deps/exports і публікація
+  `create-simplycms-store`); tarball-parity, audit-deps/exports і публікація
   (`pnpm publish -r`) покривають його автоматично.
 - 🔴 Введення пакета в реєстр відбулося за правилом «новий пакет публікується в
   момент мержу в `main`» ([`release-process.md`](release-process.md)).

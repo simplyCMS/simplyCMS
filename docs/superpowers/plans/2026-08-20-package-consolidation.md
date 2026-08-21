@@ -249,8 +249,8 @@ export const routes = rootRoute('__root.tsx', [
 **Files:**
 - Modify: `CLAUDE.md` (Project Structure, Package Aliases, публікація: 5 пакетів; блок напряму — К0 в коді гілки), `packages/README.md`, `docs/architecture/{cli,plugins,themes}.md`, `docs/architecture/release-process.md` (+розділ «Deprecate злитих пакетів» із циклом Task 9), `docs/tasks/platform-roadmap.md` (відмітки К0), `CHANGELOG.md`
 
-- [ ] **Step 1:** доки чинного стану (редакційно; спеки-історію не чіпати).
-- [ ] **Step 2:** `pnpm template:sync`; повний ланцюг + `pnpm pilot:pack`.
+- [x] **Step 1:** доки чинного стану (редакційно; спеки-історію не чіпати).
+- [x] **Step 2:** `pnpm template:sync`; повний ланцюг + `pnpm pilot:pack`.
 - [ ] **Step 3:** 🔴 **закомітити ВСЕ** (`git status` чистий) — `scripts/release.mjs:62` має `assertCleanTree()` ДО бампу; потім `pnpm release 0.4.0` (гарди + бамп 5 + гейти + коміт).
 - [ ] **Step 4:** push гілки; PR у `main` — НЕ мержити без власника.
 

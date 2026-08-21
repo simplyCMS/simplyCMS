@@ -2,11 +2,17 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
-🔴 **Версія у SimplyCMS синхронна:** усі 26 публікованих пакетів (25
-`@simplycms/*` + unscoped `create-simplycms-store`) завжди мають один номер.
-Отже підняття версії **не** означає, що змінився кожен пакет — розділи нижче
-називають, що саме змінилось і в кому. Процес випуску —
+🔴 **Версія у SimplyCMS синхронна:** усі публіковані пакети завжди мають один
+номер. Отже підняття версії **не** означає, що змінився кожен пакет — розділи
+нижче називають, що саме змінилось і в кому. Процес випуску —
 [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
+
+🔴 **Кількість пакетів змінилась у `0.4.0`:** до `0.3.x` їх було 26 (25
+`@simplycms/*` + unscoped `create-simplycms-store`), з `0.4.0` — **5**
+(unscoped `simplycms` + `@simplycms/{cli,theme-solarstore,plugin-faq}` +
+`create-simplycms-store`). Записи про версії `0.1.0`–`0.3.0` нижче називають
+пакети СТАРИМИ іменами — так вони й лежать у реєстрі; мапа старих імен на
+субшляхи — у [`packages/README.md`](packages/README.md).
 
 Дати — це дати **публікації в реєстрі npm**, а не коміту.
 
@@ -158,6 +164,102 @@
   типу sitemap із класифікацією кожної розбіжності (токен-фіксабельна /
   дані / структурна-за-дизайном) і підсумковою таблицею; спека-файли
   компонентів дістали обовʼязкову секцію `## Motion`.
+
+Трек К0 — консолідація пакетів 26 → 5 + доставка агентних скілів. Спека
+[`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md),
+[план](docs/superpowers/plans/2026-08-20-package-consolidation.md).
+🔴 **Breaking для будь-якого магазину, зібраного на `0.3.x`** (0.x, D5 — без
+шимів): 22 пакети ядра зникають як окремі імена, їхній код доїжджає
+субшляхами одного пакета. Мерж у `main` публікує НОВИЙ unscoped пакет
+`simplycms` і незворотно займає це ім'я в глобальному просторі імен npm.
+
+### Додано
+
+- **`simplycms`** — unscoped фреймворк-пакет: увесь T0–T5 теками
+  `packages/simplycms/src/*` (`contracts`, `domain`, `schema`, `supabase`,
+  `data-supabase`, `react-query`, `runtime`, `i18n`, `storefront`, `ui`,
+  `themes`, `plugins`, `plugin-sdk`, пʼять `*-ui`, `core`, `admin`,
+  `storefront-routes`), роут-теки `routes/{storefront,admin}`, core-міграції
+  `migrations/`, агентні скіли `skills/`. 79 входів `exports`-мапи —
+  чинні публічні входи перенесені за правилом 1:1
+  (`@simplycms/<pkg>/<sub>` → `simplycms/<тека>/<sub>`).
+- **Тір-зони напрямку шарів** — `eslint.tier-zones.mjs` +
+  `eslint.tier-relative.mjs`: 23 зони (21 тека `src/` + дві роут-теки),
+  кожна заборона у двох формах специфікатора — bare-субшлях
+  `simplycms/<тека>` і відносний `../<тека>`. Повертають межу, яку до
+  консолідації тримали `dependencies` окремих пакетів. Негативний
+  контроль — `tests/tier-boundary.test.ts`.
+- **Доставка скілів симлінками** — тека `skills/` пакета `simplycms` замість
+  копії в шаблоні: `create-simplycms-store` створює
+  `.agents/skills/<name>` і `.claude/skills/<name>` →
+  `node_modules/simplycms/skills/<name>` після install, `simplycms update`
+  доробляє відсутні й прибирає осиротілі, `doctor` дістав перевірку №12.
+  Оновлення ядра тепер оновлює скіл автоматично.
+- **`tests/dist-import-meta.test.ts`** (packaging-suite) — гард лоуереного
+  `import.meta` у зібраному `dist` (див. «Виправлено»).
+- Точні набори замість порогів у реліз-гардах:
+  `tests/release-bump-coverage.test.ts` (5 пакетів) і
+  `tests/published-exports-parity.test.ts` (4 — `create-simplycms-store`
+  відсікається за іменем).
+
+### Змінено
+
+- 🔴 **Специфікатори ядра — субшляхи `simplycms/<тека>`.**
+  `@simplycms/objects` → `simplycms/contracts`; решта — імʼя теки
+  один-в-один (`@simplycms/ui` → `simplycms/ui`, `@simplycms/plugin-sdk` →
+  `simplycms/plugin-sdk` тощо). Роут-теки лишили СТАРІ ключі exports
+  (`./storefront-routes/routes/*`, `./admin-routes/routes/*`) при новій
+  фізичній теці `routes/{storefront,admin}`.
+- 🔴 **Шаблон магазину має ОДНУ залежність ядра** — `simplycms` (+
+  `@simplycms/cli` у devDependencies). `routes.ts` монтує підтеки одного
+  пакета через `coreRoutes('storefront'|'admin')` зі збереженим
+  `realpathSync`; Tailwind дістав глоби `node_modules/simplycms/{dist,routes}`.
+- **`@simplycms/plugin-faq` знято з преінсталу шаблону** (ПК7) — ставиться
+  штатним `simplycms add <pkg> --plugin`; пілот довстановлює його окремим
+  кроком, бо гейти B/E і plugin-тести його потребують.
+- **Ядро в сателітах — `peerDependencies` + `devDependencies`** (ПК6), і для
+  референс-теми/плагіна теж; `dependencies` там більше немає взагалі.
+- **`drizzle-orm` — опційний peer** магазину: його імпортують лише три файли
+  `src/schema/` (тулінг drizzle-kit), рантайм і CLI не торкаються.
+- **CLI під нову топологію**: розпізнавання ядра — `isCorePackage` (точне
+  `simplycms` + префікс `@simplycms/`, 🔴 ніколи префікс `simplycms` — він
+  зачепив би сторонні `simplycms-theme-*`); канон міграцій —
+  `node_modules/simplycms/migrations`; doctor звіряє нове монтування роутів
+  і глоби Tailwind.
+- Root-манифест перейменовано `simplycms` → `simplycms-monorepo` (звільняє
+  unscoped-ім'я для флагмана; корінь ніде не публікується).
+
+### Знято (breaking, 0.x, D5 — без шимів)
+
+- **22 npm-пакети ядра** — `@simplycms/{objects,domain,schema,supabase,
+  data-supabase,react-query,runtime,i18n,storefront,storefront-routes,
+  admin-routes,admin,themes,plugins,plugin-sdk,ui,cart-ui,catalog-ui,
+  checkout-ui,profile-ui,reviews-ui,core}`. Після появи `simplycms` у
+  реєстрі всі 22 позначаються `npm deprecate` (unpublish свідомо НІ — вікно
+  72h минуло, пакети взаємозалежні, це поламало б lockfile-и пілотних
+  магазинів).
+- **Фасадна роль `@simplycms/core`** — шість модулів були реекспортом
+  чужого й видалені разом із їхніми export-входами; споживачі переведені на
+  джерела (`lib/priceUtils` → `simplycms/domain/pricing`, `lib/utils` →
+  `simplycms/ui/utils`, `types/index` → `simplycms/supabase` та ін.).
+  Власні провайдери/хуки/компоненти лишились текою `src/core` із субшляхом
+  `simplycms/core`; розселення по тірах свідомо поза К0.
+- **Аліаси tsconfig/vite/vitest для злитих пакетів** — лишилась пара
+  `simplycms` / `simplycms/*` плюс сателіти, `@themes/*`, `@plugins/*`.
+- **`template/.claude/`** — копія скіла в шаблоні (замінена симлінками).
+
+### Виправлено
+
+- 🔴 **`target: 'esnext'` загубився при злитті 21 tsup-конфігу** — вцілів
+  лише в одному профілі, тож esbuild лоуерив `import.meta` у
+  `var import_meta = {}`, і опублікований `dist` читав `({}).env`:
+  браузерний Supabase-клієнт магазину падав TypeError на гідрації ще до
+  дружнього throw про відсутній ключ. Опцію піднято у спільний `base`
+  (профіль задає розкладку entry, а не політику синтаксису); гард —
+  `tests/dist-import-meta.test.ts` із позитивним якорем і негативним
+  контролем.
+
+---
 
 ## [0.3.0] — 2026-08-11
 

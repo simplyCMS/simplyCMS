@@ -1,12 +1,26 @@
 # Реліз ядра: публікація пакетів на npmjs
 
-Ядро SimplyCMS — **26 публікованих пакетів**: 25 `@simplycms/*` під scope
-`@simplycms` + 1 unscoped `create-simplycms-store` (CLI-скаффолдер із
-вбудованим шаблоном магазину, `packages/create-simplycms-store/`). Лічильник
-виріс із 22 до 23 2026-08-13, коли додався `@simplycms/cli` (scoped, bin
-`simplycms`); до 25 — Фазою 3 (`@simplycms/plugin-sdk` + референс-плагін
-`@simplycms/plugin-faq`); до 26 — Фазою 4 (референс-тема
-`@simplycms/theme-solarstore`). Цей документ описує, як випустити нову версію.
+Ядро SimplyCMS — **5 публікованих пакетів** (трек К0, 2026-08-20; до нього
+їх було 26):
+
+| Пакет | Тека | Роль |
+|---|---|---|
+| `simplycms` | `packages/simplycms/` | 🔴 unscoped **фреймворк-пакет**: увесь T0–T5 теками `src/*`, роут-теки `routes/{storefront,admin}`, core-міграції `migrations/`, агентні скіли `skills/` |
+| `@simplycms/cli` | `packages/cli/` | CLI магазину (bin `simplycms`) |
+| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore/` | референс-тема |
+| `@simplycms/plugin-faq` | `packages/simplycms-plugin-faq/` | референс-плагін |
+| `create-simplycms-store` | `packages/create-simplycms-store/` | unscoped CLI-скаффолдер із вбудованим шаблоном магазину |
+
+🔴 **Unscoped-імен два, і критерії відбору в тулінгу різні.** `simplycms`
+скрізь перевіряється **точним** іменем, ніколи префіксом: префікс `simplycms`
+зачепив би сторонні `simplycms-theme-*`/`simplycms-plugin-*` з власним
+циклом релізу. `create-simplycms-store` під жоден із фільтрів імені ядра не
+підпадає взагалі — див. «Що бачить який гейт» нижче.
+
+Історія лічильника (до К0): 22 → 23 2026-08-13 (`@simplycms/cli`); → 25
+Фазою 3 (`plugin-sdk` + `plugin-faq`); → 26 Фазою 4 (`theme-solarstore`);
+→ **5** треком К0, який звів 22 scoped-пакети ядра в один unscoped
+фреймворк-пакет. Цей документ описує, як випустити нову версію.
 
 ## Коротко
 
@@ -21,12 +35,25 @@ gh pr create --base main --title "Реліз v0.2.0"
 
 ## Модель версіонування
 
-**Версія синхронна.** Усі 26 пакетів завжди мають одну версію — споживач бачить
-одне число «версія ядра» і не звіряє таблицю сумісності 26 пакетів між собою.
+**Версія синхронна.** Усі 5 пакетів завжди мають одну версію — споживач бачить
+одне число «версія ядра» і не звіряє таблицю сумісності між сателітами.
 `scripts/release/bump.mjs` сканує одну теку `packages/*` і бампає все, що не
-позначене `private`: 25 `@simplycms/*` + unscoped `create-simplycms-store`.
-До сплощення теки (2026-08-04) скаффолдер жив поза `packages/simplycms/` і
-потребував окремого списку-винятку — тепер він не потрібен.
+позначене `private` — після К0 це рівно пʼять манифестів; точний набір (а не
+поріг) асертить `tests/release-bump-coverage.test.ts`. До сплощення теки
+(2026-08-04) скаффолдер жив поза `packages/simplycms/` і потребував окремого
+списку-винятку — тепер він не потрібен.
+
+🔴 **Що бачить який гейт — критерії РІЗНІ, і розбіжність не помилка:**
+
+| Механізм | Критерій | Скільки пакетів |
+|---|---|---|
+| `scripts/release/bump.mjs`, `pnpm publish -r` | не-`private` у `packages/*` | **5** |
+| `pack-inspect.mjs` → `tests/published-exports-parity.test.ts` | `private === false` **І** (scope `@simplycms/` **АБО** точне `simplycms`) **І** наявний `publishConfig.exports` | **4** — `create-simplycms-store` відсікається за іменем (і не має `publishConfig.exports`) |
+| `pnpm build:packages` | `--filter "@simplycms/*" --filter simplycms`; пакет без скрипту `build` пропускається мовчки | збирається лише `simplycms` + `theme-solarstore`/`plugin-faq` |
+
+Тобто в реліз-потязі пакетів пʼять, а в tarball-parity-suite — чотири. Це
+зафіксовано коментарем у самому тесті, щоб наступна людина не «полагодила»
+розбіжність у бік поламки.
 
 Наслідок: підіймається версія **всім** пакетам, навіть тим, що не змінювались.
 Це свідомий компроміс на користь простоти; незалежні версії (Changesets) —
@@ -34,7 +61,7 @@ gh pr create --base main --title "Реліз v0.2.0"
 
 ### Unscoped-пакет: `create-simplycms-store`
 
-На відміну від 25 `@simplycms/*`-пакетів, `create-simplycms-store` — unscoped
+На відміну від сателітів `@simplycms/*`, `create-simplycms-store` — unscoped
 (без `@simplycms/` префікса, бо `pnpm create simplycms-store` — угода іменування
 npm для `create-*` CLI). Наслідки для реліз-потяга:
 
@@ -57,8 +84,13 @@ npm для `create-*` CLI). Наслідки для реліз-потяга:
   майбутній unscoped-пакет, тож повторювати процедуру не доведеться.
   Уточнення 2026-08-13: сам CLI зрештою вийшов **під scope** —
   `@simplycms/cli` (Фаза 2, спека CLI v1 §1), тож чинний токен покривав його
-  ще до створення; «майбутній unscoped `simplycms`» лишається хіба можливим
-  тонким пакетом-аліасом поверх `@simplycms/cli` — окремою дією власника.
+  ще до створення.
+  🔴 Уточнення 2026-08-20 (трек К0): unscoped-ім'я `simplycms` пішло **не**
+  під тонкий аліас CLI, а під сам фреймворк-пакет — і це другий unscoped
+  пакет у потязі. Він **новий для реєстру**, тож його публікує мерж (правило
+  «новий пакет = релізне рішення в момент мержу», нижче), і покриває його
+  саме обсяг `All Packages` — ще одне підтвердження, що звужувати токен назад
+  до scope `@simplycms` не можна.
 
 ### Другий bin-пакет: `@simplycms/cli` (scoped)
 
@@ -186,10 +218,43 @@ Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `m
 його незалежно від бампу. Зараз він там є (`npm view create-simplycms-store
 version`), тож правило знову зводиться до «no-op без бампа» — але
 для БУДЬ-ЯКОГО нового пакета воно не діє, і введення такого пакета стає
-релізним рішенням у момент мержу. Саме за цим правилом їде в реєстр і
-`@simplycms/cli`: його публікує мерж гілки CLI v1 у `main` (2026-08-13). З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
+релізним рішенням у момент мержу. Саме за цим правилом поїхав у реєстр
+`@simplycms/cli` (мерж гілки CLI v1, 2026-08-13) і так само їде unscoped
+`simplycms`: мерж гілки К0 займає ім'я в глобальному просторі імен npm
+**незворотно**. З тієї ж причини безпечний ручний ретрай (`workflow_dispatch`) після
 прогону, що впав на середині, — **для вже опублікованих** пакетів вони другий
 раз не публікуються.
+
+## Deprecate злитих пакетів (одноразово, після К0)
+
+Трек К0 звів 22 scoped-пакети ядра в один unscoped `simplycms`. Злиті імена
+лишаються в реєстрі зі своєю останньою версією `0.3.0` — і саме тому їх треба
+позначити, інакше `pnpm add @simplycms/ui` мовчки поставить мертвий пакет.
+
+🔴 **Порядок обовʼязковий:** спершу мерж і успішна публікація (в реєстрі має
+зʼявитись `simplycms`), і тільки потім deprecate — інакше повідомлення
+відправляє в пакет, якого ще немає. Токен — той самий Granular із
+`All Packages`; `npm deprecate` вимагає прав на запис.
+
+```bash
+for p in objects domain schema supabase data-supabase react-query runtime \
+         i18n storefront storefront-routes admin-routes admin themes plugins \
+         plugin-sdk ui cart-ui catalog-ui checkout-ui profile-ui reviews-ui core; do
+  npm deprecate "@simplycms/$p" \
+    "Merged into the 'simplycms' package (K0 consolidation, 2026-08). Install 'simplycms' instead."
+done
+```
+
+- **Сателіти НЕ deprecate**: `@simplycms/cli`, `@simplycms/theme-solarstore`,
+  `@simplycms/plugin-faq`, `create-simplycms-store` живі й далі їдуть у
+  потязі.
+- 🔴 **Unpublish свідомо ні.** 72 години з публікації минули (вікно npm
+  закрите), пакети взаємозалежні — зняття одного ламає резолв решти, — і це
+  розвалило б lockfile-и вже створених пілотних магазинів. Deprecate дає
+  видиме попередження, нічого не ламаючи; scope `@simplycms` захищений org,
+  тож перехоплення імені сторонньою людиною неможливе.
+- Перевірка: `npm view @simplycms/ui deprecated` віддає рядок повідомлення;
+  свіжий `pnpm add @simplycms/ui` друкує warn.
 
 ## Передумови (одноразові)
 
@@ -202,9 +267,9 @@ version`), тож правило знову зводиться до «no-op бе
 🔴 **Токен має бути Granular Access Token із увімкненим «Bypass 2FA»**
 (Packages and scopes → **`All Packages`**, permission **Read and write**).
 Саме `All Packages`, а не `Only select packages and scopes` зі scope
-`@simplycms`: у монорепо є unscoped-пакет (`create-simplycms-store`; CLI
-зрештою пішов під scope — `@simplycms/cli`), а scope-правило його не
-покриває — деталі вище, в розділі про unscoped-пакет. З листопада 2025
+`@simplycms`: у монорепо **два** unscoped-пакети — `create-simplycms-store` і
+(з треку К0) сам фреймворк-пакет `simplycms`, — а scope-правило їх не
+покриває; деталі вище, в розділі про unscoped-пакет. З листопада 2025
 classic/automation-токени npm прибрав, granular — єдиний доступний тип.
 
 Це не формальність, а перевірено падінням першого релізу (2026-08-03):
@@ -241,6 +306,7 @@ is required to publish packages.
 | `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |
+| Магазин падає на гідрації з TypeError у Supabase-клієнті, хоча гейти зелені | 🔴 профіль tsup **без `target: 'esnext'`**: esbuild лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsup.config.ts`, а не в окремих профілях; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
 
 ## Пов'язане
 
@@ -248,5 +314,7 @@ is required to publish packages.
 - `scripts/version-packages.mjs` — «сирий» бамп без гейтів і коміту
 - `.github/workflows/publish-packages.yml` — публікація + тег після неї
 - `tests/published-exports-parity.test.ts` — tarball-parity гейт
+- `tests/release-bump-coverage.test.ts` — точний набір пакетів, які бампає реліз
+- `tests/dist-import-meta.test.ts` — гард лоуереного `import.meta` у зібраному `dist`
 - `tests/release-git-tag-guard.test.ts` — `tagExists` проти remote (мок `execSync`)
 - `CLAUDE.md` §CI/CD, §Публікація пакетів
