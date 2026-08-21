@@ -1,10 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import {
-  loadSections,
-  loadSectionBySlug,
-  loadRootSections,
-} from 'simplycms/storefront/loaders';
+import { loadSections, loadSectionBySlug } from 'simplycms/storefront/loaders';
 import { createServerSupabase } from 'simplycms/supabase/server-client';
 
 /** Отримати всі активні секції */
@@ -19,8 +15,3 @@ export const getSectionBySlug = createServerFn({ method: 'GET' })
     const { slug } = input as { slug: string };
     return loadSectionBySlug(createServerSupabase(), slug);
   });
-
-/** Отримати кореневі секції (без parent_id) для навігації */
-export const getRootSections = createServerFn({ method: 'GET' }).handler(
-  async () => loadRootSections(createServerSupabase()),
-);

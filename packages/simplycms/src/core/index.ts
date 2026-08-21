@@ -55,7 +55,6 @@ export {
   getSession,
   getUser,
 } from './lib/supabase';
-export { findShippingZone } from './lib/shipping/findZone';
 
 // ---- Catalog Components ----
 export { ActiveFilters } from './components/catalog/ActiveFilters';

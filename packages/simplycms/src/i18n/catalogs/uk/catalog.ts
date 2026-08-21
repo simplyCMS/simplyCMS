@@ -17,20 +17,6 @@ export const messages = {
   'catalog.sort.priceAsc': 'Дешевші',
   'catalog.sort.priceDesc': 'Дорожчі',
 
-  // Навігація каталожного лейауту (CatalogLayout)
-  'catalog.nav.brands': 'Бренди',
-  'catalog.nav.services': 'Послуги',
-  'catalog.nav.about': 'Про нас',
-  'catalog.nav.contacts': 'Контакти',
-
-  // Вихід з акаунту
-  'catalog.signOut.success': 'Вихід виконано',
-  'catalog.signOut.successDescription': 'До зустрічі!',
-  'catalog.signOut.errorDescription': 'Не вдалося вийти з акаунту',
-
-  // Футер
-  'catalog.footer.copyright': '© 2024 SolarStore. Всі права захищено.',
-
   // Активні й бічні фільтри (ActiveFilters, FilterSidebar)
   'catalog.filters.activeLabel': 'Активні фільтри:',
   'catalog.filters.removeAria': 'Видалити фільтр {label}: {value}',
