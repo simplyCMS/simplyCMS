@@ -3,7 +3,10 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
-  dts: { tsconfig: './tsconfig.json' },
+  dts: true,
+  // 🔴 `tsconfig` — ТОП-РІВНЕВИЙ ключ; у `DtsConfig` такого поля немає
+  // (докладно — `packages/simplycms/tsup.config.ts`).
+  tsconfig: './tsconfig.json',
   sourcemap: true,
   clean: true,
   treeshake: true,
@@ -13,5 +16,5 @@ export default defineConfig({
   splitting: false,
   // Ядро приїжджає до магазину окремими пакетами — вбудовувати його копію
   // в бандл теми означало б дубль React-контекстів (SupabaseProvider тощо).
-  external: [/^@simplycms\//],
+  external: [/^simplycms(\/|$)/, /^@simplycms\//],
 });

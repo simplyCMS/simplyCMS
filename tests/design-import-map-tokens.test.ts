@@ -17,11 +17,11 @@ import {
 } from '../.agents/skills/redesign-from-reference/scripts/lib/contrast.mjs';
 import { mapColorTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/color-tokens.mjs';
 import { mapTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/map.mjs';
-import { applyTokens } from '@simplycms/themes/applyTokens';
-import { validateThemeModule } from '@simplycms/themes/validateThemeModule';
+import { applyTokens } from 'simplycms/themes/applyTokens';
+import { validateThemeModule } from 'simplycms/themes/validateThemeModule';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
-// Формат токена контракту тем (`packages/theme-system/src/types.ts`):
+// Формат токена контракту тем (`packages/simplycms/src/themes/types.ts`):
 // HSL-трійка без `hsl()`, напр. `"221 83% 53%"`. Ключі-виняток — не колір.
 const HSL_TRIPLE_REGEX = /^\d+(\.\d+)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%$/;
 const NON_COLOR_KEYS = new Set(['radius', 'font-sans', 'font-heading', 'dark']);

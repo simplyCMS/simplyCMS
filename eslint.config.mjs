@@ -1,5 +1,6 @@
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -12,12 +13,12 @@ const i18nRestrictedSyntax = [
   {
     selector: CYRILLIC_JSX_TEXT,
     message:
-      "Хардкоджений UI-рядок у JSX. Використай t('ключ') із @simplycms/i18n.",
+      "Хардкоджений UI-рядок у JSX. Використай t('ключ') із simplycms/i18n.",
   },
   {
     selector: CYRILLIC_JSX_ATTRIBUTE,
     message:
-      "Хардкоджений UI-рядок у JSX-атрибуті (placeholder/title/aria-*). Використай t('ключ') із @simplycms/i18n.",
+      "Хардкоджений UI-рядок у JSX-атрибуті (placeholder/title/aria-*). Використай t('ключ') із simplycms/i18n.",
   },
 ];
 
@@ -34,13 +35,23 @@ const i18nRestrictedSyntax = [
 // бачив ЖОДЕН гейт, і 293 хардкоджені рядки прожили там усю Фазу 1.
 const I18N_MIGRATED_FILES = [
   'src/**/*.tsx',
-  'packages/storefront-routes/**/*.tsx',
-  'packages/admin/**/*.tsx',
-  'packages/cart-ui/**/*.tsx',
-  'packages/catalog-ui/**/*.tsx',
-  'packages/checkout-ui/**/*.tsx',
-  'packages/profile-ui/**/*.tsx',
-  'packages/reviews-ui/**/*.tsx',
+  // К0: тіри вітрини й адмінки живуть теками флагмана. Зона перелічує саме
+  // теки, а не `packages/simplycms/**`: каталоги `src/i18n/catalogs/uk` —
+  // кирилиця за побудовою, і повний глоб зробив би error-зону самосуперечною.
+  //
+  // Обидві роут-теки ядра. `routes/admin` приїхала з пакета
+  // `@simplycms/admin-routes`, якого в зоні не було ніколи, — борг закрито
+  // 2026-08-21 разом із міграцією єдиного хардкоду (`AdminPending` →
+  // `admin.common.loading`), тож зона більше не обривається на `storefront`.
+  'packages/simplycms/routes/storefront/**/*.tsx',
+  'packages/simplycms/routes/admin/**/*.tsx',
+  'packages/simplycms/src/storefront-routes/**/*.tsx',
+  'packages/simplycms/src/admin/**/*.tsx',
+  'packages/simplycms/src/cart-ui/**/*.tsx',
+  'packages/simplycms/src/catalog-ui/**/*.tsx',
+  'packages/simplycms/src/checkout-ui/**/*.tsx',
+  'packages/simplycms/src/profile-ui/**/*.tsx',
+  'packages/simplycms/src/reviews-ui/**/*.tsx',
   'themes/*/components/**/*.tsx',
   // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
@@ -51,7 +62,7 @@ const I18N_MIGRATED_FILES = [
 // з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
 // Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
 // `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
-// (див. packages/supabase/src/__tests__/env-source.test.ts).
+// (див. packages/simplycms/src/supabase/__tests__/env-source.test.ts).
 const IMPORT_META_ENV =
   'MemberExpression[object.type="MetaProperty"][property.name="env"]';
 
@@ -67,16 +78,16 @@ const serverEnvRestrictedSyntax = [
 // (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
 // потрібне в бандлі, сюди їх НЕ додавати.
 const SERVER_ENV_FILES = [
-  'packages/supabase/src/server-client.ts',
-  'packages/supabase/src/anon-client.ts',
-  'packages/storefront-routes/src/seo/robots.ts',
-  'packages/storefront-routes/src/seo/sitemap.ts',
-  'packages/storefront-routes/routes/api/health.tsx',
+  'packages/simplycms/src/supabase/server-client.ts',
+  'packages/simplycms/src/supabase/anon-client.ts',
+  'packages/simplycms/src/storefront-routes/seo/robots.ts',
+  'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
+  'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
 ];
 
 // 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
-// @simplycms/plugin-sdk — прямі імпорти Supabase-шару звідси заборонені.
+// `simplycms/plugin-sdk` — прямі імпорти Supabase-шару звідси заборонені.
 // Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
 // (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
 // `plugin-*`: plugin-system і plugin-sdk — ядро, їх зона не покриває.
@@ -91,14 +102,14 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 const pluginTrustBoundaryImports = [
   {
     group: [
-      '@simplycms/supabase',
-      '@simplycms/supabase/*',
-      '@simplycms/data-supabase',
-      '@simplycms/data-supabase/*',
+      'simplycms/supabase',
+      'simplycms/supabase/*',
+      'simplycms/data-supabase',
+      'simplycms/data-supabase/*',
       '@supabase/*',
     ],
     message:
-      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7).',
+      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
   },
 ];
 
@@ -107,9 +118,9 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:@simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
     message:
-      'Плагін працює лише через порти @simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
+      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
 ];
 
@@ -142,16 +153,18 @@ const eslintConfig = [
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
     files: [
-      'packages/schema/src/schema.ts',
-      'packages/schema/src/relations.ts',
+      'packages/simplycms/src/schema/schema.ts',
+      'packages/simplycms/src/schema/relations.ts',
     ],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   {
-    // Error-зона: обидва пакети ядра цілком. Warn-зони більше немає — міграцію
-    // завершено, тож будь-який хардкод тут це помилка, а не борг.
+    // Error-зона: host `src/`, перелічені теки флагмана, теми й референс-теми
+    // — точний склад див. у `I18N_MIGRATED_FILES` вище (це список ТЕК, а не
+    // пакет цілком). Warn-зони більше немає — міграцію завершено, тож
+    // будь-який хардкод тут це помилка, а не борг.
     files: I18N_MIGRATED_FILES,
     rules: {
       'no-restricted-syntax': ['error', ...i18nRestrictedSyntax],
@@ -190,6 +203,14 @@ const eslintConfig = [
       ],
     },
   },
+  // Тір-зони напрямку шарів (ПК3, К0): по блоку на теку флагмана. Таблиця й
+  // обґрунтування — `eslint.tier-zones.mjs` (винесено окремим модулем, щоб
+  // конфіг лишався читним). Правило тут `no-restricted-imports`, тож перетину
+  // опцій з i18n/env-зонами `no-restricted-syntax` немає; зона межі довіри
+  // плагінів теж не перетинається — її глоби (`plugins/**`,
+  // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
+  // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
+  ...tierZoneConfigs,
   {
     ignores: [
       'node_modules/**',

@@ -1,0 +1,70 @@
+# simplycms/storefront
+
+SSR-лоадери вітрини (товари, розділи, характеристики, головна) і генератори
+`sitemap.xml` / `robots.txt`. Пакет не створює Supabase-клієнт і не знає про
+фреймворк: клієнт та `baseUrl` інжектує host, який сам загортає виклик у
+`createServerFn`.
+
+Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
+e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
+створюється скаффолдером `pnpm create simplycms-store`.
+
+## Встановлення
+
+```bash
+pnpm add simplycms
+```
+
+Вхід цього шару — субшлях `simplycms/storefront`.
+
+## Що всередині
+
+| Subpath | Експорти |
+|---------|----------|
+| `simplycms/storefront`          | Тип `StorefrontClient` + реекспорт `./loaders` і `./seo` |
+| `simplycms/storefront/loaders`  | `loadHomePageData`, `loadProduct`, `loadProducts`, `loadProductsBySectionId`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, константи `PRODUCT_FULL_SELECT` / `PRODUCT_LIST_SELECT`, тип `RootSection` |
+| `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
+
+Перший аргумент кожного лоадера — `StorefrontClient` (це `SupabaseClient` без
+фіксованої `Database`, тож типізований клієнт магазину підходить структурно).
+
+## Приклад
+
+```ts
+// packages/simplycms/src/storefront-routes/server/home.ts — host-glue навколо лоадера
+import { createServerFn } from '@tanstack/react-start';
+import { loadHomePageData } from 'simplycms/storefront/loaders';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
+
+export const getHomePageData = createServerFn({ method: 'GET' }).handler(
+  async () => loadHomePageData(createServerSupabase()),
+);
+
+// packages/simplycms/src/storefront-routes/seo/sitemap.ts — той самий принцип для SEO
+import { createAnonSupabaseClient } from 'simplycms/supabase/anon-client';
+import { buildSitemapXml as buildSitemap } from 'simplycms/storefront/seo';
+
+// 🔴 Базовий URL — ЛІНИВО з `process.env` у момент виклику, а не константою
+// на модуль-рівні: це серверний модуль, а серверний контур читає env лише з
+// `process.env` і лише в рантаймі (контракт CLI v1 §7). `import.meta.env`
+// запікся б у білд, а модуль-рівнева константа зафіксувала б значення на
+// момент імпорту — ротація ключів перестала б діяти без перезбірки.
+function siteUrl(): string {
+  return process.env.VITE_SITE_URL || 'https://example.com';
+}
+
+export function buildSitemapXml(): Promise<string> {
+  return buildSitemap(createAnonSupabaseClient(), siteUrl());
+}
+```
+
+## 🔴 `buildSitemapXml` кидає, а не віддає порожню карту
+
+Помилку запиту sitemap НЕ ковтає: карта з самих лише статичних URL виглядає як
+успіх, і кеш-заголовок (година + SWR) зафіксував би цю неправду для пошукових
+роботів. Краще 5xx без кешу — обробляти виняток має host.
+
+## Ліцензія
+
+MIT

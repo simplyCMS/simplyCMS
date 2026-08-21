@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { AtSign, MessageCircle, Rss } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useT } from 'simplycms/i18n';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import { MONO_LABEL, MONO_STACK } from './mono';
 import type { ThemeKey } from '../messages';
 

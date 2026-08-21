@@ -3,13 +3,13 @@
 /**
  * Адаптер drizzle-kit → формат міграцій Supabase CLI.
  *
- * Крок 1: `drizzle-kit generate` у теці `@simplycms/schema` (порівнює
- *         `src/schema.ts` зі snapshot-ом у `drizzle/meta/`).
+ * Крок 1: `drizzle-kit generate` у теці пакета `simplycms` (порівнює
+ *         `src/schema/schema.ts` зі snapshot-ом у `drizzle/meta/`).
  * Крок 2: новий `.sql` копіюється в `supabase/migrations/<YYYYMMDDHHmmss>_<name>.sql`.
  * Крок 3: друкує шлях і нагадування про ревʼю SQL перед `pnpm db:migrate`.
  *
  * Подвійна бухгалтерія навмисна: журнал і snapshot Drizzle лишаються в
- * `packages/schema/drizzle/` (комітяться), застосовний SQL — у
+ * `packages/simplycms/drizzle/` (комітяться), застосовний SQL — у
  * `supabase/migrations/`. Деталі — у README пакета схеми.
  *
  * Використання:
@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 
 // ── Шляхи ───────────────────────────────────────────────────────────────────
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SCHEMA_DIR = join(ROOT, 'packages', 'schema');
+const SCHEMA_DIR = join(ROOT, 'packages', 'simplycms');
 const DRIZZLE_DIR = join(SCHEMA_DIR, 'drizzle');
 const JOURNAL = join(DRIZZLE_DIR, 'meta', '_journal.json');
 const SUPABASE_MIGRATIONS = join(ROOT, 'supabase', 'migrations');
@@ -109,8 +109,8 @@ if (existsSync(target)) {
 }
 
 const header = [
-  `-- Згенеровано \`pnpm db:diff ${name}\` з packages/schema/drizzle/${sqlFile}.`,
-  '-- Джерело правди схеми — packages/schema/src/schema.ts.',
+  `-- Згенеровано \`pnpm db:diff ${name}\` з packages/simplycms/drizzle/${sqlFile}.`,
+  '-- Джерело правди схеми — packages/simplycms/src/schema/schema.ts.',
   '',
 ].join('\n');
 writeFileSync(
@@ -123,7 +123,7 @@ writeFileSync(
 console.log('\n✅ Міграцію створено:');
 console.log(`  📄 supabase/migrations/${target.split('/').pop()}`);
 console.log(
-  `  🗃️  drizzle-staging: packages/schema/drizzle/${sqlFile} (комітиться)`,
+  `  🗃️  drizzle-staging: packages/simplycms/drizzle/${sqlFile} (комітиться)`,
 );
 console.log('\n🔴 Переглянь SQL ПЕРЕД застосуванням:');
 console.log(

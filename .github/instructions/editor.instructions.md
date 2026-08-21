@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
+applyTo: "packages/simplycms/src/{core,admin}/**/*.{ts,tsx},src/**/*.{ts,tsx}"
 description: "Правила роботи з rich text редактором (Tiptap v3) в SimplyCMS"
 ---
 
@@ -14,7 +14,7 @@ SimplyCMS використовує **Tiptap v3** для rich text editing. Ре�
 ## ✅ ALWAYS
 
 ### Компоненти
-- Редактор знаходиться в `@simplycms/admin` (для адмін-панелі) та `@simplycms/core` (для відгуків).
+- Редактор знаходиться в `simplycms/admin` (для адмін-панелі) та `simplycms/core` (для відгуків).
 - Використовуй `RichTextEditor` компонент з відповідного пакету.
 - Використовуй `ReviewRichTextEditor` для форми відгуків.
 
@@ -35,5 +35,5 @@ SimplyCMS використовує **Tiptap v3** для rich text editing. Ре�
 - Не створюй окремі editor-обгортки — використовуй існуючі компоненти.
 
 ## ℹ️ Де шукати деталі
-- `packages/admin/src/components/` — адмін-компоненти з редактором.
-- `packages/core/src/components/reviews/ReviewRichTextEditor.tsx` — редактор відгуків.
+- `packages/simplycms/src/admin/components/` — адмін-компоненти з редактором.
+- `packages/simplycms/src/core/components/reviews/ReviewRichTextEditor.tsx` — редактор відгуків.

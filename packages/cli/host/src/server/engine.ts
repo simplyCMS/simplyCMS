@@ -1,4 +1,4 @@
-// Складання EngineContext для simplyCMS-застосунку через @simplycms/runtime.
+// Складання EngineContext для simplyCMS-застосунку через simplycms/runtime.
 // Це reference-приклад P9: магазин збирається з адаптерів data-supabase
 // + app-специфічних LinkResolver/MediaProvider/ConfigProvider.
 //
@@ -10,10 +10,10 @@ import {
   createSupabaseOrderRepository,
   createSupabaseIdentityProvider,
   singleTenantScope,
-} from '@simplycms/data-supabase';
-import { defineRuntime, type SimplyCmsRuntime } from '@simplycms/runtime';
+} from 'simplycms/data-supabase';
+import { defineRuntime, type SimplyCmsRuntime } from 'simplycms/runtime';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createServerSupabase } from '@simplycms/supabase/server-client';
+import { createServerSupabase } from 'simplycms/supabase/server-client';
 import {
   appLinks,
   appConfig,

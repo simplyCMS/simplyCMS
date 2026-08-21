@@ -2,9 +2,17 @@
  * Gate A — роути з `node_modules`.
  *
  * Доводить, що генератор TanStack Router зібрав ТЕ САМЕ дерево, скануючи
- * `node_modules/@simplycms/<pkg>/routes` замість `packages`: множина route-id
- * у скретчі має точно збігатися з монорепо (set-diff в обидва боки), а
- * import-и генерату — вести в `node_modules/@simplycms/…`.
+ * `node_modules` замість `packages`: множина route-id у скретчі має точно
+ * збігатися з монорепо (set-diff в обидва боки), а import-и генерату — вести
+ * в `node_modules`.
+ *
+ * 🔴 Роут-теки приходять із ДВОХ джерел, і рахуються вони окремо (топологія 5,
+ * трек К0). Каркас вітрини й адмінки — підтеки ОДНОГО unscoped-флагмана
+ * (`node_modules/simplycms/routes/{storefront,admin}`); роути адмінки плагіна
+ * — з його власного scoped-пакета (`node_modules/@simplycms/plugin-faq/routes`,
+ * довстановлює `install-faq.mjs`). Вимога «> 0» стоїть саме на ядрі: без неї
+ * гейт зеленів би на магазині, де каркас приїхав звідкись іще, аби лишились
+ * роути плагіна.
  */
 
 import { readFileSync } from 'node:fs';
@@ -45,14 +53,16 @@ export function gateRoutes(storeDir) {
   const imports = [...scratchSource.matchAll(/^import .* from '(.+)'$/gm)].map(
     (m) => m[1],
   );
-  const fromNodeModules = imports.filter((p) =>
+  const fromCore = imports.filter((p) => p.includes('node_modules/simplycms/'));
+  const fromSatellites = imports.filter((p) =>
     p.includes('node_modules/@simplycms/'),
   );
   const suspicious = imports.filter(
     (p) => p.includes('packages/') || p.includes('/src/'),
   );
   details.push(
-    `імпортів із node_modules/@simplycms: ${fromNodeModules.length}`,
+    `імпортів із node_modules: ядро ${fromCore.length}, ` +
+      `сателіти ${fromSatellites.length}`,
   );
   if (suspicious.length) {
     details.push(`підозрілі імпорти: ${suspicious.join(', ')}`);
@@ -63,7 +73,7 @@ export function gateRoutes(storeDir) {
       missing.length === 0 &&
       extra.length === 0 &&
       suspicious.length === 0 &&
-      fromNodeModules.length > 0,
+      fromCore.length > 0,
     details,
   };
 }

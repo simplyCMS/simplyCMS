@@ -1,7 +1,7 @@
 // simplycms theme:conformance <name> — КАНОНІЧНИЙ канал запуску conformance-
 // гейта контракту тем v3 (амендмент до Р8, 2026-08-18). Рушій тестів у шаблон
 // магазину не додається: гейт має бути доступним і магазину без vitest.
-// Прогін — `assertThemeViewsConformance` із `@simplycms/themes/conformance`
+// Прогін — `assertThemeViewsConformance` із `simplycms/themes/conformance`
 // на модулі теми, взятому з simplycms.config.ts магазину.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -93,7 +93,7 @@ export async function run(argv) {
     const theme = module.default;
     if (!theme) throw new Error(`${spec} не має default-експорту ThemeModule`);
     const { assertThemeViewsConformance } = await environment.runner.import(
-      '@simplycms/themes/conformance',
+      'simplycms/themes/conformance',
     );
     const ran = await assertThemeViewsConformance(theme);
     say.success(conformanceSummary(ran));

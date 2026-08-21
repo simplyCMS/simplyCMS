@@ -35,7 +35,7 @@ description: "Рефакторинг React компонента в SimplyCMS"
 
 ## Зверни увагу на:
 
-- Правильне розміщення в пакетах (@simplycms/core, ui, admin, themes)
+- Правильне розміщення в теках ядра (`simplycms/ui`, `*-ui`, `admin`, `core`) чи в темі — і напрям тірів T0→T5
 - Дотримання принципів SOLID
 - Consistency з існуючим кодом проекту
 - Покращення UX та accessibility

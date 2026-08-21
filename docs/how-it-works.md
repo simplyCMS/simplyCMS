@@ -8,7 +8,7 @@
 
 | В OpenCart | У SimplyCMS | Що це фізично |
 |---|---|---|
-| Ядро OpenCart (zip з сайту) | Пакети `@simplycms/*` | npm-пакети, які магазин ставить як залежності |
+| Ядро OpenCart (zip з сайту) | Пакет `simplycms` | ОДНА npm-залежність магазину: увесь фреймворк субшляхами `simplycms/<тека>` |
 | Папка магазину на хостингу | Репозиторій магазину (~8 файлів + конфіг) | Git-репо розробника магазину |
 | «Модулі» в адмінці (upload zip) | **`simplycms` CLI** в терміналі | Команда встановлення/оновлення розширень |
 | OpenCart Marketplace | Маркетплейс SimplyCMS | Сайт-каталог, що вказує на npm-пакети |
@@ -57,11 +57,11 @@ simplycms db:diff --write              ← окремий крок, ЛЮДСЬК
 
 Один Node-процес + Supabase як окремий сервіс:
 
-- **Storefront (SSR)** — канонічні сторінки з `@simplycms/storefront-routes`
+- **Storefront (SSR)** — канонічні сторінки з `simplycms/storefront-routes`
   (головна, каталог, категорія, товар, кошик, checkout…) + власні сторінки магазину.
   Повний HTML для Google та AI-агентів. Сторінки не перевизначаються — вигляд дає
   активна **тема** (токени + Header/Footer + налаштування), вставки — слоти плагінів.
-- **Admin (SPA, `/admin`)** — сторінки з `@simplycms/admin-routes` + сторінки
+- **Admin (SPA, `/admin`)** — сторінки з `simplycms/admin-routes` + сторінки
   встановлених плагінів (`/admin/<plugin>/…`). Перевизначення сторінок адмінки
   не існує (як в OpenCart/WP) — лише доповнення.
 - **Server functions** — дані для сторінок → Supabase (Postgres/Auth/Storage).
@@ -82,9 +82,9 @@ pnpm dev                               # повний магазин: вітри
 
 **Оновлення ядра:**
 ```bash
-pnpm update "@simplycms/*" && pnpm build   # нові сторінки/фікси приїхали самі
+pnpm update simplycms "@simplycms/*" && pnpm build   # нові сторінки/фікси приїхали самі
 ```
-Генератор роутів сканує теки пакетів ядра — новий route-файл у пакеті стає новою
+Генератор роутів сканує роут-теки ядра (`simplycms/routes/{storefront,admin}`) — новий route-файл у пакеті стає новою
 сторінкою магазину **без жодного нового файлу в репо магазину**. Рідкісні релізи,
 що міняють host-файли (~8 штук), доганяються командою `simplycms update`
 (CLI сам редагує ці файли). Breaking-зміни — тільки в major-версіях.
@@ -93,7 +93,7 @@ pnpm update "@simplycms/*" && pnpm build   # нові сторінки/фікс�
 `simplycms add …` + deploy → в адмінці зʼявився перемикач і форма налаштувань
 (за Zod-схемою плагіна) → активував. Далі все керується з адмінки.
 
-**Автор плагіна:** `simplycms create plugin` (скаффолд на `@simplycms/plugin-sdk`)
+**Автор плагіна:** `simplycms create plugin` (скаффолд на `simplycms/plugin-sdk`)
 → `simplycms plugin:dev` (локальний dev-loop) → `npm publish` під своїм scope
 → PR у індекс маркетплейсу. Доступ до даних — тільки через порти SDK
 (прямого Supabase-клієнта плагін не отримує).

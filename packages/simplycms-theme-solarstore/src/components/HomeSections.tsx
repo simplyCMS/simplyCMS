@@ -1,6 +1,6 @@
-import { Button } from '@simplycms/ui/button';
-import { Card } from '@simplycms/ui/card';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { Button } from 'simplycms/ui/button';
+import { Card } from 'simplycms/ui/card';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { SolarstoreThemeKey } from '../messages';
 
 /** Переваги компанії — число лишається літералом, підпис іде ключем теми */

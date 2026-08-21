@@ -54,6 +54,15 @@ describe('cli db:diff', () => {
     expect(() => parseDbDiffArgs(['--wat'])).toThrow(/--wat/);
   });
 
+  it('schemaMigrationsPath: міграції лежать на рівні пакета simplycms', async () => {
+    const store = await scaffoldStore('db-core-path');
+    // 🔴 Саме `node_modules/simplycms/migrations`, а не підтека схеми:
+    // tarball ядра везе міграції на рівні пакета (files: [... "migrations"]).
+    expect(schemaMigrationsPath(store)).toBe(
+      join(store, 'node_modules', 'simplycms', 'migrations'),
+    );
+  });
+
   it('assertSchemaMigrations: стара версія ядра без migrations/ — гучна помилка', async () => {
     const store = await scaffoldStore('db-old-core');
     expect(() => assertSchemaMigrations(store)).toThrow(/стара версія ядра/);
@@ -133,8 +142,17 @@ describe('cli db:diff', () => {
 describe('cli db:diff: мульти-канони', () => {
   it('pluginMigrationSources: читає конфіг, бачить node_modules і @plugins/, пропускає плагіни без міграцій', async () => {
     const store = await scaffoldStore('db-plugin-sources');
-    // Шаблон декларує hello-world (@plugins/, без migrations/) і faq
-    // (@simplycms/plugin-faq у node_modules) — створюємо теку лише faq.
+    // Шаблон декларує лише hello-world (@plugins/, без migrations/) — FAQ
+    // знято з шаблону (ПК7), тож довстановлюємо його тут, як це робить
+    // магазин: рядок у конфізі + пакет у node_modules.
+    const configPath = join(store, 'simplycms.config.ts');
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        'plugins: [',
+        "plugins: [\n    { name: 'faq', module: () => import('@simplycms/plugin-faq') },",
+      ),
+    );
     const faqDir = join(
       store,
       'node_modules',
@@ -177,12 +195,12 @@ describe('cli db:diff: мульти-канони', () => {
       'select 1;\n',
     );
     const single = compareMigrationsMulti(storeDir, [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
     ]);
     expect(single.own).toEqual(['99999999999999_plg_faq_items.sql']);
 
     const multi = compareMigrationsMulti(storeDir, [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
       { name: 'faq', spec: '@simplycms/plugin-faq', dir: pluginDir },
     ]);
     expect(multi.own).toEqual([]);
@@ -198,7 +216,7 @@ describe('cli db:diff: мульти-канони', () => {
     writeFileSync(join(a, '99999999999999_same.sql'), 'select 1;\n');
     writeFileSync(join(b, '99999999999999_same.sql'), 'select 2;\n');
     const { collisions } = compareMigrationsMulti(storeMigrationsDir(store), [
-      { name: null, spec: '@simplycms/schema', dir: schemaDir },
+      { name: null, spec: 'simplycms/schema', dir: schemaDir },
       { name: 'a', spec: 'a', dir: a },
       { name: 'b', spec: 'b', dir: b },
     ]);

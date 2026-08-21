@@ -169,7 +169,7 @@ try {
   // Типів БД у репозиторії ДВА файли:
   //   1. `supabase/types.ts` — host-генерат (core + плагінні таблиці магазину);
   //      його оновлює цей скрипт, host-код типізується проти нього.
-  //   2. `packages/supabase/src/database.ts` — baseline core-схеми,
+  //   2. `packages/simplycms/src/supabase/database.ts` — baseline core-схеми,
   //      проти якого типізуються пакети ядра; оновлюється `pnpm types:baseline`
   //      і ЛИШЕ з еталонної dev-БД без плагінів.
   console.log(

@@ -5,7 +5,7 @@
  * тут — лише перенесення його в реєстр. Імпортується як side-effect із
  * __root.tsx (клієнт) та storefront-routes/server/themes.ts (сервер).
  */
-import { ThemeRegistry } from '@simplycms/themes/ThemeRegistry';
+import { ThemeRegistry } from 'simplycms/themes/ThemeRegistry';
 import config from '../simplycms.config';
 
 for (const [name, loader] of Object.entries(config.themes ?? {})) {

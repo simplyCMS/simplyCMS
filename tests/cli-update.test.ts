@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,6 +16,10 @@ import {
   listFiles,
   writeHostFiles,
 } from '../packages/cli/src/host-drift.mjs';
+import {
+  inspectSkillLinks,
+  reconcileSkillLinks,
+} from '../packages/cli/src/skill-links.mjs';
 import {
   hostDriftExitCode,
   parseUpdateArgs,
@@ -87,17 +92,20 @@ describe('cli update', () => {
     expect(() => resolveTargetVersion(undefined, () => '')).toThrow(/--to/);
   });
 
-  it('planCoreInstall: лише @simplycms/*, deps і devDeps окремо, на цільову версію', () => {
+  it('planCoreInstall: ядро + сателіти, deps і devDeps окремо, на цільову версію', () => {
     const manifest = {
       dependencies: {
-        '@simplycms/ui': '0.3.0',
-        '@simplycms/core': '0.3.0',
+        simplycms: '0.3.0',
+        '@simplycms/theme-solarstore': '0.3.0',
+        // 🔴 Стороння тема лише схожа іменем — оновлювати її версією ядра не
+        // можна: у неї власний реліз-цикл.
+        'simplycms-theme-aurora': '1.2.0',
         react: '19.0.0',
       },
       devDependencies: { '@simplycms/cli': '0.3.0', typescript: '5.9.0' },
     };
     expect(planCoreInstall(manifest, '0.4.0')).toEqual({
-      deps: ['@simplycms/core@0.4.0', '@simplycms/ui@0.4.0'],
+      deps: ['@simplycms/theme-solarstore@0.4.0', 'simplycms@0.4.0'],
       devDeps: ['@simplycms/cli@0.4.0'],
     });
     // Манифест без devDependencies — порожній план, а не падіння.
@@ -144,6 +152,52 @@ describe('cli update', () => {
     writeFileSync(join(dir, '.gitkeep'), '');
     expect(listFiles(dir)).toEqual(['a.txt', 'sub/b.txt']);
     expect(listFiles(join(dir, 'nema'))).toEqual([]);
+  });
+
+  it('reconcileSkillLinks: доробляє відсутні лінки й прибирає осиротілі', async () => {
+    const store = await scaffoldStore('upd-skills');
+    const skills = join(store, 'node_modules/simplycms/skills');
+    mkdirSync(join(skills, 'redesign-from-reference'), { recursive: true });
+    writeFileSync(join(skills, 'redesign-from-reference/SKILL.md'), '# r\n');
+    // Осиротілий лінк: скіл із пакета зник (перейменували, прибрали), а лінк
+    // магазину лишився й веде в порожнечу.
+    mkdirSync(join(store, '.claude/skills'), { recursive: true });
+    symlinkSync(
+      '../../node_modules/simplycms/skills/gone',
+      join(store, '.claude/skills/gone'),
+    );
+
+    const before = inspectSkillLinks(store);
+    expect(before.missing).toEqual([
+      '.agents/skills/redesign-from-reference',
+      '.claude/skills/redesign-from-reference',
+    ]);
+    expect(before.orphaned).toEqual(['.claude/skills/gone']);
+
+    const { created, removed } = reconcileSkillLinks(store);
+    expect(created).toEqual(before.missing);
+    expect(removed).toEqual(['.claude/skills/gone']);
+    expect(
+      readFileSync(
+        join(store, '.claude/skills/redesign-from-reference/SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# r\n');
+    expect(inspectSkillLinks(store)).toEqual({
+      skills: ['redesign-from-reference'],
+      missing: [],
+      orphaned: [],
+    });
+  });
+
+  it('inspectSkillLinks: ядро без skills/ — skills: null, нічого не робимо', async () => {
+    const store = await scaffoldStore('upd-skills-none');
+    expect(inspectSkillLinks(store)).toEqual({
+      skills: null,
+      missing: [],
+      orphaned: [],
+    });
+    expect(reconcileSkillLinks(store)).toEqual({ created: [], removed: [] });
   });
 
   it('hostDriftExitCode: дрейф під --check → 1, під --write → 0, без дрейфу → 0', () => {

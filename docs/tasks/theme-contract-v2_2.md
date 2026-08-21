@@ -35,19 +35,19 @@
   тем — системний fallback без завантаження.
 - Тема не має жодного каналу вплинути на шрифт: `ThemeComponents` — це
   `React.ComponentType` без head-каналу
-  (`packages/theme-system/src/types.ts:79-91`).
+  (`packages/simplycms/src/themes/types.ts:79-91`).
 
 ### 1.2 Механізм токенів — жорсткий allowlist
 
-- `ThemeTokenValues` (`packages/theme-system/src/types.ts:27-52`) — 23
+- `ThemeTokenValues` (`packages/simplycms/src/themes/types.ts:27-52`) — 23
   кольорові ключі + `radius`; `DesignTokens` додає `dark?`.
-- `TOKEN_KEYS` (`packages/theme-system/src/applyTokens.ts:7-32`) — статичний
+- `TOKEN_KEYS` (`packages/simplycms/src/themes/applyTokens.ts:7-32`) — статичний
   масив тих самих ключів; `renderBlock` (50-58) фільтрує ПО ньому — ключ
   поза списком мовчки не потрапляє в CSS. Санітизація значень —
   `UNSAFE_VALUE = /[;{}<>]|\/\*/` (39).
 - `validateThemeModule` конкретні token-ключі НЕ звіряє (лише
   `isRecord(tokens)`) — для нових ключів правок не потребує.
-- Рендер — `ThemeTokens` (`packages/storefront-routes/src/shells/ThemeTokens.tsx`):
+- Рендер — `ThemeTokens` (`packages/simplycms/src/storefront-routes/shells/ThemeTokens.tsx`):
   inline-`<style>` у `StorefrontShell`, нешаровий, перекриває `@layer base`.
 - Fallback-значення змінних — `src/styles/globals.css` (`:root`/`.dark`;
   копії: канон `packages/cli/host/src/styles/globals.css` + template).
@@ -62,8 +62,8 @@
 - Реальні споживачі — три raw-CSS utility-класи
   `.gradient-brand`/`.gradient-brand-subtle`/`.text-gradient-brand`
   (`globals.css:156-181`), вжиті рівно тричі:
-  `packages/catalog-ui/src/CatalogLayout.tsx:61,153`,
-  `packages/cart-ui/src/CartButton.tsx:11`.
+  `packages/simplycms/src/catalog-ui/CatalogLayout.tsx:61,153`,
+  `packages/simplycms/src/cart-ui/CartButton.tsx:11`.
 - Наслідок: перемикання теми НЕ перефарбовує градієнти воронки — лишаються
   кольори SolarStore-палітри. Це дірка контракту, а не дизайн-рішення
   (ресерч §1.3, §3.2).
@@ -112,7 +112,7 @@
    stylesheet (Google Fonts і аналоги). v1 свідомо БЕЗ `@font-face`-обʼєктів
    і без роздачі файлів шрифтів темою (npm-тема не має каналу статики).
 2. Рендер: компонент поруч із `ThemeTokens` у
-   `StorefrontShell` (`packages/storefront-routes/src/shells/StorefrontShell.tsx`) —
+   `StorefrontShell` (`packages/simplycms/src/storefront-routes/shells/StorefrontShell.tsx`) —
    `<link rel="stylesheet" href=…>` на кожен запис. `<link rel=stylesheet>`
    у body — body-ok за HTML-спекою; працює і в SSR-стрімі.
 3. Валідація/санітизація: приймати ЛИШЕ абсолютні `https:`-URL; відкидати
@@ -164,13 +164,13 @@
 
 ## 3. Верифікація / DoD
 
-- [X] **Юніти `packages/theme-system`:** `applyTokens` рендерить нові ключі;
+- [X] **Юніти `packages/simplycms/src/themes`:** `applyTokens` рендерить нові ключі;
       ключ поза `TOKEN_KEYS` ігнорується (регрес); санітизація font-stack і
       fonts-URL (позитив/негатив); `validateThemeModule` — форма `fonts`. —
-      `packages/theme-system/src/__tests__/{applyTokens,safeFontStylesheets,validateThemeModule}.test.ts`.
+      `packages/simplycms/src/themes/__tests__/{applyTokens,safeFontStylesheets,validateThemeModule}.test.ts`.
 - [X] **Компонентний тест** рендера fonts-`<link>` (Testing Library, зразок —
-      тести `packages/admin/src/__tests__/`). —
-      `packages/storefront-routes/src/__tests__/theme-fonts.test.tsx` +
+      тести `packages/simplycms/src/admin/__tests__/`). —
+      `packages/simplycms/src/storefront-routes/__tests__/theme-fonts.test.tsx` +
       `theme-fonts-solarstore.test.tsx` (реальний модуль теми, Р9).
 - [X] **Гейти в канонічному порядку:** `pnpm install --frozen-lockfile` →
       `format:check` → `lint` → `build` → `typecheck` → `test` →

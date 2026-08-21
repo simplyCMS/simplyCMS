@@ -1,4 +1,4 @@
-import { definePlugin } from '@simplycms/plugin-sdk';
+import { definePlugin } from 'simplycms/plugin-sdk';
 import { FaqSlot } from './FaqSlot';
 import { messages } from './messages';
 import { settings } from './settings';
@@ -12,7 +12,7 @@ import { settings } from './settings';
 export default definePlugin({
   name: 'faq',
   displayName: 'FAQ',
-  version: '0.3.0',
+  version: '0.4.0',
   engines: { simplycms: '>=0.3.0' },
   // Метадані реєстру — англійською (конвенція Р6 плану Фази 3).
   description:

@@ -12,26 +12,12 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
-      '@simplycms/objects': pkg('objects/src'),
-      '@simplycms/domain': pkg('domain/src'),
-      '@simplycms/supabase': pkg('supabase/src'),
-      '@simplycms/i18n': pkg('i18n/src'),
-      '@simplycms/react-query': pkg('react-query/src'),
-      '@simplycms/storefront': pkg('storefront/src'),
-      '@simplycms/storefront-routes': pkg('storefront-routes/src'),
-      '@simplycms/cart-ui': pkg('cart-ui/src'),
-      '@simplycms/catalog-ui': pkg('catalog-ui/src'),
-      '@simplycms/checkout-ui': pkg('checkout-ui/src'),
-      '@simplycms/profile-ui': pkg('profile-ui/src'),
-      '@simplycms/reviews-ui': pkg('reviews-ui/src'),
-      '@simplycms/core': pkg('core/src'),
-      '@simplycms/admin': pkg('admin/src'),
-      '@simplycms/ui': pkg('ui/src'),
-      '@simplycms/plugins': pkg('plugin-system/src'),
-      '@simplycms/plugin-sdk': pkg('plugin-sdk/src'),
       '@simplycms/plugin-faq': pkg('simplycms-plugin-faq/src'),
-      '@simplycms/themes': pkg('theme-system/src'),
       '@simplycms/theme-solarstore': pkg('simplycms-theme-solarstore/src'),
+      // 🔴 Навмисно `resolve`, а не хелпер `pkg`: рядок у лапках, що
+      // починається з імені флагмана й слеша, audit-exports читає як
+      // субшлях-специфікатор ядра й вимагає для нього ключ у exports.
+      simplycms: resolve(__dirname, 'packages/simplycms/src'),
       '@themes': resolve(__dirname, 'themes'),
       '@plugins': resolve(__dirname, 'plugins'),
     },
@@ -53,6 +39,9 @@ export default defineConfig({
       // Смоук tarball-а @simplycms/cli (Gate TOOL): та сама логіка — гейт
       // опублікованого артефакту живе в релізному ланцюзі.
       'tests/cli-pack.test.ts',
+      // Гард лоуереного `import.meta` у dist: читає артефакт збірки, тому
+      // без `pnpm build:packages` перевіряв би вчорашній (або порожній) dist.
+      'tests/dist-import-meta.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —

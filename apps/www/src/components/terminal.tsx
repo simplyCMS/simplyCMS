@@ -28,7 +28,7 @@ const SCRIPT: Step[] = [
     tone: 'dim',
     pause: 1300,
   },
-  { kind: 'cmd', text: 'pnpm update "@simplycms/*" && pnpm build' },
+  { kind: 'cmd', text: 'pnpm update simplycms "@simplycms/*" && pnpm build' },
   { kind: 'out', text: '✔ Core packages updated', tone: 'ok' },
   {
     kind: 'out',

@@ -1,0 +1,604 @@
+{
+  "name": "simplycms",
+  "version": "0.4.0",
+  "private": false,
+  "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts/index.ts",
+    "./contracts/objects": "./src/contracts/objects/index.ts",
+    "./contracts/ports": "./src/contracts/ports/index.ts",
+    "./contracts/semver": "./src/contracts/semver/index.ts",
+    "./contracts/views": "./src/contracts/views/index.ts",
+    "./contracts/views/fixtures": "./src/contracts/views/fixtures/index.ts",
+    "./domain": "./src/domain/index.ts",
+    "./domain/pricing": "./src/domain/pricing.ts",
+    "./domain/discounts": "./src/domain/discounts.ts",
+    "./domain/inventory": "./src/domain/inventory.ts",
+    "./domain/shipping": "./src/domain/shipping.ts",
+    "./domain/money": "./src/domain/money.ts",
+    "./schema": "./src/schema/schema.ts",
+    "./schema/relations": "./src/schema/relations.ts",
+    "./supabase": "./src/supabase/index.ts",
+    "./supabase/keys": "./src/supabase/keys.ts",
+    "./supabase/browser-client": "./src/supabase/browser-client.ts",
+    "./supabase/server-client": "./src/supabase/server-client.ts",
+    "./supabase/anon-client": "./src/supabase/anon-client.ts",
+    "./supabase/SupabaseProvider": "./src/supabase/SupabaseProvider.tsx",
+    "./data-supabase": "./src/data-supabase/index.ts",
+    "./react-query": "./src/react-query/index.ts",
+    "./react-query/queries": "./src/react-query/queries.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./storefront": "./src/storefront/index.ts",
+    "./storefront/loaders": "./src/storefront/loaders/index.ts",
+    "./storefront/seo": "./src/storefront/seo/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./ui/*": "./src/ui/*.tsx",
+    "./ui/utils": "./src/ui/utils.ts",
+    "./ui/use-toast": "./src/ui/use-toast.ts",
+    "./ui/use-mobile": "./src/ui/use-mobile.tsx",
+    "./themes": "./src/themes/index.ts",
+    "./themes/ThemeRegistry": "./src/themes/ThemeRegistry.ts",
+    "./themes/ThemeContext": "./src/themes/ThemeContext.tsx",
+    "./themes/applyTokens": "./src/themes/applyTokens.ts",
+    "./themes/safeFontStylesheets": "./src/themes/safeFontStylesheets.ts",
+    "./themes/bootstrapThemes": "./src/themes/bootstrapThemes.ts",
+    "./themes/validateThemeModule": "./src/themes/validateThemeModule.ts",
+    "./themes/useThemeT": "./src/themes/useThemeT.ts",
+    "./themes/types": "./src/themes/types.ts",
+    "./themes/conformance": "./src/themes/conformance/index.ts",
+    "./plugins": "./src/plugins/index.ts",
+    "./plugins/PluginSlot": "./src/plugins/PluginSlot.tsx",
+    "./plugins/types": "./src/plugins/types.ts",
+    "./plugin-sdk": "./src/plugin-sdk/index.ts",
+    "./cart-ui": "./src/cart-ui/index.ts",
+    "./cart-ui/*": "./src/cart-ui/*.tsx",
+    "./catalog-ui": "./src/catalog-ui/index.ts",
+    "./catalog-ui/*": "./src/catalog-ui/*.tsx",
+    "./checkout-ui": "./src/checkout-ui/index.ts",
+    "./checkout-ui/*": "./src/checkout-ui/*.tsx",
+    "./profile-ui": "./src/profile-ui/index.ts",
+    "./profile-ui/*": "./src/profile-ui/*.tsx",
+    "./reviews-ui": "./src/reviews-ui/index.ts",
+    "./reviews-ui/*": "./src/reviews-ui/*.tsx",
+    "./admin": "./src/admin/index.ts",
+    "./admin/components/*": "./src/admin/components/*",
+    "./admin/pages/*": "./src/admin/pages/*",
+    "./admin/layouts/*": "./src/admin/layouts/*",
+    "./core": "./src/core/index.ts",
+    "./core/providers": "./src/core/providers/CMSProvider.tsx",
+    "./core/providers/CMSProvider": "./src/core/providers/CMSProvider.tsx",
+    "./core/hooks": "./src/core/hooks/useAuth.tsx",
+    "./core/hooks/*": "./src/core/hooks/*",
+    "./core/lib/*": "./src/core/lib/*",
+    "./core/components/*": "./src/core/components/*",
+    "./storefront-routes": "./src/storefront-routes/index.ts",
+    "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
+    "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
+    "./storefront-routes/seo/*": "./src/storefront-routes/seo/*.ts",
+    "./storefront-routes/pages/*": "./src/storefront-routes/pages/*.tsx",
+    "./storefront-routes/components/*": "./src/storefront-routes/components/*.tsx",
+    "./storefront-routes/shells/*": "./src/storefront-routes/shells/*",
+    "./storefront-routes/views/*": "./src/storefront-routes/views/*",
+    "./storefront-routes/routes/*": "./routes/storefront/*",
+    "./admin-routes/routes/*": "./routes/admin/*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./contracts": {
+        "types": "./dist/contracts/index.d.ts",
+        "import": "./dist/contracts/index.js"
+      },
+      "./contracts/objects": {
+        "types": "./dist/contracts/objects/index.d.ts",
+        "import": "./dist/contracts/objects/index.js"
+      },
+      "./contracts/ports": {
+        "types": "./dist/contracts/ports/index.d.ts",
+        "import": "./dist/contracts/ports/index.js"
+      },
+      "./contracts/semver": {
+        "types": "./dist/contracts/semver/index.d.ts",
+        "import": "./dist/contracts/semver/index.js"
+      },
+      "./contracts/views": {
+        "types": "./dist/contracts/views/index.d.ts",
+        "import": "./dist/contracts/views/index.js"
+      },
+      "./contracts/views/fixtures": {
+        "types": "./dist/contracts/views/fixtures/index.d.ts",
+        "import": "./dist/contracts/views/fixtures/index.js"
+      },
+      "./domain": {
+        "types": "./dist/domain/index.d.ts",
+        "import": "./dist/domain/index.js"
+      },
+      "./domain/pricing": {
+        "types": "./dist/domain/pricing.d.ts",
+        "import": "./dist/domain/pricing.js"
+      },
+      "./domain/discounts": {
+        "types": "./dist/domain/discounts.d.ts",
+        "import": "./dist/domain/discounts.js"
+      },
+      "./domain/inventory": {
+        "types": "./dist/domain/inventory.d.ts",
+        "import": "./dist/domain/inventory.js"
+      },
+      "./domain/shipping": {
+        "types": "./dist/domain/shipping.d.ts",
+        "import": "./dist/domain/shipping.js"
+      },
+      "./domain/money": {
+        "types": "./dist/domain/money.d.ts",
+        "import": "./dist/domain/money.js"
+      },
+      "./schema": {
+        "types": "./dist/schema/schema.d.ts",
+        "import": "./dist/schema/schema.js"
+      },
+      "./schema/relations": {
+        "types": "./dist/schema/relations.d.ts",
+        "import": "./dist/schema/relations.js"
+      },
+      "./supabase": {
+        "types": "./dist/supabase/index.d.ts",
+        "import": "./dist/supabase/index.js"
+      },
+      "./supabase/keys": {
+        "types": "./dist/supabase/keys.d.ts",
+        "import": "./dist/supabase/keys.js"
+      },
+      "./supabase/browser-client": {
+        "types": "./dist/supabase/browser-client.d.ts",
+        "import": "./dist/supabase/browser-client.js"
+      },
+      "./supabase/server-client": {
+        "types": "./dist/supabase/server-client.d.ts",
+        "import": "./dist/supabase/server-client.js"
+      },
+      "./supabase/anon-client": {
+        "types": "./dist/supabase/anon-client.d.ts",
+        "import": "./dist/supabase/anon-client.js"
+      },
+      "./supabase/SupabaseProvider": {
+        "types": "./dist/supabase/SupabaseProvider.d.ts",
+        "import": "./dist/supabase/SupabaseProvider.js"
+      },
+      "./data-supabase": {
+        "types": "./dist/data-supabase/index.d.ts",
+        "import": "./dist/data-supabase/index.js"
+      },
+      "./react-query": {
+        "types": "./dist/react-query/index.d.ts",
+        "import": "./dist/react-query/index.js"
+      },
+      "./react-query/queries": {
+        "types": "./dist/react-query/queries.d.ts",
+        "import": "./dist/react-query/queries.js"
+      },
+      "./runtime": {
+        "types": "./dist/runtime/index.d.ts",
+        "import": "./dist/runtime/index.js"
+      },
+      "./i18n": {
+        "types": "./dist/i18n/index.d.ts",
+        "import": "./dist/i18n/index.js"
+      },
+      "./storefront": {
+        "types": "./dist/storefront/index.d.ts",
+        "import": "./dist/storefront/index.js"
+      },
+      "./storefront/loaders": {
+        "types": "./dist/storefront/loaders/index.d.ts",
+        "import": "./dist/storefront/loaders/index.js"
+      },
+      "./storefront/seo": {
+        "types": "./dist/storefront/seo/index.d.ts",
+        "import": "./dist/storefront/seo/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui/index.d.ts",
+        "import": "./dist/ui/index.js"
+      },
+      "./ui/*": {
+        "types": "./dist/ui/*.d.ts",
+        "import": "./dist/ui/*.js"
+      },
+      "./ui/utils": {
+        "types": "./dist/ui/utils.d.ts",
+        "import": "./dist/ui/utils.js"
+      },
+      "./ui/use-toast": {
+        "types": "./dist/ui/use-toast.d.ts",
+        "import": "./dist/ui/use-toast.js"
+      },
+      "./ui/use-mobile": {
+        "types": "./dist/ui/use-mobile.d.ts",
+        "import": "./dist/ui/use-mobile.js"
+      },
+      "./themes": {
+        "types": "./dist/themes/index.d.ts",
+        "import": "./dist/themes/index.js"
+      },
+      "./themes/ThemeRegistry": {
+        "types": "./dist/themes/ThemeRegistry.d.ts",
+        "import": "./dist/themes/ThemeRegistry.js"
+      },
+      "./themes/ThemeContext": {
+        "types": "./dist/themes/ThemeContext.d.ts",
+        "import": "./dist/themes/ThemeContext.js"
+      },
+      "./themes/applyTokens": {
+        "types": "./dist/themes/applyTokens.d.ts",
+        "import": "./dist/themes/applyTokens.js"
+      },
+      "./themes/safeFontStylesheets": {
+        "types": "./dist/themes/safeFontStylesheets.d.ts",
+        "import": "./dist/themes/safeFontStylesheets.js"
+      },
+      "./themes/bootstrapThemes": {
+        "types": "./dist/themes/bootstrapThemes.d.ts",
+        "import": "./dist/themes/bootstrapThemes.js"
+      },
+      "./themes/validateThemeModule": {
+        "types": "./dist/themes/validateThemeModule.d.ts",
+        "import": "./dist/themes/validateThemeModule.js"
+      },
+      "./themes/useThemeT": {
+        "types": "./dist/themes/useThemeT.d.ts",
+        "import": "./dist/themes/useThemeT.js"
+      },
+      "./themes/types": {
+        "types": "./dist/themes/types.d.ts",
+        "import": "./dist/themes/types.js"
+      },
+      "./themes/conformance": {
+        "types": "./dist/themes/conformance/index.d.ts",
+        "import": "./dist/themes/conformance/index.js"
+      },
+      "./plugins": {
+        "types": "./dist/plugins/index.d.ts",
+        "import": "./dist/plugins/index.js"
+      },
+      "./plugins/PluginSlot": {
+        "types": "./dist/plugins/PluginSlot.d.ts",
+        "import": "./dist/plugins/PluginSlot.js"
+      },
+      "./plugins/types": {
+        "types": "./dist/plugins/types.d.ts",
+        "import": "./dist/plugins/types.js"
+      },
+      "./plugin-sdk": {
+        "types": "./dist/plugin-sdk/index.d.ts",
+        "import": "./dist/plugin-sdk/index.js"
+      },
+      "./cart-ui": {
+        "types": "./dist/cart-ui/index.d.ts",
+        "import": "./dist/cart-ui/index.js"
+      },
+      "./cart-ui/*": {
+        "types": "./dist/cart-ui/*.d.ts",
+        "import": "./dist/cart-ui/*.js"
+      },
+      "./catalog-ui": {
+        "types": "./dist/catalog-ui/index.d.ts",
+        "import": "./dist/catalog-ui/index.js"
+      },
+      "./catalog-ui/*": {
+        "types": "./dist/catalog-ui/*.d.ts",
+        "import": "./dist/catalog-ui/*.js"
+      },
+      "./checkout-ui": {
+        "types": "./dist/checkout-ui/index.d.ts",
+        "import": "./dist/checkout-ui/index.js"
+      },
+      "./checkout-ui/*": {
+        "types": "./dist/checkout-ui/*.d.ts",
+        "import": "./dist/checkout-ui/*.js"
+      },
+      "./profile-ui": {
+        "types": "./dist/profile-ui/index.d.ts",
+        "import": "./dist/profile-ui/index.js"
+      },
+      "./profile-ui/*": {
+        "types": "./dist/profile-ui/*.d.ts",
+        "import": "./dist/profile-ui/*.js"
+      },
+      "./reviews-ui": {
+        "types": "./dist/reviews-ui/index.d.ts",
+        "import": "./dist/reviews-ui/index.js"
+      },
+      "./reviews-ui/*": {
+        "types": "./dist/reviews-ui/*.d.ts",
+        "import": "./dist/reviews-ui/*.js"
+      },
+      "./admin": {
+        "types": "./dist/admin/index.d.ts",
+        "import": "./dist/admin/index.js"
+      },
+      "./admin/components/*": {
+        "types": "./dist/admin/components/*.d.ts",
+        "import": "./dist/admin/components/*.js"
+      },
+      "./admin/pages/*": {
+        "types": "./dist/admin/pages/*.d.ts",
+        "import": "./dist/admin/pages/*.js"
+      },
+      "./admin/layouts/*": {
+        "types": "./dist/admin/layouts/*.d.ts",
+        "import": "./dist/admin/layouts/*.js"
+      },
+      "./core": {
+        "types": "./dist/core/index.d.ts",
+        "import": "./dist/core/index.js"
+      },
+      "./core/providers": {
+        "types": "./dist/core/providers/CMSProvider.d.ts",
+        "import": "./dist/core/providers/CMSProvider.js"
+      },
+      "./core/providers/CMSProvider": {
+        "types": "./dist/core/providers/CMSProvider.d.ts",
+        "import": "./dist/core/providers/CMSProvider.js"
+      },
+      "./core/hooks": {
+        "types": "./dist/core/hooks/useAuth.d.ts",
+        "import": "./dist/core/hooks/useAuth.js"
+      },
+      "./core/hooks/*": {
+        "types": "./dist/core/hooks/*.d.ts",
+        "import": "./dist/core/hooks/*.js"
+      },
+      "./core/lib/*": {
+        "types": "./dist/core/lib/*.d.ts",
+        "import": "./dist/core/lib/*.js"
+      },
+      "./core/components/*": {
+        "types": "./dist/core/components/*.d.ts",
+        "import": "./dist/core/components/*.js"
+      },
+      "./storefront-routes": {
+        "types": "./dist/storefront-routes/index.d.ts",
+        "import": "./dist/storefront-routes/index.js"
+      },
+      "./storefront-routes/active-theme": {
+        "types": "./dist/storefront-routes/active-theme.d.ts",
+        "import": "./dist/storefront-routes/active-theme.js"
+      },
+      "./storefront-routes/server/*": {
+        "types": "./dist/storefront-routes/server/*.d.ts",
+        "import": "./dist/storefront-routes/server/*.js"
+      },
+      "./storefront-routes/seo/*": {
+        "types": "./dist/storefront-routes/seo/*.d.ts",
+        "import": "./dist/storefront-routes/seo/*.js"
+      },
+      "./storefront-routes/pages/*": {
+        "types": "./dist/storefront-routes/pages/*.d.ts",
+        "import": "./dist/storefront-routes/pages/*.js"
+      },
+      "./storefront-routes/components/*": {
+        "types": "./dist/storefront-routes/components/*.d.ts",
+        "import": "./dist/storefront-routes/components/*.js"
+      },
+      "./storefront-routes/shells/*": {
+        "types": "./dist/storefront-routes/shells/*.d.ts",
+        "import": "./dist/storefront-routes/shells/*.js"
+      },
+      "./storefront-routes/views/*": {
+        "types": "./dist/storefront-routes/views/*.d.ts",
+        "import": "./dist/storefront-routes/views/*.js"
+      },
+      "./storefront-routes/routes/*": "./routes/storefront/*",
+      "./admin-routes/routes/*": "./routes/admin/*"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "routes",
+    "skills",
+    "migrations",
+    "!src/**/__tests__/**"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/simplycms"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
+    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "db:dump-rls": "node ./scripts/dump-rls.mjs"
+  },
+  "peerDependencies": {
+    "@hookform/resolvers": "^5.0.0",
+    "@radix-ui/react-accordion": "^1.0.0",
+    "@radix-ui/react-alert-dialog": "^1.0.0",
+    "@radix-ui/react-aspect-ratio": "^1.0.0",
+    "@radix-ui/react-avatar": "^1.0.0",
+    "@radix-ui/react-checkbox": "^1.0.0",
+    "@radix-ui/react-collapsible": "^1.0.0",
+    "@radix-ui/react-context-menu": "^2.0.0",
+    "@radix-ui/react-dialog": "^1.0.0",
+    "@radix-ui/react-dropdown-menu": "^2.0.0",
+    "@radix-ui/react-hover-card": "^1.0.0",
+    "@radix-ui/react-label": "^2.0.0",
+    "@radix-ui/react-menubar": "^1.0.0",
+    "@radix-ui/react-navigation-menu": "^1.0.0",
+    "@radix-ui/react-popover": "^1.0.0",
+    "@radix-ui/react-progress": "^1.0.0",
+    "@radix-ui/react-radio-group": "^1.0.0",
+    "@radix-ui/react-scroll-area": "^1.0.0",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-separator": "^1.0.0",
+    "@radix-ui/react-slider": "^1.0.0",
+    "@radix-ui/react-slot": "^1.0.0",
+    "@radix-ui/react-switch": "^1.0.0",
+    "@radix-ui/react-tabs": "^1.0.0",
+    "@radix-ui/react-toast": "^1.0.0",
+    "@radix-ui/react-toggle": "^1.0.0",
+    "@radix-ui/react-toggle-group": "^1.0.0",
+    "@radix-ui/react-tooltip": "^1.0.0",
+    "@supabase/ssr": ">=0.5.0 <1.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@tanstack/react-start": "^1.0.0",
+    "@tiptap/extension-link": "^3.0.0",
+    "@tiptap/extension-underline": "^3.0.0",
+    "@tiptap/react": "^3.0.0",
+    "@tiptap/starter-kit": "^3.0.0",
+    "class-variance-authority": "^0.7.0",
+    "cmdk": "^1.0.0",
+    "date-fns": "^3.0.0 || ^4.0.0",
+    "drizzle-orm": "^0.45.0",
+    "embla-carousel-react": "^8.0.0",
+    "input-otp": "^1.0.0",
+    "lucide-react": ">=0.400.0",
+    "next-themes": "^0.3.0 || ^0.4.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-day-picker": "^9.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-hook-form": "^7.0.0",
+    "react-resizable-panels": "^3.0.0 || ^4.0.0",
+    "recharts": "^2.0.0 || ^3.0.0",
+    "sonner": "^1.0.0 || ^2.0.0",
+    "vaul": "^1.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "pg": "8.22.0"
+  },
+  "dependencies": {
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-text-align": "^3.29.2",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@radix-ui/react-accordion": {
+      "optional": true
+    },
+    "@radix-ui/react-alert-dialog": {
+      "optional": true
+    },
+    "@radix-ui/react-aspect-ratio": {
+      "optional": true
+    },
+    "@radix-ui/react-avatar": {
+      "optional": true
+    },
+    "@radix-ui/react-checkbox": {
+      "optional": true
+    },
+    "@radix-ui/react-collapsible": {
+      "optional": true
+    },
+    "@radix-ui/react-context-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-dialog": {
+      "optional": true
+    },
+    "@radix-ui/react-dropdown-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-hover-card": {
+      "optional": true
+    },
+    "@radix-ui/react-label": {
+      "optional": true
+    },
+    "@radix-ui/react-menubar": {
+      "optional": true
+    },
+    "@radix-ui/react-navigation-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-popover": {
+      "optional": true
+    },
+    "@radix-ui/react-progress": {
+      "optional": true
+    },
+    "@radix-ui/react-radio-group": {
+      "optional": true
+    },
+    "@radix-ui/react-scroll-area": {
+      "optional": true
+    },
+    "@radix-ui/react-select": {
+      "optional": true
+    },
+    "@radix-ui/react-separator": {
+      "optional": true
+    },
+    "@radix-ui/react-slider": {
+      "optional": true
+    },
+    "@radix-ui/react-slot": {
+      "optional": true
+    },
+    "@radix-ui/react-switch": {
+      "optional": true
+    },
+    "@radix-ui/react-tabs": {
+      "optional": true
+    },
+    "@radix-ui/react-toast": {
+      "optional": true
+    },
+    "@radix-ui/react-toggle": {
+      "optional": true
+    },
+    "@radix-ui/react-toggle-group": {
+      "optional": true
+    },
+    "@radix-ui/react-tooltip": {
+      "optional": true
+    },
+    "class-variance-authority": {
+      "optional": true
+    },
+    "cmdk": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "input-otp": {
+      "optional": true
+    },
+    "next-themes": {
+      "optional": true
+    },
+    "react-day-picker": {
+      "optional": true
+    },
+    "react-resizable-panels": {
+      "optional": true
+    },
+    "recharts": {
+      "optional": true
+    },
+    "vaul": {
+      "optional": true
+    }
+  }
+}

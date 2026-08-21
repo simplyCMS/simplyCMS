@@ -25,7 +25,7 @@
 // 🔴 Мок навмисно БЕЗ JSX: цей файл — `.ts`, і `<a>{children}</a>` у ньому не
 // зібрався б. Потрібна саме розмітка — перейменуй файл на `.tsx`.
 import { describe, it } from 'vitest';
-import { assertThemeViewsConformance } from '@simplycms/themes/conformance';
+import { assertThemeViewsConformance } from 'simplycms/themes/conformance';
 import theme from './index';
 
 describe('тема __THEME_NAME__: контракт v3', () => {

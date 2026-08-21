@@ -32,8 +32,8 @@ pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО
 pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
 pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
                       # packages/cli/host/ (канон host-файлів для simplycms update),
-                      # packages/schema/migrations/ (для simplycms db:diff) — усі під парність-тестом
-pnpm release 0.2.0    # РЕЛІЗ: гарди + бамп версії всіх пакетів + гейти + коміт
+                      # packages/simplycms/migrations/ (для simplycms db:diff) — усі під парність-тестом
+pnpm release 0.4.0    # РЕЛІЗ: гарди + бамп версії всіх 5 пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
@@ -47,9 +47,11 @@ SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** 
 
 **Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md).
 
-**Фаза 0 завершена 2026-07-31.** Опис нижче — фактичний стан коду після неї: роути й канонічні сторінки живуть у пакетах (`@simplycms/storefront-routes`, `@simplycms/admin-routes`), host стиснуто до `__root.tsx` + `src/routes/my/`, теми — контракт v2 (`manifest + tokens + components`), схема БД — Drizzle-baseline у `@simplycms/schema`. Незакриті борги Фази 0 перелічені в роадмапі (розділ «Борги»).
+**Фаза 0 завершена 2026-07-31.** Її здобутки чинні й сьогодні, але вже в топології К0: роути й канонічні сторінки живуть у ядрі (теки `routes/storefront`, `routes/admin` і `src/storefront-routes` пакета `simplycms`), host стиснуто до `__root.tsx` + `src/routes/my/`, теми — контракт v3, схема БД — Drizzle-baseline (`simplycms/schema`). Незакриті борги Фази 0 перелічені в роадмапі (розділ «Борги»).
 
-🔴 **Стратегічний напрям 2026-08-19 затверджено власником, у коді ще НЕМАЄ.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. Опис Supabase-механік нижче в цьому файлі — чинний стан коду ДО v2.
+🔴 **Трек К0 (консолідація пакетів) — У КОДІ цієї гілки, у реєстрі npm ЩЕ НІ.** 26 npm-пакетів зведено в 5: unscoped фреймворк-пакет `simplycms` (усе ядро T0–T5 теками `packages/simplycms/src/*`) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`; фасад `@simplycms/core` розчинено; дисципліну шарів тримають eslint-тір-зони; агентні скіли доставляються магазинам симлінками на `node_modules/simplycms/skills/`. Спека — [`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md). 🔴 **Публікація** `simplycms` (і deprecate 22 злитих імен) відбувається в момент мержу гілки в `main` — до того реєстр тримає стару топологію 26 пакетів `0.3.0`. Опис нижче в цьому файлі — стан коду ПІСЛЯ К0.
+
+🔴 **Стратегічний напрям 2026-08-19 затверджено власником, у коді ще НЕМАЄ.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. Опис Supabase-механік нижче в цьому файлі — чинний стан коду ДО v2. Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
 
 ## Mandatory Instructions
 
@@ -81,11 +83,21 @@ Also see:
 `.claude/skills/*` і `.github/prompts/*.prompt.md` — симлінки на нього, щоб
 Claude Code й Copilot читали **одні й ті самі** файли.
 
+🔴 **Виняток — скіли, які їдуть у магазини** (з треку К0): їхнє джерело
+правди — тека `packages/simplycms/skills/<name>` пакета ядра, а `.agents/
+skills/<name>` і `.claude/skills/<name>` монорепо — **прямі симлінки** на неї
+(обидва в пакет, не ланцюжком один через одного). Так само їх отримує магазин:
+скаффолдер створює обидві пари лінків на `node_modules/simplycms/skills/<name>`
+після `installDeps`, `simplycms update` доробляє відсутні й прибирає осиротілі,
+`doctor` №12 звітує розсинхрон. Копії скіла в шаблоні більше немає
+(`template/.claude/` видалено) — оновлення ядра оновлює скіл автоматично.
+Сьогодні під цим механізмом один скіл — `redesign-from-reference`.
+
 | Шар | Що це |
 |-----|-------|
 | `.agents/skills/codebase-research/` | Як шукати в репо: `orient` (карта символів, валідація якорів плану), протокол стейл-графа, формат звіту-дельти |
 | `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
-| `.agents/skills/redesign-from-reference/` | Як робити редизайн магазину за референс-сайтом, фази 0-6: правові межі, дискавері сторінок із обовʼязковим діалогом, детерміністична інспекція (`scripts/` усередині скіла) — кольори, типографіка й **motion** (transitions/keyframes/reveal/hover/JS-детект, `inspection.json` `schemaVersion: 3`), мапінг токенів по всіх знятих сторінках, тема штатним лайфсайклом, спека-файли компонентів із секцією Motion, **обовʼязковий** side-by-side по кожному підтвердженому типу з класифікацією розбіжностей, опційне шліфування. Їде в шаблон скаффолдера (`pnpm template:sync`); посібник — [`docs/guides/redesign-from-reference.md`](docs/guides/redesign-from-reference.md) |
+| `packages/simplycms/skills/redesign-from-reference/` (лінки — `.agents/skills/` і `.claude/skills/`) | Як робити редизайн магазину за референс-сайтом, фази 0-6: правові межі, дискавері сторінок із обовʼязковим діалогом, детерміністична інспекція (`scripts/` усередині скіла) — кольори, типографіка й **motion** (transitions/keyframes/reveal/hover/JS-детект, `inspection.json` `schemaVersion: 3`), мапінг токенів по всіх знятих сторінках, тема штатним лайфсайклом, спека-файли компонентів із секцією Motion, **обовʼязковий** side-by-side по кожному підтвердженому типу з класифікацією розбіжностей, опційне шліфування. Їде в магазини текою `skills/` пакета `simplycms` (симлінки, не копія); посібник — [`docs/guides/redesign-from-reference.md`](docs/guides/redesign-from-reference.md) |
 | `.claude/agents/` | Субагенти `codebase-research`, `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
 | `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`, `/редизайн-за-референсом` |
 
@@ -103,7 +115,8 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
 **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-build → typecheck → test → build:packages → test:packaging`.
+build → typecheck → test → build:packages → typecheck:template →
+test:packaging`.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
@@ -116,6 +129,17 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 без `pnpm build:packages` перед ним `pnpm test:packaging` не має що перевіряти.
 гейт саме `format:check`, бо `pnpm format` — це `prettier --write`, який не
 червоніє.
+
+🔴 **`typecheck:template` — окремий гейт, і саме після `build:packages`.**
+Кореневий `tsconfig.json` ВИКЛЮЧАЄ `packages/create-simplycms-store/template`
+(його імпорти резолвляться з `node_modules` магазину, не workspace-аліасами),
+тому `pnpm typecheck` шаблону не бачить. Розрив був не теоретичний: помилка
+типів у `template/routes.ts` проходила `tsc`, `lint`, `test`, `build:packages`
+і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого в CI
+немає. `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
+що бачить магазин), тому потребує `build:packages` перед собою. Список файлів
+під ним стереже `tests/template-typecheck-coverage.test.ts`.
+
 `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
 репозиторій** (`prettier --write .` / `--check .`), а не лише `src/**`.
 Що НЕ форматується — у `.prettierignore`: згенерований машиною код
@@ -126,36 +150,53 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
 після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
-з warn на **error** і діють на host `src/`, обидва пакети роутів, усі пʼять
-`*-ui`-пакетів воронки й компоненти тем — новий кириличний рядок інтерфейсу
-там валить лінт. Третя error-зона (2026-08-13) — `import.meta.env` у шести
-серверних модулях env-контракту (див. «Environment Variables»). Селектори не
-послабляти.
+з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
+(`routes/storefront` і `routes/admin`), `src/storefront-routes`, `src/admin`
+і пʼять `src/*-ui` пакета ядра плюс компоненти тем — новий кириличний рядок
+інтерфейсу там валить лінт.
+🔴 `routes/admin` увійшла в зону 2026-08-21 (борг К0-1 закрито): єдиний
+хардкод «Завантаження адмінки…» переведено на ключ `admin.common.loading`
+(`AdminPending` — React-компонент на тому ж місці дерева, що й `AdminLayout`,
+тобто всередині `I18nProvider`, тож `useT()` там штатний).
+Третя error-зона (2026-08-13) — `import.meta.env` у шести
+серверних модулях env-контракту (див. «Environment Variables»).
+Четверта (2026-08-20, трек К0) — **тір-зони напрямку шарів**:
+`eslint.tier-zones.mjs` + `eslint.tier-relative.mjs` забороняють імпорт
+угору по тірах усередині пакета ядра (23 зони; обидві форми специфікатора —
+bare-субшлях `simplycms/<тека>` і відносний `../<тека>`), бо після злиття
+пакетів межу `dependencies` більше не тримає ніщо. Негативний контроль —
+`tests/tier-boundary.test.ts`. Селектори не послабляти.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
-три атрибути (~64 % рядків). Доводять чотири committed-тести —
-`tests/i18n-coverage.test.ts` (AST-скан, порожній `PENDING_FILES`),
+три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
+`tests/i18n-coverage.test.ts` (AST-скан по `SCANNED_ROOTS` проти реєстру
+`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 16 роут-файлів
+ядра, чиї `<title>`/`<meta description>` у `head()` перекласти нічим:
+`head()` — функція поза React-контекстом, а локаль магазину ядру недоступна),
 `tests/i18n-catalog-parity.test.ts` (повнота `en`),
-`packages/i18n/src/__tests__/catalog-integrity.test.ts` (дублікати ключів),
+`packages/simplycms/src/i18n/__tests__/catalog-integrity.test.ts` (дублікати ключів),
 `tests/theme-messages-parity.test.ts` (повнота каталогів тем),
 `tests/plugin-messages-parity.test.ts` (повнота каталогів плагінів).
 
-**Що покрито (2026-08-14).** `SCANNED_ROOTS` у `tests/i18n-coverage/scan.ts` —
-host `src/`, обидва пакети роутів, уся воронка покупки (`cart-ui`,
-`catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), `core`, `storefront`,
-`theme-system`, `plugin-system`, `plugin-sdk`, теми (тека `themes/` цілком
-плюс референс-пакети `simplycms-theme-*`, Фаза 4) і (з Фази 3) плагіни: тека
-`plugins/` цілком плюс референс-пакети `simplycms-plugin-*` — обидва
-дискавляться з диска, не статичним списком. Тобто `locale: 'en-US'` дає
-англійський магазин цілком, а не змішаний.
+**Що покрито (оновлено 2026-08-20).** `SCANNED_ROOTS` у
+`tests/i18n-coverage/scan.ts` — host `src/` і теки пакета ядра:
+`storefront-routes`, `admin`, уся воронка покупки (`cart-ui`, `catalog-ui`,
+`checkout-ui`, `profile-ui`, `reviews-ui`), `core`, `storefront`, `themes`,
+`plugins`, `plugin-sdk`; плюс теми (тека `themes/` цілком і референс-пакети
+`simplycms-theme-*`) і плагіни (тека `plugins/` цілком і референс-пакети
+`simplycms-plugin-*`) — обидва дискавляться з диска, не статичним списком.
+🔴 Перелічені саме ТЕКИ, а не `packages/simplycms/src` цілком: core-каталоги
+(`src/i18n/catalogs/**`) — кирилиця за побудовою, суцільний корінь вимагав би
+перекладу від перекладу. Тобто `locale: 'en-US'` дає англійський магазин
+цілком, а не змішаний.
 
 🔴 **Каталогів ТРИ рівні, і плутати їх не можна.** Core-каталог
-(`packages/i18n/src/catalogs/{uk,en}/`) типізований замкненим union-ом
+(`packages/simplycms/src/i18n/catalogs/{uk,en}/`) типізований замкненим union-ом
 `MessageKey` — саме він дає перевірку одруків. Тема несе **власний**
 каталог (`ThemeModule.messages`, `themes/<name>/messages.ts`) і читається
 хуком `useThemeT()`; плагін — власний `messages` у `definePlugin`
 (ключі з префіксом `plugin.<name>.`), читається `usePluginT()` з
-`@simplycms/plugin-sdk`. Класти копірайт теми/плагіна в core-каталог
+`simplycms/plugin-sdk`. Класти копірайт теми/плагіна в core-каталог
 заборонено: це зламало б типізацію ядра й змішало шари. Ланцюжок скрізь
 той самий: `[locale]` → `uk` → сам ключ. Метадані реєстру плагіна
 (manifest.description) — англійською: показуються з БД-рядка, не з каталогу.
@@ -191,7 +232,8 @@ TS 6 пробували: він вимагає прибрати `baseUrl`, пі�
 
 ```
 simplyCMS/
-├── routes.ts                         # virtualRouteConfig: rootRoute + physical() на теки пакетів
+├── routes.ts                         # virtualRouteConfig: rootRoute + physical() на роут-теки
+│                                     # packages/simplycms/routes/{storefront,admin} (+ плагіни)
 ├── apps/www/                         # Лендінг simplycms.dev: TanStack Start у режимі ПРЕРЕНДЕРУ
 │                                     # (статичний HTML, деплой dist/client на будь-який хостинг).
 │                                     # private, ПОЗА реліз-потягом (bump/publish сканують лише
@@ -215,43 +257,49 @@ simplyCMS/
 │   ├── server.ts                     # Server entry: createServerEntry({ fetch }) + точка перехоплення
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
-├── packages/               # ВСІ публіковані пакети — і ядро, і скаффолдер.
-│   │                       # 🔴 Проміжної теки `packages/simplycms/` більше немає
-│   │                       # (сплощено 2026-08-04): вона була точкою subtree-дзеркала
-│   │                       # окремого core-репо, а дзеркало вивели з експлуатації ще
-│   │                       # у Фазі 0. Тулінг тепер відрізняє ядро від скаффолдера
-│   │                       # за ІМЕНЕМ (`@simplycms/`), а не за шляхом.
-│   ├── objects/            @simplycms/objects        # Контракти + порти (0 runtime deps);
-│   │                                                 # субшляхи ./views і ./views/fixtures —
-│   │                                                 # view-model-и вітрини (контракт тем v3)
-│   ├── domain/             @simplycms/domain         # Pure-логіка: pricing/discounts/inventory/shipping
-│   ├── schema/             @simplycms/schema         # Drizzle-схема ядра + RLS у TS + drizzle/ snapshot
-│   ├── supabase/           @simplycms/supabase       # browser/server/anon-клієнти, SupabaseProvider, keys
-│   ├── data-supabase/      @simplycms/data-supabase  # Реалізації портів на Supabase
-│   ├── react-query/        @simplycms/react-query    # Query-хуки через EngineContext
-│   ├── runtime/            @simplycms/runtime        # defineRuntime + host-defineConfig
-│   ├── i18n/               @simplycms/i18n           # createTranslator, I18nProvider, каталоги uk/en
-│   ├── storefront/         @simplycms/storefront     # SSR-лоадери + SEO-генератори (DI-клієнт)
-│   ├── storefront-routes/  @simplycms/storefront-routes  # routes/ + pages/ (container-и) +
-│   │                                                 # views/ (канонічні view + slots/ реквізитів,
-│   │                                                 # контракт тем v3) + shells/ + server/
-│   ├── admin-routes/       @simplycms/admin-routes   # routes/admin* (тонкі обгортки)
-│   ├── admin/              @simplycms/admin          # Сторінки/компоненти адмінки
-│   ├── theme-system/       @simplycms/themes         # ThemeRegistry, bootstrapThemes, applyTokens,
-│   │                                                 # validateThemeModule, conformance/ (гейт views v3,
-│   │                                                 # субшлях @simplycms/themes/conformance)
-│   ├── plugin-system/      @simplycms/plugins        # HookRegistry, PluginSlot, bootstrapPlugins,
-│   │                                                 # validatePluginModule
-│   ├── plugin-sdk/         @simplycms/plugin-sdk     # definePlugin + порти плагінів (usePluginTable,
-│   │                                                 # usePluginConfig, usePluginT) — ЄДИНА поверхня,
-│   │                                                 # дозволена плагіну (межа довіри §7, Фаза 3)
-│   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного контуру: plg_faq_items,
-│   │                                                 # routes/ (/admin/faq), слот, Zod-settings, i18n
-│   ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore  # Референс-тема повного контуру: manifest
-│   │                                                 # + tokens + components + messages (Фаза 4, npm)
-│   ├── ui/                 @simplycms/ui             # shadcn/ui-примітиви
-│   ├── {cart,catalog,checkout,profile,reviews}-ui/   # Feature-UI пакети
-│   ├── core/               @simplycms/core           # Legacy-фасад (розчиняється; Фаза 1+)
+├── packages/               # ВСІ публіковані пакети — рівно ПʼЯТЬ (трек К0).
+│   │                       # 🔴 Тека `packages/simplycms/` — це САМ фреймворк-пакет
+│   │                       # (unscoped npm-імʼя `simplycms`), а не проміжний рівень:
+│   │                       # старий проміжний `packages/simplycms/` часів subtree-дзеркала
+│   │                       # сплощено 2026-08-04, і ім'я звільнилось. Тулінг відрізняє
+│   │                       # ядро за ІМЕНЕМ: scope `@simplycms/` АБО точне `simplycms`
+│   │                       # (🔴 ніколи префіксом — зачепив би сторонні simplycms-theme-*).
+│   ├── simplycms/          simplycms                 # ФЛАГМАН: усе ядро одним пакетом
+│   │   ├── src/contracts/        # T0 Контракти + порти (0 runtime deps); субшляхи
+│   │   │                         #    ./views і ./views/fixtures — view-model-и вітрини
+│   │   │                         #    (контракт тем v3; react — type-only peer)
+│   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
+│   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
+│   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
+│   │   │                         #    database.ts (baseline core-типів)
+│   │   ├── src/data-supabase/    # T2 Реалізації портів на Supabase
+│   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
+│   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig
+│   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
+│   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
+│   │   ├── src/ui/               # T3 shadcn/ui-примітиви
+│   │   ├── src/themes/           # T4 ThemeRegistry, bootstrapThemes, applyTokens,
+│   │   │                         #    validateThemeModule, conformance/ (гейт views v3,
+│   │   │                         #    субшлях simplycms/themes/conformance)
+│   │   ├── src/plugins/          # T4 HookRegistry, PluginSlot, bootstrapPlugins,
+│   │   │                         #    validatePluginModule
+│   │   ├── src/plugin-sdk/       # T4 definePlugin + порти плагінів (usePluginTable,
+│   │   │                         #    usePluginConfig, usePluginT) — ЄДИНА поверхня,
+│   │   │                         #    дозволена плагіну (межа довіри §7)
+│   │   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
+│   │   ├── src/core/             # T5 Власні провайдери/хуки/компоненти (CMSProvider,
+│   │   │                         #    useAuth, useCart, useBanners…). Фасадна роль
+│   │   │                         #    розчинена К0; розселення по тірах — поза К0
+│   │   ├── src/admin/            # T5 Сторінки/компоненти адмінки
+│   │   ├── src/storefront-routes/# T5 pages/ (container-и) + views/ (канонічні view +
+│   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
+│   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
+│   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
+│   │   ├── migrations/           # Канон core-міграцій для `simplycms db:diff`
+│   │   │                         #    (закомічена копія supabase/migrations, template:sync)
+│   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
+│   │   ├── drizzle/ + drizzle.config.ts + scripts/dump-rls.mjs  # schema-тулінг
+│   │   └── tsup.config.ts        # МАСИВ профілів; 🔴 target: 'esnext' — у спільному base
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
 │   │                                                 # theme:conformance (гейт views, контракт тем v3);
@@ -259,10 +307,16 @@ simplyCMS/
 │   │                                                 # template-plugin/ і template-theme/ — шаблони
 │   │                                                 # create plugin/create theme (`pnpm template:sync`);
 │   │                                                 # виконується В МАГАЗИНІ, не тут
+│   ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore  # Референс-тема повного контуру: manifest
+│   │                                                 # + tokens + components + messages (Фаза 4, npm)
+│   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного контуру: plg_faq_items,
+│   │                                                 # routes/ (/admin/faq), слот, Zod-settings, i18n.
+│   │                                                 # 🔴 З шаблону знято (ПК7) — ставиться `simplycms add`
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
-│   │                            # синхронізується `pnpm template:sync`). Єдиний тут без
-│   │                            # scope — саме тому тулінг фільтрує за `@simplycms/`.
+│   │                            # синхронізується `pnpm template:sync`). Другий unscoped
+│   │                            # пакет поруч із флагманом — під фільтри імені ядра
+│   │                            # не підпадає й у tarball-parity не рахується.
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
@@ -279,19 +333,23 @@ simplyCMS/
 │   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 ├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
 │                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
-├── themes/default/                   # Локальна тема-еталон (контракт v2); solarstore — тепер
-│                                     # npm-пакет `packages/simplycms-theme-solarstore/` (Фаза 4)
+├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);
+│                                     # solarstore — npm-пакет packages/simplycms-theme-solarstore/
 ├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
 │   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
 │   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону),
-│   │                                 # cli-* (юніти @simplycms/cli: контекст/doctor/add/update/db-diff)
+│   │                                 # cli-* (юніти @simplycms/cli: контекст/doctor/add/update/db-diff),
+│   │                                 # tier-boundary (негативний контроль тір-зон),
+│   │                                 # dist-import-meta (гард лоуереного import.meta у dist)
 │   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
 │                                     # create-simplycms-store — не власна копія host-каркаса (виключений
 │                                     # із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
+├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
+│                                     # eslint.tier-relative.mjs — відносні форми специфікатора
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
@@ -307,35 +365,36 @@ simplyCMS/
 
 ## Package Aliases (tsconfig paths + vite resolve.alias)
 
-Кожен запис має пару `X` і `X/*`. Імʼя пакета ≠ імʼя теки для `themes`/`plugins`.
+🔴 **Після К0 аліасів для тек ядра БІЛЬШЕ НЕМАЄ.** Увесь T0–T5 резолвиться
+однією парою `simplycms` / `simplycms/*`, а конкретна тека — це субшлях
+(`simplycms/contracts`, `simplycms/ui`, `simplycms/themes/conformance`, …).
+Чинний повний список:
 
 | Import | Path |
 |--------|------|
-| `@simplycms/objects` | `packages/objects/src` |
-| `@simplycms/domain` | `packages/domain/src` |
-| `@simplycms/supabase` | `packages/supabase/src` |
-| `@simplycms/data-supabase` | `packages/data-supabase/src` |
-| `@simplycms/react-query` | `packages/react-query/src` |
-| `@simplycms/runtime` | `packages/runtime/src` |
-| `@simplycms/i18n` | `packages/i18n/src` |
-| `@simplycms/storefront` | `packages/storefront/src` |
-| `@simplycms/storefront-routes` | `packages/storefront-routes/src` |
-| `@simplycms/admin` | `packages/admin/src` |
-| `@simplycms/ui` | `packages/ui/src` |
-| `@simplycms/{cart,catalog,checkout,profile,reviews}-ui` | `packages/<name>/src` |
-| `@simplycms/plugins` | `packages/**plugin-system**/src` |
-| `@simplycms/plugin-sdk` | `packages/plugin-sdk/src` |
-| `@simplycms/plugin-faq` | `packages/**simplycms-plugin-faq**/src` |
-| `@simplycms/themes` | `packages/**theme-system**/src` |
+| `simplycms` (корінь; 🔴 зсередини самого пакета заборонений — цикл модулів) | `packages/simplycms/src` |
+| `simplycms/*` | `packages/simplycms/src/*` |
 | `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore/src` |
-| `@simplycms/core` | `packages/core/src` (legacy-фасад) |
+| `@simplycms/plugin-faq` (+ `/pages/*`, `/*`) | `packages/simplycms-plugin-faq/src` |
 | `@themes/*` | `themes/*` |
 | `@plugins/*` | `plugins/*` |
 
-`@simplycms/schema`, `@simplycms/admin-routes` і `@simplycms/cli` аліасів
-**не мають** — вони резолвляться через workspace-симлінки `node_modules`
-(schema споживають лише `scripts/db-*.mjs`, admin-routes монтується шляхом у
-`routes.ts`, cli — bin-інструмент, який ніхто не імпортує як код).
+Мапа старих імен на нові субшляхи (для читання доків і історії git):
+`@simplycms/objects` → `simplycms/contracts`; `@simplycms/themes` →
+`simplycms/themes`; `@simplycms/plugins` → `simplycms/plugins`;
+`@simplycms/core` → `simplycms/core` (лише **власні** модулі — реекспорти
+чужого розчинені кодмодом на джерела); решта — імʼя теки один-в-один.
+Роут-теки лишили СТАРІ ключі exports (`./storefront-routes/routes/*`,
+`./admin-routes/routes/*`) при новій фізичній теці `routes/{storefront,admin}`.
+
+`@simplycms/cli` аліаса **не має** — резолвиться через workspace-симлінк
+`node_modules` (bin-інструмент, який ніхто не імпортує як код). Схема БД і
+роут-теки аліаса теж не потребують: `scripts/db-*.mjs` адресують
+`packages/simplycms/` шляхом, `routes.ts` монтує теки `physical()`-ом.
+
+🔴 Vite/vitest мають ОДИН base-prefix ключ `simplycms` (не пару):
+`@rollup/plugin-alias` матчить і `simplycms`, і `simplycms/<sub>`, але **не**
+`simplycms-*` — саме тому сторонні `simplycms-theme-*` не перехоплюються.
 
 ## Theme System (контракт v3)
 
@@ -354,10 +413,10 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
    `themes/<name>` (аліас `@themes/*`) або npm-пакет (референс ядра —
    `@simplycms/theme-<name>`, конвенція сторонніх — `simplycms-theme-<name>`,
    Фаза 4).
-2. **SSR-резолв:** `getActiveThemeSSR` (`@simplycms/themes`) читає активну тему з БД;
+2. **SSR-резолв:** `getActiveThemeSSR` (`simplycms/themes`) читає активну тему з БД;
    `loader` каркасних роутів віддає `themeName` дітям.
 3. **Сторінки — в ядрі:** канонічні сторінки живуть у
-   `@simplycms/storefront-routes/src/pages/`. Каркаси `StorefrontShell` /
+   `simplycms/storefront-routes/pages/*`. Каркаси `StorefrontShell` /
    `ProtectedShell` беруть з теми `components` лише Header/Footer і обгортають
    сторінку; секційні компоненти (HeroBanner/HomeSections) споживає сама
    сторінка (`pages/Home.tsx`). `theme.pages.*` не існує — тема впливає на
@@ -374,7 +433,7 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
    лише абсолютні `https:`-URL зовнішніх stylesheet-ів (без `@font-face` і
    роздачі файлів: npm-тема не має каналу статики). Фільтр —
    `safeFontStylesheets` (🔴 імпорт ТІЛЬКИ субшляхом
-   `@simplycms/themes/safeFontStylesheets`: barrel тягне `getActiveThemeSSR`
+   `simplycms/themes/safeFontStylesheets`: barrel тягне `getActiveThemeSSR`
    → `anon-client` у клієнтський бандл); рендер — `ThemeFonts` в обох
    каркасах поруч із `ThemeTokens`. Базовий Inter-`<link>` у `__root.tsx`
    лишається (адмінка + fallback).
@@ -402,18 +461,18 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
     змінній валить `react-hooks/static-components`); канонічні view —
     `src/views/<Name>View.tsx`. View — ЧИСТА функція від vm (жодних запитів;
     дозволені `useT`/`useThemeT`/`useThemeSettings`).
-11. **View-model-и — `@simplycms/objects/views`** (+ фікстури
-    `@simplycms/objects/views/fixtures`), 🔴 субшлях ПОЗА барелем: тип слота
+11. **View-model-и — `simplycms/contracts/views`** (+ фікстури
+    `simplycms/contracts/views/fixtures`), 🔴 субшлях ПОЗА барелем: тип слота
     вимагає `ComponentType` з react (структурний тип JSX не приймає, TS2786),
     а барель обіцяє «без імпортів react/supabase». `react` там — опційний
     **type-only peer**, T0 лишається без рантайм-залежностей.
 12. **Слоти реквізитів:** `vm.slots` — прибінджені ядром компоненти
     (`src/views/slots/`), тема їх лише РОЗСТАВЛЯЄ; кожен малює маркер
     `data-simplycms-requisite`. Імена й обовʼязковий склад —
-    `REQUIRED_REQUISITES` у `@simplycms/objects/views` (🔴 `Home` порожній,
+    `REQUIRED_REQUISITES` у `simplycms/contracts/views` (🔴 `Home` порожній,
     `Cart` без `ClearCart` — обовʼязковим може бути лише безумовний слот).
 13. **Conformance:** `assertThemeViewsConformance` —
-    `@simplycms/themes/conformance` (субшлях, як `safeFontStylesheets`):
+    `simplycms/themes/conformance` (субшлях, як `safeFontStylesheets`):
     рендер заявлених темою view на фікстурах (`full`/`edge`) без БД + асерт
     реквізитів на `full`. Рантайм-fallback НЕ робиться. Два канали запуску:
     канонічний `pnpm simplycms theme:conformance <name>` (потребує `jsdom`
@@ -477,7 +536,10 @@ production-`node_modules` (потрібен рівно один рантайм-�
 
 ## Database Commands
 
-Джерело правди схеми — `packages/schema/src/schema.ts` (Drizzle).
+Джерело правди схеми — `packages/simplycms/src/schema/schema.ts` (Drizzle).
+Schema-тулінг (`drizzle/`, `drizzle.config.ts`, `scripts/dump-rls.mjs`,
+`seed-migrations/`) живе на рівні ПАКЕТА, не в `src/`; root-скрипти
+`db:pull`/`db:dump-rls` — це `pnpm --filter simplycms run …`.
 
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
@@ -485,15 +547,16 @@ pnpm db:dump-rls               # Дамп RLS-політик із живої Б�
 pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
 pnpm db:migrate                # supabase link + db push + db:generate-types
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
-pnpm types:baseline            # Снапшот CORE-типів → @simplycms/supabase/src/database.ts
+pnpm types:baseline            # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```
 
 🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
 встановлених плагінів); проти нього типізується host-код.
-`packages/supabase/src/database.ts` — **baseline** core-схеми для пакетів
-ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів після
-кожної core-міграції. Магазин звужує клієнти до своїх типів через generic-параметр
-фабрик (`createServerSupabase<StoreDatabase>()`) — `packages/supabase/README.md`.
+`packages/simplycms/src/supabase/database.ts` — **baseline** core-схеми для
+самого ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів
+після кожної core-міграції. Магазин звужує клієнти до своїх типів через
+generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) —
+`packages/simplycms/src/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
@@ -520,34 +583,41 @@ pnpm types:baseline            # Снапшот CORE-типів → @simplycms/s
 
 ## Публікація пакетів (npmjs)
 
-Ядро публікується на npmjs під scope `@simplycms`.
+Ядро публікується на npmjs **пʼятьма пакетами** (трек К0): unscoped
+фреймворк-пакет `simplycms` + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}`
++ unscoped скаффолдер `create-simplycms-store`.
 **Повна інструкція — [`docs/architecture/release-process.md`](docs/architecture/release-process.md)**
 (включно з типовими помилками 401/402/403 і чому не GitHub Packages). Стисло:
 
-- **реліз однією командою** — `pnpm release 0.2.0`: гарди (чисте дерево, версія
+- **реліз однією командою** — `pnpm release 0.4.0`: гарди (чисте дерево, версія
   більша за поточну, тег ще не існує) → бамп → повний прогін гейтів → коміт
   `chore(release): vX.Y.Z`. Далі `git push` і PR у `main` — вручну, бо реліз має
   лишатися рішенням людини;
-- **версія синхронна** — усі 26 пакетів (25 `@simplycms/*` — з Фазою 3 додались `plugin-sdk` і `plugin-faq`,
-  з Фази 4 — `theme-solarstore` — + unscoped
-  `create-simplycms-store`) завжди мають ОДНУ версію; `scripts/release/bump.mjs`
-  сканує `packages/*` і бере все, що не `private` — після сплощення теки
-  окремого списку-винятку не потрібно; розходження версій між ними реліз-скрипт вважає
-  помилкою стану й падає;
+- **версія синхронна** — усі 5 пакетів завжди мають ОДНУ версію;
+  `scripts/release/bump.mjs` сканує `packages/*` і бере все, що не `private`;
+  точний набір (не поріг) асертить `tests/release-bump-coverage.test.ts`;
+  розходження версій між ними реліз-скрипт вважає помилкою стану й падає.
+  🔴 Критерії «публікованості» в різних інструментів РІЗНІ: у реліз-потязі
+  пакетів пʼять, а в tarball-parity-suite — **чотири**
+  (`create-simplycms-store` відсікається за іменем; це зафіксовано
+  коментарем у тесті, «лагодити» не треба);
 - **тригер — push у `main`.** `pnpm publish -r` сам пропускає пакети, чия версія вже
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
   пакетів, що вже там є**. Пакет, якого в реєстрі ще немає, мерж публікує —
-  саме так у реєстр поїхав `create-simplycms-store`, і так само їде
-  `@simplycms/cli` (2026-08-13);
+  саме так у реєстр поїхали `create-simplycms-store` і `@simplycms/cli`
+  (2026-08-13), і так само їде unscoped `simplycms`: мерж гілки К0 займає
+  ім'я в глобальному просторі імен npm незворотно. Після появи `simplycms`
+  у реєстрі — одноразовий `npm deprecate` 22 злитих імен
+  ([`release-process.md`](docs/architecture/release-process.md), розділ
+  «Deprecate злитих пакетів»);
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;
 - 🔴 `publishConfig.access: "public"` у кожному manifest-і **обов'язковий**: scoped-пакети
   npm за замовчуванням робить приватними, а це платний план;
 - потрібен secret **`NPM_TOKEN`** — 🔴 саме **Granular Access Token із увімкненим
   «Bypass 2FA»** і обсягом **`All Packages`** (read+write). Не scope
-  `@simplycms`: scope — це префікс в ІМЕНІ пакета, а не тека, і unscoped
-  `create-simplycms-store` під нього не підпадає (CLI зрештою пішов ПІД scope —
-  `@simplycms/cli`, bin `simplycms`; unscoped `simplycms` — хіба майбутній
-  тонкий аліас, дія власника).
+  `@simplycms`: scope — це префікс в ІМЕНІ пакета, а не тека, а unscoped-пакетів
+  у монорепо ДВА — `create-simplycms-store` і сам фреймворк `simplycms`
+  (CLI зрештою пішов ПІД scope — `@simplycms/cli`, bin `simplycms`).
   Розширено 2026-08-04. Токен без bypass успішно
   автентифікується, але публікацію npm відхиляє з `403 … bypass 2fa enabled is
   required` — спіймано падінням першого релізу. Без секрету job падає з явним

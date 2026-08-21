@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,6 +19,7 @@ import {
 import {
   checkHostDrift,
   checkMigrations,
+  checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
 import { checkThemes } from '../packages/cli/src/doctor-theme-checks.mjs';
 import {
@@ -53,10 +55,8 @@ function makeCtx(storeRoot: string) {
     // Сентинел збігається з версією ядра скаффолда → перевірка версій зелена.
     cliVersion: '9.9.9-sentinel',
     hostDir: join(storeRoot, 'no-canon'), // відсутня тека → skip
-    schemaMigrationsDir: join(
-      storeRoot,
-      'node_modules/@simplycms/schema/migrations',
-    ),
+    // Міграції ядра лежать на РІВНІ пакета, а не в підтеці схеми.
+    schemaMigrationsDir: join(storeRoot, 'node_modules/simplycms/migrations'),
   };
 }
 
@@ -75,6 +75,8 @@ describe('cli doctor (оффлайн)', () => {
       'tailwind.config.ts': 'ok',
       'simplycms.config.ts': 'ok',
       themes: 'ok',
+      // node_modules ще немає — скіли ядра нема з чим звіряти.
+      'skill-links': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -209,6 +211,55 @@ describe('cli doctor (оффлайн)', () => {
       recursive: true,
     });
     expect(checkThemes({ storeRoot: store }).status).toBe('ok');
+  });
+
+  // Каркас магазину під топологію 5: роути монтуються підтеками ОДНОГО
+  // пакета, Tailwind сканує його ж. Магазин, скаффолджений до К0, тут має
+  // червоніти — інакше він мовчки збереться без роутів ядра.
+  it('якірні файли: старий каркас на два route-пакети — error', async () => {
+    const store = await scaffoldStore('doc-legacy-routes');
+    writeFileSync(
+      join(store, 'routes.ts'),
+      "import { physical, rootRoute } from '@tanstack/virtual-file-routes';\n" +
+        "export const routes = rootRoute('__root.tsx', [\n" +
+        "  physical('', '../node_modules/@simplycms/storefront-routes/routes'),\n" +
+        "  physical('', '../node_modules/@simplycms/admin-routes/routes'),\n" +
+        ']);\n',
+    );
+    const tailwindPath = join(store, 'tailwind.config.ts');
+    writeFileSync(
+      tailwindPath,
+      readFileSync(tailwindPath, 'utf8').replace(
+        /^.*node_modules\/simplycms\/.*$\n/gm,
+        '',
+      ),
+    );
+    const byId = Object.fromEntries(
+      runOfflineChecks(makeCtx(store)).map((c) => [c.id, c.status]),
+    );
+    expect(byId['routes.ts']).toBe('error');
+    expect(byId['tailwind.config.ts']).toBe('error');
+  });
+
+  it('checkSkillLinks: skip без skills/ у ядрі, warn без лінків, ok з лінками', async () => {
+    const store = await scaffoldStore('doc-skills');
+    expect(checkSkillLinks({ storeRoot: store }).status).toBe('skip');
+
+    const skills = join(store, 'node_modules/simplycms/skills');
+    mkdirSync(join(skills, 'redesign-from-reference'), { recursive: true });
+    const missing = checkSkillLinks({ storeRoot: store });
+    expect(missing.status).toBe('warn');
+    expect(missing.details).toContain('redesign-from-reference');
+    expect(missing.details).toContain('simplycms update');
+
+    for (const dir of ['.agents/skills', '.claude/skills']) {
+      mkdirSync(join(store, dir), { recursive: true });
+      symlinkSync(
+        '../../node_modules/simplycms/skills/redesign-from-reference',
+        join(store, dir, 'redesign-from-reference'),
+      );
+    }
+    expect(checkSkillLinks({ storeRoot: store }).status).toBe('ok');
   });
 
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {

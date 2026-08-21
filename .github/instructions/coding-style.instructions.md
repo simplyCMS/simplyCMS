@@ -50,7 +50,7 @@ description: 'Стиль коду, форматування та докумен�
 - Обробка помилок через Error Boundaries.
 
 ## Imports
-- Використовуй `@simplycms/*` path aliases для пакетів ядра.
+- Ядро імпортуй субшляхом `simplycms/<тека>` (`simplycms/ui`, `simplycms/contracts`, …), не відносними шляхами до `packages/`. Аліасів злитих пакетів після К0 немає — лишились `simplycms`/`simplycms/*`, сателіти `@simplycms/*`, `@themes/*`, `@plugins/*`.
 - Використовуй `@/*` для файлів з `app/` директорії.
 - Використовуй `@themes/*` та `@plugins/*` для тем/плагінів.
 - Не використовуй relative imports (`../../..`) для cross-package imports.

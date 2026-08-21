@@ -1,4 +1,4 @@
-import type { PluginMessages } from '@simplycms/plugin-sdk';
+import type { PluginMessages } from 'simplycms/plugin-sdk';
 
 /**
  * Каталог повідомлень плагіна — дзеркало механізму тем (`ThemeModule.messages`).

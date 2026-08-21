@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { RotateCcw, ShieldCheck, Truck } from 'lucide-react';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { ThemeKey } from '../../messages';
 
 interface TrustItem {

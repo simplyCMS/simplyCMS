@@ -22,22 +22,24 @@ function obj(name: string, version: string, monthly?: number): NpmSearchObject {
 }
 
 describe('isPlatformPackage', () => {
-  it('впізнає scoped-пакети ядра і unscoped-скаффолдер', () => {
+  it('впізнає scoped-пакети ядра і обидва unscoped', () => {
     expect(isPlatformPackage('@simplycms/cli')).toBe(true);
     expect(isPlatformPackage('create-simplycms-store')).toBe(true);
+    // Флагман К0 — unscoped: без нього лендінг не рахував би головний пакет.
+    expect(isPlatformPackage('simplycms')).toBe(true);
   });
 
   it('відсікає сторонні пакети з видачі пошуку', () => {
     expect(isPlatformPackage('simplycms-theme-aurora')).toBe(false);
     expect(isPlatformPackage('@acme/simplycms-plugin-faq')).toBe(false);
-    expect(isPlatformPackage('simplycms')).toBe(false);
+    expect(isPlatformPackage('simplycmsx')).toBe(false);
   });
 });
 
 describe('aggregateNpmSearch', () => {
   it('рахує лише пакети платформи: кількість, суму downloads, версію', () => {
     const stats = aggregateNpmSearch([
-      obj('@simplycms/objects', '0.3.0', 1008),
+      obj('simplycms', '0.3.0', 1008),
       obj('@simplycms/cli', '0.3.0', 0),
       obj('create-simplycms-store', '0.3.0', 433),
       obj('simplycms-theme-thirdparty', '9.9.9', 77777),

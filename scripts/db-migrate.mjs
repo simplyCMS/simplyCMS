@@ -4,7 +4,8 @@
  * Застосування міграцій із `supabase/migrations/` через Supabase CLI
  * і подальша регенерація типів (ланцюжок spec §9).
  *
- * Флоу: `src/schema.ts` → `pnpm db:diff <name>` → ревʼю SQL → `pnpm db:migrate`.
+ * Флоу: `packages/simplycms/src/schema/schema.ts` → `pnpm db:diff <name>` →
+ *       ревʼю SQL → `pnpm db:migrate`.
  *
  * Використання:
  *   pnpm db:migrate

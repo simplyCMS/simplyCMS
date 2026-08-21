@@ -104,7 +104,7 @@ export function CompareSection() {
               <hr />
               <div className="row">
                 <span className="item">
-                  <b>CORE, 26 NPM PACKAGES</b>
+                  <b>CORE, 5 NPM PACKAGES</b>
                 </span>
                 <span className="price">$0.00</span>
               </div>

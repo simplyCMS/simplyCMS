@@ -1,5 +1,5 @@
-import { useT } from '@simplycms/i18n';
-import type { CartViewModel } from '@simplycms/objects/views';
+import { useT } from 'simplycms/i18n';
+import type { CartViewModel } from 'simplycms/contracts/views';
 
 /**
  * ПРИКЛАД view-шару контракту v3 — кошик. Файл лежить у шаблоні окремо, а не

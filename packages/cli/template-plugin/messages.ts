@@ -1,4 +1,4 @@
-import type { PluginMessages } from '@simplycms/plugin-sdk';
+import type { PluginMessages } from 'simplycms/plugin-sdk';
 
 // Каталог плагіна: ключі ЗОБОВʼЯЗАНІ мати префікс plugin.__PLUGIN_NAME__.
 // (неймспейс проти колізій із ядром та іншими плагінами); en дзеркалить uk

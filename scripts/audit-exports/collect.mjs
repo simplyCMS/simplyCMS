@@ -12,11 +12,18 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const PACKAGES_DIR = join(ROOT, 'packages');
 
 /**
- * 🔴 Аудит стосується ЛИШЕ scoped-пакетів ядра: у них є subpath-exports, які
- * ці скрипти й звіряють. Unscoped `create-simplycms-store` лежить у тій самій
- * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md).
+ * 🔴 Аудит стосується ЛИШЕ пакетів ядра: у них є subpath-exports, які ці
+ * скрипти й звіряють. Це scoped-сателіти `@simplycms/*` і unscoped-флагман
+ * `simplycms` (К0). Unscoped `create-simplycms-store` лежить у тій самій
+ * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md); саме тому
+ * імʼя флагмана звіряється ТОЧНО, а не префіксом.
  */
 export const CORE_SCOPE = '@simplycms/';
+export const CORE_FLAGSHIP = 'simplycms';
+
+/** Чи це пакет ядра (scoped-сателіт або unscoped-флагман). */
+export const isCorePackage = (name) =>
+  name.startsWith(CORE_SCOPE) || name === CORE_FLAGSHIP;
 
 // Розширення файлів, де реально бувають import/require-специфікатори.
 // `*.md` навмисно виключені: доки згадують шляхи в прозі (не імпорти), і
@@ -30,11 +37,26 @@ const EXCLUDE_PATHSPECS = [
   ':!supabase/types.ts',
   ':!scripts/audit-exports/**',
   ':!scripts/audit-exports.mjs',
-  // Межа довіри плагінів (Фаза 3): ban-глоби виду '@simplycms/supabase/*' у
+  // Межа довіри плагінів (Фаза 3): ban-глоби виду 'simplycms/supabase/*' у
   // eslint-зоні та синтетичні порушення в її негативному контролі — це
   // специфікатори-ЗАБОРОНИ і фікстури, а не реальні імпорти.
   ':!eslint.config.mjs',
   ':!tests/plugin-trust-boundary.test.ts',
+  // Те саме для тір-зон напрямку шарів (ПК3, К0): таблиця зон складає
+  // ban-глоби `simplycms/<тека>`, а негативний контроль годує ESLint
+  // синтетичними порушеннями (включно з `simplycms/…` у прикладі команди в
+  // докблоці). Реальних імпортів там немає.
+  ':!eslint.tier-zones.mjs',
+  ':!tests/tier-boundary.test.ts',
+  // Таблиця зон і lint-хелпер живуть у теці поруч — виняток мусить покривати
+  // її ЦІЛКОМ, інакше кожен винос фікстур у новий файл мовчки повертає їх у
+  // скан (спіймано рев'ю К0, коло 2).
+  ':!tests/tier-boundary/**',
+  // Негативний контроль самого цього аудиту: у ньому лежать СИНТЕТИЧНІ
+  // специфікатори мертвих К0-імен (`@simplycms/runtime/…`), якими тест
+  // доводить, що кошик `stale` червоніє. Без винятку фікстура потрапляла б
+  // у скан і валила гейт сама на собі.
+  ':!tests/audit-exports.test.ts',
 ];
 
 /**
@@ -59,7 +81,7 @@ export function collectPackages() {
 
     const json = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     if (typeof json.name !== 'string') continue;
-    if (!json.name.startsWith(CORE_SCOPE)) continue;
+    if (!isCorePackage(json.name)) continue;
 
     byName.set(json.name, {
       name: json.name,
@@ -76,13 +98,16 @@ export function collectPackages() {
 }
 
 /**
- * Збирає всі унікальні специфікатори `@simplycms/<pkg>/<subpath>` з коду.
+ * Збирає всі унікальні субшлях-специфікатори ядра з коду —
+ * `@simplycms/<pkg>/<subpath>` (сателіти) і `simplycms/<subpath>` (флагман).
  * Квото-обмежений патерн (специфікатор цілком у лапках) відсікає шум типу
- * коментарів на кшталт "перенесено в @simplycms/domain/discounts." — крапка
- * речення не потрапляє в лапки й не проходить регекс.
+ * коментарів на кшталт "перенесено в simplycms/domain/discounts." — крапка
+ * речення не потрапляє в лапки й не проходить регекс. Він же розводить дві
+ * гілки: `'@simplycms/x'` починається з `@`, тож під гілку флагмана не
+ * підпадає, а `simplycms-theme-*` — не має слеша одразу після імені.
  */
 export function collectSpecifiers() {
-  const pattern = '[\'"]@simplycms/[a-zA-Z0-9_-]+/[^\'"]+[\'"]';
+  const pattern = '[\'"](@simplycms/[a-zA-Z0-9_-]+|simplycms)/[^\'"]+[\'"]';
   // `--untracked`: сусідній audit-deps обходить ФС і бачить усе, тож без цього
   // прапорця новий (ще не доданий у git) файл проходив би повз гейт exports.
   // node_modules і артефакти збірки й далі відсікає `.gitignore`.

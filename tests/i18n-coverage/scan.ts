@@ -61,18 +61,31 @@ function themeRoots(): string[] {
 
 export const SCANNED_ROOTS = [
   'src',
-  'packages/storefront-routes/src',
-  'packages/admin/src',
-  'packages/cart-ui/src',
-  'packages/catalog-ui/src',
-  'packages/checkout-ui/src',
-  'packages/profile-ui/src',
-  'packages/reviews-ui/src',
-  'packages/core/src',
-  'packages/storefront/src',
-  'packages/theme-system/src',
-  'packages/plugin-system/src',
-  'packages/plugin-sdk/src',
+  // К0: тіри ядра — теки флагмана. Перелічені саме теки, а не
+  // `packages/simplycms/src` цілком: core-каталоги
+  // (`src/i18n/catalogs/**`) — кирилиця за побудовою, і суцільний корінь
+  // вимагав би перекладу від перекладу (той самий аргумент, що для
+  // `messages.ts` тем).
+  'packages/simplycms/src/storefront-routes',
+  'packages/simplycms/src/admin',
+  'packages/simplycms/src/cart-ui',
+  'packages/simplycms/src/catalog-ui',
+  'packages/simplycms/src/checkout-ui',
+  'packages/simplycms/src/profile-ui',
+  'packages/simplycms/src/reviews-ui',
+  'packages/simplycms/src/core',
+  'packages/simplycms/src/storefront',
+  'packages/simplycms/src/themes',
+  'packages/simplycms/src/plugins',
+  'packages/simplycms/src/plugin-sdk',
+  // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
+  // у `SCANNED_ROOTS` їх не було, а eslint-зона `I18N_MIGRATED_FILES` бачить
+  // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
+  // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
+  // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
+  // Самі рядки поки в `PENDING_FILES`: перекласти їх нічим — `head()` це
+  // звичайна функція поза React-контекстом, а локаль магазину ядру недоступна.
+  'packages/simplycms/routes',
   ...pluginPackageRoots(),
   ...themeRoots(),
   // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін
@@ -87,8 +100,8 @@ export const SCANNED_ROOTS = [
  * 🔴 Тема несе власні повідомлення (`ThemeModule.messages`, контракт v2.1), і
  * український бік цього каталогу — кирилиця за побудовою. Сканувати його
  * означало б вимагати перекладу від перекладу. Core-каталоги
- * (`packages/i18n/src/catalogs/**`) у `SCANNED_ROOTS` не входять узагалі й
- * тому окремого винятку не потребують.
+ * (`packages/simplycms/src/i18n/catalogs/**`) у `SCANNED_ROOTS` не входять
+ * узагалі й тому окремого винятку не потребують.
  */
 const CATALOG_FILES = /(^|\/)messages\.ts$/;
 

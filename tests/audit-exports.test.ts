@@ -26,3 +26,43 @@ describe('audit-exports: consumed subpath-и покриті exports', () => {
     expect(scanned).toBeGreaterThan(0);
   });
 });
+
+// 🔴 Другий кошик того ж аудиту (закрито 2026-08-21). Специфікатор із іменем
+// пакета ядра, якого в `packages/` немає, — це злите К0-ім'я або одрук. Він
+// мовчки лягав у інформаційний `unresolved`, який не асертив ніхто: файл із
+// `@simplycms/runtime/defineRuntime` лишав гейт зеленим, хоч у магазині це
+// `ERR_MODULE_NOT_FOUND` на неіснуючому пакеті.
+describe('audit-exports: мертві імена пакетів ядра', () => {
+  it('у репо немає специфікаторів неіснуючих пакетів ядра', () => {
+    const { stale } = runAudit();
+
+    expect(
+      stale.map((item) => `${item.specifier} (пакета ${item.pkg} немає)`),
+    ).toEqual([]);
+  });
+
+  it('специфікатор злитого пакета валить гейт (негативний контроль)', () => {
+    const { stale, missing } = runAudit({
+      specifiers: ['@simplycms/runtime/defineRuntime'],
+    });
+
+    expect(stale).toEqual([
+      {
+        specifier: '@simplycms/runtime/defineRuntime',
+        pkg: '@simplycms/runtime',
+      },
+    ]);
+    expect(missing).toEqual([]);
+  });
+
+  it('живі сателіти в цей кошик не потрапляють', () => {
+    // Позитивний контроль: `@simplycms/plugin-faq` — робочий пакет із
+    // wildcard-ключем `./pages/*`, тож ані stale, ані missing.
+    const { stale, missing } = runAudit({
+      specifiers: ['@simplycms/plugin-faq/pages/FaqAdmin'],
+    });
+
+    expect(stale).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+});

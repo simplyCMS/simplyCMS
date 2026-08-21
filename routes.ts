@@ -11,8 +11,8 @@ import { physical, rootRoute } from '@tanstack/virtual-file-routes';
  * звідси `../../` для виходу в `packages/`.
  */
 export const routes = rootRoute('__root.tsx', [
-  physical('', '../../packages/storefront-routes/routes'),
-  physical('', '../../packages/admin-routes/routes'),
+  physical('', '../../packages/simplycms/routes/storefront'),
+  physical('', '../../packages/simplycms/routes/admin'),
   // plugin admin routes — місце монтажу роутів адмінки плагінів: додай сюди
   // рядок physical() після встановлення плагіна з adminRoutes (автоматичну
   // вставку через `simplycms add` відкладено — див. cli.md §9). Файли самі

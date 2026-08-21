@@ -25,14 +25,14 @@ view-шар (тема).
 
 - View-model-и пʼяти сторінок вітрини — `Home`, `Catalog`,
   `CatalogSection`, `ProductDetail`, `Cart` — у контрактному шарі
-  `@simplycms/objects` (T0, нуль залежностей): їх споживають і ядро, і
+  `simplycms/contracts` (T0, нуль залежностей): їх споживають і ядро, і
   теми. 🔴 Секційна структура (спека §4): поля групуються за майбутніми
   секціями (`ProductDetailViewModel` = `gallery` / `summary` /
   `description` / `characteristics`…), а не плоским мішком — форвард-
   сумісність із треком B. YAGNI: поле існує лише якщо його споживає
   канонічний view.
 - `ThemeViews` + опційне `views?` у `ThemeModule`
-  (`packages/theme-system/src/types.ts`); `validateThemeModule` — мʼяка
+  (`packages/simplycms/src/themes/types.ts`); `validateThemeModule` — мʼяка
   перевірка форми (відомі ключі, значення-функції); тема без `views`
   повністю валідна (усі наявні теми не міняються).
 
@@ -52,7 +52,7 @@ view-шар (тема).
 
 ### Блок C — container/view спліт пʼяти сторінок
 
-- Кожна сторінка `packages/storefront-routes/src/pages/<Name>.tsx`
+- Кожна сторінка `packages/simplycms/src/storefront-routes/pages/<Name>.tsx`
   розділяється: **container** (усе, що є сьогодні: хуки, query, серверні
   дані → збирає view-model зі слотами) і **canonical view** (чиста
   презентація від view-model). Container рендерить
@@ -72,7 +72,7 @@ view-шар (тема).
 
 ### Блок D — conformance-гейт (жорсткий, V3)
 
-- Розширення conformance-kit у `@simplycms/themes`: рендер кожного
+- Розширення conformance-kit у `simplycms/themes`: рендер кожного
   ЗАЯВЛЕНОГО темою view на фікстурних view-model-ах (jsdom, без БД) з
   асертами: (а) всі обовʼязкові реквізити сторінки присутні (маркери
   `data-simplycms-requisite`); (б) рендер не падає на крайніх станах
@@ -119,7 +119,7 @@ view-шар (тема).
 > `claude/theme-views-v3-<suffix>`). Усе, що потребує стенду, лишається
 > `[ ]` — див. борг наприкінці розділу.
 
-- [X] A: view-model-и пʼяти сторінок у `@simplycms/objects` із секційною
+- [X] A: view-model-и пʼяти сторінок у `simplycms/contracts` із секційною
       структурою; `views?` у контракті; `validateThemeModule` мʼяко
       перевіряє форму; всі наявні теми працюють без правок.
 - [X] B: slot-компоненти з маркерами `data-simplycms-requisite`; логіка
@@ -157,20 +157,20 @@ Docker/жива БД НЕ потрібні: всі нові тести DB-free (
 
 ## 6. Якорі коду
 
-- Контракт: `packages/theme-system/src/types.ts` (ThemeModule,
+- Контракт: `packages/simplycms/src/themes/types.ts` (ThemeModule,
   ThemeComponents, ThemeSettingDefinition), `validateThemeModule`,
   `ThemeContext.tsx:176` (`useThemeSettings`), `getActiveThemeSSR.ts`
-  (SSR-кеш), `packages/storefront-routes/src/shells/useActiveThemeModule.ts`.
-- Сторінки: `packages/storefront-routes/src/pages/{Home(86),Cart(127),
+  (SSR-кеш), `packages/simplycms/src/storefront-routes/shells/useActiveThemeModule.ts`.
+- Сторінки: `packages/simplycms/src/storefront-routes/pages/{Home(86),Cart(127),
   ProductDetail(722),Catalog(748),CatalogSection(786)}.tsx`;
   add-to-cart зараз: `ProductDetail.tsx:81` (`useCart().addItem`).
-- UI-цеглинки сторінок: `packages/catalog-ui` (ProductCard, ProductGallery,
-  ProductCharacteristics, FilterSidebar, StockDisplay), `packages/cart-ui`.
-- Контрактний шар: `packages/objects/` (T0; тут — view-model-и).
+- UI-цеглинки сторінок: `packages/simplycms/src/catalog-ui` (ProductCard, ProductGallery,
+  ProductCharacteristics, FilterSidebar, StockDisplay), `packages/simplycms/src/cart-ui`.
+- Контрактний шар: `packages/simplycms/src/contracts/` (T0; тут — view-model-и).
 - Шаблон теми: `packages/cli/template-theme/`; синк —
   `scripts/sync-create-store-template.mjs` (`pnpm template:sync`).
-- Адмінка settings: `packages/admin/src/pages/ThemeSettings.tsx`;
-  таблиця `themes.settings` (jsonb, `packages/schema/src/schema.ts:855`).
+- Адмінка settings: `packages/simplycms/src/admin/pages/ThemeSettings.tsx`;
+  таблиця `themes.settings` (jsonb, `packages/simplycms/src/schema/schema.ts:855`).
 - Тіри залежностей: `packages/README.md` (objects = T0 — view-model-и без
   імпортів React-компонентів ядра; типи компонентів — через `React.
   ComponentType`, сам React уже є в deps objects? ПЕРЕВІРИТИ на Кроці 0 —

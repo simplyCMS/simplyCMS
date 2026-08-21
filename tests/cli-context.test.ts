@@ -40,6 +40,34 @@ function monorepoRoot() {
 }
 
 describe('cli context', () => {
+  // Топологія 5 (трек К0): ядро магазину — unscoped пакет `simplycms`,
+  // scoped лишаються тільки сателіти. Магазин, який поставив саме ядро й
+  // нічого більше, мусить лишатися магазином для всіх команд CLI.
+  it('coreDependencies: бачить unscoped simplycms і scoped сателітів', () => {
+    const manifest = {
+      dependencies: { simplycms: '0.4.0', react: '19.0.0' },
+      devDependencies: { '@simplycms/cli': '0.4.0', typescript: '5.9.3' },
+    };
+    expect(coreDependencies(manifest)).toEqual({
+      simplycms: '0.4.0',
+      '@simplycms/cli': '0.4.0',
+    });
+    // 🔴 Префікс `simplycms` без межі — не ядро: `simplycms-theme-aurora` це
+    // стороння тема, а не пакет ядра.
+    expect(
+      coreDependencies({ dependencies: { 'simplycms-theme-aurora': '1.0.0' } }),
+    ).toEqual({});
+  });
+
+  it('findStoreRoot: магазин лише з пакетом simplycms — теж магазин', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cli-ctx-core-'));
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: 'shop', dependencies: { simplycms: '0.4.0' } }),
+    );
+    expect(findStoreRoot(root)).toBe(root);
+  });
+
   it('findStoreRoot: знаходить корінь із вкладеної теки магазину', async () => {
     const store = await scaffoldStore('ctx-root');
     expect(findStoreRoot(join(store, 'src', 'routes'))).toBe(store);

@@ -182,7 +182,7 @@ const theme: ThemeModule = {
 export default theme;
 ```
 
-- `validateThemeModule` (`@simplycms/themes`) — публічний валідатор; він же
+- `validateThemeModule` (`simplycms/themes`) — публічний валідатор; він же
   викликається при кожному `ThemeRegistry.load`, тож битий контракт видно
   одразу в dev. Окремої команди `theme:check` немає — перевіряє build/рантайм.
 - `manifest.name` тримай рівним ключу конфігу — розбіжність дасть warn у
@@ -239,10 +239,11 @@ const theme: ThemeModule = {
 
 Каталог теми (`messages.ts`, форма `{ uk: {...}, en: {...} }`) читається
 хуком `useThemeT()` і живе ОКРЕМО від core-каталогу: класти рядки теми в
-`packages/i18n` заборонено (зламало б типізацію ядра). `en` мусить
+core-каталог ядра (`packages/simplycms/src/i18n/`) заборонено (зламало б
+типізацію ядра). `en` мусить
 дзеркалити `uk` ключ-у-ключ. Core-рядки (назви сторінок, кошик…) бери
 `useT()` — не дублюй їх у каталозі теми. Компоненти теми можуть вільно
-використовувати хуки даних ядра (`@simplycms/core`) і `useSupabaseClient` —
+використовувати хуки даних ядра (`simplycms/core`) і `useSupabaseClient` —
 межі довіри для тем немає свідомо (тема — довірена презентація, це контракт).
 
 ### 3.5 Перевизначення view (контракт v3) — опційно
@@ -252,7 +253,7 @@ const theme: ThemeModule = {
 
 ```tsx
 // themes/aurora/views/Cart.tsx
-import type { CartViewModel } from '@simplycms/objects/views';
+import type { CartViewModel } from 'simplycms/contracts/views';
 
 export function AuroraCart({ breadcrumbs, itemCount, slots }: CartViewModel) {
   if (itemCount === 0) return <EmptyCart />;
@@ -290,7 +291,7 @@ const theme: ThemeModule = { manifest, tokens, components, views: { Cart: Aurora
 4. **Обовʼязковий склад реквізитів** сторінки має бути на місці — інакше
    магазин лишиться без кнопки купівлі, а ядро цього не «полагодить»
    fallback-ом свідомо. Що саме обовʼязкове — `REQUIRED_REQUISITES` у
-   `@simplycms/objects/views`; перевіряє гейт:
+   `simplycms/contracts/views`; перевіряє гейт:
 
 ```bash
 pnpm add -D jsdom                          # разово, on-demand
@@ -313,7 +314,7 @@ pnpm simplycms theme:conformance aurora    # рендер заявлених vie
 - якщо view використовує `Link` із `@tanstack/react-router`, у vitest-каналі
   його треба замокати (kit роутера не піднімає навмисно);
 - `<slots.*/>` беруться **тільки** з `vm.slots` — імпортувати їх із
-  `@simplycms/storefront-routes` контрактом не передбачено.
+  `simplycms/storefront-routes` контрактом не передбачено.
 
 Обсяг v3 — рівно пʼять сторінок вітрини. Checkout, авторизація і профіль
 лишаються канонічними; структурна розбіжність поза воронкою — це й далі
@@ -329,7 +330,7 @@ pnpm simplycms theme:conformance aurora    # рендер заявлених vie
 | Entry | `src/index.ts`, default-export `ThemeModule`; `exports` лише `"."` |
 | `files` | `dist` **і `src`** — без `src` у tarball-і не працюватиме copy-in (§2.2) |
 | Збірка | tsup, ESM; 🔴 **класи мають лишатися літералами в dist-JS** — саме dist сканують Tailwind-глоби магазину; динамічна склейка імен класів = зникнення стилів |
-| Залежності | `@simplycms/*` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт SupabaseProvider); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |
+| Залежності | `simplycms` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт SupabaseProvider); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |
 | Сумісність | `engines.simplycms` у manifest |
 | `description` | англійською (показується з npm-реєстру) |
 

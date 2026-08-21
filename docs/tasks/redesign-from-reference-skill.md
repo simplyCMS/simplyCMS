@@ -25,8 +25,8 @@
 ### 1.1 Що вже є і на що спираємось (не дублювати!)
 
 - **Контракт v2.2:** 23 кольорові токени + `radius` + `font-sans`/`font-heading`
-  (`packages/theme-system/src/types.ts`, `applyTokens.ts`) + `ThemeModule.fonts`
-  (https-stylesheet, фільтр `@simplycms/themes/safeFontStylesheets`) +
+  (`packages/simplycms/src/themes/types.ts`, `applyTokens.ts`) + `ThemeModule.fonts`
+  (https-stylesheet, фільтр `simplycms/themes/safeFontStylesheets`) +
   `dark?`-блок. Компоненти: `Header`/`Footer` (обовʼязкові),
   `HeroBanner?`/`HomeSections?`. Каталог теми `messages` (uk/en) через
   `useThemeT` — стережуть `tests/theme-messages-parity.test.ts` і

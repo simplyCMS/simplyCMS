@@ -13,7 +13,7 @@
 | i18n | `src/messages.ts`, ключі `theme.*`, uk/en (читає `useThemeT`) |
 
 Сторінок і лейаутів тема не несе: канонічні сторінки живуть у
-`@simplycms/storefront-routes`, каркаси беруть із теми лише Header/Footer.
+`simplycms/storefront-routes`, каркаси беруть із теми лише Header/Footer.
 
 ## Встановлення в магазин
 
@@ -37,10 +37,12 @@ pnpm build
 
 ## Залежності
 
-Референс-тема ядра тримає `@simplycms/*` у `dependencies` — вона їде тим
-самим реліз-потягом, що й ядро, тож версія завжди одна.
+🔴 Ядро (`simplycms`) — **`peerDependencies`, і для референс-теми теж**
+(рішення ПК6 треку К0): `dependencies` дублювали б React-контексти на кшталт
+`SupabaseProvider`. Референс-тема додає той самий `simplycms` ще й у
+`devDependencies` — peer сам по собі не встановлюється, а зібрати пакет
+у монорепо треба.
 
-🔴 Для **сторонньої** теми конвенція інша: `@simplycms/*` мають бути
-`peerDependencies` (інакше в магазині зʼявиться друга копія React-контекстів
-на кшталт `SupabaseProvider`), а сумісність із ядром оголошується через
-`engines.simplycms`. Деталі й чекліст автора — `docs/architecture/themes.md`.
+Для **сторонньої** теми відмінність лише в сумісності: вона оголошується
+через `engines.simplycms`, тоді як у референс-теми версія пакета збігається
+з `manifest.version`. Деталі й чекліст автора — `docs/architecture/themes.md`.

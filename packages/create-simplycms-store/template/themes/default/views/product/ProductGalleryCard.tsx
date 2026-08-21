@@ -3,8 +3,8 @@ import { ImageOff } from 'lucide-react';
 import type {
   ProductDetailGallery,
   ProductDetailSummary,
-} from '@simplycms/objects/views';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+} from 'simplycms/contracts/views';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import { MONO_STACK } from '../../components/mono';
 import type { ThemeKey } from '../../messages';
 

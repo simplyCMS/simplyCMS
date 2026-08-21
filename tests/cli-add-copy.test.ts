@@ -20,7 +20,7 @@ import {
 // сценарій приймає виконавця параметром, тож перевіряються і ПОРЯДОК команд
 // (add → … → remove), і відкат при провалі валідації — без мережі й install.
 
-const CONFIG = `import { defineConfig } from '@simplycms/runtime';
+const CONFIG = `import { defineConfig } from 'simplycms/runtime';
 
 export default defineConfig({
   plugins: [],

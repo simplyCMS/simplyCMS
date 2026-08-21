@@ -64,7 +64,7 @@ export function UpdatesSection() {
             </div>
             <div className="diff-body">
               <span className="diff-line plus">
-                + pnpm update &quot;@simplycms/*&quot;
+                + pnpm update simplycms &quot;@simplycms/*&quot;
               </span>
               <span className="diff-line plus">+ pnpm build</span>
               <span className="diff-line ctx">
@@ -167,7 +167,9 @@ export function HowItWorksSection() {
             </p>
             <pre className="step-code">
               <span className="g">❯</span>{' '}
-              <span className="w">pnpm update &quot;@simplycms/*&quot;</span>
+              <span className="w">
+                pnpm update simplycms &quot;@simplycms/*&quot;
+              </span>
               {'\n'}
               <span className="g">❯</span>{' '}
               <span className="w">pnpm simplycms doctor</span>{' '}
@@ -241,7 +243,7 @@ const FEATURES: Feature[] = [
     title: 'Plugin SDK with a trust boundary',
     body: (
       <>
-        Plugins use ports from <code>@simplycms/plugin-sdk</code> — never a raw
+        Plugins use ports from <code>simplycms/plugin-sdk</code> — never a raw
         database client. Own tables live under a <code>plg_*</code> namespace;
         migrations ship inside the package and land as reviewed SQL.
       </>

@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
-import type { ProductDetailViewModel } from '@simplycms/objects/views';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import type { ProductDetailViewModel } from 'simplycms/contracts/views';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
 import { ViewBreadcrumbs } from './parts/ViewBreadcrumbs';
 import { ViewLink } from './parts/ViewLink';

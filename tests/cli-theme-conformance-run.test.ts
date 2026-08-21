@@ -2,7 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { ThemeModule } from '@simplycms/themes/types';
+import type { ThemeModule } from 'simplycms/themes/types';
 import { installStoreDom } from '../packages/cli/src/theme-conformance-dom.mjs';
 import { createStoreRunner } from '../packages/cli/src/theme-conformance-env.mjs';
 
@@ -45,7 +45,7 @@ const BROKEN_CART = `<div>
     </div>`;
 
 function themeSource(name: string, cart: string): string {
-  return `import type { CartViewModel } from '@simplycms/objects/views';
+  return `import type { CartViewModel } from 'simplycms/contracts/views';
 
 function Stub() {
   return <div />;
@@ -103,7 +103,7 @@ describe('cli theme:conformance: живий прогін ланцюга', () => 
 
   async function importKit(): Promise<AssertConformance> {
     const module = await environment.runner.import(
-      '@simplycms/themes/conformance',
+      'simplycms/themes/conformance',
     );
     return module.assertThemeViewsConformance as AssertConformance;
   }

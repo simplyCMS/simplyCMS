@@ -21,7 +21,7 @@
 // той гейт як «хардкоджені рядки інтерфейсу». Для магазину розкладка
 // байдужа, для цього репозиторію — ні.
 import { describe, it, expect } from 'vitest';
-import { assertThemeViewsConformance } from '@simplycms/themes/conformance';
+import { assertThemeViewsConformance } from 'simplycms/themes/conformance';
 import theme from '../index';
 
 describe('тема default: контракт v3', () => {

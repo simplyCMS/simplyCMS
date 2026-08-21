@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { Sun, Phone, Mail, MapPin } from 'lucide-react';
-import { useT } from '@simplycms/i18n';
-import { useThemeT } from '@simplycms/themes/useThemeT';
+import { useT } from 'simplycms/i18n';
+import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { SolarstoreThemeKey } from '../messages';
 
 export function Footer() {

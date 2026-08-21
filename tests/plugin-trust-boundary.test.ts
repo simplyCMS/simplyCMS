@@ -39,7 +39,7 @@ async function boundaryErrors(
 
 describe('межа довіри плагінів (no-restricted-imports)', () => {
   const violation =
-    "import { createServerSupabase } from '@simplycms/supabase/server-client';\n";
+    "import { createServerSupabase } from 'simplycms/supabase/server-client';\n";
 
   it('ловить пряме імпортування Supabase-шару в plugins/**', async () => {
     const errors = await boundaryErrors(
@@ -52,8 +52,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
 
   it('ловить у packages/simplycms-plugin-*/** — усі три заборонені групи', async () => {
     for (const bad of [
-      "import { x } from '@simplycms/supabase';",
-      "import { y } from '@simplycms/data-supabase/orderRepository';",
+      "import { x } from 'simplycms/supabase';",
+      "import { y } from 'simplycms/data-supabase/orderRepository';",
       "import { createClient } from '@supabase/supabase-js';",
     ]) {
       const errors = await boundaryErrors(
@@ -67,8 +67,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
   it('НЕ чіпає ядро: той самий імпорт поза зоною чистий', async () => {
     for (const path of [
       'src/fixture.ts',
-      'packages/plugin-system/src/fixture.ts',
-      'packages/plugin-sdk/src/fixture.ts',
+      'packages/simplycms/src/plugins/fixture.ts',
+      'packages/simplycms/src/plugin-sdk/fixture.ts',
     ]) {
       expect(await boundaryErrors(violation, path), path).toEqual([]);
     }
@@ -76,7 +76,7 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
 
   it('ловить і ДИНАМІЧНИЙ import() у зоні (no-restricted-syntax селектор)', async () => {
     const [result] = await eslint.lintText(
-      "const c = await import('@simplycms/supabase/server-client');\n" +
+      "const c = await import('simplycms/supabase/server-client');\n" +
         "const d = await import('@supabase/supabase-js');\n",
       {
         filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
@@ -89,7 +89,7 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     expect(dynamicErrors).toHaveLength(2);
     // Легальний динамічний import у зоні лишається чистим.
     const [clean] = await eslint.lintText(
-      "const m = await import('@simplycms/plugin-sdk');\n",
+      "const m = await import('simplycms/plugin-sdk');\n",
       {
         filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
         warnIgnored: true,
@@ -104,8 +104,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
 
   it('дозволена поверхня в зоні чиста: plugin-sdk, ui, react', async () => {
     const errors = await boundaryErrors(
-      "import { definePlugin, usePluginTable } from '@simplycms/plugin-sdk';\n" +
-        "import { Button } from '@simplycms/ui/button';\n" +
+      "import { definePlugin, usePluginTable } from 'simplycms/plugin-sdk';\n" +
+        "import { Button } from 'simplycms/ui/button';\n" +
         "import { useState } from 'react';\n",
       'plugins/hello-world/fixture.ts',
     );

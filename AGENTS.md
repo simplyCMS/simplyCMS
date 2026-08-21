@@ -19,8 +19,11 @@ All coding rules, architecture decisions, and best practices are maintained in `
 
 ## Agent Tooling
 
-- **Скіли** (джерело правди — `.agents/skills/`, симлінки в `.claude/skills/`):
-  `codebase-research` — як шукати в репо; `code-review` — як рев'ювити;
+- **Скіли** (`codebase-research` — як шукати в репо; `code-review` — як рев'ювити):
+  джерело правди — `.agents/skills/`, симлінки в `.claude/skills/`.
+  🔴 Скіли, що їдуть у магазини, живуть у пакеті ядра
+  (`packages/simplycms/skills/`), а `.agents/skills/` і `.claude/skills/` —
+  симлінки на них; прав ОРИГІНАЛ у пакеті. Такий —
   `redesign-from-reference` — редизайн магазину за референс-сайтом (фази 0-6:
   детерміністична інспекція кольорів/типографіки/motion скриптами всередині
   скіла, обовʼязковий side-by-side, опційне шліфування).
@@ -34,7 +37,8 @@ All coding rules, architecture decisions, and best practices are maintained in `
 - **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
   (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
 - **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-  build → typecheck → test → build:packages → test:packaging` — `build` перед
+  build → typecheck → test → build:packages → typecheck:template →
+  test:packaging` — `build` перед
   `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме `format:check`
   (`pnpm format` — це `--write`, він не червоніє). Обидві команди покривають увесь
   репозиторій; винятки — у `.prettierignore` (машинний генерат, артефакти збірки,
@@ -84,26 +88,34 @@ src/                              # Host (тонка збірка магазин
 ├── start.ts                      # createStart + request middleware (admin guard)
 └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 
-packages/               # Core CMS (у монорепо; публікація на npmjs — Фаза 1+)
-├── objects/            @simplycms/objects       # Contracts + ports (0 deps)
-├── domain/             @simplycms/domain        # Pure logic (pricing/discounts/…)
-├── schema/             @simplycms/schema        # Drizzle-схема ядра + RLS у TS
-├── supabase/           @simplycms/supabase      # browser/server/anon-клієнти, keys, provider
-├── data-supabase/      @simplycms/data-supabase # Repository implementations
-├── react-query/        @simplycms/react-query   # Query-хуки через EngineContext
-├── runtime/            @simplycms/runtime       # defineRuntime + host-defineConfig
-├── i18n/               @simplycms/i18n          # createTranslator, I18nProvider, uk/en
-├── storefront/         @simplycms/storefront    # SSR loaders + SEO (DI-клієнт)
-├── storefront-routes/  @simplycms/storefront-routes # routes/ + канонічні pages/ + shells/
-├── admin-routes/       @simplycms/admin-routes  # routes/admin* (тонкі обгортки)
-├── admin/              @simplycms/admin
-├── ui/                 @simplycms/ui
-├── plugin-system/      @simplycms/plugins
-├── theme-system/       @simplycms/themes        # ThemeRegistry, bootstrapThemes
+packages/               # Публіковані пакети — рівно ПʼЯТЬ (трек К0, 2026-08-20)
+├── simplycms/          simplycms                # ФЛАГМАН: усе ядро одним unscoped пакетом.
+│   │                                            # Тіри T0→T5 — ТЕКИ, не пакети; шар імпортується
+│   │                                            # субшляхом `simplycms/<тека>`
+│   ├── src/contracts/       # T0 Contracts + ports (0 deps); ./views — view-model-и вітрини
+│   ├── src/domain/          # T1 Pure logic (pricing/discounts/inventory/shipping)
+│   ├── src/schema/          # T1 Drizzle-схема ядра + RLS у TS
+│   ├── src/supabase/        # T2 browser/server/anon-клієнти, keys, provider, database.ts
+│   ├── src/data-supabase/   # T2 Repository implementations
+│   ├── src/react-query/     # T2 Query-хуки через EngineContext
+│   ├── src/runtime/         # T2 defineRuntime + host-defineConfig
+│   ├── src/i18n/            # T2 createTranslator, I18nProvider, каталоги uk/en
+│   ├── src/storefront/      # T2 SSR loaders + SEO (DI-клієнт)
+│   ├── src/ui/              # T3 shadcn/ui-примітиви
+│   ├── src/themes/          # T4 ThemeRegistry, bootstrapThemes, ./conformance
+│   ├── src/plugins/         # T4 HookRegistry, PluginSlot, bootstrapPlugins
+│   ├── src/plugin-sdk/      # T4 definePlugin + порти плагінів (межа довіри)
+│   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
+│   ├── src/core/            # T5 Власні провайдери/хуки (фасадну роль розчинено К0)
+│   ├── src/admin/           # T5 Адмінка
+│   ├── src/storefront-routes/  # T5 pages/ + views/ + shells/ + server/ + seo/
+│   ├── routes/{storefront,admin}/  # T5 Роут-файли — монтуються physical()
+│   ├── migrations/          # Канон core-міграцій для `simplycms db:diff`
+│   └── skills/              # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
+├── cli/                @simplycms/cli           # CLI магазину (bin `simplycms`), поза тірами
 ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore # Референс-тема (npm, Фаза 4)
 ├── simplycms-plugin-faq/       @simplycms/plugin-faq       # Референс-плагін (npm, Фаза 3)
-├── core/               @simplycms/core          # Legacy-фасад (розчиняється; Фаза 1+)
-└── …                   # cart-ui, catalog-ui, checkout-ui, profile-ui, reviews-ui
+└── create-simplycms-store/     # UNSCOPED скаффолдер + вбудований шаблон магазину
 
 scripts/                          # db-diff.mjs, db-migrate.mjs
 tests/                            # virtual-routes-escape, published-exports-parity
@@ -116,11 +128,11 @@ supabase/                         # config.toml, migrations/, functions/, types.
 
 - **Routes:** дерево збирається `routes.ts` (`virtualRouteConfig`), а не скануванням `src/routes`. Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у route-теці відповідного пакета
 - **Rendering:** SSR for storefront, client-only for admin (`ssr:false` на `admin.tsx`; дочірні роути його **не** повторюють); `ssr:false` routes always define a `pendingComponent`
-- **Themes:** контракт v2 — `{ manifest, tokens, components, settings?, messages? }`. Тема **не** постачає сторінок/лейаутів; канонічні сторінки — у `@simplycms/storefront-routes/src/pages/`, каркаси — `StorefrontShell`/`ProtectedShell`. Реєстрація з `config.themes` (локальна тека `themes/*` або npm-пакет), активація через `themes.is_active` + `bootstrapThemes`. Деталі — `docs/architecture/themes.md`
+- **Themes:** контракт v3 — `{ manifest, tokens, components, settings?, messages?, fonts?, views? }`. Тема **не** постачає сторінок/лейаутів: канонічні сторінки — у `simplycms/storefront-routes/pages/` (container-и), каркаси — `StorefrontShell`/`ProtectedShell`; `views?` лише перевизначає view-шар пʼяти сторінок вітрини (Home/Catalog/CatalogSection/ProductDetail/Cart), `fonts?` — зовнішні stylesheet-и шрифтів. Реєстрація з `config.themes` (локальна тека `themes/*` або npm-пакет), активація через `themes.is_active` + `bootstrapThemes`. Деталі — `docs/architecture/themes.md`
 - **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
 - **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient` or repository ports
-- **DB schema:** джерело правди — `@simplycms/schema` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP
-- **i18n:** нові рядки — через `@simplycms/i18n` (`useT`/`createTranslator`). `pnpm lint` дає ~960 warn на ще не мігровані кириличні рядки — це очікувано, не глушити
-- **Imports:** Always use `@simplycms/*` aliases, not relative paths to packages
+- **DB schema:** джерело правди — `packages/simplycms/src/schema/schema.ts` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP
+- **i18n:** нові рядки — через `simplycms/i18n` (`useT`/`createTranslator`). Міграцію завершено: i18n-селектори `no-restricted-syntax` — **error**, а не warn, тож новий кириличний рядок інтерфейсу в зоні валить лінт. Норма прогону — `pnpm lint` = 0 errors / 13 warnings (`react-hooks/*` і `no-unused-vars`, до i18n стосунку не мають)
+- **Imports:** ядро — субшляхом `simplycms/<тека>`, не відносними шляхами. 🔴 Аліасів злитих пакетів більше немає: чинні — `simplycms`/`simplycms/*`, три сателіти `@simplycms/*`, `@themes/*`, `@plugins/*`
 - **Language:** Comments and UI text in Ukrainian
-- **Do not:** Put logic in themes, edit `src/routeTree.gen.ts`, bypass package boundaries
+- **Do not:** Put logic in themes, edit `src/routeTree.gen.ts`, bypass tier boundaries (`eslint.tier-zones.mjs` — імпорт угору по тірах усередині ядра заборонений)

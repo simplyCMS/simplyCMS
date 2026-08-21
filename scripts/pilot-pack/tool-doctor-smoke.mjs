@@ -31,7 +31,7 @@ const TEMPLATE_DIR = resolve(
 const REPORT_MARKERS = [
   'simplycms doctor',
   'Корінь магазину знайдено',
-  'Версії @simplycms/* синхронні',
+  'Версії пакетів ядра синхронні',
 ];
 
 /**

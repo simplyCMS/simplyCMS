@@ -84,7 +84,7 @@ describe('virtual routes: physical() поза routesDirectory', () => {
 // запечені id лягають ПІД layout, який приніс перший (пакет ядра). Гард
 // доводить: два монтування не колізують, і роут плагіна стає дитиною
 // чужого layout за префіксом id — рівно так /admin/faq плагіна faq
-// підвішується під layout /admin з @simplycms/admin-routes.
+// підвішується під layout /admin з simplycms/routes/admin.
 describe('virtual routes: два physical() під спільним layout', () => {
   let treePath: string;
 

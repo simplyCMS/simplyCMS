@@ -24,16 +24,23 @@ import { readTarball } from './pack-inspect/tar.mjs';
 const PACKAGES_ROOT = resolve(import.meta.dirname, '../packages');
 
 /**
- * Теки scoped-пакетів ядра, позначених як публічні (`private: false`).
+ * Теки пакетів ядра, позначених як публічні (`private: false`).
  *
  * 🔴 Дві умови, і обидві потрібні. `private === false` — явна позначка
- * публічності. Префікс `@simplycms/` відсікає unscoped
+ * публічності. Друга умова — імʼя ядра: префікс `@simplycms/` АБО точне
+ * `simplycms` (unscoped-флагман К0). Вона відсікає unscoped
  * `create-simplycms-store`, що лежить у тій самій теці: у нього немає
  * `publishConfig.exports`, тож parity-suite не має що в ньому звіряти, а
  * пілот не має чого з нього ставити. Покладатись тут на те, що в його
  * манифесті просто немає ключа `private`, не можна — це збіг, а не контракт.
  */
 const CORE_SCOPE = '@simplycms/';
+const CORE_FLAGSHIP = 'simplycms';
+
+/** Чи це пакет ядра (scoped-сателіт або unscoped-флагман). */
+const isCorePackage = (name) =>
+  typeof name === 'string' &&
+  (name.startsWith(CORE_SCOPE) || name === CORE_FLAGSHIP);
 
 export function publishableDirs() {
   return readdirSync(PACKAGES_ROOT, { withFileTypes: true })
@@ -44,7 +51,7 @@ export function publishableDirs() {
         const json = JSON.parse(
           readFileSync(join(PACKAGES_ROOT, dir, 'package.json'), 'utf8'),
         );
-        return json.private === false && json.name?.startsWith(CORE_SCOPE);
+        return json.private === false && isCorePackage(json.name);
       } catch {
         return false;
       }

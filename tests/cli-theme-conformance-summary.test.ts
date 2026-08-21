@@ -46,7 +46,7 @@ vi.mock('../packages/cli/src/theme-conformance-env.mjs', () => ({
   createStoreRunner: async () => ({
     runner: {
       import: async (spec: string) =>
-        spec === '@simplycms/themes/conformance'
+        spec === 'simplycms/themes/conformance'
           ? { assertThemeViewsConformance: async () => ACTUALLY_RAN }
           : {
               default: {

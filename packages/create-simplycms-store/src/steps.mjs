@@ -110,9 +110,17 @@ export function installDeps(targetDir) {
 }
 
 /** Наступні кроки — те саме, що в README згенерованого магазину. */
-export function printNextSteps({ dirLabel, installed, hasEnv }) {
+export function printNextSteps({
+  dirLabel,
+  installed,
+  hasEnv,
+  skillsPending = false,
+}) {
   const steps = [`cd ${dirLabel}`];
   if (!installed) steps.push(`${STORE_MANAGER} install`);
+  // Windows без install: лінки скілів чекають на існуючу ціль (junction).
+  if (skillsPending)
+    steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
   if (!hasEnv)
     steps.push('cp .env.example .env.local   # ключі з Dashboard → Connect');
   steps.push('supabase link --project-ref <ref> && supabase db push');

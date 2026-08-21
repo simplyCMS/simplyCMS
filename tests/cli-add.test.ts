@@ -127,11 +127,7 @@ describe('cli add', () => {
     expect(source.indexOf('wishlist')).toBeLessThan(
       source.indexOf('hello-world'),
     );
-    expect(configPluginNames(source)).toEqual([
-      'wishlist',
-      'hello-world',
-      'faq',
-    ]);
+    expect(configPluginNames(source)).toEqual(['wishlist', 'hello-world']);
   });
 
   it('insertEntry: тема вставляється і в конфіг кореня монорепо', () => {
@@ -293,7 +289,8 @@ describe('cli add', () => {
   it('парсери конфігу читають реальні ключі; без якоря — null', () => {
     expect(configThemeKeys(templateConfig)).toEqual(['default']);
     expect(configThemeKeys(hostConfig)).toEqual(['default', 'solarstore']);
-    expect(configPluginNames(templateConfig)).toEqual(['hello-world', 'faq']);
+    // ПК7: шаблон декларує лише hello-world — FAQ довстановлюється окремо.
+    expect(configPluginNames(templateConfig)).toEqual(['hello-world']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();
   });

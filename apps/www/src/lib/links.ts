@@ -18,10 +18,14 @@ export const LINKS = {
   marketplaceDoc: `${GITHUB_URL}/blob/main/docs/marketplace/README.md`,
   testContours: `${GITHUB_URL}/blob/main/docs/architecture/test-contours.md`,
   npmOrg: 'https://www.npmjs.com/org/simplycms',
+  // 🔴 Після К0 публікованих пакетів рівно пʼять. Колишній
+  // `@simplycms/plugin-sdk` злитий у флагман і живе субшляхом
+  // `simplycms/plugin-sdk` — окремого npm-пакета під нього більше немає.
+  npmCore: 'https://www.npmjs.com/package/simplycms',
   npmScaffolder: 'https://www.npmjs.com/package/create-simplycms-store',
   npmCli: 'https://www.npmjs.com/package/@simplycms/cli',
-  npmPluginSdk: 'https://www.npmjs.com/package/@simplycms/plugin-sdk',
   npmTheme: 'https://www.npmjs.com/package/@simplycms/theme-solarstore',
+  npmPluginFaq: 'https://www.npmjs.com/package/@simplycms/plugin-faq',
 } as const;
 
 /** Атрибути зовнішнього посилання — щоб не розсипати по компонентах. */

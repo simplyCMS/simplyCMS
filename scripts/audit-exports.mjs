@@ -8,13 +8,14 @@
  * `src/`/`routes/` — навіть той, якого немає в `package.json#exports`. При
  * справжньому `pnpm install` (tarball, без аліасів) Node різко впаде на
  * `ERR_PACKAGE_PATH_NOT_EXPORTED` для такого subpath-у. Цей скрипт зводить
- * докупи (а) усі реально вжиті специфікатори `@simplycms/<pkg>/<subpath>` і
+ * докупи (а) усі реально вжиті субшлях-специфікатори ядра
+ * (`@simplycms/<pkg>/<subpath>` і `simplycms/<subpath>`) і
  * (б) ключі `exports`/`publishConfig.exports` у manifest-і кожного пакета —
  * і друкує розриви.
  *
  * Мапа "імʼя пакета → тека" будується з поля `name` у `package.json`, НЕ з
- * імені теки: `@simplycms/plugins` живе в `plugin-system/`, `@simplycms/themes`
- * — у `theme-system/`.
+ * імені теки: `@simplycms/plugin-faq` живе в `simplycms-plugin-faq/`,
+ * `@simplycms/theme-solarstore` — у `simplycms-theme-solarstore/`.
  *
  * Використання:
  *   node scripts/audit-exports.mjs           # CLI: список розривів, exit 1 якщо є
@@ -29,30 +30,45 @@ import { resolveExportKey } from './audit-exports/resolve.mjs';
 
 /**
  * Прогонити повний аудит.
+ *
+ * Аргументи — лише для тестів (негативний контроль): за замовчуванням і
+ * пакети, і специфікатори беруться з репо.
+ *
+ * @param {{ packages?: Map<string, unknown>; specifiers?: string[] }} [input]
  * @returns {{
  *   scanned: number;
  *   missing: { specifier: string; pkg: string; reason: string; packageJsonPath: string }[];
- *   unresolved: string[];
+ *   stale: { specifier: string; pkg: string }[];
  * }}
  */
-export function runAudit() {
-  const packages = collectPackages();
-  const specifiers = collectSpecifiers();
+export function runAudit(input = {}) {
+  const packages = input.packages ?? collectPackages();
+  const specifiers = input.specifiers ?? collectSpecifiers();
 
   const missing = [];
-  const unresolved = [];
+  const stale = [];
 
   for (const specifier of specifiers) {
-    const match = /^@simplycms\/([a-zA-Z0-9_-]+)\/(.+)$/.exec(specifier);
+    // Дві гілки імені ядра: scoped-сателіт і unscoped-флагман (К0).
+    const match = /^(@simplycms\/[a-zA-Z0-9_-]+|simplycms)\/(.+)$/.exec(
+      specifier,
+    );
     if (!match) continue;
-    const [, pkgSegment, subpath] = match;
-    const pkgName = `@simplycms/${pkgSegment}`;
+    const [, pkgName, subpath] = match;
     const info = packages.get(pkgName);
 
     if (!info) {
-      // Не workspace-пакет (напр. `@simplycms/db-types` — чистий tsconfig-
-      // аліас на файл, без package.json#exports) — поза скоупом цього аудиту.
-      unresolved.push(specifier);
+      // 🔴 Імʼя в просторі ядра, якому не відповідає жоден workspace-пакет —
+      // це РОЗРИВ, а не «поза скоупом». Після К0 живих імен рівно пʼять, тож
+      // `@simplycms/<щось-інше>` означає одне з двох: специфікатор злитого
+      // пакета (`@simplycms/runtime`, `@simplycms/objects`, …) або одрук.
+      // До 2026-08-21 такі рядки мовчки лягали в інформаційний кошик, і
+      // жоден тест його не асертив: файл із `@simplycms/runtime/defineRuntime`
+      // тримав гейт зеленим. У монорепо це невидимо (tsconfig-аліасів для
+      // мертвих імен уже немає, але теки поза root tsconfig — шаблон,
+      // `packages/cli/host`, `.mjs`-скрипти — типізації не мають), а в
+      // магазині дає `ERR_MODULE_NOT_FOUND` на неіснуючому пакеті.
+      stale.push({ specifier, pkg: pkgName });
       continue;
     }
 
@@ -80,7 +96,7 @@ export function runAudit() {
     }
   }
 
-  return { scanned: specifiers.length, missing, unresolved };
+  return { scanned: specifiers.length, missing, stale };
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────
@@ -88,29 +104,35 @@ const isMain =
   process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
 
 if (isMain) {
-  const { scanned, missing, unresolved } = runAudit();
+  const { scanned, missing, stale } = runAudit();
 
   console.log(
-    `[audit-exports] Проскановано ${scanned} унікальних специфікаторів @simplycms/<pkg>/<subpath>.`,
+    `[audit-exports] Проскановано ${scanned} унікальних субшлях-специфікаторів ядра.`,
   );
 
-  if (unresolved.length > 0) {
+  if (stale.length > 0) {
     console.log(
-      `\n⚪ Поза скоупом (не workspace-пакет, напр. tsconfig-only аліас): ${unresolved.length}`,
+      `\n❌ ${stale.length} специфікатор(ів) неіснуючого пакета ядра (злите імʼя або одрук):`,
     );
-    for (const s of unresolved) console.log(`  ${s}`);
+    for (const item of stale) {
+      console.log(
+        `  ${item.specifier} — пакета «${item.pkg}» немає в packages/`,
+      );
+    }
   }
 
-  if (missing.length === 0) {
+  if (missing.length > 0) {
+    console.log(`\n❌ ${missing.length} відсутніх exports:`);
+    for (const m of missing) {
+      console.log(
+        `  ${m.specifier} — немає ключа в ${m.reason} (${m.packageJsonPath})`,
+      );
+    }
+  }
+
+  if (missing.length === 0 && stale.length === 0) {
     console.log('\n✅ 0 відсутніх exports.');
     process.exit(0);
-  }
-
-  console.log(`\n❌ ${missing.length} відсутніх exports:`);
-  for (const m of missing) {
-    console.log(
-      `  ${m.specifier} — немає ключа в ${m.reason} (${m.packageJsonPath})`,
-    );
   }
   process.exit(1);
 }

@@ -32,46 +32,17 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
-        '@simplycms/objects': resolve(__dirname, 'packages/objects/src'),
-        '@simplycms/domain': resolve(__dirname, 'packages/domain/src'),
-        '@simplycms/data-supabase': resolve(
-          __dirname,
-          'packages/data-supabase/src',
-        ),
-        '@simplycms/supabase': resolve(__dirname, 'packages/supabase/src'),
-        '@simplycms/storefront-routes': resolve(
-          __dirname,
-          'packages/storefront-routes/src',
-        ),
-        '@simplycms/i18n': resolve(__dirname, 'packages/i18n/src'),
-        '@simplycms/runtime': resolve(__dirname, 'packages/runtime/src'),
-        '@simplycms/react-query': resolve(
-          __dirname,
-          'packages/react-query/src',
-        ),
-        '@simplycms/storefront': resolve(__dirname, 'packages/storefront/src'),
-        '@simplycms/cart-ui': resolve(__dirname, 'packages/cart-ui/src'),
-        '@simplycms/catalog-ui': resolve(__dirname, 'packages/catalog-ui/src'),
-        '@simplycms/checkout-ui': resolve(
-          __dirname,
-          'packages/checkout-ui/src',
-        ),
-        '@simplycms/profile-ui': resolve(__dirname, 'packages/profile-ui/src'),
-        '@simplycms/reviews-ui': resolve(__dirname, 'packages/reviews-ui/src'),
-        '@simplycms/core': resolve(__dirname, 'packages/core/src'),
-        '@simplycms/admin': resolve(__dirname, 'packages/admin/src'),
-        '@simplycms/ui': resolve(__dirname, 'packages/ui/src'),
-        '@simplycms/plugins': resolve(__dirname, 'packages/plugin-system/src'),
-        '@simplycms/plugin-sdk': resolve(__dirname, 'packages/plugin-sdk/src'),
         '@simplycms/plugin-faq': resolve(
           __dirname,
           'packages/simplycms-plugin-faq/src',
         ),
-        '@simplycms/themes': resolve(__dirname, 'packages/theme-system/src'),
         '@simplycms/theme-solarstore': resolve(
           __dirname,
           'packages/simplycms-theme-solarstore/src',
         ),
+        // Unscoped-флагман (К0): base-prefix, як і решта — @rollup/plugin-alias
+        // матчить `simplycms` та `simplycms/<sub>`, але не `simplycms-*`.
+        simplycms: resolve(__dirname, 'packages/simplycms/src'),
         '@themes': resolve(__dirname, 'themes'),
         '@plugins': resolve(__dirname, 'plugins'),
       },

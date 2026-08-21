@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/core/**/*.{ts,tsx},src/**/*.{ts,tsx}"
+applyTo: "packages/simplycms/src/{core,admin}/**/*.{ts,tsx},src/**/*.{ts,tsx}"
 description: "Правила роботи з файловим сховищем Supabase Storage в SimplyCMS"
 ---
 
@@ -16,7 +16,7 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 ## ✅ ALWAYS
 
 ### Upload
-- Використовуй Supabase Storage API через `@simplycms/core` обгортки.
+- Використовуй Supabase Storage API через обгортки `simplycms/core`.
 - Валідуй файли перед upload (розмір, MIME type).
 - Задавай `loading="lazy"`, явні `width`/`height` (або aspect-ratio) для зображень на storefront.
 - Генеруй унікальні імена файлів для уникнення конфліктів.
@@ -28,7 +28,7 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 
 ### Зображення
 - Storefront: стандартний `<img>` з public URL Supabase Storage (`/storage/v1/object/public/**`); lazy loading + розміри обовʼязково.
-- Admin: `ImageUpload` компонент з `@simplycms/admin`.
+- Admin: `ImageUpload` компонент з `simplycms/admin`.
 - Публічні бакети для зображень товарів та банерів.
 
 ## ❌ NEVER
@@ -38,4 +38,4 @@ SimplyCMS використовує **Supabase Storage** для зберіган�
 - Не використовуй signed URLs для публічних зображень — використовуй public URLs.
 
 ## ℹ️ Де шукати деталі
-- `packages/admin/src/components/ImageUpload.tsx` — компонент upload.
+- `packages/simplycms/src/admin/components/ImageUpload.tsx` — компонент upload.

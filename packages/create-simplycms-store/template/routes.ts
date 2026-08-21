@@ -1,5 +1,5 @@
 import { realpathSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { physical, rootRoute } from '@tanstack/virtual-file-routes';
 
@@ -7,11 +7,11 @@ const STORE_ROOT = dirname(fileURLToPath(import.meta.url));
 const ROUTES_DIR = resolve(STORE_ROOT, 'src/routes');
 
 /**
- * Шлях до теки `routes/` пакета ядра — з РОЗГОРНУТИМ симлінком.
+ * Шлях до підтеки `routes/<sub>` пакета ядра — з РОЗГОРНУТИМ симлінком.
  *
- * 🔴 Чому не просто `../../node_modules/@simplycms/<pkg>/routes`. pnpm розкладає
- * залежності ізольовано: `node_modules/@simplycms/<pkg>` — це симлінк на
- * `node_modules/.pnpm/<pkg>@<версія>_<хеш>/node_modules/@simplycms/<pkg>`. Vite
+ * 🔴 Чому не просто `../../node_modules/simplycms/routes/<sub>`. pnpm розкладає
+ * залежності ізольовано: `node_modules/simplycms` — це симлінк на
+ * `node_modules/.pnpm/simplycms@<версія>_<хеш>/node_modules/simplycms`. Vite
  * симлінки резолвить (`preserveSymlinks` за замовчуванням вимкнено), тож
  * module-id, який доходить до плагінів, — це РЕАЛЬНИЙ шлях через `.pnpm/`.
  *
@@ -26,31 +26,36 @@ const ROUTES_DIR = resolve(STORE_ROOT, 'src/routes');
  * шлях, який Vite потім віддасть плагінам. Під плоским деревом (npm) виклик —
  * тотожність, тож правка нічого не змінює.
  *
+ * Розгортається САМЕ корінь `routes/` пакета, а підтека приклеюється після:
+ * так один `realpathSync` обслуговує всі роут-теки ядра.
+ *
  * Слід у `src/routeTree.gen.ts` (шляхи з хешем `.pnpm`) нікого не турбує: файл
  * генерований і лежить у `.gitignore`.
  */
-const coreRoutes = (name: string) =>
+const coreRoutes = (sub: string) =>
   relative(
     ROUTES_DIR,
-    realpathSync(resolve(STORE_ROOT, 'node_modules', name, 'routes')),
+    join(
+      realpathSync(resolve(STORE_ROOT, 'node_modules', 'simplycms', 'routes')),
+      sub,
+    ),
   );
 
 /**
  * Віртуальна конфігурація роутів магазину.
  *
  * Каркас (вітрина + адмінка) приходить теками роутів із `node_modules` —
- * пакетами ядра, а не файлами магазину. Файлове сканування `src/routes`
- * вимкнене: у роутер потрапляє лише явно змонтоване нижче.
+ * пакетом ядра `simplycms`, а не файлами магазину. Файлове сканування
+ * `src/routes` вимкнене: у роутер потрапляє лише явно змонтоване нижче.
  */
 export const routes = rootRoute('__root.tsx', [
-  physical('', coreRoutes('@simplycms/storefront-routes')),
-  physical('', coreRoutes('@simplycms/admin-routes')),
+  physical('', coreRoutes('storefront')),
+  physical('', coreRoutes('admin')),
   // plugin admin routes — місце монтажу роутів адмінки плагінів: додай сюди
   // рядок physical() після встановлення плагіна з adminRoutes (автоматичну
-  // вставку через `simplycms add` відкладено — див. cli.md §9).
-  // 🔴 Завжди через coreRoutes: без realpathSync роути плагіна мовчки
+  // вставку через `simplycms add` відкладено — див. cli.md §9). Шлях плагіна
+  // будується так само, через realpathSync: без нього роути плагіна мовчки
   // втрачають code-splitting (див. коментар вище).
-  physical('', coreRoutes('@simplycms/plugin-faq')),
   // Кастомні роути цього магазину (спочатку — порожня тека).
   physical('', 'my'),
 ]);

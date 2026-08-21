@@ -8,7 +8,7 @@ dev-loop: тека підхоплюється без build-кроку і workspa
 pnpm simplycms create plugin <name>   # скаффолд сюди + запис у simplycms.config.ts
 ```
 
-Кожен плагін — `definePlugin` з `@simplycms/plugin-sdk` (слоти, власні
+Кожен плагін — `definePlugin` з `simplycms/plugin-sdk` (слоти, власні
 таблиці `plg_<name>_*`, сторінки адмінки, Zod-настройки, каталог перекладів
 з ключами `plugin.<name>.*`). Плагін НЕ імпортує Supabase-шар напряму —
 лише порти SDK; це стереже dependency-lint.

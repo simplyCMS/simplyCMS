@@ -3,7 +3,7 @@
  * заголовки колонок футера, бейдж героя).
  *
  * 🔴 Чому літералом, а не токеном: контракт `ThemeTokenValues` свідомо не
- * має `font-mono` (YAGNI у `packages/theme-system/src/types.ts`), тож
+ * має `font-mono` (YAGNI у `packages/simplycms/src/themes/types.ts`), тож
  * `applyTokens` таку змінну не розкладе. Тримати стек в одному місці все
  * одно треба — інакше він розповзеться копіями по трьох компонентах.
  *

@@ -302,269 +302,11 @@ importers:
         specifier: ^8.2.0
         version: 8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)
 
-  packages/admin:
-    dependencies:
-      '@hookform/resolvers':
-        specifier: ^5.0.0
-        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.84.0(react@19.2.8))(zod@4.4.3)
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/plugins':
-        specifier: workspace:*
-        version: link:../plugin-system
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/themes':
-        specifier: workspace:*
-        version: link:../theme-system
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-image':
-        specifier: ^3.29.2
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
-      '@tiptap/extension-text-align':
-        specifier: ^3.29.2
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
-      '@tiptap/react':
-        specifier: ^3.0.0
-        version: 3.29.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/starter-kit':
-        specifier: ^3.0.0
-        version: 3.29.2
-      date-fns:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.0
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      react-dom:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8(react@19.2.8)
-      react-hook-form:
-        specifier: ^7.0.0
-        version: 7.84.0(react@19.2.8)
-      sonner:
-        specifier: ^1.0.0 || ^2.0.0
-        version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      zod:
-        specifier: ^4.0.0
-        version: 4.4.3
-
-  packages/admin-routes:
-    dependencies:
-      '@simplycms/admin':
-        specifier: workspace:*
-        version: link:../admin
-      '@simplycms/storefront-routes':
-        specifier: workspace:*
-        version: link:../storefront-routes
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tanstack/react-start':
-        specifier: ^1.0.0
-        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/cart-ui:
-    dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/catalog-ui:
-    dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/checkout-ui:
-    dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
   packages/cli:
     dependencies:
       '@clack/prompts':
         specifier: ^1.7.0
         version: 1.7.0
-
-  packages/core:
-    dependencies:
-      '@hookform/resolvers':
-        specifier: ^5.0.0
-        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.84.0(react@19.2.8))(zod@4.4.3)
-      '@simplycms/cart-ui':
-        specifier: workspace:*
-        version: link:../cart-ui
-      '@simplycms/catalog-ui':
-        specifier: workspace:*
-        version: link:../catalog-ui
-      '@simplycms/checkout-ui':
-        specifier: workspace:*
-        version: link:../checkout-ui
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@simplycms/plugins':
-        specifier: workspace:*
-        version: link:../plugin-system
-      '@simplycms/profile-ui':
-        specifier: workspace:*
-        version: link:../profile-ui
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/reviews-ui':
-        specifier: workspace:*
-        version: link:../reviews-ui
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/themes':
-        specifier: workspace:*
-        version: link:../theme-system
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-link':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
-      '@tiptap/extension-underline':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
-      '@tiptap/react':
-        specifier: ^3.0.0
-        version: 3.29.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/starter-kit':
-        specifier: ^3.0.0
-        version: 3.29.2
-      clsx:
-        specifier: ^2.0.0
-        version: 2.1.1
-      date-fns:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.0
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      next-themes:
-        specifier: ^0.3.0 || ^0.4.0
-        version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      react-dom:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8(react@19.2.8)
-      react-hook-form:
-        specifier: ^7.0.0
-        version: 7.84.0(react@19.2.8)
-      tailwind-merge:
-        specifier: ^2.0.0 || ^3.0.0
-        version: 3.6.0
-      zod:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.3
 
   packages/create-simplycms-store:
     dependencies:
@@ -572,341 +314,11 @@ importers:
         specifier: ^1.7.0
         version: 1.7.0
 
-  packages/data-supabase:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-
-  packages/domain:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-
-  packages/i18n:
-    dependencies:
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/objects:
-    dependencies:
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/plugin-sdk:
-    dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@simplycms/plugins':
-        specifier: workspace:*
-        version: link:../plugin-system
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      zod:
-        specifier: ^4.0.0
-        version: 4.4.3
-
-  packages/plugin-system:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/profile-ui:
-    dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/react-query:
-    dependencies:
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/reviews-ui:
-    dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-link':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
-      '@tiptap/extension-underline':
-        specifier: ^3.0.0
-        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
-      '@tiptap/react':
-        specifier: ^3.0.0
-        version: 3.29.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/starter-kit':
-        specifier: ^3.0.0
-        version: 3.29.2
-      date-fns:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.0
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/runtime:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-
-  packages/schema:
-    dependencies:
-      drizzle-orm:
-        specifier: ^0.45.0
-        version: 0.45.2(pg@8.22.0)
-    devDependencies:
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
-      pg:
-        specifier: 8.22.0
-        version: 8.22.0
-
-  packages/simplycms-plugin-faq:
-    dependencies:
-      '@simplycms/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 1.28.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      zod:
-        specifier: ^4.0.0
-        version: 4.4.3
-
-  packages/simplycms-theme-solarstore:
-    dependencies:
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/themes':
-        specifier: workspace:*
-        version: link:../theme-system
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 1.28.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/storefront:
-    dependencies:
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-
-  packages/storefront-routes:
+  packages/simplycms:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.0
         version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.84.0(react@19.2.8))(zod@4.4.3)
-      '@simplycms/catalog-ui':
-        specifier: workspace:*
-        version: link:../catalog-ui
-      '@simplycms/core':
-        specifier: workspace:*
-        version: link:../core
-      '@simplycms/domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@simplycms/plugins':
-        specifier: workspace:*
-        version: link:../plugin-system
-      '@simplycms/react-query':
-        specifier: workspace:*
-        version: link:../react-query
-      '@simplycms/storefront':
-        specifier: workspace:*
-        version: link:../storefront
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@simplycms/themes':
-        specifier: workspace:*
-        version: link:../theme-system
-      '@simplycms/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.101.4(react@19.2.8)
-      '@tanstack/react-router':
-        specifier: ^1.0.0
-        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tanstack/react-start':
-        specifier: ^1.0.0
-        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
-      embla-carousel-react:
-        specifier: ^8.0.0
-        version: 8.6.0(react@19.2.8)
-      lucide-react:
-        specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      react-hook-form:
-        specifier: ^7.0.0
-        version: 7.84.0(react@19.2.8)
-      zod:
-        specifier: ^3.0.0 || ^4.0.0
-        version: 4.4.3
-    devDependencies:
-      '@simplycms/theme-solarstore':
-        specifier: workspace:*
-        version: link:../simplycms-theme-solarstore
-
-  packages/supabase:
-    dependencies:
-      '@supabase/ssr':
-        specifier: '>=0.5.0 <1.0.0'
-        version: 0.12.4(@supabase/supabase-js@2.112.0)
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      '@tanstack/react-start':
-        specifier: ^1.0.0
-        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-
-  packages/theme-system:
-    dependencies:
-      '@simplycms/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@simplycms/objects':
-        specifier: workspace:*
-        version: link:../objects
-      '@simplycms/supabase':
-        specifier: workspace:*
-        version: link:../supabase
-      '@supabase/supabase-js':
-        specifier: ^2.0.0
-        version: 2.112.0
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8
-      react-dom:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.8(react@19.2.8)
-
-  packages/ui:
-    dependencies:
       '@radix-ui/react-accordion':
         specifier: ^1.0.0
         version: 1.2.20(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -988,6 +400,39 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.0.0
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@supabase/ssr':
+        specifier: '>=0.5.0 <1.0.0'
+        version: 0.12.4(@supabase/supabase-js@2.112.0)
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.112.0
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-start':
+        specifier: ^1.0.0
+        version: 1.167.42(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5))
+      '@tiptap/extension-image':
+        specifier: ^3.29.2
+        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
+      '@tiptap/extension-link':
+        specifier: ^3.0.0
+        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
+      '@tiptap/extension-text-align':
+        specifier: ^3.29.2
+        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
+      '@tiptap/extension-underline':
+        specifier: ^3.0.0
+        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))
+      '@tiptap/react':
+        specifier: ^3.0.0
+        version: 3.29.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tiptap/starter-kit':
+        specifier: ^3.0.0
+        version: 3.29.2
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -997,6 +442,12 @@ importers:
       cmdk:
         specifier: ^1.0.0
         version: 1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      date-fns:
+        specifier: ^3.0.0 || ^4.0.0
+        version: 4.4.0
+      drizzle-orm:
+        specifier: ^0.45.0
+        version: 0.45.2(pg@8.22.0)
       embla-carousel-react:
         specifier: ^8.0.0
         version: 8.6.0(react@19.2.8)
@@ -1005,7 +456,7 @@ importers:
         version: 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       lucide-react:
         specifier: '>=0.400.0'
-        version: 0.563.0(react@19.2.8)
+        version: 1.28.0(react@19.2.8)
       next-themes:
         specifier: ^0.3.0 || ^0.4.0
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1036,6 +487,57 @@ importers:
       vaul:
         specifier: ^1.0.0
         version: 1.1.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+    devDependencies:
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      pg:
+        specifier: 8.22.0
+        version: 8.22.0
+
+  packages/simplycms-plugin-faq:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: '>=0.400.0'
+        version: 1.28.0(react@19.2.8)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+    devDependencies:
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
+
+  packages/simplycms-theme-solarstore:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.0.0
+        version: 1.168.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: '>=0.400.0'
+        version: 1.28.0(react@19.2.8)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.8
+    devDependencies:
+      simplycms:
+        specifier: workspace:*
+        version: link:../simplycms
 
   plugins/hello-world: {}
 
@@ -4479,11 +3981,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@0.563.0:
-    resolution: {integrity: sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   lucide-react@1.28.0:
     resolution: {integrity: sha512-fARAFJULsGuDDydjp6+6blekG/sBIM29TerzLjc9bQUKAcEfrSc4ZQKb25KRz4OMKd87cZTb5dgq0w/T6KufVg==}
@@ -8526,10 +8023,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@0.563.0(react@19.2.8):
-    dependencies:
-      react: 19.2.8
 
   lucide-react@1.28.0(react@19.2.8):
     dependencies:

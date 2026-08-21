@@ -4,7 +4,9 @@
 > «theme views» (2026-08-18; спека
 > [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md),
 > план [`2026-08-18-theme-views-v3.md`](../superpowers/plans/2026-08-18-theme-views-v3.md),
-> рішення Р1–Р12). Вимоги — спека платформи
+> рішення Р1–Р12); специфікатори й конвенція залежностей оновлені після
+> треку К0 (2026-08-20) — ядро постачається одним пакетом `simplycms`, усі
+> входи стали його субшляхами. Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §6 (контракт теми), §13 (маркетплейс), §17 сценарій 4; рішення імплементації —
 > [план Фази 4](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
@@ -20,7 +22,7 @@
 **view-шар** пʼяти сторінок вітрини (§2.1).
 
 Даних, роутів і SEO тема не несе ніколи: сторінки лишаються канонічними
-(`@simplycms/storefront-routes/src/pages/`), вони тягнуть дані й віддають
+(`simplycms/storefront-routes/pages/*`), вони тягнуть дані й віддають
 темі готовий view-model. Тема перевизначає лише те, ЯК це намальовано
 (ревізія D3′/D4′ спеки v3 — попередня редакція D3/D4 забороняла темі й
 презентацію теж).
@@ -43,7 +45,7 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 - Registry-awareness адмінки (§5) — читає лише `ThemeRegistry.has(name)`;
   uninstall-рядка з адмінки немає (деактивація достатня для v1, Р0).
 - Межі довіри на теми **немає свідомо** (Р10, §7): тема, на відміну від
-  плагіна, законно імпортує `@simplycms/supabase`/`@simplycms/core` — це
+  плагіна, законно імпортує `simplycms/supabase`/`simplycms/core` — це
   контракт v2, а не діра.
 - Шрифти теми (`fonts`, контракт v2.2) — **лише зовнішні `https:`-stylesheet**;
   `@font-face`-обʼєктів і роздачі файлів шрифтів темою немає свідомо
@@ -80,8 +82,8 @@ ThemeModule = {
   лишається на Inter саме завдяки їм.
 - **`fonts` (v2.2)** — опційний масив зовнішніх stylesheet-ів теми (Google
   Fonts і аналоги). Фільтр — `safeFontStylesheets` (субшлях-експорт
-  `@simplycms/themes/safeFontStylesheets`, НЕ barrel: barrel тягне
-  `getActiveThemeSSR` → `@simplycms/supabase/anon-client`, і з клієнтського
+  `simplycms/themes/safeFontStylesheets`, НЕ barrel: barrel тягне
+  `getActiveThemeSSR` → `simplycms/supabase/anon-client`, і з клієнтського
   компонента це затягнуло б серверний код у бандл): приймаються лише
   абсолютні `https:`-URL без лапок/кутових дужок/пробілів, невалідний запис
   пропускається з `console.warn`. Рендер — `ThemeFonts` у ОБОХ каркасах
@@ -94,9 +96,9 @@ ThemeModule = {
   постачає `fonts` закоментованим, а `validateThemeModule` відсутність
   поля не вважає помилкою.
 - `manifest.displayName` — те, що бачить адмін у списку тем; поле фактично
-  існує в контракті (`packages/theme-system/src/types.ts`), хоча спека §6
+  існує в контракті (`packages/simplycms/src/themes/types.ts`), хоча спека §6
   його не називала — амендмент §6 (Р14, див. спеку).
-- `validateThemeModule` (`@simplycms/themes`) — публічний контракт для
+- `validateThemeModule` (`simplycms/themes`) — публічний контракт для
   авторів: порушення структури кидає, `ThemeRegistry.load` падає на тему
   `default`, якщо запитаної немає.
 - `name` у manifest — метаданий опис; **ідентичність** теми для БД і
@@ -131,11 +133,11 @@ ThemeViews = {
 | логіка комерційних реквізитів (кошик, ціна, стани) | РОЗСТАВЛЕННЯ слотів у власному лейауті |
 
 **Container/view.** Кожна сторінка
-`packages/storefront-routes/src/pages/<Name>.tsx` — це **container**: тягне
+`packages/simplycms/src/storefront-routes/pages/<Name>.tsx` — це **container**: тягне
 дані, тримає стан, збирає view-model і резолвить view хуком
 `useStorefrontViews({ <Name>: Canonical<Name>View })`
 (`src/views/useStorefrontViews.ts`, поверх наявного `useActiveThemeModule`).
-Канонічні view — `packages/storefront-routes/src/views/<Name>View.tsx`.
+Канонічні view — `packages/simplycms/src/storefront-routes/views/<Name>View.tsx`.
 Каркас (`StorefrontShell`) не чіпається: темовий view живе всередині нього
 так само, як канонічний.
 
@@ -144,10 +146,10 @@ ThemeViews = {
 `react-hooks/static-components` (правила React Compiler) вважає створеним під
 час рендеру — це помилка лінта і водночас реальний перемонтаж піддерева.
 
-**View-model-и — у `@simplycms/objects/views`** (T0), субшлях **поза барелем**
+**View-model-и — у `simplycms/contracts/views`** (T0), субшлях **поза барелем**
 пакета. Причина не стилістична: тип прибіндженого слота мусить бути
 `ComponentType` з react (структурний `(props) => unknown` JSX не приймає —
-TS2786), тож `views` тягне type-only імпорт react. Барель `@simplycms/objects`
+TS2786), тож `views` тягне type-only імпорт react. Барель `simplycms/contracts`
 обіцяє «без імпортів supabase/react», і ця обіцянка лишається правдою саме
 завдяки окремому субшляху; `react` оголошений **опційним type-only peer**
 (`peerDependenciesMeta`) — рантайм-залежностей T0 як не мав, так і не має.
@@ -171,8 +173,8 @@ route-пакета; тема імпортує їх НЕ напряму, а от�
 `data-simplycms-requisite="<імʼя>"` (`REQUISITE_ATTRIBUTE`). Імена й
 мінімальний склад по сторінках — константи `HOME_/CATALOG_/
 PRODUCT_DETAIL_/CART_REQUISITES` і `REQUIRED_REQUISITES` у
-`@simplycms/objects/views`: їх потребують обидва боки (слот, що малює
-маркер, і kit, що його шукає), а `@simplycms/themes` не має права залежати
+`simplycms/contracts/views`: їх потребують обидва боки (слот, що малює
+маркер, і kit, що його шукає), а тека `themes` не має права залежати
 від route-пакета (тіри T0→T5). Парність «слот у vm ↔ імʼя» тримає
 `satisfies Record<keyof …Slots, string>` — новий слот без імені червонить
 `pnpm typecheck`.
@@ -189,7 +191,7 @@ PRODUCT_DETAIL_/CART_REQUISITES` і `REQUIRED_REQUISITES` у
 conformance: рендер на фікстурах без БД (§7.1). Канонічні view ядра
 проходять той самий гейт — це водночас доказ їхньої чистоти.
 
-**Фікстури** — `@simplycms/objects/views/fixtures`, теж публічний субшлях (на
+**Фікстури** — `simplycms/contracts/views/fixtures`, теж публічний субшлях (на
 них ганяє kit і автор сторонньої теми з опублікованих пакетів). Дані без
 слотів (`ViewModelData<T>`), два стани на сторінку: `full` (повні дані) і
 `edge` (товар без фото, порожня секція, порожній кошик, магазин без
@@ -209,27 +211,37 @@ conformance: рендер на фікстурах без БД (§7.1). Кано�
 
 **Форма пакета** (Р3, зразок — `@simplycms/plugin-faq`): tsup,
 `format: esm`, `splitting: false` (тема — пасивний модуль без спільного
-singleton-стану між entry), `external: [/^@simplycms\//]`,
+singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms\//]`
+(🔴 після К0 ядро приходить unscoped-іменем — сам regexp `/^@simplycms\//`
+більше не зовнішнить нічого корисного, обидві форми потрібні разом),
 `sideEffects: false`. Єдиний entry `src/index.ts` (default-export
 `ThemeModule`), `exports` лише `"."` (dev → `src/index.ts`, `publishConfig`
 → `dist/index.js`). `files: ["dist", "src", "!src/**/__tests__/**"]` —
 **`src` обовʼязково в tarball-і**: без нього copy-in-варіант (§3.2) не має
 що копіювати.
 
-**Конвенція залежностей — РІЗНА для референс-тем ядра і сторонніх:**
+**Конвенція залежностей.** 🔴 Після треку К0 (рішення ПК6) ядро в темі —
+**завжди `peerDependencies`, і для референс-тем теж**: пакет ядра один
+(`simplycms`), а `dependencies` дублювали б React-контексти на кшталт
+`SupabaseProvider` (vite-dedupe шаблону покриває лише
+`react`/`react-dom`/`react-query`). Референс-тема додає той самий
+`simplycms` ще й у `devDependencies` — peer сам по собі не встановлюється,
+а зібрати пакет у монорепо треба.
 
 | | Референс-тема ядра | Стороння тема |
 |---|---|---|
-| `@simplycms/*` | `dependencies` (один реліз-потяг, одна версія) | `peerDependencies` (тема не в реліз-потязі ядра; `dependencies` дублювали б React-контексти на кшталт `SupabaseProvider` — vite-dedupe шаблону покриває лише `react`/`react-dom`/`react-query`) |
+| Ядро | `peerDependencies: { simplycms }` + дзеркало в `devDependencies` | `peerDependencies: { simplycms }` |
 | Сумісність з ядром | версія пакета = `manifest.version` | `engines.simplycms` (semver-range) |
 | React/router/query | `peerDependencies` (`audit-deps/classify.mjs`) | `peerDependencies` |
 
 Референс-теми ядра (`@simplycms/theme-<name>`) — той самий виняток природи,
 що `@simplycms/plugin-faq`: тека `packages/simplycms-theme-<name>`, npm-імʼя
-під scope `@simplycms/`. Причина: реліз/аудит-механіка (`pack-inspect.mjs`
-`CORE_SCOPE`, `release/bump.mjs`, audit-deps/audit-exports,
-`published-exports-parity`) авто-підхоплює лише `packages/*` під scope
-`@simplycms/` — інший неймінг лишив би референс-тему поза всіма гейтами.
+під scope `@simplycms/`. Причина: реліз/аудит-механіка (`pack-inspect.mjs`,
+`release/bump.mjs`, audit-deps/audit-exports, `published-exports-parity`)
+авто-підхоплює `packages/*` за ІМЕНЕМ — scope `@simplycms/` плюс (з К0)
+точне unscoped `simplycms`; інший неймінг лишив би референс-тему поза всіма
+гейтами. 🔴 Префікс `simplycms` тут ніде не використовується саме тому, що
+зачепив би сторонні `simplycms-theme-*` з власним циклом релізу.
 
 ### 3.2 Copy-in (`--copy`)
 
@@ -277,7 +289,8 @@ singleton-стану між entry), `external: [/^@simplycms\//]`,
 ```
 
 Референс-теми ядра (`@simplycms/theme-*`) уже покриті чинним
-`./node_modules/@simplycms/*/dist/**/*.js`. **Вимога «класи мають бути в
+`./node_modules/@simplycms/*/dist/**/*.js` (сам фреймворк-пакет — окремою
+парою глобів `./node_modules/simplycms/{dist,routes}/**`, К0). **Вимога «класи мають бути в
 зібраному dist-JS» — частина конвенції форми пакета** (tsup лишає
 className-літерали в JS; перевірено на dist `plugin-faq`). Copy-in-теми
 (§3.2) під ці глоби НЕ потрапляють — вони йдуть під `./themes/**/*.{ts,tsx}`
@@ -309,7 +322,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 
 Адмінка (`Themes.tsx`) читає **лише БД** (таблиця `themes`) — записаний у
 `simplycms.config.ts` модуль без рядка в БД просто не зʼявиться у списку.
-`bootstrapThemes` (`@simplycms/themes`, дзеркало `syncPluginRows` плагінів)
+`bootstrapThemes` (`simplycms/themes`, дзеркало `syncPluginRows` плагінів)
 синхронізує зареєстровані теми в таблицю при завантаженні застосунку —
 клієнтський `useEffect` поруч із `PluginBootstrap` у `__root.tsx` (три
 синхронні копії: host, `packages/cli/host/`, template — `pnpm template:sync`).
@@ -361,7 +374,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 
 ## 6. Registry-awareness адмінки
 
-`packages/admin/src/pages/Themes.tsx` звіряє кожен рядок БД з
+`packages/simplycms/src/admin/pages/Themes.tsx` звіряє кожен рядок БД з
 `ThemeRegistry.has(theme.name)` (дзеркало `hasModule` у `Plugins.tsx`):
 модуля немає в білді → бейдж «модуль відсутній» (`admin.themes.moduleMissing`)
 + disabled кнопка «Активувати» + пояснювальний текст
@@ -374,7 +387,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 насправді на вітрині немає.
 
 Покрито компонентним тестом (Testing Library/jsdom,
-`packages/admin/src/__tests__/`): рядок без модуля → бейдж + disabled
+`packages/simplycms/src/admin/__tests__/`): рядок без модуля → бейдж + disabled
 activate.
 
 ⚠ **Нотатка власнику.** E2e-смок `tests/e2e/admin-smoke/theme.e2e.ts` тисне
@@ -387,8 +400,8 @@ activate.
 ### 7.1 Гейт заявлених `views` (контракт v3)
 
 `assertThemeViewsConformance(theme)` — публічний kit,
-`packages/theme-system/src/conformance/`, експорт **субшляхом**
-`@simplycms/themes/conformance` (барель тягне `getActiveThemeSSR` →
+`packages/simplycms/src/themes/conformance/`, експорт **субшляхом**
+`simplycms/themes/conformance` (барель тягне `getActiveThemeSSR` →
 anon-клієнт Supabase — та сама ідіома, що `safeFontStylesheets`).
 
 Що робить: `validateThemeModule` → тимчасова реєстрація теми в
@@ -406,7 +419,7 @@ i18n + `ThemeContext` із default-ами схеми `settings` → зняття
 блоком у `conformance/cases.tsx`, тож заявлений ключ без блоку тихо не
 перевіряється. Звіт CLI (`simplycms theme:conformance`) і тести ядра
 асертять саме повернене значення — інакше випалий блок показував би прогін,
-якого не було. Підлогу тримає `packages/theme-system/src/__tests__/
+якого не було. Підлогу тримає `packages/simplycms/src/themes/__tests__/
 conformance-cases.test.tsx`: тема з усіма пʼятьма views має дати рівно
 `THEME_VIEW_KEYS.length` кейсів.
 
@@ -477,7 +490,7 @@ Playwright): гейт мусить бути доступним і магазин
    - `manifest.engines.simplycms` — semver-range сумісності;
    - `description` у `package.json` — англійською (метадані реєстру
      показуються з БД-рядка, не з каталогу i18n);
-   - `@simplycms/*` — `peerDependencies`, не `dependencies` (§3.1);
+   - `simplycms` — `peerDependencies`, не `dependencies` (§3.1);
    - модуль проходить `validateThemeModule` без падіння;
    - якщо тема заявляє `views` — зелений `simplycms theme:conformance <name>`
      (§7.1);
@@ -510,11 +523,12 @@ Playwright): гейт мусить бути доступним і магазин
   (фаза «Шліфування»), навмисно окремою сесією: так валідація контракту
   відділена від валідації клона.
 - **Межа довіри, як у плагінів (Р10).** Обидві наявні теми легітимно
-  імпортують `@simplycms/supabase/SupabaseProvider` і хуки `@simplycms/core`
+  імпортують `simplycms/supabase/SupabaseProvider` і хуки `simplycms/core`
   — тема, на відміну від плагіна, споживає DI-клієнт напряму за контрактом
   v2 (`HomeSections` сам тягне дані хуками). Плагінна eslint-зона
   (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Якщо колись
-  зʼявиться theme-sdk із портами (аналог `@simplycms/plugin-sdk`) — це
+  зʼявиться theme-sdk із портами (аналог `simplycms/plugin-sdk`, субшлях
+  того самого пакета) — це
   окрема фаза, не недогляд.
 - **`@font-face` / self-hosted шрифти теми та preconnect-оптимізації**
   (контракт v2.2) — тема віддає лише `https:`-URL зовнішніх stylesheet-ів;
@@ -523,7 +537,7 @@ Playwright): гейт мусить бути доступним і магазин
   це властивість гейтів, а не пропуск: Gate D читає лише зібраний
   `dist/client/assets/*.css` і HTML не бачить, а сід активує `default`, яка
   `fonts` не має. DB-free доказ — компонентні тести
-  `packages/storefront-routes/src/__tests__/theme-fonts*.test.tsx` (другий —
+  `packages/simplycms/src/storefront-routes/__tests__/theme-fonts*.test.tsx` (другий —
   на РЕАЛЬНОМУ модулі `@simplycms/theme-solarstore`). Живий SSR-доказ
   (Gate B + `SEED_THEME='solarstore'` + перегенерація сіду + розрізнюваний
   маркер) — борг у роадмапі.
@@ -542,25 +556,25 @@ Playwright): гейт мусить бути доступним і магазин
 
 | Що | Чим |
 |---|---|
-| Контракт `ThemeModule`/`validateThemeModule` (включно з мʼякою перевіркою форми `views`) | юніти `packages/theme-system` |
-| Conformance-kit v3: валідна тема зелена, зламана (без `AddToCart` / падає на порожньому кошику) червона | `packages/theme-system/src/__tests__/conformance-requisites.test.tsx` (+ синтетичні теми `conformance-themes.tsx`) |
-| Провайдери kit-а: default-и `settings` і каталог теми доходять до view | `packages/theme-system/src/__tests__/conformance-context.test.tsx` |
-| Канонічні view ядра проходять той самий kit (доказ їхньої чистоти) | `packages/storefront-routes/src/__tests__/canonical-views-conformance.test.tsx` |
-| Чистота кожного канонічного view (рендер на фікстурах під самим `I18nProvider`) | `packages/storefront-routes/src/__tests__/{product-detail,catalog,home,cart}-view.test.tsx` |
-| Резолв `theme.views` із fallback-ом на канонічний | `packages/storefront-routes/src/__tests__/storefront-views-resolve.test.tsx` |
-| Слоти реквізитів: маркер присутній, поведінка перенесена без змін | `packages/storefront-routes/src/__tests__/{product,cart,catalog}-slots.test.tsx` |
-| Імена/склад реквізитів ↔ типи слотів | `packages/objects/src/__tests__/views-requisites.test.ts`; фікстури ↔ типи — `views-fixtures.test.ts` |
-| Settings: merge БД-значень із default-ами (обидва шляхи ініціалізації) | `packages/theme-system/src/__tests__/ThemeContext.test.tsx` |
-| Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/admin/src/__tests__/ThemeSettings.test.tsx` |
+| Контракт `ThemeModule`/`validateThemeModule` (включно з мʼякою перевіркою форми `views`) | юніти `packages/simplycms/src/themes` |
+| Conformance-kit v3: валідна тема зелена, зламана (без `AddToCart` / падає на порожньому кошику) червона | `packages/simplycms/src/themes/__tests__/conformance-requisites.test.tsx` (+ синтетичні теми `conformance-themes.tsx`) |
+| Провайдери kit-а: default-и `settings` і каталог теми доходять до view | `packages/simplycms/src/themes/__tests__/conformance-context.test.tsx` |
+| Канонічні view ядра проходять той самий kit (доказ їхньої чистоти) | `packages/simplycms/src/storefront-routes/__tests__/canonical-views-conformance.test.tsx` |
+| Чистота кожного канонічного view (рендер на фікстурах під самим `I18nProvider`) | `packages/simplycms/src/storefront-routes/__tests__/{product-detail,catalog,home,cart}-view.test.tsx` |
+| Резолв `theme.views` із fallback-ом на канонічний | `packages/simplycms/src/storefront-routes/__tests__/storefront-views-resolve.test.tsx` |
+| Слоти реквізитів: маркер присутній, поведінка перенесена без змін | `packages/simplycms/src/storefront-routes/__tests__/{product,cart,catalog}-slots.test.tsx` |
+| Імена/склад реквізитів ↔ типи слотів | `packages/simplycms/src/contracts/__tests__/views-requisites.test.ts`; фікстури ↔ типи — `views-fixtures.test.ts` |
+| Settings: merge БД-значень із default-ами (обидва шляхи ініціалізації) | `packages/simplycms/src/themes/__tests__/ThemeContext.test.tsx` |
+| Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/simplycms/src/admin/__tests__/ThemeSettings.test.tsx` |
 | CLI-канал гейта: чисті функції команди (парсер, резолв теми з конфігу, підсумок звіту, аліаси з tsconfig) | `tests/cli-theme-conformance.test.ts` |
 | CLI-канал гейта: ЖИВИЙ ланцюг `installStoreDom → createStoreRunner → runner.import → kit` на синтетичній темі з `views` (зелений прогін + червоний на загубленому реквізиті) | `tests/cli-theme-conformance-run.test.ts` |
 | CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
-| `bootstrapThemes` | `packages/theme-system/src/__tests__/bootstrapThemes.test.ts` (mock supabase: без missing — нуль load/insert/getSession; без сесії — нуль load; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
-| Registry-awareness адмінки | компонентний тест `packages/admin/src/__tests__/` (Testing Library/jsdom) |
+| `bootstrapThemes` | `packages/simplycms/src/themes/__tests__/bootstrapThemes.test.ts` (mock supabase: без missing — нуль load/insert/getSession; без сесії — нуль load; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
+| Registry-awareness адмінки | компонентний тест `packages/simplycms/src/admin/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
 | i18n каталоги тем | `tests/theme-messages-parity.test.ts` + AST-скан `SCANNED_ROOTS` |
-| Типографічні токени і фільтр `fonts` (v2.2) | юніти `packages/theme-system/src/__tests__/` (`applyTokens.test.ts`, `safeFontStylesheets.test.ts`, `validateThemeModule.test.ts`) |
-| Рендер `<link>`-ів шрифтів теми (v2.2) | `packages/storefront-routes/src/__tests__/theme-fonts.test.tsx` + `theme-fonts-solarstore.test.tsx` (реальний модуль теми) |
+| Типографічні токени і фільтр `fonts` (v2.2) | юніти `packages/simplycms/src/themes/__tests__/` (`applyTokens.test.ts`, `safeFontStylesheets.test.ts`, `validateThemeModule.test.ts`) |
+| Рендер `<link>`-ів шрифтів теми (v2.2) | `packages/simplycms/src/storefront-routes/__tests__/theme-fonts.test.tsx` + `theme-fonts-solarstore.test.tsx` (реальний модуль теми) |
 | `create theme` скаффолд | `tests/cli-create-theme.test.ts` (методика `cli-create.test.ts`: temp-dir, плейсхолдери, `transpileModule`) |
 | `add --theme --copy` | `tests/cli-add-copy.test.ts` (чиста функція `runThemeCopy`/`mergeDependencies`/`copyPreflight` над фікстурним node_modules у temp-store: валідації, злиття deps, ідемпотентність, колізія, dry-run) |
 | Doctor: записи конфігу + Tailwind-підказка | `tests/cli-doctor.test.ts` |

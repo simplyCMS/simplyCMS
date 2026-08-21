@@ -50,8 +50,8 @@ import {
 } from './pilot-pack/e2e.mjs';
 import { seedProductNames } from './pilot-pack/seed-fixtures.mjs';
 import { freePort } from './pilot-pack/build.mjs';
-import { runGates, step } from './pilot-pack/run.mjs';
-import { report } from './pilot-pack/report.mjs';
+import { runGates } from './pilot-pack/run.mjs';
+import { report, step } from './pilot-pack/report.mjs';
 
 const ROOT = join(tmpdir(), 'simplycms-pilot');
 const STORE_DIR = join(ROOT, 'store');

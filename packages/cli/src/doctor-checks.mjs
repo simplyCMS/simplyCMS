@@ -1,14 +1,18 @@
-// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–10). Кожна повертає Check
-// (ui.mjs); файлові №6–7 живуть у doctor-fs-checks.mjs (ліміт рядків).
+// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–12). Кожна повертає Check
+// (ui.mjs); файлові №6–7 і №12 живуть у doctor-fs-checks.mjs (ліміт рядків).
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { coreDependencies } from './context.mjs';
-import { checkHostDrift, checkMigrations } from './doctor-fs-checks.mjs';
+import {
+  checkHostDrift,
+  checkMigrations,
+  checkSkillLinks,
+} from './doctor-fs-checks.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
 /**
  * Контекст перевірок. `hostDir` — канонічна тека host/ пакета CLI;
- * `schemaMigrationsDir` — node_modules/@simplycms/schema/migrations магазину.
+ * `schemaMigrationsDir` — node_modules/simplycms/migrations магазину.
  * @typedef {{
  *   storeRoot: string;
  *   manifest: Record<string, unknown>;
@@ -47,9 +51,9 @@ function checkFileContains(storeRoot, file, fragments, title) {
   return check(file, title, 'ok');
 }
 
-/** №2: усі @simplycms/* — одна версія (error); версія CLI збігається (warn). */
+/** №2: усі пакети ядра — одна версія (error); версія CLI збігається (warn). */
 export function checkCoreVersions({ manifest, cliVersion }) {
-  const title = 'Версії @simplycms/* синхронні';
+  const title = 'Версії пакетів ядра синхронні';
   const versions = [...new Set(Object.values(coreDependencies(manifest)))];
   if (versions.length > 1) {
     const details = `Версії розійшлися: ${versions.join(', ')} — вирівняй їх`;
@@ -110,21 +114,20 @@ export function runOfflineChecks(ctx) {
     checkHostDrift(ctx),
     checkMigrations(ctx),
     // №8–10: якірні файли каркаса — без них магазин не збереться коректно.
+    // 🔴 Роут-теки ядра — підшляхи ОДНОГО пакета (`simplycms/routes/*`), і
+    // обидві монтуються через realpathSync: без нього роути мовчки втрачають
+    // code-splitting (магазин їде одним initial-чанком).
     checkFileContains(
       storeRoot,
       'routes.ts',
-      [
-        'realpathSync',
-        '@simplycms/storefront-routes',
-        '@simplycms/admin-routes',
-      ],
-      'routes.ts монтує обидва route-пакети через realpathSync',
+      ['realpathSync', "coreRoutes('storefront')", "coreRoutes('admin')"],
+      'routes.ts монтує роут-теки ядра через realpathSync',
     ),
     checkFileContains(
       storeRoot,
       'tailwind.config.ts',
-      ['node_modules/@simplycms/'],
-      'tailwind.config.ts сканує пакети ядра в node_modules',
+      ['node_modules/simplycms/dist', 'node_modules/simplycms/routes'],
+      'tailwind.config.ts сканує пакет ядра в node_modules',
     ),
     checkFileContains(
       storeRoot,
@@ -134,5 +137,7 @@ export function runOfflineChecks(ctx) {
     ),
     // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
     checkThemes(ctx),
+    // №12 (трек К0): скіли ядра підключені лінками.
+    checkSkillLinks(ctx),
   ];
 }

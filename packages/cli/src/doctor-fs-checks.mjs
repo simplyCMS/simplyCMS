@@ -1,6 +1,7 @@
-// Файлові перевірки doctor №6–7 (§4.1): дрейф host-файлів і відставання
-// міграцій. Самі порівняння живуть у host-drift.mjs і db-diff.mjs — тут лише
-// мапінг їхніх результатів на Check, щоб реалізація кожного була одна.
+// Файлові перевірки doctor №6–7 і №12 (§4.1): дрейф host-файлів,
+// відставання міграцій, лінки агентних скілів. Самі порівняння живуть у
+// host-drift.mjs, db-diff.mjs і skill-links.mjs — тут лише мапінг їхніх
+// результатів на Check, щоб реалізація кожного була одна.
 import { existsSync } from 'node:fs';
 import {
   compareMigrationsMulti,
@@ -8,6 +9,7 @@ import {
   storeMigrationsDir,
 } from './db-diff.mjs';
 import { findHostDrift } from './host-drift.mjs';
+import { inspectSkillLinks } from './skill-links.mjs';
 
 /** @typedef {import('./ui.mjs').Check} Check */
 
@@ -34,7 +36,7 @@ export function checkHostDrift({ storeRoot, hostDir }) {
 }
 
 /**
- * №7: відставання міграцій магазину від канонів — @simplycms/schema/migrations
+ * №7: відставання міграцій магазину від канонів — simplycms/migrations
  * плюс міграції встановлених плагінів (N канонів, Фаза 3 Р4). `own`
  * рахується по обʼєднанню канонів — інакше скопійована міграція плагіна
  * брехливо значилась би «власною». Спільне імʼя з різним вмістом — error:
@@ -47,11 +49,11 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
   const title = 'Міграції не відстають від канонів (ядро + плагіни)';
   if (!existsSync(schemaMigrationsDir)) {
     const details =
-      'node_modules/@simplycms/schema/migrations відсутня — встановлене ядро ще не везе міграцій, онови @simplycms/schema';
+      'node_modules/simplycms/migrations відсутня — встановлене ядро ще не везе міграцій, онови його (pnpm simplycms update)';
     return { id, title, status: 'skip', details };
   }
   const sources = [
-    { name: null, spec: '@simplycms/schema', dir: schemaMigrationsDir },
+    { name: null, spec: 'simplycms', dir: schemaMigrationsDir },
     ...pluginMigrationSources(storeRoot),
   ];
   const { perSource, collisions } = compareMigrationsMulti(
@@ -70,6 +72,34 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
   const missing = perSource.flatMap((s) => s.missing);
   if (missing.length > 0) {
     const details = `Нові міграції канонів: ${missing.join(', ')}. Забери: pnpm simplycms db:diff --write`;
+    return { id, title, status: 'warn', details };
+  }
+  return { id, title, status: 'ok' };
+}
+
+/**
+ * №12: лінки агентних скілів магазину на теку `skills/` пакета `simplycms`.
+ * Ядро без `skills/` — skip (стара версія), а не помилка магазину. Осиротілі
+ * й відсутні лінки — warn: лагодяться одним `simplycms update`, ламати
+ * прогін через них нема за що.
+ * @param {{ storeRoot: string }} ctx
+ * @returns {Check}
+ */
+export function checkSkillLinks({ storeRoot }) {
+  const id = 'skill-links';
+  const title = 'Скіли ядра підключені до магазину';
+  const { skills, missing, orphaned } = inspectSkillLinks(storeRoot);
+  if (skills === null) {
+    const details =
+      'node_modules/simplycms/skills відсутня — ядро не встановлене або стара версія';
+    return { id, title, status: 'skip', details };
+  }
+  const problems = [
+    ...missing.map((link) => `немає лінка ${link}`),
+    ...orphaned.map((link) => `осиротілий лінк ${link}`),
+  ];
+  if (problems.length > 0) {
+    const details = `${problems.join('; ')}. Полагодь: pnpm simplycms update`;
     return { id, title, status: 'warn', details };
   }
   return { id, title, status: 'ok' };

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": false,
   "description": "CLI магазину SimplyCMS (бінарник simplycms): doctor, add, create, update, db:diff",
   "type": "module",

@@ -1,6 +1,8 @@
 # Механізм плагінів SimplyCMS
 
-> Фактичний стан після Фази 3 (2026-08-14). Вимоги — спека платформи
+> Фактичний стан після Фази 3 (2026-08-14); специфікатори й межа довіри
+> оновлені після треку К0 (2026-08-20): SDK — субшлях `simplycms/plugin-sdk`
+> одного фреймворк-пакета. Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §7–§9, §12; рішення імплементації —
 > [план Фази 3](../superpowers/plans/2026-08-14-phase3-plugin-sdk.md) (Р0–Р11).
@@ -20,7 +22,7 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
 | | Де | Що демонструє |
 |---|---|---|
 | `hello-world` | `plugins/hello-world` (їде в шаблон магазину) | мінімум: один слот + каталог i18n |
-| `@simplycms/plugin-faq` | `packages/simplycms-plugin-faq` (npm) | повний контур: таблиця `plg_faq_items`, `/admin/faq`, слот, Zod-settings, i18n, міграція в пакеті |
+| `@simplycms/plugin-faq` | `packages/simplycms-plugin-faq` (npm; 🔴 після К0 **не** преінстальований у шаблоні — ставиться `simplycms add`) | повний контур: таблиця `plg_faq_items`, `/admin/faq`, слот, Zod-settings, i18n, міграція в пакеті |
 
 🔴 **Межі v1 — знати, перш ніж обіцяти можливості:**
 
@@ -34,10 +36,10 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
   монтаж adminRoutes через `add`, облік `plugins.migrations_applied` —
   відкладені борги (роадмап, розділ «Борги Фази 3»).
 
-## 2. Контракт: `definePlugin` (@simplycms/plugin-sdk)
+## 2. Контракт: `definePlugin` (`simplycms/plugin-sdk`)
 
 ```ts
-import { definePlugin } from '@simplycms/plugin-sdk';
+import { definePlugin } from 'simplycms/plugin-sdk';
 import { z } from 'zod';
 
 export default definePlugin({
@@ -61,12 +63,12 @@ export default definePlugin({
   `bootstrapPlugins`/`PluginLoader` не знають про SDK.
 - Помилки контракту `definePlugin` кидає при імпорті модуля — автор бачить їх
   першим рендером, а магазин не падає (catch у bootstrap).
-- `validatePluginModule` (живе в `@simplycms/plugins`, SDK реекспортує; ідіом
+- `validatePluginModule` (живе в `simplycms/plugins`, SDK реекспортує; ідіом
   `validateThemeModule`): порушення структури — throw → bootstrap логує і
   **пропускає модуль**; підозри (немає `engines`, несумісний діапазон, ключ
   без префікса) — `console.warn`, реєстрація триває. Несумісний
   `engines.simplycms` на 0.x — навмисно warn, не фейл: строгість — рішення
-  реліз-потяга v1.0 (`satisfies`/`CORE_VERSION` — `@simplycms/objects/semver`).
+  реліз-потяга v1.0 (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
 
 ## 3. Рантайм-контур
 
@@ -94,19 +96,25 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 Плагін **не отримує `SupabaseClient`** — лише порти SDK. Примус двошаровий:
 
 1. **dependency-lint** (eslint-зона `plugins/**` +
-   `packages/simplycms-plugin-*/**`): заборонені `@simplycms/supabase(/**)`,
-   `@simplycms/data-supabase(/**)`, `@supabase/*` — і статичний import, і
+   `packages/simplycms-plugin-*/**`): заборонені `simplycms/supabase(/*)`,
+   `simplycms/data-supabase(/*)`, `@supabase/*` — і статичний import, і
    `export … from`, і динамічний `import()` (окремий селектор). 🔴 Глоб
-   навмисно `simplycms-plugin-*`: `plugin-system`/`plugin-sdk` — ядро, зона
+   навмисно `simplycms-plugin-*`: теки `plugins`/`plugin-sdk` — ядро, зона
    їх не покриває. Доводить не зелений лінт, а негативний контроль
    `tests/plugin-trust-boundary.test.ts` (синтетичне порушення в зоні й поза
    нею) — урок env-контракту: правило, що мовчки відвалилось, теж дає
    зелений лінт.
+   🔴 **Борг після К0 (не регресія — зона байт-ідентична доконсолідаційній,
+   звірено з `d81bac1`):** банляться рівно два Supabase-субшляхи. До К0
+   звернення плагіна до інших внутрішніх шарів ядра вимагало вписати новий
+   `@simplycms/*` у власний манифест — тертєвий крок, видимий у ревʼю; тепер
+   усе ядро — субшляхи однієї залежності `simplycms`, тож тертя зникло.
+   Розширення зони до allowlist дозволеної поверхні (нижче) — окреме рішення.
 2. **Рантайм-гарди портів**: `usePluginTable` приймає лише таблиці з
    префіксом `plg_`; SQL-лінт `db:diff` (див. §5) не пускає чужі таблиці в
    міграції.
 
-Порти v1 (усі — з `@simplycms/plugin-sdk`, клієнтські):
+Порти v1 (усі — з `simplycms/plugin-sdk`, клієнтські):
 
 | Порт | Що дає |
 |---|---|
@@ -114,9 +122,11 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 | `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn |
 | `usePluginT(messages)` | транслятор каталогу плагіна (див. §7) |
 
-Дозволена поверхня імпортів плагіна: `@simplycms/plugin-sdk`,
-`@simplycms/ui`, `react`, `zod`, `@tanstack/react-router`/`react-query`
-(для adminRoutes-сторінок), `@simplycms/plugins/PluginSlot`-типи.
+Дозволена поверхня імпортів плагіна: `simplycms/plugin-sdk`,
+`simplycms/ui`, `react`, `zod`, `@tanstack/react-router`/`react-query`
+(для adminRoutes-сторінок), `simplycms/plugins/PluginSlot`-типи. 🔴 Це один
+npm-пакет (`simplycms`) і кілька його субшляхів — dependency плагіна тепер
+одна, а межу тримає лише eslint-зона вище.
 
 ## 5. Дані: таблиці `plg_*` і конвеєр міграцій
 
@@ -180,7 +190,8 @@ AST-скану (`tests/i18n-coverage`); парність uk↔en, префікс
 ## 8. Сторінки адмінки (adminRoutes)
 
 Тека роутів плагіна зветься **`routes/`** (🔴 не `admin-routes/`:
-tailwind-глоб магазину сканує `node_modules/@simplycms/*/routes/**`) і несе
+tailwind-глоб магазину сканує `node_modules/simplycms/routes/**` і
+`node_modules/@simplycms/*/routes/**`) і несе
 файли з запеченими id `/admin/<slug>/…` — вони стають дітьми layout
 `/admin` за префіксом id, успадковуючи guard і `AdminLayout` автоматично.
 Гард здатності — кейс «два physical() під спільним layout» у
@@ -224,7 +235,7 @@ CLI: definePlugin + messages + README з конвенціями) + якірни�
 
 | Що | Чим |
 |---|---|
-| Контракт SDK (definePlugin/validate/порти) | юніти `packages/plugin-sdk`, `packages/plugin-system` |
+| Контракт SDK (definePlugin/validate/порти) | юніти `packages/simplycms/src/plugin-sdk`, `packages/simplycms/src/plugins` |
 | Межа довіри | `tests/plugin-trust-boundary.test.ts` (негативний контроль зони) |
 | i18n каталоги | `tests/plugin-messages-parity.test.ts` + AST-скан `SCANNED_ROOTS` |
 | Манифест ↔ пакет | `tests/plugin-manifest-parity.test.ts` |

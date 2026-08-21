@@ -7,7 +7,7 @@ import type {
   MediaProvider,
   ConfigProvider,
   ImageOpts,
-} from '@simplycms/objects';
+} from 'simplycms/contracts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import config from '../simplycms.config';
 
@@ -15,7 +15,7 @@ import config from '../simplycms.config';
  * Типи БД ЦЬОГО магазину: core-схема + таблиці встановлених плагінів.
  * Джерело — генерат `pnpm db:generate-types` (`supabase/types.ts`).
  *
- * Пакети ядра типізуються проти baseline у `@simplycms/supabase`; host звужує
+ * Пакети ядра типізуються проти baseline у `simplycms/supabase`; host звужує
  * клієнти до своїх типів, підставляючи `StoreDatabase` у generic-параметр
  * фабрик (`createServerSupabase<StoreDatabase>()`, `useSupabaseClient<…>()`).
  * Тип-онлі реекспорт — у бандл не потрапляє.

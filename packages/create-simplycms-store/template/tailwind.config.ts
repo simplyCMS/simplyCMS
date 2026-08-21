@@ -6,7 +6,12 @@ export default {
   // 🔴 Джерела класів магазину — його власні файли ПЛЮС пакети ядра з
   // `node_modules`. Tailwind v4 автодетектом node_modules НЕ сканує, тож
   // шляхи вказані явно: `dist/**/*.js` (зібрані компоненти) і `routes/**`
-  // (route-пакети везуть роути сирцями).
+  // (роут-теки ядра їдуть сирцями).
+  //
+  // Ядро — ОДИН пакет `simplycms` (топологія 5), тому перші два його глоби
+  // безscope-ні. Scoped-глоби нижче лишаються: ними живуть npm-теми й
+  // плагіни — і сателіти ядра (`@simplycms/theme-*`, `@simplycms/plugin-*`),
+  // і сторонні під чужим scope.
   //
   // 🔴 Два останні глоби — СТОРОННІ теми (Фаза 4, Р7). Конвенція неймінгу:
   // базове імʼя пакета теми починається з `simplycms-theme-` — і без scope
@@ -20,6 +25,8 @@ export default {
     './src/**/*.{ts,tsx}',
     './themes/**/*.{ts,tsx}',
     './plugins/**/*.{ts,tsx}',
+    './node_modules/simplycms/dist/**/*.js',
+    './node_modules/simplycms/routes/**/*.{ts,tsx}',
     './node_modules/@simplycms/*/dist/**/*.js',
     './node_modules/@simplycms/*/routes/**/*.{ts,tsx}',
     './node_modules/simplycms-theme-*/dist/**/*.js',

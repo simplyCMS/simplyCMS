@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildRobotsTxt, buildSitemapXml } from '@simplycms/storefront/seo';
+import { buildRobotsTxt, buildSitemapXml } from 'simplycms/storefront/seo';
 import {
   createSeoInterceptor,
   withSeoInterceptor,
-} from '@simplycms/storefront-routes/seo/interceptor';
-import type { StorefrontClient } from '@simplycms/storefront';
+} from 'simplycms/storefront-routes/seo/interceptor';
+import type { StorefrontClient } from 'simplycms/storefront';
 
-// Крос-пакетний гейт (Task 2.2): справжні білдери `@simplycms/storefront`
-// у зв'язці з інтерсептором серверного входу з `@simplycms/storefront-routes`.
+// Крос-пакетний гейт (Task 2.2): справжні білдери `simplycms/storefront`
+// у зв'язці з інтерсептором серверного входу з `simplycms/storefront-routes`.
 // Транспорт SEO живе в server entry — один і той самий у dev, preview і
 // production; тест перевіряє контракт цієї пари без підняття сервера.
 

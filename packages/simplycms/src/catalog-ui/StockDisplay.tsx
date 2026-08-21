@@ -1,0 +1,146 @@
+import { Check, X, Clock, Building } from 'lucide-react';
+import {
+  useStock,
+  usePickupPointsCount,
+  type StockStatus,
+  type StockByPoint,
+} from 'simplycms/core/hooks/useStock';
+import { useT } from 'simplycms/i18n';
+
+interface StockDisplayProps {
+  productId?: string | null;
+  modificationId?: string | null;
+  showDetails?: boolean;
+  className?: string;
+}
+
+export function StockDisplay({
+  productId,
+  modificationId,
+  showDetails = true,
+  className,
+}: StockDisplayProps) {
+  const t = useT();
+  const { data: stockInfo, isLoading } = useStock(productId, modificationId);
+  const { data: pointsCount = 0 } = usePickupPointsCount();
+
+  if (isLoading) {
+    return (
+      <div className={`animate-pulse h-5 w-24 bg-muted rounded ${className}`} />
+    );
+  }
+
+  if (!stockInfo) {
+    return null;
+  }
+
+  const { totalQuantity, isAvailable, stockStatus, byPoint } = stockInfo;
+
+  if (stockStatus === 'on_order') {
+    return (
+      <div className={className}>
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-amber-500" />
+          <span className="text-amber-600 font-medium">
+            {t('product.onOrder')}
+          </span>
+        </div>
+        {showDetails && totalQuantity > 0 && pointsCount > 1 && (
+          <StockByPointList byPoint={byPoint} />
+        )}
+      </div>
+    );
+  }
+
+  if (!isAvailable || stockStatus === 'out_of_stock') {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <X className="h-5 w-5 text-destructive" />
+        <span className="text-destructive font-medium">
+          {t('product.outOfStock')}
+        </span>
+      </div>
+    );
+  }
+
+  if (pointsCount <= 1) {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <Check className="h-5 w-5 text-green-500" />
+        <span className="text-green-600 font-medium">
+          {totalQuantity > 0
+            ? t('product.inStockCount', { count: totalQuantity })
+            : t('product.inStock')}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-2 mb-2">
+        <Check className="h-5 w-5 text-green-500" />
+        <span className="text-green-600 font-medium">
+          {t('product.inStockCount', { count: totalQuantity })}
+        </span>
+      </div>
+      {showDetails && byPoint.length > 0 && (
+        <StockByPointList byPoint={byPoint} />
+      )}
+    </div>
+  );
+}
+
+function StockByPointList({ byPoint }: { byPoint: StockByPoint[] }) {
+  const t = useT();
+  const pointsWithStock = byPoint.filter((p) => p.quantity > 0);
+
+  if (pointsWithStock.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 space-y-1 text-sm">
+      {pointsWithStock.map((point) => (
+        <div
+          key={point.point_id}
+          className="flex items-center gap-2 text-muted-foreground"
+        >
+          <Building className="h-3.5 w-3.5" />
+          <span>{point.point_name}:</span>
+          <span className="font-medium text-foreground">
+            {t('product.unitsCount', { count: point.quantity })}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function StockBadge({
+  stockStatus,
+  isAvailable,
+}: {
+  stockStatus: StockStatus | null;
+  isAvailable: boolean;
+}) {
+  const t = useT();
+
+  if (stockStatus === 'on_order') {
+    return (
+      <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 text-xs">
+        {t('product.onOrder')}
+      </span>
+    );
+  }
+
+  if (!isAvailable || stockStatus === 'out_of_stock') {
+    return (
+      <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2 py-0.5 text-xs">
+        {t('product.outOfStock')}
+      </span>
+    );
+  }
+
+  return null;
+}

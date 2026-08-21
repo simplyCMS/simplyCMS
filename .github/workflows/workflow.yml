@@ -115,6 +115,14 @@ jobs:
       - name: Build packages
         run: pnpm build:packages
 
+      # 🔴 Після `build:packages`: типізує шаблон магазину проти зібраного
+      # `dist` — того самого, що бачить згенерований магазин. Кореневий
+      # `pnpm typecheck` шаблон ВИКЛЮЧАЄ, тому без цього кроку помилка типів
+      # у `template/routes.ts` проходить усі job-и зеленими, а магазин із
+      # такого шаблону не збирається.
+      - name: Typecheck store template
+        run: pnpm typecheck:template
+
       - name: Tarball parity
         run: pnpm test:packaging
 

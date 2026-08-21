@@ -21,15 +21,15 @@ apps/www/src/routeTree.gen.ts
 # core + плагінні таблиці). Baseline пакета — `pnpm types:baseline` (снапшот
 # core-схеми, проти якого типізуються пакети ядра).
 supabase/types.ts
-packages/supabase/src/database.ts
+packages/simplycms/src/supabase/database.ts
 
 # ── Згенерована Drizzle-схема та її снапшоти ────────────────────────────────
 # `schema.ts`/`relations.ts` пише `pnpm db:pull`; `drizzle/` — meta+snapshot,
 # які drizzle-kit звіряє побайтово (нуль-diff інваріант Task 12). Будь-яке
 # переформатування тут або відкотиться наступною генерацією, або зламає гейт.
-packages/schema/src/schema.ts
-packages/schema/src/relations.ts
-packages/schema/drizzle
+packages/simplycms/src/schema/schema.ts
+packages/simplycms/src/schema/relations.ts
+packages/simplycms/drizzle
 
 # ── Документація ────────────────────────────────────────────────────────────
 # Плани, спеки, інструкції та скіли пишуться й вичитуються людиною; prettier

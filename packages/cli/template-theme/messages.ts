@@ -1,4 +1,4 @@
-import type { ThemeMessages } from '@simplycms/themes/types';
+import type { ThemeMessages } from 'simplycms/themes/types';
 
 /**
  * Каталог перекладів теми (`ThemeModule.messages`, контракт v2).

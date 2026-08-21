@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import type { BreadcrumbItem } from '@simplycms/objects/views';
+import type { BreadcrumbItem } from 'simplycms/contracts/views';
 import { MONO_STACK } from '../../components/mono';
 import { ViewLink } from './ViewLink';
 

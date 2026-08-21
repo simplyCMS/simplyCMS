@@ -1,6 +1,6 @@
 /**
  * Список сторінок адмінки, виведений зі структури файлів пакета —
- * `packages/admin-routes/routes/admin/**`, а не захардкоджений список: новий
+ * `packages/simplycms/routes/admin/**`, а не захардкоджений список: новий
  * роут потрапляє в обхід `layout-overflow` автоматично.
  */
 import { readdirSync, statSync } from 'node:fs';
@@ -8,7 +8,10 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ADMIN_ROUTES_ROOT = join(HERE, '../../../packages/admin-routes/routes');
+const ADMIN_ROUTES_ROOT = join(
+  HERE,
+  '../../../packages/simplycms/routes/admin',
+);
 
 /** Рекурсивно збирає всі `.tsx`-файли під текою роутів адмінки. */
 function collectTsxFiles(dir: string): string[] {
@@ -34,7 +37,7 @@ function collectTsxFiles(dir: string): string[] {
  * відхиляв літерал, а тест звинувачував у цьому продукт. Тобто тест перевіряв
  * вигадані URL і сам собі створював «дефекти».
  *
- * Як оновити: `git grep -l "=== 'new'\|isNew" -- packages/admin/src/pages`.
+ * Як оновити: `git grep -l "=== 'new'\|isNew" -- packages/simplycms/src/admin/pages`.
  */
 const NEW_CAPABLE = new Set([
   'banners/$bannerId',

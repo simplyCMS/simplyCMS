@@ -8,6 +8,11 @@
  * втрату `template/` у `files`, зламаний `bin` і зіпсуті перейменування
  * службових імен (`gitignore` → `.gitignore` тощо).
  *
+ * 🔴 Із треком К0 сюди ж додано інваріанти ДОСТАВКИ СКІЛІВ і топології 5 —
+ * скіли більше не копіюються в шаблон, а приходять симлінками на теку
+ * `skills/` пакета `simplycms`. Самі твердження — `create-pkg-checks.mjs`
+ * (артефакт скаффолдера) і `core-skills-parity.mjs` (артефакт ядра).
+ *
  * 🔴 `node_modules` розпакованого пакета — симлінк на теку пакета в репо: у
  * tarball залежностей немає, а `pnpm install` тут означав би похід у registry
  * заради одного `@clack/prompts`. Смоук перевіряє ВМІСТ артефакту, не його
@@ -27,40 +32,19 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { findPlaceholders } from './placeholder-scan.mjs';
+import { checkPackagedSkills } from './core-skills-parity.mjs';
+import {
+  checkNoSkillCopies,
+  checkSkillLinks,
+  checkStoreStructure,
+  checkTemplateDeps,
+} from './create-pkg-checks.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const CLI_PKG_DIR = join(REPO_ROOT, 'packages/create-simplycms-store');
 
 /** Рантайм-залежності, без яких `bin` падає в користувача на першому рядку. */
 const EXPECTED_DEPS = ['@clack/prompts'];
-
-/** Файли, без яких згенерований магазин не є магазином. */
-const EXPECTED_FILES = [
-  'package.json',
-  '.gitignore',
-  '.env.example',
-  'routes.ts',
-  'vite.config.ts',
-  'simplycms.config.ts',
-  'src/routes/__root.tsx',
-  'themes/default/index.ts',
-  'supabase/config.toml',
-  'supabase/templates/invite.html',
-  'scripts/owner-invite.mjs',
-  // 🔴 Без нього pnpm 11 обриває install (`ERR_PNPM_IGNORED_BUILDS`), а
-  // `pnpm build` перезапускає install і теж падає — магазин не збереться.
-  // Вміст стереже tests/create-store-cli.test.ts; тут — сам факт потрапляння
-  // у tarball, бо `files` у манифесті легко звузити випадково.
-  'pnpm-workspace.yaml',
-  // 🔴 Тулінг редизайну за референсом: скіл лежить у DOT-теці `.claude/`, а
-  // npm при паці обробляє dot-імена окремими правилами — саме тому доставку
-  // перевіряємо тут, по розпакованому tarball-у, а не по теці шаблону в репо.
-  // Скрипти — другий бік тієї ж пари: без них скіл у магазині безпорадний.
-  '.claude/skills/redesign-from-reference/SKILL.md',
-  '.claude/skills/redesign-from-reference/scripts/inspect.mjs',
-  '.claude/skills/redesign-from-reference/scripts/discover.mjs',
-];
 
 /**
  * @returns {{ ok: boolean; details: string[] }}
@@ -125,30 +109,21 @@ export function createPkgSmoke() {
       { cwd: work, stdio: 'pipe' },
     );
 
-    for (const file of EXPECTED_FILES) {
-      if (!existsSync(join(target, file))) {
-        return { ok: false, details: [...details, `✗ відсутній ${file}`] };
-      }
-      details.push(`✓ ${file}`);
-    }
-    // Плейсхолдери шаблону мають бути підставлені, а не доїхати як є.
-    if (existsSync(join(target, 'package.json.tpl'))) {
-      return {
-        ok: false,
-        details: [...details, '✗ package.json.tpl не перейменовано'],
-      };
-    }
-    const leftovers = findPlaceholders(target);
-    if (leftovers.length > 0) {
-      return {
-        ok: false,
-        details: [
-          ...details,
-          `✗ плейсхолдери не підставлено: ${leftovers.join(', ')}`,
-        ],
-      };
-    }
-    details.push('✓ плейсхолдерів __NAME__ не лишилось');
+    const structure = checkStoreStructure(target);
+    details.push(...structure.details);
+    if (!structure.ok) return { ok: false, details };
+
+    // Інваріанти К0 — усі чотири мусять відпрацювати, щоб звіт показав
+    // повну картину, тому результати збираються, а не рвуть прогін першим ✗.
+    const checks = [
+      checkNoSkillCopies(pkgDir),
+      checkTemplateDeps(pkgDir),
+      checkSkillLinks(target),
+      checkPackagedSkills(work),
+    ];
+    for (const check of checks) details.push(...check.details);
+    if (checks.some((check) => !check.ok)) return { ok: false, details };
+
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
   } catch (error) {

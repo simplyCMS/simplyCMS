@@ -23,7 +23,7 @@ export function importFromStore(storeRoot, spec) {
 /**
  * Аліаси магазину з `compilerOptions.paths` його `tsconfig.json` — єдине
  * джерело, спільне для магазину (`@themes/*`, `@plugins/*`) і кореня монорепо
- * ядра (`@simplycms/*` на теки пакетів).
+ * ядра (`simplycms` на теку флагмана).
  *
  * 🔴 Конфіг vite тут НЕ читається, і це не спрощення: раннер vite примусово
  * ставить `configFile: false` (див. `runnerImport` у vite/dist/node), тож
@@ -63,7 +63,7 @@ export function tsconfigAliases(storeRoot) {
 /**
  * Раннер vite для модулів магазину. 🔴 Раннер саме ОДИН на прогін: і тему, і
  * kit треба взяти з ОДНОГО графа модулів — інакше в монорепо (де
- * `@simplycms/themes` резолвиться аліасом у сирці) kit реєстрував би тему в
+ * `simplycms/themes` резолвиться аліасом у сирці) kit реєстрував би тему в
  * СВОЄМУ `ThemeRegistry`, а `useThemeT` теми читав би чужий.
  * @param {string} storeRoot
  */

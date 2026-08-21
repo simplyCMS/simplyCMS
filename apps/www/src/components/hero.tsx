@@ -161,18 +161,14 @@ function MetricsStrip() {
 
 /** Фолбек-склад тікера, поки живий список пакетів не приїхав. */
 const FALLBACK_TICKER = [
-  '@simplycms/storefront-routes',
-  '@simplycms/admin-routes',
-  '@simplycms/plugin-sdk',
-  '@simplycms/themes',
-  '@simplycms/schema',
-  '@simplycms/supabase',
+  // 🔴 Це імена ОПУБЛІКОВАНИХ пакетів, не субшляхи. Після К0 їх рівно пʼять:
+  // 22 пакети тірів T0–T5 (`objects`/`domain`/`ui`/`admin`/`*-routes`/…)
+  // злиті у флагман `simplycms` і доступні лише субшляхами.
+  'simplycms',
   '@simplycms/cli',
+  '@simplycms/theme-solarstore',
+  '@simplycms/plugin-faq',
   'create-simplycms-store',
-  '@simplycms/checkout-ui',
-  '@simplycms/catalog-ui',
-  '@simplycms/i18n',
-  '@simplycms/domain',
 ];
 
 function PackageTicker() {
