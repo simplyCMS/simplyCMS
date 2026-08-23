@@ -24,11 +24,16 @@ export const storeMigrationsDir = (storeRoot) =>
   join(storeRoot, 'supabase', 'migrations');
 
 /**
- * Тека міграцій встановленого ядра.
+ * Канон міграцій встановленого ядра.
  *
  * 🔴 Саме `node_modules/simplycms/migrations` — міграції лежать на РІВНІ
  * пакета (`files: [… "migrations"]`), а не в підтеці схеми: після злиття
  * пакетів (трек К0) `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
+ *
+ * 🔴 Після B13 канон — це baseline + сід (`0000_prelude` … `0003_seed`), а не
+ * історія з 33 файлів. Компаратор від цього не змінився: він порівнює імена
+ * й вміст, а не формат імені. Змінився лише ПОРЯДОК — його тепер задає
+ * числовий префікс, а не таймстамп Supabase CLI.
  */
 export const schemaMigrationsPath = (storeRoot) =>
   join(storeRoot, 'node_modules', 'simplycms', 'migrations');
@@ -322,10 +327,13 @@ export async function run(argv) {
     finish('Є що забрати (--write).');
     return;
   }
+  // 🔴 Supabase CLI тут більше не називається (B2/B13): контракт v2 — чистий
+  // Postgres, а `supabase db push` до того ж не приймає числові префікси
+  // канону. Команду накату дає оточення магазину, а не CLI ядра.
   showSteps([
     'git diff             # ревʼю доданих міграцій',
-    'supabase db push     # накатити їх на БД магазину',
-    '                     # (таймстамп плагінної міграції старіший за вже накачені? push --include-all)',
+    'застосуй їх на БД магазину інструментом свого оточення (psql/деплой),',
+    '                     # у порядку імен файлів',
   ]);
   finish('Готово.');
 }

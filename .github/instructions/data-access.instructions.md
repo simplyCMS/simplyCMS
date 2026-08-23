@@ -44,7 +44,7 @@ description: "Правила роботи з даними та Supabase в Simpl
 - Після mutations — інвалідація відповідних query keys.
 
 ### Типи та валідація
-- Генеруй типи після змін схеми: `pnpm db:generate-types` (`pnpm db:migrate` робить це сам).
+- Генеруй типи після змін схеми: `pnpm db:generate-types` (окремим кроком — `db:migrate` більше немає).
 - Не редагуй `supabase/types.ts` вручну — лише через генератор.
 - DB команди працюють через `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` з `.env.local` (Management API).
 - Zod schemas для валідації форм (react-hook-form + @hookform/resolvers/zod).
@@ -53,7 +53,7 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 | Змінні | Команди |
 |--------|---------|
-| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types`, `db:migrate` (Management API) |
+| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types` (Management API) |
 | `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |
 
 ### Міграції
@@ -63,26 +63,32 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 ```bash
 # 1. правка packages/simplycms/src/schema/schema.ts
-pnpm db:diff <name>       # 2. drizzle-kit generate → supabase/migrations/<ts>_<name>.sql
+pnpm db:diff <name>       # 2. drizzle-kit generate → packages/simplycms/migrations/NNNN_<name>.sql
 #                            3. РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
-pnpm db:migrate           # 4. supabase link + db push + автоматичний db:generate-types
+pnpm test:schema          # 4. накат УСЬОГО канону на чисту БД харнеса (потребує Postgres)
 pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-схема (не плагінна) —
 #                            на еталонній dev-БД без встановлених плагінів
 ```
 
-- Всі застосовні міграції живуть на рівні проекту: `supabase/migrations/`
-  (формат Supabase CLI: `<YYYYMMDDHHmmss>_<slug>.sql`).
+- 🔴 Канон застосовного SQL — **`packages/simplycms/migrations/`**: baseline
+  (`0000_prelude` → `0003_seed`) плюс усе, що додав `db:diff`. Історії з 33
+  Supabase-міграцій більше немає (рішення B13); теки `supabase/migrations/`
+  теж. Порядок накату задає числовий префікс імені, не таймстамп.
+- 🔴 `pnpm db:migrate` виведено з експлуатації (B2/B13) — Supabase CLI
+  виходить із тулчейна. Скрипт лишається надгробком і падає з поясненням.
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/`
-  (подвійна бухгалтерія навмисна, комітяться обидві теки). 🔴 Schema-тулінг
+  (подвійна бухгалтерія навмисна, комітяться обидві теки; нумерація в них
+  своя — drizzle не бачить рукописних файлів канону). 🔴 Schema-тулінг
   (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`, `scripts/dump-rls.mjs`)
   живе на рівні ПАКЕТА, не в `src/schema/`.
 - Seed-міграції ядра (reference): `packages/simplycms/seed-migrations/`.
-- Канон core-міграцій для магазину (`simplycms db:diff`) — закомічена копія
-  `supabase/migrations/` у `packages/simplycms/migrations/` (`pnpm template:sync`).
+- Копію канону для магазину везе шаблон скаффолдера
+  (`template/supabase/migrations/`, `pnpm template:sync`); `simplycms db:diff`
+  у магазині докочує з неї нове поверх baseline.
 - Сайт може додавати власні міграції поруч з seed-файлами.
-- 🔴 Ревʼю SQL перед `db:migrate` — обовʼязкове: drizzle-kit не бачить
-  перейменувань (генерує `DROP`+`ADD`) і не діфить RLS-політики/тригери.
-- 🔴 Крок 5 (`types:baseline`) — НЕ автоматизований навмисно: `db:migrate`
+- 🔴 Ревʼю SQL перед накатом — обовʼязкове: drizzle-kit не бачить
+  перейменувань (генерує `DROP`+`ADD`) і не діфить ролі, гранти й функції.
+- 🔴 Крок 5 (`types:baseline`) — НЕ автоматизований навмисно: накат
   застосовується й до dev-БД із встановленими плагінами, а baseline
   (`packages/simplycms/src/supabase/database.ts`) публікується на npm і
   повинен містити ЛИШЕ core-таблиці. Автозапуск мовчки затягнув би плагінні
@@ -135,7 +141,7 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 бо таблиця `themes` має RLS `SELECT` для `anon`.
 
 ## ❌ NEVER
-- Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm db:migrate`.
+- Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm test:schema`.
 - Не редагуй `packages/simplycms/drizzle/meta/*` вручну — це snapshot drizzle-kit.
 - Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client/репозиторії.
 - Не редагуй `supabase/types.ts` вручну — виключно через `pnpm db:generate-types`.

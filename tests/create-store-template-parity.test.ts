@@ -50,15 +50,33 @@ describe('create-store template: парність із монорепо', () => 
     expect(listFiles(CLI_HOST_DIR)).toEqual([...SYNCED_FILES].sort());
   });
 
-  // Міграції ядра в tarball simplycms/schema — джерело `simplycms db:diff`.
-  it('тека supabase/migrations байт-ідентична packages/simplycms/migrations', () => {
-    const source = listFiles('supabase/migrations');
-    expect(source.length).toBeGreaterThan(0);
-    expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual(source);
-    for (const file of source) {
-      expect(read(join(SCHEMA_MIGRATIONS_DIR, file))).toBe(
-        read(join('supabase/migrations', file)),
+  // Канон міграцій ядра (B13) — baseline + сід, а не історія з 33 файлів.
+  // Склад асертиться ТОЧНО, а не порогом: порядок накату задає саме імʼя
+  // файлу, тож зайвий чи перейменований файл — це зламаний накат на чисту БД,
+  // а не «дрібний дрейф». Копію в шаблоні стереже перевірка SYNCED_DIRS вище.
+  it('канон міграцій ядра — 0000_prelude → 0003_seed + README', () => {
+    expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual([
+      '0000_prelude.sql',
+      '0001_init.sql',
+      '0002_grants.sql',
+      '0003_seed.sql',
+      'README.md',
+    ]);
+  });
+
+  // 🔴 Схема GoTrue й Supabase Storage у baseline не існують як клас — це і
+  // є доказ B13 на рівні дефолтного гейта (`pnpm test`, без БД). Поведінковий
+  // доказ — накат на харнес у `pnpm test:schema`.
+  it('канон не згадує auth.* / storage.*', () => {
+    for (const file of listFiles(SCHEMA_MIGRATIONS_DIR).filter((f) =>
+      f.endsWith('.sql'),
+    )) {
+      const sql = read(join(SCHEMA_MIGRATIONS_DIR, file)).replace(
+        /--[^\n]*/g,
+        '',
       );
+      expect(sql).not.toMatch(/\bauth\./);
+      expect(sql).not.toMatch(/\bstorage\./);
     }
   });
 

@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Адаптер drizzle-kit → формат міграцій Supabase CLI.
+ * Адаптер drizzle-kit → канон міграцій ядра.
  *
  * Крок 1: `drizzle-kit generate` у теці пакета `simplycms` (порівнює
  *         `src/schema/schema.ts` зі snapshot-ом у `drizzle/meta/`).
- * Крок 2: новий `.sql` копіюється в `supabase/migrations/<YYYYMMDDHHmmss>_<name>.sql`.
- * Крок 3: друкує шлях і нагадування про ревʼю SQL перед `pnpm db:migrate`.
+ * Крок 2: новий `.sql` копіюється в `packages/simplycms/migrations/NNNN_<name>.sql`
+ *         — наступним вільним номером канону (B13).
+ * Крок 3: друкує шлях і нагадування про ревʼю SQL.
  *
  * Подвійна бухгалтерія навмисна: журнал і snapshot Drizzle лишаються в
- * `packages/simplycms/drizzle/` (комітяться), застосовний SQL — у
- * `supabase/migrations/`. Деталі — у README пакета схеми.
+ * `packages/simplycms/drizzle/` (комітяться), застосовний SQL — у каноні.
+ * Нумерація в них РІЗНА: drizzle рахує від нуля свій журнал, канон — від
+ * `0000_prelude.sql`, який drizzle не породжував і не бачить. Деталі — у
+ * `packages/simplycms/migrations/README.md`.
  *
  * Використання:
  *   pnpm db:diff <name>        # напр. pnpm db:diff add-product-badge
@@ -25,8 +28,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA_DIR = join(ROOT, 'packages', 'simplycms');
 const DRIZZLE_DIR = join(SCHEMA_DIR, 'drizzle');
-const JOURNAL = join(DRIZZLE_DIR, 'meta', '_journal.json');
-const SUPABASE_MIGRATIONS = join(ROOT, 'supabase', 'migrations');
+const CANON_DIR = join(SCHEMA_DIR, 'migrations');
+const CANON_REL = 'packages/simplycms/migrations';
 
 // ── Аргумент ────────────────────────────────────────────────────────────────
 const name = process.argv[2];
@@ -44,12 +47,18 @@ function listSql() {
   return readdirSync(DRIZZLE_DIR).filter((f) => f.endsWith('.sql'));
 }
 
-/** `when` (мс) останнього запису журналу → `YYYYMMDDHHmmss` в UTC. */
-function timestampFromJournal(tag) {
-  const journal = JSON.parse(readFileSync(JOURNAL, 'utf8'));
-  const entry = journal.entries.find((e) => e.tag === tag);
-  const when = new Date(entry ? entry.when : Date.now());
-  return when.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+/**
+ * Наступний вільний номер канону, 4 цифри. Порядок накату в каноні задає
+ * саме імʼя файлу (`0000_prelude` → `0001_init` → …), тож новий діф мусить
+ * лягти суворо після найбільшого наявного — дірки й повтори зламали б накат
+ * на чисту БД.
+ */
+function nextCanonPrefix() {
+  const used = readdirSync(CANON_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .map((f) => Number.parseInt(f.slice(0, 4), 10))
+    .filter((n) => Number.isInteger(n));
+  return String(Math.max(-1, ...used) + 1).padStart(4, '0');
 }
 
 // ── 1. Генерація діфа ───────────────────────────────────────────────────────
@@ -95,13 +104,9 @@ if (created.length > 1) {
   process.exit(1);
 }
 
-// ── 2. Копія у формат Supabase CLI ──────────────────────────────────────────
+// ── 2. Копія в канон міграцій ядра ──────────────────────────────────────────
 const [sqlFile] = created;
-const tag = sqlFile.replace(/\.sql$/, '');
-const target = join(
-  SUPABASE_MIGRATIONS,
-  `${timestampFromJournal(tag)}_${name}.sql`,
-);
+const target = join(CANON_DIR, `${nextCanonPrefix()}_${name}.sql`);
 
 if (existsSync(target)) {
   console.error(`\n❌ Файл уже існує: ${target}`);
@@ -121,7 +126,7 @@ writeFileSync(
 
 // ── 3. Підсумок ─────────────────────────────────────────────────────────────
 console.log('\n✅ Міграцію створено:');
-console.log(`  📄 supabase/migrations/${target.split('/').pop()}`);
+console.log(`  📄 ${CANON_REL}/${target.split('/').pop()}`);
 console.log(
   `  🗃️  drizzle-staging: packages/simplycms/drizzle/${sqlFile} (комітиться)`,
 );
@@ -130,6 +135,8 @@ console.log(
   '  1. звір DDL з наміром (особливо DROP/RENAME — drizzle-kit не бачить перейменувань);',
 );
 console.log(
-  '  2. RLS-політики та тригери drizzle не діфить — додай руками, якщо треба;',
+  '  2. ролі, гранти й функції drizzle не діфить — додай руками, якщо треба;',
 );
-console.log('  3. `pnpm db:migrate` — застосувати + оновити типи.\n');
+console.log(
+  '  3. `pnpm test:schema` — накат усього канону на чисту БД харнеса.\n',
+);

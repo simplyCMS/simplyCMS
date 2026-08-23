@@ -37,7 +37,7 @@ pnpm release 0.4.0    # РЕЛІЗ: гарди + бамп версії всіх 
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
-pnpm db:pull / db:diff / db:migrate / db:dump-rls / db:generate-types / types:baseline
+pnpm db:pull / db:diff / db:dump-rls / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
 
@@ -295,8 +295,8 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # Канон core-міграцій для `simplycms db:diff`
-│   │   │                         #    (закомічена копія supabase/migrations, template:sync)
+│   │   ├── migrations/           # КАНОН core-міграцій (B13): baseline 0000_prelude →
+│   │   │                         #    0003_seed; джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── drizzle/ + drizzle.config.ts + scripts/dump-rls.mjs  # schema-тулінг
 │   │   └── tsup.config.ts        # МАСИВ профілів; 🔴 target: 'esnext' — у спільному base
@@ -544,8 +544,8 @@ Schema-тулінг (`drizzle/`, `drizzle.config.ts`, `scripts/dump-rls.mjs`,
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
 pnpm db:dump-rls               # Дамп RLS-політик із живої БД (джерело для rls-parity.test.ts)
-pnpm db:diff <name>            # schema.ts → SQL у supabase/migrations/ (ревʼю обовʼязкове)
-pnpm db:migrate                # supabase link + db push + db:generate-types
+pnpm db:diff <name>            # schema.ts → SQL у packages/simplycms/migrations/ (ревʼю обовʼязкове)
+pnpm test:schema               # накат канону на чисту БД харнеса (db:migrate — decommissioned, B2/B13)
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
 pnpm types:baseline            # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```

@@ -39,13 +39,16 @@ cp .env.example .env.local
 `<project-ref>` — ідентифікатор проєкту з Dashboard → Project Settings →
 General.
 
+`supabase/migrations/` — схема ядра SimplyCMS: baseline (`0001_init.sql`) плюс
+передумови, гранти й сід довідників. Файли накочуються **в порядку імен**:
+
 ```bash
-supabase link --project-ref <project-ref>
-supabase db push
+for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
-`supabase/migrations/` — повна схема ядра SimplyCMS: таблиці, RLS-політики,
-тригери.
+🔴 `supabase db push` цей канон не приймає: він чекає імена
+`<timestamp>_<name>.sql`, а тут нумерація послідовна — порядок накату мусить
+бути детермінованим, а не залежати від годинника машини, що згенерувала файл.
 
 ### 3. Призначити власника
 

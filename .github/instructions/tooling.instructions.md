@@ -38,8 +38,8 @@ pnpm pilot:seed             # фікстури пілота → supabase/seed.sq
 
 # База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
 pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
-pnpm db:diff <name>         # schema.ts → SQL у supabase/migrations (ревʼю обовʼязкове!)
-pnpm db:migrate             # Застосувати міграції (supabase link + db push + типи)
+pnpm db:diff <name>         # schema.ts → SQL у packages/simplycms/migrations (ревʼю обовʼязкове!)
+pnpm test:schema            # Накат канону на чисту БД харнеса (db:migrate виведено з експлуатації)
 pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase → supabase/types.ts
 pnpm types:baseline         # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```
@@ -133,5 +133,5 @@ SUPABASE_ACCESS_TOKEN=sbp_xxxx
 
 | Змінні | Команди |
 |--------|---------|
-| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types`, `db:migrate` (Management API) |
+| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types` (Management API) |
 | `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |

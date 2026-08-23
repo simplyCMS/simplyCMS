@@ -65,33 +65,39 @@ for (const value of Object.values(schema)) {
 
 ## 🔴 Робочий процес міграцій
 
-`drizzle/` — це **не** `supabase/migrations/`. Комітяться обидві теки: перша тримає
-журнал і snapshot-и (база наступного діфа), друга — застосовний SQL для
-`supabase db push`. Команди репозиторію: `db:pull` (інтроспекція) · `db:diff <name>`
-(SQL міграції) · `db:migrate` (push + типи) · `db:dump-rls` (фікстура політик).
+`drizzle/` — це **не** канон. Комітяться обидві теки: перша тримає журнал і
+snapshot-и (база наступного діфа), друга — `../../migrations/` — застосовний
+SQL. Нумерація в них своя в кожної: drizzle рахує власний журнал від нуля, а
+канон починається з `0000_prelude.sql`, якого drizzle не породжував і не
+бачить. Команди репозиторію: `db:pull` (інтроспекція) · `db:diff <name>`
+(SQL міграції) · `test:schema` (накат канону на харнес) · `db:dump-rls`
+(фікстура політик).
 
-- Між `db:diff` і `db:migrate` — **обовʼязкове людське ревʼю SQL**: drizzle-kit не
+- Між `db:diff` і накатом — **обовʼязкове людське ревʼю SQL**: drizzle-kit не
   розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
-  RLS-політики та тригери.
+  ролі, гранти та функції.
+- 🔴 `db:migrate` виведено з експлуатації (B2/B13): Supabase CLI виходить із
+  тулчейна, а числові префікси канону він не приймає.
 - `drizzle-kit` запускається з cwd = тека цього пакета, а `schema`/`out` у конфізі
   мусять лишатися **відносними**: 0.31 у `generate` склеює `./${out}` і на
   абсолютному шляху падає з `ENOENT`.
 - `DATABASE_URL` — **session pooler**; прямий `db.<ref>.supabase.co` резолвиться
   лише в IPv6 і на CI недоступний.
-- Після кожного `pull` треба відтворити ручні правки поверх багів drizzle-kit 0.31
-  (RLS-вирази з фікстури `pg_policies`, `auth.users`, вираз `idx_product_prices_unique`) —
-  інакше падає parity-гейт, який звіряє політики з живою БД повнопольово й в обидва боки.
+- 🔴 `db:pull` після B13 — інструмент розвідки, а не джерело правди: жива БД
+  живе на СТАРОМУ стеку, а `schema.ts` уже описує модель v2. Накат `pull`
+  поверх схеми затер би реекспорти `./auth`/`./media`, RLS-ядро й B7-поля.
 - `drizzle-orm@1.0.0-beta` свідомо відхилено: у ній змінені layout теки міграцій і
   семантика `pull --init`.
 
 У репозиторії поруч лежить `seed-migrations/` — SQL початкового насіву схеми для
 підняття БД з нуля (у npm-tarball не потрапляє).
 
-Tarball пакета везе теку `migrations/` — байт-копію кореневих
-`supabase/migrations/` монорепо, синхронізовану `pnpm template:sync` і
-закріплену parity-тестом. Це джерело для `simplycms db:diff` у магазині:
-команда порівнює `supabase/migrations/` магазину з
-`node_modules/simplycms/migrations/` і докопіює нові міграції ядра.
+Tarball пакета везе теку `migrations/` — **канон** застосовного SQL ядра
+(baseline `0000_prelude` → `0003_seed` плюс усе, що додав `db:diff`). Це
+джерело для `simplycms db:diff` у магазині: команда порівнює
+`supabase/migrations/` магазину з `node_modules/simplycms/migrations/` і
+докопіює нові міграції ядра. Копію для скаффолдера тримає `pnpm
+template:sync` під parity-тестом. Деталі — [`../../migrations/README.md`](../../migrations/README.md).
 
 ## Ліцензія
 
