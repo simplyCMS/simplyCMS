@@ -242,12 +242,26 @@ PostgreSQL 16/17 без Docker (харнес), pgbouncer-сумісність д
   з файлу). Fail-closed за побудовою: забутий `SET LOCAL ROLE` під
   `app_runtime` = `permission denied`, а не тихий обхід RLS.
 
-- [ ] **Step 1:** спроектувати мінімальні набори: `app_user` — SELECT
+- [x] **Step 1:** спроектувати мінімальні набори: `app_user` — SELECT
       каталог/довідники + CRUD своїх user-scoped рядків; `app_admin` — повний
       CRUD доменних таблиць; жодного BYPASSRLS, жодного OWNER.
-- [ ] **Step 2:** гейт парності привілеїв у `test:schema`.
-- [ ] **Step 3:** негативна перевірка: під `app_runtime` без `SET LOCAL ROLE`
-      будь-який SELECT доменної таблиці — `permission denied`.
+      🔴 Уточнення до формулювання «повний CRUD»: для RLS-таблиць набір
+      команд гранта дорівнює ОБʼЄДНАННЮ команд політик тієї ж ролі —
+      більше було б мертвим привілеєм, менше — мертвою політикою. Тому
+      `orders`/`order_items` під `app_user` — лише SELECT+INSERT,
+      `profiles` — SELECT+UPDATE, а `comparisons`/`wishlists` під
+      `app_admin` не видані взагалі (політик на них немає). Розходження
+      двох шарів асертить окремий кейс гейта.
+      Сиквенсів у baseline немає (усі PK — uuid), тож блок `GRANT USAGE ON
+      SEQUENCE` порожній — і цей факт теж під гейтом.
+- [x] **Step 2:** гейт парності привілеїв у `test:schema`
+      (`test-harness/pg/__tests__/grants-parity.test.ts` + декларація
+      очікувань `__tests__/fixtures/grants.ts`, знімання стану —
+      `test-harness/pg/introspect.mjs` через `aclexplode`).
+- [x] **Step 3:** негативна перевірка: під `app_runtime` без `SET LOCAL ROLE`
+      будь-який SELECT доменної таблиці — `permission denied`; поруч —
+      позитивний контроль (той самий SELECT після `SET LOCAL ROLE app_user`
+      проходить), інакше відмова не доводила б причини.
 
 ### Task 5: Поведінкова матриця RLS + негативні контролі (новий rls-гейт)
 

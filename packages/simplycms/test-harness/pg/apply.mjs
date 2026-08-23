@@ -72,6 +72,37 @@ export function withDbName(connectionString, dbName) {
 }
 
 /**
+ * Той самий кластер і БД, але під іншою роллю БД. Потрібно негативним
+ * контролям: fail-closed доводиться лише РЕАЛЬНИМ конектом під `app_runtime`,
+ * а не `SET ROLE` з-під власника (власник обходить гранти за побудовою).
+ * Харнес автентифікує `trust`, тож пароль не потрібен.
+ */
+export function withUser(connectionString, user) {
+  const url = new URL(connectionString);
+  url.username = user;
+  return url.toString();
+}
+
+/**
+ * Виконати послідовність SQL-стейтментів в ОДНІЙ транзакції й відкотити її.
+ * Повертає рядки останнього стейтмента. Помилка будь-якого — прокидується
+ * назовні (саме її і ловлять негативні контролі).
+ */
+export async function queryInTransaction(connectionString, statements) {
+  const client = new pg.Client({ connectionString });
+  await client.connect();
+  try {
+    await client.query('begin');
+    let rows = [];
+    for (const sql of statements) rows = (await client.query(sql)).rows;
+    await client.query('rollback');
+    return rows;
+  } finally {
+    await client.end();
+  }
+}
+
+/**
  * Одноразовий запит: підключитись, виконати, віддати рядки, відключитись.
  *
  * 🔴 Навмисно тут, а не прямий `new pg.Client()` у тестах: `pg` не має
