@@ -135,15 +135,15 @@ PostgreSQL 16/17 без Docker (харнес), pgbouncer-сумісність д
 - Produces: `test:schema` — окремий гейт, що потребує Postgres і НЕ
   потребує Docker локально; у CI — services-контейнер.
 
-- [ ] **Step 1:** `up.mjs`: якщо `PG_HARNESS_URL` заданий — перевірити
+- [x] **Step 1:** `up.mjs`: якщо `PG_HARNESS_URL` заданий — перевірити
       конект і віддати як є; інакше ефемерний кластер у tmp-теці
       (`initdb --no-sync`, `pg_ctl -o '-p <вільний порт> -k <сокет-тека>'`);
       від root — явна помилка з підказкою про `su postgres`/`PG_HARNESS_URL`.
-- [ ] **Step 2:** `apply.mjs` + смоук-тест; `vitest.schema.config.ts` за
+- [x] **Step 2:** `apply.mjs` + смоук-тест; `vitest.schema.config.ts` за
       зразком `vitest.packaging.config.ts`.
-- [ ] **Step 3:** CI job `schema` у `workflow.yml`; переконатись, що job
+- [x] **Step 3:** CI job `schema` у `workflow.yml`; переконатись, що job
       `test` НЕ підхоплює нові тести (exclude).
-- [ ] **Step 4:** гейти канонічним порядком; `test:schema` зелений локально
+- [x] **Step 4:** гейти канонічним порядком; `test:schema` зелений локально
       (фолбек-гілка) — у цьому середовищі через `su postgres`.
 
 ### Task 2: Схема v2 у Drizzle (B3′ + B5″ + бандли амендменту)

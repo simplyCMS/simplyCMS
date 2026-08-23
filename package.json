@@ -22,6 +22,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:schema": "vitest run --config vitest.schema.config.ts",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "test:e2e": "node scripts/e2e.mjs",
     "pilot": "node scripts/pilot-pack.mjs",

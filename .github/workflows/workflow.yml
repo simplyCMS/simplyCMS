@@ -126,6 +126,52 @@ jobs:
       - name: Tarball parity
         run: pnpm test:packaging
 
+  schema:
+    name: Schema (PG harness)
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    # Service-контейнер: те саме, чим гейт користується локально через
+    # PG_HARNESS_URL (розробник піднімає власний кластер) — тут CI піднімає
+    # його сам, без Docker-у самого джоба (GitHub Actions services — це
+    # окремий контейнер поруч, не наш `docker run`). Мажор 17 — той самий,
+    # проти якого знято еталонний дамп політик (Task 5).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pgtest
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U pgtest"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PG_HARNESS_URL: postgresql://pgtest@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Schema gate
+        run: pnpm test:schema
+
 # 🔴 Пілот пакування (`pnpm pilot:pack` / `pilot` / `pilot:e2e`) у CI НЕ ганяється
 # — рішення власника (2026-08-01). Причина: `pilot` і `pilot:e2e` потребують
 # бази (живої або локального стеку в Docker), а це зовнішній стан, від дрейфу
