@@ -31,14 +31,22 @@ Peer-залежність — `drizzle-orm@^0.45.0`, і вона **опційн�
 Енами: `appRole`, `discountType`, `discountTargetType`, `discountGroupOperator`,
 `propertyType`, `stockStatus`, `shippingMethodType`, `shippingCalculationType`.
 
-`auth.users` описана окремо (`src/schema/auth-users.ts`) і **навмисно не реекспортується**
-зі `schema.ts`: інакше drizzle-kit вважатиме її «своєю» і згенерує
-`CREATE TABLE "auth"."users"`. Як імпорт вона лишається валідною ціллю `foreignKey(...)`.
+Ідентичність — таблиці Better Auth (`users`/`sessions`/`accounts`/`verifications`,
+`src/schema/auth.ts`) у схемі `public` з uuid-PK; метадані медіа — `src/schema/media.ts`.
+Обидва файли **реекспортуються** зі `schema.ts` — саме так drizzle-kit їх бачить
+(він збирає сутності з експортів файлу, перелічених у `config.schema`).
+Схеми GoTrue `auth.users` у моделі v2 немає: FK шести доменних таблиць дивляться
+на `public.users`.
+
+RLS — **ядро**, а не суцільне покриття: політики лише на user-scoped таблицях,
+у initplan-формі `(select app.current_user_id())`; адмінські й «публічне читання»
+політики не існують — їхню роботу роблять ролі БД і гранти. Причини й наслідки —
+у шапці `schema.ts`.
 
 ## Приклад
 
 RLS живе в самій схемі, тож політики читаються як дані — на цьому тримається
-parity-гейт `src/schema/__tests__/rls-parity.test.ts`:
+поведінковий гейт `test:schema` (`test-harness/pg/__tests__/`):
 
 ```ts
 import { is } from 'drizzle-orm';
