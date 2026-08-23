@@ -172,6 +172,15 @@ const profiles: Profile[] = [
   //     `simplycms/db/client` в опублікованому пакеті просто не існує.
   //     Один entry знімає й питання splitting: дублювати нічого.
   profile('db', ['src/db/index.ts'], { splitting: false, platform: 'node' }),
+  // Auth-контур (Task 7, В2-К1а) — node-профіль з тих самих двох причин, що й
+  // `db`: він server-only за побудовою (Better Auth + `node:crypto` + пул
+  // через `withActor`), а entry РІВНО один, тож внутрішні модулі
+  // (`drizzle-proxy`, `provision`, `invite-store`) лишаються всередині бандла
+  // й не отримують шляху назовні — межа довіри тримається ще й артефактом.
+  profile('auth', ['src/auth/index.ts'], {
+    splitting: false,
+    platform: 'node',
+  }),
   // Route-шар вітрини (`target: esnext` — у base, див. вище).
   profile(
     'storefront-routes',

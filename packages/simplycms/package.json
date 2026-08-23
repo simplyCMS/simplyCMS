@@ -23,6 +23,7 @@
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
     "./db": "./src/db/index.ts",
+    "./auth": "./src/auth/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -157,6 +158,10 @@
       "./db": {
         "types": "./dist/db/index.d.ts",
         "import": "./dist/db/index.js"
+      },
+      "./auth": {
+        "types": "./dist/auth/index.d.ts",
+        "import": "./dist/auth/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
@@ -493,6 +498,7 @@
   "dependencies": {
     "@tiptap/extension-image": "^3.29.2",
     "@tiptap/extension-text-align": "^3.29.2",
+    "better-auth": "1.7.1",
     "clsx": "^2.1.1",
     "pg": "8.22.0",
     "tailwind-merge": "^3.6.0"

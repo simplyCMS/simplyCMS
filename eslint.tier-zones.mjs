@@ -49,6 +49,11 @@ const TIER_ZONES = [
   // із БД і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
   // `contracts`, `domain`, `schema` — і більше нічого.
   ['src/db', 2, 'db', []],
+  // Auth-контур v2 (Task 7, В2-К1а) — T2 поруч із `db`: він теж серверний і
+  // теж стоїть над схемою. `db` у винятку `upward` навмисно: єдиний канал до
+  // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
+  // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
+  ['src/auth', 2, 'auth', ['db']],
   ['src/supabase', 2, 'supabase', []],
   ['src/data-supabase', 2, 'data-supabase', []],
   ['src/react-query', 2, 'react-query', []],
