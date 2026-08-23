@@ -78,8 +78,21 @@ end
 $$;
 
 -- Членство: `SET LOCAL ROLE app_user|app_admin` дозволене лише члену.
-grant app_user to app_runtime;
-grant app_admin to app_runtime;
+--
+-- 🔴 `WITH INHERIT FALSE, SET TRUE` — не дублювання атрибута NOINHERIT вище, а
+-- ДРУГА його половина. З PostgreSQL 16 успадкування — властивість САМОГО
+-- членства (`pg_auth_members.inherit_option`), і за замовчуванням воно
+-- береться з `rolinherit` члена НА МОМЕНТ гранта. У кластері з попереднім
+-- життям (ролі кластерні, а членство переживає `drop database`) рядок міг
+-- бути створений, коли `app_runtime` ще була INHERIT, — і повторний голий
+-- `grant` його НЕ виправляє: він бачить членство наявним і мовчить. Наслідок
+-- рівно той, який весь цей дизайн виключає: `app_runtime` дістає права
+-- `app_user` без `SET LOCAL ROLE`, забутий `SET LOCAL ROLE` знову працює
+-- тихо, і fail-closed зникає, не червонячи жодного гейта.
+-- `SET TRUE` виписано явно, бо саме воно й дозволяє `SET LOCAL ROLE`.
+-- Спіймано поведінковим гейтом RLS на харнесі 2026-08-23 (Task 5).
+grant app_user to app_runtime with inherit false, set true;
+grant app_admin to app_runtime with inherit false, set true;
 
 -- Доступ до самого хелпера — обом акторським ролям: предикат політики
 -- обчислюється правами того, хто читає таблицю.
