@@ -22,6 +22,7 @@
     "./domain/money": "./src/domain/money.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
+    "./db": "./src/db/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -152,6 +153,10 @@
       "./schema/relations": {
         "types": "./dist/schema/relations.d.ts",
         "import": "./dist/schema/relations.js"
+      },
+      "./db": {
+        "types": "./dist/db/index.d.ts",
+        "import": "./dist/db/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
@@ -482,13 +487,14 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2",
-    "pg": "8.22.0"
+    "@types/pg": "^8.15.6",
+    "dotenv": "^17.4.2"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.29.2",
     "@tiptap/extension-text-align": "^3.29.2",
     "clsx": "^2.1.1",
+    "pg": "8.22.0",
     "tailwind-merge": "^3.6.0"
   },
   "peerDependenciesMeta": {

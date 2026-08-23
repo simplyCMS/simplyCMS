@@ -25,6 +25,7 @@
 // правило матчить рядок, а не резолвлений модуль. Деталі й бюджет рівнів
 // `../` — в `eslint.tier-relative.mjs`.
 
+import { dbClientImportGroup } from './eslint.db-client-zone.mjs';
 import { relativeForms } from './eslint.tier-relative.mjs';
 
 // 🔴 Межа зони — СТАТИЧНИЙ імпорт/`export … from`: `no-restricted-imports`
@@ -44,6 +45,10 @@ const TIER_ZONES = [
   ['src/contracts', 0, 'contracts', []],
   ['src/domain', 1, 'domain', []],
   ['src/schema', 1, 'schema', []],
+  // db-рантайм v2 (Task 6, В2-К1а) — T2 поруч із `supabase`: він теж говорить
+  // із БД і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
+  // `contracts`, `domain`, `schema` — і більше нічого.
+  ['src/db', 2, 'db', []],
   ['src/supabase', 2, 'supabase', []],
   ['src/data-supabase', 2, 'data-supabase', []],
   ['src/react-query', 2, 'react-query', []],
@@ -137,6 +142,11 @@ export const tierZoneConfigs = TIER_ZONES.map(
                 group: forbidden,
                 message: `Тір-зона ПК3: ${dir} — шар T${layer}. Легальні лише теки НИЖЧОГО шару (плюс зафіксовані винятки статус-кво). Підняти імпорт угору — архітектурне рішення зі зміною таблиці в eslint.tier-zones.mjs, а не побічний ефект правки.`,
               },
+              // Flat config замінює опції правила цілком, тож глобальна зона
+              // `simplycms/db/client` тут не діяла б: доливаємо явно. Для
+              // самої теки `src/db` вона зайва (вона і є фабрика) — і саме
+              // там `db` як тір-ціль у `targets` не потрапляє.
+              ...(name === 'db' ? [] : [dbClientImportGroup]),
             ],
           },
         ],

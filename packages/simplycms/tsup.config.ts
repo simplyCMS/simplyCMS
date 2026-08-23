@@ -161,6 +161,17 @@ const profiles: Profile[] = [
     ],
     { splitting: true },
   ),
+  // db-рантайм (Task 6, В2-К1а) — окремий NODE-профіль, а не рядок у `tiers`.
+  // Дві причини, обидві не стильові:
+  //   • `platform: 'node'` — модуль server-only за побудовою (пул `pg`), і
+  //     дефолтний нейтральний таргет esbuild вибирав би browser-поля
+  //     `exports` залежностей;
+  //   • entry РІВНО один (`index.ts`), тож `client.ts` і `with-actor.ts`
+  //     лишаються всередині бандла й не мають шляху назовні — те саме, що
+  //     стереже лінт-зона, але вже на рівні артефакту: субшляху
+  //     `simplycms/db/client` в опублікованому пакеті просто не існує.
+  //     Один entry знімає й питання splitting: дублювати нічого.
+  profile('db', ['src/db/index.ts'], { splitting: false, platform: 'node' }),
   // Route-шар вітрини (`target: esnext` — у base, див. вище).
   profile(
     'storefront-routes',

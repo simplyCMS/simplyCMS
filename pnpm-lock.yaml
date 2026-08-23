@@ -239,7 +239,7 @@ importers:
         version: 0.31.10
       drizzle-orm:
         specifier: 0.45.2
-        version: 0.45.2(pg@8.22.0)
+        version: 0.45.2(@types/pg@8.23.1)(pg@8.22.0)
       eslint:
         specifier: ^10.8.0
         version: 10.8.0(jiti@2.7.0)(supports-color@7.2.0)
@@ -447,7 +447,7 @@ importers:
         version: 4.4.0
       drizzle-orm:
         specifier: ^0.45.0
-        version: 0.45.2(pg@8.22.0)
+        version: 0.45.2(@types/pg@8.23.1)(pg@8.22.0)
       embla-carousel-react:
         specifier: ^8.0.0
         version: 8.6.0(react@19.2.8)
@@ -460,6 +460,9 @@ importers:
       next-themes:
         specifier: ^0.3.0 || ^0.4.0
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      pg:
+        specifier: 8.22.0
+        version: 8.22.0
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.8
@@ -491,12 +494,12 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
     devDependencies:
+      '@types/pg':
+        specifier: ^8.15.6
+        version: 8.23.1
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
-      pg:
-        specifier: 8.22.0
-        version: 8.22.0
 
   packages/simplycms-plugin-faq:
     dependencies:
@@ -2917,6 +2920,9 @@ packages:
 
   '@types/node@26.1.2':
     resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
+
+  '@types/pg@8.23.1':
+    resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
   '@types/react-dom@19.2.4':
     resolution: {integrity: sha512-Bsc+QHgp+P/F02XDzNCY9jnZNCUuLki36KT7VKrTXXLdHf+vHMNZnW1rVu5DNW/rCK+fya3DATySbLM4yhtKUw==}
@@ -7002,6 +7008,12 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
+  '@types/pg@8.23.1':
+    dependencies:
+      '@types/node': 26.1.2
+      pg-protocol: 1.15.0
+      pg-types: 2.2.0
+
   '@types/react-dom@19.2.4(@types/react@19.2.18)':
     dependencies:
       '@types/react': 19.2.18
@@ -7451,8 +7463,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.5
 
-  drizzle-orm@0.45.2(pg@8.22.0):
+  drizzle-orm@0.45.2(@types/pg@8.23.1)(pg@8.22.0):
     optionalDependencies:
+      '@types/pg': 8.23.1
       pg: 8.22.0
 
   electron-to-chromium@1.5.399: {}

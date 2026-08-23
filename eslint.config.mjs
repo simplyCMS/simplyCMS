@@ -1,5 +1,9 @@
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import {
+  dbClientImportGroup,
+  dbClientZoneConfig,
+} from './eslint.db-client-zone.mjs';
 import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
@@ -107,10 +111,19 @@ const pluginTrustBoundaryImports = [
       'simplycms/data-supabase',
       'simplycms/data-supabase/*',
       '@supabase/*',
+      // db-рантайм v2 (Task 6): плагінові він не поверхня взагалі — навіть
+      // `withActor`. Дані плагін бере портами SDK, які самі вирішують, під
+      // яким актором піде транзакція.
+      'simplycms/db',
+      'simplycms/db/*',
     ],
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
   },
+  // Flat config замінює опції правила цілком, тож глобальну зону
+  // `simplycms/db/client` доливаємо сюди явно — інакше блок мовчки зняв би її
+  // з `plugins/**` (той самий прийом, що з i18n-селекторами в env-зоні).
+  dbClientImportGroup,
 ];
 
 // no-restricted-imports НЕ бачить динамічний import() — його ловить окремий
@@ -126,6 +139,11 @@ const pluginTrustBoundarySyntax = [
 
 const eslintConfig = [
   ...tseslint.configs.recommended,
+  // Зона «зʼєднання лише через withActor» (Task 6, В2-К1а) — глобальна, тому
+  // стоїть тут, ДО зон, що теж ставлять `no-restricted-imports`: ті доливають
+  // її групу до своїх патернів (див. `eslint.db-client-zone.mjs`).
+  // Негативний контроль — `tests/db-client-boundary.test.ts`.
+  dbClientZoneConfig,
   {
     plugins: {
       'react-hooks': reactHooks,

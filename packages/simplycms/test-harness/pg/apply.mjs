@@ -87,6 +87,8 @@ export function withUser(connectionString, user) {
  * Виконати послідовність SQL-стейтментів в ОДНІЙ транзакції й відкотити її.
  * Повертає рядки останнього стейтмента. Помилка будь-якого — прокидується
  * назовні (саме її і ловлять негативні контролі).
+ *
+ * @returns {Promise<any[]>} рядки останнього стейтмента (див. нижче про тип)
  */
 export async function queryInTransaction(connectionString, statements) {
   const client = new pg.Client({ connectionString });
@@ -105,11 +107,16 @@ export async function queryInTransaction(connectionString, statements) {
 /**
  * Одноразовий запит: підключитись, виконати, віддати рядки, відключитись.
  *
- * 🔴 Навмисно тут, а не прямий `new pg.Client()` у тестах: `pg` не має
- * власних типів (`@types/pg` не встановлено — окрема залежність поза
- * скоупом Task 1), тож `.test.ts`, що імпортує `pg` напряму, валить
- * `tsc --noEmit` (TS7016). `.mjs` не типочекається (`checkJs` вимкнено),
- * тому імпорт `pg` тут для `tsc` невидимий.
+ * 🔴 Тип результату виписаний ЯВНО, і це не формальність. `checkJs` вимкнено,
+ * але tsc усе одно ВИВОДИТЬ типи цього модуля для `.test.ts`, які його
+ * імпортують. З Task 6 у репо зʼявились `@types/pg` (драйвер став
+ * рантайм-залежністю ядра), і `client.query(sql, params)` почав резолвитись
+ * в overload з `R extends any[]` — тобто рядки виводились як `any[][]`, і
+ * кожен виклик у гейтах падав із TS2352/TS2345. Тести звертаються до рядків
+ * власними формами (`as { rolname: string }[]`), тож чесний тип довільного
+ * SQL-результату тут саме `any[]` — вужчий зробив би касти брехливими.
+ *
+ * @returns {Promise<any[]>}
  */
 export async function queryRows(connectionString, sql, params = []) {
   const client = new pg.Client({ connectionString });
