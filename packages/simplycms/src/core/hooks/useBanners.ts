@@ -1,88 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { parseBannerRow } from '../lib/bannerUtils';
+import { getBanners } from '../lib/banners';
 
-export interface BannerButton {
-  text: string;
-  url: string;
-  target: '_self' | '_blank';
-  variant: 'primary' | 'secondary' | 'outline';
-}
+export type { Banner, BannerButton } from 'simplycms/contracts';
 
-export interface Banner {
-  id: string;
-  title: string;
-  subtitle: string | null;
-  image_url: string;
-  desktop_image_url: string | null;
-  mobile_image_url: string | null;
-  buttons: BannerButton[];
-  placement: string;
-  section_id: string | null;
-  sort_order: number;
-  is_active: boolean;
-  date_from: string | null;
-  date_to: string | null;
-  schedule_days: number[] | null;
-  schedule_time_from: string | null;
-  schedule_time_to: string | null;
-  slide_duration: number;
-  animation_type: string;
-  animation_duration: number;
-  overlay_color: string | null;
-  text_position: string;
-  created_at: string;
-  updated_at: string;
-}
-
-function isBannerVisible(banner: Banner): boolean {
-  const now = new Date();
-
-  // Check date range
-  if (banner.date_from && new Date(banner.date_from) > now) return false;
-  if (banner.date_to && new Date(banner.date_to) < now) return false;
-
-  // Check day of week (0=Sun ... 6=Sat)
-  if (banner.schedule_days && banner.schedule_days.length > 0) {
-    const today = now.getDay();
-    if (!banner.schedule_days.includes(today)) return false;
-  }
-
-  // Check time range
-  if (banner.schedule_time_from && banner.schedule_time_to) {
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    if (
-      currentTime < banner.schedule_time_from ||
-      currentTime > banner.schedule_time_to
-    )
-      return false;
-  }
-
-  return true;
-}
-
+/**
+ * Банери одного місця розміщення.
+ *
+ * 🔴 Ані фільтр `is_active`, ані розклад показу більше не живуть у браузері:
+ * перший переїхав у предикат запиту (RLS на `banners` немає — див.
+ * `simplycms/storefront/loaders/banners`), другий рахується за годинником
+ * СЕРВЕРА, тож банер «щодня 9:00–18:00» вмикається однаково для всіх
+ * відвідувачів, а не по локальному часу кожного.
+ */
 export function useBanners(placement: string, sectionId?: string) {
-  const supabase = useSupabaseClient();
-  return useQuery({
-    queryKey: ['banners', placement, sectionId],
-    queryFn: async () => {
-      let query = supabase
-        .from('banners')
-        .select('*')
-        .eq('is_active', true)
-        .eq('placement', placement)
-        .order('sort_order');
-
-      if (sectionId) {
-        query = query.eq('section_id', sectionId);
-      }
-
-      const { data } = await query;
-      if (!data) return [];
-
-      const banners: Banner[] = data.map(parseBannerRow);
-
-      return banners.filter(isBannerVisible);
-    },
+  const query = useQuery({
+    queryKey: ['banners', placement, sectionId ?? null],
+    queryFn: () =>
+      getBanners({ data: { placement, sectionId: sectionId ?? null } }),
+    staleTime: 60 * 1000,
   });
+
+  // 🔴 `data` лишається `undefined` до відповіді, а не порожнім масивом:
+  // слайдер каркаса показує до цього моменту банери з SSR-лоадера, і
+  // підмінити їх пустим масивом означало б блимнути порожнім екраном.
+  return { data: query.data, isLoading: query.isLoading };
 }

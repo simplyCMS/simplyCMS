@@ -62,3 +62,38 @@ function isBannerButton(item: unknown): item is BannerButton {
     typeof obj.variant === 'string'
   );
 }
+
+/**
+ * Чи показується банер саме зараз.
+ *
+ * 🔴 Розклад рахується на СЕРВЕРІ й за його годинником. Раніше це робив
+ * браузер: банер «щодня 9:00–18:00» показувався по локальному часу
+ * відвідувача, тож той самий банер у Києві й Ванкувері вмикався в різні
+ * моменти доби. Час магазину — час його сервера, а не гостя.
+ *
+ * `date_from`/`date_to` — мітки часу (порівнюються як миті), а
+ * `schedule_days`/`schedule_time_*` — правило доби, тож вони й читаються
+ * як день тижня й «години:хвилини».
+ */
+export function isBannerVisible(banner: Banner, now: Date): boolean {
+  if (banner.date_from && new Date(banner.date_from) > now) return false;
+  if (banner.date_to && new Date(banner.date_to) < now) return false;
+
+  if (
+    banner.schedule_days?.length &&
+    !banner.schedule_days.includes(now.getDay())
+  )
+    return false;
+
+  if (banner.schedule_time_from && banner.schedule_time_to) {
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const current = `${hh}:${mm}`;
+    if (
+      current < banner.schedule_time_from ||
+      current > banner.schedule_time_to
+    )
+      return false;
+  }
+  return true;
+}

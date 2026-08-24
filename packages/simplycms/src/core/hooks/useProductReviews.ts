@@ -1,30 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
+import { deleteMyProductReview, submitProductReview } from '../lib/review-form';
+import { getProductRatings, getProductReviews } from '../lib/reviews';
+import type { ProductReviewRow } from '../lib/reviews';
 
-export interface ProductReview {
-  id: string;
-  product_id: string;
-  user_id: string;
-  rating: number;
-  title: string | null;
-  content: string | null;
-  images: string[];
-  status: string;
-  admin_comment: string | null;
-  created_at: string;
-  updated_at: string;
-  profile?: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  };
-}
+export type ProductReview = ProductReviewRow;
 
+const NO_REVIEWS: ProductReview[] = [];
+
+/**
+ * Відгуки товару, рейтинг і власний відгук покупця.
+ *
+ * 🔴 Список звужує АКТОР серверної транзакції, а не клієнт: анонім дістає
+ * лише `approved`, залогінений — ще й власні `pending` (політика
+ * `product_reviews_select_approved_or_own`). Раніше браузер тягнув усі рядки
+ * таблиці й фільтрував їх у пам'яті, а імена авторів добирав окремим запитом
+ * до `profiles` — тобто чужі нерозглянуті відгуки їхали в клієнт.
+ */
 export function useProductReviews(productId: string | undefined) {
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,67 +27,24 @@ export function useProductReviews(productId: string | undefined) {
 
   const reviewsQuery = useQuery({
     queryKey: ['product-reviews', productId],
-    queryFn: async () => {
-      if (!productId) return [];
-      const { data, error } = await supabase
-        .from('product_reviews')
-        .select('*')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch profiles for all user_ids
-      const userIds = [...new Set((data || []).map((r) => r.user_id))];
-      const profilesMap: Record<
-        string,
-        {
-          user_id: string;
-          first_name: string | null;
-          last_name: string | null;
-          avatar_url: string | null;
-        }
-      > = {};
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, first_name, last_name, avatar_url')
-          .in('user_id', userIds);
-        profiles?.forEach((p) => {
-          profilesMap[p.user_id] = p;
-        });
-      }
-
-      return (data || []).map((r) => ({
-        ...r,
-        images: Array.isArray(r.images) ? r.images : [],
-        profile: profilesMap[r.user_id] || null,
-      })) as ProductReview[];
-    },
+    queryFn: () => getProductReviews({ data: { productId: productId! } }),
     enabled: !!productId,
-    staleTime: 60000,
+    staleTime: 60 * 1000,
   });
 
-  const reviews = reviewsQuery.data || [];
-  const approvedReviews = reviews.filter((r) => r.status === 'approved');
-  const userReview = user ? reviews.find((r) => r.user_id === user.id) : null;
-  const hasUserReview = !!userReview;
+  const invalidate = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ['product-reviews', productId],
+    });
+    void queryClient.invalidateQueries({ queryKey: ['product-ratings'] });
+  };
 
-  // Rating stats (only approved)
-  const reviewCount = approvedReviews.length;
-  const avgRating =
-    reviewCount > 0
-      ? Math.round(
-          (approvedReviews.reduce((sum, r) => sum + r.rating, 0) /
-            reviewCount) *
-            10,
-        ) / 10
-      : 0;
-
-  const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  approvedReviews.forEach((r) => {
-    distribution[r.rating] = (distribution[r.rating] || 0) + 1;
-  });
+  const onError = (err: Error) =>
+    toast({
+      variant: 'destructive',
+      title: t('common.error'),
+      description: err.message,
+    });
 
   const submitReview = useMutation({
     mutationFn: async (data: {
@@ -101,113 +53,89 @@ export function useProductReviews(productId: string | undefined) {
       content?: string;
       images?: string[];
     }) => {
+      // 🔴 Перевірка ЛИШАЄТЬСЯ, хоч автора й задає сервер: без неї відмова
+      // приїхала б англійською серверною діагностикою просто в тост покупця.
       if (!user || !productId)
         throw new Error(t('product.review.notAuthorized'));
-      const { error } = await supabase.from('product_reviews').insert({
-        product_id: productId,
-        user_id: user.id,
-        rating: data.rating,
-        title: data.title || null,
-        content: data.content || null,
-        images: data.images || [],
-        status: 'pending',
+      await submitProductReview({
+        data: {
+          productId,
+          rating: data.rating,
+          title: data.title || null,
+          content: data.content || null,
+          images: data.images ?? [],
+        },
       });
-      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['product-reviews', productId],
-      });
+      invalidate();
       toast({
         title: t('product.review.submitted'),
         description: t('product.review.submittedDescription'),
       });
     },
-    onError: (err: Error) => {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description: err.message,
-      });
-    },
+    onError,
   });
 
   const deleteReview = useMutation({
     mutationFn: async (reviewId: string) => {
-      // Get review images first
-      const review = reviews.find((r) => r.id === reviewId);
-      if (review?.images?.length) {
-        const paths = review.images
-          .map((url: string) => {
-            try {
-              const u = new URL(url);
-              const match = u.pathname.match(/\/review-images\/(.+)$/);
-              return match ? match[1] : null;
-            } catch {
-              return null;
-            }
-          })
-          .filter(Boolean) as string[];
-        if (paths.length > 0) {
-          await supabase.storage.from('review-images').remove(paths);
-        }
-      }
-      const { error } = await supabase
-        .from('product_reviews')
-        .delete()
-        .eq('id', reviewId);
-      if (error) throw error;
+      // `false` — рядка немає або він чужий: RLS лишила `returning` порожнім.
+      // Тихий «успіх» тут показав би відгук видаленим, доки сторінка не
+      // перезавантажиться.
+      const deleted = await deleteMyProductReview({ data: { reviewId } });
+      if (!deleted) throw new Error(t('product.review.notAuthorized'));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['product-reviews', productId],
-      });
+      invalidate();
       toast({ title: t('product.review.deleted') });
     },
-    onError: (err: Error) => {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description: err.message,
-      });
-    },
+    onError,
   });
+
+  const reviews = reviewsQuery.data ?? NO_REVIEWS;
+  const approvedReviews = reviews.filter((r) => r.status === 'approved');
+  const userReview = user ? reviews.find((r) => r.user_id === user.id) : null;
 
   return {
     reviews,
     approvedReviews,
     userReview,
-    hasUserReview,
-    avgRating,
-    reviewCount,
-    distribution,
+    hasUserReview: !!userReview,
+    ...summarize(approvedReviews),
     isLoading: reviewsQuery.isLoading,
     submitReview,
     deleteReview,
   };
 }
 
+/** Середнє й розподіл зірок — рахуються ЛИШЕ по схвалених відгуках. */
+function summarize(approved: ProductReview[]) {
+  const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  for (const review of approved) {
+    distribution[review.rating] = (distribution[review.rating] || 0) + 1;
+  }
+  const reviewCount = approved.length;
+  const sum = approved.reduce((total, r) => total + r.rating, 0);
+
+  return {
+    reviewCount,
+    avgRating: reviewCount > 0 ? Math.round((sum / reviewCount) * 10) / 10 : 0,
+    distribution,
+  };
+}
+
+/**
+ * Рейтинги пачки товарів для сітки каталогу.
+ *
+ * 🔴 Заміна `rpc('get_product_ratings')` — функції, якої в схемі v2 немає,
+ * тож зірки в каталозі не малювались узагалі. Агрегат рахує SQL і ЛИШЕ по
+ * `status = 'approved'` (див. `loadProductRatings`).
+ */
 export function useProductRatings(productIds: string[]) {
-  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ['product-ratings', productIds],
-    queryFn: async () => {
-      if (productIds.length === 0) return {};
-      const { data, error } = await supabase.rpc('get_product_ratings', {
-        product_ids: productIds,
-      });
-      if (error) throw error;
-      const map: Record<string, { avgRating: number; reviewCount: number }> =
-        {};
-      (data || []).forEach((r: Record<string, unknown>) => {
-        map[String(r.product_id)] = {
-          avgRating: Number(r.avg_rating),
-          reviewCount: Number(r.review_count),
-        };
-      });
-      return map;
-    },
+    queryFn: () => getProductRatings({ data: { productIds } }),
     enabled: productIds.length > 0,
-    staleTime: 60000,
+    staleTime: 60 * 1000,
   });
 }
