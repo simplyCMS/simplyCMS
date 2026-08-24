@@ -395,7 +395,27 @@ React».
   (🔴 `checkEnv` має гейтити `DATABASE_URL` і `BETTER_AUTH_SECRET` — те, що
   реально блокує старт, а не старий контракт), `packages/cli/src/doctor.mjs`,
   `packages/cli/src/doctor-online.mjs`, `packages/create-simplycms-store/src/scaffold.mjs`,
-  `scripts/pilot-pack/{scaffold,tool-pkg-smoke,tool-doctor-smoke}.mjs`
+  `scripts/pilot-pack/{scaffold,tool-pkg-smoke,tool-doctor-smoke,e2e,gate-b,gate-e}.mjs`,
+  `scripts/e2e.mjs`, `.claude/settings.json` (allowlist-згадки)
+- 🔴 **Modify окремим кроком: `scripts/pilot-pack/env.mjs:24-26`** — див. Step 0
+
+**🔴 Чому пілот тут головний (знайдено при аудиті плану):**
+`resolvePilotEnv` (`scripts/pilot-pack/env.mjs:47`) у режимі `--pack-only`
+підставляє скретч-магазину **фіктивні** ключі:
+
+```js
+const PLACEHOLDER_SUPABASE = {
+  VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
+  VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_pilot_pack_placeholder',
+};
+```
+
+Саме тому `pnpm pilot:pack` лишався зеленим, поки реальний магазин без цих
+ключів падав у браузері: пілот **сам приховував дефект**, який цей реліз
+лікує. Додатково — у пілоті **немає жодної згадки** `DATABASE_URL` чи
+`BETTER_AUTH_SECRET`, тобто чинний env-контракт V2 він не вправляє взагалі
+(`rg -n "DATABASE_URL|BETTER_AUTH" scripts/pilot-pack/*.mjs` → порожньо), хоч
+Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
 - Modify (тести): `tests/create-store-cli.test.ts`, `tests/cli-pack.test.ts`,
   `tests/cli-doctor.test.ts`, `tests/create-store-invite-setup.test.ts`
 - Modify: `packages/create-simplycms-store/src/steps.mjs:126` — замінити
@@ -406,6 +426,16 @@ React».
 - Produces: env-контракт магазину = рівно `DATABASE_URL`,
   `BETTER_AUTH_SECRET`, `VITE_SITE_URL`. `simplycms doctor` перевіряє саме їх.
 
+- [ ] **Step 0 (найважливіший):** зняти `PLACEHOLDER_SUPABASE` із
+      `scripts/pilot-pack/env.mjs` і дати пілотові **чинний** контракт:
+      `VITE_SITE_URL` + `DATABASE_URL` + `BETTER_AUTH_SECRET` (для
+      `--pack-only` — синтаксично валідні значення, БД не потрібна, бо
+      `vite build` запитів не робить; для режимів із БД — як і раніше з
+      `.env.local`). 🔴 Без цього кроку пілот і після 0.4.1 продовжить
+      сертифікувати магазин, зібраний із ключами, яких у продукті вже немає —
+      тобто лишиться сліпим рівно до того класу регресії, який ми закриваємо.
+      Прогнати `pnpm pilot:pack` — має лишитись зеленим уже БЕЗ жодного
+      Supabase-ключа.
 - [ ] **Step 1 (RED):** оновити `tests/cli-doctor.test.ts` — `checkEnv`
       червоніє на відсутньому `DATABASE_URL`/`BETTER_AUTH_SECRET` і НЕ
       згадує `VITE_SUPABASE_*`. Прогнати: червоний.
@@ -474,6 +504,11 @@ React».
 
 ## Поза цим планом (щоб виконавець не розширював скоуп)
 
+- **`tools/content-loader-mcp/src/client.ts`** — окремий MCP-інструмент, що
+  читає `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` (`client.ts:4-5`). Це не
+  частина магазину й не входить у реліз-потяг; його доля — окреме рішення
+  власника (він згадувався як кандидат на переробку).
+
 - **Адмінка** (50 файлів, `useSupabaseClient`) і знесення
   `@supabase/supabase-js` із залежностей — трек К3.
 - **Storage-порт** `delete`/`transform` + драйвери local-fs/s3 — К4
@@ -494,6 +529,9 @@ React».
 2. Магазин, зібраний БЕЗ `VITE_SUPABASE_*`: браузер — нуль `console.error`,
    контент на місці; `/api/health` — 200.
 3. `simplycms doctor` без `DATABASE_URL` падає саме на ньому.
-4. `pnpm pilot:pack` зелений; `test:schema` зелений.
+4. `pnpm pilot:pack` зелений — і 🔴 `rg -n "SUPABASE" scripts/pilot-pack/`
+   порожньо: пілот більше не підставляє фіктивних ключів, тобто гейт нарешті
+   вправляє той самий контракт, що й реальний магазин.
+   `test:schema` зелений.
 5. `AvatarUpload` не має жодного шляху, який «успішно» нічого не зберігає.
 6. Диф не містить змін у `packages/simplycms/src/admin/**`.
