@@ -17,6 +17,7 @@ export * from './properties';
 export * from './property-option';
 export * from './property-values';
 export * from './sections';
+export * from './sitemap';
 export * from './entities/catalog-product';
 export * from './entities/order';
 export * from './entities/banner';

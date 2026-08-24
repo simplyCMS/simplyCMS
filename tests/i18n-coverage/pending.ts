@@ -23,8 +23,6 @@ export const ALLOWLIST: Record<string, string> = {
     'console.error — лог',
   'packages/simplycms/src/storefront-routes/seo/interceptor.ts':
     'console.error — лог',
-  'packages/simplycms/src/storefront/seo/sitemap.ts':
-    'throw — діагностика генерації',
   'packages/simplycms/src/plugins/bootstrap.ts': 'console.error — лог',
   'packages/simplycms/src/themes/getActiveThemeSSR.ts': 'console.error — лог',
   // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає

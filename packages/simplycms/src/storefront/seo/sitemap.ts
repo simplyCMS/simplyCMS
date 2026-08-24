@@ -1,32 +1,15 @@
-import type { StorefrontClient } from '../client';
+import type { SitemapData } from '../loaders/sitemap';
 
-/** Генерує sitemap.xml з активних секцій і товарів. baseUrl інжектується host'ом. */
-export async function buildSitemapXml(
-  client: StorefrontClient,
-  baseUrl: string,
-): Promise<string> {
-  const [sectionsRes, productsRes] = await Promise.all([
-    client.from('sections').select('slug, updated_at').order('sort_order'),
-    client
-      .from('products')
-      .select('slug, updated_at, sections(slug)')
-      .eq('is_active', true),
-  ]);
-
-  // 🔴 Помилку запиту НЕ ковтаємо: sitemap із самих лише статичних URL
-  // виглядає як успіх, і cache-header (година + SWR) зафіксує цю неправду
-  // для пошукових роботів. Краще 5xx без кешу — див. SEO-інтерсептор.
-  if (sectionsRes.error) {
-    throw new Error(
-      `sitemap: запит sections впав — ${sectionsRes.error.message}`,
-    );
-  }
-  if (productsRes.error) {
-    throw new Error(
-      `sitemap: запит products впав — ${productsRes.error.message}`,
-    );
-  }
-
+/**
+ * Рендер `/sitemap.xml` — ЧИСТА функція від даних (В2-К1а).
+ *
+ * 🔴 Раніше тут же жив і похід у базу (Supabase-клієнт параметром), і саме це
+ * робило юніт-тест тестом мока PostgREST, а не тестом sitemap. Після переходу
+ * на Drizzle предикат видимості перевіряється SQL-ом на живій БД
+ * (`loadSitemapData` + гейт `pnpm test:schema`), а тут лишається рівно те, що
+ * можна довести без БД: форма XML, екранування й склад URL-ів.
+ */
+export function renderSitemapXml(data: SitemapData, baseUrl: string): string {
   const urls: string[] = [];
 
   /** Статичні сторінки */
@@ -35,11 +18,11 @@ export async function buildSitemapXml(
   urls.push(entry(`${baseUrl}/properties`, undefined, 'weekly', 0.5));
 
   /** Секції */
-  for (const s of sectionsRes.data ?? []) {
+  for (const section of data.sections) {
     urls.push(
       entry(
-        `${baseUrl}/catalog/${s.slug}`,
-        s.updated_at ?? undefined,
+        `${baseUrl}/catalog/${section.slug}`,
+        section.updated_at,
         'daily',
         0.8,
       ),
@@ -47,13 +30,12 @@ export async function buildSitemapXml(
   }
 
   /** Товари */
-  for (const p of productsRes.data ?? []) {
-    const sectionSlug =
-      (p.sections as unknown as { slug: string } | null)?.slug ?? 'products';
+  for (const product of data.products) {
+    const sectionSlug = product.section_slug ?? 'products';
     urls.push(
       entry(
-        `${baseUrl}/catalog/${sectionSlug}/${p.slug}`,
-        p.updated_at ?? undefined,
+        `${baseUrl}/catalog/${sectionSlug}/${product.slug}`,
+        product.updated_at,
         'weekly',
         0.7,
       ),

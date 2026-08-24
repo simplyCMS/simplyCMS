@@ -26,6 +26,13 @@ export {
 } from './hooks';
 export type { NewAuthUser, ProvisionUser, UserProvisionPlan } from './hooks';
 
+export { acceptOwnerInvite } from './accept-invite';
+export type {
+  AcceptInviteRejection,
+  AcceptOwnerInviteInput,
+  AcceptOwnerInviteResult,
+} from './accept-invite';
+
 export {
   issueOwnerInvite,
   verifyOwnerInvite,

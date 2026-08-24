@@ -28,8 +28,8 @@ pnpm create simplycms-store my-shop
 | `--no-git`       | Не робити `git init` + перший коміт                      |
 
 `.env.local` пишеться лише коли задані **обидва** значення Supabase.
-🔴 `service_role`-ключ у файли не потрапляє ніколи — він потрібен лише як змінна
-середовища для `owner:invite`.
+🔴 Серверні ключі (`DATABASE_URL`, `BETTER_AUTH_SECRET`) скаффолдер не вигадує —
+їх дописує власник. Без них не запуститься ні магазин, ні `owner:invite`.
 
 ## 🔴 Оновлення магазину, створеного з 0.2.0 / 0.2.1
 
@@ -69,7 +69,7 @@ pnpm create simplycms-store my-shop \
   --supabase-key sb_publishable_… --yes
 cd my-shop
 supabase link --project-ref <ref> && supabase db push
-OWNER_EMAIL=you@example.com SUPABASE_SERVICE_ROLE_KEY=<key> pnpm run owner:invite
+OWNER_EMAIL=you@example.com pnpm run owner:invite
 pnpm run dev
 ```
 
@@ -80,11 +80,12 @@ pnpm run dev
   npm/yarn ці механізми ігнорують і зберуть магазин у неперевіреній конфігурації.
   У перші 24 години після виходу нової версії ядра install упреться в
   `minimumReleaseAge` — обхід описаний у README згенерованого магазину.
-- `supabase db push` накочує **лише міграції**: секція `[auth]` з
-  `supabase/config.toml` на хмару не потрапляє. У Dashboard треба продублювати
-  шаблон листа «Invite user» (стандартний не передає `token_hash`, і `/auth/confirm`
-  його не побачить) і виставити Site URL — інакше лінк будується з дефолтного
-  `http://localhost:3000`.
+- Auth-налаштувань у Dashboard магазин більше не потребує: вхід і запрошення
+  власника працюють на Better Auth поверх самого Postgres, а не на GoTrue.
+  Натомість обовʼязкові серверні ключі `.env.local` — `DATABASE_URL` і
+  `BETTER_AUTH_SECRET`; без них сервер падає гучно, а не пускає всіх.
+- Листів магазин не шле: `owner:invite` друкує одноразове посилання на
+  `/auth/invite` у консоль — SMTP налаштовує вже власник.
 
 Дизайн — [спека bootstrap-у власника](https://github.com/simplyCMS/simplyCMS/blob/main/docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md).
 

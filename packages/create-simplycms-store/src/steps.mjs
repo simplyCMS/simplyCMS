@@ -124,25 +124,24 @@ export function printNextSteps({
   if (!hasEnv)
     steps.push('cp .env.example .env.local   # ключі з Dashboard → Connect');
   steps.push('supabase link --project-ref <ref> && supabase db push');
-  steps.push(
-    'OWNER_EMAIL=you@example.com SUPABASE_SERVICE_ROLE_KEY=<key> ' +
-      `${STORE_MANAGER} run owner:invite`,
-  );
+  // 🔴 service_role-ключа тут більше немає: запрошення власника випускається
+  // прямо в Postgres (контракт v2), тож потрібен лише DATABASE_URL із
+  // .env.local. Посилання скрипт друкує в консоль — SMTP магазин не має.
+  steps.push(`OWNER_EMAIL=you@example.com ${STORE_MANAGER} run owner:invite`);
   // Перший крок діагностики: env, host-файли, міграції — до старту dev-сервера.
   steps.push(`${STORE_MANAGER} simplycms doctor   # діагностика магазину`);
   steps.push(`${STORE_MANAGER} run dev`);
   note(steps.join('\n'), 'Наступні кроки');
+  // 🔴 Auth-налаштувань у Dashboard тут більше немає: вхід і запрошення
+  // працюють на Better Auth поверх самого Postgres, а не на GoTrue. Лишається
+  // рівно те, без чого owner:invite не запуститься — серверні ключі .env.local
+  // і той факт, що посилання доведеться взяти з консолі, а не з пошти.
   log.info(
-    'Для хмарного проєкту (supabase db push накочує ЛИШЕ міграції, секція\n' +
-      '[auth] із supabase/config.toml на хмару не потрапляє) зроби в Dashboard:\n' +
-      '1) Authentication → Email Templates → «Invite user» — продублюй\n' +
-      '   supabase/templates/invite.html: стандартний лист не передає\n' +
-      '   token_hash, і /auth/confirm його не побачить;\n' +
-      '2) Authentication → URL Configuration → Site URL = публічна адреса\n' +
-      '   магазину, її ж додай у Redirect URLs. Лінк у листі будується з\n' +
-      '   {{ .SiteURL }}, а дефолт проєкту — http://localhost:3000.\n' +
-      'CLI-альтернатива п.2 — supabase config push, але він відправляє ВЕСЬ\n' +
-      'локальний config.toml і перезапише віддалені auth-налаштування\n' +
-      'дефолтами CLI.',
+    'Перед owner:invite заповни в .env.local серверні ключі:\n' +
+      '  DATABASE_URL       — підключення роллю app_runtime;\n' +
+      '  BETTER_AUTH_SECRET — openssl rand -base64 32.\n' +
+      'Лист магазин не шле (SMTP не налаштований) — одноразове посилання\n' +
+      'на /auth/invite скрипт надрукує в консоль. Воно дійсне 24 год,\n' +
+      'повторний прогін команди перевипускає його.',
   );
 }

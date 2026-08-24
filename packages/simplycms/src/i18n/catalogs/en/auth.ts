@@ -15,6 +15,22 @@ export const messages: Catalog = {
   'auth.setPassword.backToAuth': 'Go to sign in',
   'auth.setPassword.error': 'Could not save the password. Please try again.',
 
+  'auth.invite.title': 'Owner invitation',
+  'auth.invite.description':
+    'Choose a password — you will be taken straight to the admin panel.',
+  'auth.invite.badLink':
+    'The link is incomplete: it has no email or token. Copy the whole link from the email, or ask for a new invitation.',
+  'auth.invite.notFound':
+    'This invitation has already been used or does not exist. Ask for a new one.',
+  'auth.invite.expired': 'The invitation has expired. Ask for a new one.',
+  'auth.invite.mismatch':
+    'The token in the link does not match the invitation. Copy the whole link from the email.',
+  'auth.invite.passwordRejected':
+    'The password was rejected. Try a longer or stronger one.',
+  'auth.invite.signInFailed':
+    'The password was saved, but the automatic sign-in failed. Please sign in manually.',
+  'auth.invite.backToAuth': 'Go to sign in',
+
   'auth.brand': 'SimplyCMS Store',
   'auth.tagline': 'Renewable energy for your home',
   'auth.login.title': 'Sign in',

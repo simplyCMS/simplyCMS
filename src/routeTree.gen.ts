@@ -16,6 +16,7 @@ import { Route as AuthIndexRouteImport } from './../packages/simplycms/routes/st
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
 import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/routes/storefront/auth/set-password'
+import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
 import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
 import { Route as ApiHealthRouteImport } from './../packages/simplycms/routes/storefront/api/health'
 import { Route as ApiGuestOrderRouteImport } from './../packages/simplycms/routes/storefront/api/guest-order'
@@ -107,6 +108,11 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/auth/set-password',
   path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthInviteRoute = AuthInviteRouteImport.update({
+  id: '/auth/invite',
+  path: '/auth/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
@@ -440,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -505,6 +512,7 @@ export interface FileRoutesByTo {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
@@ -573,6 +581,7 @@ export interface FileRoutesById {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -642,6 +651,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/admin/'
     | '/auth/'
@@ -707,6 +717,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/admin'
     | '/auth'
@@ -774,6 +785,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/_storefront/'
     | '/admin/'
@@ -841,6 +853,7 @@ export interface RootRouteChildren {
   ApiGuestOrderRoute: typeof ApiGuestOrderRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
+  AuthInviteRoute: typeof AuthInviteRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -895,6 +908,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/set-password'
       fullPath: '/auth/set-password'
       preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/invite': {
+      id: '/auth/invite'
+      path: '/auth/invite'
+      fullPath: '/auth/invite'
+      preLoaderRoute: typeof AuthInviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/revalidate-theme': {
@@ -1467,6 +1487,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGuestOrderRoute: ApiGuestOrderRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
+  AuthInviteRoute: AuthInviteRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

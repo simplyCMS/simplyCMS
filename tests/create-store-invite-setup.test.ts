@@ -2,31 +2,40 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { printNextSteps } from '../packages/create-simplycms-store/src/steps.mjs';
 
-// Лінк у листі-запрошенні GoTrue будує з `{{ .SiteURL }}`, а `owner:invite`
-// свідомо НЕ передає `redirectTo`. Отже адреса листа = Site URL проєкту, і
-// вона мусить збігатися з тим, де магазин реально піднімається. Два місця, де
-// це може розсинхронитись, і обидва — не код, а інструкція користувачу.
+// Інструкція власнику про перший вхід — те, що людина читає ОДИН раз і
+// виконує буквально. Тому вона під тестом: розсинхрон тут не падає збіркою,
+// він просто заводить власника в глухий кут.
+//
+// 🔴 Перевірялось інше до контракту v2: що Site URL проєкту Supabase збігається
+// з адресою магазину, бо лінк запрошення будував GoTrue з `{{ .SiteURL }}`.
+// GoTrue немає — посилання будує САМ скрипт із `VITE_SITE_URL`, і жодних
+// auth-налаштувань у Dashboard флоу більше не потребує. Асертимо натомість
+// те, що стало правдою: ключ підключення замість service_role, посилання з
+// консолі й сторінка, на яку воно веде.
 const TEMPLATE = 'packages/create-simplycms-store/template';
 const read = (p: string) => readFileSync(p, 'utf8');
 
-describe('create-store: адреса з листа-запрошення', () => {
-  // `supabase db push` накочує лише міграції — секція `[auth]` локального
-  // config.toml на хмару не їде, а її `site_url` збігається з дефолтом нового
-  // проєкту (localhost:3000), тож і діфа не буде. Крок у Dashboard обовʼязковий.
-  it('README вимагає виставити Site URL у Dashboard', () => {
-    const readme = read(`${TEMPLATE}/README.md`);
-    expect(readme).toMatch(/URL Configuration/);
-    expect(readme).toMatch(/Site URL/);
-    expect(readme).toMatch(/Redirect URLs/);
-    // Згадка `supabase config push` без застереження — пастка: він відправляє
-    // ВЕСЬ конфіг і затирає віддалені auth-налаштування дефолтами CLI.
-    if (readme.includes('supabase config push')) {
-      expect(readme).toMatch(/весь|ВЕСЬ/);
-      expect(readme).toMatch(/перезапи/i);
-    }
+describe('create-store: інструкція «призначити власника»', () => {
+  const readme = read(`${TEMPLATE}/README.md`);
+
+  it('README веде на /auth/invite і не вимагає service_role-ключа', () => {
+    expect(readme).toMatch(/pnpm owner:invite/);
+    expect(readme).toMatch(/\/auth\/invite/);
+    expect(readme).toMatch(/DATABASE_URL/);
+    // 🔴 Найдорожча помилка тут — лишити стару команду: вона просить ключ,
+    // якого магазин уже не використовує, і власник шукатиме його в Dashboard.
+    expect(readme).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+    // Доставки листа немає — якщо README про це змовчить, власник чекатиме
+    // пошту, якої не буде.
+    expect(readme).toMatch(/консоль/);
   });
 
-  it('printNextSteps друкує той самий крок', () => {
+  it('README не обіцяє неіснуючих сторінок GoTrue', () => {
+    expect(readme).not.toMatch(/\/auth\/confirm/);
+    expect(readme).not.toMatch(/invite\.html/);
+  });
+
+  it('printNextSteps друкує ту саму команду й ті самі ключі', () => {
     let out = '';
     const spy = vi
       .spyOn(process.stdout, 'write')
@@ -35,26 +44,25 @@ describe('create-store: адреса з листа-запрошення', () => 
         return true;
       });
     try {
-      printNextSteps({
-        dirLabel: 'my-shop',
-        installed: true,
-        hasEnv: true,
-      });
+      printNextSteps({ dirLabel: 'my-shop', installed: true, hasEnv: true });
     } finally {
       spy.mockRestore();
     }
-    expect(out).toContain('URL Configuration');
-    expect(out).toContain('Site URL');
-    expect(out).toContain('Redirect URLs');
-    expect(out).toContain('Email Templates');
+
+    expect(out).toContain('owner:invite');
+    expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(out).toContain('DATABASE_URL');
+    expect(out).toContain('BETTER_AUTH_SECRET');
+    expect(out).toContain('/auth/invite');
   });
 
-  // Dev-сервер магазину мусить слухати той самий порт, що `site_url` у
-  // config.toml і що `server.mjs` (PORT=3000). Дефолт Vite — 5173.
-  it('dev-порт шаблону = порт site_url і server.mjs', () => {
-    const port = /site_url = "http:\/\/localhost:(\d+)"/.exec(
-      read(`${TEMPLATE}/supabase/config.toml`),
-    )?.[1];
+  // Посилання запрошення будується з `VITE_SITE_URL`, а без нього — з дефолту
+  // скрипта. Дефолт мусить збігатися з портом, на якому магазин реально
+  // піднімається, інакше лінк веде на порожній порт.
+  it('дефолт site URL у owner-invite = порт dev-сервера й `pnpm start`', () => {
+    const invite = read(`${TEMPLATE}/scripts/owner-invite.mjs`);
+    const port = /'http:\/\/localhost:(\d+)'/.exec(invite)?.[1];
+
     expect(port).toBe('3000');
     for (const config of [
       `${TEMPLATE}/vite.config.ts`,

@@ -19,6 +19,7 @@ import {
   loadRootSections,
   loadSectionBySlug,
   loadSections,
+  loadSitemapData,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
@@ -166,6 +167,30 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(list.map((row) => row.slug)).toEqual([PAGED_PROPERTY_SLUG]);
     expect(paged?.property_options.length).toBeGreaterThan(0);
     expect(unpaged).toBeNull();
+  });
+
+  it('sitemap бачить лише активні розділи й товари', async () => {
+    const data = await withStorefrontDb((db) => loadSitemapData(db));
+
+    expect(data.sections.length).toBeGreaterThan(0);
+    expect(data.products.length).toBeGreaterThan(0);
+    // 🔴 Головне, чого юніт із фікстурою довести не може: предикат `is_active`
+    // живе в SQL, і саме тут видно, що чернетка й прихований розділ не поїхали
+    // в мапу сайту — тобто робот не отримав запрошення на 404.
+    expect(data.sections.map((row) => row.slug)).not.toContain(
+      HIDDEN_SECTION_SLUG,
+    );
+    expect(data.products.map((row) => row.slug)).not.toContain(
+      HIDDEN_PRODUCT_SLUG,
+    );
+    // URL товару будується з розділу — без нього посилання пішло б під
+    // технічний `products`, тобто в нікуди.
+    expect(
+      data.products.find((row) => row.slug === VISIBLE_PRODUCT_SLUG)
+        ?.section_slug,
+    ).toBe('sonyachni-paneli');
+    // `updated_at` мусить приїхати рядком ISO — саме він іде в `<lastmod>`.
+    expect(data.products[0].updated_at).toEqual(expect.any(String));
   });
 
   it('сторінка значення характеристики не показує неактивних товарів', async () => {

@@ -1,67 +1,81 @@
 import { describe, expect, it } from 'vitest';
-import { buildSitemapXml } from '../sitemap';
-import type { StorefrontClient } from '../../client';
-
-/** Відповідь Supabase-запиту, яку віддає мок. */
-interface MockResult {
-  data: unknown;
-  error: unknown;
-}
-
-const OK_SECTIONS: MockResult = {
-  data: [{ slug: 'shoes', updated_at: '2026-07-01T00:00:00Z' }],
-  error: null,
-};
-const OK_PRODUCTS: MockResult = {
-  data: [{ slug: 'boot', updated_at: null, sections: { slug: 'shoes' } }],
-  error: null,
-};
-const FAIL: MockResult = { data: null, error: { message: 'RLS violation' } };
+import { renderSitemapXml } from '../sitemap';
+import type { SitemapData } from '../../loaders/sitemap';
 
 /**
- * Thenable-білдер Supabase: `from(table)` віддає ланцюг, який резолвиться
- * у заготовлений результат для цієї таблиці.
+ * Юніт рендера sitemap — БЕЗ бази й без мока клієнта.
+ *
+ * 🔴 Мок-клієнт Supabase, що стояв тут доти, доводив лише те, що ланцюг
+ * `.from().select()` викликано в очікуваному порядку — тобто перевіряв макет
+ * PostgREST. Фільтр видимості й помилки запиту тепер доводяться на живій БД
+ * (`test-harness/pg/__tests__/storefront-loaders.test.ts`), а тут лишилось
+ * рівно те, що від бази не залежить.
  */
-function makeClient(results: Record<string, MockResult>): StorefrontClient {
-  const from = (table: string) => {
-    const builder: Record<string, unknown> = {};
-    const chain = () => builder;
-    builder.select = chain;
-    builder.order = chain;
-    builder.eq = chain;
-    builder.then = <TResult>(onfulfilled: (value: MockResult) => TResult) =>
-      Promise.resolve(results[table] ?? { data: [], error: null }).then(
-        onfulfilled,
-      );
-    return builder;
-  };
-  return { from } as unknown as StorefrontClient;
-}
 
-describe('buildSitemapXml: помилки запитів не ковтаються', () => {
-  it('успішні запити → sitemap із секціями і товарами', async () => {
-    const xml = await buildSitemapXml(
-      makeClient({ sections: OK_SECTIONS, products: OK_PRODUCTS }),
+const DATA: SitemapData = {
+  sections: [{ slug: 'shoes', updated_at: '2026-07-01T00:00:00Z' }],
+  products: [
+    {
+      slug: 'boot',
+      updated_at: '2026-07-02T00:00:00Z',
+      section_slug: 'shoes',
+    },
+    { slug: 'orphan', updated_at: '2026-07-03T00:00:00Z', section_slug: null },
+  ],
+};
+
+describe('renderSitemapXml', () => {
+  const xml = renderSitemapXml(DATA, 'https://shop.test');
+
+  it('статичні сторінки, розділи й товари — у одному urlset', () => {
+    expect(xml).toContain('<loc>https://shop.test</loc>');
+    expect(xml).toContain('<loc>https://shop.test/catalog</loc>');
+    expect(xml).toContain('<loc>https://shop.test/properties</loc>');
+    expect(xml).toContain('<loc>https://shop.test/catalog/shoes</loc>');
+    expect(xml).toContain('<loc>https://shop.test/catalog/shoes/boot</loc>');
+    expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
+  });
+
+  it('товар без розділу отримує технічний префікс, а не порожній сегмент', () => {
+    // `/catalog//orphan` був би 404-ю з подвійним слешем — саме той випадок,
+    // який робот запамʼятовує надовго.
+    expect(xml).toContain(
+      '<loc>https://shop.test/catalog/products/orphan</loc>',
+    );
+    expect(xml).not.toContain('/catalog//');
+  });
+
+  it('lastmod береться з рядка БД', () => {
+    expect(xml).toContain('<lastmod>2026-07-01T00:00:00Z</lastmod>');
+    expect(xml).toContain('<lastmod>2026-07-02T00:00:00Z</lastmod>');
+  });
+
+  it('спецсимволи в slug екрануються', () => {
+    const escaped = renderSitemapXml(
+      {
+        sections: [],
+        products: [
+          {
+            slug: 'a&b',
+            updated_at: '2026-07-02T00:00:00Z',
+            section_slug: 'x<y',
+          },
+        ],
+      },
       'https://shop.test',
     );
 
-    expect(xml).toContain('<loc>https://shop.test/catalog/shoes</loc>');
-    expect(xml).toContain('<loc>https://shop.test/catalog/shoes/boot</loc>');
-  });
-
-  it('помилка запиту products → throw (а не «успішний» неповний sitemap)', async () => {
-    const client = makeClient({ sections: OK_SECTIONS, products: FAIL });
-
-    await expect(buildSitemapXml(client, 'https://shop.test')).rejects.toThrow(
-      /RLS violation/,
+    expect(escaped).toContain(
+      '<loc>https://shop.test/catalog/x&lt;y/a&amp;b</loc>',
     );
   });
 
-  it('помилка запиту sections → throw', async () => {
-    const client = makeClient({ sections: FAIL, products: OK_PRODUCTS });
-
-    await expect(buildSitemapXml(client, 'https://shop.test')).rejects.toThrow(
-      /RLS violation/,
+  it('порожня база → валідний XML лише зі статичних сторінок', () => {
+    const empty = renderSitemapXml(
+      { sections: [], products: [] },
+      'https://shop.test',
     );
+
+    expect(empty.match(/<url>/g)).toHaveLength(3);
   });
 });

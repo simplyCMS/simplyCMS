@@ -1,139 +1,117 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { inviteIdentifier, verifyOwnerInvite } from 'simplycms/auth';
+import type { OwnerInviteStore } from 'simplycms/auth';
 import { runOwnerInvite } from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
 
-const makeAdmin = ({
-  inviteError = null as { code: string; status: number } | null,
-  users = [] as { id: string; email: string }[],
-} = {}) => {
-  const upsert = vi.fn().mockResolvedValue({ error: null });
-  const generateLink = vi.fn().mockResolvedValue({
-    data: { properties: { hashed_token: 'hash123' } },
-    error: null,
-  });
-  return {
-    client: {
-      auth: {
-        admin: {
-          inviteUserByEmail: vi
-            .fn()
-            .mockResolvedValue(
-              inviteError
-                ? { data: { user: null }, error: inviteError }
-                : { data: { user: { id: 'new-id' } }, error: null },
-            ),
-          // nextPage: null — одна сторінка (тест на кілька сторінок нижче)
-          listUsers: vi.fn().mockResolvedValue({
-            data: { users, nextPage: null },
-            error: null,
-          }),
-          generateLink,
-        },
-      },
-      from: vi.fn().mockReturnValue({ upsert }),
+// Юніт скрипта `owner:invite` із шаблону магазину.
+//
+// 🔴 Мока Supabase тут більше немає: скрипт більше не кличе GoTrue, а
+// перевикористовує `issueOwnerInvite` ядра. Підмінюється тому не клієнт, а
+// ПОРТ сховища — тобто тест ганяє справжній механізм запрошення, лише без
+// Postgres. Що той самий механізм працює й на живій БД, доводить
+// `packages/simplycms/test-harness/pg/__tests__/owner-invite-flow.test.ts`.
+
+const EMAIL = 'owner@example.com';
+const SITE = 'https://shop.test';
+
+/** Сховище в памʼяті з тією ж семантикою, що й `ownerInviteStore`. */
+function makeStore() {
+  const users = new Map<string, string>();
+  const tokens = new Map<string, { valueHash: string; expiresAt: Date }>();
+  const roles: { userId: string; role: string }[] = [];
+  let nextId = 1;
+
+  const store: OwnerInviteStore = {
+    findUserIdByEmail: async (email) => users.get(email.toLowerCase()) ?? null,
+    createUser: async ({ email }) => {
+      const id = `user-${nextId++}`;
+      users.set(email.toLowerCase(), id);
+      return id;
     },
-    upsert,
-    generateLink,
+    storeToken: async ({ identifier, valueHash, expiresAt }) => {
+      // Перевипуск гасить попередній токен — та сама семантика, що в БД.
+      tokens.set(identifier, { valueHash, expiresAt });
+    },
+    consumeToken: async (identifier) => {
+      const record = tokens.get(identifier) ?? null;
+      tokens.delete(identifier);
+      return record;
+    },
+    grantAdminRole: async (userId) => {
+      if (!roles.some((row) => row.userId === userId && row.role === 'admin')) {
+        roles.push({ userId, role: 'admin' });
+      }
+    },
   };
-};
 
-describe('owner-invite', () => {
-  it('новий email: invite (без options) + роль admin', async () => {
-    const { client, upsert } = makeAdmin();
-    const result = await runOwnerInvite({
-      admin: client,
-      email: 'o@x.com',
-      siteUrl: 'https://s',
-      log: () => {},
-    });
-    expect(result).toMatchObject({
-      userId: 'new-id',
-      invited: true,
-      roleAdded: true,
-    });
-    expect(client.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('o@x.com');
-    expect(upsert).toHaveBeenCalledWith(
-      { user_id: 'new-id', role: 'admin' },
-      { onConflict: 'user_id,role', ignoreDuplicates: true },
-    );
+  return { store, users, tokens, roles };
+}
+
+/** Прогін скрипта зі збором того, що він надрукував. */
+async function run(store: OwnerInviteStore) {
+  const lines: string[] = [];
+  const result = await runOwnerInvite({
+    email: EMAIL,
+    siteUrl: SITE,
+    store,
+    log: (message: string) => lines.push(message),
+  });
+  return { result, output: lines.join('\n') };
+}
+
+describe('owner-invite (скрипт шаблону)', () => {
+  it('новий email: користувач, роль admin і надруковане посилання', async () => {
+    const { store, users, roles } = makeStore();
+
+    const { result, output } = await run(store);
+
+    expect(result.created).toBe(true);
+    expect(users.size).toBe(1);
+    expect(roles).toEqual([{ userId: result.userId, role: 'admin' }]);
+    expect(result.url.startsWith(`${SITE}/auth/invite?email=`)).toBe(true);
+    // 🔴 Друк посилання — і є доставка: SMTP немає, тож мовчазний прогін
+    // залишив би власника без єдиного шляху до адмінки.
+    expect(output).toContain(result.url);
+    expect(output).toContain('SMTP');
   });
 
-  it('email існує: знаходить id через listUsers і дописує роль', async () => {
-    const { client } = makeAdmin({
-      inviteError: { code: 'email_exists', status: 422 },
-      users: [{ id: 'old-id', email: 'o@x.com' }],
-    });
-    const result = await runOwnerInvite({
-      admin: client,
-      email: 'o@x.com',
-      siteUrl: 'https://s',
-      log: () => {},
-    });
-    expect(result).toMatchObject({
-      userId: 'old-id',
-      invited: false,
-      roleAdded: true,
+  it('надруковане посилання справді проходить перевірку', async () => {
+    const { store } = makeStore();
+
+    const { result } = await run(store);
+    const token = new URL(result.url).searchParams.get('token')!;
+
+    expect(await verifyOwnerInvite({ store, email: EMAIL, token })).toEqual({
+      ok: true,
+      userId: result.userId,
     });
   });
 
-  it('email існує + --resend: генерує одноразовий confirm-лінк', async () => {
-    const { client, generateLink } = makeAdmin({
-      inviteError: { code: 'email_exists', status: 422 },
-      users: [{ id: 'old-id', email: 'o@x.com' }],
-    });
-    const result = await runOwnerInvite({
-      admin: client,
-      email: 'o@x.com',
-      siteUrl: 'https://s/',
-      resend: true,
-      log: () => {},
-    });
-    expect(generateLink).toHaveBeenCalledWith({
-      type: 'magiclink',
-      email: 'o@x.com',
-    });
-    expect(result.resendLink).toBe(
-      'https://s/auth/confirm?token_hash=hash123&type=magiclink&next=/auth/set-password',
-    );
+  it('повторний прогін ідемпотентний: той самий користувач, одна роль', async () => {
+    const { store, users, roles } = makeStore();
+
+    const first = await run(store);
+    const second = await run(store);
+
+    expect(second.result.created).toBe(false);
+    expect(second.result.userId).toBe(first.result.userId);
+    expect(users.size).toBe(1);
+    expect(roles).toHaveLength(1);
   });
 
-  it('інший 422 (validation_failed) — кидає, а не маскує під email_exists', async () => {
-    const { client } = makeAdmin({
-      inviteError: { code: 'validation_failed', status: 422 },
-    });
-    await expect(
-      runOwnerInvite({
-        admin: client,
-        email: 'bad',
-        siteUrl: 'https://s',
-        log: () => {},
-      }),
-      // 🔴 Матчер обовʼязковий: без гарда `code !== 'email_exists'` код пішов
-      // би гілкою «вже існує» і впав уже в `findUserIdByEmail` («не знайдено»)
-      // — голий `.toThrow()` прийняв би цю помилку за очікувану й лишився б
-      // зеленим під мутацією «будь-який 422 = вже існує».
-    ).rejects.toThrow(/inviteUserByEmail: /);
-  });
+  it('перевипуск гасить попереднє посилання', async () => {
+    const { store, tokens } = makeStore();
 
-  it('пагінація listUsers: іде за nextPage до знахідки', async () => {
-    const { client } = makeAdmin({
-      inviteError: { code: 'email_exists', status: 422 },
-    });
-    client.auth.admin.listUsers = vi
-      .fn()
-      .mockResolvedValueOnce({
-        data: { users: [{ id: 'a', email: 'a@x.com' }], nextPage: 2 },
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: { users: [{ id: 'old-id', email: 'o@x.com' }], nextPage: null },
-        error: null,
-      });
-    const result = await runOwnerInvite({
-      admin: client,
-      email: 'o@x.com',
-      siteUrl: 'https://s',
-      log: () => {},
-    });
-    expect(result.userId).toBe('old-id');
+    const first = await run(store);
+    const staleToken = new URL(first.result.url).searchParams.get('token')!;
+    await run(store);
+
+    // В обігу лишається рівно один токен — інакше в пошті власника жили б
+    // два дійсні ключі до адмінки.
+    expect(tokens.size).toBe(1);
+    expect(tokens.has(inviteIdentifier(EMAIL))).toBe(true);
+    expect(
+      await verifyOwnerInvite({ store, email: EMAIL, token: staleToken }),
+    ).toEqual({ ok: false, reason: 'mismatch' });
   });
 });

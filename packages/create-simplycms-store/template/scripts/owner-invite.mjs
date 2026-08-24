@@ -1,52 +1,59 @@
-// Запуск: OWNER_EMAIL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm owner:invite
-// service_role-ключ живе ЛИШЕ в env цього процесу — не в .env.local.
+// Запуск: OWNER_EMAIL=owner@example.com pnpm owner:invite
+//
+// 🔴 Контракт env — серверний (спека CLI v1 §7): скрипт читає лише
+// `process.env`, а `.env.local`/`.env` служать способом його наповнити.
+// Ключ підключення тут один — `DATABASE_URL`; service_role-ключа Supabase
+// більше не існує.
 import { readFileSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
+import { closeDbPool } from 'simplycms/db';
 import { runOwnerInvite } from './owner-invite-core.mjs';
 
-function readEnvLocal() {
+/** Дописує у `process.env` лише ВІДСУТНІ ключі: реальний env завжди виграє. */
+function loadEnvFile(path) {
+  let raw;
   try {
-    return Object.fromEntries(
-      readFileSync('.env.local', 'utf8')
-        .split('\n')
-        .filter(
-          (line) => line.includes('=') && !line.trimStart().startsWith('#'),
-        )
-        .map((line) => [
-          line.slice(0, line.indexOf('=')).trim(),
-          line.slice(line.indexOf('=') + 1).trim(),
-        ]),
-    );
+    raw = readFileSync(path, 'utf8');
   } catch {
-    return {};
+    return;
+  }
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trimStart();
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+    const key = trimmed.slice(0, trimmed.indexOf('=')).trim();
+    const value = trimmed.slice(trimmed.indexOf('=') + 1).trim();
+    if (!(key in process.env)) process.env[key] = value;
   }
 }
 
-const local = readEnvLocal();
-const url = process.env.VITE_SUPABASE_URL ?? local.VITE_SUPABASE_URL;
-const siteUrl =
-  process.env.VITE_SITE_URL ?? local.VITE_SITE_URL ?? 'http://localhost:3000';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const email = process.env.OWNER_EMAIL;
+loadEnvFile('.env.local');
+loadEnvFile('.env');
 
-if (!url || !serviceKey || !email) {
+const email = process.env.OWNER_EMAIL;
+const siteUrl = process.env.VITE_SITE_URL ?? 'http://localhost:3000';
+
+const missing = [
+  ...(process.env.DATABASE_URL ? [] : ['DATABASE_URL']),
+  ...(email ? [] : ['OWNER_EMAIL']),
+];
+if (missing.length > 0) {
   console.error(
-    'Потрібні: VITE_SUPABASE_URL (env або .env.local), SUPABASE_SERVICE_ROLE_KEY і OWNER_EMAIL (env).',
+    `Потрібні змінні оточення: ${missing.join(', ')} ` +
+      '(env процесу або .env.local магазину).',
   );
   process.exit(1);
 }
 
-const admin = createClient(url, serviceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
-
-runOwnerInvite({
-  admin,
-  email,
-  siteUrl,
-  resend: process.argv.includes('--resend'),
-  log: (message) => console.log(message),
-}).catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+try {
+  await runOwnerInvite({
+    email,
+    siteUrl,
+    storeName: process.env.VITE_STORE_NAME ?? 'SimplyCMS',
+    log: (message) => console.log(message),
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+} finally {
+  // Без цього процес висів би на відкритому пулі Postgres.
+  await closeDbPool();
+}
