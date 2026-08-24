@@ -22,7 +22,6 @@ function contextValue(theme: ThemeModule): ThemeContextType {
     // Default-и зі схеми теми: view, що читає `useThemeSettings`, тестований
     // без БД — рівно те, чого вимагає спека §8, п.3.
     themeSettings: resolveDefaultThemeSettings(theme.settings),
-    themeRecord: null,
     isLoading: false,
     error: null,
     refreshTheme: () => Promise.resolve(),

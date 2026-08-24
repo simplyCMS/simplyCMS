@@ -1,58 +1,47 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { hookRegistry } from '../HookRegistry';
 import { bootstrapPlugins, type PluginRegistration } from '../bootstrap';
-import type { PluginModule } from '../types';
-
-/** Рядок таблиці `plugins` у мок-БД (лише поля, потрібні bootstrap-у). */
-interface PluginRow {
-  name: string;
-  display_name: string;
-  version: string;
-  is_active: boolean;
-  [key: string]: unknown;
-}
+import type { PluginBootstrapRow, PluginModule, PluginRecord } from '../types';
 
 /**
- * Мінімальний мок Supabase (патерн `engine-provider.test.tsx`): thenable-білдер
- * із `select/eq/order/insert`. Повертає стан таблиці, щоб перевіряти upsert.
+ * 🔴 Мокається СЕРВЕРНА поверхня (`simplycms/plugins/server`), а не
+ * Supabase-клієнт: після рішення B9 bootstrap не тримає клієнта до БД —
+ * читання й запис рядків `plugins` живуть у serverFn. Юніт доводить
+ * складання рядків і роботу з реєстром; право на запис доводить
+ * `pnpm test:schema` проти живої БД.
  */
-function createMockSupabase(initial: PluginRow[]) {
-  const rows: PluginRow[] = [...initial];
-  const inserted: PluginRow[] = [];
+const rows: PluginRecord[] = [];
+const inserted: PluginBootstrapRow[] = [];
 
-  const client = {
-    from(table: string) {
-      if (table !== 'plugins') throw new Error(`unexpected table ${table}`);
-      const filters: [string, unknown][] = [];
-      const builder = {
-        select: () => builder,
-        order: () => builder,
-        eq: (column: string, value: unknown) => {
-          filters.push([column, value]);
-          return builder;
-        },
-        insert(values: PluginRow[]) {
-          for (const value of values) {
-            rows.push(value);
-            inserted.push(value);
-          }
-          return Promise.resolve({ data: values, error: null });
-        },
-        then<TResult>(
-          onfulfilled: (value: { data: PluginRow[]; error: null }) => TResult,
-        ) {
-          const data = rows.filter((row) =>
-            filters.every(([column, value]) => row[column] === value),
-          );
-          return Promise.resolve({ data, error: null }).then(onfulfilled);
-        },
-      };
-      return builder;
-    },
-  };
+vi.mock('simplycms/plugins/server', () => ({
+  listPluginNames: async () => rows.map((row) => row.name),
+  listActivePlugins: async () => rows.filter((row) => row.is_active),
+  registerPlugins: async ({
+    data,
+  }: {
+    data: { rows: PluginBootstrapRow[] };
+  }) => {
+    inserted.push(...data.rows);
+    return data.rows.length;
+  },
+}));
 
-  return { client: client as unknown as SupabaseClient, rows, inserted };
+/** Рядок «БД» у формі, яку віддає serverFn. */
+function seedRow(name: string, isActive: boolean): void {
+  rows.push({
+    id: `id-${name}`,
+    name,
+    display_name: `Plugin ${name}`,
+    version: '1.2.3',
+    description: null,
+    author: null,
+    is_active: isActive,
+    config: {},
+    hooks: [],
+    migrations_applied: [],
+    installed_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  });
 }
 
 /** Фабрика тестового модуля плагіна, що чіпляється на дашборд-віджети. */
@@ -78,6 +67,8 @@ function makeRegistration(name: string): PluginRegistration {
 
 describe('bootstrapPlugins', () => {
   beforeEach(() => {
+    rows.length = 0;
+    inserted.length = 0;
     hookRegistry.clear();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     // validatePluginModule попереджає про відсутній engines у фабричних
@@ -90,16 +81,9 @@ describe('bootstrapPlugins', () => {
   });
 
   it('зареєстрований + активний у БД → хук у реєстрі', async () => {
-    const { client } = createMockSupabase([
-      {
-        name: 'active-plugin',
-        display_name: 'Plugin active-plugin',
-        version: '1.2.3',
-        is_active: true,
-      },
-    ]);
+    seedRow('active-plugin', true);
 
-    await bootstrapPlugins([makeRegistration('active-plugin')], client, true);
+    await bootstrapPlugins([makeRegistration('active-plugin')], true);
 
     expect(hookRegistry.getPluginsForHook('admin.dashboard.widgets')).toContain(
       'active-plugin',
@@ -107,16 +91,9 @@ describe('bootstrapPlugins', () => {
   });
 
   it('активний у БД, але невідомий → без падіння + console.error', async () => {
-    const { client } = createMockSupabase([
-      {
-        name: 'ghost-plugin',
-        display_name: 'Ghost',
-        version: '0.0.1',
-        is_active: true,
-      },
-    ]);
+    seedRow('ghost-plugin', true);
 
-    await expect(bootstrapPlugins([], client, true)).resolves.toBeUndefined();
+    await expect(bootstrapPlugins([], true)).resolves.toBeUndefined();
 
     expect(hookRegistry.getRegisteredHooks()).toHaveLength(0);
     expect(console.error).toHaveBeenCalledWith(
@@ -124,37 +101,31 @@ describe('bootstrapPlugins', () => {
     );
   });
 
-  it('зареєстрований, але неактивний → хуків нема, рядок upsert-нуто', async () => {
-    const { client, inserted } = createMockSupabase([]);
-
-    await bootstrapPlugins([makeRegistration('quiet-plugin')], client, true);
+  it('зареєстрований, але неактивний → хуків нема, рядок дописано', async () => {
+    await bootstrapPlugins([makeRegistration('quiet-plugin')], true);
 
     expect(hookRegistry.getRegisteredHooks()).toHaveLength(0);
     expect(inserted).toEqual([
-      expect.objectContaining({
+      {
         name: 'quiet-plugin',
         display_name: 'Plugin quiet-plugin',
         version: '1.2.3',
+        description: null,
+        author: null,
         // hooks їдуть із manifest — без них рядок від bootstrap був би
         // біднішим за сідовий, і адмінка показувала б порожній список.
         hooks: [{ name: 'admin.dashboard.widgets' }],
-        is_active: false,
-      }),
+      },
     ]);
   });
 
   it('невалідний модуль (без register) → error-лог + пропуск, решта підключається', async () => {
-    const { client, inserted } = createMockSupabase([]);
     const broken: PluginRegistration = {
       name: 'broken-plugin',
       module: async () => ({ default: {} as never }),
     };
 
-    await bootstrapPlugins(
-      [broken, makeRegistration('ok-plugin')],
-      client,
-      true,
-    );
+    await bootstrapPlugins([broken, makeRegistration('ok-plugin')], true);
 
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('broken-plugin'),
@@ -164,26 +135,17 @@ describe('bootstrapPlugins', () => {
     expect(inserted.map((row) => row.name)).toEqual(['ok-plugin']);
   });
 
-  it('без права запису INSERT не пробується (RLS дозволяє його лише адміну)', async () => {
-    const { client, inserted } = createMockSupabase([]);
-
-    await bootstrapPlugins([makeRegistration('anon-plugin')], client, false);
+  it('без права запису рядок не пробується (запис — лише адміну)', async () => {
+    await bootstrapPlugins([makeRegistration('anon-plugin')], false);
 
     expect(inserted).toHaveLength(0);
     expect(console.error).not.toHaveBeenCalled();
   });
 
   it('наявний у БД рядок повторно не вставляється', async () => {
-    const { client, inserted } = createMockSupabase([
-      {
-        name: 'known-plugin',
-        display_name: 'Plugin known-plugin',
-        version: '1.2.3',
-        is_active: false,
-      },
-    ]);
+    seedRow('known-plugin', false);
 
-    await bootstrapPlugins([makeRegistration('known-plugin')], client, true);
+    await bootstrapPlugins([makeRegistration('known-plugin')], true);
 
     expect(inserted).toHaveLength(0);
   });

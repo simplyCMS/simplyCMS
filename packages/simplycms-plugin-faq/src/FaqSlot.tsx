@@ -19,7 +19,7 @@ import type { FaqItem } from './types';
  */
 export function FaqSlot({ context }: { context?: unknown }) {
   const t = usePluginT<FaqKey>(messages);
-  const port = usePluginTable<FaqItem>('plg_faq_items');
+  const port = usePluginTable<FaqItem>('faq', 'plg_faq_items');
   const { config } = usePluginConfig('faq', settings);
   const [items, setItems] = useState<FaqItem[] | null>(null);
 

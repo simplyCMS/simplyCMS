@@ -3,12 +3,17 @@ export { hookRegistry } from './HookRegistry';
 export { default as HookRegistry } from './HookRegistry';
 export {
   loadPlugins,
-  activatePlugin,
-  deactivatePlugin,
-  uninstallPlugin,
   registerPluginModule,
   getRegisteredPluginModules,
 } from './PluginLoader';
+// 🔴 Lifecycle адмінки — окремим модулем: він єдиний тут ще ходить у БД
+// через supabase-js, і склеєний із `PluginLoader` тягнув би PostgREST у
+// кожен чанк вітрини (bootstrap кореня імпортує цей барель).
+export {
+  activatePlugin,
+  deactivatePlugin,
+  uninstallPlugin,
+} from './adminLifecycle';
 export {
   getAllPlugins,
   updatePluginConfig,

@@ -6,8 +6,8 @@ import {
   updateProfile,
   type OrderListRow,
   type ProfileRow,
+  withSessionDb,
 } from 'simplycms/storefront/loaders';
-import { withSessionDb } from './session-db';
 
 /** Скільки останніх замовлень показує головна сторінка кабінету. */
 const RECENT_ORDERS = 3;

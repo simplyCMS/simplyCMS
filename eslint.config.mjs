@@ -116,6 +116,23 @@ const pluginTrustBoundaryImports = [
       // яким актором піде транзакція.
       'simplycms/db',
       'simplycms/db/*',
+      // 🔴 Обхідні шляхи до тієї самої БД, відкриті контуром v2 (B9). Доки
+      // єдиним каналом був PostgREST, заборони Supabase вистачало; тепер
+      // поруч живуть серверні лоадери вітрини, auth-контур і Drizzle-схема —
+      // і кожен із них дає плагінові рівно те, що межа довіри забирає.
+      // Транспорт портів (`plugin-sdk/server`) сюди ж: плагін кличе хуки,
+      // а не хендлери під ними.
+      'simplycms/storefront',
+      'simplycms/storefront/*',
+      'simplycms/auth',
+      'simplycms/auth/*',
+      'simplycms/schema',
+      'simplycms/schema/*',
+      'simplycms/plugin-sdk/server',
+      'simplycms/plugin-sdk/server/*',
+      'drizzle-orm',
+      'drizzle-orm/*',
+      'pg',
     ],
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
@@ -131,7 +148,7 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase)(?:\\u002F.*)?|@supabase\\u002F.*)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },

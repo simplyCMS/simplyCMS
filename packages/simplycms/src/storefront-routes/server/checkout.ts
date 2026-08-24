@@ -7,13 +7,13 @@ import {
   withOrderTokenDb,
   type ActorDb,
   type NewOrderInput,
+  optionalSessionUserId,
 } from 'simplycms/storefront/loaders';
 import {
   checkoutInputSchema,
   type CheckoutInput,
   type PlacedOrder,
 } from './checkout-input';
-import { optionalSessionUserId } from './session-db';
 
 /**
  * Оформлення замовлення.

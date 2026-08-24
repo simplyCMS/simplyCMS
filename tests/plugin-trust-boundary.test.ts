@@ -64,6 +64,48 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     }
   });
 
+  it('ловить обхідні шляхи контуру v2: лоадери, auth, схема, транспорт портів', async () => {
+    // 🔴 Ці групи додано разом із B9 і не з чистоти: доки єдиним каналом до
+    // БД був PostgREST, заборони Supabase вистачало. Тепер поруч живуть
+    // серверні лоадери вітрини, auth-контур, Drizzle-схема й сам транспорт
+    // портів — кожен віддає плагінові рівно те, що межа довіри забирає.
+    for (const bad of [
+      "import { withStorefrontDb } from 'simplycms/storefront/loaders';",
+      "import { readSessionSubject } from 'simplycms/auth';",
+      "import { orders } from 'simplycms/schema';",
+      "import { pluginTableList } from 'simplycms/plugin-sdk/server';",
+      "import { sql } from 'drizzle-orm';",
+      "import pg from 'pg';",
+    ]) {
+      const errors = await boundaryErrors(
+        bad,
+        'packages/simplycms-plugin-faq/src/fixture.ts',
+      );
+      expect(errors, bad).toHaveLength(1);
+      expect(errors[0], bad).toContain('plugin-sdk');
+    }
+  });
+
+  it('ті самі обхідні шляхи ловляться і ДИНАМІЧНИМ import()', async () => {
+    const [result] = await eslint.lintText(
+      "const a = await import('simplycms/storefront/loaders');\n" +
+        "const b = await import('simplycms/auth');\n" +
+        "const c = await import('simplycms/schema');\n" +
+        "const d = await import('simplycms/plugin-sdk/server');\n" +
+        "const e = await import('drizzle-orm');\n" +
+        "const f = await import('pg');\n",
+      {
+        filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
+        warnIgnored: true,
+      },
+    );
+    expect(
+      (result?.messages ?? []).filter(
+        (m) => m.ruleId === 'no-restricted-syntax',
+      ),
+    ).toHaveLength(6);
+  });
+
   it('НЕ чіпає ядро: той самий імпорт поза зоною чистий', async () => {
     for (const path of [
       'src/fixture.ts',

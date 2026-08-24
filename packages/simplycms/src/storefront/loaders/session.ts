@@ -1,6 +1,7 @@
 import { getRequest } from '@tanstack/react-start/server';
 import { readSessionSubject } from 'simplycms/auth';
-import { withCustomerDb, type ActorDb } from 'simplycms/storefront/loaders';
+import { withCustomerDb } from './db';
+import type { ActorDb } from './db';
 
 /**
  * Транзакція від імені ВЛАСНИКА поточної сесії.
@@ -13,10 +14,16 @@ import { withCustomerDb, type ActorDb } from 'simplycms/storefront/loaders';
  * Без сесії кидає: сторінки кабінету за роутом `_protected` і так недосяжні
  * анонімно, а тихе `null` перетворило б відсутність входу на «даних немає».
  *
- * 🔴 Модуль існує ОКРЕМО від файлів із serverFn-ами й не має жодного
- * не-serverFn експорту в них: трансформація Start вирізає тіла хендлерів
- * разом із їхніми імпортами, а живий експортований символ затягнув би
- * серверний auth-контур і пул Postgres у клієнтський бандл (див. `./is-admin`).
+ * 🔴 Чому це ЛОАДЕРИ, а не `storefront-routes/server` (звідки воно переїхало
+ * 2026-08-24, Gate C пілота). Живий не-serverFn експорт, який serverFn-модулі
+ * тягнуть ВІДНОСНИМ шляхом, tsup при `splitting: true` піднімає у спільний
+ * чанк — а сторінки кабінету імпортують ті самі serverFn-модулі теж відносно
+ * й дістають цей чанк у КЛІЄНТСЬКИЙ граф. Start вирізає з чанка лише тіла
+ * serverFn; звичайний експорт лишається живим і затягує весь value-граф
+ * лоадерів (drizzle, пул) у бандл браузера. Барель лоадерів імпортується
+ * bare-специфікатором `simplycms/storefront/loaders`, який у tsup зовнішній
+ * (`external`) — у чанки він не потрапляє за побудовою, тож тут цей клас
+ * витоку неможливий структурно, а не за домовленістю.
  */
 export async function withSessionDb<T>(
   fn: (db: ActorDb, userId: string) => Promise<T>,
@@ -30,8 +37,8 @@ export async function requireSessionUserId(): Promise<string> {
   const subject = await readSessionSubject(getRequest().headers);
   if (!subject) {
     // 🔴 Текст англійською свідомо: це серверна діагностика, а не рядок
-    // інтерфейсу — користувач її не бачить, а зона i18n-скану (`storefront-routes`)
-    // кирилицю в літералах не пропускає.
+    // інтерфейсу — користувач її не бачить, а зона i18n-скану кирилицю в
+    // літералах не пропускає.
     throw new Error(
       '[simplycms] Sign-in required: no session for this request.',
     );

@@ -4,8 +4,9 @@ import {
   loadOrderDetail,
   withOrderTokenDb,
   type OrderDetailRow,
+  optionalSessionUserId,
+  withSessionDb,
 } from 'simplycms/storefront/loaders';
-import { optionalSessionUserId, withSessionDb } from './session-db';
 
 /**
  * Замовлення для сторінки «замовлення прийнято».

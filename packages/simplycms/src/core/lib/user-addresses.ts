@@ -72,7 +72,7 @@ export const deleteMyAddress = createServerFn({ method: 'POST' })
 /**
  * Транзакція від імені власника сесії.
  *
- * 🔴 Дублює `storefront-routes/server/session-db#withSessionDb` свідомо:
+ * 🔴 Дублює `storefront/loaders/session#withSessionDb` свідомо:
  * тір-зони забороняють `core` (T5) імпортувати `storefront-routes` (T5), а
  * прорізати заради цього дірку в напрямку шарів дорожче, ніж повторити
  * шість рядків (той самий компроміс, що в `./auth-session`).

@@ -23,8 +23,8 @@ import {
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useToast } from 'simplycms/core/hooks/use-toast';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { CartDrawer } from 'simplycms/core/components/cart/CartDrawer';
+import { getRootSections } from 'simplycms/storefront-routes/server/home';
 import { useQuery } from '@tanstack/react-query';
 import { useT } from 'simplycms/i18n';
 import { useThemeT } from 'simplycms/themes/useThemeT';
@@ -44,25 +44,23 @@ const categoryIcons = [
 export function Header() {
   const t = useT();
   const tt = useThemeT<SolarstoreThemeKey>();
-  const supabase = useSupabaseClient();
   const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
   const { totalItems, setIsOpen } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  /** Отримати секції каталогу */
+  /**
+   * Кореневі розділи каталогу для меню.
+   *
+   * 🔴 Через serverFn ядра, а не власним запитом до БД: тема — це оформлення,
+   * і знати, чим магазин говорить із базою, вона не має за контрактом. Той
+   * самий лоадер живить добірки головної, тож меню й сторінка не розходяться
+   * у видимості розділів.
+   */
   const { data: sections } = useQuery({
     queryKey: ['sections-nav'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('sections')
-        .select('id, name, slug, parent_id')
-        .eq('is_active', true)
-        .is('parent_id', null)
-        .order('sort_order');
-      return data || [];
-    },
+    queryFn: () => getRootSections(),
   });
 
   const handleSignOut = async () => {

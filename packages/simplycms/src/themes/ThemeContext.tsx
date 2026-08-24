@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ThemeRegistry } from './ThemeRegistry';
 import { ThemeContext } from './theme-context';
 import { resolveDefaultThemeSettings } from './theme-settings';
-import type { ThemeContextType, ThemeModule, ThemeRecord } from './types';
+import type { ThemeContextType, ThemeModule } from './types';
 
-// Сам обʼєкт контексту й хуки читання живуть у `theme-context.ts` (модуль без
-// supabase) — тут лише провайдер. Ре-експорт нижче зберігає публічний шлях
+// Сам обʼєкт контексту й хуки читання живуть у `theme-context.ts` — тут лише
+// провайдер. Ре-експорт нижче зберігає публічний шлях
 // `simplycms/themes/ThemeContext` для наявних імпортів.
 export { useTheme, useThemeSettings } from './theme-context';
 
@@ -15,9 +14,17 @@ const DEFAULT_THEME_NAME = 'default';
 interface ThemeProviderProps {
   children: React.ReactNode;
   fallbackTheme?: string;
-  /** Назва теми з SSR — пропускає початковий fetchActiveTheme */
-  initialThemeName?: string;
-  /** Збережені налаштування теми з БД (передані через SSR) */
+  /**
+   * Назва активної теми, зрезолвлена СЕРВЕРОМ.
+   *
+   * 🔴 Обовʼязкова. До В2 провайдер умів дочитати тему сам — запитом
+   * `themes` з браузера через PostgREST. Тепер джерело одне: лоадер
+   * каркасного роуту (`getActiveTheme` → `loadActiveTheme` → `withStorefrontDb`).
+   * Другий шлях не «резервний», а розбіжний: він давав інший знімок БД, ніж
+   * SSR, і показував би тему, якої сервер не рендерив.
+   */
+  initialThemeName: string;
+  /** Збережені налаштування теми з того самого лоадера. */
   initialThemeSettings?: Record<string, unknown>;
 }
 
@@ -27,25 +34,21 @@ export function ThemeProvider({
   initialThemeName,
   initialThemeSettings,
 }: ThemeProviderProps) {
-  const supabase = useSupabaseClient();
   const [activeTheme, setActiveTheme] = useState<ThemeModule | null>(null);
-  const [themeName, setThemeName] = useState<string>(
-    initialThemeName || DEFAULT_THEME_NAME,
-  );
+  const [themeName, setThemeName] = useState<string>(initialThemeName);
   const [themeSettings, setThemeSettings] = useState<Record<string, unknown>>(
     {},
   );
-  const [themeRecord, setThemeRecord] = useState<ThemeRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(!initialThemeName);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const didInit = useRef(false);
 
   const loadTheme = useCallback(
-    async (name: string, record?: ThemeRecord) => {
+    async (name: string, settings?: Record<string, unknown>) => {
       try {
         if (!ThemeRegistry.has(name)) {
           if (name !== fallbackTheme && ThemeRegistry.has(fallbackTheme)) {
-            return loadTheme(fallbackTheme);
+            return loadTheme(fallbackTheme, settings);
           }
           throw new Error(`Theme "${name}" is not available`);
         }
@@ -54,100 +57,47 @@ export function ThemeProvider({
         setActiveTheme(theme);
         setThemeName(name);
 
-        // Злиття default settings зі збереженими.
-        // Контракт v2: схема налаштувань лежить у `module.settings`,
-        // а не в маніфесті (маніфест — лише паспорт теми).
-        const defaultSettings = resolveDefaultThemeSettings(theme.settings);
-
-        const savedSettings = record?.settings || {};
-        setThemeSettings({ ...defaultSettings, ...savedSettings });
+        // Злиття default settings зі збереженими. Контракт v2: схема
+        // налаштувань лежить у `module.settings`, а не в маніфесті
+        // (маніфест — лише паспорт теми).
+        setThemeSettings({
+          ...resolveDefaultThemeSettings(theme.settings),
+          ...(settings ?? {}),
+        });
       } catch (err) {
         console.error(`[ThemeProvider] Failed to load theme "${name}":`, err);
         setError(err instanceof Error ? err : new Error(String(err)));
-        throw err;
       }
     },
     [fallbackTheme],
   );
 
-  const fetchActiveTheme = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
-        .from('themes')
-        .select('*')
-        .eq('is_active', true)
-        .single();
-
-      if (fetchError) {
-        console.error(
-          '[ThemeProvider] Error fetching active theme:',
-          fetchError,
-        );
-        await loadTheme(fallbackTheme);
-        return;
-      }
-
-      if (!data) {
-        await loadTheme(fallbackTheme);
-        return;
-      }
-
-      const settingsData = data.settings as Record<string, unknown> | null;
-
-      const record: ThemeRecord = {
-        id: data.id,
-        name: data.name,
-        display_name: data.display_name,
-        version: data.version,
-        description: data.description,
-        author: data.author,
-        preview_image: data.preview_image,
-        is_active: data.is_active,
-        settings: settingsData || {},
-        created_at: data.created_at ?? new Date().toISOString(),
-        updated_at: data.updated_at ?? new Date().toISOString(),
-      };
-
-      setThemeRecord(record);
-      await loadTheme(record.name, record);
-    } catch (err) {
-      console.error('[ThemeProvider] Failed to initialize theme:', err);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fallbackTheme, loadTheme, supabase]);
-
+  /**
+   * Перечитати МОДУЛЬ активної теми (скидає кеш реєстру).
+   *
+   * Назву й налаштування перечитує лоадер роуту — саме він тепер єдине
+   * джерело правди про активну тему, тож окремого походу в БД звідси немає.
+   */
   const refreshTheme = useCallback(async () => {
     ThemeRegistry.clearCache();
-    await fetchActiveTheme();
-  }, [fetchActiveTheme]);
+    setIsLoading(true);
+    await loadTheme(themeName, themeSettings);
+    setIsLoading(false);
+  }, [loadTheme, themeName, themeSettings]);
 
-  // Ініціалізація: якщо є initialThemeName — завантажуємо з Registry без fetch
-  // Якщо ні — робимо fetch з БД
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
 
-    if (initialThemeName) {
-      // Формуємо частковий ThemeRecord зі збереженими settings з SSR
-      const ssrRecord = initialThemeSettings
-        ? ({ settings: initialThemeSettings } as ThemeRecord)
-        : undefined;
-      loadTheme(initialThemeName, ssrRecord).then(() => setIsLoading(false));
-    } else {
-      fetchActiveTheme();
-    }
-  }, [initialThemeName, initialThemeSettings, loadTheme, fetchActiveTheme]);
+    void loadTheme(initialThemeName, initialThemeSettings).then(() =>
+      setIsLoading(false),
+    );
+  }, [initialThemeName, initialThemeSettings, loadTheme]);
 
   const value: ThemeContextType = {
     activeTheme,
     themeName,
     themeSettings,
-    themeRecord,
     isLoading,
     error,
     refreshTheme,

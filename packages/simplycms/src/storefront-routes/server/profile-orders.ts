@@ -11,8 +11,8 @@ import {
   type OrderDetailRow,
   type OrderListRow,
   type OrderStatusRow,
+  withSessionDb,
 } from 'simplycms/storefront/loaders';
-import { withSessionDb } from './session-db';
 
 /** Код статусу, у який переводить скасування покупцем. */
 const CANCELLED = 'cancelled';

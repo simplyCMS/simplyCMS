@@ -18,7 +18,7 @@ import { CheckoutDeliveryForm } from 'simplycms/core/components/checkout/Checkou
 import { CheckoutPaymentForm } from 'simplycms/core/components/checkout/CheckoutPaymentForm';
 import { CheckoutOrderSummary } from 'simplycms/core/components/checkout/CheckoutOrderSummary';
 import { CheckoutRecipientForm } from 'simplycms/core/components/checkout/CheckoutRecipientForm';
-import { PluginSlot } from 'simplycms/plugins';
+import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 
 /**
  * Фабрика схеми, а не константа модуля: повідомлення валідації беруться з

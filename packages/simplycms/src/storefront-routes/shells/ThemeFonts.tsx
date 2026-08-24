@@ -9,8 +9,9 @@ import { safeFontStylesheets } from 'simplycms/themes/safeFontStylesheets';
  * не видає precedence-попередження (перевірено адверсаріальним ревʼю).
  *
  * 🔴 Імпорт ТІЛЬКИ субшляхом (Р11): barrel `simplycms/themes` тягне
- * `getActiveThemeSSR` → `simplycms/supabase/anon-client`, і його імпорт
- * з цього клієнтського компонента затягнув би серверний код у бандл.
+ * `bootstrapThemes` → `simplycms/themes/server` (serverFn-и + серверний
+ * auth за ними), і його імпорт із цього клієнтського компонента затягнув
+ * би той вантаж у бандл заради фільтра рядків.
  */
 export function ThemeFonts({
   fonts,

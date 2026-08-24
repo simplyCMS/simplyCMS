@@ -32,9 +32,10 @@ function isSafeHttpsUrl(value: unknown): value is string {
  * пропускається з попередженням у консоль.
  *
  * 🔴 Субшлях-експорт (Р11): цей модуль НЕ реекспортується з barrel-а
- * `index.ts` — barrel тягне `getActiveThemeSSR` →
- * `simplycms/supabase/anon-client`, і імпорт barrel-а з клієнтського
- * `ThemeFonts` затягнув би серверний код у клієнтський бандл. Єдиний
+ * `index.ts`. Причина пережила знесення `getActiveThemeSSR` (В2): barrel
+ * тягне `bootstrapThemes` → `simplycms/themes/server`, тобто модуль із
+ * serverFn-ами й серверним auth-контуром за ними. Клієнтський `ThemeFonts`
+ * не має підстав тягнути цей вантаж заради фільтра рядків. Єдиний
  * дозволений імпорт — `simplycms/themes/safeFontStylesheets`.
  */
 export function safeFontStylesheets(fonts: unknown): string[] {

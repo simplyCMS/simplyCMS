@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { hookRegistry } from '../HookRegistry';
 import { PluginSlot } from '../PluginSlot';
-import { activatePlugin, deactivatePlugin } from '../PluginLoader';
+import { activatePlugin, deactivatePlugin } from '../adminLifecycle';
 import {
   HOOK,
   Marker,

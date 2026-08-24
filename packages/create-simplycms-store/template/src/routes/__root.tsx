@@ -10,9 +10,11 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
-import { bootstrapPlugins } from 'simplycms/plugins';
+// 🔴 Субшлях, а не барель `simplycms/plugins`: барель тягне ще й lifecycle
+// адмінки, який досі ходить у БД через supabase-js. Тут корінь застосунку —
+// у нього цей вантаж потрапляти не має.
+import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import {
   I18nProvider,
@@ -120,15 +122,13 @@ function RootComponent() {
  * не вмикаємо — PluginSlot і так виконує хуки в ефекті.
  */
 function PluginBootstrap() {
-  const supabase = useSupabaseClient();
-  // Право на запис рядків — з контексту сесії, а не з Supabase-клієнта:
-  // після К1′б сесія живе в Better Auth, і питати її в PostgREST-клієнта
-  // означало б завжди діставати `null`.
+  // Прапорець — лише економія виклику: право на запис перевіряє сервер
+  // (`registerPlugins` → сесія Better Auth). Клієнт тут нічого не вирішує.
   const { isAdmin } = useAuth();
 
   useEffect(() => {
-    void bootstrapPlugins(config.plugins ?? [], supabase, isAdmin);
-  }, [supabase, isAdmin]);
+    void bootstrapPlugins(config.plugins ?? [], isAdmin);
+  }, [isAdmin]);
 
   return null;
 }
@@ -143,12 +143,11 @@ function PluginBootstrap() {
  * В ефекті — з тієї ж причини, що й плагіни: не блокувати гідрацію.
  */
 function ThemeBootstrap() {
-  const supabase = useSupabaseClient();
   const { isAdmin } = useAuth();
 
   useEffect(() => {
-    void bootstrapThemes(supabase, isAdmin);
-  }, [supabase, isAdmin]);
+    void bootstrapThemes(isAdmin);
+  }, [isAdmin]);
 
   return null;
 }
