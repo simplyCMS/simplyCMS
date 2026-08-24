@@ -19,7 +19,16 @@ const external = [/^simplycms(\/|$)/, /^@simplycms\//];
 // раз, до запуску tsup.
 const base = {
   format: ['esm'],
-  dts: true,
+  // 🔴 dts вимкнено НАЗАВЖДИ — декларації видає `tsc -p tsconfig.dts.json`
+  // (крок `build` у package.json). Вендорений rollup-plugin-dts створює
+  // окрему повну ts.Program на КОЖНУ теку entry профілю (несталий dirName
+  // на cache-hit) і тримає їх усі живими: 36 програм / 9 ГБ / 191 с там,
+  // де tsc емітить ті самі декларації за ~26 с і 1.1 ГБ (розтин 2026-08-24).
+  // Повернення `dts: true` у будь-який профіль пробиває кеп памʼяті
+  // build:packages (3 ГБ) — і саме так регресія й проявиться: миттєво,
+  // з людським поясненням зі scripts/build-packages.mjs. Структурний гард —
+  // tests/dts-toolchain.test.ts (packaging-контур).
+  dts: false,
   // 🔴 Валідна форма — ТОП-РІВНЕВИЙ `tsconfig` (тип `string`). Вкладений
   // `dts: { tsconfig }` типу `DtsConfig` не має: до 2026-08-21 він жив тут
   // німим no-op-ом, бо tsup і так вантажить `./tsconfig.json` із cwd (а
@@ -102,27 +111,37 @@ const profiles: Profile[] = [
     { splitting: false },
   ),
   // Поверхня плагінів: та сама причина відмови від splitting.
-  profile('plugin-sdk', ['src/plugin-sdk/index.ts'], { splitting: false }),
-  // 🔴 Схема БД — ОКРЕМИЙ профіль і БЕЗ dts від tsup. Причина — не смак:
-  // rollup-plugin-dts РОЗГОРТАЄ кожен виведений тип, а типи Drizzle-схеми
-  // (45 pgTable × генерики колонок і політик) комбінаторно величезні — після
-  // приземлення data-шару вітрини (2026-08-24) генерація декларацій TIERS
-  // вичерпувала heap воркера навіть на 8 ГБ (`ERR_WORKER_OUT_OF_MEMORY`),
-  // тобто падала б і в CI. Декларації для schema-файлів видає звичайний
-  // `tsc --emitDeclarationOnly` (крок `build` у package.json): він НЕ
-  // розгортає типи, а лишає імпорти `drizzle-orm` як є — це секунди й
-  // мегабайти замість гігабайтів. Мапінг 1:1 файл→entry, бандлінг не потрібен.
+  //
+  // 🔴 `plugin-sdk/server` — ОКРЕМИЙ entry, а не модуль усередині бандла
+  // SDK. Трансформація Start вирізає з клієнтського бандла ТІЛА
+  // serverFn-хендлерів, після чого їхні серверні імпорти стають невживаними
+  // і зникають. Це працює лише поки хендлери живуть у власному модулі: у
+  // спільному чанку з хуками їхні імпорти лишилися б на верхньому рівні
+  // ЖИВОГО модуля, і пул Postgres поїхав би в браузер разом із `usePluginTable`.
+  profile(
+    'plugin-sdk',
+    ['src/plugin-sdk/index.ts', 'src/plugin-sdk/server/index.ts'],
+    { splitting: false },
+  ),
+  // Схема БД — окремий профіль ЗАРАДИ `splitting: false`: кожен schema-entry
+  // самодостатній, спільні чанки йому ні до чого.
+  // 🔴 Історична чесність: первинне пояснення цього профілю (коміт cfd5c75 —
+  // «виносимо схему, бо Drizzle-типи вибухають у dts») було ХИБНИМ. Розтин
+  // 2026-08-24 виміряв: Drizzle-типи коштують ~0.6 с у трасі компілятора і
+  // причиною OOM не були; полегшення дало вилучення ОДНІЄЇ ТЕКИ entry (однієї
+  // ts.Program), а справжня причина — програма-на-теку в rollup-plugin-dts
+  // (див. коментар до `dts: false` у base).
   profile(
     'schema',
     ['src/schema/schema.ts', 'src/schema/relations.ts', 'src/schema/types.ts'],
-    { dts: false, splitting: false },
+    { splitting: false },
   ),
   // Node/React-тіри (domain, schema, supabase, i18n, ui, admin, теми, …):
   // спільні чанки обовʼязкові — модулі зі станом мусять лишатися ОДНИМ
   // інстансом для всіх subpath-entry пакета.
   //
   // 🔴 Патерни ДЗЕРКАЛЯТЬ `exports`, а не «усе, що є в теці»: сусідній модуль
-  // без export-входу (`themes/getActiveThemeSSR.ts`, `admin/lib/*`,
+  // без export-входу (`themes/server/registry-db.ts`, `admin/lib/*`,
   // `storefront-routes/pages/catalog/*`) мусить лишитися чанком, а не стати
   // окремим entry — інакше `dist/` перестає бути дзеркалом exports-мапи.
   profile(
@@ -152,10 +171,13 @@ const profiles: Profile[] = [
       'src/themes/bootstrapThemes.ts',
       'src/themes/validateThemeModule.ts',
       'src/themes/conformance/index.ts',
+      'src/themes/server/index.ts',
+      'src/plugins/server/index.ts',
       'src/themes/useThemeT.ts',
       'src/themes/types.ts',
       'src/plugins/index.ts',
       'src/plugins/PluginSlot.tsx',
+      'src/plugins/bootstrap.ts',
       'src/plugins/types.ts',
       'src/{cart,catalog,checkout,profile,reviews}-ui/index.ts',
       'src/{cart,catalog,checkout,profile,reviews}-ui/*.tsx',
@@ -180,10 +202,12 @@ const profiles: Profile[] = [
   //     дефолтний нейтральний таргет esbuild вибирав би browser-поля
   //     `exports` залежностей;
   //   • entry РІВНО один (`index.ts`), тож `client.ts` і `with-actor.ts`
-  //     лишаються всередині бандла й не мають шляху назовні — те саме, що
-  //     стереже лінт-зона, але вже на рівні артефакту: субшляху
-  //     `simplycms/db/client` в опублікованому пакеті просто не існує.
-  //     Один entry знімає й питання splitting: дублювати нічого.
+  //     лишаються всередині JS-бандла. 🔴 Уточнення після переходу dts на
+  //     tsc (2026-08-24): у dist тепер існують `db/client.d.ts` тощо —
+  //     tsc емітить декларації пофайлово, і виключити їх не можна
+  //     (index.d.ts реекспортує їх відносно). Але ШЛЯХУ до них у споживача
+  //     як не було, так і немає: JS-файла немає, у exports-мапі субшляху
+  //     немає — межу тримають exports + лінт-зона, а не «файл не існує».
   profile('db', ['src/db/index.ts'], { splitting: false, platform: 'node' }),
   // Auth-контур (Task 7, В2-К1а) — node-профіль з тих самих двох причин, що й
   // `db`: він server-only за побудовою (Better Auth + `node:crypto` + пул

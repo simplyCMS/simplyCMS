@@ -55,10 +55,14 @@
     "./themes/useThemeT": "./src/themes/useThemeT.ts",
     "./themes/types": "./src/themes/types.ts",
     "./themes/conformance": "./src/themes/conformance/index.ts",
+    "./themes/server": "./src/themes/server/index.ts",
     "./plugins": "./src/plugins/index.ts",
     "./plugins/PluginSlot": "./src/plugins/PluginSlot.tsx",
     "./plugins/types": "./src/plugins/types.ts",
+    "./plugins/bootstrap": "./src/plugins/bootstrap.ts",
+    "./plugins/server": "./src/plugins/server/index.ts",
     "./plugin-sdk": "./src/plugin-sdk/index.ts",
+    "./plugin-sdk/server": "./src/plugin-sdk/server/index.ts",
     "./cart-ui": "./src/cart-ui/index.ts",
     "./cart-ui/*": "./src/cart-ui/*.tsx",
     "./catalog-ui": "./src/catalog-ui/index.ts",
@@ -289,6 +293,10 @@
         "types": "./dist/themes/conformance/index.d.ts",
         "import": "./dist/themes/conformance/index.js"
       },
+      "./themes/server": {
+        "types": "./dist/themes/server/index.d.ts",
+        "import": "./dist/themes/server/index.js"
+      },
       "./plugins": {
         "types": "./dist/plugins/index.d.ts",
         "import": "./dist/plugins/index.js"
@@ -301,9 +309,21 @@
         "types": "./dist/plugins/types.d.ts",
         "import": "./dist/plugins/types.js"
       },
+      "./plugins/bootstrap": {
+        "types": "./dist/plugins/bootstrap.d.ts",
+        "import": "./dist/plugins/bootstrap.js"
+      },
+      "./plugins/server": {
+        "types": "./dist/plugins/server/index.d.ts",
+        "import": "./dist/plugins/server/index.js"
+      },
       "./plugin-sdk": {
         "types": "./dist/plugin-sdk/index.d.ts",
         "import": "./dist/plugin-sdk/index.js"
+      },
+      "./plugin-sdk/server": {
+        "types": "./dist/plugin-sdk/server/index.d.ts",
+        "import": "./dist/plugin-sdk/server/index.js"
       },
       "./cart-ui": {
         "types": "./dist/cart-ui/index.d.ts",
@@ -440,7 +460,7 @@
     "directory": "packages/simplycms"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup && tsc -p tsconfig.schema-dts.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup && tsc -p tsconfig.dts.json",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
@@ -598,9 +618,6 @@
       "optional": true
     },
     "cmdk": {
-      "optional": true
-    },
-    "drizzle-orm": {
       "optional": true
     },
     "input-otp": {
