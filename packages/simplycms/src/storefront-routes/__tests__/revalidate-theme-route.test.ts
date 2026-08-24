@@ -16,7 +16,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('simplycms/storefront-routes/server/is-admin', () => ({
   checkIsAdmin: async () => false,
 }));
-vi.mock('simplycms/storefront-routes/server/themes', () => ({
+vi.mock('simplycms/storefront-routes/server/theme-record', () => ({
   invalidateThemeCache: () => {},
 }));
 

@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_storefront/properties/$propertySlug/')({
 
     return {
       property,
-      options: property.property_options ?? [],
+      options: property.property_options,
     };
   },
   head: ({ loaderData }) => ({

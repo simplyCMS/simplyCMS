@@ -1,51 +1,46 @@
-import type { StorefrontClient } from '../client';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { sections } from 'simplycms/schema';
+import type { ActorDb } from './db';
+import {
+  sectionColumns,
+  sectionRefColumns,
+  type SectionRef,
+  type SectionRow,
+} from './entities/section';
 
-/** Отримати всі активні секції */
-export async function loadSections(client: StorefrontClient) {
-  const { data, error } = await client
-    .from('sections')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order');
-
-  if (error) {
-    console.error('[loadSections] Помилка:', error.message);
-  }
-
-  return data ?? [];
+/**
+ * 🔴 `is_active` фільтрується КОДОМ, а не базою, і так тепер скрізь у вітрині.
+ * У моделі безпеки B5″ на каталозі немає RLS: роль `app_user` має SELECT на
+ * всю таблицю, бо «активність» — правило показу, а не право доступу. Отже
+ * забутий предикат тут не дасть помилки — він тихо виведе чернетки в магазин.
+ */
+export async function loadSections(db: ActorDb): Promise<SectionRow[]> {
+  return db
+    .select(sectionColumns)
+    .from(sections)
+    .where(eq(sections.isActive, true))
+    .orderBy(asc(sections.sortOrder));
 }
 
-/** Отримати секцію за slug */
+/** Розділ за slug — лише активний (див. коментар про видимість вище). */
 export async function loadSectionBySlug(
-  client: StorefrontClient,
+  db: ActorDb,
   slug: string,
-) {
-  const { data, error } = await client
-    .from('sections')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .maybeSingle();
+): Promise<SectionRow | null> {
+  const [row] = await db
+    .select(sectionColumns)
+    .from(sections)
+    .where(and(eq(sections.slug, slug), eq(sections.isActive, true)))
+    .limit(1);
 
-  if (error) {
-    console.error('[loadSectionBySlug] Помилка:', error.message);
-  }
-
-  return data;
+  return row ?? null;
 }
 
-/** Отримати кореневі секції (без parent_id) для навігації */
-export async function loadRootSections(client: StorefrontClient) {
-  const { data, error } = await client
-    .from('sections')
-    .select('id, name, slug')
-    .eq('is_active', true)
-    .is('parent_id', null)
-    .order('sort_order');
-
-  if (error) {
-    console.error('[loadRootSections] Помилка:', error.message);
-  }
-
-  return data ?? [];
+/** Кореневі розділи (без батька) для навігації й добірок головної. */
+export async function loadRootSections(db: ActorDb): Promise<SectionRef[]> {
+  return db
+    .select(sectionRefColumns)
+    .from(sections)
+    .where(and(eq(sections.isActive, true), isNull(sections.parentId)))
+    .orderBy(asc(sections.sortOrder));
 }

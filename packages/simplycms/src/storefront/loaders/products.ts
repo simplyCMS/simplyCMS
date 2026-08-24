@@ -1,78 +1,106 @@
-import type { StorefrontClient } from '../client';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import {
+  productModifications,
+  productPrices,
+  products,
+  sections,
+} from 'simplycms/schema';
+import type { PriceEntry } from 'simplycms/contracts';
+import type { ActorDb } from './db';
+import { toImageList } from './entities/product';
+import { listModificationColumns } from './entities/modification';
+import { groupPricesByProduct, priceColumns } from './entities/price';
 
-/** Повний select для сторінки товару (з усіма зв'язками) */
-export const PRODUCT_FULL_SELECT = `
-  *,
-  sections(id, slug, name),
-  product_modifications(*),
-  product_prices(price_type_id, price, old_price, modification_id),
-  product_property_values(
-    property_id,
-    value,
-    numeric_value,
-    option_id,
-    property_options:option_id(id, slug),
-    section_properties:property_id(id, name, slug, property_type, has_page)
-  )
-` as const;
+/** Модифікація в рядку списку — рівно те, чим обирається ціна за замовчуванням. */
+export interface ProductListModification {
+  id: string;
+  is_default: boolean;
+  sort_order: number;
+}
 
 /**
- * Select для списків каталогу. Крім базових полів тягне секцію (для href
- * картки), модифікації та ціни — щоб ціну можна було порахувати на сервері
- * і віддати список готовим у SSR-HTML.
+ * Рядок списку каталогу. Вузький навмисно: назовні їде вже DTO
+ * (`toProductListItem`), тож повний товар тут був би трафіком у нікуди.
  */
-export const PRODUCT_LIST_SELECT = `
-  *,
-  sections(id, slug, name),
-  product_modifications(*),
-  product_prices(price_type_id, price, old_price, modification_id)
-` as const;
-
-/** Отримати товар за slug (для сторінки товару) */
-export async function loadProduct(client: StorefrontClient, slug: string) {
-  const { data, error } = await client
-    .from('products')
-    .select(PRODUCT_FULL_SELECT)
-    .eq('slug', slug)
-    .maybeSingle();
-
-  if (error) {
-    console.error('[loadProduct] Помилка:', error.message);
-  }
-
-  return data;
+export interface ProductListRow {
+  id: string;
+  slug: string;
+  name: string;
+  images: string[];
+  has_modifications: boolean | null;
+  sections: { slug: string } | null;
+  product_modifications: ProductListModification[];
+  product_prices: PriceEntry[];
 }
 
-/** Отримати всі активні товари (каталог) */
-export async function loadProducts(client: StorefrontClient) {
-  const { data, error } = await client
-    .from('products')
-    .select(PRODUCT_LIST_SELECT)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+/**
+ * Список товарів каталогу — цілком або звужений розділом.
+ *
+ * 🔴 Три запити, а не запит на товар: модифікації й ціни тягнуться одним
+ * `inArray` по всіх знайдених товарах. Так само свідомо НЕ один запит із
+ * join-ом: join на дві колекції розмножив би рядки товару m×n, і збирати їх
+ * назад довелося б у памʼяті — тобто той самий обсяг роботи, але з дублями
+ * у відповіді БД.
+ *
+ * 🔴 `is_active = true` — обовʼязковий предикат видимості (пояснення — у
+ * `./sections`). Розділ у фільтрі не робить його зайвим: неактивний товар
+ * лишається в активному розділі.
+ */
+export async function loadProductList(
+  db: ActorDb,
+  sectionId?: string,
+): Promise<ProductListRow[]> {
+  const visible = sectionId
+    ? and(eq(products.isActive, true), eq(products.sectionId, sectionId))
+    : eq(products.isActive, true);
 
-  if (error) {
-    console.error('[loadProducts] Помилка:', error.message);
+  const rows = await db
+    .select({
+      id: products.id,
+      slug: products.slug,
+      name: products.name,
+      images: products.images,
+      has_modifications: products.hasModifications,
+      section_slug: sections.slug,
+    })
+    .from(products)
+    .leftJoin(sections, eq(products.sectionId, sections.id))
+    .where(visible)
+    .orderBy(desc(products.createdAt));
+
+  if (rows.length === 0) return [];
+
+  // 🔴 Запити ПОСЛІДОВНІ, а не `Promise.all`. Транзакція живе на ОДНОМУ
+  // зʼєднанні, тож паралелити нічого: драйвер усе одно вишикує їх у чергу,
+  // а `pg` таке використання вже позначив застарілим (прибирається в pg@9).
+  const ids = rows.map((row) => row.id);
+  const modificationRows = await db
+    .select(listModificationColumns)
+    .from(productModifications)
+    .where(inArray(productModifications.productId, ids));
+  const priceRows = await db
+    .select(priceColumns)
+    .from(productPrices)
+    .where(inArray(productPrices.productId, ids));
+
+  const modificationsByProduct: Record<string, ProductListModification[]> = {};
+  for (const modification of modificationRows) {
+    (modificationsByProduct[modification.product_id] ??= []).push({
+      id: modification.id,
+      is_default: modification.is_default,
+      sort_order: modification.sort_order,
+    });
   }
+  const pricesByProduct = groupPricesByProduct(priceRows);
 
-  return data ?? [];
-}
-
-/** Отримати товари за ID секції */
-export async function loadProductsBySectionId(
-  client: StorefrontClient,
-  sectionId: string,
-) {
-  const { data, error } = await client
-    .from('products')
-    .select(PRODUCT_LIST_SELECT)
-    .eq('section_id', sectionId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('[loadProductsBySectionId] Помилка:', error.message);
-  }
-
-  return data ?? [];
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    images: toImageList(row.images),
+    has_modifications: row.has_modifications,
+    sections: row.section_slug === null ? null : { slug: row.section_slug },
+    product_modifications: modificationsByProduct[row.id] ?? [],
+    product_prices: pricesByProduct[row.id] ?? [],
+  }));
 }

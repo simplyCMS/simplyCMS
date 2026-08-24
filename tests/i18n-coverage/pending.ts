@@ -21,16 +21,7 @@ export const ALLOWLIST: Record<string, string> = {
   // Логи сервера: дивиться розробник у терміналі.
   'packages/simplycms/src/storefront-routes/server/auth.ts':
     'console.error — лог',
-  'packages/simplycms/src/storefront-routes/server/themes.ts':
-    'console.error — лог',
   'packages/simplycms/src/storefront-routes/seo/interceptor.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/pricing.ts': 'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/products.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/properties.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/sections.ts':
     'console.error — лог',
   'packages/simplycms/src/storefront/seo/sitemap.ts':
     'throw — діагностика генерації',

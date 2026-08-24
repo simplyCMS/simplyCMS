@@ -8,7 +8,10 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- **Серверні функції / loaders:** використовуй `createServerSupabase()` з `simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
+- 🔴 **Шар даних вітрини на Supabase БІЛЬШЕ НЕ будується** (В2-К1а): SSR-лоадери
+  вітрини переведені на Drizzle поверх чистого Postgres — див. «Storefront (SSR)».
+  Supabase лишається живим для адмінки, клієнтських запитів і auth до контуру К1′б.
+- **Серверні функції (не-вітрина):** `createServerSupabase()` з `simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
 - **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `simplycms/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
 - **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `simplycms/supabase/anon-client` — без cookies, лише RLS `anon`-читання.
 - **Порти/репозиторії:** нові data-шляхи будуй через `simplycms/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `simplycms/react-query` (`useEngine()`).
@@ -16,14 +19,28 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 ### Storefront (SSR)
 - Data fetching — у route `loader` через `createServerFn`
-  (`simplycms/storefront-routes/server/*`), який делегує в `simplycms/storefront/loaders`:
+  (`simplycms/storefront-routes/server/*`), який делегує в `simplycms/storefront/loaders`.
+- 🔴 Лоадери вітрини ходять у БД **лише** через `withStorefrontDb` із
+  `simplycms/storefront/loaders` (обгортка над `withActor`, роль `app_user` без
+  `userId`). Кожен лоадер приймає `ActorDb` першим аргументом, тож уся сторінка
+  збирається в ОДНІЙ транзакції. Supabase-клієнта в цьому шарі немає.
+- 🔴 **Видимість фільтрує КОД.** На каталозі RLS немає — `app_user` має SELECT на
+  всю таблицю, бо «активність» це правило показу, а не право доступу. Кожен
+  публічний запит зобовʼязаний нести предикат явно (`is_active = true`,
+  `has_page = true`). Забутий предикат не падає — він виводить чернетки у вітрину.
   ```typescript
-  // packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index.tsx
-  export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
-    loader: async ({ params }) => getSectionPageData({ data: params.sectionSlug }),
-    component: CatalogSectionRoute,
-  });
+  // packages/simplycms/src/storefront-routes/server/catalog.ts
+  export const getSectionPageData = createServerFn({ method: 'GET' })
+    .inputValidator(z.object({ slug: z.string().min(1) }))
+    .handler(async ({ data }) =>
+      withStorefrontDb(async (db) => {
+        const section = await loadSectionBySlug(db, (data as { slug: string }).slug);
+        return section ? { section, products: await loadProductList(db, section.id) } : null;
+      }),
+    );
   ```
+- Типи рядків для НОВОГО серверного коду — з `simplycms/schema/types` (Drizzle),
+  а не з `supabase/types.ts` / `supabase/database.ts`.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
 - Кеш-інвалідація — через `staleTime`/router invalidate + in-memory TTL-кеші серверних функцій (ISR/`revalidatePath` не існує).
 
@@ -99,15 +116,16 @@ pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-с�
 
 ### Server function + in-memory TTL cache (cross-request)
 ```typescript
-// packages/simplycms/src/storefront-routes/server/themes.ts — еталон патерну
+// packages/simplycms/src/storefront-routes/server/theme-record.ts — еталон патерну
 const CACHE_TTL = 5 * 60 * 1000;
 let cache: { data: T | null; timestamp: number } | null = null;
 
-export const getActiveTheme = createServerFn({ method: 'GET' }).handler(async () => {
+export async function loadActiveTheme() {
   if (cache && Date.now() - cache.timestamp < CACHE_TTL) return cache.data;
-  const supabase = createAnonSupabaseClient();
-  // ... запит; заповнити cache; повернути
-});
+  const record = await withStorefrontDb(async (db) => /* ... запит */);
+  cache = { data: record, timestamp: Date.now() };
+  return record;
+}
 ```
 
 ### Mutations (admin)

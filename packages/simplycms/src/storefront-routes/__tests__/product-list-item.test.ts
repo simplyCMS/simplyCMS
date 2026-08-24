@@ -7,8 +7,8 @@ import {
 
 /**
  * Task 16, Step 2: маппер серверного рядка каталогу в DTO для SSR-списку.
- * Фікстура — у формі реального select-рядка (PRODUCT_LIST_SELECT): ціни лежать
- * і на продукті (modification_id = null), і на модифікаціях.
+ * Фікстура — у формі реального рядка вибірки каталогу (`ProductListRow`):
+ * ціни лежать і на продукті (modification_id = null), і на модифікаціях.
  */
 
 const DEFAULT_PRICE_TYPE = 'pt-default';

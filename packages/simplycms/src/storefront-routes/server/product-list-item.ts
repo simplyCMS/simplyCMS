@@ -1,4 +1,10 @@
-import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
+import { resolvePrice } from 'simplycms/domain/pricing';
+import type {
+  ProductListModification,
+  ProductListRow,
+} from 'simplycms/storefront/loaders';
+
+export type { ProductListRow };
 
 /**
  * Контекст цін для серверного резолву. SSR рендериться анонімно, тож ціни
@@ -20,44 +26,24 @@ export interface ProductListItem {
   sectionSlug: string | null;
 }
 
-/** Модифікація товару в рядку select-у списку. */
-interface ProductListRowModification {
-  id: string;
-  is_default?: boolean | null;
-  sort_order?: number | null;
-}
-
-/** Рядок select-у списку товарів (форма PRODUCT_LIST_SELECT). */
-export interface ProductListRow {
-  id: string;
-  slug: string;
-  name: string;
-  images?: unknown;
-  has_modifications?: boolean | null;
-  sections?: { slug?: string | null } | null;
-  product_modifications?: ProductListRowModification[] | null;
-  product_prices?: PriceEntry[] | null;
+/** Список товарів для SSR разом із контекстом цін — одним раундтрипом. */
+export interface ProductListPayload {
+  items: ProductListItem[];
+  priceContext: PriceContext;
 }
 
 /** Модифікація за замовчуванням: явний прапорець, інакше — найменший sort_order. */
 function pickDefaultModification(
-  mods: ProductListRowModification[],
-): ProductListRowModification | null {
+  mods: ProductListModification[],
+): ProductListModification | null {
   if (mods.length === 0) return null;
   const flagged = mods.find((m) => m.is_default);
   if (flagged) return flagged;
-  return [...mods].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
-}
-
-/** Перше зображення товару з jsonb-масиву `images`. */
-function pickFirstImage(images: unknown): string | null {
-  if (!Array.isArray(images)) return null;
-  const first: unknown = images[0];
-  return typeof first === 'string' && first.length > 0 ? first : null;
+  return [...mods].sort((a, b) => a.sort_order - b.sort_order)[0];
 }
 
 /**
- * Мапить рядок select-у в DTO для SSR-списку. Ціну обирає доменна
+ * Мапить рядок вибірки в DTO для SSR-списку. Ціну обирає доменна
  * `resolvePrice` — та сама семантика, що на клієнті (Catalog.tsx), без
  * дублювання логіки: спершу ціни default-модифікації, інакше ціна продукту.
  */
@@ -67,11 +53,11 @@ export function toProductListItem(
 ): ProductListItem {
   const hasModifications = row.has_modifications ?? true;
   const defaultMod = hasModifications
-    ? pickDefaultModification(row.product_modifications ?? [])
+    ? pickDefaultModification(row.product_modifications)
     : null;
 
   const { price } = resolvePrice(
-    row.product_prices ?? [],
+    row.product_prices,
     ctx.defaultPriceTypeId,
     ctx.defaultPriceTypeId,
     defaultMod?.id ?? null,
@@ -81,8 +67,21 @@ export function toProductListItem(
     id: row.id,
     slug: row.slug,
     name: row.name,
-    imageUrl: pickFirstImage(row.images),
+    imageUrl: row.images[0] ?? null,
     price,
     sectionSlug: row.sections?.slug ?? null,
+  };
+}
+
+/** Мапить рядки списку в DTO за СПІЛЬНИМ контекстом цін (він один на сторінку). */
+export function toProductListPayload(
+  rows: ProductListRow[],
+  defaultPriceTypeId: string | null,
+): ProductListPayload {
+  const priceContext: PriceContext = { defaultPriceTypeId };
+
+  return {
+    items: rows.map((row) => toProductListItem(row, priceContext)),
+    priceContext,
   };
 }

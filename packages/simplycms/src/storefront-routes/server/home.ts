@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
-import { loadHomePageData } from 'simplycms/storefront/loaders';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
+import {
+  loadHomePageData,
+  withStorefrontDb,
+} from 'simplycms/storefront/loaders';
 
-/** Отримати дані головної сторінки */
+/** Отримати дані головної сторінки — однією транзакцією вітрини. */
 export const getHomePageData = createServerFn({ method: 'GET' }).handler(
-  async () => loadHomePageData(createServerSupabase()),
+  async () => withStorefrontDb((db) => loadHomePageData(db)),
 );

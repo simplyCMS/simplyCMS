@@ -4,23 +4,23 @@ import {
   loadProperties,
   loadPropertyBySlug,
   loadPropertyOption,
+  withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
 
-/** Отримати всі характеристики з has_page=true */
+/** Отримати всі характеристики з публічною сторінкою. */
 export const getProperties = createServerFn({ method: 'GET' }).handler(
-  async () => loadProperties(createServerSupabase()),
+  async () => withStorefrontDb((db) => loadProperties(db)),
 );
 
-/** Отримати характеристику за slug з опціями */
+/** Отримати характеристику за slug разом з опціями. */
 export const getPropertyBySlug = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { slug } = input as { slug: string };
-    return loadPropertyBySlug(createServerSupabase(), slug);
+    return withStorefrontDb((db) => loadPropertyBySlug(db, slug));
   });
 
-/** Отримати опцію характеристики з повʼязаними товарами */
+/** Отримати опцію характеристики з повʼязаними товарами. */
 export const getPropertyOption = createServerFn({ method: 'GET' })
   .inputValidator(
     z.object({
@@ -33,5 +33,7 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
       propertySlug: string;
       optionSlug: string;
     };
-    return loadPropertyOption(createServerSupabase(), propertySlug, optionSlug);
+    return withStorefrontDb((db) =>
+      loadPropertyOption(db, propertySlug, optionSlug),
+    );
   });

@@ -41,12 +41,9 @@ export const Route = createFileRoute(
     const canonicalUrl = `${BASE_URL}/catalog/${sectionSlug}/${product.slug}`;
 
     /** Базова ціна для JSON-LD (перша ціна без модифікації) */
-    const prices = Array.isArray(product.product_prices)
-      ? product.product_prices
-      : [];
-    const basePrice = prices.find(
-      (p: Record<string, unknown>) => !p.modification_id,
-    )?.price as number | undefined;
+    const basePrice = product.product_prices.find(
+      (price) => price.modification_id === null,
+    )?.price;
 
     const jsonLd: Record<string, unknown> = {
       '@context': 'https://schema.org',

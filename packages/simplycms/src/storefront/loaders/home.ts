@@ -1,148 +1,77 @@
-import type { Banner, BannerButton } from 'simplycms/contracts';
-import type { StorefrontClient } from '../client';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { banners, products, sections } from 'simplycms/schema';
+import type { Banner } from 'simplycms/contracts';
+import type { ActorDb } from './db';
+import { bannerColumns, toBanner } from './entities/banner';
+import {
+  homeProductColumns,
+  toHomeProduct,
+  type HomeProductRow,
+} from './entities/home-product';
+import type { SectionRef } from './entities/section';
+import { loadSectionProducts } from './home-sections';
+import { loadRootSections } from './sections';
 
-/** Перетворює рядок banners на доменний Banner (раніше — core/lib/bannerUtils). */
-function mapBannerRow(row: Record<string, unknown>): Banner {
-  return {
-    ...(row as unknown as Banner),
-    buttons: parseBannerButtons(row.buttons),
-    schedule_days: Array.isArray(row.schedule_days)
-      ? (row.schedule_days as number[])
-      : null,
-  };
-}
+/** Скільки товарів у добірках «популярне» й «новинки». */
+const FEATURED_LIMIT = 12;
 
-function parseBannerButtons(raw: unknown): BannerButton[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(isBannerButton);
-}
-
-function isBannerButton(item: unknown): item is BannerButton {
-  if (typeof item !== 'object' || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    typeof obj.text === 'string' &&
-    typeof obj.url === 'string' &&
-    typeof obj.target === 'string' &&
-    typeof obj.variant === 'string'
-  );
-}
-
-/** Скорочений select для карточки товару на головній */
-const HOME_PRODUCT_SELECT = `
-  id, name, slug, images, short_description,
-  stock_status, section_id,
-  sections!products_section_id_fkey(slug)
-` as const;
-
-/** Select картки товару секційної добірки — джойн зайвий, slug секції відомий */
-const SECTION_PRODUCT_SELECT =
-  'id, name, slug, images, short_description, stock_status' as const;
-
-/**
- * Кореневий розділ каталогу у виборці фази 1.
- *
- * Експортується, бо тече у публічний тип `loadHomePageData`: без цього
- * споживач (`simplycms/storefront-routes`) не може іменувати тип під час
- * емісії власних `.d.ts` (TS4023).
- */
-export interface RootSection {
-  id: string;
-  name: string;
-  slug: string;
+export interface HomePageData {
+  banners: Banner[];
+  featuredProducts: HomeProductRow[];
+  newProducts: HomeProductRow[];
+  sections: SectionRef[];
+  /** Товари кожного кореневого розділу: `sectionId → товари`. */
+  sectionProducts: Record<string, HomeProductRow[]>;
 }
 
 /**
- * Отримати дані головної сторінки.
+ * Дані головної сторінки — усе однією транзакцією.
  *
- * Двофазний алгоритм: фаза 1 — банери/добірки/кореневі секції одним
- * `Promise.all`; фаза 2 — по одному запиту `limit(8)` на кожну кореневу
- * секцію. Per-section limit одним запитом PostgREST не вміє, тому N запитів
- * свідомо виконуються на сервері одним SSR-батчем — це прибирає N+1 з
- * клієнта (RPC — пізніша оптимізація).
+ * Фаз усе ще дві, але друга більше не N+1: товари всіх розділів приходять
+ * одним віконним запитом (`./home-sections`).
+ *
+ * 🔴 Запити йдуть послідовно, і `Promise.all` тут нічого б не прискорив:
+ * транзакція живе на одному зʼєднанні, тож паралелізм уявний (див. `./products`).
  */
-export async function loadHomePageData(client: StorefrontClient) {
-  const [banners, featured, newProducts, sections] = await Promise.all([
-    client.from('banners').select('*').eq('is_active', true),
-    client
-      .from('products')
-      .select(HOME_PRODUCT_SELECT)
-      .eq('is_active', true)
-      .eq('is_featured', true)
-      .order('created_at', { ascending: false })
-      .limit(12),
-    client
-      .from('products')
-      .select(HOME_PRODUCT_SELECT)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(12),
-    client
-      .from('sections')
-      .select('id, name, slug')
-      .eq('is_active', true)
-      .is('parent_id', null)
-      .order('sort_order'),
-  ]);
-
-  if (banners.error) throw banners.error;
-  if (featured.error) throw featured.error;
-  if (newProducts.error) throw newProducts.error;
-  if (sections.error) throw sections.error;
-
-  const rootSections = (sections.data ?? []) as RootSection[];
+export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
+  // Предикат видимості — див. коментар у `./sections`.
+  const bannerRows = await db
+    .select(bannerColumns)
+    .from(banners)
+    .where(eq(banners.isActive, true))
+    .orderBy(asc(banners.sortOrder));
+  const featured = await loadHomeProducts(db, true);
+  const newProducts = await loadHomeProducts(db, false);
+  const rootSections = await loadRootSections(db);
 
   return {
-    banners: (banners.data ?? []).map(mapBannerRow),
-    featuredProducts: (featured.data ?? []).map(mapHomeProduct),
-    newProducts: (newProducts.data ?? []).map(mapHomeProduct),
+    banners: bannerRows.map(toBanner),
+    featuredProducts: featured,
+    newProducts,
     sections: rootSections,
-    sectionProducts: await loadSectionProducts(client, rootSections),
+    sectionProducts: await loadSectionProducts(db, rootSections),
   };
 }
 
-/** Фаза 2: товари кожної кореневої секції → мапа `sectionId → товари` */
-async function loadSectionProducts(
-  client: StorefrontClient,
-  sections: RootSection[],
-): Promise<Record<string, ReturnType<typeof mapHomeProduct>[]>> {
-  const responses = await Promise.all(
-    sections.map((section) =>
-      client
-        .from('products')
-        .select(SECTION_PRODUCT_SELECT)
-        .eq('is_active', true)
-        .eq('section_id', section.id)
-        .order('created_at', { ascending: false })
-        .limit(8),
-    ),
-  );
+/**
+ * Добірка головної: `featuredOnly` розрізняє «популярне» й «новинки» —
+ * решта запиту в них однакова, тож дублювати його немає сенсу.
+ */
+async function loadHomeProducts(
+  db: ActorDb,
+  featuredOnly: boolean,
+): Promise<HomeProductRow[]> {
+  const visible = featuredOnly
+    ? and(eq(products.isActive, true), eq(products.isFeatured, true))
+    : eq(products.isActive, true);
 
-  const bySection: Record<string, ReturnType<typeof mapHomeProduct>[]> = {};
-  responses.forEach((response, index) => {
-    if (response.error) throw response.error;
-    const section = sections[index];
-    const rows = (response.data ?? []) as Record<string, unknown>[];
-    bySection[section.id] = rows.map((row) => ({
-      ...mapHomeProduct(row),
-      section: { slug: section.slug },
-    }));
-  });
+  const rows = await db
+    .select({ ...homeProductColumns, section_slug: sections.slug })
+    .from(products)
+    .leftJoin(sections, eq(products.sectionId, sections.id))
+    .where(visible)
+    .orderBy(desc(products.createdAt))
+    .limit(FEATURED_LIMIT);
 
-  return bySection;
-}
-
-/** Трансформація продукту для картки на головній */
-function mapHomeProduct(p: Record<string, unknown>) {
-  return {
-    id: p.id as string,
-    name: p.name as string,
-    slug: p.slug as string,
-    images: (p.images as string[]) || [],
-    short_description: p.short_description as string | null,
-    stock_status: p.stock_status as string,
-    section: p.sections
-      ? { slug: (p.sections as { slug: string }).slug }
-      : null,
-  };
+  return rows.map((row) => toHomeProduct(row, row.section_slug));
 }
