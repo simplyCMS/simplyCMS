@@ -15,26 +15,17 @@ interface ThemeRow {
 
 /**
  * Мінімальний мок Supabase (патерн `plugin-system/__tests__/bootstrap.test.ts`):
- * thenable-білдер із `select`/`insert` + лічильник викликів `getSession`, щоб
- * довести порядок кроків (session-гард НЕ виконується без missing).
+ * thenable-білдер із `select`/`insert` + лічильник викликів `from`, щоб
+ * довести порядок кроків.
  */
-function createMockSupabase(initial: ThemeRow[], signedIn = true) {
+function createMockSupabase(initial: ThemeRow[]) {
   const rows: ThemeRow[] = [...initial];
   const inserted: ThemeRow[] = [];
   // `from` рахується окремо: порожній реєстр мусить не торкатися БД ВЗАГАЛІ,
   // а порожній `inserted` цього не доводить (SELECT теж іде через from).
-  const calls = { getSession: 0, from: 0 };
+  const calls = { from: 0 };
 
   const client = {
-    auth: {
-      getSession: async () => {
-        calls.getSession += 1;
-        return {
-          data: { session: signedIn ? { user: { id: 'u1' } } : null },
-          error: null,
-        };
-      },
-    },
     from(table: string) {
       calls.from += 1;
       if (table !== 'themes') throw new Error(`unexpected table ${table}`);
@@ -97,27 +88,27 @@ describe('bootstrapThemes', () => {
     vi.restoreAllMocks();
   });
 
-  it('усі теми вже в БД → ні load, ні getSession, ні insert', async () => {
+  it('усі теми вже в БД → ні load, ні insert', async () => {
     register('default');
     const load = vi.spyOn(ThemeRegistry, 'load');
     const { client, inserted, calls } = createMockSupabase([
       { name: 'default' },
     ]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     // Типовий випадок мусить коштувати рівно один SELECT.
     expect(load).not.toHaveBeenCalled();
-    expect(calls.getSession).toBe(0);
+    expect(calls.from).toBe(1);
     expect(inserted).toHaveLength(0);
   });
 
-  it('без сесії модулі навіть не вантажаться (RLS: INSERT лише адміну)', async () => {
+  it('без права запису модулі навіть не вантажаться (RLS: INSERT лише адміну)', async () => {
     register('solarstore');
     const load = vi.spyOn(ThemeRegistry, 'load');
-    const { client, inserted } = createMockSupabase([], false);
+    const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, false);
 
     expect(load).not.toHaveBeenCalled();
     expect(inserted).toHaveLength(0);
@@ -128,7 +119,7 @@ describe('bootstrapThemes', () => {
     register('solarstore');
     const { client, inserted } = createMockSupabase([{ name: 'default' }]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     expect(inserted).toEqual([
       {
@@ -147,7 +138,7 @@ describe('bootstrapThemes', () => {
     register('ok');
     const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('broken'),
@@ -160,7 +151,7 @@ describe('bootstrapThemes', () => {
     register('aurora', async () => ({ default: makeModule('renamed') }));
     const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('aurora'),
@@ -175,7 +166,7 @@ describe('bootstrapThemes', () => {
     register('aurora', async () => ({ default: makeModule('aurora', long) }));
     const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     expect(inserted[0].version).toBe(long.slice(0, 20));
     expect(console.warn).toHaveBeenCalledWith(
@@ -186,12 +177,11 @@ describe('bootstrapThemes', () => {
   it('порожній реєстр → жодного запиту до БД', async () => {
     const { client, inserted, calls } = createMockSupabase([]);
 
-    await bootstrapThemes(client);
+    await bootstrapThemes(client, true);
 
     // Саме `from` доводить відсутність запиту: порожній inserted сумісний і з
     // виконаним SELECT-ом.
     expect(calls.from).toBe(0);
-    expect(calls.getSession).toBe(0);
     expect(inserted).toHaveLength(0);
   });
 });

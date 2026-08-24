@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useFormatPrice } from 'simplycms/react-query';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
@@ -52,6 +53,9 @@ import { uk } from 'date-fns/locale';
 export default function UserEdit() {
   const t = useT();
   const supabase = useSupabaseClient();
+  // Автор зміни ролі — з контексту сесії: GoTrue, у якого це раніше питали,
+  // більше немає (К1′б).
+  const { user: currentUser } = useAuth();
   const formatPrice = useFormatPrice();
   const { userId } = useParams({ strict: false }) as { userId: string };
   const queryClient = useQueryClient();
@@ -208,7 +212,7 @@ export default function UserEdit() {
           from_category_id: profile?.category_id,
           to_category_id: categoryId,
           reason: t('admin.users.manualChange'),
-          changed_by: (await supabase.auth.getUser()).data.user?.id,
+          changed_by: currentUser?.id ?? null,
         });
       if (historyError) console.error('History error:', historyError);
     },

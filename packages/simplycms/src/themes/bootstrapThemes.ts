@@ -59,21 +59,25 @@ function toInsert(name: string, theme: ThemeModule): ThemeInsert {
  * коштував рівно один SELECT:
  *   1) SELECT імен (RLS дозволяє читати всім) → `missing`;
  *   2) порожньо → вихід ДО будь-якої іншої роботи;
- *   3) session-гард: писати може лише адмін (політика `Admins can manage
- *      themes`), тож без сесії навіть не пробуємо — анонім інакше діставав би
+ *   3) гард `canWrite`: писати може лише адмін (політика `Admins can manage
+ *      themes`), тож без ролі навіть не пробуємо — анонім інакше діставав би
  *      гарантований RLS-фейл у консолі на кожному завантаженні сторінки;
  *   4) `ThemeRegistry.load` лише для missing — чанки тем тягнуться тільки у
  *      рідкісному вікні «тему додано, адмін ще не заходив»;
  *   5) один batch INSERT.
  *
- * 🔴 Чесна межа (симетрична плагінному `syncPluginRows`): залогінений НЕ-адмін
- * у тому самому вікні пройде session-гард, потягне чанки і отримає RLS-відмову
- * INSERT → `console.error`. Приймається свідомо; деталі — docs/architecture/themes.md.
+ * 🔴 `canWrite` приходить ЗЗОВНІ (`useAuth().isAdmin` у корені застосунку), а
+ * не питається тут: після знесення GoTrue (К1′б) браузерний Supabase-клієнт
+ * сесії не має взагалі, тож питати її в нього означало б завжди діставати
+ * `null` і ніколи нічого не дописувати.
  *
  * Помилки не кидаються назовні: bootstrap викликається з ефекту в корені
  * застосунку, і падіння тут не має валити сторінку.
  */
-export async function bootstrapThemes(supabase: SupabaseClient): Promise<void> {
+export async function bootstrapThemes(
+  supabase: SupabaseClient,
+  canWrite: boolean,
+): Promise<void> {
   const registered = ThemeRegistry.getRegisteredThemes();
   if (registered.length === 0) return;
 
@@ -89,8 +93,7 @@ export async function bootstrapThemes(supabase: SupabaseClient): Promise<void> {
   const missing = registered.filter((name) => !known.has(name));
   if (missing.length === 0) return;
 
-  const { data: auth } = await supabase.auth.getSession();
-  if (!auth.session) return;
+  if (!canWrite) return;
 
   const rows = await loadRows(missing);
   if (rows.length === 0) return;

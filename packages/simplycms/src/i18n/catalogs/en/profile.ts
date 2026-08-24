@@ -47,6 +47,8 @@ export const messages: Catalog = {
 
   'profile.password.title': 'Change password',
   'profile.password.subtitle': 'Set a new password for your account',
+  'profile.password.current': 'Current password',
+  'profile.password.wrongCurrent': 'The current password is wrong',
   'profile.password.new': 'New password',
   'profile.password.confirm': 'Confirm password',
   'profile.password.confirmPlaceholder': 'Repeat the new password',

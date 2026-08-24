@@ -4,7 +4,9 @@ import { accounts, sessions, users, verifications } from 'simplycms/schema';
 import { createAuthDb } from './drizzle-proxy';
 import { resolveAuthBaseUrl, resolveAuthSecret } from './env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
+import { renderResetPasswordEmail } from './invite-email';
 import { provisionUserInDb } from './provision';
+import { stubSendAuthEmail, type SendAuthEmail } from './send-email';
 
 /**
  * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
@@ -33,12 +35,22 @@ export interface AuthDeps {
   readonly provisionUser?: ProvisionUser;
   readonly secret?: string;
   readonly baseURL?: string;
+  /**
+   * Канал доставки листів. За замовчуванням — заглушка з логом
+   * (`./send-email`): SMTP лишається справою магазину, ядро лише КЛИЧЕ канал.
+   */
+  readonly sendEmail?: SendAuthEmail;
+  /** Назва магазину в темі листа. */
+  readonly storeName?: string;
 }
 
 /**
  * Створює інстанс. Env читається ТУТ, у рантаймі — не на модуль-рівні.
  */
 export function createAuth(deps: AuthDeps = {}) {
+  const sendEmail = deps.sendEmail ?? stubSendAuthEmail;
+  const storeName = deps.storeName ?? 'SimplyCMS';
+
   return betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
     baseURL: deps.baseURL ?? resolveAuthBaseUrl(process.env),
@@ -52,7 +64,18 @@ export function createAuth(deps: AuthDeps = {}) {
         // прапорця адаптер падає на першому ж запиті.
         usePlural: true,
       }),
-    emailAndPassword: { enabled: true },
+    emailAndPassword: {
+      enabled: true,
+      // 🔴 Колбек прибіндований ЗАВЖДИ, навіть коли транспорт — заглушка.
+      // Інакше `requestPasswordReset` мовчки повертав би 200 без жодного
+      // сліду, і «лист не прийшов» неможливо було б відрізнити від
+      // «магазин не налаштував пошту».
+      sendResetPassword: async ({ user, url }) => {
+        await sendEmail(
+          renderResetPasswordEmail({ to: user.email, url, storeName }),
+        );
+      },
+    },
     advanced: {
       database: {
         // 🔴 `'uuid'` — єдине значення, коректне для ОБОХ адаптерів. Драйвер

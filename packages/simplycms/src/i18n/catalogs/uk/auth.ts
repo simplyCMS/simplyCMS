@@ -51,6 +51,9 @@ export const messages = {
   'auth.lastNamePlaceholder': 'Петренко',
   'auth.google': 'Продовжити з Google',
   'auth.googleFailed': 'Помилка Google авторизації',
+  'auth.forgot.link': 'Забули пароль?',
+  'auth.forgot.needEmail': 'Спершу введіть email — на нього прийде посилання.',
+  'auth.forgot.sent': 'Якщо такий email є в системі, ми надіслали посилання.',
   'auth.backHome': 'Повернутися на головну',
   'auth.genericError': 'Щось пішло не так. Спробуйте ще раз.',
 } as const;

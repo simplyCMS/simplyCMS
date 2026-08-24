@@ -42,13 +42,17 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
  *
  * Спершу SELECT, і лише потім INSERT відсутніх: RLS дозволяє читати всім,
  * а писати — лише адміну (політика `Admins can manage plugins`). Тому запис
- * навіть не пробуємо без сесії: анонімний відвідувач інакше отримував би
+ * навіть не пробуємо без ролі: анонімний відвідувач інакше отримував би
  * гарантований RLS-фейл у консолі на кожному завантаженні сторінки. Рядок
  * зʼявиться, щойно на сайт зайде адмін — тобто рівно тоді, коли він потрібен.
+ *
+ * 🔴 `canWrite` приходить ЗЗОВНІ (`useAuth().isAdmin`), а не питається в
+ * Supabase-клієнта: після знесення GoTrue (К1′б) сесії в нього немає взагалі.
  */
 async function syncPluginRows(
   modules: Map<string, PluginModule>,
   supabase: SupabaseClient,
+  canWrite: boolean,
 ): Promise<void> {
   if (modules.size === 0) return;
 
@@ -67,8 +71,7 @@ async function syncPluginRows(
 
   if (missing.length === 0) return;
 
-  const { data: auth } = await supabase.auth.getSession();
-  if (!auth.session) return;
+  if (!canWrite) return;
 
   const { error: insertError } = await supabase.from('plugins').insert(missing);
   if (insertError) {
@@ -89,6 +92,7 @@ async function syncPluginRows(
 export async function bootstrapPlugins(
   regs: PluginRegistration[],
   supabase: SupabaseClient,
+  canWrite: boolean,
 ): Promise<void> {
   const modules = new Map<string, PluginModule>();
 
@@ -117,6 +121,6 @@ export async function bootstrapPlugins(
     }
   }
 
-  await syncPluginRows(modules, supabase);
+  await syncPluginRows(modules, supabase, canWrite);
   await loadPlugins(supabase);
 }

@@ -1,10 +1,22 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
-import { getSupabaseBrowserClient } from 'simplycms/supabase/browser-client';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  authClient,
+  type AuthSession,
+  type AuthUser,
+} from '../lib/auth-client';
+import { fetchIsAdmin } from '../lib/auth-session';
 
+/**
+ * Контекст автентифікації вітрини (К1′б: Better Auth замість GoTrue).
+ *
+ * Форма контексту навмисно збережена з попереднього контуру — компоненти
+ * читають `user.id`/`user.email`, і переписувати їх заміна провайдера не
+ * зобовʼязана. Змінилися лише ТИПИ: `user`/`session` тепер із Better Auth.
+ */
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  session: AuthSession | null;
   isLoading: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
@@ -19,78 +31,39 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Джерело правди про сесію — атом клієнта Better Auth. Власного стану тут
+  // немає свідомо: другий стан довелося б синхронізувати з ним вручну, і
+  // саме на цій синхронізації жили гонки старого `onAuthStateChange`.
+  const { data, isPending } = authClient.useSession();
+  const user = data?.user ?? null;
+  const session = data?.session ?? null;
 
-  useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
+  // Роль — окремий серверний запит (див. докблок `fetchIsAdmin`). Ключ
+  // містить id користувача, тож вихід і вхід іншим акаунтом не лишають
+  // чужого `isAdmin` у кеші.
+  const { data: isAdmin } = useQuery({
+    queryKey: ['auth', 'is-admin', user?.id ?? null],
+    queryFn: () => fetchIsAdmin(),
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
 
-    // Set up auth state listener BEFORE getting session
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        // Check if user is admin - use queueMicrotask to avoid race conditions
-        queueMicrotask(async () => {
-          const { data, error } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .eq('role', 'admin')
-            .maybeSingle();
-
-          setIsAdmin(!error && !!data);
-        });
-      } else {
-        setIsAdmin(false);
-      }
-
-      setIsLoading(false);
-    });
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .maybeSingle()
-          .then(({ data, error }) => {
-            setIsAdmin(!error && !!data);
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+  const signOut = useCallback(async () => {
+    await authClient.signOut();
   }, []);
 
-  const handleSignOut = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{ user, session, isLoading, isAdmin, signOut: handleSignOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      session,
+      isLoading: isPending,
+      isAdmin: isAdmin ?? false,
+      signOut,
+    }),
+    [user, session, isPending, isAdmin, signOut],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

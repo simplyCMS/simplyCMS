@@ -13,6 +13,7 @@ import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import {
   I18nProvider,
   createTranslator,
@@ -120,10 +121,14 @@ function RootComponent() {
  */
 function PluginBootstrap() {
   const supabase = useSupabaseClient();
+  // Право на запис рядків — з контексту сесії, а не з Supabase-клієнта:
+  // після К1′б сесія живе в Better Auth, і питати її в PostgREST-клієнта
+  // означало б завжди діставати `null`.
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
-    void bootstrapPlugins(config.plugins ?? [], supabase);
-  }, [supabase]);
+    void bootstrapPlugins(config.plugins ?? [], supabase, isAdmin);
+  }, [supabase, isAdmin]);
 
   return null;
 }
@@ -139,10 +144,11 @@ function PluginBootstrap() {
  */
 function ThemeBootstrap() {
   const supabase = useSupabaseClient();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
-    void bootstrapThemes(supabase);
-  }, [supabase]);
+    void bootstrapThemes(supabase, isAdmin);
+  }, [supabase, isAdmin]);
 
   return null;
 }

@@ -1,10 +1,10 @@
 /**
  * `simplycms/auth` — серверний auth-контур v2 (B3′, Task 7, В2-К1а).
  *
- * 🔴 Контур побудований ПОРУЧ із чинним GoTrue-шляхом і ще нікуди не
- * підключений: `src/start.ts`, `/auth/confirm` і `simplycms/supabase`
- * лишаються чинними до К1′б. Це навмисна адитивність — точка неповернення
- * планується окремо.
+ * 🔴 К1′б: контур ПІДКЛЮЧЕНО. GoTrue знесено — `src/start.ts` питає ролі
+ * звідси, роут `/api/auth/$` віддає запити хендлеру Better Auth, а клієнт
+ * вітрини живе на `better-auth/react`. Модулів `/auth/confirm` і
+ * `/auth/callback` більше немає.
  *
  * 🔴 `./drizzle-proxy` і `./provision` тут НЕ реекспортуються: перший —
  * деталь того, як адаптер BA дістає транзакцію, другий уже прибінджений
@@ -41,12 +41,19 @@ export type {
 
 export { ownerInviteStore, hasAnyAdmin } from './invite-store';
 
-export { renderInviteEmail } from './invite-email';
+export { renderInviteEmail, renderResetPasswordEmail } from './invite-email';
 export type {
   InviteEmail,
   InviteEmailInput,
+  ResetPasswordEmailInput,
   SendInviteEmail,
 } from './invite-email';
+
+export { stubSendAuthEmail } from './send-email';
+export type { SendAuthEmail } from './send-email';
+
+export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
+export type { SessionSubject } from './session';
 
 export {
   AUTHZ_MATRIX,

@@ -17,7 +17,6 @@ import {
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useToast } from 'simplycms/core/hooks/use-toast';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { ThemeKey } from '../messages';
@@ -55,23 +54,25 @@ export function HeaderActions({
 }) {
   const t = useT();
   const tt = useThemeT<ThemeKey>();
-  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
   const { totalItems, setIsOpen } = useCart();
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    toast(
-      error
-        ? {
-            variant: 'destructive',
-            title: t('common.error'),
-            description: tt('theme.header.signOutError'),
-          }
-        : { title: tt('theme.header.signedOut') },
-    );
+    // 🔴 Вихід іде через контекст, а не через власний виклик провайдера: тема
+    // не має знати, ЧИМ автентифікується магазин. Better Auth кидає на
+    // помилку, тож гілка невдачі — catch, а не поле `error`.
+    try {
+      await signOut();
+      toast({ title: tt('theme.header.signedOut') });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: t('common.error'),
+        description: tt('theme.header.signOutError'),
+      });
+    }
   };
 
   return (

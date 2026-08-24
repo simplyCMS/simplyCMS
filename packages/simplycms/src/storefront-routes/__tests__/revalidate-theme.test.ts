@@ -16,7 +16,7 @@ import type { Actor } from 'simplycms/db';
  * (публічне читання лише під `app_user`, guard лише по своїх рядках).
  */
 
-/** Керований стан: хто «залогінений» і чи має роль admin. */
+/** Керований стан: хто «залогінений» (сесія Better Auth) і чи має роль admin. */
 let currentUser: { id: string } | null = null;
 let hasAdminRole = false;
 /** Скільки разів читання активної теми реально ходило в БД. */
@@ -94,12 +94,27 @@ vi.mock('simplycms/db', () => ({
     fn(makeDb(actor)),
 }));
 
-vi.mock('simplycms/supabase/server-client', () => ({
-  createServerSupabase: () => ({
-    auth: {
-      getUser: async () => ({ data: { user: currentUser }, error: null }),
+// Ідентичність підміняється на рівні ІНСТАНСУ Better Auth, а не всього
+// `simplycms/auth`: `readUserRoles` мусить лишитись справжнім — саме він
+// ходить у `withActor`, і саме його актора й предикат тест міряє нижче.
+// 🔴 Шлях ВІДНОСНИЙ, а не `simplycms/auth/instance`: субшляху `auth/instance`
+// в `exports` пакета немає (і не буде — межа довіри), а `audit-exports`
+// сканує саме bare-специфікатори й червонів би на неіснуючому ключі.
+vi.mock('../../auth/instance', () => ({
+  getAuth: () => ({
+    api: {
+      getSession: async () =>
+        currentUser
+          ? { user: { id: currentUser.id, email: 'admin@example.test' } }
+          : null,
     },
   }),
+}));
+
+// Запит із ALS у тесті немає — віддаємо порожній: cookie все одно читає мок
+// сесії вище.
+vi.mock('@tanstack/react-start/server', () => ({
+  getRequest: () => new Request('http://shop.test/api/revalidate-theme'),
 }));
 
 import { revalidateTheme } from '../server/revalidate-theme';
@@ -164,9 +179,12 @@ describe('POST /api/revalidate-theme', () => {
 
     const guard = queries.filter((q) => q.table === 'user_roles');
     expect(guard).toHaveLength(1);
-    expect(guard[0].params).toEqual([ADMIN_USER, 'admin']);
+    // 🔴 Предикат — рівно `user_id`, без `role = 'admin'`: контур читає ВСІ
+    // ролі субʼєкта (їх максимум дві), а рішення ухвалює TS-матриця authz.
+    // Фільтр по ролі в SQL повернув би відповідь на питання «чи я адмін» ще
+    // до того, як його задали, і зробив би решту ролей невидимими.
+    expect(guard[0].params).toEqual([ADMIN_USER]);
     expect(guard[0].sql).toContain('"user_id"');
-    expect(guard[0].sql).toContain('"role"');
   });
 
   it('читання вітрини йде під app_user БЕЗ userId, а guard — зі своїм userId', async () => {

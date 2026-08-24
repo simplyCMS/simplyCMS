@@ -53,3 +53,32 @@ export function renderInviteEmail(input: InviteEmailInput): InviteEmail {
 
   return { to: input.to, subject, text, html };
 }
+
+export interface ResetPasswordEmailInput {
+  readonly to: string;
+  readonly url: string;
+  readonly storeName: string;
+}
+
+/**
+ * Лист скидання пароля (К1′б).
+ *
+ * Живе поруч із запрошенням навмисно: обидва — листи auth-контуру з ОДНИМ
+ * одноразовим посиланням, і спільне екранування тут дешевше за другий модуль
+ * із власною копією тих самих чотирьох `replace`.
+ */
+export function renderResetPasswordEmail(
+  input: ResetPasswordEmailInput,
+): InviteEmail {
+  const subject = `Скидання пароля — ${input.storeName}`;
+  const text =
+    `Ви (або хтось інший) попросили скинути пароль у магазині ` +
+    `«${input.storeName}».\n\nЩоб задати новий пароль, відкрийте ` +
+    `посилання:\n${input.url}\n\nЯкщо ви цього не робили — просто ` +
+    `проігноруйте лист, пароль лишиться попереднім.`;
+  const html =
+    `<p>Запит на скидання пароля в магазині «${escapeHtml(input.storeName)}».</p>` +
+    `<p><a href="${escapeHtml(input.url)}">Задати новий пароль</a></p>`;
+
+  return { to: input.to, subject, text, html };
+}

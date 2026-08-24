@@ -41,6 +41,9 @@ export const messages: Catalog = {
   'auth.lastNamePlaceholder': 'Smith',
   'auth.google': 'Continue with Google',
   'auth.googleFailed': 'Google sign-in failed',
+  'auth.forgot.link': 'Forgot your password?',
+  'auth.forgot.needEmail': 'Enter your email first — the link is sent there.',
+  'auth.forgot.sent': 'If that email is in our system, we have sent a link.',
   'auth.backHome': 'Back to home page',
   'auth.genericError': 'Something went wrong. Please try again.',
 };

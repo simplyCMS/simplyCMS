@@ -17,17 +17,11 @@ interface PluginRow {
  * Мінімальний мок Supabase (патерн `engine-provider.test.tsx`): thenable-білдер
  * із `select/eq/order/insert`. Повертає стан таблиці, щоб перевіряти upsert.
  */
-function createMockSupabase(initial: PluginRow[], signedIn = true) {
+function createMockSupabase(initial: PluginRow[]) {
   const rows: PluginRow[] = [...initial];
   const inserted: PluginRow[] = [];
 
   const client = {
-    auth: {
-      getSession: async () => ({
-        data: { session: signedIn ? { user: { id: 'u1' } } : null },
-        error: null,
-      }),
-    },
     from(table: string) {
       if (table !== 'plugins') throw new Error(`unexpected table ${table}`);
       const filters: [string, unknown][] = [];
@@ -105,7 +99,7 @@ describe('bootstrapPlugins', () => {
       },
     ]);
 
-    await bootstrapPlugins([makeRegistration('active-plugin')], client);
+    await bootstrapPlugins([makeRegistration('active-plugin')], client, true);
 
     expect(hookRegistry.getPluginsForHook('admin.dashboard.widgets')).toContain(
       'active-plugin',
@@ -122,7 +116,7 @@ describe('bootstrapPlugins', () => {
       },
     ]);
 
-    await expect(bootstrapPlugins([], client)).resolves.toBeUndefined();
+    await expect(bootstrapPlugins([], client, true)).resolves.toBeUndefined();
 
     expect(hookRegistry.getRegisteredHooks()).toHaveLength(0);
     expect(console.error).toHaveBeenCalledWith(
@@ -133,7 +127,7 @@ describe('bootstrapPlugins', () => {
   it('зареєстрований, але неактивний → хуків нема, рядок upsert-нуто', async () => {
     const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapPlugins([makeRegistration('quiet-plugin')], client);
+    await bootstrapPlugins([makeRegistration('quiet-plugin')], client, true);
 
     expect(hookRegistry.getRegisteredHooks()).toHaveLength(0);
     expect(inserted).toEqual([
@@ -156,7 +150,11 @@ describe('bootstrapPlugins', () => {
       module: async () => ({ default: {} as never }),
     };
 
-    await bootstrapPlugins([broken, makeRegistration('ok-plugin')], client);
+    await bootstrapPlugins(
+      [broken, makeRegistration('ok-plugin')],
+      client,
+      true,
+    );
 
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('broken-plugin'),
@@ -166,10 +164,10 @@ describe('bootstrapPlugins', () => {
     expect(inserted.map((row) => row.name)).toEqual(['ok-plugin']);
   });
 
-  it('без сесії запис не пробується (RLS дозволяє INSERT лише адміну)', async () => {
-    const { client, inserted } = createMockSupabase([], false);
+  it('без права запису INSERT не пробується (RLS дозволяє його лише адміну)', async () => {
+    const { client, inserted } = createMockSupabase([]);
 
-    await bootstrapPlugins([makeRegistration('anon-plugin')], client);
+    await bootstrapPlugins([makeRegistration('anon-plugin')], client, false);
 
     expect(inserted).toHaveLength(0);
     expect(console.error).not.toHaveBeenCalled();
@@ -185,7 +183,7 @@ describe('bootstrapPlugins', () => {
       },
     ]);
 
-    await bootstrapPlugins([makeRegistration('known-plugin')], client);
+    await bootstrapPlugins([makeRegistration('known-plugin')], client, true);
 
     expect(inserted).toHaveLength(0);
   });

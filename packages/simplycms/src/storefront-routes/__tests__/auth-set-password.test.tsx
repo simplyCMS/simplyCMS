@@ -14,26 +14,28 @@ import { I18nProvider, createTranslator } from 'simplycms/i18n';
 const uk = createTranslator('uk');
 
 /**
- * Сторінка встановлення пароля після invite-редіректу (спека 2026-08-03 §4.4).
+ * Сторінка встановлення нового пароля (К1′б, Better Auth).
  *
- * Користувач приходить сюди вже залогіненим — сесію поставив серверний
- * `/auth/confirm`. Тому перевіряємо дві гілки: сесії немає (протермінований
- * лінк) і сесія є (валідна пара паролів іде в `updateUser`).
+ * Дозвіл дає ТОКЕН у query — його кладе редірект
+ * `/api/auth/reset-password/<token>` на `callbackURL`. Тому дві гілки:
+ * токена немає (лінк недійсний) і токен є (валідна пара йде в
+ * `authClient.resetPassword` разом із ним).
  */
 
 const navigate = vi.fn();
-const updateUser = vi.fn();
-const getSession = vi.fn();
+const resetPassword = vi.fn();
+let search: Record<string, string | undefined> = {};
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useSearch: () => search,
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),
 }));
 
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => ({ auth: { getSession, updateUser } }),
+vi.mock('simplycms/core/lib/auth-client', () => ({
+  authClient: { resetPassword: (...args: unknown[]) => resetPassword(...args) },
 }));
 
 import AuthSetPassword from '../pages/AuthSetPassword';
@@ -62,16 +64,15 @@ function fillPasswords(password: string, confirm: string) {
 describe('сторінка /auth/set-password', () => {
   beforeEach(() => {
     navigate.mockReset();
-    updateUser.mockReset();
-    updateUser.mockResolvedValue({ error: null });
-    getSession.mockReset();
-    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
+    resetPassword.mockReset();
+    resetPassword.mockResolvedValue({ error: null });
+    search = { token: 'reset-token' };
   });
 
   afterEach(() => cleanup());
 
-  it('без сесії показує повідомлення про недійсний лінк', async () => {
-    getSession.mockResolvedValue({ data: { session: null } });
+  it('без токена показує повідомлення про недійсний лінк', async () => {
+    search = {};
     renderPage();
 
     expect(
@@ -80,21 +81,22 @@ describe('сторінка /auth/set-password', () => {
     expect(screen.queryByLabelText(uk('auth.setPassword.password'))).toBeNull();
   });
 
-  it('із сесією сабміт валідної пари викликає updateUser і веде в /admin', async () => {
+  it('із токеном сабміт валідної пари йде в resetPassword і веде на /auth', async () => {
     renderPage();
 
     await screen.findByLabelText(uk('auth.setPassword.password'));
     fillPasswords('supersecret', 'supersecret');
 
     await waitFor(() =>
-      expect(updateUser).toHaveBeenCalledWith({ password: 'supersecret' }),
+      expect(resetPassword).toHaveBeenCalledWith({
+        newPassword: 'supersecret',
+        token: 'reset-token',
+      }),
     );
-    await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith({ to: '/admin' }),
-    );
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: '/auth' }));
   });
 
-  it('різні паролі не йдуть у Supabase', async () => {
+  it('різні паролі не йдуть у Better Auth', async () => {
     renderPage();
 
     await screen.findByLabelText(uk('auth.setPassword.password'));
@@ -103,11 +105,11 @@ describe('сторінка /auth/set-password', () => {
     expect(
       await screen.findByText(uk('auth.setPassword.mismatch')),
     ).toBeDefined();
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  it('помилка Supabase показує текст помилки і не редиректить', async () => {
-    updateUser.mockResolvedValue({ error: { message: 'weak password' } });
+  it('помилка Better Auth показує текст помилки і не редиректить', async () => {
+    resetPassword.mockResolvedValue({ error: { code: 'INVALID_TOKEN' } });
     renderPage();
 
     await screen.findByLabelText(uk('auth.setPassword.password'));

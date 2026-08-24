@@ -45,7 +45,7 @@ export function Header() {
   const t = useT();
   const tt = useThemeT<SolarstoreThemeKey>();
   const supabase = useSupabaseClient();
-  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
   const { totalItems, setIsOpen } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -66,17 +66,18 @@ export function Header() {
   });
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    // Вихід через контекст: тема не знає, ЧИМ автентифікується магазин.
+    try {
+      await signOut();
+      toast({
+        title: tt('theme.header.signedOut'),
+        description: tt('theme.header.seeYouSoon'),
+      });
+    } catch {
       toast({
         variant: 'destructive',
         title: t('common.error'),
         description: tt('theme.header.signOutError'),
-      });
-    } else {
-      toast({
-        title: tt('theme.header.signedOut'),
-        description: tt('theme.header.seeYouSoon'),
       });
     }
   };

@@ -23,6 +23,7 @@ import {
 } from 'simplycms/ui/form';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { authClient } from 'simplycms/core/lib/auth-client';
 import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { AvatarUpload } from 'simplycms/core/components/profile/AvatarUpload';
@@ -52,6 +53,10 @@ const buildProfileSchema = (t: Translator) =>
 const buildPasswordSchema = (t: Translator) =>
   z
     .object({
+      // 🔴 Поточний пароль зʼявився разом із Better Auth: його `changePassword`
+      // вимагає підтвердження володіння акаунтом, і це не формальність —
+      // без нього викрадена сесія міняла б пароль без жодного знання.
+      currentPassword: z.string().min(6, t('validation.min6')),
       newPassword: z.string().min(6, t('validation.min6')),
       confirmPassword: z.string().min(6, t('validation.min6')),
     })
@@ -91,6 +96,7 @@ export default function ProfileSettingsPage() {
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
+      currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
@@ -166,11 +172,21 @@ export default function ProfileSettingsPage() {
     setIsChangingPassword(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: data.newPassword,
+      const { error } = await authClient.changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        // Зміна пароля гасить решту сесій — інакше вкрадена cookie
+        // переживала б саме ту дію, якою її намагаються знешкодити.
+        revokeOtherSessions: true,
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(
+          error.code === 'INVALID_PASSWORD'
+            ? t('profile.password.wrongCurrent')
+            : (error.message ?? t('profile.password.failed')),
+        );
+      }
 
       passwordForm.reset();
       toast({
@@ -338,6 +354,24 @@ export default function ProfileSettingsPage() {
               onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
               className="space-y-4"
             >
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('profile.password.current')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        autoComplete="current-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={passwordForm.control}
                 name="newPassword"

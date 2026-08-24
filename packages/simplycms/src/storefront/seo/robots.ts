@@ -4,8 +4,10 @@ export async function buildRobotsTxt(baseUrl: string): Promise<string> {
     'User-agent: *',
     'Allow: /',
     'Disallow: /admin/',
+    // `/api/` уже накриває й ендпойнти Better Auth (`/api/auth/*`), тож
+    // окремого рядка під них немає. Рядок `/auth/callback` знято разом із
+    // OAuth-роутом GoTrue (К1′б).
     'Disallow: /api/',
-    'Disallow: /auth/callback',
     '',
     `Sitemap: ${baseUrl}/sitemap.xml`,
   ];
