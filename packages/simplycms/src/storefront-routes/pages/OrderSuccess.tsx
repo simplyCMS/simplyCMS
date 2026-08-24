@@ -5,6 +5,7 @@ import {
   useNavigate,
   Link,
 } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   CheckCircle2,
   Package,
@@ -18,38 +19,11 @@ import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Separator } from 'simplycms/ui/separator';
 import { Skeleton } from 'simplycms/ui/skeleton';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
-
-interface OrderDetails {
-  id: string;
-  order_number: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  delivery_method: string;
-  delivery_city: string | null;
-  delivery_address: string | null;
-  payment_method: string;
-  subtotal: number;
-  total: number;
-  created_at: string;
-  status: {
-    name: string;
-    color: string | null;
-  } | null;
-  items: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    total: number;
-  }[];
-}
+import { getOrderView } from '../server/order-view';
 
 // Мапи ключів, а не текстів: код способу приходить із БД, тож розкладка
 // «код → ключ каталогу» лишається на рівні модуля, а текст резолвиться під час
@@ -67,7 +41,6 @@ const paymentLabels: Record<string, MessageKey> = {
 
 export default function OrderSuccess() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
     string | undefined
@@ -80,63 +53,35 @@ export default function OrderSuccess() {
   const token = search.token ?? null;
   const { user } = useAuth();
   const navigate = useNavigate({ from: '/order-success/$orderId' });
-
-  const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  /**
+   * 🔴 Гостьове замовлення читається за `orderToken`, а не за id користувача:
+   * сервер кладе токен у GUC `app.order_token` тієї ж транзакції, і рядок
+   * віддає політика `orders_select_own_or_token`. Токен приймається ЛИШЕ
+   * коли сесії немає — інакше залогінений із чужим токеном у URL відкрив би
+   * чуже замовлення.
+   */
+  const { data: order = null, isLoading } = useQuery({
+    queryKey: ['order-view', orderId, token, user?.id],
+    queryFn: () => getOrderView({ data: { orderId, token } }),
+    enabled: !!orderId,
+  });
+
+  // Guest-token одноразовий: після успішного завантаження прибираємо його з
+  // URL, щоб він не лишався в історії/логах/шарінгу посилання.
   useEffect(() => {
-    async function fetchOrder() {
-      if (!orderId) return;
-
-      try {
-        let query = supabase
-          .from('orders')
-          .select(
-            `
-            *,
-            status:order_statuses(name, color),
-            items:order_items(id, name, price, quantity, total)
-          `,
-          )
-          .eq('id', orderId);
-
-        // If user is logged in, check ownership
-        if (user) {
-          query = query.eq('user_id', user.id);
-        } else if (token) {
-          // For guest orders, use access_token
-          query = query.eq('access_token', token);
-        } else {
-          setIsLoading(false);
-          return;
-        }
-
-        const { data, error } = await query.single();
-
-        if (error) throw error;
-        setOrder(data as OrderDetails);
-
-        // Guest-token одноразовий: після успішного завантаження прибираємо
-        // його з URL, щоб він не лишався в історії/логах/шарінгу посилання.
-        navigate({
-          search: (s) => {
-            const rest = { ...s };
-            delete rest.token;
-            return rest;
-          },
-          replace: true,
-        });
-      } catch (error) {
-        console.error('Error fetching order:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchOrder();
+    if (!order || !token) return;
+    navigate({
+      search: (s) => {
+        const rest = { ...s };
+        delete rest.token;
+        return rest;
+      },
+      replace: true,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate стабільний з @tanstack/react-router
-  }, [orderId, token, user, supabase]);
+  }, [order, token]);
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
@@ -299,9 +244,9 @@ export default function OrderSuccess() {
                   {t('cart.summary.shipping')}
                 </p>
                 <p className="font-medium">
-                  {deliveryLabels[order.delivery_method]
-                    ? t(deliveryLabels[order.delivery_method])
-                    : order.delivery_method}
+                  {deliveryLabels[order.delivery_method ?? '']
+                    ? t(deliveryLabels[order.delivery_method ?? ''])
+                    : (order.delivery_method ?? t('common.notSet'))}
                 </p>
                 {order.delivery_city && (
                   <p className="text-sm text-muted-foreground">

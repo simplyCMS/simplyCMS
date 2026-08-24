@@ -1,3 +1,4 @@
+import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import {
   productPropertyValues,
   propertyOptions,
@@ -74,5 +75,27 @@ export function toPropertyValueRow(
     option_id: row.option_id,
     property_options: row.option?.id ? row.option : null,
     section_properties: row.property?.id ? row.property : null,
+  };
+}
+
+/**
+ * Той самий рядок, але під іменами КОНТРАКТУ вітрини (`option`/`property`).
+ *
+ * 🔴 Дві форми співіснують не з недогляду: `product_property_values` картки
+ * читаються під іменами таблиць PostgREST (див. докблок вище), а
+ * характеристики модифікацій одразу їдуть у view-model теми. Перейменувати
+ * першу — окрема правка UI, а не побічний ефект цього переходу.
+ */
+export function toPropertyValueViewModel(
+  row: RawPropertyValueRow,
+): ProductPropertyValueViewModel {
+  const normalized = toPropertyValueRow(row);
+  return {
+    property_id: normalized.property_id,
+    value: normalized.value,
+    numeric_value: normalized.numeric_value,
+    option_id: normalized.option_id,
+    option: normalized.property_options,
+    property: normalized.section_properties,
   };
 }

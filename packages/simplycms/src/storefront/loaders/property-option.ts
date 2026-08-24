@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, or, sql } from 'drizzle-orm';
+import { and, eq, exists, or, sql } from 'drizzle-orm';
 import {
   modificationPropertyValues,
   productModifications,
@@ -8,11 +8,8 @@ import {
   sectionProperties,
 } from 'simplycms/schema';
 import type { ActorDb } from './db';
-import {
-  productColumns,
-  toImageList,
-  type ProductRow,
-} from './entities/product';
+import { loadCatalogProductsWhere } from './catalog-products';
+import type { CatalogProductRow } from './entities/catalog-product';
 import {
   optionColumns,
   propertyColumns,
@@ -24,7 +21,8 @@ import {
 export interface PropertyOptionPageData {
   property: PropertyRow;
   option: OptionRow;
-  products: ProductRow[];
+  /** Товари вже з модифікаціями й цінами — картка інакше показала б порожньо. */
+  products: CatalogProductRow[];
 }
 
 /**
@@ -73,11 +71,15 @@ export async function loadPropertyOption(
  * 🔴 Обидва рівні, хоч старий серверний запит брав лише модифікаційний:
  * клієнтський запит тієї самої сторінки завжди обʼєднував два рівні, тож
  * SSR-розмітка й гідрація показували різні набори товарів.
+ *
+ * 🔴 Два `exists`, а не два запити з обʼєднанням id у памʼяті: старий
+ * клієнтський варіант робив саме так і на великій опції вивалював у
+ * `in (…)` список ідентифікаторів довжиною з пів каталогу.
  */
 async function loadProductsByOption(
   db: ActorDb,
   optionId: string,
-): Promise<ProductRow[]> {
+): Promise<CatalogProductRow[]> {
   const onProduct = db
     .select({ marker: sql`1` })
     .from(productPropertyValues)
@@ -102,17 +104,9 @@ async function loadProductsByOption(
       ),
     );
 
-  const rows = await db
-    .select(productColumns)
-    .from(products)
-    // Предикат видимості — див. `./sections`.
-    .where(
-      and(
-        eq(products.isActive, true),
-        or(exists(onProduct), exists(onModification)),
-      ),
-    )
-    .orderBy(desc(products.createdAt));
-
-  return rows.map((row) => ({ ...row, images: toImageList(row.images) }));
+  // Предикат видимості доклеює сам `loadCatalogProductsWhere`.
+  return loadCatalogProductsWhere(
+    db,
+    or(exists(onProduct), exists(onModification)),
+  );
 }

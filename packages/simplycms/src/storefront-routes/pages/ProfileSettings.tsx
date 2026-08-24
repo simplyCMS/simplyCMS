@@ -22,8 +22,8 @@ import {
   FormMessage,
 } from 'simplycms/ui/form';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { authClient } from 'simplycms/core/lib/auth-client';
+import { getProfileSettings, saveProfileSettings } from '../server/profile';
 import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { AvatarUpload } from 'simplycms/core/components/profile/AvatarUpload';
@@ -70,7 +70,6 @@ type PasswordFormData = z.infer<ReturnType<typeof buildPasswordSchema>>;
 
 export default function ProfileSettingsPage() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -102,52 +101,47 @@ export default function ProfileSettingsPage() {
     },
   });
 
+  /**
+   * 🔴 Профіль читає й пише СЕРВЕР під актором власника сесії. `user_id` у
+   * запиті більше немає взагалі: рядок обирає `readSessionSubject`, а не
+   * параметр із браузера — інакше форма налаштувань редагувала б будь-який
+   * профіль, id якого підставили.
+   */
   useEffect(() => {
-    async function loadProfile() {
-      if (!user) return;
+    // Без користувача сторінка кабінету й не рендериться (роут `_protected`),
+    // тож стан лишається «завантаження» — як і до переходу на serverFn.
+    if (!user) return;
 
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, phone, avatar_url')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (data) {
-          profileForm.setValue('firstName', data.first_name || '');
-          profileForm.setValue('lastName', data.last_name || '');
-          profileForm.setValue('phone', data.phone || '');
-          setAvatarUrl(data.avatar_url);
-          setProfileData({
-            first_name: data.first_name,
-            last_name: data.last_name,
-          });
-        }
-      } catch (error: unknown) {
+    void getProfileSettings()
+      .then((data) => {
+        if (!data) return;
+        profileForm.setValue('firstName', data.first_name || '');
+        profileForm.setValue('lastName', data.last_name || '');
+        profileForm.setValue('phone', data.phone || '');
+        setAvatarUrl(data.avatar_url);
+        setProfileData({
+          first_name: data.first_name,
+          last_name: data.last_name,
+        });
+      })
+      .catch((error: unknown) => {
         console.error('Error loading profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadProfile();
-  }, [user, profileForm, supabase]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [user, profileForm]);
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     if (!user) return;
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: data.firstName,
-          last_name: data.lastName,
+      await saveProfileSettings({
+        data: {
+          firstName: data.firstName,
+          lastName: data.lastName,
           phone: data.phone || null,
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+        },
+      });
 
       toast({
         title: t('profile.settings.saved'),

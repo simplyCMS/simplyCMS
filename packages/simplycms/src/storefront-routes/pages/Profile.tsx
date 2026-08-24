@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   User,
   Mail,
@@ -13,75 +13,28 @@ import { Button } from 'simplycms/ui/button';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { Badge } from 'simplycms/ui/badge';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
-
-interface ProfileData {
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  category: {
-    name: string;
-  } | null;
-}
-
-interface RecentOrder {
-  id: string;
-  order_number: string;
-  total: number;
-  created_at: string;
-  status: {
-    name: string;
-    color: string | null;
-  } | null;
-}
+import { getProfileOverview } from '../server/profile';
 
 export default function ProfilePage() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      if (!user) return;
+  /**
+   * 🔴 Профіль і замовлення тягне СЕРВЕР під актором власника сесії. Раніше
+   * браузер сам ставив `user_id` у запит — тобто ідентичність, за якою
+   * читались персональні дані, приходила з клієнта. Тепер її задає
+   * `readSessionSubject`, і підставити чужий id нема куди: параметра немає.
+   */
+  const { data, isLoading } = useQuery({
+    queryKey: ['profile-overview', user?.id],
+    queryFn: () => getProfileOverview(),
+    enabled: !!user,
+  });
 
-      try {
-        // Load profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select(
-            'first_name, last_name, email, phone, category:user_categories(name)',
-          )
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        setProfile(profileData);
-
-        // Load recent orders
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select(
-            'id, order_number, total, created_at, status:order_statuses(name, color)',
-          )
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(3);
-
-        setRecentOrders(ordersData || []);
-      } catch (error) {
-        console.error('Error loading profile data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-  }, [user, supabase]);
+  const profile = data?.profile ?? null;
+  const recentOrders = data?.recentOrders ?? [];
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія

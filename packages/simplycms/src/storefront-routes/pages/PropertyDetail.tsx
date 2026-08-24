@@ -1,15 +1,18 @@
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, ChevronRight } from 'lucide-react';
-import type { Tables } from 'simplycms/supabase';
+import type {
+  OptionRow,
+  PropertyWithOptions,
+} from 'simplycms/storefront/loaders';
+import { getPropertyBySlug } from '../server/properties';
 
 export interface PropertyDetailPageProps {
-  property?: Tables<'section_properties'>;
-  options?: Tables<'property_options'>[];
+  property?: PropertyWithOptions;
+  options?: OptionRow[];
 }
 
 export default function PropertyDetailPage({
@@ -17,45 +20,27 @@ export default function PropertyDetailPage({
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
   const t = useT();
-  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
     string | undefined
   >;
   const propertySlug = params?.propertySlug as string | undefined;
 
-  // Fetch property by slug
+  /**
+   * 🔴 Один запит замість двох: характеристика приїжджає разом з опціями, а
+   * не другим походом за `property_options` після того, як приїхав її id.
+   * Заодно зникає стан «характеристика вже є, опції ще ні».
+   */
   const { data: property, isLoading: propertyLoading } = useQuery({
     queryKey: ['property-by-slug-detail', propertySlug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('section_properties')
-        .select('*')
-        .eq('slug', propertySlug!)
-        .eq('has_page', true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: (): Promise<PropertyWithOptions | null> =>
+      getPropertyBySlug({ data: { slug: propertySlug as string } }),
     enabled: !!propertySlug,
     initialData: initialProperty,
   });
 
-  // Fetch options for this property
-  const { data: options, isLoading: optionsLoading } = useQuery({
-    queryKey: ['property-options-public', property?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('property_options')
-        .select('*')
-        .eq('property_id', property!.id)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!property?.id,
-    initialData: initialOptions,
-  });
+  const options: OptionRow[] =
+    property?.property_options ?? initialOptions ?? [];
 
   if (propertyLoading) {
     return (
@@ -101,11 +86,7 @@ export default function PropertyDetailPage({
       </div>
 
       {/* Options grid */}
-      {optionsLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : options && options.length > 0 ? (
+      {options.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {options.map((option) => (
             <Link

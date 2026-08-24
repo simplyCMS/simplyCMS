@@ -56,8 +56,12 @@ export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
 /**
  * Добірка головної: `featuredOnly` розрізняє «популярне» й «новинки» —
  * решта запиту в них однакова, тож дублювати його немає сенсу.
+ *
+ * 🔴 Експортується, бо ті самі дві добірки перезапитує клієнт після
+ * інвалідації кешу — і мусить робити це ТИМ САМИМ запитом, що й SSR,
+ * інакше сторінка після рефетчу показує інший набір товарів.
  */
-async function loadHomeProducts(
+export async function loadHomeProducts(
   db: ActorDb,
   featuredOnly: boolean,
 ): Promise<HomeProductRow[]> {

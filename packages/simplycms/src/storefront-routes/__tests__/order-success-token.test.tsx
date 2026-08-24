@@ -1,38 +1,24 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 
 /**
- * Task 15: guest-token не має лишатись у URL після завантаження замовлення.
- * Мокаємо useNavigate з @tanstack/react-router і перевіряємо, що після
- * успішного fetch викликається navigate({ search: <transform>, replace: true }),
- * де transform прибирає лише token, а помилка fetch navigate не викликає.
+ * Guest-token не має лишатись у URL після завантаження замовлення (Task 15).
+ *
+ * 🔴 Мокається САМА серверна функція, а не supabase-клієнт: після переходу
+ * вітрини на `createServerFn` браузер у базу не ходить взагалі, тож мок
+ * PostgREST-білдера тут перевіряв би неіснуючий шлях.
  */
 
 const navigateMock = vi.fn();
 
-const { mockSupabase, setSingleResult } = vi.hoisted(() => {
-  let singleResult: { data: unknown; error: unknown } = {
-    data: null,
-    error: null,
-  };
-  const builder = {
-    eq: () => builder,
-    single: async () => singleResult,
-  };
-  const mockSupabase = {
-    from: () => ({ select: () => builder }),
-  };
-  return {
-    mockSupabase,
-    setSingleResult: (r: { data: unknown; error: unknown }) => {
-      singleResult = r;
-    },
-  };
-});
+const { getOrderViewMock } = vi.hoisted(() => ({
+  getOrderViewMock: vi.fn(),
+}));
 
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ orderId: 'order-1' }),
@@ -43,8 +29,8 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => mockSupabase,
+vi.mock('../server/order-view', () => ({
+  getOrderView: getOrderViewMock,
 }));
 
 vi.mock('simplycms/core/hooks/useAuth', () => ({
@@ -62,29 +48,47 @@ const orderFixture = {
   delivery_city: null,
   delivery_address: null,
   payment_method: 'cash',
+  notes: null,
   subtotal: 100,
   total: 100,
   created_at: new Date().toISOString(),
+  status_id: null,
   status: null,
+  has_different_recipient: false,
+  recipient_first_name: null,
+  recipient_last_name: null,
+  recipient_phone: null,
+  recipient_email: null,
   items: [],
 };
 
-afterEach(() => {
-  cleanup();
-  navigateMock.mockClear();
-});
+function renderPage() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
-describe('OrderSuccess — прибирання guest-token з URL', () => {
-  it('після успішного завантаження замовлення викликає navigate і прибирає лише token', async () => {
-    setSingleResult({ data: orderFixture, error: null });
-
-    render(
+  return render(
+    <QueryClientProvider client={client}>
       <I18nProvider locale="uk">
         <TestEngineProvider>
           <OrderSuccess />
         </TestEngineProvider>
-      </I18nProvider>,
-    );
+      </I18nProvider>
+    </QueryClientProvider>,
+  );
+}
+
+afterEach(() => {
+  cleanup();
+  navigateMock.mockClear();
+  getOrderViewMock.mockReset();
+});
+
+describe('OrderSuccess — прибирання guest-token з URL', () => {
+  it('після успішного завантаження замовлення викликає navigate і прибирає лише token', async () => {
+    getOrderViewMock.mockResolvedValue(orderFixture);
+
+    renderPage();
 
     await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(1));
 
@@ -99,20 +103,23 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
     expect(call.search({ token: 'abc', foo: 'x' })).toEqual({ foo: 'x' });
   });
 
+  it('токен їде серверній функції, а не в запит із браузера', async () => {
+    getOrderViewMock.mockResolvedValue(orderFixture);
+
+    renderPage();
+
+    await waitFor(() => expect(getOrderViewMock).toHaveBeenCalled());
+    expect(getOrderViewMock).toHaveBeenCalledWith({
+      data: { orderId: 'order-1', token: 'abc' },
+    });
+  });
+
   it('при помилці завантаження navigate НЕ викликається', async () => {
-    setSingleResult({ data: null, error: new Error('boom') });
+    getOrderViewMock.mockRejectedValue(new Error('boom'));
 
-    render(
-      <I18nProvider locale="uk">
-        <TestEngineProvider>
-          <OrderSuccess />
-        </TestEngineProvider>
-      </I18nProvider>,
-    );
+    renderPage();
 
-    // Чекаємо завершення fetch — компонент рендерить "не знайдено".
-    await waitFor(() => expect(navigateMock).not.toHaveBeenCalled());
-    // Даємо мікротаскам ще один тік, аби впевнитись, що navigate дійсно не викликано пізніше.
+    await waitFor(() => expect(getOrderViewMock).toHaveBeenCalled());
     await Promise.resolve();
     expect(navigateMock).not.toHaveBeenCalled();
   });

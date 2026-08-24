@@ -1,46 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { getPriceTypeContext } from '../lib/price-type';
 import { useAuth } from './useAuth';
 
+/**
+ * Контекст цін покупця: тип за замовчуванням і персональний тип категорії.
+ *
+ * 🔴 Один серверний виклик замість двох запитів браузера — і персональний
+ * тип більше не резолвиться за `user_id`, присланим із клієнта (пояснення —
+ * у `../lib/price-type`).
+ */
 export function usePriceType() {
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
 
-  const { data: defaultPriceType } = useQuery({
-    queryKey: ['default-price-type'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('price_types')
-        .select('id')
-        .eq('is_default', true)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: userPriceTypeId } = useQuery({
-    queryKey: ['user-price-type', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('category:user_categories(price_type_id)')
-        .eq('user_id', user.id)
-        .single();
-      if (error) return null;
-      return (
-        (data?.category as { price_type_id: string | null } | null)
-          ?.price_type_id || null
-      );
-    },
-    enabled: !!user?.id,
+  const { data } = useQuery({
+    queryKey: ['price-type-context', user?.id ?? null],
+    queryFn: () => getPriceTypeContext(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const defaultPriceTypeId = defaultPriceType?.id || null;
-  const priceTypeId = userPriceTypeId || defaultPriceTypeId;
-
-  return { priceTypeId, defaultPriceTypeId };
+  return {
+    priceTypeId: data?.priceTypeId ?? null,
+    defaultPriceTypeId: data?.defaultPriceTypeId ?? null,
+  };
 }

@@ -1,9 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
+  loadCatalogProducts,
   loadDefaultPriceTypeId,
+  loadFilterOptions,
   loadProductList,
   loadSectionBySlug,
+  loadSectionNumericProperties,
   loadSections,
   withStorefrontDb,
   type ActorDb,
@@ -74,3 +77,44 @@ async function loadProductPayload(
 
   return toProductListPayload(rows, defaultPriceTypeId);
 }
+
+/** Активні розділи — чипси над списком товарів. */
+export const getCatalogSections = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<SectionRow[]> => withStorefrontDb((db) => loadSections(db)),
+);
+
+/** Розділ поточної сторінки за slug; `null` — немає або неактивний. */
+export const getCatalogSection = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data: input }): Promise<SectionRow | null> => {
+    const { slug } = input as { slug: string };
+    return withStorefrontDb((db) => loadSectionBySlug(db, slug));
+  });
+
+/**
+ * Вибірка каталогу з модифікаціями, цінами, характеристиками й наявністю.
+ *
+ * `sectionId` відсутній — сторінка каталогу (розділ обирається чипсами на
+ * клієнті); заданий — сторінка розділу, вибірка звужена запитом.
+ */
+export const getCatalogProducts = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ sectionId: z.string().min(1).optional() }))
+  .handler(async ({ data: input }) => {
+    const { sectionId } = input as { sectionId?: string };
+    return withStorefrontDb((db) => loadCatalogProducts(db, sectionId));
+  });
+
+/** Числові характеристики розділу, за якими можна фільтрувати. */
+export const getSectionNumericProperties = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ sectionId: z.string().min(1) }))
+  .handler(async ({ data: input }) => {
+    const { sectionId } = input as { sectionId: string };
+    return withStorefrontDb((db) =>
+      loadSectionNumericProperties(db, sectionId),
+    );
+  });
+
+/** Опції характеристик — назви для бейджів активних фільтрів. */
+export const getFilterOptions = createServerFn({ method: 'GET' }).handler(
+  async () => withStorefrontDb((db) => loadFilterOptions(db)),
+);

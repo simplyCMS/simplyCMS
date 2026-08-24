@@ -1,28 +1,32 @@
 import { useMemo } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { ProductCard } from 'simplycms/core/components/catalog/ProductCard';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
 import { usePriceType } from 'simplycms/core/hooks/usePriceType';
-import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
-import type { Tables } from 'simplycms/supabase';
+import { resolvePrice } from 'simplycms/domain/pricing';
+import type {
+  CatalogProductRow,
+  OptionRow,
+  PropertyOptionPageData,
+  PropertyRow,
+} from 'simplycms/storefront/loaders';
+import { getPropertyOption } from '../server/properties';
 
 export interface PropertyOptionPageProps {
-  property?: Tables<'section_properties'> & Record<string, unknown>;
-  option?: Tables<'property_options'> & Record<string, unknown>;
-  products?: Array<Tables<'products'> & Record<string, unknown>>;
+  property?: PropertyRow;
+  option?: OptionRow;
+  products?: CatalogProductRow[];
 }
 
 export default function PropertyPage({
   property: initialProperty,
   option: initialOption,
-  products: _initialProducts,
+  products: initialProducts,
 }: PropertyOptionPageProps = {}) {
   const t = useT();
-  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
     string | undefined
@@ -31,139 +35,63 @@ export default function PropertyPage({
   const optionSlug = params?.optionSlug as string | undefined;
 
   const { priceTypeId, defaultPriceTypeId } = usePriceType();
-  const propertyCode = propertySlug;
 
-  // Fetch property by slug
-  const { data: property } = useQuery({
-    queryKey: ['property-by-slug', propertyCode],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('section_properties')
-        .select('*')
-        .eq('slug', propertyCode!)
-        .eq('has_page', true)
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!propertyCode,
-    initialData: initialProperty,
+  /**
+   * 🔴 Один серверний виклик замість чотирьох клієнтських запитів
+   * (характеристика → опція → id товарів двома вибірками → самі товари).
+   * Обидва рівні характеристики — товар і модифікація — обʼєднані в SQL, тож
+   * список більше не залежить від того, скільки id влізе в `in (…)`.
+   */
+  const initialData: PropertyOptionPageData | undefined =
+    initialProperty && initialOption
+      ? {
+          property: initialProperty,
+          option: initialOption,
+          products: initialProducts ?? [],
+        }
+      : undefined;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['property-option-page', propertySlug, optionSlug],
+    queryFn: (): Promise<PropertyOptionPageData | null> =>
+      getPropertyOption({
+        data: {
+          propertySlug: propertySlug as string,
+          optionSlug: optionSlug as string,
+        },
+      }),
+    enabled: !!propertySlug && !!optionSlug,
+    initialData,
   });
 
-  // Fetch option by slug (now includes page data)
-  const { data: option, isLoading: optionLoading } = useQuery({
-    queryKey: ['property-option-by-slug', property?.id, optionSlug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('property_options')
-        .select('*')
-        .eq('property_id', property!.id)
-        .eq('slug', optionSlug!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!property?.id && !!optionSlug,
-    initialData: initialOption,
-  });
+  const property = data?.property ?? null;
+  const option = data?.option ?? null;
+  const optionLoading = isLoading;
+  const productsLoading = isLoading;
 
-  // Fetch products with this property value
-  const { data: rawProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['products-by-option', option?.id],
-    queryFn: async () => {
-      if (!option?.id) return [];
-
-      // Get product IDs that have this option at product level
-      const { data: productLevelValues, error: pvError } = await supabase
-        .from('product_property_values')
-        .select('product_id')
-        .eq('option_id', option.id);
-
-      if (pvError) throw pvError;
-
-      // Get modification IDs that have this option at modification level
-      const { data: modLevelValues, error: mvError } = await supabase
-        .from('modification_property_values')
-        .select('modification_id, product_modifications!inner(product_id)')
-        .eq('option_id', option.id);
-
-      if (mvError) throw mvError;
-
-      // Combine unique product IDs
-      const productIds = new Set<string>();
-      productLevelValues?.forEach((pv) => productIds.add(pv.product_id));
-      modLevelValues?.forEach((mv) => {
-        const productId = (
-          mv.product_modifications as { product_id: string } | null
-        )?.product_id;
-        if (productId) productIds.add(productId);
-      });
-
-      if (productIds.size === 0) return [];
-
-      const { data, error } = await supabase
-        .from('products')
-        .select(
-          `
-          *,
-          sections(id, slug, name),
-          product_modifications(id, stock_status, is_default, sort_order),
-          product_prices(price_type_id, price, old_price, modification_id)
-        `,
-        )
-        .in('id', Array.from(productIds))
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      return data.map((product) => {
-        const mods = product.product_modifications || [];
-        const defaultMod =
-          mods.find((m) => m.is_default) ||
-          [...mods].sort((a, b) => a.sort_order - b.sort_order)[0];
-        const images = product.images as string[] | null;
-        return {
-          ...product,
-          has_modifications: product.has_modifications ?? false,
-          images: Array.isArray(images) ? images : [],
-          section: product.sections,
-          modifications: defaultMod ? [defaultMod] : [],
-          product_prices: product.product_prices || [],
-        };
-      });
-    },
-    enabled: !!option?.id,
-  });
-
-  // Resolve prices
+  // Резолв цін під тип ціни покупця — форма картки лишилась незмінною.
   const products = useMemo(() => {
-    if (!rawProducts) return undefined;
-    return rawProducts.map((p) => {
-      const prices = (p.product_prices ?? []) as PriceEntry[];
+    if (!data) return undefined;
+    return data.products.map((p) => {
       const hasModifications = p.has_modifications ?? true;
-      let resolved;
-      if (hasModifications && p.modifications?.[0]) {
-        resolved = resolvePrice(
-          prices,
-          priceTypeId,
-          defaultPriceTypeId,
-          p.modifications[0].id,
-        );
-      } else {
-        resolved = resolvePrice(prices, priceTypeId, defaultPriceTypeId, null);
-      }
-      const stockStatus = hasModifications
-        ? (p.modifications?.[0]?.stock_status ?? 'in_stock')
-        : (p.stock_status ?? 'in_stock');
+      const defaultMod = hasModifications ? (p.modifications[0] ?? null) : null;
+      const resolved = resolvePrice(
+        p.product_prices,
+        priceTypeId,
+        defaultPriceTypeId,
+        defaultMod?.id ?? null,
+      );
+
       return {
         ...p,
         price: resolved.price,
         old_price: resolved.oldPrice,
-        stock_status: stockStatus,
+        stock_status: defaultMod
+          ? (defaultMod.stock_status ?? 'in_stock')
+          : (p.stock_status ?? 'in_stock'),
       };
     });
-  }, [rawProducts, priceTypeId, defaultPriceTypeId]);
+  }, [data, priceTypeId, defaultPriceTypeId]);
 
   if (optionLoading) {
     return (

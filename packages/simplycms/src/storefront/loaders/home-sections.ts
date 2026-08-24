@@ -65,3 +65,17 @@ export async function loadSectionProducts(
 
   return bySection;
 }
+
+/**
+ * Товари ОДНОГО розділу — рівно та ж вибірка, що й у мапі головної.
+ *
+ * Потрібна клієнтському перезапиту каруселі: він знає лише свій розділ, і
+ * тягнути заради нього всю головну було б марно.
+ */
+export async function loadOneSectionProducts(
+  db: ActorDb,
+  section: SectionRef,
+): Promise<HomeProductRow[]> {
+  const bySection = await loadSectionProducts(db, [section]);
+  return bySection[section.id] ?? [];
+}

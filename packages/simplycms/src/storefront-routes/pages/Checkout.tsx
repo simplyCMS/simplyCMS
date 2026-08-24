@@ -8,7 +8,8 @@ import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { getProfileSettings } from '../server/profile';
+import { placeOrder } from '../server/checkout';
 import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { CheckoutAuthBlock } from 'simplycms/core/components/checkout/CheckoutAuthBlock';
@@ -105,13 +106,11 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
 export default function Checkout() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shippingCost, setShippingCost] = useState<number>(0);
-
   const checkoutSchema = useMemo(() => buildCheckoutSchema(t), [t]);
 
   const form = useForm<CheckoutFormData>({
@@ -142,17 +141,12 @@ export default function Checkout() {
     },
   });
 
-  // Autofill for logged-in users
+  // Автозаповнення для залогінених: профіль тягне сервер під актором сесії
+  // (`getProfileSettings`), тож `user.id` у запит більше не їде з браузера.
   useEffect(() => {
-    async function loadProfile() {
-      if (!user) return;
+    if (!user) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, email, phone')
-        .eq('user_id', user.id)
-        .single();
-
+    void getProfileSettings().then((profile) => {
       if (profile) {
         form.setValue('firstName', profile.first_name || '');
         form.setValue('lastName', profile.last_name || '');
@@ -161,10 +155,8 @@ export default function Checkout() {
       } else if (user.email) {
         form.setValue('email', user.email);
       }
-    }
-
-    loadProfile();
-  }, [user, form, supabase]);
+    });
+  }, [user, form]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -173,8 +165,12 @@ export default function Checkout() {
     }
   }, [items, navigate]);
 
-  const totalWithShipping = totalPrice + shippingCost;
-
+  /**
+   * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
+   * записів у базу (отримувач → статус → спосіб доставки → замовлення →
+   * позиції), і падіння будь-якого з них лишало в базі напівстворене
+   * замовлення. Тепер усе це одна транзакція актора на сервері.
+   */
   const onSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
       toast({
@@ -188,139 +184,59 @@ export default function Checkout() {
     setIsSubmitting(true);
 
     try {
-      let savedRecipientId: string | null = null;
-
-      // If saving new recipient, create it first
-      if (
-        user &&
-        data.hasDifferentRecipient &&
-        data.saveRecipient &&
-        (!data.savedRecipientId || data.savedRecipientId === 'new')
-      ) {
-        const { data: newRecipient, error: recipientError } = await supabase
-          .from('user_recipients')
-          .insert({
-            user_id: user.id,
-            first_name: data.recipientFirstName!,
-            last_name: data.recipientLastName!,
-            phone: data.recipientPhone!,
-            email: data.recipientEmail || null,
-            city: data.recipientCity!,
-            address: data.recipientAddress!,
-            notes: data.recipientNotes || null,
-          })
-          .select('id')
-          .single();
-
-        if (recipientError) throw recipientError;
-        savedRecipientId = newRecipient.id;
-      } else if (data.savedRecipientId && data.savedRecipientId !== 'new') {
-        savedRecipientId = data.savedRecipientId;
-      }
-
-      // Get default status
-      const { data: defaultStatus } = await supabase
-        .from('order_statuses')
-        .select('id')
-        .eq('is_default', true)
-        .single();
-
-      // Get shipping method details
-      const { data: shippingMethod } = await supabase
-        .from('shipping_methods')
-        .select('code')
-        .eq('id', data.shippingMethodId)
-        .single();
-
-      // Create order with all data copied as text
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user?.id || null,
-          first_name: data.firstName,
-          last_name: data.lastName,
+      const order = await placeOrder({
+        data: {
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email || '',
           phone: data.phone || '',
-          delivery_method: shippingMethod?.code || null,
-          delivery_city: data.deliveryCity || null,
-          delivery_address: data.deliveryAddress || null,
-          payment_method: data.paymentMethod,
+          shippingMethodId: data.shippingMethodId,
+          deliveryCity: data.deliveryCity || null,
+          deliveryAddress: data.deliveryAddress || null,
+          pickupPointId: data.pickupPointId || null,
+          paymentMethod: data.paymentMethod,
           notes: data.notes || null,
-          status_id: defaultStatus?.id || null,
-          subtotal: totalPrice,
-          total: totalWithShipping,
-          shipping_method_id: data.shippingMethodId,
-          shipping_cost: shippingCost,
-          pickup_point_id: data.pickupPointId || null,
-          shipping_data: {},
-          order_number: '',
-          // Recipient fields - copy as text
-          has_different_recipient: data.hasDifferentRecipient,
-          recipient_first_name: data.hasDifferentRecipient
-            ? data.recipientFirstName
-            : null,
-          recipient_last_name: data.hasDifferentRecipient
-            ? data.recipientLastName
-            : null,
-          recipient_phone: data.hasDifferentRecipient
-            ? data.recipientPhone
-            : null,
-          recipient_email: data.hasDifferentRecipient
-            ? data.recipientEmail || null
-            : null,
-          // References for analytics (will become NULL if deleted)
-          saved_recipient_id: savedRecipientId,
-          saved_address_id: data.savedAddressId || null,
-        })
-        .select()
-        .single();
+          shippingCost,
+          hasDifferentRecipient: data.hasDifferentRecipient,
+          recipientFirstName: data.recipientFirstName || null,
+          recipientLastName: data.recipientLastName || null,
+          recipientPhone: data.recipientPhone || null,
+          recipientEmail: data.recipientEmail || null,
+          recipientCity: data.recipientCity || null,
+          recipientAddress: data.recipientAddress || null,
+          recipientNotes: data.recipientNotes || null,
+          saveRecipient: data.saveRecipient,
+          savedRecipientId:
+            data.savedRecipientId && data.savedRecipientId !== 'new'
+              ? data.savedRecipientId
+              : null,
+          savedAddressId: data.savedAddressId || null,
+          items: items.map((item) => ({
+            productId: item.productId || null,
+            modificationId: item.modificationId || null,
+            name: item.modificationName
+              ? `${item.name} - ${item.modificationName}`
+              : item.name,
+            price: item.price,
+            quantity: item.quantity,
+            basePrice: item.basePrice ?? null,
+            discountData: item.discountData ?? null,
+          })),
+        },
+      });
 
-      if (orderError) throw orderError;
-
-      // Create order items with discount data
-      const orderItems = items.map((item) => ({
-        order_id: order.id,
-        product_id: item.productId,
-        modification_id: item.modificationId || null,
-        name: item.modificationName
-          ? `${item.name} - ${item.modificationName}`
-          : item.name,
-        price: item.price,
-        quantity: item.quantity,
-        total: item.price * item.quantity,
-        base_price: item.basePrice || null,
-        discount_data: item.discountData || null,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Clear cart and redirect
       clearCart();
 
       toast({
         title: t('checkout.placed'),
-        description: t('checkout.placedNumber', {
-          number: order.order_number,
-        }),
+        description: t('checkout.placedNumber', { number: order.orderNumber }),
       });
 
-      // Navigate to success page
-      if (user) {
-        navigate({
-          to: '/order-success/$orderId',
-          params: { orderId: order.id },
-        });
-      } else {
-        navigate({
-          to: '/order-success/$orderId',
-          params: { orderId: order.id },
-          search: { token: order.access_token ?? undefined },
-        });
-      }
+      navigate({
+        to: '/order-success/$orderId',
+        params: { orderId: order.id },
+        search: { token: order.accessToken ?? undefined },
+      });
     } catch (error: unknown) {
       console.error('Order creation error:', error);
       toast({

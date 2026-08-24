@@ -30,8 +30,6 @@ export {
 export type { ProductReview } from './hooks/useProductReviews';
 export {
   calculateProductAvailability,
-  fetchModificationPropertyValues,
-  fetchModificationStockData,
   enrichProductsWithAvailability,
 } from './hooks/useProductsWithStock';
 export type { StockData } from './hooks/useProductsWithStock';
