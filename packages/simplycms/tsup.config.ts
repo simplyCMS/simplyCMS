@@ -103,6 +103,20 @@ const profiles: Profile[] = [
   ),
   // Поверхня плагінів: та сама причина відмови від splitting.
   profile('plugin-sdk', ['src/plugin-sdk/index.ts'], { splitting: false }),
+  // 🔴 Схема БД — ОКРЕМИЙ профіль і БЕЗ dts від tsup. Причина — не смак:
+  // rollup-plugin-dts РОЗГОРТАЄ кожен виведений тип, а типи Drizzle-схеми
+  // (45 pgTable × генерики колонок і політик) комбінаторно величезні — після
+  // приземлення data-шару вітрини (2026-08-24) генерація декларацій TIERS
+  // вичерпувала heap воркера навіть на 8 ГБ (`ERR_WORKER_OUT_OF_MEMORY`),
+  // тобто падала б і в CI. Декларації для schema-файлів видає звичайний
+  // `tsc --emitDeclarationOnly` (крок `build` у package.json): він НЕ
+  // розгортає типи, а лишає імпорти `drizzle-orm` як є — це секунди й
+  // мегабайти замість гігабайтів. Мапінг 1:1 файл→entry, бандлінг не потрібен.
+  profile(
+    'schema',
+    ['src/schema/schema.ts', 'src/schema/relations.ts', 'src/schema/types.ts'],
+    { dts: false, splitting: false },
+  ),
   // Node/React-тіри (domain, schema, supabase, i18n, ui, admin, теми, …):
   // спільні чанки обовʼязкові — модулі зі станом мусять лишатися ОДНИМ
   // інстансом для всіх subpath-entry пакета.
@@ -117,9 +131,6 @@ const profiles: Profile[] = [
       'src/index.ts',
       'src/domain/*.ts',
       'src/domain/user-categories/index.ts',
-      'src/schema/schema.ts',
-      'src/schema/relations.ts',
-      'src/schema/types.ts',
       'src/supabase/index.ts',
       'src/supabase/keys.ts',
       'src/supabase/*-client.ts',

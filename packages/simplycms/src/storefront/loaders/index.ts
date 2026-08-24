@@ -27,13 +27,49 @@ export * from './property-values';
 export * from './sections';
 export * from './shipping';
 export * from './sitemap';
-export * from './entities/catalog-product';
-export * from './entities/discount';
-export * from './entities/order';
-export * from './entities/banner';
-export * from './entities/home-product';
-export * from './entities/modification';
-export * from './entities/price';
-export * from './entities/product';
-export * from './entities/property';
-export * from './entities/section';
+// 🔴 Мапи колонок (`*Columns`) назовні НЕ виходять — це внутрішні помічники
+// побудови select-ів, а не публічний API. Причина не лише в чистоті межі:
+// їхні значення — Drizzle-колонки з глибоко генеричними типами, і `export *`
+// затягував увесь типовий граф ORM у публічний `.d.ts` пакета. Генерація
+// декларацій на цьому вичерпувала heap воркера tsup
+// (`ERR_WORKER_OUT_OF_MEMORY`) — тобто збірка падала не від обсягу коду, а
+// від того, що внутрішній інструмент протік у контракт. Назовні — рядки й мапери.
+export type {
+  CatalogModificationRow,
+  CatalogPropertyValueRow,
+  CatalogProductRow,
+} from './entities/catalog-product';
+export {
+  pickDefaultModification,
+  toNumericValue,
+} from './entities/catalog-product';
+export type {
+  DiscountGroupRow,
+  DiscountRow,
+  DiscountTargetRow,
+  DiscountConditionRow,
+} from './entities/discount';
+export { toDiscountGroupNode, toDiscount } from './entities/discount';
+export type {
+  OrderStatusRow,
+  OrderItemRow,
+  OrderListRow,
+  OrderDetailRow,
+  RawOrderItem,
+} from './entities/order';
+export { toOrderItem, groupItemsByOrder } from './entities/order';
+export { toBanner, isBannerVisible } from './entities/banner';
+export type {
+  HomeProductRow,
+  RawHomeProductRow,
+} from './entities/home-product';
+export { toHomeProduct } from './entities/home-product';
+export type { ModificationRow } from './entities/modification';
+export { toModificationRow } from './entities/modification';
+export type { RawPriceRow } from './entities/price';
+export { toPriceEntry, groupPricesByProduct } from './entities/price';
+export type { ProductRow } from './entities/product';
+export { toImageList } from './entities/product';
+export type { JsonValue, PropertyRow, OptionRow } from './entities/property';
+export { toPropertyRow } from './entities/property';
+export type { SectionRow, SectionRef } from './entities/section';

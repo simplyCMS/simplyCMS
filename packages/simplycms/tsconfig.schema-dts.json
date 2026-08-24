@@ -1,0 +1,24 @@
+{
+  // Емісія .d.ts ЛИШЕ для схеми БД — дешевим tsc замість rollup-plugin-dts.
+  // Причина — коментар до профілю `schema` у tsup.config.ts: розгортання
+  // Drizzle-типів у dts-воркері tsup вичерпує heap; tsc імпорти не розгортає.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist",
+    "declarationDir": "./dist",
+    "rootDir": "./src",
+    // Схема самодостатня (drizzle-orm + свої файли) — композитних посилань
+    // не треба, а isolatedDeclarations вимагав би явних анотацій, яких
+    // Drizzle-схема принципово не має (типи виводяться).
+    "noEmit": false
+  },
+  "include": [
+    "src/schema/schema.ts",
+    "src/schema/relations.ts",
+    "src/schema/types.ts",
+    "src/schema/auth.ts",
+    "src/schema/media.ts"
+  ]
+}
