@@ -23,6 +23,7 @@
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
+    "./schema/types": "./src/schema/types.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./supabase": "./src/supabase/index.ts",
@@ -159,6 +160,10 @@
       "./schema/relations": {
         "types": "./dist/schema/relations.d.ts",
         "import": "./dist/schema/relations.js"
+      },
+      "./schema/types": {
+        "types": "./dist/schema/types.d.ts",
+        "import": "./dist/schema/types.js"
       },
       "./db": {
         "types": "./dist/db/index.d.ts",

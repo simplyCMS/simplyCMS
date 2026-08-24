@@ -19,6 +19,11 @@ pnpm test             # Run tests (vitest run; packaging-suite виключен�
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # tsup build публікованих пакетів ядра
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): накат канону міграцій на чистий
+                      # Postgres + парність політик і грантів + ПОВЕДІНКОВА матриця RLS.
+                      # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
+                      # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
+                      # із service-контейнером postgres:17. Межі — test-contours.md §10
 pnpm test:e2e         # БРАУЗЕРНИЙ контур: Playwright по монорепо-хосту.
                       # scripts/e2e.mjs сам піднімає локальний Supabase (Docker),
                       # накатує сід, створює власника — і ганяє специ ДВІЧІ:
@@ -270,8 +275,18 @@ simplyCMS/
 │   │   │                         #    (контракт тем v3; react — type-only peer)
 │   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
+│   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle (B12, частина) — джерело
+│   │   │                         #    типів для НОВОГО серверного коду
+│   │   ├── src/db/               # T2 🔴 V2: pg-пул + `withActor` — ЄДИНИЙ спосіб дістати
+│   │   │                         #    зʼєднання (GUC актора + SET LOCAL ROLE у транзакції);
+│   │   │                         #    гола фабрика `db/client` закрита лінт-зоною й не має
+│   │   │                         #    субшляху в exports
+│   │   ├── src/auth/             # T2 🔴 V2: серверний Better Auth (інстанс, databaseHooks,
+│   │   │                         #    invite власника, authz-матриця). Застосунок ще НЕ
+│   │   │                         #    перемкнено — це К1′б
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
-│   │   │                         #    database.ts (baseline core-типів)
+│   │   │                         #    database.ts (baseline core-типів).
+│   │   │                         #    🔴 ЖИВИЙ шар до К1′б — не «прибирати дублювання» типів
 │   │   ├── src/data-supabase/    # T2 Реалізації портів на Supabase
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig
@@ -331,8 +346,13 @@ simplyCMS/
 │   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-e + create-pkg-smoke
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду
 │   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
-├── supabase/                         # config.toml (проєкт + локальний стек), migrations/,
-│                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts
+│   ├── test-harness/pg/    # 🔴 V2: контур `pnpm test:schema` — підйом Postgres без Docker
+│   │                       # (PG_HARNESS_URL або ефемерний initdb), накат канону,
+│   │                       # інтроспекція ACL/політик, актори. Тести — у __tests__/
+├── supabase/                         # config.toml (проєкт + локальний стек),
+│                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts.
+│                                     # 🔴 migrations/ ТУТ БІЛЬШЕ НЕМАЄ (B13): канон —
+│                                     # packages/simplycms/migrations/ (baseline + сід)
 ├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);
 │                                     # solarstore — npm-пакет packages/simplycms-theme-solarstore/
 ├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
@@ -487,6 +507,19 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 - `VITE_SITE_URL` — Public site URL (production)
 - `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
 - `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
+
+🔴 **Ключі контуру V2** (трек К1а; серверні — читаються ЛИШЕ з `process.env` у
+рантаймі, клієнту не видно й `VITE_`-префікса не мають):
+- `DATABASE_URL` — пряме підключення до Postgres. Був tooling-ключем
+  (`db:pull`/`db:diff`/`db:dump-rls`), у V2 стає **рантайм-контрактом**: із нього
+  живе пул `simplycms/db`
+- `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` — серверний Better Auth (`simplycms/auth`)
+- `PG_HARNESS_URL` — опційний dev-ключ: готовий Postgres для `pnpm test:schema`
+  (без нього харнес підіймає ефемерний кластер сам)
+
+🔴 Обидва auth-контури зараз **співіснують**: застосунок ще ходить у GoTrue через
+`VITE_SUPABASE_*`, а `simplycms/auth` існує поруч і не підключений. Перемикання і
+знос `VITE_SUPABASE_*` — контур К1′б.
 
 🔴 **Контурів env два, і джерела в них різні** (спека CLI v1 §7, 2026-08-13).
 Клієнтський бандл читає `import.meta.env` — значення запікаються при

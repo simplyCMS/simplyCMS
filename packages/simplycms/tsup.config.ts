@@ -119,6 +119,7 @@ const profiles: Profile[] = [
       'src/domain/user-categories/index.ts',
       'src/schema/schema.ts',
       'src/schema/relations.ts',
+      'src/schema/types.ts',
       'src/supabase/index.ts',
       'src/supabase/keys.ts',
       'src/supabase/*-client.ts',
