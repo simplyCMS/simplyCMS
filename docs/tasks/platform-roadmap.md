@@ -46,12 +46,14 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 **V2-К1а** ([план](../superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md)).
 
 **Фази 0–4, трек «теми + клонування дизайну» і трек К0 завершені.**
-🔴 **Стан коду і стан реєстру зараз РІЗНІ.** У реєстрі npm — стара топологія
-`0.3.0`: 26 пакетів (25 `@simplycms/*` + unscoped `create-simplycms-store`).
-У коді (гілка К0) — **5 пакетів**: unscoped фреймворк `simplycms` (усе ядро
-T0–T5 теками) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` +
-`create-simplycms-store`. Зведення відбудеться релізом `0.4.0` і мержем у
-`main` — це дія власника (Task 9 плану К0). Магазин створюється
+✅ **Код і реєстр зведені 2026-08-24.** У реєстрі — **5 пакетів версії
+`0.4.0`**: unscoped фреймворк `simplycms` (усе ядро T0–T5 теками) + сателіти
+`@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`.
+Усі **22 злитих імені `@simplycms/*` deprecated** (усі версії 0.1.0–0.3.0)
+з вказівником на `simplycms` — Task 9 плану К0 закритий повністю.
+🔴 Пастка тулінгу, спіймана аудитом: `pnpm create simplycms-store` може
+взяти ЗАКЕШОВАНУ стару версію скаффолдера — для чистої перевірки пінуй
+явно (`pnpm create simplycms-store@0.4.0`). Магазин створюється
 `pnpm create simplycms-store` і збирається зі справжніх npm-пакетів; CLI
 (`simplycms doctor/add/create/update/db:diff/theme:conformance`), плагіни
 (SDK + референси), теми за контрактом v3 (tokens/fonts + опційні views

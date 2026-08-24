@@ -256,8 +256,14 @@ export const routes = rootRoute('__root.tsx', [
 
 ### Task 9: Реліз і пост-реліз (дії власника, асистовані)
 
-- [ ] **Step 1 (власник):** мерж PR = релізне рішення (ПК11): CI публікує 5 пакетів, unscoped-ім'я зайняте (ПК2). Перевірити job `publish`.
-- [ ] **Step 2:** deprecate 22 злитих імен (після появи `simplycms` у реєстрі; той самий Granular-токен):
+- [x] **Step 1 (власник):** мерж PR = релізне рішення (ПК11): CI публікує 5 пакетів, unscoped-ім'я зайняте (ПК2). Перевірити job `publish`.
+      Виконано 2026-08-24: `simplycms@0.4.0` і 4 сателіти в реєстрі, job
+      `Publish Packages` — success.
+- [x] **Step 2:** deprecate 22 злитих імен (після появи `simplycms` у реєстрі; той самий Granular-токен):
+      Виконано 2026-08-24 — **22/22**, перевірено незалежним читанням
+      `npm view <pkg>@0.3.0 deprecated`; усі 5 чинних пакетів не зачеплені
+      (контрольна перевірка). Deprecate накриває ВСІ версії кожного імені
+      (0.1.0…0.3.0), не лише останню.
 
 ```bash
 for p in objects domain schema supabase data-supabase react-query runtime \
