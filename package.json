@@ -35,7 +35,8 @@
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:generate-types": "node supabase/scripts/update-types.mjs",
-    "types:baseline": "node scripts/types-baseline.mjs"
+    "types:baseline": "node scripts/types-baseline.mjs",
+    "db:demo": "node scripts/demo-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

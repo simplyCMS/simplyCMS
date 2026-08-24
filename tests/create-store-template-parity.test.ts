@@ -54,13 +54,17 @@ describe('create-store template: парність із монорепо', () => 
   // Склад асертиться ТОЧНО, а не порогом: порядок накату задає саме імʼя
   // файлу, тож зайвий чи перейменований файл — це зламаний накат на чисту БД,
   // а не «дрібний дрейф». Копію в шаблоні стереже перевірка SYNCED_DIRS вище.
-  it('канон міграцій ядра — 0000_prelude → 0003_seed + README', () => {
+  // 🔴 `demo/demo-seed.sql` тут теж є, але НЕ входить у канон: readdir у
+  // каноні (`db-diff.mjs`, `apply.mjs`) нерекурсивний і бере лише `*.sql`
+  // верхнього рівня, тож піддиректорія `demo/` для накату канону невидима.
+  it('канон міграцій ядра — 0000_prelude → 0003_seed + README + demo/', () => {
     expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
       '0002_grants.sql',
       '0003_seed.sql',
       'README.md',
+      'demo/demo-seed.sql',
     ]);
   });
 
