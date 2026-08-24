@@ -79,7 +79,7 @@ pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-с�
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/`
   (подвійна бухгалтерія навмисна, комітяться обидві теки; нумерація в них
   своя — drizzle не бачить рукописних файлів канону). 🔴 Schema-тулінг
-  (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`, `scripts/dump-rls.mjs`)
+  (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`)
   живе на рівні ПАКЕТА, не в `src/schema/`.
 - Seed-міграції ядра (reference): `packages/simplycms/seed-migrations/`.
 - Копію канону для магазину везе шаблон скаффолдера

@@ -317,7 +317,7 @@ simplyCMS/
 │   │   ├── migrations/           # КАНОН core-міграцій (B13): baseline 0000_prelude →
 │   │   │                         #    0003_seed; джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
-│   │   ├── drizzle/ + drizzle.config.ts + scripts/dump-rls.mjs  # schema-тулінг
+│   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг
 │   │   └── tsup.config.ts        # МАСИВ профілів; 🔴 target: 'esnext' — у спільному base
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
@@ -574,7 +574,7 @@ production-`node_modules` (потрібен рівно один рантайм-�
 ## Database Commands
 
 Джерело правди схеми — `packages/simplycms/src/schema/schema.ts` (Drizzle).
-Schema-тулінг (`drizzle/`, `drizzle.config.ts`, `scripts/dump-rls.mjs`,
+Schema-тулінг (`drizzle/`, `drizzle.config.ts`,
 `seed-migrations/`) живе на рівні ПАКЕТА, не в `src/`; root-скрипти
 `db:pull` — це `pnpm --filter simplycms run …`.
 
