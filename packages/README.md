@@ -28,7 +28,9 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 |-------------|---------|------|------|
 | `contracts/` | `simplycms/contracts` | T0 | Контракти доменних обʼєктів + порти (репозиторії, провайдери, `EngineContext`) + view-model-и вітрини (`./views`, контракт тем v3). 0 runtime-залежностей; тонкий рантайм-шар у `./views` (константи реквізитів) і `./views/fixtures` (фікстури conformance). `react` — опційний type-only peer саме через типи слотів `./views` (у барель не потрапляє) |
 | `domain/` | `simplycms/domain` | T1 | Чиста комерційна логіка — `./pricing`, `./discounts`, `./inventory`, `./shipping`. Без IO |
-| `schema/` | `simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS. Тулінг (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`, `scripts/dump-rls.mjs`) — на рівні пакета, не в `src/` |
+| `schema/` | `simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS. Тулінг (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`) — на рівні пакета, не в `src/` |
+| `db/` | `simplycms/db` | T2 | db-рантайм v2: пул `pg` + `withActor` (транзакція + claims `app.user_id` + `SET LOCAL ROLE`). 🔴 Єдиний канал до Postgres — субшляху `./db/client` в `exports` немає, прямий імпорт фабрики пулу є помилкою лінту |
+| `auth/` | `simplycms/auth` | T2 | Серверний auth-контур v2 (Better Auth, пін версії): інстанс + `drizzleAdapter` над схемою, хук `user.create.after` (`profiles`+`user_roles`, інваріант `first_user_no_auto_admin`), invite власника, typed authz (`requireOperation`, матриця «роль × операція»). 🔴 Ще НЕ підключений до `start.ts`/роутів — це К1′б. Імпортує `db` (свій тір) навмисно: зʼєднання лише через `withActor` |
 | `supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД (`database.ts`) |
 | `data-supabase/` | `simplycms/data-supabase` | T2 | Реалізації портів на Supabase (DI: інʼєктований клієнт + `ScopeResolver`) |
 | `react-query/` | `simplycms/react-query` | T2 | Хуки TanStack Query через `EngineProvider`/`useEngine` |

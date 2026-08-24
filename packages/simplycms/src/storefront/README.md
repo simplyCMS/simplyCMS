@@ -1,14 +1,12 @@
 # simplycms/storefront
 
 SSR-лоадери вітрини (товари, розділи, характеристики, головна) і генератори
-`sitemap.xml` / `robots.txt`. Пакет не створює Supabase-клієнт і не знає про
-фреймворк: клієнт та `baseUrl` інжектує host, який сам загортає виклик у
-`createServerFn`.
+`sitemap.xml` / `robots.txt`.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
-постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
-створюється скаффолдером `pnpm create simplycms-store`.
+e-commerce CMS на TanStack Start. Окремим пакетом він більше не постачається:
+усе ядро приходить одним npm-пакетом `simplycms`, а магазин створюється
+скаффолдером `pnpm create simplycms-store`.
 
 ## Встановлення
 
@@ -23,41 +21,41 @@ pnpm add simplycms
 | Subpath | Експорти |
 |---------|----------|
 | `simplycms/storefront`          | Тип `StorefrontClient` + реекспорт `./loaders` і `./seo` |
-| `simplycms/storefront/loaders`  | `loadHomePageData`, `loadProduct`, `loadProducts`, `loadProductsBySectionId`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, константи `PRODUCT_FULL_SELECT` / `PRODUCT_LIST_SELECT`, тип `RootSection` |
+| `simplycms/storefront/loaders`  | `withStorefrontDb`, `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 
-Перший аргумент кожного лоадера — `StorefrontClient` (це `SupabaseClient` без
-фіксованої `Database`, тож типізований клієнт магазину підходить структурно).
+## Як лоадери ходять у БД (В2-К1а)
 
-## Приклад
+Лоадери — **server-only** і працюють на Drizzle поверх чистого Postgres.
+Перший аргумент кожного — `ActorDb`, тобто drizzle-інстанс, прибіндований до
+транзакції конкретного актора. Транзакцію відкриває `withStorefrontDb`:
 
 ```ts
-// packages/simplycms/src/storefront-routes/server/home.ts — host-glue навколо лоадера
-import { createServerFn } from '@tanstack/react-start';
-import { loadHomePageData } from 'simplycms/storefront/loaders';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
+import {
+  loadSectionBySlug,
+  loadProductList,
+  withStorefrontDb,
+} from 'simplycms/storefront/loaders';
 
-export const getHomePageData = createServerFn({ method: 'GET' }).handler(
-  async () => loadHomePageData(createServerSupabase()),
-);
-
-// packages/simplycms/src/storefront-routes/seo/sitemap.ts — той самий принцип для SEO
-import { createAnonSupabaseClient } from 'simplycms/supabase/anon-client';
-import { buildSitemapXml as buildSitemap } from 'simplycms/storefront/seo';
-
-// 🔴 Базовий URL — ЛІНИВО з `process.env` у момент виклику, а не константою
-// на модуль-рівні: це серверний модуль, а серверний контур читає env лише з
-// `process.env` і лише в рантаймі (контракт CLI v1 §7). `import.meta.env`
-// запікся б у білд, а модуль-рівнева константа зафіксувала б значення на
-// момент імпорту — ротація ключів перестала б діяти без перезбірки.
-function siteUrl(): string {
-  return process.env.VITE_SITE_URL || 'https://example.com';
-}
-
-export function buildSitemapXml(): Promise<string> {
-  return buildSitemap(createAnonSupabaseClient(), siteUrl());
-}
+const data = await withStorefrontDb(async (db) => {
+  const section = await loadSectionBySlug(db, slug);
+  return section ? loadProductList(db, section.id) : [];
+});
 ```
+
+🔴 Обгортка приймає функцію навмисно: усі запити однієї сторінки мають лягти в
+**одну** транзакцію, інакше сторінка збирається з різних знімків БД. Роль
+актора — завжди `app_user` і без `userId`: вітрина рендериться анонімно.
+
+## 🔴 Видимість фільтрує КОД, а не база
+
+У моделі безпеки B5″ на каталозі немає RLS: `app_user` має `SELECT` на всю
+таблицю, бо «активність» — це правило показу, а не право доступу. Отже кожен
+публічний запит зобовʼязаний нести предикат видимості явно
+(`is_active = true` для товарів, розділів і банерів; `has_page = true` для
+характеристик). Забутий предикат не дає помилки — він тихо виводить чернетки
+у вітрину. Негативний контроль — `test-harness/pg/__tests__/storefront-loaders.test.ts`
+(контур `pnpm test:schema`).
 
 ## 🔴 `buildSitemapXml` кидає, а не віддає порожню карту
 

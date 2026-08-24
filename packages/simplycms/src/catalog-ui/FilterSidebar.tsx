@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { X } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 
@@ -55,7 +55,6 @@ export function FilterSidebar({
   products = [],
 }: FilterSidebarProps) {
   const t = useT();
-  const supabase = useSupabaseClient();
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([
     priceRange?.min || 0,
     priceRange?.max || 100000,
@@ -68,67 +67,21 @@ export function FilterSidebar({
     setLocalPriceRange([priceRange.min, priceRange.max]);
   }
 
-  const { data: properties } = useQuery({
-    queryKey: ['section-filter-properties', sectionId],
-    queryFn: async () => {
-      if (!sectionId) return [];
-      const { data, error } = await supabase
-        .from('section_property_assignments')
-        .select(
-          `
-          applies_to,
-          property:property_id (
-            id,
-            name,
-            slug,
-            property_type,
-            is_filterable
-          )
-        `,
-        )
-        .eq('section_id', sectionId);
-      if (error) throw error;
-      const propertyMap = new Map<string, Property>();
-      data.forEach((a) => {
-        const prop = a.property as Property | null;
-        if (prop && prop.is_filterable && !propertyMap.has(prop.id)) {
-          propertyMap.set(prop.id, prop);
-        }
-      });
-      return Array.from(propertyMap.values());
-    },
+  /**
+   * 🔴 Один серверний виклик замість двох послідовних запитів браузера:
+   * другий чекав на перший, бо будував `in (…)` з його ж результату. Тепер
+   * характеристики й опції приходять однією транзакцією.
+   */
+  const { data } = useQuery({
+    queryKey: ['section-filters', sectionId],
+    queryFn: () =>
+      getSectionFilters({ data: { sectionId: sectionId as string } }),
     enabled: !!sectionId,
   });
 
-  const filterableProperties = properties || [];
-
-  const selectPropertyIds = filterableProperties
-    .filter(
-      (p) => p.property_type === 'select' || p.property_type === 'multiselect',
-    )
-    .map((p) => p.id);
-
-  const { data: propertyOptions } = useQuery({
-    queryKey: ['filter-property-options', selectPropertyIds],
-    queryFn: async () => {
-      if (selectPropertyIds.length === 0) return {};
-      const { data, error } = await supabase
-        .from('property_options')
-        .select('*')
-        .in('property_id', selectPropertyIds)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      const grouped: Record<string, PropertyOption[]> = {};
-      data?.forEach((opt) => {
-        if (!grouped[opt.property_id]) {
-          grouped[opt.property_id] = [];
-        }
-        grouped[opt.property_id].push(opt);
-      });
-      return grouped;
-    },
-    enabled: selectPropertyIds.length > 0,
-  });
+  const filterableProperties: Property[] = data?.properties ?? [];
+  const propertyOptions: Record<string, PropertyOption[]> | undefined =
+    data?.optionsByProperty as Record<string, PropertyOption[]> | undefined;
 
   const [localNumericRanges, setLocalNumericRanges] = useState<
     Record<string, [number, number]>

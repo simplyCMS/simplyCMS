@@ -2,11 +2,11 @@ import { createFileRoute } from '@tanstack/react-router';
 import AuthSetPassword from 'simplycms/storefront-routes/pages/AuthSetPassword';
 
 /**
- * Встановлення пароля після invite-редіректу (спека 2026-08-03 §4.4).
+ * Встановлення нового пароля за одноразовим токеном (К1′б).
  *
  * `beforeLoad`-редіректу залогіненого тут навмисно НЕМАЄ (на відміну від
- * `/auth/`): користувач приходить сюди саме із сесією, яку щойно поставив
- * `/auth/confirm`, — гард зробив би сторінку недосяжною.
+ * `/auth/`): сюди веде посилання з листа, і власник ЧИННОЇ сесії теж має
+ * право змінити пароль — гард зробив би цей випадок недосяжним.
  */
 export const Route = createFileRoute('/auth/set-password')({
   head: () => ({

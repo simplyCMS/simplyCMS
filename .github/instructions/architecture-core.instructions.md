@@ -98,7 +98,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Система тем (контракт v3): `ThemeModule = { manifest, tokens, components, settings?, views? }`. Дані, SEO й лоадери публічних сторінок лишаються ядром (`simplycms/storefront-routes/pages/`); тема дає `components` (Header/Footer/…) і `tokens`, які розкладає `applyTokens`, а опційно — `views` для пʼятьох сторінок вітрини (`Home`, `Catalog`, `CatalogSection`, `ProductDetail`, `Cart`): лише розмітка поверх готових `vm.slots`, під гейтом `pnpm simplycms theme:conformance <slug>`.
 - Система плагінів: контракт — `definePlugin` з `simplycms/plugin-sdk` (слоти, Zod-settings, власні таблиці `plg_*`, каталог i18n `plugin.<name>.*`); розширення через `HookRegistry`; `PluginSlot` реактивний (`hookRegistry.subscribe` + `useSyncExternalStore`) — віджет зʼявляється без reload. 🔴 Плагін НЕ імпортує Supabase-шар — лише порти SDK (dependency-lint); механізм цілком — `docs/architecture/plugins.md`.
 - Конфігурація CMS через `simplycms.config.ts` (`defineConfig`: теми, плагіни, `siteUrl`, SEO) — одне джерело істини для `theme-registry.ts` і `bootstrapPlugins`.
-- Зміни схеми БД: `db:pull` → правка `packages/simplycms/src/schema/schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Supabase MCP — **лише** для інспекції.
+- Зміни схеми БД: правка `packages/simplycms/src/schema/schema.ts` → `db:diff <name>` (→ `packages/simplycms/migrations/`) → ревʼю SQL → `test:schema`. Supabase MCP — **лише** для інспекції.
 
 ## ❌ NEVER
 - Не розміщуй бізнес-логіку в темах (теми — лише візуальна складова).

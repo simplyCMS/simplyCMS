@@ -3,6 +3,15 @@
 Supabase-клієнти ядра SimplyCMS (browser / server / anon), DI-провайдер
 `SupabaseProvider`, резолв env-ключів і **baseline типів БД** core-схеми.
 
+> 🔴 **Статус у треку V2 (2026-08-23): шар ЖИВИЙ і заморожений до контуру
+> К1′б.** Поруч уже існує `simplycms/db` (пул + `withActor`) і
+> `simplycms/auth` (Better Auth), але застосунок на них ще НЕ перемкнено:
+> вітрина, адмінка й воронка досі ходять у БД цими клієнтами. Тому дуальність
+> типів (`supabase/types.ts` магазину + `database.ts` тут + новий
+> `simplycms/schema/types` із Drizzle) — **свідома, а не борг до прибирання**:
+> вона зникне разом з останнім `useSupabaseClient()`. Рішення B12 — спека
+> бекенд-контракту v2, амендмент 2026-08-23.
+
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин

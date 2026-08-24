@@ -18,33 +18,25 @@ import { useSectionProducts } from '../pages/home/queries';
 
 const SECTION_ID = 'sec-1';
 
-/** Thenable-білдер, що завжди резолвиться заданими даними. */
-function createSupabaseStub(rows: unknown[]) {
-  const result = { data: rows, error: null };
-  const builder: Record<string, unknown> = {};
-  const chain = () => builder;
-  builder.select = chain;
-  builder.eq = chain;
-  builder.order = chain;
-  builder.limit = chain;
-  builder.then = <TResult,>(onfulfilled: (value: typeof result) => TResult) =>
-    Promise.resolve(result).then(onfulfilled);
-
-  return { from: () => builder };
-}
-
+/**
+ * 🔴 Мокається серверна функція, а не supabase-клієнт: карусель головної
+ * більше не ходить у базу з браузера — вона кличе `getSectionProducts`.
+ */
 const freshRow = {
   id: 'fresh-product',
   name: 'Свіжий товар',
   slug: 'fresh-product',
-  images: null,
+  images: [],
   short_description: null,
   stock_status: 'in_stock',
-  sections: { slug: 'panels' },
+  section: { slug: 'panels' },
 };
 
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => createSupabaseStub([freshRow]),
+vi.mock('../server/home', () => ({
+  getFeaturedProducts: vi.fn(),
+  getNewProducts: vi.fn(),
+  getRootSections: vi.fn(),
+  getSectionProducts: vi.fn(async () => [freshRow]),
 }));
 
 describe('useSectionProducts — не ділить ключ кешу з каталогом розділу', () => {
@@ -75,17 +67,7 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Дані хука — свої (fetched), а не підмінені сентинелом каталогу.
-    expect(result.current.data).toEqual([
-      {
-        id: 'fresh-product',
-        name: 'Свіжий товар',
-        slug: 'fresh-product',
-        images: [],
-        short_description: null,
-        stock_status: 'in_stock',
-        section: { slug: 'panels' },
-      },
-    ]);
+    expect(result.current.data).toEqual([freshRow]);
     expect(result.current.data).not.toEqual(catalogPageCacheSentinel);
 
     // Іменований ключ хука — фабрика react-query, не сирий рядок каталогу.

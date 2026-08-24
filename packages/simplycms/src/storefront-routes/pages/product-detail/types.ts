@@ -1,17 +1,17 @@
 // Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
 
 import type { DiscountResult } from 'simplycms/domain/discounts';
-import type { Tables } from 'simplycms/supabase';
+import type { ProductDetailRow } from 'simplycms/storefront/loaders';
 
 /**
  * Рядок товару з приєднаними гілками (`sections`, `product_modifications`,
  * `product_prices`, `product_property_values`).
  *
- * Форма — та сама, що вже оголошував проп сторінки: типів джойнів supabase
- * тут не виводить, тож приєднані гілки читаються явними кастами на місці
- * використання (як і до спліту).
+ * 🔴 Тип тепер приходить із серверного лоадера, а не з генерату PostgREST:
+ * SSR і клієнт беруть товар ОДНИМ і тим самим `getProduct`, тож розходитись
+ * їхнім формам більше ні на чому.
  */
-export type ProductDetailProduct = Tables<'products'> & Record<string, unknown>;
+export type ProductDetailProduct = ProductDetailRow;
 
 /** Модифікація товару у вигляді, потрібному картці. */
 export interface ProductModificationRow {

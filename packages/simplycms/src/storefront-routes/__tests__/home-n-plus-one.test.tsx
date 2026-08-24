@@ -16,27 +16,14 @@ import type { HomeProduct, HomeSection } from '../pages/home/types';
  * лише каруселі пропускала б розрив у будь-якій із цих ланок.
  */
 
-/** Значення `section_id` кожного клієнтського запиту товарів */
+/**
+ * Розділи, по яких карусель СХОДИЛА на сервер.
+ *
+ * 🔴 Лічильник переїхав із supabase-білдера на серверну функцію: після
+ * переходу вітрини на `createServerFn` клієнтський запит — це виклик
+ * `getSectionProducts`, і саме його відсутність тепер доводить, що N+1 немає.
+ */
 const sectionIdCalls: string[] = [];
-
-function createSupabaseSpy() {
-  const builder: Record<string, unknown> = {};
-  const chain = () => builder;
-  builder.select = chain;
-  builder.is = chain;
-  builder.order = chain;
-  builder.limit = chain;
-  builder.eq = (column: string, value: unknown) => {
-    if (column === 'section_id') sectionIdCalls.push(String(value));
-    return builder;
-  };
-  builder.then = <TResult,>(
-    onfulfilled: (value: { data: unknown[]; error: null }) => TResult,
-  ) => Promise.resolve({ data: [], error: null }).then(onfulfilled);
-  return { from: () => builder };
-}
-
-const mockSupabase = createSupabaseSpy();
 
 /** Дані, які «віддає» лоадер роуту в поточному тесті */
 let loaderData: HomeLoaderData;
@@ -49,12 +36,20 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }));
 
+// 🔴 ОДИН `vi.mock` на модуль. Роут імпортує його bare-специфікатором
+// (`simplycms/storefront-routes/server/home`), а сторінка — відносним
+// шляхом; обидва резолвляться в той самий файл, тож два окремі моки того
+// самого id дають нестабільний результат залежно від порядку файлів у
+// прогоні (спіймано: у поодинокому запуску зелено, у повному — ні).
 vi.mock('simplycms/storefront-routes/server/home', () => ({
   getHomePageData: async () => loaderData,
-}));
-
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => mockSupabase,
+  getFeaturedProducts: async () => [],
+  getNewProducts: async () => [],
+  getRootSections: async () => [],
+  getSectionProducts: async ({ data }: { data: { id: string } }) => {
+    sectionIdCalls.push(data.id);
+    return [];
+  },
 }));
 
 vi.mock('../shells/useActiveThemeModule', () => ({

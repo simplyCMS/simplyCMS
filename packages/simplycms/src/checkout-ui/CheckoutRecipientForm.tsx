@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserPlus, ChevronRight, Save } from 'lucide-react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
+import {
+  useRecipientBook,
+  type RecipientRow,
+} from 'simplycms/core/hooks/useRecipientBook';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 import { RecipientCard } from './RecipientCard';
@@ -14,57 +16,37 @@ interface CheckoutRecipientFormProps {
   onChange: (field: string, value: string | boolean) => void;
 }
 
-interface SavedRecipient {
-  id: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  email: string | null;
-  city: string;
-  address: string;
-  notes: string | null;
-  is_default: boolean;
-}
-
 const MAX_VISIBLE_CARDS = 3;
 
+/**
+ * Отримувач замовлення й книга збережених отримувачів.
+ *
+ * 🔴 Книга читається серверним викликом під актором покупця, а не запитом
+ * браузера з `user_id` у предикаті: підставлений чужий id більше не існує як
+ * параметр — ідентичність бере сесія (`readSessionSubject`).
+ */
 export function CheckoutRecipientForm({
   values,
   onChange,
 }: CheckoutRecipientFormProps) {
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const t = useT();
-  const queryClient = useQueryClient();
   const hasDifferentRecipient = values.hasDifferentRecipient;
   const selectedRecipientId = values.savedRecipientId as string | undefined;
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [originalRecipient, setOriginalRecipient] =
-    useState<SavedRecipient | null>(null);
+    useState<RecipientRow | null>(null);
 
-  const { data: savedRecipients } = useQuery({
-    queryKey: ['checkout-saved-recipients', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('user_recipients')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as SavedRecipient[];
-    },
-    enabled: !!user,
-  });
+  const { recipients: savedRecipients, save: saveRecipient } =
+    useRecipientBook(!!user);
 
-  const visibleRecipients = useMemo(() => {
-    if (!savedRecipients) return [];
-    return savedRecipients.slice(0, MAX_VISIBLE_CARDS);
-  }, [savedRecipients]);
+  const visibleRecipients = useMemo(
+    () => (savedRecipients ?? []).slice(0, MAX_VISIBLE_CARDS),
+    [savedRecipients],
+  );
 
   const showMoreButton =
     savedRecipients && savedRecipients.length > MAX_VISIBLE_CARDS;
@@ -119,7 +101,7 @@ export function CheckoutRecipientForm({
     }
   };
 
-  const fillRecipientFields = (recipient: SavedRecipient) => {
+  const fillRecipientFields = (recipient: RecipientRow) => {
     onChange('recipientFirstName', recipient.first_name);
     onChange('recipientLastName', recipient.last_name);
     onChange('recipientPhone', recipient.phone);
@@ -141,38 +123,47 @@ export function CheckoutRecipientForm({
     ].forEach((f) => onChange(f, ''));
   }, [onChange]);
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!originalRecipient) return;
-      const { error } = await supabase
-        .from('user_recipients')
-        .update({
-          first_name: currentValues.firstName,
-          last_name: currentValues.lastName,
-          phone: currentValues.phone,
-          email: currentValues.email || null,
-          city: currentValues.city,
-          address: currentValues.address,
-          notes: currentValues.notes || null,
-        })
-        .eq('id', originalRecipient.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['checkout-saved-recipients'],
-      });
-      toast({ title: t('common.recipient.updated') });
-    },
+  /** Поля форми → вхід serverFn (порожній рядок означає «немає значення»). */
+  const toInput = (isDefault: boolean) => ({
+    firstName: currentValues.firstName,
+    lastName: currentValues.lastName,
+    phone: currentValues.phone,
+    email: currentValues.email || null,
+    city: currentValues.city,
+    address: currentValues.address,
+    notes: currentValues.notes || null,
+    isDefault,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('user_recipients')
-        .insert({
-          user_id: user.id,
+  /**
+   * 🔴 `null` у відповіді — рядок актору не належить: RLS не віддала його
+   * `returning`. Показати «оновлено» в цьому разі означало б збрехати.
+   */
+  const handleUpdateRecipient = () => {
+    if (!originalRecipient) return;
+    saveRecipient.mutate(
+      { id: originalRecipient.id, ...toInput(originalRecipient.is_default) },
+      {
+        onSuccess: (id) => {
+          if (!id) {
+            toast({ title: t('common.error'), variant: 'destructive' });
+            return;
+          }
+          toast({ title: t('common.recipient.updated') });
+        },
+      },
+    );
+  };
+
+  const handleCreateRecipient = () => {
+    if (!user) return;
+    saveRecipient.mutate(toInput(false), {
+      onSuccess: (id) => {
+        if (!id) return;
+        toast({ title: t('checkout.recipientForm.created') });
+        onChange('savedRecipientId', id);
+        setOriginalRecipient({
+          id,
           first_name: currentValues.firstName,
           last_name: currentValues.lastName,
           phone: currentValues.phone,
@@ -181,27 +172,15 @@ export function CheckoutRecipientForm({
           address: currentValues.address,
           notes: currentValues.notes || null,
           is_default: false,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: ['checkout-saved-recipients'],
-      });
-      toast({ title: t('checkout.recipientForm.created') });
-      if (data) {
-        onChange('savedRecipientId', data.id);
-        setOriginalRecipient(data as SavedRecipient);
-      }
-    },
-  });
+          usage_count: 0,
+        });
+      },
+    });
+  };
 
   const handleSaveClick = () => {
     if (originalRecipient) setSaveDialogOpen(true);
-    else if (user) createMutation.mutate();
+    else if (user) handleCreateRecipient();
   };
 
   const handleCancelChanges = () => {
@@ -405,9 +384,7 @@ export function CheckoutRecipientForm({
                     type="button"
                     className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-2"
                     onClick={handleSaveClick}
-                    disabled={
-                      updateMutation.isPending || createMutation.isPending
-                    }
+                    disabled={saveRecipient.isPending}
                   >
                     <Save className="h-4 w-4" />
                     {t('checkout.recipientForm.saveChanges')}
@@ -438,10 +415,10 @@ export function CheckoutRecipientForm({
             ? `${originalRecipient.first_name} ${originalRecipient.last_name}`
             : undefined
         }
-        onUpdate={() => updateMutation.mutate()}
+        onUpdate={handleUpdateRecipient}
         onCreate={() => {
           onChange('savedRecipientId', '');
-          createMutation.mutate();
+          handleCreateRecipient();
         }}
         onCancel={handleCancelChanges}
       />

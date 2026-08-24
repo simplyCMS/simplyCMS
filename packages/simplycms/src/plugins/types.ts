@@ -43,6 +43,48 @@ export interface Plugin {
   updated_at: string;
 }
 
+/**
+ * Рядок, який bootstrap дописує в `plugins` для ще невідомого магазину.
+ *
+ * Ключі — snake_case колонок БД: рядок їде на сервер serverFn-ом і лягає в
+ * INSERT як є. `is_active` тут немає навмисно — його задає сервер.
+ */
+export interface PluginBootstrapRow {
+  name: string;
+  display_name: string;
+  version: string;
+  description: string | null;
+  author: string | null;
+  hooks: PluginHookDefinition[];
+}
+
+/**
+ * Рядок `plugins` у формі, яку віддає serverFn.
+ *
+ * 🔴 Відрізняється від `Plugin` рівно тим, що jsonb-поля типізовані як JSON,
+ * а не `unknown`. Це не педантизм: результат serverFn їде на клієнт
+ * серіалізацією, і `unknown` для TanStack Start означає «може не пережити
+ * дорогу» — тип не збирається. `PluginRecord` присвоюється в `Plugin`
+ * структурно, тож рантайм плагінів працює з ним без кастів.
+ */
+export interface PluginRecord extends Omit<
+  Plugin,
+  'config' | 'hooks' | 'migrations_applied'
+> {
+  config: PluginJson;
+  hooks: PluginJson;
+  migrations_applied: PluginJson;
+}
+
+/** JSON без `undefined` — рівно те, що переживає серіалізацію serverFn. */
+export type PluginJson =
+  | string
+  | number
+  | boolean
+  | null
+  | PluginJson[]
+  | { [key: string]: PluginJson };
+
 // Parsed plugin with typed fields
 export interface ParsedPlugin extends Omit<
   Plugin,

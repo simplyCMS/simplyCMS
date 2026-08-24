@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { Package, Calendar, ChevronRight, Filter } from 'lucide-react';
 import { Card, CardContent } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
@@ -13,87 +14,37 @@ import {
   SelectValue,
 } from 'simplycms/ui/select';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
+import { getMyOrders, getOrderStatuses } from '../server/profile-orders';
 
-interface Order {
-  id: string;
-  order_number: string;
-  total: number;
-  created_at: string;
-  status_id: string | null;
-  status: {
-    id: string;
-    name: string;
-    color: string | null;
-  } | null;
-  items: {
-    id: string;
-    name: string;
-    quantity: number;
-  }[];
-}
-
-interface OrderStatus {
-  id: string;
-  name: string;
-  color: string | null;
-}
+/** Значення фільтра «усі статуси». */
+const ALL_STATUSES = 'all';
 
 export default function ProfileOrdersPage() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [statuses, setStatuses] = useState<OrderStatus[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedStatus, setSelectedStatus] = useState<string>(ALL_STATUSES);
 
-  useEffect(() => {
-    async function loadStatuses() {
-      const { data } = await supabase
-        .from('order_statuses')
-        .select('id, name, color')
-        .order('sort_order');
-      setStatuses(data || []);
-    }
-    loadStatuses();
-  }, [supabase]);
+  const { data: statuses = [] } = useQuery({
+    queryKey: ['order-statuses'],
+    queryFn: () => getOrderStatuses(),
+  });
 
-  useEffect(() => {
-    async function loadOrders() {
-      if (!user) return;
-      setIsLoading(true);
-
-      try {
-        let query = supabase
-          .from('orders')
-          .select(
-            `
-            id, order_number, total, created_at, status_id,
-            status:order_statuses(id, name, color),
-            items:order_items(id, name, quantity)
-          `,
-          )
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (selectedStatus !== 'all') {
-          query = query.eq('status_id', selectedStatus);
-        }
-
-        const { data } = await query;
-        setOrders(data || []);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadOrders();
-  }, [user, selectedStatus, supabase]);
+  /**
+   * 🔴 Список замовлень — під актором власника сесії (див. `Profile.tsx`).
+   * Фільтр статусу їде параметром, бо він і є вибором користувача; чиї саме
+   * замовлення показати — параметром НЕ їде і їхати не може.
+   */
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['my-orders', user?.id, selectedStatus],
+    queryFn: () =>
+      getMyOrders({
+        data:
+          selectedStatus === ALL_STATUSES ? {} : { statusId: selectedStatus },
+      }),
+    enabled: !!user,
+  });
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
@@ -122,7 +73,7 @@ export default function ProfileOrdersPage() {
               <SelectValue placeholder={t('profile.orders.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">
+              <SelectItem value={ALL_STATUSES}>
                 {t('profile.orders.allStatuses')}
               </SelectItem>
               {statuses.map((status) => (
@@ -153,19 +104,19 @@ export default function ProfileOrdersPage() {
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">
               {t(
-                selectedStatus === 'all'
+                selectedStatus === ALL_STATUSES
                   ? 'profile.noOrders'
                   : 'profile.orders.noneForStatus',
               )}
             </h2>
             <p className="text-muted-foreground mb-4">
               {t(
-                selectedStatus === 'all'
+                selectedStatus === ALL_STATUSES
                   ? 'profile.orders.emptyHint'
                   : 'profile.orders.filterHint',
               )}
             </p>
-            {selectedStatus === 'all' && (
+            {selectedStatus === ALL_STATUSES && (
               <Button asChild>
                 <Link to="/catalog">{t('cart.empty.cta')}</Link>
               </Button>

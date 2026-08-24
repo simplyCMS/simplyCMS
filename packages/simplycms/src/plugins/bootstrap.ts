@@ -1,7 +1,7 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { listPluginNames, registerPlugins } from 'simplycms/plugins/server';
 import { registerPluginModule, loadPlugins } from './PluginLoader';
 import { validatePluginModule } from './validatePluginModule';
-import type { PluginModule } from './types';
+import type { PluginBootstrapRow, PluginModule } from './types';
 
 /** Опис плагіна в конфізі магазину: імʼя + ліниве завантаження модуля. */
 export interface PluginRegistration {
@@ -9,18 +9,7 @@ export interface PluginRegistration {
   module: () => Promise<{ default: PluginModule }>;
 }
 
-/** Рядок, який bootstrap вставляє в `plugins` для ще невідомого магазину. */
-interface PluginInsert {
-  name: string;
-  display_name: string;
-  version: string;
-  description: string | null;
-  author: string | null;
-  hooks: unknown;
-  is_active: boolean;
-}
-
-function toInsert(name: string, module: PluginModule): PluginInsert {
+function toRow(name: string, module: PluginModule): PluginBootstrapRow {
   // `manifest` у PluginModule опційний — падати назад на імʼя з конфіга.
   const manifest = module.manifest;
   return {
@@ -32,7 +21,6 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
     // Без hooks рядок від bootstrap був біднішим за рядок від сіду —
     // адмінка показувала б порожній список хуків встановленого плагіна.
     hooks: manifest?.hooks ?? [],
-    is_active: false,
   };
 }
 
@@ -40,42 +28,40 @@ function toInsert(name: string, module: PluginModule): PluginInsert {
  * Дописує в таблицю `plugins` рядки для модулів, яких там ще немає, —
  * інакше адмінка не побачила б встановлений через конфіг плагін.
  *
- * Спершу SELECT, і лише потім INSERT відсутніх: RLS дозволяє читати всім,
- * а писати — лише адміну (політика `Admins can manage plugins`). Тому запис
- * навіть не пробуємо без сесії: анонімний відвідувач інакше отримував би
- * гарантований RLS-фейл у консолі на кожному завантаженні сторінки. Рядок
- * зʼявиться, щойно на сайт зайде адмін — тобто рівно тоді, коли він потрібен.
+ * Спершу читання імен, і лише потім запис відсутніх: читає будь-хто, пише
+ * лише адмін. Рядок зʼявиться, щойно на сайт зайде адмін — тобто рівно тоді,
+ * коли він потрібен.
+ *
+ * 🔴 `canWrite` — підказка, а не рубіж: право перевіряє серверний хендлер
+ * `registerPlugins` із сесії запиту. Тут прапорець економить анонімові
+ * гарантовано відмовний виклик на кожному завантаженні сторінки.
  */
 async function syncPluginRows(
   modules: Map<string, PluginModule>,
-  supabase: SupabaseClient,
+  canWrite: boolean,
 ): Promise<void> {
   if (modules.size === 0) return;
 
-  const { data, error } = await supabase.from('plugins').select('name');
-  if (error) {
+  let known: Set<string>;
+  try {
+    known = new Set(await listPluginNames());
+  } catch (error) {
     console.error('[plugins] Не вдалося прочитати таблицю plugins:', error);
     return;
   }
 
-  const known = new Set(
-    ((data ?? []) as { name: string }[]).map((row) => row.name),
-  );
   const missing = [...modules.entries()]
     .filter(([name]) => !known.has(name))
-    .map(([name, module]) => toInsert(name, module));
+    .map(([name, module]) => toRow(name, module));
 
   if (missing.length === 0) return;
 
-  const { data: auth } = await supabase.auth.getSession();
-  if (!auth.session) return;
+  if (!canWrite) return;
 
-  const { error: insertError } = await supabase.from('plugins').insert(missing);
-  if (insertError) {
-    console.error(
-      '[plugins] Не вдалося зареєструвати плагіни в БД:',
-      insertError,
-    );
+  try {
+    await registerPlugins({ data: { rows: missing } });
+  } catch (error) {
+    console.error('[plugins] Не вдалося зареєструвати плагіни в БД:', error);
   }
 }
 
@@ -88,7 +74,7 @@ async function syncPluginRows(
  */
 export async function bootstrapPlugins(
   regs: PluginRegistration[],
-  supabase: SupabaseClient,
+  canWrite: boolean,
 ): Promise<void> {
   const modules = new Map<string, PluginModule>();
 
@@ -117,6 +103,6 @@ export async function bootstrapPlugins(
     }
   }
 
-  await syncPluginRows(modules, supabase);
-  await loadPlugins(supabase);
+  await syncPluginRows(modules, canWrite);
+  await loadPlugins();
 }

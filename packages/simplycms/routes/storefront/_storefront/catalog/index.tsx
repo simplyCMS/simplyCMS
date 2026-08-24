@@ -1,19 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
 import CatalogPage from 'simplycms/storefront-routes/pages/Catalog';
-import { getSections } from 'simplycms/storefront-routes/server/sections';
-import { getProducts } from 'simplycms/storefront-routes/server/products';
+import { getCatalogPageData } from 'simplycms/storefront-routes/server/catalog';
 
 export const Route = createFileRoute('/_storefront/catalog/')({
   staleTime: 60_000,
   loader: async () => {
-    const [sections, products] = await Promise.all([
-      getSections(),
-      getProducts(),
-    ]);
+    const data = await getCatalogPageData();
     return {
-      initialSections: sections,
-      initialProducts: products.items,
-      priceContext: products.priceContext,
+      initialSections: data.sections,
+      initialProducts: data.products.items,
+      priceContext: data.products.priceContext,
     };
   },
   head: () => ({

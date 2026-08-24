@@ -51,6 +51,8 @@ export const messages = {
   // Зміна пароля
   'profile.password.title': 'Зміна пароля',
   'profile.password.subtitle': 'Встановіть новий пароль для вашого акаунта',
+  'profile.password.current': 'Поточний пароль',
+  'profile.password.wrongCurrent': 'Поточний пароль невірний',
   'profile.password.new': 'Новий пароль',
   'profile.password.confirm': 'Підтвердіть пароль',
   'profile.password.confirmPlaceholder': 'Повторіть новий пароль',

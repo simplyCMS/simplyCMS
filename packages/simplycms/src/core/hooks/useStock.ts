@@ -1,99 +1,59 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import type { StockStatus } from 'simplycms/contracts';
 import type { Translator } from 'simplycms/i18n';
+import {
+  getActivePickupPoints,
+  getPickupPointsCount,
+  getStockInfo,
+} from '../lib/stock';
 
-export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
+export type { StockStatus };
+export type {
+  StockByPointRow as StockByPoint,
+  StockInfoRow as StockInfo,
+} from '../lib/stock';
 
-export interface StockByPoint {
-  point_id: string;
-  point_name: string;
-  quantity: number;
-}
-
-export interface StockInfo {
-  totalQuantity: number;
-  isAvailable: boolean;
-  stockStatus: StockStatus | null;
-  byPoint: StockByPoint[];
-}
-
+/**
+ * Наявність товару або обраної модифікації.
+ *
+ * 🔴 Заміна браузерного `rpc('get_stock_info')`: такої функції в схемі v2
+ * немає, тож блок наявності на картці товару просто не мав що показати.
+ * Тепер залишок рахує SQL під анонімним актором вітрини, а розкладка по
+ * точках видачі відсіює вимкнені точки (див. `loadStockInfo`).
+ */
 export function useStock(
   productId?: string | null,
   modificationId?: string | null,
 ) {
-  const supabase = useSupabaseClient();
   return useQuery({
-    queryKey: ['stock-info', modificationId ?? productId],
-    queryFn: async (): Promise<StockInfo> => {
-      const { data, error } = await supabase.rpc('get_stock_info', {
-        p_product_id: modificationId ? undefined : (productId ?? undefined),
-        p_modification_id: modificationId ?? undefined,
-      });
-
-      if (error) throw error;
-
-      // RPC returns an array with one row
-      const row = data?.[0];
-
-      if (!row) {
-        return {
-          totalQuantity: 0,
-          isAvailable: false,
-          stockStatus: null,
-          byPoint: [],
-        };
-      }
-
-      const byPoint: StockByPoint[] = Array.isArray(row.by_point)
-        ? (row.by_point as Array<Record<string, unknown>>).map((p) => ({
-            point_id: String(p.point_id),
-            point_name: String(p.point_name),
-            quantity: Number(p.quantity),
-          }))
-        : [];
-
-      return {
-        totalQuantity: row.total_quantity ?? 0,
-        isAvailable: row.is_available ?? false,
-        stockStatus: row.stock_status as StockStatus | null,
-        byPoint,
-      };
-    },
+    queryKey: ['stock-info', modificationId ?? null, productId ?? null],
+    queryFn: () =>
+      getStockInfo({
+        data: {
+          productId: modificationId ? null : (productId ?? null),
+          modificationId: modificationId ?? null,
+        },
+      }),
     enabled: !!(productId || modificationId),
-    staleTime: 30000, // 30 seconds
+    staleTime: 30 * 1000,
   });
 }
 
+/** Скільки точок видачі активні — заміна `rpc('get_active_pickup_points_count')`. */
 export function usePickupPointsCount() {
-  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ['pickup-points-count'],
-    queryFn: async (): Promise<number> => {
-      const { data, error } = await supabase.rpc(
-        'get_active_pickup_points_count',
-      );
-      if (error) throw error;
-      return data ?? 0;
-    },
-    staleTime: 60000, // 1 minute
+    queryFn: () => getPickupPointsCount(),
+    staleTime: 60 * 1000,
   });
 }
 
+/** Активні точки видачі — довідник самовивозу. */
 export function usePickupPoints() {
-  const supabase = useSupabaseClient();
   return useQuery({
     queryKey: ['active-pickup-points'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pickup_points')
-        .select('id, name, city, address, is_system')
-        .eq('is_active', true)
-        .order('is_system', { ascending: false })
-        .order('sort_order');
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 60000,
+    queryFn: () => getActivePickupPoints(),
+    staleTime: 60 * 1000,
   });
 }
 

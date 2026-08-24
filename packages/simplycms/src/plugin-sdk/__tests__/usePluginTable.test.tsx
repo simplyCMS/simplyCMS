@@ -1,108 +1,81 @@
 // @vitest-environment jsdom
-import type { ReactNode } from 'react';
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
-import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { usePluginTable } from '../usePluginTable';
 
+/**
+ * Юніт порту: що саме хук кладе в запит до серверної поверхні.
+ *
+ * 🔴 Межу даних (`plg_<плагін>_*` і тільки її) цей файл НЕ доводить і не
+ * може: після рішення B9 рішення ухвалює сервер (`plugin-sdk/server/guard`),
+ * а хук лише передає імена. Доводять її юніт гарда й гейт `pnpm test:schema`
+ * проти живої БД — там плагін реально не дістає таблицю ядра.
+ */
+
 interface Call {
-  table: string;
   op: string;
-  args: unknown[];
+  data: Record<string, unknown>;
 }
 
-/** Двійник ланцюжків supabase-js, які використовує порт; записує виклики. */
-function makeClient(rows: Record<string, unknown>[]) {
-  const calls: Call[] = [];
-  const client = {
-    from: (table: string) => ({
-      select: () => {
-        calls.push({ table, op: 'select', args: [] });
-        const builder = {
-          eq: (...args: unknown[]) => {
-            calls.push({ table, op: 'eq', args });
-            return builder;
-          },
-          order: (...args: unknown[]) => {
-            calls.push({ table, op: 'order', args });
-            return builder;
-          },
-          then: (resolve: (value: { data: unknown; error: null }) => unknown) =>
-            resolve({ data: rows, error: null }),
-        };
-        return builder;
-      },
-      insert: (row: Record<string, unknown>) => ({
-        select: () => ({
-          single: () => {
-            calls.push({ table, op: 'insert', args: [row] });
-            return Promise.resolve({
-              data: { id: 'new', ...row },
-              error: null,
-            });
-          },
-        }),
-      }),
-      update: (patch: Record<string, unknown>) => ({
-        eq: (...args: unknown[]) => ({
-          select: () => ({
-            single: () => {
-              calls.push({ table, op: 'update', args: [patch, ...args] });
-              return Promise.resolve({
-                data: { id: args[1], ...patch },
-                error: null,
-              });
-            },
-          }),
-        }),
-      }),
-      delete: () => ({
-        eq: (...args: unknown[]) => {
-          calls.push({ table, op: 'delete', args });
-          return Promise.resolve({ error: null });
-        },
-      }),
-    }),
-  } as unknown as SupabaseClient;
-  return { client, calls };
-}
+const calls: Call[] = [];
+let listRows: Record<string, unknown>[] = [];
+let listError: Error | null = null;
 
-const wrap =
-  (client: SupabaseClient) =>
-  ({ children }: { children: ReactNode }) => (
-    <SupabaseProvider client={client}>{children}</SupabaseProvider>
-  );
+vi.mock('simplycms/plugin-sdk/server', () => ({
+  pluginTableList: async ({ data }: { data: Record<string, unknown> }) => {
+    calls.push({ op: 'list', data });
+    if (listError) throw listError;
+    return listRows;
+  },
+  pluginTableInsert: async ({ data }: { data: Record<string, unknown> }) => {
+    calls.push({ op: 'insert', data });
+    return { id: 'new', ...(data.row as Record<string, unknown>) };
+  },
+  pluginTableUpdate: async ({ data }: { data: Record<string, unknown> }) => {
+    calls.push({ op: 'update', data });
+    return { id: data.id, ...(data.patch as Record<string, unknown>) };
+  },
+  pluginTableRemove: async ({ data }: { data: Record<string, unknown> }) => {
+    calls.push({ op: 'remove', data });
+  },
+}));
+
+beforeEach(() => {
+  calls.length = 0;
+  listRows = [];
+  listError = null;
+});
 
 afterEach(cleanup);
 
 describe('usePluginTable', () => {
-  it('відмовляє таблиці без префікса plg_ (межа довіри)', () => {
-    const { client } = makeClient([]);
-    expect(() =>
-      renderHook(() => usePluginTable('orders'), { wrapper: wrap(client) }),
-    ).toThrow(/лише з власними/);
-  });
+  it('list передає імʼя плагіна, таблицю й фільтри — і віддає рядки', async () => {
+    listRows = [{ id: '1', question: 'Що?' }];
+    const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
 
-  it('list проксить eq/order і віддає рядки', async () => {
-    const { client, calls } = makeClient([{ id: '1', question: 'Що?' }]);
-    const { result } = renderHook(() => usePluginTable('plg_faq_items'), {
-      wrapper: wrap(client),
-    });
     const rows = await result.current.list({
       eq: { is_active: true },
       orderBy: 'sort_order',
     });
+
     expect(rows).toEqual([{ id: '1', question: 'Що?' }]);
-    expect(calls.map((c) => c.op)).toEqual(['select', 'eq', 'order']);
-    expect(calls.every((c) => c.table === 'plg_faq_items')).toBe(true);
+    expect(calls).toEqual([
+      {
+        op: 'list',
+        data: {
+          plugin: 'faq',
+          table: 'plg_faq_items',
+          eq: { is_active: true },
+          orderBy: 'sort_order',
+          ascending: undefined,
+        },
+      },
+    ]);
   });
 
   it('insert/update/remove проходять по id і повертають рядок', async () => {
-    const { client, calls } = makeClient([]);
-    const { result } = renderHook(() => usePluginTable('plg_faq_items'), {
-      wrapper: wrap(client),
-    });
+    const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
+
     await expect(result.current.insert({ question: 'A' })).resolves.toEqual({
       id: 'new',
       question: 'A',
@@ -111,29 +84,29 @@ describe('usePluginTable', () => {
       result.current.update('42', { question: 'B' }),
     ).resolves.toEqual({ id: '42', question: 'B' });
     await result.current.remove('42');
-    expect(calls.map((c) => c.op)).toEqual(['insert', 'update', 'delete']);
+
+    expect(calls.map((call) => call.op)).toEqual([
+      'insert',
+      'update',
+      'remove',
+    ]);
+    expect(calls.every((call) => call.data.plugin === 'faq')).toBe(true);
   });
 
-  it('помилка PostgREST — виняток із назвою операції', async () => {
-    const client = {
-      from: (table: string) => ({
-        select: () => ({
-          eq: () => ({}),
-          order: () => ({}),
-          then: (
-            resolve: (value: {
-              data: null;
-              error: { message: string };
-            }) => unknown,
-          ) => resolve({ data: null, error: { message: `RLS: ${table}` } }),
-        }),
-      }),
-    } as unknown as SupabaseClient;
-    const { result } = renderHook(() => usePluginTable('plg_faq_items'), {
-      wrapper: wrap(client),
-    });
-    await expect(result.current.list()).rejects.toThrow(
-      /list plg_faq_items: RLS/,
+  it('undefined у рядку їде як null — транспорт бере лише JSON-скаляри', async () => {
+    const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
+
+    await result.current.insert({ question: 'A', product_id: undefined });
+
+    expect(calls[0].data.row).toEqual({ question: 'A', product_id: null });
+  });
+
+  it('помилка сервера доїжджає до викликача, а не ковтається', async () => {
+    const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
+    listError = new Error(
+      '[plugin-sdk] Плагін "faq" не володіє таблицею "orders"',
     );
+
+    await expect(result.current.list()).rejects.toThrow(/не володіє таблицею/);
   });
 });

@@ -22,6 +22,9 @@ export default defineConfig({
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.
       'tests/dist-import-meta.test.ts',
+      // Структурний гард тулчейна декларацій (dts поза tsup + кеп памʼяті):
+      // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
+      'tests/dts-toolchain.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.

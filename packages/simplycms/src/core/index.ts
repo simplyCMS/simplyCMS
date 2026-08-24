@@ -30,8 +30,6 @@ export {
 export type { ProductReview } from './hooks/useProductReviews';
 export {
   calculateProductAvailability,
-  fetchModificationPropertyValues,
-  fetchModificationStockData,
   enrichProductsWithAvailability,
 } from './hooks/useProductsWithStock';
 export type { StockData } from './hooks/useProductsWithStock';
@@ -46,15 +44,11 @@ export {
 export type { StockStatus, StockByPoint, StockInfo } from './hooks/useStock';
 
 // ---- Lib ----
-export {
-  signUp,
-  signIn,
-  signOut,
-  resetPassword,
-  updatePassword,
-  getSession,
-  getUser,
-} from './lib/supabase';
+// 🔴 Обгортки `signUp`/`signIn`/`signOut`/… над GoTrue знесено разом із ним
+// (К1′б). Їхня заміна — `authClient` нижче: він і є публічний API входу для
+// вітрини й тем, а не ще один шар власних функцій поверх нього.
+export { authClient } from './lib/auth-client';
+export type { AuthSession, AuthUser } from './lib/auth-client';
 
 // ---- Catalog Components ----
 export { ActiveFilters } from './components/catalog/ActiveFilters';

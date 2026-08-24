@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "simplycms": "__SIMPLYCMS_VERSION__",
+    "drizzle-orm": "^0.45.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

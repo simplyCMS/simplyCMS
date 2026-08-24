@@ -1,66 +1,47 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
+  loadModificationIds,
+  loadModificationStock,
   loadProduct,
-  loadProducts,
-  loadProductsBySectionId,
-  loadDefaultPriceTypeId,
+  loadProductModificationValues,
+  withStorefrontDb,
+  type ModificationStockRow,
 } from 'simplycms/storefront/loaders';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
-import {
-  toProductListItem,
-  type PriceContext,
-  type ProductListItem,
-  type ProductListRow,
-} from './product-list-item';
+import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 
-/** Список товарів для SSR разом із контекстом цін — одним раундтрипом. */
-export interface ProductListPayload {
-  items: ProductListItem[];
-  priceContext: PriceContext;
+/** Характеристики й наявність модифікацій одного товару. */
+export interface ModificationDataPayload {
+  propertyValues: Record<string, ProductPropertyValueViewModel[]>;
+  stock: Record<string, ModificationStockRow>;
 }
 
-/** Мапить рядки select-у в DTO списку за спільним контекстом цін. */
-function toPayload(
-  rows: ProductListRow[],
-  defaultPriceTypeId: string | null,
-): ProductListPayload {
-  const priceContext: PriceContext = { defaultPriceTypeId };
-  return {
-    items: rows.map((row) => toProductListItem(row, priceContext)),
-    priceContext,
-  };
-}
-
-/** Отримати товар за slug (для сторінки товару) */
+/** Отримати товар за slug (для сторінки товару). */
 export const getProduct = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { slug } = input as { slug: string };
-    return loadProduct(createServerSupabase(), slug);
+    return withStorefrontDb((db) => loadProduct(db, slug));
   });
 
-/** Отримати всі активні товари (каталог) — готовий SSR-список + контекст цін */
-export const getProducts = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<ProductListPayload> => {
-    const client = createServerSupabase();
-    const [rows, defaultPriceTypeId] = await Promise.all([
-      loadProducts(client),
-      loadDefaultPriceTypeId(client),
-    ]);
-    return toPayload(rows as ProductListRow[], defaultPriceTypeId);
-  },
-);
+/**
+ * Дані модифікацій товару: характеристики й залишки.
+ *
+ * 🔴 Вхід — `productId`, а не список id модифікацій. По-перше, список із
+ * браузера довелося б звіряти; по-друге, старий клієнт робив ОКРЕМИЙ виклик
+ * `rpc('get_stock_info')` на кожну модифікацію — тобто N раундтрипів там, де
+ * достатньо двох запитів. Самої функції в схемі v2 вже й немає (B13).
+ */
+export const getModificationData = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ productId: z.string().min(1) }))
+  .handler(async ({ data: input }): Promise<ModificationDataPayload> => {
+    const { productId } = input as { productId: string };
 
-/** Отримати товари за ID секції — готовий SSR-список + контекст цін */
-export const getProductsBySectionId = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ sectionId: z.string().min(1) }))
-  .handler(async ({ data: input }): Promise<ProductListPayload> => {
-    const { sectionId } = input as { sectionId: string };
-    const client = createServerSupabase();
-    const [rows, defaultPriceTypeId] = await Promise.all([
-      loadProductsBySectionId(client, sectionId),
-      loadDefaultPriceTypeId(client),
-    ]);
-    return toPayload(rows as ProductListRow[], defaultPriceTypeId);
+    return withStorefrontDb(async (db) => ({
+      propertyValues: await loadProductModificationValues(db, productId),
+      stock: await loadModificationStock(
+        db,
+        await loadModificationIds(db, productId),
+      ),
+    }));
   });

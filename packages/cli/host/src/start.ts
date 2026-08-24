@@ -1,24 +1,13 @@
 import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
-import { resolveSupabaseKeys, type SupabaseEnv } from 'simplycms/supabase/keys';
-import type { StoreDatabase } from './engine.shared';
+import { readSessionSubject } from 'simplycms/auth';
 
 /**
- * Чи достатньо env, щоб підняти серверний Supabase-клієнт.
- *
- * Делегує рішення `resolveSupabaseKeys` — єдиній точці резолву (publishable з
- * пріоритетом, anon як legacy-fallback). Власної перевірки імен змінних тут
- * НЕ дублюємо: інакше guard мовчки вимикається на інсталяціях, де оголошений
- * лише новий publishable-ключ.
+ * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
+ * перевірялася юнітом без підйому Start-міддлвари.
  */
-export function isSupabaseEnvReady(env: SupabaseEnv): boolean {
-  try {
-    resolveSupabaseKeys(env);
-    return true;
-  } catch {
-    return false;
-  }
+export function isAdminPath(pathname: string): boolean {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
 /**
@@ -31,41 +20,26 @@ export function isSupabaseEnvReady(env: SupabaseEnv): boolean {
  *
  * `/profile` тут НЕ перевіряється — `_protected` SSR-роут уже захищений серверним
  * `beforeLoad` (не дублюємо guard).
+ *
+ * 🔴 Контур — Better Auth (К1′б), GoTrue тут більше немає. Перевірки
+ * «чи готовий env» теж немає навмисно: `readSessionSubject` читає
+ * `BETTER_AUTH_SECRET`/`DATABASE_URL` через штатний контракт серверного env і
+ * на відсутньому ключі падає ГУЧНО. Стара гілка «немає env — пропускаємо»
+ * була fail-open: неповний деплой мовчки відкривав адмінку.
  */
 const adminRequestGuard = createMiddleware().server(
   async ({ next, request }) => {
     const { pathname } = new URL(request.url);
 
-    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-      // Без env Supabase guard неможливий — пропускаємо (admin однаково не запрацює).
-      // Серверний контур читає ЛИШЕ `process.env` у рантаймі (контракт
-      // серверного env, спека CLI v1 §7) — джерело те саме, з якого
-      // `createServerSupabase` нижче візьме ключі.
-      if (isSupabaseEnvReady(process.env)) {
-        // Передаємо cookie з request напряму — не залежимо від ALS getRequestHeader.
-        // Клієнт типізуємо ТИПАМИ МАГАЗИНУ (core + плагінні таблиці).
-        const supabase = createServerSupabase<StoreDatabase>(
-          request.headers.get('cookie') ?? '',
-        );
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    if (isAdminPath(pathname)) {
+      // Заголовки беремо з `request` напряму — не залежимо від ALS.
+      const subject = await readSessionSubject(request.headers);
 
-        if (!user) {
-          throw redirect({ to: '/auth' });
-        }
-
-        const { data: role } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        if (!role) {
-          throw redirect({ to: '/' });
-        }
-      }
+      // Дві різні відмови: гостю показуємо вхід, залогіненому без ролі —
+      // вітрину. Один спільний редірект відправляв би адміна, що вже
+      // увійшов, на форму входу, з якої той одразу вилітав би назад.
+      if (!subject) throw redirect({ to: '/auth' });
+      if (!subject.roles.includes('admin')) throw redirect({ to: '/' });
     }
 
     return next();

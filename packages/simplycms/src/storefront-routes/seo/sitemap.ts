@@ -1,5 +1,8 @@
-import { createAnonSupabaseClient } from 'simplycms/supabase/anon-client';
-import { buildSitemapXml as buildSitemap } from 'simplycms/storefront/seo';
+import {
+  loadSitemapData,
+  withStorefrontDb,
+} from 'simplycms/storefront/loaders';
+import { renderSitemapXml } from 'simplycms/storefront/seo';
 
 /**
  * Базовий URL сайту — ЛІНИВО з `process.env` у момент виклику (контракт
@@ -10,7 +13,15 @@ function siteUrl(): string {
   return process.env.VITE_SITE_URL || 'https://example.com';
 }
 
-/** Генерує sitemap.xml (host-glue: anon-клієнт + VITE_SITE_URL). */
+/**
+ * Генерує sitemap.xml (host-glue: транзакція вітрини + VITE_SITE_URL).
+ *
+ * 🔴 Актор — `app_user` БЕЗ ідентичності (`withStorefrontDb`): sitemap читає
+ * рівно те, що бачить анонім, і робот не має отримати нічого понад це.
+ */
 export function buildSitemapXml(): Promise<string> {
-  return buildSitemap(createAnonSupabaseClient(), siteUrl());
+  const baseUrl = siteUrl();
+  return withStorefrontDb(async (db) =>
+    renderSitemapXml(await loadSitemapData(db), baseUrl),
+  );
 }

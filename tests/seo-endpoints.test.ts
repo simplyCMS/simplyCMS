@@ -1,69 +1,53 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildRobotsTxt, buildSitemapXml } from 'simplycms/storefront/seo';
+import { buildRobotsTxt, renderSitemapXml } from 'simplycms/storefront/seo';
+import type { SitemapData } from 'simplycms/storefront/loaders';
 import {
   createSeoInterceptor,
   withSeoInterceptor,
 } from 'simplycms/storefront-routes/seo/interceptor';
-import type { StorefrontClient } from 'simplycms/storefront';
 
 // Крос-пакетний гейт (Task 2.2): справжні білдери `simplycms/storefront`
 // у зв'язці з інтерсептором серверного входу з `simplycms/storefront-routes`.
 // Транспорт SEO живе в server entry — один і той самий у dev, preview і
 // production; тест перевіряє контракт цієї пари без підняття сервера.
+//
+// 🔴 Мока Supabase тут більше немає (В2-К1а): рендер sitemap став чистою
+// функцією від даних, а сам похід у базу — `withStorefrontDb` + Drizzle, і
+// доводиться він на живому Postgres у `pnpm test:schema`. Для контракту
+// «білдер упав → 500 без кешу» джерело падіння байдуже — важливо, що
+// інтерсептор його не ковтає.
 
 const BASE_URL = 'https://shop.test';
 
-interface MockResult {
-  data: unknown;
-  error: unknown;
-}
+const DATA: SitemapData = {
+  sections: [{ slug: 'shoes', updated_at: '2026-07-01T00:00:00Z' }],
+  products: [
+    { slug: 'boot', updated_at: '2026-07-01T00:00:00Z', section_slug: 'shoes' },
+  ],
+};
 
-/** Thenable-білдер Supabase з результатом за назвою таблиці. */
-function makeClient(results: Record<string, MockResult>): StorefrontClient {
-  const from = (table: string) => {
-    const builder: Record<string, unknown> = {};
-    const chain = () => builder;
-    builder.select = chain;
-    builder.order = chain;
-    builder.eq = chain;
-    builder.then = <TResult>(onfulfilled: (value: MockResult) => TResult) =>
-      Promise.resolve(results[table] ?? { data: [], error: null }).then(
-        onfulfilled,
-      );
-    return builder;
-  };
-  return { from } as unknown as StorefrontClient;
-}
-
-const okClient = makeClient({
-  sections: { data: [{ slug: 'shoes', updated_at: null }], error: null },
-  products: {
-    data: [{ slug: 'boot', updated_at: null, sections: { slug: 'shoes' } }],
-    error: null,
-  },
-});
-
-const failingClient = makeClient({
-  sections: { data: null, error: { message: 'RLS violation' } },
-  products: { data: [], error: null },
-});
+/** Білдер, що падає так само, як упав би збій транзакції вітрини. */
+const failingSitemap = () =>
+  Promise.reject(new Error('sitemap: транзакція вітрини впала'));
 
 function makeFetch(
-  client: StorefrontClient,
+  sitemap: () => Promise<string>,
   delegate = vi.fn(() => new Response('ssr')),
 ) {
   const interceptor = createSeoInterceptor({
-    sitemap: () => buildSitemapXml(client, BASE_URL),
+    sitemap,
     robots: () => buildRobotsTxt(BASE_URL),
   });
   return { fetch: withSeoInterceptor(interceptor, delegate), delegate };
 }
 
+const okSitemap = () => Promise.resolve(renderSitemapXml(DATA, BASE_URL));
+
 const req = (path: string) => new Request(`${BASE_URL}${path}`);
 
 describe('SEO-ендпойнти серверного входу', () => {
   it('/sitemap.xml → 200 XML з URL-ами каталогу + public cache', async () => {
-    const { fetch, delegate } = makeFetch(okClient);
+    const { fetch, delegate } = makeFetch(okSitemap);
 
     const response = await fetch(req('/sitemap.xml'));
     const body = await response.text();
@@ -78,7 +62,7 @@ describe('SEO-ендпойнти серверного входу', () => {
   });
 
   it('/robots.txt → 200 text/plain із посиланням на sitemap', async () => {
-    const { fetch } = makeFetch(okClient);
+    const { fetch } = makeFetch(okSitemap);
 
     const response = await fetch(req('/robots.txt'));
     const body = await response.text();
@@ -91,7 +75,7 @@ describe('SEO-ендпойнти серверного входу', () => {
 
   it('збій БД → 500 без public cache (кеш не фіксує неповний sitemap)', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { fetch } = makeFetch(failingClient);
+    const { fetch } = makeFetch(failingSitemap);
 
     const response = await fetch(req('/sitemap.xml'));
 
@@ -101,7 +85,7 @@ describe('SEO-ендпойнти серверного входу', () => {
   });
 
   it('решта шляхів іде в SSR-хендлер', async () => {
-    const { fetch, delegate } = makeFetch(okClient);
+    const { fetch, delegate } = makeFetch(okSitemap);
 
     await fetch(req('/'));
     await fetch(req('/catalog'));

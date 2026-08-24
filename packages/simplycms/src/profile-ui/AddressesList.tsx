@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Pencil,
@@ -8,134 +7,97 @@ import {
   Loader2,
   AlertTriangle,
 } from 'lucide-react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
+import {
+  useAddressBook,
+  type AddressRow,
+} from 'simplycms/core/hooks/useAddressBook';
 import { useT } from 'simplycms/i18n';
 
-interface Address {
-  id: string;
-  name: string;
-  city: string;
-  address: string;
-  is_default: boolean;
-  usage_count?: number;
-}
-
+/**
+ * Адреси доставки покупця — список і CRUD.
+ *
+ * 🔴 Читання і запис ідуть серверними викликами під актором покупця. Раніше
+ * браузер робив це напряму: список із `eq('user_id', …)` плюс окремий `count`
+ * на КОЖЕН рядок, а видалення — `delete().eq('id', …)` взагалі без згадки про
+ * власника. Належність рядка тепер доводить сесія, а не параметр запиту.
+ */
 export function AddressesList() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const {
+    addresses,
+    isLoading,
+    save: saveAddress,
+    remove: removeAddress,
+  } = useAddressBook(!!user);
+
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [editingAddress, setEditingAddress] = useState<AddressRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
+  const [addressToDelete, setAddressToDelete] = useState<AddressRow | null>(
+    null,
+  );
 
   const [formName, setFormName] = useState('');
   const [formCity, setFormCity] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [formIsDefault, setFormIsDefault] = useState(false);
 
-  const { data: addresses, isLoading } = useQuery({
-    queryKey: ['user-addresses', user?.id],
-    queryFn: async () => {
-      const { data: addressData, error: addressError } = await supabase
-        .from('user_addresses')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (addressError) throw addressError;
+  const failed = (error: Error) =>
+    toast({
+      title: t('common.error'),
+      description: error.message,
+      variant: 'destructive',
+    });
 
-      const addressesWithCount = await Promise.all(
-        (addressData || []).map(async (addr) => {
-          const { count } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true })
-            .eq('saved_address_id', addr.id);
-          return { ...addr, usage_count: count || 0 };
-        }),
-      );
-
-      return addressesWithCount as Address[];
-    },
-    enabled: !!user,
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (formIsDefault) {
-        await supabase
-          .from('user_addresses')
-          .update({ is_default: false })
-          .eq('user_id', user!.id);
-      }
-
-      const data = {
+  const handleSave = () => {
+    saveAddress.mutate(
+      {
+        id: editingAddress?.id ?? null,
         name: formName,
         city: formCity,
         address: formAddress,
-        is_default: formIsDefault,
-      };
+        isDefault: formIsDefault,
+      },
+      {
+        onSuccess: (id) => {
+          setDialogOpen(false);
+          const wasEditing = editingAddress !== null;
+          setEditingAddress(null);
+          // 🔴 `null` — рядок актору не належить (RLS не віддала `returning`).
+          if (!id) {
+            toast({ title: t('common.error'), variant: 'destructive' });
+            return;
+          }
+          toast({
+            title: wasEditing
+              ? t('common.address.updated')
+              : t('common.address.added'),
+          });
+        },
+        onError: failed,
+      },
+    );
+  };
 
-      if (editingAddress) {
-        const { error } = await supabase
-          .from('user_addresses')
-          .update(data)
-          .eq('id', editingAddress.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_addresses')
-          .insert([{ ...data, user_id: user!.id }]);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
-      setDialogOpen(false);
-      setEditingAddress(null);
-      toast({
-        title: editingAddress
-          ? t('common.address.updated')
-          : t('common.address.added'),
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const handleDelete = (id: string) => {
+    removeAddress.mutate(id, {
+      onSuccess: (ok) => {
+        setDeleteDialogOpen(false);
+        setAddressToDelete(null);
+        toast({
+          title: ok ? t('profile.addresses.deleted') : t('common.error'),
+          variant: ok ? undefined : 'destructive',
+        });
+      },
+      onError: failed,
+    });
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('user_addresses')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
-      toast({ title: t('profile.addresses.deleted') });
-      setDeleteDialogOpen(false);
-      setAddressToDelete(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const openEditDialog = (address: Address) => {
+  const openEditDialog = (address: AddressRow) => {
     setEditingAddress(address);
     setFormName(address.name);
     setFormCity(address.city);
@@ -263,7 +225,7 @@ export function AddressesList() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                saveMutation.mutate();
+                handleSave();
               }}
               className="space-y-4"
             >
@@ -323,9 +285,9 @@ export function AddressesList() {
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm flex items-center"
-                  disabled={saveMutation.isPending}
+                  disabled={saveAddress.isPending}
                 >
-                  {saveMutation.isPending && (
+                  {saveAddress.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
                   {editingAddress ? t('common.save') : t('common.add')}
@@ -379,10 +341,10 @@ export function AddressesList() {
               <button
                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm flex items-center"
                 onClick={() =>
-                  addressToDelete && deleteMutation.mutate(addressToDelete.id)
+                  addressToDelete && handleDelete(addressToDelete.id)
                 }
               >
-                {deleteMutation.isPending && (
+                {removeAddress.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 {t('common.delete')}

@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm/relations";
 import { sections, sectionProperties, priceTypes, userCategories, userRoles, products, wishlists, comparisons, productModifications, orderItems, orders, services, modificationPropertyValues, propertyOptions, productPropertyValues, sectionPropertyAssignments, serviceRequests, shippingMethods, shippingRates, shippingZones, pickupPoints, stockByPickupPoint, profiles, userCategoryHistory, categoryRules, userAddresses, userRecipients, orderStatuses, productPrices, discountGroups, discounts, discountTargets, discountConditions, productReviews, banners } from "./schema";
-import { usersInAuth } from "./auth-users";
+import { users, sessions, accounts } from "./auth";
+import { media } from "./media";
 
 export const sectionsRelations = relations(sections, ({one, many}) => ({
 	section: one(sections, {
@@ -55,19 +56,43 @@ export const priceTypesRelations = relations(priceTypes, ({many}) => ({
 }));
 
 export const userRolesRelations = relations(userRoles, ({one}) => ({
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [userRoles.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 
-export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
+export const usersRelations = relations(users, ({many}) => ({
 	userRoles: many(userRoles),
 	wishlists: many(wishlists),
 	comparisons: many(comparisons),
 	serviceRequests: many(serviceRequests),
 	profiles: many(profiles),
 	orders: many(orders),
+	sessions: many(sessions),
+	accounts: many(accounts),
+	media: many(media),
+}));
+
+export const sessionsRelations = relations(sessions, ({one}) => ({
+	user: one(users, {
+		fields: [sessions.userId],
+		references: [users.id]
+	}),
+}));
+
+export const accountsRelations = relations(accounts, ({one}) => ({
+	user: one(users, {
+		fields: [accounts.userId],
+		references: [users.id]
+	}),
+}));
+
+export const mediaRelations = relations(media, ({one}) => ({
+	user: one(users, {
+		fields: [media.uploadedBy],
+		references: [users.id]
+	}),
 }));
 
 export const wishlistsRelations = relations(wishlists, ({one}) => ({
@@ -75,9 +100,9 @@ export const wishlistsRelations = relations(wishlists, ({one}) => ({
 		fields: [wishlists.productId],
 		references: [products.id]
 	}),
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [wishlists.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 
@@ -101,9 +126,9 @@ export const comparisonsRelations = relations(comparisons, ({one}) => ({
 		fields: [comparisons.productId],
 		references: [products.id]
 	}),
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [comparisons.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 
@@ -167,9 +192,9 @@ export const ordersRelations = relations(orders, ({one, many}) => ({
 		fields: [orders.statusId],
 		references: [orderStatuses.id]
 	}),
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [orders.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 
@@ -233,9 +258,9 @@ export const serviceRequestsRelations = relations(serviceRequests, ({one}) => ({
 		fields: [serviceRequests.serviceId],
 		references: [services.id]
 	}),
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [serviceRequests.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 
@@ -306,9 +331,9 @@ export const profilesRelations = relations(profiles, ({one}) => ({
 		fields: [profiles.defaultShippingMethodId],
 		references: [shippingMethods.id]
 	}),
-	usersInAuth: one(usersInAuth, {
+	user: one(users, {
 		fields: [profiles.userId],
-		references: [usersInAuth.id]
+		references: [users.id]
 	}),
 }));
 

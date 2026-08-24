@@ -77,11 +77,30 @@ export function calculateShippingCost(
 
 /**
  * Розраховує доставку для методу з урахуванням зони й тарифів.
+ *
+ * Тонка обгортка над `resolveShippingRate` — лишена async заради наявних
+ * викликів; уся логіка живе в синхронній функції нижче.
  */
 export async function calculateShipping(
   context: ShippingCalculationContext,
   rates: ShippingRate[],
 ): Promise<ShippingCalculationResult | null> {
+  return resolveShippingRate(context, rates);
+}
+
+/**
+ * Той самий вибір тарифу, але СИНХРОННО.
+ *
+ * 🔴 Потрібен формі чекауту: вона малює вартість кожного способу доставки
+ * прямо в рендері, і `await` там неможливий. До В2-К1а форма мала ВЛАСНУ
+ * копію правила («перший тариф методу, `free_from` — нуль понад поріг») —
+ * тобто прайс у списку й прайс у підсумку рахувалися різним кодом. Тепер
+ * правило одне, і живе воно тут.
+ */
+export function resolveShippingRate(
+  context: ShippingCalculationContext,
+  rates: ShippingRate[],
+): ShippingCalculationResult | null {
   const { method, zone } = context;
 
   // For plugin methods, skip hook-based calculation in this package

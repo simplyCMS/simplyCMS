@@ -10,7 +10,7 @@
     "dev:www": "pnpm --filter simplycms-www dev",
     "build:www": "pnpm --filter simplycms-www build",
     "typecheck:www": "pnpm --filter simplycms-www typecheck",
-    "build:packages": "pnpm --filter \"@simplycms/*\" --filter simplycms run build",
+    "build:packages": "node scripts/build-packages.mjs",
     "version:packages": "node scripts/version-packages.mjs",
     "verify:published": "node scripts/verify-published.mjs",
     "release": "node scripts/release.mjs",
@@ -22,6 +22,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:schema": "vitest run --config vitest.schema.config.ts",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "test:e2e": "node scripts/e2e.mjs",
     "pilot": "node scripts/pilot-pack.mjs",
@@ -31,11 +32,11 @@
     "template:sync": "node scripts/sync-create-store-template.mjs",
     "test:watch": "vitest",
     "db:pull": "pnpm --filter simplycms run db:pull",
-    "db:dump-rls": "pnpm --filter simplycms run db:dump-rls",
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:generate-types": "node supabase/scripts/update-types.mjs",
-    "types:baseline": "node scripts/types-baseline.mjs"
+    "types:baseline": "node scripts/types-baseline.mjs",
+    "db:demo": "node scripts/demo-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

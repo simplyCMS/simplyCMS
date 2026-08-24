@@ -26,6 +26,7 @@ pnpm add simplycms
 | `simplycms/domain/discounts` | `resolveDiscount(basePrice, groups, context)` — обчислює дерево знижок (оператори `and`/`or`/`not`/`min`/`max`), повертає `finalPrice`, застосовані й відхилені |
 | `simplycms/domain/inventory` | `calculateProductAvailability`, `enrichProductsWithAvailability` — та сама семантика, що в RPC `get_stock_info` |
 | `simplycms/domain/shipping` | `calculateShippingCost`, `calculateShipping`, `formatShippingCost`, `findShippingZoneIn` |
+| `simplycms/domain/user-categories` | `evaluateCategoryRules(rules, currentCategoryId, stats)` — порт `check_category_rules`: обчислює перехід категорії покупця за пріоритетними правилами, без звернень до БД |
 
 Доменні типи реекспортуються з `simplycms/contracts` — тягнути його окремо не обов'язково.
 

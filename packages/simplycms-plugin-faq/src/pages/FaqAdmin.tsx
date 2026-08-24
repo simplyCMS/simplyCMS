@@ -21,7 +21,7 @@ const QUERY_KEY = ['plg_faq_items'] as const;
  */
 export default function FaqAdmin() {
   const t = usePluginT<FaqKey>(messages);
-  const port = usePluginTable<FaqItem>('plg_faq_items');
+  const port = usePluginTable<FaqItem>('faq', 'plg_faq_items');
   const queryClient = useQueryClient();
 
   const [question, setQuestion] = useState('');

@@ -189,18 +189,25 @@ export interface ThemeRecord {
   updated_at: string;
 }
 
-/** Результат SSR-резолюції теми */
-export interface ActiveThemeSSR {
-  theme: ThemeModule;
-  themeName: string;
-  themeRecord: ThemeRecord;
+/**
+ * Рядок, який bootstrap дописує в `themes` для ще невідомого магазину.
+ *
+ * Ключі — snake_case колонок БД: рядок їде на сервер через serverFn і там
+ * лягає в INSERT як є. Полів `is_active`, `preview_image` і дат тут немає
+ * навмисно — їх задає сервер, а не клієнт (див. `themes/server/index.ts`).
+ */
+export interface ThemeBootstrapRow {
+  name: string;
+  display_name: string;
+  version: string;
+  description: string | null;
+  author: string | null;
 }
 
 export interface ThemeContextType {
   activeTheme: ThemeModule | null;
   themeName: string;
   themeSettings: Record<string, unknown>;
-  themeRecord: ThemeRecord | null;
   isLoading: boolean;
   error: Error | null;
   refreshTheme: () => Promise<void>;

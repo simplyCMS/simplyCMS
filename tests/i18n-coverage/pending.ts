@@ -21,21 +21,9 @@ export const ALLOWLIST: Record<string, string> = {
   // Логи сервера: дивиться розробник у терміналі.
   'packages/simplycms/src/storefront-routes/server/auth.ts':
     'console.error — лог',
-  'packages/simplycms/src/storefront-routes/server/themes.ts':
-    'console.error — лог',
   'packages/simplycms/src/storefront-routes/seo/interceptor.ts':
     'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/pricing.ts': 'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/products.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/properties.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/loaders/sections.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront/seo/sitemap.ts':
-    'throw — діагностика генерації',
   'packages/simplycms/src/plugins/bootstrap.ts': 'console.error — лог',
-  'packages/simplycms/src/themes/getActiveThemeSSR.ts': 'console.error — лог',
   // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає
   // розробник магазину в консолі, а не покупець.
   'packages/simplycms/src/themes/bootstrapThemes.ts':
@@ -66,6 +54,16 @@ export const ALLOWLIST: Record<string, string> = {
   'packages/simplycms/src/plugin-sdk/usePluginTable.ts':
     'throw new Error — межа довіри (гард plg_)',
   'packages/simplycms/src/plugin-sdk/usePluginConfig.ts': 'console.warn — лог',
+  // Серверна половина портів (рішення B9): усі рядки — `throw new Error` на
+  // порушенні межі даних плагіна або на невалідному запиті. Їх читає автор
+  // плагіна в логах сервера; жоден із них не доходить до покупця — хендлер
+  // віддає браузеру помилку, а не її текст як інтерфейс.
+  'packages/simplycms/src/plugin-sdk/server/guard.ts':
+    'throw new Error — межа даних плагіна',
+  'packages/simplycms/src/plugin-sdk/server/table-db.ts':
+    'throw new Error — діагностика запиту плагіна',
+  'packages/simplycms/src/plugin-sdk/server/index.ts':
+    'throw new Error — відмова в записі не-адміну',
   'packages/simplycms/src/admin/lib/pluginSettingsFields.ts':
     'console.warn — діагностика непредставної settings-схеми плагіна',
 };

@@ -16,8 +16,7 @@ import { Route as AuthIndexRouteImport } from './../packages/simplycms/routes/st
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
 import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/routes/storefront/auth/set-password'
-import { Route as AuthConfirmRouteImport } from './../packages/simplycms/routes/storefront/auth/confirm'
-import { Route as AuthCallbackRouteImport } from './../packages/simplycms/routes/storefront/auth/callback'
+import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
 import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
 import { Route as ApiHealthRouteImport } from './../packages/simplycms/routes/storefront/api/health'
 import { Route as ApiGuestOrderRouteImport } from './../packages/simplycms/routes/storefront/api/guest-order'
@@ -46,6 +45,7 @@ import { Route as AdminBannersIndexRouteImport } from './../packages/simplycms/r
 import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/index'
 import { Route as StorefrontCatalogIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/index'
 import { Route as ProtectedProfileIndexRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/index'
+import { Route as ApiAuthSplatRouteImport } from './../packages/simplycms/routes/storefront/api/auth/$'
 import { Route as AdminUsersUserIdRouteImport } from './../packages/simplycms/routes/admin/admin/users/$userId'
 import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/$categoryId'
 import { Route as AdminSectionsSectionIdRouteImport } from './../packages/simplycms/routes/admin/admin/sections/$sectionId'
@@ -110,14 +110,9 @@ const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   path: '/auth/set-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthConfirmRoute = AuthConfirmRouteImport.update({
-  id: '/auth/confirm',
-  path: '/auth/confirm',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
+const AuthInviteRoute = AuthInviteRouteImport.update({
+  id: '/auth/invite',
+  path: '/auth/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
@@ -263,6 +258,11 @@ const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   id: '/users/$userId',
@@ -446,8 +446,7 @@ export interface FileRoutesByFullPath {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -462,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/admin/sections/$sectionId': typeof AdminSectionsSectionIdRoute
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/profile/': typeof ProtectedProfileIndexRoute
   '/catalog/': typeof StorefrontCatalogIndexRoute
   '/properties/': typeof StorefrontPropertiesIndexRoute
@@ -512,8 +512,7 @@ export interface FileRoutesByTo {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
@@ -528,6 +527,7 @@ export interface FileRoutesByTo {
   '/admin/sections/$sectionId': typeof AdminSectionsSectionIdRoute
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/profile': typeof ProtectedProfileIndexRoute
   '/catalog': typeof StorefrontCatalogIndexRoute
   '/properties': typeof StorefrontPropertiesIndexRoute
@@ -581,8 +581,7 @@ export interface FileRoutesById {
   '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -598,6 +597,7 @@ export interface FileRoutesById {
   '/admin/sections/$sectionId': typeof AdminSectionsSectionIdRoute
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/_protected/profile/': typeof ProtectedProfileIndexRoute
   '/_storefront/catalog/': typeof StorefrontCatalogIndexRoute
   '/_storefront/properties/': typeof StorefrontPropertiesIndexRoute
@@ -651,8 +651,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
-    | '/auth/callback'
-    | '/auth/confirm'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/admin/'
     | '/auth/'
@@ -667,6 +666,7 @@ export interface FileRouteTypes {
     | '/admin/sections/$sectionId'
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
+    | '/api/auth/$'
     | '/profile/'
     | '/catalog/'
     | '/properties/'
@@ -717,8 +717,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
-    | '/auth/callback'
-    | '/auth/confirm'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/admin'
     | '/auth'
@@ -733,6 +732,7 @@ export interface FileRouteTypes {
     | '/admin/sections/$sectionId'
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
+    | '/api/auth/$'
     | '/profile'
     | '/catalog'
     | '/properties'
@@ -785,8 +785,7 @@ export interface FileRouteTypes {
     | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
-    | '/auth/callback'
-    | '/auth/confirm'
+    | '/auth/invite'
     | '/auth/set-password'
     | '/_storefront/'
     | '/admin/'
@@ -802,6 +801,7 @@ export interface FileRouteTypes {
     | '/admin/sections/$sectionId'
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
+    | '/api/auth/$'
     | '/_protected/profile/'
     | '/_storefront/catalog/'
     | '/_storefront/properties/'
@@ -853,10 +853,10 @@ export interface RootRouteChildren {
   ApiGuestOrderRoute: typeof ApiGuestOrderRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthConfirmRoute: typeof AuthConfirmRoute
+  AuthInviteRoute: typeof AuthInviteRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -910,18 +910,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/confirm': {
-      id: '/auth/confirm'
-      path: '/auth/confirm'
-      fullPath: '/auth/confirm'
-      preLoaderRoute: typeof AuthConfirmRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
+    '/auth/invite': {
+      id: '/auth/invite'
+      path: '/auth/invite'
+      fullPath: '/auth/invite'
+      preLoaderRoute: typeof AuthInviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/revalidate-theme': {
@@ -1119,6 +1112,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/'
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/users/$userId': {
       id: '/admin/users/$userId'
@@ -1487,10 +1487,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGuestOrderRoute: ApiGuestOrderRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
-  AuthConfirmRoute: AuthConfirmRoute,
+  AuthInviteRoute: AuthInviteRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
   AuthIndexRoute: AuthIndexRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

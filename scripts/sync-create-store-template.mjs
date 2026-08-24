@@ -10,10 +10,14 @@
  * правки, тож вони СИНКУЮТЬСЯ звідси, а `tests/create-store-template-parity.test.ts`
  * червоніє, щойно копія розійдеться з джерелом (модель `pilot-seed`).
  *
- * Дві додаткові цілі того самого механізму: `SYNCED_FILES` → `packages/cli/host/`
- * (канон для `simplycms update`, зі збереженням відносних шляхів) і
- * `supabase/migrations/` → `packages/simplycms/migrations/` (джерело для
- * `simplycms db:diff` — tarball `simplycms` везе міграції ядра).
+ * Додаткова ціль того самого механізму: `SYNCED_FILES` → `packages/cli/host/`
+ * (канон для `simplycms update`, зі збереженням відносних шляхів).
+ *
+ * 🔴 Міграції течуть у ЗВОРОТНОМУ напрямку від того, що було до B13. Раніше
+ * джерелом були кореневі `supabase/migrations/`, а `packages/simplycms/migrations/`
+ * — їхнім дзеркалом. Тепер канон САМ по собі джерело правди (baseline + сід,
+ * пишеться руками й `pnpm db:diff`), а копія в шаблоні — похідна від нього.
+ * Кореневої теки `supabase/migrations/` більше не існує.
  *
  * Статичні файли шаблону (`package.json.tpl`, `vite.config.ts`, `routes.ts`,
  * `README.md`, `supabase/config.toml` тощо) скрипт НЕ чіпає — їхнє джерело
@@ -32,7 +36,7 @@ export const TEMPLATE_DIR = 'packages/create-simplycms-store/template';
 /** Канон host-файлів пакета CLI — тека сама собі маніфест для `simplycms update`. */
 export const CLI_HOST_DIR = 'packages/cli/host';
 
-/** Міграції ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
+/** Канон міграцій ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
 export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
 
 /** Host-файли: байт-ідентичні кореню монорепо (та сама 11-ка, що в пілоті). */
@@ -52,7 +56,10 @@ export const SYNCED_FILES = [
 
 /** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
 export const SYNCED_DIRS = [
-  { from: 'supabase/migrations', to: 'supabase/migrations' },
+  // Канон ядра → тека міграцій магазину. Імена тек різні навмисно:
+  // перейменування `<store>/supabase/` — окремий крок (К6), а зміст уже
+  // не Supabase-специфічний.
+  { from: SCHEMA_MIGRATIONS_DIR, to: 'supabase/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
   // 🔴 Скілів тут НЕМАЄ (трек К0): вони їдуть у магазин текою `skills/`
@@ -87,17 +94,11 @@ export function syncTemplate(root = REPO_ROOT) {
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(root, file), target);
   }
-  // Міграції ядра для tarball `simplycms` — байт-копія supabase/migrations.
-  const migrationsTarget = join(root, SCHEMA_MIGRATIONS_DIR);
-  rmSync(migrationsTarget, { recursive: true, force: true });
-  cpSync(join(root, 'supabase/migrations'), migrationsTarget, {
-    recursive: true,
-  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   syncTemplate();
   console.log(
-    '[template:sync] шаблон, канон host/ CLI і міграції schema синхронізовано з монорепо.',
+    '[template:sync] шаблон і канон host/ CLI синхронізовано з монорепо.',
   );
 }

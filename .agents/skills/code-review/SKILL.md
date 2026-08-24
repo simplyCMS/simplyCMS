@@ -104,13 +104,11 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   імпортується субшляхом `simplycms/<тека>`, не відносними шляхами через межу
   тіру; барелі не змішують server-only й client-safe експорти;
   `src/routeTree.gen.ts` руками не редагується.
-- `data-layer` — зміни схеми йдуть **локальними міграціями** в
-  `supabase/migrations/` + `pnpm db:migrate` (Supabase MCP — лише інспекція:
-  `list_tables`, read-only `execute_sql`, `get_advisors`).
-  🔴 **Не став `major` за «суперечить канону»**, якщо диф робить локальну
-  міграцію: `data-access.instructions.md` тут суперечить сам собі (рядок 51 —
-  «міграції живуть у `supabase/migrations/`»; рядки 15/55/103 — ще MCP-only) і
-  виправляється Task 12.5 Step 4 плану Фази 0. Діє правило локальних міграцій.
+- `data-layer` — зміни схеми йдуть **локальними міграціями** в канон
+  `packages/simplycms/migrations/` (`pnpm db:diff` → ревʼю → `pnpm test:schema`;
+  Supabase MCP — лише інспекція: `list_tables`, read-only `execute_sql`,
+  `get_advisors`). 🔴 **Не став `major` за «суперечить канону»**, якщо диф
+  робить локальну міграцію — діє правило локальних міграцій.
   Далі: типи регенеровані
   (`pnpm db:generate-types`, `supabase/types.ts` руками не правиться);
   RLS-політики на кожній зачепленій таблиці; **жодного глобального

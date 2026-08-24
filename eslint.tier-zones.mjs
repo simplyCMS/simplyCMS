@@ -25,6 +25,7 @@
 // правило матчить рядок, а не резолвлений модуль. Деталі й бюджет рівнів
 // `../` — в `eslint.tier-relative.mjs`.
 
+import { dbClientImportGroup } from './eslint.db-client-zone.mjs';
 import { relativeForms } from './eslint.tier-relative.mjs';
 
 // 🔴 Межа зони — СТАТИЧНИЙ імпорт/`export … from`: `no-restricted-imports`
@@ -44,12 +45,25 @@ const TIER_ZONES = [
   ['src/contracts', 0, 'contracts', []],
   ['src/domain', 1, 'domain', []],
   ['src/schema', 1, 'schema', []],
+  // db-рантайм v2 (Task 6, В2-К1а) — T2 поруч із `supabase`: він теж говорить
+  // із БД і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
+  // `contracts`, `domain`, `schema` — і більше нічого.
+  ['src/db', 2, 'db', []],
+  // Auth-контур v2 (Task 7, В2-К1а) — T2 поруч із `db`: він теж серверний і
+  // теж стоїть над схемою. `db` у винятку `upward` навмисно: єдиний канал до
+  // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
+  // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
+  ['src/auth', 2, 'auth', ['db']],
   ['src/supabase', 2, 'supabase', []],
   ['src/data-supabase', 2, 'data-supabase', []],
   ['src/react-query', 2, 'react-query', []],
   ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
-  ['src/storefront', 2, 'storefront', []],
+  // SSR-лоадери вітрини (В2-К1а) — T2, і `db` у винятку `upward` з тієї
+  // самої причини, що в `auth`: єдиний канал до Postgres — `withActor`, тож
+  // заборона власного тіру виштовхнула б лоадери на голий пул, тобто рівно
+  // туди, куди не можна.
+  ['src/storefront', 2, 'storefront', ['db', 'auth']],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.
@@ -137,6 +151,11 @@ export const tierZoneConfigs = TIER_ZONES.map(
                 group: forbidden,
                 message: `Тір-зона ПК3: ${dir} — шар T${layer}. Легальні лише теки НИЖЧОГО шару (плюс зафіксовані винятки статус-кво). Підняти імпорт угору — архітектурне рішення зі зміною таблиці в eslint.tier-zones.mjs, а не побічний ефект правки.`,
               },
+              // Flat config замінює опції правила цілком, тож глобальна зона
+              // `simplycms/db/client` тут не діяла б: доливаємо явно. Для
+              // самої теки `src/db` вона зайва (вона і є фабрика) — і саме
+              // там `db` як тір-ціль у `targets` не потрапляє.
+              ...(name === 'db' ? [] : [dbClientImportGroup]),
             ],
           },
         ],

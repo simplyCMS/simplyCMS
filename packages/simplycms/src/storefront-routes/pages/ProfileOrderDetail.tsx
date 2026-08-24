@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Package,
@@ -28,48 +29,10 @@ import {
   AlertDialogTrigger,
 } from 'simplycms/ui/alert-dialog';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
-import type { Json } from 'simplycms/supabase';
-
-interface OrderDetails {
-  id: string;
-  order_number: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  delivery_method: string | null;
-  delivery_city: string | null;
-  delivery_address: string | null;
-  payment_method: string;
-  notes: string | null;
-  subtotal: number;
-  total: number;
-  created_at: string;
-  has_different_recipient: boolean;
-  recipient_first_name: string | null;
-  recipient_last_name: string | null;
-  recipient_phone: string | null;
-  recipient_email: string | null;
-  status: {
-    id: string;
-    name: string;
-    code: string;
-    color: string | null;
-  } | null;
-  items: {
-    id: string;
-    name: string;
-    price: number;
-    base_price: number | null;
-    discount_data: Json | null;
-    quantity: number;
-    total: number;
-  }[];
-}
+import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
 
 // Мапи ключів, а не текстів: код способу приходить із БД (див. OrderSuccess).
 const deliveryLabels: Record<string, MessageKey> = {
@@ -83,9 +46,15 @@ const paymentLabels: Record<string, MessageKey> = {
   online: 'checkout.payment.online',
 };
 
+/** Причина відмови від скасування → ключ каталогу повідомлень. */
+const cancelFailures: Record<string, MessageKey> = {
+  not_found: 'profile.order.cancel.notAuthorized',
+  not_cancellable: 'profile.order.cancel.failed',
+  status_missing: 'profile.order.cancel.statusMissing',
+};
+
 export default function ProfileOrderDetailPage() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const params = useParams({ strict: false }) as Record<
     string,
     string | undefined
@@ -93,39 +62,18 @@ export default function ProfileOrderDetailPage() {
   const orderId = params?.orderId as string | undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  useEffect(() => {
-    async function loadOrder() {
-      if (!orderId || !user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select(
-            `
-            *,
-            status:order_statuses(id, name, code, color),
-            items:order_items(id, name, price, base_price, discount_data, quantity, total)
-          `,
-          )
-          .eq('id', orderId)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-        setOrder(data);
-      } catch (error) {
-        console.error('Error loading order:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadOrder();
-  }, [orderId, user, supabase]);
+  /**
+   * 🔴 Замовлення читає СЕРВЕР під актором власника сесії. Чуже замовлення
+   * повертається як `null` — не тому, що код його відфільтрував, а тому що
+   * політика `orders_select_own_or_token` не віддала рядок актору.
+   */
+  const { data: order, isLoading } = useQuery({
+    queryKey: ['my-order', user?.id, orderId],
+    queryFn: () => getMyOrder({ data: { orderId: orderId as string } }),
+    enabled: !!user && !!orderId,
+  });
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
@@ -144,33 +92,28 @@ export default function ProfileOrderDetailPage() {
 
   const canCancel = order?.status?.code === 'new';
 
+  /**
+   * 🔴 Скасування — серверна операція: `0002_grants.sql` навмисно не дає
+   * `app_user` UPDATE на `orders`. Сервер спершу доводить право читанням під
+   * актором покупця й лише потім пише під `app_admin`.
+   */
   const handleCancel = async () => {
     if (!order) return;
     setIsCancelling(true);
 
     try {
-      // Get cancelled status
-      const { data: cancelledStatus } = await supabase
-        .from('order_statuses')
-        .select('id')
-        .eq('code', 'cancelled')
-        .maybeSingle();
+      const result = await cancelMyOrder({ data: { orderId: order.id } });
 
-      if (!cancelledStatus) {
-        throw new Error(t('profile.order.cancel.statusMissing'));
+      if (!result.ok) {
+        toast({
+          title: t('common.error'),
+          description: t(
+            cancelFailures[result.reason] ?? 'profile.order.cancel.failed',
+          ),
+          variant: 'destructive',
+        });
+        return;
       }
-
-      if (!user?.id) {
-        throw new Error(t('profile.order.cancel.notAuthorized'));
-      }
-
-      const { error } = await supabase
-        .from('orders')
-        .update({ status_id: cancelledStatus.id })
-        .eq('id', order.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
 
       toast({
         title: t('profile.order.cancel.done'),
@@ -184,10 +127,7 @@ export default function ProfileOrderDetailPage() {
       console.error('Error cancelling order:', error);
       toast({
         title: t('common.error'),
-        description:
-          error instanceof Error
-            ? error.message
-            : t('profile.order.cancel.failed'),
+        description: t('profile.order.cancel.failed'),
         variant: 'destructive',
       });
     } finally {

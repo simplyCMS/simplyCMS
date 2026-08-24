@@ -1,0 +1,27 @@
+{
+  // Емісія ВСІХ .d.ts пакета — дешевим tsc замість dts-механізму tsup.
+  //
+  // 🔴 Причина — не смак, а виміряний баг вендореного rollup-plugin-dts
+  // (розтин 2026-08-24): він створює окрему повну ts.Program на КОЖНУ теку
+  // entry профілю (несталий dirName на cache-hit у getCompilerOptions) і
+  // тримає їх усі живими до кінця збірки. 228 entry профілю tiers у 34 теках
+  // давали 36 програм → 191 с / 9 ГБ там, де tsc робить ту саму роботу за
+  // ~26 с / 1.1 ГБ. Вартість масштабується кількістю ТЕК, а не entry чи
+  // складністю типів. Деталі й бюджет — docs/architecture/test-contours.md,
+  // розділ «Бюджет памʼяті збірки».
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "outDir": "./dist",
+    "declarationDir": "./dist",
+    "rootDir": "./src",
+    "noEmit": false,
+    "skipLibCheck": true,
+    "incremental": false
+  },
+  "include": ["src"],
+  // 🔴 Без exclude d.ts тестів поїхали б у tarball (dist/**/__tests__/).
+  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/*.test.tsx"]
+}

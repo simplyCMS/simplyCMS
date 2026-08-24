@@ -1,29 +1,27 @@
 // Довідкові запити каталогу: розділи, числові характеристики, опції
 // характеристик (контракт тем v3, Фаза 4).
+//
+// 🔴 Усі — через `createServerFn`. Ті самі вибірки робить SSR-лоадер, тож
+// клієнт і сервер відповідають ОДНИМ запитом, а не двома схожими: розділи
+// після гідрації вже не можуть розійтися з тими, що в серверному HTML.
 
 import { useQuery } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import type { Tables } from 'simplycms/supabase';
-import type { NumericProperty } from './types';
+import {
+  getCatalogSection,
+  getCatalogSections,
+  getFilterOptions,
+  getSectionNumericProperties,
+} from '../../server/catalog';
+import type { SectionRow } from 'simplycms/storefront/loaders';
 
 /** Рядок розділу у формі, яку віддає SSR-лоадер і споживають чипси. */
-export type CatalogSectionRow = Tables<'sections'> & Record<string, unknown>;
+export type CatalogSectionRow = SectionRow;
 
 /** Усі активні розділи — чипси над списком товарів. */
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
-  const supabase = useSupabaseClient();
-
   return useQuery({
     queryKey: ['public-sections'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sections')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: (): Promise<CatalogSectionRow[]> => getCatalogSections(),
     initialData: initialSections,
   });
 }
@@ -33,47 +31,23 @@ export function useSectionQuery(
   sectionSlug: string | undefined,
   initialSection?: CatalogSectionRow,
 ) {
-  const supabase = useSupabaseClient();
-
   return useQuery({
     queryKey: ['public-section', sectionSlug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sections')
-        .select('*')
-        .eq('slug', sectionSlug!)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: (): Promise<CatalogSectionRow | null> =>
+      getCatalogSection({ data: { slug: sectionSlug as string } }),
+    enabled: !!sectionSlug,
     initialData: initialSection,
   });
 }
 
 /** Числові характеристики розділу, за якими можна фільтрувати. */
 export function useNumericPropertiesQuery(sectionId: string | null) {
-  const supabase = useSupabaseClient();
-
   return useQuery({
     queryKey: ['section-numeric-properties', sectionId],
-    queryFn: async (): Promise<NumericProperty[]> => {
-      if (!sectionId) return [];
-      const { data, error } = await supabase
-        .from('section_property_assignments')
-        .select('property:property_id (id, slug, property_type, is_filterable)')
-        .eq('section_id', sectionId);
-      if (error) throw error;
-      return data
-        .map((a) => a.property as NumericProperty | null)
-        .filter((p): p is NumericProperty =>
-          Boolean(
-            p &&
-            p.is_filterable &&
-            (p.property_type === 'number' || p.property_type === 'range'),
-          ),
-        );
-    },
+    queryFn: () =>
+      getSectionNumericProperties({
+        data: { sectionId: sectionId as string },
+      }),
     enabled: !!sectionId,
   });
 }
@@ -86,16 +60,8 @@ export function useNumericPropertiesQuery(sectionId: string | null) {
  * перемикання чипсів (так було до спліту, окремими ключами на двох сторінках).
  */
 export function usePropertyOptionsQuery() {
-  const supabase = useSupabaseClient();
-
   return useQuery({
     queryKey: ['all-property-options-for-filters'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('property_options')
-        .select('id, name, property_id, section_properties(name, slug)');
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getFilterOptions(),
   });
 }

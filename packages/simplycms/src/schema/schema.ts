@@ -1,9 +1,51 @@
 import { pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
-// 🔧 Ручна правка після `pull` (див. README): ціль зовнішніх ключів `auth.users`.
-// Імпортуємо БЕЗ реекспорту — деталі в `./auth-users.ts`.
-import { usersInAuth } from "./auth-users";
+// Схема ядра SimplyCMS — SSOT моделі даних v2 (рішення B3′/B5″/B13,
+// амендмент спеки 2026-08-23). Файл більше не є чистим генератом
+// `drizzle-kit pull`: політики, індекси й B7-поля тут написані руками.
+//
+// 🔴 Ідентичність — таблиця `users` Better Auth зі СВОГО файлу (`./auth`), а
+// не `auth.users` GoTrue: схема GoTrue зникла як клас. Реекспорт нижче
+// НАВМИСНИЙ і обовʼязковий: drizzle-kit збирає сутності з експортів файлу,
+// перелічених у `config.schema`, і без нього auth/media-таблиці не потрапили б
+// у baseline. (Це дзеркало старої причини, з якої `auth.users` навпаки НЕ
+// реекспортувалась.) Після `db:pull` реекспорт треба відтворити руками.
+//
+// 🔴 RLS-ядро замість «RLS як є» (B5″). Політики лишились ЛИШЕ на
+// user-scoped таблицях (`orders`, `order_items`, `profiles`, `wishlists`,
+// `comparisons`, `user_addresses`, `user_recipients`, `product_reviews`,
+// `service_requests`, `user_category_history`, `user_roles`) — 27 політик
+// замість 93. Що зникло і чому:
+//   • ~56 політик на `is_admin()` — самої функції в схемі v2 немає. Право
+//     адміна тепер дає РОЛЬ БД (`app_admin`, вмикається `SET LOCAL ROLE`
+//     після TS-перевірки), а не SECURITY DEFINER-функція без гарда;
+//   • ~16 політик «публічне читання» існували лише тому, що браузер робив
+//     прямий SELECT через PostgREST. У сервер-first (B1) браузер у БД не
+//     ходить, тож їхню роботу роблять ГРАНТИ (Task 4).
+//
+// 🔴 НАСЛІДОК, який мусить бути видимим, а не випадковим: разом із
+// «публічним читанням» зникла й фільтрація видимості в БД — предикати
+// `is_active = true` більше НІХТО не застосовує автоматично. Показувати
+// лише активні товари/розділи/послуги/банери — тепер ОБОВʼЯЗОК серверного
+// репозиторію (`where(eq(products.isActive, true))`), і забутий `where` дає
+// витік чернетки на вітрину, а не порожній список. Це свідомий компроміс
+// B5″: RLS у сервер-first перестає бути єдиним рубежем і лишається
+// страхувальною сіткою на ДАНИХ КОРИСТУВАЧА, де ціна забутого `where` —
+// крос-тенантний витік, а не показ неопублікованого товару.
+//
+// 🔴 Форма предиката — initplan: `(select app.current_user_id())`, а не
+// голий виклик. Живий аудит показав 21/21 політику в голій формі
+// (`auth_rls_initplan`): предикат переобчислювався на КОЖЕН рядок. У
+// підзапиті планувальник обчислює його раз на запит.
+//
+// `app.current_user_id()` (читач GUC `app.user_id`) і ролі `app_user`/
+// `app_admin` створюються ДО цих таблиць — файлом `0000_prelude.sql`
+// канону міграцій (Task 3); гранти — `0002_grants.sql` (Task 4).
+import { users } from "./auth";
+
+export * from "./auth";
+export * from "./media";
 
 export const appRole = pgEnum("app_role", ['admin', 'user'])
 export const discountGroupOperator = pgEnum("discount_group_operator", ['and', 'or', 'not', 'min', 'max'])
@@ -25,8 +67,6 @@ export const orderStatuses = pgTable("order_statuses", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
-	pgPolicy("Order statuses are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage order statuses", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const sections = pgTable("sections", {
@@ -49,8 +89,7 @@ export const sections = pgTable("sections", {
 			name: "sections_parent_id_fkey"
 		}),
 	unique("sections_slug_key").on(table.slug),
-	pgPolicy("Active sections are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage sections", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	index("idx_sections_parent_id").on(table.parentId),
 ]);
 
 export const sectionProperties = pgTable("section_properties", {
@@ -72,8 +111,6 @@ export const sectionProperties = pgTable("section_properties", {
 			name: "section_properties_section_id_fkey"
 		}).onDelete("cascade"),
 	unique("section_properties_section_id_code_key").on(table.sectionId, table.slug),
-	pgPolicy("Section properties are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage section properties", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const userCategories = pgTable("user_categories", {
@@ -91,10 +128,7 @@ export const userCategories = pgTable("user_categories", {
 			name: "user_categories_price_type_id_fkey"
 		}).onDelete("set null"),
 	unique("user_categories_code_key").on(table.code),
-	pgPolicy("Categories are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can insert categories", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`is_admin()` }),
-	pgPolicy("Admins can update categories", { as: "permissive", for: "update", to: ["public"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
-	pgPolicy("Admins can delete categories", { as: "permissive", for: "delete", to: ["public"], using: sql`is_admin()` }),
+	index("idx_user_categories_price_type_id").on(table.priceTypeId),
 ]);
 
 export const languages = pgTable("languages", {
@@ -106,8 +140,6 @@ export const languages = pgTable("languages", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("languages_code_key").on(table.code),
-	pgPolicy("Languages are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage languages", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const userRoles = pgTable("user_roles", {
@@ -118,12 +150,12 @@ export const userRoles = pgTable("user_roles", {
 }, (table) => [
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "user_roles_user_id_fkey"
 		}).onDelete("cascade"),
 	unique("user_roles_user_id_role_key").on(table.userId, table.role),
-	pgPolicy("Users can view own roles", { as: "permissive", for: "select", to: ["public"], using: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Admins can manage roles", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	pgPolicy("user_roles_select_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("user_roles_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const wishlists = pgTable("wishlists", {
@@ -139,13 +171,12 @@ export const wishlists = pgTable("wishlists", {
 		}).onDelete("cascade"),
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "wishlists_user_id_fkey"
 		}).onDelete("cascade"),
 	unique("wishlists_user_id_product_id_key").on(table.userId, table.productId),
-	pgPolicy("Users can view own wishlist", { as: "permissive", for: "select", to: ["public"], using: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Users can manage own wishlist", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Users can delete from wishlist", { as: "permissive", for: "delete", to: ["public"], using: sql`(auth.uid() = user_id)` }),
+	index("idx_wishlists_product_id").on(table.productId),
+	pgPolicy("wishlists_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 ]);
 
 export const comparisons = pgTable("comparisons", {
@@ -161,13 +192,12 @@ export const comparisons = pgTable("comparisons", {
 		}).onDelete("cascade"),
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "comparisons_user_id_fkey"
 		}).onDelete("cascade"),
 	unique("comparisons_user_id_product_id_key").on(table.userId, table.productId),
-	pgPolicy("Users can view own comparisons", { as: "permissive", for: "select", to: ["public"], using: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Users can manage own comparisons", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Users can delete from comparisons", { as: "permissive", for: "delete", to: ["public"], using: sql`(auth.uid() = user_id)` }),
+	index("idx_comparisons_product_id").on(table.productId),
+	pgPolicy("comparisons_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 ]);
 
 export const orderItems = pgTable("order_items", {
@@ -204,14 +234,14 @@ export const orderItems = pgTable("order_items", {
 			foreignColumns: [services.id],
 			name: "order_items_service_id_fkey"
 		}),
-	pgPolicy("Users can create order items", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`(EXISTS ( SELECT 1
-   FROM orders
-  WHERE ((orders.id = order_items.order_id) AND ((orders.user_id = auth.uid()) OR (orders.user_id IS NULL)))))` }),
-	pgPolicy("Admins can manage order items", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Users can view own order items", { as: "permissive", for: "select", to: ["public"], using: sql`(EXISTS ( SELECT 1
-   FROM orders
-  WHERE ((orders.id = order_items.order_id) AND (orders.user_id = auth.uid()) AND (auth.uid() IS NOT NULL))))` }),
 	check("order_items_positive_quantity", sql`quantity > 0`),
+	index("idx_order_items_order_id").on(table.orderId),
+	index("idx_order_items_product_id").on(table.productId),
+	index("idx_order_items_modification_id").on(table.modificationId),
+	index("idx_order_items_service_id").on(table.serviceId),
+	pgPolicy("order_items_select_own_or_token", { as: "permissive", for: "select", to: ["app_user"], using: sql`exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), '')))))` }),
+	pgPolicy("order_items_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null))` }),
+	pgPolicy("order_items_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const modificationPropertyValues = pgTable("modification_property_values", {
@@ -241,8 +271,7 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 			name: "modification_property_values_property_id_fkey"
 		}).onDelete("cascade"),
 	unique("modification_property_values_modification_id_property_id_key").on(table.modificationId, table.propertyId),
-	pgPolicy("Modification property values are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage modification property values", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	index("idx_modification_property_values_property").on(table.propertyId),
 ]);
 
 export const productPropertyValues = pgTable("product_property_values", {
@@ -271,8 +300,7 @@ export const productPropertyValues = pgTable("product_property_values", {
 			name: "product_property_values_property_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_property_values_product_id_property_id_key").on(table.productId, table.propertyId),
-	pgPolicy("Property values are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage property values", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	index("idx_product_property_values_property_id").on(table.propertyId),
 ]);
 
 export const propertyOptions = pgTable("property_options", {
@@ -295,8 +323,6 @@ export const propertyOptions = pgTable("property_options", {
 			name: "property_options_property_id_fkey"
 		}).onDelete("cascade"),
 	unique("property_options_property_id_slug_key").on(table.propertyId, table.slug),
-	pgPolicy("Property options are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage property options", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const sectionPropertyAssignments = pgTable("section_property_assignments", {
@@ -320,8 +346,6 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 			name: "section_property_assignments_section_id_fkey"
 		}).onDelete("cascade"),
 	unique("section_property_assignments_section_id_property_id_key").on(table.sectionId, table.propertyId),
-	pgPolicy("Section property assignments are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage section property assignments", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 	check("section_property_assignments_applies_to_check", sql`applies_to = ANY (ARRAY['product'::text, 'modification'::text])`),
 ]);
 
@@ -337,8 +361,6 @@ export const services = pgTable("services", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("services_slug_key").on(table.slug),
-	pgPolicy("Active services are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage services", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 	check("services_positive_price", sql`(price IS NULL) OR (price >= (0)::numeric)`),
 ]);
 
@@ -359,6 +381,18 @@ export const products = pgTable("products", {
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
 	stockStatus: stockStatus("stock_status").default('in_stock'),
+	// B7: `MerchantReturnPolicy` і `OfferShippingDetails` у JSON-LD стають
+	// обовʼязковими, а рендер приїде в К2 — колонки додаються зараз, поки
+	// схема молода. Рівнів ДВА, і другий не потребує DDL: магазинний дефолт
+	// живе в `system_settings` (та сама k/v-таблиця з jsonb-значенням —
+	// ключі `commerce.return_policy` / `commerce.shipping_details`), а тут —
+	// НЕОБОВʼЯЗКОВЕ перевизначення для конкретного товару (крихке скло,
+	// негабарит, товар без повернення). Рендерер накладає перше на друге.
+	// jsonb, а не розкладка в колонки: форма — вкладений обʼєкт schema.org
+	// зі своїм словником, і розкладати його в 8-10 колонок означало б
+	// версіонувати чужий словник міграціями.
+	returnPolicy: jsonb("return_policy"),
+	shippingDetails: jsonb("shipping_details"),
 }, (table) => [
 	foreignKey({
 			columns: [table.sectionId],
@@ -366,8 +400,7 @@ export const products = pgTable("products", {
 			name: "products_section_id_fkey"
 		}).onDelete("set null"),
 	unique("products_slug_key").on(table.slug),
-	pgPolicy("Active products are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage products", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	index("idx_products_section_id").on(table.sectionId),
 ]);
 
 export const productModifications = pgTable("product_modifications", {
@@ -389,8 +422,6 @@ export const productModifications = pgTable("product_modifications", {
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
-	pgPolicy("Modifications are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage modifications", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const serviceRequests = pgTable("service_requests", {
@@ -411,13 +442,15 @@ export const serviceRequests = pgTable("service_requests", {
 		}),
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "service_requests_user_id_fkey"
 		}),
-	pgPolicy("Anyone can create service requests", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`true` }),
-	pgPolicy("Admins can manage service requests", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Users can view own service requests", { as: "permissive", for: "select", to: ["public"], using: sql`(((auth.uid() IS NOT NULL) AND (auth.uid() = user_id)) OR is_admin())` }),
 	check("service_requests_message_length", sql`(char_length(message) <= 10000) OR (message IS NULL)`),
+	index("idx_service_requests_service_id").on(table.serviceId),
+	index("idx_service_requests_user_id").on(table.userId),
+	pgPolicy("service_requests_insert_any", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`true` }),
+	pgPolicy("service_requests_select_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`user_id is not null and user_id = (select app.current_user_id())` }),
+	pgPolicy("service_requests_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const pluginEvents = pgTable("plugin_events", {
@@ -429,8 +462,6 @@ export const pluginEvents = pgTable("plugin_events", {
 	error: text(),
 	executedAt: timestamp("executed_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
-	pgPolicy("Admins can manage plugin events", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Plugin events are viewable by admins", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const plugins = pgTable("plugins", {
@@ -448,8 +479,6 @@ export const plugins = pgTable("plugins", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
 	unique("plugins_name_key").on(table.name),
-	pgPolicy("Admins can manage plugins", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Plugins are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
 ]);
 
 export const shippingMethods = pgTable("shipping_methods", {
@@ -467,8 +496,6 @@ export const shippingMethods = pgTable("shipping_methods", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("shipping_methods_code_key").on(table.code),
-	pgPolicy("Shipping methods are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage shipping methods", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const shippingZones = pgTable("shipping_zones", {
@@ -482,8 +509,6 @@ export const shippingZones = pgTable("shipping_zones", {
 	cities: text().array().default([""]),
 	regions: text().array().default([""]),
 }, (table) => [
-	pgPolicy("Shipping zones are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage shipping zones", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const shippingRates = pgTable("shipping_rates", {
@@ -516,8 +541,6 @@ export const shippingRates = pgTable("shipping_rates", {
 			foreignColumns: [shippingZones.id],
 			name: "shipping_rates_zone_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Shipping rates are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage shipping rates", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const systemSettings = pgTable("system_settings", {
@@ -529,8 +552,6 @@ export const systemSettings = pgTable("system_settings", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
 	unique("system_settings_key_key").on(table.key),
-	pgPolicy("Admins can manage system settings", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("System settings are viewable by admins", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const pickupPoints = pgTable("pickup_points", {
@@ -561,8 +582,6 @@ export const pickupPoints = pgTable("pickup_points", {
 			foreignColumns: [shippingZones.id],
 			name: "pickup_points_zone_id_fkey"
 		}).onDelete("set null"),
-	pgPolicy("Pickup points are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`((is_active = true) OR is_admin())` }),
-	pgPolicy("Admins can manage pickup points", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
@@ -591,10 +610,14 @@ export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
 			foreignColumns: [products.id],
 			name: "stock_by_pickup_point_product_id_fkey"
 		}).onDelete("cascade"),
-	unique("stock_by_pickup_point_pickup_point_id_product_id_modificati_key").on(table.pickupPointId, table.productId, table.modificationId),
-	pgPolicy("Admins can manage stock", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Stock is viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
+	// 🔴 Унікальний ключ (pickup_point_id, product_id, modification_id)
+	// прибрано як мертвий, а не як «невживаний»: check нижче гарантує, що
+	// рівно одна з двох колонок завжди NULL, а UNIQUE з NULL у складі не
+	// конфліктує НІКОЛИ. Реальну унікальність тримають два часткові
+	// індекси вище — вони для того й зʼявились.
 	check("stock_product_or_modification", sql`((product_id IS NOT NULL) AND (modification_id IS NULL)) OR ((product_id IS NULL) AND (modification_id IS NOT NULL))`),
+	index("idx_stock_by_pickup_point_product_id").on(table.productId),
+	index("idx_stock_by_pickup_point_modification_id").on(table.modificationId),
 ]);
 
 export const profiles = pgTable("profiles", {
@@ -630,17 +653,17 @@ export const profiles = pgTable("profiles", {
 		}).onDelete("set null"),
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "profiles_user_id_fkey"
 		}).onDelete("cascade"),
 	unique("profiles_user_id_key").on(table.userId),
-	pgPolicy("Users can view own profile", { as: "permissive", for: "select", to: ["public"], using: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Admins can view all profiles", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Admins can manage profiles", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Users can update own profile", { as: "permissive", for: "update", to: ["public"], using: sql`(auth.uid() = user_id)`, withCheck: sql`((auth.uid() = user_id) AND (NOT (category_id IS DISTINCT FROM ( SELECT p.category_id
-   FROM profiles p
-  WHERE (p.user_id = auth.uid())))))` }),
 	check("profiles_name_length", sql`((char_length(first_name) <= 100) OR (first_name IS NULL)) AND ((char_length(last_name) <= 100) OR (last_name IS NULL))`),
+	index("idx_profiles_category_id").on(table.categoryId),
+	index("idx_profiles_default_pickup_point_id").on(table.defaultPickupPointId),
+	index("idx_profiles_default_shipping_method_id").on(table.defaultShippingMethodId),
+	pgPolicy("profiles_select_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("profiles_update_own", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("profiles_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const userCategoryHistory = pgTable("user_category_history", {
@@ -668,8 +691,12 @@ export const userCategoryHistory = pgTable("user_category_history", {
 			foreignColumns: [userCategories.id],
 			name: "user_category_history_to_category_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Admins can manage category history", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Users can view own category history", { as: "permissive", for: "select", to: ["public"], using: sql`(auth.uid() = user_id)` }),
+	index("idx_user_category_history_user_id").on(table.userId),
+	index("idx_user_category_history_from_category_id").on(table.fromCategoryId),
+	index("idx_user_category_history_to_category_id").on(table.toCategoryId),
+	index("idx_user_category_history_rule_id").on(table.ruleId),
+	pgPolicy("user_category_history_select_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("user_category_history_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const categoryRules = pgTable("category_rules", {
@@ -693,10 +720,8 @@ export const categoryRules = pgTable("category_rules", {
 			foreignColumns: [userCategories.id],
 			name: "category_rules_to_category_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Category rules are viewable by admins", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Admins can insert category rules", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`is_admin()` }),
-	pgPolicy("Admins can update category rules", { as: "permissive", for: "update", to: ["public"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
-	pgPolicy("Admins can delete category rules", { as: "permissive", for: "delete", to: ["public"], using: sql`is_admin()` }),
+	index("idx_category_rules_from_category_id").on(table.fromCategoryId),
+	index("idx_category_rules_to_category_id").on(table.toCategoryId),
 ]);
 
 export const userRecipients = pgTable("user_recipients", {
@@ -712,8 +737,9 @@ export const userRecipients = pgTable("user_recipients", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
-	pgPolicy("Users can manage own recipients", { as: "permissive", for: "all", to: ["public"], using: sql`(auth.uid() = user_id)`, withCheck: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Admins can view all recipients", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
+	index("idx_user_recipients_user_id").on(table.userId),
+	pgPolicy("user_recipients_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("user_recipients_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
 
 export const orders = pgTable("orders", {
@@ -788,16 +814,23 @@ export const orders = pgTable("orders", {
 		}),
 	foreignKey({
 			columns: [table.userId],
-			foreignColumns: [usersInAuth.id],
+			foreignColumns: [users.id],
 			name: "orders_user_id_fkey"
 		}),
 	unique("orders_order_number_key").on(table.orderNumber),
-	pgPolicy("Users can create orders", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`((auth.uid() = user_id) OR (user_id IS NULL))` }),
-	pgPolicy("Admins can manage orders", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
-	pgPolicy("Users can view own orders", { as: "permissive", for: "select", to: ["public"], using: sql`((auth.uid() IS NOT NULL) AND (auth.uid() = user_id))` }),
 	check("orders_name_length", sql`(char_length(first_name) <= 100) AND (char_length(last_name) <= 100)`),
 	check("orders_notes_length", sql`(char_length(notes) <= 5000) OR (notes IS NULL)`),
 	check("orders_positive_totals", sql`(subtotal >= (0)::numeric) AND (total >= (0)::numeric)`),
+	index("idx_orders_user_id").on(table.userId),
+	index("idx_orders_status_id").on(table.statusId),
+	index("idx_orders_shipping_rate_id").on(table.shippingRateId),
+	index("idx_orders_shipping_zone_id").on(table.shippingZoneId),
+	index("idx_orders_saved_address_id").on(table.savedAddressId),
+	index("idx_orders_saved_recipient_id").on(table.savedRecipientId),
+	index("idx_orders_access_token").on(table.accessToken).where(sql`access_token is not null`),
+	pgPolicy("orders_select_own_or_token", { as: "permissive", for: "select", to: ["app_user"], using: sql`(user_id = (select app.current_user_id())) or (access_token is not null and access_token = (select nullif(current_setting('app.order_token', true), '')))` }),
+	pgPolicy("orders_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`(user_id = (select app.current_user_id())) or (user_id is null)` }),
+	pgPolicy("orders_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const userAddresses = pgTable("user_addresses", {
@@ -809,8 +842,9 @@ export const userAddresses = pgTable("user_addresses", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
-	pgPolicy("Users can manage own addresses", { as: "permissive", for: "all", to: ["public"], using: sql`(auth.uid() = user_id)`, withCheck: sql`(auth.uid() = user_id)` }),
-	pgPolicy("Admins can view all addresses", { as: "permissive", for: "select", to: ["public"], using: sql`is_admin()` }),
+	index("idx_user_addresses_user_id").on(table.userId),
+	pgPolicy("user_addresses_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("user_addresses_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
 
 export const productPrices = pgTable("product_prices", {
@@ -839,8 +873,8 @@ export const productPrices = pgTable("product_prices", {
 			foreignColumns: [products.id],
 			name: "product_prices_product_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Anyone can view product prices", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage product prices", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
+	index("idx_product_prices_product_id").on(table.productId),
+	index("idx_product_prices_modification_id").on(table.modificationId),
 ]);
 
 export const themes = pgTable("themes", {
@@ -858,8 +892,6 @@ export const themes = pgTable("themes", {
 }, (table) => [
 	uniqueIndex("themes_active_idx").using("btree", table.isActive.asc().nullsLast().op("bool_ops")).where(sql`(is_active = true)`),
 	unique("themes_name_key").on(table.name),
-	pgPolicy("Themes are viewable by everyone", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage themes", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const priceTypes = pgTable("price_types", {
@@ -872,8 +904,6 @@ export const priceTypes = pgTable("price_types", {
 }, (table) => [
 	uniqueIndex("idx_price_types_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 	unique("price_types_code_key").on(table.code),
-	pgPolicy("Anyone can view price types", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage price types", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
 ]);
 
 export const discountGroups = pgTable("discount_groups", {
@@ -895,8 +925,6 @@ export const discountGroups = pgTable("discount_groups", {
 			foreignColumns: [table.id],
 			name: "discount_groups_parent_group_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Anyone can view active discount groups", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage discount groups", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const discountTargets = pgTable("discount_targets", {
@@ -912,8 +940,6 @@ export const discountTargets = pgTable("discount_targets", {
 			foreignColumns: [discounts.id],
 			name: "discount_targets_discount_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Anyone can view discount targets", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage discount targets", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const discountConditions = pgTable("discount_conditions", {
@@ -930,8 +956,6 @@ export const discountConditions = pgTable("discount_conditions", {
 			foreignColumns: [discounts.id],
 			name: "discount_conditions_discount_id_fkey"
 		}).onDelete("cascade"),
-	pgPolicy("Anyone can view discount conditions", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage discount conditions", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
 ]);
 
 export const discounts = pgTable("discounts", {
@@ -960,8 +984,7 @@ export const discounts = pgTable("discounts", {
 			foreignColumns: [priceTypes.id],
 			name: "discounts_price_type_id_fkey"
 		}),
-	pgPolicy("Anyone can view active discounts", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
-	pgPolicy("Admins can manage discounts", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()` }),
+	index("idx_discounts_price_type_id").on(table.priceTypeId),
 ]);
 
 export const productReviews = pgTable("product_reviews", {
@@ -983,10 +1006,12 @@ export const productReviews = pgTable("product_reviews", {
 			name: "product_reviews_product_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_reviews_product_id_user_id_key").on(table.productId, table.userId),
-	pgPolicy("Anyone can view approved reviews", { as: "permissive", for: "select", to: ["public"], using: sql`((status = 'approved'::text) OR (user_id = auth.uid()) OR is_admin())` }),
-	pgPolicy("Authenticated users can create reviews", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`((auth.uid() IS NOT NULL) AND (user_id = auth.uid()))` }),
-	pgPolicy("Authors can update pending reviews", { as: "permissive", for: "update", to: ["public"], using: sql`(((user_id = auth.uid()) AND (status = 'pending'::text)) OR is_admin())` }),
-	pgPolicy("Authors and admins can delete reviews", { as: "permissive", for: "delete", to: ["public"], using: sql`((user_id = auth.uid()) OR is_admin())` }),
+	index("idx_product_reviews_user_id").on(table.userId),
+	pgPolicy("product_reviews_select_approved_or_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`status = 'approved' or user_id = (select app.current_user_id())` }),
+	pgPolicy("product_reviews_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("product_reviews_update_own_pending", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id()) and status = 'pending'`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
+	pgPolicy("product_reviews_delete_own", { as: "permissive", for: "delete", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("product_reviews_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const banners = pgTable("banners", {
@@ -1021,6 +1046,4 @@ export const banners = pgTable("banners", {
 			foreignColumns: [sections.id],
 			name: "banners_section_id_fkey"
 		}).onDelete("set null"),
-	pgPolicy("Anyone can view active banners", { as: "permissive", for: "select", to: ["public"], using: sql`(is_active = true)` }),
-	pgPolicy("Admins can manage banners", { as: "permissive", for: "all", to: ["public"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
 ]);

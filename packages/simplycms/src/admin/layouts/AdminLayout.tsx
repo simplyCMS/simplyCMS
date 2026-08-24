@@ -7,19 +7,19 @@ import {
 import { AdminSidebar } from './AdminSidebar';
 import { Button } from 'simplycms/ui/button';
 import { LogOut, Home } from 'lucide-react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ThemeToggle } from 'simplycms/core/components/ThemeToggle';
 import { useT } from 'simplycms/i18n';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useT();
-  const supabase = useSupabaseClient();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast({
       title: t('admin.common.signedOut'),
       description: t('admin.common.signedOutHint'),

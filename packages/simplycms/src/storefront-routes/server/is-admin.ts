@@ -1,4 +1,5 @@
-import { createServerSupabase } from 'simplycms/supabase/server-client';
+import { getRequest } from '@tanstack/react-start/server';
+import { isAdminRequest } from 'simplycms/auth';
 
 /**
  * Чи має поточний користувач роль admin — ЗВИЧАЙНА функція.
@@ -7,31 +8,20 @@ import { createServerSupabase } from 'simplycms/supabase/server-client';
  * контексту `createServerFn`, тому виклик serverFn-обгортки там впав би.
  * Без сесії → `false`.
  *
- * 🔴 Живе в ОКРЕМОМУ модулі, а не поруч із serverFn-ами в `auth.ts`, і це не
- * косметика. Трансформація TanStack Start вирізає з клієнтського бандла тіла
- * `createServerFn`-хендлерів, після чого їхній `import ... from
- * 'simplycms/supabase/server-client'` стає невживаним і зникає. Звичайна
- * функція такого імунітету не має: як живий експортований символ вона тримає
- * серверний імпорт живим, а в опублікованому пакеті сусідні модулі вже склеєні
- * в один tsup-чанк — тож клієнтський `import { getUser } from '…/server/auth'`
- * (`admin-routes/routes/admin.tsx`) затягнув би сюди весь серверний Supabase.
- * У монорепо цього не видно: там Vite бачить сирці й вирізає невживане.
- * Спіймано Gate C пілота (`node scripts/pilot-pack.mjs`).
+ * 🔴 Контур — Better Auth (К1′б): і ідентичність, і роль тепер приходять з
+ * Postgres (`simplycms/auth` → `withActor`). Гібрид «GoTrue дає id, Postgres
+ * дає роль» знято разом із GoTrue.
+ *
+ * 🔴 Живе в ОКРЕМОМУ модулі, а не поруч із serverFn-ами в `auth.ts`.
+ * Трансформація TanStack Start вирізає з клієнтського бандла тіла
+ * `createServerFn`-хендлерів, після чого їхні серверні імпорти стають
+ * невживаними і зникають. Звичайна функція такого імунітету не має: як живий
+ * експортований символ вона тримає серверний імпорт живим, а в опублікованому
+ * пакеті сусідні модулі вже склеєні в один tsup-чанк — тож клієнтський
+ * `import { getUser } from '…/server/auth'` (`admin-routes/routes/admin.tsx`)
+ * затягнув би сюди і Better Auth, і пул Postgres. У монорепо цього не видно:
+ * там Vite бачить сирці й вирізає невживане. Спіймано Gate C пілота.
  */
 export async function checkIsAdmin(): Promise<boolean> {
-  const supabase = createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return false;
-
-  const { data: role } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('role', 'admin')
-    .maybeSingle();
-
-  return !!role;
+  return isAdminRequest(getRequest().headers);
 }

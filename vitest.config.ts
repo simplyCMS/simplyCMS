@@ -29,6 +29,12 @@ export default defineConfig({
       '**/dist/**',
       '**/.output/**',
       '**/package/**', // витяги npm/pnpm pack
+      // Ізольовані git worktree агентних сесій живуть УСЕРЕДИНІ репо
+      // (.claude/worktrees/<run>) — без виключення vitest сканує їх як
+      // другу копію кодової бази: тести дублюються (~270 файлів замість
+      // ~136), а падіння старої версії в копії виглядають як падіння
+      // нашого коду. Спіймано 2026-08-24 живим прогоном.
+      '**/.claude/worktrees/**',
       // Packaging-suite: пакує кожен пакет через `pnpm pack`, тому вимагає
       // попереднього `pnpm build:packages`. У `pnpm test` не входить —
       // запускається окремим CI-job-ом `packaging`.
@@ -47,6 +53,11 @@ export default defineConfig({
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —
       // явний, а не мовчазний збіг конвенцій.
       'tests/e2e/**',
+      // PG-харнес (Task 1, план В2-К1а): потребує живого Postgres
+      // (`PG_HARNESS_URL` або ефемерний `initdb`+`pg_ctl` фолбек), тому в
+      // `pnpm test` не входить — окремий гейт `pnpm test:schema`
+      // (`vitest.schema.config.ts`), та сама логіка, що з packaging-suite.
+      'packages/simplycms/test-harness/**',
     ],
   },
 });

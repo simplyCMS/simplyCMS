@@ -48,6 +48,12 @@ const EXCLUDE_PATHSPECS = [
   // докблоці). Реальних імпортів там немає.
   ':!eslint.tier-zones.mjs',
   ':!tests/tier-boundary.test.ts',
+  // Те саме для зони «зʼєднання лише через withActor» (Task 6, В2-К1а):
+  // `eslint.db-client-zone.mjs` складає ban-патерни, а негативний контроль
+  // годує ESLint синтетичним `simplycms/db/client`. Це специфікатор-ЗАБОРОНА,
+  // а не імпорт: субшляху `./db/client` в `exports` немає свідомо.
+  ':!eslint.db-client-zone.mjs',
+  ':!tests/db-client-boundary.test.ts',
   // Таблиця зон і lint-хелпер живуть у теці поруч — виняток мусить покривати
   // її ЦІЛКОМ, інакше кожен винос фікстур у новий файл мовчки повертає їх у
   // скан (спіймано рев'ю К0, коло 2).

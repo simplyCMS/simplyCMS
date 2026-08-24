@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { authClient } from 'simplycms/core/lib/auth-client';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 import {
@@ -25,7 +25,6 @@ export function CheckoutAuthBlock({
   onAuthSuccess,
   defaultTab = 'guest',
 }: CheckoutAuthBlockProps) {
-  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const t = useT();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
@@ -52,14 +51,15 @@ export function CheckoutAuthBlock({
     clearMessages();
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await authClient.signIn.email({
         email: loginEmail,
         password: loginPassword,
       });
 
       if (error) {
-        let errorMessage = error.message;
-        if (error.message === 'Invalid login credentials') {
+        // За кодом, а не за текстом — текст Better Auth змінюється версією.
+        let errorMessage = error.message ?? t('checkout.auth.genericError');
+        if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
           errorMessage = t('checkout.auth.invalidCredentials');
         }
         setAuthError(errorMessage);
@@ -96,21 +96,15 @@ export function CheckoutAuthBlock({
     clearMessages();
 
     try {
-      const { data: signUpData, error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await authClient.signUp.email({
         email: regEmail,
         password: regPassword,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            first_name: regFirstName,
-            last_name: regLastName,
-          },
-        },
+        name: `${regFirstName} ${regLastName}`,
       });
 
       if (error) {
-        let errorMessage = error.message;
-        if (error.message.includes('already registered')) {
+        let errorMessage = error.message ?? t('checkout.auth.genericError');
+        if (error.code === 'USER_ALREADY_EXISTS') {
           errorMessage = t('checkout.auth.emailAlreadyRegistered');
         }
         setAuthError(errorMessage);
@@ -119,10 +113,11 @@ export function CheckoutAuthBlock({
           title: t('auth.register.failed'),
           description: errorMessage,
         });
-      } else if (signUpData?.user && !signUpData.session) {
-        setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
-        toast({ title: t('checkout.auth.checkEmailToast') });
-      } else if (signUpData?.user && signUpData.session) {
+      } else if (signUpData?.user) {
+        // 🔴 Гілки «створено, але без сесії» більше немає: підтвердження
+        // пошти вимкнене, тож успішний signUp одразу дає сесію. Тримати
+        // мертву гілку «перевірте пошту» означало б показувати користувачу
+        // крок, якого в контурі не існує.
         setAuthSuccess(t('checkout.auth.registerSuccess'));
         toast({ title: t('checkout.auth.registerSuccess') });
         onAuthSuccess?.();

@@ -20,8 +20,12 @@
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
     "./domain/money": "./src/domain/money.ts",
+    "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
+    "./schema/types": "./src/schema/types.ts",
+    "./db": "./src/db/index.ts",
+    "./auth": "./src/auth/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -51,10 +55,14 @@
     "./themes/useThemeT": "./src/themes/useThemeT.ts",
     "./themes/types": "./src/themes/types.ts",
     "./themes/conformance": "./src/themes/conformance/index.ts",
+    "./themes/server": "./src/themes/server/index.ts",
     "./plugins": "./src/plugins/index.ts",
     "./plugins/PluginSlot": "./src/plugins/PluginSlot.tsx",
     "./plugins/types": "./src/plugins/types.ts",
+    "./plugins/bootstrap": "./src/plugins/bootstrap.ts",
+    "./plugins/server": "./src/plugins/server/index.ts",
     "./plugin-sdk": "./src/plugin-sdk/index.ts",
+    "./plugin-sdk/server": "./src/plugin-sdk/server/index.ts",
     "./cart-ui": "./src/cart-ui/index.ts",
     "./cart-ui/*": "./src/cart-ui/*.tsx",
     "./catalog-ui": "./src/catalog-ui/index.ts",
@@ -145,6 +153,10 @@
         "types": "./dist/domain/money.d.ts",
         "import": "./dist/domain/money.js"
       },
+      "./domain/user-categories": {
+        "types": "./dist/domain/user-categories/index.d.ts",
+        "import": "./dist/domain/user-categories/index.js"
+      },
       "./schema": {
         "types": "./dist/schema/schema.d.ts",
         "import": "./dist/schema/schema.js"
@@ -152,6 +164,18 @@
       "./schema/relations": {
         "types": "./dist/schema/relations.d.ts",
         "import": "./dist/schema/relations.js"
+      },
+      "./schema/types": {
+        "types": "./dist/schema/types.d.ts",
+        "import": "./dist/schema/types.js"
+      },
+      "./db": {
+        "types": "./dist/db/index.d.ts",
+        "import": "./dist/db/index.js"
+      },
+      "./auth": {
+        "types": "./dist/auth/index.d.ts",
+        "import": "./dist/auth/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
@@ -269,6 +293,10 @@
         "types": "./dist/themes/conformance/index.d.ts",
         "import": "./dist/themes/conformance/index.js"
       },
+      "./themes/server": {
+        "types": "./dist/themes/server/index.d.ts",
+        "import": "./dist/themes/server/index.js"
+      },
       "./plugins": {
         "types": "./dist/plugins/index.d.ts",
         "import": "./dist/plugins/index.js"
@@ -281,9 +309,21 @@
         "types": "./dist/plugins/types.d.ts",
         "import": "./dist/plugins/types.js"
       },
+      "./plugins/bootstrap": {
+        "types": "./dist/plugins/bootstrap.d.ts",
+        "import": "./dist/plugins/bootstrap.js"
+      },
+      "./plugins/server": {
+        "types": "./dist/plugins/server/index.d.ts",
+        "import": "./dist/plugins/server/index.js"
+      },
       "./plugin-sdk": {
         "types": "./dist/plugin-sdk/index.d.ts",
         "import": "./dist/plugin-sdk/index.js"
+      },
+      "./plugin-sdk/server": {
+        "types": "./dist/plugin-sdk/server/index.d.ts",
+        "import": "./dist/plugin-sdk/server/index.js"
       },
       "./cart-ui": {
         "types": "./dist/cart-ui/index.d.ts",
@@ -420,10 +460,9 @@
     "directory": "packages/simplycms"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup && tsc -p tsconfig.dts.json",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
-    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
-    "db:dump-rls": "node ./scripts/dump-rls.mjs"
+    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",
@@ -482,13 +521,15 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2",
-    "pg": "8.22.0"
+    "@types/pg": "^8.15.6",
+    "dotenv": "^17.4.2"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.29.2",
     "@tiptap/extension-text-align": "^3.29.2",
+    "better-auth": "1.7.1",
     "clsx": "^2.1.1",
+    "pg": "8.22.0",
     "tailwind-merge": "^3.6.0"
   },
   "peerDependenciesMeta": {
@@ -577,9 +618,6 @@
       "optional": true
     },
     "cmdk": {
-      "optional": true
-    },
-    "drizzle-orm": {
       "optional": true
     },
     "input-otp": {

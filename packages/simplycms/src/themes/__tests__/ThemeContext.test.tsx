@@ -2,31 +2,24 @@
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { SupabaseProvider } from 'simplycms/supabase/SupabaseProvider';
-import type { SupabaseClient } from 'simplycms/supabase/browser-client';
 import { ThemeProvider } from '../ThemeContext';
 import { useTheme } from '../theme-context';
 import { ThemeRegistry } from '../ThemeRegistry';
 import type { ThemeModule } from '../types';
 
 /**
- * 🔴 Фаза 8, Step 1 (Р9а) — доказ, а не переказ: `loadTheme` у
- * `ThemeContext.tsx` уже робить `{ ...defaultSettings, ...savedSettings }`.
- * Тест ловить регрес на ОБОХ шляхах ініціалізації — SSR (`initialThemeName`)
- * і клієнтський fetch (`supabase.from('themes')...`) — бо це два різні
- * виклики `loadTheme` з різним походженням `record`.
+ * 🔴 Доказ, а не переказ: `loadTheme` у `ThemeContext.tsx` робить
+ * `{ ...defaultSettings, ...savedSettings }`.
  *
- * 🔴 Асиметрія, знайдена цим тестом (НЕ дірка в самому злитті): на SSR-гілці
- * `isLoading` ініціалізується як `false` одразу (`!initialThemeName`), а
- * `themeSettings` заповнюється лише після того, як `loadTheme` довантажить
- * модуль теми з `ThemeRegistry` — це відбувається в ефекті, тобто на тік
- * пізніше. Тому тести чекають (`waitFor`) саме на вміст `themeSettings`, а
- * не на `isLoading === false`: останній не є надійним сигналом готовності
- * налаштувань на цьому шляху. Сьогодні жоден компонент не читає `isLoading`
- * з `useTheme()`, а `useActiveThemeModule` резолвиться через окремий
- * Suspense (`use(ThemeRegistry.load(...))`), тож це не production-регрес —
- * але про нюанс варто памʼятати, якщо `isLoading` колись стане публічним
- * сигналом готовності `themeSettings`.
+ * 🔴 Шлях ініціалізації тепер ОДИН (В2, рішення B9): назву й налаштування
+ * активної теми дає лоадер каркасного роуту, і другої гілки — клієнтського
+ * запиту `themes` через PostgREST — більше немає. Тест на неї знято разом із
+ * нею: браузер до БД не звертається взагалі, тож «тема з другого джерела»
+ * не могла б розійтися з тим, що зрендерив сервер.
+ *
+ * 🔴 Готовність `themeSettings` перевіряється саме по вмісту, а не по
+ * `isLoading`: модуль теми довантажується в ефекті, тобто на тік пізніше за
+ * перший рендер.
  */
 
 const THEME_NAME = 'settings-merge-theme';
@@ -50,20 +43,6 @@ function makeTheme(): ThemeModule {
   };
 }
 
-/** Двійник `supabase.from('themes').select('*').eq('is_active', true).single()`. */
-function makeSupabase(row: Record<string, unknown> | null): SupabaseClient {
-  const client = {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: row, error: null }),
-        }),
-      }),
-    }),
-  };
-  return client as unknown as SupabaseClient;
-}
-
 afterEach(() => {
   for (const name of ThemeRegistry.getRegisteredThemes()) {
     ThemeRegistry.unregister(name);
@@ -73,20 +52,18 @@ afterEach(() => {
 });
 
 describe('ThemeProvider — злиття default-ів зі збереженими settings (Р9а)', () => {
-  it('SSR-гілка (initialThemeName): ключ з БД перекриває default, відсутній ключ читається як default', async () => {
+  it('ключ із лоадера перекриває default, відсутній ключ читається як default', async () => {
     ThemeRegistry.register(THEME_NAME, () =>
       Promise.resolve({ default: makeTheme() }),
     );
 
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <SupabaseProvider client={makeSupabase(null)}>
-        <ThemeProvider
-          initialThemeName={THEME_NAME}
-          initialThemeSettings={{ accent: '#ff0000' }}
-        >
-          {children}
-        </ThemeProvider>
-      </SupabaseProvider>
+      <ThemeProvider
+        initialThemeName={THEME_NAME}
+        initialThemeSettings={{ accent: '#ff0000' }}
+      >
+        {children}
+      </ThemeProvider>
     );
 
     const { result } = renderHook(() => useTheme(), { wrapper });
@@ -95,54 +72,19 @@ describe('ThemeProvider — злиття default-ів зі збереженим�
       expect(result.current.themeSettings.accent).toBe('#ff0000'),
     );
 
-    // Є в initialThemeSettings (БД через SSR) — значення з БД, не default.
+    // Є в initialThemeSettings (рядок БД через лоадер) — значення з БД.
     expect(result.current.themeSettings.accent).toBe('#ff0000');
     // Відсутній у initialThemeSettings — має лишитись default зі схеми.
     expect(result.current.themeSettings.title).toBe('#222222');
   });
 
-  it('клієнтський fetch (без initialThemeName): те саме злиття з рядка supabase.from("themes")', async () => {
-    ThemeRegistry.register(THEME_NAME, () =>
-      Promise.resolve({ default: makeTheme() }),
-    );
-
-    const row = {
-      id: 'theme-1',
-      name: THEME_NAME,
-      display_name: THEME_NAME,
-      version: '1.0.0',
-      description: null,
-      author: null,
-      preview_image: null,
-      is_active: true,
-      settings: { accent: '#ff0000' },
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    };
-
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <SupabaseProvider client={makeSupabase(row)}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </SupabaseProvider>
-    );
-
-    const { result } = renderHook(() => useTheme(), { wrapper });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.themeSettings.accent).toBe('#ff0000');
-    expect(result.current.themeSettings.title).toBe('#222222');
-  });
-
-  it('SSR-гілка без initialThemeSettings: усі значення — default зі схеми', async () => {
+  it('без initialThemeSettings: усі значення — default зі схеми', async () => {
     ThemeRegistry.register(THEME_NAME, () =>
       Promise.resolve({ default: makeTheme() }),
     );
 
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <SupabaseProvider client={makeSupabase(null)}>
-        <ThemeProvider initialThemeName={THEME_NAME}>{children}</ThemeProvider>
-      </SupabaseProvider>
+      <ThemeProvider initialThemeName={THEME_NAME}>{children}</ThemeProvider>
     );
 
     const { result } = renderHook(() => useTheme(), { wrapper });
@@ -153,5 +95,21 @@ describe('ThemeProvider — злиття default-ів зі збереженим�
         title: '#222222',
       }),
     );
+  });
+
+  it('невідома тема з лоадера → fallback, і БЕЗ жодного походу в БД', async () => {
+    ThemeRegistry.register('default', () =>
+      Promise.resolve({ default: makeTheme() }),
+    );
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ThemeProvider initialThemeName="ghost-theme">{children}</ThemeProvider>
+    );
+
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.themeName).toBe('default');
+    expect(result.current.error).toBeNull();
   });
 });

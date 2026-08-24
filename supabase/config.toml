@@ -23,8 +23,14 @@ shadow_port = 54320
 major_version = 17
 
 [db.migrations]
-# supabase/migrations/ застосовуються на `supabase start` і `supabase db reset`.
-enabled = true
+# 🔴 Вимкнено рішенням B13 (амендмент спеки 2026-08-23): теки
+# `supabase/migrations/` більше немає — канон схеми переїхав у
+# `packages/simplycms/migrations/` (baseline + сід). Формат імен там числовий
+# (`0000_prelude.sql`), і Supabase CLI його все одно не прийняв би: він чекає
+# `<timestamp>_<name>.sql`. Наслідок, який мусить бути видимим: локальний
+# стек `supabase start` піднімається з ПОРОЖНЬОЮ схемою, тож `pnpm pilot:e2e`
+# і `pnpm test:e2e` — decommissioned до К1′б/К6 (обидва й так поза CI).
+enabled = false
 schema_paths = []
 
 [db.seed]

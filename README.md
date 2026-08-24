@@ -97,7 +97,8 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 ### Потрібна Supabase
 
 Ядро працює поверх Supabase (Postgres + Auth + Storage). Схема ядра — 40 таблиць
-із RLS; міграції лежать у [`supabase/migrations/`](supabase/migrations/).
+із RLS; канон міграцій лежить у
+[`packages/simplycms/migrations/`](packages/simplycms/migrations/).
 
 ## Розробка самого ядра
 

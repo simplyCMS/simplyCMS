@@ -90,7 +90,10 @@ const createOverlayChecker = (): ((file: string, text: string) => number[]) => {
 };
 
 // Одруку відтворюємо ІСТОРИЧНУ: рівно та форма, яку tsup ігнорував мовчки.
-const ANCHOR = 'dts: true,';
+// Якорів два, бо значення `dts` тепер РІЗНЕ по конфігах: флагман — `false`
+// (декларації видає tsc, розтин OOM 2026-08-24), сателіти — `true` (вони
+// крихітні, одна тека entry, під кепом памʼяті проходять). Мутація та сама.
+const ANCHORS = ['dts: false,', 'dts: true,'] as const;
 const TYPO = "dts: { tsconfig: './tsconfig.json' },";
 
 describe('tsup-конфіги під типізацією', () => {
@@ -113,10 +116,14 @@ describe('tsup-конфіги під типізацією', () => {
 
       // Якір мусить існувати: без нього мутація нічого не міняє і тест
       // «зеленів» би на порожньому місці.
-      expect(source, `${where}: немає якоря «${ANCHOR}»`).toContain(ANCHOR);
+      const anchor = ANCHORS.find((candidate) => source.includes(candidate));
+      expect(
+        anchor,
+        `${where}: немає жодного з якорів «${ANCHORS.join('», «')}»`,
+      ).toBeDefined();
       expect(check(file, source), `${where}: чистий конфіг`).toEqual([]);
 
-      const codes = check(file, source.replace(ANCHOR, TYPO));
+      const codes = check(file, source.replace(anchor as string, TYPO));
       // TS2353 — «'tsconfig' does not exist in type 'DtsConfig'».
       expect(codes, `${where}: одрук не спійманий`).toContain(2353);
     }

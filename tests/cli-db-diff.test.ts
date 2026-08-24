@@ -42,8 +42,11 @@ function makeSchemaDir(store: string) {
   const schemaDir = schemaMigrationsPath(store);
   mkdirSync(schemaDir, { recursive: true });
   const storeDir = storeMigrationsDir(store);
+  // 🔴 `{ recursive: true }` обовʼязковий: канон везе піддиректорію
+  // `demo/` (demo-сід, поза каноном db:diff) — без опції cpSync падає на
+  // директорії з "cannot copy a directory".
   for (const name of readdirSync(storeDir))
-    cpSync(join(storeDir, name), join(schemaDir, name));
+    cpSync(join(storeDir, name), join(schemaDir, name), { recursive: true });
   return schemaDir;
 }
 
