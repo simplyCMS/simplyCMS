@@ -1,14 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Truck, ChevronRight, Save, icons } from 'lucide-react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import type {
-  ShippingMethod,
-  ShippingRate,
-  PickupPoint,
-} from 'simplycms/domain/shipping';
 import { formatShippingCost } from 'simplycms/domain/shipping';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
+import {
+  useAddressBook,
+  type AddressRow,
+} from 'simplycms/core/hooks/useAddressBook';
+import { useShippingDirectory } from 'simplycms/core/hooks/useShippingDirectory';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 import { useEngine } from 'simplycms/react-query';
@@ -23,14 +21,6 @@ interface CheckoutDeliveryFormProps {
   onShippingCostChange: (cost: number) => void;
 }
 
-interface SavedAddress {
-  id: string;
-  name: string;
-  city: string;
-  address: string;
-  is_default: boolean;
-}
-
 const MAX_VISIBLE_CARDS = 3;
 
 const getMethodIcon = (
@@ -41,97 +31,57 @@ const getMethodIcon = (
   return (Icon as React.ComponentType<{ className?: string }>) || Truck;
 };
 
+/**
+ * Спосіб доставки, адреса й вартість.
+ *
+ * 🔴 Довідники (способи, зони, тарифи, точки видачі) приходять ОДНИМ
+ * серверним викликом, а не трьома запитами браузера в PostgREST: без
+ * PostgREST форму не було чим заповнити, тобто замовлення не оформлювалось
+ * узагалі. Вартість рахує домен (`resolveShippingRate`), а не цей файл.
+ */
 export function CheckoutDeliveryForm({
   values,
   onChange,
   subtotal,
   onShippingCostChange,
 }: CheckoutDeliveryFormProps) {
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
   const t = useT();
   // Локаль і валюта для `formatShippingCost` — чистої T1-функції без доступу
   // ні до конфігу магазину, ні до перекладів (див. коментар у shipping.ts).
   const { config } = useEngine();
-  const queryClient = useQueryClient();
   const selectedMethodId = values.shippingMethodId as string | undefined;
   const selectedAddressId = values.savedAddressId as string | undefined;
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [originalAddress, setOriginalAddress] = useState<SavedAddress | null>(
+  const [originalAddress, setOriginalAddress] = useState<AddressRow | null>(
     null,
   );
 
-  const { data: methods, isLoading: methodsLoading } = useQuery({
-    queryKey: ['checkout-shipping-methods'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shipping_methods')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      if (error) throw error;
-      return data as unknown as ShippingMethod[];
-    },
-  });
+  const currentCity = String(values.deliveryCity || '');
+  const currentAddress = String(values.deliveryAddress || '');
 
-  const { data: rates } = useQuery({
-    queryKey: ['checkout-shipping-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shipping_rates')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      if (error) throw error;
-      return data as unknown as ShippingRate[];
-    },
-  });
+  const {
+    methods,
+    pickupPoints,
+    isLoading: methodsLoading,
+    rateFor,
+  } = useShippingDirectory(currentCity, subtotal);
+  const { addresses: savedAddresses, save: saveAddress } =
+    useAddressBook(!!user);
 
-  const { data: pickupPoints } = useQuery({
-    queryKey: ['checkout-pickup-points'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pickup_points')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
-      if (error) throw error;
-      return data as unknown as PickupPoint[];
-    },
-  });
-
-  const { data: savedAddresses } = useQuery({
-    queryKey: ['checkout-saved-addresses', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('user_addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as SavedAddress[];
-    },
-    enabled: !!user,
-  });
-
-  const visibleAddresses = useMemo(() => {
-    if (!savedAddresses) return [];
-    return savedAddresses.slice(0, MAX_VISIBLE_CARDS);
-  }, [savedAddresses]);
+  const visibleAddresses = useMemo(
+    () => (savedAddresses ?? []).slice(0, MAX_VISIBLE_CARDS),
+    [savedAddresses],
+  );
 
   const showMoreButton =
     savedAddresses && savedAddresses.length > MAX_VISIBLE_CARDS;
-  const selectedMethod = methods?.find((m) => m.id === selectedMethodId);
+  const selectedMethod = methods.find((m) => m.id === selectedMethodId);
   const isPickup = selectedMethod?.code === 'pickup';
   const showAddressFields = selectedMethod && !isPickup;
-
-  const currentCity = String(values.deliveryCity || '');
-  const currentAddress = String(values.deliveryAddress || '');
 
   // hasChanges — виведений стан, не потребує окремого useState
   const hasChanges = useMemo(() => {
@@ -159,56 +109,60 @@ export function CheckoutDeliveryForm({
     }
   };
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!originalAddress) return;
-      const { error } = await supabase
-        .from('user_addresses')
-        .update({ city: currentCity, address: currentAddress })
-        .eq('id', originalAddress.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
-      toast({ title: t('common.address.updated') });
-      setOriginalAddress({
-        ...originalAddress!,
-        city: currentCity,
-        address: currentAddress,
-      });
-    },
-  });
+  /**
+   * 🔴 `null` у відповіді — рядок актору НЕ належить (RLS не віддала його
+   * `returning`). Тихо вважати це успіхом означало б показати «оновлено» там,
+   * де нічого не змінилось.
+   */
+  const handleUpdateAddress = () => {
+    if (!originalAddress) return;
+    const edited = { city: currentCity, address: currentAddress };
+    saveAddress.mutate(
+      {
+        id: originalAddress.id,
+        name: originalAddress.name,
+        isDefault: originalAddress.is_default,
+        ...edited,
+      },
+      {
+        onSuccess: (id) => {
+          if (!id) {
+            toast({ title: t('common.error'), variant: 'destructive' });
+            return;
+          }
+          toast({ title: t('common.address.updated') });
+          setOriginalAddress({ ...originalAddress, ...edited });
+        },
+      },
+    );
+  };
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('user_addresses')
-        .insert({
-          user_id: user.id,
-          name: t('common.address.new'),
-          city: currentCity,
-          address: currentAddress,
-          is_default: false,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['checkout-saved-addresses'] });
-      toast({ title: t('checkout.delivery.addressCreated') });
-      if (data) {
-        onChange('savedAddressId', data.id);
-        setOriginalAddress(data as SavedAddress);
-      }
-    },
-  });
+  const handleCreateAddress = () => {
+    if (!user) return;
+    const name = t('common.address.new');
+    saveAddress.mutate(
+      { name, city: currentCity, address: currentAddress, isDefault: false },
+      {
+        onSuccess: (id) => {
+          if (!id) return;
+          toast({ title: t('checkout.delivery.addressCreated') });
+          onChange('savedAddressId', id);
+          setOriginalAddress({
+            id,
+            name,
+            city: currentCity,
+            address: currentAddress,
+            is_default: false,
+            usage_count: 0,
+          });
+        },
+      },
+    );
+  };
 
   const handleSaveClick = () => {
     if (originalAddress) setSaveDialogOpen(true);
-    else if (user) createMutation.mutate();
+    else if (user) handleCreateAddress();
   };
 
   const handleCancelChanges = () => {
@@ -230,48 +184,15 @@ export function CheckoutDeliveryForm({
   };
 
   useEffect(() => {
-    if (!selectedMethodId || !rates) {
-      onShippingCostChange(0);
-      return;
-    }
-    const methodRates = rates.filter((r) => r.method_id === selectedMethodId);
-    if (methodRates.length === 0) {
-      onShippingCostChange(0);
-      return;
-    }
-    const rate = methodRates[0];
-    let cost = rate.base_cost;
-    if (
-      rate.calculation_type === 'free_from' &&
-      rate.free_from_amount &&
-      subtotal >= rate.free_from_amount
-    ) {
-      cost = 0;
-    }
-    onShippingCostChange(cost);
-  }, [selectedMethodId, rates, subtotal, onShippingCostChange]);
+    const rate = selectedMethodId ? rateFor(selectedMethodId) : null;
+    onShippingCostChange(rate?.cost ?? 0);
+  }, [selectedMethodId, rateFor, onShippingCostChange]);
 
   useEffect(() => {
-    if (methods && methods.length > 0 && !selectedMethodId) {
+    if (methods.length > 0 && !selectedMethodId) {
       onChange('shippingMethodId', methods[0].id);
     }
   }, [methods, selectedMethodId, onChange]);
-
-  const getRateInfo = (methodId: string) => {
-    if (!rates) return null;
-    const methodRates = rates.filter((r) => r.method_id === methodId);
-    if (methodRates.length === 0) return null;
-    const rate = methodRates[0];
-    let displayCost = rate.base_cost;
-    if (
-      rate.calculation_type === 'free_from' &&
-      rate.free_from_amount &&
-      subtotal >= rate.free_from_amount
-    ) {
-      displayCost = 0;
-    }
-    return { cost: displayCost, estimatedDays: rate.estimated_days };
-  };
 
   if (methodsLoading) {
     return (
@@ -299,9 +220,9 @@ export function CheckoutDeliveryForm({
         </div>
         <div className="p-4 space-y-4">
           <div className="grid gap-3">
-            {methods?.map((method) => {
+            {methods.map((method) => {
               const IconComponent = getMethodIcon(method.icon);
-              const rateInfo = getRateInfo(method.id);
+              const rateInfo = rateFor(method.id);
               return (
                 <label
                   key={method.id}
@@ -344,7 +265,7 @@ export function CheckoutDeliveryForm({
             })}
           </div>
 
-          {isPickup && pickupPoints && pickupPoints.length > 0 && (
+          {isPickup && pickupPoints.length > 0 && (
             <div className="pt-4 border-t">
               <label className="text-sm font-medium mb-1 block">
                 {t('checkout.delivery.pickupPointLabel')}
@@ -439,9 +360,7 @@ export function CheckoutDeliveryForm({
                     type="button"
                     className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm flex items-center gap-2"
                     onClick={handleSaveClick}
-                    disabled={
-                      updateMutation.isPending || createMutation.isPending
-                    }
+                    disabled={saveAddress.isPending}
                   >
                     <Save className="h-4 w-4" />
                     {t('checkout.delivery.saveAddress')}
@@ -468,10 +387,10 @@ export function CheckoutDeliveryForm({
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         existingAddressName={originalAddress?.name}
-        onUpdate={() => updateMutation.mutate()}
+        onUpdate={handleUpdateAddress}
         onCreate={() => {
           onChange('savedAddressId', '');
-          createMutation.mutate();
+          handleCreateAddress();
         }}
         onCancel={handleCancelChanges}
       />

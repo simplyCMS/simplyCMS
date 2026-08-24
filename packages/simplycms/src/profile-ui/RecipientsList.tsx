@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Pencil,
@@ -11,38 +10,40 @@ import {
   Mail,
   MapPin,
 } from 'lucide-react';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
+import {
+  useRecipientBook,
+  type RecipientRow,
+} from 'simplycms/core/hooks/useRecipientBook';
 import { useT } from 'simplycms/i18n';
 
-interface Recipient {
-  id: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  email: string | null;
-  city: string;
-  address: string;
-  notes: string | null;
-  is_default: boolean;
-  usage_count?: number;
-}
-
+/**
+ * Книга отримувачів покупця — список і CRUD.
+ *
+ * 🔴 Той самий перехід, що в `AddressesList`: читання й запис під актором
+ * сесії замість запитів браузера з `user_id` у предикаті. Прапорець
+ * «основний» знімається з решти рядків у ТІЙ САМІЙ транзакції серверу —
+ * раніше це були два незалежні запити, між якими основних було двоє.
+ */
 export function RecipientsList() {
   const t = useT();
-  const supabase = useSupabaseClient();
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const {
+    recipients,
+    isLoading,
+    save: saveRecipient,
+    remove: removeRecipient,
+  } = useRecipientBook(!!user);
+
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
+  const [editingRecipient, setEditingRecipient] = useState<RecipientRow | null>(
     null,
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [recipientToDelete, setRecipientToDelete] = useState<Recipient | null>(
-    null,
-  );
+  const [recipientToDelete, setRecipientToDelete] =
+    useState<RecipientRow | null>(null);
 
   const [formFirstName, setFormFirstName] = useState('');
   const [formLastName, setFormLastName] = useState('');
@@ -53,108 +54,62 @@ export function RecipientsList() {
   const [formNotes, setFormNotes] = useState('');
   const [formIsDefault, setFormIsDefault] = useState(false);
 
-  const { data: recipients, isLoading } = useQuery({
-    queryKey: ['user-recipients', user?.id],
-    queryFn: async () => {
-      const { data: recipientData, error: recipientError } = await supabase
-        .from('user_recipients')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (recipientError) throw recipientError;
+  const failed = (error: Error) =>
+    toast({
+      title: t('common.error'),
+      description: error.message,
+      variant: 'destructive',
+    });
 
-      const recipientsWithCount = await Promise.all(
-        (recipientData || []).map(async (r) => {
-          const { count } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true })
-            .eq('saved_recipient_id', r.id);
-          return { ...r, usage_count: count || 0 };
-        }),
-      );
-
-      return recipientsWithCount as Recipient[];
-    },
-    enabled: !!user,
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (formIsDefault) {
-        await supabase
-          .from('user_recipients')
-          .update({ is_default: false })
-          .eq('user_id', user!.id);
-      }
-
-      const payload = {
-        first_name: formFirstName,
-        last_name: formLastName,
+  const handleSave = () => {
+    saveRecipient.mutate(
+      {
+        id: editingRecipient?.id ?? null,
+        firstName: formFirstName,
+        lastName: formLastName,
         phone: formPhone,
         email: formEmail || null,
         city: formCity,
         address: formAddress,
         notes: formNotes || null,
-        is_default: formIsDefault,
-      };
+        isDefault: formIsDefault,
+      },
+      {
+        onSuccess: (id) => {
+          setDialogOpen(false);
+          const wasEditing = editingRecipient !== null;
+          setEditingRecipient(null);
+          // 🔴 `null` — рядок актору не належить (RLS не віддала `returning`).
+          if (!id) {
+            toast({ title: t('common.error'), variant: 'destructive' });
+            return;
+          }
+          toast({
+            title: wasEditing
+              ? t('common.recipient.updated')
+              : t('common.recipient.added'),
+          });
+        },
+        onError: failed,
+      },
+    );
+  };
 
-      if (editingRecipient) {
-        const { error } = await supabase
-          .from('user_recipients')
-          .update(payload)
-          .eq('id', editingRecipient.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_recipients')
-          .insert([{ ...payload, user_id: user!.id }]);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-recipients'] });
-      setDialogOpen(false);
-      setEditingRecipient(null);
-      toast({
-        title: editingRecipient
-          ? t('common.recipient.updated')
-          : t('common.recipient.added'),
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const handleDelete = (id: string) => {
+    removeRecipient.mutate(id, {
+      onSuccess: (ok) => {
+        setDeleteDialogOpen(false);
+        setRecipientToDelete(null);
+        toast({
+          title: ok ? t('profile.recipients.deleted') : t('common.error'),
+          variant: ok ? undefined : 'destructive',
+        });
+      },
+      onError: failed,
+    });
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('user_recipients')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-recipients'] });
-      toast({ title: t('profile.recipients.deleted') });
-      setDeleteDialogOpen(false);
-      setRecipientToDelete(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const openEditDialog = (recipient: Recipient) => {
+  const openEditDialog = (recipient: RecipientRow) => {
     setEditingRecipient(recipient);
     setFormFirstName(recipient.first_name);
     setFormLastName(recipient.last_name);
@@ -308,7 +263,7 @@ export function RecipientsList() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                saveMutation.mutate();
+                handleSave();
               }}
               className="space-y-4"
             >
@@ -418,9 +373,9 @@ export function RecipientsList() {
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm flex items-center"
-                  disabled={saveMutation.isPending}
+                  disabled={saveRecipient.isPending}
                 >
-                  {saveMutation.isPending && (
+                  {saveRecipient.isPending && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
                   {editingRecipient ? t('common.save') : t('common.add')}
@@ -476,11 +431,10 @@ export function RecipientsList() {
               <button
                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm flex items-center"
                 onClick={() =>
-                  recipientToDelete &&
-                  deleteMutation.mutate(recipientToDelete.id)
+                  recipientToDelete && handleDelete(recipientToDelete.id)
                 }
               >
-                {deleteMutation.isPending && (
+                {removeRecipient.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 {t('common.delete')}
