@@ -67,8 +67,21 @@ Drizzle + `simplycms/db` (`withActor`), vitest, пілот, eslint-зони.
 | `EngineContext.config` | живий: `checkout-ui/CheckoutOrderSummary.tsx:31`, `CheckoutDeliveryForm.tsx:53`, `react-query/useFormatPrice.ts:28`, `admin/pages/ShippingZoneEdit.tsx:93` | ЛИШИТИ |
 | `EngineContext.links` | живий лише у фікстурі тесту `react-query/__tests__/engine-provider.test.tsx:67` | ЛИШИТИ (host `appLinks` його постачає) |
 
-🔴 **Ревізія 1 (2026-08-24, за аудитом Codex — 7 знахідок, усі вивірені
-проти коду):** Tasks 1 і 2 **злиті в одну атомарну задачу** — окремо вони
+🔴 **Ревізія 3 (2026-08-24, два раунди аудиту Codex — 16 знахідок, усі
+вивірені проти коду; плюс дві власні).** Раунд 2 дав ще два блокери:
+(1) Task 1 не бачив `runtime/index.ts:64` і `engine-provider.test.tsx:13` —
+без них `typecheck`/`test` не зазеленіли б; (2) порядок задач лишав
+`/profile/settings` зламаним, бо `useSupabaseClient` має fallback на
+`resolveDefaultClient()` (`SupabaseProvider.tsx:51`) — тому AvatarUpload
+тепер ІДЕ ПЕРЕД зняттям провайдера. Решта раунду 2: прагма `jsdom` у
+render-тестах (`vitest.config.ts:26` — `environment: 'node'`), реальні
+пропси AvatarUpload і `Locale = 'uk' | 'en'`, `closeDbPool()` між кейсами
+health-тесту й `connectionTimeoutMillis` у пулі, CLI-поверхня скаффолдера
+(`--supabase-*` і промпт), доля `db:generate-types`, `.claude/settings.json`
+свідомо НЕ чіпаємо, плюс `create-api-route.prompt.md`, `code-review/SKILL.md`,
+`template/README.md` і кореневий `README.md` у списку доків.
+
+**Раунд 1 (за тим самим аудитом):** Tasks 1 і 2 **злиті в одну атомарну задачу** — окремо вони
 лишали репо в неробочому стані (видалення `src/data-supabase` при живих
 імпортах `src/engine-provider.tsx:14` і `src/server/engine.ts:13`);
 `typecheck:template` доданий у ланцюг гейтів; RED-кроки переписані під
@@ -101,6 +114,13 @@ Gate C і заборону віддавати сирий текст помилк
   `packages/simplycms/package.json` (`exports` І `publishConfig.exports`:
   зняти `./data-supabase`), `packages/simplycms/tsup.config.ts` (entry),
   `eslint.tier-zones.mjs` + `tests/tier-boundary/zones.ts` (зона `data-supabase`)
+- 🔴 Modify (пропущені споживачі — без них `typecheck`/`test` не зазеленіють):
+  `packages/simplycms/src/runtime/index.ts:64` — `defineRuntime` складає
+  `EngineContext` із `adapters.catalog/orders/scope/identity/media`; звуження
+  інтерфейсу ламає його компіляцію, тож `DefineRuntimeInput`/`adapters`
+  звужуються ТУТ ЖЕ. `packages/simplycms/src/react-query/__tests__/engine-provider.test.tsx:13`
+  імпортує `useProduct, useSections` із `../hooks`, який ця задача видаляє —
+  тест переписується в тому ж кроці, інакше падає на імпорті.
 - Modify (host): `src/engine-provider.tsx`, `src/engine.shared.ts`,
   `src/routes/__root.tsx` (якщо передає клієнт у `ClientEngineProvider`)
 - Modify (синк): 🔴 `scripts/sync-create-store-template.mjs` — зняти
@@ -157,6 +177,10 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
 }
 ```
 
+- [ ] **Step 3b:** 🔴 звузити `defineRuntime` (`runtime/index.ts:64`) і тип
+      `DefineRuntimeInput` до `{ links, config }`; переписати
+      `react-query/__tests__/engine-provider.test.tsx` (зняти імпорт
+      `../hooks`, фікстура — два поля). Обидва — умова зеленого `typecheck`.
 - [ ] **Step 4:** видалити `src/data-supabase/**`, `react-query/hooks.ts`,
       `src/server/engine.ts`; почистити `react-query/index.ts` і `queries.ts`
       (🔴 `catalogKeys` ЛИШАЄТЬСЯ — його споживає
@@ -177,7 +201,81 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
       очікуваний шум.
 - [ ] **Step 7:** Commit: `refactor(v2): знести мертвий шар репозиторіїв, EngineContext = config+links`.
 
-### Task 2: Зняти SupabaseProvider зі шляху вітрини
+### Task 2: AvatarUpload — гучна відмова замість тихої
+
+🔴 **Іде ПЕРЕД зняттям `SupabaseProvider`, і це не стиль.**
+`useSupabaseClient` має fallback на `resolveDefaultClient()`
+(`SupabaseProvider.tsx:51`): якщо спершу зняти провайдер, `AvatarUpload`
+(`ProfileSettings.tsx:225`) отримає не `null`, а виклик фабрики — і
+`/profile/settings` упаде без Supabase-env. Перевірка головної сторінки
+цього не ловить.
+
+**Files:**
+- Modify: `packages/simplycms/src/profile-ui/AvatarUpload.tsx:3,44,70-82`
+- Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/**` (новий ключ)
+- Test: `packages/simplycms/src/profile-ui/__tests__/avatar-upload-disabled.test.tsx` (новий)
+
+**Interfaces:**
+- Consumes: Task 1 (EngineContext уже звужений).
+- Produces: компонент рендериться, інпут файлу **disabled**, поруч видиме
+  пояснення; жодного `useSupabaseClient`. Пропси НЕ змінюються:
+  `{ userId, currentAvatarUrl, firstName, lastName, email, onUpdate }`.
+
+- [ ] **Step 1:** додати ключ `profile.avatar.unavailable` в **обидва**
+      каталоги (`uk`: «Завантаження аватара тимчасово недоступне — сховище
+      файлів підключається в наступному оновленні»; `en`: «Avatar upload is
+      temporarily unavailable — file storage lands in an upcoming release»).
+      🔴 Обидва обов'язково: `tests/i18n-catalog-parity.test.ts` червоніє на
+      неповному `en`.
+- [ ] **Step 2 (RED):** тест: рендер показує текст ключа й `input[type=file]`
+      має `disabled`. 🔴 Три пастки, кожна дала б червоне з неправильної
+      причини:
+      (а) `vitest.config.ts:26` задає `environment: 'node'` — рендер без
+      прагми впаде на відсутньому `document`; прецедент —
+      `plugin-sdk/__tests__/usePluginT.test.tsx`;
+      (б) `useT()` (`AvatarUpload.tsx:43`) кидає поза `<I18nProvider>`
+      (`I18nProvider.tsx:43`);
+      (в) `Locale = 'uk' | 'en'` (`i18n/types.ts:4`) — `"uk-UA"` не
+      компілюється, а пропси компонента саме ті, що в Interfaces.
+
+```tsx
+// @vitest-environment jsdom
+import { render, screen } from '@testing-library/react';
+import { expect, it } from 'vitest';
+import { I18nProvider } from 'simplycms/i18n';
+import { AvatarUpload } from '../AvatarUpload';
+
+it('аватар недоступний до контуру К4 — інпут вимкнено, причина видима', () => {
+  render(
+    <I18nProvider locale="uk">
+      <AvatarUpload
+        userId="00000000-0000-0000-0000-000000000001"
+        currentAvatarUrl={null}
+        firstName="Тест"
+        lastName="Тестенко"
+        email="test@example.com"
+        onUpdate={() => {}}
+      />
+    </I18nProvider>,
+  );
+
+  expect(
+    screen.getByText(/тимчасово недоступне/i),
+  ).toBeInTheDocument();
+  expect(screen.getByTestId('avatar-file-input')).toBeDisabled();
+});
+```
+
+- [ ] **Step 3:** прогнати — червоний саме на відсутньому тексті/`disabled`.
+- [ ] **Step 4:** переписати компонент: зняти `useSupabaseClient` і весь блок
+      `supabase.storage`; лишити показ поточного аватара, вимкнений інпут
+      (`data-testid="avatar-file-input"`) і пояснення. 🔴 Ніякого `onUpload`,
+      що «нічого не робить, але не скаржиться» — заборонена тиха заглушка
+      (шапка файлу вже фіксує цей принцип, рядки 31-34).
+- [ ] **Step 5:** прогнати — зелений; `pnpm lint` (i18n-зона — error).
+- [ ] **Step 6:** повний ланцюг. Commit: `fix(profile): аватар — чесна відмова до контуру К4, без Supabase`.
+
+### Task 3: Зняти SupabaseProvider зі шляху вітрини
 
 **Files:**
 - Modify: `packages/simplycms/src/core/providers/CMSProvider.tsx:3,29,33`
@@ -186,18 +284,19 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
 - Test: `packages/simplycms/src/core/__tests__/cms-provider-no-supabase.test.tsx` (новий)
 
 **Interfaces:**
-- Consumes: Task 2.
+- Consumes: Task 2 (жоден компонент вітрини вже не кличе `useSupabaseClient`).
 - Produces: `CMSProvider` не монтує `SupabaseProvider`; рендер вітрини не
   торкається `resolveSupabaseKeys`, тож відсутність `VITE_SUPABASE_*` більше
   не кидає.
 
-- [ ] **Step 1 (RED):** тест, що доводить саме поведінку, а не форму.
-      🔴 Використовуй `vi.stubEnv(..., undefined)` — **не** `delete
-      import.meta.env.X`: у vitest `import.meta.env` є Proxy над
-      `process.env`, і репо вже має канонічний спосіб це обійти
-      (`packages/simplycms/src/supabase/__tests__/env-source.test.ts:20-27`).
+- [ ] **Step 1 (RED):** тест, що доводить поведінку, а не форму.
+      🔴 `vi.stubEnv(..., undefined)`, **не** `delete import.meta.env.X`: у
+      vitest `import.meta.env` — Proxy над `process.env`, і репо має
+      канонічний обхід (`supabase/__tests__/env-source.test.ts:20-27`).
+      🔴 Прагма `jsdom` обов'язкова (`vitest.config.ts:26` — `environment: 'node'`).
 
 ```tsx
+// @vitest-environment jsdom
 // Гард регресії: рендер CMSProvider БЕЗ VITE_SUPABASE_* не повинен кидати.
 // До фіксу падав на resolveSupabaseKeys усередині SupabaseProvider — саме це
 // ламало вітрину в браузері, тоді як SSR віддавав 200 (аудит 2026-08-24).
@@ -225,51 +324,9 @@ it('рендериться без змінних Supabase', () => {
 ```
 
 - [ ] **Step 2:** прогнати — червоний із текстом «Відсутні змінні оточення».
-- [ ] **Step 3:** прибрати `<SupabaseProvider>` із `CMSProvider`; лишити решту провайдерів як є. Прогнати — зелений.
-- [ ] **Step 4:** 🔴 **жива перевірка в браузері** (без неї задача не зроблена — саме цей клас дефекту curl не бачить). Підняти демо-БД і магазин БЕЗ `VITE_SUPABASE_*`, відкрити головну Playwright-ом і асертити нуль `console.error` і наявність `h1` з контентом. Було: «Щось пішло не так».
+- [ ] **Step 3:** прибрати `<SupabaseProvider>` із `CMSProvider`; решту провайдерів лишити. Прогнати — зелений.
+- [ ] **Step 4:** 🔴 **жива перевірка в браузері** (без неї задача не зроблена — цей клас дефекту curl не бачить). Магазин БЕЗ `VITE_SUPABASE_*`: відкрити Playwright-ом **головну І `/profile/settings`** (друга — доказ, що Task 2 відпрацювала), асертити нуль `console.error` і `h1` з контентом. Було: «Щось пішло не так».
 - [ ] **Step 5:** повний ланцюг гейтів. Commit: `fix(v2): вітрина не монтує SupabaseProvider — магазин працює без VITE_SUPABASE_*`.
-
-### Task 3: AvatarUpload — гучна відмова замість тихої
-
-**Files:**
-- Modify: `packages/simplycms/src/profile-ui/AvatarUpload.tsx:3,44,70-82`
-- Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/**` (новий ключ)
-- Test: `packages/simplycms/src/profile-ui/__tests__/avatar-upload-disabled.test.tsx` (новий)
-
-**Interfaces:**
-- Consumes: Task 3 (клієнта Supabase у дереві більше немає).
-- Produces: компонент рендериться, кнопка вибору файлу **disabled**, поруч —
-  видиме пояснення; спроба завантаження неможлива. Жодного `useSupabaseClient`.
-
-- [ ] **Step 1:** додати ключ `profile.avatar.unavailable` в обидва каталоги
-      (`uk`: «Завантаження аватара тимчасово недоступне — сховище файлів
-      підключається в наступному оновленні»; `en`: «Avatar upload is
-      temporarily unavailable — file storage lands in an upcoming release»).
-      🔴 Обидва каталоги обов'язково: `tests/i18n-catalog-parity.test.ts`
-      червоніє на неповному `en`.
-- [ ] **Step 2 (RED):** тест: рендер `AvatarUpload` показує текст ключа
-      `profile.avatar.unavailable` і `input[type=file]` має `disabled`.
-      🔴 Компонент починає з `useT()` (`AvatarUpload.tsx:43`), а
-      `I18nProvider.tsx:43` кидає `«… використано поза <I18nProvider>»` —
-      тож рендер ОБОВ'ЯЗКОВО загортати:
-
-```tsx
-render(
-  <I18nProvider locale="uk-UA">
-    <AvatarUpload currentUrl={null} onUpdate={() => {}} />
-  </I18nProvider>,
-);
-```
-
-      Без обгортки тест червонітиме з НЕПРАВИЛЬНОЇ причини — і зазеленіє
-      після фіксу теж з неправильної. Прогнати — червоний саме на
-      відсутньому тексті/`disabled`.
-- [ ] **Step 3:** переписати компонент: зняти `useSupabaseClient` і весь
-      блок `supabase.storage`; лишити показ поточного аватара, вимкнений
-      інпут і пояснення. 🔴 Ніякого `onUpload`, що «нічого не робить, але не
-      скаржиться» — це і є заборонена тиха заглушка.
-- [ ] **Step 4:** прогнати тест — зелений; `pnpm lint` (i18n-зона — error).
-- [ ] **Step 5:** повний ланцюг. Commit: `fix(profile): аватар — чесна відмова до контуру К4, без Supabase`.
 
 ### Task 4: `/api/health` на Postgres
 
@@ -284,7 +341,13 @@ render(
 
 - [ ] **Step 1 (RED):** тест у схемному контурі: викликати хендлер проти
       живого харнеса — 200 і `checks.database.ok === true`; другим кейсом —
-      з завідомо битим `DATABASE_URL` — 503. Прогнати: червоний.
+      з завідомо битим `DATABASE_URL` — 503.
+      🔴 Між кейсами **обов'язковий `await closeDbPool()`**
+      (`db/client.ts:81`): пул — лінивий синглтон, і другий виклик віддає
+      ВЖЕ створений (`client.ts:45-53` — це задокументована семантика
+      «рестарт замість гарячої ротації», не баг). Без закриття негативний
+      кейс говоритиме зі старою БД і 503 не доведе — тобто буде зеленим
+      намарно. Прогнати: червоний.
 - [ ] **Step 2:** переписати хендлер:
 
 ```tsx
@@ -330,6 +393,12 @@ export const Route = createFileRoute('/api/health')({
 });
 ```
 
+- [ ] **Step 2b:** 🔴 додати `connectionTimeoutMillis` у фабрику пулу
+      (`db/client.ts:71`). Зараз його немає: недоступний host підвисне до
+      системного TCP-таймауту, і health замість своєчасного 503 просто не
+      відповість — для Dokploy-healthcheck це гірше за 503, бо виглядає як
+      зависання застосунку. Значення — 5000 мс (менше типового інтервалу
+      healthcheck), винести константою з поясненням.
 - [ ] **Step 3:** 🔴 розширити bundle-guard пілота: у
       `scripts/pilot-pack/gate-c.mjs:23` масив `SERVER_PAYLOAD` перелічує
       лише `supabase/server-client`, `supabase/anon-client` і
@@ -396,7 +465,16 @@ React».
   реально блокує старт, а не старий контракт), `packages/cli/src/doctor.mjs`,
   `packages/cli/src/doctor-online.mjs`, `packages/create-simplycms-store/src/scaffold.mjs`,
   `scripts/pilot-pack/{scaffold,tool-pkg-smoke,tool-doctor-smoke,e2e,gate-b,gate-e}.mjs`,
-  `scripts/e2e.mjs`, `.claude/settings.json` (allowlist-згадки)
+  `scripts/e2e.mjs`
+- 🔴 Modify (**CLI-поверхня скаффолдера** — без неї команда й далі прийматиме
+  Supabase-прапорці й питатиме ключі в кожного інтерактивного користувача):
+  `packages/create-simplycms-store/src/args.mjs:50-56` (`--supabase-url`,
+  `--supabase-key`), `.../src/steps.mjs:27` (інтерактивний промпт «URL проєкту
+  Supabase»), `.../src/index.mjs:66` (прокидання цих опцій)
+- 🔴 **НЕ чіпати** `.claude/settings.json:8`: там env для MCP
+  `content-loader`, який винесений за скоуп плану. Прибрати звідти
+  `SUPABASE_SERVICE_ROLE_KEY`, не переписавши `tools/content-loader-mcp/src/client.ts:4-5`,
+  означало б зламати інструмент — суперечність, яку план не робить.
 - 🔴 **Modify окремим кроком: `scripts/pilot-pack/env.mjs:24-26`** — див. Step 0
 
 **🔴 Чому пілот тут головний (знайдено при аудиті плану):**
@@ -445,6 +523,14 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
 - [ ] **Step 3:** почистити обидва env-приклади, `vite-env.d.ts`, конфіги,
       `steps.mjs:126`; `pnpm template:sync`.
 - [ ] **Step 4:** оновити решту тестів і пілотні скрипти зі списку Files.
+- [ ] **Step 4b:** 🔴 вирішити долю `pnpm db:generate-types`
+      (`package.json:37` → `supabase/scripts/update-types.mjs:36-37`): вона
+      читає `SUPABASE_PROJECT_ID`/`SUPABASE_ACCESS_TOKEN`, тобто після
+      очищення env і доків матиме **прихований старий контракт**. За B12
+      (типи з Drizzle) джерелом типів є `simplycms/schema/types` — тож
+      рекомендація: **видалити** команду й скрипт разом із двома ключами.
+      Якщо власник хоче лишити — команда й ключі мусять бути ЯВНО оголошені
+      винятком у `.env.example` і в доках, а не мовчазним хвостом.
 - [ ] **Step 5:** 🔴 жива перевірка: скаффолд у чистій теці з локальних
       tarball-ів → в `.env.example` нема жодного `SUPABASE` →
       `pnpm simplycms doctor` без `DATABASE_URL` дає ПОМИЛКУ саме про нього.
@@ -475,7 +561,16 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
   `packages/simplycms/src/runtime/README.md` (`createServerRuntime`),
   `packages/simplycms/src/storefront/README.md`,
   `server.mjs` (коментар про ротацію Supabase-ключів),
-  `.github/instructions/tooling.instructions.md`
+  `.github/instructions/tooling.instructions.md`,
+  🔴 `.github/prompts/create-api-route.prompt.md:18` (генерує Supabase-роути —
+  наступні агенти діставатимуть хибний канон),
+  🔴 `.agents/skills/code-review/SKILL.md:89` (вимагає перевіряти
+  `data-supabase` і `SupabaseProvider`, яких уже немає)
+- 🔴 Modify (**публікована документація** — без неї фінальний асерт
+  верифікації не зійдеться):
+  `packages/create-simplycms-store/template/README.md:33` (досі вимагає
+  `VITE_SUPABASE_URL`/`PUBLISHABLE_KEY` з Dashboard),
+  кореневий `README.md:89` (`supabase db push`)
 - Modify: `CLAUDE.md` (🔴 рядки 70/303/537-539 — К1′б пройдена, GoTrue знесено;
   розділ «Environment Variables» — новий контракт; Quick Reference),
   `docs/architecture/test-contours.md` (🔴 банер DECOMMISSIONED для
