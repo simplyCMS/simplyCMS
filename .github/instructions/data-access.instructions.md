@@ -54,7 +54,7 @@ description: "Правила роботи з даними та Supabase в Simpl
 | Змінні | Команди |
 |--------|---------|
 | `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types` (Management API) |
-| `DATABASE_URL` | `db:pull`, `db:diff`, `db:dump-rls` (прямий SQL-конект, session pooler) |
+| `DATABASE_URL` | `db:pull`, `db:diff` (прямий SQL-конект); 🔴 у V2 — ще й рантайм-пул `simplycms/db` |
 
 ### Міграції
 

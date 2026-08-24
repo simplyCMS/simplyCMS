@@ -131,6 +131,55 @@ describe('поведінка RLS: матриця акторів', () => {
     expect(await countAs(AS_ADMIN, countSql('profiles'))).toBe(2);
   });
 
+  // 🔴 Блок додано 2026-08-23 (борг К1а-9). Рев'ю довело мутацією, що ці
+  // чотири таблиці мали політики, ACL і текстову парність — але жодного
+  // запиту двома акторами. Підміна `user_roles_select_own` на `using: true`
+  // лишала весь гейт зеленим (42/42). Тепер кожна з них екзаменується
+  // так само, як решта: свій рядок видно, чужий — ні, адмін — усе.
+  it('порівняння і заявки на послуги звужені до власника', async () => {
+    const comparisons = countSql('comparisons');
+    expect(await countAs(AS_A, comparisons)).toBe(1);
+    expect(await countAs(AS_B, comparisons)).toBe(1);
+    expect(await countAs(AS_ANON, comparisons)).toBe(0);
+    // 🔴 Адмін тут дістає НЕ «0 рядків», а відмову: `comparisons` не має
+    // адмінської політики, тож і гранта `app_admin` на неї немає (правило
+    // Task 4: набір команд гранта = обʼєднанню команд політик тієї ж ролі).
+    // Асертимо саме відмову — «0 рядків» приховало б появу зайвого гранта.
+    await expect(
+      withActor(runtimeUrl, { userId: USER_ADMIN, role: 'app_admin' }, [
+        comparisons,
+      ]),
+    ).rejects.toThrow(/permission denied/i);
+
+    const requests = countSql('service_requests');
+    expect(await countAs(AS_A, requests)).toBe(1);
+    expect(await countAs(AS_ANON, requests)).toBe(0);
+    // Адмінська політика `service_requests_admin_all` — на відміну від
+    // `comparisons`, де адмінської політики свідомо немає.
+    expect(await countAs(AS_ADMIN, requests)).toBe(2);
+  });
+
+  it('історія категорій і ролі: чужий рядок невидимий', async () => {
+    const history = countSql('user_category_history');
+    expect(await countAs(AS_A, history)).toBe(1);
+    expect(await countAs(AS_B, history)).toBe(1);
+    expect(await countAs(AS_ANON, history)).toBe(0);
+    expect(await countAs(AS_ADMIN, history)).toBe(2);
+
+    // 🔴 Саме на цій таблиці мутація рев'ю лишалась непоміченою. Побачити
+    // чужий рядок `user_roles` = дізнатись, хто в магазині адмін.
+    const roles = countSql('user_roles');
+    expect(await countAs(AS_A, roles)).toBe(1);
+    expect(await countAs(AS_ANON, roles)).toBe(0);
+    expect(await countAs(AS_ADMIN, roles)).toBe(3);
+
+    // Лічильника мало — звіряємо, що видно САМЕ свій рядок.
+    const rows = (await withActor(runtimeUrl, AS_A, [
+      'select user_id from public.user_roles',
+    ])) as { user_id: string }[];
+    expect(rows.map((row) => row.user_id)).toEqual([USER_A]);
+  });
+
   it('WITH CHECK: INSERT на чужий user_id відбито, на свій — проходить', async () => {
     // Без WITH CHECK власник рядка підмінявся б на етапі запису: USING ховає
     // чуже лише від ЧИТАННЯ, писати чуже він не заважає.

@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm"
 // user-scoped таблицях (`orders`, `order_items`, `profiles`, `wishlists`,
 // `comparisons`, `user_addresses`, `user_recipients`, `product_reviews`,
 // `service_requests`, `user_category_history`, `user_roles`) — 27 політик
-// замість 94. Що зникло і чому:
+// замість 93. Що зникло і чому:
 //   • ~56 політик на `is_admin()` — самої функції в схемі v2 немає. Право
 //     адміна тепер дає РОЛЬ БД (`app_admin`, вмикається `SET LOCAL ROLE`
 //     після TS-перевірки), а не SECURITY DEFINER-функція без гарда;

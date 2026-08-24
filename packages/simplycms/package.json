@@ -442,8 +442,7 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
-    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
-    "db:dump-rls": "node ./scripts/dump-rls.mjs"
+    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
   "peerDependencies": {
     "@hookform/resolvers": "^5.0.0",

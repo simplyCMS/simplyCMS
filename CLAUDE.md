@@ -24,6 +24,10 @@ pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): нак�
                       # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
                       # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
+# 🔴 pnpm test:e2e і pnpm pilot:e2e — DECOMMISSIONED до К1′б/К6 (B13): локальний
+#                       стек supabase start піднімається з ПОРОЖНЬОЮ схемою (міграції
+#                       вимкнені в supabase/config.toml), тож сід падає. Опис нижче —
+#                       історичний, до відновлення контурів на Postgres-стеку.
 pnpm test:e2e         # БРАУЗЕРНИЙ контур: Playwright по монорепо-хосту.
                       # scripts/e2e.mjs сам піднімає локальний Supabase (Docker),
                       # накатує сід, створює власника — і ганяє специ ДВІЧІ:
@@ -42,7 +46,7 @@ pnpm release 0.4.0    # РЕЛІЗ: гарди + бамп версії всіх 
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
-pnpm db:pull / db:diff / db:dump-rls / db:generate-types / types:baseline
+pnpm db:pull / db:diff / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
 
@@ -511,7 +515,7 @@ Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VIT
 🔴 **Ключі контуру V2** (трек К1а; серверні — читаються ЛИШЕ з `process.env` у
 рантаймі, клієнту не видно й `VITE_`-префікса не мають):
 - `DATABASE_URL` — пряме підключення до Postgres. Був tooling-ключем
-  (`db:pull`/`db:diff`/`db:dump-rls`), у V2 стає **рантайм-контрактом**: із нього
+  (`db:pull`/`db:diff`), у V2 стає **рантайм-контрактом**: із нього
   живе пул `simplycms/db`
 - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` — серверний Better Auth (`simplycms/auth`)
 - `PG_HARNESS_URL` — опційний dev-ключ: готовий Postgres для `pnpm test:schema`
@@ -572,11 +576,10 @@ production-`node_modules` (потрібен рівно один рантайм-�
 Джерело правди схеми — `packages/simplycms/src/schema/schema.ts` (Drizzle).
 Schema-тулінг (`drizzle/`, `drizzle.config.ts`, `scripts/dump-rls.mjs`,
 `seed-migrations/`) живе на рівні ПАКЕТА, не в `src/`; root-скрипти
-`db:pull`/`db:dump-rls` — це `pnpm --filter simplycms run …`.
+`db:pull` — це `pnpm --filter simplycms run …`.
 
 ```bash
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
-pnpm db:dump-rls               # Дамп RLS-політик із живої БД (джерело для rls-parity.test.ts)
 pnpm db:diff <name>            # schema.ts → SQL у packages/simplycms/migrations/ (ревʼю обовʼязкове)
 pnpm test:schema               # накат канону на чисту БД харнеса (db:migrate — decommissioned, B2/B13)
 pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
@@ -592,7 +595,8 @@ generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) 
 `packages/simplycms/src/supabase/README.md`.
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
-для інспекції. Після зміни схеми типи мають бути свіжими (`db:migrate` робить це сам).
+для інспекції. Після зміни схеми типи оновлюються окремим кроком — `pnpm db:generate-types`;
+`db:migrate` більше не існує (B2/B13).
 
 ## CI/CD
 
@@ -603,6 +607,7 @@ generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) 
 | `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
 | `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
 | `workflow.yml` | `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `workflow.yml` | `schema` | `install` → `test:schema` (service-контейнер `postgres:17`) | push/PR/manual |
 | `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
 
 `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і

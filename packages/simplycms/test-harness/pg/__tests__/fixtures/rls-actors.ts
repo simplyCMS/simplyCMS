@@ -19,6 +19,18 @@ export const PRODUCT = '44444444-4444-4444-8444-444444444444';
 export const ORDER_A = '55555555-5555-4555-8555-555555555555';
 export const ORDER_GUEST = '66666666-6666-4666-8666-666666666666';
 export const MEDIA_A = '77777777-7777-4777-8777-777777777777';
+export const SERVICE = '88888888-8888-4888-8888-888888888888';
+
+/**
+ * Категорія `retail` із `0003_seed.sql` — єдина в чистому магазині.
+ *
+ * 🔴 Підзапит, а НЕ хардкод uuid: сід створює рядок через `gen_random_uuid()`,
+ * тож ідентифікатор різний у кожній свіжій БД харнеса. Береться саме з сіду
+ * (а не заводиться тут власна категорія), бо `user_category_history
+ * .to_category_id` має FK — власна категорія приховала б регрес, якби сід
+ * колись перестав засівати `retail`.
+ */
+const SEED_CATEGORY = `(select id from public.user_categories where code = 'retail')`;
 
 /** Токен гостьового замовлення — заміна edge-функції `get-guest-order`. */
 export const GUEST_TOKEN = 'guest-token-9f3c4a';
@@ -60,6 +72,29 @@ export const SEED_STATEMENTS: string[] = [
   `insert into public.product_reviews (product_id, user_id, rating, status) values
      ('${PRODUCT}', '${USER_B}', 5, 'approved'),
      ('${PRODUCT}', '${USER_A}', 4, 'pending')`,
+  // 🔴 Нижче — перехресні рядки для решти RLS-таблиць. Додано 2026-08-23 після
+  // знахідки рев'ю (лінза test-honesty, борг К1а-9): матриця екзаменувала лише
+  // частину захищених таблиць, і підміна предиката `user_roles_select_own` на
+  // `true` лишала ВЕСЬ гейт зеленим. Структурна перевірка (ACL + текст
+  // предиката) поведінку не доводить — кожна захищена таблиця мусить мати
+  // рядки двох різних власників, інакше «зелено» означає лише «порожньо».
+  `insert into public.comparisons (user_id, product_id) values
+     ('${USER_A}', '${PRODUCT}'), ('${USER_B}', '${PRODUCT}')`,
+  `insert into public.services (id, slug, name)
+     values ('${SERVICE}', 'test-service', 'Тестова послуга')`,
+  `insert into public.service_requests (service_id, user_id, name, email) values
+     ('${SERVICE}', '${USER_A}', 'Заявка A', 'a@example.test'),
+     ('${SERVICE}', '${USER_B}', 'Заявка B', 'b@example.test')`,
+  // `::uuid` обовʼязковий: у формі `select … union all select …` Postgres
+  // виводить тип із літерала (text), а не з цільової колонки, як у `values`.
+  `insert into public.user_category_history (user_id, to_category_id)
+     select '${USER_A}'::uuid, ${SEED_CATEGORY}
+     union all
+     select '${USER_B}'::uuid, ${SEED_CATEGORY}`,
+  // Ролі: A і B — звичайні користувачі, ADMIN — адмін. Саме цей рядок робить
+  // видимою суть `user_roles`: побачити чужу роль означає дізнатись, хто адмін.
+  `insert into public.user_roles (user_id, role) values
+     ('${USER_A}', 'user'), ('${USER_B}', 'user'), ('${USER_ADMIN}', 'admin')`,
 ];
 
 /** Скільки рядків таблиці актор реально бачить (`::int` — щоб не рядок). */
