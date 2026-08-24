@@ -20,6 +20,7 @@
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
     "./domain/money": "./src/domain/money.ts",
+    "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
     "./db": "./src/db/index.ts",
@@ -146,6 +147,10 @@
       "./domain/money": {
         "types": "./dist/domain/money.d.ts",
         "import": "./dist/domain/money.js"
+      },
+      "./domain/user-categories": {
+        "types": "./dist/domain/user-categories/index.d.ts",
+        "import": "./dist/domain/user-categories/index.js"
       },
       "./schema": {
         "types": "./dist/schema/schema.d.ts",
