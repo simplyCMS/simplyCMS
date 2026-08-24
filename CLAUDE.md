@@ -17,7 +17,11 @@ pnpm format           # Prettier (write)
 pnpm format:check     # Prettier (check only)
 pnpm test             # Run tests (vitest run; packaging-suite виключено)
 pnpm test:watch       # Tests in watch mode
-pnpm build:packages   # tsup build публікованих пакетів ядра
+pnpm build:packages   # Збірка публікованих пакетів. 🔴 Ходить через scripts/build-packages.mjs
+                      # із кепом купи 3 ГБ: JS видає tsup, ДЕКЛАРАЦІЇ — tsc
+                      # (tsconfig.dts.json), бо dts-воркер tsup жер 12 ГБ.
+                      # Форму стереже tests/dts-toolchain.test.ts, причина — урок №10
+                      # роадмапу. Наступний крок — трек T (tsup → tsdown)
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
 pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): накат канону міграцій на чистий
                       # Postgres + парність політик і грантів + ПОВЕДІНКОВА матриця RLS.
@@ -46,6 +50,9 @@ pnpm release 0.4.0    # РЕЛІЗ: гарди + бамп версії всіх 
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
+pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магазину з нуля (канон міграцій +
+                      # демо-каталог) у Postgres із DATABASE_URL. Покроковий
+                      # локальний запуск — docs/tasks/v2-state-map.md §5
 pnpm db:pull / db:diff / db:generate-types / types:baseline
                       # Схема БД і типи — див. «Database Commands»
 ```
@@ -78,6 +85,10 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 | [`optimization`](.github/instructions/optimization.instructions.md) | `**/*.ts,tsx` | Performance, bundle, rendering optimization |
 
 Also see:
+- 🔴 [`docs/tasks/v2-state-map.md`](docs/tasks/v2-state-map.md) — **карта чинного
+  стану V2**: що з магазину працює наживо на чистому Postgres, що НЕ працює і
+  чому (адмінка, storage-порт, листи), як підняти локально з нуля і що робити
+  наступним кроком. Читати ПЕРШИМ, якщо береш роботу в цій частині
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
@@ -124,8 +135,10 @@ $ORIENT --doctor                       # чи є граф, чи свіжий, ч
 (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
 
 **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-build → typecheck → test → build:packages → typecheck:template →
+build → typecheck → test → test:schema → build:packages → typecheck:template →
 test:packaging`.
+🔴 `test:schema` увійшов у ланцюг 2026-08-24 (трек К1а): він єдиний перевіряє
+накат канону міграцій і ПОВЕДІНКУ RLS — інші гейти схему БД не виконують.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
