@@ -325,7 +325,7 @@ it('рендериться без змінних Supabase', () => {
 
 - [X] **Step 2:** прогнати — червоний із текстом «Відсутні змінні оточення».
 - [X] **Step 3:** прибрати `<SupabaseProvider>` із `CMSProvider`; решту провайдерів лишити. Прогнати — зелений.
-- [ ] **Step 4:** 🔴 **жива перевірка в браузері** (без неї задача не зроблена — цей клас дефекту curl не бачить). Магазин БЕЗ `VITE_SUPABASE_*`: відкрити Playwright-ом **головну І `/profile/settings`** (друга — доказ, що Task 2 відпрацювала), асертити нуль `console.error` і `h1` з контентом. Було: «Щось пішло не так».
+- [X] **Step 4:** 🔴 **жива перевірка в браузері** (без неї задача не зроблена — цей клас дефекту curl не бачить). Магазин БЕЗ `VITE_SUPABASE_*`: відкрити Playwright-ом **головну І `/profile/settings`** (друга — доказ, що Task 2 відпрацювала), асертити нуль `console.error` і `h1` з контентом. Було: «Щось пішло не так».
 - [X] **Step 5:** повний ланцюг гейтів. Commit: `fix(v2): вітрина не монтує SupabaseProvider — магазин працює без VITE_SUPABASE_*`.
 
 ### Task 4: `/api/health` на Postgres
@@ -410,7 +410,7 @@ export const Route = createFileRoute('/api/health')({
       клієнтський бандл (спіймано саме Gate C).
 - [X] **Step 4:** прогнати `pnpm test:schema` — зелений; `pnpm pilot:pack` —
       зелений із новим payload-guard.
-- [ ] **Step 5:** 🔴 жива перевірка: магазин проти демо-БД → `curl -s -o /dev/null -w '%{http_code}' localhost:PORT/api/health` = **200** (до фіксу було 503); тіло НЕ містить hostname чи назви ролі.
+- [X] **Step 5:** 🔴 жива перевірка: магазин проти демо-БД → `curl -s -o /dev/null -w '%{http_code}' localhost:PORT/api/health` = **200** (до фіксу було 503); тіло НЕ містить hostname чи назви ролі.
 - [X] **Step 6:** повний ланцюг + `test:schema` + `pilot:pack`. Commit: `fix(health): пінг Postgres замість Supabase — healthcheck більше не бреше`.
 
 ### Task 4b: `guest-order` — легасі-шлях створення замовлення повз serverFn
@@ -531,7 +531,7 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
       рекомендація: **видалити** команду й скрипт разом із двома ключами.
       Якщо власник хоче лишити — команда й ключі мусять бути ЯВНО оголошені
       винятком у `.env.example` і в доках, а не мовчазним хвостом.
-- [ ] **Step 5:** 🔴 жива перевірка: скаффолд у чистій теці з локальних
+- [X] **Step 5:** 🔴 жива перевірка: скаффолд у чистій теці з локальних
       tarball-ів → в `.env.example` нема жодного `SUPABASE` →
       `pnpm simplycms doctor` без `DATABASE_URL` дає ПОМИЛКУ саме про нього.
 - [X] **Step 6:** повний ланцюг + `pnpm pilot:pack`. Commit: `chore(env): контракт магазину — DATABASE_URL/BETTER_AUTH_SECRET/VITE_SITE_URL, Supabase-ключі геть`.
@@ -540,11 +540,11 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
 
 **Files:** тільки перевірки, коду не змінює (крім фіксів, якщо щось спливе).
 
-- [ ] **Step 1:** зібрати tarball-и (`pnpm build:packages` + `pnpm pack` кожного з 5) і скаффолднути магазин із них у чисту теку.
-- [ ] **Step 2:** `.env.local` рівно з трьох ключів (жодного Supabase); накат канону README-способом на **чисту** БД; `pnpm build && pnpm start` під роллю `app_runtime`.
-- [ ] **Step 3:** асертити: `/`, `/catalog`, `/cart`, `/auth`, `/sitemap.xml`, `/robots.txt` → 200; `/admin`, `/profile` анонімом → 307; **`/api/health` → 200**.
-- [ ] **Step 4:** 🔴 браузером: нуль `console.error`, `h1` із реальним контентом (це головний доказ Task 3).
-- [ ] **Step 5:** зафіксувати результат у `docs/tasks/v2-state-map.md` §2 (таблиця «доведено живим прогоном») і §5 (локальний запуск — прибрати згадку про потребу Supabase-ключів).
+- [X] **Step 1:** зібрати tarball-и (`pnpm build:packages` + `pnpm pack` кожного з 5) і скаффолднути магазин із них у чисту теку.
+- [X] **Step 2:** `.env.local` рівно з трьох ключів (жодного Supabase); накат канону README-способом на **чисту** БД; `pnpm build && pnpm start` під роллю `app_runtime`.
+- [X] **Step 3:** асертити: `/`, `/catalog`, `/cart`, `/auth`, `/sitemap.xml`, `/robots.txt` → 200; `/admin`, `/profile` анонімом → 307; **`/api/health` → 200**.
+- [X] **Step 4:** 🔴 браузером: нуль `console.error`, `h1` із реальним контентом (це головний доказ Task 3).
+- [X] **Step 5:** зафіксувати результат у `docs/tasks/v2-state-map.md` §2 (таблиця «доведено живим прогоном») і §5 (локальний запуск — прибрати згадку про потребу Supabase-ключів).
 - [ ] **Step 6:** Commit: `docs(v2): карта стану — магазин без Supabase-ключів, доведено живим прогоном`.
 
 ### Task 7: Доки, роадмап, реліз 0.4.1

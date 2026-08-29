@@ -176,7 +176,7 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
+🔴 **`pnpm lint` = 0 errors / 12 warnings — це НОРМА** (станом на 2026-08-29;
 після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
