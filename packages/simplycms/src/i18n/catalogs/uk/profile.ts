@@ -105,13 +105,8 @@ export const messages = {
   'profile.usedInOrders.one': 'Використано в {count} замовленні',
   'profile.usedInOrders.many': 'Використано в {count} замовленнях',
 
-  // Фото профілю (simplycms/profile-ui, AvatarUpload)
-  'profile.avatar.uploadError': 'Помилка завантаження',
-  'profile.avatar.unsupportedFormat': 'Підтримуються тільки JPG, PNG та WebP',
-  'profile.avatar.tooLarge': 'Максимальний розмір файлу 5MB',
-  'profile.avatar.updated': 'Аватар оновлено',
-  'profile.avatar.removed': 'Аватар видалено',
-  'profile.avatar.deleteError': 'Помилка видалення',
-  'profile.avatar.uploadButton': 'Завантажити фото',
-  'profile.avatar.formatHint': 'JPG, PNG або WebP. Макс. 5MB.',
+  // Фото профілю (simplycms/profile-ui, AvatarUpload) — до контуру К4
+  // (порт сховища файлів) завантаження вимкнене, ключ пояснює чому.
+  'profile.avatar.unavailable':
+    'Завантаження аватара тимчасово недоступне — сховище файлів підключається в наступному оновленні',
 } as const;

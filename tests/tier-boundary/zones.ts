@@ -17,13 +17,8 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   ['packages/simplycms/src/auth', 'simplycms/supabase', 'simplycms/db'],
   [
     'packages/simplycms/src/supabase',
-    'simplycms/data-supabase',
+    'simplycms/react-query',
     'simplycms/contracts',
-  ],
-  [
-    'packages/simplycms/src/data-supabase',
-    'simplycms/supabase/browser-client',
-    'simplycms/contracts/ports',
   ],
   [
     'packages/simplycms/src/react-query',

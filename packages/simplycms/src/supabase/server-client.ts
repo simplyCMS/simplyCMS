@@ -21,9 +21,9 @@ import { resolveSupabaseKeys } from './keys';
  * тому ротація Supabase-ключів = перезапуск процесу, без перезбірки.
  * `process.env` наповнюють `vite.config.ts` (dev) та `server.mjs` (prod).
  *
- * `Db` — типи БД магазину. За замовчуванням — baseline core-схеми пакета;
- * host зі своїми (плагінними) таблицями підставляє власний згенерований
- * `Database` із `supabase/types.ts`: `createServerSupabase<HostDatabase>()`.
+ * `Db` — типи БД магазину: baseline core-схеми пакета (`./database`).
+ * 🔴 Generic-містка до host-генерату більше немає — сам генерат знесено
+ * в 0.4.1; baseline заморожений до К3, який переписує останнього споживача.
  */
 export function createServerSupabase<Db extends Database = Database>(
   cookieHeader?: string,

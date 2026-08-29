@@ -24,23 +24,13 @@ export async function promptMissing(options) {
       }),
     );
   }
-  if (!result.supabaseUrl) {
-    result.supabaseUrl =
+  if (!result.databaseUrl) {
+    result.databaseUrl =
       (await ask(() =>
         text({
-          message:
-            'URL проєкту Supabase (Dashboard → Connect; Enter — пропустити)',
-          placeholder: 'https://<project-ref>.supabase.co',
-          defaultValue: '',
-        }),
-      )) || undefined;
-  }
-  if (result.supabaseUrl && !result.supabaseKey) {
-    result.supabaseKey =
-      (await ask(() =>
-        text({
-          message: 'Publishable-ключ Supabase (Enter — пропустити)',
-          placeholder: 'sb_publishable_…',
+          message: 'Підключення до Postgres, DATABASE_URL (Enter — пропустити)',
+          placeholder:
+            'postgresql://app_runtime:пароль@localhost:5432/postgres',
           defaultValue: '',
         }),
       )) || undefined;
@@ -122,8 +112,25 @@ export function printNextSteps({
   if (skillsPending)
     steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
   if (!hasEnv)
-    steps.push('cp .env.example .env.local   # ключі з Dashboard → Connect');
-  steps.push('supabase link --project-ref <ref> && supabase db push');
+    steps.push('cp .env.example .env.local   # три ключі контракту магазину');
+  // 🔴 Накат схеми — psql по канону міграцій, а не `supabase db push`: канон
+  // нумерований послідовно (`0000_prelude.sql`), а Supabase CLI чекає
+  // `<timestamp>_<name>.sql` і такі імена відхиляє.
+  //
+  // 🔴 URL тут — ПРИВІЛЕЙОВАНИЙ (власник БД), а НЕ `DATABASE_URL` із
+  // `.env.local`. `0000_prelude.sql` створює ролі й безумовно робить
+  // `alter role app_runtime …`, а сама `app_runtime` — `nosuperuser
+  // nocreatedb nocreaterole`, тож під нею накат падає за будь-якого стану
+  // бази (`permission denied for database`, `permission denied to alter
+  // role`, або роль ще не існує на чистому кластері). Це bootstrap-крок
+  // людини, а не рантайм-ключ, тому нової змінної в контракті магазину не
+  // заводимо — URL підставляється руками.
+  steps.push(
+    '# накат канону — підключенням ВЛАСНИКА БД, не app_runtime із .env.local:\n' +
+      'for f in supabase/migrations/*.sql; do ' +
+      'psql "postgresql://<owner>:<pass>@<host>:5432/<db>" ' +
+      '-v ON_ERROR_STOP=1 -f "$f"; done',
+  );
   // 🔴 service_role-ключа тут більше немає: запрошення власника випускається
   // прямо в Postgres (контракт v2), тож потрібен лише DATABASE_URL із
   // .env.local. Посилання скрипт друкує в консоль — SMTP магазин не має.

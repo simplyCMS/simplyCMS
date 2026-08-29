@@ -14,9 +14,16 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
 
 ## Вимоги:
 
+🔴 **Контур (0.4.1):** вітрина ходить у БД лише через `withActor()`
+з `simplycms/db` (Drizzle поверх Postgres) і авторизується Better Auth
+(`readSessionSubject()` з `simplycms/auth`) — Supabase зі шляху вітрини
+знято повністю. Субшляху `simplycms/data-supabase` НЕ ІСНУЄ. Клієнти
+`simplycms/supabase/*` лишаються лише для адмінки (до треку К3) — застосовуй
+їх ТІЛЬКИ якщо роут явно адмінський.
+
 1. **Авторизація та безпека**
-   - Перевір авторизацію через `createServerSupabase()` з `simplycms/supabase/server-client`
-   - Реалізуй перевірку ролей якщо потрібно (user_roles)
+   - Перевір сесію через `readSessionSubject(request.headers)` з `simplycms/auth`
+   - Реалізуй перевірку ролей якщо потрібно (`subject.roles`)
    - Валідуй вхідні дані через Zod
 
 2. **Обробка даних**
@@ -25,8 +32,9 @@ description: "Створити server route (TanStack Start) в SimplyCMS"
    - Реалізуй правильну обробку помилок
 
 3. **База даних**
-   - Працюй через Supabase клієнт з `simplycms/supabase/server-client`
-   - RLS policies для авторизації на рівні бази
+   - Працюй через `withActor({ role }, (db) => …)` з `simplycms/db` (Drizzle)
+   - Видимість фільтрує КОД (явний предикат `is_active`/`has_page`), не RLS —
+     каталог RLS не має (модель B5″)
    - Поверни структуровані дані
 
 4. **Відповіді та статуси**

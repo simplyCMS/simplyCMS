@@ -154,7 +154,6 @@ const profiles: Profile[] = [
       'src/supabase/keys.ts',
       'src/supabase/*-client.ts',
       'src/supabase/SupabaseProvider.tsx',
-      'src/data-supabase/index.ts',
       'src/react-query/index.ts',
       'src/react-query/queries.ts',
       'src/runtime/index.ts',

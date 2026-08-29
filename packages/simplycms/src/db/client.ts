@@ -45,6 +45,17 @@ export function resolveDatabaseUrl(env: DbEnv): string {
 let pool: pg.Pool | undefined;
 
 /**
+ * Стеля очікування вільного/нового зʼєднання, мс.
+ *
+ * 🔴 Без неї недоступний host підвисає до СИСТЕМНОГО TCP-таймауту (десятки
+ * секунд і більше), і `/api/health` замість своєчасного 503 просто не
+ * відповідає. Для healthcheck деплою (Dokploy) це гірше за 503: чесна
+ * «degraded» читається як стан БД, а мовчанка — як зависання застосунку.
+ * Значення свідомо менше за типовий інтервал healthcheck.
+ */
+const CONNECTION_TIMEOUT_MS = 5_000;
+
+/**
  * Пул процесу (лінива синглтон-фабрика).
  *
  * Контракт серверного env (спека CLI v1, §7): `DATABASE_URL` читається ЛИШЕ з
@@ -68,7 +79,10 @@ export function getDbPool(): pg.Pool {
     );
   }
 
-  pool ??= new pg.Pool({ connectionString: resolveDatabaseUrl(process.env) });
+  pool ??= new pg.Pool({
+    connectionString: resolveDatabaseUrl(process.env),
+    connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+  });
   return pool;
 }
 

@@ -1,6 +1,6 @@
-// simplycms doctor — read-only діагностика магазину (§4.1 спеки): оффлайн-
-// перевірки завжди; онлайн (doctor-online.mjs) — лише коли env є. Exit-код:
-// 1 при будь-якому error; warn валить лише під --strict; skip не впливає.
+// simplycms doctor — read-only діагностика магазину (§4.1 спеки): усі
+// перевірки оффлайн. Exit-код: 1 при будь-якому error; warn валить лише під
+// --strict; skip не впливає.
 import {
   findStoreRoot,
   readCliVersion,
@@ -9,7 +9,6 @@ import {
 } from './context.mjs';
 import { schemaMigrationsPath } from './db-diff.mjs';
 import { runOfflineChecks } from './doctor-checks.mjs';
-import { runOnlineChecks } from './doctor-online.mjs';
 import { CANON_HOST_DIR } from './host-drift.mjs';
 import { begin, finish, reportChecks, summarizeChecks } from './ui.mjs';
 
@@ -27,10 +26,25 @@ export function parseDoctorArgs(argv) {
   return { strict };
 }
 
-/** Чи є env для онлайн-перевірок (той самий набір, що й перевірка №5). */
-export function hasSupabaseEnv(env) {
-  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_ANON_KEY;
-  return Boolean(env.VITE_SUPABASE_URL && key);
+/**
+ * Рядок звіту про зняті онлайн-перевірки.
+ *
+ * 🔴 Явний skip, а не тиша: перевірки стану БД ходили в Supabase REST, а
+ * магазин контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі.
+ * Мовчазне зникнення рядка читалося б як «БД перевірено», тому причина
+ * лишається у звіті разом із треком, який поверне перевірки.
+ *
+ * @returns {Check}
+ */
+export function offlineOnlyNotice() {
+  return {
+    id: 'db-online',
+    title: 'Перевірки стану БД',
+    status: 'skip',
+    details:
+      'недоступні: магазин сервер-first, HTTP-API до БД немає; ' +
+      'повернуться контуром К3',
+  };
 }
 
 /**
@@ -71,7 +85,7 @@ export async function run(argv) {
     { id: 'root', title: ROOT_TITLE, status: 'ok', details: storeRoot },
     ...runOfflineChecks(ctx),
   ];
-  if (hasSupabaseEnv(ctx.env)) checks.push(...(await runOnlineChecks(ctx)));
+  checks.push(offlineOnlyNotice());
   reportChecks(checks);
   process.exitCode = computeExitCode(checks, { strict });
   finish(summarizeChecks(checks));

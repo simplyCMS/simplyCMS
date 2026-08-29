@@ -10,15 +10,6 @@ import { defineConfig } from 'simplycms/runtime';
  * у `vite.config.ts`), ядро приходить із `node_modules`.
  */
 export default defineConfig({
-  supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL!,
-    // Той самий порядок, що й у `resolveSupabaseKeys`: publishable-ключ,
-    // legacy `anon` — лише запасний варіант для старих проєктів.
-    anonKey:
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-      import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
-  },
   seo: {
     siteName: 'SimplyCMS Store',
     defaultTitle: 'SimplyCMS Store — Best Products',

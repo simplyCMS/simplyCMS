@@ -1,52 +1,23 @@
 // Збірка EngineContext + монтування EngineProvider у дерево застосунку.
-// Робить рушій (`simplycms/runtime`/`simplycms/react-query`) ЖИВИМ:
-// будь-який компонент під ним бере дані через useEngine()/порт-хуки,
-// а не через прямий supabase. Ізоморфний: на SSR `useSupabaseClient()`
-// повертає null, репозиторії будуються lazy (без деференсу), запити йдуть
-// лише на клієнті — тож файл безпечно імпортувати з серверного __root.
+//
+// 🔴 V2: Supabase тут більше немає. Шар репозиторіїв (`data-supabase`,
+// порт-хуки) знесений — браузер у БД не ходить, дані приходять серверними
+// лоадерами (`simplycms/storefront`) через `simplycms/db`. У контейнері
+// лишились два ЧИСТИХ провайдери — резолвер посилань і конфіг магазину,
+// тож файл ізоморфний і безпечний для серверного `__root`.
 
 import { useMemo, type ReactNode } from 'react';
-import {
-  createSupabaseCatalogRepository,
-  createSupabaseOrderRepository,
-  createSupabaseIdentityProvider,
-  singleTenantScope,
-} from 'simplycms/data-supabase';
 import { EngineProvider } from 'simplycms/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
 import type { EngineContext } from 'simplycms/contracts';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  appLinks,
-  appConfig,
-  createAppMediaProvider,
-  type StoreDatabase,
-} from './engine.shared';
+import { appLinks, appConfig } from './engine.shared';
 
-/** Збирає клієнтський EngineContext з браузерного Supabase-клієнта + адаптерів. */
-export function buildClientEngine(client: SupabaseClient): EngineContext {
-  return {
-    catalog: createSupabaseCatalogRepository(client, singleTenantScope),
-    orders: createSupabaseOrderRepository(client, singleTenantScope),
-    identity: createSupabaseIdentityProvider(client),
-    scope: singleTenantScope,
-    links: appLinks,
-    media: createAppMediaProvider(client),
-    config: appConfig,
-  };
+/** Збирає EngineContext магазину. Ізоморфний: жодного IO. */
+export function buildClientEngine(): EngineContext {
+  return { links: appLinks, config: appConfig };
 }
 
-/**
- * Монтує EngineProvider у клієнтському дереві. Клієнт береться з
- * SupabaseProvider (CMSProvider). Репозиторії lazy — на SSR (client=null)
- * збираються без деференсу, запити йдуть лише на клієнті.
- */
+/** Монтує EngineProvider у дереві застосунку. */
 export function ClientEngineProvider({ children }: { children: ReactNode }) {
-  // Клієнт із DI-контексту, звужений до типів МАГАЗИНУ (core + плагінні таблиці).
-  const client = useSupabaseClient<StoreDatabase>();
-  const engine = useMemo(
-    () => buildClientEngine(client as unknown as SupabaseClient),
-    [client],
-  );
+  const engine = useMemo(() => buildClientEngine(), []);
   return <EngineProvider value={engine}>{children}</EngineProvider>;
 }

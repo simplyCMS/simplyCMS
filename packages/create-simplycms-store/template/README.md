@@ -30,20 +30,21 @@
 cp .env.example .env.local
 ```
 
-`VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY` — з панелі **Connect**
-у Supabase Dashboard (або Project Settings → API Keys).
+Контракт магазину — рівно три ключі: `DATABASE_URL` (підключення роллю
+`app_runtime`), `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) і
+`VITE_SITE_URL`. Перші два серверні: читаються з `process.env` у рантаймі, тож
+їхня зміна потребує перезапуску процесу, а не перезбірки.
 
 ### 2. Накотити схему БД
 
-Потрібен [Supabase CLI](https://supabase.com/docs/guides/local-development).
-`<project-ref>` — ідентифікатор проєкту з Dashboard → Project Settings →
-General.
+Потрібен `psql` і підключення **власника БД** (не `DATABASE_URL` із
+`.env.local`: роль `app_runtime` не має прав створювати схему, ролі й таблиці).
 
 `supabase/migrations/` — схема ядра SimplyCMS: baseline (`0001_init.sql`) плюс
 передумови, гранти й сід довідників. Файли накочуються **в порядку імен**:
 
 ```bash
-for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
 🔴 `supabase db push` цей канон не приймає: він чекає імена

@@ -30,13 +30,12 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `domain/` | `simplycms/domain` | T1 | Чиста комерційна логіка — `./pricing`, `./discounts`, `./inventory`, `./shipping`. Без IO |
 | `schema/` | `simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS. Тулінг (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`) — на рівні пакета, не в `src/` |
 | `db/` | `simplycms/db` | T2 | db-рантайм v2: пул `pg` + `withActor` (транзакція + claims `app.user_id` + `SET LOCAL ROLE`). 🔴 Єдиний канал до Postgres — субшляху `./db/client` в `exports` немає, прямий імпорт фабрики пулу є помилкою лінту |
-| `auth/` | `simplycms/auth` | T2 | Серверний auth-контур v2 (Better Auth, пін версії): інстанс + `drizzleAdapter` над схемою, хук `user.create.after` (`profiles`+`user_roles`, інваріант `first_user_no_auto_admin`), invite власника, typed authz (`requireOperation`, матриця «роль × операція»). 🔴 Ще НЕ підключений до `start.ts`/роутів — це К1′б. Імпортує `db` (свій тір) навмисно: зʼєднання лише через `withActor` |
-| `supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД (`database.ts`) |
-| `data-supabase/` | `simplycms/data-supabase` | T2 | Реалізації портів на Supabase (DI: інʼєктований клієнт + `ScopeResolver`) |
-| `react-query/` | `simplycms/react-query` | T2 | Хуки TanStack Query через `EngineProvider`/`useEngine` |
+| `auth/` | `simplycms/auth` | T2 | Серверний auth-контур v2 (Better Auth, пін версії): інстанс + `drizzleAdapter` над схемою, хук `user.create.after` (`profiles`+`user_roles`, інваріант `first_user_no_auto_admin`), invite власника, typed authz (`requireOperation`, матриця «роль × операція»). Підключений до `start.ts`/роутів (К1′б, GoTrue знесено). Імпортує `db` (свій тір) навмисно: зʼєднання лише через `withActor` |
+| `supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД (`database.ts`). 🔴 Живий ЛИШЕ для адмінки — переписує трек К3 |
+| `react-query/` | `simplycms/react-query` | T2 | `EngineProvider`/`useEngine` (links+config), `CartProvider`/`useCart`, `catalogKeys` |
 | `runtime/` | `simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
 | `i18n/` | `simplycms/i18n` | T2 | Request-scoped транслятор (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
-| `storefront/` | `simplycms/storefront` | T2 | SSR-лоадери + SEO-генератори (Supabase-клієнт інʼєктується) |
+| `storefront/` | `simplycms/storefront` | T2 | SSR-лоадери (`withStorefrontDb` над Drizzle) + SEO-генератори — без Supabase |
 | `ui/` | `simplycms/ui` | T3 | Бібліотека примітивів shadcn/ui |
 | `themes/` | `simplycms/themes` | T4 | Система тем v3 (`ThemeRegistry`, `bootstrapThemes`, `applyTokens`, `validateThemeModule` + `./conformance` — гейт заявлених темою `views`) |
 | `plugins/` | `simplycms/plugins` | T4 | Система плагінів (`HookRegistry`, `PluginLoader`, `PluginSlot`) |

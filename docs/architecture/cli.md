@@ -67,7 +67,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 2 | усі пакети ядра (`simplycms` + сателіти `@simplycms/*`) — одна версія; версія CLI збігається | error / warn |
 | 3 | `packageManager` — pnpm 11 | warn |
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
-| 5 | env: `VITE_SUPABASE_URL` + publishable/anon-ключ у `process.env` або `.env.local`/`.env` | error |
+| 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env` | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
 | 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
@@ -76,10 +76,13 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 
-Онлайн-перевірки (лише коли env із п.5 присутній; голий `fetch` до Supabase
-REST, без клієнтських бібліотек): доступність БД; активна тема з БД присутня
-серед ключів `themes` конфігу; активні плагіни з БД — серед зареєстрованих
-(визначена деградація розсинхрону конфіг↔БД зі спеки платформи §8).
+🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в Supabase REST, а магазин
+контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
+мовчазного зникнення рядка звіт лишає видиму позначку `skip`:
+
+| id | title | status | details |
+|---|---|---|---|
+| `db-online` | Перевірки стану БД | `skip` | недоступні: магазин сервер-first, HTTP-API до БД немає; повернуться контуром К3 |
 
 Exit-коди: `1` — є хоч один error; самі warn → `0`; `--strict` — warn теж
 валить. Стан «не вдалося перевірити» на exit-код не впливає.
@@ -166,9 +169,11 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 Конвенція імені плагінної міграції — `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql`
 (унеможливлює колізії імен між канонами). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених — `supabase db push` тоді потребує `--include-all` (порада є в
-підказці `--write`); перейменування-при-копіюванні відкладено разом з
-обліком `plugins.migrations_applied`.
+накачених у `supabase/migrations/`. Оскільки накат тепер — прямий `psql -f`
+(немає Supabase CLI, що сам відстежує застосовані файли), це не блокує:
+оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
+порядку імен. Перейменування-при-копіюванні відкладено разом з обліком
+`plugins.migrations_applied`.
 
 Режим перегляду (без `--write`) — завжди exit 0; CI-семантику має
 `update --check`.
@@ -238,13 +243,15 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 несе потік у зворотний бік: канон → копія в шаблоні.
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
-  обхід теки, дубльованого списку немає. Це ті самі 11 файлів, що
+  обхід теки, дубльованого списку немає. Це ті самі 10 файлів, що
   `template:sync` кладе в шаблон скаффолдера (`server.mjs`,
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
-  `src/client.tsx`, `src/router.tsx`, `src/server.ts`, `src/server/engine.ts`,
-  `src/engine-provider.tsx`, `src/theme-registry.ts`,
-  `src/styles/globals.css`). `src/engine.shared.ts` свідомо не входить —
-  template-варіант навмисно відрізняється від кореневого.
+  `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
+  `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
+  `src/styles/globals.css`). 🔴 `src/engine.shared.ts` увійшов у канон у
+  0.4.1: після знесення шару репозиторіїв копії стали байт-ідентичними, і
+  тримала їх такими лише ручна правка обох — розсинхрону не побачив би
+  жоден гейт.
 - 🔴 Наслідок для розробки ядра: після зміни будь-якого з цих файлів —
   `pnpm template:sync`, інакше червоніє
   `tests/create-store-template-parity.test.ts` (він же стереже байт-парність
@@ -260,7 +267,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-supabase db push                 # накатити міграції (після ревʼю!)
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
 pnpm build && pnpm start         # rebuild
 ```
 
@@ -303,9 +310,10 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 | Клієнтський бандл | `import.meta.env`, запікається `vite build` | `.env`-файли на момент збірки |
 
 Пріоритет наповнення: реальний env процесу > `.env.local` > `.env`. Дуального
-резолву немає — відсутній ключ гучно падає (`resolveSupabaseKeys`).
-Наслідок: **ротація Supabase-ключів = перезапуск процесу** (`pnpm start`), без
-перезбірки; для клієнтських значень перезбірка як була, так і лишається.
+резолву немає — відсутній ключ гучно падає.
+Наслідок: **ротація `DATABASE_URL`/`BETTER_AUTH_SECRET` = перезапуск процесу**
+(`pnpm start`), без перезбірки; для клієнтського `VITE_SITE_URL` перезбірка як
+була, так і лишається.
 
 Контракт захищено машинно: eslint `no-restricted-syntax` забороняє
 `import.meta.env` у шести серверних модулях (тест відрізнити джерело не може —

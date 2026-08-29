@@ -31,35 +31,36 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
 pnpm template:sync          # регенерація шаблону create-simplycms-store з монорепо (закомічені копії)
-pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase; Gate E видимо SKIP
-pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local); Gate E досі SKIP
-pnpm pilot:e2e              # гейти A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
+pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase, без БД
+pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local)
 pnpm pilot:seed             # фікстури пілота → supabase/seed.sql (генерат!)
 
-# База даних (використовує SUPABASE_PROJECT_ID + SUPABASE_ACCESS_TOKEN з .env.local)
+# База даних (використовує DATABASE_URL з .env.local)
 pnpm db:pull                # Інтроспекція живої БД → Drizzle-baseline (schema.ts)
 pnpm db:diff <name>         # schema.ts → SQL у packages/simplycms/migrations (ревʼю обовʼязкове!)
 pnpm test:schema            # Накат канону на чисту БД харнеса (db:migrate виведено з експлуатації)
-pnpm db:generate-types      # Згенерувати TypeScript типи з Supabase → supabase/types.ts
-pnpm types:baseline         # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```
+
+🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)
+разом із генератом `supabase/types.ts`: типи для НОВОГО серверного коду —
+`simplycms/schema/types` (Drizzle). Baseline-файл адмінки
+(`packages/simplycms/src/supabase/database.ts`) заморожений до треку К3.
 
 🔴 **`supabase/seed.sql` — ГЕНЕРАТ, руками не правиться.** Джерело правди —
 `scripts/pilot-pack/seed-fixtures.mjs`; перегенерація — `pnpm pilot:seed`,
-парність стереже `tests/pilot-seed.test.ts`. Так само як `pnpm pilot:e2e` не
-переживає без Docker: він піднімає локальний стек (`supabase start` → `db reset`
-→ міграції + сід) і в Gate B асертить ТОЧНІ назви товарів із фікстур. Проти
-довільної бази (`pnpm pilot`) очікування лишаються нечіткими — назви беруться з
-живої БД, тому змінюються разом з нею.
+парність стереже `tests/pilot-seed.test.ts`. 🔴 Споживач сіду (`pnpm pilot:e2e`,
+локальний стек Supabase + Gate B у режимі `--e2e` з асертом ТОЧНИХ назв
+товарів) знесено разом зі стеком у 0.4.1 — фікстури лишаються під
+парність-тестом до треку К6. Проти довільної бази (`pnpm pilot`) очікування
+лишаються нечіткими — назви беруться з живої БД, тому змінюються разом з нею.
 
-🔴 **Типів БД у репо ДВА файли.** `supabase/types.ts` — генерат МАГАЗИНУ
-(core + таблиці встановлених плагінів), проти нього типізується host-код.
-`packages/simplycms/src/supabase/database.ts` — **baseline** core-схеми, проти
-якого типізуються пакети ядра; оновлюється `pnpm types:baseline` і ЛИШЕ з
-еталонної dev-БД без плагінів, після кожної core-міграції. Обидва — генерати:
-руками не редагуються, у `.prettierignore`. Магазин звужує клієнти до своїх
-типів через generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) —
-див. `packages/simplycms/src/supabase/README.md`.
+🔴 **Генерат `supabase/types.ts` ВИДАЛЕНИЙ (0.4.1)** разом із
+`db:generate-types`/`types:baseline` — магазин на ньому більше не
+типізується. Лишився один файл — `packages/simplycms/src/supabase/database.ts`,
+**заморожений** baseline core-схеми, проти якого типізується адмінка ядра
+(до треку К3, руками не редагується, у `.prettierignore`). Типи для НОВОГО
+серверного коду — `simplycms/schema/types` (Drizzle). Деталі —
+`packages/simplycms/src/supabase/README.md`.
 
 ## Конфігурація
 
@@ -116,22 +117,22 @@ pnpm types:baseline         # Снапшот CORE-типів → packages/simply
 
 ## Змінні оточення
 
+🔴 **Контракт магазину — рівно ТРИ ключі (0.4.1).** Supabase-ключів немає:
+браузер у БД не ходить, тож секретів для неї не має.
+
 ```env
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGci...
+DATABASE_URL=postgresql://app_runtime:your-password@localhost:5432/postgres
+BETTER_AUTH_SECRET=your-32-byte-random-secret
 VITE_SITE_URL=https://example.com
-SUPABASE_PROJECT_ID=your-project-ref
-SUPABASE_ACCESS_TOKEN=sbp_xxxx
 ```
 
 - Завжди використовуй `.env.local` для локальних значень.
-- `VITE_` prefix для клієнтських змінних (`import.meta.env.VITE_*`).
-- `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` — для CLI (міграції, генерація типів через Management API).
+- `VITE_` prefix для клієнтських змінних (`import.meta.env.VITE_*`) — лише `VITE_SITE_URL`/`VITE_LOCALE`.
+- `DATABASE_URL`/`BETTER_AUTH_SECRET` — СЕРВЕРНІ, лише `process.env`, у рантаймі (див. `CLAUDE.md` «Environment Variables»).
 - Не комітьте `.env.local` — він в `.gitignore`.
 
 ### Env-матриця для DB команд
 
 | Змінні | Команди |
 |--------|---------|
-| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types` (Management API) |
 | `DATABASE_URL` | `db:pull`, `db:diff` (прямий SQL-конект); 🔴 у V2 — ще й рантайм-пул `simplycms/db` |

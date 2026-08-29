@@ -5,9 +5,9 @@ import { resolveSupabaseKeys } from './keys';
 /**
  * Браузерний Supabase-клієнт.
  *
- * `Db` — типи БД магазину. За замовчуванням — baseline core-схеми пакета;
- * host зі своїми (плагінними) таблицями підставляє власний згенерований
- * `Database` із `supabase/types.ts`: `createBrowserSupabase<HostDatabase>()`.
+ * `Db` — типи БД магазину: baseline core-схеми пакета (`./database`).
+ * 🔴 Generic-містка до host-генерату більше немає — сам генерат знесено
+ * в 0.4.1; baseline заморожений до К3, який переписує останнього споживача.
  */
 export function createBrowserSupabase<Db extends Database = Database>() {
   const { url, key } = resolveSupabaseKeys(import.meta.env);

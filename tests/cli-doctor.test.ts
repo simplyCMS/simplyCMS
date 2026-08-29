@@ -24,16 +24,21 @@ import {
 import { checkThemes } from '../packages/cli/src/doctor-theme-checks.mjs';
 import {
   computeExitCode,
-  hasSupabaseEnv,
+  offlineOnlyNotice,
   parseDoctorArgs,
 } from '../packages/cli/src/doctor.mjs';
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
-// Оффлайн-перевірки doctor на реальному скаффолді шаблону. Онлайн-перевірки
-// (Supabase REST) тут не ганяються — мережі в тестах немає за контрактом.
+// Оффлайн-перевірки doctor на реальному скаффолді шаблону. Онлайн-перевірок у
+// doctor більше НЕМАЄ: вони ходили в Supabase REST, а магазин сервер-first —
+// HTTP-API до БД у нього немає взагалі (їх повертає контур К3).
+//
+// 🔴 Env — рівно серверний контракт магазину (0.4.1). Supabase-ключів тут бути
+// не може: якби checkEnv і далі гейтив їх, doctor зеленів би на магазині, який
+// не стартує, і червонів на тому, який працює.
 const ENV = {
-  VITE_SUPABASE_URL: 'https://x.supabase.co',
-  VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_pk',
+  DATABASE_URL: 'postgresql://app_runtime:pw@localhost:5432/postgres',
+  BETTER_AUTH_SECRET: 'x'.repeat(32),
 };
 
 async function scaffoldStore(name: string) {
@@ -98,13 +103,30 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkCoreVersions(stale).status).toBe('warn');
   });
 
-  it('checkEnv: без ключів — error; legacy anon-ключа достатньо', () => {
-    expect(checkEnv({ env: {} }).status).toBe('error');
-    const legacy = {
-      VITE_SUPABASE_URL: 'https://x.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'eyJ',
-    };
-    expect(checkEnv({ env: legacy }).status).toBe('ok');
+  it('checkEnv: гейтить DATABASE_URL і BETTER_AUTH_SECRET, не ключі Supabase', () => {
+    const empty = checkEnv({ env: {} });
+    expect(empty.status).toBe('error');
+    expect(empty.details).toContain('DATABASE_URL');
+    expect(empty.details).toContain('BETTER_AUTH_SECRET');
+
+    // Половина контракту — все ще error, і в тексті рівно те, чого бракує.
+    const halfway = checkEnv({ env: { DATABASE_URL: ENV.DATABASE_URL } });
+    expect(halfway.status).toBe('error');
+    expect(halfway.details).toContain('BETTER_AUTH_SECRET');
+    // 🔴 Без двокрапки. `checkEnv` будує текст як `Не задано: ${missing.join('; ')}`,
+    // тобто підрядка `DATABASE_URL:` не буває в ЖОДНІЙ реалізації — старий
+    // асерт із двокрапкою був no-op і пропускав мутацію «звинувачувати всі
+    // ключі, навіть заповнені».
+    expect(halfway.details).not.toContain('DATABASE_URL');
+
+    expect(checkEnv({ env: ENV }).status).toBe('ok');
+    // 🔴 Ключі поза контрактом його не заміняють: магазин, у якого заповнено
+    // лише їх (так виглядав .env.local до 0.4.1 — з ключами Supabase), не
+    // стартує, тож doctor мусить червоніти, а не зеленіти на «щось задано».
+    const outsideContract = { VITE_SITE_URL: 'https://shop.example' };
+    const stale = checkEnv({ env: outsideContract });
+    expect(stale.status).toBe('error');
+    expect(stale.title).toMatch(/DATABASE_URL/);
   });
 
   it('checkHostDrift: збіг із каноном — ok, локальна правка — warn', async () => {
@@ -276,11 +298,14 @@ describe('cli doctor (оффлайн)', () => {
     expect(() => parseDoctorArgs(['--wat'])).toThrow(/--wat/);
   });
 
-  it('hasSupabaseEnv: потрібен URL і будь-який із двох ключів', () => {
-    expect(hasSupabaseEnv(ENV)).toBe(true);
-    expect(
-      hasSupabaseEnv({ VITE_SUPABASE_URL: 'x', VITE_SUPABASE_ANON_KEY: 'k' }),
-    ).toBe(true);
-    expect(hasSupabaseEnv({ VITE_SUPABASE_PUBLISHABLE_KEY: 'k' })).toBe(false);
+  // Онлайн-перевірки знято, але зникнути мовчки вони не мають: звіт друкує
+  // окремий рядок зі статусом skip і причиною — інакше читач вирішить, що
+  // стан БД перевірено.
+  it('offlineOnlyNotice: видимий skip замість тихої відсутності', () => {
+    const notice = offlineOnlyNotice();
+    expect(notice.status).toBe('skip');
+    expect(notice.details).toMatch(/сервер-first/);
+    expect(notice.details).toMatch(/К3/);
+    expect(computeExitCode([notice], { strict: true })).toBe(0);
   });
 });

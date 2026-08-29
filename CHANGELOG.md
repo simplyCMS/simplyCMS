@@ -18,7 +18,113 @@
 
 ---
 
-## [Unreleased]
+## [0.4.1] — 2026-08-29
+
+Контур **0.4.1 — «Supabase зі шляху вітрини»** (трек V2, після К1′б). План і
+межі:
+[`docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`](docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md).
+🔴 **Breaking для будь-якого магазину на `0.4.0`** (0.x, D5 — без шимів):
+міняється контракт `.env`, зникає субшлях `simplycms/data-supabase` і два
+db-скрипти. Нових пакетів не зʼявляється — мерж у `main` публікує ті самі
+пʼять.
+
+### Змінено
+
+- 🔴 **Контракт env магазину — рівно ТРИ ключі:** `DATABASE_URL` і
+  `BETTER_AUTH_SECRET` (серверні, з `process.env` у рантаймі) +
+  `VITE_SITE_URL` (клієнтський). `VITE_SUPABASE_URL`/`_PUBLISHABLE_KEY`/
+  `_ANON_KEY`, `SUPABASE_PROJECT_ID` і `SUPABASE_ACCESS_TOKEN` із
+  `.env.example` і зі скаффолдера знято; `create-simplycms-store` приймає
+  `--database-url` замість `--supabase-url`/`--supabase-key`, сам генерує
+  `BETTER_AUTH_SECRET` і показує накат канону через `psql`.
+- 🔴 **`EngineContext` = `{ links, config }`.** Порти-репозиторії
+  (`catalog`/`orders`/`scope`/`identity`/`media`) більше не інжектяться в
+  React-контекст: у браузері даних немає взагалі, читання йде серверними
+  лоадерами `simplycms/storefront` через `simplycms/db`. Самі контракти
+  портів у `simplycms/contracts` лишились — під майбутній `data-pg`.
+- 🔴 **`CMSProvider` не монтує `SupabaseProvider`** — вітрина збирається й
+  працює без жодного Supabase-ключа (регресія-тест
+  `core/__tests__/cms-provider-no-supabase.test.tsx`).
+- **`/api/health` пінгує Postgres** (`select 1` через `withActor`), а не
+  Supabase: до цього healthcheck зеленів на магазині з мертвою базою.
+- **`AvatarUpload` чесно відмовляє** до порту сховища (К4): показує аватар
+  або ініціали, `input[type=file]` вимкнений, причина — видимим текстом із
+  каталогу. Заглушки, яка «успішно» нічого не зберігає, свідомо немає.
+- **`doctor`:** `checkEnv` гейтить `DATABASE_URL` + `BETTER_AUTH_SECRET`;
+  онлайн-перевірки (Supabase REST) знято — HTTP-API до БД у контракті v2
+  немає; у звіті лишається видимий skip із причиною й треком К3.
+- **Пілот:** env скретча — рівно контракт магазину (раніше підставлялись
+  ФІКТИВНІ Supabase-ключі, тож `pilot:pack` зеленів саме на тому класі
+  регресії, який ловить реальний магазин); Gate B бере назви товарів прямим
+  SQL за `DATABASE_URL`; `SERVER_PAYLOAD` Gate C розширено на
+  `simplycms/dist/db`, `drizzle-orm` і `pg`.
+
+### Знято (breaking, 0.x, D5 — без шимів)
+
+- **Субшлях `simplycms/data-supabase`** і весь шар репозиторіїв на Supabase
+  (`catalogRepository`, `orderRepository`, `identityProvider`, `mappers`,
+  `scope`) — 0 споживачів після К1′б.
+- **Роут `/api/guest-order`** — дублював `placeOrder` в обхід нового
+  контуру (сервер-first + `withActor`).
+- **`pnpm db:generate-types`, `pnpm types:baseline`, `supabase/types.ts`** і
+  місток `StoreDatabase`. Джерело типів для нового коду —
+  `simplycms/schema/types` (Drizzle, B12); `src/supabase/database.ts`
+  заморожений до К3.
+- **`pnpm test:e2e`, `pnpm pilot:e2e`, прапорець `--e2e` і Gate E** разом із
+  локальним стеком Supabase (`scripts/e2e.mjs`, `scripts/e2e/`,
+  `scripts/pilot-pack/e2e.mjs`, `gate-e.mjs`). `--e2e` тепер падає з
+  поясненням, а не мовчки ігнорується; специ `tests/e2e/**` і
+  `playwright.config.ts` лишились без входу — основа відновлення в К6.
+
+### Документація
+
+- Канон (`.github/instructions/*`, `AGENTS.md`, `packages/README.md`,
+  скіл `code-review`, prompt-и) і публіковані README приведені до стану
+  після severance; `supabase db push` замінено на реальний psql-накат.
+- `CLAUDE.md`, [`test-contours.md`](docs/architecture/test-contours.md)
+  (банери DECOMMISSIONED), [`v2-state-map.md`](docs/tasks/v2-state-map.md)
+  (§2.1 — результат ОКРЕМОГО живого прогону саме під контракт 0.4.1) і
+  [роадмап](docs/tasks/platform-roadmap.md) (борги 0.4.1-1…11, зокрема три
+  дефекти безпеки, які цей контур **не** закриває).
+
+### Виправлено за результатами рев'ю контуру
+
+Рев'ю шістьма лінзами + адверсаріальна перевірка кожної знахідки, два кола
+фіксів. Три дефекти, доведені живими прогонами (не читанням коду):
+
+- **Gate B пілота ходив у БД голим `select`** за `DATABASE_URL`. За контрактом
+  0.4.1 це роль `app_runtime`, у якої прямих грантів немає за побудовою, тож
+  гейт падав із `permission denied for table products` рівно тоді, коли
+  розробник дотримався власного контракту, і зеленів на привілейованому DSN.
+  Тепер запит іде з преамбулою актора (`begin; set local role app_user`) —
+  тією самою, що в `withActor`. 🔴 `pnpm pilot:pack` цього не ловив ніколи: він
+  Gate B не запускає взагалі.
+- **Роль `app_runtime` не може накотити схему** — ні `create schema`, ні
+  `alter role`, ні навіть `create table` для міграції плагіна. А **вісім**
+  місць документації друкували `psql "$DATABASE_URL"` як команду накату
+  (вивід CLI, README шаблону й пакета, кореневий README, `packages/cli/README.md`,
+  `cli.md`, `plugins.md`, README обох шаблонів плагіна). Усі переведені на
+  підключення власника БД; гарди — на вивід CLI **і** на вміст README шаблону
+  (перший фікс закрив лише вивід, README пропустив).
+- **Тест генерації `BETTER_AUTH_SECRET` перевіряв лише довжину** — зашитий
+  спільний секрет на 32+ символи проходив (доведено мутацією). Тепер
+  асертиться різність між двома скаффолдами і форма base64.
+
+Побічно: `src/engine.shared.ts` внесено в `SYNCED_FILES` (копії були
+байт-ідентичні, а канон стверджував «навмисно відрізняється» — тримала їх
+такими лише ручна правка обох); знесено мертвий `StorefrontClient =
+SupabaseClient`; мертвий `simplycms/data-supabase` прибрано з deny-листа межі
+довіри плагінів.
+
+---
+
+## [0.4.0] — 2026-08-24
+
+🔴 Реліз топології 5 пакетів: у реєстрі — `simplycms` + сателіти
+`@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`;
+усі 22 злитих імені `@simplycms/*` (версії 0.1.0–0.3.0) позначені
+`npm deprecate`. Нижче — усе, що приїхало цим релізом: Фази 3 і 4, трек
+редизайну за референсом і трек К0.
 
 Фаза 3 роадмапу — Plugin SDK v1. План і межі:
 [`docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md`](docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md).

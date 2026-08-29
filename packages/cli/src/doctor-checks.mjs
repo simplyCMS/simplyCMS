@@ -25,7 +25,12 @@ import { checkThemes } from './doctor-theme-checks.mjs';
  * @typedef {import('./ui.mjs').CheckStatus} CheckStatus
  */
 
-const KEY_VARS = ['VITE_SUPABASE_PUBLISHABLE_KEY', 'VITE_SUPABASE_ANON_KEY'];
+/**
+ * Серверний контракт env магазину: рівно те, без чого процес не стартує.
+ * `VITE_SITE_URL` сюди не входить — без нього магазин працює, лише sitemap
+ * лишається без абсолютної бази.
+ */
+const REQUIRED_ENV_VARS = ['DATABASE_URL', 'BETTER_AUTH_SECRET'];
 
 /**
  * Конструктор результату — щоб кожна гілка перевірки була короткою.
@@ -90,12 +95,17 @@ export function checkAllowBuilds({ storeRoot }) {
   return check('allowBuilds', title, 'ok');
 }
 
-/** №5: env несе VITE_SUPABASE_URL + publishable/anon-ключ. */
+/**
+ * №5: env несе серверний контракт магазину.
+ *
+ * 🔴 Гейтяться саме ці два ключі, бо саме вони блокують старт: без
+ * `DATABASE_URL` немає пулу `simplycms/db`, без `BETTER_AUTH_SECRET` сервер
+ * відмовляється підписувати сесії. Ключів Supabase магазин не має взагалі —
+ * браузер до бази не звертається.
+ */
 export function checkEnv({ env }) {
-  const title = 'env: VITE_SUPABASE_URL + publishable/anon-ключ';
-  const missing = [];
-  if (!env.VITE_SUPABASE_URL) missing.push('VITE_SUPABASE_URL');
-  if (!KEY_VARS.some((name) => env[name])) missing.push(KEY_VARS.join(' або '));
+  const title = `env: ${REQUIRED_ENV_VARS.join(' + ')}`;
+  const missing = REQUIRED_ENV_VARS.filter((name) => !env[name]);
   if (missing.length > 0) {
     const details = `Не задано: ${missing.join('; ')} (process.env, .env.local або .env)`;
     return check('env', title, 'error', details);

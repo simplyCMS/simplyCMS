@@ -1,57 +1,49 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { createServerSupabase } from 'simplycms/supabase/server-client';
+import { sql } from 'drizzle-orm';
+import { withActor } from 'simplycms/db';
 
 /**
- * Diagnostic endpoint — перевірка конфігурації та підключення до Supabase.
- * Використання: GET /api/health
+ * Health-ендпоінт магазину: пінг Postgres під роллю вітрини.
+ *
+ * 🔴 Перевіряє ТОЙ бекенд, на якому магазин працює. До 0.4.1 тут стояла
+ * перевірка Supabase — у чистому V2-магазині вона давала 503 при повністю
+ * робочому магазині, тобто healthcheck деплою (Dokploy) був би вічно
+ * «unhealthy» (аудит 2026-08-24).
+ *
+ * 🔴 Файл лишає ЄДИНИЙ export — `Route`. Named export звідси пережив би
+ * стрипінг властивості `server` і затягнув би пул Postgres у клієнтський
+ * бандл; ловить це Gate C пілота (`scripts/pilot-pack/gate-c.mjs`).
  */
 export const Route = createFileRoute('/api/health')({
   server: {
     handlers: {
       GET: async () => {
-        const checks: Record<string, Record<string, unknown>> = {};
-
-        // Серверний контур читає env з `process.env` у рантаймі (контракт
-        // серверного env, спека CLI v1 §7) — перевіряємо те саме джерело,
-        // з якого `createServerSupabase` нижче візьме ключі.
-        checks.envVars = {
-          VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
-          VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
-        };
+        let ok = false;
+        let error: string | null = null;
 
         try {
-          const supabase = createServerSupabase();
-          const { data, error } = await supabase
-            .from('banners')
-            .select('count')
-            .limit(1);
-
-          checks.supabaseConnection = {
-            success: !error,
-            error: error?.message || null,
-            dataReceived: !!data,
-          };
-        } catch (supabaseError) {
-          checks.supabaseConnection = {
-            success: false,
-            error:
-              supabaseError instanceof Error
-                ? supabaseError.message
-                : 'Unknown error',
-          };
+          await withActor({ role: 'app_user' }, (db) =>
+            db.execute(sql`select 1`),
+          );
+          ok = true;
+        } catch (err) {
+          error = err instanceof Error ? err.message : 'Unknown error';
         }
 
-        const allChecksPass = Object.values(checks).every(
-          (check) => check.success !== false,
-        );
+        // 🔴 Назовні — стабільний рядок, а не `err.message`: текст помилки
+        // драйвера містить hostname, роль і деталі зʼєднання, а health —
+        // публічний неавтентифікований ендпоінт. Повна причина — у лог.
+        if (error) console.error('[health] database check failed:', error);
 
         return Response.json(
           {
-            status: allChecksPass ? 'healthy' : 'degraded',
+            status: ok ? 'healthy' : 'degraded',
             timestamp: new Date().toISOString(),
-            checks,
+            checks: {
+              database: { ok, error: ok ? null : 'database unavailable' },
+            },
           },
-          { status: allChecksPass ? 200 : 503 },
+          { status: ok ? 200 : 503 },
         );
       },
     },

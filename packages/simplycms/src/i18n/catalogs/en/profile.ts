@@ -97,13 +97,8 @@ export const messages: Catalog = {
   'profile.usedInOrders.one': 'Used in {count} order',
   'profile.usedInOrders.many': 'Used in {count} orders',
 
-  // Profile photo (simplycms/profile-ui, AvatarUpload)
-  'profile.avatar.uploadError': 'Upload failed',
-  'profile.avatar.unsupportedFormat': 'Only JPG, PNG, and WebP are supported',
-  'profile.avatar.tooLarge': 'File size must be under 5MB',
-  'profile.avatar.updated': 'Avatar updated',
-  'profile.avatar.removed': 'Avatar removed',
-  'profile.avatar.deleteError': 'Delete failed',
-  'profile.avatar.uploadButton': 'Upload photo',
-  'profile.avatar.formatHint': 'JPG, PNG, or WebP. Max 5MB.',
+  // Profile photo (simplycms/profile-ui, AvatarUpload) — disabled until К4
+  // (file storage port); the key explains why.
+  'profile.avatar.unavailable':
+    'Avatar upload is temporarily unavailable — file storage lands in an upcoming release',
 };

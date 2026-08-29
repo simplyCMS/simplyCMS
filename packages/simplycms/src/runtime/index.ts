@@ -3,12 +3,7 @@
 
 import type {
   EngineContext,
-  CatalogRepository,
-  OrderRepository,
-  ScopeResolver,
-  IdentityProvider,
   LinkResolver,
-  MediaProvider,
   ConfigProvider,
 } from 'simplycms/contracts';
 
@@ -30,13 +25,11 @@ export interface EngineModule {
 }
 
 export interface DefineRuntimeInput {
+  // 🔴 V2: адаптерів даних тут більше немає — репозиторії знесені разом із
+  // шаром `data-supabase`, читання йде серверними лоадерами. Лишились два
+  // чистих провайдери, з яких і складається EngineContext.
   adapters: {
-    catalog: CatalogRepository;
-    orders?: OrderRepository;
-    scope?: ScopeResolver;
-    identity: IdentityProvider;
     links: LinkResolver;
-    media: MediaProvider;
     config: ConfigProvider;
   };
   modules?: EngineModule[];
@@ -51,9 +44,6 @@ export interface SimplyCmsRuntime {
   plugins: string[];
 }
 
-/** Single-tenant скоуп за замовчуванням (simplyCMS). */
-const defaultScope: ScopeResolver = { getScope: () => undefined };
-
 /**
  * Збирає рантайм магазину з адаптерів. Усі залежності інжектуються —
  * жодного прямого доступу до supabase чи import.meta.env тут немає.
@@ -62,12 +52,7 @@ export function defineRuntime(input: DefineRuntimeInput): SimplyCmsRuntime {
   const { adapters } = input;
 
   const engine: EngineContext = {
-    catalog: adapters.catalog,
-    orders: adapters.orders,
-    scope: adapters.scope ?? defaultScope,
-    identity: adapters.identity,
     links: adapters.links,
-    media: adapters.media,
     config: adapters.config,
   };
 

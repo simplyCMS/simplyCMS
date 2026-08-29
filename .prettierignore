@@ -16,11 +16,10 @@ dist-ssr
 src/routeTree.gen.ts
 apps/www/src/routeTree.gen.ts
 
-# ── Згенеровані типи БД (Supabase CLI) ──────────────────────────────────────
-# Автор host-генерату — `pnpm db:generate-types` (повні типи магазину:
-# core + плагінні таблиці). Baseline пакета — `pnpm types:baseline` (снапшот
-# core-схеми, проти якого типізуються пакети ядра).
-supabase/types.ts
+# ── Baseline типів БД (знятий генератором Supabase CLI) ─────────────────────
+# 🔴 Генератора більше немає (0.4.1): host-генерат `supabase/types.ts` і обидві
+# команди його оновлення знесені разом із Supabase-контуром. Файл лишається
+# ЗАМОРОЖЕНИМ снапшотом core-схеми — на ньому ще типізується адмінка (К3).
 packages/simplycms/src/supabase/database.ts
 
 # ── Згенерована Drizzle-схема та її снапшоти ────────────────────────────────

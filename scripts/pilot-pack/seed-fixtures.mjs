@@ -1,15 +1,13 @@
 /**
  * Фікстури детерміністичного сіду пілота — ЄДИНЕ джерело правди.
  *
- * Звідси беруть дані обидві сторони e2e-контуру:
- *  - `scripts/pilot-pack/seed-sql.mjs` рендерить із них `supabase/seed.sql`
- *    (перегенерація — `node scripts/pilot-seed.mjs`, парність стереже
- *    `tests/pilot-seed.test.ts`);
- *  - `scripts/pilot-pack/gate-b.mjs` у режимі `--e2e` асертить рівно ці назви
- *    в SSR-HTML.
+ * 🔴 Споживача (локальний стек Supabase + Gate B у режимі `--e2e`, який
+ * асертив рівно ці назви товарів у SSR-HTML) знесено разом зі стеком у
+ * 0.4.1 — фікстури лишаються під парність-тестом до треку К6.
  *
- * 🔴 Тому назви НЕ дублюються в SQL руками: розсинхрон «сід каже одне, гейт
- * чекає інше» неможливий за побудовою.
+ * `scripts/pilot-pack/seed-sql.mjs` рендерить із них `supabase/seed.sql`
+ * (перегенерація — `node scripts/pilot-seed.mjs`, парність стереже
+ * `tests/pilot-seed.test.ts`).
  */
 
 /** Префікс усіх сідових сутностей — щоб їх було видно в БД неозброєним оком. */
@@ -103,7 +101,7 @@ export const SEED_PRODUCTS = [
 /** Символи, які React екранує в HTML — у назвах сіду їх бути не може. */
 export const HTML_UNSAFE_CHARS = /[&<>"']/;
 
-/** Назви товарів сіду — очікування Gate B у режимі `--e2e`. */
+/** Назви товарів сіду — очікування знесеного разом зі стеком Gate B (`--e2e`, 0.4.1; К6). */
 export function seedProductNames() {
   return SEED_PRODUCTS.map((product) => product.name);
 }

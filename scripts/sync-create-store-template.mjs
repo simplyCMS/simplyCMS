@@ -39,7 +39,7 @@ export const CLI_HOST_DIR = 'packages/cli/host';
 /** Канон міграцій ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
 export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
 
-/** Host-файли: байт-ідентичні кореню монорепо (та сама 11-ка, що в пілоті). */
+/** Host-файли: байт-ідентичні кореню монорепо (та сама 10-ка, що в пілоті). */
 export const SYNCED_FILES = [
   'server.mjs',
   'server-runtime.mjs',
@@ -49,8 +49,13 @@ export const SYNCED_FILES = [
   'src/client.tsx',
   'src/router.tsx',
   'src/server.ts',
-  'src/server/engine.ts',
   'src/engine-provider.tsx',
+  // 🔴 Увійшов у канон 0.4.1. Доти файл був поза синком «бо template-варіант
+  // навмисно відрізняється» — після знесення шару репозиторіїв копії стали
+  // байт-ідентичними, і єдине, що тримало їх такими, — ручна правка обох при
+  // кожній зміні. Рев'ю спіймало це як клас помилок: розсинхрон не побачив би
+  // жоден гейт.
+  'src/engine.shared.ts',
   'src/theme-registry.ts',
 ];
 

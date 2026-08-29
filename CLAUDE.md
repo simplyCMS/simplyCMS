@@ -28,46 +28,52 @@ pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): нак�
                       # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
                       # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
-# 🔴 pnpm test:e2e і pnpm pilot:e2e — DECOMMISSIONED до К1′б/К6 (B13): локальний
-#                       стек supabase start піднімається з ПОРОЖНЬОЮ схемою (міграції
-#                       вимкнені в supabase/config.toml), тож сід падає. Опис нижче —
-#                       історичний, до відновлення контурів на Postgres-стеку.
-pnpm test:e2e         # БРАУЗЕРНИЙ контур: Playwright по монорепо-хосту.
-                      # scripts/e2e.mjs сам піднімає локальний Supabase (Docker),
-                      # накатує сід, створює власника — і ганяє специ ДВІЧІ:
-                      # під VITE_LOCALE=uk-UA і en-US, послідовно.
-                      # У CI НЕ ганяється (Docker + ~10 ГБ образів) — як і пілот
-pnpm pilot:pack       # tarball-пілот: гейти A/C/D/CLI — БЕЗ Supabase (Gate B відсутній, Gate E — видимо skipped)
-pnpm pilot            # той самий пілот + Gate B проти живої БД (.env.local); Gate E — видимо skipped (потрібен --e2e)
-pnpm pilot:e2e        # пілот A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + seed.sql);
-                      # потребує Docker; Gate B асертить точні назви із сіду,
-                      # Gate E — owner:invite (inviteUserByEmail → /auth/confirm → set-password) наживо
-pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота
+# 🔴 pnpm test:e2e і pnpm pilot:e2e — КОМАНД БІЛЬШЕ НЕМАЄ (знято в 0.4.1). Обидві
+#                       піднімали локальний стек Supabase, а магазин контракту v2 ходить
+#                       у чистий Postgres: стек не був би ні джерелом даних, ні джерелом
+#                       auth. Прапорець --e2e тепер ПАДАЄ з поясненням, а не мовчки
+#                       ігнорується. Браузерний контур і Gate E (owner-флоу вже на
+#                       Better Auth) повертає трек К6
+pnpm pilot:pack       # tarball-пілот: гейти A/C/D + CLI/TOOL — БЕЗ БД (Gate B відсутній)
+pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
+                      # BETTER_AUTH_SECRET із .env.local (Supabase-ключів пілот більше
+                      # не підставляє); назви товарів Gate B бере прямим SQL — HTTP-API
+                      # до БД у контракті v2 немає
+pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота. 🔴 Сід годує
+                      # ЛИШЕ знятий стек supabase start; лишається під парність-тестом до К6
 pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
                       # packages/cli/host/ (канон host-файлів для simplycms update),
                       # packages/simplycms/migrations/ (для simplycms db:diff) — усі під парність-тестом
-pnpm release 0.4.0    # РЕЛІЗ: гарди + бамп версії всіх 5 пакетів + гейти + коміт
+pnpm release 0.4.1    # РЕЛІЗ: гарди + бамп версії всіх 5 пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
 pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магазину з нуля (канон міграцій +
                       # демо-каталог) у Postgres із DATABASE_URL. Покроковий
                       # локальний запуск — docs/tasks/v2-state-map.md §5
-pnpm db:pull / db:diff / db:generate-types / types:baseline
-                      # Схема БД і типи — див. «Database Commands»
+pnpm db:pull / db:diff
+                      # Схема БД — див. «Database Commands». 🔴 Генератора типів
+                      # (db:generate-types, types:baseline) більше немає: знято в 0.4.1
+                      # разом із supabase/types.ts
 ```
 
 ## What This Project Is
 
-SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** and Supabase. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages live in this monorepo and are published to npmjs (Фаза 1+).
+SimplyCMS is an open-source e-commerce CMS built with **TanStack Start (Vite)** on plain **PostgreSQL**. It provides a full storefront (SSR), admin panel (client-side SPA), user profiles, cart, checkout, and order management. The core CMS packages live in this monorepo and are published to npmjs (Фаза 1+).
+
+🔴 **Supabase зійшов зі шляху вітрини у `0.4.1`.** Дані вітрини — Drizzle поверх
+чистого Postgres (`simplycms/db`, `withActor`), auth — Better Auth
+(`simplycms/auth`). `supabase-js` лишається живим **лише під адмінкою**
+(`packages/simplycms/src/admin/**`), яку переписує трек К3; описи
+Supabase-механік нижче читати саме в цих межах.
 
 **Platform direction (затверджено 2026-07-30):** SimplyCMS розвивається в OpenCart-подібну платформу — ядро постачає каркас (роути/сторінки) npm-пакетами, магазин стає тонкою збіркою, плагіни й теми — встановлювані одиниці. Джерело правди: [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md); трекінг: [`docs/tasks/platform-roadmap.md`](docs/tasks/platform-roadmap.md).
 
 **Фаза 0 завершена 2026-07-31.** Її здобутки чинні й сьогодні, але вже в топології К0: роути й канонічні сторінки живуть у ядрі (теки `routes/storefront`, `routes/admin` і `src/storefront-routes` пакета `simplycms`), host стиснуто до `__root.tsx` + `src/routes/my/`, теми — контракт v3, схема БД — Drizzle-baseline (`simplycms/schema`). Незакриті борги Фази 0 перелічені в роадмапі (розділ «Борги»).
 
-🔴 **Трек К0 (консолідація пакетів) — У КОДІ цієї гілки, у реєстрі npm ЩЕ НІ.** 26 npm-пакетів зведено в 5: unscoped фреймворк-пакет `simplycms` (усе ядро T0–T5 теками `packages/simplycms/src/*`) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`; фасад `@simplycms/core` розчинено; дисципліну шарів тримають eslint-тір-зони; агентні скіли доставляються магазинам симлінками на `node_modules/simplycms/skills/`. Спека — [`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md). 🔴 **Публікація** `simplycms` (і deprecate 22 злитих імен) відбувається в момент мержу гілки в `main` — до того реєстр тримає стару топологію 26 пакетів `0.3.0`. Опис нижче в цьому файлі — стан коду ПІСЛЯ К0.
+✅ **Трек К0 (консолідація пакетів) — ЗАВЕРШЕНО; код і реєстр зведені 2026-08-24.** 26 npm-пакетів зведено в 5: unscoped фреймворк-пакет `simplycms` (усе ядро T0–T5 теками `packages/simplycms/src/*`) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`; фасад `@simplycms/core` розчинено; дисципліну шарів тримають eslint-тір-зони; агентні скіли доставляються магазинам симлінками на `node_modules/simplycms/skills/`. Спека — [`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md). ✅ У реєстрі npm — **5 пакетів**, а всі 22 злитих імені `@simplycms/*` (версії 0.1.0–0.3.0) позначені `npm deprecate` з вказівником на `simplycms` (перевірено читанням реєстру 2026-08-29). 🔴 **Версія в коді — `0.4.1`, у реєстрі — `0.4.0`**: публікує мерж PR у `main`, і це рішення власника. Опис нижче в цьому файлі — стан коду ПІСЛЯ К0.
 
-🔴 **Стратегічний напрям 2026-08-19 затверджено власником, у коді ще НЕМАЄ.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; спайк B5 виконано, трек АКТИВНИЙ — план К1а в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. Опис Supabase-механік нижче в цьому файлі — чинний стан коду ДО v2. Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
+🔴 **Стратегічний напрям 2026-08-19 затверджено власником; бекенд-контракт v2 — ЧАСТКОВО в коді.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; трек К1а закритий, вітрина переведена — плани в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md` і `docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. 🔴 Стан на `0.4.1`: вітрина, вхід, воронка й `/api/health` живуть на чистому Postgres + Better Auth; **адмінка на цьому стеку не працює** (їй потрібен серверний шар — трек К3), storage-порт без драйверів (К4). Що саме доведено живим прогоном — [`v2-state-map.md`](docs/tasks/v2-state-map.md). Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
 
 ## Mandatory Instructions
 
@@ -77,10 +83,10 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 |------|-------|-------------|
 | [`architecture-core`](.github/instructions/architecture-core.instructions.md) | `**/*` | Core architecture, rendering strategies, themes, plugins, auth |
 | [`coding-style`](.github/instructions/coding-style.instructions.md) | `**/*` | TypeScript strict mode, Ukrainian comments, file limits |
-| [`data-access`](.github/instructions/data-access.instructions.md) | `app/**`, `packages/**` | Supabase clients, caching, data fetching, DB types |
+| [`data-access`](.github/instructions/data-access.instructions.md) | `app/**`, `packages/**` | Дані вітрини (`withActor` над Drizzle), кеш, Supabase-клієнти адмінки (до К3) |
 | [`ui-architecture`](.github/instructions/ui-architecture.instructions.md) | `app/**`, `themes/**`, `ui/**` | UI components, theme structure, shadcn/ui |
 | [`editor`](.github/instructions/editor.instructions.md) | `core/**` | Tiptap editor integration |
-| [`storage`](.github/instructions/storage.instructions.md) | `core/**`, `app/**` | Supabase Storage patterns |
+| [`storage`](.github/instructions/storage.instructions.md) | `core/**`, `app/**` | Supabase Storage patterns (лишається під адмінкою; порт К4) |
 | [`tooling`](.github/instructions/tooling.instructions.md) | `**/*` | Commands, formatting, testing |
 | [`optimization`](.github/instructions/optimization.instructions.md) | `**/*.ts,tsx` | Performance, bundle, rendering optimization |
 
@@ -91,7 +97,7 @@ Also see:
   наступним кроком. Читати ПЕРШИМ, якщо береш роботу в цій частині
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
-- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/E/CLI/TOOL), які зони не покриті й що змінить `apps/dev-store`
+- [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/CLI/TOOL — Gate E знято в 0.4.1 разом зі стеком Supabase), які зони не покриті й що змінить `apps/dev-store`
 - [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff/theme:conformance): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 - [`docs/architecture/plugins.md`](docs/architecture/plugins.md) — механізм плагінів (Фаза 3): контракт `definePlugin`, рантайм-контур, межа довіри, конвеєр міграцій `plg_*`, i18n плагінів, adminRoutes, інваріант імені, межі v1
 - [`docs/architecture/themes.md`](docs/architecture/themes.md) — механізм тем (Фаза 4): контракт `ThemeModule`, пакування npm vs copy-in, `bootstrapThemes` і БД, conformance-kit, межі v1
@@ -165,11 +171,12 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь
 репозиторій** (`prettier --write .` / `--check .`), а не лише `src/**`.
 Що НЕ форматується — у `.prettierignore`: згенерований машиною код
-(`src/routeTree.gen.ts`, `supabase/types.ts`, Drizzle-схема і `drizzle/`),
+(`src/routeTree.gen.ts`, заморожений `supabase/database.ts` ядра, Drizzle-схема
+і `drizzle/`),
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / 13 warnings — це НОРМА** (станом на 2026-08-09,
+🔴 **`pnpm lint` = 0 errors / 12 warnings — це НОРМА** (станом на 2026-08-29;
 після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
 стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
@@ -192,7 +199,7 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
 `tests/i18n-coverage.test.ts` (AST-скан по `SCANNED_ROOTS` проти реєстру
-`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 16 роут-файлів
+`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 15 роут-файлів
 ядра, чиї `<title>`/`<meta description>` у `head()` перекласти нічим:
 `head()` — функція поза React-контекстом, а локаль магазину ядру недоступна),
 `tests/i18n-catalog-parity.test.ts` (повнота `en`),
@@ -229,7 +236,7 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 - **Language:** TypeScript 5.9 (strict mode) — 🔴 **свідомо не 6/7**, див. нижче
 - **Linting:** ESLint 10 + typescript-eslint 8
 - **Package Manager:** pnpm 11.20 (workspaces; налаштування — у `pnpm-workspace.yaml`, не в `package.json`)
-- **Database:** Supabase (PostgreSQL + Auth + Storage + Edge Functions)
+- **Database:** чистий **PostgreSQL 17** (Drizzle + `pg`-пул, `simplycms/db`); auth — **Better Auth**. 🔴 Supabase — лише один із можливих провайдерів Postgres; `supabase-js` лишається в дереві до К3 як шар адмінки
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4
 - **Data Fetching:** TanStack React Query 5 (client) + route loaders / `createServerFn` (server)
@@ -268,8 +275,7 @@ simplyCMS/
 │   ├── routes/
 │   │   ├── __root.tsx                # Root route (html, providers, 404/error)
 │   │   └── my/                       # ЄДИНА тека роутів магазину (кастомні сторінки)
-│   ├── server/engine.ts              # createServerFn-glue для EngineContext
-│   ├── engine-provider.tsx           # EngineProvider (репозиторії lazy, DI-клієнт)
+│   ├── engine-provider.tsx           # EngineProvider (ізоморфна збірка EngineContext: links+config)
 │   ├── engine.shared.ts              # Shared-частина EngineContext (isomorphic)
 │   ├── styles/globals.css            # Tailwind v4 entry (@import + @config)
 │   ├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
@@ -299,12 +305,12 @@ simplyCMS/
 │   │   │                         #    гола фабрика `db/client` закрита лінт-зоною й не має
 │   │   │                         #    субшляху в exports
 │   │   ├── src/auth/             # T2 🔴 V2: серверний Better Auth (інстанс, databaseHooks,
-│   │   │                         #    invite власника, authz-матриця). Застосунок ще НЕ
-│   │   │                         #    перемкнено — це К1′б
+│   │   │                         #    invite власника, authz-матриця). ПІДКЛЮЧЕНИЙ у 0.4.1:
+│   │   │                         #    вхід, сесія і guard адмінки живуть із нього
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
-│   │   │                         #    database.ts (baseline core-типів).
-│   │   │                         #    🔴 ЖИВИЙ шар до К1′б — не «прибирати дублювання» типів
-│   │   ├── src/data-supabase/    # T2 Реалізації портів на Supabase
+│   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів).
+│   │   │                         #    🔴 ЖИВИЙ ЛИШЕ під адмінкою — зноситься треком К3;
+│   │   │                         #    вітрина його не імпортує, провайдер ніде не монтується
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig
 │   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
@@ -352,7 +358,7 @@ simplyCMS/
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
-│   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
+│   ├── db-diff.mjs · db-migrate.mjs
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
 │   │                                    # (bump.mjs сканує packages/* — і ядро, і скаффолдер)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
@@ -360,16 +366,18 @@ simplyCMS/
 │   ├── audit-exports.mjs + audit-exports/ # collect (споживані subpath-и) + resolve
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
 │   ├── sync-create-store-template.mjs   # монорепо → template/ пакета create-simplycms-store (`pnpm template:sync`)
-│   ├── pilot-pack.mjs   + pilot-pack/   # env/e2e/pack/scaffold/build/run + gate-a…gate-e + create-pkg-smoke
-│   │                                    # + seed-fixtures.mjs — джерело правди сіду
-│   └── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
-│   ├── test-harness/pg/    # 🔴 V2: контур `pnpm test:schema` — підйом Postgres без Docker
-│   │                       # (PG_HARNESS_URL або ефемерний initdb), накат канону,
-│   │                       # інтроспекція ACL/політик, актори. Тести — у __tests__/
-├── supabase/                         # config.toml (проєкт + локальний стек),
-│                                     # seed.sql (ЗГЕНЕРОВАНО), functions/, types.ts.
-│                                     # 🔴 migrations/ ТУТ БІЛЬШЕ НЕМАЄ (B13): канон —
-│                                     # packages/simplycms/migrations/ (baseline + сід)
+│   ├── pilot-pack.mjs   + pilot-pack/   # env/pack/scaffold/build/run + gate-a…gate-d + create-pkg-smoke
+│   │                                    # + seed-fixtures.mjs — джерело правди сіду.
+│   │                                    # 🔴 gate-e.mjs знято в 0.4.1 разом зі стеком Supabase
+│   ├── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
+│   └── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+├── packages/simplycms/test-harness/pg/  # 🔴 V2: контур `pnpm test:schema` — підйом Postgres
+│                                     # без Docker (PG_HARNESS_URL або ефемерний initdb),
+│                                     # накат канону, інтроспекція ACL/політик, актори
+├── supabase/                         # 🔴 ЗАЛИШКОВА тека: config.toml + ЗГЕНЕРОВАНИЙ seed.sql
+│                                     # знятого локального стеку. Ні migrations/ (B13), ні
+│                                     # types.ts (0.4.1) тут більше немає; канон схеми —
+│                                     # packages/simplycms/migrations/. Знос теки — К6
 ├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);
 │                                     # solarstore — npm-пакет packages/simplycms-theme-solarstore/
 ├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
@@ -517,34 +525,37 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
 
 ## Environment Variables
 
-Required (copy `.env.example` to `.env.local`). Client-exposed vars use the `VITE_` prefix:
-- `VITE_SUPABASE_URL` — Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key
-  (legacy fallback — `VITE_SUPABASE_ANON_KEY`; резолв — `resolveSupabaseKeys`)
-- `VITE_SITE_URL` — Public site URL (production)
-- `SUPABASE_PROJECT_ID` — Supabase project ref (tooling)
-- `SUPABASE_ACCESS_TOKEN` — Personal access token for Management API (tooling)
+🔴 **Контракт магазину — рівно ТРИ ключі** (0.4.1). Copy `.env.example` to
+`.env.local`; клієнту видно лише той, що з префіксом `VITE_`:
+- `DATABASE_URL` — **серверний**: пряме підключення до Postgres, з нього живе
+  пул `simplycms/db`. Логін роллю `app_runtime` (вона без прямих грантів, тож
+  забутий `SET LOCAL ROLE` падає, а не мовчки обходить RLS). Той самий URL —
+  джерело тулінгу (`db:pull`/`db:diff`)
+- `BETTER_AUTH_SECRET` — **серверний**: підпис сесій Better Auth
+  (`simplycms/auth`). `VITE_`-префікса тут не може бути за побудовою — секрет
+  у клієнтському бандлі не секрет. Опційний сусід — `BETTER_AUTH_URL`
+  (без нього базовий URL береться із самого запиту)
+- `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt); запікається
+  при `vite build`, тож зміна вимагає перезбірки
 
-🔴 **Ключі контуру V2** (трек К1а; серверні — читаються ЛИШЕ з `process.env` у
-рантаймі, клієнту не видно й `VITE_`-префікса не мають):
-- `DATABASE_URL` — пряме підключення до Postgres. Був tooling-ключем
-  (`db:pull`/`db:diff`), у V2 стає **рантайм-контрактом**: із нього
-  живе пул `simplycms/db`
-- `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` — серверний Better Auth (`simplycms/auth`)
-- `PG_HARNESS_URL` — опційний dev-ключ: готовий Postgres для `pnpm test:schema`
-  (без нього харнес підіймає ефемерний кластер сам)
+Поза контрактом магазину — dev-ключ `PG_HARNESS_URL`: готовий Postgres для
+`pnpm test:schema` (без нього харнес підіймає ефемерний кластер сам).
 
-🔴 Обидва auth-контури зараз **співіснують**: застосунок ще ходить у GoTrue через
-`VITE_SUPABASE_*`, а `simplycms/auth` існує поруч і не підключений. Перемикання і
-знос `VITE_SUPABASE_*` — контур К1′б.
+🔴 **`VITE_SUPABASE_*` магазину більше не потрібні** — ні вітрині, ні входу,
+ні `/api/health`; із `.env.example` їх знято, а пілот більше не підставляє
+фіктивних. `resolveSupabaseKeys` і фабрики клієнтів лишились у
+`simplycms/supabase` як шар **адмінки**: магазину, якому потрібна робоча
+адмінка до треку К3, доведеться тримати ці ключі у власному env — контрактом
+ядра вони вже не є. `SUPABASE_PROJECT_ID`/`SUPABASE_ACCESS_TOKEN` знято разом
+із генератором типів.
 
 🔴 **Контурів env два, і джерела в них різні** (спека CLI v1 §7, 2026-08-13).
 Клієнтський бандл читає `import.meta.env` — значення запікаються при
 `vite build`. Серверний код (SSR, server fns, middleware, SEO) читає **лише**
 `process.env` і лише в рантаймі; `.env`/`.env.local` — не джерело, а спосіб
 його наповнення (див. «Production Run»). `VITE_`-префікс означає «видно
-клієнту», а не «лише клієнт»: той самий `VITE_SUPABASE_URL` сервер бере з
-`process.env`. Дуального резолву немає — відсутній ключ гучно падає.
+клієнту», а не «лише клієнт»: той самий `VITE_SITE_URL` сервер бере з
+`process.env` (`seo/robots`, `seo/sitemap`). Дуального резолву немає — відсутній ключ гучно падає.
 🔴 Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
 `import.meta.env` — це Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести
 джерело env не здатен. Доводять: eslint `no-restricted-syntax` на
@@ -581,8 +592,9 @@ production-`node_modules` (потрібен рівно один рантайм-�
 `process.env` із `.env.local`/`.env` — лише відсутні ключі, тож реальний env
 процесу завжди виграє (`process.env` > `.env.local` > `.env`); у dev те саме
 робить `loadEnv` у `vite.config.ts`. Дуального резолву немає. Наслідок:
-ротація Supabase-ключів = перезапуск процесу (`pnpm start`), БЕЗ перезбірки;
-для клієнтських значень перезбірка як була, так і лишається.
+ротація `DATABASE_URL`/`BETTER_AUTH_SECRET` = перезапуск процесу (`pnpm start`),
+БЕЗ перезбірки; для клієнтського `VITE_SITE_URL` перезбірка як була, так і
+лишається.
 
 ## Database Commands
 
@@ -595,21 +607,20 @@ Schema-тулінг (`drizzle/`, `drizzle.config.ts`,
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
 pnpm db:diff <name>            # schema.ts → SQL у packages/simplycms/migrations/ (ревʼю обовʼязкове)
 pnpm test:schema               # накат канону на чисту БД харнеса (db:migrate — decommissioned, B2/B13)
-pnpm db:generate-types         # Regenerate TypeScript types to supabase/types.ts
-pnpm types:baseline            # Снапшот CORE-типів → packages/simplycms/src/supabase/database.ts
 ```
 
-🔴 **Типів БД два файли.** `supabase/types.ts` — генерат МАГАЗИНУ (core + таблиці
-встановлених плагінів); проти нього типізується host-код.
-`packages/simplycms/src/supabase/database.ts` — **baseline** core-схеми для
-самого ядра; оновлюється `pnpm types:baseline` з еталонної dev-БД без плагінів
-після кожної core-міграції. Магазин звужує клієнти до своїх типів через
-generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) —
-`packages/simplycms/src/supabase/README.md`.
+🔴 **Генератора типів БД більше немає** (знято в 0.4.1). `pnpm db:generate-types`,
+`pnpm types:baseline` і host-генерат `supabase/types.ts` пішли разом із
+Supabase-контуром магазину. Джерело типів для НОВОГО коду —
+`simplycms/schema/types` (виведені з Drizzle-схеми, рішення B12).
+`packages/simplycms/src/supabase/database.ts` лишається **замороженим**
+снапшотом рівно доти, доки на ньому типізується адмінка (трек К3), — не
+«оновлювати» і не «прибирати дублювання».
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
-для інспекції. Після зміни схеми типи оновлюються окремим кроком — `pnpm db:generate-types`;
-`db:migrate` більше не існує (B2/B13).
+для інспекції. `db:migrate` — файл-надгробок, який гучно пояснює, що канон
+переїхав у `packages/simplycms/migrations/` (B2/B13); накат канону на чисту БД
+робить `pnpm db:demo` (магазин) або харнес `pnpm test:schema` (гейт).
 
 ## CI/CD
 
@@ -626,9 +637,9 @@ generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) 
 `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
 потребує зібраних `dist/` кожного пакета.
 
-🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pilot` і
-`pilot:e2e` потребують бази — живої або локального стеку в Docker, — а це зовнішній
-стан, від дрейфу якого гейт червонів би без регресії коду. Прогін пілота перед
+🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pnpm pilot`
+потребує живої бази (`DATABASE_URL`), а це зовнішній стан, від дрейфу якого гейт
+червонів би без регресії коду. Прогін пілота перед
 релізом — відповідальність розробника (`pnpm pilot:pack` не потребує нічого, решта —
 див. Quick Reference). Передрелізний гейт у CI — детерміністичний tarball-parity.
 
@@ -656,9 +667,9 @@ generic-параметр фабрик (`createServerSupabase<StoreDatabase>()`) 
   в реєстрі (`isAlreadyPublished`), тож merge без бампа — no-op **тільки для тих
   пакетів, що вже там є**. Пакет, якого в реєстрі ще немає, мерж публікує —
   саме так у реєстр поїхали `create-simplycms-store` і `@simplycms/cli`
-  (2026-08-13), і так само їде unscoped `simplycms`: мерж гілки К0 займає
-  ім'я в глобальному просторі імен npm незворотно. Після появи `simplycms`
-  у реєстрі — одноразовий `npm deprecate` 22 злитих імен
+  (2026-08-13), а 2026-08-24 — unscoped `simplycms`: мерж гілки К0 зайняв
+  ім'я в глобальному просторі імен npm незворотно, і тим же днем виконано
+  одноразовий `npm deprecate` 22 злитих імен
   ([`release-process.md`](docs/architecture/release-process.md), розділ
   «Deprecate злитих пакетів»);
 - `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині;

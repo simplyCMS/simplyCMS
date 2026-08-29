@@ -109,9 +109,4 @@ export const PENDING_FILES: readonly string[] = [
   'packages/simplycms/routes/storefront/_storefront/properties/index.tsx',
   'packages/simplycms/routes/storefront/auth/index.tsx',
   'packages/simplycms/routes/storefront/auth/set-password.tsx',
-  // Не `head()`, але той самий блокер плюс власний: fallback назви позиції
-  // (`item.name ?? 'Товар'`) у гостьовому замовленні — це серверний
-  // Request-хендлер (React-контексту немає) І значення, яке ЗАПИСУЄТЬСЯ в
-  // `order_items.name`, тобто дані рядка БД, а не текст рендера.
-  'packages/simplycms/routes/storefront/api/guest-order.tsx',
 ];

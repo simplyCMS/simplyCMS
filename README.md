@@ -86,7 +86,8 @@ pnpm simplycms doctor            # діагностика: версії, env, ho
 pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
-pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff → supabase db push)
+pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
+                                  # for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
@@ -135,10 +136,14 @@ Vite резолвлять те, чого немає в `exports`, а tree-shakin
 справжніх tarball-ів, без workspace-аліасів:
 
 ```bash
-pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundle-guard, Tailwind, смоуки обох CLI-пакетів. Без БД, Gate E — видимо SKIP
-pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local); Gate E — досі SKIP (потрібен --e2e)
-pnpm pilot:e2e    # gates A/C/D/CLI/TOOL/B/E на локальному стеку Supabase із сідом (потребує Docker)
+pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundle-guard, Tailwind, смоуки обох CLI-пакетів. Без БД
+pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local)
 ```
+
+🔴 `pnpm pilot:e2e` і Gate E — **decommissioned у 0.4.1** разом зі стеком
+Supabase: команди більше немає, `--e2e` падає з поясненням. Owner-флоу на
+Better Auth повертає трек К6 (деталі —
+[`docs/architecture/test-contours.md`](docs/architecture/test-contours.md)).
 
 Ганяйте його після змін в `exports`, `peerDependencies`, `tsup`-конфігах, барелях
 або `routes/`.

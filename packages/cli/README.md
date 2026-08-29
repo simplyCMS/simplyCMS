@@ -33,7 +33,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра + звіт дрейфу host-файлів
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-supabase db push                 # накатити міграції після ревʼю
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити після ревʼю (URL власника БД, не app_runtime)
 pnpm build && pnpm start         # rebuild
 ```
 

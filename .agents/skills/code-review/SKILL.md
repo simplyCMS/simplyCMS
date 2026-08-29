@@ -86,13 +86,13 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - `architecture` — напрямок залежностей **за тірами з
   `packages/README.md`** (це джерело, не переказуй по пам'яті). 🔴 Після треку К0
   тір — це **тека** в `packages/simplycms/src/`, а не окремий npm-пакет:
-  T0 `contracts` → T1 `domain`/`schema` → T2 `data-supabase`/`react-query`/`storefront` →
+  T0 `contracts` → T1 `domain`/`schema` → T2 `supabase`/`db`/`auth`/`react-query`/`storefront` →
   T3 `ui` → T4 `plugins`/`themes`/`plugin-sdk`/`*-ui` → T5 `core`/`admin`/`storefront-routes`.
   Межу тримає не `dependencies`, а eslint-тір-зони (`eslint.tier-zones.mjs` +
   `eslint.tier-relative.mjs`) — тож порушення напрямку в нормі валить лінт; якщо
   диф його додав, а лінт мовчить, це знахідка про зону, не лише про імпорт.
   🔴 Два факти, без яких лінза дає хибні спрацювання: теки одного тіру —
-  **сиблінги**, а не ланка ланцюга (`data-supabase` і `react-query` обидва
+  **сиблінги**, а не ланка ланцюга (`supabase` і `react-query` обидва
   залежать лише від `contracts`, один від одного — ні); дві розбіжності
   таблиці з зонами зафіксовані **фактом**, а не виправлені кодом — `plugin-sdk`
   стоїть T4 (імпортує `plugins`), а пʼять `*-ui` (T4) тягнуть `core` (T5),
@@ -109,14 +109,16 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   Supabase MCP — лише інспекція: `list_tables`, read-only `execute_sql`,
   `get_advisors`). 🔴 **Не став `major` за «суперечить канону»**, якщо диф
   робить локальну міграцію — діє правило локальних міграцій.
-  Далі: типи регенеровані
-  (`pnpm db:generate-types`, `supabase/types.ts` руками не правиться);
-  RLS-політики на кожній зачепленій таблиці; **жодного глобального
-  supabase-singleton** — DI через `SupabaseProvider`/`useSupabaseClient` або
-  порти-репозиторії з `contracts`; Zod-валідація входу на сервері; інвалідація
-  TanStack Query (стабільні `queryKey`, адекватний `staleTime`,
+  Далі: 🔴 `pnpm db:generate-types`/`pnpm types:baseline` **ВИДАЛЕНІ**
+  (0.4.1) разом із `supabase/types.ts` — типи для НОВОГО серверного коду з
+  `simplycms/schema/types` (Drizzle), не з генератора; RLS-політики на кожній
+  зачепленій таблиці; субшляху `simplycms/data-supabase` НЕ ІСНУЄ (0.4.1) —
+  вітрина ходить у БД лоадерами `withStorefrontDb`/`withActor`, адмінка (до
+  К3) — **жодного глобального supabase-singleton**, лише DI через
+  `SupabaseProvider`/`useSupabaseClient`; Zod-валідація входу на сервері;
+  інвалідація TanStack Query (стабільні `queryKey`, адекватний `staleTime`,
   `router.invalidate()`) відповідає тому, що змінили; типи БД проти реальних
-  PostgREST-відповідей; N+1.
+  відповідей (адмінка — PostgREST, вітрина — Drizzle-схема); N+1.
 
 **Стек залежить від того, що саме зачепив диф** — не змішуй правила різних зон:
 
@@ -156,11 +158,14 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - доказ = конкретний фрагмент коду, конкретний вхід, або відтворений запуск
   (гейти в канонічному порядку: `pnpm install --frozen-lockfile` →
   `pnpm format:check` → `pnpm lint` → `pnpm build` → `pnpm typecheck` →
-  `pnpm test` → `pnpm build:packages` → `pnpm test:packaging`;
+  `pnpm test` → `pnpm test:schema` → `pnpm build:packages` → `pnpm test:packaging`;
   **frozen-lockfile першим** — якщо диф чіпав `package.json`, це єдиний гейт, що
   ловить розсинхрон `pnpm-lock.yaml` (у CI frozen — дефолт, тож розсинхрон валить
   усі job-и до першого кроку);
   **build перед typecheck**, бо build генерує `src/routeTree.gen.ts`;
+  🔴 `test:schema` увійшов у ланцюг 2026-08-24 (трек К1а) — потребує Postgres
+  (`PG_HARNESS_URL` або ефемерний харнес), запускається, лише якщо диф чіпав
+  схему/RLS;
   packaging-suite — у кінці й окремо, бо `tests/published-exports-parity.test.ts`
   виведено з `pnpm test` (`test.exclude`) і працює по зібраних tarball-ах;
   гейт саме `format:check` — `pnpm format` це

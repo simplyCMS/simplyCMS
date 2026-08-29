@@ -108,8 +108,6 @@ const pluginTrustBoundaryImports = [
     group: [
       'simplycms/supabase',
       'simplycms/supabase/*',
-      'simplycms/data-supabase',
-      'simplycms/data-supabase/*',
       '@supabase/*',
       // db-рантайм v2 (Task 6): плагінові він не поверхня взагалі — навіть
       // `withActor`. Дані плагін бере портами SDK, які самі вирішують, під
@@ -148,7 +146,7 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|data-supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },

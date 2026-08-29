@@ -34,7 +34,6 @@ const CODE_GLOBS = ['*.ts', '*.tsx', '*.mjs', '*.cjs', '*.js'];
 // каталог скрипта може містити приклади специфікаторів у коментарях.
 const EXCLUDE_PATHSPECS = [
   ':!**/routeTree.gen.ts',
-  ':!supabase/types.ts',
   ':!scripts/audit-exports/**',
   ':!scripts/audit-exports.mjs',
   // Межа довіри плагінів (Фаза 3): ban-глоби виду 'simplycms/supabase/*' у

@@ -58,7 +58,7 @@ docs/tasks/{feature-name}.md
 [Чому це погано в контексті SimplyCMS]
 
 ## Архітектурні рішення
-- У яку теку ядра додавати код: simplycms/* (contracts | domain | data-supabase | react-query | core | admin | ui | storefront | *-ui) | themes/ | src/
+- У яку теку ядра додавати код: simplycms/* (contracts | domain | schema | db | auth | supabase | react-query | core | admin | ui | storefront | *-ui) | themes/ | src/
 - Rendering стратегія: SSR | Client-only (ssr:false) | Mixed
 
 ## MCP Servers (за потреби)
