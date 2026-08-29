@@ -1,4 +1,6 @@
-// Порти рушія (Tier 0). Контракти, які реалізують host-адаптери (data-supabase, @kit/supabase тощо).
+// Порти рушія (Tier 0). Контракти, які реалізують СЕРВЕРНІ адаптери даних.
+// 🔴 Реалізації на Supabase (`data-supabase`) знесені у V2 — порти лишились
+// контрактом для майбутнього `data-pg` поверх `simplycms/db`.
 // Жодних імпортів supabase/react — лише доменні типи.
 
 import type {
@@ -83,13 +85,16 @@ export interface ConfigProvider {
   seo: SeoConfig;
 }
 
-/** Контейнер залежностей рушія, що інжектиться через React-контекст. */
+/**
+ * Контейнер залежностей рушія, що інжектиться через React-контекст.
+ *
+ * 🔴 V2: у браузері даних немає — читання йде серверними лоадерами
+ * (`simplycms/storefront`) через `simplycms/db`. Тому в контейнері лишились
+ * рівно два ЧИСТИХ (без IO) провайдери: резолвер посилань і конфіг магазину.
+ * Порти-репозиторії вище — контракт для серверних реалізацій, у клієнтський
+ * контекст вони більше не інжектяться.
+ */
 export interface EngineContext {
-  catalog: CatalogRepository;
-  orders?: OrderRepository;
-  scope: ScopeResolver;
-  identity: IdentityProvider;
   links: LinkResolver;
-  media: MediaProvider;
   config: ConfigProvider;
 }

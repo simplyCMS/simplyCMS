@@ -55,7 +55,6 @@ const TIER_ZONES = [
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
   ['src/auth', 2, 'auth', ['db']],
   ['src/supabase', 2, 'supabase', []],
-  ['src/data-supabase', 2, 'data-supabase', []],
   ['src/react-query', 2, 'react-query', []],
   ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
@@ -73,14 +72,7 @@ const TIER_ZONES = [
     3,
     'ui',
     [],
-    [
-      'schema',
-      'supabase',
-      'data-supabase',
-      'react-query',
-      'storefront',
-      'runtime',
-    ],
+    ['schema', 'supabase', 'react-query', 'storefront', 'runtime'],
   ],
   ['src/themes', 4, 'themes', []],
   ['src/plugins', 4, 'plugins', []],
