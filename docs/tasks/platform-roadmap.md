@@ -578,11 +578,19 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    `DATABASE_URL` він потім потрапляє вручну. Для деплой-пакета це має бути
    крок із перевіркою, а не усна домовленість.
 
-0.4.1-9. **Надрукований онбординг-крок накату канону не виконується під
-   роллю з контракту.** `0000_prelude.sql` створює ролі й безумовно робить
-   `alter role`, а `app_runtime` — `nosuperuser nocreatedb nocreaterole`.
-   Інструкція вже виправлена на «підключення власника БД», але команди CLI
-   (`simplycms db:apply`) досі немає — той самий розрив, що й 0.4.1-7.
+0.4.1-9. **Накат канону вимагає привілейованого підключення, а команди для
+   цього немає.** `0000_prelude.sql` створює ролі й безумовно робить
+   `alter role`, а `app_runtime` — `nosuperuser nocreatedb nocreaterole` і без
+   `create` на `public` (перевірено наживо: не проходить ні `create schema`,
+   ні `alter role`, ні навіть `create table` для міграції плагіна).
+   ✅ Тексти виправлені в 0.4.1 — усі вісім місць, що друкували
+   `psql "$DATABASE_URL"` (вивід CLI, README шаблону й пакета, кореневий
+   README, `packages/cli/README.md`, `cli.md`, `plugins.md`, README обох
+   шаблонів плагіна), тепер називають підключення власника БД; гарди —
+   `tests/create-store-invite-setup.test.ts` (і на вивід CLI, і на README
+   шаблону — перший фікс закрив лише вивід, README пропустив).
+   🔴 Відкрите: команди CLI (`simplycms db:apply`) досі немає, накат лишається
+   ручним `psql` із підстановкою URL — той самий розрив, що й 0.4.1-7.
 
 0.4.1-10. **`defineRuntime`/`bootstrapRuntime`/`EngineModule`/`SimplyCmsRuntime`
    (`simplycms/runtime`) — публічна поверхня без жодного споживача.** Збірку

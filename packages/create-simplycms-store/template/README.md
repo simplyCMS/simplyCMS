@@ -37,13 +37,14 @@ cp .env.example .env.local
 
 ### 2. Накотити схему БД
 
-Потрібен `psql` і заповнений `DATABASE_URL`.
+Потрібен `psql` і підключення **власника БД** (не `DATABASE_URL` із
+`.env.local`: роль `app_runtime` не має прав створювати схему, ролі й таблиці).
 
 `supabase/migrations/` — схема ядра SimplyCMS: baseline (`0001_init.sql`) плюс
 передумови, гранти й сід довідників. Файли накочуються **в порядку імен**:
 
 ```bash
-for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
 🔴 `supabase db push` цей канон не приймає: він чекає імена

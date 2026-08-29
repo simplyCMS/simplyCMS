@@ -100,9 +100,12 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
    `@supabase/*`, `simplycms/db(/*)`, `simplycms/storefront(/*)`,
    `simplycms/auth(/*)`, `simplycms/schema(/*)`, `simplycms/plugin-sdk/server(/*)`,
    `drizzle-orm(/*)`, `pg` — і статичний import, і `export … from`, і
-   динамічний `import()` (окремий селектор). 🔴 Субшлях `simplycms/data-supabase`
-   у списку теж є, хоч сам шар знесений (0.4.1) — belt-and-suspenders на
-   випадок відновлення. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
+   динамічний `import()` (окремий селектор). 🔴 Субшляху
+   `simplycms/data-supabase` у списку БІЛЬШЕ НЕМАЄ: шар знесено в 0.4.1, і
+   специфікатор не резолвиться в принципі, тож правило стерегло б порожнечу, а
+   негативний контроль — неіснуючий модуль. Наступників (`simplycms/db`,
+   `simplycms/storefront`, `simplycms/schema`, `drizzle-orm`, `pg`) список
+   містить окремо. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
    `plugins`/`plugin-sdk` — ядро, зона їх не покриває. Доводить не зелений
    лінт, а негативний контроль `tests/plugin-trust-boundary.test.ts`
    (синтетичне порушення в зоні й поза нею) — урок env-контракту: правило,
@@ -156,7 +159,8 @@ npm-пакет (`simplycms`) і кілька його субшляхів — dep
 - Накат: `git diff` (ревʼю) → пряме `psql`, файл за файлом (немає Supabase
   CLI, що сам відстежує застосовані міграції — таймстамп «у минуле» нічого
   не блокує):
-  `for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done`.
+  `for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done`
+  (URL власника БД: `app_runtime` не має прав на `create table`).
   🔴 Генератора типів магазину (`supabase/types.ts`) більше немає (0.4.1) —
   плагінні таблиці типізуються ЛИШЕ через власний generic плагіна
   (`usePluginTable<Row>`), не через автогенерат.

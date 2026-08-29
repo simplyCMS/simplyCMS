@@ -76,7 +76,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 | `_storefront/` | `simplycms/routes/storefront/` | SSR | Публічні сторінки, SEO; loader надає `themeName` |
 | `_protected/` | `simplycms/routes/storefront/` | SSR guard + client | `beforeLoad` перевіряє auth, редіректить на `/auth` |
 | `auth/` | `simplycms/routes/storefront/` | Client-only + server route | Форми авторизації; `callback` — server handler (OAuth) |
-| `api/` | `simplycms/routes/storefront/` | Server routes | `server.handlers` (health) |
+| `api/` | `simplycms/routes/storefront/` | Server routes | `server.handlers` (health, revalidate-theme, `auth/*` — монтування Better Auth) |
 | `admin/` | `simplycms/routes/admin/` | Client-only (`ssr: false`) | `ssr:false` стоїть **лише** на `admin.tsx`; дочірні роути його не повторюють |
 | `my/` | `src/routes/my/` | за потребою магазину | Єдина тека роутів host-а |
 

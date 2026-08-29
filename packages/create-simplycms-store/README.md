@@ -67,7 +67,7 @@ ls dist/client/assets/*.js | wc -l   # одиниці → вас стосуєт�
 pnpm create simplycms-store my-shop \
   --database-url postgresql://app_runtime:пароль@localhost:5432/postgres --yes
 cd my-shop
-for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
 OWNER_EMAIL=you@example.com pnpm run owner:invite
 pnpm run dev
 ```

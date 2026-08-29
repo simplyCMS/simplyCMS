@@ -247,9 +247,11 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
   `template:sync` кладе в шаблон скаффолдера (`server.mjs`,
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
   `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
-  `src/engine-provider.tsx`, `src/theme-registry.ts`,
-  `src/styles/globals.css`). `src/engine.shared.ts` свідомо не входить —
-  template-варіант навмисно відрізняється від кореневого.
+  `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
+  `src/styles/globals.css`). 🔴 `src/engine.shared.ts` увійшов у канон у
+  0.4.1: після знесення шару репозиторіїв копії стали байт-ідентичними, і
+  тримала їх такими лише ручна правка обох — розсинхрону не побачив би
+  жоден гейт.
 - 🔴 Наслідок для розробки ядра: після зміни будь-якого з цих файлів —
   `pnpm template:sync`, інакше червоніє
   `tests/create-store-template-parity.test.ts` (він же стереже байт-парність
@@ -265,7 +267,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!)
+for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
 pnpm build && pnpm start         # rebuild
 ```
 
