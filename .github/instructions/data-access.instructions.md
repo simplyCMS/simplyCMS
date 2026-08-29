@@ -14,7 +14,7 @@ description: "Правила роботи з даними та Supabase в Simpl
   лишається живим **лише для адмінки** (`packages/simplycms/src/admin/**`) —
   її переписує трек К3.
 - **Серверні функції (адмінка):** `createServerSupabase()` з `simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
-- **Клієнтські компоненти (адмінка):** використовуй DI — `useSupabaseClient()` з `simplycms/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
+- **Клієнтські компоненти (адмінка):** використовуй DI — `useSupabaseClient()` з `simplycms/supabase/SupabaseProvider`. 🔴 **Борг (роадмап 0.4.1-11):** `SupabaseProvider` НЕ монтується в проді — `CMSProvider` його не несе, і жодної точки інжекції в дереві застосунку немає. `useSupabaseClient()` без контексту-провайдера відкатується на `resolveDefaultClient()` → модульний singleton `getSupabaseBrowserClient()`, тож увесь код адмінки сьогодні фактично сидить на ньому, а не на DI. Пиши через `useSupabaseClient()` як і раніше (це форма, яку зніме трек К3) — просто май на увазі, що DI-шов декларований, а не підключений.
 - **Анонімні cross-request сценарії** (SSR-резолв теми): `createAnonSupabaseClient()` з `simplycms/supabase/anon-client` — без cookies, лише RLS `anon`-читання.
 - 🔴 Субшляху `simplycms/data-supabase` **НЕ ІСНУЄ** — шар репозиторіїв-портів
   знесений (0.4.1, 0 споживачів). Нові data-шляхи вітрини — лоадери

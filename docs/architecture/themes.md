@@ -392,8 +392,9 @@ activate.
 
 ⚠ **Нотатка власнику.** E2e-смок `tests/e2e/admin-smoke/theme.e2e.ts` тисне
 ПЕРШУ кнопку «Активувати» в списку. З появою disabled-рядків (тема в БД без
-модуля) селектор може почати чіпляти не той рядок — уточнити при живому
-прогоні `pnpm test:e2e`/`pnpm pilot:e2e` (роадмап, Борги Фази 4).
+модуля) селектор може почати чіпляти не той рядок — уточнити, коли контур
+повернеться треком К6: `pnpm test:e2e`/`pnpm pilot:e2e` decommissioned у
+0.4.1 разом зі стеком Supabase (роадмап, Борги Фази 4).
 
 ## 7. Conformance-kit і чекліст автора теми
 
@@ -582,7 +583,7 @@ Playwright): гейт мусить бути доступним і магазин
 | `bump.mjs`: version-літерал `manifest.ts` | `tests/release-bump-coverage.test.ts` (Р13) |
 | Маркетплейс-індекс (формат запису) | `tests/marketplace-index.test.ts` (Zod-схема, `docs/marketplace/index.sample.json`) |
 | Пакування (обидві гілки §17.4, provenance, Gate D-маркер) | `pnpm pilot:pack` — Gate THEME-контур: `scripts/pilot-pack/install-themes.mjs` (copy-in + npm тим самим `pnpm exec simplycms`, що й користувач), `gate-d.mjs` (маркер `@simplycms/theme-solarstore · HeroBanner`) |
-| Поведінка наживо (перемикання теми, RLS bootstrap) | `pnpm test:e2e` (Docker; `theme.e2e.ts` — див. нотатку §6) |
+| Поведінка наживо (перемикання теми, RLS bootstrap) | 🔴 **decommissioned у 0.4.1** разом зі стеком Supabase — `pnpm test:e2e` немає; `theme.e2e.ts` (нотатка §6) лишився без входу, повертає трек К6 |
 
 🔴 Зелений `pnpm test` пакування теми **не доводить** — загальний закон репо
 (`test-contours.md`): після змін exports/manifest/tailwind-глобів пакета теми

@@ -199,7 +199,7 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
 `tests/i18n-coverage.test.ts` (AST-скан по `SCANNED_ROOTS` проти реєстру
-`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 16 роут-файлів
+`PENDING_FILES`; 🔴 з 2026-08-21 реєстр НЕ порожній — у ньому 15 роут-файлів
 ядра, чиї `<title>`/`<meta description>` у `head()` перекласти нічим:
 `head()` — функція поза React-контекстом, а локаль магазину ядру недоступна),
 `tests/i18n-catalog-parity.test.ts` (повнота `en`),
@@ -275,8 +275,7 @@ simplyCMS/
 │   ├── routes/
 │   │   ├── __root.tsx                # Root route (html, providers, 404/error)
 │   │   └── my/                       # ЄДИНА тека роутів магазину (кастомні сторінки)
-│   ├── server/engine.ts              # createServerFn-glue для EngineContext
-│   ├── engine-provider.tsx           # EngineProvider (репозиторії lazy, DI-клієнт)
+│   ├── engine-provider.tsx           # EngineProvider (ізоморфна збірка EngineContext: links+config)
 │   ├── engine.shared.ts              # Shared-частина EngineContext (isomorphic)
 │   ├── styles/globals.css            # Tailwind v4 entry (@import + @config)
 │   ├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
@@ -359,7 +358,7 @@ simplyCMS/
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
-│   ├── db-diff.mjs · db-migrate.mjs · types-baseline.mjs
+│   ├── db-diff.mjs · db-migrate.mjs
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
 │   │                                    # (bump.mjs сканує packages/* — і ядро, і скаффолдер)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів

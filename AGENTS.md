@@ -81,7 +81,6 @@ routes.ts                         # virtualRouteConfig: rootRoute + physical() �
 src/                              # Host (тонка збірка магазину)
 ├── routes/__root.tsx             # Root route (html, providers, 404/error)
 ├── routes/my/                    # ЄДИНА тека роутів магазину (кастомні сторінки)
-├── server/engine.ts              # createServerFn-glue для EngineContext
 ├── engine-provider.tsx           # EngineProvider (ізоморфна збірка EngineContext: links+config)
 ├── engine.shared.ts              # Shared-частина EngineContext
 ├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
@@ -132,7 +131,7 @@ supabase/                         # config.toml, migrations/, functions/, types.
 - **Rendering:** SSR for storefront, client-only for admin (`ssr:false` на `admin.tsx`; дочірні роути його **не** повторюють); `ssr:false` routes always define a `pendingComponent`
 - **Themes:** контракт v3 — `{ manifest, tokens, components, settings?, messages?, fonts?, views? }`. Тема **не** постачає сторінок/лейаутів: канонічні сторінки — у `simplycms/storefront-routes/pages/` (container-и), каркаси — `StorefrontShell`/`ProtectedShell`; `views?` лише перевизначає view-шар пʼяти сторінок вітрини (Home/Catalog/CatalogSection/ProductDetail/Cart), `fonts?` — зовнішні stylesheet-и шрифтів. Реєстрація з `config.themes` (локальна тека `themes/*` або npm-пакет), активація через `themes.is_active` + `bootstrapThemes`. Деталі — `docs/architecture/themes.md`
 - **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
-- **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient` or repository ports
+- **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient`
 - **DB schema:** джерело правди — `packages/simplycms/src/schema/schema.ts` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP
 - **i18n:** нові рядки — через `simplycms/i18n` (`useT`/`createTranslator`). Міграцію завершено: i18n-селектори `no-restricted-syntax` — **error**, а не warn, тож новий кириличний рядок інтерфейсу в зоні валить лінт. Норма прогону — `pnpm lint` = 0 errors / 13 warnings (`react-hooks/*` і `no-unused-vars`, до i18n стосунку не мають)
 - **Imports:** ядро — субшляхом `simplycms/<тека>`, не відносними шляхами. 🔴 Аліасів злитих пакетів більше немає: чинні — `simplycms`/`simplycms/*`, три сателіти `@simplycms/*`, `@themes/*`, `@plugins/*`

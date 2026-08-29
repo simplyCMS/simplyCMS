@@ -83,7 +83,7 @@ db-скрипти. Нових пакетів не зʼявляється — м�
   після severance; `supabase db push` замінено на реальний psql-накат.
 - `CLAUDE.md`, [`test-contours.md`](docs/architecture/test-contours.md)
   (банери DECOMMISSIONED), [`v2-state-map.md`](docs/tasks/v2-state-map.md)
-  (§2.1 — що ще НЕ підтверджено живим прогоном) і
+  (§2.1 — результат ОКРЕМОГО живого прогону саме під контракт 0.4.1) і
   [роадмап](docs/tasks/platform-roadmap.md) (борги 0.4.1-1…8, зокрема три
   дефекти безпеки, які цей контур **не** закриває).
 

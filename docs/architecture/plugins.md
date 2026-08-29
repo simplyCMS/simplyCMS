@@ -251,7 +251,7 @@ CLI: definePlugin + messages + README з конвенціями) + якірни�
 | Скаффолд create plugin | `tests/cli-create.test.ts` (+ реальні діагностики `transpileModule`) |
 | Два physical() під /admin | `tests/virtual-routes-escape.test.ts` |
 | Пакування (route-id, бандл, tarball, CLI) | `pnpm pilot:pack` — Gates A/C/D/CLI/TOOL |
-| Поведінка наживо (toggle, віджет) | `pnpm test:e2e` (Docker; спека `plugin.e2e.ts` адресує картку за назвою) |
+| Поведінка наживо (toggle, віджет) | 🔴 **decommissioned у 0.4.1** разом зі стеком Supabase — `pnpm test:e2e` немає; спека `plugin.e2e.ts` лишилась без входу, повертає трек К6 |
 
 🔴 Зелений `pnpm test` пакування плагіна **не доводить** — це загальний
 закон репо (`test-contours.md`): після змін exports/routes/міграцій пакета

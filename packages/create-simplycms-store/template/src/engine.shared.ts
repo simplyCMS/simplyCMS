@@ -1,7 +1,7 @@
 // Framework-agnostic адаптери магазину (LinkResolver + ConfigProvider).
 //
 // 🔴 V2: медіа-провайдер на Supabase Storage звідси знесений разом із шаром
-// репозиторіїв — storage-порт повертає трек К3/К6. Лишились два ЧИСТИХ
+// репозиторіїв — storage-порт повертає трек К4. Лишились два ЧИСТИХ
 // (без IO) провайдери, тож модуль безпечний для браузерного бандла.
 
 import type { LinkResolver, ConfigProvider } from 'simplycms/contracts';

@@ -50,10 +50,10 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     expect(errors[0]).toContain('plugin-sdk');
   });
 
-  it('ловить у packages/simplycms-plugin-*/** — усі три заборонені групи', async () => {
+  it('ловить у packages/simplycms-plugin-*/** — bare, субшлях і зовнішній пакет', async () => {
     for (const bad of [
       "import { x } from 'simplycms/supabase';",
-      "import { y } from 'simplycms/data-supabase/orderRepository';",
+      "import { y } from 'simplycms/supabase/browser-client';",
       "import { createClient } from '@supabase/supabase-js';",
     ]) {
       const errors = await boundaryErrors(

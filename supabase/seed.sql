@@ -2,9 +2,9 @@
 -- Джерело правди: scripts/pilot-pack/seed-fixtures.mjs
 -- Парність файлу й фікстур стереже tests/pilot-seed.test.ts.
 --
--- Детерміністичний сід пілота (`pnpm pilot:e2e`): рівно стільки даних,
--- скільки треба Gate B, щоб асертити КОНКРЕТНІ назви товарів у SSR-HTML.
--- Застосовується локальним стеком після міграцій (`[db.seed]` у config.toml).
+-- 🔴 Споживача (`pnpm pilot:e2e`, локальний стек Supabase, Gate B асертив
+-- КОНКРЕТНІ назви товарів у SSR-HTML) знесено разом зі стеком у 0.4.1 —
+-- фікстури лишаються під парність-тестом до треку К6.
 
 -- 1. Активна тема (без неї getActiveThemeSSR не резолвиться).
 update public.themes set is_active = false where name <> 'default';

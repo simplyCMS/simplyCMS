@@ -76,7 +76,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 | `_storefront/` | `simplycms/routes/storefront/` | SSR | Публічні сторінки, SEO; loader надає `themeName` |
 | `_protected/` | `simplycms/routes/storefront/` | SSR guard + client | `beforeLoad` перевіряє auth, редіректить на `/auth` |
 | `auth/` | `simplycms/routes/storefront/` | Client-only + server route | Форми авторизації; `callback` — server handler (OAuth) |
-| `api/` | `simplycms/routes/storefront/` | Server routes | `server.handlers` (health, guest-order) |
+| `api/` | `simplycms/routes/storefront/` | Server routes | `server.handlers` (health) |
 | `admin/` | `simplycms/routes/admin/` | Client-only (`ssr: false`) | `ssr:false` стоїть **лише** на `admin.tsx`; дочірні роути його не повторюють |
 | `my/` | `src/routes/my/` | за потребою магазину | Єдина тека роутів host-а |
 
@@ -85,12 +85,12 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Client-side (`ssr: false`) для адмін-панелі; **завжди** додавай `pendingComponent` для `ssr:false`-роутів.
 - Route-файли — тонкі обгортки: `createFileRoute` + component з пакетів; без бізнес-логіки.
 - Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у route-теці відповідного пакета. Файл поруч із `__root.tsx` роутом **не стане** (гард — `tests/virtual-routes-escape.test.ts`).
-- Дані на сервері — через `createServerFn` (server-шар `simplycms/storefront-routes/server/*` або `src/server/engine.ts`) чи route `loader`.
+- Дані на сервері — через `createServerFn` (server-шар `simplycms/storefront-routes/server/*`) чи route `loader`.
 - Списки товарів мають бути повними в SSR-HTML: DTO `ProductListItem` + `SsrProductGrid`, збагачення — на сервері, не в `useEffect`.
 - Нові UI-рядки — через `simplycms/i18n` (`useT` / `createTranslator`), не хардкодом.
 - Cookie-based auth через `@supabase/ssr` (не localStorage JWT).
 - Request-level guard для `/admin` — у `src/start.ts` (middleware).
-- Supabase-клієнт — через DI: `SupabaseProvider`/`useSupabaseClient` або репозиторії-порти; не глобальний singleton.
+- Supabase-клієнт (адмінка) — через DI: `SupabaseProvider`/`useSupabaseClient`; не глобальний singleton.
 - Використовуй субшляхи пакета `simplycms` замість локальних копій (`simplycms/ui`, `simplycms/core`, `simplycms/admin`).
 - **Використовуй MCP сервери** для перевірки актуальних API:
   - **context7:** TanStack Start/Router, React, TanStack Query, Zod docs
@@ -109,7 +109,7 @@ Route-файли живуть у пакетах; `routes.ts` монтує їхн
 - Не глуши i18n-селектори `no-restricted-syntax` і не послаблюй їх — після завершення міграції це **error**-зона, а не борг. Норма прогону — `pnpm lint` = 0 errors / 13 warnings (`react-hooks/*` і `no-unused-vars`, поза i18n).
 - Не застосовуй міграції через Supabase MCP (`apply_migration`) і не пиши SQL повз `db:diff`.
 - Не хардкодь Supabase URL/ключі — використовуй змінні оточення (`VITE_*`).
-- Не імпортуй глобальний supabase-клієнт — тільки DI (`useSupabaseClient`/порти).
+- Не імпортуй глобальний supabase-клієнт — тільки DI (`useSupabaseClient`).
 - **НЕ додавай shadcn/ui компоненти без перевірки через MCP** (search → examples → audit).
 - **НЕ припускай library APIs — перевіряй через MCP context7**.
 - Не виноси auth-guard логіку за межі `src/start.ts` та `auth/`-роутів.

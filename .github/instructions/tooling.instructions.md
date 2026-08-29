@@ -31,9 +31,8 @@ pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 # Пакети ядра
 pnpm build:packages         # tsup build публікованих пакетів
 pnpm template:sync          # регенерація шаблону create-simplycms-store з монорепо (закомічені копії)
-pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase; Gate E видимо SKIP
-pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local); Gate E досі SKIP
-pnpm pilot:e2e              # гейти A/C/D/CLI/B/E проти ЛОКАЛЬНОГО стеку (supabase start + db reset)
+pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase, без БД
+pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local)
 pnpm pilot:seed             # фікстури пілота → supabase/seed.sql (генерат!)
 
 # База даних (використовує DATABASE_URL з .env.local)
@@ -49,11 +48,11 @@ pnpm test:schema            # Накат канону на чисту БД ха�
 
 🔴 **`supabase/seed.sql` — ГЕНЕРАТ, руками не правиться.** Джерело правди —
 `scripts/pilot-pack/seed-fixtures.mjs`; перегенерація — `pnpm pilot:seed`,
-парність стереже `tests/pilot-seed.test.ts`. Так само як `pnpm pilot:e2e` не
-переживає без Docker: він піднімає локальний стек (`supabase start` → `db reset`
-→ міграції + сід) і в Gate B асертить ТОЧНІ назви товарів із фікстур. Проти
-довільної бази (`pnpm pilot`) очікування лишаються нечіткими — назви беруться з
-живої БД, тому змінюються разом з нею.
+парність стереже `tests/pilot-seed.test.ts`. 🔴 Споживач сіду (`pnpm pilot:e2e`,
+локальний стек Supabase + Gate B у режимі `--e2e` з асертом ТОЧНИХ назв
+товарів) знесено разом зі стеком у 0.4.1 — фікстури лишаються під
+парність-тестом до треку К6. Проти довільної бази (`pnpm pilot`) очікування
+лишаються нечіткими — назви беруться з живої БД, тому змінюються разом з нею.
 
 🔴 **Генерат `supabase/types.ts` ВИДАЛЕНИЙ (0.4.1)** разом із
 `db:generate-types`/`types:baseline` — магазин на ньому більше не
