@@ -6,7 +6,7 @@
 без форку репозиторію.
 
 CLI проєкту [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Це єдиний пакет, який ставиться
+e-commerce CMS на TanStack Start + Postgres. Це єдиний пакет, який ставиться
 окремо: він приводить усе ядро разом.
 
 ## Встановлення
@@ -22,14 +22,14 @@ pnpm create simplycms-store my-shop
 | Прапорець        | Значення                                                 |
 | ---------------- | -------------------------------------------------------- |
 | `--yes`, `-y`    | Без промптів (також вмикається при `CI=true` і в не-TTY) |
-| `--supabase-url` | URL проєкту Supabase → у `.env.local`                    |
-| `--supabase-key` | Publishable-ключ Supabase → у `.env.local`               |
+| `--database-url` | DSN Postgres → у `.env.local`                            |
 | `--no-install`   | Не встановлювати залежності                              |
 | `--no-git`       | Не робити `git init` + перший коміт                      |
 
-`.env.local` пишеться лише коли задані **обидва** значення Supabase.
-🔴 Серверні ключі (`DATABASE_URL`, `BETTER_AUTH_SECRET`) скаффолдер не вигадує —
-їх дописує власник. Без них не запуститься ні магазин, ні `owner:invite`.
+`.env.local` пишеться лише коли заданий `--database-url`: разом із ним туди
+йдуть згенерований `BETTER_AUTH_SECRET` і `VITE_SITE_URL=http://localhost:3000`
+— увесь контракт магазину. Без `--database-url` файл не створюється: магазин
+дістає `.env.example` і власник заповнює його сам.
 
 ## 🔴 Оновлення магазину, створеного з 0.2.0 / 0.2.1
 
@@ -65,10 +65,9 @@ ls dist/client/assets/*.js | wc -l   # одиниці → вас стосуєт�
 
 ```bash
 pnpm create simplycms-store my-shop \
-  --supabase-url https://<ref>.supabase.co \
-  --supabase-key sb_publishable_… --yes
+  --database-url postgresql://app_runtime:пароль@localhost:5432/postgres --yes
 cd my-shop
-supabase link --project-ref <ref> && supabase db push
+for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
 OWNER_EMAIL=you@example.com pnpm run owner:invite
 pnpm run dev
 ```

@@ -4,18 +4,21 @@ const PORT = Number(process.env.E2E_PORT ?? 4300);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 /**
- * Playwright Test — автоматизований браузерний контур поверх ручного смоку
- * (`docs/architecture/test-contours.md` §8). Єдиний вхід — `pnpm test:e2e`
- * (`scripts/e2e.mjs`): він піднімає локальний Supabase-стек, накатує сід,
- * створює власника-адміна і ЛИШЕ ТОДІ запускає `playwright test` дочірнім
- * процесом — двічі, послідовно, під `VITE_LOCALE=uk-UA` і `en-US`.
+ * Playwright Test — автоматизований браузерний контур
+ * (`docs/architecture/test-contours.md` §8).
+ *
+ * 🔴 ВХОДУ В НЬОГО ЗАРАЗ НЕМАЄ. Оркестратор `scripts/e2e.mjs` (`pnpm test:e2e`)
+ * знесений разом із локальним стеком Supabase: він піднімав стек, накатував
+ * сід і створював власника через service_role GoTrue — жодного з цих
+ * механізмів у контракті v2 не існує. Специ й цей конфіг лишаються як основа;
+ * підйом Postgres-стека, сід і bootstrap власника на Better Auth повертає
+ * контур К6.
  *
  * 🔴 `webServer` тут навмисно НЕ піднімає БД сам: Playwright стартує
  * `webServer` у фазі `createPluginSetupTasks` — РАНІШЕ за будь-який
- * `globalSetup`. Якби стек піднімав `globalSetup`, змінні `VITE_SUPABASE_*`
- * не встигли б потрапити в env процесу `vite dev` — він успадковує env від
- * батьківського `playwright test` у МОМЕНТ СТАРТУ, а не пізніше. Тому весь
- * bootstrap живе поза Playwright, у зовнішньому оркестраторі.
+ * `globalSetup`, тож змінні оточення БД не встигли б потрапити в env процесу
+ * `vite dev` (він успадковує env від батьківського `playwright test` у МОМЕНТ
+ * СТАРТУ, а не пізніше). Тому bootstrap мусить жити поза Playwright.
  */
 export default defineConfig({
   testDir: './tests/e2e',

@@ -49,13 +49,13 @@ const PILOT_OVERLAY_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
  */
 const RENAMES = { gitignore: '.gitignore', 'env.example': '.env.example' };
 
-/** Ключі, які магазин чекає у своєму `.env`. */
-const ENV_KEYS = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_ANON_KEY',
-  'VITE_SUPABASE_PUBLISHABLE_KEY',
-  'VITE_SITE_URL',
-];
+/**
+ * Ключі, які магазин чекає у своєму `.env` — увесь контракт 0.4.1 і нічого
+ * понад нього: клієнтський `VITE_SITE_URL` плюс два серверні. Зайвий ключ у
+ * цьому списку означав би, що пілот збирає магазин із env, якого в продукті
+ * немає, — саме так тут доти жили фіктивні ключі Supabase.
+ */
+const ENV_KEYS = ['VITE_SITE_URL', 'DATABASE_URL', 'BETTER_AUTH_SECRET'];
 
 /**
  * Розгорнути магазин: шаблон пакета + пілотний оверлей + tarball-и та `.env`.

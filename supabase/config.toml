@@ -10,7 +10,7 @@ project_id = "slctbhbsdxaibubqvljz"
 
 [api]
 enabled = true
-# Порт локального REST-ендпойнта (звідси береться VITE_SUPABASE_URL).
+# Порт локального REST-ендпойнта.
 port = 54321
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]

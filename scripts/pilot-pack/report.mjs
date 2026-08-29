@@ -5,6 +5,18 @@
  * оркестрація режимів, без форматування виводу.
  */
 
+/**
+ * Явний пропуск замість тиші: звіт має ПОКАЗАТИ, що гейт не виконувався, і
+ * при цьому не червоніти (`ok: true`). Мовчазна відсутність рядка читається
+ * як «такого гейта немає», а не «у цьому режимі не перевірялось».
+ *
+ * @param {string} reason
+ * @returns {{ ok: boolean; skipped: boolean; details: string[] }}
+ */
+export function skippedGate(reason) {
+  return { ok: true, skipped: true, details: [`SKIP ${reason}`] };
+}
+
 /** Заголовок кроку — щоб лог пілота читався зверху вниз. */
 export function step(title) {
   console.log(`\n[1m▸ ${title}[0m`);

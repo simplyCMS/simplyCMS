@@ -9,9 +9,10 @@
  * exit-код чи відсутність маркерів звіту — FAIL гейта, без мовчазних
  * запасних варіантів (§3 спеки).
  *
- * 🔴 VITE_SUPABASE_* вирізаються з env процесу: `readStoreEnv` мерджить
- * process.env, і ключі з середовища розробника ввімкнули б онлайн-перевірки —
- * смоук пішов би в мережу, а він герметичний за контрактом packaging-сюїти.
+ * 🔴 Ключі env магазину вирізаються з env процесу: `readStoreEnv` мерджить
+ * process.env, тож `.env.local` розробника зробив би результат перевірки env
+ * залежним від машини. Голий скаффолд має виглядати саме голим — інакше
+ * смоук зеленів би на чужому оточенні, а не на власному скаффолді.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -28,6 +29,9 @@ const TEMPLATE_DIR = resolve(
  * intro і перевірка №1 (doctor.mjs), перша оффлайн-перевірка
  * (doctor-checks.mjs) — вона доводить, що прогін дійшов далі пошуку кореня.
  */
+/** Контракт env магазину — рівно те, що гейтить перевірка №5 doctor. */
+const STORE_ENV_KEYS = ['DATABASE_URL', 'BETTER_AUTH_SECRET', 'VITE_SITE_URL'];
+
 const REPORT_MARKERS = [
   'simplycms doctor',
   'Корінь магазину знайдено',
@@ -52,7 +56,7 @@ export async function doctorSmoke(pkgDir, work, version) {
   });
   const env = Object.fromEntries(
     Object.entries(process.env).filter(
-      ([name]) => !name.startsWith('VITE_SUPABASE_'),
+      ([name]) => !STORE_ENV_KEYS.includes(name),
     ),
   );
   const run = spawnSync('node', [join(pkgDir, 'src/index.mjs'), 'doctor'], {

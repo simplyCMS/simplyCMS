@@ -2,18 +2,16 @@
  * Складання скретч-магазину й прогін гейтів.
  *
  * Винесено з `pilot-pack.mjs`: там лишається лише вибір режиму (звідки взяти
- * env і чи піднімати локальний стек), тут — прогін гейтів у порядку, спільному
- * для всіх режимів. Підготовку самого магазину робить `prepare-store.mjs`.
+ * env), тут — прогін гейтів у порядку, спільному для всіх режимів. Підготовку самого магазину робить `prepare-store.mjs`.
  */
 
 import { startStore } from './build.mjs';
 import { prepareStore } from './prepare-store.mjs';
-import { step } from './report.mjs';
+import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateTailwind } from './gate-d.mjs';
-import { gateOwner, skippedOwnerGate } from './gate-e.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
 import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
 
@@ -21,8 +19,7 @@ import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
  * @param {{
  *   storeDir: string; tarballDir: string; port: number;
  *   env: Record<string,string>; reuse: boolean; skipBuild: boolean;
- *   packOnly: boolean; expectedNames: string[] | null;
- *   serviceRoleKey: string | null;
+ *   packOnly: boolean;
  * }} opts
  * @returns {Promise<[string, { ok: boolean; details: string[] }][]>}
  */
@@ -47,59 +44,33 @@ export async function runGates(opts) {
   step('Gate TOOL — tarball @simplycms/cli');
   results.push(['TOOL', await toolPkgSmoke()]);
 
-  if (opts.packOnly) {
-    // Gate B у `--pack-only` не існує (сервер не піднімається), а Gate E має
-    // бути ВИДИМО пропущений: мовчазна відсутність рядка читається як «немає
-    // такого гейта», а не «не перевірялось у цьому режимі».
-    results.push([
-      'E',
-      skippedOwnerGate(
-        'Gate E — пропущено: --pack-only не піднімає ні сервер, ні БД',
-      ),
-    ]);
-  } else {
-    results.push(...(await runServerGates(opts)));
-  }
+  // Gate E (bootstrap власника) знято разом із локальним стеком Supabase —
+  // він жив на service_role-ключі GoTrue. Рядок лишається видимим, щоб звіт
+  // не виглядав так, ніби owner-флоу колись покривався й тихо зник.
+  results.push([
+    'E',
+    skippedGate(
+      'Gate E — знято разом зі стеком Supabase: owner-флоу на Better Auth ' +
+        'повертає контур К6',
+    ),
+  ]);
+
+  // Gate B потребує живого сервера і живої БД, тож у `--pack-only` не існує.
+  if (!opts.packOnly) results.push(await gateServer(opts));
   return results;
 }
 
 /**
- * Гейти, яким потрібен ЖИВИЙ сервер скретча — Gate B і Gate E.
+ * Gate B — єдиний гейт, якому потрібен ЖИВИЙ сервер скретча: він піднімається
+ * тут і гаситься у `finally`, щоб процес не лишався висіти після падіння.
  *
- * 🔴 Обидва ділять ОДНЕ вікно життя процесу: сервер піднімається тут і гаситься
- * у `finally`. Викликати Gate E після повернення з окремого «runGateB» не можна
- * — сервер там уже вбито, і `fetch('/auth/confirm')` падав би на ECONNREFUSED.
- *
- * @returns {Promise<[string, { ok: boolean; details: string[] }][]>}
+ * @returns {Promise<[string, { ok: boolean; details: string[] }]>}
  */
-async function runServerGates({
-  storeDir,
-  port,
-  env,
-  expectedNames,
-  serviceRoleKey,
-}) {
+async function gateServer({ storeDir, port, env }) {
   step(`Gate B — production-запуск на порту ${port}`);
   const server = await startStore(storeDir, port);
   try {
-    const results = [['B', await gateHttp(port, env, { expectedNames })]];
-
-    if (serviceRoleKey) {
-      step('Gate E — bootstrap власника');
-      results.push([
-        'E',
-        await gateOwner({ storeDir, port, env, serviceRoleKey }),
-      ]);
-    } else {
-      results.push([
-        'E',
-        skippedOwnerGate(
-          'Gate E — пропущено: потрібен --e2e (service_role-ключ дає лише ' +
-            'локальний стек; проти живої БД owner-флоу не ганяємо)',
-        ),
-      ]);
-    }
-    return results;
+    return ['B', await gateHttp(port, env)];
   } finally {
     server.stop();
   }

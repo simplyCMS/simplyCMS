@@ -6,59 +6,51 @@
  * що `createServerFn` із пакета працює в PRODUCTION-манифесті, а не лише
  * у dev-режимі монорепо.
  *
- * 🔴 Два режими очікувань:
- *  - проти ДОВІЛЬНОЇ бази (`pnpm pilot`) — назви беруться з живої БД, і
- *    достатньо, щоб у HTML знайшлася хоч одна: більшого про чужі дані сказати
- *    не можна;
- *  - на СІДІ (`pnpm pilot:e2e`) — очікування точні: у HTML мають бути ВСІ
- *    товари з `seed-fixtures.mjs`. Тільки так гейт ловить регресію рендера,
- *    а не коливання даних.
+ * 🔴 Очікувані назви беруться з тієї самої бази, з якою працює магазин, —
+ * прямим SQL за `DATABASE_URL`. HTTP-API до БД у контракті v2 немає взагалі
+ * (PostgREST зник разом із Supabase), тож іншого способу дізнатися, ЩО має
+ * опинитися в HTML, не існує. База довільна, тому достатньо, щоб у HTML
+ * знайшлася хоч одна назва: більшого про чужі дані сказати не можна.
  */
 
-/** Товари з БД — очікувані рядки для SSR-перевірок довільної бази. */
+import pg from 'pg';
+
+/** Товари з БД — очікувані рядки для SSR-перевірок. */
 export async function expectedProducts(env) {
-  const url = `${env.VITE_SUPABASE_URL}/rest/v1/products?select=name&is_active=eq.true&limit=50`;
-  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
-  const res = await fetch(url, { headers: { apikey: key } });
-  if (!res.ok)
-    throw new Error(`Gate B: REST-запит товарів впав (${res.status})`);
-  // Імена зі спецсимволами HTML пропускаємо — React їх екранує.
-  return (await res.json())
-    .map((row) => row.name)
-    .filter((name) => typeof name === 'string' && !/[&<>"']/.test(name));
+  const client = new pg.Client({ connectionString: env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      'select name from public.products where is_active = true limit 50',
+    );
+    // Імена зі спецсимволами HTML пропускаємо — React їх екранує.
+    return rows
+      .map((row) => row.name)
+      .filter((name) => typeof name === 'string' && !/[&<>"']/.test(name));
+  } finally {
+    await client.end();
+  }
 }
 
 /**
- * Чи знайшлися очікувані назви в HTML.
+ * Чи знайшлася в HTML хоч одна очікувана назва.
  *
  * @param {string} html
  * @param {string[]} names
- * @param {boolean} exact точний режим — потрібні ВСІ назви, а не хоча б одна
  */
-function matchNames(html, names, exact) {
-  if (!exact) {
-    const hit = names.find((name) => html.includes(name));
-    return { passed: Boolean(hit), fact: `назва товару: ${hit ?? '—'}` };
-  }
-  const missing = names.filter((name) => !html.includes(name));
-  return {
-    passed: names.length > 0 && missing.length === 0,
-    fact: `товарів сіду ${names.length - missing.length}/${names.length}${
-      missing.length > 0 ? `, немає: ${missing.join(', ')}` : ''
-    }`,
-  };
+function matchNames(html, names) {
+  const hit = names.find((name) => html.includes(name));
+  return { passed: Boolean(hit), fact: `назва товару: ${hit ?? '—'}` };
 }
 
 /**
  * @param {number} port
  * @param {Record<string,string>} env
- * @param {{ expectedNames?: string[] | null }} [opts] точні очікування сіду
  * @returns {Promise<{ ok: boolean; details: string[] }>}
  */
-export async function gateHttp(port, env, { expectedNames = null } = {}) {
+export async function gateHttp(port, env) {
   const base = `http://127.0.0.1:${port}`;
-  const exact = Array.isArray(expectedNames);
-  const names = exact ? expectedNames : await expectedProducts(env);
+  const names = await expectedProducts(env);
   const details = [];
   let ok = true;
 
@@ -69,7 +61,7 @@ export async function gateHttp(port, env, { expectedNames = null } = {}) {
   };
 
   const home = await fetch(`${base}/`);
-  const homeMatch = matchNames(await home.text(), names, exact);
+  const homeMatch = matchNames(await home.text(), names);
   check(
     'GET /',
     home.status === 200 && homeMatch.passed,
@@ -78,7 +70,7 @@ export async function gateHttp(port, env, { expectedNames = null } = {}) {
 
   const catalog = await fetch(`${base}/catalog`);
   const catalogHtml = await catalog.text();
-  const catalogMatch = matchNames(catalogHtml, names, exact);
+  const catalogMatch = matchNames(catalogHtml, names);
   const hasPrice = catalogHtml.includes('₴');
   check(
     'GET /catalog',

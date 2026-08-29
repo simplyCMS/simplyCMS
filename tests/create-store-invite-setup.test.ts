@@ -50,6 +50,12 @@ describe('create-store: інструкція «призначити власни
     }
 
     expect(out).toContain('owner:invite');
+    // 🔴 Накат схеми — psql по канону міграцій. Стара порада `supabase db push`
+    // не просто застаріла: вона відхиляє нумеровані імена канону, тож власник
+    // упирався б у помилку CLI замість накоченої схеми.
+    expect(out).toContain('supabase/migrations/*.sql');
+    expect(out).toContain('psql');
+    expect(out).not.toContain('supabase db push');
     expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(out).toContain('DATABASE_URL');
     expect(out).toContain('BETTER_AUTH_SECRET');

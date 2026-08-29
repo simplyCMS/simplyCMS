@@ -1,4 +1,5 @@
 // Розгортання шаблону: копія, перейменування службових імен, підстановки.
+import { randomBytes } from 'node:crypto';
 import {
   cpSync,
   existsSync,
@@ -47,8 +48,7 @@ export function renderTemplate(tpl, { storeName, version }) {
  * @property {string} targetDir
  * @property {string} storeName Імʼя npm-пакета магазину.
  * @property {string} version Версія пакетів ядра (`simplycms`, `@simplycms/*`).
- * @property {string} [supabaseUrl]
- * @property {string} [supabaseKey]
+ * @property {string} [databaseUrl] DSN Postgres для `.env.local`.
  */
 
 /** @param {ScaffoldInput} input */
@@ -74,15 +74,18 @@ export async function scaffold(input) {
       renderTemplate(readFileSync(path, 'utf8'), { storeName, version }),
     );
   }
-  // .env.local пишемо тільки коли задані обидва значення: половинчастий файл
-  // маскує «не налаштовано» під «налаштовано». service_role-ключа тут немає
-  // за визначенням — він живе лише у змінній середовища на час owner:invite.
-  if (input.supabaseUrl && input.supabaseKey) {
+  // .env.local пишемо лише коли відоме підключення до БД: без нього файл був
+  // би половинчастим і маскував «не налаштовано» під «налаштовано».
+  //
+  // 🔴 BETTER_AUTH_SECRET генерується ТУТ, а не лишається плейсхолдером:
+  // секрет підпису сесій, однаковий у всіх магазинів, — це не налаштування,
+  // а вразливість. Значення локальне й нікуди не надсилається.
+  if (input.databaseUrl) {
     writeFileSync(
       join(targetDir, '.env.local'),
       [
-        `VITE_SUPABASE_URL=${input.supabaseUrl}`,
-        `VITE_SUPABASE_PUBLISHABLE_KEY=${input.supabaseKey}`,
+        `DATABASE_URL=${input.databaseUrl}`,
+        `BETTER_AUTH_SECRET=${randomBytes(32).toString('base64')}`,
         'VITE_SITE_URL=http://localhost:3000',
         '',
       ].join('\n'),

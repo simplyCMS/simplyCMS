@@ -24,7 +24,9 @@ export interface SimplyCmsSeoConfig {
 }
 
 export interface SimplyCmsConfig {
-  supabase: { url: string; anonKey: string };
+  // 🔴 Поля `supabase` тут більше немає: магазин ходить у БД лише сервером
+  // (`simplycms/db`), а браузер до неї не звертається взагалі. Ключі клієнта
+  // до бази — це і був той контракт, який 0.4.1 знімає.
   seo: SimplyCmsSeoConfig;
   locale: string;
   currency: string;

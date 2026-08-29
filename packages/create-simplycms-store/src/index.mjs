@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Вхід CLI: `pnpm create simplycms-store my-shop`.
-// Розгортає тонку збірку магазину зі шаблону пакета й підключає Supabase.
+// Розгортає тонку збірку магазину зі шаблону пакета й заповнює `.env.local`.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,8 +63,7 @@ async function main() {
     targetDir,
     storeName,
     version: readVersion(),
-    supabaseUrl: options.supabaseUrl,
-    supabaseKey: options.supabaseKey,
+    databaseUrl: options.databaseUrl,
   });
   log.success(`Магазин «${storeName}» розгорнуто: ${targetDir}`);
 
@@ -79,7 +78,7 @@ async function main() {
   printNextSteps({
     dirLabel: options.storeName,
     installed,
-    hasEnv: Boolean(options.supabaseUrl && options.supabaseKey),
+    hasEnv: Boolean(options.databaseUrl),
     skillsPending: skills.pending,
   });
   outro('Готово.');

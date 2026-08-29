@@ -11,18 +11,14 @@ import { findPlaceholders } from '../scripts/pilot-pack/placeholder-scan.mjs';
 
 // Чисті функції CLI-скаффолдера: розбір аргументів, підстановки в манифест,
 // розгортання шаблону. Ті самі функції викликає `src/index.mjs`.
+//
+// 🔴 Supabase-прапорців у CLI більше немає: магазин отримує підключення до
+// Postgres, а не ключі клієнта до чужого HTTP-API.
+const DSN = 'postgresql://app_runtime:pw@localhost:5432/postgres';
 describe('create-store CLI', () => {
   it('resolveOptions: прапорці перекривають промпти', () => {
     const o = resolveOptions(
-      [
-        'my-shop',
-        '--supabase-url',
-        'https://x.supabase.co',
-        '--supabase-key',
-        'sb_pk',
-        '--no-install',
-        '--no-git',
-      ],
+      ['my-shop', '--database-url', DSN, '--no-install', '--no-git'],
       {},
       // 🔴 isTTY = true: інакше клаузула `!isTTY` сама дає yes:true й ховає
       // будь-яку регресію в решті джерел цього прапорця.
@@ -30,8 +26,7 @@ describe('create-store CLI', () => {
     );
     expect(o).toMatchObject({
       storeName: 'my-shop',
-      supabaseUrl: 'https://x.supabase.co',
-      supabaseKey: 'sb_pk',
+      databaseUrl: DSN,
       install: false,
       git: false,
       yes: false,
@@ -55,12 +50,12 @@ describe('create-store CLI', () => {
 
   it('resolveOptions: значення прапорця не з’їдає позиційний аргумент', () => {
     const o = resolveOptions(
-      ['--supabase-url', 'https://x.supabase.co', '../shops/my-shop'],
+      ['--database-url', DSN, '../shops/my-shop'],
       {},
       true,
     );
     expect(o.storeName).toBe('../shops/my-shop');
-    expect(o.supabaseUrl).toBe('https://x.supabase.co');
+    expect(o.databaseUrl).toBe(DSN);
     expect(o.yes).toBe(false);
     expect(o.install).toBe(true);
     expect(o.git).toBe(true);
@@ -72,28 +67,14 @@ describe('create-store CLI', () => {
 
   it('resolveOptions: прапорець не ковтає наступний прапорець', () => {
     expect(() =>
-      resolveOptions(
-        ['my-shop', '--supabase-url', '--no-git', '--supabase-key', 'sb_x'],
-        {},
-        true,
-      ),
-    ).toThrow(/--supabase-url потребує значення/);
-  });
-
-  it('resolveOptions: прапорець не з’їдає інший прапорець і не краде теку', () => {
-    expect(() =>
-      resolveOptions(
-        ['--supabase-url', '--supabase-key', 'sb_x', 'shop'],
-        {},
-        true,
-      ),
-    ).toThrow(/--supabase-url потребує значення/);
+      resolveOptions(['my-shop', '--database-url', '--no-git'], {}, true),
+    ).toThrow(/--database-url потребує значення/);
   });
 
   it('resolveOptions: прапорець без значення в кінці argv — помилка', () => {
     expect(() =>
-      resolveOptions(['my-shop', '--supabase-key'], {}, true),
-    ).toThrow(/--supabase-key потребує значення/);
+      resolveOptions(['my-shop', '--database-url'], {}, true),
+    ).toThrow(/--database-url потребує значення/);
   });
 
   it('renderTemplate підставляє імʼя і версію в пакети ядра', () => {
@@ -118,16 +99,20 @@ describe('create-store CLI', () => {
       // літерал `"0.1.0"`, дописаний рукою в `package.json.tpl`, рендерився б
       // у те саме значення — і асерт нижче його не відрізнив би.
       version: '9.9.9-sentinel',
-      supabaseUrl: 'https://x.supabase.co',
-      supabaseKey: 'sb_pk',
+      databaseUrl: DSN,
     });
     expect(existsSync(join(target, 'package.json'))).toBe(true);
     expect(existsSync(join(target, '.gitignore'))).toBe(true);
     expect(existsSync(join(target, '.env.example'))).toBe(true);
     expect(existsSync(join(target, 'package.json.tpl'))).toBe(false);
-    expect(readFileSync(join(target, '.env.local'), 'utf8')).toContain(
-      'VITE_SUPABASE_URL=https://x.supabase.co',
-    );
+    const envLocal = readFileSync(join(target, '.env.local'), 'utf8');
+    expect(envLocal).toContain(`DATABASE_URL=${DSN}`);
+    expect(envLocal).toContain('VITE_SITE_URL=http://localhost:3000');
+    // 🔴 Секрет підпису сесій генерується, а не приїжджає літералом: однаковий
+    // у всіх магазинів секрет — вразливість, а не налаштування за замовчуванням.
+    const secret = /^BETTER_AUTH_SECRET=(.+)$/m.exec(envLocal)?.[1] ?? '';
+    expect(secret.length).toBeGreaterThanOrEqual(32);
+    expect(envLocal).not.toMatch(/SUPABASE/);
     const manifest = JSON.parse(
       readFileSync(join(target, 'package.json'), 'utf8'),
     );
@@ -191,7 +176,7 @@ describe('create-store CLI', () => {
     expect(findPlaceholders(target)).toEqual([]);
   });
 
-  it('scaffold: без ключів Supabase .env.local не створюється', async () => {
+  it('scaffold: без DATABASE_URL .env.local не створюється', async () => {
     const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'demo');
     await scaffold({
       templateDir: 'packages/create-simplycms-store/template',

@@ -2,8 +2,7 @@
  * Опції запуску скаффолдера.
  * @typedef {object} CliOptions
  * @property {string} [storeName] Тека призначення (позиційний аргумент).
- * @property {string} [supabaseUrl]
- * @property {string} [supabaseKey]
+ * @property {string} [databaseUrl] DSN Postgres → у `.env.local`.
  * @property {boolean} install
  * @property {boolean} git
  * @property {boolean} yes Неінтерактивний режим.
@@ -11,8 +10,8 @@
 
 /**
  * Значення прапорця = наступний argv. Прапорець, що ковтає сусіда, тихо ламає
- * запуск: `--supabase-url --no-git` записало б «--no-git» у `.env.local`, а
- * `--supabase-url --supabase-key sb_x shop` розгорнуло б магазин у теці «sb_x».
+ * запуск: `--database-url --no-git` записало б «--no-git» у `.env.local`, а
+ * `--database-url shop` розгорнуло б магазин у теці, якої користувач не називав.
  * Тому відсутнє значення й значення, схоже на прапорець, — помилка.
  * @param {string[]} argv
  * @param {number} index Позиція самого прапорця.
@@ -47,11 +46,8 @@ export function resolveOptions(
     if (arg === '--yes' || arg === '-y') options.yes = true;
     else if (arg === '--no-install') options.install = false;
     else if (arg === '--no-git') options.git = false;
-    else if (arg === '--supabase-url') {
-      options.supabaseUrl = requireValue(argv, i, arg);
-      i += 1;
-    } else if (arg === '--supabase-key') {
-      options.supabaseKey = requireValue(argv, i, arg);
+    else if (arg === '--database-url') {
+      options.databaseUrl = requireValue(argv, i, arg);
       i += 1;
     } else if (arg.startsWith('-'))
       throw new Error(`Невідомий прапорець: ${arg}`);

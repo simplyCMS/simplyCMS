@@ -1,10 +1,15 @@
 /**
  * Env скретч-магазину: що саме потрапляє в його `.env` перед `vite build`.
  *
- * Винесено зі `scaffold.mjs` окремим модулем, бо джерело env залежить від
- * РЕЖИМУ пілота, а не від розкладки файлів магазину:
- *  - `pilot` / майбутній `pilot:e2e` — живі ключі (прогін реально ходить у БД);
- *  - `pilot:pack` — плейсхолдери (гейти пакувальності до БД не звертаються).
+ * 🔴 Контракт магазину (0.4.1) — рівно три ключі: `VITE_SITE_URL` (клієнтський,
+ * запікається в бандл), `DATABASE_URL` і `BETTER_AUTH_SECRET` (серверні,
+ * читаються з `process.env` у рантаймі). Supabase-ключів тут більше немає —
+ * і це не косметика: доти пілот підставляв ФІКТИВНІ ключі Supabase, тож
+ * лишався зеленим саме на тому класі регресії, який ловить реальний магазин.
+ *
+ * Джерело env залежить від РЕЖИМУ пілота, а не від розкладки файлів магазину:
+ *  - `pilot` — живі значення з кореневого `.env.local` (прогін ходить у БД);
+ *  - `pilot:pack` — значення без БД (гейти пакувальності до неї не звертаються).
  */
 
 import { readFileSync } from 'node:fs';
@@ -13,74 +18,59 @@ import { join, resolve } from 'node:path';
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 
 /**
- * Плейсхолдери для режиму `--pack-only`.
+ * Значення для режиму `--pack-only`.
  *
  * Пакувальність (резолв tarball-ів, route tree з node_modules, bundle-guard,
  * Tailwind) не залежить від жодного рядка в БД: `vite build` лише вшиває
- * значення `VITE_*` у бандл, запитів не робить. Значення мають бути
- * СИНТАКСИЧНО валідними (URL + ключ), інакше фабрики Supabase падають ще на
- * етапі імпорту модуля.
+ * `VITE_*` у бандл, запитів не робить, а серверні ключі читаються аж у
+ * рантаймі. Значення мусять бути СИНТАКСИЧНО валідними — DSN, який `pg` вміє
+ * розібрати, і секрет непорожньої довжини, — інакше збірка впаде не на тому,
+ * що перевіряється. Живого сервера цей режим не піднімає, тож підключення за
+ * цим DSN ніхто не відкриває.
  */
-const PLACEHOLDER_SUPABASE = {
-  VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
-  VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_pilot_pack_placeholder',
+const PACK_ONLY_ENV = {
+  DATABASE_URL: 'postgresql://app_runtime:pilot-pack@127.0.0.1:5432/postgres',
+  BETTER_AUTH_SECRET: 'pilot-pack-secret-not-used-outside-this-scratch-store',
 };
 
 /**
  * Джерело env для магазину.
  *
- * Локально — кореневий `.env.local` (живі ключі dev-проєкту). Змінні
- * `PILOT_SUPABASE_URL`/`PILOT_SUPABASE_KEY` мають пріоритет над ним — щоб
- * пілота можна було направити на іншу базу, не чіпаючи `.env.local`.
+ * Локально — кореневий `.env.local` (живі значення dev-стенда). Змінні
+ * `PILOT_DATABASE_URL`/`PILOT_BETTER_AUTH_SECRET` мають пріоритет над ним —
+ * щоб пілота можна було направити на іншу базу, не чіпаючи `.env.local`.
  *
- * 🔴 CI-job-а для пілота більше немає (рішення власника 2026-08-01: гейт не має
+ * 🔴 CI-job-и для пілота немає (рішення власника 2026-08-01: гейт не має
  * залежати від зовнішнього стану БД), тож ці змінні — суто локальний
  * інструмент, а не мапінг GitHub-секретів.
  *
- * 🔴 Вимога ключів — НЕ глобальна: живі ключі потрібні лише режимам, які
- * реально ходять у БД. `--pack-only` бере плейсхолдери, тож не залежить ні від
- * `.env.local`, ні від секретів CI.
- *
  * @param {number} port порт, на якому підніметься магазин (іде у VITE_SITE_URL)
- * @param {{ requireSupabase?: boolean }} [opts]
+ * @param {{ requireDb?: boolean }} [opts]
  */
-export function resolvePilotEnv(port, { requireSupabase = true } = {}) {
+export function resolvePilotEnv(port, { requireDb = true } = {}) {
   const siteUrl = `http://127.0.0.1:${port}`;
-  if (!requireSupabase) {
-    return { ...PLACEHOLDER_SUPABASE, VITE_SITE_URL: siteUrl };
-  }
+  if (!requireDb) return { ...PACK_ONLY_ENV, VITE_SITE_URL: siteUrl };
 
-  const secretUrl = process.env.PILOT_SUPABASE_URL;
-  const secretKey = process.env.PILOT_SUPABASE_KEY;
-  const local =
-    secretUrl && secretKey ? {} : parseDotEnv(join(REPO_ROOT, '.env.local'));
+  const local = parseDotEnv(join(REPO_ROOT, '.env.local'));
+  const databaseUrl = process.env.PILOT_DATABASE_URL || local.DATABASE_URL;
+  const secret =
+    process.env.PILOT_BETTER_AUTH_SECRET || local.BETTER_AUTH_SECRET;
 
-  const resolved =
-    secretUrl && secretKey
-      ? {
-          VITE_SUPABASE_URL: secretUrl,
-          VITE_SUPABASE_ANON_KEY: secretKey,
-          VITE_SUPABASE_PUBLISHABLE_KEY: secretKey,
-          VITE_SITE_URL: siteUrl,
-        }
-      : {
-          VITE_SUPABASE_URL: local.VITE_SUPABASE_URL ?? '',
-          VITE_SUPABASE_ANON_KEY: local.VITE_SUPABASE_ANON_KEY ?? '',
-          VITE_SUPABASE_PUBLISHABLE_KEY:
-            local.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-          VITE_SITE_URL: siteUrl,
-        };
-
-  const hasKey =
-    resolved.VITE_SUPABASE_PUBLISHABLE_KEY || resolved.VITE_SUPABASE_ANON_KEY;
-  if (!resolved.VITE_SUPABASE_URL || !hasKey) {
+  const missing = [];
+  if (!databaseUrl) missing.push('DATABASE_URL');
+  if (!secret) missing.push('BETTER_AUTH_SECRET');
+  if (missing.length > 0) {
     throw new Error(
-      'Немає ключів Supabase: очікую .env.local у корені або ' +
-        'PILOT_SUPABASE_URL/PILOT_SUPABASE_KEY. Для гейтів пакувальності без ' +
-        'БД використовуй `pnpm pilot:pack`.',
+      `Немає серверних ключів магазину (${missing.join(', ')}): очікую ` +
+        '.env.local у корені або PILOT_DATABASE_URL/PILOT_BETTER_AUTH_SECRET. ' +
+        'Для гейтів пакувальності без БД використовуй `pnpm pilot:pack`.',
     );
   }
-  return resolved;
+  return {
+    DATABASE_URL: databaseUrl,
+    BETTER_AUTH_SECRET: secret,
+    VITE_SITE_URL: siteUrl,
+  };
 }
 
 /** Мінімальний парсер `.env` (без залежностей: KEY=VALUE, `#` — коментар). */

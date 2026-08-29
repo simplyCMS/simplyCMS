@@ -11,28 +11,26 @@
  * 🔴 Режими розділені за ПРИРОДОЮ перевірки, бо змішувати їх — значить робити
  * детерміністичний гейт заручником даних:
  *
- * | Режим              | Команда           | Гейти              | Джерело даних        |
- * |--------------------|-------------------|--------------------|----------------------|
- * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI, TOOL | нічого (плейсхолдери)|
- * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI, TOOL     | `.env.local`/секрети |
- * | e2e на сіді        | `pnpm pilot:e2e`  | A-E, CLI, TOOL     | стек + seed.sql      |
+ * | Режим              | Команда           | Гейти              | Джерело даних     |
+ * |--------------------|-------------------|--------------------|-------------------|
+ * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI, TOOL | нічого (без БД)   |
+ * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI, TOOL     | `.env.local`      |
  *
- * Gate E (bootstrap власника) є ЛИШЕ в `--e2e`: він потребує service_role-ключа
- * і пише в auth.users, а робити це проти чужої живої БД неприпустимо. В інших
- * режимах він у звіті позначений SKIP — видимо, а не мовчки.
+ * 🔴 Режиму `--e2e` більше немає: він піднімав локальний стек Supabase, а
+ * магазин контракту v2 ходить у чистий Postgres — стек не був би ні джерелом
+ * даних магазину, ні джерелом auth. Разом із ним знято Gate E (bootstrap
+ * власника через service_role): owner-флоу на Better Auth повертає контур К6.
  *
  * A/C/D, CLI і TOOL (резолв tarball-ів, route tree з node_modules, відсутність
  * серверного вантажу в клієнті, Tailwind, вміст tarball-ів скаффолдера й
- * @simplycms/cli) до БД не звертаються — тому `--pack-only` не
- * потребує ані ключів, ані піднятого сервера й ніколи не червоніє через зміну
- * даних. Gate B бере назви товарів із бази: у `pilot` — з чужої живої (тому
- * достатньо збігу хоч однієї назви), у `pilot:e2e` — із детерміністичного сіду
- * (`supabase/seed.sql`), тому очікування там ТОЧНІ.
+ * @simplycms/cli) до БД не звертаються — тому `--pack-only` не потребує ані
+ * ключів, ані піднятого сервера й ніколи не червоніє через зміну даних. Gate B
+ * бере назви товарів із живої бази за `DATABASE_URL`, тому там достатньо збігу
+ * хоч однієї назви: більшого про чужі дані сказати не можна.
  *
  * Використання:
  *   node scripts/pilot-pack.mjs               # повний прогін (потрібна БД)
  *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, CLI, TOOL (без БД)
- *   node scripts/pilot-pack.mjs --e2e         # gates A-E, CLI, TOOL проти локального стеку
  *   node scripts/pilot-pack.mjs --keep        # не прибирати /tmp-магазин
  *   node scripts/pilot-pack.mjs --skip-build  # dist пакетів уже свіжий
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
@@ -42,13 +40,6 @@ import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { resolvePilotEnv } from './pilot-pack/env.mjs';
-import {
-  assertLocalStackTooling,
-  readLocalStack,
-  startLocalStack,
-  stopLocalStack,
-} from './pilot-pack/e2e.mjs';
-import { seedProductNames } from './pilot-pack/seed-fixtures.mjs';
 import { freePort } from './pilot-pack/build.mjs';
 import { runGates } from './pilot-pack/run.mjs';
 import { report, step } from './pilot-pack/report.mjs';
@@ -60,7 +51,6 @@ const TARBALL_DIR = join(ROOT, 'tarballs');
 const keep = process.argv.includes('--keep');
 const reuse = process.argv.includes('--reuse');
 const packOnly = process.argv.includes('--pack-only');
-const e2e = process.argv.includes('--e2e');
 const skipBuild = process.argv.includes('--skip-build');
 
 /**
@@ -71,42 +61,31 @@ const PACK_ONLY_PORT = 3000;
 
 /** Людський опис активного режиму для шапки логу. */
 function describeMode() {
-  if (packOnly) return `--pack-only (${describeScope()}, без Supabase)`;
-  if (e2e) return `--e2e (${describeScope()}, локальний стек + сід)`;
-  return `повний (${describeScope()}, проти живої БД)`;
+  return packOnly
+    ? `--pack-only (${describeScope()}, без БД)`
+    : `повний (${describeScope()}, проти живої БД)`;
 }
 
 /** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
 function describeScope() {
-  if (packOnly) return 'гейти A/C/D + CLI/TOOL';
-  // Gate E потребує service_role, який дає лише локальний стек, — тож у прогоні
-  // проти живої БД він показується як пропущений, а не як провалений.
-  return e2e
-    ? 'гейти A-E + CLI/TOOL'
-    : 'гейти A-D + CLI/TOOL (E пропускається)';
+  return packOnly ? 'гейти A/C/D + CLI/TOOL' : 'гейти A-D + CLI/TOOL (E знято)';
 }
 
 async function main() {
-  if (packOnly && e2e) {
-    throw new Error('--pack-only і --e2e взаємовиключні: обери один режим.');
+  // Прапорець знято разом із локальним стеком Supabase. Мовчазне ігнорування
+  // дало б прогін, який виглядає як e2e, але ним не є, — тому падаємо.
+  if (process.argv.includes('--e2e')) {
+    throw new Error(
+      'Режим --e2e знято: він піднімав локальний стек Supabase, а магазин ' +
+        'контракту v2 працює на чистому Postgres. E2E-контур (разом із Gate E ' +
+        '— bootstrap власника на Better Auth) повертає трек К6. Доступні ' +
+        'режими: `pnpm pilot:pack` і `pnpm pilot`.',
+    );
   }
-  // Перевірка тулінгу — ДО важкої роботи: краще впасти зрозумілим
-  // повідомленням за секунду, ніж після кількох хвилин збірки.
-  if (e2e) assertLocalStackTooling();
 
   const port = packOnly ? PACK_ONLY_PORT : await freePort();
-  let stackUp = false;
   try {
-    if (e2e) {
-      step('Локальний стек Supabase: start + db reset (міграції + seed.sql)');
-      startLocalStack();
-      stackUp = true;
-    }
-    // service_role живе лише в памʼяті процесу пілота і в env дочірнього
-    // owner-invite — у `.env` магазину він не потрапляє (див. readLocalStack).
-    const stack = e2e ? readLocalStack(port) : null;
-    const env =
-      stack?.env ?? resolvePilotEnv(port, { requireSupabase: !packOnly });
+    const env = resolvePilotEnv(port, { requireDb: !packOnly });
     step(`Режим: ${describeMode()}`);
 
     const results = await runGates({
@@ -117,13 +96,9 @@ async function main() {
       reuse,
       skipBuild,
       packOnly,
-      expectedNames: e2e ? seedProductNames() : null,
-      serviceRoleKey: stack?.serviceRoleKey ?? null,
     });
     return report(results, { scope: describeScope() });
   } finally {
-    // 🔴 Стек глушимо завжди: інакше контейнери лишаться висіти після падіння.
-    if (stackUp) stopLocalStack();
     if (!keep) rmSync(STORE_DIR, { recursive: true, force: true });
   }
 }
