@@ -28,6 +28,37 @@
 - Breaking change дозволений і бажаний: клієнтів і магазинів немає, перехідних шимів не робимо.
 - Коміти українською, `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
 
+## Передумова оточення (перевірити ДО Task 1)
+
+Задачі 1–3 виконуються без бази; **Task 4 і весь DoD потребують живого
+Postgres**. Харнес резолвить підключення двома шляхами (`test-harness/pg/up.mjs`):
+`PG_HARNESS_URL` або ефемерний `initdb`/`pg_ctl`.
+
+🔴 Ефемерний фолбек працює **не скрізь** — це відкритий борг К1а-2
+(«перевірено лише в цьому контейнері: root + доступний `su postgres` +
+PG у стандартному шляху»). Якщо `command -v initdb` порожній, фолбек
+недоступний і `PG_HARNESS_URL` **обов'язковий**.
+
+```bash
+# 1. Чи є локальні бінарники PG (якщо так — фолбек спрацює сам):
+for b in initdb pg_ctl psql; do printf '%-8s %s\n' "$b" "$(command -v $b || echo MISSING)"; done
+
+# 2. Якщо MISSING — підняти/знайти контейнер і взяти з нього доступи:
+docker ps --format '{{.Names}}\t{{.Image}}\t{{.Ports}}' | grep -i postgres
+docker inspect <ім'я> --format '{{range .Config.Env}}{{println .}}{{end}}' | grep POSTGRES_
+
+# 3. Скласти рядок і ПЕРЕВІРИТИ конект перед роботою:
+export PG_HARNESS_URL='postgresql://<user>@127.0.0.1:<порт>/postgres'
+node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.env.PG_HARNESS_URL});c.connect().then(()=>c.query('select 1')).then(()=>{console.log('OK');return c.end()}).catch(e=>{console.error('FAIL',e.message);process.exit(1)})"
+```
+
+Приклад робочого стенда цього репозиторію (станом на 2026-08-29):
+контейнер `simplycms-041-pg`, образ `pgvector/pgvector:pg17`, trust-auth,
+користувач `pgtest`, порт `55433` →
+`PG_HARNESS_URL='postgresql://pgtest@127.0.0.1:55433/postgres'`.
+🔴 Це **знімок середовища, не контракт** — порт і користувач у іншому
+оточенні інші, тому крок 2 обов'язковий, а не декоративний.
+
 ---
 
 ## File Structure
@@ -168,7 +199,7 @@ Run: `pnpm test`
 Expected: PASS. Далі — живий доказ, бо тест схеми цього шляху не виконує:
 
 ```bash
-PG_HARNESS_URL=postgresql://$USER@127.0.0.1:5432/postgres pnpm db:demo
+PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 pnpm build && PORT=3141 pnpm start &
 curl -s localhost:3141/api/health
 ```
@@ -283,8 +314,8 @@ Run: `pnpm test:schema`
 Expected: PASS. Потім двічі поспіль — сід ідемпотентний:
 
 ```bash
-PG_HARNESS_URL=postgresql://$USER@127.0.0.1:5432/postgres pnpm db:demo
-PG_HARNESS_URL=postgresql://$USER@127.0.0.1:5432/postgres pnpm db:demo
+PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
+PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 ```
 Expected: другий прогін без помилок, кількість рядків не подвоїлась.
 
@@ -616,7 +647,7 @@ git checkout packages/simplycms/migrations/0001_init.sql
 
 ```bash
 pnpm build && pnpm test && pnpm test:schema
-PG_HARNESS_URL=postgresql://$USER@127.0.0.1:5432/postgres pnpm db:demo
+PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 pnpm build && PORT=3141 pnpm start &
 curl -s -o /dev/null -w '%{http_code}\n' localhost:3141/ localhost:3141/catalog
 ```
@@ -658,7 +689,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 3. **Живий прогін, а не тести** (канон репо — доводить прогін, не зелений CI):
    ```bash
-   PG_HARNESS_URL=postgresql://$USER@127.0.0.1:5432/postgres pnpm db:demo
+   PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
    pnpm build && PORT=3141 pnpm start &
    curl -s -o /dev/null -w '%{http_code} ' localhost:3141/ localhost:3141/catalog \
      localhost:3141/cart localhost:3141/api/health; echo
