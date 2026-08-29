@@ -1,8 +1,3 @@
-import { useState, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import { Camera, Loader2, Trash2 } from 'lucide-react';
-import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
 
 interface AvatarUploadProps {
@@ -15,37 +10,26 @@ interface AvatarUploadProps {
 }
 
 /**
- * 🔴 TODO(К4): ЄДИНИЙ компонент вітрини, який ще ходить у Supabase — і він
- * НЕ ПРАЦЮЄ на чистому Postgres.
+ * 🔴 TODO(К4): завантаження аватара ВИМКНЕНЕ до порту сховища файлів.
  *
  * Аватар — це файл, а не рядок таблиці: завантаження, видалення старого
- * обʼєкта й публічний URL дає Supabase Storage. Порту сховища
+ * обʼєкта й публічний URL раніше давав Supabase Storage. Порту сховища
  * (`MediaProvider` з `delete`/`transform`) у контракті v2 ще немає — це
- * контур К4, поза цим етапом. Тому код лишено ЯК Є, без переписування:
+ * контур К4, поза цим етапом.
  *
- *  • на Supabase-стеку він працює як і працював;
- *  • на чистому Postgres обидві мутації впадуть — і завантаження, і
- *    видалення, разом із записом `profiles.avatar_url` (він іде тим самим
- *    PostgREST-клієнтом).
- *
- * 🔴 Заглушки, яка «успішно» нічого не зберігає, тут свідомо немає: тихий
- * успіх на місці зламаного завантаження — гірша відмова, ніж гучна помилка,
- * бо ховає відсутність цілого контуру за зеленим тостом.
+ * 🔴 Тому компонент чесно відмовляє: показує поточний аватар/ініціали,
+ * тримає `input[type=file]` вимкненим і пояснює причину видимим текстом.
+ * Жодного `onUpload`, що «нічого не робить, але не скаржиться», — тихий
+ * успіх на місці зламаного завантаження гірший за гучну відмову, бо ховає
+ * відсутність цілого контуру за фальшивим позитивним UX.
  */
 export function AvatarUpload({
-  userId,
   currentAvatarUrl,
   firstName,
   lastName,
   email,
-  onUpdate,
 }: AvatarUploadProps) {
   const t = useT();
-  const supabase = useSupabaseClient();
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const queryClient = useQueryClient();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const getInitials = () => {
     const first = firstName?.[0] || '';
@@ -53,160 +37,37 @@ export function AvatarUpload({
     return (first + last).toUpperCase() || email?.[0]?.toUpperCase() || '?';
   };
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
-        throw new Error(t('profile.avatar.unsupportedFormat'));
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error(t('profile.avatar.tooLarge'));
-      }
-
-      const ext = file.name.split('.').pop();
-      const filename = `${userId}/avatar-${Date.now()}.${ext}`;
-
-      if (currentAvatarUrl) {
-        const oldPath = currentAvatarUrl.split('/').slice(-2).join('/');
-        await supabase.storage.from('user-avatars').remove([oldPath]);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('user-avatars')
-        .upload(filename, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('user-avatars').getPublicUrl(filename);
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
-      return publicUrl;
-    },
-    onSuccess: (url) => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      onUpdate?.(url);
-      setPreviewUrl(null);
-      toast({ title: t('profile.avatar.updated') });
-    },
-    onError: (error: Error) => {
-      setPreviewUrl(null);
-      toast({
-        title: t('profile.avatar.uploadError'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentAvatarUrl) return;
-
-      const path = currentAvatarUrl.split('/').slice(-2).join('/');
-      await supabase.storage.from('user-avatars').remove([path]);
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      onUpdate?.(null);
-      toast({ title: t('profile.avatar.removed') });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t('profile.avatar.deleteError'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    uploadMutation.mutate(file);
-  };
-
-  const isLoading = uploadMutation.isPending || deleteMutation.isPending;
-  const displayUrl = previewUrl || currentAvatarUrl;
-
   return (
     <div className="space-y-4">
       <label className="text-sm font-medium">
         {t('profile.settings.avatar')}
       </label>
       <div className="flex items-center gap-4">
-        <div className="relative">
-          <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
-            {displayUrl ? (
-              <img
-                src={displayUrl}
-                alt="Avatar"
-                width={96}
-                height={96}
-                className="rounded-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              getInitials()
-            )}
-          </div>
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-full">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
+        <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
+          {currentAvatarUrl ? (
+            <img
+              src={currentAvatarUrl}
+              alt="Avatar"
+              width={96}
+              height={96}
+              className="rounded-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            getInitials()
           )}
         </div>
         <div className="flex flex-col gap-2">
           <input
-            ref={fileInputRef}
             type="file"
+            data-testid="avatar-file-input"
             accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileChange}
+            disabled
             className="hidden"
           />
-          <button
-            type="button"
-            className="px-3 py-1.5 border rounded-md text-sm flex items-center gap-2"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-          >
-            <Camera className="h-4 w-4" />
-            {t('profile.avatar.uploadButton')}
-          </button>
-          {currentAvatarUrl && (
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm text-destructive hover:text-destructive flex items-center gap-2"
-              onClick={() => deleteMutation.mutate()}
-              disabled={isLoading}
-            >
-              <Trash2 className="h-4 w-4" />
-              {t('common.delete')}
-            </button>
-          )}
-          <p className="text-xs text-muted-foreground">
-            {t('profile.avatar.formatHint')}
+          <p className="text-xs text-muted-foreground max-w-xs">
+            {t('profile.avatar.unavailable')}
           </p>
         </div>
       </div>
