@@ -135,7 +135,7 @@ Gate C і заборону віддавати сирий текст помилк
   `useEngine`, `CartProvider`, `useCart`, `useFormatPrice`, `catalogKeys` і типи.
   Субшляху `simplycms/data-supabase` не існує.
 
-- [ ] **Step 1:** довести, що шар мертвий (перед видаленням — щоб виконавець не зніс живе):
+- [X] **Step 1:** довести, що шар мертвий (перед видаленням — щоб виконавець не зніс живе):
 
 ```bash
 for h in useProduct useProducts useSections useProperties useStockInfo useOrder useOrders \
@@ -147,7 +147,7 @@ done
 
 Очікування: у кожного `0`. Якщо хоч в одного не 0 — СТОП, звіт власнику (щось приземлилось після аудиту 2026-08-24).
 
-- [ ] **Step 2 (RED):** звузити `EngineContext` у `contracts/ports/index.ts` до
+- [X] **Step 2 (RED):** звузити `EngineContext` у `contracts/ports/index.ts` до
       `{ links: LinkResolver; config: ConfigProvider }` і оновити фікстуру
       `react-query/__tests__/engine-provider.test.tsx` до тих самих двох полів.
       🔴 **RED тут — `pnpm typecheck`, а НЕ `pnpm test`**: `EngineProvider`
@@ -155,7 +155,7 @@ done
       прокидає `value` у контекст, тож vitest лишиться зеленим і нічого не
       доведе. Червоніти має саме компілятор — на host-файлах, які ще
       передають `catalog`/`orders`/`scope`/`identity`/`media`.
-- [ ] **Step 3:** переписати `src/engine-provider.tsx`:
+- [X] **Step 3:** переписати `src/engine-provider.tsx`:
 
 ```tsx
 // Збірка EngineContext. Supabase тут більше немає: репозиторії знесені
@@ -177,21 +177,21 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 3b:** 🔴 звузити `defineRuntime` (`runtime/index.ts:64`) і тип
+- [X] **Step 3b:** 🔴 звузити `defineRuntime` (`runtime/index.ts:64`) і тип
       `DefineRuntimeInput` до `{ links, config }`; переписати
       `react-query/__tests__/engine-provider.test.tsx` (зняти імпорт
       `../hooks`, фікстура — два поля). Обидва — умова зеленого `typecheck`.
-- [ ] **Step 4:** видалити `src/data-supabase/**`, `react-query/hooks.ts`,
+- [X] **Step 4:** видалити `src/data-supabase/**`, `react-query/hooks.ts`,
       `src/server/engine.ts`; почистити `react-query/index.ts` і `queries.ts`
       (🔴 `catalogKeys` ЛИШАЄТЬСЯ — його споживає
       `storefront-routes/pages/home/queries.ts:2,66`); почистити
       `src/engine.shared.ts` від `createAppMediaProvider`, імпорту
       `SupabaseClient` і реекспорту `StoreDatabase`, якщо після цього кроку
       їх ніхто не споживає (`rg -n "createAppMediaProvider|StoreDatabase" src packages`).
-- [ ] **Step 5:** зняти `./data-supabase` з ОБОХ exports-мап, entry tsup,
+- [X] **Step 5:** зняти `./data-supabase` з ОБОХ exports-мап, entry tsup,
       тір-зон (`eslint.tier-zones.mjs` + `tests/tier-boundary/zones.ts`), і
       `src/server/engine.ts` зі `SYNCED_FILES`.
-- [ ] **Step 6:** `pnpm install --frozen-lockfile` → `pnpm template:sync` →
+- [X] **Step 6:** `pnpm install --frozen-lockfile` → `pnpm template:sync` →
       повний ланцюг гейтів (включно з `typecheck:template`) + `pnpm pilot:pack`
       (міняються host-файли — на них дивляться Gate A/C).
       🔴 `test:packaging` при узгоджених правках exports+tsup має лишитись
@@ -199,7 +199,7 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
       `publishConfig.exports` динамічно (`tests/published-exports-parity.test.ts:59-63`).
       Якщо він червоніє — значить мапи розійшлись, це справжня помилка, а не
       очікуваний шум.
-- [ ] **Step 7:** Commit: `refactor(v2): знести мертвий шар репозиторіїв, EngineContext = config+links`.
+- [X] **Step 7:** Commit: `refactor(v2): знести мертвий шар репозиторіїв, EngineContext = config+links`.
 
 ### Task 2: AvatarUpload — гучна відмова замість тихої
 
@@ -221,13 +221,13 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
   пояснення; жодного `useSupabaseClient`. Пропси НЕ змінюються:
   `{ userId, currentAvatarUrl, firstName, lastName, email, onUpdate }`.
 
-- [ ] **Step 1:** додати ключ `profile.avatar.unavailable` в **обидва**
+- [X] **Step 1:** додати ключ `profile.avatar.unavailable` в **обидва**
       каталоги (`uk`: «Завантаження аватара тимчасово недоступне — сховище
       файлів підключається в наступному оновленні»; `en`: «Avatar upload is
       temporarily unavailable — file storage lands in an upcoming release»).
       🔴 Обидва обов'язково: `tests/i18n-catalog-parity.test.ts` червоніє на
       неповному `en`.
-- [ ] **Step 2 (RED):** тест: рендер показує текст ключа й `input[type=file]`
+- [X] **Step 2 (RED):** тест: рендер показує текст ключа й `input[type=file]`
       має `disabled`. 🔴 Три пастки, кожна дала б червоне з неправильної
       причини:
       (а) `vitest.config.ts:26` задає `environment: 'node'` — рендер без
@@ -266,14 +266,14 @@ it('аватар недоступний до контуру К4 — інпут �
 });
 ```
 
-- [ ] **Step 3:** прогнати — червоний саме на відсутньому тексті/`disabled`.
-- [ ] **Step 4:** переписати компонент: зняти `useSupabaseClient` і весь блок
+- [X] **Step 3:** прогнати — червоний саме на відсутньому тексті/`disabled`.
+- [X] **Step 4:** переписати компонент: зняти `useSupabaseClient` і весь блок
       `supabase.storage`; лишити показ поточного аватара, вимкнений інпут
       (`data-testid="avatar-file-input"`) і пояснення. 🔴 Ніякого `onUpload`,
       що «нічого не робить, але не скаржиться» — заборонена тиха заглушка
       (шапка файлу вже фіксує цей принцип, рядки 31-34).
-- [ ] **Step 5:** прогнати — зелений; `pnpm lint` (i18n-зона — error).
-- [ ] **Step 6:** повний ланцюг. Commit: `fix(profile): аватар — чесна відмова до контуру К4, без Supabase`.
+- [X] **Step 5:** прогнати — зелений; `pnpm lint` (i18n-зона — error).
+- [X] **Step 6:** повний ланцюг. Commit: `fix(profile): аватар — чесна відмова до контуру К4, без Supabase`.
 
 ### Task 3: Зняти SupabaseProvider зі шляху вітрини
 
@@ -289,7 +289,7 @@ it('аватар недоступний до контуру К4 — інпут �
   торкається `resolveSupabaseKeys`, тож відсутність `VITE_SUPABASE_*` більше
   не кидає.
 
-- [ ] **Step 1 (RED):** тест, що доводить поведінку, а не форму.
+- [X] **Step 1 (RED):** тест, що доводить поведінку, а не форму.
       🔴 `vi.stubEnv(..., undefined)`, **не** `delete import.meta.env.X`: у
       vitest `import.meta.env` — Proxy над `process.env`, і репо має
       канонічний обхід (`supabase/__tests__/env-source.test.ts:20-27`).
@@ -323,10 +323,10 @@ it('рендериться без змінних Supabase', () => {
 });
 ```
 
-- [ ] **Step 2:** прогнати — червоний із текстом «Відсутні змінні оточення».
-- [ ] **Step 3:** прибрати `<SupabaseProvider>` із `CMSProvider`; решту провайдерів лишити. Прогнати — зелений.
+- [X] **Step 2:** прогнати — червоний із текстом «Відсутні змінні оточення».
+- [X] **Step 3:** прибрати `<SupabaseProvider>` із `CMSProvider`; решту провайдерів лишити. Прогнати — зелений.
 - [ ] **Step 4:** 🔴 **жива перевірка в браузері** (без неї задача не зроблена — цей клас дефекту curl не бачить). Магазин БЕЗ `VITE_SUPABASE_*`: відкрити Playwright-ом **головну І `/profile/settings`** (друга — доказ, що Task 2 відпрацювала), асертити нуль `console.error` і `h1` з контентом. Було: «Щось пішло не так».
-- [ ] **Step 5:** повний ланцюг гейтів. Commit: `fix(v2): вітрина не монтує SupabaseProvider — магазин працює без VITE_SUPABASE_*`.
+- [X] **Step 5:** повний ланцюг гейтів. Commit: `fix(v2): вітрина не монтує SupabaseProvider — магазин працює без VITE_SUPABASE_*`.
 
 ### Task 4: `/api/health` на Postgres
 
@@ -339,7 +339,7 @@ it('рендериться без змінних Supabase', () => {
   коли БД доступна; `503 {status:'degraded', …}` коли ні. Жодних
   Supabase-перевірок.
 
-- [ ] **Step 1 (RED):** тест у схемному контурі: викликати хендлер проти
+- [X] **Step 1 (RED):** тест у схемному контурі: викликати хендлер проти
       живого харнеса — 200 і `checks.database.ok === true`; другим кейсом —
       з завідомо битим `DATABASE_URL` — 503.
       🔴 Між кейсами **обов'язковий `await closeDbPool()`**
@@ -348,7 +348,7 @@ it('рендериться без змінних Supabase', () => {
       «рестарт замість гарячої ротації», не баг). Без закриття негативний
       кейс говоритиме зі старою БД і 503 не доведе — тобто буде зеленим
       намарно. Прогнати: червоний.
-- [ ] **Step 2:** переписати хендлер:
+- [X] **Step 2:** переписати хендлер:
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
@@ -393,13 +393,13 @@ export const Route = createFileRoute('/api/health')({
 });
 ```
 
-- [ ] **Step 2b:** 🔴 додати `connectionTimeoutMillis` у фабрику пулу
+- [X] **Step 2b:** 🔴 додати `connectionTimeoutMillis` у фабрику пулу
       (`db/client.ts:71`). Зараз його немає: недоступний host підвисне до
       системного TCP-таймауту, і health замість своєчасного 503 просто не
       відповість — для Dokploy-healthcheck це гірше за 503, бо виглядає як
       зависання застосунку. Значення — 5000 мс (менше типового інтервалу
       healthcheck), винести константою з поясненням.
-- [ ] **Step 3:** 🔴 розширити bundle-guard пілота: у
+- [X] **Step 3:** 🔴 розширити bundle-guard пілота: у
       `scripts/pilot-pack/gate-c.mjs:23` масив `SERVER_PAYLOAD` перелічує
       лише `supabase/server-client`, `supabase/anon-client` і
       `storefront/loaders/` — після переходу health на `simplycms/db` гейт
@@ -408,10 +408,10 @@ export const Route = createFileRoute('/api/health')({
       Без цього кроку задача не зроблена: у проєкті вже був випадок, коли
       серверний модуль поруч із serverFn затяг drizzle і пул Postgres у
       клієнтський бандл (спіймано саме Gate C).
-- [ ] **Step 4:** прогнати `pnpm test:schema` — зелений; `pnpm pilot:pack` —
+- [X] **Step 4:** прогнати `pnpm test:schema` — зелений; `pnpm pilot:pack` —
       зелений із новим payload-guard.
 - [ ] **Step 5:** 🔴 жива перевірка: магазин проти демо-БД → `curl -s -o /dev/null -w '%{http_code}' localhost:PORT/api/health` = **200** (до фіксу було 503); тіло НЕ містить hostname чи назви ролі.
-- [ ] **Step 6:** повний ланцюг + `test:schema` + `pilot:pack`. Commit: `fix(health): пінг Postgres замість Supabase — healthcheck більше не бреше`.
+- [X] **Step 6:** повний ланцюг + `test:schema` + `pilot:pack`. Commit: `fix(health): пінг Postgres замість Supabase — healthcheck більше не бреше`.
 
 ### Task 4b: `guest-order` — легасі-шлях створення замовлення повз serverFn
 
@@ -437,18 +437,18 @@ React».
 - Produces: у вітрині лишається рівно ОДИН шлях створення замовлення —
   serverFn `placeOrder`.
 
-- [ ] **Step 1:** перевірити, що зовнішніх споживачів справді немає:
+- [X] **Step 1:** перевірити, що зовнішніх споживачів справді немає:
       `rg -n "api/guest-order" -g '!node_modules' -g '!*routeTree.gen.ts' .`
       Очікування: збіги лише в самому файлі й доках. Якщо знайдеться живий
       споживач — СТОП, рішення власника (порт на serverFn ≠ видалення).
-- [ ] **Step 2:** видалити файл (рекомендація: гостьовий чекаут уже
+- [X] **Step 2:** видалити файл (рекомендація: гостьовий чекаут уже
       покритий `placeOrder`, а RLS має гостьовий контур через
       `app.order_token`). Альтернатива, якщо власник хоче зберегти публічний
       HTTP-API: переписати хендлер на `placeOrder`-логіку через `withActor`
       — але тоді це окрема задача зі своїми тестами, не крок тут.
-- [ ] **Step 3:** `pnpm build` (перегенерує `routeTree.gen.ts`), повний
+- [X] **Step 3:** `pnpm build` (перегенерує `routeTree.gen.ts`), повний
       ланцюг гейтів + `pnpm pilot:pack` (Gate A дивиться на роут-дерево).
-- [ ] **Step 4:** Commit: `refactor(v2): прибрати легасі-роут guest-order — дублює placeOrder і обходить новий контур`.
+- [X] **Step 4:** Commit: `refactor(v2): прибрати легасі-роут guest-order — дублює placeOrder і обходить новий контур`.
 
 ### Task 5: Вичистити env-контракт усюди
 
@@ -504,7 +504,7 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
 - Produces: env-контракт магазину = рівно `DATABASE_URL`,
   `BETTER_AUTH_SECRET`, `VITE_SITE_URL`. `simplycms doctor` перевіряє саме їх.
 
-- [ ] **Step 0 (найважливіший):** зняти `PLACEHOLDER_SUPABASE` із
+- [X] **Step 0 (найважливіший):** зняти `PLACEHOLDER_SUPABASE` із
       `scripts/pilot-pack/env.mjs` і дати пілотові **чинний** контракт:
       `VITE_SITE_URL` + `DATABASE_URL` + `BETTER_AUTH_SECRET` (для
       `--pack-only` — синтаксично валідні значення, БД не потрібна, бо
@@ -514,16 +514,16 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
       тобто лишиться сліпим рівно до того класу регресії, який ми закриваємо.
       Прогнати `pnpm pilot:pack` — має лишитись зеленим уже БЕЗ жодного
       Supabase-ключа.
-- [ ] **Step 1 (RED):** оновити `tests/cli-doctor.test.ts` — `checkEnv`
+- [X] **Step 1 (RED):** оновити `tests/cli-doctor.test.ts` — `checkEnv`
       червоніє на відсутньому `DATABASE_URL`/`BETTER_AUTH_SECRET` і НЕ
       згадує `VITE_SUPABASE_*`. Прогнати: червоний.
-- [ ] **Step 2:** переписати `checkEnv` у `doctor-checks.mjs` під новий
+- [X] **Step 2:** переписати `checkEnv` у `doctor-checks.mjs` під новий
       контракт; `doctor-online.mjs` — якщо він пінгував Supabase, перевести
       на `DATABASE_URL` або зняти з набору з явним поясненням у звіті doctor.
-- [ ] **Step 3:** почистити обидва env-приклади, `vite-env.d.ts`, конфіги,
+- [X] **Step 3:** почистити обидва env-приклади, `vite-env.d.ts`, конфіги,
       `steps.mjs:126`; `pnpm template:sync`.
-- [ ] **Step 4:** оновити решту тестів і пілотні скрипти зі списку Files.
-- [ ] **Step 4b:** 🔴 вирішити долю `pnpm db:generate-types`
+- [X] **Step 4:** оновити решту тестів і пілотні скрипти зі списку Files.
+- [X] **Step 4b:** 🔴 вирішити долю `pnpm db:generate-types`
       (`package.json:37` → `supabase/scripts/update-types.mjs:36-37`): вона
       читає `SUPABASE_PROJECT_ID`/`SUPABASE_ACCESS_TOKEN`, тобто після
       очищення env і доків матиме **прихований старий контракт**. За B12
@@ -534,7 +534,7 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
 - [ ] **Step 5:** 🔴 жива перевірка: скаффолд у чистій теці з локальних
       tarball-ів → в `.env.example` нема жодного `SUPABASE` →
       `pnpm simplycms doctor` без `DATABASE_URL` дає ПОМИЛКУ саме про нього.
-- [ ] **Step 6:** повний ланцюг + `pnpm pilot:pack`. Commit: `chore(env): контракт магазину — DATABASE_URL/BETTER_AUTH_SECRET/VITE_SITE_URL, Supabase-ключі геть`.
+- [X] **Step 6:** повний ланцюг + `pnpm pilot:pack`. Commit: `chore(env): контракт магазину — DATABASE_URL/BETTER_AUTH_SECRET/VITE_SITE_URL, Supabase-ключі геть`.
 
 ### Task 6: Наскрізна жива перевірка «магазин із реєстру → Dokploy-поза»
 
@@ -586,13 +586,13 @@ Gate D піднімає справжній `node server.mjs` (`build.mjs:76`).
   `packages/create-simplycms-store/README.md:71,89` (усі — `supabase db push`),
   `CHANGELOG.md`
 
-- [ ] **Step 1:** синхронізувати доки за списком Files.
-- [ ] **Step 2:** дописати в роадмап нові борги, знайдені аудитом і НЕ
+- [X] **Step 1:** синхронізувати доки за списком Files.
+- [X] **Step 2:** дописати в роадмап нові борги, знайдені аудитом і НЕ
       закриті цим планом: DoS на owner-invite, відсутній `profiles` у
       власника, витік `admin_comment`, ціни/доставка з клієнта, сліпота
       RLS-матриці на крос-акторний запис, відсутній Dockerfile, немає
       команди накату схеми, пароль `app_runtime` не автоматизований.
-- [ ] **Step 3:** `pnpm template:sync`; повний ланцюг + `pnpm test:schema` + `pnpm pilot:pack`.
+- [X] **Step 3:** `pnpm template:sync`; повний ланцюг + `pnpm test:schema` + `pnpm pilot:pack`.
 - [ ] **Step 4:** 🔴 закомітити ВСЕ (`git status` чистий — `release.mjs` має
       `assertCleanTree()` до бампу), далі `pnpm release 0.4.1`.
 - [ ] **Step 5:** push, PR у `main`. 🔴 Мерж = публікація 0.4.1 — рішення власника.
