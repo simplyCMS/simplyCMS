@@ -67,51 +67,163 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 
 | Файл | Відповідальність |
 |---|---|
-| `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts` | Гейт: серверні вставки Категорії A несуть явний `id` |
-| `packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts` | Гейт: сід детермінований, UUID статичні й унікальні |
+| `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts` | Гейт: серверні вставки Категорії A несуть явний `id`; Категорія B — ні |
+| `packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts` | Гейт: обидва сіди детерміновані, UUID унікальні |
 | `packages/simplycms/test-harness/pg/__tests__/id-defaults.test.ts` | Гейт: `DEFAULT` лише в Категорії B (з негативним контролем) |
 | `packages/simplycms/src/plugin-sdk/__tests__/plugin-table-id.test.ts` | Гейт: порт плагіна кидає без `id` |
+| `tests/admin-inserts-need-id.test.ts` | Ратчет застарілого шару адмінки |
+| `packages/cli/template-plugin/migrations/0001_init.sql` | Шаблон міграції плагіна (**його не існувало**) |
 
 **Змінюються:**
 
 | Файл | Що саме |
 |---|---|
-| `packages/simplycms/src/storefront/loaders/{order-create,reviews-write,addresses,recipients}.ts` | явний `id` у `.values()` |
-| `packages/simplycms/src/auth/provision.ts` | явний `id` для `profiles`, `userRoles` |
-| `packages/simplycms/migrations/0003_seed.sql` | статичні UUID (6 INSERT) |
-| `packages/simplycms/migrations/demo/demo-seed.sql` | статичні UUID (15 INSERT) |
-| `packages/simplycms/migrations/0001_init.sql` | `DROP DEFAULT` на Категорії A + `COMMENT ON COLUMN` |
-| `packages/simplycms/migrations/0002_grants.sql:186-189` | стале пояснення про сиквенси |
-| `packages/simplycms/src/schema/schema.ts` | зняти `.defaultRandom()` у Категорії A |
-| `packages/simplycms/src/plugin-sdk/{usePluginTable.ts,server/table-db.ts}` | `id` обов'язковий |
+| `test-harness/pg/__tests__/fixtures/*.ts` (5 файлів) | ~23 вставки без `id` → явні UUID |
+| `src/storefront/loaders/{order-create,reviews-write,addresses,recipients}.ts` | явний `id`; в `order-create` ще й `return` без `row` |
+| `src/auth/provision.ts` | явний `id` для `profiles`, `userRoles` |
+| `src/auth/invite-store.ts` | явний `id` **лише** для `userRoles` |
+| `src/themes/server/registry-db.ts`, `src/plugins/server/registry-db.ts` | явний `id` |
+| `migrations/0003_seed.sql`, `migrations/demo/demo-seed.sql` | статичні UUID; **дані не змінюються** |
+| `migrations/0001_init.sql` | `DROP DEFAULT` на Категорії A + `COMMENT ON COLUMN` |
+| `migrations/0002_grants.sql:186-189` | стале пояснення про сиквенси |
+| `src/schema/schema.ts`, `src/schema/media.ts` | зняти `.defaultRandom()` |
+| `drizzle/0000_init.sql`, `drizzle/meta/` | регенерація (інакше `db:diff` бачить дрейф) |
+| `packages/create-simplycms-store/template/**` | `pnpm template:sync` після правки міграцій |
+| `src/plugin-sdk/{usePluginTable.ts,server/table-db.ts}` | `id` обов'язковий |
+| `src/plugin-sdk/__tests__/usePluginTable.test.tsx`, `test-harness/pg/__tests__/plugin-port.test.ts` | оновити виклики, DDL тестової таблиці й фікстуру |
 | `packages/simplycms-plugin-faq/**` | генерація id у UI, DDL без DEFAULT |
-| `packages/cli/src/create-scaffold.mjs` | шаблон міграції плагіна без DEFAULT |
+| `scripts/pilot-pack/seed-sql.mjs`, `supabase/seed.sql` | стабільні id (`pnpm pilot:seed`) |
+| `docs/tasks/platform-roadmap.md` | борг К0-9 — дописати несумісність `content-loader-mcp` |
 
-**Свідомо НЕ чіпаються:** `packages/simplycms/src/admin/**` — 27 клієнтських вставок старої адмінки. Вона не працює на чистому Postgres і повністю переписується в Е1+; лагодити її вставки означало б робити роботу двічі.
+**Свідомо НЕ чіпаються:** `packages/simplycms/src/admin/**` — 27 вставок
+застарілого шару (рішення власника 2026-08-29). Вони ходять через
+`supabase-js`, на чистому Postgres не виконуються й переписуються в
+Е1–Е6; замість правки — ратчет у Task 5.
 
 ---
 
 # Етап Е0 — контракт id
 
-Порядок жорсткий: **код перед DDL**. Спершу кожен insert-шлях починає передавати `id`, і лише в Task 4 знімається DEFAULT. Зворотний порядок поклав би вітрину.
+Порядок жорсткий і **не переставляється**: спершу всі шляхи вставки
+починають передавати `id` (Tasks 0–3), і лише потім знімається DEFAULT
+(Task 4). Зворотний порядок поклав би і вітрину, і весь `test:schema`.
 
-### Task 1: Серверні вставки вітрини передають id явно
+🔴 **Ревізія 1 (2026-08-29) за результатами зовнішнього аудиту.** Перша
+редакція плану мала шість блокерів: не бачила 23 вставки у фікстурах
+харнеса, не кликала `template:sync` після правки міграцій, пропускала три
+серверні insert-шляхи, стирала власну роботу в негативному контролі,
+посилалась на неіснуючий шаблон міграції плагіна і **вигадувала вміст
+сіду**. Усе виправлено нижче; звідси Task 0 і Task 5, яких не було.
+
+### Task 0: Фікстури харнеса — явні id
 
 **Files:**
-- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts:87-131`
-- Modify: `packages/simplycms/src/storefront/loaders/reviews-write.ts:27`
-- Modify: `packages/simplycms/src/storefront/loaders/addresses.ts:66`
-- Modify: `packages/simplycms/src/storefront/loaders/recipients.ts:81`
-- Modify: `packages/simplycms/src/auth/provision.ts:16,29`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/rls-actors.ts`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/showcase.ts`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/shipping.ts`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/storefront.ts`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/storefront-client.ts`
+
+**Interfaces:**
+- Consumes: нічого нового.
+- Produces: фікстури, придатні до схеми без DEFAULT. Task 4 без цього
+  завалить **увесь** `test:schema`, а не лише власний тест.
+
+🔴 Це задача-передумова, знайдена аудитом. У п'яти файлах — **50**
+`insert into`, з них приблизно **23 без явного `id`** (`rls-actors` 17
+вставок / ~4 з id, `showcase` 19 / ~13, `shipping` 6 / ~4,
+`storefront` 4 / ~3, `storefront-client` 4 / ~3). Точні числа порахувати
+на місці — регекс-оцінка тут орієнтир, не контракт.
+
+- [ ] **Step 1: Порахувати фактичний обсяг**
+
+```bash
+cd packages/simplycms/test-harness/pg/__tests__/fixtures
+for p in *.ts; do
+  printf '%-22s insert=%s\n' "$p" "$(grep -c 'insert into' "$p")"
+done
+grep -n "insert into" *.ts | wc -l
+```
+
+Виписати кожен `insert into`, що НЕ містить `id` у списку колонок.
+
+- [ ] **Step 2: Переконатись, що зараз усе зелене**
+
+Run: `pnpm test:schema`
+Expected: PASS. Це базова лінія — після Task 0 вона мусить лишитись
+зеленою (фікстури з явним `id` працюють і зі старим DEFAULT).
+
+- [ ] **Step 3: Проставити явні UUID у кожній вставці без id**
+
+Стиль — той, що вже вживається в `rls-actors.ts`: іменована константа
+зверху файлу, потім підстановка. Для рядків, на які нічого не
+посилається, годиться `gen_random_uuid()` прямо у `values`.
+
+```ts
+// на початку файлу — константи для рядків, на які є посилання
+const SECTION_A = '10000000-0000-4000-8000-000000000001';
+const PRODUCT_A = '10000000-0000-4000-8000-000000000002';
+
+// у вставці — id першою колонкою
+await queryInTransaction(dbUrl, [
+  `insert into public.sections (id, name, slug, is_active)
+     values ('${SECTION_A}', 'Секція A', 'section-a', true)`,
+  `insert into public.products (id, section_id, name, slug, is_active)
+     values ('${PRODUCT_A}', '${SECTION_A}', 'Товар A', 'product-a', true)`,
+]);
+```
+
+🔴 Де рядок ні з чим не пов'язаний — `gen_random_uuid()` у `values`
+допустимий: це явна вставка значення, а не покладання на DEFAULT колонки,
+тож Task 4 її не зачепить.
+
+- [ ] **Step 4: Гейт лишився зеленим**
+
+Run: `pnpm test:schema`
+Expected: PASS — та сама кількість тестів, що в Step 2.
+
+- [ ] **Step 5: Коміт**
+
+```bash
+git add packages/simplycms/test-harness/pg/__tests__/fixtures
+git commit -m "test(v2-k3): фікстури харнеса — явні id замість DEFAULT
+
+Передумова Task 4: після DROP DEFAULT вставка без id падає 23502, і це
+поклало б увесь test:schema, а не лише новий тест. Знайдено зовнішнім
+аудитом плану.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 1: Серверні вставки передають id явно
+
+**Files:**
+- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts` (вставки + `return`)
+- Modify: `packages/simplycms/src/storefront/loaders/reviews-write.ts`
+- Modify: `packages/simplycms/src/storefront/loaders/addresses.ts`
+- Modify: `packages/simplycms/src/storefront/loaders/recipients.ts`
+- Modify: `packages/simplycms/src/auth/provision.ts` (`profiles`, `userRoles`)
+- Modify: `packages/simplycms/src/auth/invite-store.ts` (**лише** `userRoles`)
+- Modify: `packages/simplycms/src/themes/server/registry-db.ts`
+- Modify: `packages/simplycms/src/plugins/server/registry-db.ts`
 - Test: `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
 
 **Interfaces:**
-- Consumes: `withActor`/`withCustomerDb` з `simplycms/storefront/loaders` (наявні).
-- Produces: нічого нового — змінюється лише payload наявних вставок.
+- Consumes: `randomUUID` з `node:crypto` (в `order-create.ts` уже імпортований — **не** дублювати імпорт).
+- Produces: усі серверні вставки Категорії A несуть `id`.
 
-🔴 `invite-store.ts:29` вставляє в `users` — це **Категорія B**, там `id` НЕ додається (Better Auth делегує генерацію базі). Рядок `verifications:46` — теж B. А от `userRoles:70` і `profiles` — Категорія A.
+🔴 Три останні файли додано аудитом — перша редакція їх не бачила.
+🔴 В `invite-store.ts` міняється **тільки** вставка `userRoles`: вставки в
+`users` і `verifications` — Категорія B (Better Auth делегує генерацію
+базі), їх чіпати не можна.
 
 - [ ] **Step 1: Написати падаючий тест**
+
+Наївний скан «600 символів після `.insert(table)`» дає хибні проходження —
+ловить `return { id: row.id }` і `.returning({ id: … })`. Тому тест
+структурно вирізає саме аргумент `.values(...)`.
 
 ```ts
 // packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts
@@ -121,10 +233,7 @@ import { resolve } from 'node:path';
 
 const SRC = resolve(import.meta.dirname, '../../../src');
 
-/**
- * Гейт Е0: кожна серверна вставка в таблицю Категорії A несе явний `id`.
- * Текстовий скан, а не рантайм: рантайм довів би лише пройдені шляхи.
- */
+/** Серверні вставки в таблиці Категорії A. Файл → drizzle-таблиця. */
 const CATEGORY_A_INSERTS = [
   ['storefront/loaders/order-create.ts', 'orders'],
   ['storefront/loaders/order-create.ts', 'orderItems'],
@@ -133,17 +242,58 @@ const CATEGORY_A_INSERTS = [
   ['storefront/loaders/recipients.ts', 'userRecipients'],
   ['auth/provision.ts', 'profiles'],
   ['auth/provision.ts', 'userRoles'],
+  ['auth/invite-store.ts', 'userRoles'],
+  ['themes/server/registry-db.ts', 'themes'],
+  ['plugins/server/registry-db.ts', 'plugins'],
 ] as const;
+
+/**
+ * Вирізає текст аргументу першого `.values(` після `.insert(<table>)`,
+ * рахуючи дужки. Без цього скан ловить `.returning({ id: … })` і
+ * `return { id: row.id }`, тобто дає хибне проходження (знахідка аудиту).
+ */
+function valuesArgument(src: string, table: string): string | null {
+  const insertAt = src.indexOf(`.insert(${table})`);
+  if (insertAt < 0) return null;
+  const valuesAt = src.indexOf('.values(', insertAt);
+  if (valuesAt < 0) return null;
+
+  let depth = 0;
+  const from = valuesAt + '.values('.length - 1;
+  for (let i = from; i < src.length; i += 1) {
+    if (src[i] === '(') depth += 1;
+    else if (src[i] === ')') {
+      depth -= 1;
+      if (depth === 0) return src.slice(from + 1, i);
+    }
+  }
+  return null;
+}
 
 describe('Е0: серверні вставки передають id явно', () => {
   it.each(CATEGORY_A_INSERTS)('%s → %s', (file, table) => {
     const src = readFileSync(resolve(SRC, file), 'utf8');
-    const idx = src.indexOf(`.insert(${table})`);
-    expect(idx, `не знайдено .insert(${table}) у ${file}`).toBeGreaterThan(-1);
-    const window = src.slice(idx, idx + 600);
-    expect(window, `.insert(${table}) у ${file} не передає id`).toMatch(
-      /\bid:\s*(randomUUID\(\)|[A-Za-z_$][\w$]*Id\b|[A-Za-z_$][\w$]*\.id\b)/,
-    );
+    const values = valuesArgument(src, table);
+    expect(values, `не знайдено .insert(${table}).values(...) у ${file}`).not.toBeNull();
+    expect(
+      values!,
+      `.insert(${table}) у ${file} не передає id у values(...)`,
+    ).toMatch(/(^|[\s{,])id:\s*\S/);
+  });
+});
+
+describe('Е0: Категорія B id НЕ передає', () => {
+  it.each([
+    ['auth/invite-store.ts', 'users'],
+    ['auth/invite-store.ts', 'verifications'],
+  ] as const)('%s → %s лишається на DEFAULT', (file, table) => {
+    const src = readFileSync(resolve(SRC, file), 'utf8');
+    const values = valuesArgument(src, table);
+    if (values === null) return; // вставки може не бути — це не помилка
+    expect(
+      values,
+      `${table} — Категорія B: id генерує БД, Better Auth його не шле`,
+    ).not.toMatch(/(^|[\s{,])id:\s*\S/);
   });
 });
 ```
@@ -151,15 +301,15 @@ describe('Е0: серверні вставки передають id явно', 
 - [ ] **Step 2: Запустити — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
-Expected: FAIL, сім кейсів — «не передає id».
+Expected: FAIL у першому describe. 🔴 Кількість падінь **виписати** — це
+базова лінія; аудит показав, що наївний скан давав 4 замість 10, тож
+переконайся, що падають саме ті кейси, які ще не мають `id`.
 
 - [ ] **Step 3: Додати id у кожну вставку**
 
 ```ts
-// order-create.ts — id батька відомий ДО вставки, тож позиції більше
-// не чекають RETURNING: обидві вставки лягають без зайвого раундтрипу.
-import { randomUUID } from 'node:crypto';
-
+// order-create.ts — randomUUID УЖЕ імпортований на рядку 1, не дублювати.
+// Ключ батька відомий до вставки, тож .returning() більше не потрібен.
 const orderId = randomUUID();
 
 await db.insert(orders).values({
@@ -178,48 +328,71 @@ await db.insert(orderItems).values(
     // …решта полів без змін
   })),
 );
+
+// 🔴 Знахідка аудиту: `return` нижче посилався на `row`, який зникає
+// разом із `.returning()`. Повертаємо вже відомі значення.
+return { id: orderId, orderNumber, accessToken };
 ```
 
-🔴 `orders` — Категорія B (DEFAULT лишається), але явний `id` тут усе одно
-правильний: він прибирає двокроковий `RETURNING`-ланцюг. DEFAULT
-залишається як страхувальна сітка для самої БД, а не як спосіб вставки.
+```ts
+// themes/server/registry-db.ts — вставка масиву
+await db.insert(themes).values(
+  missing.map((entry) => ({
+    id: randomUUID(),
+    slug: entry.manifest.slug,
+    // …решта полів без змін
+  })),
+);
+```
 
-Так само в решті чотирьох файлів: `id: randomUUID()` першим полем
-`.values({ … })`. Імпорт `randomUUID` з `node:crypto` — це серверні
-модулі, `crypto.randomUUID()` браузерного API тут не потрібен.
+Так само: `plugins/server/registry-db.ts` (`plugins`), `invite-store.ts`
+(**тільки** `userRoles`), `provision.ts` (`profiles`, `userRoles`),
+`reviews-write.ts`, `addresses.ts`, `recipients.ts`. У кожному файлі,
+де `randomUUID` ще не імпортований, додати `import { randomUUID } from 'node:crypto';`.
+
+🔴 `addresses.ts` і `recipients.ts` використовують `.returning({ id: … })`
+— його можна лишити або замінити на відому константу; тест дивиться
+лише на `values(...)`.
 
 - [ ] **Step 4: Запустити — має пройти**
 
 Run: `pnpm vitest run packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
-Expected: PASS, 7/7.
+Expected: PASS, 12/12 (10 у першому describe + 2 у другому).
 
-- [ ] **Step 5: Перевірити, що вітрина не зламалась**
+- [ ] **Step 5: Типи й гейти**
 
-Run: `pnpm test`
-Expected: PASS. Далі — живий доказ, бо тест схеми цього шляху не виконує:
+Run: `pnpm typecheck && pnpm test`
+Expected: PASS. 🔴 `typecheck` тут обов'язковий — саме він спіймає
+забутий `row` після видалення `.returning()`.
+
+- [ ] **Step 6: Живий доказ**
 
 ```bash
+export PG_HARNESS_URL='postgresql://<user>@127.0.0.1:<порт>/postgres'
 PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 pnpm build && PORT=3141 pnpm start &
-curl -s localhost:3141/api/health
+curl -s localhost:3141/api/health; echo
 ```
 Expected: `{"status":"healthy",...}`.
 
-- [ ] **Step 6: Коміт**
+- [ ] **Step 7: Коміт**
 
 ```bash
 git add packages/simplycms/src packages/simplycms/test-harness
-git commit -m "feat(v2-k3): серверні вставки вітрини передають id явно
+git commit -m "feat(v2-k3): серверні вставки передають id явно
 
-Передумова зняття DEFAULT (Е0): клієнтський ключ мусить бути єдиним
-джерелом id. Заразом прибрано двокроковий RETURNING у order-create —
-id замовлення тепер відомий до вставки, тож позиції не чекають на нього.
+Передумова зняття DEFAULT. Охоплює всі десять шляхів Категорії A,
+включно з трьома, яких перша редакція плану не бачила (invite-store
+userRoles, registry-db тем і плагінів). Заразом прибрано .returning()
+в order-create — id замовлення тепер відомий до вставки.
+
+Вставки users/verifications свідомо лишились без id: Better Auth
+делегує генерацію базі, і тест це фіксує окремим describe.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
-
 ### Task 2: Сіди отримують статичні UUID
 
 **Files:**
@@ -228,7 +401,13 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Test: `packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts`
 
 **Interfaces:**
-- Produces: стабільні UUID сіду — на них спиратиметься e2e (борг №4 роадмапу: сім динамічних роутів адмінки, що потребують реальних id).
+- Produces: стабільні UUID сіду — на них зможе спиратися e2e (борг №4
+  роадмапу: сім динамічних роутів адмінки).
+
+🔴 **Дані сіду НЕ змінюються — додається лише колонка `id`.** Перша
+редакція плану вигадала п'ять статусів замість шести й підмінила коди;
+`baseline.test.ts:190` асертить `statuses: 6`, тож це впало б одразу.
+Нижче наведено **фактичний** вміст із доданими ключами.
 
 - [ ] **Step 1: Написати падаючий тест**
 
@@ -240,27 +419,45 @@ import { resolve } from 'node:path';
 
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
+const SEEDS = [
+  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql')],
+  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql')],
+] as const;
+
 /**
- * Сід мусить бути детермінованим: без явних id ті самі дані щоразу
- * отримують нові ключі, і e2e не може адресувати рядок (борг №4).
+ * Вирізає список колонок кожного `insert into … ( … )`. Дивитись треба
+ * саме на нього: скан «чи є десь id» ловив би `select s.id` у підзапиті
+ * резолву FK і давав хибне проходження (знахідка аудиту).
  */
+function insertColumnLists(sql: string): { table: string; columns: string }[] {
+  const out: { table: string; columns: string }[] = [];
+  const re = /insert\s+into\s+([a-z_.]+)\s*\(([^)]*)\)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(sql)) !== null) {
+    out.push({ table: m[1], columns: m[2] });
+  }
+  return out;
+}
+
 describe('Е0: сід детермінований', () => {
-  it('0003_seed.sql не покладається на DEFAULT для id', () => {
-    const sql = readFileSync(resolve(MIGRATIONS, '0003_seed.sql'), 'utf8');
-    const inserts = sql.match(/insert into[\s\S]*?;/gi) ?? [];
-    expect(inserts.length).toBeGreaterThan(0);
-    for (const stmt of inserts) {
-      expect(stmt, `INSERT без явного id:\n${stmt.slice(0, 200)}`).toMatch(
-        /\(\s*id\b|\bid\s*,/i,
-      );
+  it.each(SEEDS)('%s — кожен INSERT називає колонку id', (label, path) => {
+    const sql = readFileSync(path, 'utf8');
+    const inserts = insertColumnLists(sql);
+    expect(inserts.length, `у ${label} не знайдено жодного INSERT`).toBeGreaterThan(0);
+    for (const { table, columns } of inserts) {
+      expect(
+        columns,
+        `${label}: insert into ${table} без колонки id → покладається на DEFAULT`,
+      ).toMatch(/(^|[\s,])id([\s,]|$)/);
     }
   });
 
-  it('усі id сіду — валідні UUID-літерали', () => {
-    const sql = readFileSync(resolve(MIGRATIONS, '0003_seed.sql'), 'utf8');
-    const uuids = sql.match(/'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'/gi) ?? [];
-    expect(uuids.length).toBeGreaterThan(0);
-    expect(new Set(uuids).size, 'дубльовані UUID у сіді').toBe(uuids.length);
+  it.each(SEEDS)('%s — UUID-літерали унікальні', (label, path) => {
+    const sql = readFileSync(path, 'utf8');
+    const uuids =
+      sql.match(/'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'/gi) ?? [];
+    expect(uuids.length, `${label}: немає UUID-літералів`).toBeGreaterThan(0);
+    expect(new Set(uuids).size, `${label}: дубльовані UUID`).toBe(uuids.length);
   });
 });
 ```
@@ -268,22 +465,21 @@ describe('Е0: сід детермінований', () => {
 - [ ] **Step 2: Запустити — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts`
-Expected: FAIL — «INSERT без явного id».
+Expected: FAIL, 4 кейси (обидва файли × обидва твердження).
 
-- [ ] **Step 3: Проставити статичні UUID**
+- [ ] **Step 3: Проставити статичні UUID, НЕ змінюючи дані**
 
-Схема нумерації, щоб ключі читались очима: префікс `0000000N` за
-таблицею, суфікс — порядковий номер рядка.
+Схема нумерації: префікс за таблицею, суфікс — номер рядка.
 
 ```sql
--- 0003_seed.sql
 insert into public.order_statuses (id, name, code, color, sort_order, is_default)
 values
-  ('00000001-0000-4000-8000-000000000001', 'Новий',        'new',       '#3B82F6', 0, true),
-  ('00000001-0000-4000-8000-000000000002', 'В обробці',    'processing','#F59E0B', 1, false),
-  ('00000001-0000-4000-8000-000000000003', 'Відправлено',  'shipped',   '#8B5CF6', 2, false),
-  ('00000001-0000-4000-8000-000000000004', 'Виконано',     'completed', '#10B981', 3, false),
-  ('00000001-0000-4000-8000-000000000005', 'Скасовано',    'cancelled', '#EF4444', 4, false)
+  ('00000001-0000-4000-8000-000000000001', 'Новий',        'new',        '#3B82F6', 0, true),
+  ('00000001-0000-4000-8000-000000000002', 'Підтверджено', 'confirmed',  '#10B981', 1, false),
+  ('00000001-0000-4000-8000-000000000003', 'В обробці',    'processing', '#F59E0B', 2, false),
+  ('00000001-0000-4000-8000-000000000004', 'Відправлено',  'shipped',    '#8B5CF6', 3, false),
+  ('00000001-0000-4000-8000-000000000005', 'Доставлено',   'delivered',  '#22C55E', 4, false),
+  ('00000001-0000-4000-8000-000000000006', 'Скасовано',    'cancelled',  '#EF4444', 5, false)
 on conflict (code) do nothing;
 
 insert into public.languages (id, code, name, is_default, is_active)
@@ -293,25 +489,60 @@ on conflict (code) do nothing;
 insert into public.price_types (id, name, code, is_default, sort_order)
 values ('00000003-0000-4000-8000-000000000001', 'Роздрібна', 'retail', true, 0)
 on conflict (code) do nothing;
+
+-- 🔴 FK і далі резолвиться ПІДЗАПИТОМ за натуральним ключем, а не
+-- константою: на БД, яка вже мала сід, price_types має старий випадковий
+-- id, і `on conflict do nothing` не замінить його на нову константу —
+-- константа у FK впала б (знахідка аудиту).
+insert into public.user_categories (id, name, code, is_default, price_type_id)
+select
+  '00000004-0000-4000-8000-000000000001',
+  'Роздріб',
+  'retail',
+  true,
+  (select id from public.price_types where code = 'retail')
+on conflict (code) do nothing;
+
+insert into public.system_settings (id, key, value, description)
+values
+  (
+    '00000005-0000-4000-8000-000000000001',
+    'active_theme', '"default"'::jsonb, 'Активна тема сайту'
+  ),
+  (
+    '00000005-0000-4000-8000-000000000002',
+    'stock_management',
+    '{"decrease_on_order": false}'::jsonb,
+    'Налаштування управління залишками'
+  )
+on conflict (key) do nothing;
+
+insert into public.themes (id, name, display_name, version, description, author, is_active)
+values (
+  '00000006-0000-4000-8000-000000000001',
+  'default', 'Default', '1.0.0', 'Базова тема SimplyCMS', 'SimplyCMS', true
+)
+on conflict (name) do nothing;
 ```
 
-🔴 `on conflict` лишається за **натуральним** ключем (`code`), не за `id` —
-семантика «сід ідемпотентний» не змінюється.
-
-Решту INSERT-ів у `0003_seed.sql` (`user_categories`, `system_settings`,
-`themes`) і всі 15 у `demo/demo-seed.sql` — за тією ж схемою. У демо-сіді
-дочірні рядки, що сьогодні беруть батька через `select s.id`, тепер
-посилаються на константу напряму.
+`demo/demo-seed.sql` — за тим самим правилом: **власним** рядкам дати
+константні `id` (префікси `10000001…`, `10000002…` тощо), а посилання на
+батьків лишити підзапитами за slug/code.
 
 - [ ] **Step 4: Запустити — має пройти**
 
 Run: `pnpm vitest run packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts`
-Expected: PASS, 2/2.
+Expected: PASS, 4/4.
 
-- [ ] **Step 5: Довести накатом на чисту БД**
+- [ ] **Step 5: Дані не змінились — довести накатом**
 
-Run: `pnpm test:schema`
-Expected: PASS. Потім двічі поспіль — сід ідемпотентний:
+```bash
+pnpm test:schema
+```
+Expected: PASS, у тому числі `baseline.test.ts` з `{ statuses: 6, themes: 1, settings: 2 }`.
+🔴 Якщо тут `statuses` не 6 — сід змінили, а не переключили на явні ключі.
+
+- [ ] **Step 6: Ідемпотентність — двічі поспіль**
 
 ```bash
 PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
@@ -319,15 +550,19 @@ PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 ```
 Expected: другий прогін без помилок, кількість рядків не подвоїлась.
 
-- [ ] **Step 6: Коміт**
+- [ ] **Step 7: Коміт**
 
 ```bash
 git add packages/simplycms/migrations packages/simplycms/test-harness
-git commit -m "feat(v2-k3): детермінований сід — статичні UUID замість DEFAULT
+git commit -m "feat(v2-k3): детермінований сід — статичні UUID
 
-Передумова зняття DEFAULT (Е0) і заразом закриття боргу №4 роадмапу:
-сім динамічних роутів адмінки поза e2e потребували реальних id із сіду.
-on conflict лишається за натуральним ключем — ідемпотентність не змінилась.
+Дані сіду НЕ змінені: ті самі шість статусів, мова, тип ціни, категорія,
+дві системні настройки й тема — додано лише колонку id. FK і далі
+резолвляться підзапитом за натуральним ключем, інакше на вже засіяній БД
+константа не збіглася б із наявним рядком.
+
+Закриває борг №4 роадмапу: сім динамічних роутів адмінки поза e2e
+потребували стабільних id із сіду.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -337,19 +572,25 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 3: Контракт плагінів вимагає id
 
 **Files:**
-- Modify: `packages/simplycms/src/plugin-sdk/usePluginTable.ts:33-42,60-75`
-- Modify: `packages/simplycms/src/plugin-sdk/server/table-db.ts:70-90`
+- Modify: `packages/simplycms/src/plugin-sdk/usePluginTable.ts`
+- Modify: `packages/simplycms/src/plugin-sdk/server/table-db.ts`
+- Modify: `packages/simplycms/src/plugin-sdk/__tests__/usePluginTable.test.tsx:79,99`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/plugin-port.test.ts:43,50,82`
 - Modify: `packages/simplycms-plugin-faq/migrations/20260814120000_plg_faq_items.sql:15`
-- Modify: `packages/simplycms-plugin-faq/src/pages/FaqAdmin.tsx:43-49`
-- Modify: `packages/cli/src/create-scaffold.mjs` (шаблон міграції плагіна)
+- Modify: `packages/simplycms-plugin-faq/src/pages/FaqAdmin.tsx`
+- Create: `packages/cli/template-plugin/migrations/0001_init.sql`
+- Modify: `packages/cli/src/create-scaffold.mjs` (якщо шаблон міграції треба зареєструвати явно)
 - Test: `packages/simplycms/src/plugin-sdk/__tests__/plugin-table-id.test.ts`
+- Test: `tests/cli-create.test.ts` (перевірка DDL шаблону)
 
 **Interfaces:**
-- Consumes: `PluginTablePort<Row>` (наявний).
-- Produces: `PluginTablePort.insert(row)` тепер вимагає `row.id: string`; `insertPluginRow` кидає без нього.
+- Produces: `PluginTablePort.insert(row: Partial<Row> & { id: string })`;
+  `insertPluginRow` кидає без `id`.
 
-🔴 Робиться зараз, бо вікно закривається на К5: після відкриття подач
-маркетплейсу контракт заморожується першим стороннім пакетом.
+🔴 Дві знахідки аудиту врахувано: теки `packages/cli/template-plugin/migrations/`
+**не існує** (там лише `README.md`, `index.ts`, `messages.ts`,
+`package.json.tpl`), тож шаблон треба **створити**, а не правити; і зміна
+контракту ламає **наявні** тести, які перша редакція не оновлювала.
 
 - [ ] **Step 1: Написати падаючий тест**
 
@@ -363,17 +604,23 @@ vi.mock('simplycms/storefront/loaders', () => ({
   withStoreOperatorDb: vi.fn(),
 }));
 
-describe('порт плагіна: id обов’язковий', () => {
+describe('порт плагіна: id обовʼязковий', () => {
   it('insertPluginRow без id кидає з поясненням', async () => {
     await expect(
       insertPluginRow('faq', 'plg_faq_items', { question: 'q', answer: 'a' }),
     ).rejects.toThrow(/id/i);
   });
 
-  it('повідомлення називає плагін і таблицю', async () => {
+  it('повідомлення називає таблицю і плагін', async () => {
     await expect(
       insertPluginRow('faq', 'plg_faq_items', { question: 'q' }),
     ).rejects.toThrow(/plg_faq_items/);
+  });
+
+  it('порожній рядок як id теж відхиляється', async () => {
+    await expect(
+      insertPluginRow('faq', 'plg_faq_items', { id: '', question: 'q' }),
+    ).rejects.toThrow(/id/i);
   });
 });
 ```
@@ -381,13 +628,13 @@ describe('порт плагіна: id обов’язковий', () => {
 - [ ] **Step 2: Запустити — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/plugin-sdk/__tests__/plugin-table-id.test.ts`
-Expected: FAIL — вставка не кидає (сьогодні `id` необов'язковий).
+Expected: FAIL, 3 кейси — вставка не кидає.
 
 - [ ] **Step 3: Зробити id обов'язковим**
 
 ```ts
-// server/table-db.ts, на початку insertPluginRow — ПЕРЕД guardedTable,
-// щоб помилка контракту не маскувалась помилкою доступу
+// server/table-db.ts — перевірка ПЕРЕД guardedTable, щоб помилка
+// контракту не маскувалась помилкою доступу
 export async function insertPluginRow(
   pluginName: string,
   table: string,
@@ -407,7 +654,7 @@ export async function insertPluginRow(
 ```
 
 ```ts
-// usePluginTable.ts — тип входу звужується
+// usePluginTable.ts
 export interface PluginTablePort<Row extends Record<string, unknown>> {
   list(options?: { orderBy?: string; ascending?: boolean; eq?: Partial<Row> }): Promise<Row[]>;
   /** 🔴 `id` генерує викликач: ключ мусить бути відомий до відповіді сервера. */
@@ -417,13 +664,10 @@ export interface PluginTablePort<Row extends Record<string, unknown>> {
 }
 ```
 
-```sql
--- packages/simplycms-plugin-faq/migrations/20260814120000_plg_faq_items.sql
-  id uuid primary key,   -- 🔴 без default: ключ приходить від клієнта
-```
+- [ ] **Step 4: Оновити наявних споживачів**
 
 ```tsx
-// FaqAdmin.tsx
+// packages/simplycms-plugin-faq/src/pages/FaqAdmin.tsx
 await table.insert({
   id: crypto.randomUUID(),
   question,
@@ -434,54 +678,90 @@ await table.insert({
 });
 ```
 
-Той самий рядок `id uuid primary key,` — у шаблоні міграції, який
-генерує `simplycms create plugin` (`packages/cli/src/create-scaffold.mjs`).
+```sql
+-- packages/simplycms-plugin-faq/migrations/20260814120000_plg_faq_items.sql:15
+  id uuid primary key,   -- 🔴 без default: ключ приходить від клієнта
+```
 
-🔴 **`crypto.randomUUID()` доступний лише в secure context** (`https://`
-або `localhost`); на `http://192.168.x.x:3000` він `undefined`. У Е0 це ще
-не проявляється — `FaqAdmin` живе в адмінці, яка на чистому Postgres не
-працює. Fail-loud перевірка secure context при старті адмінки
-приземляється в **Е1** разом з рештою адмін-точок; тут фіксується лише
-контракт. Пакет `uuid` не додається: це була б обгортка заради обгортки,
-а адмінці HTTPS потрібен і без UUID — Better Auth ставить `Secure`-cookie.
+Наявні тести — додати `id` у виклики: `usePluginTable.test.tsx:79` і `:99`,
+`plugin-port.test.ts:82`. У `plugin-port.test.ts` також прибрати
+`DEFAULT gen_random_uuid()` з DDL тестової таблиці (`:43`) і додати `id`
+у фікстуру `plugins` (`:50`).
 
-- [ ] **Step 4: Запустити — має пройти**
+- [ ] **Step 5: Створити шаблон міграції плагіна**
 
-Run: `pnpm vitest run packages/simplycms/src/plugin-sdk/__tests__/plugin-table-id.test.ts`
-Expected: PASS, 2/2.
+Теки `migrations/` у `packages/cli/template-plugin/` немає — створити:
 
-- [ ] **Step 5: Перевірити наскрізний контур плагінів**
+```sql
+-- packages/cli/template-plugin/migrations/0001_init.sql
+-- Власна таблиця плагіна. Межа даних — префікс plg_<name>_ (спека §7/§9).
+create table if not exists plg___PLUGIN_KEY___items (
+  -- 🔴 Без DEFAULT: ключ генерує клієнт (crypto.randomUUID()) і шле в
+  -- insert. Інакше оптимістичний рядок і серверний розійдуться ключами.
+  id uuid primary key,
+  title text not null,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+```
 
-Run: `pnpm test && pnpm lint`
-Expected: PASS, 0 errors.
+Перевірити, чи `create-scaffold.mjs` копіює теку автоматично
+(`copyTemplateDirectory`) — якщо так, реєстрація не потрібна; якщо ні,
+додати теку у список. Плейсхолдер ключа взяти той самий, що вже вживає
+скаффолдер (`packages/cli/src/create-scaffold.mjs:34,43`).
 
-- [ ] **Step 6: Коміт**
+Додати перевірку в `tests/cli-create.test.ts`: згенерований плагін має
+файл міграції, і в ньому **немає** `default gen_random_uuid()`.
+
+- [ ] **Step 6: Запустити все**
+
+Run: `pnpm test && pnpm lint && pnpm typecheck`
+Expected: PASS, 0 errors. 🔴 Особливо — `usePluginTable.test.tsx` і
+`plugin-port.test.ts` (їх щойно оновили).
+
+- [ ] **Step 7: Коміт**
 
 ```bash
-git add packages/simplycms/src/plugin-sdk packages/simplycms-plugin-faq packages/cli/src
+git add packages/simplycms/src/plugin-sdk packages/simplycms/test-harness \
+        packages/simplycms-plugin-faq packages/cli tests
 git commit -m "feat(v2-k3)!: порт плагінів вимагає клієнтський id
 
-BREAKING CHANGE: PluginTablePort.insert тепер вимагає row.id, а plg_*
-таблиці створюються без DEFAULT. Робиться зараз, бо вікно закривається
-на К5 — після відкриття подач маркетплейсу контракт заморожує перший
-сторонній пакет. Сторонніх плагінів сьогодні нуль, ціна зміни нульова.
+BREAKING CHANGE: PluginTablePort.insert вимагає row.id; plg_* таблиці
+створюються без DEFAULT. Створено шаблон міграції плагіна, якого досі не
+існувало, — без нього вимога К3-11 щодо scaffold DDL була невиконанною.
+Оновлено наявних споживачів: usePluginTable.test, plugin-port.test (DDL
+і фікстура), FaqAdmin.
+
+Робиться зараз, бо вікно закривається на К5: після відкриття подач
+маркетплейсу контракт заморожує перший сторонній пакет.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
-
 ### Task 4: DROP DEFAULT у baseline + гейт у test:schema
 
 **Files:**
-- Modify: `packages/simplycms/migrations/0001_init.sql` (id-колонки Категорії A)
+- Modify: `packages/simplycms/migrations/0001_init.sql` (Категорія A)
 - Modify: `packages/simplycms/migrations/0002_grants.sql:186-189` (стале пояснення)
-- Modify: `packages/simplycms/src/schema/schema.ts` (зняти `.defaultRandom()` у Категорії A)
+- Modify: `packages/simplycms/src/schema/schema.ts` (зняти `.defaultRandom()`)
+- Modify: `packages/simplycms/src/schema/media.ts:45` (**та сама зміна**)
+- Modify: `packages/simplycms/drizzle/0000_init.sql` + `drizzle/meta/` (регенерація)
 - Test: `packages/simplycms/test-harness/pg/__tests__/id-defaults.test.ts`
 
 **Interfaces:**
-- Consumes: харнес `test-harness/pg` (наявний: `apply.mjs`, `up.mjs`).
-- Produces: інваріант «Категорія A без DEFAULT», на який спирається fail-loud guard Task 13.
+- Consumes: харнес (`resolveHarness` з `up.mjs`; `applySqlFiles`,
+  `createTempDatabase`, `dropTempDatabase`, `queryRows`, `randomDbName`,
+  `withDbName` з `apply.mjs`). 🔴 `queryRows` повертає **масив рядків**,
+  не `{ rows }`.
+- Produces: інваріант «Категорія A без DEFAULT».
+
+🔴 Три знахідки аудиту врахувано: `schema/media.ts` має власне
+`.defaultRandom()` і його теж треба зняти, інакше Drizzle-модель
+розійдеться з БД; артефакти `drizzle/` збережуть старі defaults і
+наступний `db:diff` побачить дрейф; правка міграцій ламає
+`create-store-template-parity` без `pnpm template:sync`.
 
 - [ ] **Step 1: Написати падаючий тест**
 
@@ -502,31 +782,29 @@ import {
 
 const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const canonFiles = (): string[] =>
-  readdirSync(CANON_DIR)
-    .filter((n) => n.endsWith('.sql'))
-    .sort()
+  readdirSync(CANON_DIR).filter((n) => n.endsWith('.sql')).sort()
     .map((n) => join(CANON_DIR, n));
 
 /**
  * Категорія B — DEFAULT лишається КОНСТРУКТИВНО:
  *  • таблиці Better Auth: `generateId:'uuid'` + `supportsUUIDs` драйвера
  *    означає, що BA не кладе id в INSERT узагалі (`auth/instance.ts:78-87`);
- *  • `orders`: створює сервер із атомарним `order_number`, клієнт цим id
- *    не оперує.
- * Усе інше — Категорія A, і DEFAULT там є регресією.
+ *  • `orders`: створює сервер із атомарним `order_number`.
  */
 const CATEGORY_B = new Set([
-  'users',
-  'sessions',
-  'accounts',
-  'verifications',
-  'orders',
+  'users', 'sessions', 'accounts', 'verifications', 'orders',
 ]);
 
+/**
+ * 🔴 `has_default` — це ФАКТ наявності DEFAULT (`d.oid is not null`), а не
+ * збіг із `gen_random_uuid`. Знахідка аудиту: перевірка через ILIKE
+ * пропустила б `uuid_generate_v4()` чи літерал, тобто гейт мовчав би саме
+ * там, де мав спрацювати. Вираз лишаємо окремою колонкою — для діагностики.
+ */
 const ID_DEFAULTS_SQL = `
-  select c.relname as table_name,
-         coalesce(pg_get_expr(d.adbin, d.adrelid), '') ilike '%gen_random_uuid%'
-           as has_default
+  select c.relname                                as table_name,
+         (d.oid is not null)                      as has_default,
+         coalesce(pg_get_expr(d.adbin, d.adrelid), '') as default_expr
     from pg_attribute a
     join pg_class c on c.oid = a.attrelid
     join pg_namespace n on n.oid = c.relnamespace
@@ -557,7 +835,7 @@ describe('Е0: DEFAULT на id лише в Категорії B', () => {
     expect(rows.length).toBeGreaterThan(0);
     const offenders = rows
       .filter((r) => r.has_default && !CATEGORY_B.has(r.table_name))
-      .map((r) => r.table_name)
+      .map((r) => `${r.table_name} (${r.default_expr})`)
       .sort();
     expect(
       offenders,
@@ -583,9 +861,10 @@ describe('Е0: DEFAULT на id лише в Категорії B', () => {
 - [ ] **Step 2: Запустити — має впасти**
 
 Run: `pnpm test:schema`
-Expected: FAIL — перший кейс перелічує ~40 таблиць Категорії A.
+Expected: FAIL — перший кейс перелічує 40 таблиць Категорії A.
+🔴 Записати точне число: воно знадобиться в Step 5.
 
-- [ ] **Step 3: Зняти DEFAULT у baseline і схемі**
+- [ ] **Step 3: Зняти DEFAULT у baseline, схемі та drizzle-артефактах**
 
 У `0001_init.sql` для кожної таблиці Категорії A:
 
@@ -593,15 +872,14 @@ Expected: FAIL — перший кейс перелічує ~40 таблиць �
 	"id" uuid PRIMARY KEY NOT NULL,
 ```
 
-(було: `"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL`).
-Для п'яти таблиць Категорії B рядок лишається без змін.
+(було `… PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL`). П'ять таблиць
+Категорії B лишаються як є.
 
-Наприкінці файлу — коментарі-інваріанти, щоб наступний читач схеми бачив
-контракт, а не забутий DEFAULT:
+Коментарі-інваріанти наприкінці файлу:
 
 ```sql
 COMMENT ON COLUMN "products"."id" IS 'Категорія A: client-generated UUID. DEFAULT знято навмисно — fail-loud guard проти розсинхрону оптимістичного й серверного ключа.';
-COMMENT ON COLUMN "orders"."id" IS 'Категорія B: id генерує сервер разом із атомарним order_number. DEFAULT свідомо збережено.';
+COMMENT ON COLUMN "orders"."id"   IS 'Категорія B: id генерує сервер разом із атомарним order_number. DEFAULT свідомо збережено.';
 ```
 
 У `schema.ts` — прибрати `.defaultRandom()` у Категорії A:
@@ -613,124 +891,311 @@ export const orderStatuses = pgTable("order_statuses", {
 });
 ```
 
-У `0002_grants.sql:186-189` оновити пояснення: сиквенсів немає не тому,
-що «всі PK — uuid з `gen_random_uuid()`», а тому, що тип PK лишається
-`uuid` — гранти на сиквенси не потрібні в обох випадках.
+🔴 **`schema/media.ts:45` — окремий файл, та сама зміна:**
 
-- [ ] **Step 4: Запустити — має пройти**
+```ts
+    id: uuid().primaryKey().notNull(),
+```
 
-Run: `pnpm test:schema`
-Expected: PASS, обидва кейси.
+Оновити `0002_grants.sql:186-189`: сиквенсів немає не тому, що «всі PK —
+uuid з `gen_random_uuid()`», а тому, що тип PK лишається `uuid`.
+
+Перегенерувати артефакти Drizzle (`drizzle/0000_init.sql`,
+`drizzle/meta/`) канонічним процесом — інакше наступний `db:diff` побачить
+дрейф. Якщо регенерація дає ширший діф, ніж очікувано, — зупинитись і
+звірити: baseline канону лишається джерелом правди.
+
+- [ ] **Step 4: Синхронізувати шаблон і запустити гейт**
+
+🔴 Міграції під `create-store-template-parity` (звіряє `SCHEMA_MIGRATIONS_DIR`
+байт-у-байт). Без цього кроку `pnpm test` червоний.
+
+```bash
+pnpm template:sync
+pnpm test:schema
+pnpm test
+```
+Expected: `test:schema` PASS (обидва кейси), `test` PASS (parity зелений).
 
 - [ ] **Step 5: Негативний контроль**
 
-Тимчасово повернути DEFAULT одній таблиці Категорії A і переконатись, що
-гейт червоніє — інакше він нічого не доводить:
+🔴 **Не використовувати `git checkout` — Task 4 ще не закомічений, і
+відкат файлу стер би всі щойно зроблені `DROP DEFAULT`** (знахідка
+аудиту: перша редакція саме так і робила, тобто крок знищував задачу).
 
 ```bash
-# 1. Вручну повернути DEFAULT рівно ОДНІЙ таблиці Категорії A: у
-#    0001_init.sql знайти CREATE TABLE "banners" і замінити рядок
-#      "id" uuid PRIMARY KEY NOT NULL,
-#    на
-#      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-# 2. Прогнати гейт — він МУСИТЬ почервоніти:
+# 1. Точкова правка ОДНІЄЇ таблиці Категорії A — повернути DEFAULT:
+python3 - <<'PATCH'
+import pathlib, re
+p = pathlib.Path('packages/simplycms/migrations/0001_init.sql')
+t = p.read_text(encoding='utf-8')
+marker = 'CREATE TABLE "banners"'
+i = t.index(marker)
+j = t.index('"id" uuid PRIMARY KEY NOT NULL,', i)
+p.write_text(
+    t[:j] + '"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,' + t[j + len('"id" uuid PRIMARY KEY NOT NULL,'):],
+    encoding='utf-8')
+print('DEFAULT повернено таблиці banners')
+PATCH
+
+# 2. Гейт МУСИТЬ почервоніти рівно на цій таблиці:
 pnpm test:schema
-# Expected: FAIL — 'DEFAULT на id у Категорії A: banners'
-# 3. Відкотити контрольну правку:
-git checkout packages/simplycms/migrations/0001_init.sql
+# Expected: FAIL — 'DEFAULT на id у Категорії A: banners (gen_random_uuid())'
+
+# 3. Відкотити ТОЧКОВО (не git checkout!):
+python3 - <<'PATCH'
+import pathlib
+p = pathlib.Path('packages/simplycms/migrations/0001_init.sql')
+t = p.read_text(encoding='utf-8')
+p.write_text(t.replace('"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,',
+                       '"id" uuid PRIMARY KEY NOT NULL,', 1)
+             if 'CREATE TABLE "banners"' in t else t, encoding='utf-8')
+print('відкочено')
+PATCH
+
+# 4. Переконатись, що позитивний стан повернувся:
+pnpm test:schema
 ```
+Expected: крок 2 — FAIL із назвою `banners`; крок 4 — PASS.
 
-🔴 Якщо гейт лишився зеленим — він нічого не доводить, і етап не можна
-закривати. Це той самий клас сліпоти, що дав борги К1а-9 і 0.4.1-5.
+🔴 Якщо на кроці 2 гейт лишився зеленим — він нічого не доводить, і етап
+не можна закривати. Це той самий клас сліпоти, що дав борги К1а-9 і 0.4.1-5.
 
-- [ ] **Step 6: Довести повний накат і живий магазин**
+⚠️ Точковий відкат у кроці 3 замінює **перше** входження — переконайся
+`git diff`, що змінена рівно одна таблиця й решта `DROP DEFAULT` на місці.
+
+- [ ] **Step 6: Повний ланцюг гейтів і живий магазин**
 
 ```bash
-pnpm build && pnpm test && pnpm test:schema
+pnpm install --frozen-lockfile && pnpm format:check && pnpm lint \
+  && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema \
+  && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging
 PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
 pnpm build && PORT=3141 pnpm start &
-curl -s -o /dev/null -w '%{http_code}\n' localhost:3141/ localhost:3141/catalog
+curl -s -o /dev/null -w '%{http_code} ' localhost:3141/ localhost:3141/catalog; echo
 ```
-Expected: гейти PASS; обидві сторінки `200`.
+Expected: усе PASS; обидві сторінки `200`.
 
 - [ ] **Step 7: Коміт**
 
 ```bash
-git add packages/simplycms/migrations packages/simplycms/src/schema packages/simplycms/test-harness
-git commit -m "feat(v2-k3)!: DROP DEFAULT на id Категорії A + гейт у test:schema
+git add packages/simplycms/migrations packages/simplycms/src/schema \
+        packages/simplycms/drizzle packages/simplycms/test-harness \
+        packages/create-simplycms-store/template
+git commit -m "feat(v2-k3)!: DROP DEFAULT на id Категорії A + гейт
 
 BREAKING CHANGE: baseline більше не генерує id для таблиць, які створює
-клієнт. Забутий id тепер падає 23502 у момент помилки, а не мовчки
-розходиться ключем з оптимістичним рядком. Категорія B (Better Auth,
-orders) DEFAULT зберігає конструктивно — див. COMMENT ON COLUMN.
+клієнт. Забутий id падає 23502 у момент помилки, а не мовчки розходиться
+ключем з оптимістичним рядком. Категорія B (Better Auth, orders) DEFAULT
+зберігає конструктивно — див. COMMENT ON COLUMN.
 
-Гейт має негативний контроль: повернений DEFAULT червонить test:schema.
+Гейт перевіряє ФАКТ наявності DEFAULT (d.oid is not null), а не збіг із
+gen_random_uuid: інакше uuid_generate_v4() чи літерал пройшли б повз.
+Негативний контроль — точкова правка однієї таблиці, без git checkout.
+
+Синхронізовано шаблон (template:sync) і артефакти drizzle; media.ts
+знято з defaultRandom разом зі schema.ts.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
+### Task 5: Гейт на нові вставки + сід пілота
+
+**Files:**
+- Modify: `scripts/pilot-pack/seed-sql.mjs`
+- Regenerate: `supabase/seed.sql` (через `pnpm pilot:seed`)
+- Test: `tests/admin-inserts-need-id.test.ts`
+
+**Interfaces:**
+- Consumes: `ENTITY`-незалежний текстовий скан (реєстру сутностей у Е0 ще немає).
+- Produces: гейт, що не дає новій вставці без `id` з'явитись у застарілому шарі.
+
+🔴 **Рішення власника (2026-08-29):** 27 вставок у `src/admin/**` **не
+чіпаємо** — вони ходять через `supabase-js`, якого на чистому Postgres
+немає, тобто не виконуються за жодних умов, і всі переписуються в Е1–Е6.
+Замість правки ставимо гейт, який червонітиме на **новій** вставці без
+`id`, і фіксуємо наявні 27 іменованим списком-виїмкою.
+
+- [ ] **Step 1: Написати тест-ратчет**
+
+```ts
+// tests/admin-inserts-need-id.test.ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+
+const ADMIN = resolve(import.meta.dirname, '../packages/simplycms/src/admin');
+
+/**
+ * Ратчет застарілого шару. Адмінка на supabase-js не виконується на
+ * чистому Postgres і повністю переписується в Е1–Е6 (рішення власника
+ * 2026-08-29), тому наявні вставки без `id` лишаються як є — але їхня
+ * кількість може тільки ЗМЕНШУВАТИСЬ. Нова вставка валить тест.
+ *
+ * 🔴 Не «полагодити» цей файл додаванням нового рядка у список: кожен
+ * запис звідси зникає разом із переписаною сторінкою.
+ */
+const KNOWN_WITHOUT_ID = 27;
+
+function tsxFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true, recursive: true })
+    .filter((e) => e.isFile() && /\.tsx?$/.test(e.name))
+    .map((e) => join(e.parentPath ?? e.path, e.name));
+}
+
+describe('застарілий шар адмінки: ратчет вставок без id', () => {
+  it(`вставок без id не більше ніж ${KNOWN_WITHOUT_ID}`, () => {
+    const offenders: string[] = [];
+    for (const file of tsxFiles(ADMIN)) {
+      const src = readFileSync(file, 'utf8');
+      const re = /\.insert\(\s*(\{|\[)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(src)) !== null) {
+        const chunk = src.slice(m.index, m.index + 400);
+        if (!/(^|[\s{,])id:\s*\S/.test(chunk)) {
+          offenders.push(`${relative(ADMIN, file)}@${m.index}`);
+        }
+      }
+    }
+    expect(
+      offenders.length,
+      `вставок без id: ${offenders.length}\n${offenders.join('\n')}`,
+    ).toBeLessThanOrEqual(KNOWN_WITHOUT_ID);
+  });
+});
+```
+
+- [ ] **Step 2: Запустити — має пройти на поточному стані**
+
+Run: `pnpm vitest run tests/admin-inserts-need-id.test.ts`
+Expected: PASS. 🔴 Якщо фактичне число інше за 27 — **виправити константу
+на виміряне**, а не підганяти скан. Записати виміряне число.
+
+- [ ] **Step 3: Негативний контроль**
+
+Додати в будь-який файл адмінки тимчасову вставку без `id`
+(`await supabase.from('banners').insert({ title: 'x' });`), запустити тест
+— має ВПАСТИ з переліком. Прибрати правку, запустити знову — PASS.
+
+- [ ] **Step 4: Сід пілота — стабільні id**
+
+`scripts/pilot-pack/seed-sql.mjs` рендерить `supabase/seed.sql` без `id`
+(знахідка аудиту). Додати генерацію стабільних UUID у джерелі та
+перегенерувати:
+
+```bash
+pnpm pilot:seed
+git diff --stat supabase/seed.sql
+```
+Expected: у `supabase/seed.sql` кожен `insert into` називає колонку `id`.
+
+Run: `pnpm test`
+Expected: PASS, зокрема `tests/pilot-seed.test.ts` (парність фікстур і сіду).
+
+- [ ] **Step 5: Зафіксувати відомий виняток**
+
+`tools/content-loader-mcp` містить ~34 вставки без `id`, але це
+**автономний npm-проєкт поза `pnpm-workspace.yaml`** (борг К0-9: він і
+сьогодні не стартує без окремого `npm install`, його тести в гейти не
+входять). Зміни контракту він не ламає, бо не виконується.
+
+Дописати рядок у борг К0-9 роадмапу: «після Е0 інструмент ще й
+несумісний із контрактом id — мігрувати разом із втягуванням у workspace
+або формально вилучити».
+
+- [ ] **Step 6: Коміт**
+
+```bash
+git add tests/admin-inserts-need-id.test.ts scripts/pilot-pack supabase/seed.sql \
+        docs/tasks/platform-roadmap.md
+git commit -m "test(v2-k3): ратчет вставок без id + стабільні id у сіді пілота
+
+Застарілий шар адмінки свідомо не правиться (рішення власника): він
+ходить через supabase-js, на чистому Postgres не виконується і
+переписується в Е1–Е6. Замість правки — ратчет: наявні вставки без id
+дозволені, нова валить тест.
+
+Сід пілота перегенеровано зі стабільними id. content-loader-mcp
+зафіксовано як відомий виняток у борзі К0-9 — він поза workspace і в
+гейти не входить.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+---
 ## DoD етапу Е0
 
 Етап закритий, коли **всі** пункти виконані й перевірені:
 
-1. **Гейти зелені у повному ланцюзі:**
+1. **Повний ланцюг гейтів зелений:**
    ```bash
    pnpm install --frozen-lockfile && pnpm format:check && pnpm lint \
      && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema \
      && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging
    ```
-   Очікується: усе PASS, `pnpm lint` = 0 errors.
+   `pnpm lint` = 0 errors. 🔴 `pnpm test` включно з
+   `create-store-template-parity` — тобто `pnpm template:sync` виконано.
 
-2. **Негативний контроль гейта DEFAULT відпрацював** (Task 4, Step 5):
-   повернений DEFAULT одній таблиці Категорії A червонить `pnpm test:schema`
-   з іменем цієї таблиці у повідомленні. Без цього кроку гейт не доведений.
+2. **Обидва негативні контролі відпрацювали:**
+   - Task 4 Step 5 — повернений DEFAULT одній таблиці Категорії A червонить
+     `test:schema` з її іменем; після точкового відкату гейт знову зелений.
+   - Task 5 Step 3 — додана вставка без `id` в адмінці валить ратчет.
 
-3. **Живий прогін, а не тести** (канон репо — доводить прогін, не зелений CI):
+   Без цих двох перевірок гейти не доведені, і етап **не закривається**.
+
+3. **Живий прогін** (канон репо — доводить прогін, не зелений CI):
    ```bash
    PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
    pnpm build && PORT=3141 pnpm start &
    curl -s -o /dev/null -w '%{http_code} ' localhost:3141/ localhost:3141/catalog \
      localhost:3141/cart localhost:3141/api/health; echo
    ```
-   Очікується: `200 200 200 200`.
+   Expected: `200 200 200 200`.
 
-4. **Наскрізний контур покупки прожитий вручну** — саме він містить
-   найбільше нових `id`: додати товар у кошик → оформити замовлення →
-   переконатись, що замовлення й позиції створились (прямим SQL, бо
-   HTTP-API до БД у контракті v2 немає):
+4. **Наскрізний контур покупки прожитий вручну** — він містить найбільше
+   нових `id`: додати товар у кошик → оформити замовлення → перевірити
+   прямим SQL (HTTP-API до БД у контракті v2 немає):
    ```sql
    select o.order_number, count(i.id) as items
    from orders o join order_items i on i.order_id = o.id
    group by o.order_number order by o.created_at desc limit 1;
    ```
-   Очікується: рядок із ненульовою кількістю позицій.
+   Expected: рядок із ненульовою кількістю позицій.
 
-5. **Сід ідемпотентний** — `pnpm db:demo` двічі поспіль не подвоює рядки.
+5. **Сід ідемпотентний і не змінився за складом** — `pnpm db:demo` двічі
+   поспіль не подвоює рядки; `baseline.test.ts` бачить
+   `{ statuses: 6, themes: 1, settings: 2 }`.
 
-6. **`pnpm pilot:pack`** пройдено (гейти A/C/D/CLI/TOOL) — доводить, що
-   зміни в `plugin-sdk` і шаблоні плагіна не зламали пакування.
+6. **`pnpm pilot:pack`** пройдено (A/C/D/CLI/TOOL) — доводить, що зміни в
+   `plugin-sdk`, шаблоні плагіна і сіді пілота не зламали пакування.
+
+7. **`pnpm db:diff` не показує дрейфу** — артефакти `drizzle/`
+   перегенеровані разом зі схемою.
 
 ## Що НЕ входить в Е0 (щоб не було спокуси)
 
 - Жодного рядка TanStack DB, колекцій, `useLiveQuery` — це Е1.
-- Адмінка не чіпається взагалі: її 27 вставок переписуються в Е1+.
+- 27 вставок у `src/admin/**` — свідоме рішення власника (Task 5); вони
+  переписуються разом зі сторінками в Е1–Е6.
 - `defineAdminResource`, `ENTITY`, `entityKey` — Е1.
+- Fail-loud перевірка secure context для `crypto.randomUUID()` — Е1,
+  разом з рештою адмін-точок.
 - Storage-порт і `ImageUpload` — Е2.
-- Поіменна класифікація всіх 45 таблиць у документі: класифікація
-  **машинна** (гейт Task 4 тримає список Категорії B, решта — A за
-  замовчуванням), список у плані застарів би за один PR.
+- `tools/content-loader-mcp` — поза workspace, у гейти не входить
+  (борг К0-9).
 
 ## Точка передачі
 
-Після закриття DoD — повернутись на валідацію: показати результат живого
-прогону (п. 3–4) і вивід негативного контролю (п. 2). Наступний план —
-**Е1: інфраструктура серверного шару + перша сутність наскрізь**
-(`ENTITY`/`entityKey`, `defineAdminResource`, `subset.ts`, реєстр
-колекцій, `QueryClient` у router context, дві тір-зони, `order_statuses`
-наскрізь, гейти `mutation-cache-sync` / `handler-canon` /
+Після закриття DoD — повернутись на валідацію з трьома артефактами:
+вивід живого прогону (п. 3–4), вивід **обох** негативних контролів (п. 2)
+і виміряне число вставок без `id` в адмінці (Task 5 Step 2).
+
+Наступний план — **Е1: інфраструктура серверного шару + перша сутність
+наскрізь** (`ENTITY`/`entityKey`, `defineAdminResource`, `subset.ts`,
+реєстр колекцій, `QueryClient` у router context, дві тір-зони,
+`order_statuses` наскрізь, гейти `mutation-cache-sync` / `handler-canon` /
 `client-generated-ids` / `id-mismatch` / `entity-parity` /
-`no-literal-query-key`). Він пишеться після того, як Е0 підтверджено —
-бо форма fail-loud guard-а в Е1 спирається на інваріант, який Е0 щойно
-встановив.
+`no-literal-query-key`). Він пишеться після підтвердження Е0: форма
+fail-loud guard-а в Е1 спирається на інваріант, який Е0 щойно встановив.
