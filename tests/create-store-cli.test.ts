@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -110,8 +110,30 @@ describe('create-store CLI', () => {
     expect(envLocal).toContain('VITE_SITE_URL=http://localhost:3000');
     // 🔴 Секрет підпису сесій генерується, а не приїжджає літералом: однаковий
     // у всіх магазинів секрет — вразливість, а не налаштування за замовчуванням.
+    // 🔴 Довжини НЕДОСТАТНЬО: зашитий літерал на 32+ символи проходив би її
+    // так само, як згенерований (доведено мутацією `randomBytes(32)` →
+    // константа — тест лишався зеленим). Тому асертимо саме РІЗНІСТЬ між
+    // двома скаффолдами плюс форму base64 від 32 байт.
     const secret = /^BETTER_AUTH_SECRET=(.+)$/m.exec(envLocal)?.[1] ?? '';
     expect(secret.length).toBeGreaterThanOrEqual(32);
+    expect(secret).toMatch(/^[A-Za-z0-9+/]{43}=$/);
+    const second = mkdtempSync(join(tmpdir(), 'simplycms-secret-'));
+    try {
+      await scaffold({
+        templateDir: 'packages/create-simplycms-store/template',
+        targetDir: second,
+        storeName: 'demo2',
+        version: '9.9.9-sentinel',
+        databaseUrl: DSN,
+      });
+      const secondSecret =
+        /^BETTER_AUTH_SECRET=(.+)$/m.exec(
+          readFileSync(join(second, '.env.local'), 'utf8'),
+        )?.[1] ?? '';
+      expect(secondSecret).not.toBe(secret);
+    } finally {
+      rmSync(second, { recursive: true, force: true });
+    }
     expect(envLocal).not.toMatch(/SUPABASE/);
     const manifest = JSON.parse(
       readFileSync(join(target, 'package.json'), 'utf8'),

@@ -56,6 +56,13 @@ describe('create-store: інструкція «призначити власни
     expect(out).toContain('supabase/migrations/*.sql');
     expect(out).toContain('psql');
     expect(out).not.toContain('supabase db push');
+    // 🔴 Накат канону НЕ під `DATABASE_URL` із .env.local: там роль
+    // `app_runtime` (`nosuperuser nocreatedb nocreaterole`), а
+    // `0000_prelude.sql` створює ролі й безумовно робить `alter role`. Порада
+    // `psql "$DATABASE_URL"` падала за будь-якого стану бази, тож гард саме на
+    // неї — інакше регресія повернулась би мовчки.
+    expect(out).not.toContain('psql "$DATABASE_URL"');
+    expect(out).toContain('ВЛАСНИКА БД');
     expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(out).toContain('DATABASE_URL');
     expect(out).toContain('BETTER_AUTH_SECRET');

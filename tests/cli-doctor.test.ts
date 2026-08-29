@@ -113,7 +113,11 @@ describe('cli doctor (оффлайн)', () => {
     const halfway = checkEnv({ env: { DATABASE_URL: ENV.DATABASE_URL } });
     expect(halfway.status).toBe('error');
     expect(halfway.details).toContain('BETTER_AUTH_SECRET');
-    expect(halfway.details).not.toContain('DATABASE_URL:');
+    // 🔴 Без двокрапки. `checkEnv` будує текст як `Не задано: ${missing.join('; ')}`,
+    // тобто підрядка `DATABASE_URL:` не буває в ЖОДНІЙ реалізації — старий
+    // асерт із двокрапкою був no-op і пропускав мутацію «звинувачувати всі
+    // ключі, навіть заповнені».
+    expect(halfway.details).not.toContain('DATABASE_URL');
 
     expect(checkEnv({ env: ENV }).status).toBe('ok');
     // 🔴 Ключі поза контрактом його не заміняють: магазин, у якого заповнено

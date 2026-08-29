@@ -116,9 +116,20 @@ export function printNextSteps({
   // 🔴 Накат схеми — psql по канону міграцій, а не `supabase db push`: канон
   // нумерований послідовно (`0000_prelude.sql`), а Supabase CLI чекає
   // `<timestamp>_<name>.sql` і такі імена відхиляє.
+  //
+  // 🔴 URL тут — ПРИВІЛЕЙОВАНИЙ (власник БД), а НЕ `DATABASE_URL` із
+  // `.env.local`. `0000_prelude.sql` створює ролі й безумовно робить
+  // `alter role app_runtime …`, а сама `app_runtime` — `nosuperuser
+  // nocreatedb nocreaterole`, тож під нею накат падає за будь-якого стану
+  // бази (`permission denied for database`, `permission denied to alter
+  // role`, або роль ще не існує на чистому кластері). Це bootstrap-крок
+  // людини, а не рантайм-ключ, тому нової змінної в контракті магазину не
+  // заводимо — URL підставляється руками.
   steps.push(
-    'for f in supabase/migrations/*.sql; do ' +
-      'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done',
+    '# накат канону — підключенням ВЛАСНИКА БД, не app_runtime із .env.local:\n' +
+      'for f in supabase/migrations/*.sql; do ' +
+      'psql "postgresql://<owner>:<pass>@<host>:5432/<db>" ' +
+      '-v ON_ERROR_STOP=1 -f "$f"; done',
   );
   // 🔴 service_role-ключа тут більше немає: запрошення власника випускається
   // прямо в Postgres (контракт v2), тож потрібен лише DATABASE_URL із

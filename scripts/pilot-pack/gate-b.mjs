@@ -20,9 +20,21 @@ export async function expectedProducts(env) {
   const client = new pg.Client({ connectionString: env.DATABASE_URL });
   await client.connect();
   try {
+    // 🔴 Читаємо ТІЄЮ САМОЮ дорогою, що й магазин. `DATABASE_URL` за
+    // контрактом 0.4.1 логіниться роллю `app_runtime`, у якої прямих грантів
+    // НЕМАЄ за побудовою (`0000_prelude.sql` — `noinherit`; `0002_grants.sql`
+    // — жодного табличного гранта). Голий `select` тут падав із
+    // `permission denied for table products` рівно тоді, коли розробник
+    // дотримався власного контракту, — тобто гейт карав за ПРАВИЛЬНИЙ конфіг,
+    // а зеленів на привілейованому DSN. Форма преамбули — та сама, що в
+    // `withActor` (`simplycms/db`) і в тестовій копії контракту
+    // `test-harness/pg/actors.mjs`.
+    await client.query('begin');
+    await client.query('set local role app_user');
     const { rows } = await client.query(
       'select name from public.products where is_active = true limit 50',
     );
+    await client.query('commit');
     // Імена зі спецсимволами HTML пропускаємо — React їх екранує.
     return rows
       .map((row) => row.name)
