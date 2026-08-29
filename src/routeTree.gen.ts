@@ -19,7 +19,6 @@ import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/rou
 import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
 import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
 import { Route as ApiHealthRouteImport } from './../packages/simplycms/routes/storefront/api/health'
-import { Route as ApiGuestOrderRouteImport } from './../packages/simplycms/routes/storefront/api/guest-order'
 import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/routes/storefront/_storefront/checkout'
 import { Route as StorefrontCartRouteImport } from './../packages/simplycms/routes/storefront/_storefront/cart'
 import { Route as AdminUsersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/users/index'
@@ -123,11 +122,6 @@ const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGuestOrderRoute = ApiGuestOrderRouteImport.update({
-  id: '/api/guest-order',
-  path: '/api/guest-order',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StorefrontCheckoutRoute = StorefrontCheckoutRouteImport.update({
@@ -443,7 +437,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
-  '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
@@ -509,7 +502,6 @@ export interface FileRoutesByTo {
   '/': typeof StorefrontIndexRoute
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
-  '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
@@ -578,7 +570,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/_storefront/cart': typeof StorefrontCartRoute
   '/_storefront/checkout': typeof StorefrontCheckoutRoute
-  '/api/guest-order': typeof ApiGuestOrderRoute
   '/api/health': typeof ApiHealthRoute
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
@@ -648,7 +639,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/checkout'
-    | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/invite'
@@ -714,7 +704,6 @@ export interface FileRouteTypes {
     | '/'
     | '/cart'
     | '/checkout'
-    | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/invite'
@@ -782,7 +771,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/_storefront/cart'
     | '/_storefront/checkout'
-    | '/api/guest-order'
     | '/api/health'
     | '/api/revalidate-theme'
     | '/auth/invite'
@@ -850,7 +838,6 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   StorefrontRoute: typeof StorefrontRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
-  ApiGuestOrderRoute: typeof ApiGuestOrderRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
   AuthInviteRoute: typeof AuthInviteRoute
@@ -929,13 +916,6 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/guest-order': {
-      id: '/api/guest-order'
-      path: '/api/guest-order'
-      fullPath: '/api/guest-order'
-      preLoaderRoute: typeof ApiGuestOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_storefront/checkout': {
@@ -1484,7 +1464,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   StorefrontRoute: StorefrontRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
-  ApiGuestOrderRoute: ApiGuestOrderRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
   AuthInviteRoute: AuthInviteRoute,
