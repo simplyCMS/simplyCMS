@@ -29,12 +29,13 @@ npm-пакети; шар імпортується субшляхом `simplycms/
 | `src/contracts/` | `simplycms/contracts` | T0 | Доменні контракти + порти (0 runtime deps); `./views` і `./views/fixtures` — view-model-и вітрини (контракт тем v3) |
 | `src/domain/` | `simplycms/domain` | T1 | Pure-логіка: pricing, discounts, inventory, shipping |
 | `src/schema/` | `simplycms/schema` | T1 | Drizzle-схема ядра + RLS у TS; snapshot і schema-тулінг — на рівні ПАКЕТА (`drizzle/`, `drizzle.config.ts`), не в `src/` |
-| `src/supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД |
-| `src/data-supabase/` | `simplycms/data-supabase` | T2 | Репозиторії на інжектованому Supabase-клієнті |
-| `src/react-query/` | `simplycms/react-query` | T2 | `EngineProvider`/`useEngine` + data-хуки |
+| `src/supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД — 🔴 живий ЛИШЕ для адмінки (переписує К3) |
+| `src/db/` | `simplycms/db` | T2 | pg-пул + `withActor` — єдиний спосіб дістати зʼєднання (GUC актора, `SET LOCAL ROLE`) |
+| `src/auth/` | `simplycms/auth` | T2 | Серверний Better Auth (інстанс, databaseHooks, invite власника, authz-матриця) |
+| `src/react-query/` | `simplycms/react-query` | T2 | `EngineProvider`/`useEngine` (links+config), `CartProvider`/`useCart`, `catalogKeys` |
 | `src/i18n/` | `simplycms/i18n` | T2 | `createTranslator`/`normalizeLocale`, `I18nProvider`/`useT`, каталоги uk/en |
 | `src/runtime/` | `simplycms/runtime` | T2 | `defineRuntime` (складання EngineContext) + host-`defineConfig` |
-| `src/storefront/` | `simplycms/storefront` | T2 | SSR-loaders + SEO (sitemap/robots), Supabase-клієнт інʼєктується |
+| `src/storefront/` | `simplycms/storefront` | T2 | SSR-loaders (Drizzle, `withStorefrontDb`) + SEO (sitemap/robots) — без Supabase |
 | `src/ui/` | `simplycms/ui` | T3 | Дизайн-система (50+ shadcn/ui компонентів, self-contained) |
 | `src/themes/` | `simplycms/themes` | T4 | ThemeRegistry, ThemeContext, `applyTokens`, `validateThemeModule`, `getActiveThemeSSR`, `./conformance` |
 | `src/plugins/` | `simplycms/plugins` | T4 | HookRegistry, PluginSlot, `bootstrapPlugins`, `validatePluginModule` |

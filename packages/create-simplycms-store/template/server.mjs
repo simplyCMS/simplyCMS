@@ -24,7 +24,8 @@ import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
 // норма). Пріоритет: реальний env процесу > `.env.local` > `.env` — тому
 // пишемо лише відсутні ключі, а `.env.local` читаємо першим. Файли шукаються
 // в теці запуску (для `pnpm start` — корінь магазину). Наслідок контракту:
-// ротація Supabase-ключів = перезапуск процесу, без перезбірки.
+// ротація серверних ключів (`DATABASE_URL`, `BETTER_AUTH_SECRET`) =
+// перезапуск процесу, без перезбірки.
 for (const file of ['.env.local', '.env']) {
   if (!existsSync(file)) continue;
   const parsed = parseEnv(readFileSync(file, 'utf8'));

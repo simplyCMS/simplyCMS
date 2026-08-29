@@ -166,9 +166,11 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 Конвенція імені плагінної міграції — `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql`
 (унеможливлює колізії імен між канонами). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених — `supabase db push` тоді потребує `--include-all` (порада є в
-підказці `--write`); перейменування-при-копіюванні відкладено разом з
-обліком `plugins.migrations_applied`.
+накачених у `supabase/migrations/`. Оскільки накат тепер — прямий `psql -f`
+(немає Supabase CLI, що сам відстежує застосовані файли), це не блокує:
+оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
+порядку імен. Перейменування-при-копіюванні відкладено разом з обліком
+`plugins.migrations_applied`.
 
 Режим перегляду (без `--write`) — завжди exit 0; CI-семантику має
 `update --check`.
@@ -260,7 +262,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-supabase db push                 # накатити міграції (після ревʼю!)
+for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!)
 pnpm build && pnpm start         # rebuild
 ```
 

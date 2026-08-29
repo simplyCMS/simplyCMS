@@ -17,7 +17,7 @@
   `<YYYYMMDDHHmmss>___PLUGIN_TABLE_PREFIX__<slug>.sql`; чіпати можна ЛИШЕ
   таблиці `__PLUGIN_TABLE_PREFIX__*` (межа довіри — `simplycms db:diff` це
   лінтить). Забрати в магазин: `pnpm simplycms db:diff --write` → ревʼю →
-  `supabase db push`. Доступ із коду — `usePluginTable`.
+  `psql "$DATABASE_URL" -f <нова>.sql`. Доступ із коду — `usePluginTable`.
 - **Сторінки адмінки** — тека `routes/` із запеченими id
   `/admin/__PLUGIN_NAME__/…` + рядок `physical()` у `routes.ts` магазину
   (див. якір-коментар там); приклад — пакет `@simplycms/plugin-faq`.

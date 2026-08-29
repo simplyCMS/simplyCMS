@@ -68,7 +68,8 @@ pnpm typecheck         # TypeScript type check
 pnpm lint              # ESLint
 pnpm test              # Run tests (vitest run)
 pnpm format:check      # Prettier (check only)
-pnpm db:generate-types # Regenerate TypeScript types
+pnpm db:diff <name>    # schema.ts → SQL migration (review required)
+pnpm test:schema       # Apply migration canon against a clean Postgres
 ```
 
 ## Project Structure (Summary)
@@ -81,7 +82,7 @@ src/                              # Host (тонка збірка магазин
 ├── routes/__root.tsx             # Root route (html, providers, 404/error)
 ├── routes/my/                    # ЄДИНА тека роутів магазину (кастомні сторінки)
 ├── server/engine.ts              # createServerFn-glue для EngineContext
-├── engine-provider.tsx           # EngineProvider (DI-клієнт, lazy-репозиторії)
+├── engine-provider.tsx           # EngineProvider (ізоморфна збірка EngineContext: links+config)
 ├── engine.shared.ts              # Shared-частина EngineContext
 ├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
 ├── router.tsx                    # createRouter
@@ -95,9 +96,10 @@ packages/               # Публіковані пакети — рівно П�
 │   ├── src/contracts/       # T0 Contracts + ports (0 deps); ./views — view-model-и вітрини
 │   ├── src/domain/          # T1 Pure logic (pricing/discounts/inventory/shipping)
 │   ├── src/schema/          # T1 Drizzle-схема ядра + RLS у TS
-│   ├── src/supabase/        # T2 browser/server/anon-клієнти, keys, provider, database.ts
-│   ├── src/data-supabase/   # T2 Repository implementations
-│   ├── src/react-query/     # T2 Query-хуки через EngineContext
+│   ├── src/supabase/        # T2 browser/server/anon-клієнти, keys, provider, database.ts — лише адмінка (до К3)
+│   ├── src/db/              # T2 pg-пул + withActor (єдиний шлях до Postgres)
+│   ├── src/auth/            # T2 Серверний Better Auth
+│   ├── src/react-query/     # T2 EngineProvider/useEngine, CartProvider/useCart
 │   ├── src/runtime/         # T2 defineRuntime + host-defineConfig
 │   ├── src/i18n/            # T2 createTranslator, I18nProvider, каталоги uk/en
 │   ├── src/storefront/      # T2 SSR loaders + SEO (DI-клієнт)

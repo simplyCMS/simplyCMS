@@ -1,9 +1,9 @@
 # simplycms/runtime
 
 Складання магазину SimplyCMS: `defineRuntime` збирає `EngineContext` з
-інжектованих адаптерів (репозиторії, identity, links, media, config), а
-`defineConfig` типізує `simplycms.config.ts`. Залежить лише від контрактів
-`simplycms/contracts` — Supabase та `import.meta.env` усередині немає.
+інжектованих адаптерів (`links`, `config`), а `defineConfig` типізує
+`simplycms.config.ts`. Залежить лише від контрактів `simplycms/contracts` —
+Supabase та `import.meta.env` усередині немає.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
@@ -29,21 +29,20 @@ pnpm add simplycms
 
 ## Приклад
 
-```ts
-// src/server/engine.ts магазину — серверний рантайм на одному Supabase-клієнті
-import { defineRuntime, type SimplyCmsRuntime } from 'simplycms/runtime';
+🔴 **`adapters` звузились до двох чистих провайдерів (0.4.1).**
+Репозиторії даних (`catalog`/`orders`/`identity`/`media`) знесені разом із
+шаром `simplycms/data-supabase` — вітрина читає БД серверними лоадерами
+`simplycms/storefront` через `simplycms/db` (`withActor`), а не з браузера.
+`defineRuntime` лишає лише `links`/`config`, тож збірка ізоморфна:
 
-export function createServerRuntime(cookieHeader?: string): SimplyCmsRuntime {
-  const client = createServerSupabase(cookieHeader);
+```ts
+// src/engine.shared.ts магазину — ізоморфна збірка EngineContext
+import { defineRuntime, type SimplyCmsRuntime } from 'simplycms/runtime';
+import { appLinks, appConfig } from './engine.shared';
+
+export function buildClientEngine(): SimplyCmsRuntime {
   return defineRuntime({
-    adapters: {
-      catalog: createSupabaseCatalogRepository(client, singleTenantScope),
-      orders: createSupabaseOrderRepository(client, singleTenantScope),
-      identity: createSupabaseIdentityProvider(client),
-      links: appLinks,
-      media: createAppMediaProvider(client),
-      config: appConfig,
-    },
+    adapters: { links: appLinks, config: appConfig },
   });
 }
 ```

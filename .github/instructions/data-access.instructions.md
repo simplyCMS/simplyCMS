@@ -8,13 +8,18 @@ description: "Правила роботи з даними та Supabase в Simpl
 ## ✅ ALWAYS
 
 ### Supabase клієнти
-- 🔴 **Шар даних вітрини на Supabase БІЛЬШЕ НЕ будується** (В2-К1а): SSR-лоадери
-  вітрини переведені на Drizzle поверх чистого Postgres — див. «Storefront (SSR)».
-  Supabase лишається живим для адмінки, клієнтських запитів і auth до контуру К1′б.
-- **Серверні функції (не-вітрина):** `createServerSupabase()` з `simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
-- **Клієнтські компоненти:** використовуй DI — `useSupabaseClient()` з `simplycms/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
-- **Анонімні cross-request сценарії** (SSR-резолв теми, sitemap): `createAnonSupabaseClient()` з `simplycms/supabase/anon-client` — без cookies, лише RLS `anon`-читання.
-- **Порти/репозиторії:** нові data-шляхи будуй через `simplycms/data-supabase` (репозиторії з інжектованим клієнтом + `ScopeResolver`) та хуки `simplycms/react-query` (`useEngine()`).
+- 🔴 **Шар даних вітрини на Supabase знесений повністю** (0.4.1): SSR-лоадери,
+  клієнтські запити воронки й auth переведені на Drizzle поверх чистого
+  Postgres (`withActor`) і Better Auth — див. «Storefront (SSR)». Supabase
+  лишається живим **лише для адмінки** (`packages/simplycms/src/admin/**`) —
+  її переписує трек К3.
+- **Серверні функції (адмінка):** `createServerSupabase()` з `simplycms/supabase/server-client` (cookie-based, через `getHeaders`/`setCookie` TanStack Start).
+- **Клієнтські компоненти (адмінка):** використовуй DI — `useSupabaseClient()` з `simplycms/supabase/SupabaseProvider` (глобального singleton-клієнта немає).
+- **Анонімні cross-request сценарії** (SSR-резолв теми): `createAnonSupabaseClient()` з `simplycms/supabase/anon-client` — без cookies, лише RLS `anon`-читання.
+- 🔴 Субшляху `simplycms/data-supabase` **НЕ ІСНУЄ** — шар репозиторіїв-портів
+  знесений (0.4.1, 0 споживачів). Нові data-шляхи вітрини — лоадери
+  `withStorefrontDb`/`withActor` над Drizzle-схемою (див. «Storefront (SSR)»);
+  нові data-шляхи адмінки — прямий `useSupabaseClient()`/`createServerSupabase()`.
 - **Інспекція БД** (структура таблиць, RLS policies, аналіз) — через MCP supabase у read-only режимі: `list_tables`, `execute_sql` (лише `SELECT`), `get_advisors`, `search_docs`. Зміни схеми — виключно міграціями (див. «Міграції»).
 
 ### Storefront (SSR)
@@ -61,16 +66,18 @@ description: "Правила роботи з даними та Supabase в Simpl
 - Після mutations — інвалідація відповідних query keys.
 
 ### Типи та валідація
-- Генеруй типи після змін схеми: `pnpm db:generate-types` (окремим кроком — `db:migrate` більше немає).
-- Не редагуй `supabase/types.ts` вручну — лише через генератор.
-- DB команди працюють через `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` з `.env.local` (Management API).
+- 🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)
+  разом із генератом `supabase/types.ts`: типи для НОВОГО серверного коду
+  беруться з `simplycms/schema/types` (Drizzle). Baseline-файл адмінки
+  (`packages/simplycms/src/supabase/database.ts`) заморожений до треку К3 і
+  генератором більше не оновлюється.
+- DB команди (`db:pull`, `db:diff`) працюють через `DATABASE_URL` з `.env.local`.
 - Zod schemas для валідації форм (react-hook-form + @hookform/resolvers/zod).
 
 ### Env-матриця для DB команд
 
 | Змінні | Команди |
 |--------|---------|
-| `SUPABASE_PROJECT_ID` + `SUPABASE_ACCESS_TOKEN` | `db:generate-types` (Management API) |
 | `DATABASE_URL` | `db:pull`, `db:diff` (прямий SQL-конект); 🔴 у V2 — ще й рантайм-пул `simplycms/db` |
 
 ### Міграції
@@ -83,8 +90,6 @@ description: "Правила роботи з даними та Supabase в Simpl
 pnpm db:diff <name>       # 2. drizzle-kit generate → packages/simplycms/migrations/NNNN_<name>.sql
 #                            3. РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
 pnpm test:schema          # 4. накат УСЬОГО канону на чисту БД харнеса (потребує Postgres)
-pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-схема (не плагінна) —
-#                            на еталонній dev-БД без встановлених плагінів
 ```
 
 - 🔴 Канон застосовного SQL — **`packages/simplycms/migrations/`**: baseline
@@ -105,12 +110,10 @@ pnpm types:baseline       # 5. ТІЛЬКИ якщо змінилась CORE-с�
 - Сайт може додавати власні міграції поруч з seed-файлами.
 - 🔴 Ревʼю SQL перед накатом — обовʼязкове: drizzle-kit не бачить
   перейменувань (генерує `DROP`+`ADD`) і не діфить ролі, гранти й функції.
-- 🔴 Крок 5 (`types:baseline`) — НЕ автоматизований навмисно: накат
-  застосовується й до dev-БД із встановленими плагінами, а baseline
-  (`packages/simplycms/src/supabase/database.ts`) публікується на npm і
-  повинен містити ЛИШЕ core-таблиці. Автозапуск мовчки затягнув би плагінні
-  таблиці в опублікований пакет за одного невдалого запуску. Деталі й повний
-  розклад двох файлів типів — `packages/simplycms/src/supabase/README.md`.
+- 🔴 `packages/simplycms/src/supabase/database.ts` (baseline типів адмінки)
+  **заморожений до треку К3**: генератор (`db:generate-types`/`types:baseline`)
+  видалений разом із генератом `supabase/types.ts` (0.4.1), тож після зміни
+  core-схеми файл руками НЕ оновлюється. Деталі — `packages/simplycms/src/supabase/README.md`.
 
 ## Supabase Data Patterns
 
@@ -161,17 +164,17 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 ## ❌ NEVER
 - Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm test:schema`.
 - Не редагуй `packages/simplycms/drizzle/meta/*` вручну — це snapshot drizzle-kit.
-- Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client/репозиторії.
-- Не редагуй `supabase/types.ts` вручну — виключно через `pnpm db:generate-types`.
+- Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client.
+- Не імпортуй `simplycms/data-supabase` — субшляху не існує (0.4.1, шар знесено).
 - Не забувай інвалідацію query keys після мутацій в адмінці.
 - Не використовуй `queryClient.setQueryData()` для складних кейсів — invalidate замість цього.
 - Не роби DB calls у серверних функціях без обробки помилок.
 - Не хардкодь query keys — використовуй константи або фабрики.
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/src/supabase/` — клієнти Supabase (server/anon/SupabaseProvider).
-- `packages/simplycms/src/data-supabase/` — репозиторії-порти.
-- `packages/simplycms/src/react-query/` — `EngineProvider`, query-фабрики, хуки.
+- `packages/simplycms/src/supabase/` — клієнти Supabase адмінки (server/anon/SupabaseProvider).
+- `packages/simplycms/src/storefront/` — SSR-лоадери вітрини (`withStorefrontDb`) поверх Drizzle.
+- `packages/simplycms/src/react-query/` — `EngineProvider`, хуки.
 - `packages/simplycms/src/schema/README.md` — Drizzle-baseline, RLS-parity gate, ручні правки після `pull`.
 - `scripts/db-diff.mjs`, `scripts/db-migrate.mjs` — конвеєр міграцій.
 - `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` — порти, DI, цільова пакетна архітектура.

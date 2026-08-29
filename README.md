@@ -86,7 +86,8 @@ pnpm simplycms doctor            # діагностика: версії, env, ho
 pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
-pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff → supabase db push)
+pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
+                                  # for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —

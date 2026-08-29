@@ -28,7 +28,7 @@ export async function addSteps({ storeRoot, pkg, type }) {
   ).filter((name) => !store.includes(name));
   if (missing.length > 0) {
     steps.push(
-      `pnpm simplycms db:diff --write   # плагін привіз ${missing.length} міграцій — ревʼю + supabase db push`,
+      `pnpm simplycms db:diff --write   # плагін привіз ${missing.length} міграцій — ревʼю + psql -f`,
     );
   }
   return steps;
