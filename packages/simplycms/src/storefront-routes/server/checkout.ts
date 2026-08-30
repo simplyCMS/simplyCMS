@@ -23,9 +23,13 @@ import {
  * замовлення без жодної позиції, і ніщо його звідти не прибирало.
  *
  * 🔴 Гість дістає `access_token`, і цей самий токен виставляється в GUC
- * `app.order_token` ТІЄЇ Ж транзакції. Без нього `insert … returning` упав би
- * на власній політиці SELECT: рядок із `user_id is null` анонімному актору
- * без токена не видно.
+ * `app.order_token` ТІЄЇ Ж транзакції. `withOrderTokenDb` тут не рудимент від
+ * знятого `returning`: без токена падає вставка ПОЗИЦІЙ. `order_items_insert_own`
+ * перевіряє `exists (select 1 from orders where orders.id = order_items.order_id …)`,
+ * підзапит іде під тим самим актором і підпадає під RLS `orders`, а гостьовий
+ * рядок (`user_id is null`) видно лише гілці
+ * `access_token = current_setting('app.order_token')` політики
+ * `orders_select_own_or_token`.
  */
 export const placeOrder = createServerFn({ method: 'POST' })
   .inputValidator(checkoutInputSchema)

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+import {
+  ID_FIELD,
+  callArgument,
+  findMatchingClose,
+  sourceFiles,
+} from '../packages/simplycms/test-harness/pg/insert-scan';
 
 const ADMIN = resolve(import.meta.dirname, '../packages/simplycms/src/admin');
 
@@ -26,53 +32,6 @@ const ADMIN = resolve(import.meta.dirname, '../packages/simplycms/src/admin');
  * дорівнює тому, що він виміряв.
  */
 const KNOWN_WITHOUT_ID = 27;
-
-function tsxFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true, recursive: true })
-    .filter((e) => e.isFile() && /\.tsx?$/.test(e.name))
-    .map((e) => join(e.parentPath, e.name));
-}
-
-/**
- * Індекс символу, що закриває дужку, відкриту в `openIndex`
- * (`src[openIndex]` — сам відкривний символ `(`, `{` або `[`). Ігнорує
- * вміст рядкових літералів (`'...'`, `"..."`, шаблонних `` `...` ``), щоб
- * дужка всередині рядка не збила глибину.
- *
- * 🔴 Межа: це НЕ парсер JS/TS — не розрізняє коментарі (`//`, `/* *​/`) і
- * не розуміє шаблонних виразів `${...}` усередині backtick-рядків (весь
- * backtick-рядок трактується як непрозорий текст до найближчого
- * закривного backtick). У коді, що реально сканується (`.insert(...)`
- * у `src/admin`), таких конструкцій немає — перевірено вручну для всіх
- * 27 викликів на момент написання тесту.
- */
-function findMatchingClose(src: string, openIndex: number): number {
-  const open = src[openIndex];
-  const close = open === '(' ? ')' : open === '{' ? '}' : ']';
-  let depth = 0;
-  let inString: string | null = null;
-  for (let i = openIndex; i < src.length; i++) {
-    const ch = src[i];
-    if (inString) {
-      if (ch === '\\') {
-        i++;
-        continue;
-      }
-      if (ch === inString) inString = null;
-      continue;
-    }
-    if (ch === '"' || ch === "'" || ch === '`') {
-      inString = ch;
-      continue;
-    }
-    if (ch === open) depth++;
-    else if (ch === close) {
-      depth--;
-      if (depth === 0) return i;
-    }
-  }
-  return src.length - 1;
-}
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за
@@ -113,28 +72,20 @@ function resolveIdentifierInitializer(
   return src.slice(braceIdx, closeIdx + 1);
 }
 
-// `id:` як ключ поля об'єкта: попередній символ — початок вікна, пробільний
-// символ, `{` або `,` — щоб НЕ зачепити `property_id:`, `discount_id:` тощо.
-const ID_FIELD = /(^|[\s{,])id:\s*\S/;
-
 describe('застарілий шар адмінки: ратчет вставок без id', () => {
   it(`вставок без id не більше ніж ${KNOWN_WITHOUT_ID}`, () => {
     const offenders: string[] = [];
     let total = 0;
-    for (const file of tsxFiles(ADMIN)) {
+    for (const file of sourceFiles(ADMIN)) {
       const src = readFileSync(file, 'utf8');
       const re = /\.insert\(/g;
       let m: RegExpExecArray | null;
       while ((m = re.exec(src)) !== null) {
         total++;
-        const openParenIdx = m.index + m[0].length - 1;
-        const closeParenIdx = findMatchingClose(src, openParenIdx);
-        let arg = src.slice(openParenIdx + 1, closeParenIdx).trim();
-
-        // Розгортаємо один шар обгортки-масиву: `.insert([x])` → `x`.
-        const arrMatch = /^\[([\s\S]*)\]$/.exec(arg);
-        if (arrMatch) arg = arrMatch[1].replace(/,\s*$/, '').trim();
-
+        // Балансування дужок і розгортання `.insert([x])` — спільні з
+        // гейтом інваріанта (`insert-scan.ts`), щоб два гейти різали текст
+        // однаково.
+        const arg = callArgument(src, m.index + m[0].length - 1);
         const identMatch = /^([A-Za-z_$][\w$]*)$/.exec(arg);
         let window: string;
         if (identMatch) {

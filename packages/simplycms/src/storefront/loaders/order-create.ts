@@ -68,8 +68,16 @@ function generateOrderNumber(now: Date): string {
  *
  * 🔴 `userId` — з серверної сесії або `null` для гостя; політика
  * `orders_insert_own` приймає рівно ці два випадки. Гостю одразу видається
- * `access_token`, і саме він має бути в GUC `app.order_token` ЦІЄЇ транзакції:
- * без нього `insert … returning` впав би на власній же SELECT-політиці.
+ * `access_token`, і саме він має бути в GUC `app.order_token` ЦІЄЇ транзакції.
+ * Причина — НЕ `returning` (його знято): падає вставка ПОЗИЦІЙ. Політика
+ * `order_items_insert_own` має
+ * `WITH CHECK (exists (select 1 from orders where orders.id = order_items.order_id
+ * and (orders.user_id = (select app.current_user_id()) or orders.user_id is null)))`,
+ * і цей підзапит виконується під тим самим актором, тобто підпадає під RLS
+ * `orders`. Для гостя `orders_select_own_or_token` пускає рядок лише гілкою
+ * `access_token = current_setting('app.order_token')` — без токена в GUC
+ * підзапит нічого не бачить, `WITH CHECK` не виконується і `order_items`
+ * не вставляються.
  */
 export async function createOrder(
   db: ActorDb,
