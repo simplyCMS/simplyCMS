@@ -83,8 +83,16 @@ interface InsertSite {
  * Дискаверить вставки двох форм, які тільки й існують у ядрі:
  *   • Drizzle — `.insert(<таблиця>)…values(<payload>)`, де `<таблиця>` є
  *     експортом Drizzle-схеми (звірка з мапою відсікає `.insert(payload)`
- *     адмінки — там `payload` не таблиця);
+ *     адмінки — там `payload` не таблиця). Приймається і кваліфікована
+ *     форма `.insert(schema.products)`;
  *   • supabase-js — `.from('<таблиця>').insert(<payload>)`.
+ *
+ * 🔴 Третя форма — сирий SQL — свідомо поза скану, і вона рівно одна:
+ * `plugin-sdk/server/table-db.ts` збирає `insert into <plg_*>` через
+ * `sql.identifier`. Там діє СИЛЬНІШИЙ гард — рантайм-перевірка `row.id`, що
+ * кидає до звернення в БД (`plugin-table-id.test.ts`), а таблиця належить
+ * плагіну, не ядру. Якщо в ядрі зʼявиться сирий INSERT у core-таблицю —
+ * додавати сюди третій дискавер, а не мовчки покладатись на ревʼю.
  */
 function discoverInserts(root: string): InsertSite[] {
   const tables = drizzleTables();
@@ -95,7 +103,8 @@ function discoverInserts(root: string): InsertSite[] {
     const file = relative(root, path);
     const src = readFileSync(path, 'utf8');
 
-    const drizzleRe = /\.insert\(\s*([A-Za-z_$][\w$]*)\s*\)/g;
+    const drizzleRe =
+      /\.insert\(\s*(?:[A-Za-z_$][\w$]*\.)?([A-Za-z_$][\w$]*)\s*\)/g;
     let m: RegExpExecArray | null;
     while ((m = drizzleRe.exec(src)) !== null) {
       const table = tables.get(m[1]);
