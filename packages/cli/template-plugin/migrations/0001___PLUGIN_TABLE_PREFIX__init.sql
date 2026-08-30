@@ -13,3 +13,9 @@ create table if not exists __PLUGIN_TABLE_PREFIX__items (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+-- Вітрина читає таблицю плагіна під `app_user`.
+grant select on table __PLUGIN_TABLE_PREFIX__items to app_user;
+
+-- Адмінка плагіна пише під `app_admin`.
+grant select, insert, update, delete on table __PLUGIN_TABLE_PREFIX__items to app_admin;

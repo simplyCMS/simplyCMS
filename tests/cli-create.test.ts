@@ -92,6 +92,48 @@ describe('cli create: скаффолд', () => {
     expect(migration).not.toContain('default gen_random_uuid()');
   });
 
+  it('згенерована міграція видає РІВНО два гранти й нічого зайвого', () => {
+    // Модель безпеки B5″: `app_runtime` прямих грантів не має — права
+    // дістає через SET LOCAL ROLE app_user|app_admin. Таблиця плагіна без
+    // grant валить перший виклик usePluginTable permission denied, хоча
+    // скаффолджений файл виглядає завершеним (хвіст Е0).
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+
+    const file = readdirSync(join(target, 'migrations'))[0];
+    const raw = readFileSync(join(target, 'migrations', file), 'utf8');
+
+    // 🔴 Прибрати коментарі: закоментований grant не дає прав, але
+    // регексу виглядає як справжній.
+    const sql = raw.replace(/--[^\n]*/g, '');
+
+    const grants = [
+      ...sql.matchAll(/grant\s+([^;]+?)\s+on\s+table\s+(\S+)\s+to\s+(\w+)/gi),
+    ].map((m) => ({
+      privileges: m[1]
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .sort()
+        .join(','),
+      role: m[3].toLowerCase(),
+    }));
+
+    expect(grants).toHaveLength(2);
+    expect(grants).toContainEqual({ privileges: 'select', role: 'app_user' });
+    expect(grants).toContainEqual({
+      privileges: 'delete,insert,select,update',
+      role: 'app_admin',
+    });
+
+    // Жодних прав рантайм-ролі: вона їх дістає через SET LOCAL ROLE (B5″).
+    expect(sql).not.toMatch(/to\s+app_runtime/i);
+  });
+
   it('імена міграцій скаффолду не колізують із каноном ядра', () => {
     // 🔴 Регресія C1: шаблон плагіна називався `0001_init.sql` — тим самим
     // іменем, що й baseline ядра. `compareMigrationsMulti` бачив «одне імʼя,
