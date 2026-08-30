@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
@@ -83,13 +83,51 @@ describe('cli create: скаффолд', () => {
       coreRange: '>=0.3.0',
     });
 
-    expect(created).toContain('migrations/0001_init.sql');
+    expect(created).toContain('migrations/0001_plg_my_faq_init.sql');
     const migration = readFileSync(
-      join(target, 'migrations/0001_init.sql'),
+      join(target, 'migrations/0001_plg_my_faq_init.sql'),
       'utf8',
     );
     expect(migration).toContain('plg_my_faq_items');
     expect(migration).not.toContain('default gen_random_uuid()');
+  });
+
+  it('імена міграцій скаффолду не колізують із каноном ядра', () => {
+    // 🔴 Регресія C1: шаблон плагіна називався `0001_init.sql` — тим самим
+    // іменем, що й baseline ядра. `compareMigrationsMulti` бачив «одне імʼя,
+    // різний вміст у двох канонах» → `collision`, і `simplycms db:diff` падав
+    // з exitCode 1 ДО копіювання будь-чого: магазин після `create plugin` не
+    // міг забрати навіть міграції ядра (`doctor` №7 — error). Фікс — рендер
+    // плейсхолдерів в ІМЕНАХ файлів (`scaffoldTree`), тож імʼя унікальне на
+    // плагін. Гейт стереже саме цю властивість, а не конкретне імʼя.
+    const coreNames = readdirSync(
+      resolve(import.meta.dirname, '../packages/simplycms/migrations'),
+    ).filter((name) => name.endsWith('.sql'));
+    expect(coreNames.length).toBeGreaterThan(0);
+
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    const created = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+    const scaffolded = created
+      .filter((rel) => rel.startsWith('migrations/'))
+      .map((rel) => rel.slice('migrations/'.length));
+    expect(scaffolded.length).toBeGreaterThan(0);
+
+    const clashes = scaffolded.filter((name) => coreNames.includes(name));
+    expect(
+      clashes,
+      `імена міграцій плагіна збігаються з каноном ядра: ${clashes.join(', ')}`,
+    ).toEqual([]);
+
+    // Плейсхолдер в імені мусить бути розгорнутий, а не поїхати як є.
+    for (const name of scaffolded) {
+      expect(name).not.toContain('__');
+      expect(name).toContain('plg_my_faq_');
+    }
   });
 
   it('скаффолджені index.ts і messages.ts — валідний TypeScript', () => {

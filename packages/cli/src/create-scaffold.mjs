@@ -79,6 +79,14 @@ export function renderThemeTemplate(
 /**
  * Рекурсивна копія шаблону в цільову теку з рендером КОЖНОГО файла (усі вони
  * текстові) і перейменуваннями.
+ *
+ * 🔴 Плейсхолдери рендеряться і в ІМЕНАХ файлів, не лише у вмісті. Без цього
+ * шаблон міграції плагіна їхав у магазин під іменем `0001_init.sql` — тим
+ * самим, що й baseline ядра, — і `compareMigrationsMulti` бачив «одне імʼя з
+ * різним вмістом у двох канонах», тобто `collision`. `simplycms db:diff`
+ * після цього падав з `exitCode 1` ДО копіювання будь-чого: магазин, який
+ * зробив `create plugin`, не міг забрати навіть міграції ядра (`doctor` №7 —
+ * error). Статичний `RENAMES` цю форму не покривав за побудовою.
  * @param {{ templateDir: string; targetDir: string;
  *   render: (source: string) => string }} input
  * @returns {string[]} відносні шляхи створених файлів
@@ -90,7 +98,7 @@ export function scaffoldTree({ templateDir: from, targetDir, render }) {
     mkdirSync(toDir, { recursive: true });
     for (const entry of readdirSync(fromDir, { withFileTypes: true })) {
       const source = join(fromDir, entry.name);
-      const outName = RENAMES[entry.name] ?? entry.name;
+      const outName = render(RENAMES[entry.name] ?? entry.name);
       const target = join(toDir, outName);
       const rel = prefix ? `${prefix}/${outName}` : outName;
       if (entry.isDirectory()) walk(source, target, rel);
