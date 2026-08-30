@@ -125,9 +125,24 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 
 | Порт | Що дає |
 |---|---|
-| `usePluginTable<Row>('plg_…')` | CRUD по ВЛАСНІЙ таблиці: `list({eq, orderBy})` / `insert` / `update` / `remove`; типи рядків — generic автора (плагінні таблиці свідомо поза core-baseline типів БД) |
+| `usePluginTable<Row>('plg_…')` | CRUD по ВЛАСНІЙ таблиці: `list({eq, orderBy})` / `insert` / `update` / `remove`; типи рядків — generic автора (плагінні таблиці свідомо поза core-baseline типів БД). 🔴 **`insert` вимагає `id`** — див. нижче |
 | `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn |
 | `usePluginT(messages)` | транслятор каталогу плагіна (див. §7) |
+
+🔴 **BREAKING (0.4.1, трек V2-К3 Е0): `insert` вимагає `id` від викликача.**
+Сигнатура — `insert(row: Partial<Row> & { id: string })`. Таблиці `plg_*`
+створюються **без** `DEFAULT gen_random_uuid()`, ключ генерує клієнт:
+
+```ts
+const port = usePluginTable<FaqRow>('faq', 'plg_faq_items');
+await port.insert({ id: crypto.randomUUID(), question, answer });
+```
+
+Причина — контракт id етапу Е0: оптимістичний рядок у клієнтському кеші має
+той самий ключ, що й серверний, інакше вони розходяться і кеш ловить дубль.
+Порт fail-loud: `insert` без `id` (або з порожнім рядком) кидає з поясненням,
+а не мовчки шле запит. Вікно на цю зміну закривається на К5 — після відкриття
+подач маркетплейсу контракт заморожує перший сторонній пакет.
 
 Дозволена поверхня імпортів плагіна: `simplycms/plugin-sdk`,
 `simplycms/ui`, `react`, `zod`, `@tanstack/react-router`/`react-query`

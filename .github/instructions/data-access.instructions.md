@@ -65,6 +65,43 @@ description: "Правила роботи з даними та Supabase в Simpl
 - `useMutation` з invalidation для CUD-операцій.
 - Після mutations — інвалідація відповідних query keys.
 
+### Контракт id: ключ генерує викликач, не БД
+
+🔴 **Інваріант треку V2-К3 (етап Е0, 0.4.1).** У 40 таблиць «Категорії A»
+знято `DEFAULT gen_random_uuid()`, тож **кожен** шлях вставки зобовʼязаний
+передати `id` явно:
+
+```typescript
+// сервер (SSR-лоадери, server fns, auth-провізія, реєстри тем/плагінів)
+import { randomUUID } from 'node:crypto';
+await db.insert(userAddresses).values({ id: randomUUID(), userId, ...input });
+
+// клієнт (сторінки адмінки, плагіни через usePluginTable)
+await port.insert({ id: crypto.randomUUID(), question, answer });
+```
+
+Чому не DEFAULT: оптимістичний рядок у клієнтському кеші мусить мати ТОЙ
+САМИЙ ключ, що й рядок у БД, — інакше після відповіді сервера кеш ловить
+дубль. Пропущений `id` тепер падає гучно (`23502 not_null_violation`), а не
+розходиться тихо.
+
+**Дві виїмки, і вони іменовані:**
+
+| Виїмка | Чому | Хто стереже |
+|---|---|---|
+| `users`, `sessions`, `accounts`, `verifications` | Better Auth із `generateId: 'uuid'` не кладе `id` в INSERT узагалі | `id-defaults.test.ts` (Категорія B) |
+| `packages/simplycms/src/admin/**` | застарілий шар на `supabase-js`, переписується в Е1–Е6 | `tests/admin-inserts-need-id.test.ts` — ратчет, число може лише зменшуватись |
+
+🔴 `orders` — окремий випадок і в обох гейтах одночасно: **DEFAULT у БД
+збережено** (страхувальна сітка, площина схеми), але **сервер усе одно шле
+`id` явно** (площина коду, разом з атомарним `order_number`). Слово
+«Категорія» в двох гейтах означає різні речі — деталі в шапках
+`explicit-ids.test.ts` і `id-defaults.test.ts`.
+
+Гейт інваріанта — `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
+(`pnpm test:schema`): він **дискаверить** усі вставки в `packages/simplycms/src/**`,
+а не звіряється зі списком, тож нова вставка без `id` червонить його одразу.
+
 ### Типи та валідація
 - 🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)
   разом із генератом `supabase/types.ts`: типи для НОВОГО серверного коду
@@ -166,6 +203,9 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 - Не редагуй `packages/simplycms/drizzle/meta/*` вручну — це snapshot drizzle-kit.
 - Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client.
 - Не імпортуй `simplycms/data-supabase` — субшляху не існує (0.4.1, шар знесено).
+- 🔴 Не покладайся на `DEFAULT gen_random_uuid()` при вставці — його знято
+  (Категорія A). Не «лагодь» падіння `23502` поверненням DEFAULT у схему:
+  ключ мусить передати викликач (див. «Контракт id»).
 - Не забувай інвалідацію query keys після мутацій в адмінці.
 - Не використовуй `queryClient.setQueryData()` для складних кейсів — invalidate замість цього.
 - Не роби DB calls у серверних функціях без обробки помилок.

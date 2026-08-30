@@ -617,6 +617,19 @@ Supabase-контуром магазину. Джерело типів для Н�
 снапшотом рівно доти, доки на ньому типізується адмінка (трек К3), — не
 «оновлювати» і не «прибирати дублювання».
 
+🔴 **Контракт id (трек V2-К3, етап Е0): ключ генерує ВИКЛИКАЧ, не БД.** У 40
+таблиць «Категорії A» знято `DEFAULT gen_random_uuid()`, тож кожен INSERT
+зобовʼязаний передати `id` (`randomUUID()` на сервері, `crypto.randomUUID()`
+у браузері) — інакше `23502`. DEFAULT лишили тільки `users`/`sessions`/
+`accounts`/`verifications` (Better Auth не кладе `id` в INSERT) і `orders`
+(страхувальна сітка; сервер ключ усе одно шле явно). Виїмка на теку —
+`src/admin/**` (застарілий supabase-js-шар, переписує Е1–Е6) під ратчетом
+`tests/admin-inserts-need-id.test.ts`. Гейти інваріанта — `explicit-ids.test.ts`
+(дискаверить усі вставки в `packages/simplycms/src/**`) і `id-defaults.test.ts`
+(DDL) у `pnpm test:schema`. Повний опис —
+[`data-access`](.github/instructions/data-access.instructions.md), розділ
+«Контракт id».
+
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. `db:migrate` — файл-надгробок, який гучно пояснює, що канон
 переїхав у `packages/simplycms/migrations/` (B2/B13); накат канону на чисту БД
