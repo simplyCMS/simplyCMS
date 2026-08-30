@@ -42,7 +42,7 @@ import { users } from './auth';
 export const media = pgTable(
   'media',
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: uuid().primaryKey().notNull(),
     entityType: text('entity_type').notNull(),
     entityId: uuid('entity_id'),
     storageKey: text('storage_key').notNull(),
