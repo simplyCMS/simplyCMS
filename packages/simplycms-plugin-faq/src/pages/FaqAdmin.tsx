@@ -41,6 +41,7 @@ export default function FaqAdmin() {
   const addMutation = useMutation({
     mutationFn: () =>
       port.insert({
+        id: crypto.randomUUID(),
         question,
         answer,
         product_id: productId.trim() === '' ? null : productId.trim(),

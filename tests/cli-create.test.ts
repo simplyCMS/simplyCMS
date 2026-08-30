@@ -71,6 +71,27 @@ describe('cli create: скаффолд', () => {
     expect(existsSync(join(target, 'messages.ts'))).toBe(true);
   });
 
+  it('скаффолджений плагін несе міграцію власної таблиці БЕЗ DEFAULT на id', () => {
+    // Контракт К3-Е0: id генерує клієнт, тому scaffold-DDL не сміє мати
+    // DEFAULT gen_random_uuid() — інакше перший сторонній плагін одразу
+    // ловить розбіжність ключів між оптимістичним і серверним рядком.
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    const created = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+
+    expect(created).toContain('migrations/0001_init.sql');
+    const migration = readFileSync(
+      join(target, 'migrations/0001_init.sql'),
+      'utf8',
+    );
+    expect(migration).toContain('plg_my_faq_items');
+    expect(migration).not.toContain('default gen_random_uuid()');
+  });
+
   it('скаффолджені index.ts і messages.ts — валідний TypeScript', () => {
     const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'demo');
     scaffoldPlugin({

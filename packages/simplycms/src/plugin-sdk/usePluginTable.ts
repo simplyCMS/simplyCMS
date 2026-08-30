@@ -35,7 +35,8 @@ export interface PluginTablePort<Row extends Record<string, unknown>> {
     ascending?: boolean;
     eq?: Partial<Row>;
   }): Promise<Row[]>;
-  insert(row: Partial<Row>): Promise<Row>;
+  /** 🔴 `id` генерує викликач: ключ мусить бути відомий до відповіді сервера. */
+  insert(row: Partial<Row> & { id: string }): Promise<Row>;
   update(id: string, patch: Partial<Row>): Promise<Row>;
   remove(id: string): Promise<void>;
 }

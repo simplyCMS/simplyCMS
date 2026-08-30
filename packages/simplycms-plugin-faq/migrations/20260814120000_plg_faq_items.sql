@@ -12,7 +12,7 @@
 -- `withActor`. Плагін, який спробує повторити стару форму, дістане помилку
 -- накату — і це правильно, бо мовчазна тиша означала б таблицю без прав.
 create table if not exists public.plg_faq_items (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key,   -- 🔴 без default: ключ приходить від клієнта
   product_id uuid,
   question text not null,
   answer text not null,

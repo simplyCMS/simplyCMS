@@ -40,15 +40,15 @@ const TABLE = 'plg_testkit_notes';
 /** Те, що зробила б міграція плагіна: власна таблиця + гранти ролям. */
 const PLUGIN_MIGRATION = `
   create table public.${TABLE} (
-    id uuid primary key default gen_random_uuid(),
+    id uuid primary key,
     title text not null,
     sort_order integer not null default 0,
     is_active boolean not null default true
   );
   grant select on table public.${TABLE} to app_user;
   grant select, insert, update, delete on table public.${TABLE} to app_admin;
-  insert into public.plugins (name, display_name, version, is_active)
-    values ('${PLUGIN}', 'Test Kit', '1.0.0', true);
+  insert into public.plugins (id, name, display_name, version, is_active)
+    values (gen_random_uuid(), '${PLUGIN}', 'Test Kit', '1.0.0', true);
 `;
 
 describe('порт даних плагіна проти живого Postgres', () => {
@@ -80,10 +80,12 @@ describe('порт даних плагіна проти живого Postgres', 
 
   it('плагін читає й пише ВЛАСНУ plg_-таблицю', async () => {
     const created = await insertPluginRow(PLUGIN, TABLE, {
+      id: crypto.randomUUID(),
       title: 'Перша',
       sort_order: 2,
     });
     await insertPluginRow(PLUGIN, TABLE, {
+      id: crypto.randomUUID(),
       title: 'Друга',
       sort_order: 1,
       is_active: false,
