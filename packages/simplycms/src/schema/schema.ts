@@ -743,7 +743,7 @@ export const userRecipients = pgTable("user_recipients", {
 ]);
 
 export const orders = pgTable("orders", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id"),
 	orderNumber: varchar("order_number", { length: 50 }).notNull(),
 	statusId: uuid("status_id"),

@@ -150,7 +150,7 @@ CREATE TABLE "order_statuses" (
 );
 --> statement-breakpoint
 CREATE TABLE "orders" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid,
 	"order_number" varchar(50) NOT NULL,
 	"status_id" uuid,
@@ -789,4 +789,4 @@ CREATE POLICY "user_roles_select_own" ON "user_roles" AS PERMISSIVE FOR SELECT T
 CREATE POLICY "user_roles_admin_all" ON "user_roles" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "wishlists_own_all" ON "wishlists" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
 COMMENT ON COLUMN "products"."id" IS 'Категорія A: ключ генерує ВИКЛИКАЧ, не БД. Для сторінок адмінки це браузер (crypto.randomUUID()), для суто серверних таблиць (themes, plugins, user_roles, profiles) — randomUUID() на сервері. DEFAULT знято навмисно — fail-loud guard проти розсинхрону оптимістичного й серверного ключа.';--> statement-breakpoint
-COMMENT ON COLUMN "orders"."id"   IS 'Категорія B У ПЛОЩИНІ СХЕМИ: DEFAULT свідомо збережено як страхувальна сітка. У площині КОДУ orders поводиться як Категорія A — сервер генерує id сам, разом з атомарним order_number, і шле його явно. Дві площини не плутати: explicit-ids.test.ts питає «чи код передає id», id-defaults.test.ts — «чи колонка має DEFAULT»; orders свідомо в обох, по різні боки.';
+COMMENT ON COLUMN "orders"."id" IS 'Категорія A: client-generated UUID. Ключ шле сервер (order-create), DEFAULT знято в Е1а — сітка перестала страхувати після Е0.';

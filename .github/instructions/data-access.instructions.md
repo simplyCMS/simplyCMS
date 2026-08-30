@@ -67,9 +67,9 @@ description: "Правила роботи з даними та Supabase в Simpl
 
 ### Контракт id: ключ генерує викликач, не БД
 
-🔴 **Інваріант треку V2-К3 (етап Е0, 0.4.1).** У 40 таблиць «Категорії A»
-знято `DEFAULT gen_random_uuid()`, тож **кожен** шлях вставки зобовʼязаний
-передати `id` явно:
+🔴 **Інваріант треку V2-К3 (етап Е0, 0.4.1; ревізія Е1а).** У 41 таблиці
+«Категорії A» знято `DEFAULT gen_random_uuid()`, тож **кожен** шлях вставки
+зобовʼязаний передати `id` явно:
 
 ```typescript
 // сервер (SSR-лоадери, server fns, auth-провізія, реєстри тем/плагінів)
@@ -92,11 +92,10 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 | `users`, `sessions`, `accounts`, `verifications` | Better Auth із `generateId: 'uuid'` не кладе `id` в INSERT узагалі | `id-defaults.test.ts` (Категорія B) |
 | `packages/simplycms/src/admin/**` | застарілий шар на `supabase-js`, переписується в Е1–Е6 | `tests/admin-inserts-need-id.test.ts` — ратчет, число може лише зменшуватись |
 
-🔴 `orders` — окремий випадок і в обох гейтах одночасно: **DEFAULT у БД
-збережено** (страхувальна сітка, площина схеми), але **сервер усе одно шле
-`id` явно** (площина коду, разом з атомарним `order_number`). Слово
-«Категорія» в двох гейтах означає різні речі — деталі в шапках
-`explicit-ids.test.ts` і `id-defaults.test.ts`.
+🔴 Ревізія Е1а: `orders` вийшла з винятків і перейшла в Категорію A —
+після Е0 її єдина вставка (`order-create.ts:99`) передає ключ явно, тож
+DEFAULT перестав бути страхувальною сіткою і став fail-silent пасткою в
+таблиці, яку адмінка отримує в керування.
 
 Гейт інваріанта — `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
 (`pnpm test:schema`): він **дискаверить** усі вставки в `packages/simplycms/src/**`,

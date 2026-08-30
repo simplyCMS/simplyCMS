@@ -19,28 +19,16 @@ const canonFiles = (): string[] =>
     .map((n) => join(CANON_DIR, n));
 
 /**
- * Категорія B — DEFAULT лишається КОНСТРУКТИВНО:
- *  • таблиці Better Auth: `generateId:'uuid'` + `supportsUUIDs` драйвера
- *    означає, що BA не кладе id в INSERT узагалі (`auth/instance.ts:78-87`);
- *  • `orders`: створює сервер із атомарним `order_number`.
+ * Категорія B — лише таблиці Better Auth: `generateId:'uuid'` +
+ * `supportsUUIDs` драйвера означає, що BA не кладе id в INSERT узагалі
+ * (`auth/instance.ts:78-87`), тож зняття DEFAULT поклало б signUp.
  *
- * 🔴 «Категорія» тут і в `explicit-ids.test.ts` означає РІЗНІ речі, і плутати
- * їх не можна:
- *  • тут — площина СХЕМИ: «чи колонка `id` має DEFAULT у БД»;
- *  • там — площина КОДУ: «чи шлях вставки ПЕРЕДАЄ `id`».
- * Тому `orders` свідомо стоїть в обох гейтах по різні боки: сервер шле ключ
- * явно (там вона під вимогою), а DEFAULT у БД лишається страхувальною сіткою
- * (тут вона у виїмці). Склад Категорії B на рівні DDL — контракт етапу
- * (рішення К3-6), а не дефект реалізації: змінювати його «щоб збіглося»
- * означало б чіпати DDL, обидва гейти, план і спеку разом.
+ * 🔴 `orders` вийшла звідси в Е1а: її єдина вставка
+ * (`order-create.ts:99`) передає ключ явно з Е0, тож DEFAULT перестав
+ * бути страхувальною сіткою і став fail-silent пасткою в таблиці, яку
+ * адмінка отримує в керування.
  */
-const CATEGORY_B = new Set([
-  'users',
-  'sessions',
-  'accounts',
-  'verifications',
-  'orders',
-]);
+const CATEGORY_B = new Set(['users', 'sessions', 'accounts', 'verifications']);
 
 /**
  * 🔴 `has_default` — це ФАКТ наявності DEFAULT (`d.oid is not null`), а не
@@ -90,7 +78,7 @@ describe('Е0: DEFAULT на id лише в Категорії B', () => {
     ).toEqual([]);
   });
 
-  it('Категорія B DEFAULT зберігає — інакше ляже auth і створення замовлень', async () => {
+  it('Категорія B DEFAULT зберігає — інакше ляже auth', async () => {
     const rows = await queryRows(dbUrl, ID_DEFAULTS_SQL);
     const withDefault = new Set(
       rows.filter((r) => r.has_default).map((r) => r.table_name),

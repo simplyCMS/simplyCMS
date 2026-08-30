@@ -150,7 +150,7 @@ CREATE TABLE "order_statuses" (
 );
 --> statement-breakpoint
 CREATE TABLE "orders" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid,
 	"order_number" varchar(50) NOT NULL,
 	"status_id" uuid,

@@ -157,7 +157,11 @@ compile-time exhaustiveness: кожна колонка мусить бути у 
 | Таблиці | Обґрунтування |
 |---|---|
 | `users`, `sessions`, `accounts`, `verifications` | Better Auth **конструктивно делегує генерацію базі**: `generateId: 'uuid'` + `supportsUUIDs` драйвера drizzle-pg означає, що BA не кладе `id` в INSERT (`auth/instance.ts:78-87`, `schema/auth.ts:20-21`). Зняття DEFAULT поклало б signUp/sign-in/OAuth цілком |
-| `orders` | Створює сервер із атомарним `order_number`; адмінка замовлення лише `.update()` (`OrderDetail.tsx` — три `update`, жодного `insert`). Прямий аналог Pattern 2 MetaHub |
+
+🔴 **Ревізія Е1а: `orders` переведено в Категорію A** — після Е0 її
+вставка (`order-create.ts:99`) передає ключ явно, тож DEFAULT став
+fail-silent пасткою в таблиці, яку адмінка отримує в керування в
+Е1б–Е6, а не страхувальною сіткою.
 
 🔴 Поіменна класифікація всіх 45 таблиць — **машинна** (скан insert-шляхів
 + іменований allowlist), а не список у спеці, який застаріє.
