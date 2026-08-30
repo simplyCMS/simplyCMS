@@ -69,6 +69,31 @@ function drizzleTables(): Map<string, string> {
   return map;
 }
 
+/**
+ * Локальні аліаси Drizzle-таблиць: `import { orders as ordersTable }`.
+ * 🔴 Без цього кроку скан був fail-open — незнайоме імʼя тихо
+ * пропускалось, тож аліасована вставка не перевірялась узагалі.
+ */
+function aliasMap(
+  src: string,
+  tables: Map<string, string>,
+): Map<string, string> {
+  const resolved = new Map(tables);
+  const importRe = /import\s*\{([^}]*)\}\s*from\s*'simplycms\/schema[^']*'/g;
+  let im: RegExpExecArray | null;
+  while ((im = importRe.exec(src)) !== null) {
+    for (const part of im[1].split(',')) {
+      const m = /^\s*([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)\s*$/.exec(
+        part,
+      );
+      if (!m) continue;
+      const table = tables.get(m[1]);
+      if (table !== undefined) resolved.set(m[2], table);
+    }
+  }
+  return resolved;
+}
+
 interface InsertSite {
   /** Шлях відносно `src/`. */
   file: string;
@@ -82,12 +107,31 @@ interface InsertSite {
 }
 
 /**
- * Дискаверить вставки двох форм, які тільки й існують у ядрі:
+ * Мапа «експорт Drizzle-таблиці → імʼя таблиці в SQL», обчислена один раз
+ * при завантаженні модуля. Винесена на рівень модуля (а не аргумент
+ * `discoverInsertsInSource`), щоб чиста функція нижче лишалась чистою —
+ * без власного читання диска — і водночас негативний контроль міг
+ * викликати її двома аргументами (`src`, `file`), як реальну вставку.
+ */
+const TABLES = drizzleTables();
+
+/**
+ * Дискаверить вставки двох форм, які тільки й існують у ядрі, в УЖЕ
+ * прочитаному тексті одного файлу:
  *   • Drizzle — `.insert(<таблиця>)…values(<payload>)`, де `<таблиця>` є
  *     експортом Drizzle-схеми (звірка з мапою відсікає `.insert(payload)`
- *     адмінки — там `payload` не таблиця). Приймається і кваліфікована
- *     форма `.insert(schema.products)`;
+ *     адмінки — там `payload` не таблиця). Приймається кваліфікована форма
+ *     `.insert(schema.products)` і локальний АЛІАС імпорту
+ *     (`import { orders as ordersTable }` → `.insert(ordersTable)`),
+ *     резолвлений `aliasMap`;
  *   • supabase-js — `.from('<таблиця>').insert(<payload>)`.
+ *
+ * 🔴 Свідомо ПОЗА сканом лишаються дві форми, що не резолвляться статично:
+ * `.insert(getTable(name))` (обчислене імʼя — виклик функції замість
+ * ідентифікатора) і `.insert(schema[key])` (індексний доступ — ключ відомий
+ * лише в рантаймі). Поява такої форми в ядрі — сигнал додати рантайм-
+ * перевірку (як `plugin-table-id.test.ts` для сирого SQL нижче), а не
+ * розширювати регекс.
  *
  * 🔴 Третя форма — сирий SQL — свідомо поза скану, і вона рівно одна:
  * `plugin-sdk/server/table-db.ts` збирає `insert into <plg_*>` через
@@ -95,51 +139,59 @@ interface InsertSite {
  * кидає до звернення в БД (`plugin-table-id.test.ts`), а таблиця належить
  * плагіну, не ядру. Якщо в ядрі зʼявиться сирий INSERT у core-таблицю —
  * додавати сюди третій дискавер, а не мовчки покладатись на ревʼю.
+ *
+ * Чиста: жодного `readFileSync`/`readdirSync` — лише текст, переданий
+ * викликачем, і `TABLES`, обчислена один раз при завантаженні модуля.
  */
-function discoverInserts(root: string): InsertSite[] {
-  const tables = drizzleTables();
+function discoverInsertsInSource(src: string, file: string): InsertSite[] {
+  const tables = aliasMap(src, TABLES);
   const sites: InsertSite[] = [];
 
+  const drizzleRe =
+    /\.insert\(\s*(?:[A-Za-z_$][\w$]*\.)?([A-Za-z_$][\w$]*)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = drizzleRe.exec(src)) !== null) {
+    const table = tables.get(m[1]);
+    if (table === undefined) continue;
+    // 🔴 `.values(` шукається ЛИШЕ до наступного `.insert(`: інакше
+    // вставка без значень позичила б `values` наступної й тихо пройшла.
+    const nextInsert = src.indexOf('.insert(', m.index + 1);
+    const valuesAt = src.indexOf('.values(', m.index);
+    const chained = valuesAt >= 0 && (nextInsert < 0 || valuesAt < nextInsert);
+    sites.push({
+      file,
+      table,
+      kind: 'drizzle',
+      offset: m.index,
+      // Немає свого `.values(` — це не «безпечно», це невідомо: payload
+      // порожній, і гейт червоніє.
+      payload: chained
+        ? callArgument(src, valuesAt + '.values('.length - 1)
+        : '',
+    });
+  }
+
+  const supabaseRe = /\.from\(\s*['"]([^'"]+)['"]\s*\)\s*\.insert\(/g;
+  while ((m = supabaseRe.exec(src)) !== null) {
+    sites.push({
+      file,
+      table: m[1],
+      kind: 'supabase',
+      offset: m.index,
+      payload: callArgument(src, m.index + m[0].length - 1),
+    });
+  }
+  return sites;
+}
+
+/** Обходить `root` і скликає {@link discoverInsertsInSource} для кожного файлу. */
+function discoverInserts(root: string): InsertSite[] {
+  const sites: InsertSite[] = [];
   for (const path of sourceFiles(root)) {
     if (path.includes('__tests__')) continue;
     const file = relative(root, path);
     const src = readFileSync(path, 'utf8');
-
-    const drizzleRe =
-      /\.insert\(\s*(?:[A-Za-z_$][\w$]*\.)?([A-Za-z_$][\w$]*)\s*\)/g;
-    let m: RegExpExecArray | null;
-    while ((m = drizzleRe.exec(src)) !== null) {
-      const table = tables.get(m[1]);
-      if (table === undefined) continue;
-      // 🔴 `.values(` шукається ЛИШЕ до наступного `.insert(`: інакше
-      // вставка без значень позичила б `values` наступної й тихо пройшла.
-      const nextInsert = src.indexOf('.insert(', m.index + 1);
-      const valuesAt = src.indexOf('.values(', m.index);
-      const chained =
-        valuesAt >= 0 && (nextInsert < 0 || valuesAt < nextInsert);
-      sites.push({
-        file,
-        table,
-        kind: 'drizzle',
-        offset: m.index,
-        // Немає свого `.values(` — це не «безпечно», це невідомо: payload
-        // порожній, і гейт червоніє.
-        payload: chained
-          ? callArgument(src, valuesAt + '.values('.length - 1)
-          : '',
-      });
-    }
-
-    const supabaseRe = /\.from\(\s*['"]([^'"]+)['"]\s*\)\s*\.insert\(/g;
-    while ((m = supabaseRe.exec(src)) !== null) {
-      sites.push({
-        file,
-        table: m[1],
-        kind: 'supabase',
-        offset: m.index,
-        payload: callArgument(src, m.index + m[0].length - 1),
-      });
-    }
+    sites.push(...discoverInsertsInSource(src, file));
   }
   return sites;
 }
@@ -186,6 +238,25 @@ describe('Е0: інваріант явного id у вставках ядра',
       'verifications',
     ]);
     expect(EXEMPT_DIRS).toEqual(['admin/']);
+  });
+});
+
+describe('Е0: дискавер id звіряє таблицю за значенням (аліаси)', () => {
+  it('дискавер бачить аліасовану форму .insert(alias)', () => {
+    // Синтетичне джерело: так виглядатиме вставка після
+    // `import { orders as ordersTable } from 'simplycms/schema'`.
+    const source = [
+      "import { orders as ordersTable } from 'simplycms/schema';",
+      'async function create(db) {',
+      '  await db.insert(ordersTable).values({ userId: null });',
+      '}',
+    ].join('\n');
+
+    const sites = discoverInsertsInSource(source, 'synthetic.ts');
+    expect(
+      sites.map((s) => s.table),
+      'аліасована вставка мусить бути знайдена, інакше гейт fail-open',
+    ).toContain('orders');
   });
 });
 
