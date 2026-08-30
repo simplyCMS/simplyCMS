@@ -5,7 +5,15 @@ import { CartProvider } from '../hooks/useCart';
 
 interface CMSProviderProps {
   children: React.ReactNode;
-  /** Optional custom QueryClient. If not provided, a default one is created. */
+  /**
+   * `QueryClient` ззовні — на практиці той самий інстанс, що `getRouter()`
+   * (`src/router.tsx`) поклав у router context: колекції TanStack DB (Е1б)
+   * memoізуються по інстансу клієнта й потрібні в `loader` роуту, тобто поза
+   * React-деревом, де клієнт, народжений усередині провайдера, недосяжний.
+   *
+   * Якщо не передано — провайдер створює власний клієнт сам (тести,
+   * storybook-подібні точки входу без роутера).
+   */
   customQueryClient?: QueryClient;
 }
 

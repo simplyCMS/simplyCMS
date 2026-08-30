@@ -3,8 +3,9 @@ import {
   Link,
   Outlet,
   Scripts,
-  createRootRoute,
+  createRootRouteWithContext,
 } from '@tanstack/react-router';
+import type { QueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
@@ -43,7 +44,17 @@ const locale = normalizeLocale(config.locale);
  */
 const t = createTranslator(locale);
 
-export const Route = createRootRoute({
+/**
+ * Контекст кореневого роуту: `QueryClient`, народжений у `getRouter()`
+ * (`src/router.tsx`). Тут — лише типова декларація, щоб `loader`-и (Е1б)
+ * і `RootComponent` могли дістати той самий інстанс через
+ * `Route.useRouteContext()`.
+ */
+export interface RouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   // Резолвимо активну тему один раз на рівні root — її назву інлайн-скриптом
   // прокидаємо клієнту, щоб той прогрів саме цю тему ДО гідрації (без suspend).
   loader: async () => {
@@ -75,6 +86,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { activeThemeName } = Route.useLoaderData();
+  const { queryClient } = Route.useRouteContext();
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -96,7 +108,7 @@ function RootComponent() {
             enableSystem
             disableTransitionOnChange
           >
-            <CMSProvider>
+            <CMSProvider customQueryClient={queryClient}>
               <PluginBootstrap />
               <ThemeBootstrap />
               <ClientEngineProvider>
