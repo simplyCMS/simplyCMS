@@ -149,8 +149,15 @@ export const AGGREGATE = {
    * характеристика й опція (`section_properties`, `property_options`) +
    * товари, де опція стоїть на самому товарі АБО на модифікації
    * (`product_property_values`, `modification_property_values` через
-   * `product_modifications`) — видимий вміст сторінки це САМЕ товари
-   * (`products`), тож він у deps нарівні з рештою (Task 6, fix-раунд 1).
+   * `product_modifications`). Товари приходять НЕ голими рядками —
+   * `loadProductsByOption` делегує в спільний `loadCatalogProductsWhere`
+   * (`storefront/loaders/catalog-products.ts`), а той доклеює секцію
+   * (`sections`, leftJoin), ціни (`product_prices`) і залишки через
+   * `loadStockByModification`/`loadStockByProduct` (обидва — `stock_by_pickup_point`).
+   * `PropertyOptionPageData.products` документовано як «уже з
+   * модифікаціями й цінами» — deps звіряють саме це, а не тільки join
+   * ідентифікації опції (Task 6, fix-раунд 2: перша редакція пропустила
+   * делегування в спільний лоадер).
    */
   propertyOptionPage: aggregateKey('property-option-page', [
     ENTITY.products,
@@ -159,6 +166,9 @@ export const AGGREGATE = {
     ENTITY.productPropertyValues,
     ENTITY.productModifications,
     ENTITY.modificationPropertyValues,
+    ENTITY.sections,
+    ENTITY.productPrices,
+    ENTITY.stockByPickupPoint,
   ]),
 } as const;
 
