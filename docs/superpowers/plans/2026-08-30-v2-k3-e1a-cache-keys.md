@@ -70,7 +70,7 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 | `packages/simplycms/src/contracts/__tests__/entity-key.test.ts` | Юніт форми ключів |
 | `packages/simplycms/src/schema/__tests__/entity-parity.test.ts` | Гейт: `ENTITY` ≡ `getTableName()` усіх таблиць |
 | `eslint-rules/query-key-from-entity.mjs` | **Перше кастомне AST-правило репо**: `queryKey` з реєстру (зона `no-restricted-syntax` неможлива — конфлікт із i18n) |
-| `packages/simplycms/src/core/__tests__/router-query-client.test.tsx` | Інтеграційний тест топології `QueryClient` |
+| `tests/router-query-client.test.ts` | Інтеграційний тест топології `QueryClient` (кореневий — імпортує host) |
 
 **Змінюються:**
 
@@ -368,17 +368,38 @@ Expected: PASS, 2/2 (`orders` більше не в B, решта B на місц
 
 🔴 `drizzle/0000_init.sql:153` і `drizzle/meta/0000_snapshot.json` досі
 тримають `DEFAULT gen_random_uuid()` для `orders`. Snapshot — база
-наступних diff-ів (`src/schema/README.md:3`), тож без регенерації
-наступний `db:diff` знову згенерує зняття DEFAULT.
+наступних diff-ів (`src/schema/README.md:3`), тож поки він старий,
+`drizzle-kit generate` бачитиме дрейф.
+
+🔴 **`pnpm db:diff` тут НЕ підходить, і це важливо.** Він = `drizzle-kit
+generate` + копія **нового** SQL у канон наступним номером
+(`scripts/db-diff.mjs:6-9`). Журнал має один запис `0000_init`, тож
+generate не перепише baseline — він додасть `0001` у `drizzle/` і ще
+один файл у канон. Тобто замість «зняти DEFAULT у baseline» ми дістали б
+зайву міграцію в журналі.
+
+**Правильний шлях — точкова правка обох артефактів** (як зробив Е0: три
+його коміти торкались `drizzle/`, і там зараз рівно ті самі п'ять
+таблиць із DEFAULT, що й у каноні):
 
 ```bash
-# регенерувати baseline і snapshot канонічним процесом drizzle-kit,
-# потім переконатись, що дрейфу немає:
-pnpm db:diff
-git diff --stat packages/simplycms/drizzle
+# 1. Зняти DEFAULT для orders у baseline drizzle і в снапшоті:
+#    packages/simplycms/drizzle/0000_init.sql       — рядок "id" таблиці orders
+#    packages/simplycms/drizzle/meta/0000_snapshot.json — поле default колонки id
+# 2. Переконатись, що всюди лишилось рівно ЧОТИРИ таблиці з DEFAULT:
+for f in packages/simplycms/migrations/0001_init.sql \
+         packages/simplycms/drizzle/0000_init.sql \
+         packages/simplycms/drizzle/meta/0000_snapshot.json; do
+  echo "$f: $(grep -c gen_random_uuid "$f")"
+done
+# Expected: 4, 4, 4 — лише users/sessions/accounts/verifications
 pnpm template:sync
 ```
-Expected: `db:diff` не пропонує зміни по `orders`.
+
+🔴 Доказ відсутності дрейфу — **не** `pnpm db:diff` (він створить файли).
+Перевірка: `drizzle-kit generate` у теці пакета має сказати «No schema
+changes». Якщо він усе ж генерує міграцію — снапшот і `schema.ts`
+розійшлися, і це треба лагодити, а не комітити результат.
 
 🔴 **Доки — чотири джерела, не два.** Крім спеки й `CLAUDE.md` канон
 містить:
@@ -751,7 +772,7 @@ Expected: PASS, 4/4.
 // packages/simplycms/src/schema/__tests__/entity-parity.test.ts
 import { describe, expect, it } from 'vitest';
 import { getTableName, is, Table } from 'drizzle-orm';
-import { ENTITY } from 'simplycms/contracts/entities';
+import { AGGREGATE, ENTITY } from 'simplycms/contracts/entities';
 import * as schema from '../schema';
 
 /**
@@ -802,7 +823,7 @@ describe('ENTITY ≡ Drizzle-схема', () => {
 ```
 
 Run: `pnpm vitest run packages/simplycms/src/schema/__tests__/entity-parity.test.ts`
-Expected: PASS, 3/3.
+Expected: PASS, 4/4.
 
 - [ ] **Step 6: Негативний контроль парності**
 
@@ -840,7 +861,10 @@ pnpm vitest run packages/simplycms/src/schema/__tests__/entity-parity.test.ts
 той самий мотив, що у `./contracts/views`.
 
 У `tsup.config.ts` — додати файл до чинного профілю `contracts`
-(`tsup.config.ts:104`). Окремий профіль не потрібен.
+(`tsup.config.ts:104`). 🔴 Глоби профілю матчать `index.ts` і
+`*/index.ts`, тож `entities.ts` під них **не підпадає** — потрібен явний
+патерн `src/contracts/entities.ts`, інакше субшлях не збереться в `dist`
+і `test:packaging` червонітиме. Окремий профіль не потрібен.
 
 - [ ] **Step 8: Гейти й коміт**
 
@@ -869,7 +893,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Files:**
 - Modify: `packages/simplycms/src/react-query/queries.ts` (`catalogKeys`)
 - Modify: `packages/simplycms/src/core/hooks/*.ts` і `src/*-ui/**` — 13 літеральних ключів
-- Create: `eslint.query-key-zone.mjs`
+- Create: `eslint-rules/query-key-from-entity.mjs`
 - Modify: `eslint.config.mjs`
 - Test: `packages/simplycms/src/react-query/__tests__/queries.test.ts` (наявний — оновити)
 
@@ -1130,7 +1154,7 @@ Expected: `200 200 200`. Ключі — клієнтський кеш, тож SS
 
 ```bash
 pnpm lint && pnpm test && pnpm build
-git add packages/simplycms/src eslint.query-key-zone.mjs eslint.config.mjs
+git add packages/simplycms/src eslint-rules/query-key-from-entity.mjs eslint.config.mjs
 git commit -m "feat(v2-k3): вітринні ключі кешу через entityKey + лінт-зона
 
 Одна таблиця жила під різними ключами на вітрині й в адмінці
@@ -1224,9 +1248,13 @@ Expected: **обидва кейси зелені одразу** — `CMSProvider
 другий тест — інтеграційний:
 
 ```tsx
-// packages/simplycms/src/core/__tests__/router-query-client.test.tsx
+// tests/router-query-client.test.ts
+//
+// 🔴 Кореневий тест, не в пакеті ядра: він імпортує HOST-файл
+// (`src/router.tsx`), а пакет `simplycms` у host лізти не повинен —
+// це зворотний напрям залежності. Прецедент — `tests/admin-guard-path.test.ts`.
 import { describe, expect, it } from 'vitest';
-import { getRouter } from '../../../../../src/router';
+import { getRouter } from '../src/router';
 
 describe('топологія: клієнт роутера — той самий, що в дереві', () => {
   it('router.options.context.queryClient існує', () => {
