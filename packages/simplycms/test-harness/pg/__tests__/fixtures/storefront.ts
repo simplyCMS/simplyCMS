@@ -27,20 +27,21 @@ export const FIXTURE_STATEMENTS: string[] = [
   `update public.section_properties set has_page = true
      where slug = '${PAGED_PROPERTY_SLUG}'`,
 
-  `insert into public.sections (slug, name, sort_order, is_active)
-     values ('${HIDDEN_SECTION_SLUG}', 'Прихований розділ', 99, false)`,
+  `insert into public.sections (id, slug, name, sort_order, is_active)
+     values (gen_random_uuid(), '${HIDDEN_SECTION_SLUG}', 'Прихований розділ', 99, false)`,
 
   // Чернетка: неактивна, але «популярна» й у активному розділі — тобто
   // потрапила б у КОЖНУ добірку, якби фільтр видимості загубився.
   `insert into public.products
-     (slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
-   select '${HIDDEN_PRODUCT_SLUG}', 'Чернетка товару', s.id, false, true, false, 'in_stock', '[]'::jsonb
+     (id, slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
+   select gen_random_uuid(), '${HIDDEN_PRODUCT_SLUG}', 'Чернетка товару', s.id,
+          false, true, false, 'in_stock', '[]'::jsonb
      from public.sections s where s.slug = 'sonyachni-paneli'`,
 
   // Та сама опція, що й у видимих товарів — негативний контроль сторінки
   // значення характеристики.
-  `insert into public.product_property_values (product_id, property_id, option_id)
-   select p.id, sp.id, po.id
+  `insert into public.product_property_values (id, product_id, property_id, option_id)
+   select gen_random_uuid(), p.id, sp.id, po.id
      from public.products p
      join public.section_properties sp on sp.slug = '${PAGED_PROPERTY_SLUG}'
      join public.property_options po
@@ -50,8 +51,9 @@ export const FIXTURE_STATEMENTS: string[] = [
   // Наповнення розділу понад ліміт каруселі: без цього віконний зріз
   // перевірявся б на трьох товарах, тобто не перевірявся б.
   `insert into public.products
-     (slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
-   select 'napovnennya-' || g, 'Наповнення ' || g, s.id, true, false, false, 'in_stock', '[]'::jsonb
+     (id, slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
+   select gen_random_uuid(), 'napovnennya-' || g, 'Наповнення ' || g, s.id,
+          true, false, false, 'in_stock', '[]'::jsonb
      from generate_series(1, ${PER_SECTION_LIMIT}) as g
      cross join public.sections s where s.slug = '${FILLED_SECTION_SLUG}'`,
 ];

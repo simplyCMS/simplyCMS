@@ -114,7 +114,8 @@ describe('персональні дані вітрини під актором',
     );
     await queryRows(
       dbUrl,
-      `insert into public.shipping_methods (code, name) values ('pickup', 'Самовивіз')`,
+      `insert into public.shipping_methods (id, code, name)
+       values (gen_random_uuid(), 'pickup', 'Самовивіз')`,
     );
     [{ id: SHIPPING_METHOD_ID }] = (await queryRows(
       dbUrl,

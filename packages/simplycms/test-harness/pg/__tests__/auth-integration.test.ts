@@ -141,8 +141,9 @@ describe('Better Auth над реальним Postgres', () => {
     // що саме доводить тест.
     await queryRows(
       dbUrl,
-      `insert into public.wishlists (user_id, product_id)
-       values ($1, '${PRODUCT}'), ($2, '${PRODUCT}')`,
+      `insert into public.wishlists (id, user_id, product_id)
+       values (gen_random_uuid(), $1, '${PRODUCT}'),
+              (gen_random_uuid(), $2, '${PRODUCT}')`,
       [first.id, second],
     );
 

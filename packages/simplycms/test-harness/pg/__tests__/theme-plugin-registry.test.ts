@@ -97,7 +97,7 @@ describe('реєстри теми й плагіна проти живого Post
     // Drizzle загортає помилку драйвера, тож текст Postgres лежить у `cause`.
     const denied = await withStorefrontDb((db) =>
       db.execute(
-        `insert into themes (name, display_name, version) values ('sneaky', 'Sneaky', '1.0.0')`,
+        `insert into themes (id, name, display_name, version) values (gen_random_uuid(), 'sneaky', 'Sneaky', '1.0.0')`,
       ),
     ).then(
       () => null,

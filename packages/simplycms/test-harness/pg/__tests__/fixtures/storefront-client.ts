@@ -21,16 +21,16 @@ export const SHIPPING_METHOD_CODE = 'pickup';
 export const CLIENT_FIXTURE_STATEMENTS: string[] = [
   // Канонічний сід способів доставки не везе (їх заводить магазин), а точка
   // видачі без `method_id` не вставляється — тож заводимо обидва тут.
-  `insert into public.shipping_methods (code, name, is_active)
-     values ('${SHIPPING_METHOD_CODE}', 'Самовивіз', true)`,
+  `insert into public.shipping_methods (id, code, name, is_active)
+     values (gen_random_uuid(), '${SHIPPING_METHOD_CODE}', 'Самовивіз', true)`,
 
-  `insert into public.pickup_points (method_id, name, address, city, is_active)
-   select m.id, 'Склад №1', 'вул. Тестова, 1', 'Київ', true
+  `insert into public.pickup_points (id, method_id, name, address, city, is_active)
+   select gen_random_uuid(), m.id, 'Склад №1', 'вул. Тестова, 1', 'Київ', true
      from public.shipping_methods m where m.code = '${SHIPPING_METHOD_CODE}'`,
 
   // Залишок рівно однієї модифікації: друга мусить лишитись недоступною.
-  `insert into public.stock_by_pickup_point (pickup_point_id, modification_id, quantity)
-   select pp.id, m.id, ${STOCK_QUANTITY}
+  `insert into public.stock_by_pickup_point (id, pickup_point_id, modification_id, quantity)
+   select gen_random_uuid(), pp.id, m.id, ${STOCK_QUANTITY}
      from public.pickup_points pp
      cross join public.product_modifications m
      join public.products p on p.id = m.product_id
@@ -40,8 +40,8 @@ export const CLIENT_FIXTURE_STATEMENTS: string[] = [
 
   // Характеристика НА МОДИФІКАЦІЇ: саме її старий клієнт тягнув окремим
   // запитом, а наявність — ще й окремим RPC на кожну модифікацію.
-  `insert into public.modification_property_values (modification_id, property_id, option_id)
-   select m.id, sp.id, po.id
+  `insert into public.modification_property_values (id, modification_id, property_id, option_id)
+   select gen_random_uuid(), m.id, sp.id, po.id
      from public.product_modifications m
      join public.products p on p.id = m.product_id
      join public.section_properties sp on sp.slug = 'tip-invertora'
