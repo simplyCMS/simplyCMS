@@ -14,6 +14,18 @@
 
 **Обсяг:** перша половина етапу Е1. **TanStack DB тут ще немає** — жодної колекції, `useLiveQuery` чи нової залежності. Друга половина (Е1б: `admin-server`, `defineAdminResource`, `subset.ts`, реєстр колекцій, `order_statuses` наскрізь, гейти `mutation-cache-sync` / `handler-canon` / `id-mismatch`) пишеться після валідації цього.
 
+🔴 **Ревізія 1 (2026-08-30) за зовнішнім аудитом.** Перша редакція мала
+блокер і сім major: `ENTITY` пропускав шість таблиць, які вже сьогодні в
+кеші вітрини (`user_addresses`, `user_recipients`, `stock_by_pickup_point`,
+три `shipping_*`); інвентар називав 13 ключів замість 36 і не бачив
+непрямих форм; лінт-зона на `no-restricted-syntax` **мовчки вимкнула б
+i18n-детектор** (flat config замінює опції правила); субшлях додавався
+лише в dev-`exports` без `publishConfig`; Task 3 не оновлював
+Drizzle-снапшот і `.github/instructions`; тест `QueryClient` проходив до
+зміни й не доводив топологію; тест грантів був фальшиво-зелений.
+Виправлено все; звідси кастомне ESLint-правило замість зони й три форми
+ключів замість однієї.
+
 **Чому саме такий розріз.** Топологія `QueryClient` зачіпає host-файли під `template:sync` — найризикованіша частина Е1, і прожити її треба **до** того, як на неї ляжуть колекції. Контракт ключів — передумова колекцій за побудовою: `queryKey` колекції має бути тим самим ключем, що й у решти запитів, інакше оновлення кешу проминає записи (Додаток Б-2 спеки).
 
 ## Global Constraints
@@ -57,7 +69,8 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 | `packages/simplycms/src/contracts/entities.ts` | T0: реєстр `ENTITY` (рядки) + `entityKey()` |
 | `packages/simplycms/src/contracts/__tests__/entity-key.test.ts` | Юніт форми ключів |
 | `packages/simplycms/src/schema/__tests__/entity-parity.test.ts` | Гейт: `ENTITY` ≡ `getTableName()` усіх таблиць |
-| `eslint.query-key-zone.mjs` | Зона заборони літерального `queryKey` |
+| `eslint-rules/query-key-from-entity.mjs` | **Перше кастомне AST-правило репо**: `queryKey` з реєстру (зона `no-restricted-syntax` неможлива — конфлікт із i18n) |
+| `packages/simplycms/src/core/__tests__/router-query-client.test.tsx` | Інтеграційний тест топології `QueryClient` |
 
 **Змінюються:**
 
@@ -73,9 +86,11 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 | `packages/simplycms/src/core/hooks/*.ts`, `src/*-ui/**` | 13 вітринних ключів → `entityKey` |
 | `src/router.tsx`, `src/routes/__root.tsx` | `QueryClient` у router context (канон `packages/cli/host/` і шаблон оновлює `template:sync`, руками не чіпати) |
 | `packages/simplycms/src/core/providers/CMSProvider.tsx` | приймає клієнт із контексту |
-| `packages/simplycms/package.json` | export `./contracts/entities` |
+| `packages/simplycms/package.json` | `./contracts/entities` в **обидві** мапи: `exports` і `publishConfig.exports` |
 | `packages/simplycms/tsup.config.ts` | профіль нового субшляху |
-| `eslint.config.mjs` | підключення зони ключів |
+| `eslint.config.mjs` | підключення правила окремим плагін-блоком |
+| `packages/simplycms/drizzle/0000_init.sql` + `drizzle/meta/0000_snapshot.json` | регенерація після `orders` (інакше `db:diff` бачить дрейф) |
+| `.github/instructions/data-access.instructions.md`, `src/schema/README.md` | 41 таблиця Категорії A, чотири B |
 | `docs/superpowers/specs/2026-08-29-…-design.md` | К3-6: `orders` переїхав у Категорію A |
 
 **Свідомо НЕ чіпаються:** 170 літеральних `queryKey` у `packages/simplycms/src/admin/**`. Сторінки адмінки переписуються в Е1б–Е6 разом із ключами — той самий принцип, що з 27 вставками в Е0. Лінт-зона їх не покриває; покриє, коли теку буде переписано.
@@ -106,22 +121,38 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 
 - [ ] **Step 1: Написати падаючий тест**
 
+🔴 Перевіряти треба **згенеровану** міграцію (у тесті вже є скаффолджений
+плагін), а не сирий шаблон, і асертити ТОЧНУ множину грантів — інакше
+закоментований `grant` або зайвий `insert` для `app_user` проходять
+зеленими. Це security boundary, тут «щось знайшлося» не доказ.
+
 ```ts
-// у tests/cli-create.test.ts — додати до наявного describe про create plugin
-it('міграція шаблону видає гранти обом ролям магазину', () => {
-  const sql = readFileSync(
-    resolve(
-      import.meta.dirname,
-      '../packages/cli/template-plugin/migrations/0001___PLUGIN_TABLE_PREFIX__init.sql',
-    ),
-    'utf8',
-  );
-  // Без грантів таблиця недоступна: app_runtime прав не має за побудовою
-  // (B5″), а порт плагіна ходить під app_user/app_admin.
-  expect(sql).toMatch(/grant\s+select\s+on\s+table\s+\S+\s+to\s+app_user/i);
-  expect(sql).toMatch(
-    /grant\s+select,\s*insert,\s*update,\s*delete\s+on\s+table\s+\S+\s+to\s+app_admin/i,
-  );
+// у tests/cli-create.test.ts — до наявного describe про create plugin
+it('згенерована міграція видає РІВНО два гранти й нічого зайвого', () => {
+  // `generatedPluginDir` — тека вже скаффолдженого плагіна з наявного
+  // тесту; якщо змінна зветься інакше, узяти чинну.
+  const file = readdirSync(join(generatedPluginDir, 'migrations'))[0];
+  const raw = readFileSync(join(generatedPluginDir, 'migrations', file), 'utf8');
+
+  // 🔴 Прибрати коментарі: закоментований grant не дає прав, але
+  // регексу виглядає як справжній.
+  const sql = raw.replace(/--[^\n]*/g, '');
+
+  const grants = [...sql.matchAll(/grant\s+([^;]+?)\s+on\s+table\s+(\S+)\s+to\s+(\w+)/gi)]
+    .map((m) => ({
+      privileges: m[1].split(',').map((s) => s.trim().toLowerCase()).sort().join(','),
+      role: m[3].toLowerCase(),
+    }));
+
+  expect(grants).toHaveLength(2);
+  expect(grants).toContainEqual({ privileges: 'select', role: 'app_user' });
+  expect(grants).toContainEqual({
+    privileges: 'delete,insert,select,update',
+    role: 'app_admin',
+  });
+
+  // Жодних прав рантайм-ролі: вона їх дістає через SET LOCAL ROLE (B5″).
+  expect(sql).not.toMatch(/to\s+app_runtime/i);
 });
 ```
 
@@ -270,12 +301,20 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Довести, що вставка одна і вона з id**
 
 ```bash
-grep -rn "insert(orders)" --include="*.ts" packages/ src/ scripts/ | grep -v test
-grep -n "insert(orders)" -A3 packages/simplycms/src/storefront/loaders/order-create.ts
+# 🔴 Шукати і Drizzle-, і SQL-форму, і В ТЕСТАХ теж: `grep -v test`
+# приховав би дві фікстурні вставки (перша редакція плану через це
+# стверджувала «єдина вставка»).
+grep -rn "insert(orders)\|insert into public.orders\|from('orders').insert" \
+  --include="*.ts" --include="*.tsx" --include="*.sql" --include="*.mjs" \
+  packages/ src/ scripts/ supabase/ tests/
 ```
-Expected: рівно один сайт, і в ньому `id: orderId`. 🔴 Якщо з'явився
-другий шлях без `id` — спершу додати туди ключ, інакше Step 4 покладе
-чекаут.
+Expected: **три** сайти, усі з `id`:
+- `storefront/loaders/order-create.ts:99` — `id: orderId`;
+- `test-harness/pg/__tests__/fixtures/rls-actors.ts:59,63` — обидві через
+  `ORDER_COLUMNS`, який починається з `id`.
+
+🔴 Якщо зʼявився шлях без `id` — спершу додати туди ключ, інакше Step 4
+покладе чекаут або `test:schema`.
 
 - [ ] **Step 2: Написати падаючий тест**
 
@@ -325,11 +364,33 @@ export const orders = pgTable("orders", {
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/id-defaults.test.ts`
 Expected: PASS, 2/2 (`orders` більше не в B, решта B на місці).
 
-- [ ] **Step 6: Синхронізувати шаблон і оновити доки**
+- [ ] **Step 6: Оновити Drizzle-артефакти, шаблон і ВЕСЬ канон доків**
+
+🔴 `drizzle/0000_init.sql:153` і `drizzle/meta/0000_snapshot.json` досі
+тримають `DEFAULT gen_random_uuid()` для `orders`. Snapshot — база
+наступних diff-ів (`src/schema/README.md:3`), тож без регенерації
+наступний `db:diff` знову згенерує зняття DEFAULT.
 
 ```bash
+# регенерувати baseline і snapshot канонічним процесом drizzle-kit,
+# потім переконатись, що дрейфу немає:
+pnpm db:diff
+git diff --stat packages/simplycms/drizzle
 pnpm template:sync
 ```
+Expected: `db:diff` не пропонує зміни по `orders`.
+
+🔴 **Доки — чотири джерела, не два.** Крім спеки й `CLAUDE.md` канон
+містить:
+- `.github/instructions/data-access.instructions.md:68` — обовʼязкова
+  інструкція, розділ «Контракт id»;
+- `packages/simplycms/src/schema/README.md:14`;
+- **назву другого кейса** в `id-defaults.test.ts` («інакше ляже auth і
+  створення замовлень» — після зміни там лише auth);
+- пояснювальний коментар `explicit-ids.test.ts:25`.
+
+Скрізь: «40 таблиць Категорії A» → **41**, Категорія B → чотири таблиці
+Better Auth.
 
 У спеці, К3-6, таблицю Категорії B привести до чотирьох рядків і додати
 рядок про перегляд:
@@ -589,9 +650,15 @@ export const ENTITY = {
   sectionProperties: 'section_properties',
   sectionPropertyAssignments: 'section_property_assignments',
   sections: 'sections',
+  shippingMethods: 'shipping_methods',
+  shippingRates: 'shipping_rates',
+  shippingZones: 'shipping_zones',
+  stockByPickupPoint: 'stock_by_pickup_point',
   systemSettings: 'system_settings',
   themes: 'themes',
+  userAddresses: 'user_addresses',
   userCategories: 'user_categories',
+  userRecipients: 'user_recipients',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** Імʼя сутності — значення `ENTITY`, не довільний рядок. */
@@ -611,12 +678,67 @@ export function entityKey(entity: EntityName) {
       [entity, relation, parentId] as const,
   };
 }
+
+/**
+ * Ключ, що обслуговує кілька таблиць одним запитом.
+ *
+ * 🔴 Не всі кеші однотабличні, і зводити їх силою до `entityKey` було б
+ * регресією: `shipping-directory` одним походом читає `shipping_methods`,
+ * `shipping_zones` і `shipping_rates` (`storefront/loaders/shipping.ts:81,107,136`),
+ * а `stock-info` — `stock_by_pickup_point`, `product_modifications` і
+ * `products`. Розбити їх на три ключі означало б три раундтрипи замість
+ * одного.
+ *
+ * Тому агрегат лишається одним ключем, але **називає свої залежності
+ * явно** — інакше мутація в `shipping_rates` не мала б як його
+ * інвалідувати. `deps` тут не декорація: саме звідси Е1б візьме список
+ * ключів для інвалідації.
+ */
+export function aggregateKey(
+  name: string,
+  deps: readonly EntityName[],
+): { key: readonly [string]; deps: readonly EntityName[] } {
+  return { key: [name] as const, deps };
+}
+
+/** Агрегати вітрини — єдине місце, де вони оголошені. */
+export const AGGREGATE = {
+  shippingDirectory: aggregateKey('shipping-directory', [
+    ENTITY.shippingMethods,
+    ENTITY.shippingZones,
+    ENTITY.shippingRates,
+  ]),
+  stockInfo: aggregateKey('stock-info', [
+    ENTITY.stockByPickupPoint,
+    ENTITY.productModifications,
+    ENTITY.products,
+  ]),
+} as const;
+
+/**
+ * Ключі, що НЕ належать жодній таблиці: сесійний і похідний стан.
+ *
+ * 🔴 Іменований allowlist, а не виняток у лінті: `['auth','is-admin', id]`
+ * (`core/hooks/useAuth.tsx:45`) описує обчислене право, а не рядок БД, і
+ * прив'язувати його до таблиці `user_roles` було б брехнею — воно
+ * перераховується із сесії, а не читається звідти.
+ */
+export const SESSION_KEY = {
+  isAdmin: (userId: string | null) => ['auth', 'is-admin', userId] as const,
+} as const;
 ```
 
 🔴 Список `ENTITY` — **не повний перелік 45 таблиць**: сюди входять лише
-ті, що мають ключ кешу. Таблиці Better Auth і суто серверні
-(`plugin_events`, `user_roles`, `shipping_rates` тощо) додаються тоді,
-коли зʼявляється їхній кеш. Тест парності це враховує (Step 5).
+ті, що мають ключ кешу сьогодні (33 імені). Таблиці Better Auth і суто
+серверні (`plugin_events`, `user_roles`, `service_requests`) додаються
+тоді, коли зʼявиться їхній кеш.
+
+🔴 Склад звірений з **фактичним інвентарем кешів**, а не складений з
+голови: перша редакція плану мала 27 імен і пропускала `user_addresses`,
+`user_recipients`, `stock_by_pickup_point` і три `shipping_*` — усі вони
+вже сьогодні в клієнтському кеші вітрини. Крок 1 Task 6 вимагає звірити
+інвентар ще раз перед реалізацією: якщо в коді зʼявився новий кеш, його
+таблиця має бути тут.
 
 - [ ] **Step 4: Запустити — має пройти**
 
@@ -665,6 +787,17 @@ describe('ENTITY ≡ Drizzle-схема', () => {
     // Інакше обидва твердження вище зелені через поламаний скан.
     expect(schemaTables.size).toBeGreaterThanOrEqual(40);
   });
+
+  it('кожна залежність агрегату існує в ENTITY', () => {
+    // 🔴 `deps` агрегату — не декорація: з них Е1б будує інвалідацію.
+    // Залежність поза ENTITY зробила б її мовчазно неповною.
+    const known = new Set(Object.values(ENTITY));
+    for (const [name, agg] of Object.entries(AGGREGATE)) {
+      for (const dep of agg.deps) {
+        expect(known.has(dep), `${name}: залежність ${dep} поза ENTITY`).toBe(true);
+      }
+    }
+  });
 });
 ```
 
@@ -685,18 +818,29 @@ pnpm vitest run packages/simplycms/src/schema/__tests__/entity-parity.test.ts
 
 - [ ] **Step 7: Оголосити субшлях**
 
-У `packages/simplycms/package.json`, `exports`:
+🔴 **Мап дві, і обидві обовʼязкові.** `audit-exports` окремо вимагає
+запис у `publishConfig.exports` (86 входів сьогодні); без нього
+`pnpm test` червоніє, а tarball не експортує модуль.
+
+`packages/simplycms/package.json`, `exports` (dev):
 ```json
 "./contracts/entities": "./src/contracts/entities.ts"
 ```
 
-🔴 Окремий субшлях, **не** через барель `./contracts`: барель обіцяє
-«без імпортів react/supabase», а сюди по нього ходитиме і серверний, і
-клієнтський код — той самий мотив, що у `./contracts/views`.
+той самий файл, `publishConfig.exports` (tarball):
+```json
+"./contracts/entities": {
+  "types": "./dist/contracts/entities.d.ts",
+  "import": "./dist/contracts/entities.js"
+}
+```
 
-У `tsup.config.ts` — додати файл у профіль `contracts` (глоб уже може
-його покривати; перевірити `pnpm build:packages` і
-`tests/published-exports-parity.test.ts`).
+Окремий субшлях, **не** через барель `./contracts`: барель обіцяє «без
+імпортів react/supabase», а сюди ходить і серверний, і клієнтський код —
+той самий мотив, що у `./contracts/views`.
+
+У `tsup.config.ts` — додати файл до чинного профілю `contracts`
+(`tsup.config.ts:104`). Окремий профіль не потрібен.
 
 - [ ] **Step 8: Гейти й коміт**
 
@@ -741,11 +885,25 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Виписати всі вітринні ключі**
 
 ```bash
-grep -rn "queryKey: \[" packages/simplycms/src/core packages/simplycms/src/*-ui \
+# 🔴 Шукати ВСІ входження `queryKey`, а не лише `queryKey: [` — інакше
+# непрямі форми лишаться невидимими (перша редакція плану саме так і
+# нарахувала «~13» замість фактичних 36).
+grep -rn "queryKey" packages/simplycms/src/core packages/simplycms/src/*-ui \
   packages/simplycms/src/react-query packages/simplycms/src/storefront-routes \
-  --include="*.ts" --include="*.tsx" | grep -v __tests__
+  --include="*.ts" --include="*.tsx" | grep -v __tests__ | tee /tmp/keys.txt | wc -l
 ```
-Expected: ~13 місць. Виписати кожне з таблицею, до якої воно належить.
+Expected: **36** входжень (виміряно 2026-08-30). Виписати кожне з
+таблицею або агрегатом, до якого воно належить.
+
+🔴 Три форми, які легко проґавити — вони є в коді вже сьогодні:
+
+| Форма | Приклад | Де |
+|---|---|---|
+| константа-масив | `const ADDRESS_BOOK_KEY = ['address-book']` → `queryKey: ADDRESS_BOOK_KEY` | `core/hooks/useAddressBook.ts:28,43` |
+| умовний вибір | `queryKey: sectionId === undefined ? ['all-products'] : ['section-products', sectionId]` | `storefront-routes/pages/catalog/useCatalogProductsQuery.ts:23` |
+| агрегат кількох таблиць | `queryKey: ['shipping-directory']` (читає 3 таблиці) | `core/hooks/useShippingDirectory.ts:37` |
+
+Перші дві переводяться на `entityKey`, третя — на `AGGREGATE`.
 
 - [ ] **Step 2: Оновити наявний тест ключів**
 
@@ -801,77 +959,160 @@ export const catalogKeys = {
 Run: `pnpm vitest run packages/simplycms/src/react-query packages/simplycms/src/storefront-routes`
 Expected: PASS, зокрема наявний `home-catalog-query-key-collision.test.tsx`.
 
-- [ ] **Step 5: Лінт-зона**
+- [ ] **Step 5: Кастомне ESLint-правило (НЕ зона `no-restricted-syntax`)**
+
+🔴 **Зона `no-restricted-syntax` тут неможлива, і це не стиль.** Flat
+config **замінює** опції правила, а не зливає. Репозиторій сам про це
+попереджає (`eslint.config.mjs:241-243`): тір-зони свідомо зроблені на
+`no-restricted-imports`, «тож перетину опцій з i18n/env-зонами
+`no-restricted-syntax` немає». Моя зона накрила б `storefront-routes/**`
+і `*-ui/**`, які вже під i18n-зоною (`I18N_MIGRATED_FILES`,
+`eslint.config.mjs:203`) — і залежно від порядку конфігів **мовчки
+вимкнувся б або i18n-детектор, або цей**. Обидва наслідки катастрофічні
+й непомітні.
+
+Тому — власне правило з окремим імʼям. Це перше кастомне AST-правило в
+репозиторії; Е1б додасть до нього `mutation-cache-sync`.
 
 ```js
-// eslint.query-key-zone.mjs
+// eslint-rules/query-key-from-entity.mjs
 /**
- * Заборона літерального `queryKey` поза реєстром ENTITY.
+ * `queryKey` будується з реєстру ENTITY, а не пишеться літералом.
  *
- * 🔴 Тека `src/admin/**` під виїмкою: 170 її ключів зникнуть разом зі
- * сторінками в Е1б–Е6 (той самий принцип, що з 27 вставками в Е0).
- * Прибрати виїмку — частина завершення переписування адмінки.
+ * 🔴 Окреме правило, а не селектор у `no-restricted-syntax`: flat config
+ * замінює опції правила цілком, тож зона поверх i18n-зони мовчки
+ * вимкнула б одну з двох (`eslint.config.mjs:241-243`).
+ *
+ * Ловить три форми, яких евристичний селектор не бачив:
+ *   queryKey: ['banners']                 — прямий літерал
+ *   queryKey: ADDRESS_BOOK_KEY            — константа-масив у модулі
+ *   queryKey: cond ? ['a'] : ['b', id]    — умовний вибір
+ * Значення має лише ПЕРШИЙ сегмент — він визначає префікс.
  */
-export const queryKeyZone = {
+const MESSAGE =
+  'queryKey мусить починатися з ENTITY/AGGREGATE/SESSION_KEY ' +
+  '(simplycms/contracts/entities). Літеральний перший сегмент дає ' +
+  'сутності різні префікси, і оновлення кешу проминає записи.';
+
+/** `x as const` / `(x)` — розгорнути до самого виразу. */
+function unwrap(node) {
+  let n = node;
+  while (n && (n.type === 'TSAsExpression' || n.type === 'TSTypeAssertion')) {
+    n = n.expression;
+  }
+  return n;
+}
+
+/** Гілки умовного виразу — інакше `cond ? ['a'] : ['b']` пройде повз. */
+function branches(node) {
+  if (node?.type === 'ConditionalExpression') {
+    return [...branches(node.consequent), ...branches(node.alternate)];
+  }
+  return [node];
+}
+
+/** Масив, чий ПЕРШИЙ елемент — рядковий літерал. */
+const startsWithLiteral = (node) =>
+  node?.type === 'ArrayExpression' &&
+  node.elements[0]?.type === 'Literal' &&
+  typeof node.elements[0].value === 'string';
+
+export default {
+  meta: {
+    type: 'problem',
+    docs: { description: 'queryKey з реєстру ENTITY' },
+    schema: [],
+    messages: { literalKey: MESSAGE },
+  },
+  create(context) {
+    // Константи-масиви модуля: `const ADDRESS_BOOK_KEY = ['address-book']`.
+    const literalConsts = new Set();
+
+    return {
+      VariableDeclarator(node) {
+        if (
+          node.id.type === 'Identifier' &&
+          startsWithLiteral(unwrap(node.init))
+        ) {
+          literalConsts.add(node.id.name);
+        }
+      },
+      Property(node) {
+        const key = node.key;
+        const name =
+          key.type === 'Identifier'
+            ? key.name
+            : key.type === 'Literal'
+              ? key.value
+              : null;
+        if (name !== 'queryKey') return;
+
+        for (const candidate of branches(node.value)) {
+          const value = unwrap(candidate);
+          const offends =
+            startsWithLiteral(value) ||
+            (value?.type === 'Identifier' && literalConsts.has(value.name));
+          if (offends) {
+            context.report({ node: candidate, messageId: 'literalKey' });
+            return;
+          }
+        }
+      },
+    };
+  },
+};
+```
+
+Підключення в `eslint.config.mjs` — окремим блоком, як плагін:
+
+```js
+import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
+
+{
   files: [
     'packages/simplycms/src/core/**/*.{ts,tsx}',
     'packages/simplycms/src/*-ui/**/*.{ts,tsx}',
     'packages/simplycms/src/react-query/**/*.{ts,tsx}',
     'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
-    'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
   ],
   ignores: ['**/__tests__/**'],
-  rules: {
-    'no-restricted-syntax': [
-      'error',
-      {
-        // 🔴 `Literal:first-child`, а не `Literal[value=/^[a-z]/]`.
-        // Перевірено живим прогоном eslint на чотирьох формах:
-        //   ['banners']                    → ловиться (порушення)
-        //   ['Banners']                    → ловиться (регекс на малу
-        //                                    літеру його пропускав)
-        //   [...products.list(), q]        → НЕ чіпається (SpreadElement)
-        //   [ENTITY.products, 'list']      → НЕ чіпається — а регекс
-        //                                    хибно валив тут на 'list',
-        //                                    тобто банив ЛЕГІТИМНУ форму.
-        // Значення має лише ПЕРШИЙ сегмент: він визначає префікс.
-        selector:
-          "Property[key.name='queryKey'] > ArrayExpression > Literal:first-child",
-        message:
-          'Літеральний queryKey заборонений: ключ будується entityKey(ENTITY.x) ' +
-          'із simplycms/contracts/entities. Інакше та сама сутність отримує ' +
-          'різні префікси, і оновлення кешу проминає записи.',
-      },
-    ],
+  plugins: {
+    simplycms: { rules: { 'query-key-from-entity': queryKeyFromEntity } },
   },
-};
+  rules: { 'simplycms/query-key-from-entity': 'error' },
+},
 ```
 
-Підключити в `eslint.config.mjs` поруч із наявними зонами.
+🔴 Теки `src/admin/**` у списку немає — її 170 ключів зникнуть зі
+сторінками в Е1б–Е6. Додати її туди — крок завершення переписування
+адмінки, і саме тоді DoD К3-3 закриється повністю.
 
-- [ ] **Step 6: Негативний контроль лінта**
+- [ ] **Step 6: Контролі правила — по одному на кожну форму**
 
 ```bash
-# 1. НЕГАТИВНИЙ контроль — тимчасово додати у файл зони:
-#      const q = { queryKey: ['banners'], queryFn: async () => [] };
-pnpm lint
-# Expected: FAIL — 'Літеральний queryKey заборонений…'
+# НЕГАТИВНІ (правило МУСИТЬ впасти) — по черзі додати у файл зони:
+#   1) const q = { queryKey: ['banners'], queryFn: async () => [] };
+#   2) const K = ['address-book'] as const;
+#      const q = { queryKey: K, queryFn: async () => [] };
+#   3) const q = { queryKey: x ? ['all-products'] : ['section-products', x],
+#                  queryFn: async () => [] };
+pnpm lint   # кожного разу Expected: FAIL із повідомленням правила
 
-# 2. ПОЗИТИВНИЙ контроль — замінити на легітимні форми:
-#      const a = { queryKey: [...products.list(), q], queryFn: async () => [] };
-#      const b = { queryKey: [ENTITY.products, 'list'], queryFn: async () => [] };
-pnpm lint
-# Expected: 0 errors — інакше зона банить правильний код і її доведеться
-# обходити коментарями, тобто вона марна.
+# ПОЗИТИВНІ (правило НЕ сміє чіпати):
+#   4) const q = { queryKey: [...products.list(), filters], queryFn: … };
+#   5) const q = { queryKey: [ENTITY.products, 'list'], queryFn: … };
+#   6) const q = { queryKey: AGGREGATE.shippingDirectory.key, queryFn: … };
+#   7) const q = { queryKey: SESSION_KEY.isAdmin(userId), queryFn: … };
+pnpm lint   # Expected: 0 errors
 
-# 3. Прибрати обидві правки → pnpm lint = 0 errors / 12 warnings
+# Прибрати всі правки → pnpm lint = 0 errors / 12 warnings
 ```
 
-🔴 Обидва контролі обовʼязкові. Селектор без позитивного контролю —
-типова пастка: перша редакція цього плану вживала
-`Literal[value=/^[a-z]/]`, і живий прогін показав, що вона валила
-`[ENTITY.products, 'list']` на другому сегменті, тобто забороняла саме
-ту форму, яку й запроваджує.
+🔴 Позитивні контролі не менш обовʼязкові за негативні: правило, що
+банить правильний код, обходитимуть коментарями, і воно перестане щось
+означати. Перша редакція цього плану мала саме таку ваду — селектор
+`Literal[value=/^[a-z]/]` валив легітимне `[ENTITY.products, 'list']`.
+
 
 - [ ] **Step 7: Живий доказ вітрини**
 
@@ -974,9 +1215,45 @@ describe('CMSProvider: клієнт приходить ззовні', () => {
 ```
 
 Run: `pnpm vitest run packages/simplycms/src/core/__tests__/query-client-context.test.tsx`
-Expected: перший кейс може вже проходити (проп існує), другий теж —
-🔴 якщо обидва зелені одразу, це нормально: тест фіксує контракт, який
-Task 7 не має зламати, а не вводить нову поведінку в `CMSProvider`.
+Expected: **обидва кейси зелені одразу** — `CMSProvider` уже приймає
+`customQueryClient`.
+
+🔴 Саме тому цього тесту НЕ досить: він доводить контракт провайдера, а
+не нову топологію. Реалізація з **двома різними** клієнтами (один у
+роутері, другий створений провайдером) пройшла б його. Тому додається
+другий тест — інтеграційний:
+
+```tsx
+// packages/simplycms/src/core/__tests__/router-query-client.test.tsx
+import { describe, expect, it } from 'vitest';
+import { getRouter } from '../../../../../src/router';
+
+describe('топологія: клієнт роутера — той самий, що в дереві', () => {
+  it('router.options.context.queryClient існує', () => {
+    const router = getRouter();
+    // 🔴 Без цього `loader` не має де взяти колекцію (Е1б).
+    expect(router.options.context?.queryClient).toBeDefined();
+  });
+
+  it('два виклики getRouter дають РІЗНІ клієнти', () => {
+    // Кожен запит на сервері має власний кеш: спільний інстанс протік би
+    // між користувачами.
+    expect(getRouter().options.context.queryClient).not.toBe(
+      getRouter().options.context.queryClient,
+    );
+  });
+});
+```
+
+🔴 Тотожність «клієнт роутера === `useQueryClient()` у дереві»
+доводиться живим прогоном (Step 6): якщо вони різні, каталог після
+гідрації показує порожній кеш і перезапитує все. Юніт-тестом це
+відтворити важко — root-провайдер тягне I18n, Theme і Engine; тому тут
+чесніше покластися на браузерну перевірку, ніж імітувати дерево.
+
+**Негативний контроль:** тимчасово прибрати `customQueryClient={queryClient}`
+у `__root.tsx` → у браузері на `/catalog` мають зʼявитися повторні
+запити після гідрації (мережева панель) при зелених юнітах. Повернути.
 
 - [ ] **Step 2: Створити клієнт у роутері**
 
@@ -1037,7 +1314,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 `CMSProvider` лишається там само, всередині `I18nProvider`/`ThemeProvider`):
 
 ```tsx
-function RootDocument() {
+function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   // …
   <CMSProvider customQueryClient={queryClient}>
@@ -1129,12 +1406,18 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
    ```
    `pnpm lint` = 0 errors, 12 warnings — лінія не зрушена.
 
-2. **Три негативні контролі прогнані вручну:**
+2. **Контролі прогнані вручну — негативні І позитивні:**
    - Task 4 Step 2 — аліасована вставка не знаходиться дискавером до фіксу;
    - Task 5 Step 6 — неіснуюча таблиця в `ENTITY` червонить парність;
-   - Task 6 Step 6 — літеральний `queryKey` у зоні валить лінт.
+   - Task 6 Step 6 — **три негативні** форми (літерал, константа-масив,
+     умовний вибір) валять правило, і **чотири позитивні** (spread,
+     `[ENTITY.x, 'list']`, `AGGREGATE.*.key`, `SESSION_KEY.*`) не чіпає;
+   - Task 7 Step 6 — прибраний `customQueryClient` дає повторні запити
+     після гідрації.
 
-   Без них гейти не доведені, і етап **не закривається**.
+   Без них гейти не доведені, і етап **не закривається**. Позитивні
+   контролі обовʼязкові нарівні з негативними: правило, що банить
+   правильний код, обходитимуть коментарями.
 
 3. **`pnpm test:schema`** зелений, і `orders` більше не в Категорії B:
    ```bash
@@ -1152,8 +1435,14 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 6. **Скаффолджений плагін працює**: `simplycms create plugin probe` →
    у міграції є обидва `grant`.
 
-7. **Доки узгоджені**: спека К3-6 і `CLAUDE.md` називають Категорію B у
-   складі чотирьох таблиць; README міграцій описує чинний механізм.
+7. **Доки узгоджені в усіх чотирьох джерелах**: спека К3-6, `CLAUDE.md`,
+   `.github/instructions/data-access.instructions.md`,
+   `src/schema/README.md` — 41 таблиця Категорії A, чотири Better Auth;
+   README міграцій описує чинний механізм; назви кейсів у
+   `id-defaults.test.ts` не згадують замовлення.
+
+8. **`pnpm db:diff` не показує дрейфу** — Drizzle-снапшот регенеровано
+   разом зі зняттям DEFAULT з `orders`.
 
 ## Що НЕ входить в Е1а
 
