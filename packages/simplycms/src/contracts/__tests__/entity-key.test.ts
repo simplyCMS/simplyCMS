@@ -13,7 +13,11 @@ describe('entityKey: єдина форма ключів кешу', () => {
     // знаходить записи колекції префіксним матчем, і ключ, що не
     // розширює базовий, лишає застарілі дані у кеші (спека, Додаток Б-2).
     const base = k.all();
-    for (const derived of [k.list(), k.detail('abc'), k.scoped('section', 'x')]) {
+    for (const derived of [
+      k.list(),
+      k.detail('abc'),
+      k.scoped('section', 'x'),
+    ]) {
       expect(derived.slice(0, base.length)).toEqual(base);
     }
   });
@@ -21,7 +25,11 @@ describe('entityKey: єдина форма ключів кешу', () => {
   it('форма кожного ключа стабільна', () => {
     expect(k.list()).toEqual(['order_statuses', 'list']);
     expect(k.detail('abc')).toEqual(['order_statuses', 'detail', 'abc']);
-    expect(k.scoped('section', 'x')).toEqual(['order_statuses', 'section', 'x']);
+    expect(k.scoped('section', 'x')).toEqual([
+      'order_statuses',
+      'section',
+      'x',
+    ]);
   });
 
   it('ENTITY не містить дублікатів значень', () => {

@@ -36,9 +36,14 @@ describe('ENTITY ≡ Drizzle-схема', () => {
 
   it('ключ ENTITY — camelCase від імені таблиці', () => {
     const wrong = Object.entries(ENTITY)
-      .filter(([key, table]) => key !== table.replace(/_([a-z])/g, (_, c) => c.toUpperCase()))
+      .filter(
+        ([key, table]) =>
+          key !== table.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
+      )
       .map(([key, table]) => `${key} ≠ ${table}`);
-    expect(wrong, `розбіжність ключа й таблиці: ${wrong.join(', ')}`).toEqual([]);
+    expect(wrong, `розбіжність ключа й таблиці: ${wrong.join(', ')}`).toEqual(
+      [],
+    );
   });
 
   it('скан схеми взагалі щось знайшов', () => {
@@ -52,7 +57,9 @@ describe('ENTITY ≡ Drizzle-схема', () => {
     const known = new Set(Object.values(ENTITY));
     for (const [name, agg] of Object.entries(AGGREGATE)) {
       for (const dep of agg.deps) {
-        expect(known.has(dep), `${name}: залежність ${dep} поза ENTITY`).toBe(true);
+        expect(known.has(dep), `${name}: залежність ${dep} поза ENTITY`).toBe(
+          true,
+        );
       }
     }
   });
