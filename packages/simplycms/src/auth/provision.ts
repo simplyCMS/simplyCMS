@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import { profiles, userRoles } from 'simplycms/schema';
@@ -14,6 +15,7 @@ import type { ProvisionUser } from './hooks';
 export const provisionUserInDb: ProvisionUser = async (plan) => {
   await withActor({ role: 'app_admin' }, async (db) => {
     await db.insert(profiles).values({
+      id: randomUUID(),
       userId: plan.userId,
       email: plan.email,
       firstName: plan.firstName,
@@ -28,7 +30,7 @@ export const provisionUserInDb: ProvisionUser = async (plan) => {
     // збою) не має падати на унікальності `(user_id, role)`.
     await db
       .insert(userRoles)
-      .values({ userId: plan.userId, role: plan.role })
+      .values({ id: randomUUID(), userId: plan.userId, role: plan.role })
       .onConflictDoNothing();
   });
 };

@@ -84,41 +84,44 @@ export async function createOrder(
     .limit(1);
 
   const orderNumber = generateOrderNumber(new Date());
-  const [row] = await db
-    .insert(orders)
-    .values({
-      userId,
-      accessToken,
-      orderNumber,
-      statusId: await loadDefaultStatusId(db),
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      phone: input.phone,
-      deliveryMethod: method?.code ?? null,
-      deliveryCity: input.deliveryCity,
-      deliveryAddress: input.deliveryAddress,
-      paymentMethod: input.paymentMethod,
-      notes: input.notes,
-      subtotal: input.subtotal.toFixed(2),
-      total: input.total.toFixed(2),
-      shippingMethodId: input.shippingMethodId,
-      shippingCost: input.shippingCost.toFixed(2),
-      pickupPointId: input.pickupPointId,
-      shippingData: {},
-      hasDifferentRecipient: input.hasDifferentRecipient,
-      recipientFirstName: input.recipientFirstName,
-      recipientLastName: input.recipientLastName,
-      recipientPhone: input.recipientPhone,
-      recipientEmail: input.recipientEmail,
-      savedRecipientId: input.savedRecipientId,
-      savedAddressId: input.savedAddressId,
-    })
-    .returning({ id: orders.id, orderNumber: orders.orderNumber });
+  // Ключ замовлення відомий ДО вставки — тому `.returning()` більше не
+  // потрібен: позиції нижче можуть посилатись на нього одразу.
+  const orderId = randomUUID();
+
+  await db.insert(orders).values({
+    id: orderId,
+    userId,
+    accessToken,
+    orderNumber,
+    statusId: await loadDefaultStatusId(db),
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    phone: input.phone,
+    deliveryMethod: method?.code ?? null,
+    deliveryCity: input.deliveryCity,
+    deliveryAddress: input.deliveryAddress,
+    paymentMethod: input.paymentMethod,
+    notes: input.notes,
+    subtotal: input.subtotal.toFixed(2),
+    total: input.total.toFixed(2),
+    shippingMethodId: input.shippingMethodId,
+    shippingCost: input.shippingCost.toFixed(2),
+    pickupPointId: input.pickupPointId,
+    shippingData: {},
+    hasDifferentRecipient: input.hasDifferentRecipient,
+    recipientFirstName: input.recipientFirstName,
+    recipientLastName: input.recipientLastName,
+    recipientPhone: input.recipientPhone,
+    recipientEmail: input.recipientEmail,
+    savedRecipientId: input.savedRecipientId,
+    savedAddressId: input.savedAddressId,
+  });
 
   await db.insert(orderItems).values(
     input.items.map((item) => ({
-      orderId: row.id,
+      id: randomUUID(),
+      orderId,
       productId: item.productId,
       modificationId: item.modificationId,
       name: item.name,
@@ -130,5 +133,5 @@ export async function createOrder(
     })),
   );
 
-  return { id: row.id, orderNumber: row.orderNumber, accessToken };
+  return { id: orderId, orderNumber, accessToken };
 }

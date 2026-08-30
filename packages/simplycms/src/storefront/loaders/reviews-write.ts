@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { productReviews } from 'simplycms/schema';
 import type { ActorDb } from './db';
@@ -25,6 +26,7 @@ export async function insertProductReview(
   input: ReviewInput,
 ): Promise<void> {
   await db.insert(productReviews).values({
+    id: randomUUID(),
     productId: input.productId,
     userId,
     rating: input.rating,
