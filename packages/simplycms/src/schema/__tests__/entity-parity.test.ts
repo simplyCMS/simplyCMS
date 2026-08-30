@@ -63,4 +63,34 @@ describe('ENTITY ≡ Drizzle-схема', () => {
       }
     }
   });
+
+  it('імена агрегатів не колізують ні з ENTITY, ні між собою', () => {
+    // 🔴 Запобіжник, а не теоретична турбота: агрегат, названий іменем
+    // таблиці (`AGGREGATE.x.key[0] === ENTITY.y`), мовчки зілляв би свій
+    // кеш із ключами `entityKey(ENTITY.y)` — префіксна інвалідація однієї
+    // сутності зачепила б і зовсім інший запит.
+    const entityValues = new Set<string>(Object.values(ENTITY));
+    const aggNames = Object.entries(AGGREGATE).map(
+      ([name, agg]) => [name, agg.key[0]] as const,
+    );
+
+    const collidesWithEntity = aggNames
+      .filter(([, aggName]) => entityValues.has(aggName))
+      .map(([name, aggName]) => `${name} → ${aggName}`);
+    expect(
+      collidesWithEntity,
+      `імʼя агрегату збігається зі значенням ENTITY: ${collidesWithEntity.join(', ')}`,
+    ).toEqual([]);
+
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+    for (const [name, aggName] of aggNames) {
+      if (seen.has(aggName)) duplicates.push(`${name} → ${aggName}`);
+      seen.add(aggName);
+    }
+    expect(
+      duplicates,
+      `дублікат імені агрегату: ${duplicates.join(', ')}`,
+    ).toEqual([]);
+  });
 });

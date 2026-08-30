@@ -245,7 +245,7 @@ const eslintConfig = [
   // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
   // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
   ...tierZoneConfigs,
-  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY (В2-К3,
+  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY (V2-К3,
   // рішення К3-3), не літералом. Кастомне AST-правило, а не селектор у
   // `no-restricted-syntax`: ця зона накриває `storefront-routes/**` і
   // `*-ui/**`, які вже під i18n-зоною (`I18N_MIGRATED_FILES` вище), а flat

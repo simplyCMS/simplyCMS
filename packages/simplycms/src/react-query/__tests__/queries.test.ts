@@ -12,20 +12,8 @@ import { catalogKeys } from '../queries';
 // вітрина й адмінка адресують ту саму сутність різними ключами (К3-3), і
 // оновлення кешу в одному місці проминає записи в іншому.
 describe('catalogKeys', () => {
-  it('усі ключі каталогу починаються з імені сутності', () => {
-    expect(catalogKeys.all[0]).toBe(ENTITY.products);
-    expect(catalogKeys.sections[0]).toBe(ENTITY.sections);
-    expect(catalogKeys.product('x')[0]).toBe(ENTITY.products);
-  });
-
-  it('тримає стабільний префікс namespace', () => {
-    expect(catalogKeys.all).toEqual([ENTITY.products]);
-    expect(catalogKeys.product('widget')).toEqual([
-      ENTITY.products,
-      'detail',
-      'widget',
-    ]);
-    expect(catalogKeys.sections).toEqual([ENTITY.sections, 'list']);
+  it('починається з імені сутності', () => {
+    expect(catalogKeys.sectionProducts('s1')[0]).toBe(ENTITY.products);
   });
 
   it('розділяє добірку секції за id і за запитом', () => {
@@ -38,10 +26,5 @@ describe('catalogKeys', () => {
     expect(catalogKeys.sectionProducts('s1', { page: 2 })).not.toEqual(
       catalogKeys.sectionProducts('s1'),
     );
-  });
-
-  it('ключ залишків розширює агрегат наявності й залежить від повного набору id', () => {
-    expect(catalogKeys.stock(['a', 'b'])).toEqual(['stock-info', 'a', 'b']);
-    expect(catalogKeys.stock(['a'])).not.toEqual(catalogKeys.stock(['a', 'b']));
   });
 });

@@ -170,6 +170,29 @@ export const AGGREGATE = {
     ENTITY.productPrices,
     ENTITY.stockByPickupPoint,
   ]),
+  /**
+   * Вибірка каталогу (`useCatalogProductsQuery` →
+   * `storefront-routes/server/catalog.ts` → `loadCatalogProducts` →
+   * `loadCatalogProductsWhere`, `storefront/loaders/catalog-products.ts`):
+   * товари + розділ (leftJoin, `sections`) + модифікації
+   * (`product_modifications`) + ціни (`product_prices`) + характеристики
+   * товару (`product_property_values`) й модифікацій
+   * (`modification_property_values`, через `loadModificationValues`) +
+   * залишки по точках видачі (`stock_by_pickup_point`, і по товару, і по
+   * модифікації, через `loadStockByProduct`/`loadStockByModification`) —
+   * сім таблиць одним походом. Раніше йшла під `entityKey(ENTITY.products)`,
+   * тож мутація ціни чи залишку не мала шляху до інвалідації списку
+   * (фінальне рев'ю Е1а, фікс-раунд 3).
+   */
+  catalogProducts: aggregateKey('catalog-products', [
+    ENTITY.products,
+    ENTITY.sections,
+    ENTITY.productModifications,
+    ENTITY.productPrices,
+    ENTITY.productPropertyValues,
+    ENTITY.modificationPropertyValues,
+    ENTITY.stockByPickupPoint,
+  ]),
 } as const;
 
 /**
