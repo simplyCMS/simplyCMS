@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import {
   findShippingZoneIn,
   resolveShippingRate,
@@ -34,7 +35,7 @@ const EMPTY: ShippingDirectory = {
  */
 export function useShippingDirectory(city: string, subtotal: number) {
   const query = useQuery({
-    queryKey: ['shipping-directory'],
+    queryKey: AGGREGATE.shippingDirectory.key,
     queryFn: (): Promise<ShippingDirectory> => getShippingDirectory(),
     staleTime: 5 * 60 * 1000,
   });

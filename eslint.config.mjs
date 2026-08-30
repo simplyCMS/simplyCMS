@@ -5,6 +5,7 @@ import {
   dbClientZoneConfig,
 } from './eslint.db-client-zone.mjs';
 import { tierZoneConfigs } from './eslint.tier-zones.mjs';
+import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -244,6 +245,31 @@ const eslintConfig = [
   // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
   // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
   ...tierZoneConfigs,
+  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY (В2-К3,
+  // рішення К3-3), не літералом. Кастомне AST-правило, а не селектор у
+  // `no-restricted-syntax`: ця зона накриває `storefront-routes/**` і
+  // `*-ui/**`, які вже під i18n-зоною (`I18N_MIGRATED_FILES` вище), а flat
+  // config ЗАМІНЮЄ опції правила цілком — спільний `no-restricted-syntax`
+  // тут мовчки вимкнув би один із двох детекторів залежно від порядку
+  // конфігів. Окреме імʼя правила прибирає перетин повністю.
+  //
+  // 🔴 `src/admin/**` тут НЕМАЄ навмисно: її ~170 літеральних ключів
+  // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
+  // означало б робити роботу двічі. Додати теку — крок завершення
+  // переписування адмінки (DoD К3-3).
+  {
+    files: [
+      'packages/simplycms/src/core/**/*.{ts,tsx}',
+      'packages/simplycms/src/*-ui/**/*.{ts,tsx}',
+      'packages/simplycms/src/react-query/**/*.{ts,tsx}',
+      'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/__tests__/**'],
+    plugins: {
+      simplycms: { rules: { 'query-key-from-entity': queryKeyFromEntity } },
+    },
+    rules: { 'simplycms/query-key-from-entity': 'error' },
+  },
   {
     ignores: [
       'node_modules/**',

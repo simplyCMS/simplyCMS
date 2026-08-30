@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { SESSION_KEY } from 'simplycms/contracts/entities';
 import {
   authClient,
   type AuthSession,
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // містить id користувача, тож вихід і вхід іншим акаунтом не лишають
   // чужого `isAdmin` у кеші.
   const { data: isAdmin } = useQuery({
-    queryKey: ['auth', 'is-admin', user?.id ?? null],
+    queryKey: SESSION_KEY.isAdmin(user?.id ?? null),
     queryFn: () => fetchIsAdmin(),
     enabled: Boolean(user),
     staleTime: 5 * 60 * 1000,

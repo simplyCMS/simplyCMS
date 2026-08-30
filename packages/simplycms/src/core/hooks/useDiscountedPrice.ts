@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getDiscountEnvironment, type DiscountActor } from '../lib/discounts';
 import {
   resolveDiscount,
@@ -6,6 +7,14 @@ import {
   type DiscountContext,
   type DiscountResult,
 } from 'simplycms/domain/discounts';
+
+/**
+ * 🔴 Правила знижок читають `discount_groups`, `discounts`,
+ * `discount_conditions` і `discount_targets` разом із `price_types`/
+ * `user_categories` покупця — `discount_groups` лишається якорем ключа: це
+ * форма, яку `DiscountGroup[]` віддає назовні.
+ */
+const discountGroups = entityKey(ENTITY.discountGroups);
 
 /** Актор до відповіді сервера: без категорії знижки просто не спрацьовують. */
 const ANONYMOUS: DiscountActor = {
@@ -30,7 +39,7 @@ const NO_GROUPS: DiscountGroup[] = [];
  */
 function useDiscountEnvironment() {
   return useQuery({
-    queryKey: ['discount-environment'],
+    queryKey: [...discountGroups.list(), 'environment'],
     queryFn: () => getDiscountEnvironment(),
     staleTime: 2 * 60 * 1000,
   });

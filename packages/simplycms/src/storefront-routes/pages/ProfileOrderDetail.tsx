@@ -32,7 +32,10 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
+
+const orders = entityKey(ENTITY.orders);
 
 // Мапи ключів, а не текстів: код способу приходить із БД (див. OrderSuccess).
 const deliveryLabels: Record<string, MessageKey> = {
@@ -70,7 +73,7 @@ export default function ProfileOrderDetailPage() {
    * політика `orders_select_own_or_token` не віддала рядок актору.
    */
   const { data: order, isLoading } = useQuery({
-    queryKey: ['my-order', user?.id, orderId],
+    queryKey: [...orders.detail(orderId ?? ''), user?.id],
     queryFn: () => getMyOrder({ data: { orderId: orderId as string } }),
     enabled: !!user && !!orderId,
   });

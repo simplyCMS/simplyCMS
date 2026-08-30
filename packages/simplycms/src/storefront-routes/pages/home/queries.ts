@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { catalogKeys } from 'simplycms/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   getFeaturedProducts,
   getNewProducts,
@@ -7,6 +8,9 @@ import {
   getSectionProducts,
 } from '../../server/home';
 import type { HomeProduct, HomeSection } from './types';
+
+const products = entityKey(ENTITY.products);
+const sections = entityKey(ENTITY.sections);
 
 /**
  * Запити головної.
@@ -20,7 +24,7 @@ import type { HomeProduct, HomeSection } from './types';
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
   return useQuery({
-    queryKey: ['featured-products'],
+    queryKey: [...products.list(), 'featured'],
     queryFn: (): Promise<HomeProduct[]> => getFeaturedProducts(),
     initialData,
   });
@@ -29,7 +33,7 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
   return useQuery({
-    queryKey: ['new-products'],
+    queryKey: [...products.list(), 'new'],
     queryFn: (): Promise<HomeProduct[]> => getNewProducts(),
     initialData,
   });
@@ -38,7 +42,7 @@ export function useNewProducts(initialData?: HomeProduct[]) {
 /** Кореневі категорії каталогу */
 export function useRootSections(initialData?: HomeSection[]) {
   return useQuery({
-    queryKey: ['root-sections'],
+    queryKey: [...sections.list(), 'root'],
     queryFn: (): Promise<HomeSection[]> => getRootSections(),
     initialData,
   });

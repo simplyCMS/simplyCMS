@@ -1,8 +1,11 @@
 // Запит вибірки товарів каталогу (контракт тем v3, Фаза 4).
 
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { CatalogProductRow } from 'simplycms/storefront/loaders';
 import { getCatalogProducts } from '../../server/catalog';
+
+const products = entityKey(ENTITY.products);
 
 /**
  * Вибірка товарів із модифікаціями, цінами, характеристиками й наявністю.
@@ -22,8 +25,8 @@ export function useCatalogProductsQuery(sectionId: string | null | undefined) {
   return useQuery({
     queryKey:
       sectionId === undefined
-        ? ['all-products']
-        : ['section-products', sectionId],
+        ? products.list()
+        : products.scoped('section', sectionId ?? ''),
     queryFn: (): Promise<CatalogProductRow[]> =>
       getCatalogProducts({
         data: sectionId ? { sectionId } : {},

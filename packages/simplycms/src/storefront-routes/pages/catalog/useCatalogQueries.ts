@@ -6,6 +6,7 @@
 // після гідрації вже не можуть розійтися з тими, що в серверному HTML.
 
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   getCatalogSection,
   getCatalogSections,
@@ -17,10 +18,14 @@ import type { SectionRow } from 'simplycms/storefront/loaders';
 /** Рядок розділу у формі, яку віддає SSR-лоадер і споживають чипси. */
 export type CatalogSectionRow = SectionRow;
 
+const sections = entityKey(ENTITY.sections);
+const sectionProperties = entityKey(ENTITY.sectionProperties);
+const propertyOptions = entityKey(ENTITY.propertyOptions);
+
 /** Усі активні розділи — чипси над списком товарів. */
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
   return useQuery({
-    queryKey: ['public-sections'],
+    queryKey: sections.list(),
     queryFn: (): Promise<CatalogSectionRow[]> => getCatalogSections(),
     initialData: initialSections,
   });
@@ -32,7 +37,7 @@ export function useSectionQuery(
   initialSection?: CatalogSectionRow,
 ) {
   return useQuery({
-    queryKey: ['public-section', sectionSlug],
+    queryKey: sections.detail(sectionSlug ?? ''),
     queryFn: (): Promise<CatalogSectionRow | null> =>
       getCatalogSection({ data: { slug: sectionSlug as string } }),
     enabled: !!sectionSlug,
@@ -43,7 +48,7 @@ export function useSectionQuery(
 /** Числові характеристики розділу, за якими можна фільтрувати. */
 export function useNumericPropertiesQuery(sectionId: string | null) {
   return useQuery({
-    queryKey: ['section-numeric-properties', sectionId],
+    queryKey: sectionProperties.scoped('numeric', sectionId ?? ''),
     queryFn: () =>
       getSectionNumericProperties({
         data: { sectionId: sectionId as string },
@@ -61,7 +66,7 @@ export function useNumericPropertiesQuery(sectionId: string | null) {
  */
 export function usePropertyOptionsQuery() {
   return useQuery({
-    queryKey: ['all-property-options-for-filters'],
+    queryKey: propertyOptions.list(),
     queryFn: () => getFilterOptions(),
   });
 }

@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getBanners } from '../lib/banners';
 
 export type { Banner, BannerButton } from 'simplycms/contracts';
+
+const banners = entityKey(ENTITY.banners);
 
 /**
  * Банери одного місця розміщення.
@@ -14,7 +17,7 @@ export type { Banner, BannerButton } from 'simplycms/contracts';
  */
 export function useBanners(placement: string, sectionId?: string) {
   const query = useQuery({
-    queryKey: ['banners', placement, sectionId ?? null],
+    queryKey: [...banners.list(), placement, sectionId ?? null],
     queryFn: () =>
       getBanners({ data: { placement, sectionId: sectionId ?? null } }),
     staleTime: 60 * 1000,

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
@@ -9,6 +10,11 @@ import type { ProductReviewRow } from '../lib/reviews';
 export type ProductReview = ProductReviewRow;
 
 const NO_REVIEWS: ProductReview[] = [];
+
+const productReviews = entityKey(ENTITY.productReviews);
+/** Рейтинги — SQL-агрегат ПО ТІЙ САМІЙ таблиці `product_reviews`, тож ключ
+ * розширює її список: інвалідація по entity зачепить обидва кеші разом. */
+const productRatings = [...productReviews.list(), 'ratings'] as const;
 
 /**
  * Відгуки товару, рейтинг і власний відгук покупця.
@@ -26,7 +32,7 @@ export function useProductReviews(productId: string | undefined) {
   const t = useT();
 
   const reviewsQuery = useQuery({
-    queryKey: ['product-reviews', productId],
+    queryKey: productReviews.scoped('product', productId ?? ''),
     queryFn: () => getProductReviews({ data: { productId: productId! } }),
     enabled: !!productId,
     staleTime: 60 * 1000,
@@ -34,9 +40,9 @@ export function useProductReviews(productId: string | undefined) {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: ['product-reviews', productId],
+      queryKey: productReviews.scoped('product', productId ?? ''),
     });
-    void queryClient.invalidateQueries({ queryKey: ['product-ratings'] });
+    void queryClient.invalidateQueries({ queryKey: productRatings });
   };
 
   const onError = (err: Error) =>
@@ -133,7 +139,7 @@ function summarize(approved: ProductReview[]) {
  */
 export function useProductRatings(productIds: string[]) {
   return useQuery({
-    queryKey: ['product-ratings', productIds],
+    queryKey: [...productRatings, productIds] as const,
     queryFn: () => getProductRatings({ data: { productIds } }),
     enabled: productIds.length > 0,
     staleTime: 60 * 1000,
