@@ -9,7 +9,7 @@
 | Файл | Що робить | Хто його володіє |
 |------|-----------|------------------|
 | `0000_prelude.sql` | схема `app`, функція `app.current_user_id()`, ролі `app_runtime`/`app_user`/`app_admin` | рука (drizzle-kit цього класу об'єктів не емітить) |
-| `0001_init.sql` | уся схема: 40 доменних таблиць + таблиці Better Auth + `media`, енами, індекси, RLS-політики | `drizzle-kit generate` — 🔴 **руками не редагується** |
+| `0001_init.sql` | уся схема: 40 доменних таблиць + таблиці Better Auth + `media`, енами, індекси, RLS-політики | `drizzle-kit generate`; ручна правка baseline — виняток, див. `data-access.instructions.md` § ❌ NEVER |
 | `0002_grants.sql` | явні GRANT-и по таблицях; зняття мовчазних дефолтів PUBLIC | рука |
 | `0003_seed.sql` | довідники чистого магазину, ідемпотентні | рука |
 
