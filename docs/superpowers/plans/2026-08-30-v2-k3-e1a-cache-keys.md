@@ -71,7 +71,7 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 | `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts` | звірка за значенням + `orders` (хвости 3, 4) |
 | `packages/simplycms/src/react-query/queries.ts` | `catalogKeys` → через `entityKey` |
 | `packages/simplycms/src/core/hooks/*.ts`, `src/*-ui/**` | 13 вітринних ключів → `entityKey` |
-| `src/router.tsx`, `src/routes/__root.tsx` (+ канон `packages/cli/host/src/`) | `QueryClient` у router context |
+| `src/router.tsx`, `src/routes/__root.tsx` | `QueryClient` у router context (канон `packages/cli/host/` і шаблон оновлює `template:sync`, руками не чіпати) |
 | `packages/simplycms/src/core/providers/CMSProvider.tsx` | приймає клієнт із контексту |
 | `packages/simplycms/package.json` | export `./contracts/entities` |
 | `packages/simplycms/tsup.config.ts` | профіль нового субшляху |
@@ -825,8 +825,18 @@ export const queryKeyZone = {
     'no-restricted-syntax': [
       'error',
       {
+        // 🔴 `Literal:first-child`, а не `Literal[value=/^[a-z]/]`.
+        // Перевірено живим прогоном eslint на чотирьох формах:
+        //   ['banners']                    → ловиться (порушення)
+        //   ['Banners']                    → ловиться (регекс на малу
+        //                                    літеру його пропускав)
+        //   [...products.list(), q]        → НЕ чіпається (SpreadElement)
+        //   [ENTITY.products, 'list']      → НЕ чіпається — а регекс
+        //                                    хибно валив тут на 'list',
+        //                                    тобто банив ЛЕГІТИМНУ форму.
+        // Значення має лише ПЕРШИЙ сегмент: він визначає префікс.
         selector:
-          "Property[key.name='queryKey'] > ArrayExpression > Literal[value=/^[a-z]/]",
+          "Property[key.name='queryKey'] > ArrayExpression > Literal:first-child",
         message:
           'Літеральний queryKey заборонений: ключ будується entityKey(ENTITY.x) ' +
           'із simplycms/contracts/entities. Інакше та сама сутність отримує ' +
@@ -842,12 +852,26 @@ export const queryKeyZone = {
 - [ ] **Step 6: Негативний контроль лінта**
 
 ```bash
-# Тимчасово додати у будь-який файл зони:
-#   const q = { queryKey: ['banners'], queryFn: async () => [] };
+# 1. НЕГАТИВНИЙ контроль — тимчасово додати у файл зони:
+#      const q = { queryKey: ['banners'], queryFn: async () => [] };
 pnpm lint
 # Expected: FAIL — 'Літеральний queryKey заборонений…'
-# Прибрати правку → pnpm lint = 0 errors
+
+# 2. ПОЗИТИВНИЙ контроль — замінити на легітимні форми:
+#      const a = { queryKey: [...products.list(), q], queryFn: async () => [] };
+#      const b = { queryKey: [ENTITY.products, 'list'], queryFn: async () => [] };
+pnpm lint
+# Expected: 0 errors — інакше зона банить правильний код і її доведеться
+# обходити коментарями, тобто вона марна.
+
+# 3. Прибрати обидві правки → pnpm lint = 0 errors / 12 warnings
 ```
+
+🔴 Обидва контролі обовʼязкові. Селектор без позитивного контролю —
+типова пастка: перша редакція цього плану вживала
+`Literal[value=/^[a-z]/]`, і живий прогін показав, що вона валила
+`[ENTITY.products, 'list']` на другому сегменті, тобто забороняла саме
+ту форму, яку й запроваджує.
 
 - [ ] **Step 7: Живий доказ вітрини**
 
@@ -888,8 +912,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `src/router.tsx`
 - Modify: `src/routes/__root.tsx`
 - Modify: `packages/simplycms/src/core/providers/CMSProvider.tsx`
-- Modify: `packages/cli/host/src/router.tsx`, `packages/cli/host/src/routes/__root.tsx` (канон)
-- Modify: `packages/create-simplycms-store/template/src/**` (через `template:sync`)
+- Generated: `packages/cli/host/src/**` і `packages/create-simplycms-store/template/src/**` — обидві цілі оновлює `pnpm template:sync`, руками не редагувати
 - Test: `packages/simplycms/src/core/__tests__/query-client-context.test.tsx`
 
 **Interfaces:**
@@ -1037,15 +1060,18 @@ Expected: PASS. 🔴 `build` іде **перед** `typecheck` — він ген
 Ті самі правки — у канонічні копії, інакше `simplycms update` роздасть
 магазинам стару топологію:
 
+🔴 **Руками канон НЕ правиться.** `src/router.tsx` і
+`src/routes/__root.tsx` входять у `SYNCED_FILES`
+(`scripts/sync-create-store-template.mjs:47,50`), а скрипт оновлює
+ОБИДВІ цілі з монорепо — і шаблон, і `packages/cli/host/`, причому
+канон він перед копіюванням зносить (`rmSync(hostRoot, …)`, рядок ~96).
+Тобто ручна правка канону не просто зайва — вона буде знищена.
+
 ```bash
-# 1. Перенести зміни в packages/cli/host/src/router.tsx і
-#    packages/cli/host/src/routes/__root.tsx (ручна правка — це канон,
-#    а не генерат).
-# 2. Синхронізувати шаблон скаффолдера:
 pnpm template:sync
-git diff --stat packages/create-simplycms-store/template/src
+git diff --stat packages/cli/host packages/create-simplycms-store/template/src
 ```
-Expected: `router.tsx` і `__root.tsx` шаблону оновлені.
+Expected: у дифі — `router.tsx` і `__root.tsx` в **обох** цілях.
 
 Run: `pnpm test`
 Expected: PASS, зокрема `create-store-template-parity` і
