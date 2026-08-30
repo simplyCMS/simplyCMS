@@ -101,6 +101,65 @@ export const AGGREGATE = {
     ENTITY.productModifications,
     ENTITY.products,
   ]),
+  /**
+   * Контекст цін покупця (`core/lib/price-type.ts`): дефолтний тип ціни з
+   * `price_types` + персональний тип, який `profiles` резолвить у
+   * `user_categories`. Віддає обчислені id, а не рядки однієї таблиці —
+   * без домінантної сутності, тож `entityKey` тут регресія (Task 6, fix-раунд 1).
+   */
+  priceTypeContext: aggregateKey('price-type-context', [
+    ENTITY.priceTypes,
+    ENTITY.profiles,
+    ENTITY.userCategories,
+  ]),
+  /**
+   * Довідник знижок (`core/lib/discounts.ts`): дефолтний і персональний тип
+   * ціни/категорія (`price_types`, `profiles`, `user_categories`) плюс
+   * дерево правил (`discounts`, `discount_targets`, `discount_conditions`,
+   * `discount_groups`) — до семи таблиць, структурно те саме, що
+   * `shippingDirectory` (Task 6, fix-раунд 1).
+   */
+  discountEnvironment: aggregateKey('discount-environment', [
+    ENTITY.priceTypes,
+    ENTITY.profiles,
+    ENTITY.userCategories,
+    ENTITY.discounts,
+    ENTITY.discountTargets,
+    ENTITY.discountConditions,
+    ENTITY.discountGroups,
+  ]),
+  /**
+   * Характеристики й наявність модифікацій товару
+   * (`storefront-routes/server/products.ts` → `getModificationData`):
+   * значення модифікацій (`modification_property_values`, приєднані
+   * `product_modifications`/`property_options`/`section_properties`) +
+   * залишки (`stock_by_pickup_point`, `product_modifications.stock_status`).
+   * Перекриває дві з трьох таблиць `stockInfo` — окремий агрегат, бо третя
+   * (`products`) тут не читається (Task 6, fix-раунд 1).
+   */
+  modificationData: aggregateKey('product-modification-data', [
+    ENTITY.modificationPropertyValues,
+    ENTITY.productModifications,
+    ENTITY.propertyOptions,
+    ENTITY.sectionProperties,
+    ENTITY.stockByPickupPoint,
+  ]),
+  /**
+   * Сторінка значення характеристики (`storefront/loaders/property-option.ts`):
+   * характеристика й опція (`section_properties`, `property_options`) +
+   * товари, де опція стоїть на самому товарі АБО на модифікації
+   * (`product_property_values`, `modification_property_values` через
+   * `product_modifications`) — видимий вміст сторінки це САМЕ товари
+   * (`products`), тож він у deps нарівні з рештою (Task 6, fix-раунд 1).
+   */
+  propertyOptionPage: aggregateKey('property-option-page', [
+    ENTITY.products,
+    ENTITY.propertyOptions,
+    ENTITY.sectionProperties,
+    ENTITY.productPropertyValues,
+    ENTITY.productModifications,
+    ENTITY.modificationPropertyValues,
+  ]),
 } as const;
 
 /**

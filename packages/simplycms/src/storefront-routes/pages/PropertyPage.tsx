@@ -7,7 +7,7 @@ import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
 import { usePriceType } from 'simplycms/core/hooks/usePriceType';
 import { resolvePrice } from 'simplycms/domain/pricing';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import type {
   CatalogProductRow,
   OptionRow,
@@ -15,13 +15,6 @@ import type {
   PropertyRow,
 } from 'simplycms/storefront/loaders';
 import { getPropertyOption } from '../server/properties';
-
-/**
- * 🔴 Сторінка читає опцію разом зі списком товарів під нею
- * (`property_options` + `products`) — якір ключа `propertyOptions`, бо саме
- * опція (не характеристика) визначає, ЯКІ товари приїдуть.
- */
-const propertyOptions = entityKey(ENTITY.propertyOptions);
 
 export interface PropertyOptionPageProps {
   property?: PropertyRow;
@@ -60,7 +53,7 @@ export default function PropertyPage({
       : undefined;
 
   const { data, isLoading } = useQuery({
-    queryKey: [...propertyOptions.detail(optionSlug ?? ''), propertySlug],
+    queryKey: [...AGGREGATE.propertyOptionPage.key, propertySlug, optionSlug],
     queryFn: (): Promise<PropertyOptionPageData | null> =>
       getPropertyOption({
         data: {

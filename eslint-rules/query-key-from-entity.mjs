@@ -16,10 +16,15 @@ const MESSAGE =
   '(simplycms/contracts/entities). Літеральний перший сегмент дає ' +
   'сутності різні префікси, і оновлення кешу проминає записи.';
 
-/** `x as const` / `(x)` — розгорнути до самого виразу. */
+/** `x as const` / `(x)` / `x satisfies T` — розгорнути до самого виразу. */
 function unwrap(node) {
   let n = node;
-  while (n && (n.type === 'TSAsExpression' || n.type === 'TSTypeAssertion')) {
+  while (
+    n &&
+    (n.type === 'TSAsExpression' ||
+      n.type === 'TSTypeAssertion' ||
+      n.type === 'TSSatisfiesExpression')
+  ) {
     n = n.expression;
   }
   return n;

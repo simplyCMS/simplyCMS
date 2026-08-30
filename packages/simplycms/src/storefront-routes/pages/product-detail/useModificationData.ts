@@ -4,11 +4,9 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import { getModificationData } from '../../server/products';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
-
-const productModifications = entityKey(ENTITY.productModifications);
 
 export interface ModificationData {
   /** Модифікації, відсортовані: спершу дефолтна, далі за `sort_order`. */
@@ -32,7 +30,7 @@ export function useModificationData(
   const productId = product?.id;
 
   const { data } = useQuery({
-    queryKey: productModifications.scoped('product', productId ?? ''),
+    queryKey: [...AGGREGATE.modificationData.key, productId ?? ''],
     queryFn: () =>
       getModificationData({ data: { productId: productId as string } }),
     enabled: !!productId,
