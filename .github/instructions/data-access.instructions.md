@@ -199,7 +199,13 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 
 ## ❌ NEVER
 - Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm test:schema`.
-- Не редагуй `packages/simplycms/drizzle/meta/*` вручну — це snapshot drizzle-kit.
+- Не редагуй `packages/simplycms/drizzle/meta/*` вручну для звичайних змін
+  схеми — зміни йдуть через `pnpm db:diff`. Виняток — точкова правка
+  BASELINE (`drizzle/0000_init.sql` + `drizzle/meta/0000_snapshot.json`,
+  синхронно з каноном і `schema.ts`), коли повний `db:diff` додав би зайвий
+  журнальний запис замість виправлення `0000` (застосовано в Е0 і Е1а).
+  Кожна така правка мусить лишити канон ≡ drizzle-baseline ≡ снапшот і
+  підтверджуватись `drizzle-kit generate` → «No schema changes».
 - Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client.
 - Не імпортуй `simplycms/data-supabase` — субшляху не існує (0.4.1, шар знесено).
 - 🔴 Не покладайся на `DEFAULT gen_random_uuid()` при вставці — його знято
