@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./contracts": "./src/contracts/index.ts",
+    "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
@@ -107,6 +108,10 @@
       "./contracts": {
         "types": "./dist/contracts/index.d.ts",
         "import": "./dist/contracts/index.js"
+      },
+      "./contracts/entities": {
+        "types": "./dist/contracts/entities.d.ts",
+        "import": "./dist/contracts/entities.js"
       },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",

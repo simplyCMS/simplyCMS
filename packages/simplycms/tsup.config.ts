@@ -105,6 +105,7 @@ const profiles: Profile[] = [
     'contracts',
     [
       'src/contracts/index.ts',
+      'src/contracts/entities.ts',
       'src/contracts/*/index.ts',
       'src/contracts/views/fixtures/index.ts',
     ],
