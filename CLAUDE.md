@@ -195,6 +195,16 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 bare-субшлях `simplycms/<тека>` і відносний `../<тека>`), бо після злиття
 пакетів межу `dependencies` більше не тримає ніщо. Негативний контроль —
 `tests/tier-boundary.test.ts`. Селектори не послабляти.
+Пʼята (2026-08-30, трек V2-К3) — **контракт ключів кешу React Query**:
+кастомне AST-правило `eslint-rules/query-key-from-entity.mjs` забороняє
+літеральний перший сегмент `queryKey` (прямий, через константу-масив і в
+умовному виборі) — сегмент 0 мусить іти з реєстру `simplycms/contracts/entities`
+(`ENTITY`/`AGGREGATE`/`SESSION_KEY`). Зона — `core/`, `*-ui/`,
+`react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` —
+свідома виїмка до Е1б–Е6 (її ~170 літеральних ключів перепишуться разом зі
+сторінками адмінки). Контракт задокументований у
+[`data-access`](.github/instructions/data-access.instructions.md), розділ
+«Контракт ключів кешу».
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -295,7 +305,9 @@ simplyCMS/
 │   ├── simplycms/          simplycms                 # ФЛАГМАН: усе ядро одним пакетом
 │   │   ├── src/contracts/        # T0 Контракти + порти (0 runtime deps); субшляхи
 │   │   │                         #    ./views і ./views/fixtures — view-model-и вітрини
-│   │   │                         #    (контракт тем v3; react — type-only peer)
+│   │   │                         #    (контракт тем v3; react — type-only peer);
+│   │   │                         #    ./entities — реєстр ENTITY/AGGREGATE/SESSION_KEY +
+│   │   │                         #    фабрика entityKey() для queryKey React Query (К3-3)
 │   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle (B12, частина) — джерело
@@ -395,6 +407,9 @@ simplyCMS/
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
+├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються):
+│                                     # query-key-from-entity.mjs — queryKey з реєстру
+│                                     # ENTITY/AGGREGATE/SESSION_KEY, не літералом (V2-К3)
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
