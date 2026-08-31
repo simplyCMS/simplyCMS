@@ -1,35 +1,35 @@
-# V2-К3 · Етап Е1б: серверний шар адмінки і перша колекція
+# V2-К3 · Етап Е1б: серверний шар адмінки і перша колекція — РЕДАКЦІЯ 2
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Дати адмінці серверний шар під `app_admin` і довести весь механізм на одній сутності наскрізь — від `defineAdminResource` до живої сторінки на `useLiveQuery` з оптимістичними мутаціями й машинними гейтами кеш-синхронізації.
+**Goal:** Дати адмінці серверний шар і довести весь механізм на одній сутності наскрізь — від `defineAdminResource` (операції + схеми) через явні топ-рівневі serverFn до живої сторінки на `useLiveQuery` з оптимістичними мутаціями й машинними гейтами.
 
-**Architecture:** `admin-server` (T2) — єдиний, хто торкається БД: фабрика `defineAdminResource` віддає CRUD-serverFn під роллю `app_admin`, а операції з доменними інваріантами пишуться руками поруч. `admin-data` (T4) тримає колекції TanStack DB, memoізовані по `QueryClient`, із ключами з реєстру `ENTITY` (Е1а). Сторінка (T5) читає `useLiveQuery` і пише через колекцію, дістаючи оптимізм і авто-rollback від бібліотеки.
+**Architecture:** `admin-server` (T2) — єдиний, хто торкається БД: фабрика `defineAdminResource` віддає **plain async-операції** і **Zod-схеми** (drizzle-zod, server-side), а кожен serverFn оголошується **явним топ-рівневим `const`** (~4–6 рядків/сутність) — цього вимагає компілятор Start (К3-4′). Authz — наявні `requireOperation`+`dbRoleForSubject` через склейку `resolveRequestGrant`, строго ДО `withActor` (К3-13). `admin-data` (T4) тримає колекції TanStack DB **без `schema`** (тип — type-only з `simplycms/schema/types`, К3-9′), memoізовані по `QueryClient`, з ключами з реєстру `ENTITY`. Інваріант «дефолт рівно один» тримає БД частковими unique-індексами (К3-14) + іменовані операції.
 
-**Tech Stack:** `@tanstack/db` 0.8.6 + `@tanstack/react-db` 0.3.6 + `@tanstack/query-db-collection` 1.2.11 · TanStack Start 1.167 · TanStack Query 5.101 · Drizzle 0.45.2 + `drizzle-zod` 0.8.3 · Zod 4.4.3 · TypeScript 5.9 strict · Vitest 4
+**Tech Stack:** `@tanstack/react-db` 0.3.6 + `@tanstack/query-db-collection` 1.2.11 (обидва пінять `@tanstack/db` 0.8.6) · `drizzle-zod` 0.8.3 · TanStack Start 1.167 · TanStack Query 5.101 · Drizzle 0.45.2 · Zod 4.4.3 · TypeScript 5.9 strict · Vitest 4
 
-**Spec:** [`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md`](../specs/2026-08-29-v2-k3-admin-server-layer-design.md) — К3-2 (реєстр винятків), К3-4 (фабрика), К3-5 (режими), К3-7 (write-back), К3-8 (гейти), К3-9 (розкладка), К3-10 (peer); Додаток А-1…А-4, Б-1…Б-5
+**Spec:** [`2026-08-29-v2-k3-admin-server-layer-design.md`](../specs/2026-08-29-v2-k3-admin-server-layer-design.md) — 🔴 **читати З РЕВІЗІЄЮ 2026-08-31** (К3-4′, К3-9′, К3-10′, К3-13, К3-14); доказова база ревізії — [`2026-08-31-k3-e1b-redesign-research.md`](../research/2026-08-31-k3-e1b-redesign-research.md).
 
-**Попередні етапи:** [Е0 — контракт id](2026-08-29-v2-k3-e0-id-contract.md) і [Е1а — ключі кешу](2026-08-30-v2-k3-e1a-cache-keys.md), обидва прийняті (HEAD `ddcff1ad`, 26 комітів, не запушено).
+**Попередня редакція цього плану** (2026-08-30) відхилена подвійним аудитом (Codex REJECT + оркестратор): центральна конструкція «фабрика віддає CRUD-serverFn» нереалізовна компілятором Start; повний перелік дефектів — research-док §6. Git-історія файлу тримає стару редакцію.
 
 **Обсяг:** друга половина Е1. Після неї **одна сторінка адмінки жива** на чистому Postgres. Решта сутностей — Е3 (каталог on-demand) і Е4–Е6 (хвилі); storage — Е2.
-
-🔴 **Головний ризик, успадкований з Е1а: гейт `entity-parity.test.ts` сліпий до ПОВНОТИ `deps`.** Він перевіряє лише, що названа залежність існує в `ENTITY` (`entity-parity.test.ts:59`), а не що список повний відносно коду лоадера. Сліпота вже пропустила дві реальні вади (`propertyOptionPage` мав 6 залежностей замість 9; `useCatalogProductsQuery` не мав жодної) — обидві спіймало ручне рев'ю. Цей етап будує інвалідацію **саме з `deps`**, тож неповний список = мовчазно неповна інвалідація, тобто рівно той клас багів, проти якого затіяно весь трек. Тому Task 1 — гейт повноти, і він іде **перед** усім.
 
 ## Global Constraints
 
 - TypeScript 5.9 strict; **не** оновлювати до 6/7.
 - Коментарі й документація — **українською**; рядки інтерфейсу — тільки через i18n-каталоги.
-- `pnpm lint` = **0 errors**, 12 warnings — чинна лінія, не зрушувати.
+- `pnpm lint` = **0 errors**, 13 warnings — чинна лінія (AGENTS.md:136), не зрушувати.
 - Порядок гейтів: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → test → test:schema → build:packages → typecheck:template → test:packaging`.
 - `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки `package.json`.
-- Тіри: `admin-server` = **T2** (поруч із `db`/`auth`), `admin-data` = **T4**, `admin` = T5. Імпорт угору заборонений; дві нові зони в `eslint.tier-zones.mjs` + негативний контроль у `tests/tier-boundary.test.ts`.
-- 🔴 **Модуль поруч із serverFn не має живих не-serverFn експортів.** Трансформація Start вирізає тіла `createServerFn`-хендлерів, і їхні серверні імпорти зникають; звичайна функція такого імунітету не має і затягує drizzle та пул Postgres у клієнтський бандл. Спіймано Gate C пілота (`storefront-routes/server/is-admin.ts:17-26`). Усе, що потрібне і клієнту, і серверу, — окремим модулем під bare-специфікатором.
-- 🔴 **`queryKey` колекції — той самий ключ, що в решти запитів** (`entityKey`/`AGGREGATE` з Е1а). Похідні ключі мусять розширювати базовий як префікс, інакше оновлення кешу проминає записи (спека, Додаток Б-2).
-- 🔴 **Write-back замість self-invalidation:** persistence-хендлер пише результат сервера через `writeUpsert` і повертає `{ refetch: false }`. Інвалідація власного ключа — заборонений антипатерн (зайвий GET + вікно гонки).
-- `id` для Категорії A генерує клієнт (`crypto.randomUUID()`); fail-loud при `serverRow.id !== optimisticId`.
+- 🔴 **К3-4′:** `createServerFn` — ЛИШЕ топ-рівневий `const` з простим ідентифікатором. Фабрики serverFn не повертають. Гейт — Task 4.
+- 🔴 **К3-9′:** модуль із serverFn експортує лише serverFn; операції/схеми — server-side; клієнт — type-only типи, колекції БЕЗ `schema`.
+- 🔴 **К3-13:** порядок у кожній операції — `requireGrant(op)` → `withActor({ role: dbRoleForSubject(subject), userId })`. 403 — `setResponseStatus(403)` ДО `throw`; `Response` не кидати; клієнт розрізняє `error.name === 'AuthzError'`.
+- 🔴 **Write-back замість self-invalidation:** persistence-хендлер пише результат сервера `writeUpsert`/`writeBatch` і повертає `{ refetch: false }`. Хендлери обробляють **усі** `transaction.mutations`, не `[0]`.
+- `id` для Категорії A генерує клієнт (`crypto.randomUUID()`); fail-loud при `serverRow.id !== optimisticId` ДО write-back.
+- 🔴 `queryKey` колекції = `entityKey(ENTITY.х).list()` — той самий префікс, що в решти запитів сутності.
 - Кожен гейт має **негативний І позитивний** контроль, прогнаний вручну.
-- Коміти українською, `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
+- Тіри: `admin-server` = **T2** (upward-виняток `['db','auth']` — як у `storefront`), `admin-data` = **T4**, `admin` = T5.
+- Коміти українською, `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 
 ## Передумова оточення
 
@@ -40,10 +40,24 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 
 🔴 Тести з `test-harness/**` — **тільки** через
 `pnpm vitest run --config vitest.schema.config.ts <path>`; кореневий конфіг
-цю теку виключає. Локальних `initdb`/`pg_ctl` немає, стенд — контейнер
-`simplycms-041-pg` (знімок 2026-08-30, не контракт).
+цю теку виключає. Стенд — контейнер `simplycms-041-pg` (знімок, не контракт).
 
----
+## Граф залежностей задач
+
+```
+Task 0 (baseline is_default) ─┐
+Task 1 (deps-гейт + фікс deps)│  незалежні між собою
+Task 2 (залежності npm)       │
+Task 3 (RouterContext)        │
+Task 4 (ESLint top-level)     ─┘
+Task 5 (resolveRequestGrant) ← Task 4
+Task 6 (subset + тір-зона)   ← Task 2
+Task 7 (defineAdminResource) ← Task 5, Task 6
+Task 8 (order_statuses: ops + serverFn + операції) ← Task 0, Task 7
+Task 9 (admin-data: registry + колекція) ← Task 2, Task 8
+Task 10 (сторінка + живий прогін) ← Task 3, Task 9
+Task 11 (гейти кеш-синхронізації + Gate C + реєстр винятків + DoD) ← Task 10
+```
 
 ## File Structure
 
@@ -51,118 +65,287 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 
 | Файл | Відповідальність |
 |---|---|
-| `packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts` | **Гейт повноти `deps`**: перехоплює фактичний SQL лоадера |
-| `packages/simplycms/src/admin-server/index.ts` | T2. Барель — **лише serverFn** |
-| `packages/simplycms/src/admin-server/subset.ts` | `loadSubsetOptions` → Drizzle `where`/`orderBy` з allowlist |
-| `packages/simplycms/src/admin-server/resource.ts` | `defineAdminResource` — фабрика CRUD |
-| `packages/simplycms/src/admin-server/resources/order-statuses.ts` | Перший ресурс |
-| `packages/simplycms/src/admin-server/operations/order-status-default.ts` | Іменована операція з інваріантом |
-| `packages/simplycms/src/admin-data/registry.ts` | T4. `WeakMap<QueryClient, …>` + `useCollection` |
-| `packages/simplycms/src/admin-data/collections/order-statuses.ts` | Перша колекція |
-| `packages/simplycms/src/runtime/router-context.ts` | Тип `RouterContext` у пакеті (борг Е1а) |
-| `packages/simplycms/src/auth/authz-request.ts` | `assertAllowed` — склейка `readSessionSubject` + `can` (не існує сьогодні) |
-| `eslint-rules/mutation-cache-sync.mjs` | Друге кастомне правило |
+| `packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts` | Гейт повноти `deps`: перехоплення фактичного SQL, сценарії по гілках |
+| `packages/simplycms/test-harness/pg/__tests__/single-default.test.ts` | Поведінковий контроль часткових unique-індексів (23505) |
+| `packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts` | Інтеграційні тести операцій `order_statuses` проти живої БД |
+| `packages/simplycms/src/auth/authz-request.ts` | `resolveRequestGrant` + `requireGrant` (склейка сесія→scope, 403) |
+| `packages/simplycms/src/auth/__tests__/authz-request.test.ts` | Юніти склейки (мок `@tanstack/react-start/server`) |
+| `packages/simplycms/src/admin-server/subset.ts` | `SubsetInput` → Drizzle `where`/`orderBy` з allowlist; `subsetInputSchema` |
+| `packages/simplycms/src/admin-server/resource.ts` | `defineAdminResource` — операції + схеми (БЕЗ serverFn) |
+| `packages/simplycms/src/admin-server/resources/order-statuses.ts` | Ops першої сутності (server-only) |
+| `packages/simplycms/src/admin-server/operations/order-status-default.ts` | `setDefaultOrderStatusOp` (інваріант) |
+| `packages/simplycms/src/admin-server/operations/order-status-reorder.ts` | `reorderOrderStatusOp` (транзакційний swap) |
+| `packages/simplycms/src/admin-server/operations/order-status-remove.ts` | `removeManyOrderStatusesOp` (атомарний guarded batch, FOR UPDATE) |
+| `packages/simplycms/src/admin-server/index.ts` | 🔴 ЄДИНИЙ модуль serverFn: топ-рівневі const усіх functions сутності |
+| `packages/simplycms/src/admin-server/__tests__/*.test.ts` | Юніти subset, фабрики, схем |
+| `packages/simplycms/src/admin-data/registry.ts` | `CollectionDef<C>` + `getCollection`/`useCollection` (WeakMap, generic) |
+| `packages/simplycms/src/admin-data/collections/order-statuses.ts` | Перша колекція (без `schema`, type-only `OrderStatus`) |
+| `packages/simplycms/src/admin-data/index.ts` | Барель admin-data |
+| `packages/simplycms/src/admin-data/__tests__/*.test.tsx` | Юніти реєстру і колекції (id-mismatch, batch) |
+| `packages/simplycms/src/contracts/admin-server-first.ts` | Реєстр server-first винятків (К3-2) |
+| `eslint-rules/server-fn-top-level.mjs` | Гейт К3-4′: `createServerFn` лише топ-рівнево |
+| `eslint-rules/mutation-cache-sync.mjs` | Мутація в UI парує синк кешу |
 | `tests/handler-canon.test.ts` | AST-гейт write-back у persistence-хендлерах |
-| `packages/simplycms/src/admin-server/__tests__/*.test.ts` | Юніти фабрики, subset, id-mismatch |
+| `tests/tanstack-db-single-instance.test.ts` | Рівно один `@tanstack/db` у дереві |
 
 **Змінюються:**
 
 | Файл | Що саме |
 |---|---|
-| `packages/simplycms/package.json` | peer TanStack DB (3 пакети) + **dep `drizzle-zod`**; exports+publishConfig `./admin-server`, `./admin-data`, `./runtime/router-context` |
-| `packages/simplycms/tsup.config.ts` | профілі двох нових тек (явні патерни) |
-| `eslint.tier-zones.mjs` | дві нові зони (T2, T4) |
-| `eslint.config.mjs` | підключення `mutation-cache-sync` |
-| `packages/simplycms/src/admin/pages/OrderStatuses.tsx` | на `useLiveQuery` + колекцію |
-| `src/routes/__root.tsx` (+ канон, шаблон через `template:sync`) | `RouterContext` реекспортом із пакета |
-| `packages/create-simplycms-store/template/package.json.tpl` | пін `@tanstack/react-db` |
+| `packages/simplycms/migrations/0001_init.sql` | 🔴 ПРАВКА BASELINE (К3-14): 7 часткових unique-індексів `is_default` |
+| `packages/simplycms/src/schema/schema.ts` | ті самі 7 індексів у Drizzle (дзеркало baseline) |
+| `packages/simplycms/src/contracts/entities.ts` | `+ENTITY.pickupPoints` у deps `shippingDirectory` і `stockInfo` |
+| `packages/simplycms/package.json` | peer: `@tanstack/react-db`, `@tanstack/query-db-collection` (вузько); deps: `drizzle-zod`; exports+publishConfig `./admin-server`, `./admin-data` |
+| `packages/simplycms/src/runtime/index.ts` | `export type { RouterContext }` (без нового субшляху) |
+| `packages/simplycms/src/runtime/router-context.ts` | сам тип (внутрішній модуль) |
+| `packages/simplycms/src/auth/index.ts` | реекспорт `resolveRequestGrant`/`requireGrant`/`RequestGrant` |
+| `packages/simplycms/tsup.config.ts` | профіль `admin-server` (splitting:false, entry `index.ts`); `admin-data` у `tiers` |
+| `eslint.tier-zones.mjs` | зони `['src/admin-server',2,'admin-server',['db','auth']]` і `['src/admin-data',4,'admin-data',[]]` |
+| `eslint.config.mjs` | підключення `server-fn-top-level` (глобально на ts/tsx пакета+host) і `mutation-cache-sync`; зона `query-key-from-entity` += `admin-data/**`; i18n-зона += `admin-data/**` |
 | `tests/tier-boundary.test.ts` | негативний контроль двох нових зон |
+| `packages/simplycms/src/admin/pages/OrderStatuses.tsx` | повне переписування на колекцію (create/update/delete/reorder/setDefault/тости) |
+| `packages/simplycms/routes/admin/admin/order-statuses/index.tsx` | `loader` з `preload()` |
+| `src/routes/__root.tsx` (+ канон `packages/cli/host`, шаблон через `template:sync`) | `RouterContext` реекспортом із `simplycms/runtime` |
+| `packages/create-simplycms-store/template/package.json.tpl` | точні піни `@tanstack/react-db@0.3.6`, `@tanstack/query-db-collection@1.2.11` |
+| `scripts/pilot-pack/gate-c.mjs` | stub-маркер `admin-server` (гейт не вхолосту; drizzle/pg-маркери вже стережуть витік) |
 
-**Свідомо НЕ чіпаються:** решта 52 файлів `src/admin/**` — вони переходять хвилями Е3–Е6. Ратчет `admin-inserts-need-id` і виїмка `admin/` у правилі ключів лишаються чинними до кінця переписування.
+**Свідомо НЕ чіпаються:** решта 52 файли `src/admin/**` (хвилі Е3–Е6; ратчет `admin-inserts-need-id` і виїмка `admin/` у правилі ключів чинні), `handler-canon` BASELINE (порожній назавжди), сигнатури view-контракту тем.
 
 ---
-# Частина 1 — передумови
+# Частина 0 — фундамент (Tasks 0–4, незалежні)
 
-### Task 1: Гейт повноти `deps` — перехоплення фактичного SQL
+**DoD частини 0:** `pnpm test:schema` зелений з новими індексами і deps-гейтом (負ативні контролі прогнані); `pnpm install --frozen-lockfile && pnpm lint && pnpm test` зелені; ESLint-гейт top-level доведений негативним контролем.
+
+### Task 0: Часткові unique-індекси `is_default` — правка BASELINE (К3-14)
+
+**Files:**
+- Modify: `packages/simplycms/migrations/0001_init.sql`
+- Modify: `packages/simplycms/src/schema/schema.ts`
+- Modify: `packages/simplycms/drizzle/0000_init.sql` (🔴 4 джерела правди, не 2)
+- Modify: `packages/simplycms/drizzle/meta/0000_snapshot.json`
+- Create: `packages/simplycms/test-harness/pg/__tests__/single-default.test.ts`
+
+**Interfaces:**
+- Produces: інваріант «дефолтів НЕ БІЛЬШЕ одного» (at most one) на рівні БД
+  для 7 таблиць — індекс забороняє ДВА `true`, не НУЛЬ; «принаймні один»
+  (at least one) — контракт іменованих операцій (в Е1б — для
+  `order_statuses`: setDefault + guarded remove; для решти таблиць —
+  контракт їхніх хвиль, див. блок Legacy нижче).
+
+🔴 **Форма — правка існуючого baseline, НЕ нова міграція** (уточнення
+власника 2026-08-31, рамка B13: канон переписується, поки клієнтів немає).
+Прецедент індексу — `idx_price_types_single_default` (`0001_init.sql:725`).
+
+- [ ] **Step 1: Знайти точну форму прецеденту в обох джерелах**
+
+```bash
+grep -n "idx_price_types_single_default" packages/simplycms/migrations/0001_init.sql packages/simplycms/src/schema/schema.ts
+```
+Expected: рядок у SQL (`CREATE UNIQUE INDEX ... USING btree ("is_default" bool_ops) WHERE (is_default = true)`) і відповідний `uniqueIndex(...).where(...)` у Drizzle. Нові індекси — ТІЄЮ САМОЮ формою.
+
+- [ ] **Step 2: Додати 7 індексів у `0001_init.sql`**
+
+Кожен — поряд із `CREATE TABLE` своєї таблиці, глобальні:
+
+```sql
+CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);
+CREATE UNIQUE INDEX "idx_user_categories_single_default" ON "user_categories" USING btree ("is_default" bool_ops) WHERE (is_default = true);
+CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("is_default" bool_ops) WHERE (is_default = true);
+CREATE UNIQUE INDEX "idx_shipping_zones_single_default" ON "shipping_zones" USING btree ("is_default" bool_ops) WHERE (is_default = true);
+```
+
+scoped (дефолт «на батька»):
+
+```sql
+CREATE UNIQUE INDEX "idx_product_modifications_single_default" ON "product_modifications" USING btree ("product_id") WHERE (is_default = true);
+CREATE UNIQUE INDEX "idx_user_addresses_single_default" ON "user_addresses" USING btree ("user_id") WHERE (is_default = true);
+CREATE UNIQUE INDEX "idx_user_recipients_single_default" ON "user_recipients" USING btree ("user_id") WHERE (is_default = true);
+```
+
+🔴 **Legacy-шляхи запису НЕ адаптуються — вони мертві.** Стара адмінка
+(`ProductModifications.tsx:111`, `ShippingZoneEdit.tsx:169`, …) пише
+`is_default` без транзакційного unset, і під новим індексом такий шлях
+падав би з `23505` — але на стеку v2 ці шляхи НЕ ВИКОНУЮТЬСЯ взагалі
+(supabase-js без HTTP-посередника; 215 мертвих звернень — §1 спеки).
+Індекс не ламає нічого працюючого. 🔴 КОНТРАКТ ХВИЛЬ Е3–Е6, який цим
+встановлюється: сторінка таблиці з single-default індексом переписується
+ЛИШЕ РАЗОМ зі своєю named setDefault-операцією (за зразком Task 8) —
+інакше нова сторінка напореться на той самий `23505`. Продубльовано в
+«Що НЕ входить».
+
+🔴 Перед правкою звірити семантику кожної таблиці по чинному коду
+(`rg "is_default" packages/simplycms/src --type ts -l`): якщо якась із
+чотирьох «глобальних» насправді scoped — індекс міняється на scoped-форму,
+рішення фіксується коментарем у SQL поруч з індексом.
+
+- [ ] **Step 3: Ті самі 7 — у `schema.ts`** (дзеркало, форма з price_types)
+
+- [ ] **Step 3б: Синхронізувати drizzle-baseline (канон data-access «❌ NEVER»)**
+
+Точкова правка BASELINE — той самий виняток, що застосовано в Е0 і Е1а:
+ті самі 7 індексів у `drizzle/0000_init.sql` і `drizzle/meta/0000_snapshot.json`
+(форма — з наявного `idx_price_types_single_default` там же). Підтвердження
+парності: `pnpm --filter simplycms exec drizzle-kit generate` мусить
+відповісти **«No schema changes»** (якщо згенерував новий файл у `drizzle/`
+— снапшот розсинхронений: полагодити снапшот, згенероване видалити).
+Без цього кроку наступний `pnpm db:diff` дав би фантомну різницю.
+
+- [ ] **Step 4: Накат канону і сідів**
+
+```bash
+pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/baseline.test.ts
+```
+Expected: PASS. Якщо `0003_seed.sql`/`demo-seed.sql` порушують новий
+інваріант (два дефолти в одній із 7 таблиць) — накат впаде з `23505`;
+тоді полагодити СІД (лишити один дефолт), не індекс.
+
+- [ ] **Step 5: Поведінковий тест інваріанта**
+
+```ts
+// packages/simplycms/test-harness/pg/__tests__/single-default.test.ts
+// (шапка resolveHarness/createTempDatabase/applySqlFiles(канон) — точна
+// копія beforeAll/afterAll із baseline.test.ts; afterAll БЕЗ closeDbPool —
+// цей тест не чіпає simplycms/db)
+import { queryRows, queryInTransaction } from '../apply.mjs';
+
+describe('К3-14: інваріант is_default тримає БД', () => {
+  it('другий глобальний дефолт — 23505', async () => {
+    await expect(
+      queryInTransaction(dbUrl, [
+        `insert into public.order_statuses (id, name, code, is_default)
+         values (gen_random_uuid(), 'Дубль', 'dup-default', true)`,
+      ]),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('scoped: свій дефолт у КОЖНОГО користувача легальний, другий у того самого — 23505', async () => {
+    await queryRows(dbUrl, `insert into public.users (id, name, email, email_verified)
+      values ('a0000000-0000-4000-8000-000000000001', 'А', 'a@t.test', true),
+             ('a0000000-0000-4000-8000-000000000002', 'Б', 'b@t.test', true)`);
+    // По одному дефолтному одержувачу на кожного — обидва проходять.
+    // Колонки NOT NULL user_recipients (0001_init.sql:539-551): user_id,
+    // first_name, last_name, phone, city, address.
+    await queryRows(dbUrl, `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default)
+      values (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000001', 'А', 'А', '+380000000001', 'Київ', 'вул. Тестова, 1', true),
+             (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000002', 'Б', 'Б', '+380000000002', 'Львів', 'вул. Тестова, 2', true)`);
+    // Другий дефолт ТОГО САМОГО користувача — 23505.
+    await expect(queryRows(dbUrl, `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default)
+      values (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000001', 'В', 'В', '+380000000003', 'Київ', 'вул. Тестова, 3', true)`),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
+});
+```
+
+Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/single-default.test.ts`
+Expected: PASS (обидва кейси; другий кейс дописати повністю за патерном першого).
+
+- [ ] **Step 6: Повний схемний контур і коміт**
+
+```bash
+pnpm test:schema
+git add packages/simplycms/migrations packages/simplycms/src/schema packages/simplycms/drizzle packages/simplycms/test-harness
+git commit -m "feat(v2-k3): інваріант is_default — 7 часткових unique-індексів у baseline
+
+К3-14 (амендмент 2026-08-31): за прецедентом idx_price_types_single_default
+закрито всі таблиці патерну — 4 глобальні + 3 scoped. Правка baseline, не
+міграція (B13). Інваріант тримали два нетранзакційні запити з браузера —
+тепер другий дефолт відбиває БД кодом 23505.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 1: Гейт повноти `deps` — сценарії по гілках + фікс двох агрегатів
 
 **Files:**
 - Create: `packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts`
-- Modify: `packages/simplycms/src/contracts/entities.ts` (якщо виявиться неповний `deps`)
+- Modify: `packages/simplycms/src/contracts/entities.ts` (deps двох агрегатів)
 
 **Interfaces:**
-- Consumes: `AGGREGATE` з `simplycms/contracts/entities` (Е1а), харнес `resolveHarness`/`applySqlFiles`.
-- Produces: доказ, що `deps` кожного агрегату **повний** — на ньому Task 8 будує інвалідацію.
+- Consumes: `AGGREGATE`/`ENTITY` (Е1а); `withStorefrontDb`/`withCustomerDb` і внутрішні лоадери з `simplycms/storefront/loaders`; харнес `resolveHarness`/`applySqlFiles`/`queryRows`/`withUser`; `closeDbPool` із `simplycms/db`.
+- Produces: доказ повноти `deps` кожного агрегату — Е3 будує інвалідацію саме з них.
 
-🔴 **Чому рантайм, а не статичний аналіз.** Наявний гейт перевіряє лише
-існування названої залежності. Статично довести повноту не вийде:
-`loadProductsByOption` делегує в спільний `loadCatalogProductsWhere`, той
-— ще глибше, і саме на транзитивності гейт Е1а й осліп (`propertyOptionPage`
-мав 6 залежностей замість 9). Виконаний запит бреше значно менше за
-граф викликів: у SQL видно фактичні таблиці, включно з делегуванням,
-аліасами й динамікою.
+🔴 **Дві відомі вади, які гейт мусить зловити першим прогоном** (перевірено
+читанням коду, research-док §5): `pickup_points` читають і
+`loadShippingDirectory` (`shipping.ts:70`), і `loadStockInfo`
+(`stock-info.ts:72-75`, innerJoin) — в `deps` обох його немає.
+**Порядок TDD тут навмисний:** спершу гейт (він ЧЕРВОНИЙ на цих двох),
+потім фікс `entities.ts` → зелений.
 
-🔴 Перехоплення робиться на рівні `pg`, а не drizzle-логера: `withActor`
-створює drizzle сам (`db/with-actor.ts:57`), логера туди не підсунути без
-правки продакшн-коду. Spy на `Client.prototype.query` бачить і преамбулу
-актора, і всі запити транзакції.
-
-✅ **Техніку перевірено наживо** (2026-08-30, стенд `55433`): підміна
-`pg.Client.prototype.query` перехопила всі три запити, що пішли через
-`pool.connect()` → `client.query`, включно з `begin`/`commit`. Тобто
-`PoolClient` успадковує прототип `Client`, і spy на ньому працює.
+🔴 **Конвенція викликів:** serverFn-обгортки в харнесі НЕ викликаються
+(`getRequest()` без ALS падає — `price-type.ts:35`, `discounts.ts:47`;
+конвенція зафіксована коментарем `storefront-client-queries.test.ts:1-6`).
+Кличемо ЛИШЕ внутрішні лоадери під `withStorefrontDb`/`withCustomerDb`.
 
 - [ ] **Step 1: Написати гейт**
 
 ```ts
 // packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { readdirSync } from 'node:fs';
 import pg from 'pg';
 import { AGGREGATE, ENTITY } from 'simplycms/contracts/entities';
+import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
-import { applySqlFiles, createTempDatabase, dropTempDatabase, randomDbName, withDbName } from '../apply.mjs';
+import {
+  applySqlFiles, createTempDatabase, dropTempDatabase,
+  queryRows, randomDbName, withDbName, withUser,
+} from '../apply.mjs';
 
-const CANON = join(import.meta.dirname, '../../../migrations');
+const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 const canonFiles = () =>
-  readdirSync(CANON).filter((n) => n.endsWith('.sql')).sort().map((n) => join(CANON, n));
+  readdirSync(MIGRATIONS).filter((n) => n.endsWith('.sql')).sort().map((n) => join(MIGRATIONS, n));
+const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
 
 /**
- * Імена таблиць, які реально згадав SQL.
- *
- * 🔴 Межі перевірені на реальних формах Drizzle (прогін 2026-08-30):
- * ловить `from`/`join` з лапками й без, у підзапитах і після CTE.
- * НЕ ловить:
- *   • `insert into "orders"` — свідомо: агрегати описують ЧИТАННЯ, і
- *     запис у них не входить (за записом стежить `explicit-ids`);
- *   • кома-розділені таблиці `from a, b` — Drizzle такої форми не
- *     генерує, але якщо колись зʼявиться сирий SQL із нею, друга
- *     таблиця пройде повз.
- * Тобто гейт ловить рівно те, заради чого існує, і не вдає більшого.
+ * Імена таблиць, які реально згадав SQL. Межі (перевірено на формах
+ * Drizzle): ловить from/join з лапками й без, у підзапитах і після CTE;
+ * НЕ ловить insert (агрегати описують ЧИТАННЯ) і кома-розділені from a,b
+ * (Drizzle такого не генерує).
  */
 function tablesInSql(sql: string): string[] {
   const re = /\b(?:from|join)\s+(?:"?public"?\.)?"?([a-z_][a-z0-9_]*)"?/gi;
   return [...sql.matchAll(re)].map((m) => m[1].toLowerCase());
 }
 
-/**
- * Як викликати кожен агрегат. 🔴 Реєстр РУЧНИЙ і це навмисно: він і є
- * місцем, де автор агрегату свідомо каже «ось так воно виконується».
- * Агрегат без запису тут — провал гейта, а не мовчазний пропуск.
- */
-const INVOCATIONS: Record<keyof typeof AGGREGATE, () => Promise<unknown>> = {
-  shippingDirectory: async () => {
-    const m = await import('simplycms/storefront/loaders');
-    return m.loadShippingDirectory();
-  },
-  // …решта агрегатів — по одному рядку. Аргументи брати такі, щоб запит
-  // реально виконався (id із сіду, який накочується нижче).
-};
+/** UUID демо-сіду (migrations/demo/demo-seed.sql — статичні за Е0). */
+const MOD_ID = '10000003-0000-4000-8000-000000000001';       // модифікація «odnofazny»
+const PRODUCT_NO_MODS = '10000002-0000-4000-8000-000000000001'; // панель 450w-mono
+const PRODUCT_WITH_MODS = '10000002-0000-4000-8000-000000000004'; // інвертор 5kw
+const RETAIL_PRICE_TYPE_ID = '00000003-0000-4000-8000-000000000001'; // 0003_seed.sql
+
+/** Власні фікстури поверх сідів (raw SQL, патерн fixtures/showcase.ts). */
+const FIXTURES = [
+  // Користувач із профілем — для гілок user-контексту (демо-сід без людей).
+  `insert into public.users (name, email, email_verified)
+   values ('Гейт deps', 'deps-gate@example.test', true)`,
+  `insert into public.profiles (id, user_id, email, first_name, category_id)
+   select gen_random_uuid(), u.id, u.email, 'Гейт', c.id
+     from public.users u cross join public.user_categories c
+    where u.email = 'deps-gate@example.test' and c.code = 'retail'`,
+  // Активна знижка — без неї loadDiscountGroups виходить після першого
+  // запиту і 3 таблиці лишаються темними (discounts.ts:41).
+  `insert into public.discount_groups (id, name, operator, is_active)
+   values (gen_random_uuid(), 'Гейт deps: група', 'and', true)`,
+  `insert into public.discounts (id, name, group_id, discount_type, discount_value, is_active, price_type_id)
+   select gen_random_uuid(), 'Гейт deps: акція', g.id, 'percent', 10, true, '${'$'}{RETAIL_PRICE_TYPE_ID}'::uuid
+     from public.discount_groups g where g.name = 'Гейт deps: група'`,
+  `insert into public.discount_conditions (id, discount_id, condition_type)
+   select gen_random_uuid(), d.id, 'user_category' from public.discounts d where d.name = 'Гейт deps: акція'`,
+  `insert into public.discount_targets (id, discount_id)
+   select gen_random_uuid(), d.id from public.discounts d where d.name = 'Гейт deps: акція'`,
+  // Сторінка опції: демо-сід не має has_page=true; наявна фікстура
+  // tip-paneli НЕ годиться (товари mono без модифікацій — гілка 2b темна).
+  `update public.section_properties set has_page = true where slug = 'tip-invertora'`,
+];
 
 describe('Е1б: deps агрегатів повні відносно фактичного SQL', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_aggregate_deps');
-  let dbUrl: string;
+  let dbUrl = '';
+  let userId = '';
   const seen = new Set<string>();
   let restore: (() => void) | null = null;
 
@@ -170,8 +353,12 @@ describe('Е1б: deps агрегатів повні відносно факти�
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
-    process.env.DATABASE_URL = dbUrl;
+    await applySqlFiles(dbUrl, [...canonFiles(), DEMO_SEED]);
+    for (const sql of FIXTURES) await queryRows(dbUrl, sql);
+    const [u] = await queryRows(dbUrl, `select id from public.users where email = 'deps-gate@example.test'`);
+    userId = (u as { id: string }).id;
+    // Як у всіх сусідніх тестах: app_runtime, і ЛИШЕ після сетапу.
+    process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
 
     const original = pg.Client.prototype.query;
     const spy = vi
@@ -180,20 +367,72 @@ describe('Е1б: deps агрегатів повні відносно факти�
         const first = args[0] as string | { text?: string };
         const sql = typeof first === 'string' ? first : first?.text;
         if (sql) for (const t of tablesInSql(sql)) seen.add(t);
-        return (original as never).apply(this, args as never);
+        return (original as (...a: unknown[]) => unknown).apply(this, args);
       });
     restore = () => spy.mockRestore();
   }, 180_000);
 
-  afterEach(() => seen.clear());
   afterAll(async () => {
     restore?.();
+    await closeDbPool();
+    delete process.env.DATABASE_URL;
     if (dbUrl) await dropTempDatabase(harness.url, dbName);
     await harness?.teardown();
   });
 
+  /**
+   * 🔴 Реєстр РУЧНИЙ і це навмисно: автор агрегату свідомо каже, ЯК він
+   * виконується — включно з гілками. Сценарії підібрані так, щоб union
+   * SQL покрив усі deps (обґрунтування по гілках — research-док §5).
+   */
+  const INVOCATIONS: Record<keyof typeof AGGREGATE, () => Promise<void>> = {
+    shippingDirectory: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb((db) => m.loadShippingDirectory(db));
+    },
+    stockInfo: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb(async (db) => {
+        await m.loadStockInfo(db, { modificationId: MOD_ID }); // гілка modification
+        await m.loadStockInfo(db, { productId: PRODUCT_NO_MODS }); // гілка product
+      });
+    },
+    priceTypeContext: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb((db) => m.loadDefaultPriceTypeId(db));
+      await m.withCustomerDb(userId, (db) => m.loadUserPriceTypeId(db, userId));
+    },
+    discountEnvironment: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb(async (db) => {
+        await m.loadDefaultPriceTypeId(db);
+        await m.loadDefaultUserCategoryId(db);
+        await m.loadDiscountGroups(db, RETAIL_PRICE_TYPE_ID);
+      });
+      await m.withCustomerDb(userId, async (db) => {
+        await m.loadUserPriceTypeId(db, userId);
+        await m.loadUserCategoryId(db, userId);
+      });
+    },
+    modificationData: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb(async (db) => {
+        await m.loadProductModificationValues(db, PRODUCT_WITH_MODS);
+        const ids = await m.loadModificationIds(db, PRODUCT_WITH_MODS);
+        await m.loadModificationStock(db, ids);
+      });
+    },
+    propertyOptionPage: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb((db) => m.loadPropertyOption(db, 'tip-invertora', 'on-grid'));
+    },
+    catalogProducts: async () => {
+      const m = await import('simplycms/storefront/loaders');
+      await m.withStorefrontDb((db) => m.loadCatalogProducts(db));
+    },
+  };
+
   it('кожен агрегат має запис у реєстрі викликів', () => {
-    // Інакше новий агрегат тихо лишиться поза перевіркою.
     expect(Object.keys(INVOCATIONS).sort()).toEqual(Object.keys(AGGREGATE).sort());
   });
 
@@ -202,293 +441,539 @@ describe('Е1б: deps агрегатів повні відносно факти�
     async (name) => {
       seen.clear();
       await INVOCATIONS[name]();
+      // 🔴 Fail-open захист У КОЖНОМУ кейсі: лоадер, що вийшов раніше без
+      // жодного SQL, не сміє давати зелень (сліпота цього класу вже була).
+      expect(seen.size, `${name}: сценарій не виконав жодного запиту`).toBeGreaterThan(0);
 
       const declared = new Set<string>(AGGREGATE[name].deps);
       const known = new Set<string>(Object.values(ENTITY));
-      // Службові таблиці поза ENTITY (напр. auth) до deps не належать.
       const missing = [...seen].filter((t) => known.has(t) && !declared.has(t)).sort();
-
       expect(
         missing,
-        `${name}: SQL читає таблиці, яких немає в deps — інвалідація буде ` +
-          `неповною: ${missing.join(', ')}`,
+        `${name}: SQL читає таблиці поза deps — інвалідація буде неповною: ${missing.join(', ')}`,
       ).toEqual([]);
     },
   );
-
-  it('перехоплення взагалі працює', async () => {
-    // Захист від зеленого гейта через зламаний spy: після виклику
-    // будь-якого агрегату множина не може бути порожньою.
-    seen.clear();
-    await INVOCATIONS[Object.keys(AGGREGATE)[0] as keyof typeof AGGREGATE]();
-    expect(seen.size).toBeGreaterThan(0);
-  });
 });
 ```
 
-🔴 Якщо лоадер потребує даних — накотити демо-сід
-(`migrations/demo/demo-seed.sql`) у `beforeAll` після канону. Порожній
-результат гейт не турбує: важливо, ЩО запитано, а не що повернулось.
+🔴 У фікстурі знижки `RETAIL_PRICE_TYPE_ID` — підставити ЛІТЕРАЛОМ
+(рядок вище показує template-подібний запис лише для читабельності плану;
+у файлі — звичайна конкатенація або літерал uuid).
 
-- [ ] **Step 2: Запустити й виміряти**
+- [ ] **Step 2: Запустити — очікуємо ЧЕРВОНИЙ на двох агрегатах**
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts`
-Expected: або PASS (усі `deps` повні), або FAIL із переліком таблиць.
-🔴 **FAIL тут — успіх гейта, а не привід послабити його.** Дописати
-відсутні таблиці в `deps` агрегату й перезапустити.
+Expected: FAIL — `shippingDirectory` і `stockInfo` з `pickup_points` у missing. 🔴 Це успіх гейта. Якщо впало інакше (сигнатура лоадера, відсутній експорт) — звірити фактичні експорти `storefront/loaders/index.ts` і поправити СЦЕНАРІЙ, не гейт.
 
-- [ ] **Step 3: Негативний контроль**
+- [ ] **Step 3: Фікс deps**
+
+У `contracts/entities.ts`: `ENTITY.pickupPoints` додати в масиви
+`shippingDirectory` і `stockInfo` (+ рядок у їхні докблоки: «pickup_points —
+знахідка рантайм-гейта 2026-08-31»).
+
+Run: той самий. Expected: PASS усі.
+
+- [ ] **Step 4: Негативний контроль**
 
 ```bash
-# Тимчасово прибрати одну залежність із будь-якого агрегату в
-# packages/simplycms/src/contracts/entities.ts (напр. ENTITY.products
-# зі stockInfo), потім:
-pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/aggregate-deps.test.ts
-# Expected: FAIL — 'stockInfo: SQL читає таблиці, яких немає в deps: products'
-# Повернути залежність → PASS
+# Тимчасово прибрати ENTITY.products зі stockInfo.deps → FAIL з 'products'
+# Повернути → PASS
 ```
 
-🔴 Без цього кроку гейт не доведений: саме така сліпота в Е1а пройшла
-повз чотири зелені кейси.
-
-- [ ] **Step 4: Коміт**
+- [ ] **Step 5: Коміт**
 
 ```bash
 git add packages/simplycms/test-harness packages/simplycms/src/contracts
-git commit -m "test(v2-k3): гейт повноти deps — перехоплення фактичного SQL
+git commit -m "test(v2-k3): рантайм-гейт повноти deps + фікс pickup_points у двох агрегатах
 
-Гейт Е1а перевіряв лише існування названої залежності, не повноту
-списку, і вже пропустив дві реальні вади (propertyOptionPage 6 замість
-9; useCatalogProductsQuery без deps) — обидві спіймало ручне рев'ю.
-Е1б будує інвалідацію саме з deps, тож неповний список дав би мовчазно
-неповну інвалідацію.
+Гейт Е1а перевіряв існування залежності, не повноту. Рантайм-перехоплення
+(spy на pg.Client.prototype.query) зі сценаріями по гілках зловило першим
+прогоном: shippingDirectory і stockInfo читають pickup_points, якого не
+було в deps. Виклики — лише внутрішні лоадери під withActor; fail-open
+захист seen.size у кожному кейсі.
 
-Статичний аналіз тут безсилий (делегування через
-loadCatalogProductsWhere), тому перевірка рантаймова: spy на
-pg.Client.prototype.query бачить фактичний SQL транзакції.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 2: `@tanstack/react-db` як peer + пін у шаблоні
+### Task 2: Залежності npm — 2 peer + піни + `drizzle-zod` + гейт одного інстанса
 
 **Files:**
-- Modify: `packages/simplycms/package.json` (peerDependencies + devDependencies)
+- Modify: `packages/simplycms/package.json`
+- Modify: `package.json` (корінь: devDeps для збірки монорепо)
 - Modify: `packages/create-simplycms-store/template/package.json.tpl`
-- Test: `tests/template-deps-parity.test.ts` (наявний або новий — перевірити)
+- Create: `tests/tanstack-db-single-instance.test.ts`
 
 **Interfaces:**
-- Produces: `@tanstack/db`, `@tanstack/react-db`, `@tanstack/query-db-collection` доступні ядру й магазину.
+- Produces: `@tanstack/react-db`, `@tanstack/query-db-collection`, `drizzle-zod` доступні ядру; магазин отримує пару peer-ів точними пінами.
 
-🔴 **Peer, не dependency** (рішення К3-10): `@tanstack/react-db` — `0.3.x`,
-і як пряма залежність ядра його breaking changes їхали б у магазини
-разом із нашим релізом. Форма — та сама, що вже вживається для
-`@tanstack/react-query` (`package.json:493`).
+🔴 **Peer-ів ДВА, не три** (К3-10′): обидва адаптери несуть `@tanstack/db`
+точним піном у власних `dependencies` (0.3.6 і 1.2.11 → `db@0.8.6`).
+Розсинхрон = два інстанси `@tanstack/db` у дереві — колекція з одного,
+підписки з іншого. Тому діапазони вузькі і є структурний гейт.
 
-- [ ] **Step 1: Подивитись, як оформлено наявний peer**
+- [ ] **Step 1: peer + deps ядра**
 
-```bash
-python3 -c "
-import json;d=json.load(open('packages/simplycms/package.json'))
-print('peer:', json.dumps({k:v for k,v in d['peerDependencies'].items() if 'tanstack' in k}, indent=1))
-print('dev :', json.dumps({k:v for k,v in d.get('devDependencies',{}).items() if 'tanstack' in k}, indent=1))"
-grep -n "tanstack" packages/create-simplycms-store/template/package.json.tpl
-```
-
-- [ ] **Step 2: Додати трійку**
-
-У `peerDependencies` ядра — те саме формулювання, що в сусідів:
+У `packages/simplycms/package.json`:
 ```json
-"@tanstack/db": "^0.8.0",
-"@tanstack/query-db-collection": "^1.2.0",
-"@tanstack/react-db": "^0.3.0"
-```
-
-🔴 **І `drizzle-zod` — його теж немає в дереві** (перевірено: нуль у
-`node_modules/.pnpm` і в манифестах). Він потрібен Task 5 для виведення
-Zod-схем зі схеми Drizzle. Але це **не** peer: його вживає лише
-серверний код ядра, магазин про нього не знає. Тому — у
-`dependencies` пакета:
-```json
+// peerDependencies. 🔴 ~, не ^: ^1.2.11 дозволив би 1.3.x з ІНШИМ точним
+// піном @tanstack/db — і два інстанси в дереві стороннього магазину,
+// де наш репозиторний single-instance гейт не діє.
+"@tanstack/query-db-collection": "~1.2.11",
+"@tanstack/react-db": "~0.3.6",
+// dependencies (server-only, прецедент pg/better-auth; рішення власника):
 "drizzle-zod": "^0.8.3"
 ```
-Сумісність перевірена: його peer — `drizzle-orm >=0.36.0` і
-`zod ^3.25.0 || ^4.0.0`; у нас `0.45.2` і `4.4.3`.
-У `devDependencies` ядра — ті самі пакети точними версіями (щоб монорепо
-збиралось), у `template/package.json.tpl` — пін, як у решти залежностей
-шаблону.
 
-```bash
-pnpm install   # оновити lockfile — БЕЗ --frozen-lockfile, ми міняли манифести
+У КОРЕНЕВОМУ `package.json` → `dependencies` (щоб монорепо збиралось; там
+уже живуть `@tanstack/react-query`, `zod`):
+```json
+"@tanstack/query-db-collection": "1.2.11",
+"@tanstack/react-db": "0.3.6"
 ```
 
-- [ ] **Step 3: Гейти**
+У `template/package.json.tpl` — ТОЧНІ піни `"@tanstack/react-db": "0.3.6"`,
+`"@tanstack/query-db-collection": "1.2.11"` (форма — як у сусідніх рядках шаблону).
 
 ```bash
-pnpm install --frozen-lockfile && pnpm test && pnpm lint
-```
-Expected: PASS. 🔴 `--frozen-lockfile` тут обовʼязковий: він єдиний
-доводить, що lockfile перегенеровано (урок PR #20).
-
-- [ ] **Step 4: Коміт**
-
-```bash
-git add packages/simplycms/package.json packages/create-simplycms-store/template pnpm-lock.yaml
-git commit -m "chore(v2-k3): TanStack DB як peer-залежність + пін у шаблоні
-
-react-db на 0.3.x: як пряма залежність ядра його breaking changes їхали
-б у магазини з нашим релізом. Форма та сама, що для react-query.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+pnpm install   # БЕЗ frozen — ми міняли манифести
 ```
 
----
-
-### Task 3: Тип `RouterContext` переїжджає в пакет
-
-**Files:**
-- Create: `packages/simplycms/src/runtime/router-context.ts`
-- Modify: `src/routes/__root.tsx` (+ канон і шаблон через `template:sync`)
-- Modify: `packages/simplycms/package.json` (обидві exports-мапи)
-- Modify: `packages/simplycms/tsup.config.ts`
-
-**Interfaces:**
-- Produces: `RouterContext` імпортовний з `simplycms/runtime/router-context` — щоб `loader` роут-файлів **ядра** міг типізувати `context.queryClient`.
-
-🔴 Борг Е1а: тип живе в host-файлі `src/routes/__root.tsx:53`, тож роути
-ядра його не бачать. Task 9 ставить `loader` у роут-файл адмінки — без
-переїзду він не типізується.
-
-- [ ] **Step 1: Написати падаючий тест**
+- [ ] **Step 2: Гейт одного інстанса**
 
 ```ts
-// packages/simplycms/src/runtime/__tests__/router-context.test.ts
-import { describe, expectTypeOf, it } from 'vitest';
-import type { QueryClient } from '@tanstack/react-query';
-import type { RouterContext } from '../router-context';
+// tests/tanstack-db-single-instance.test.ts
+import { execSync } from 'node:child_process';
+import { describe, expect, it } from 'vitest';
 
-describe('RouterContext доступний із пакета', () => {
-  it('несе queryClient', () => {
-    expectTypeOf<RouterContext>().toHaveProperty('queryClient');
-    expectTypeOf<RouterContext['queryClient']>().toEqualTypeOf<QueryClient>();
+/**
+ * Два інстанси @tanstack/db у дереві — найгірший клас дефекту: колекція
+ * створена одним, useLiveQuery підписується через інший, підписки одна
+ * одну не бачать, симптом далеко від причини (К3-10′). Патерн гейта —
+ * як tests/dts-toolchain.test.ts: структурна властивість дерева.
+ */
+describe('рівно один @tanstack/db у дереві', () => {
+  it('усі resolved-версії @tanstack/db збігаються', () => {
+    const out = execSync('pnpm ls -r --depth Infinity @tanstack/db --json', {
+      encoding: 'utf8', cwd: process.cwd(),
+    });
+    // 🔴 СТРУКТУРНИЙ обхід, не regex по "version": вивід — масив
+    // workspace-проєктів, КОЖЕН зі своєю версією пакета (0.4.1, 1.0.0…) —
+    // сирий скан рахував би їх «другою версією» і фейлив здорове дерево
+    // (знахідка Codex r2 проти redакції з regex-ом).
+    const versions = new Set<string>();
+    const walk = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      for (const [name, dep] of Object.entries(
+        node as Record<string, { version?: string; dependencies?: unknown }>,
+      )) {
+        if (name === '@tanstack/db' && dep?.version) versions.add(dep.version);
+        if (dep && typeof dep === 'object') walk((dep as { dependencies?: unknown }).dependencies);
+      }
+    };
+    for (const project of JSON.parse(out) as Array<Record<string, unknown>>) {
+      for (const key of ['dependencies', 'devDependencies', 'peerDependencies'] as const)
+        walk(project[key]);
+    }
+    expect(versions.size, 'у дереві немає @tanstack/db взагалі — гейт вхолосту').toBeGreaterThan(0);
+    expect([...versions], 'дерево тримає кілька версій @tanstack/db').toHaveLength(1);
   });
 });
 ```
 
-Run: `pnpm vitest run packages/simplycms/src/runtime/__tests__/router-context.test.ts`
-Expected: FAIL — модуля немає.
+Run: `pnpm vitest run tests/tanstack-db-single-instance.test.ts`
+Expected: PASS. Негативний контроль: тимчасово поставити в корінь
+`"@tanstack/db": "0.8.5"` + `pnpm install` → FAIL → відкотити.
 
-- [ ] **Step 2: Створити модуль**
+- [ ] **Step 3: Повні гейти встановлення і коміт**
+
+```bash
+pnpm install --frozen-lockfile && pnpm lint && pnpm test
+git add package.json packages/simplycms/package.json packages/create-simplycms-store/template pnpm-lock.yaml tests/tanstack-db-single-instance.test.ts
+git commit -m "chore(v2-k3): TanStack DB — 2 peer-и вузько + гейт одного інстанса; drizzle-zod у deps ядра
+
+К3-10′: @tanstack/db не peer-иться — його точним піном несуть обидва
+адаптери; розсинхрон версій дає два інстанси в дереві (підписки одна одну
+не бачать), тому діапазони вузькі, у шаблоні точні піни, і структурний
+гейт стереже єдиність. drizzle-zod — server-only dependency ядра за
+прецедентом pg/better-auth.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: `RouterContext` — тип у пакеті через НАЯВНИЙ барель `runtime`
+
+**Files:**
+- Create: `packages/simplycms/src/runtime/router-context.ts`
+- Modify: `packages/simplycms/src/runtime/index.ts`
+- Modify: `src/routes/__root.tsx` (+ канон `packages/cli/host/src/routes/__root.tsx` і шаблон — через `pnpm template:sync`)
+
+**Interfaces:**
+- Produces: `import type { RouterContext } from 'simplycms/runtime'` — Task 10 типізує `context.queryClient` у loader роуту ядра.
+
+🔴 БЕЗ нового субшляху exports (рішення Q7): тип — `import type`, нуль
+рантайм-ваги, наявний субшлях `./runtime` достатній. Нові записи в
+exports/publishConfig/tsup НЕ додаються.
+
+- [ ] **Step 1: Тип + реекспорт**
 
 ```ts
 // packages/simplycms/src/runtime/router-context.ts
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
- * Контекст роутера магазину.
- *
- * 🔴 Живе в ПАКЕТІ, а не в host-файлі: `loader` роут-файлів ядра
- * (`routes/admin/**`) типізує `context.queryClient` саме звідси, а
- * дотягтись до `src/routes/__root.tsx` магазину вони не можуть — це
- * зворотний напрям залежності. Host лише реекспортує цей тип.
+ * Контекст роутера магазину. Живе в ПАКЕТІ: loader роут-файлів ядра
+ * (routes/admin/**) типізує context.queryClient звідси — дотягтись до
+ * host src/routes/__root.tsx вони не можуть (зворотний напрям). Host
+ * лише реекспортує цей тип.
  */
 export interface RouterContext {
   readonly queryClient: QueryClient;
 }
 ```
 
-- [ ] **Step 3: Host реекспортує**
+У `runtime/index.ts` додати: `export type { RouterContext } from './router-context';`
+
+- [ ] **Step 2: Host реекспортує**
+
+У `src/routes/__root.tsx` замінити власне оголошення інтерфейсу на:
 
 ```tsx
-// src/routes/__root.tsx — замість власного оголошення
-import type { RouterContext } from 'simplycms/runtime/router-context';
-
+import type { RouterContext } from 'simplycms/runtime';
 export type { RouterContext };
-
-export const Route = createRootRouteWithContext<RouterContext>()({
-  // …без змін
-});
 ```
 
-- [ ] **Step 4: Оголосити субшлях в ОБИДВІ мапи + tsup**
+(`createRootRouteWithContext<RouterContext>()` — без змін.)
 
-`exports`: `"./runtime/router-context": "./src/runtime/router-context.ts"`
-`publishConfig.exports`: `{ "types": "./dist/runtime/router-context.d.ts", "import": "./dist/runtime/router-context.js" }`
-🔴 Обидві обовʼязкові — `audit-exports` вимагає publish-запис окремо.
-У `tsup.config.ts` — явний патерн `src/runtime/router-context.ts`
-(глоби профілю матчать лише `index.ts`).
-
-- [ ] **Step 5: Синхронізувати й прогнати**
+- [ ] **Step 3: Синк, гейти, коміт**
 
 ```bash
 pnpm template:sync
-pnpm build && pnpm typecheck && pnpm test && pnpm build:packages && pnpm test:packaging
-```
-Expected: PASS. 🔴 `build` перед `typecheck` — він генерує `routeTree.gen.ts`.
+pnpm build && pnpm typecheck && pnpm test
+git add packages/simplycms/src/runtime src packages/cli/host packages/create-simplycms-store/template
+git commit -m "feat(v2-k3): RouterContext переїжджає в пакет (через наявний runtime-барель)
 
-- [ ] **Step 6: Коміт**
+Борг Е1а: тип жив у host-файлі, роути ядра його не бачили. Новий субшлях
+не заводиться — тип type-only, наявний simplycms/runtime достатній.
 
-```bash
-git add packages/simplycms src packages/cli/host packages/create-simplycms-store/template
-git commit -m "feat(v2-k3): RouterContext переїжджає в пакет
-
-Борг Е1а: тип жив у host-файлі, тож роути ядра його не бачили. Task 9
-ставить loader у роут адмінки — без переїзду він не типізується. Host
-тепер лише реекспортує.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
-# Частина 2 — серверний шар
 
-### Task 4: Тека `admin-server`, тір-зона і `subset.ts`
+### Task 4: ESLint-гейт К3-4′ — `createServerFn` лише топ-рівнево
 
 **Files:**
-- Create: `packages/simplycms/src/admin-server/index.ts`, `subset.ts`
-- Create: `packages/simplycms/src/admin-server/__tests__/subset.test.ts`
-- Modify: `eslint.tier-zones.mjs`, `tests/tier-boundary.test.ts`
-- Modify: `packages/simplycms/package.json` (обидві мапи), `tsup.config.ts`
+- Create: `eslint-rules/server-fn-top-level.mjs`
+- Modify: `eslint.config.mjs`
+- Test: негативний контроль вручну (фікстурою в зоні)
 
 **Interfaces:**
-- Produces: `toDrizzleSubset(table, allow, opts)` → `{ where, orderBy, limit, offset }` для Drizzle; кидає на колонку поза allowlist.
+- Produces: постійний запобіжник обох режимів провалу компілятора (throw на повільному шляху, МОВЧАЗНИЙ пропуск на fast-path).
 
-🔴 `subset.ts` — **єдина причина існування фабрики**. Трансляція
-`{field, operator, value}[]` у SQL мусить жити в одному місці з
-allowlist колонок; написана 34 рази вона дає 34 шанси на інʼєкцію. Той
-самий мотив, з якого в `plugin-sdk/server/guard.ts` живуть
-`assertColumn`/`assertOwnTable`.
+- [ ] **Step 1: Правило**
 
-- [ ] **Step 1: Написати падаючий тест**
+```js
+// eslint-rules/server-fn-top-level.mjs
+/**
+ * К3-4′: виклик createServerFn мусить бути ініціалізатором топ-рівневого
+ * `const` з простим ідентифікатором — цього вимагає компілятор Start
+ * (handleCreateServerFn.js:104-106). Гірше за помилку компілятора —
+ * fast-path: для файлів, де детектовано лише serverFn, сканується ТІЛЬКИ
+ * топ-рівень, тож нетоплевел-виклик МОВЧКИ лишається нетрансформованим і
+ * серверний граф їде в клієнтський бандл. Це правило робить обидва режими
+ * гучними на pnpm lint.
+ */
+export default {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      notTopLevel:
+        'createServerFn мусить бути топ-рівневим `const ім’я = createServerFn(...)` — ' +
+        'інакше компілятор Start або впаде, або МОВЧКИ пропустить трансформацію (К3-4′).',
+    },
+  },
+  create(context) {
+    return {
+      'CallExpression[callee.name="createServerFn"]'(node) {
+        // Легальна форма: … → VariableDeclarator(id=Identifier) →
+        // VariableDeclaration → Program | ExportNamedDeclaration→Program.
+        // Виклик — корінь method-chain, тож піднімаємось крізь ланцюг
+        // .inputValidator(...).handler(...) до declarator-а.
+        let p = node.parent;
+        while (
+          p &&
+          ((p.type === 'MemberExpression' && p.object &&
+            (p.object === node || p.object.type === 'CallExpression')) ||
+            p.type === 'CallExpression')
+        ) p = p.parent;
+        const ok =
+          p?.type === 'VariableDeclarator' &&
+          p.id?.type === 'Identifier' &&
+          p.parent?.type === 'VariableDeclaration' &&
+          p.parent.kind === 'const' && // let/var компілятор теж не приймає
+          (p.parent.parent?.type === 'Program' ||
+            (p.parent.parent?.type === 'ExportNamedDeclaration' &&
+              p.parent.parent.parent?.type === 'Program'));
+        if (!ok) context.report({ node, messageId: 'notTopLevel' });
+      },
+    };
+  },
+};
+```
+
+- [ ] **Step 2: Підключити у `eslint.config.mjs`**
+
+Окремим блоком на `packages/simplycms/src/**/*.{ts,tsx}` +
+`packages/simplycms/routes/**/*.tsx` + `src/**/*.{ts,tsx}` (plugins:
+`simplycms-serverfn`, rule `'simplycms-serverfn/server-fn-top-level': 'error'`;
+окреме імʼя плагіна — щоб не зливати опції з `query-key-from-entity`).
+
+- [ ] **Step 3: Контролі**
+
+```bash
+pnpm lint                      # Expected: 0 errors (чинний код легальний)
+# НЕГАТИВНІ (по одному, кожен → FAIL з notTopLevel):
+#   function f() { const x = createServerFn({ method: 'GET' }); return x; }
+#   let y = createServerFn({ method: 'GET' });
+#   const o = { fn: createServerFn({ method: 'GET' }) };
+pnpm lint
+# Прибрати → 0 errors / 13 warnings
+```
+
+- [ ] **Step 4: Коміт**
+
+```bash
+git add eslint-rules/server-fn-top-level.mjs eslint.config.mjs
+git commit -m "test(v2-k3): гейт К3-4′ — createServerFn лише топ-рівневим const
+
+Компілятор Start вимагає top-level присвоєння (handleCreateServerFn:104),
+а fast-path для serverFn-файлів сканує лише топ-рівень — нетоплевел
+виклик не падає, а мовчки лишається нетрансформованим. Правило робить
+обидва режими гучними.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+# Частина 1 — authz-склейка (Task 5)
+
+**DoD частини 1:** `resolveRequestGrant`/`requireGrant` живуть у `simplycms/auth`, юніти зелені, `AuthzError` доїжджає як 403 (доведено юнітом на `setResponseStatus`).
+
+### Task 5: `resolveRequestGrant` + `requireGrant` (К3-13)
+
+**Files:**
+- Create: `packages/simplycms/src/auth/authz-request.ts`
+- Create: `packages/simplycms/src/auth/__tests__/authz-request.test.ts`
+- Modify: `packages/simplycms/src/auth/index.ts`
+
+**Interfaces:**
+- Consumes: `readSessionSubject(headers)` (`auth/session.ts`), `requireOperation(subject, op): AuthScope` і `AuthzError` (`auth/authz.ts`), `getRequest`/`setResponseStatus` (`@tanstack/react-start/server`).
+- Produces: `resolveRequestGrant(operation): Promise<RequestGrant>`; `requireGrant(operation): Promise<RequestGrant>` (те саме + 403 при відмові); `type RequestGrant = { subject: AuthzSubject; scope: AuthScope }`. Task 7 будує операції поверх `requireGrant`.
+
+🔴 НЕ писати `assertAllowed`-подібних void-обгорток: `requireOperation` вже
+існує і ПОВЕРТАЄ scope — викликач мусить бачити `'own'` (докблок
+`authz.ts:110-118`). Склейка лише додає «субʼєкт із запиту» і HTTP-статус.
+
+- [ ] **Step 1: Падаючий тест**
+
+```ts
+// packages/simplycms/src/auth/__tests__/authz-request.test.ts
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Патерн мока Start-server — як у storefront-routes/__tests__/revalidate-theme.test.ts
+const setResponseStatus = vi.fn();
+vi.mock('@tanstack/react-start/server', () => ({
+  getRequest: () => ({ headers: new Headers() }),
+  setResponseStatus: (...a: unknown[]) => setResponseStatus(...a),
+}));
+
+let subject: unknown = null;
+vi.mock('../session', () => ({
+  readSessionSubject: vi.fn(async () => subject),
+}));
+
+import { AuthzError } from '../authz';
+import { requireGrant, resolveRequestGrant } from '../authz-request';
+
+describe('authz-request (К3-13)', () => {
+  beforeEach(() => { subject = null; setResponseStatus.mockClear(); });
+
+  it('анонім на catalog.write — AuthzError', async () => {
+    await expect(resolveRequestGrant('catalog.write')).rejects.toBeInstanceOf(AuthzError);
+  });
+
+  it('admin на catalog.write — scope any і той самий субʼєкт', async () => {
+    subject = { userId: 'u1', roles: ['admin'], email: 'a@b', name: null };
+    const grant = await resolveRequestGrant('catalog.write');
+    expect(grant.scope).toBe('any');
+    expect(grant.subject.userId).toBe('u1');
+  });
+
+  it('user на order.read — scope own (склейка НЕ зʼїдає scope)', async () => {
+    subject = { userId: 'u2', roles: ['user'], email: 'c@d', name: null };
+    const grant = await resolveRequestGrant('order.read');
+    expect(grant.scope).toBe('own');
+  });
+
+  it('requireGrant при відмові ставить 403 ДО прокидання', async () => {
+    await expect(requireGrant('catalog.write')).rejects.toBeInstanceOf(AuthzError);
+    expect(setResponseStatus).toHaveBeenCalledWith(403);
+  });
+
+  it('requireGrant при дозволі статус не чіпає', async () => {
+    subject = { userId: 'u1', roles: ['admin'], email: 'a@b', name: null };
+    await requireGrant('catalog.write');
+    expect(setResponseStatus).not.toHaveBeenCalled();
+  });
+});
+```
+
+Run: `pnpm vitest run packages/simplycms/src/auth/__tests__/authz-request.test.ts`
+Expected: FAIL — модуля немає.
+
+- [ ] **Step 2: Реалізація**
+
+```ts
+// packages/simplycms/src/auth/authz-request.ts
+import { getRequest, setResponseStatus } from '@tanstack/react-start/server';
+import { AuthzError, requireOperation, type AuthScope, type AuthzSubject, type Operation } from './authz';
+import { readSessionSubject } from './session';
+
+/** Анонім: жодної ролі — матриця сама відмовляє всьому не-публічному. */
+const GUEST: AuthzSubject = { userId: null, roles: [] };
+
+export interface RequestGrant {
+  readonly subject: AuthzSubject;
+  readonly scope: AuthScope;
+}
+
+/**
+ * Сесія поточного запиту → дозволений scope операції (перший рубіж B5″).
+ *
+ * 🔴 Викликається строго ДО withActor: субʼєкт — із СЕСІЇ, ніколи з
+ * параметра клієнта; вкладених withActor не існує (readSessionSubject сам
+ * ходить у user_roles власною короткою транзакцією — тому цей виклик
+ * НЕ можна робити зсередини відкритої транзакції: другий pool.connect()
+ * усередині першої = self-deadlock при вичерпаному пулі).
+ *
+ * 🔴 Повертає scope, не void: викликач зобовʼязаний ПОБАЧИТИ 'own' і
+ * звузити запит (докблок requireOperation). Void-обгортки заборонені.
+ */
+export async function resolveRequestGrant(operation: Operation): Promise<RequestGrant> {
+  const subject = (await readSessionSubject(getRequest().headers)) ?? GUEST;
+  const scope = requireOperation(subject, operation); // кидає AuthzError
+  return { subject, scope };
+}
+
+/**
+ * Те саме + контракт помилок К3-13: 403 ставиться ДО прокидання, бо
+ * сервер бере статус із getResponse().status ?? 500 у момент catch —
+ * не з полів Error. Response не кидати ніколи: клієнтський fetcher
+ * резолвить його json-тіло як успіх. Клієнт розрізняє відмову за
+ * error.name === 'AuthzError' (seroval не зберігає instanceof).
+ */
+export async function requireGrant(operation: Operation): Promise<RequestGrant> {
+  try {
+    return await resolveRequestGrant(operation);
+  } catch (error) {
+    if (error instanceof AuthzError) setResponseStatus(403);
+    throw error;
+  }
+}
+```
+
+У `auth/index.ts` (блок session/authz-експортів):
+`export { requireGrant, resolveRequestGrant } from './authz-request';`
+`export type { RequestGrant } from './authz-request';`
+
+- [ ] **Step 3: Зелений прогін + лінт + коміт**
+
+Run: `pnpm vitest run packages/simplycms/src/auth/__tests__/authz-request.test.ts` → PASS 5/5; `pnpm lint && pnpm typecheck` → PASS.
+
+```bash
+git add packages/simplycms/src/auth
+git commit -m "feat(v2-k3): resolveRequestGrant/requireGrant — перше підключення requireOperation (К3-13)
+
+Склейка сесія→scope над НАЯВНИМИ requireOperation і dbRoleForSubject
+(жоден serverFn досі їх не кликав). requireGrant ставить 403 ДО throw —
+сервер бере статус із response.status у момент catch. Void-дублікатів
+на кшталт assertAllowed немає: scope мусить доїхати до викликача.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+# Частина 2 — серверний шар (Tasks 6–8)
+
+**DoD частини 2:** серверний шар доводиться `test:schema` і юнітами БЕЗ жодного клієнтського коду; `pnpm build:packages && pnpm test:packaging && pnpm pilot:pack` зелені (Gate C бачить новий entry).
+
+### Task 6: Тека `admin-server`, тір-зона, `subset.ts`
+
+**Files:**
+- Create: `packages/simplycms/src/admin-server/subset.ts`
+- Create: `packages/simplycms/src/admin-server/__tests__/subset.test.ts`
+- Modify: `eslint.tier-zones.mjs`, `tests/tier-boundary.test.ts`
+
+**Interfaces:**
+- Produces: `toDrizzleSubset(table, allow, input)` → `{ where?, orderBy?, limit?, offset? }`; `subsetInputSchema` (Zod, СТРОГИЙ — для inputValidator list-serverFn); типи `SubsetAllow`, `SubsetInput`.
+
+🔴 `subset.ts` — єдина причина існування фабрики: трансляція предикатів у
+SQL з allowlist в ОДНОМУ місці (34 копії = 34 шанси на інʼєкцію; той
+самий мотив, що `plugin-sdk/server/guard.ts`).
+
+- [ ] **Step 1: Тір-зона (ДО коду — щоб перший же файл писався під нею)**
+
+У `eslint.tier-zones.mjs`, поруч із `['src/storefront', 2, …]`:
+
+```js
+// Серверний шар адмінки (Е1б) — T2. Winяток upward той самий, що в
+// storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
+// requireGrant (auth). Ширшого не давати.
+['src/admin-server', 2, 'admin-server', ['db', 'auth']],
+```
+
+У `tests/tier-boundary.test.ts` → `./tier-boundary/zones` додати зону:
+forbidden-приклад `simplycms/storefront` (T2 поза винятком), allowed —
+`simplycms/db` (виняток) — за формою сусідніх записів ZONES.
+
+Run: `pnpm vitest run tests/tier-boundary.test.ts` → PASS (зона ловить і bare, і відносну форму).
+
+- [ ] **Step 2: Падаючий тест subset**
 
 ```ts
 // packages/simplycms/src/admin-server/__tests__/subset.test.ts
 import { describe, expect, it } from 'vitest';
 import { orderStatuses } from 'simplycms/schema';
-import { toDrizzleSubset } from '../subset';
+import { subsetInputSchema, toDrizzleSubset } from '../subset';
 
 const ALLOW = { filterable: ['code', 'isDefault'], sortable: ['sortOrder'] } as const;
 
-describe('subset: трансляція loadSubsetOptions у Drizzle', () => {
+describe('subset: трансляція предикатів колекції у Drizzle', () => {
   it('колонка поза allowlist — кидає', () => {
-    expect(() =>
-      toDrizzleSubset(orderStatuses, ALLOW, {
-        filters: [{ field: ['name'], operator: 'eq', value: 'x' }],
-      }),
-    ).toThrow(/name/);
+    expect(() => toDrizzleSubset(orderStatuses, ALLOW, {
+      filters: [{ field: ['name'], operator: 'eq', value: 'x' }],
+    })).toThrow(/name/);
   });
 
   it('сортування поза allowlist — кидає', () => {
-    expect(() =>
-      toDrizzleSubset(orderStatuses, ALLOW, {
-        sorts: [{ field: ['createdAt'], direction: 'asc' }],
-      }),
-    ).toThrow(/createdAt/);
+    expect(() => toDrizzleSubset(orderStatuses, ALLOW, {
+      sorts: [{ field: ['createdAt'], direction: 'asc' }],
+    })).toThrow(/createdAt/);
   });
 
-  it('дозволена колонка проходить', () => {
+  it('невідомий оператор — кидає, не ігнорується', () => {
+    expect(() => toDrizzleSubset(orderStatuses, ALLOW, {
+      filters: [{ field: ['code'], operator: 'like', value: 'x' }],
+    })).toThrow(/like/);
+  });
+
+  it('дозволене — проходить; порожнє — порожній subset', () => {
     const s = toDrizzleSubset(orderStatuses, ALLOW, {
       filters: [{ field: ['code'], operator: 'eq', value: 'new' }],
       sorts: [{ field: ['sortOrder'], direction: 'asc' }],
@@ -496,19 +981,16 @@ describe('subset: трансляція loadSubsetOptions у Drizzle', () => {
     });
     expect(s.where).toBeDefined();
     expect(s.limit).toBe(10);
-  });
-
-  it('порожні опції — порожній subset, не помилка', () => {
-    // On-demand колекція може попросити все: це легальний стан.
     expect(toDrizzleSubset(orderStatuses, ALLOW, {}).where).toBeUndefined();
   });
 
-  it('невідомий оператор — кидає, а не ігнорується мовчки', () => {
-    expect(() =>
-      toDrizzleSubset(orderStatuses, ALLOW, {
-        filters: [{ field: ['code'], operator: 'like' as never, value: 'x' }],
-      }),
-    ).toThrow(/like/);
+  it('subsetInputSchema — строгий: limit обмежений, сміття не проходить', () => {
+    expect(subsetInputSchema.safeParse({ subset: { limit: 100_000 } }).success).toBe(false);
+    expect(subsetInputSchema.safeParse({ subset: { filters: 'x' } }).success).toBe(false);
+    expect(subsetInputSchema.safeParse({}).success).toBe(true);
+    expect(subsetInputSchema.safeParse({
+      subset: { filters: [{ field: ['code'], operator: 'eq', value: 'new' }], limit: 50 },
+    }).success).toBe(true);
   });
 });
 ```
@@ -516,25 +998,21 @@ describe('subset: трансляція loadSubsetOptions у Drizzle', () => {
 Run: `pnpm vitest run packages/simplycms/src/admin-server/__tests__/subset.test.ts`
 Expected: FAIL — модуля немає.
 
-- [ ] **Step 2: Написати `subset.ts`**
+- [ ] **Step 3: Реалізація**
 
 ```ts
 // packages/simplycms/src/admin-server/subset.ts
-import { and, asc, desc, eq, gt, gte, inArray, lt, lte, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, lt, lte, type SQL } from 'drizzle-orm';
 import type { Table } from 'drizzle-orm';
+import { z } from 'zod';
 
 /**
- * Трансляція предикатів колекції у Drizzle — з allowlist колонок.
- *
- * 🔴 Єдине місце, де рядок із клієнта стає частиною SQL. `field`
- * звіряється з дозволеним списком РЕСУРСУ (не зі схемою: дозволити
- * фільтр по всіх колонках означало б віддати клієнту повний доступ до
- * форми запиту), значення завжди йде параметром Drizzle.
- *
+ * Єдине місце, де рядок із клієнта стає частиною SQL. field звіряється з
+ * allowlist РЕСУРСУ (не зі схемою: фільтр по всіх колонках = повний
+ * контроль форми запиту клієнтом); значення завжди йде параметром.
  * Оператори — рівно ті, що вміє push-down query-collection
- * (`parseLoadSubsetOptions`): eq, gt, gte, lt, lte, in, and, or.
- * Невідомий оператор КИДАЄ: мовчазне ігнорування віддало б клієнту
- * ширший набір рядків, ніж він просив.
+ * (parseLoadSubsetOptions): eq, gt, gte, lt, lte, in. Невідомий — КИДАЄ.
+ * `or` свідомо відкладений до Е3 (каталог) — тут його не вмикати.
  */
 const OPERATORS = { eq, gt, gte, lt, lte, in: inArray } as const;
 
@@ -543,32 +1021,48 @@ export interface SubsetAllow {
   readonly sortable: readonly string[];
 }
 
-export interface SubsetInput {
-  filters?: readonly { field: readonly string[]; operator: string; value: unknown }[];
-  sorts?: readonly { field: readonly string[]; direction: 'asc' | 'desc' }[];
-  limit?: number;
-  offset?: number;
-}
+const filterSchema = z.object({
+  field: z.array(z.string().min(1)).min(1),
+  operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in']),
+  value: z.unknown(),
+});
+const sortSchema = z.object({
+  field: z.array(z.string().min(1)).min(1),
+  direction: z.enum(['asc', 'desc']),
+});
+
+/** Форма subset одного list-запиту. */
+export const subsetShapeSchema = z.object({
+  filters: z.array(filterSchema).max(20).optional(),
+  sorts: z.array(sortSchema).max(5).optional(),
+  // 🔴 limit обмежений: відкритий endpoint під адмін-роллю не сміє
+  // приймати «віддай мільйон» (закриває дірку z.unknown() старої редакції).
+  limit: z.number().int().positive().max(500).optional(),
+  offset: z.number().int().nonnegative().optional(),
+});
+export type SubsetInput = z.infer<typeof subsetShapeSchema>;
+
+/** Вхід list-serverFn: { subset? } — саме це йде в inputValidator. */
+export const subsetInputSchema = z.object({ subset: subsetShapeSchema.optional() });
+export type SubsetPayload = z.infer<typeof subsetInputSchema>;
 
 export function toDrizzleSubset(table: Table, allow: SubsetAllow, input: SubsetInput) {
   const columns = table as unknown as Record<string, never>;
 
   const conditions: SQL[] = (input.filters ?? []).map((f) => {
     const name = f.field.join('.');
-    if (!allow.filterable.includes(name)) {
+    if (!allow.filterable.includes(name))
       throw new Error(`[admin-server] фільтр по недозволеній колонці: ${name}`);
-    }
     const op = OPERATORS[f.operator as keyof typeof OPERATORS];
     if (!op) throw new Error(`[admin-server] невідомий оператор: ${f.operator}`);
-    return op(columns[name], f.value as never);
+    return op(columns[name] as never, f.value as never);
   });
 
   const orderBy = (input.sorts ?? []).map((s) => {
     const name = s.field.join('.');
-    if (!allow.sortable.includes(name)) {
+    if (!allow.sortable.includes(name))
       throw new Error(`[admin-server] сортування по недозволеній колонці: ${name}`);
-    }
-    return (s.direction === 'desc' ? desc : asc)(columns[name]);
+    return (s.direction === 'desc' ? desc : asc)(columns[name] as never);
   });
 
   return {
@@ -580,49 +1074,967 @@ export function toDrizzleSubset(table: Table, allow: SubsetAllow, input: SubsetI
 }
 ```
 
-🔴 `or` імпортовано, але поки не вживається — його ввімкне Е3 разом із
-складнішими фільтрами каталогу. Якщо лінт свариться на невживаний
-імпорт — прибрати й повернути в Е3.
+Run: тест → PASS 5/5. Потім `pnpm lint` → 0 errors (зона жива, файл під нею).
 
-Run: `pnpm vitest run packages/simplycms/src/admin-server/__tests__/subset.test.ts`
-Expected: PASS, 5/5.
+- [ ] **Step 4: Коміт**
 
-- [ ] **Step 3: Тір-зона T2**
+```bash
+git add packages/simplycms/src/admin-server eslint.tier-zones.mjs tests/tier-boundary.test.ts
+git commit -m "feat(v2-k3): admin-server (T2, виняток db+auth) + subset зі строгим Zod-входом
 
-У `eslint.tier-zones.mjs`, поруч із `['src/db', 2, 'db', []]`:
+Тір-зона — ПЕРЕД першим файлом теки. subset — єдине місце трансляції
+предикатів у SQL: allowlist колонок, закритий enum операторів, limit
+з межею (замість z.unknown() старої редакції). or — свідомо Е3.
 
-```js
-// Серверний шар адмінки (Е1б) — T2 поруч із `db`/`auth`: він теж
-// говорить із БД і теж стоїть над схемою. `db` у винятку `upward` —
-// єдиний канал до Postgres (`withActor`), як і в `auth`.
-['src/admin-server', 2, 'admin-server', ['db']],
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
-У `tests/tier-boundary.test.ts` — негативний контроль: імпорт із
-`admin-server` у щось вище тіру має валити лінт.
+---
 
-- [ ] **Step 4: Барель — лише serverFn**
+### Task 7: `defineAdminResource` — операції + схеми (К3-4′)
+
+**Files:**
+- Create: `packages/simplycms/src/admin-server/resource.ts`
+- Create: `packages/simplycms/src/admin-server/__tests__/resource.test.ts`
+
+**Interfaces:**
+- Consumes: `requireGrant` (`simplycms/auth`), `dbRoleForSubject` (`simplycms/auth`), `withActor` (`simplycms/db`), `toDrizzleSubset`/`subsetInputSchema` (Task 6), `createInsertSchema`/`createSelectSchema`/`createUpdateSchema` (`drizzle-zod`).
+- Produces: `defineAdminResource(config)` → `AdminResourceOps`:
+  - `list: (ctx: { data: SubsetPayload }) => Promise<Row[]>`
+  - `insert: (ctx: { data: InsertRow[] }) => Promise<Row[]>` — 🔴 масиви (batch)
+  - `update: (ctx: { data: { id: string; patch: Patch }[] }) => Promise<Row[]>`
+  - `remove: (ctx: { data: { id: string }[] }) => Promise<{ count: number }>`
+  - схеми: `subsetSchema`, `insertSchema` (масив, id обовʼязковий), `updateSchema`, `removeSchema`, `rowSchema`
+  Кожна операція — ГОТОВИЙ handler для `.handler(ops.х)` (сигнатура `({ data }) => …`).
+
+🔴 serverFn фабрика НЕ створює (К3-4′) — Task 8 оголошує їх явно.
+🔴 Compile-time exhaustiveness — вимога спеки, БЕЗ `as never`-обходу.
+
+- [ ] **Step 1: Падаючий тест**
+
+```ts
+// packages/simplycms/src/admin-server/__tests__/resource.test.ts
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { orderStatuses } from 'simplycms/schema';
+
+// Операції торкаються auth/db лише в рантаймі хендлера — мокаємо обидва
+// канали, форму схем перевіряємо без БД.
+vi.mock('simplycms/auth', async (orig) => ({
+  ...(await orig()),
+  requireGrant: vi.fn(async () => ({ subject: { userId: 'u1', roles: ['admin'] }, scope: 'any' })),
+}));
+vi.mock('simplycms/db', () => ({
+  withActor: vi.fn(async (_actor, fn) => fn({} as never, {} as never)),
+}));
+
+import { defineAdminResource } from '../resource';
+
+const ops = defineAdminResource({
+  entity: 'order_statuses',
+  table: orderStatuses,
+  operation: 'catalog.write',
+  mode: 'eager',
+  filterable: ['code', 'isDefault'],
+  sortable: ['sortOrder', 'name'],
+  defaultOrder: { column: 'sortOrder', direction: 'asc' },
+  writable: ['name', 'code', 'color', 'sortOrder'],
+  readonly: ['id', 'isDefault', 'createdAt'],
+});
+
+describe('defineAdminResource (К3-4′)', () => {
+  it("scope 'own' — фабрична операція кидає, а не мовчки віддає все", async () => {
+    // Рев'ю р2: втрата scope нейтралізувала б resolveRequestGrant для
+    // Е3–Е6. Фабрика мусить бути admin-only fail-loud.
+    const { requireGrant } = await import('simplycms/auth');
+    (requireGrant as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      subject: { userId: 'u2', roles: ['user'] }, scope: 'own',
+    });
+    await expect(ops.list({ data: {} })).rejects.toThrow(/own/);
+  });
+
+  it('віддає операції-хендлери і схеми, НЕ serverFn', () => {
+    for (const k of ['list', 'insert', 'update', 'remove'] as const)
+      expect(typeof ops[k]).toBe('function');
+    for (const k of ['subsetSchema', 'insertSchema', 'updateSchema', 'removeSchema', 'rowSchema'] as const)
+      expect(ops[k]).toBeDefined();
+    // serverFn мав би .url/__executeServer — операція plain-функція без них.
+    expect('url' in (ops.list as object)).toBe(false);
+  });
+
+  it('insertSchema — масив, id обовʼязковий (Е0), readonly зрізаються', () => {
+    const noId = ops.insertSchema.safeParse([{ name: 'X', code: 'x' }]);
+    expect(noId.success).toBe(false);
+    const withExtra = ops.insertSchema.safeParse([
+      { id: crypto.randomUUID(), name: 'X', code: 'x', isDefault: true, createdAt: 'boom' },
+    ]);
+    // strip: readonly-ключі не доїжджають у БД навіть якщо прислані.
+    expect(withExtra.success).toBe(true);
+    if (withExtra.success) {
+      expect('isDefault' in withExtra.data[0]).toBe(false);
+      expect('createdAt' in withExtra.data[0]).toBe(false);
+    }
+  });
+
+  it('updateSchema: patch не приймає id і readonly', () => {
+    const parsed = ops.updateSchema.safeParse([
+      { id: crypto.randomUUID(), patch: { name: 'Y', isDefault: true } },
+    ]);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect('isDefault' in parsed.data[0].patch).toBe(false);
+  });
+
+  it('exhaustiveness: пропуск І перетин — помилки ТИПУ', () => {
+    // Пропущений 'color' → __missingColumns: "color".
+    // @ts-expect-error — color не покритий
+    defineAdminResource({
+      entity: 'order_statuses', table: orderStatuses, operation: 'catalog.write',
+      mode: 'eager', filterable: [], sortable: [],
+      writable: ['name', 'code', 'sortOrder'],
+      readonly: ['id', 'isDefault', 'createdAt'],
+    });
+    // 'createdAt' в ОБОХ списках → __overlappingColumns: "createdAt"
+    // (знахідка рев'ю ред.2: перетин давав клієнту право перезаписати
+    // мітку створення, а тип мовчав).
+    // @ts-expect-error — createdAt і writable, і readonly
+    defineAdminResource({
+      entity: 'order_statuses', table: orderStatuses, operation: 'catalog.write',
+      mode: 'eager', filterable: [], sortable: [],
+      writable: ['name', 'code', 'color', 'sortOrder', 'createdAt'],
+      readonly: ['id', 'isDefault', 'createdAt'],
+    });
+    expectTypeOf(ops.list).toBeFunction();
+  });
+});
+```
+
+Run: `pnpm vitest run packages/simplycms/src/admin-server/__tests__/resource.test.ts`
+Expected: FAIL — модуля немає.
+
+- [ ] **Step 2: Реалізація**
+
+```ts
+// packages/simplycms/src/admin-server/resource.ts
+import { eq, inArray, asc, desc, type Table } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
+import { requireGrant, dbRoleForSubject, type Operation } from 'simplycms/auth';
+import { withActor, type ActorDb } from 'simplycms/db';
+import { subsetInputSchema, toDrizzleSubset, type SubsetAllow, type SubsetPayload } from './subset';
+
+/** Імена колонок Drizzle-таблиці (TS-ключі, camelCase). */
+type ColumnName<T extends Table> = Extract<keyof T['_']['columns'], string>;
+
+/**
+ * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
+ * компілятор Start вимагає топ-рівневих const (а fast-path нетоплевел
+ * виклик мовчки пропускає) — обгортки пише Task-модуль сутності явно.
+ *
+ * 🔴 Розріз «фабрика vs іменована операція» — ПО ОПЕРАЦІЯХ: усе з
+ * доменним інваріантом (setDefault, reorder, remove-з-перевіркою)
+ * пишеться руками в operations/. DSL запитів немає — складніше за
+ * subset = useLiveQuery на клієнті або іменована операція.
+ *
+ * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути у
+ * writable АБО readonly — інакше конфіг не типізується (фантомне поле
+ * __missingColumns називає пропущені).
+ */
+export function defineAdminResource<
+  T extends Table,
+  const W extends ColumnName<T>,
+  const R extends ColumnName<T>,
+>(
+  config: {
+    entity: string;
+    table: T;
+    operation: Operation;
+    mode: 'eager' | 'on-demand';
+    filterable: readonly ColumnName<T>[];
+    sortable: readonly ColumnName<T>[];
+    defaultOrder?: { column: ColumnName<T>; direction: 'asc' | 'desc' };
+    writable: readonly W[];
+    readonly: readonly R[];
+  } & ([Exclude<ColumnName<T>, W | R>] extends [never]
+    ? unknown
+    : { __missingColumns: Exclude<ColumnName<T>, W | R> }) &
+    // 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable
+    //   виграв би мовчки (напр., createdAt став би перезаписуваним).
+    ([Extract<W, R>] extends [never]
+      ? unknown
+      : { __overlappingColumns: Extract<W, R> }),
+) {
+  const allow: SubsetAllow = { filterable: config.filterable, sortable: config.sortable };
+  const columns = config.table as unknown as Record<string, never>;
+  const pickWritable = Object.fromEntries(config.writable.map((c) => [c, true])) as {
+    [K in W]: true;
+  };
+
+  const rowSchema = createSelectSchema(config.table);
+  const insertRowSchema = createInsertSchema(config.table)
+    .pick(pickWritable)
+    .extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
+  const patchSchema = createUpdateSchema(config.table).pick(pickWritable);
+
+  const insertSchema = z.array(insertRowSchema).min(1).max(100);
+  const updateSchema = z.array(z.object({ id: z.uuid(), patch: patchSchema })).min(1).max(100);
+  const removeSchema = z.array(z.object({ id: z.uuid() })).min(1).max(100);
+
+  /**
+   * Спільна склейка К3-13: перший рубіж → роль від субʼєкта → транзакція.
+   *
+   * 🔴 Grant НЕ відкидається (рев'ю р2: `const { subject } = …` зʼїдав
+   * scope, який Task 5 спеціально повертає). Фабрика обслуговує ЛИШЕ
+   * admin-поверхню: scope 'own' тут структурно непідтримуваний (немає
+   * owner-колонки), тож fail-loud — 'own'-ресурси (orders/profiles у
+   * Е4+) пишуться іменованими операціями, які scope ЧЕСНО звужують.
+   */
+  const run = async <Out>(
+    fn: (db: ActorDb, grant: Awaited<ReturnType<typeof requireGrant>>) => Promise<Out>,
+  ): Promise<Out> => {
+    const grant = await requireGrant(config.operation);
+    if (grant.scope !== 'any')
+      throw new Error(
+        `[admin-server] ${config.entity}: операція ${config.operation} дала scope '${grant.scope}' — фабрика обслуговує лише admin-scope 'any'; own-звуження пишеться іменованою операцією`,
+      );
+    return withActor(
+      { role: dbRoleForSubject(grant.subject), userId: grant.subject.userId ?? undefined },
+      (db) => fn(db, grant),
+    );
+  };
+
+  return {
+    entity: config.entity,
+    mode: config.mode,
+    rowSchema, insertSchema, updateSchema, removeSchema,
+    subsetSchema: subsetInputSchema,
+
+    list: async ({ data }: { data: SubsetPayload }) =>
+      run(async (db, _grant) => {
+        const s = toDrizzleSubset(config.table, allow, data.subset ?? {});
+        let q = db.select().from(config.table as never).$dynamic();
+        if (s.where) q = q.where(s.where);
+        if (s.orderBy) q = q.orderBy(...s.orderBy);
+        else if (config.defaultOrder) {
+          // 🔴 defaultOrder ЗАСТОСОВУЄТЬСЯ (мертвий параметр старої редакції).
+          const col = columns[config.defaultOrder.column];
+          q = q.orderBy(config.defaultOrder.direction === 'desc' ? desc(col) : asc(col));
+        }
+        if (s.limit !== undefined) q = q.limit(s.limit);
+        if (s.offset !== undefined) q = q.offset(s.offset);
+        return q;
+      }),
+
+    insert: async ({ data }: { data: z.infer<typeof insertSchema> }) =>
+      run(async (db) =>
+        // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
+        // мутацій «підтвердяться» локально без запису в БД.
+        db.insert(config.table).values(data as never).returning(),
+      ),
+
+    update: async ({ data }: { data: z.infer<typeof updateSchema> }) =>
+      run(async (db) => {
+        const out = [];
+        for (const { id, patch } of data) {
+          const [row] = await db
+            .update(config.table).set(patch as never)
+            .where(eq(columns['id'], id as never)).returning();
+          if (!row) throw new Error(`[admin-server] ${config.entity}: рядка ${id} не існує`);
+          out.push(row);
+        }
+        return out;
+      }),
+
+    remove: async ({ data }: { data: z.infer<typeof removeSchema> }) =>
+      run(async (db) => {
+        const ids = data.map((d) => d.id);
+        const rows = await db
+          .delete(config.table)
+          .where(inArray(columns['id'], ids as never)).returning();
+        return { count: rows.length };
+      }),
+  };
+}
+
+export type AdminResourceOps<T extends Table> = ReturnType<typeof defineAdminResource<T, ColumnName<T>, ColumnName<T>>>;
+```
+
+🔴 `z.uuid()` — форма Zod 4 (не `z.string().uuid()`); якщо typecheck
+свариться — звірити з фактичним експортом встановленого zod і вжити чинну.
+
+Run: тест → PASS 4/4; `pnpm typecheck` → PASS (включно з `@ts-expect-error`-кейсом).
+
+- [ ] **Step 3: Коміт**
+
+```bash
+git add packages/simplycms/src/admin-server
+git commit -m "feat(v2-k3): defineAdminResource — операції і схеми, БЕЗ serverFn (К3-4′)
+
+Фабрика віддає готові хендлери ({data})=>… і drizzle-zod-схеми; batch
+масивами; defaultOrder застосований; exhaustiveness колонок — умовним
+типом без as never; склейка requireGrant→dbRoleForSubject→withActor —
+одна на всі операції, auth строго ДО транзакції (К3-13).
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 8: `order_statuses` — ops, іменовані операції, явні serverFn, entry
+
+**Files:**
+- Create: `packages/simplycms/src/admin-server/resources/order-statuses.ts`
+- Create: `packages/simplycms/src/admin-server/operations/order-status-default.ts`
+- Create: `packages/simplycms/src/admin-server/operations/order-status-reorder.ts`
+- Create: `packages/simplycms/src/admin-server/operations/order-status-remove.ts`
+- Create: `packages/simplycms/src/admin-server/index.ts`
+- Create: `packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts`
+- Modify: `packages/simplycms/package.json` (exports + publishConfig `./admin-server`)
+- Modify: `packages/simplycms/tsup.config.ts`
+- Modify: `scripts/pilot-pack/gate-c.mjs`
+
+**Interfaces:**
+- Consumes: Task 7 (`defineAdminResource`), Task 5 (`requireGrant`), Task 0 (індекс `idx_order_statuses_single_default`).
+- Produces (для Task 9/10): serverFn з `simplycms/admin-server`:
+  `listOrderStatuses({ data: SubsetPayload })` · `insertOrderStatuses({ data: InsertRow[] })` · `updateOrderStatuses({ data: {id,patch}[] })` · `removeOrderStatuses({ data: {id}[] })` · `setDefaultOrderStatus({ data: { id } })` · `reorderOrderStatus({ data: { id, direction: 'up'|'down' } })`.
+
+🔴 **Розріз по інваріантах** (критерій К3-4′): `isDefault` НЕ у `writable`
+(зміна дефолту — лише `setDefault`); `remove` теж іменований — «не
+видалити останній дефолт» тримається сьогодні лише UI-`disabled`, а
+частковий індекс забороняє ДВА дефолти, не НУЛЬ; `reorder` — swap двох
+рядків в одній транзакції (стара сторінка робила два запити з браузера).
+
+- [ ] **Step 1: Ресурс (server-only)**
+
+```ts
+// packages/simplycms/src/admin-server/resources/order-statuses.ts
+import { orderStatuses } from 'simplycms/schema';
+import { ENTITY } from 'simplycms/contracts/entities';
+import { defineAdminResource } from '../resource';
+
+/**
+ * 🔴 isDefault — у readonly: інваріант «дефолт рівно один» не проходить
+ * через generic-write (форма сторінки має чекбокс — він кличе setDefault
+ * ОКРЕМИМ викликом після insert/update). sortOrder — writable: клієнт
+ * (eager-колекція = повна копія) рахує max+1 сам.
+ */
+export const orderStatusesOps = defineAdminResource({
+  entity: ENTITY.orderStatuses,
+  table: orderStatuses,
+  operation: 'catalog.write',
+  mode: 'eager',
+  filterable: ['code', 'isDefault'],
+  sortable: ['sortOrder', 'name'],
+  defaultOrder: { column: 'sortOrder', direction: 'asc' },
+  writable: ['name', 'code', 'color', 'sortOrder'],
+  readonly: ['id', 'isDefault', 'createdAt'],
+});
+```
+
+- [ ] **Step 2: Іменовані операції (server-only; кожна — готовий handler)**
+
+```ts
+// packages/simplycms/src/admin-server/operations/order-status-default.ts
+import { eq, ne, and } from 'drizzle-orm';
+import { z } from 'zod';
+import { orderStatuses } from 'simplycms/schema';
+import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
+import { withActor } from 'simplycms/db';
+
+export const setDefaultInput = z.object({ id: z.uuid() });
+
+/**
+ * Дефолт рівно один. 🔴 Порядок під частковим unique-індексом (Task 0):
+ * СПОЧАТКУ зняти з інших, ПОТІМ поставити цільовий — зворотний порядок
+ * дав би два true одночасно і 23505. Вікна «нуль дефолтів» назовні немає:
+ * обидва кроки в одній транзакції withActor; неіснуючий id → returning
+ * порожній → throw → ROLLBACK повертає і знятий прапорець.
+ */
+export const setDefaultOrderStatusOp = async ({ data }: { data: z.infer<typeof setDefaultInput> }) => {
+  const { subject } = await requireGrant('catalog.write');
+  return withActor({ role: dbRoleForSubject(subject), userId: subject.userId ?? undefined }, async (db) => {
+    await db.update(orderStatuses).set({ isDefault: false })
+      .where(and(eq(orderStatuses.isDefault, true), ne(orderStatuses.id, data.id)));
+    const [row] = await db.update(orderStatuses).set({ isDefault: true })
+      .where(eq(orderStatuses.id, data.id)).returning();
+    if (!row) throw new Error(`[admin-server] статусу ${data.id} не існує`);
+    return row;
+  });
+};
+```
+
+```ts
+// packages/simplycms/src/admin-server/operations/order-status-reorder.ts
+import { asc, desc, eq, gt, lt } from 'drizzle-orm';
+import { z } from 'zod';
+import { orderStatuses } from 'simplycms/schema';
+import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
+import { withActor } from 'simplycms/db';
+
+export const reorderInput = z.object({ id: z.uuid(), direction: z.enum(['up', 'down']) });
+
+/**
+ * Swap sort_order із сусідом — В ОДНІЙ транзакції (стара сторінка робила
+ * два запити з браузера: перший пройшов/другий упав = два однакові
+ * sort_order). Сусід шукається В БД за фактичним sort_order, не в
+ * клієнтському кеші. Краю (немає сусіда) — no-op, повертає обидва
+ * незмінені рядки порожнім масивом swap.
+ */
+export const reorderOrderStatusOp = async ({ data }: { data: z.infer<typeof reorderInput> }) => {
+  const { subject } = await requireGrant('catalog.write');
+  return withActor({ role: dbRoleForSubject(subject), userId: subject.userId ?? undefined }, async (db) => {
+    // FOR UPDATE (рев'ю р2): конкурентні overlapping-swap без локів могли
+    // б лишити дубльовані sort_order.
+    const [current] = await db.select().from(orderStatuses)
+      .where(eq(orderStatuses.id, data.id)).for('update');
+    if (!current) throw new Error(`[admin-server] статусу ${data.id} не існує`);
+    const [neighbor] = await db.select().from(orderStatuses)
+      .where(data.direction === 'up'
+        ? lt(orderStatuses.sortOrder, current.sortOrder)
+        : gt(orderStatuses.sortOrder, current.sortOrder))
+      .orderBy(data.direction === 'up' ? desc(orderStatuses.sortOrder) : asc(orderStatuses.sortOrder))
+      .limit(1).for('update');
+    if (!neighbor) return { swapped: [] as (typeof current)[] };
+    const swapped = [
+      (await db.update(orderStatuses).set({ sortOrder: neighbor.sortOrder })
+        .where(eq(orderStatuses.id, current.id)).returning())[0],
+      (await db.update(orderStatuses).set({ sortOrder: current.sortOrder })
+        .where(eq(orderStatuses.id, neighbor.id)).returning())[0],
+    ];
+    return { swapped };
+  });
+};
+```
+
+```ts
+// packages/simplycms/src/admin-server/operations/order-status-remove.ts
+import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { orderStatuses } from 'simplycms/schema';
+import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
+import { withActor } from 'simplycms/db';
+
+export const removeStatusInput = z.object({ id: z.uuid() });
+export const removeManyInput = z.array(removeStatusInput).min(1).max(100);
+
+/**
+ * 🔴 remove для ЦІЄЇ сутності — іменований: «не видалити дефолтний» —
+ * доменний інваріант, який частковий індекс не покриває (він забороняє
+ * ДВА дефолти, не НУЛЬ), а сьогодні його тримає лише disabled-кнопка UI.
+ *
+ * 🔴 АТОМАРНО і без TOCTOU (рев'ю р2): один requireGrant, ОДНА
+ * транзакція на весь batch; рядки беруться `FOR UPDATE` — конкурентний
+ * setDefault чекає на лок і не зробить рядок дефолтним між перевіркою і
+ * delete; будь-яка відмова відкочує ВЕСЬ batch — БД і оптимістичний стан
+ * колекції не розходяться (TanStack DB теж відкочує транзакцію цілком).
+ */
+export const removeManyOrderStatusesOp = async ({ data }: { data: z.infer<typeof removeManyInput> }) => {
+  const { subject } = await requireGrant('catalog.write');
+  return withActor({ role: dbRoleForSubject(subject), userId: subject.userId ?? undefined }, async (db) => {
+    const ids = data.map((d) => d.id);
+    const rows = await db.select().from(orderStatuses)
+      .where(inArray(orderStatuses.id, ids)).for('update');
+    if (rows.length !== ids.length) {
+      const found = new Set(rows.map((r) => r.id));
+      const missing = ids.filter((id) => !found.has(id));
+      throw new Error(`[admin-server] статусів не існує: ${missing.join(', ')}`);
+    }
+    const def = rows.find((r) => r.isDefault);
+    if (def) throw new Error('[admin-server] дефолтний статус видалити не можна — призначте інший дефолт');
+    const deleted = await db.delete(orderStatuses)
+      .where(inArray(orderStatuses.id, ids)).returning();
+    return { count: deleted.length };
+  });
+};
+```
+
+- [ ] **Step 3: `impl`-барель нутрощів + ЄДИНИЙ serverFn-модуль (К3-4′/К3-9′)**
+
+```ts
+// packages/simplycms/src/admin-server/impl.ts
+/**
+ * 🔴 Server-only барель нутрощів — ДЗЕРКАЛО механіки
+ * `storefront-routes/server/*` ↔ `storefront/loaders`: index.ts імпортує
+ * звідси BARE-специфікатором `simplycms/admin-server/impl`, tsup лишає
+ * його зовнішнім, тож у dist це ОКРЕМИЙ модуль. Саме на цьому тримається
+ * розрізнювальна здатність Gate C: нетрансформований index тягне impl —
+ * і payload-маркер червоніє; трансформований стаб імпорту не має (DCE).
+ * Однаковий префікс id стаба й нутрощів такої здатності не дає — це
+ * знахідка рев'ю ред.2.
+ */
+export { orderStatusesOps } from './resources/order-statuses';
+export { setDefaultInput, setDefaultOrderStatusOp } from './operations/order-status-default';
+export { reorderInput, reorderOrderStatusOp } from './operations/order-status-reorder';
+export {
+  removeStatusInput, removeManyInput, removeManyOrderStatusesOp,
+} from './operations/order-status-remove';
+```
 
 ```ts
 // packages/simplycms/src/admin-server/index.ts
+import { createServerFn } from '@tanstack/react-start';
+// 🔴 BARE-специфікатор, не './impl': відносний імпорт tsup заінлайнив би,
+// і розрізнення «стаб vs нетрансформований» у dist зникло б (див. impl.ts).
+import {
+  orderStatusesOps,
+  setDefaultInput, setDefaultOrderStatusOp,
+  reorderInput, reorderOrderStatusOp,
+  removeManyInput, removeManyOrderStatusesOp,
+} from 'simplycms/admin-server/impl';
+
 /**
- * Публічна поверхня серверного шару адмінки.
- *
- * 🔴 Тут ЛИШЕ serverFn. Живий не-serverFn експорт поруч із ними тягне
- * drizzle і пул Postgres у клієнтський бандл: трансформація Start
- * вирізає тіла хендлерів `createServerFn`, і їхні серверні імпорти
- * зникають, а звичайна функція такого імунітету не має. Спіймано Gate C
- * (`storefront-routes/server/is-admin.ts:17-26`).
- *
- * `subset.ts` і `resource.ts` НЕ реекспортуються — вони внутрішні.
+ * 🔴 Публічна поверхня admin-server: ЛИШЕ serverFn (К3-9′ п.1). Жодного
+ * живого не-serverFn експорту: клієнтська трансформація Start вирізає
+ * inputValidator і handler та чистить осиротілі імпорти DCE-проходом —
+ * але лише доки їх не тримає інший живий експорт. Схеми/операції назовні
+ * НЕ реекспортуються.
  */
-export * from './resources/order-statuses';
-export * from './operations/order-status-default';
+export const listOrderStatuses = createServerFn({ method: 'GET' })
+  .inputValidator(orderStatusesOps.subsetSchema)
+  .handler(orderStatusesOps.list);
+
+export const insertOrderStatuses = createServerFn({ method: 'POST' })
+  .inputValidator(orderStatusesOps.insertSchema)
+  .handler(orderStatusesOps.insert);
+
+export const updateOrderStatuses = createServerFn({ method: 'POST' })
+  .inputValidator(orderStatusesOps.updateSchema)
+  .handler(orderStatusesOps.update);
+
+// 🔴 remove ЦІЄЇ сутності — guarded-операція, не фабричний ops.remove:
+// «не видалити дефолтний» — доменний інваріант (критерій К3-4′).
+export const removeOrderStatuses = createServerFn({ method: 'POST' })
+  .inputValidator(removeManyInput)
+  .handler(removeManyOrderStatusesOp);
+
+export const setDefaultOrderStatus = createServerFn({ method: 'POST' })
+  .inputValidator(setDefaultInput)
+  .handler(setDefaultOrderStatusOp);
+
+export const reorderOrderStatus = createServerFn({ method: 'POST' })
+  .inputValidator(reorderInput)
+  .handler(reorderOrderStatusOp);
 ```
 
-- [ ] **Step 5: Субшлях, tsup, гейти**
+- [ ] **Step 4: Інтеграційні тести проти живої БД — ОПЕРАЦІЙ, не serverFn**
 
-Обидві exports-мапи (`./admin-server`), явний патерн у профілі tsup.
+```ts
+// packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts
+// Шапка: resolveHarness → createTempDatabase → applySqlFiles(канон) →
+// process.env.DATABASE_URL = withUser(dbUrl,'app_runtime') → afterAll із
+// closeDbPool() ПЕРШИМ (точна копія패 патерну aggregate-deps.test.ts).
+// 🔴 serverFn тут не викликаються (getRequest без ALS падає) — мокаємо
+// requireGrant модульним моком і кличемо operations/ops напряму:
+import { vi } from 'vitest';
+// (мок ОГОЛОШУЄТЬСЯ до імпортів операцій — vitest hoist-ить vi.mock)
+vi.mock('simplycms/auth', async (orig) => ({
+  ...(await orig()),
+  requireGrant: vi.fn(async () => ({ subject: { userId: null, roles: ['admin'] }, scope: 'any' })),
+}));
+
+import {
+  orderStatusesOps, setDefaultOrderStatusOp,
+  reorderOrderStatusOp, removeManyOrderStatusesOp,
+} from 'simplycms/admin-server/impl';
+// 🔴 impl — службовий server-only субшлях (дзеркало ./storefront/loaders):
+// у тестах харнеса легальний; клієнтський код його не імпортує ніколи
+// (Gate C: payload-маркер).
+
+describe('order_statuses: операції проти живої БД', () => {
+  it('setDefault переносить прапорець в одній транзакції', async () => {
+    const before = await queryRows(dbUrl, `select id, is_default from public.order_statuses order by sort_order`);
+    const target = before.find((r) => !r.is_default)!;
+    await setDefaultOrderStatusOp({ data: { id: target.id } });
+    const after = await queryRows(dbUrl, `select id, is_default from public.order_statuses`);
+    expect(after.filter((r) => r.is_default)).toHaveLength(1);
+    expect(after.find((r) => r.is_default)!.id).toBe(target.id);
+  });
+
+  it('setDefault на неіснуючий id — магазин НЕ лишається без дефолту', async () => {
+    await expect(setDefaultOrderStatusOp({ data: { id: crypto.randomUUID() } })).rejects.toThrow();
+    const after = await queryRows(dbUrl, `select is_default from public.order_statuses`);
+    expect(after.filter((r) => r.is_default)).toHaveLength(1);
+  });
+
+  it('reorder свапає сусідів; на краю — no-op', async () => {
+    const list = await queryRows(dbUrl, `select id, sort_order from public.order_statuses order by sort_order`);
+    await reorderOrderStatusOp({ data: { id: list[1].id, direction: 'up' } });
+    const after = await queryRows(dbUrl, `select id from public.order_statuses order by sort_order`);
+    expect(after[0].id).toBe(list[1].id);
+    const top = await reorderOrderStatusOp({ data: { id: list[1].id, direction: 'up' } });
+    expect(top.swapped).toHaveLength(0);
+  });
+
+  it('remove: batch [звичайний, дефолтний] — АТОМАРНА відмова, нічого не видалено', async () => {
+    const rows = await queryRows(dbUrl, `select id, is_default from public.order_statuses`);
+    const def = rows.find((r) => r.is_default)!;
+    const plain = rows.find((r) => !r.is_default)!;
+    await expect(
+      removeManyOrderStatusesOp({ data: [{ id: plain.id }, { id: def.id }] }),
+    ).rejects.toThrow(/дефолтний/);
+    const after = await queryRows(dbUrl, `select id from public.order_statuses`);
+    expect(after.map((r) => r.id)).toContain(plain.id); // не видалений — rollback усього batch
+    // Недефолтний окремо — ок.
+    await removeManyOrderStatusesOp({ data: [{ id: plain.id }] });
+  });
+
+  it('фабричний insert: batch масивом, id від клієнта, returning усі', async () => {
+    const a = crypto.randomUUID(); const b = crypto.randomUUID();
+    const out = await orderStatusesOps.insert({ data: [
+      { id: a, name: 'Тест А', code: 'test-a', color: '#111111', sortOrder: 90 },
+      { id: b, name: 'Тест Б', code: 'test-b', color: '#222222', sortOrder: 91 },
+    ]});
+    expect(out.map((r) => r.id).sort()).toEqual([a, b].sort());
+  });
+
+  it('list: defaultOrder застосовано без явного sorts', async () => {
+    const rows = await orderStatusesOps.list({ data: {} });
+    const orders = rows.map((r) => r.sortOrder);
+    expect([...orders].sort((x, y) => x - y)).toEqual(orders);
+  });
+});
+```
+
+Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts`
+Expected: спершу FAIL (модулів немає на момент написання — TDD), після Steps 1–3 → PASS 6/6.
+
+- [ ] **Step 5: exports + tsup + Gate C**
+
+`package.json` (обидві мапи): `"./admin-server": "./src/admin-server/index.ts"`
+**і** `"./admin-server/impl": "./src/admin-server/impl.ts"` (службовий
+server-only субшлях — дзеркало ролі `./storefront/loaders`; у публічну
+документацію не виноситься); publishConfig — обидва з dist-дзеркалами.
+
+`tsup.config.ts` — ОКРЕМИЙ профіль (перед `db`):
+```ts
+// serverFn-шар адмінки (Е1б, К3-9′): ДВА entry. index — serverFn-стаби
+// (імпортує impl BARE-специфікатором, tsup лишає його зовнішнім);
+// impl — server-only нутрощі (фабрика/операції/схеми інлайняться сюди,
+// splitting:false). Саме ця пара дає Gate C розрізнення «стаб vs
+// нетрансформований модуль» — механіка та сама, що server/ ↔ loaders/.
+// БЕЗ platform:'node' — index імпортує клієнтський граф (стаби).
+profile('admin-server', ['src/admin-server/index.ts', 'src/admin-server/impl.ts'], { splitting: false }),
+```
+
+`scripts/pilot-pack/gate-c.mjs` — ДВІ правки:
+```js
+// У SERVER_PAYLOAD (поруч із /storefront\/loaders\//):
+// Нутрощі admin-server: у клієнті їх не може бути ЗА ЖОДНИХ умов.
+// Нетрансформований index тягне impl живим імпортом — маркер червоніє
+// навіть якби drizzle туди не доїхав (делегуюча операція без drizzle).
+/simplycms\/dist\/admin-server\/impl/,
+```
+```js
+// Окремий стаб-маркер (гейт не вхолосту): форма dist/admin-server/ не
+// матчить SERVER_FN_STUB (той вимагає сегмент /server/ ПІСЛЯ теки).
+// 🔴 index, НЕ impl: наявність index-стаба легальна й обовʼязкова.
+const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
+```
+і асертити НАЯВНІСТЬ `ADMIN_SERVER_STUB` у клієнтських чанках поруч із
+чинним стабом. Чинні `/drizzle-orm/` і `pg` лишаються другим рубежем.
+
+- [ ] **Step 6: Гейти й коміт**
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
+git add packages/simplycms scripts/pilot-pack/gate-c.mjs
+git commit -m "feat(v2-k3): order_statuses — ops + 3 іменовані операції + явні serverFn
+
+Перша сутність наскрізь: фабричні list/insert/update/remove (batch,
+defaultOrder) + setDefault (порядок unset→set під частковим індексом) +
+reorder (транзакційний swap замість двох запитів із браузера) + remove
+(дефолтний захищений сервером, не disabled-кнопкою). serverFn — шість
+топ-рівневих const у єдиному модулі поверхні; tsup-профіль splitting:false;
+Gate C отримав стаб-маркер admin-server.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+# Частина 3 — клієнтський шар і гейти (Tasks 9–11)
+
+**DoD частини 3:** = DoD етапу (нижче).
+
+### Task 9: `admin-data` — типізований реєстр + колекція `order_statuses`
+
+**Files:**
+- Create: `packages/simplycms/src/admin-data/registry.ts`, `index.ts`
+- Create: `packages/simplycms/src/admin-data/collections/order-statuses.ts`
+- Create: `packages/simplycms/src/admin-data/__tests__/registry.test.tsx`
+- Create: `packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts`
+- Modify: `eslint.tier-zones.mjs` (+ `tests/tier-boundary.test.ts`), `eslint.config.mjs` (зони `query-key-from-entity` та i18n += `admin-data`), `packages/simplycms/package.json` (обидві мапи `./admin-data`), `tsup.config.ts` (entry у профіль `tiers`)
+
+**Interfaces:**
+- Consumes: serverFn Task 8; `entityKey`/`ENTITY` (Е1а); `type OrderStatus` з `simplycms/schema/types` (**type-only**).
+- Produces: `CollectionDef<C>`; `getCollection<C>(queryClient, def): C`; `useCollection<C>(def): C`; `orderStatusesCollection` (typed def). Task 10 споживає всі три.
+
+🔴 К3-9′ п.3: колекція БЕЗ `schema` (вона валідує лише оптимістичні
+insert/update, дані queryFn — ні; а імпорт drizzle-zod-схеми тягнув би
+drizzle у клієнт — заборонено Gate C). Тип рядка — generic.
+
+- [ ] **Step 1: Падаючі тести реєстру**
+
+```tsx
+// @vitest-environment jsdom
+// (vitest.config: environment 'node' — без директиви renderHook упаде
+// на document is not defined; патерн — як у сусідніх hook-тестах репо)
+// packages/simplycms/src/admin-data/__tests__/registry.test.tsx
+import { describe, expect, it } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { getCollection, useCollection, type CollectionDef } from '../registry';
+
+const probeDef: CollectionDef<{ marker: string }> = {
+  id: 'probe',
+  create: () => ({ marker: Math.random().toString(36) }),
+};
+
+const wrap = (client: QueryClient) =>
+  function W({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  };
+
+describe('admin-data/registry', () => {
+  it('той самий QueryClient — той самий інстанс (typed, без ре-створення)', () => {
+    const client = new QueryClient();
+    const { result, rerender } = renderHook(() => useCollection(probeDef), { wrapper: wrap(client) });
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+    expect(getCollection(client, probeDef)).toBe(first);
+  });
+
+  it('різні QueryClient — різні інстанси (нуль протікання між запитами)', () => {
+    const a = getCollection(new QueryClient(), probeDef);
+    const b = getCollection(new QueryClient(), probeDef);
+    expect(a).not.toBe(b);
+  });
+});
+```
+
+Run: `pnpm vitest run packages/simplycms/src/admin-data/__tests__/registry.test.tsx` → FAIL (модуля немає).
+
+- [ ] **Step 2: Реєстр**
+
+```ts
+// packages/simplycms/src/admin-data/registry.ts
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+
+/**
+ * Реєстр колекцій, ключований QueryClient (патерн business-scope з
+ * офіційного query-adapter.md). WeakMap, не singleton: на сервері кожен
+ * запит має власний QueryClient (Е1а), спільний інстанс протік би між
+ * користувачами; WeakMap заразом прибирає записи разом із клієнтом.
+ *
+ * 🔴 Generic C зберігає конкретний тип колекції наскрізь — типізовані
+ * рядки в useLiveQuery і typed utils (стирання через
+ * ReturnType<typeof createCollection> — дефект старої редакції).
+ */
+export interface CollectionDef<C> {
+  readonly id: string;
+  readonly create: (queryClient: QueryClient) => C;
+}
+
+const byClient = new WeakMap<QueryClient, Map<string, unknown>>();
+
+export function getCollection<C>(client: QueryClient, def: CollectionDef<C>): C {
+  let byId = byClient.get(client);
+  if (!byId) byClient.set(client, (byId = new Map()));
+  let collection = byId.get(def.id) as C | undefined;
+  if (!collection) byId.set(def.id, (collection = def.create(client)));
+  return collection;
+}
+
+/** Хук-обгортка: клієнт із контексту. Інстанс стабільний у межах клієнта. */
+export function useCollection<C>(def: CollectionDef<C>): C {
+  return getCollection(useQueryClient(), def);
+}
+```
+
+Run: тест → PASS 2/2.
+
+- [ ] **Step 3: Падаючий тест колекції (id-mismatch + batch)**
+
+```ts
+// packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts
+import { describe, expect, it, vi } from 'vitest';
+import { QueryClient } from '@tanstack/react-query';
+
+const insertMock = vi.fn(async ({ data }: { data: { id: string }[] }) =>
+  data.map((r) => ({ isDefault: false, createdAt: '2026-01-01', color: null, sortOrder: 0, ...r })));
+vi.mock('simplycms/admin-server', () => ({
+  listOrderStatuses: vi.fn(async () => []),
+  insertOrderStatuses: insertMock,
+  updateOrderStatuses: vi.fn(async ({ data }) => data.map((d: { id: string }) => ({ id: d.id }))),
+  removeOrderStatuses: vi.fn(async () => ({ count: 1 })),
+  setDefaultOrderStatus: vi.fn(),
+  reorderOrderStatus: vi.fn(),
+}));
+
+import { getCollection } from '../registry';
+import { orderStatusesCollection } from '../collections/order-statuses';
+
+describe('колекція order_statuses', () => {
+  it('id колекції — з ENTITY (значення "order_statuses" з реєстру, не довільне)', () => {
+    expect(orderStatusesCollection.id).toBe('order_statuses');
+  });
+
+  it('batch-insert шле ВСІ мутації транзакції одним викликом', async () => {
+    const c = getCollection(new QueryClient(), orderStatusesCollection);
+    // 🔴 Sync-контекст ОБОВʼЯЗКОВИЙ до мутацій: createCollection у 0.8.6
+    // стартує sync лише при явному startSync===true (collection/index.js:115),
+    // query-адаптер його не передає, а writeUpsert/writeBatch без контексту
+    // кидає SyncNotInitializedError (manual-sync.js:122). Прод-шлях це
+    // робить preload-ом у loader (Task 10) — тест дзеркалить його.
+    await c.preload();
+    const rows = [
+      { id: crypto.randomUUID(), name: 'А', code: 'a', color: '#111111', sortOrder: 1 },
+      { id: crypto.randomUUID(), name: 'Б', code: 'b', color: '#222222', sortOrder: 2 },
+    ];
+    const tx = c.insert(rows as never);
+    await tx.isPersisted.promise;
+    expect(insertMock).toHaveBeenCalledTimes(1);
+    expect(insertMock.mock.calls[0][0].data).toHaveLength(2);
+  });
+
+  it('live-стан живий: оптимістичний рядок видимий СИНХРОННО, після персисту — серверні значення', async () => {
+    // Позитивний контроль (рев'ю ред.2): без нього мок serverFn звів би
+    // тест до перевірки хендлерів, а заявляє він інтеграцію з колекцією.
+    const c = getCollection(new QueryClient(), orderStatusesCollection);
+    await c.preload(); // sync-контекст (див. коментар у batch-тесті)
+    const id = crypto.randomUUID();
+    const tx = c.insert({ id, name: 'Live', code: 'live', color: null, sortOrder: 5 } as never);
+    expect(c.has(id), 'оптимістичний рядок не зʼявився в тому ж тіку').toBe(true);
+    await tx.isPersisted.promise;
+    expect(c.has(id), 'після персисту рядок зник').toBe(true);
+    expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toBe('2026-01-01');
+  });
+
+  it('розходження ключів — fail-loud ДО write-back, рядків-двійників немає', async () => {
+    insertMock.mockImplementationOnce(async () => [{ id: 'server-generated', name: 'X', code: 'x', color: null, sortOrder: 0, isDefault: false, createdAt: '2026-01-01' }]);
+    const c = getCollection(new QueryClient(), orderStatusesCollection);
+    await c.preload(); // sync-контекст (див. коментар у batch-тесті)
+    const optimisticId = crypto.randomUUID();
+    const tx = c.insert({ id: optimisticId, name: 'X', code: 'x', color: null, sortOrder: 0 } as never);
+    await expect(tx.isPersisted.promise).rejects.toThrow(/id/);
+    expect(c.has(optimisticId), 'оптимістичний рядок лишився').toBe(false);
+    expect(c.has('server-generated'), 'серверний двійник потрапив').toBe(false);
+  });
+});
+```
+
+Run: → FAIL (модуля немає).
+
+- [ ] **Step 4: Колекція**
+
+```ts
+// packages/simplycms/src/admin-data/collections/order-statuses.ts
+import { createCollection } from '@tanstack/react-db';
+import { queryCollectionOptions } from '@tanstack/query-db-collection';
+import type { QueryClient } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import type { OrderStatus } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import {
+  insertOrderStatuses, listOrderStatuses,
+  removeOrderStatuses, updateOrderStatuses,
+} from 'simplycms/admin-server';
+import type { CollectionDef } from '../registry';
+
+const key = entityKey(ENTITY.orderStatuses);
+
+/**
+ * Довідник статусів — режим eager (К3-5): обмежений розмір, повна
+ * колекція в памʼяті. 🔴 queryKey = entityKey(...).list() — той самий
+ * префікс, що в решти запитів сутності (Б-2). schema НЕ передається
+ * (К3-9′ п.3): тип — generic OrderStatus, рантайм-валідація — на сервері.
+ */
+function create(queryClient: QueryClient) {
+  const collection = createCollection(
+    queryCollectionOptions<OrderStatus>({
+      id: ENTITY.orderStatuses,
+      queryClient,
+      queryKey: key.list(),
+      getKey: (row) => row.id,
+      queryFn: async () => listOrderStatuses({ data: {} }),
+
+      onInsert: async ({ transaction }) => {
+        // 🔴 batch: УСІ мутації транзакції (дефект [0] старої редакції).
+        const drafts = transaction.mutations.map((m) => m.modified);
+        const rows = await insertOrderStatuses({ data: drafts as never });
+        // 🔴 Fail-loud ДО write-back: інакше в synced-store ляжуть ДВА
+        // рядки — серверний під своїм ключем і оптимістичний під
+        // клієнтським, що зникне на commit (урок favorites MetaHub).
+        for (const [i, row] of rows.entries()) {
+          if (row.id !== (drafts[i] as OrderStatus).id)
+            throw new Error(`[admin-data] сервер повернув id "${row.id}" замість "${(drafts[i] as OrderStatus).id}" — write-back писав би не в той ключ`);
+        }
+        collection.utils.writeBatch(() => {
+          for (const row of rows) collection.utils.writeUpsert(row);
+        });
+        return { refetch: false };
+      },
+
+      onUpdate: async ({ transaction }) => {
+        const patches = transaction.mutations.map((m) => ({ id: m.key as string, patch: m.changes }));
+        const rows = await updateOrderStatuses({ data: patches as never });
+        collection.utils.writeBatch(() => {
+          for (const row of rows) collection.utils.writeUpsert(row);
+        });
+        return { refetch: false };
+      },
+
+      onDelete: async ({ transaction }) => {
+        const ids = transaction.mutations.map((m) => ({ id: m.key as string }));
+        await removeOrderStatuses({ data: ids as never });
+        collection.utils.writeBatch(() => {
+          for (const { id } of ids) collection.utils.writeDelete(id);
+        });
+        return { refetch: false };
+      },
+    }),
+  );
+  return collection;
+}
+
+export type OrderStatusesCollection = ReturnType<typeof create>;
+export const orderStatusesCollection: CollectionDef<OrderStatusesCollection> = {
+  id: ENTITY.orderStatuses,
+  create,
+};
+```
+
+```ts
+// packages/simplycms/src/admin-data/index.ts
+export { getCollection, useCollection } from './registry';
+export type { CollectionDef } from './registry';
+export { orderStatusesCollection } from './collections/order-statuses';
+export type { OrderStatusesCollection } from './collections/order-statuses';
+```
+
+Run: обидва тести → PASS.
+
+🔴 `collection.delete(id)` → `onDelete` → serverFn `removeOrderStatuses`,
+який у Task 8 збудований на GUARDED-операції (`removeManyOrderStatusesOp`
+— кожен id зі своєю перевіркою `is_default`): серверна заборона
+видалення дефолтного діє й на цьому шляху, фабричний `ops.remove` для
+цієї сутності serverFn-ом не експортується.
+
+- [ ] **Step 5: Зони + entry + гейти**
+
+`eslint.tier-zones.mjs`:
+```js
+// Колекції адмінки (Е1б) — T4: над contracts/schema-типами, під
+// сторінками. Окремо від src/admin (T5): колекція — module-level стан.
+['src/admin-data', 4, 'admin-data', []],
+```
+`tests/tier-boundary.test.ts` — запис зони (forbidden: `simplycms/admin`,
+allowed: `simplycms/contracts`).
+
+`eslint.config.mjs`: у files-блок правила `query-key-from-entity` додати
+`'packages/simplycms/src/admin-data/**/*.{ts,tsx}'`; у i18n-зону — так само.
+
+`package.json`: `"./admin-data": "./src/admin-data/index.ts"` +
+publishConfig-дзеркало. `tsup.config.ts`: `'src/admin-data/index.ts'` у
+масив entry профілю `tiers` (клієнтський React-тір, спільні чанки легальні).
 
 ```bash
 pnpm lint && pnpm test && pnpm build:packages && pnpm test:packaging
@@ -632,728 +2044,152 @@ Expected: PASS, 0 errors.
 - [ ] **Step 6: Коміт**
 
 ```bash
-git add packages/simplycms eslint.tier-zones.mjs tests/tier-boundary.test.ts
-git commit -m "feat(v2-k3): admin-server (T2) + subset із allowlist колонок
+git add packages/simplycms eslint.tier-zones.mjs eslint.config.mjs tests/tier-boundary.test.ts
+git commit -m "feat(v2-k3): admin-data — типізований реєстр колекцій + order_statuses без schema
 
-subset — єдина причина існування фабрики: трансляція предикатів
-колекції у SQL мусить жити в одному місці з allowlist, написана 34 рази
-вона дала б 34 шанси на інʼєкцію. Невідомий оператор кидає, а не
-ігнорується мовчки.
+CollectionDef<C> зберігає тип наскрізь (WeakMap по QueryClient). Колекція
+без schema (валідувала б лише optimistic-шлях, а тягла drizzle у клієнт) —
+тип type-only OrderStatus. Batch у всіх хендлерах, fail-loud id-mismatch
+ДО write-back, writeBatch+writeUpsert із refetch:false. Зони: тір T4,
+query-key-from-entity та i18n накривають нову теку.
 
-Барель тримає лише serverFn — інакше tsup тягне drizgle і пул у
-клієнтський бандл (урок Gate C).
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 5: `defineAdminResource`
+### Task 10: Сторінка `OrderStatuses` на `useLiveQuery` + живий прогін
 
 **Files:**
-- Create: `packages/simplycms/src/admin-server/resource.ts`
-- Create: `packages/simplycms/src/admin-server/__tests__/resource.test.ts`
+- Modify: `packages/simplycms/src/admin/pages/OrderStatuses.tsx` (повне переписування, 537 рядків)
+- Modify: `packages/simplycms/routes/admin/admin/order-statuses/index.tsx`
 
 **Interfaces:**
-- Produces: `defineAdminResource(config)` → `{ list, insert, update, remove }` (serverFn) + `{ rowSchema, insertSchema, updateSchema }` (Zod з `drizzle-zod`).
+- Consumes: `useCollection`/`getCollection`, `orderStatusesCollection` (`simplycms/admin-data`); `setDefaultOrderStatus`, `reorderOrderStatus` (`simplycms/admin-server`); `RouterContext` (`simplycms/runtime`); i18n-ключі `admin.orders.statuses.*` і `common.*` (усі вже в каталозі).
 
-- [ ] **Step 1: Написати падаючий тест**
+🔴 **Повний інвентар поведінки, яку НЕ МОЖНА загубити** (виміряно старою
+сторінкою): create з `sortOrder = max+1`; редагування name/code/color;
+чекбокс дефолту; delete з підтвердженням (дефолтний — disabled);
+reorder стрілками (краї disabled); автогенерація code з name
+(`generateCode`, вимикається після ручного редагування); 8 тостів
+(`created/createFailed/statusUpdated/updateFailed/deleted/deleteFailed/
+reorderFailed/requiredFields`); кольоровий кружечок; скелетон завантаження.
 
-```ts
-// packages/simplycms/src/admin-server/__tests__/resource.test.ts
-import { describe, expect, it, vi } from 'vitest';
-import { orderStatuses } from 'simplycms/schema';
-import { defineAdminResource } from '../resource';
-
-vi.mock('simplycms/storefront/loaders', () => ({
-  withStoreOperatorDb: vi.fn(async (fn) => fn({} as never)),
-}));
-
-const resource = defineAdminResource({
-  entity: 'order_statuses',
-  table: orderStatuses,
-  operation: 'catalog.write',
-  filterable: ['code'],
-  sortable: ['sortOrder'],
-  writable: ['name', 'code', 'color', 'sortOrder', 'isDefault'],
-  readonly: ['id', 'createdAt'],
-});
-
-describe('defineAdminResource', () => {
-  it('insertSchema вимагає id — ключ генерує клієнт', () => {
-    // 🔴 Контракт Е0: без id оптимістичний рядок і серверний розійдуться.
-    const parsed = resource.insertSchema.safeParse({ name: 'X', code: 'x' });
-    expect(parsed.success).toBe(false);
-    expect(JSON.stringify(parsed.error?.issues)).toMatch(/id/);
-  });
-
-  it('insertSchema не приймає readonly-колонок', () => {
-    const parsed = resource.insertSchema.safeParse({
-      id: crypto.randomUUID(), name: 'X', code: 'x', createdAt: '2026-01-01',
-    });
-    // createdAt зрізається або відхиляється — головне, щоб не доїхав у БД.
-    expect(parsed.success ? 'createdAt' in parsed.data : true).toBe(false);
-  });
-
-  it('віддає чотири операції', () => {
-    for (const op of ['list', 'insert', 'update', 'remove'] as const) {
-      expect(typeof resource[op], `${op} відсутній`).toBe('function');
-    }
-  });
-});
-```
-
-- [ ] **Step 2: Запустити — має впасти**
-
-Run: `pnpm vitest run packages/simplycms/src/admin-server/__tests__/resource.test.ts`
-Expected: FAIL — модуля немає.
-
-- [ ] **Step 3: Написати фабрику**
-
-```ts
-// packages/simplycms/src/admin-server/resource.ts
-import { createServerFn } from '@tanstack/react-start';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { eq, type Table } from 'drizzle-orm';
-import { z } from 'zod';
-import { withStoreOperatorDb } from 'simplycms/storefront/loaders';
-import { assertAllowed } from 'simplycms/auth';
-import { toDrizzleSubset, type SubsetAllow } from './subset';
-
-/**
- * Фабрика CRUD-serverFn ресурсу адмінки (рішення К3-4).
- *
- * 🔴 Розріз «фабрика vs ручна операція» проходить ПО ОПЕРАЦІЯХ, не по
- * сутностях: `order_statuses` бере тут `list/insert/update/remove`, а
- * `setDefault` (він знімає прапорець з інших) живе окремим модулем.
- * Критерій простий — чи має операція доменний інваріант, якого фабрика
- * знати не може.
- *
- * 🔴 DSL запитів тут свідомо НЕМАЄ: жодних вкладених фільтрів, `or`,
- * підзапитів. Усе складніше — це `useLiveQuery` на клієнті або іменована
- * операція. Саме це тримає фабрику в межах, за якими вона не стає
- * «фреймворком усередині фреймворка».
- */
-export function defineAdminResource<T extends Table>(config: {
-  entity: string;
-  table: T;
-  operation: Parameters<typeof assertAllowed>[1];
-  filterable: readonly string[];
-  sortable: readonly string[];
-  writable: readonly string[];
-  readonly: readonly string[];
-  defaultOrder?: { column: string; direction: 'asc' | 'desc' };
-}) {
-  const allow: SubsetAllow = {
-    filterable: config.filterable,
-    sortable: config.sortable,
-  };
-
-  const rowSchema = createSelectSchema(config.table);
-  // 🔴 `id` обовʼязковий: ключ генерує клієнт (контракт Е0).
-  const insertSchema = createInsertSchema(config.table)
-    .pick(Object.fromEntries(config.writable.map((c) => [c, true])) as never)
-    .extend({ id: z.string().uuid() });
-  const updateSchema = createUpdateSchema(config.table)
-    .pick(Object.fromEntries(config.writable.map((c) => [c, true])) as never);
-
-  return {
-    rowSchema,
-    insertSchema,
-    updateSchema,
-
-    list: createServerFn({ method: 'GET' })
-      .inputValidator(z.object({ subset: z.unknown().optional() }))
-      .handler(async ({ data }) =>
-        withStoreOperatorDb(async (db) => {
-          await assertAllowed(config.operation);
-          const s = toDrizzleSubset(config.table, allow, (data.subset ?? {}) as never);
-          let q = db.select().from(config.table as never).$dynamic();
-          if (s.where) q = q.where(s.where);
-          if (s.orderBy) q = q.orderBy(...s.orderBy);
-          if (s.limit !== undefined) q = q.limit(s.limit);
-          if (s.offset !== undefined) q = q.offset(s.offset);
-          return q;
-        }),
-      ),
-
-    insert: createServerFn({ method: 'POST' })
-      .inputValidator(insertSchema)
-      .handler(async ({ data }) =>
-        withStoreOperatorDb(async (db) => {
-          await assertAllowed(config.operation);
-          const [row] = await db.insert(config.table).values(data as never).returning();
-          return row;
-        }),
-      ),
-
-    update: createServerFn({ method: 'POST' })
-      .inputValidator(z.object({ id: z.string().uuid(), patch: updateSchema }))
-      .handler(async ({ data }) =>
-        withStoreOperatorDb(async (db) => {
-          await assertAllowed(config.operation);
-          const [row] = await db
-            .update(config.table)
-            .set(data.patch as never)
-            .where(eq((config.table as never)['id'], data.id))
-            .returning();
-          return row;
-        }),
-      ),
-
-    remove: createServerFn({ method: 'POST' })
-      .inputValidator(z.object({ id: z.string().uuid() }))
-      .handler(async ({ data }) =>
-        withStoreOperatorDb(async (db) => {
-          await assertAllowed(config.operation);
-          await db.delete(config.table).where(eq((config.table as never)['id'], data.id));
-        }),
-      ),
-  };
-}
-```
-
-🔴 **`assertAllowed` НЕ ІСНУЄ — його треба написати, і саме в
-`simplycms/auth`.** Перевірено: там є `AUTHZ_MATRIX`, `resolveGrant`,
-`can(subject, operation)`, `AuthzError` (`auth/authz.ts:57-98`) і
-`readSessionSubject(headers)` (`auth/session.ts:48`), але склеєної
-перевірки немає. Додати в `auth/authz-request.ts`:
-
-```ts
-// packages/simplycms/src/auth/authz-request.ts
-import { getRequest } from '@tanstack/react-start/server';
-import { AuthzError, can, type Operation } from './authz';
-import { readSessionSubject } from './session';
-
-/**
- * Перший рубіж моделі B5″: чи дозволена операція субʼєкту запиту.
- *
- * 🔴 Викликається ПЕРЕД доступом до БД. Роль БД (`SET LOCAL ROLE` у
- * `withActor`) — другий рубіж, страхувальна сітка проти забутого
- * `WHERE`, і вона першого не замінює: застосунок сам виставляє собі
- * claims.
- *
- * 🔴 Субʼєкт береться з СЕСІЇ, ніколи з параметра клієнта — id,
- * прийнятий від клієнта, RLS перевірити не може за побудовою.
- */
-export async function assertAllowed(operation: Operation): Promise<void> {
-  const subject = await readSessionSubject(getRequest().headers);
-  if (!subject || !can(subject, operation)) {
-    throw new AuthzError(operation);
-  }
-}
-```
-
-🔴 Живе в `simplycms/auth`, а не в `admin-server`: це звичайна функція, і
-поруч із serverFn вона тягнула б серверний граф у клієнтський бандл
-(Gate C). `auth` — bare-специфікатор, tsup вважає його зовнішнім.
-Звірити конструктор `AuthzError` із чинним (`authz.ts:71`) і додати
-експорт у барель `auth/index.ts`.
-
-- [ ] **Step 4: Запустити — має пройти**
-
-Run: `pnpm vitest run packages/simplycms/src/admin-server/__tests__/resource.test.ts`
-Expected: PASS, 3/3.
-
-- [ ] **Step 5: Гейти й коміт**
-
-```bash
-pnpm lint && pnpm typecheck && pnpm test
-git add packages/simplycms/src/admin-server
-git commit -m "feat(v2-k3): defineAdminResource — фабрика CRUD-serverFn
-
-Типи й Zod виводяться з Drizzle (drizzle-zod), id обовʼязковий у
-insertSchema (контракт Е0), права перевіряються ПЕРЕД доступом до БД.
-DSL запитів свідомо немає — усе складніше йде в useLiveQuery або
-іменовану операцію.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 6: Ресурс `order_statuses` + іменована операція `setDefault`
-
-**Files:**
-- Create: `packages/simplycms/src/admin-server/resources/order-statuses.ts`
-- Create: `packages/simplycms/src/admin-server/operations/order-status-default.ts`
-- Test: `packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts`
-
-**Interfaces:**
-- Produces: `orderStatusesResource` (CRUD) і `setDefaultOrderStatus({ id })`.
-
-🔴 Перша сутність обрана саме через **доменний інваріант**: при
-встановленні `is_default` прапорець знімається з решти
-(`admin/pages/OrderStatuses.tsx:87-91`). Це і показує межу — фабрика
-такого знати не може, тож операція пишеться руками й виконує обидві дії
-**в одній транзакції**.
-
-- [ ] **Step 1: Написати інтеграційний тест проти живої БД**
-
-```ts
-// packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts
-// (шапка з resolveHarness/applySqlFiles — як у сусідніх тестах харнеса)
-
-describe('order_statuses: інваріант єдиного дефолту', () => {
-  it('setDefault знімає прапорець з решти В ОДНІЙ транзакції', async () => {
-    const rows = await queryRows(dbUrl, 'select id, is_default from order_statuses order by sort_order');
-    const target = rows.find((r) => !r.is_default)!;
-
-    await setDefaultOrderStatus({ data: { id: target.id } });
-
-    const after = await queryRows(dbUrl, 'select id, is_default from order_statuses');
-    expect(after.filter((r) => r.is_default)).toHaveLength(1);
-    expect(after.find((r) => r.is_default)!.id).toBe(target.id);
-  });
-
-  it('неіснуючий id не лишає магазин без дефолту', async () => {
-    // 🔴 Найнебезпечніший сценарій: зняли з усіх, а поставити нема кому.
-    await expect(
-      setDefaultOrderStatus({ data: { id: crypto.randomUUID() } }),
-    ).rejects.toThrow();
-    const after = await queryRows(dbUrl, 'select is_default from order_statuses');
-    expect(after.filter((r) => r.is_default)).toHaveLength(1);
-  });
-});
-```
-
-- [ ] **Step 2: Запустити — має впасти**
-
-Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts`
-Expected: FAIL — модулів немає.
-
-- [ ] **Step 3: Ресурс**
-
-```ts
-// packages/simplycms/src/admin-server/resources/order-statuses.ts
-import { orderStatuses } from 'simplycms/schema';
-import { ENTITY } from 'simplycms/contracts/entities';
-import { defineAdminResource } from '../resource';
-
-export const orderStatusesResource = defineAdminResource({
-  entity: ENTITY.orderStatuses,
-  table: orderStatuses,
-  operation: 'catalog.write',
-  filterable: ['code', 'isDefault'],
-  sortable: ['sortOrder', 'name'],
-  defaultOrder: { column: 'sortOrder', direction: 'asc' },
-  writable: ['name', 'code', 'color', 'sortOrder', 'isDefault'],
-  readonly: ['id', 'createdAt'],
-});
-```
-
-- [ ] **Step 4: Операція з інваріантом**
-
-```ts
-// packages/simplycms/src/admin-server/operations/order-status-default.ts
-import { createServerFn } from '@tanstack/react-start';
-import { eq, ne } from 'drizzle-orm';
-import { z } from 'zod';
-import { orderStatuses } from 'simplycms/schema';
-import { withStoreOperatorDb } from 'simplycms/storefront/loaders';
-import { assertAllowed } from 'simplycms/auth';
-
-/**
- * Призначити статус замовлення дефолтним.
- *
- * 🔴 Не лягає у фабрику: інваріант «дефолт рівно один» вимагає ЗНЯТИ
- * прапорець з решти, і обидві дії мусять бути в одній транзакції —
- * інакше між ними магазин лишається або без дефолту, або з двома.
- * Стара адмінка робила це двома окремими запитами з браузера
- * (`OrderStatuses.tsx:87-91`), тобто вікно неконсистентності було
- * реальним.
- *
- * Порядок навмисний: спершу ставимо новий (перевіряючи, що рядок
- * існує), потім знімаємо з інших. Зворотний порядок на неіснуючому id
- * лишив би магазин без дефолту взагалі.
- */
-export const setDefaultOrderStatus = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ data }) =>
-    withStoreOperatorDb(async (db) => {
-      await assertAllowed('catalog.write');
-
-      const [row] = await db
-        .update(orderStatuses)
-        .set({ isDefault: true })
-        .where(eq(orderStatuses.id, data.id))
-        .returning();
-
-      if (!row) {
-        throw new Error(`[admin-server] статусу ${data.id} не існує`);
-      }
-
-      await db
-        .update(orderStatuses)
-        .set({ isDefault: false })
-        .where(ne(orderStatuses.id, data.id));
-
-      return row;
-    }),
-  );
-```
-
-- [ ] **Step 5: Запустити — має пройти**
-
-Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/admin-order-statuses.test.ts`
-Expected: PASS, 2/2.
-
-- [ ] **Step 6: Коміт**
-
-```bash
-git add packages/simplycms
-git commit -m "feat(v2-k3): ресурс order_statuses + операція setDefault
-
-Перша сутність обрана через доменний інваріант: дефолт рівно один, і
-зняття прапорця з решти мусить бути в тій самій транзакції. Стара
-адмінка робила це двома запитами з браузера — вікно неконсистентності
-було реальним. Порядок дій навмисний: неіснуючий id не лишає магазин
-без дефолту.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-```
-
----
-# Частина 3 — клієнтський шар
-
-### Task 7: `admin-data` — реєстр колекцій
-
-**Files:**
-- Create: `packages/simplycms/src/admin-data/registry.ts`, `index.ts`
-- Create: `packages/simplycms/src/admin-data/__tests__/registry.test.tsx`
-- Modify: `eslint.tier-zones.mjs` (зона T4), `tests/tier-boundary.test.ts`
-- Modify: `packages/simplycms/package.json` (обидві мапи), `tsup.config.ts`
-
-**Interfaces:**
-- Produces: `useCollection(def)` — стабільний інстанс колекції на `QueryClient`.
-
-🔴 Колекція memoізується по `QueryClient` і **не** створюється в рендері:
-інстанс є джерелом підписки `useLiveQuery`, і нова інстанція скидає живий
-стан. Це офіційно визнаний виняток із «не мемоізуй, React Compiler
-зробить сам» (`skills/db-core/collection-setup/references/query-adapter.md`:
-«Memoize by QueryClient… Do not create the collection during every render»).
-
-- [ ] **Step 1: Написати падаючий тест**
+- [ ] **Step 1: Дані й мутації (ключові фрагменти)**
 
 ```tsx
-// packages/simplycms/src/admin-data/__tests__/registry.test.tsx
-import { describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useCollection } from '../registry';
-import { orderStatusesCollection } from '../collections/order-statuses';
+// OrderStatuses.tsx — шар даних
+import { useLiveQuery } from '@tanstack/react-db';
+import { useCollection } from 'simplycms/admin-data';
+import { orderStatusesCollection } from 'simplycms/admin-data';
+import { reorderOrderStatus, setDefaultOrderStatus } from 'simplycms/admin-server';
+import type { OrderStatus } from 'simplycms/schema/types';
 
-const wrapper = (client: QueryClient) =>
-  function W({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-  };
-
-describe('реєстр колекцій', () => {
-  it('той самий QueryClient — той самий інстанс', () => {
-    const client = new QueryClient();
-    const { result, rerender } = renderHook(() => useCollection(orderStatusesCollection), {
-      wrapper: wrapper(client),
-    });
-    const first = result.current;
-    rerender();
-    // 🔴 Інакше useLiveQuery перепідписується й губить живий стан.
-    expect(result.current).toBe(first);
-  });
-
-  it('різні QueryClient — різні інстанси', () => {
-    const a = renderHook(() => useCollection(orderStatusesCollection), {
-      wrapper: wrapper(new QueryClient()),
-    });
-    const b = renderHook(() => useCollection(orderStatusesCollection), {
-      wrapper: wrapper(new QueryClient()),
-    });
-    // Кеш одного запиту не сміє протікати в інший.
-    expect(a.result.current).not.toBe(b.result.current);
-  });
-});
-```
-
-- [ ] **Step 2: Запустити — має впасти**
-
-Run: `pnpm vitest run packages/simplycms/src/admin-data/__tests__/registry.test.tsx`
-Expected: FAIL — модулів немає.
-
-- [ ] **Step 3: Написати реєстр**
-
-```ts
-// packages/simplycms/src/admin-data/registry.ts
-import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { createCollection } from '@tanstack/react-db';
-
-/**
- * Реєстр колекцій, ключований `QueryClient`.
- *
- * 🔴 `WeakMap`, а не module-level singleton: на сервері кожен запит має
- * власний `QueryClient` (Е1а поклав його в `getRouter()`), і спільний
- * інстанс колекції протік би між користувачами. `WeakMap` заразом
- * прибирає записи разом із клієнтом.
- *
- * 🔴 Інстанс мусить бути стабільним у межах клієнта: він є джерелом
- * підписки `useLiveQuery`, і нова інстанція скидає живий стан. Це
- * задокументований виняток із правила «не мемоізуй руками».
- */
-type AnyCollection = ReturnType<typeof createCollection>;
-
-export interface CollectionDef {
-  readonly id: string;
-  readonly create: (queryClient: QueryClient) => AnyCollection;
-}
-
-const byClient = new WeakMap<QueryClient, Map<string, AnyCollection>>();
-
-export function getCollection(client: QueryClient, def: CollectionDef): AnyCollection {
-  let byId = byClient.get(client);
-  if (!byId) {
-    byId = new Map();
-    byClient.set(client, byId);
-  }
-  let collection = byId.get(def.id);
-  if (!collection) {
-    collection = def.create(client);
-    byId.set(def.id, collection);
-  }
-  return collection;
-}
-
-/** Хук-обгортка: клієнт береться з контексту. */
-export function useCollection(def: CollectionDef): AnyCollection {
-  return getCollection(useQueryClient(), def);
-}
-```
-
-- [ ] **Step 4: Тір-зона T4 + субшлях**
-
-У `eslint.tier-zones.mjs`:
-```js
-// Колекції адмінки (Е1б) — T4: над `contracts`/`db`-контрактами, під
-// сторінками. 🔴 Окремо від `src/admin` (T5) навмисно: колекція —
-// module-level стан, і якби вона жила у файлі сторінки, дві сторінки на
-// одну сутність дали б два інстанси й тихий розсинхрон.
-['src/admin-data', 4, 'admin-data', []],
-```
-Обидві exports-мапи (`./admin-data`), явний патерн у tsup.
-
-- [ ] **Step 5: Гейти й коміт**
-
-```bash
-pnpm lint && pnpm test && pnpm build:packages && pnpm test:packaging
-git add packages/simplycms eslint.tier-zones.mjs tests/tier-boundary.test.ts
-git commit -m "feat(v2-k3): admin-data (T4) — реєстр колекцій по QueryClient
-
-WeakMap, а не singleton: на сервері кожен запит має власний QueryClient
-(Е1а), і спільна колекція протікала б між користувачами. Інстанс
-стабільний у межах клієнта — він джерело підписки useLiveQuery.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 8: Колекція `order_statuses`
-
-**Files:**
-- Create: `packages/simplycms/src/admin-data/collections/order-statuses.ts`
-- Create: `packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts`
-
-**Interfaces:**
-- Consumes: `orderStatusesResource` (Task 6), `entityKey` (Е1а), `useCollection` (Task 7).
-- Produces: `orderStatusesCollection: CollectionDef`.
-
-- [ ] **Step 1: Написати падаючий тест id-mismatch**
-
-```ts
-// packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts
-import { describe, expect, it, vi } from 'vitest';
-import { QueryClient } from '@tanstack/react-query';
-import { getCollection } from '../registry';
-import { orderStatusesCollection } from '../collections/order-statuses';
-
-vi.mock('simplycms/admin-server', () => ({
-  orderStatusesResource: {
-    list: vi.fn(async () => []),
-    // Сервер повертає ІНШИЙ ключ, ніж прислав клієнт.
-    insert: vi.fn(async () => ({ id: 'server-generated', name: 'X' })),
-    update: vi.fn(),
-    remove: vi.fn(),
-  },
-  setDefaultOrderStatus: vi.fn(),
-}));
-
-describe('колекція order_statuses', () => {
-  it('ключ колекції — з ENTITY, не літерал', async () => {
-    const c = getCollection(new QueryClient(), orderStatusesCollection);
-    expect(c.id).toBe('order_statuses');
-  });
-
-  it('розходження ключів — fail-loud ДО write-back', async () => {
-    // 🔴 Найважливіший тест етапу. Якби write-back стався, у synced-store
-    // лягли б ДВА рядки: серверний під своїм ключем і оптимістичний під
-    // клієнтським — без write-back, тобто зниклий на commit. Кожен
-    // наступний update/delete бив би в неіснуючий ключ.
-    const c = getCollection(new QueryClient(), orderStatusesCollection);
-    const optimisticId = crypto.randomUUID();
-
-    const tx = c.insert({ id: optimisticId, name: 'X', code: 'x' } as never);
-    await expect(tx.isPersisted.promise).rejects.toThrow(/id/);
-
-    expect(c.has(optimisticId), 'оптимістичний рядок лишився').toBe(false);
-    expect(c.has('server-generated'), 'серверний рядок-двійник потрапив').toBe(false);
-  });
-});
-```
-
-- [ ] **Step 2: Запустити — має впасти**
-
-Run: `pnpm vitest run packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts`
-Expected: FAIL — модуля немає.
-
-- [ ] **Step 3: Написати колекцію**
-
-```ts
-// packages/simplycms/src/admin-data/collections/order-statuses.ts
-import { createCollection } from '@tanstack/react-db';
-import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
-import { orderStatusesResource } from 'simplycms/admin-server';
-import type { CollectionDef } from '../registry';
-
-const key = entityKey(ENTITY.orderStatuses);
-
-/**
- * Довідник статусів — режим `eager` (рішення К3-5): обмежений розмір,
- * уся колекція в памʼяті, фільтрація живим запитом на клієнті.
- *
- * 🔴 `queryKey` — ТОЙ САМИЙ ключ, що в решти запитів цієї сутності:
- * query-collection знаходить свої записи префіксним матчем, і власний
- * ключ лишив би застарілі дані у спільному кеші.
- */
-export const orderStatusesCollection: CollectionDef = {
-  id: ENTITY.orderStatuses,
-  create: (queryClient) =>
-    createCollection(
-      queryCollectionOptions({
-        id: ENTITY.orderStatuses,
-        queryClient,
-        queryKey: key.list(),
-        getKey: (row: { id: string }) => row.id,
-        schema: orderStatusesResource.rowSchema,
-        queryFn: async () => orderStatusesResource.list({ data: {} }),
-
-        onInsert: async ({ transaction, collection }) => {
-          const { modified } = transaction.mutations[0];
-          const row = await orderStatusesResource.insert({ data: modified as never });
-
-          // 🔴 Fail-loud ДО write-back: інакше в synced-store лягли б два
-          // рядки — серверний під своїм ключем і оптимістичний під
-          // клієнтським, який зникне на commit (урок favorites MetaHub).
-          if (row.id !== modified.id) {
-            throw new Error(
-              `[admin-data] сервер повернув id "${row.id}", а оптимістичний ` +
-                `рядок має "${modified.id}" — write-back писав би не в той ключ`,
-            );
-          }
-
-          // 🔴 writeUpsert, НІКОЛИ writeUpdate: рядка ще немає в
-          // syncedData, і writeUpdate кинув би UpdateOperationItemNotFound.
-          collection.utils.writeUpsert(row);
-          return { refetch: false };
-        },
-
-        onUpdate: async ({ transaction, collection }) => {
-          const { key: id, changes } = transaction.mutations[0];
-          const row = await orderStatusesResource.update({
-            data: { id: id as string, patch: changes as never },
-          });
-          collection.utils.writeUpsert(row);
-          return { refetch: false };
-        },
-
-        onDelete: async ({ transaction, collection }) => {
-          const { key: id } = transaction.mutations[0];
-          await orderStatusesResource.remove({ data: { id: id as string } });
-          collection.utils.writeDelete([id]);
-          return { refetch: false };
-        },
-      }),
-    ),
-};
-```
-
-- [ ] **Step 4: Запустити — має пройти**
-
-Run: `pnpm vitest run packages/simplycms/src/admin-data/__tests__/order-statuses-collection.test.ts`
-Expected: PASS, 2/2.
-
-- [ ] **Step 5: Коміт**
-
-```bash
-git add packages/simplycms/src/admin-data
-git commit -m "feat(v2-k3): колекція order_statuses з write-back і fail-loud
-
-Ключ — той самий entityKey, що в решти запитів сутності (префіксний
-матч query-collection). Happy-path синхронізується writeUpsert, не
-інвалідацією власного ключа. Розходження ключів кидає ДО write-back,
-інакше в колекції лишився б рядок-двійник (урок favorites MetaHub).
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 9: Сторінка на `useLiveQuery`
-
-**Files:**
-- Modify: `packages/simplycms/src/admin/pages/OrderStatuses.tsx`
-- Modify: `packages/simplycms/routes/admin/admin/order-statuses/index.tsx` (preload у `loader`)
-
-**Interfaces:**
-- Consumes: `useCollection`, `orderStatusesCollection`, `setDefaultOrderStatus`.
-
-🔴 `preload()` ставиться в `loader` роуту, а не в компоненті — інакше
-перший рендер піде з порожньою колекцією. Для `eager`-колекції це
-звичайний `collection.preload()`; для on-demand (Е3) — preload
-`createLiveQueryCollection`, бо на джерелі він **no-op**.
-
-- [ ] **Step 1: Переписати сторінку**
-
-```tsx
-// ключові фрагменти OrderStatuses.tsx
 const collection = useCollection(orderStatusesCollection);
+// 🔴 Форма 0.3.6 — обʼєкт { query }; dependency-масиви legacy.
+const { data: statuses, isLoading } = useLiveQuery({
+  query: (q) => q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
+});
 
-const { data: statuses } = useLiveQuery((q) =>
-  q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
-);
-
-const handleCreate = (form: FormValues) => {
-  // 🔴 Ключ генерує клієнт: інакше оптимістичний рядок і серверний
-  // розійдуться (контракт Е0).
-  collection.insert({ id: crypto.randomUUID(), ...form });
+/** create: клієнт рахує max+1 — eager-колекція і є повна копія. */
+const handleCreate = (form: StatusFormData) => {
+  if (!form.name.trim() || !form.code.trim()) {
+    toast.error(t('admin.orders.statuses.requiredFields'));
+    return;
+  }
+  const id = crypto.randomUUID(); // Е0: ключ генерує клієнт
+  const sortOrder = (statuses ?? []).reduce((m, s) => Math.max(m, s.sortOrder), -1) + 1;
+  const tx = collection.insert({ id, name: form.name, code: form.code, color: form.color, sortOrder, isDefault: false, createdAt: new Date().toISOString() } as OrderStatus);
+  tx.isPersisted.promise
+    .then(async () => {
+      // 🔴 Двофазність ЧЕСНА (рев'ю р2): insert уже закомічено, тож
+      // падіння setDefault — НЕ createFailed. Рядок створено — кажемо
+      // це, а про дефолт — окремою помилкою.
+      toast.success(t('admin.orders.statuses.created'));
+      if (form.is_default) {
+        try { await applyDefault(id); }
+        catch (e) { toast.error(t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message); }
+      }
+    })
+    .catch((e: Error) => toast.error(t('admin.orders.statuses.createFailed') + ' ' + e.message));
+  handleCloseDialog();
 };
 
-const handleDelete = (id: string) => collection.delete(id);
+const handleUpdate = (id: string, form: StatusFormData) => {
+  const tx = collection.update(id, (draft) => {
+    draft.name = form.name; draft.code = form.code; draft.color = form.color;
+  });
+  tx.isPersisted.promise
+    .then(async () => {
+      if (form.is_default) await applyDefault(id);
+      toast.success(t('common.statusUpdated'));
+    })
+    .catch((e: Error) => toast.error(t('admin.orders.statuses.updateFailed') + ' ' + e.message));
+  handleCloseDialog();
+};
 
-const handleSetDefault = async (id: string) => {
-  // Інваріант «дефолт рівно один» — серверна операція; після неї
-  // рефетч, бо змінилось БІЛЬШЕ рядків, ніж один оптимістичний.
+const handleDelete = (id: string) => {
+  const tx = collection.delete(id);
+  tx.isPersisted.promise
+    .then(() => toast.success(t('admin.orders.statuses.deleted')))
+    .catch((e: Error) => toast.error(t('admin.orders.statuses.deleteFailed') + ' ' + e.message));
+  setDeleteStatus(null);
+};
+
+/**
+ * setDefault/reorder — серверні операції, що міняють N рядків: write-back
+ * одного не описує стан → refetch. Це МЕЖА канону write-back, не виняток.
+ */
+const applyDefault = async (id: string) => {
   await setDefaultOrderStatus({ data: { id } });
   await collection.utils.refetch();
 };
+const handleReorder = async (id: string, direction: 'up' | 'down') => {
+  try {
+    await reorderOrderStatus({ data: { id, direction } });
+    await collection.utils.refetch();
+  } catch (e) {
+    toast.error(t('admin.orders.statuses.reorderFailed') + ' ' + (e as Error).message);
+  }
+};
 ```
 
-🔴 `handleSetDefault` — єдине місце, де рефетч правильний: операція
-міняє N рядків, і write-back одного тут не описує стан. Це не виняток із
-канону, а його межа.
+UI-частина (таблиця, діалоги, `generateCode`, кружечок кольору, disabled
+на краях і на дефолтному delete, скелетон) — переноситься зі старої
+версії 1:1 з двома змінами: поля рядка тепер **camelCase**
+(`sortOrder`/`isDefault`/`createdAt` — тип `OrderStatus` з Drizzle) і
+чекбокс дефолту на редагуванні ДЕФОЛТНОГО рядка — disabled з
+`title={t('admin.orders.statuses.autoAssign')}` (зняти дефолт без
+призначення нового не можна — нуль дефолтів заборонений доменом).
 
-- [ ] **Step 2: Preload у роуті**
+- [ ] **Step 2: Guard secure context (К3-6) — у `beforeLoad` layout-роуту адмінки**
+
+У `packages/simplycms/routes/admin/admin.tsx`, ПЕРШИМ рядком `beforeLoad`
+(client-only, `ssr:false` — виконується рівно на старті адмінки):
+
+```ts
+// К3-6: crypto.randomUUID існує лише в secure context — адмінка на
+// http:// не-localhost мовчки отримала б undefined на кожному create.
+if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') {
+  throw new Error(
+    '[simplycms/admin] Адмінка вимагає secure context (https:// або localhost): crypto.randomUUID недоступний.',
+  );
+}
+```
+
+(Файл додається в Files цієї задачі: Modify `packages/simplycms/routes/admin/admin.tsx`.)
+
+- [ ] **Step 3: Preload у loader роуту**
 
 ```tsx
 // packages/simplycms/routes/admin/admin/order-statuses/index.tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { getCollection, orderStatusesCollection } from 'simplycms/admin-data';
+import OrderStatuses from 'simplycms/admin/pages/OrderStatuses';
+
 export const Route = createFileRoute('/admin/order-statuses/')({
+  // Батько /admin має ssr:false — loader КЛІЄНТСЬКИЙ; preload тут
+  // стартує синк під час навігації, без спалаху порожньої таблиці.
   loader: async ({ context }) => {
     await getCollection(context.queryClient, orderStatusesCollection).preload();
     return null;
@@ -1362,191 +2198,333 @@ export const Route = createFileRoute('/admin/order-statuses/')({
 });
 ```
 
-- [ ] **Step 3: Гейти**
+(`context` типізується `RouterContext` з `simplycms/runtime` — Task 3.)
+
+- [ ] **Step 4: Гейти**
 
 ```bash
 pnpm lint && pnpm build && pnpm typecheck && pnpm test
 ```
-Expected: PASS, 0 errors. 🔴 Лінт тут ще й доводить, що i18n-рядки не
-загубились при переписуванні.
+Expected: PASS, 0 errors. 🔴 Зелений лінт i18n-повноти сторінки НЕ
+доводить (усі 8 рядків — у toast, які селектори не бачать за побудовою);
+доводить ручна звірка інвентаря Step 1 із живим прогоном Step 4.
 
-- [ ] **Step 4: ЖИВИЙ прогін — головний доказ етапу**
+- [ ] **Step 5: ЖИВИЙ прогін — головний доказ етапу**
 
 ```bash
 PG_HARNESS_URL="$PG_HARNESS_URL" pnpm db:demo
-# створити адміна: див. v2-state-map.md §5 (issueOwnerInvite)
+# адмін: v2-state-map.md §5 (issueOwnerInvite → пароль → вхід)
 pnpm build && PORT=3141 pnpm start &
 ```
 
 У браузері під адміном на `/admin/order-statuses`:
-1. Список рендериться з БД;
-2. **створення** — рядок зʼявляється **миттєво**, до відповіді сервера;
-3. **видалення** — зникає миттєво;
-4. **призначення дефолту** — прапорець переїжджає, у решти знімається;
-5. консоль: нуль `console.error`;
-6. **rollback**: тимчасово зупинити сервер і спробувати створити —
-   рядок має **зникнути** сам, без перезавантаження.
+1. список рендериться з БД, порядок за `sortOrder`;
+2. **створення** — рядок зʼявляється МИТТЄВО (до відповіді сервера), toast після персисту;
+3. створення з чекбоксом дефолту — прапорець переїжджає (у старого зникає);
+4. **видалення** — миттєво; спроба видалити дефолтний — кнопка disabled; via devtools-виклик serverFn напряму — 500 із текстом про дефолтний (сервер тримає, не UI);
+5. **reorder** — стрілки міняють сусідів, порядок стабільний після F5;
+6. консоль: нуль `console.error`;
+7. **rollback**: зупинити сервер (`kill %1`) → створити рядок → рядок
+   зʼявляється і сам ЗНИКАЄ, toast помилки; після рестарту сервера F5 —
+   стан консистентний.
 
-🔴 П. 6 — доказ того, заради чого весь етап: авто-rollback від колекції.
-Без нього оптимізм лишається обіцянкою.
+🔴 П. 7 — доказ того, заради чого оптимізм: авто-rollback колекції.
 
-- [ ] **Step 5: Коміт**
+- [ ] **Step 6: Коміт**
 
 ```bash
 git add packages/simplycms
-git commit -m "feat(v2-k3): OrderStatuses на useLiveQuery — перша жива сторінка
+git commit -m "feat(v2-k3): OrderStatuses на useLiveQuery — перша жива сторінка адмінки
 
-Читання — живий запит із колекції, запис — collection.insert/delete з
-оптимізмом і авто-rollback. setDefault лишається серверною операцією з
-рефетчем: вона міняє N рядків, і write-back одного не описує стан.
-preload у loader роуту — інакше перший рендер із порожньою колекцією.
+Читання — живий запит колекції; create/update/delete — оптимістичні з
+авто-rollback і тостами через isPersisted (лінт toast-рядків не бачить —
+інвентар перенесено вручну: max+1, generateCode, disabled-межі, 8
+тостів). setDefault/reorder — серверні операції з refetch (міняють N
+рядків — межа канону write-back). preload у клієнтському loader.
 
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 10: Гейти мутацій — `mutation-cache-sync` і `handler-canon`
+### Task 11: Гейти кеш-синхронізації, реєстр винятків, повний ланцюг
 
 **Files:**
 - Create: `eslint-rules/mutation-cache-sync.mjs`
 - Create: `tests/handler-canon.test.ts`
+- Create: `packages/simplycms/src/contracts/admin-server-first.ts` (+ тест `packages/simplycms/src/contracts/__tests__/admin-server-first.test.ts`)
 - Modify: `eslint.config.mjs`
 
 **Interfaces:**
-- Produces: два незалежні гейти на різні поверхні одного інваріанту.
+- Produces: два незалежні гейти одного інваріанту (хуки ↔ persistence-хендлери) + реєстр К3-2.
 
-🔴 Два, а не один: `mutation-cache-sync` дивиться на **React-хуки**
-(`useMutation` у файлі сторінки), `handler-canon` — на **persistence-
-хендлери колекції**. Мутація може бути коректною на одному рівні й
-зламаною на іншому; у MetaHub це два незалежні артефакти саме тому.
-
-- [ ] **Step 1: `handler-canon` — AST-гейт write-back**
+- [ ] **Step 1: `handler-canon` — AST-гейт write-back (повна специфікація)**
 
 ```ts
 // tests/handler-canon.test.ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import ts from 'typescript';
+
 /**
- * Кожен `return { refetch: false }` у persistence-хендлері
- * (`onInsert`/`onUpdate`/`onDelete`) мусить мати write-back
- * (`writeUpsert`/`writeUpdate`/`writeInsert`/`writeDelete`/`writeBatch`)
- * у СВОЇЙ домінуючій гілці.
+ * Кожен `return { refetch: false }` усередині onInsert/onUpdate/onDelete
+ * мусить мати write-back (collection.utils.writeUpsert/writeUpdate/
+ * writeInsert/writeDelete/writeBatch) СЕРЕД STATEMENT-ів, що передують
+ * цьому return у його ланцюжку блоків (усі попередні сиблінги в кожному
+ * батьківському Block аж до тіла хендлера).
  *
- * 🔴 Path-sensitive, а не текстовий скан: `if (x) { return {refetch:false} }`
- * без write-back у тій самій гілці — саме той дефект, який шукаємо.
- * Виняток — коментар `// canon-exempt: <причина>` рядком вище.
- *
- * BASELINE порожній і лишається порожнім: гейт постійний, не міграційний.
+ * 🔴 Path-sensitive рівно настільки: `if (x) return {refetch:false}` без
+ * write-back вище по ланцюжку — офендер; write-back у ЧУЖІЙ гілці не
+ * рахується, бо він не передує return-у в його ланцюжку. Виняток —
+ * коментар `// canon-exempt: <причина>` рядком вище return.
+ * BASELINE порожній і лишається порожнім: гейт постійний.
  */
+const ROOT = join(import.meta.dirname, '../packages/simplycms/src/admin-data');
+const HANDLERS = new Set(['onInsert', 'onUpdate', 'onDelete']);
+const WRITE_RE = /\bwrite(?:Upsert|Update|Insert|Delete|Batch)\b/;
+
+function* tsFiles(dir: string): Generator<string> {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory() && e.name !== '__tests__') yield* tsFiles(p);
+    else if (e.isFile() && /\.tsx?$/.test(e.name)) yield p;
+  }
+}
+
+function offendersIn(file: string): string[] {
+  const src = readFileSync(file, 'utf8');
+  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true);
+  const out: string[] = [];
+
+  const isRefetchFalse = (node: ts.Node): boolean =>
+    ts.isReturnStatement(node) && !!node.expression &&
+    ts.isObjectLiteralExpression(node.expression) &&
+    node.expression.properties.some((p) =>
+      ts.isPropertyAssignment(p) && p.name.getText() === 'refetch' &&
+      p.initializer.kind === ts.SyntaxKind.FalseKeyword);
+
+  const hasExempt = (node: ts.Node): boolean =>
+    /canon-exempt:/.test(src.slice(Math.max(0, node.getFullStart() - 200), node.getStart()));
+
+  const precededByWrite = (ret: ts.Node, boundary: ts.Node): boolean => {
+    let cur: ts.Node = ret;
+    while (cur !== boundary && cur.parent) {
+      const parent = cur.parent;
+      if (ts.isBlock(parent)) {
+        for (const st of parent.statements) {
+          if (st === cur) break;
+          // 🔴 Зараховуємо лише БЕЗУМОВНИЙ write-statement (рев'ю р2:
+          // `if (cond) writeUpsert(...)` — попередній сиблінг, але
+          // write у чужій гілці; такий НЕ рахується — це IfStatement,
+          // не ExpressionStatement).
+          if (ts.isExpressionStatement(st) && WRITE_RE.test(st.getText())) return true;
+        }
+      }
+      cur = parent;
+    }
+    return false;
+  };
+
+  const visitHandlerBody = (body: ts.Node) => {
+    const walk = (n: ts.Node) => {
+      if (isRefetchFalse(n) && !hasExempt(n) && !precededByWrite(n, body))
+        out.push(`${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+      ts.forEachChild(n, walk);
+    };
+    walk(body);
+  };
+
+  const visit = (n: ts.Node) => {
+    if ((ts.isPropertyAssignment(n) || ts.isMethodDeclaration(n)) &&
+        HANDLERS.has(n.name.getText())) {
+      const fn = ts.isPropertyAssignment(n) ? n.initializer : n;
+      if ((ts.isArrowFunction(fn) || ts.isFunctionExpression(fn) || ts.isMethodDeclaration(fn)) && fn.body)
+        visitHandlerBody(fn.body);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+describe('handler-canon: refetch:false ⇒ write-back у своєму ланцюжку', () => {
+  it('офендерів немає (BASELINE порожній назавжди)', () => {
+    const offenders = [...tsFiles(ROOT)].flatMap(offendersIn);
+    expect(offenders).toEqual([]);
+  });
+});
 ```
 
-Реалізація — обхід через TypeScript compiler API: для кожного
-`ReturnStatement`, чий вираз має `refetch: false`, піднятись по
-батьківських блоках і перевірити наявність виклику `write*` серед
-попередніх statements.
+Run: `pnpm vitest run tests/handler-canon.test.ts` → PASS.
+**Негативні контролі (ОБИДВА):** у `collections/order-statuses.ts`
+тимчасово (1) прибрати `writeBatch`-блок в `onDelete` → FAIL; (2)
+замінити його на `if (Math.random() > 2) collection.utils.writeDelete(ids[0].id);`
+→ теж FAIL (умовний сиблінг не зараховується) → повернути.
 
-- [ ] **Step 2: Негативний контроль `handler-canon`**
-
-```bash
-# У колекції тимчасово: прибрати рядок collection.utils.writeUpsert(row)
-# у onInsert, лишивши return { refetch: false }.
-pnpm vitest run tests/handler-canon.test.ts
-# Expected: FAIL із назвою файлу й рядком
-# Повернути → PASS
-```
-
-- [ ] **Step 3: `mutation-cache-sync` — правило на хуки**
+- [ ] **Step 2: `mutation-cache-sync` — правило на хуки**
 
 ```js
 // eslint-rules/mutation-cache-sync.mjs
 /**
- * Клієнтська мутація мусить лишати слід у кеші.
- *
- * Шар 1: файл із `useMutation` мусить мати хоч якийсь сигнал —
- *   invalidateQueries / setQueryData / removeQueries / refetchQueries
- *   або collection.utils.{refetch,writeUpsert,writeUpdate,writeDelete}.
- * Шар 2: якщо є `invalidateQueries` — мусить бути й collection-синк,
- *   інакше список TanStack DB не оновиться без reload.
- *
- * 🔴 Правило евристичне за побудовою (будь-який синк у файлі рахується):
- * можливі фолс-негативи, але не фолс-позитиви. Строгість дає
- * `handler-canon` через dataflow-аналіз. Opt-out —
- * `// cache-sync-ok: <причина>`.
+ * Клієнтська мутація мусить лишати слід у кеші (урок №6 роадмапу:
+ * колекція НЕ рефетчиться від invalidateQueries React Query).
+ * Шар 1: файл із useMutation АБО з викликом серверної операції
+ *   (setDefault*/reorder*) мусить містити хоч один синк:
+ *   invalidateQueries/setQueryData/refetchQueries АБО
+ *   collection.utils.{refetch,writeUpsert,writeUpdate,writeDelete,writeBatch}
+ *   АБО collection.insert/update/delete (оптимістичний шлях сам синкає).
+ * Шар 2: якщо є invalidateQueries і в файлі імпортовано simplycms/admin-data
+ *   — вимагається ще й collection-синк (інвалідація колекцію не будить).
+ * Евристика за побудовою (файловий рівень): фолс-негативи можливі,
+ * фолс-позитиви — ні; строгість дає handler-canon. Opt-out —
+ * `// cache-sync-ok: <причина>` у першому рядку файла.
  */
+export default {
+  meta: { type: 'problem', schema: [], messages: {
+    noSync: 'Мутація без сліду в кеші: додай collection-синк або поясни // cache-sync-ok (див. eslint-rules/mutation-cache-sync.mjs).',
+    invalidateOnly: 'invalidateQueries не будить TanStack DB-колекцію — потрібен collection.utils.* синк.',
+  }},
+  create(context) {
+    const src = context.sourceCode.getText();
+    if (/^\/\/ cache-sync-ok:/.test(src)) return {};
+    const hasMutation = /\buseMutation\b/.test(src) || /\b(setDefault|reorder)\w*\(\s*\{/.test(src);
+    if (!hasMutation) return {};
+    const hasCollectionSync = /collection\.(insert|update|delete)\b/.test(src) ||
+      /utils\.(refetch|writeUpsert|writeUpdate|writeDelete|writeBatch)\b/.test(src);
+    const hasQuerySync = /\b(invalidateQueries|setQueryData|refetchQueries)\b/.test(src);
+    const usesAdminData = /simplycms\/admin-data/.test(src);
+    return { 'Program:exit'(node) {
+      if (!hasCollectionSync && !hasQuerySync) context.report({ node, messageId: 'noSync' });
+      else if (!hasCollectionSync && hasQuerySync && usesAdminData) context.report({ node, messageId: 'invalidateOnly' });
+    }};
+  },
+};
 ```
 
-- [ ] **Step 4: Контролі правила**
+Зона в `eslint.config.mjs`: `packages/simplycms/src/admin-data/**/*.{ts,tsx}`
++ точковий ратчет переписаних сторінок — стартово
+`packages/simplycms/src/admin/pages/OrderStatuses.tsx` (список росте з
+хвилями Е3–Е6, патерн `PENDING_FILES` навпаки).
 
-```bash
-# НЕГАТИВНИЙ: додати у файл сторінки useMutation без жодного синку
-pnpm lint   # Expected: FAIL
-# ПОЗИТИВНИЙ: додати поруч collection.utils.refetch()
-pnpm lint   # Expected: 0 errors
-# Прибрати → 0 errors / 12 warnings
+**Контролі:** негативний — тимчасово прибрати `collection.utils.refetch()`
+із `handleReorder` сторінки → `pnpm lint` FAIL (invalidateOnly/noSync);
+позитивний — повернути → 0 errors / 13 warnings.
+
+- [ ] **Step 3: Реєстр server-first винятків (К3-2)**
+
+```ts
+// packages/simplycms/src/contracts/admin-server-first.ts
+/**
+ * Реєстр К3-2: сутності/екрани адмінки, що СВІДОМО лишаються server-first
+ * (без TanStack DB-колекції). Мовчазні відхилення заборонені: колекція
+ * для сутності звідси — дефект, і навпаки — сутність без колекції й без
+ * запису тут на кінець Е6 — дефект (гейт повноти доросте разом із
+ * хвилями; сьогодні тест стереже першу половину інваріанта).
+ */
+export const ADMIN_SERVER_FIRST = {
+  priceValidator: 'обчислення, не сутність',
+  dashboard: 'агрегати-лічильники',
+  systemSettings: 'одиничний рядок — колекція з одного елемента безглузда',
+} as const satisfies Readonly<Record<string, string>>;
 ```
 
-- [ ] **Step 5: Повний ланцюг і коміт**
+```ts
+// packages/simplycms/src/contracts/__tests__/admin-server-first.test.ts
+import { describe, expect, it } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { ADMIN_SERVER_FIRST } from '../admin-server-first';
+import { ENTITY } from '../entities';
+
+describe('реєстр server-first винятків (К3-2)', () => {
+  it('колекція не існує для сутності з реєстру', () => {
+    const collections = readdirSync(
+      join(import.meta.dirname, '../../admin-data/collections'),
+    ).map((f) => f.replace(/\.tsx?$/, '').replace(/-/g, '_'));
+    for (const name of Object.keys(ADMIN_SERVER_FIRST))
+      expect(collections, `${name} у реєстрі винятків — колекція заборонена`)
+        .not.toContain(name.replace(/([A-Z])/g, '_$1').toLowerCase());
+  });
+
+  it('ключі реєстру не суперечать ENTITY-іменам колекцій', () => {
+    expect(Object.keys(ADMIN_SERVER_FIRST).length).toBeGreaterThan(0);
+    expect(Object.values(ENTITY)).not.toContain('price_validator');
+  });
+});
+```
+
+- [ ] **Step 4: Повний ланцюг + контролі + коміт**
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint \
   && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema \
   && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging
 pnpm pilot:pack
-git add eslint-rules tests eslint.config.mjs
-git commit -m "test(v2-k3): гейти мутацій — cache-sync і handler-canon
+git add eslint-rules tests eslint.config.mjs packages/simplycms/src/contracts
+git commit -m "test(v2-k3): гейти мутацій (handler-canon + mutation-cache-sync) і реєстр К3-2
 
-Дві різні поверхні одного інваріанту: правило дивиться на React-хуки,
-AST-гейт — на persistence-хендлери колекції. Мутація може бути
-коректною на одному рівні й зламаною на іншому.
+Дві поверхні одного інваріанту: AST-гейт по ланцюжку блоків до
+refetch:false (BASELINE порожній назавжди) і файлова евристика на хуки
+(фолс-негативи можливі, фолс-позитиви — ні). Реєстр server-first
+винятків — мовчазні відхилення від «усе на колекціях» заборонені.
 
-BASELINE handler-canon порожній і лишається порожнім.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-## DoD етапу Е1б
+## DoD етапу Е1б (редакція 2)
 
-1. **Повний ланцюг гейтів зелений** (десять кроків) + `pnpm pilot:pack`;
-   `pnpm lint` = 0 errors, 12 warnings.
-
-2. **Контролі прогнані вручну — усі шість:**
-   - Task 1 — прибрана залежність агрегату червонить гейт `deps`;
-   - Task 8 — розходження ключів кидає й не лишає жодного рядка;
-   - Task 10 — `handler-canon` без write-back падає; `mutation-cache-sync`
-     негативний і позитивний;
-   - Task 4 / Task 7 — імпорт угору по тіру валить лінт (обидві зони).
-
-3. **Жива сторінка** `/admin/order-statuses` під адміном: список, миттєве
-   створення й видалення, переїзд дефолту, **авто-rollback при
-   зупиненому сервері**, нуль `console.error`.
-
-4. **`test:schema`** доводить інваріант дефолту в одній транзакції.
-
-5. **Gate C пілота** зелений — `simplycms/admin-server` не поїхав у
-   клієнтський бандл разом із drizzle і пулом.
-
-6. **`ENTITY`, ключі й `deps`** узгоджені: гейт повноти зелений на всіх
-   восьми агрегатах.
+1. **Повний ланцюг гейтів** (десять кроків) + `pnpm pilot:pack` зелені;
+   `pnpm lint` = 0 errors / 13 warnings.
+2. **Контролі прогнані вручну — пронумеровано ВІСІМ:**
+   1) Task 0 — другий глобальний дефолт → 23505;
+   2) Task 1 — прибрана залежність агрегату червонить deps-гейт;
+   3) Task 2 — друга версія `@tanstack/db` червонить single-instance;
+   4) Task 4 — нетоплевел `createServerFn` червонить лінт;
+   5) Task 6/9 — імпорт угору по тіру валить лінт (обидві нові зони, обидві форми специфікатора);
+   6) Task 9 — id-mismatch кидає ДО write-back, двійників немає;
+   7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
+   8) Task 11 — `mutation-cache-sync` негативний і позитивний.
+3. **Жива сторінка** `/admin/order-statuses`: усі 7 пунктів прогону
+   Task 10 Step 4, включно з авто-rollback і серверною відмовою на
+   видалення дефолтного.
+4. **`test:schema`** доводить: інваріант дефолту (23505 + операції) і
+   повноту `deps` усіх СЕМИ агрегатів (з `pickup_points` у двох).
+5. **Gate C** зелений зі стаб-маркером `admin-server`; `/drizzle-orm/` і
+   `pg` у клієнтських чанках відсутні.
+6. **Спека звірена:** кожен пункт ревізії 2026-08-31 (К3-4′/К3-9′/К3-10′/
+   К3-13/К3-14) має відповідний артефакт у коді (цей план — мапа).
 
 ## Що НЕ входить в Е1б
 
-- Решта 52 файлів `src/admin/**` — хвилі Е3–Е6.
-- `syncMode: 'on-demand'` і push-down — Е3 (каталог); тут лише `eager`.
+- Решта 52 файлів `src/admin/**` — хвилі Е3–Е6 (ратчет
+  `admin-inserts-need-id` і виїмка `admin/` у правилі ключів чинні).
+- `syncMode: 'on-demand'` і push-down — Е3; тут лише `eager`
+  (`mode` у дескрипторі вже є — Е3 фабрику не міняє).
 - Storage-порт і `ImageUpload` — Е2.
-- Прибирання виїмки `admin/` з правила ключів — після переписування всіх
-  сторінок (закриє DoD К3-3).
-- Борги Е1а №4 (`detail()` змішує slug і uuid), №6 (`scoped` у двох
-  значеннях), №8 (зона правила не дістає до тем і плагінів) — вони
-  проявляться на каталозі, тобто в Е3.
+- Гейт повноти «сутність ⇒ колекція АБО реєстр винятків» на всі 34 —
+  доростає з хвилями, закривається в Е6.
+- Адаптація мертвих legacy-шляхів запису під нові індекси — сторінки
+  supabase-js не виконуються на стеку v2; КОНТРАКТ хвиль Е3–Е6: сторінка
+  single-default таблиці переписується разом зі своєю setDefault-операцією
+  (Task 0, блок Legacy).
+- К3-11 (контракт плагінів: `PluginTablePort.insert` вимагає `id`, DDL
+  шаблонів без `gen_random_uuid()`) — окремим кроком до К5; Е0 вже зняв
+  DEFAULT у референс-плагіна, решта — поза Е1б.
+- Борги Е1а №4 (`detail()` slug/uuid), №6 (`scoped` у двох значеннях),
+  №8 (зона правила ключів не дістає тем/плагінів) — проявляться на
+  каталозі, тобто в Е3.
 
 ## Точка передачі
 
 Після закриття DoD — повернутись на валідацію з чотирма артефактами:
-вивід повного ланцюга, вивід **усіх шести** контролів, запис або опис
-живого прогону (особливо п. 3 з rollback), і `git log --oneline` етапу.
+вивід повного ланцюга; вивід УСІХ ВОСЬМИ контролів; запис/опис живого
+прогону (особливо rollback п.7); `git log --oneline` етапу. Рев'ю нової
+редакції перед виконанням — сесія `admin-server-layer` (адверсаріально,
+бажано повторним прогоном Codex тим самим протоколом, що дав REJECT
+старій редакції).
 
-Наступний план — **Е2: Storage-мінімум** (`MediaProvider` + драйвер
-`local-fs`), після нього **Е3: каталог на on-demand** — там уперше
-працює push-down, і туди ж переїжджають три борги Е1а, що стосуються
-каталогу.
+Наступний план — **Е2: Storage-мінімум** (`MediaProvider` + `local-fs`),
+після нього **Е3: каталог on-demand** — перший push-down і три борги Е1а.
