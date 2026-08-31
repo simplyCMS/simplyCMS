@@ -106,6 +106,11 @@ node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.
 правки продакшн-коду. Spy на `Client.prototype.query` бачить і преамбулу
 актора, і всі запити транзакції.
 
+✅ **Техніку перевірено наживо** (2026-08-30, стенд `55433`): підміна
+`pg.Client.prototype.query` перехопила всі три запити, що пішли через
+`pool.connect()` → `client.query`, включно з `begin`/`commit`. Тобто
+`PoolClient` успадковує прототип `Client`, і spy на ньому працює.
+
 - [ ] **Step 1: Написати гейт**
 
 ```ts
@@ -122,7 +127,19 @@ const CANON = join(import.meta.dirname, '../../../migrations');
 const canonFiles = () =>
   readdirSync(CANON).filter((n) => n.endsWith('.sql')).sort().map((n) => join(CANON, n));
 
-/** Імена таблиць, які реально згадав SQL (from/join, з лапками й без). */
+/**
+ * Імена таблиць, які реально згадав SQL.
+ *
+ * 🔴 Межі перевірені на реальних формах Drizzle (прогін 2026-08-30):
+ * ловить `from`/`join` з лапками й без, у підзапитах і після CTE.
+ * НЕ ловить:
+ *   • `insert into "orders"` — свідомо: агрегати описують ЧИТАННЯ, і
+ *     запис у них не входить (за записом стежить `explicit-ids`);
+ *   • кома-розділені таблиці `from a, b` — Drizzle такої форми не
+ *     генерує, але якщо колись зʼявиться сирий SQL із нею, друга
+ *     таблиця пройде повз.
+ * Тобто гейт ловить рівно те, заради чого існує, і не вдає більшого.
+ */
 function tablesInSql(sql: string): string[] {
   const re = /\b(?:from|join)\s+(?:"?public"?\.)?"?([a-z_][a-z0-9_]*)"?/gi;
   return [...sql.matchAll(re)].map((m) => m[1].toLowerCase());
