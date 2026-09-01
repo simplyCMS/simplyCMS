@@ -28,6 +28,8 @@
 - `id` для Категорії A генерує клієнт (`crypto.randomUUID()`); fail-loud при `serverRow.id !== optimisticId` ДО write-back.
 - 🔴 `queryKey` колекції = `entityKey(ENTITY.х).list()` — той самий префікс, що в решти запитів сутності.
 - Кожен гейт має **негативний І позитивний** контроль, прогнаний вручну.
+- 🔴 **Мінімальний гейт КОЖНОЇ задачі перед комітом: `pnpm lint && pnpm test`** (+ `test:schema`, якщо чіпала schema/migrations/harness). Урок Task 0 (знахідка сесії-імплементатора 2026-09-01): `pnpm test` не ганявся між Task 0 і Task 2, і червоний parity-тест прожив чотири задачі непоміченим.
+- 🔴 **Інваріант `template:sync`:** задача, що чіпає джерела `SYNCED_DIRS` (`scripts/sync-create-store-template.mjs:63`: `packages/simplycms/migrations/`, `themes/default/`, `plugins/hello-world/`) або `SYNCED_FILES` (host-файли), зобовʼязана прогнати `pnpm template:sync` і закомітити копію в `packages/create-simplycms-store/template/` (+ `packages/cli/host/`) — інакше `tests/create-store-template-parity.test.ts` червоніє, а диф задачі цього не показує за побудовою (бракує файла, якого немає в дифі). В Е1б під це підпадає Task 0 (міграції) і Task 3 (host-файл); хвилі Е3–Е6 чіпатимуть теми.
 - Тіри: `admin-server` = **T2** (upward-виняток `['db','auth']` — як у `storefront`), `admin-data` = **T4**, `admin` = T5.
 - Коміти українською, `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 
@@ -289,11 +291,17 @@ Expected: PASS 7/7. **Негативний контроль:** тимчасов�
 індекс (напр. `idx_languages_single_default`) з `0001_init.sql` → рівно
 той кейс FAIL (не 23505) → повернути.
 
-- [ ] **Step 6: Повний схемний контур і коміт**
+- [ ] **Step 6: Синк шаблону, повний контур і коміт**
+
+🔴 `packages/simplycms/migrations/` — джерело `template:sync` (копія в
+шаблоні магазину під парність-тестом у `pnpm test`). Без синку
+`tests/create-store-template-parity.test.ts` червоніє, а диф Task 0 цього
+не показує (бракує файла). Знахідка імплементації 2026-09-01.
 
 ```bash
-pnpm test:schema
-git add packages/simplycms/migrations packages/simplycms/src/schema packages/simplycms/drizzle packages/simplycms/test-harness
+pnpm template:sync
+pnpm test:schema && pnpm lint && pnpm test
+git add packages/simplycms/migrations packages/simplycms/src/schema packages/simplycms/drizzle packages/simplycms/test-harness packages/create-simplycms-store/template
 git commit -m "feat(v2-k3): інваріант is_default — 7 часткових unique-індексів у baseline
 
 К3-14 (амендмент 2026-08-31): за прецедентом idx_price_types_single_default
@@ -531,9 +539,10 @@ Run: той самий. Expected: PASS усі.
 # Повернути → PASS
 ```
 
-- [ ] **Step 5: Коміт**
+- [ ] **Step 5: Гейти й коміт**
 
 ```bash
+pnpm lint && pnpm test    # entity-parity.test.ts стереже entities.ts — мусить бути зелений
 git add packages/simplycms/test-harness packages/simplycms/src/contracts
 git commit -m "test(v2-k3): рантайм-гейт повноти deps + фікс pickup_points у двох агрегатах
 
@@ -849,9 +858,10 @@ pnpm lint
 # Прибрати → 0 errors, warnings без змін
 ```
 
-- [ ] **Step 5: Коміт**
+- [ ] **Step 5: Гейти й коміт**
 
 ```bash
+pnpm lint && pnpm test
 git add eslint-rules/server-fn-top-level.mjs tests/eslint-rules eslint.config.mjs
 git commit -m "test(v2-k3): гейт К3-4′ — createServerFn лише топ-рівневим const
 
@@ -1183,9 +1193,10 @@ export function toDrizzleSubset(table: Table, allow: SubsetAllow, input: SubsetI
 
 Run: тест → PASS 5/5. Потім `pnpm lint` → 0 errors (зона жива, файл під нею).
 
-- [ ] **Step 4: Коміт**
+- [ ] **Step 4: Гейти й коміт**
 
 ```bash
+pnpm lint && pnpm test
 git add packages/simplycms/src/admin-server eslint.tier-zones.mjs tests/tier-boundary.test.ts
 git commit -m "feat(v2-k3): admin-server (T2, виняток db+auth) + subset зі строгим Zod-входом
 
