@@ -86,6 +86,8 @@ Task 11 (гейти кеш-синхронізації + Gate C + реєстр в
 | `eslint-rules/server-fn-top-level.mjs` | Гейт К3-4′: `createServerFn` лише топ-рівнево |
 | `eslint-rules/mutation-cache-sync.mjs` | Мутація в UI парує синк кешу |
 | `tests/handler-canon.test.ts` | AST-гейт write-back у persistence-хендлерах |
+| `tests/eslint-rules/server-fn-top-level.test.ts` | Машинні фікстури правила К3-4′ (Linter API, 8 кейсів) |
+| `tests/eslint-rules/mutation-cache-sync.test.ts` | Машинні фікстури function-scope правила (Linter API, 9 кейсів) |
 | `tests/tanstack-db-single-instance.test.ts` | Рівно один `@tanstack/db` у дереві |
 
 **Змінюються:**
@@ -717,8 +719,8 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Files:**
 - Create: `eslint-rules/server-fn-top-level.mjs`
+- Create: `tests/eslint-rules/server-fn-top-level.test.ts`
 - Modify: `eslint.config.mjs`
-- Test: негативний контроль вручну (фікстурою в зоні)
 
 **Interfaces:**
 - Produces: постійний запобіжник обох режимів провалу компілятора (throw на повільному шляху, МОВЧАЗНИЙ пропуск на fast-path).
@@ -787,7 +789,53 @@ export default {
 `simplycms-serverfn`, rule `'simplycms-serverfn/server-fn-top-level': 'error'`;
 окреме імʼя плагіна — щоб не зливати опції з `query-key-from-entity`).
 
-- [ ] **Step 3: Контролі**
+- [ ] **Step 3: Машинний тест правила (Linter API на синтетичних фікстурах)**
+
+Прецедент підходу — `tests/tier-boundary/lint.ts` (ESLint годується
+синтетичним кодом). ✅ Усі 8 кейсів емпірично зелені на ESLint 10.8 +
+typescript-eslint 8 (прогін 2026-09-01, правило витягнуте з цього плану).
+
+```ts
+// tests/eslint-rules/server-fn-top-level.test.ts
+import { describe, expect, it } from 'vitest';
+import { Linter } from 'eslint';
+import tseslint from 'typescript-eslint';
+import rule from '../../eslint-rules/server-fn-top-level.mjs';
+
+const linter = new Linter({ configType: 'flat' });
+const config = [{
+  files: ['**/*.ts'],
+  languageOptions: { parser: tseslint.parser },
+  plugins: { s: { rules: { 'server-fn-top-level': rule } } },
+  rules: { 's/server-fn-top-level': 'error' },
+}];
+const lint = (code: string) =>
+  linter.verify(`import { createServerFn } from '@tanstack/react-start';\n${code}`, config, { filename: 'f.ts' });
+
+describe('server-fn-top-level (К3-4′)', () => {
+  it.each([
+    ['export const chain', `export const list = createServerFn({ method: 'GET' }).inputValidator(s).handler(h);`],
+    ['const без export', `const list = createServerFn({ method: 'GET' }).handler(h);`],
+  ])('легально: %s', (_n, code) => expect(lint(code)).toEqual([]));
+
+  it.each([
+    ['усередині функції', `function f() { const x = createServerFn({ method: 'GET' }).handler(h); return x; }`],
+    ['let', `let y = createServerFn({ method: 'GET' }).handler(h);`],
+    ['object property', `const o = { fn: createServerFn({ method: 'GET' }).handler(h) };`],
+    ['wrapper-call', `const w = wrap(createServerFn({ method: 'GET' }).handler(h));`],
+    ['Promise.resolve', `const pr = Promise.resolve(createServerFn({ method: 'GET' }).handler(h));`],
+    ['export default', `export default createServerFn({ method: 'GET' }).handler(h);`],
+  ])('офендер: %s', (_n, code) => {
+    const msgs = lint(code);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].messageId).toBe('notTopLevel');
+  });
+});
+```
+
+Run: `pnpm vitest run tests/eslint-rules/server-fn-top-level.test.ts` → PASS 8/8.
+
+- [ ] **Step 4: Смоук у реальній зоні**
 
 ```bash
 pnpm lint                      # Expected: 0 errors (чинний код легальний)
@@ -801,10 +849,10 @@ pnpm lint
 # Прибрати → 0 errors / 13 warnings
 ```
 
-- [ ] **Step 4: Коміт**
+- [ ] **Step 5: Коміт**
 
 ```bash
-git add eslint-rules/server-fn-top-level.mjs eslint.config.mjs
+git add eslint-rules/server-fn-top-level.mjs tests/eslint-rules eslint.config.mjs
 git commit -m "test(v2-k3): гейт К3-4′ — createServerFn лише топ-рівневим const
 
 Компілятор Start вимагає top-level присвоєння (handleCreateServerFn:104),
@@ -2335,6 +2383,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Files:**
 - Create: `eslint-rules/mutation-cache-sync.mjs`
+- Create: `tests/eslint-rules/mutation-cache-sync.test.ts`
 - Create: `tests/handler-canon.test.ts`
 - Create: `packages/simplycms/src/contracts/admin-server-first.ts` (+ тест `packages/simplycms/src/contracts/__tests__/admin-server-first.test.ts`)
 - Modify: `eslint.config.mjs`
@@ -2609,16 +2658,114 @@ export default {
 `packages/simplycms/src/admin/pages/OrderStatuses.tsx` (список росте з
 хвилями Е3–Е6, патерн `PENDING_FILES` навпаки).
 
-**Контролі:** негативний — тимчасово прибрати `collection.utils.refetch()`
-із `handleReorder` сторінки → `pnpm lint` FAIL з `noSync` САМЕ на
-виклику `reorderOrderStatus` (рев'ю р3: function-scope робить контроль
-можливим на реальній сторінці — інші хендлери файла зі своїми синками
-його не «покривають»); позитивний — повернути → 0 errors / 13 warnings.
-Другий негатив — `useMutation` без синку на рівні компонента, поруч із
-хендлером, що МАЄ синк → FAIL (рев'ю р4: сусідній синк не покриває).
-Третій — `// cache-sync-ok: причина` рядком вище `await reorderOrderStatus(...)`
-→ 0 errors (opt-out працює через `await`); `// cache-sync-ok:` без
-причини → FAIL. Усе прибрати.
+**Машинний тест правила** — гейт, а не ручний контроль. ✅ Усі 9 кейсів
+емпірично зелені на ESLint 10.8 + typescript-eslint 8 (прогін
+2026-09-01, правило витягнуте з цього плану); покривають знахідки р3/р4:
+змішана сторінка, useMutation поруч із синком, serverFn у mutationFn +
+onSuccess, opt-out через `await`, persistence-хендлери, loader, JSX-arrow.
+
+```ts
+// tests/eslint-rules/mutation-cache-sync.test.ts
+import { describe, expect, it } from 'vitest';
+import { Linter } from 'eslint';
+import tseslint from 'typescript-eslint';
+import rule from '../../eslint-rules/mutation-cache-sync.mjs';
+
+const linter = new Linter({ configType: 'flat' });
+const config = [{
+  files: ['**/*.tsx', '**/*.ts'],
+  languageOptions: { parser: tseslint.parser, parserOptions: { ecmaFeatures: { jsx: true } } },
+  plugins: { s: { rules: { 'mutation-cache-sync': rule } } },
+  rules: { 's/mutation-cache-sync': 'error' },
+}];
+const HEAD = `import { useMutation } from '@tanstack/react-query';
+import { useCollection, orderStatusesCollection } from 'simplycms/admin-data';
+import { listOrderStatuses, insertOrderStatuses, setDefaultOrderStatus, reorderOrderStatus } from 'simplycms/admin-server';
+`;
+const lint = (code: string, head = HEAD) => linter.verify(head + code, config, { filename: 'f.tsx' });
+const ids = (code: string, head?: string) => lint(code, head).map((m) => m.messageId);
+
+describe('mutation-cache-sync (function-scope)', () => {
+  it('сторінка Task 10 — чиста', () => {
+    expect(ids(`export function Page() {
+      const collection = useCollection(orderStatusesCollection);
+      const handleCreate = (form) => { const tx = collection.insert({ id: 'x', ...form }); tx.isPersisted.promise.then(() => {}); };
+      const handleUpdate = (id, form) => { collection.update(id, (d) => { d.name = form.name; }); };
+      const handleDelete = (id) => { collection.delete(id); };
+      const applyDefault = async (id) => { await setDefaultOrderStatus({ data: { id } }); await collection.utils.refetch(); };
+      const handleReorder = async (id, dir) => { await reorderOrderStatus({ data: { id, dir } }); await collection.utils.refetch(); };
+      return <button onClick={() => handleReorder('a', 'up')} />;
+    }`)).toEqual([]);
+  });
+
+  it('прибраний refetch у handleReorder — noSync САМЕ там (сусідній синк не покриває)', () => {
+    expect(ids(`export function Page() {
+      const collection = useCollection(orderStatusesCollection);
+      const applyDefault = async (id) => { await setDefaultOrderStatus({ data: { id } }); await collection.utils.refetch(); };
+      const handleReorder = async (id) => { await reorderOrderStatus({ data: { id } }); };
+      return null;
+    }`)).toEqual(['noSync']);
+  });
+
+  it('useMutation без синку поруч із хендлером із синком — офендер', () => {
+    expect(ids(`export function Page() {
+      const collection = useCollection(orderStatusesCollection);
+      const m = useMutation({ mutationFn: async (x) => fetch('/api', { body: x }) });
+      const handleReorder = async (id) => { await reorderOrderStatus({ data: { id } }); await collection.utils.refetch(); };
+      return null;
+    }`)).toEqual(['noSync']);
+  });
+
+  it('useMutation(serverFn у mutationFn) + refetch в onSuccess — чисто', () => {
+    expect(ids(`export function Page() {
+      const collection = useCollection(orderStatusesCollection);
+      const m = useMutation({ mutationFn: (id) => setDefaultOrderStatus({ data: { id } }), onSuccess: () => collection.utils.refetch() });
+      return null;
+    }`)).toEqual([]);
+  });
+
+  it('opt-out над await — працює лише з причиною', () => {
+    const body = (comment: string) => `export function Page() {
+      const handleReorder = async (id) => {
+        ${'$'}{comment}
+        await reorderOrderStatus({ data: { id } });
+      };
+      return null;
+    }`;
+    expect(ids(body('// cache-sync-ok: refetch робить викликач'))).toEqual([]);
+    expect(ids(body('// cache-sync-ok:'))).toEqual(['noSync']);
+  });
+
+  it('колекція Task 9 (serverFn у persistence-хендлерах) — чиста', () => {
+    expect(ids(`function create(queryClient) {
+      const collection = createCollection(queryCollectionOptions({
+        queryFn: async () => listOrderStatuses({ data: {} }),
+        onInsert: async ({ transaction }) => {
+          const rows = await insertOrderStatuses({ data: transaction.mutations.map((m) => m.modified) });
+          collection.utils.writeBatch(() => { for (const row of rows) collection.utils.writeUpsert(row); });
+          return { refetch: false };
+        },
+      }));
+      return collection;
+    }`, `import { insertOrderStatuses, listOrderStatuses } from 'simplycms/admin-server';\n`)).toEqual([]);
+  });
+
+  it('loader з list — поза правилом', () => {
+    expect(ids(`export const Route = { loader: async () => { await listOrderStatuses({ data: {} }); return null; } };`,
+      `import { listOrderStatuses } from 'simplycms/admin-server';\n`)).toEqual([]);
+  });
+
+  it('serverFn у JSX inline-arrow без синку — офендер', () => {
+    expect(ids(`export function Page() { return <button onClick={() => setDefaultOrderStatus({ data: { id: 'a' } })} />; }`)).toEqual(['noSync']);
+  });
+});
+```
+
+Run: `pnpm vitest run tests/eslint-rules/mutation-cache-sync.test.ts` → PASS 8/8.
+
+**Смоук у реальній зоні (після Task 10):** тимчасово прибрати
+`collection.utils.refetch()` із `handleReorder` сторінки → `pnpm lint`
+FAIL з `noSync` на `reorderOrderStatus`; повернути → 0 errors / 13 warnings.
 
 - [ ] **Step 3: Реєстр server-first винятків (К3-2)**
 
@@ -2692,11 +2839,11 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
    1) Task 0 — другий глобальний дефолт → 23505;
    2) Task 1 — прибрана залежність агрегату червонить deps-гейт;
    3) Task 2 — друга версія `@tanstack/db` червонить single-instance;
-   4) Task 4 — нетоплевел `createServerFn` червонить лінт;
+   4) Task 4 — машинний тест 8/8 + смоук: нетоплевел `createServerFn` червонить лінт;
    5) Task 6/9 — імпорт угору по тіру валить лінт (обидві нові зони, обидві форми специфікатора);
    6) Task 9 — id-mismatch кидає ДО write-back, двійників немає;
    7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
-   8) Task 11 — `mutation-cache-sync` негативний і позитивний.
+   8) Task 11 — `mutation-cache-sync`: машинний тест 8/8 + смоук на сторінці.
 3. **Жива сторінка** `/admin/order-statuses`: усі 10 пунктів прогону
    Task 10 Step 5, включно з авто-rollback і серверною відмовою на
    видалення дефолтного.
