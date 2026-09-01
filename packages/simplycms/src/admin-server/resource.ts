@@ -53,19 +53,58 @@ export function defineAdminResource<
   };
 
   const rowSchema = createSelectSchema(config.table);
-  // 🔴 Відхилення від брифа (typecheck): `.pick()` drizzle-zod типізований
-  // `M extends Mask<keyof Shape>`, де `Shape` — мапований тип, виведений із
-  // ГЕНЕРИЧНОГО `T['_']['columns']`. TS не вміє звести `keyof Shape` до
-  // конкретних імен колонок, коли `T` ще не інстанційовано (помилка
-  // TS2345: «W could be instantiated with a different subtype…»), тож
-  // `{[K in W]: true}` не проходить структурну перевірку. Каст ЛИШЕ
-  // аргументу `.pick()` — сама фабрика лишається типізована по `W`/`R`
-  // (exhaustiveness) вище й нижче цього виклику; рантайм-форма маски не
-  // змінюється.
-  const insertRowSchema = createInsertSchema(config.table)
-    .pick(pickWritable as never)
-    .extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = createUpdateSchema(config.table).pick(pickWritable as never);
+
+  // 🔴 Відхилення від брифа (typecheck), ХВІСТ РЕВʼЮ Task 7 (round 1):
+  // `.pick()` drizzle-zod типізований `M extends Mask<keyof Shape>`, де
+  // `Shape` — мапований тип, виведений із ГЕНЕРИЧНОГО `T['_']['columns']`.
+  // TS не вміє звести `keyof Shape` до конкретних імен колонок, поки `T`
+  // не інстанційовано (TS2345: «W could be instantiated with a different
+  // subtype…»), тож `{[K in W]: true}` не проходить структурну перевірку
+  // АРГУМЕНТУ.
+  //
+  // 🔴 Перша редакція касту (`pick(pickWritable as never)`) компілювалась,
+  // але БУЛА ПОМИЛКОВОЮ: аргумент типу `never` не дає TS сайту інференсу
+  // для `M`, тож `M` падає до свого констрейнта `Mask<keyof Shape>` —
+  // звідси `Extract<keyof Shape, keyof M> = keyof Shape` і `pick` СТАТИЧНО
+  // повертає Shape НЕЗМІНЕНИМ (рантайм не постраждав — `.pick()` усередині
+  // самого zod працює з реальним обʼєктом `pickWritable`, це суто питання
+  // СТАТИЧНОГО типу виклику). Наслідок: `insertSchema`/`updateSchema`
+  // статично приймали ВСІ колонки, включно з `readonly` (isDefault,
+  // createdAt) — рівно те, від чого існує exhaustiveness. Емпірично
+  // перевірено `expectTypeOf` у тесті ДО і ПІСЛЯ цього фіксу.
+  //
+  // Правильний фікс: каст на РЕЗУЛЬТАТ `.pick()`, не на аргумент. Явно
+  // виводимо Shape повної insert/update-схеми (`InsertShape`/`UpdateShape`
+  // через `infer` по `{ shape: infer S }` — так само, як сам zod типізує
+  // `.shape` на ZodObject), звужуємо його TS-ом (`Pick<Shape, W>` —
+  // справжній структурний Pick, обчислюваний компілятором, а не залежний
+  // від інференсу `M`) і кажемо компілятору, що саме такий тип повертає
+  // рантайм-виклик `.pick(pickWritable)`. Це ТОЧНО те, що робить рантайм:
+  // `pickWritable` містить рівно ключі `W`.
+  const insertSchemaFull = createInsertSchema(config.table);
+  const updateSchemaFull = createUpdateSchema(config.table);
+  type InsertShape =
+    typeof insertSchemaFull extends { shape: infer S } ? S : never;
+  type UpdateShape =
+    typeof updateSchemaFull extends { shape: infer S } ? S : never;
+  // 🔴 `Pick<Shape, W>` напряму не типізується: вбудований `Pick` вимагає
+  // `W extends keyof Shape`, а TS не може це довести генерично — insert-
+  // shape виключає «завжди згенеровані» колонки (ColumnIsGeneratedAlwaysAs),
+  // тож `keyof InsertShape` формально ВУЖЧИЙ за `ColumnName<T>`, з якого
+  // виведено `W`. Перетин `W & keyof Shape` знімає обмеження БЕЗ втрати
+  // точності: якщо `writable`-колонка колись виявиться «завжди
+  // згенерованою», вона так само відсутня в РАНТАЙМ-схемі insert (сам
+  // drizzle-zod її не кладе) — тип і рантайм лишаються синхронними.
+  type SafePick<S, K> = Pick<S, K & keyof S>;
+
+  const insertRowSchema = (
+    insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
+      SafePick<InsertShape, W>
+    >
+  ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
+  const patchSchema = updateSchemaFull.pick(
+    pickWritable as never,
+  ) as unknown as z.ZodObject<SafePick<UpdateShape, W>>;
 
   const insertSchema = z.array(insertRowSchema).min(1).max(100);
   const updateSchema = z.array(z.object({ id: z.uuid(), patch: patchSchema })).min(1).max(100);
