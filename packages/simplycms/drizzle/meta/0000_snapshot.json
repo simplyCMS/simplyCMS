@@ -919,7 +919,25 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_languages_single_default": {
+          "name": "idx_languages_single_default",
+          "columns": [
+            {
+              "expression": "is_default",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -1374,7 +1392,25 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_order_statuses_single_default": {
+          "name": "idx_order_statuses_single_default",
+          "columns": [
+            {
+              "expression": "is_default",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -2372,7 +2408,24 @@
           "default": "'in_stock'"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_product_modifications_single_default": {
+          "name": "idx_product_modifications_single_default",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "product_modifications_product_id_fkey": {
           "name": "product_modifications_product_id_fkey",
@@ -4358,7 +4411,25 @@
           "default": "'{\"\"}'"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_shipping_zones_single_default": {
+          "name": "idx_shipping_zones_single_default",
+          "columns": [
+            {
+              "expression": "is_default",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -4782,6 +4853,22 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_user_addresses_single_default": {
+          "name": "idx_user_addresses_single_default",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -4872,6 +4959,23 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_user_categories_single_default": {
+          "name": "idx_user_categories_single_default",
+          "columns": [
+            {
+              "expression": "is_default",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5174,6 +5278,22 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_user_recipients_single_default": {
+          "name": "idx_user_recipients_single_default",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_default = true)",
           "concurrently": false,
           "method": "btree",
           "with": {}

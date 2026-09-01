@@ -67,6 +67,10 @@ export const orderStatuses = pgTable("order_statuses", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
+	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
+	// нетранзакційні запити з браузера (перевірено — сторінка адмінки
+	// перемикає is_default по всій таблиці, без scope на батька).
+	uniqueIndex("idx_order_statuses_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const sections = pgTable("sections", {
@@ -129,6 +133,9 @@ export const userCategories = pgTable("user_categories", {
 		}).onDelete("set null"),
 	unique("user_categories_code_key").on(table.code),
 	index("idx_user_categories_price_type_id").on(table.priceTypeId),
+	// К3-14: та сама глобальна семантика, що в order_statuses (перевірено —
+	// адмінка перемикає is_default по всій таблиці через `.neq('id', …)`).
+	uniqueIndex("idx_user_categories_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const languages = pgTable("languages", {
@@ -140,6 +147,9 @@ export const languages = pgTable("languages", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("languages_code_key").on(table.code),
+	// К3-14: таблиця без parent-колонки — CRUD ще не реалізований (лише
+	// nav-заглушка), тож дефолт структурно глобальний.
+	uniqueIndex("idx_languages_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const userRoles = pgTable("user_roles", {
@@ -422,6 +432,8 @@ export const productModifications = pgTable("product_modifications", {
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
+	// К3-14: дефолт scoped на product_id — модифікації належать товару.
+	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
 ]);
 
 export const serviceRequests = pgTable("service_requests", {
@@ -509,6 +521,9 @@ export const shippingZones = pgTable("shipping_zones", {
 	cities: text().array().default([""]),
 	regions: text().array().default([""]),
 }, (table) => [
+	// К3-14: таблиця без parent-колонки — дефолт глобальний (перевірено —
+	// у ShippingZoneEdit.tsx unset-логіки взагалі немає, легасі-шлях мертвий).
+	uniqueIndex("idx_shipping_zones_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const shippingRates = pgTable("shipping_rates", {
@@ -738,6 +753,8 @@ export const userRecipients = pgTable("user_recipients", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_recipients_user_id").on(table.userId),
+	// К3-14: дефолт scoped на user_id — отримувач належить користувачу.
+	uniqueIndex("idx_user_recipients_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_recipients_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_recipients_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
@@ -843,6 +860,8 @@ export const userAddresses = pgTable("user_addresses", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_addresses_user_id").on(table.userId),
+	// К3-14: дефолт scoped на user_id — адреса належить користувачу.
+	uniqueIndex("idx_user_addresses_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_addresses_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_addresses_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
