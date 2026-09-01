@@ -18,7 +18,7 @@
 
 - TypeScript 5.9 strict; **не** оновлювати до 6/7.
 - Коментарі й документація — **українською**; рядки інтерфейсу — тільки через i18n-каталоги.
-- `pnpm lint` = **0 errors**, 13 warnings — чинна лінія (AGENTS.md:136), не зрушувати.
+- `pnpm lint` = **0 errors**. 🔴 Кількість warnings НЕ асертиться (докі розходяться: CLAUDE.md — 12, AGENTS.md — 13; живий прогін 2026-09-01 — 12): перед Task 0 виміряти `pnpm lint`, зафіксувати число в DoD-звіті, і воно не має зрости — усі warnings лише `react-hooks/*` і `no-unused-vars`.
 - Порядок гейтів: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → test → test:schema → build:packages → typecheck:template → test:packaging`.
 - `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки `package.json`.
 - 🔴 **К3-4′:** `createServerFn` — ЛИШЕ топ-рівневий `const` з простим ідентифікатором. Фабрики serverFn не повертають. Гейт — Task 4.
@@ -87,7 +87,7 @@ Task 11 (гейти кеш-синхронізації + Gate C + реєстр в
 | `eslint-rules/mutation-cache-sync.mjs` | Мутація в UI парує синк кешу |
 | `tests/handler-canon.test.ts` | AST-гейт write-back у persistence-хендлерах |
 | `tests/eslint-rules/server-fn-top-level.test.ts` | Машинні фікстури правила К3-4′ (Linter API, 8 кейсів) |
-| `tests/eslint-rules/mutation-cache-sync.test.ts` | Машинні фікстури function-scope правила (Linter API, 9 кейсів) |
+| `tests/eslint-rules/mutation-cache-sync.test.ts` | Машинні фікстури function-scope правила (Linter API, 10 кейсів) |
 | `tests/tanstack-db-single-instance.test.ts` | Рівно один `@tanstack/db` у дереві |
 
 **Змінюються:**
@@ -846,7 +846,7 @@ pnpm lint                      # Expected: 0 errors (чинний код лег�
 #   const w = wrap(createServerFn({ method: 'GET' }).handler(h));
 #   const pr = Promise.resolve(createServerFn({ method: 'GET' }).handler(h));
 pnpm lint
-# Прибрати → 0 errors / 13 warnings
+# Прибрати → 0 errors, warnings без змін
 ```
 
 - [ ] **Step 5: Коміт**
@@ -2586,6 +2586,17 @@ export default {
       return sourceCode.getCommentsBefore(s).some((c) => /cache-sync-ok:\s*\S/.test(c.value));
     };
 
+    const COLLECTION_FACTORIES = new Set(['useCollection', 'getCollection']);
+    const isCollectionVar = (ident, at) => {
+      for (let s = sourceCode.getScope(at); s; s = s.upper) {
+        const v = s.set.get(ident.name);
+        if (!v) continue;
+        const init = v.defs[0]?.node?.init;
+        return init?.type === 'CallExpression' && COLLECTION_FACTORIES.has(init.callee?.name);
+      }
+      return false;
+    };
+
     // 🔴 Сканування НЕ заходить у вкладені функції (рев'ю р4): інакше
     // useMutation на рівні компонента «бачив» би синк сусіднього
     // хендлера, а це і є клас фолс-негативів файлової евристики.
@@ -2601,7 +2612,11 @@ export default {
           const name = n.callee.property?.name;
           const obj = n.callee.object;
           if (SYNC_UTILS.has(name) && obj.type === 'MemberExpression' && obj.property?.name === 'utils') collectionSync = true;
-          if (OPTIMISTIC.has(name) && obj.type === 'Identifier' && /collection$/i.test(obj.name)) collectionSync = true;
+          // Отримувач insert/update/delete — змінна, ініціалізована
+          // useCollection(...)/getCollection(...): за ПОХОДЖЕННЯМ, не за
+          // іменем (самоперевірка р5: `const statuses = useCollection(…)`
+          // інакше не рахувався б, і сторінка діставала хибний noSync).
+          if (OPTIMISTIC.has(name) && obj.type === 'Identifier' && isCollectionVar(obj, n)) collectionSync = true;
           if (QUERY_SYNC.has(name)) querySync = true;
         }
         for (const key of sourceCode.visitorKeys[n.type] ?? []) {
@@ -2654,6 +2669,7 @@ export default {
 ```
 
 Зона в `eslint.config.mjs`: `packages/simplycms/src/admin-data/**/*.{ts,tsx}`
+(з `ignores: ['**/__tests__/**']` — як у зоні `query-key-from-entity`)
 + точковий ратчет переписаних сторінок — стартово
 `packages/simplycms/src/admin/pages/OrderStatuses.tsx` (список росте з
 хвилями Е3–Е6, патерн `PENDING_FILES` навпаки).
@@ -2755,17 +2771,26 @@ describe('mutation-cache-sync (function-scope)', () => {
       `import { listOrderStatuses } from 'simplycms/admin-server';\n`)).toEqual([]);
   });
 
+  it('отримувач з іншим іменем (statuses = useCollection) — рахується синком', () => {
+    expect(ids(`export function Page() {
+      const statuses = useCollection(orderStatusesCollection);
+      const handleCreate = (form) => { statuses.insert({ id: 'x', ...form }); };
+      const m = useMutation({ mutationFn: (id) => setDefaultOrderStatus({ data: { id } }), onSuccess: () => statuses.utils.refetch() });
+      return null;
+    }`)).toEqual([]);
+  });
+
   it('serverFn у JSX inline-arrow без синку — офендер', () => {
     expect(ids(`export function Page() { return <button onClick={() => setDefaultOrderStatus({ data: { id: 'a' } })} />; }`)).toEqual(['noSync']);
   });
 });
 ```
 
-Run: `pnpm vitest run tests/eslint-rules/mutation-cache-sync.test.ts` → PASS 8/8.
+Run: `pnpm vitest run tests/eslint-rules/mutation-cache-sync.test.ts` → PASS 9/9.
 
 **Смоук у реальній зоні (після Task 10):** тимчасово прибрати
 `collection.utils.refetch()` із `handleReorder` сторінки → `pnpm lint`
-FAIL з `noSync` на `reorderOrderStatus`; повернути → 0 errors / 13 warnings.
+FAIL з `noSync` на `reorderOrderStatus`; повернути → 0 errors, warnings без змін.
 
 - [ ] **Step 3: Реєстр server-first винятків (К3-2)**
 
@@ -2834,7 +2859,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ## DoD етапу Е1б (редакція 2)
 
 1. **Повний ланцюг гейтів** (десять кроків) + `pnpm pilot:pack` зелені;
-   `pnpm lint` = 0 errors / 13 warnings.
+   `pnpm lint` = 0 errors, warnings не зросли відносно зафіксованих перед Task 0.
 2. **Контролі прогнані вручну — пронумеровано ВІСІМ:**
    1) Task 0 — другий глобальний дефолт → 23505;
    2) Task 1 — прибрана залежність агрегату червонить deps-гейт;
@@ -2843,7 +2868,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
    5) Task 6/9 — імпорт угору по тіру валить лінт (обидві нові зони, обидві форми специфікатора);
    6) Task 9 — id-mismatch кидає ДО write-back, двійників немає;
    7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
-   8) Task 11 — `mutation-cache-sync`: машинний тест 8/8 + смоук на сторінці.
+   8) Task 11 — `mutation-cache-sync`: машинний тест 9/9 + смоук на сторінці.
 3. **Жива сторінка** `/admin/order-statuses`: усі 10 пунктів прогону
    Task 10 Step 5, включно з авто-rollback і серверною відмовою на
    видалення дефолтного.
