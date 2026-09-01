@@ -703,6 +703,7 @@ CREATE INDEX "idx_discount_groups_parent" ON "discount_groups" USING btree ("par
 CREATE INDEX "idx_discount_targets_discount" ON "discount_targets" USING btree ("discount_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_group" ON "discounts" USING btree ("group_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_price_type_id" ON "discounts" USING btree ("price_type_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_mod" ON "modification_property_values" USING btree ("modification_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_option" ON "modification_property_values" USING btree ("option_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_property" ON "modification_property_values" USING btree ("property_id");--> statement-breakpoint
@@ -710,6 +711,7 @@ CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id"
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_service_id" ON "order_items" USING btree ("service_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_shipping_method_id" ON "orders" USING btree ("shipping_method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_user_id" ON "orders" USING btree ("user_id");--> statement-breakpoint
@@ -723,6 +725,7 @@ CREATE INDEX "idx_pickup_points_city" ON "pickup_points" USING btree ("city" tex
 CREATE INDEX "idx_pickup_points_method_id" ON "pickup_points" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_pickup_points_zone_id" ON "pickup_points" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_price_types_single_default" ON "price_types" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_product_modifications_single_default" ON "product_modifications" USING btree ("product_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_product_prices_unique" ON "product_prices" USING btree (price_type_id,product_id,COALESCE(modification_id, '00000000-0000-0000-0000-000000000000'::uuid));--> statement-breakpoint
 CREATE INDEX "idx_product_prices_product_id" ON "product_prices" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_product_prices_modification_id" ON "product_prices" USING btree ("modification_id");--> statement-breakpoint
@@ -742,18 +745,22 @@ CREATE INDEX "idx_service_requests_service_id" ON "service_requests" USING btree
 CREATE INDEX "idx_service_requests_user_id" ON "service_requests" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_method_id" ON "shipping_rates" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_zone_id" ON "shipping_rates" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_shipping_zones_single_default" ON "shipping_zones" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_modification_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"modification_id" uuid_ops) WHERE (modification_id IS NOT NULL);--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_product_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"product_id" uuid_ops) WHERE ((product_id IS NOT NULL) AND (modification_id IS NULL));--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_product_id" ON "stock_by_pickup_point" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_modification_id" ON "stock_by_pickup_point" USING btree ("modification_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "themes_active_idx" ON "themes" USING btree ("is_active" bool_ops) WHERE (is_active = true);--> statement-breakpoint
 CREATE INDEX "idx_user_addresses_user_id" ON "user_addresses" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_addresses_single_default" ON "user_addresses" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_user_categories_price_type_id" ON "user_categories" USING btree ("price_type_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_categories_single_default" ON "user_categories" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_user_id" ON "user_category_history" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_from_category_id" ON "user_category_history" USING btree ("from_category_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_to_category_id" ON "user_category_history" USING btree ("to_category_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_rule_id" ON "user_category_history" USING btree ("rule_id");--> statement-breakpoint
 CREATE INDEX "idx_user_recipients_user_id" ON "user_recipients" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_recipients_single_default" ON "user_recipients" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_wishlists_product_id" ON "wishlists" USING btree ("product_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "accounts_issuer_account_id_key" ON "accounts" USING btree ("issuer","account_id");--> statement-breakpoint
 CREATE INDEX "idx_accounts_user_id" ON "accounts" USING btree ("user_id");--> statement-breakpoint
