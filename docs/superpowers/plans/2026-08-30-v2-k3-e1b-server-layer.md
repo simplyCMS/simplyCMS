@@ -208,36 +208,72 @@ Expected: PASS. Якщо `0003_seed.sql`/`demo-seed.sql` порушують но
 // цей тест не чіпає simplycms/db)
 import { queryRows, queryInTransaction } from '../apply.mjs';
 
-describe('К3-14: інваріант is_default тримає БД', () => {
-  it('другий глобальний дефолт — 23505', async () => {
-    await expect(
-      queryInTransaction(dbUrl, [
-        `insert into public.order_statuses (id, name, code, is_default)
-         values (gen_random_uuid(), 'Дубль', 'dup-default', true)`,
-      ]),
-    ).rejects.toMatchObject({ code: '23505' });
+/**
+ * 🔴 Параметризовано на ВСІ 7 індексів (рев'ю р3: два кейси доводили 2 з
+ * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
+ * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
+ * Кожен глобальний INSERT робиться після того, як сід уже має один
+ * default (0003_seed: order_statuses/user_categories/languages/
+ * shipping_zones — звірити при написанні; якщо в сіді дефолту немає,
+ * кейс спершу вставляє свій перший `true`, потім другий).
+ */
+const U1 = 'a0000000-0000-4000-8000-000000000001';
+const U2 = 'a0000000-0000-4000-8000-000000000002';
+const P1 = '10000002-0000-4000-8000-000000000001'; // товар демо-сіду (без модифікацій)
+const P2 = '10000002-0000-4000-8000-000000000004'; // інвертор (має модифікації)
+
+const GLOBAL: Array<[table: string, insertDefault: string]> = [
+  ['order_statuses', `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дубль', 'dup-os', true)`],
+  ['user_categories', `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дубль', 'dup-uc', true)`],
+  ['languages', `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'xx', 'Дубль', true)`],
+  ['shipping_zones', `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дубль', true)`],
+];
+
+/** [таблиця, INSERT для батька A, INSERT для батька B, ДРУГИЙ INSERT для батька A]. */
+const SCOPED: Array<[table: string, a: string, b: string, aAgain: string]> = [
+  ['user_recipients',
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'А', 'А', '+380000000001', 'Київ', 'вул. Тестова, 1', true)`,
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U2}', 'Б', 'Б', '+380000000002', 'Львів', 'вул. Тестова, 2', true)`,
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'В', 'В', '+380000000003', 'Київ', 'вул. Тестова, 3', true)`],
+  ['user_addresses',
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'Дім', 'Київ', 'вул. Тестова, 1', true)`,
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U2}', 'Дім', 'Львів', 'вул. Тестова, 2', true)`,
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'Офіс', 'Київ', 'вул. Тестова, 3', true)`],
+  ['product_modifications',
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P1}', 'dflt-a', 'A', true)`,
+    // 🔴 P2 у демо-сіді ВЖЕ має дефолтну модифікацію — тут вставка з
+    // is_default=false лише доводить, що індекс не заважає не-дефолтам.
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P2}', 'extra-b', 'B', false)`,
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P1}', 'dflt-a2', 'A2', true)`],
+];
+
+describe('К3-14: інваріант is_default тримає БД (усі 7 індексів)', () => {
+  beforeAll(async () => {
+    // Демо-сід — для товарів (P1/P2); користувачі — власна фікстура.
+    await applySqlFiles(dbUrl, [DEMO_SEED]);
+    await queryRows(dbUrl, `insert into public.users (id, name, email, email_verified)
+      values ('${'$'}{U1}', 'А', 'a@t.test', true), ('${'$'}{U2}', 'Б', 'b@t.test', true)`);
   });
 
-  it('scoped: свій дефолт у КОЖНОГО користувача легальний, другий у того самого — 23505', async () => {
-    await queryRows(dbUrl, `insert into public.users (id, name, email, email_verified)
-      values ('a0000000-0000-4000-8000-000000000001', 'А', 'a@t.test', true),
-             ('a0000000-0000-4000-8000-000000000002', 'Б', 'b@t.test', true)`);
-    // По одному дефолтному одержувачу на кожного — обидва проходять.
-    // Колонки NOT NULL user_recipients (0001_init.sql:539-551): user_id,
-    // first_name, last_name, phone, city, address.
-    await queryRows(dbUrl, `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default)
-      values (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000001', 'А', 'А', '+380000000001', 'Київ', 'вул. Тестова, 1', true),
-             (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000002', 'Б', 'Б', '+380000000002', 'Львів', 'вул. Тестова, 2', true)`);
-    // Другий дефолт ТОГО САМОГО користувача — 23505.
-    await expect(queryRows(dbUrl, `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default)
-      values (gen_random_uuid(), 'a0000000-0000-4000-8000-000000000001', 'В', 'В', '+380000000003', 'Київ', 'вул. Тестова, 3', true)`),
-    ).rejects.toMatchObject({ code: '23505' });
+  it.each(GLOBAL)('%s: другий глобальний дефолт — 23505', async (_table, sql) => {
+    await expect(queryInTransaction(dbUrl, [sql])).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it.each(SCOPED)('%s: різні батьки — можна, той самий — 23505', async (_table, a, b, aAgain) => {
+    await queryRows(dbUrl, a);
+    await queryRows(dbUrl, b);
+    await expect(queryRows(dbUrl, aAgain)).rejects.toMatchObject({ code: '23505' });
   });
 });
 ```
 
+(`DEMO_SEED` — той самий шлях, що в `aggregate-deps.test.ts`; `${'$'}{…}`
+у SQL — звичайні template-літерали TS.)
+
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/single-default.test.ts`
-Expected: PASS (обидва кейси; другий кейс дописати повністю за патерном першого).
+Expected: PASS 7/7. **Негативний контроль:** тимчасово прибрати ОДИН
+індекс (напр. `idx_languages_single_default`) з `0001_init.sql` → рівно
+той кейс FAIL (не 23505) → повернути.
 
 - [ ] **Step 6: Повний схемний контур і коміт**
 
@@ -705,13 +741,18 @@ export default {
         // VariableDeclaration → Program | ExportNamedDeclaration→Program.
         // Виклик — корінь method-chain, тож піднімаємось крізь ланцюг
         // .inputValidator(...).handler(...) до declarator-а.
+        // 🔴 Піднімаємось ЛИШЕ як `.object` MemberExpression або `.callee`
+        // CallExpression (рев'ю р3): `wrap(createServerFn(...))` кладе
+        // ланцюг в arguments — компілятор Start це відхиляє
+        // (handleCreateServerFn: parentPath мусить бути declarator), а
+        // безумовний прохід крізь CallExpression пропускав би wrapper.
+        let cur = node;
         let p = node.parent;
         while (
           p &&
-          ((p.type === 'MemberExpression' && p.object &&
-            (p.object === node || p.object.type === 'CallExpression')) ||
-            p.type === 'CallExpression')
-        ) p = p.parent;
+          ((p.type === 'MemberExpression' && p.object === cur) ||
+            (p.type === 'CallExpression' && p.callee === cur))
+        ) { cur = p; p = p.parent; }
         const ok =
           p?.type === 'VariableDeclarator' &&
           p.id?.type === 'Identifier' &&
@@ -742,6 +783,8 @@ pnpm lint                      # Expected: 0 errors (чинний код лег�
 #   function f() { const x = createServerFn({ method: 'GET' }); return x; }
 #   let y = createServerFn({ method: 'GET' });
 #   const o = { fn: createServerFn({ method: 'GET' }) };
+#   const w = wrap(createServerFn({ method: 'GET' }).handler(h));
+#   const pr = Promise.resolve(createServerFn({ method: 'GET' }).handler(h));
 pnpm lint
 # Прибрати → 0 errors / 13 warnings
 ```
@@ -950,7 +993,7 @@ Run: `pnpm vitest run tests/tier-boundary.test.ts` → PASS (зона ловит
 // packages/simplycms/src/admin-server/__tests__/subset.test.ts
 import { describe, expect, it } from 'vitest';
 import { orderStatuses } from 'simplycms/schema';
-import { subsetInputSchema, toDrizzleSubset } from '../subset';
+import { subsetInputSchema, toDrizzleSubset, type SubsetInput } from '../subset';
 
 const ALLOW = { filterable: ['code', 'isDefault'], sortable: ['sortOrder'] } as const;
 
@@ -968,9 +1011,13 @@ describe('subset: трансляція предикатів колекції у 
   });
 
   it('невідомий оператор — кидає, не ігнорується', () => {
-    expect(() => toDrizzleSubset(orderStatuses, ALLOW, {
+    // Рантайм-негатив: 'like' поза union-типом SubsetInput, тож у strict TS
+    // потрібен явний каст (рев'ю р3) — це саме те, що прийшло б із мережі
+    // повз типи, і що toDrizzleSubset мусить відбити сам.
+    const invalid = {
       filters: [{ field: ['code'], operator: 'like', value: 'x' }],
-    })).toThrow(/like/);
+    } as unknown as SubsetInput;
+    expect(() => toDrizzleSubset(orderStatuses, ALLOW, invalid)).toThrow(/like/);
   });
 
   it('дозволене — проходить; порожнє — порожній subset', () => {
@@ -1360,7 +1407,7 @@ export type AdminResourceOps<T extends Table> = ReturnType<typeof defineAdminRes
 🔴 `z.uuid()` — форма Zod 4 (не `z.string().uuid()`); якщо typecheck
 свариться — звірити з фактичним експортом встановленого zod і вжити чинну.
 
-Run: тест → PASS 4/4; `pnpm typecheck` → PASS (включно з `@ts-expect-error`-кейсом).
+Run: тест → PASS 5/5; `pnpm typecheck` → PASS (включно з `@ts-expect-error`-кейсами).
 
 - [ ] **Step 3: Коміт**
 
@@ -2100,8 +2147,15 @@ const handleCreate = (form: StatusFormData) => {
   const id = crypto.randomUUID(); // Е0: ключ генерує клієнт
   const sortOrder = (statuses ?? []).reduce((m, s) => Math.max(m, s.sortOrder), -1) + 1;
   const tx = collection.insert({ id, name: form.name, code: form.code, color: form.color, sortOrder, isDefault: false, createdAt: new Date().toISOString() } as OrderStatus);
+  // 🔴 Failure-state збережений (рев'ю р3, як у старій сторінці :104/:138):
+  // діалог закривається ЛИШЕ після успішного персисту — при помилці
+  // введене лишається у формі. Рядок у СПИСКУ все одно зʼявляється
+  // миттєво (оптимістично) — DoD «створення миттєве» не страждає.
+  // `isSubmitting` — заміна старого mutation.isPending на кнопці Save.
+  setIsSubmitting(true);
   tx.isPersisted.promise
     .then(async () => {
+      handleCloseDialog();
       // 🔴 Двофазність ЧЕСНА (рев'ю р2): insert уже закомічено, тож
       // падіння setDefault — НЕ createFailed. Рядок створено — кажемо
       // це, а про дефолт — окремою помилкою.
@@ -2111,21 +2165,29 @@ const handleCreate = (form: StatusFormData) => {
         catch (e) { toast.error(t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message); }
       }
     })
-    .catch((e: Error) => toast.error(t('admin.orders.statuses.createFailed') + ' ' + e.message));
-  handleCloseDialog();
+    .catch((e: Error) => toast.error(t('admin.orders.statuses.createFailed') + ' ' + e.message))
+    .finally(() => setIsSubmitting(false));
 };
 
 const handleUpdate = (id: string, form: StatusFormData) => {
   const tx = collection.update(id, (draft) => {
     draft.name = form.name; draft.code = form.code; draft.color = form.color;
   });
+  setIsSubmitting(true);
   tx.isPersisted.promise
     .then(async () => {
-      if (form.is_default) await applyDefault(id);
+      handleCloseDialog();
+      // 🔴 Та сама чесна двофазність, що в create (рев'ю р3): update вже
+      // закомічений окремим withActor — statusUpdated ДО default-фази,
+      // її падіння — окремою помилкою, не «оновлення не вдалося».
       toast.success(t('common.statusUpdated'));
+      if (form.is_default) {
+        try { await applyDefault(id); }
+        catch (e) { toast.error(t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message); }
+      }
     })
-    .catch((e: Error) => toast.error(t('admin.orders.statuses.updateFailed') + ' ' + e.message));
-  handleCloseDialog();
+    .catch((e: Error) => toast.error(t('admin.orders.statuses.updateFailed') + ' ' + e.message))
+    .finally(() => setIsSubmitting(false));
 };
 
 const handleDelete = (id: string) => {
@@ -2156,7 +2218,9 @@ const handleReorder = async (id: string, direction: 'up' | 'down') => {
 
 UI-частина (таблиця, діалоги, `generateCode`, кружечок кольору, disabled
 на краях і на дефолтному delete, скелетон) — переноситься зі старої
-версії 1:1 з двома змінами: поля рядка тепер **camelCase**
+версії 1:1 з трьома змінами: `const [isSubmitting, setIsSubmitting] =
+useState(false)` замінює `createMutation.isPending || updateMutation.isPending`
+на кнопці Save (`disabled={isSubmitting}`, стара :495); поля рядка тепер **camelCase**
 (`sortOrder`/`isDefault`/`createdAt` — тип `OrderStatus` з Drizzle) і
 чекбокс дефолту на редагуванні ДЕФОЛТНОГО рядка — disabled з
 `title={t('admin.orders.statuses.autoAssign')}` (зняти дефолт без
@@ -2207,7 +2271,7 @@ pnpm lint && pnpm build && pnpm typecheck && pnpm test
 ```
 Expected: PASS, 0 errors. 🔴 Зелений лінт i18n-повноти сторінки НЕ
 доводить (усі 8 рядків — у toast, які селектори не бачать за побудовою);
-доводить ручна звірка інвентаря Step 1 із живим прогоном Step 4.
+доводить ручна звірка інвентаря Step 1 із живим прогоном Step 5.
 
 - [ ] **Step 5: ЖИВИЙ прогін — головний доказ етапу**
 
@@ -2282,7 +2346,7 @@ import ts from 'typescript';
  */
 const ROOT = join(import.meta.dirname, '../packages/simplycms/src/admin-data');
 const HANDLERS = new Set(['onInsert', 'onUpdate', 'onDelete']);
-const WRITE_RE = /\bwrite(?:Upsert|Update|Insert|Delete|Batch)\b/;
+const WRITE_OPS = new Set(['writeUpsert', 'writeUpdate', 'writeInsert', 'writeDelete']);
 
 function* tsFiles(dir: string): Generator<string> {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -2307,6 +2371,29 @@ function offendersIn(file: string): string[] {
   const hasExempt = (node: ts.Node): boolean =>
     /canon-exempt:/.test(src.slice(Math.max(0, node.getFullStart() - 200), node.getStart()));
 
+  /** Чи є в піддереві фактичний CallExpression collection.utils.write*(…). */
+  const containsWriteCall = (n: ts.Node): boolean => {
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
+        WRITE_OPS.has(n.expression.name.text)) return true;
+    return ts.forEachChild(n, containsWriteCall) ?? false;
+  };
+  /**
+   * Statement — справжній write-back: або прямий write*-виклик, або
+   * `writeBatch(cb)`, чий callback САМ містить write*-виклик. Порожній
+   * batch — не write-back.
+   */
+  const isRealWrite = (st: ts.ExpressionStatement): boolean => {
+    const expr = st.expression;
+    if (!ts.isCallExpression(expr) || !ts.isPropertyAccessExpression(expr.expression)) return false;
+    const name = expr.expression.name.text;
+    if (WRITE_OPS.has(name)) return true;
+    if (name === 'writeBatch') {
+      const cb = expr.arguments[0];
+      return !!cb && containsWriteCall(cb);
+    }
+    return false;
+  };
+
   const precededByWrite = (ret: ts.Node, boundary: ts.Node): boolean => {
     let cur: ts.Node = ret;
     while (cur !== boundary && cur.parent) {
@@ -2317,8 +2404,10 @@ function offendersIn(file: string): string[] {
           // 🔴 Зараховуємо лише БЕЗУМОВНИЙ write-statement (рев'ю р2:
           // `if (cond) writeUpsert(...)` — попередній сиблінг, але
           // write у чужій гілці; такий НЕ рахується — це IfStatement,
-          // не ExpressionStatement).
-          if (ts.isExpressionStatement(st) && WRITE_RE.test(st.getText())) return true;
+          // не ExpressionStatement). І лише за AST, не regex по тексту
+          // (рев'ю р3): порожній `writeBatch(() => {})` чи слово в
+          // коментарі/рядку — не write-back.
+          if (ts.isExpressionStatement(st) && isRealWrite(st)) return true;
         }
       }
       cur = parent;
@@ -2357,10 +2446,13 @@ describe('handler-canon: refetch:false ⇒ write-back у своєму ланцю
 ```
 
 Run: `pnpm vitest run tests/handler-canon.test.ts` → PASS.
-**Негативні контролі (ОБИДВА):** у `collections/order-statuses.ts`
+**Негативні контролі (УСІ ТРИ):** у `collections/order-statuses.ts`
 тимчасово (1) прибрати `writeBatch`-блок в `onDelete` → FAIL; (2)
 замінити його на `if (Math.random() > 2) collection.utils.writeDelete(ids[0].id);`
-→ теж FAIL (умовний сиблінг не зараховується) → повернути.
+→ теж FAIL (умовний сиблінг); (3) замінити на порожній
+`collection.utils.writeBatch(() => {});` → теж FAIL (рев'ю р3: batch без
+write*-виклику всередині — не write-back)
+→ повернути.
 
 - [ ] **Step 2: `mutation-cache-sync` — правило на хуки**
 
@@ -2369,35 +2461,91 @@ Run: `pnpm vitest run tests/handler-canon.test.ts` → PASS.
 /**
  * Клієнтська мутація мусить лишати слід у кеші (урок №6 роадмапу:
  * колекція НЕ рефетчиться від invalidateQueries React Query).
- * Шар 1: файл із useMutation АБО з викликом серверної операції
- *   (setDefault*/reorder*) мусить містити хоч один синк:
- *   invalidateQueries/setQueryData/refetchQueries АБО
+ *
+ * 🔴 Межа аналізу — ФУНКЦІЯ, не файл (рев'ю р3: файлова евристика
+ * сліпа на змішаних сторінках — інший хендлер із синком «покривав» би
+ * хендлер без нього, і негативний контроль на реальній сторінці був
+ * фізично неможливий). Тригер — виклик serverFn, імпортованого з
+ * 'simplycms/admin-server' (будь-яке імʼя, крім list*-читань), АБО
+ * useMutation. Для кожного тригера береться найближча охоплююча функція
+ * (стрілка/function/метод), і В НІЙ мусить бути синк:
  *   collection.utils.{refetch,writeUpsert,writeUpdate,writeDelete,writeBatch}
- *   АБО collection.insert/update/delete (оптимістичний шлях сам синкає).
- * Шар 2: якщо є invalidateQueries і в файлі імпортовано simplycms/admin-data
- *   — вимагається ще й collection-синк (інвалідація колекцію не будить).
- * Евристика за побудовою (файловий рівень): фолс-негативи можливі,
- * фолс-позитиви — ні; строгість дає handler-canon. Opt-out —
- * `// cache-sync-ok: <причина>` у першому рядку файла.
+ *   АБО collection.insert/update/delete (оптимістичний шлях сам синкає)
+ *   АБО invalidateQueries/setQueryData/refetchQueries (легасі React Query;
+ *   але якщо файл імпортує simplycms/admin-data — цього НЕ досить,
+ *   інвалідація колекцію не будить → invalidateOnly).
+ * Виклики всередині persistence-хендлерів (onInsert/onUpdate/onDelete) —
+ * поза правилом: їх стереже handler-canon. Виклик у loader (preload) —
+ * теж поза правилом (читання). Opt-out — `// cache-sync-ok: <причина>`
+ * рядком вище виклику.
  */
+const SYNC_UTILS = new Set(['refetch', 'writeUpsert', 'writeUpdate', 'writeDelete', 'writeBatch']);
+const OPTIMISTIC = new Set(['insert', 'update', 'delete']);
+const QUERY_SYNC = new Set(['invalidateQueries', 'setQueryData', 'refetchQueries']);
+const HANDLERS = new Set(['onInsert', 'onUpdate', 'onDelete']);
+const FN_TYPES = new Set(['ArrowFunctionExpression', 'FunctionExpression', 'FunctionDeclaration']);
+
 export default {
   meta: { type: 'problem', schema: [], messages: {
-    noSync: 'Мутація без сліду в кеші: додай collection-синк або поясни // cache-sync-ok (див. eslint-rules/mutation-cache-sync.mjs).',
-    invalidateOnly: 'invalidateQueries не будить TanStack DB-колекцію — потрібен collection.utils.* синк.',
+    noSync: 'Мутація без сліду в кеші у ЦІЙ функції: додай collection-синк або поясни // cache-sync-ok (див. eslint-rules/mutation-cache-sync.mjs).',
+    invalidateOnly: 'invalidateQueries не будить TanStack DB-колекцію — потрібен collection.utils.* синк у цій функції.',
   }},
   create(context) {
-    const src = context.sourceCode.getText();
-    if (/^\/\/ cache-sync-ok:/.test(src)) return {};
-    const hasMutation = /\buseMutation\b/.test(src) || /\b(setDefault|reorder)\w*\(\s*\{/.test(src);
-    if (!hasMutation) return {};
-    const hasCollectionSync = /collection\.(insert|update|delete)\b/.test(src) ||
-      /utils\.(refetch|writeUpsert|writeUpdate|writeDelete|writeBatch)\b/.test(src);
-    const hasQuerySync = /\b(invalidateQueries|setQueryData|refetchQueries)\b/.test(src);
-    const usesAdminData = /simplycms\/admin-data/.test(src);
-    return { 'Program:exit'(node) {
-      if (!hasCollectionSync && !hasQuerySync) context.report({ node, messageId: 'noSync' });
-      else if (!hasCollectionSync && hasQuerySync && usesAdminData) context.report({ node, messageId: 'invalidateOnly' });
-    }};
+    const sourceCode = context.sourceCode;
+    const serverFns = new Set();
+    let usesAdminData = false;
+
+    const enclosingFn = (node) => {
+      let p = node.parent;
+      while (p && !FN_TYPES.has(p.type)) p = p.parent;
+      return p;
+    };
+    const insidePersistenceHandler = (fn) =>
+      fn?.parent?.type === 'Property' && HANDLERS.has(fn.parent.key?.name);
+    const hasExempt = (node) =>
+      sourceCode.getCommentsBefore(node).some((c) => /cache-sync-ok:/.test(c.value));
+
+    const scanFn = (fn) => {
+      let collectionSync = false, querySync = false;
+      const walk = (n) => {
+        if (!n || typeof n.type !== 'string') return;
+        if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
+          const name = n.callee.property?.name;
+          const obj = n.callee.object;
+          if (SYNC_UTILS.has(name) && obj.type === 'MemberExpression' && obj.property?.name === 'utils') collectionSync = true;
+          if (OPTIMISTIC.has(name) && obj.type === 'Identifier' && /collection$/i.test(obj.name)) collectionSync = true;
+          if (QUERY_SYNC.has(name)) querySync = true;
+        }
+        for (const key of sourceCode.visitorKeys[n.type] ?? []) {
+          const child = n[key];
+          if (Array.isArray(child)) child.forEach(walk); else if (child) walk(child);
+        }
+      };
+      walk(fn.body);
+      return { collectionSync, querySync };
+    };
+
+    const check = (trigger) => {
+      if (hasExempt(trigger)) return;
+      const fn = enclosingFn(trigger);
+      if (!fn || insidePersistenceHandler(fn)) return;
+      const { collectionSync, querySync } = scanFn(fn);
+      if (!collectionSync && !querySync) context.report({ node: trigger, messageId: 'noSync' });
+      else if (!collectionSync && querySync && usesAdminData) context.report({ node: trigger, messageId: 'invalidateOnly' });
+    };
+
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value === 'simplycms/admin-data') usesAdminData = true;
+        if (node.source.value === 'simplycms/admin-server')
+          for (const s of node.specifiers)
+            if (s.type === 'ImportSpecifier' && !/^list/.test(s.imported.name)) serverFns.add(s.local.name);
+      },
+      'CallExpression[callee.name="useMutation"]'(node) { check(node); },
+      'CallExpression[callee.type="Identifier"]'(node) {
+        if (serverFns.has(node.callee.name)) check(node);
+      },
+    };
   },
 };
 ```
@@ -2408,8 +2556,12 @@ export default {
 хвилями Е3–Е6, патерн `PENDING_FILES` навпаки).
 
 **Контролі:** негативний — тимчасово прибрати `collection.utils.refetch()`
-із `handleReorder` сторінки → `pnpm lint` FAIL (invalidateOnly/noSync);
-позитивний — повернути → 0 errors / 13 warnings.
+із `handleReorder` сторінки → `pnpm lint` FAIL з `noSync` САМЕ на
+виклику `reorderOrderStatus` (рев'ю р3: function-scope робить контроль
+можливим на реальній сторінці — інші хендлери файла зі своїми синками
+його не «покривають»); позитивний — повернути → 0 errors / 13 warnings.
+Другий негатив — `useMutation` без синку в новій функції того ж файла →
+FAIL; прибрати.
 
 - [ ] **Step 3: Реєстр server-first винятків (К3-2)**
 
@@ -2488,7 +2640,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
    7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
    8) Task 11 — `mutation-cache-sync` негативний і позитивний.
 3. **Жива сторінка** `/admin/order-statuses`: усі 7 пунктів прогону
-   Task 10 Step 4, включно з авто-rollback і серверною відмовою на
+   Task 10 Step 5, включно з авто-rollback і серверною відмовою на
    видалення дефолтного.
 4. **`test:schema`** доводить: інваріант дефолту (23505 + операції) і
    повноту `deps` усіх СЕМИ агрегатів (з `pickup_points` у двох).
