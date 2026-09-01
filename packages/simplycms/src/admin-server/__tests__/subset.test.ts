@@ -51,6 +51,44 @@ describe('subset: трансляція предикатів колекції у 
     expect(toDrizzleSubset(orderStatuses, ALLOW, {}).where).toBeUndefined();
   });
 
+  it('R9: форма value привʼязана до оператора (400, не 500 з БД)', () => {
+    const parse = (f: object) =>
+      subsetInputSchema.safeParse({ subset: { filters: [f] } }).success;
+    expect(parse({ field: ['code'], operator: 'in', value: 'x' })).toBe(
+      false,
+    ); // скаляр замість масиву
+    expect(parse({ field: ['code'], operator: 'in', value: [] })).toBe(
+      false,
+    ); // порожній масив
+    expect(
+      parse({ field: ['code'], operator: 'eq', value: ['a', 'b'] }),
+    ).toBe(false); // масив замість скаляра
+    expect(
+      parse({ field: ['code'], operator: 'in', value: ['a', 'b'] }),
+    ).toBe(true);
+    expect(parse({ field: ['code'], operator: 'eq', value: null })).toBe(
+      true,
+    );
+  });
+
+  it('напрям поза asc/desc при прямому виклику — кидає, не мовчазний asc', () => {
+    expect(() =>
+      toDrizzleSubset(orderStatuses, ALLOW, {
+        sorts: [{ field: ['sortOrder'], direction: 'sideways' }],
+      } as unknown as SubsetInput),
+    ).toThrow(/напрям/);
+  });
+
+  it('allowlist з неіснуючою колонкою — чітка помилка з іменем таблиці', () => {
+    expect(() =>
+      toDrizzleSubset(
+        orderStatuses,
+        { filterable: ['colour'], sortable: [] },
+        { filters: [{ field: ['colour'], operator: 'eq', value: 'x' }] },
+      ),
+    ).toThrow(/colour.*order_statuses/);
+  });
+
   it('subsetInputSchema — строгий: limit обмежений, сміття не проходить', () => {
     expect(
       subsetInputSchema.safeParse({ subset: { limit: 100_000 } }).success,

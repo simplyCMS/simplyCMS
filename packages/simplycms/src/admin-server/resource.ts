@@ -95,6 +95,18 @@ export function defineAdminResource<
   // точності: якщо `writable`-колонка колись виявиться «завжди
   // згенерованою», вона так само відсутня в РАНТАЙМ-схемі insert (сам
   // drizzle-zod її не кладе) — тип і рантайм лишаються синхронними.
+  //
+  // 🔴 Ціна перетину `K & keyof S`: якщо колонка зі списку `writable`
+  // колись стане `generatedAlwaysAs`/`generatedAlwaysAsIdentity`, вона
+  // МОВЧКИ випаде зі статичної форми `SafePick` — компілятор про це не
+  // попередить (перетин просто звужується, `__missingColumns` тут не
+  // спрацьовує, бо колонка й далі є валідним членом `W`). Перевірено в
+  // рантаймі drizzle-zod: такі колонки `continue`-яться повз
+  // `columnSchemas` — і для insert, і для update, — тож `.pick()` однаково
+  // не знайшов би їх у Shape. Сьогодні це недосяжно (у schema.ts таких
+  // колонок немає), а якби колись спрацювало — тип і рантайм лишились би
+  // в згоді: мовчазний no-op запису конкретного поля, а НЕ розбіжність
+  // безпеки (readonly/writable розріз не порушується).
   type SafePick<S, K> = Pick<S, K & keyof S>;
 
   const insertRowSchema = (
@@ -148,6 +160,10 @@ export function defineAdminResource<
         else if (config.defaultOrder) {
           // 🔴 defaultOrder ЗАСТОСОВУЄТЬСЯ (мертвий параметр старої редакції).
           const col = columns[config.defaultOrder.column];
+          if (col === undefined)
+            throw new Error(
+              `[admin-server] ${config.entity}: defaultOrder.column "${config.defaultOrder.column}" немає в таблиці`,
+            );
           q = q.orderBy(config.defaultOrder.direction === 'desc' ? desc(col) : asc(col));
         }
         if (s.limit !== undefined) q = q.limit(s.limit);
