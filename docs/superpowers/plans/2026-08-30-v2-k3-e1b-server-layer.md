@@ -212,21 +212,32 @@ import { queryRows, queryInTransaction } from '../apply.mjs';
  * 🔴 Параметризовано на ВСІ 7 індексів (рев'ю р3: два кейси доводили 2 з
  * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
  * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
- * Кожен глобальний INSERT робиться після того, як сід уже має один
- * default (0003_seed: order_statuses/user_categories/languages/
- * shipping_zones — звірити при написанні; якщо в сіді дефолту немає,
- * кейс спершу вставляє свій перший `true`, потім другий).
+ *
+ * 🔴 GLOBAL-кейс НЕ покладається на сід (перевірено: `shipping_zones` у
+ * 0003_seed.sql відсутня взагалі, тож «другий» дефолт там пройшов би):
+ * спершу reset (`is_default=false` усім), потім insert #1 (мусить пройти —
+ * доводить, що індекс не заважає першому), потім insert #2 → 23505.
+ * Коди — унікальні відносно сіду (UNIQUE code у languages/user_categories).
  */
 const U1 = 'a0000000-0000-4000-8000-000000000001';
 const U2 = 'a0000000-0000-4000-8000-000000000002';
 const P1 = '10000002-0000-4000-8000-000000000001'; // товар демо-сіду (без модифікацій)
 const P2 = '10000002-0000-4000-8000-000000000004'; // інвертор (має модифікації)
 
-const GLOBAL: Array<[table: string, insertDefault: string]> = [
-  ['order_statuses', `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дубль', 'dup-os', true)`],
-  ['user_categories', `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дубль', 'dup-uc', true)`],
-  ['languages', `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'xx', 'Дубль', true)`],
-  ['shipping_zones', `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дубль', true)`],
+/** [таблиця, INSERT #1 (проходить), INSERT #2 (23505)]. */
+const GLOBAL: Array<[table: string, first: string, second: string]> = [
+  ['order_statuses',
+    `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 1', 'dflt-1', true)`,
+    `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 2', 'dflt-2', true)`],
+  ['user_categories',
+    `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 1', 'dflt-1', true)`,
+    `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 2', 'dflt-2', true)`],
+  ['languages',
+    `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz1', 'Дефолт 1', true)`,
+    `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz2', 'Дефолт 2', true)`],
+  ['shipping_zones',
+    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 1', true)`,
+    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`],
 ];
 
 /** [таблиця, INSERT для батька A, INSERT для батька B, ДРУГИЙ INSERT для батька A]. */
@@ -255,8 +266,10 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
       values ('${'$'}{U1}', 'А', 'a@t.test', true), ('${'$'}{U2}', 'Б', 'b@t.test', true)`);
   });
 
-  it.each(GLOBAL)('%s: другий глобальний дефолт — 23505', async (_table, sql) => {
-    await expect(queryInTransaction(dbUrl, [sql])).rejects.toMatchObject({ code: '23505' });
+  it.each(GLOBAL)('%s: перший дефолт проходить, другий — 23505', async (table, first, second) => {
+    await queryRows(dbUrl, `update public.${'$'}{table} set is_default = false where is_default`);
+    await queryRows(dbUrl, first); // індекс не заважає єдиному дефолту
+    await expect(queryRows(dbUrl, second)).rejects.toMatchObject({ code: '23505' });
   });
 
   it.each(SCOPED)('%s: різні батьки — можна, той самий — 23505', async (_table, a, b, aAgain) => {
