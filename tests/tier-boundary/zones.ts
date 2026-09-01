@@ -40,6 +40,11 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/supabase/server-client',
     'simplycms/contracts',
   ],
+  [
+    'packages/simplycms/src/admin-server',
+    'simplycms/storefront',
+    'simplycms/db',
+  ],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',
