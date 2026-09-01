@@ -72,10 +72,11 @@ export function entityKey(entity: EntityName) {
  *
  * 🔴 Не всі кеші однотабличні, і зводити їх силою до `entityKey` було б
  * регресією: `shipping-directory` одним походом читає `shipping_methods`,
- * `shipping_zones` і `shipping_rates` (`storefront/loaders/shipping.ts:81,107,136`),
- * а `stock-info` — `stock_by_pickup_point`, `product_modifications` і
- * `products`. Розбити їх на три ключі означало б три раундтрипи замість
- * одного.
+ * `shipping_zones`, `shipping_rates` і `pickup_points`
+ * (`storefront/loaders/shipping.ts:81,107,136,70`),
+ * а `stock-info` — `stock_by_pickup_point`, `product_modifications`,
+ * `products` і `pickup_points`. Розбити їх на окремі ключі означало б
+ * кілька раундтрипів замість одного.
  *
  * Тому агрегат лишається одним ключем, але **називає свої залежності
  * явно** — інакше мутація в `shipping_rates` не мала б як його
@@ -91,15 +92,28 @@ export function aggregateKey(
 
 /** Агрегати вітрини — єдине місце, де вони оголошені. */
 export const AGGREGATE = {
+  /**
+   * 🔴 `pickup_points` — знахідка рантайм-гейта 2026-08-31: `loadShippingDirectory`
+   * (`storefront/loaders/shipping.ts:70`) через `loadPickupPoints` читає й
+   * точки видачі, а `deps` цього не називав — мутація точки видачі не мала б
+   * шляху до інвалідації довідника доставки.
+   */
   shippingDirectory: aggregateKey('shipping-directory', [
     ENTITY.shippingMethods,
     ENTITY.shippingZones,
     ENTITY.shippingRates,
+    ENTITY.pickupPoints,
   ]),
+  /**
+   * 🔴 `pickup_points` — знахідка рантайм-гейта 2026-08-31: `loadStockInfo`
+   * (`storefront/loaders/stock-info.ts:72-75`) робить `innerJoin` на точки
+   * видачі (фільтр `is_active`), а `deps` цього не називав.
+   */
   stockInfo: aggregateKey('stock-info', [
     ENTITY.stockByPickupPoint,
     ENTITY.productModifications,
     ENTITY.products,
+    ENTITY.pickupPoints,
   ]),
   /**
    * Контекст цін покупця (`core/lib/price-type.ts`): дефолтний тип ціни з
