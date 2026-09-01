@@ -25,17 +25,29 @@ export default {
         // Виклик — корінь method-chain, тож піднімаємось крізь ланцюг
         // .inputValidator(...).handler(...) до declarator-а.
         // 🔴 Піднімаємось ЛИШЕ як `.object` MemberExpression або `.callee`
-        // CallExpression (рев'ю р3): `wrap(createServerFn(...))` кладе
-        // ланцюг в arguments — компілятор Start це відхиляє
-        // (handleCreateServerFn: parentPath мусить бути declarator), а
-        // безумовний прохід крізь CallExpression пропускав би wrapper.
+        // CallExpression, і `CallExpression`-крок дозволений ЛИШЕ одразу
+        // після `MemberExpression`-кроку — дзеркалить власний предикат
+        // компілятора Start (`isMethodChainCandidate`: callee чергової
+        // ланки завжди сам MemberExpression). Це закриває ОБИДВА випадки:
+        //   - wrap(createServerFn(...))       — виклик в arguments, не в
+        //     callee (рев'ю р3);
+        //   - createServerFn(...).handler(h)() — trailing re-invocation:
+        //     CallExpression-крок ІДЕ ОДРАЗУ ЗА іншим CallExpression-кроком
+        //     без MemberExpression між ними (рев'ю р4, Task 4 round 1).
+        // В обох компілятор Start на fast-path НЕ бачить цей statement як
+        // chain candidate і мовчки лишає його нетрансформованим.
         let cur = node;
         let p = node.parent;
+        let cameFromMember = false; // чи попередній крок підйому — MemberExpression
         while (
           p &&
           ((p.type === 'MemberExpression' && p.object === cur) ||
-            (p.type === 'CallExpression' && p.callee === cur))
-        ) { cur = p; p = p.parent; }
+            (p.type === 'CallExpression' && p.callee === cur && cameFromMember))
+        ) {
+          cameFromMember = p.type === 'MemberExpression';
+          cur = p;
+          p = p.parent;
+        }
         const ok =
           p?.type === 'VariableDeclarator' &&
           p.id?.type === 'Identifier' &&

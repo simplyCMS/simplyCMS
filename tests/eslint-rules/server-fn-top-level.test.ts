@@ -26,6 +26,7 @@ describe('server-fn-top-level (К3-4′)', () => {
     ['wrapper-call', `const w = wrap(createServerFn({ method: 'GET' }).handler(h));`],
     ['Promise.resolve', `const pr = Promise.resolve(createServerFn({ method: 'GET' }).handler(h));`],
     ['export default', `export default createServerFn({ method: 'GET' }).handler(h);`],
+    ['trailing call', `const t = createServerFn({ method: 'GET' }).handler(h)();`],
   ])('офендер: %s', (_n, code) => {
     const msgs = lint(code);
     expect(msgs).toHaveLength(1);
