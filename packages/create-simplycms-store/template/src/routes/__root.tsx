@@ -5,7 +5,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router';
-import type { QueryClient } from '@tanstack/react-query';
+import type { RouterContext } from 'simplycms/runtime';
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
@@ -46,13 +46,13 @@ const t = createTranslator(locale);
 
 /**
  * Контекст кореневого роуту: `QueryClient`, народжений у `getRouter()`
- * (`src/router.tsx`). Тут — лише типова декларація, щоб `loader`-и (Е1б)
- * і `RootComponent` могли дістати той самий інстанс через
- * `Route.useRouteContext()`.
+ * (`src/router.tsx`). Тип живе в пакеті (`simplycms/runtime`) — роут-файли
+ * ядра (routes/admin/**) типізують ним `context.queryClient` у своїх
+ * loader-ах і не можуть імпортувати з host у зворотному напрямку. Тут —
+ * лише реекспорт, щоб `RootComponent` і локальний код host-а могли
+ * дістати той самий інстанс через `Route.useRouteContext()`.
  */
-export interface RouterContext {
-  queryClient: QueryClient;
-}
+export type { RouterContext };
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Резолвимо активну тему один раз на рівні root — її назву інлайн-скриптом
