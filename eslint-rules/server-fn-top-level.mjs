@@ -7,6 +7,7 @@
  * серверний граф їде в клієнтський бандл. Це правило робить обидва режими
  * гучними на pnpm lint.
  */
+/** @type {import('eslint').Rule.RuleModule} */
 export default {
   meta: {
     type: 'problem',

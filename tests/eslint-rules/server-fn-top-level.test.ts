@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import rule from '../../eslint-rules/server-fn-top-level.mjs';
 
 const linter = new Linter({ configType: 'flat' });
-const config = [{
+const config: Linter.Config[] = [{
   files: ['**/*.ts'],
   languageOptions: { parser: tseslint.parser },
   plugins: { s: { rules: { 'server-fn-top-level': rule } } },
