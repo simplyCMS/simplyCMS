@@ -6,6 +6,7 @@ import {
 } from './eslint.db-client-zone.mjs';
 import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
+import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -269,6 +270,24 @@ const eslintConfig = [
       simplycms: { rules: { 'query-key-from-entity': queryKeyFromEntity } },
     },
     rules: { 'simplycms/query-key-from-entity': 'error' },
+  },
+  // К3-4′: createServerFn лише топ-рівневим `const` — компілятор Start
+  // на повільному шляху падає, а на fast-path (файли, де детектовано лише
+  // serverFn) МОВЧКИ пропускає нетоплевел-виклик, і серверний граф їде в
+  // клієнтський бандл (див. eslint-rules/server-fn-top-level.mjs). Окреме
+  // імʼя плагіна (`simplycms-serverfn`, не `simplycms`) — щоб опції не
+  // зливались із `query-key-from-entity` (flat config замінює опції
+  // правила цілком, а не доливає).
+  {
+    files: [
+      'packages/simplycms/src/**/*.{ts,tsx}',
+      'packages/simplycms/routes/**/*.tsx',
+      'src/**/*.{ts,tsx}',
+    ],
+    plugins: {
+      'simplycms-serverfn': { rules: { 'server-fn-top-level': serverFnTopLevel } },
+    },
+    rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
   },
   {
     ignores: [
