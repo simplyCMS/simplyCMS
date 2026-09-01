@@ -1116,6 +1116,27 @@ describe('subset: трансляція предикатів колекції у 
     expect(toDrizzleSubset(orderStatuses, ALLOW, {}).where).toBeUndefined();
   });
 
+  it('R9: форма value привʼязана до оператора (400, не 500 з БД)', () => {
+    const parse = (f: object) => subsetInputSchema.safeParse({ subset: { filters: [f] } }).success;
+    expect(parse({ field: ['code'], operator: 'in', value: 'x' })).toBe(false);        // скаляр замість масиву
+    expect(parse({ field: ['code'], operator: 'in', value: [] })).toBe(false);         // порожній масив
+    expect(parse({ field: ['code'], operator: 'eq', value: ['a', 'b'] })).toBe(false); // масив замість скаляра
+    expect(parse({ field: ['code'], operator: 'in', value: ['a', 'b'] })).toBe(true);
+    expect(parse({ field: ['code'], operator: 'eq', value: null })).toBe(true);
+  });
+
+  it('напрям поза asc/desc при прямому виклику — кидає, не мовчазний asc', () => {
+    expect(() => toDrizzleSubset(orderStatuses, ALLOW, {
+      sorts: [{ field: ['sortOrder'], direction: 'sideways' }],
+    } as unknown as SubsetInput)).toThrow(/напрям/);
+  });
+
+  it('allowlist з неіснуючою колонкою — чітка помилка з іменем таблиці', () => {
+    expect(() => toDrizzleSubset(orderStatuses, { filterable: ['colour'], sortable: [] }, {
+      filters: [{ field: ['colour'], operator: 'eq', value: 'x' }],
+    })).toThrow(/colour.*order_statuses/);
+  });
+
   it('subsetInputSchema — строгий: limit обмежений, сміття не проходить', () => {
     expect(subsetInputSchema.safeParse({ subset: { limit: 100_000 } }).success).toBe(false);
     expect(subsetInputSchema.safeParse({ subset: { filters: 'x' } }).success).toBe(false);
@@ -1134,7 +1155,7 @@ Expected: FAIL — модуля немає.
 
 ```ts
 // packages/simplycms/src/admin-server/subset.ts
-import { and, asc, desc, eq, gt, gte, inArray, lt, lte, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableName, gt, gte, inArray, lt, lte, type SQL } from 'drizzle-orm';
 import type { Table } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -1146,18 +1167,38 @@ import { z } from 'zod';
  * (parseLoadSubsetOptions): eq, gt, gte, lt, lte, in. Невідомий — КИДАЄ.
  * `or` свідомо відкладений до Е3 (каталог) — тут його не вмикати.
  */
-const OPERATORS = { eq, gt, gte, lt, lte, in: inArray } as const;
+// 🔴 Не `as const`: eq/gt/… — це інтерфейс BinaryOperator із трьома
+// перевантаженнями, inArray — окрема generic-функція; спільна мапа
+// типізується лише через звужену сигнатуру (TS2349 інакше). Вхід уже
+// звірений allowlist-ом ДО того, як дійде до SQL-функції.
+type SubsetOperatorFn = (column: never, value: never) => SQL;
+const OPERATORS: Record<'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in', SubsetOperatorFn> =
+  { eq, gt, gte, lt, lte, in: inArray };
 
 export interface SubsetAllow {
   readonly filterable: readonly string[];
   readonly sortable: readonly string[];
 }
 
-const filterSchema = z.object({
-  field: z.array(z.string().min(1)).min(1),
-  operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in']),
-  value: z.unknown(),
-});
+const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const filterSchema = z
+  .object({
+    field: z.array(z.string().min(1)).min(1),
+    operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in']),
+    value: z.unknown(),
+  })
+  // 🔴 R9 (рев'ю Task 6): форма value привʼязана до оператора ТУТ, на
+  // межі, — інакше `in` зі скаляром чи `eq` з масивом доїжджають до
+  // bindIfParam і повертаються 500 з БД замість 400 від валідатора.
+  .superRefine((f, ctx) => {
+    if (f.operator === 'in') {
+      const r = z.array(scalar).min(1).safeParse(f.value);
+      if (!r.success)
+        ctx.addIssue({ code: 'custom', path: ['value'], message: "operator 'in' вимагає непорожній масив скалярів" });
+    } else if (!scalar.safeParse(f.value).success) {
+      ctx.addIssue({ code: 'custom', path: ['value'], message: `operator '${f.operator}' вимагає скаляр` });
+    }
+  });
 const sortSchema = z.object({
   field: z.array(z.string().min(1)).min(1),
   direction: z.enum(['asc', 'desc']),
@@ -1181,20 +1222,32 @@ export type SubsetPayload = z.infer<typeof subsetInputSchema>;
 export function toDrizzleSubset(table: Table, allow: SubsetAllow, input: SubsetInput) {
   const columns = table as unknown as Record<string, never>;
 
+  /** Колонка з allowlist мусить існувати в таблиці — одрук автора ресурсу
+   *  падає тут чіткою помилкою, а не невиразно всередині SQL-білдера. */
+  const column = (name: string) => {
+    const col = columns[name];
+    if (col === undefined)
+      throw new Error(`[admin-server] колонки "${name}" немає в таблиці ${getTableName(table)}`);
+    return col;
+  };
+
   const conditions: SQL[] = (input.filters ?? []).map((f) => {
     const name = f.field.join('.');
     if (!allow.filterable.includes(name))
       throw new Error(`[admin-server] фільтр по недозволеній колонці: ${name}`);
     const op = OPERATORS[f.operator as keyof typeof OPERATORS];
     if (!op) throw new Error(`[admin-server] невідомий оператор: ${f.operator}`);
-    return op(columns[name] as never, f.value as never);
+    return op(column(name), f.value as never);
   });
 
   const orderBy = (input.sorts ?? []).map((s) => {
     const name = s.field.join('.');
     if (!allow.sortable.includes(name))
       throw new Error(`[admin-server] сортування по недозволеній колонці: ${name}`);
-    return (s.direction === 'desc' ? desc : asc)(columns[name] as never);
+    // Заява модуля «невідоме → кидає» діє і при прямому виклику повз схему.
+    if (s.direction !== 'asc' && s.direction !== 'desc')
+      throw new Error(`[admin-server] невідомий напрям сортування: ${String(s.direction)}`);
+    return (s.direction === 'desc' ? desc : asc)(column(name));
   });
 
   return {
@@ -1206,7 +1259,7 @@ export function toDrizzleSubset(table: Table, allow: SubsetAllow, input: SubsetI
 }
 ```
 
-Run: тест → PASS 5/5. Потім `pnpm lint` → 0 errors (зона жива, файл під нею).
+Run: тест → PASS 8/8. Потім `pnpm lint` → 0 errors (зона жива, файл під нею).
 
 - [ ] **Step 4: Гейти й коміт**
 
@@ -1449,6 +1502,8 @@ export function defineAdminResource<
         else if (config.defaultOrder) {
           // 🔴 defaultOrder ЗАСТОСОВУЄТЬСЯ (мертвий параметр старої редакції).
           const col = columns[config.defaultOrder.column];
+          if (col === undefined)
+            throw new Error(`[admin-server] ${config.entity}: defaultOrder.column "${config.defaultOrder.column}" немає в таблиці`);
           q = q.orderBy(config.defaultOrder.direction === 'desc' ? desc(col) : asc(col));
         }
         if (s.limit !== undefined) q = q.limit(s.limit);
