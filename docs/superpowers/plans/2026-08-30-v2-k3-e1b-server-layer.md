@@ -243,19 +243,19 @@ const GLOBAL: Array<[table: string, first: string, second: string]> = [
 /** [таблиця, INSERT для батька A, INSERT для батька B, ДРУГИЙ INSERT для батька A]. */
 const SCOPED: Array<[table: string, a: string, b: string, aAgain: string]> = [
   ['user_recipients',
-    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'А', 'А', '+380000000001', 'Київ', 'вул. Тестова, 1', true)`,
-    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U2}', 'Б', 'Б', '+380000000002', 'Львів', 'вул. Тестова, 2', true)`,
-    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'В', 'В', '+380000000003', 'Київ', 'вул. Тестова, 3', true)`],
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${U1}', 'А', 'А', '+380000000001', 'Київ', 'вул. Тестова, 1', true)`,
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${U2}', 'Б', 'Б', '+380000000002', 'Львів', 'вул. Тестова, 2', true)`,
+    `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address, is_default) values (gen_random_uuid(), '${U1}', 'В', 'В', '+380000000003', 'Київ', 'вул. Тестова, 3', true)`],
   ['user_addresses',
-    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'Дім', 'Київ', 'вул. Тестова, 1', true)`,
-    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U2}', 'Дім', 'Львів', 'вул. Тестова, 2', true)`,
-    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${'$'}{U1}', 'Офіс', 'Київ', 'вул. Тестова, 3', true)`],
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${U1}', 'Дім', 'Київ', 'вул. Тестова, 1', true)`,
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${U2}', 'Дім', 'Львів', 'вул. Тестова, 2', true)`,
+    `insert into public.user_addresses (id, user_id, name, city, address, is_default) values (gen_random_uuid(), '${U1}', 'Офіс', 'Київ', 'вул. Тестова, 3', true)`],
   ['product_modifications',
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P1}', 'dflt-a', 'A', true)`,
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P1}', 'dflt-a', 'A', true)`,
     // 🔴 P2 у демо-сіді ВЖЕ має дефолтну модифікацію — тут вставка з
     // is_default=false лише доводить, що індекс не заважає не-дефолтам.
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P2}', 'extra-b', 'B', false)`,
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${'$'}{P1}', 'dflt-a2', 'A2', true)`],
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P2}', 'extra-b', 'B', false)`,
+    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P1}', 'dflt-a2', 'A2', true)`],
 ];
 
 describe('К3-14: інваріант is_default тримає БД (усі 7 індексів)', () => {
@@ -263,11 +263,11 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
     // Демо-сід — для товарів (P1/P2); користувачі — власна фікстура.
     await applySqlFiles(dbUrl, [DEMO_SEED]);
     await queryRows(dbUrl, `insert into public.users (id, name, email, email_verified)
-      values ('${'$'}{U1}', 'А', 'a@t.test', true), ('${'$'}{U2}', 'Б', 'b@t.test', true)`);
+      values ('${U1}', 'А', 'a@t.test', true), ('${U2}', 'Б', 'b@t.test', true)`);
   });
 
   it.each(GLOBAL)('%s: перший дефолт проходить, другий — 23505', async (table, first, second) => {
-    await queryRows(dbUrl, `update public.${'$'}{table} set is_default = false where is_default`);
+    await queryRows(dbUrl, `update public.${table} set is_default = false where is_default`);
     await queryRows(dbUrl, first); // індекс не заважає єдиному дефолту
     await expect(queryRows(dbUrl, second)).rejects.toMatchObject({ code: '23505' });
   });
@@ -280,8 +280,7 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
 });
 ```
 
-(`DEMO_SEED` — той самий шлях, що в `aggregate-deps.test.ts`; `${'$'}{…}`
-у SQL — звичайні template-літерали TS.)
+(`DEMO_SEED` — той самий шлях, що в `aggregate-deps.test.ts`.)
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/single-default.test.ts`
 Expected: PASS 7/7. **Негативний контроль:** тимчасово прибрати ОДИН
@@ -379,7 +378,7 @@ const FIXTURES = [
   `insert into public.discount_groups (id, name, operator, is_active)
    values (gen_random_uuid(), 'Гейт deps: група', 'and', true)`,
   `insert into public.discounts (id, name, group_id, discount_type, discount_value, is_active, price_type_id)
-   select gen_random_uuid(), 'Гейт deps: акція', g.id, 'percent', 10, true, '${'$'}{RETAIL_PRICE_TYPE_ID}'::uuid
+   select gen_random_uuid(), 'Гейт deps: акція', g.id, 'percent', 10, true, '${RETAIL_PRICE_TYPE_ID}'::uuid
      from public.discount_groups g where g.name = 'Гейт deps: група'`,
   `insert into public.discount_conditions (id, discount_id, condition_type)
    select gen_random_uuid(), d.id, 'user_category' from public.discounts d where d.name = 'Гейт deps: акція'`,
@@ -2303,9 +2302,17 @@ pnpm build && PORT=3141 pnpm start &
 6. консоль: нуль `console.error`;
 7. **rollback**: зупинити сервер (`kill %1`) → створити рядок → рядок
    зʼявляється і сам ЗНИКАЄ, toast помилки; після рестарту сервера F5 —
-   стан консистентний.
+   стан консистентний;
+8. **редагування** — name/code/color: зміна видима миттєво, збережена
+   після F5, діалог закрився після персисту;
+9. **редагування з чекбоксом дефолту** — після збереження рівно один
+   дефолт (у старого прапорець зник);
+10. **rollback редагування** (сервер зупинений): зміна відкочується,
+    **діалог лишається відкритим з введеними даними**, кнопка Save
+    знову активна, toast `updateFailed`.
 
-🔴 П. 7 — доказ того, заради чого оптимізм: авто-rollback колекції.
+🔴 П. 7 і п. 10 — доказ того, заради чого оптимізм: авто-rollback
+колекції і збережений failure-state форми (рев'ю р3/р4).
 
 - [ ] **Step 6: Коміт**
 
@@ -2513,15 +2520,34 @@ export default {
       while (p && !FN_TYPES.has(p.type)) p = p.parent;
       return p;
     };
-    const insidePersistenceHandler = (fn) =>
-      fn?.parent?.type === 'Property' && HANDLERS.has(fn.parent.key?.name);
-    const hasExempt = (node) =>
-      sourceCode.getCommentsBefore(node).some((c) => /cache-sync-ok:/.test(c.value));
+    // 🔴 Persistence-виняток — по ВСІХ предках (рев'ю р4): serverFn у
+    // вкладеному callback усередині onInsert має найближчою функцією той
+    // callback, а не хендлер.
+    const insidePersistenceHandler = (node) => {
+      for (let p = node.parent; p; p = p.parent)
+        if (p.type === 'Property' && HANDLERS.has(p.key?.name)) return true;
+      return false;
+    };
+    // 🔴 Opt-out шукається перед STATEMENT-ом, не перед call (рев'ю р4):
+    // між `// cache-sync-ok:` і `reorderOrderStatus(...)` стоїть токен
+    // `await`, і getCommentsBefore(call) порожній. Причина обовʼязкова.
+    const hasExempt = (node) => {
+      let s = node;
+      while (s.parent && !/Statement$|Declaration$/.test(s.parent.type)) s = s.parent;
+      return sourceCode.getCommentsBefore(s).some((c) => /cache-sync-ok:\s*\S/.test(c.value));
+    };
 
-    const scanFn = (fn) => {
+    // 🔴 Сканування НЕ заходить у вкладені функції (рев'ю р4): інакше
+    // useMutation на рівні компонента «бачив» би синк сусіднього
+    // хендлера, а це і є клас фолс-негативів файлової евристики.
+    const scanFn = (root) => {
       let collectionSync = false, querySync = false;
       const walk = (n) => {
         if (!n || typeof n.type !== 'string') return;
+        // Для config-обʼєкта useMutation — його прямі callbacks сканувати
+        // ТРЕБА (вони і є тіло мутації), глибші вкладені — ні.
+        if (n !== root && FN_TYPES.has(n.type) &&
+            !(root.type === 'ObjectExpression' && n.parent?.type === 'Property' && n.parent.parent === root)) return;
         if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
           const name = n.callee.property?.name;
           const obj = n.callee.object;
@@ -2534,15 +2560,19 @@ export default {
           if (Array.isArray(child)) child.forEach(walk); else if (child) walk(child);
         }
       };
-      walk(fn.body);
+      walk(root.type === 'ObjectExpression' ? root : root.body);
       return { collectionSync, querySync };
     };
 
-    const check = (trigger) => {
-      if (hasExempt(trigger)) return;
-      const fn = enclosingFn(trigger);
-      if (!fn || insidePersistenceHandler(fn)) return;
-      const { collectionSync, querySync } = scanFn(fn);
+    /**
+     * Що сканувати: для useMutation — його config-обʼєкт (mutationFn/
+     * onSuccess/onSettled — усі callbacks там, і ТІЛЬКИ там); для виклику
+     * serverFn — тіло найближчої охоплюючої функції без вкладених.
+     */
+    const check = (trigger, scope) => {
+      if (hasExempt(trigger) || insidePersistenceHandler(trigger)) return;
+      if (!scope) return;
+      const { collectionSync, querySync } = scanFn(scope);
       if (!collectionSync && !querySync) context.report({ node: trigger, messageId: 'noSync' });
       else if (!collectionSync && querySync && usesAdminData) context.report({ node: trigger, messageId: 'invalidateOnly' });
     };
@@ -2554,9 +2584,20 @@ export default {
           for (const s of node.specifiers)
             if (s.type === 'ImportSpecifier' && !/^list/.test(s.imported.name)) serverFns.add(s.local.name);
       },
-      'CallExpression[callee.name="useMutation"]'(node) { check(node); },
+      'CallExpression[callee.name="useMutation"]'(node) {
+        const cfg = node.arguments[0];
+        check(node, cfg?.type === 'ObjectExpression' ? cfg : null);
+      },
       'CallExpression[callee.type="Identifier"]'(node) {
-        if (serverFns.has(node.callee.name)) check(node);
+        if (!serverFns.has(node.callee.name)) return;
+        const fn = enclosingFn(node);
+        // serverFn усередині callback-а useMutation-config (mutationFn/
+        // onSuccess…) стереже тригер useMutation — інакше синк у сусідньому
+        // onSuccess дав би хибний noSync на mutationFn (самоперевірка р4).
+        const cfg = fn?.parent?.type === 'Property' ? fn.parent.parent : null;
+        if (cfg?.type === 'ObjectExpression' && cfg.parent?.type === 'CallExpression' &&
+            cfg.parent.callee?.name === 'useMutation') return;
+        check(node, fn);
       },
     };
   },
@@ -2573,8 +2614,11 @@ export default {
 виклику `reorderOrderStatus` (рев'ю р3: function-scope робить контроль
 можливим на реальній сторінці — інші хендлери файла зі своїми синками
 його не «покривають»); позитивний — повернути → 0 errors / 13 warnings.
-Другий негатив — `useMutation` без синку в новій функції того ж файла →
-FAIL; прибрати.
+Другий негатив — `useMutation` без синку на рівні компонента, поруч із
+хендлером, що МАЄ синк → FAIL (рев'ю р4: сусідній синк не покриває).
+Третій — `// cache-sync-ok: причина` рядком вище `await reorderOrderStatus(...)`
+→ 0 errors (opt-out працює через `await`); `// cache-sync-ok:` без
+причини → FAIL. Усе прибрати.
 
 - [ ] **Step 3: Реєстр server-first винятків (К3-2)**
 
@@ -2630,8 +2674,9 @@ git add eslint-rules tests eslint.config.mjs packages/simplycms/src/contracts
 git commit -m "test(v2-k3): гейти мутацій (handler-canon + mutation-cache-sync) і реєстр К3-2
 
 Дві поверхні одного інваріанту: AST-гейт по ланцюжку блоків до
-refetch:false (BASELINE порожній назавжди) і файлова евристика на хуки
-(фолс-негативи можливі, фолс-позитиви — ні). Реєстр server-first
+refetch:false (BASELINE порожній назавжди) і function-scope AST-правило
+на хуки/виклики serverFn (межа — охоплююча функція без вкладених;
+useMutation — його config). Реєстр server-first
 винятків — мовчазні відхилення від «усе на колекціях» заборонені.
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
@@ -2652,7 +2697,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
    6) Task 9 — id-mismatch кидає ДО write-back, двійників немає;
    7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
    8) Task 11 — `mutation-cache-sync` негативний і позитивний.
-3. **Жива сторінка** `/admin/order-statuses`: усі 7 пунктів прогону
+3. **Жива сторінка** `/admin/order-statuses`: усі 10 пунктів прогону
    Task 10 Step 5, включно з авто-rollback і серверною відмовою на
    видалення дефолтного.
 4. **`test:schema`** доводить: інваріант дефолту (23505 + операції) і
