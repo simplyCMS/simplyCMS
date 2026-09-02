@@ -91,6 +91,38 @@ describe('колекція order_statuses', () => {
     );
   });
 
+  it('batch write-back — КОЖЕН рядок батчу в кеші після персисту (не лише rows[0])', async () => {
+    // Фінальне рев'ю Е1б, знахідка 3: `handler-canon` стереже лише
+    // НАЯВНІСТЬ write-back у хендлері, а юніт-тест колекції досі
+    // перевіряв лише що всі мутації ВІДПРАВЛЕНІ на сервер — жоден гейт не
+    // ловив регрес «дописати назад лише rows[0]». Цей кейс — поведінковий:
+    // мінімум ДВА рядки в одному batch-insert, і ПІСЛЯ персисту КОЖЕН з
+    // них мусить бути в кеші колекції з серверними полями (createdAt тут
+    // приходить лише через write-back — оптимістичний рядок його не має).
+    // Шаблон для Е3–Е6.
+    const c = getCollection(new QueryClient(), orderStatusesCollection);
+    await c.preload(); // sync-контекст (див. коментар у batch-тесті вище)
+    const ids = [crypto.randomUUID(), crypto.randomUUID()];
+    const tx = c.insert(
+      ids.map((id, i) => ({
+        id,
+        name: `B${i}`,
+        code: `b${i}`,
+        color: null,
+        sortOrder: 10 + i,
+      })) as never,
+    );
+    await tx.isPersisted.promise;
+    for (const id of ids) {
+      expect(c.has(id), `рядок ${id} відсутній у кеші після write-back`).toBe(
+        true,
+      );
+      expect(c.get(id)?.createdAt, 'серверні поля не доїхали').toBe(
+        '2026-01-01',
+      );
+    }
+  });
+
   it('розходження ключів — fail-loud ДО write-back, рядків-двійників немає', async () => {
     insertMock.mockImplementationOnce(async () => [
       {

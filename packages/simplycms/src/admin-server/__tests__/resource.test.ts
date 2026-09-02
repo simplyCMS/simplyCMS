@@ -84,6 +84,17 @@ describe('defineAdminResource (К3-4′)', () => {
     if (parsed.success) expect('isDefault' in parsed.data[0].patch).toBe(false);
   });
 
+  it('updateSchema: порожній patch — 400 на межі, а не "No values to set" з БД (фінальна хвиля Е1б)', () => {
+    // `createUpdateSchema` робить УСІ писані поля optional, тож
+    // `{ id, patch: {} }` без .refine() пройшов би схему і впав би
+    // синхронно на `db.update().set({})` — 500 замість 400. Той самий
+    // клас, що вже сформульовано в 7a4baa9f.
+    const parsed = ops.updateSchema.safeParse([
+      { id: crypto.randomUUID(), patch: {} },
+    ]);
+    expect(parsed.success).toBe(false);
+  });
+
   it('exhaustiveness: пропуск І перетин — помилки ТИПУ', () => {
     // Пропущений 'color' → __missingColumns: "color".
     // @ts-expect-error — color не покритий

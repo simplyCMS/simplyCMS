@@ -124,6 +124,27 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
     expect(top.swapped).toHaveLength(0);
   });
 
+  it('reorder: два зустрічні свопи суміжної пари — БЕЗ 40P01 (детермінований порядок локів)', async () => {
+    // Фінальне рев'ю Е1б, знахідка 1: стара реалізація локала "current →
+    // neighbor" ДВОМА окремими `SELECT … FOR UPDATE`. Для суміжної пари
+    // (A, B) виклик reorder(A,'down') лока A, потім B; reorder(B,'up') —
+    // у ЗУСТРІЧНОМУ порядку: B, потім A. Дві конкурентні транзакції з
+    // круговим очікуванням локів — 40P01, відтворено двічі на живому
+    // Postgres. Фікс бере обидва локи ОДНИМ `select … where id in (a,b)
+    // order by id for update` — циклу очікування вже немає.
+    const list = (await queryRows(
+      dbUrl,
+      `select id from public.order_statuses order by sort_order`,
+    )) as { id: string }[];
+    const [a, b] = [list[0].id, list[1].id];
+    const results = await Promise.allSettled([
+      reorderOrderStatusOp({ data: { id: a, direction: 'down' } }),
+      reorderOrderStatusOp({ data: { id: b, direction: 'up' } }),
+    ]);
+    for (const r of results)
+      expect(r.status, JSON.stringify(r)).toBe('fulfilled');
+  });
+
   it('remove: batch [звичайний, дефолтний] — АТОМАРНА відмова, нічого не видалено', async () => {
     const rows = (await queryRows(
       dbUrl,

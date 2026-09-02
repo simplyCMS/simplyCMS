@@ -130,9 +130,19 @@ export function defineAdminResource<
       SafePick<InsertShape, W>
     >
   ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = updateSchemaFull.pick(
-    pickWritable as never,
-  ) as unknown as z.ZodObject<SafePick<UpdateShape, W>>;
+  const patchSchema = (
+    updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
+      SafePick<UpdateShape, W>
+    >
+  ).refine((p) => Object.keys(p).length > 0, {
+    // 🔴 Порожній patch — 400 на межі, не «No values to set» синхронно з
+    // drizzle (фінальне рев'ю Е1б, знахідка 2 — той самий клас, що вже
+    // сформульовано в 7a4baa9f: межа admin-server відбиває невалідний
+    // вхід чітко, а не через SQL-білдер). `createUpdateSchema` робить усі
+    // писані поля optional, тож `{ id, patch: {} }` без цього refine
+    // проходив би схему і падав на `db.update().set({})`.
+    message: 'patch не може бути порожнім',
+  });
 
   const insertSchema = z.array(insertRowSchema).min(1).max(100);
   const updateSchema = z
