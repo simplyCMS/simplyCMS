@@ -5,6 +5,9 @@ export const messages = {
   'admin.common.signedOut': 'Вихід виконано',
   'admin.common.signedOutHint': 'Ви успішно вийшли з системи',
   'admin.common.loading': 'Завантаження адмінки…',
+  // К3-6: errorComponent /admin — секьюр-контекст guard (InsecureContextError).
+  'admin.common.insecureContext':
+    'Адмінка працює лише в захищеному контексті (https:// або localhost).',
 
   // Сторінки-заглушки (розділи, яких ще немає)
   'admin.common.placeholder.fallback': 'Сторінка',
