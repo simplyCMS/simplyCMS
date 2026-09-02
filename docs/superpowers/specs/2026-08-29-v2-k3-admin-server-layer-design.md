@@ -266,7 +266,11 @@ dataflow-аналіз. `BASELINE` гейта №2 порожній і лишає
 `./admin-server/impl` (дзеркало ролі `./storefront/loaders`: bare-імпорт
 з index робить нутрощі окремим dist-модулем, і Gate C розрізняє стаб від
 нетрансформованого entry payload-маркером; у публічну документацію
-субшлях не виноситься). (3) Клієнт
+субшлях не виноситься; 🔴 амендмент 2026-09-02, трек T: розкладка по
+сутностях у Е3 — `./admin-server/impl/<entity>`, а не
+`./admin-server/<entity>/impl`, бо межу задекларовано префіксами в
+`simplycms/contracts/server-only`, і префікс `admin-server/impl` накриває
+нові сутності без правки декларації). (3) Клієнт
 (`admin-data`, сторінки) отримує ТІЛЬКИ type-only типи рядків із
 `simplycms/schema/types`; `schema` у колекцію не передається — вона
 валідує лише оптимістичні insert/update (дані `queryFn` не валідуються
