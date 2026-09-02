@@ -2604,8 +2604,20 @@ function offendersIn(file: string): string[] {
       ts.isPropertyAssignment(p) && p.name.getText() === 'refetch' &&
       p.initializer.kind === ts.SyntaxKind.FalseKeyword);
 
-  const hasExempt = (node: ts.Node): boolean =>
-    /canon-exempt:/.test(src.slice(Math.max(0, node.getFullStart() - 200), node.getStart()));
+  /**
+   * Opt-out `// canon-exempt: <причина>` — РІВНО рядком вище return-а
+   * (R13: сирий пошук по 200 символах глушив детекцію коментарем за три
+   * рядки вище; механіка та сама, що hasExempt у mutation-cache-sync).
+   */
+  const hasExempt = (node: ts.Node): boolean => {
+    const ranges = ts.getLeadingCommentRanges(src, node.getFullStart()) ?? [];
+    const last = ranges[ranges.length - 1];
+    if (!last) return false;
+    const text = src.slice(last.pos, last.end).replace(/^\/\/|^\/\*|\*\/$/g, '');
+    const commentEndLine = sf.getLineAndCharacterOfPosition(last.end).line;
+    const stmtLine = sf.getLineAndCharacterOfPosition(node.getStart()).line;
+    return /^\s*canon-exempt:\s*\S/.test(text) && commentEndLine === stmtLine - 1;
+  };
 
   /** Чи є в піддереві фактичний CallExpression collection.utils.write*(…). */
   const containsWriteCall = (n: ts.Node): boolean => {
@@ -2651,10 +2663,27 @@ function offendersIn(file: string): string[] {
     return false;
   };
 
+  const report = (n: ts.Node) =>
+    out.push(`${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+
+  const isRefetchFalseExpr = (e: ts.Node): boolean => {
+    const inner = ts.isParenthesizedExpression(e) ? e.expression : e;
+    return ts.isObjectLiteralExpression(inner) && inner.properties.some((p) =>
+      ts.isPropertyAssignment(p) && p.name.getText() === 'refetch' &&
+      p.initializer.kind === ts.SyntaxKind.FalseKeyword);
+  };
+
   const visitHandlerBody = (body: ts.Node) => {
+    // Concise-arrow `async () => ({ refetch: false })` — тіло не Block: це
+    // «return <expr>» без жодного місця для write-back → офендер за
+    // побудовою (окрім exempt). R13-дрібниця: явний ReturnStatement — не
+    // єдина форма return-а.
+    if (!ts.isBlock(body)) {
+      if (isRefetchFalseExpr(body) && !hasExempt(body.parent)) report(body);
+      return;
+    }
     const walk = (n: ts.Node) => {
-      if (isRefetchFalse(n) && !hasExempt(n) && !precededByWrite(n, body))
-        out.push(`${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+      if (isRefetchFalse(n) && !hasExempt(n) && !precededByWrite(n, body)) report(n);
       ts.forEachChild(n, walk);
     };
     walk(body);
@@ -2682,12 +2711,15 @@ describe('handler-canon: refetch:false ⇒ write-back у своєму ланцю
 ```
 
 Run: `pnpm vitest run tests/handler-canon.test.ts` → PASS.
-**Негативні контролі (УСІ ТРИ):** у `collections/order-statuses.ts`
+**Негативні контролі (УСІ ШІСТЬ):** у `collections/order-statuses.ts`
 тимчасово (1) прибрати `writeBatch`-блок в `onDelete` → FAIL; (2)
 замінити його на `if (Math.random() > 2) collection.utils.writeDelete(ids[0].id);`
 → теж FAIL (умовний сиблінг); (3) замінити на порожній
 `collection.utils.writeBatch(() => {});` → теж FAIL (рев'ю р3: batch без
-write*-виклику всередині — не write-back)
+write*-виклику всередині — не write-back); (4) `// canon-exempt: причина`
+РІВНО рядком вище `return { refetch: false }` → PASS; (5) та сама
+директива за три рядки вище або без причини → FAIL (R13); (6)
+`onUpdate: async () => ({ refetch: false })` (concise-arrow) → FAIL
 → повернути.
 
 - [ ] **Step 2: `mutation-cache-sync` — правило на хуки**
@@ -3057,19 +3089,21 @@ import { join } from 'node:path';
 import { ADMIN_SERVER_FIRST } from '../admin-server-first';
 import { ENTITY } from '../entities';
 
+/** Одна нормалізація для ОБОХ сторін (R13-дрібниця: асиметрія пропускала bare-camelCase імʼя файла). */
+const toSnake = (s: string) =>
+  s.replace(/\.tsx?$/, '').replace(/-/g, '_').replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+
 describe('реєстр server-first винятків (К3-2)', () => {
-  it('колекція не існує для сутності з реєстру', () => {
-    const collections = readdirSync(
-      join(import.meta.dirname, '../../admin-data/collections'),
-    ).map((f) => f.replace(/\.tsx?$/, '').replace(/-/g, '_'));
-    for (const name of Object.keys(ADMIN_SERVER_FIRST))
-      expect(collections, `${name} у реєстрі винятків — колекція заборонена`)
-        .not.toContain(name.replace(/([A-Z])/g, '_$1').toLowerCase());
+  const collections = readdirSync(join(import.meta.dirname, '../../admin-data/collections')).map(toSnake);
+
+  it.each(Object.keys(ADMIN_SERVER_FIRST))('%s — у реєстрі винятків, колекція заборонена', (name) => {
+    expect(collections).not.toContain(toSnake(name));
   });
 
-  it('ключі реєстру не суперечать ENTITY-іменам колекцій', () => {
-    expect(Object.keys(ADMIN_SERVER_FIRST).length).toBeGreaterThan(0);
-    expect(Object.values(ENTITY)).not.toContain('price_validator');
+  it('реєстр непорожній і жоден ключ не збігається з іменем ENTITY', () => {
+    const keys = Object.keys(ADMIN_SERVER_FIRST);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const name of keys) expect(Object.values(ENTITY)).not.toContain(toSnake(name));
   });
 });
 ```
