@@ -2401,14 +2401,59 @@ useState(false)` замінює `createMutation.isPending || updateMutation.isPe
 ```ts
 // К3-6: crypto.randomUUID існує лише в secure context — адмінка на
 // http:// не-localhost мовчки отримала б undefined на кожному create.
+// 🔴 Помилка ТИПІЗОВАНА і АНГЛІЙСЬКА (прецедент core/lib/user-addresses.ts:88:
+// «серверна діагностика, а не рядок інтерфейсу»): beforeLoad — поза
+// React-контекстом, локаль там недосяжна, тож рядок інтерфейсу дає
+// errorComponent цього ж роуту за error.name (контракт як у К3-13).
+class InsecureContextError extends Error {
+  override readonly name = 'InsecureContextError';
+}
 if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') {
-  throw new Error(
-    '[simplycms/admin] Адмінка вимагає secure context (https:// або localhost): crypto.randomUUID недоступний.',
+  throw new InsecureContextError(
+    '[simplycms/admin] Secure context required (https:// or localhost): crypto.randomUUID is unavailable.',
   );
 }
 ```
 
-(Файл додається в Files цієї задачі: Modify `packages/simplycms/routes/admin/admin.tsx`.)
+І `errorComponent` на тому ж роуті — поруч із `AdminPending`, тим самим
+патерном (`useT()` легальний: рендер на тому самому місці дерева,
+всередині `I18nProvider`):
+
+```tsx
+export const Route = createFileRoute('/admin')({
+  ssr: false,
+  beforeLoad: /* guard вище → getUser → isAdmin */,
+  pendingComponent: AdminPending,
+  errorComponent: AdminError,
+  component: AdminRoot,
+});
+
+/** Помилки beforeLoad/loader адмінки: відомі коди — з каталогу, решта — як root. */
+function AdminError({ error }: { error: Error }) {
+  const t = useT();
+  const message =
+    error.name === 'InsecureContextError'
+      ? t('admin.common.insecureContext')
+      : (error.message ?? t('app.error.fallback'));
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-sm text-destructive">{message}</p>
+    </div>
+  );
+}
+```
+
+Ключі в `i18n/catalogs/{uk,en}/admin/common.ts`:
+`'admin.common.insecureContext'` — uk «Адмінка працює лише в захищеному
+контексті (https:// або localhost).», en «The admin panel requires a
+secure context (https:// or localhost).». 🔴 Запис у
+`tests/i18n-coverage/pending.ts` для `admin.tsx` НЕ додається (кириличного
+рядка в throw немає; «dev-діагностика» як обґрунтування allowlist — хибне,
+бо root boundary рендерить `error.message` дослівно).
+
+Юніт `packages/simplycms/routes/admin/__tests__/admin-error.test.tsx`
+(jsdom, під `I18nProvider` — прецедент тестів адмінки): `InsecureContextError`
+→ рендер перекладеного рядка; довільний `Error('x')` → `x`.
 
 - [ ] **Step 3: Preload у loader роуту**
 
