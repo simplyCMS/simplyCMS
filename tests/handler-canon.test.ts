@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import ts from 'typescript';
 
@@ -49,10 +56,24 @@ function offendersIn(file: string): string[] {
         p.initializer.kind === ts.SyntaxKind.FalseKeyword,
     );
 
-  const hasExempt = (node: ts.Node): boolean =>
-    /canon-exempt:/.test(
-      src.slice(Math.max(0, node.getFullStart() - 200), node.getStart()),
+  /**
+   * Opt-out `// canon-exempt: <причина>` — РІВНО рядком вище return-а
+   * (R13: сирий пошук по 200 символах глушив детекцію коментарем за три
+   * рядки вище; механіка та сама, що hasExempt у mutation-cache-sync).
+   */
+  const hasExempt = (node: ts.Node): boolean => {
+    const ranges = ts.getLeadingCommentRanges(src, node.getFullStart()) ?? [];
+    const last = ranges[ranges.length - 1];
+    if (!last) return false;
+    const text = src
+      .slice(last.pos, last.end)
+      .replace(/^\/\/|^\/\*|\*\/$/g, '');
+    const commentEndLine = sf.getLineAndCharacterOfPosition(last.end).line;
+    const stmtLine = sf.getLineAndCharacterOfPosition(node.getStart()).line;
+    return (
+      /^\s*canon-exempt:\s*\S/.test(text) && commentEndLine === stmtLine - 1
     );
+  };
 
   /** Чи є в піддереві фактичний CallExpression collection.utils.write*(…). */
   const containsWriteCall = (n: ts.Node): boolean => {
@@ -106,12 +127,36 @@ function offendersIn(file: string): string[] {
     return false;
   };
 
+  const report = (n: ts.Node) =>
+    out.push(
+      `${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`,
+    );
+
+  const isRefetchFalseExpr = (e: ts.Node): boolean => {
+    const inner = ts.isParenthesizedExpression(e) ? e.expression : e;
+    return (
+      ts.isObjectLiteralExpression(inner) &&
+      inner.properties.some(
+        (p) =>
+          ts.isPropertyAssignment(p) &&
+          p.name.getText() === 'refetch' &&
+          p.initializer.kind === ts.SyntaxKind.FalseKeyword,
+      )
+    );
+  };
+
   const visitHandlerBody = (body: ts.Node) => {
+    // Concise-arrow `async () => ({ refetch: false })` — тіло не Block: це
+    // «return <expr>» без жодного місця для write-back → офендер за
+    // побудовою (окрім exempt). R13-дрібниця: явний ReturnStatement — не
+    // єдина форма return-а.
+    if (!ts.isBlock(body)) {
+      if (isRefetchFalseExpr(body) && !hasExempt(body.parent)) report(body);
+      return;
+    }
     const walk = (n: ts.Node) => {
       if (isRefetchFalse(n) && !hasExempt(n) && !precededByWrite(n, body))
-        out.push(
-          `${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`,
-        );
+        report(n);
       ts.forEachChild(n, walk);
     };
     walk(body);
@@ -137,9 +182,109 @@ function offendersIn(file: string): string[] {
   return out;
 }
 
+/**
+ * Одноразовий .ts-фікстур для юніт-тестів `offendersIn` напряму, без
+ * торкання реальних колекцій (R13: раніше canon-exempt і concise-arrow не
+ * мали ЖОДНОГО автоматичного кейса — лише ручні негативні контролі на
+ * `collections/order-statuses.ts`).
+ */
+function withFixture(code: string, run: (file: string) => void) {
+  const dir = mkdtempSync(join(tmpdir(), 'handler-canon-'));
+  const file = join(dir, 'fixture.ts');
+  writeFileSync(file, code, 'utf8');
+  try {
+    run(file);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 describe('handler-canon: refetch:false ⇒ write-back у своєму ланцюжку', () => {
   it('офендерів немає (BASELINE порожній назавжди)', () => {
     const offenders = [...tsFiles(ROOT)].flatMap(offendersIn);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('canon-exempt: заякорений рядком вище, з причиною (R13)', () => {
+  it('директива РІВНО рядком вище return-а — офендера немає', () => {
+    withFixture(
+      [
+        'export const c = {',
+        '  onDelete: async () => {',
+        '    // canon-exempt: тестова причина',
+        '    return { refetch: false };',
+        '  },',
+        '};',
+        '',
+      ].join('\n'),
+      (file) => expect(offendersIn(file)).toEqual([]),
+    );
+  });
+
+  it('директива за три рядки вище, і окремо — без причини: офендер в обох випадках', () => {
+    // Три рядки вище (два порожні рядки між коментарем і return-ом) —
+    // саме той кейс, який стара 200-символьна евристика мовчки глушила.
+    withFixture(
+      [
+        'export const c = {',
+        '  onDelete: async () => {',
+        '    // canon-exempt: тестова причина',
+        '',
+        '',
+        '    return { refetch: false };',
+        '  },',
+        '};',
+        '',
+      ].join('\n'),
+      (file) => expect(offendersIn(file)).toHaveLength(1),
+    );
+    // Директива рівно рядком вище, але БЕЗ причини після ":" — теж не opt-out.
+    withFixture(
+      [
+        'export const c = {',
+        '  onDelete: async () => {',
+        '    // canon-exempt:',
+        '    return { refetch: false };',
+        '  },',
+        '};',
+        '',
+      ].join('\n'),
+      (file) => expect(offendersIn(file)).toHaveLength(1),
+    );
+  });
+});
+
+describe('concise-arrow тіло — офендер за побудовою (R13)', () => {
+  it('async () => ({ refetch: false }) без write-back — завжди офендер (write-back неможливий у виразі)', () => {
+    withFixture(
+      [
+        'export const c = {',
+        '  onUpdate: async () => ({ refetch: false }),',
+        '};',
+        '',
+      ].join('\n'),
+      (file) => expect(offendersIn(file)).toHaveLength(1),
+    );
+  });
+
+  it('той самий concise-arrow з canon-exempt рядком вище — офендера немає', () => {
+    // 🔴 Для concise-arrow «сам вузол» — це ArrowFunction, а не
+    // PropertyAssignment: коментар над УСІМ рядком `onUpdate: async () =>`
+    // прикріпився б як leading trivia до імені властивості, не до стрілки
+    // (getFullStart() ArrowFunction — одразу після токена `:`). Тому
+    // директива стоїть МІЖ `:` і `async`, рівно рядком вище стрілки —
+    // так само, як для Block-форми вона стоїть рядком вище return-а.
+    withFixture(
+      [
+        'export const c = {',
+        '  onUpdate:',
+        '    // canon-exempt: тестова причина',
+        '    async () => ({ refetch: false }),',
+        '};',
+        '',
+      ].join('\n'),
+      (file) => expect(offendersIn(file)).toEqual([]),
+    );
   });
 });
