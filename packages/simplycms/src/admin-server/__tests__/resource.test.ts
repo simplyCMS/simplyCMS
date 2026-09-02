@@ -6,7 +6,10 @@ import { orderStatuses } from 'simplycms/schema';
 // канали, форму схем перевіряємо без БД.
 vi.mock('simplycms/auth', async (orig) => ({
   ...(await orig()),
-  requireGrant: vi.fn(async () => ({ subject: { userId: 'u1', roles: ['admin'] }, scope: 'any' })),
+  requireGrant: vi.fn(async () => ({
+    subject: { userId: 'u1', roles: ['admin'] },
+    scope: 'any',
+  })),
 }));
 vi.mock('simplycms/db', () => ({
   withActor: vi.fn(async (_actor, fn) => fn({} as never, {} as never)),
@@ -32,7 +35,8 @@ describe('defineAdminResource (К3-4′)', () => {
     // Е3–Е6. Фабрика мусить бути admin-only fail-loud.
     const { requireGrant } = await import('simplycms/auth');
     (requireGrant as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      subject: { userId: 'u2', roles: ['user'] }, scope: 'own',
+      subject: { userId: 'u2', roles: ['user'] },
+      scope: 'own',
     });
     await expect(ops.list({ data: {} })).rejects.toThrow(/own/);
   });
@@ -40,7 +44,13 @@ describe('defineAdminResource (К3-4′)', () => {
   it('віддає операції-хендлери і схеми, НЕ serverFn', () => {
     for (const k of ['list', 'insert', 'update', 'remove'] as const)
       expect(typeof ops[k]).toBe('function');
-    for (const k of ['subsetSchema', 'insertSchema', 'updateSchema', 'removeSchema', 'rowSchema'] as const)
+    for (const k of [
+      'subsetSchema',
+      'insertSchema',
+      'updateSchema',
+      'removeSchema',
+      'rowSchema',
+    ] as const)
       expect(ops[k]).toBeDefined();
     // serverFn мав би .url/__executeServer — операція plain-функція без них.
     expect('url' in (ops.list as object)).toBe(false);
@@ -50,7 +60,13 @@ describe('defineAdminResource (К3-4′)', () => {
     const noId = ops.insertSchema.safeParse([{ name: 'X', code: 'x' }]);
     expect(noId.success).toBe(false);
     const withExtra = ops.insertSchema.safeParse([
-      { id: crypto.randomUUID(), name: 'X', code: 'x', isDefault: true, createdAt: 'boom' },
+      {
+        id: crypto.randomUUID(),
+        name: 'X',
+        code: 'x',
+        isDefault: true,
+        createdAt: 'boom',
+      },
     ]);
     // strip: readonly-ключі не доїжджають у БД навіть якщо прислані.
     expect(withExtra.success).toBe(true);
@@ -72,8 +88,12 @@ describe('defineAdminResource (К3-4′)', () => {
     // Пропущений 'color' → __missingColumns: "color".
     // @ts-expect-error — color не покритий
     defineAdminResource({
-      entity: 'order_statuses', table: orderStatuses, operation: 'catalog.write',
-      mode: 'eager', filterable: [], sortable: [],
+      entity: 'order_statuses',
+      table: orderStatuses,
+      operation: 'catalog.write',
+      mode: 'eager',
+      filterable: [],
+      sortable: [],
       writable: ['name', 'code', 'sortOrder'],
       readonly: ['id', 'isDefault', 'createdAt'],
     });
@@ -82,15 +102,19 @@ describe('defineAdminResource (К3-4′)', () => {
     // мітку створення, а тип мовчав).
     // @ts-expect-error — createdAt і writable, і readonly
     defineAdminResource({
-      entity: 'order_statuses', table: orderStatuses, operation: 'catalog.write',
-      mode: 'eager', filterable: [], sortable: [],
+      entity: 'order_statuses',
+      table: orderStatuses,
+      operation: 'catalog.write',
+      mode: 'eager',
+      filterable: [],
+      sortable: [],
       writable: ['name', 'code', 'color', 'sortOrder', 'createdAt'],
       readonly: ['id', 'isDefault', 'createdAt'],
     });
     expectTypeOf(ops.list).toBeFunction();
   });
 
-  it('тип-регресія (хвіст рев\'ю р1): readonly-колонки не зʼявляються у СТАТИЧНІЙ формі insert/update', () => {
+  it("тип-регресія (хвіст рев'ю р1): readonly-колонки не зʼявляються у СТАТИЧНІЙ формі insert/update", () => {
     // `.pick(mask as never)` компілювався, але був type-level no-op: аргумент
     // типу `never` не дає TS сайту інференсу для `M` у
     // `pick<M extends Mask<keyof Shape>>`, тож `M` падає до констрейнта

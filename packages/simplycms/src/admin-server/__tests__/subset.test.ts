@@ -54,21 +54,15 @@ describe('subset: трансляція предикатів колекції у 
   it('R9: форма value привʼязана до оператора (400, не 500 з БД)', () => {
     const parse = (f: object) =>
       subsetInputSchema.safeParse({ subset: { filters: [f] } }).success;
-    expect(parse({ field: ['code'], operator: 'in', value: 'x' })).toBe(
+    expect(parse({ field: ['code'], operator: 'in', value: 'x' })).toBe(false); // скаляр замість масиву
+    expect(parse({ field: ['code'], operator: 'in', value: [] })).toBe(false); // порожній масив
+    expect(parse({ field: ['code'], operator: 'eq', value: ['a', 'b'] })).toBe(
       false,
-    ); // скаляр замість масиву
-    expect(parse({ field: ['code'], operator: 'in', value: [] })).toBe(
-      false,
-    ); // порожній масив
-    expect(
-      parse({ field: ['code'], operator: 'eq', value: ['a', 'b'] }),
-    ).toBe(false); // масив замість скаляра
-    expect(
-      parse({ field: ['code'], operator: 'in', value: ['a', 'b'] }),
-    ).toBe(true);
-    expect(parse({ field: ['code'], operator: 'eq', value: null })).toBe(
+    ); // масив замість скаляра
+    expect(parse({ field: ['code'], operator: 'in', value: ['a', 'b'] })).toBe(
       true,
     );
+    expect(parse({ field: ['code'], operator: 'eq', value: null })).toBe(true);
   });
 
   it('напрям поза asc/desc при прямому виклику — кидає, не мовчазний asc', () => {

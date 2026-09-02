@@ -32,7 +32,10 @@ export const Route = createFileRoute('/admin')({
   beforeLoad: async () => {
     // ПЕРШИЙ рядок beforeLoad: роут client-only (`ssr:false`), тож це
     // виконується рівно один раз на старті адмінки, до будь-якого запиту.
-    if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') {
+    if (
+      typeof crypto === 'undefined' ||
+      typeof crypto.randomUUID !== 'function'
+    ) {
       throw new InsecureContextError(
         '[simplycms/admin] Secure context required (https:// or localhost): crypto.randomUUID is unavailable.',
       );

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import { useCollection, orderStatusesCollection } from 'simplycms/admin-data';
-import { reorderOrderStatus, setDefaultOrderStatus } from 'simplycms/admin-server';
+import {
+  reorderOrderStatus,
+  setDefaultOrderStatus,
+} from 'simplycms/admin-server';
 import type { OrderStatus } from 'simplycms/schema/types';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
@@ -58,7 +61,8 @@ export default function OrderStatuses() {
   const collection = useCollection(orderStatusesCollection);
   // 🔴 Форма 0.3.6 — обʼєкт { query }; dependency-масиви legacy.
   const { data: statuses, isLoading } = useLiveQuery({
-    query: (q) => q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
+    query: (q) =>
+      q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -117,7 +121,9 @@ export default function OrderStatuses() {
             await applyDefault(id);
           } catch (e) {
             toast.error(
-              t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message,
+              t('admin.orders.statuses.updateFailed') +
+                ' ' +
+                (e as Error).message,
             );
           }
         }
@@ -147,7 +153,9 @@ export default function OrderStatuses() {
             await applyDefault(id);
           } catch (e) {
             toast.error(
-              t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message,
+              t('admin.orders.statuses.updateFailed') +
+                ' ' +
+                (e as Error).message,
             );
           }
         }

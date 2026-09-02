@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest';
 describe('рівно один @tanstack/db у дереві', () => {
   it('усі resolved-версії @tanstack/db збігаються', () => {
     const out = execSync('pnpm ls -r --depth Infinity @tanstack/db --json', {
-      encoding: 'utf8', cwd: process.cwd(),
+      encoding: 'utf8',
+      cwd: process.cwd(),
     });
     // 🔴 СТРУКТУРНИЙ обхід, не regex по "version": вивід — масив
     // workspace-проєктів, КОЖЕН зі своєю версією пакета (0.4.1, 1.0.0…) —
@@ -28,22 +29,43 @@ describe('рівно один @tanstack/db у дереві', () => {
     const walk = (node: unknown): void => {
       if (!node || typeof node !== 'object') return;
       for (const [name, dep] of Object.entries(
-        node as Record<string, { version?: string; path?: string; dependencies?: unknown }>,
+        node as Record<
+          string,
+          { version?: string; path?: string; dependencies?: unknown }
+        >,
       )) {
         if (name === '@tanstack/db' && dep?.version) {
           versions.add(dep.version);
           if (dep.path) paths.add(dep.path);
         }
-        if (dep && typeof dep === 'object') walk((dep as { dependencies?: unknown }).dependencies);
+        if (dep && typeof dep === 'object')
+          walk((dep as { dependencies?: unknown }).dependencies);
       }
     };
     for (const project of JSON.parse(out) as Array<Record<string, unknown>>) {
-      for (const key of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as const)
+      for (const key of [
+        'dependencies',
+        'devDependencies',
+        'peerDependencies',
+        'optionalDependencies',
+      ] as const)
         walk(project[key]);
     }
-    expect(versions.size, 'у дереві немає @tanstack/db взагалі — гейт вхолосту').toBeGreaterThan(0);
-    expect([...versions], 'дерево тримає кілька версій @tanstack/db').toHaveLength(1);
-    expect(paths.size, 'pnpm ls не віддав path — гейт фізичного інстанса вхолосту').toBeGreaterThan(0);
-    expect([...paths], 'дерево тримає кілька ФІЗИЧНИХ інстансів @tanstack/db (peer-контекст)').toHaveLength(1);
+    expect(
+      versions.size,
+      'у дереві немає @tanstack/db взагалі — гейт вхолосту',
+    ).toBeGreaterThan(0);
+    expect(
+      [...versions],
+      'дерево тримає кілька версій @tanstack/db',
+    ).toHaveLength(1);
+    expect(
+      paths.size,
+      'pnpm ls не віддав path — гейт фізичного інстанса вхолосту',
+    ).toBeGreaterThan(0);
+    expect(
+      [...paths],
+      'дерево тримає кілька ФІЗИЧНИХ інстансів @tanstack/db (peer-контекст)',
+    ).toHaveLength(1);
   });
 });

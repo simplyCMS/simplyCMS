@@ -156,7 +156,12 @@ export function gateBundle(storeDir) {
    * serverFn: стаб МУСИТЬ приїхати в клієнт, і 0 тут — реальний регрес
    * спліту (не «ще не встигли перевести сторінку»).
    */
-  if (leaked.length || stubs === 0 || adminServerStubs === 0 || !adminServerSplitOk) {
+  if (
+    leaked.length ||
+    stubs === 0 ||
+    adminServerStubs === 0 ||
+    !adminServerSplitOk
+  ) {
     ok = false;
     details.push(
       leaked.length
