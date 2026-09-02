@@ -1039,7 +1039,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ---
 # Частина 2 — серверний шар (Tasks 6–8)
 
-**DoD частини 2:** серверний шар доводиться `test:schema` і юнітами БЕЗ жодного клієнтського коду; `pnpm build:packages && pnpm test:packaging && pnpm pilot:pack` зелені (Gate C бачить новий entry).
+**DoD частини 2:** серверний шар доводиться `test:schema` і юнітами БЕЗ жодного клієнтського коду; `pnpm build:packages && pnpm test:packaging && pnpm pilot:pack` зелені (Gate C стереже `impl` у `SERVER_PAYLOAD` і бачить розділення entry у dist; присутність стаба в бандлі — Task 10, бо клієнта ще немає).
 
 ### Task 6: Тека `admin-server`, тір-зона, `subset.ts`
 
@@ -1911,13 +1911,20 @@ profile('admin-server', ['src/admin-server/index.ts', 'src/admin-server/impl.ts'
 /simplycms\/dist\/admin-server\/impl/,
 ```
 ```js
-// Окремий стаб-маркер (гейт не вхолосту): форма dist/admin-server/ не
-// матчить SERVER_FN_STUB (той вимагає сегмент /server/ ПІСЛЯ теки).
-// 🔴 index, НЕ impl: наявність index-стаба легальна й обовʼязкова.
+// Окремий стаб-маркер: форма dist/admin-server/ не матчить SERVER_FN_STUB
+// (той вимагає сегмент /server/ ПІСЛЯ теки). 🔴 index, НЕ impl.
 const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 ```
-і асертити НАЯВНІСТЬ `ADMIN_SERVER_STUB` у клієнтських чанках поруч із
-чинним стабом. Чинні `/drizzle-orm/` і `pg` лишаються другим рубежем.
+🔴 **На межі Task 8 присутність стаба в клієнтських чанках асертити НЕ
+МОЖНА** (розвилка R10 імплементації): жоден клієнтський файл ще не
+імпортує `simplycms/admin-server` — сторінка переводиться в Task 10, і
+Vite не кладе в бандл модуль без імпорту. Тому в Task 8 Gate C отримує:
+(а) leak-половину безумовно — `impl` у `SERVER_PAYLOAD`; (б) доказ, що
+tsup РОЗДІЛИВ entry — існування `dist/admin-server/index.js` і
+`dist/admin-server/impl.js` у встановленому пакеті; (в) лічильник
+`ADMIN_SERVER_STUB` як INFO (0 очікувано). Сувора присутність стаба —
+обовʼязковий крок Task 10 (Step 4б), щойно сторінка споживає serverFn.
+Чинні `/drizzle-orm/` і `pg` лишаються другим рубежем.
 
 - [ ] **Step 6: Гейти й коміт**
 
@@ -2410,6 +2417,21 @@ export const Route = createFileRoute('/admin/order-statuses/')({
 ```bash
 pnpm lint && pnpm build && pnpm typecheck && pnpm test
 ```
+
+- [ ] **Step 4б: Gate C — сувора присутність стаба (перенесено з Task 8, R10)**
+
+Тепер сторінка імпортує `simplycms/admin-server`, тож стаб МУСИТЬ бути
+в клієнтських чанках. У `scripts/pilot-pack/gate-c.mjs` перевести
+лічильник `ADMIN_SERVER_STUB` з INFO в **обовʼязковий assert ≥ 1** поруч
+із чинним `SERVER_FN_STUB`; leak-маркер `impl` лишається. Прогнати:
+
+```bash
+pnpm build:packages && pnpm pilot:pack
+```
+Expected: PASS; у виводі Gate C — `admin-server stub: N ≥ 1`, `impl` у
+клієнті відсутній. **Негативний контроль:** тимчасово додати в
+`OrderStatuses.tsx` `import { orderStatusesOps } from 'simplycms/admin-server/impl'`
+(будь-яке вживання) → `pilot:pack` FAIL на leak-маркері → прибрати.
 Expected: PASS, 0 errors. 🔴 Зелений лінт i18n-повноти сторінки НЕ
 доводить (усі 8 рядків — у toast, які селектори не бачать за побудовою);
 доводить ручна звірка інвентаря Step 1 із живим прогоном Step 5.
