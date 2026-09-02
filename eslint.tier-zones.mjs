@@ -80,6 +80,9 @@ const TIER_ZONES = [
   ],
   ['src/themes', 4, 'themes', []],
   ['src/plugins', 4, 'plugins', []],
+  // Колекції адмінки (Е1б) — T4: над contracts/schema-типами, під
+  // сторінками. Окремо від src/admin (T5): колекція — module-level стан.
+  ['src/admin-data', 4, 'admin-data', []],
   ['src/plugin-sdk', 4, 'plugin-sdk', ['plugins']],
   ['src/cart-ui', 4, 'cart-ui', []],
   ['src/catalog-ui', 4, 'catalog-ui', ['core']],

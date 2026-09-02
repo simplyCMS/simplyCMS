@@ -183,6 +183,10 @@ const profiles: Profile[] = [
       'src/{cart,catalog,checkout,profile,reviews}-ui/*.tsx',
       'src/admin/index.ts',
       'src/admin/{components,pages,layouts}/*.tsx',
+      // Реєстр колекцій адмінки (Е1б, Task 9): клієнтський React-тір, спільні
+      // чанки легальні (на відміну від `admin-server` — там код мусить
+      // лишатися server-only й splitting:false тримає межу довіри).
+      'src/admin-data/index.ts',
       // Тір `core` (залишок розчиненого фасаду): `lib/**` і `components/**`
       // рекурсивні — wildcard-входи `./core/lib/*` і `./core/components/*`
       // накривають і вкладені шляхи (`lib/shipping/findZone`,

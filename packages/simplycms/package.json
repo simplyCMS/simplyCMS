@@ -27,6 +27,7 @@
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
     "./admin-server/impl": "./src/admin-server/impl.ts",
+    "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./supabase": "./src/supabase/index.ts",
@@ -182,6 +183,10 @@
       "./admin-server/impl": {
         "types": "./dist/admin-server/impl.d.ts",
         "import": "./dist/admin-server/impl.js"
+      },
+      "./admin-data": {
+        "types": "./dist/admin-data/index.d.ts",
+        "import": "./dist/admin-data/index.js"
       },
       "./db": {
         "types": "./dist/db/index.d.ts",

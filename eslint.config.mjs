@@ -58,6 +58,9 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
   'packages/simplycms/src/profile-ui/**/*.tsx',
   'packages/simplycms/src/reviews-ui/**/*.tsx',
+  // Реєстр колекцій адмінки (Task 9, Е1б): один .tsx у тесті (renderHook-
+  // обгортка), тож зона розширена явно, а не покладена на успадкування.
+  'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
   'themes/*/components/**/*.tsx',
   // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
@@ -264,6 +267,7 @@ const eslintConfig = [
       'packages/simplycms/src/*-ui/**/*.{ts,tsx}',
       'packages/simplycms/src/react-query/**/*.{ts,tsx}',
       'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
     ],
     ignores: ['**/__tests__/**'],
     plugins: {
@@ -285,7 +289,9 @@ const eslintConfig = [
       'src/**/*.{ts,tsx}',
     ],
     plugins: {
-      'simplycms-serverfn': { rules: { 'server-fn-top-level': serverFnTopLevel } },
+      'simplycms-serverfn': {
+        rules: { 'server-fn-top-level': serverFnTopLevel },
+      },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
   },

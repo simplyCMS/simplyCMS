@@ -57,6 +57,11 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/contracts/semver',
   ],
   [
+    'packages/simplycms/src/admin-data',
+    'simplycms/admin',
+    'simplycms/contracts',
+  ],
+  [
     'packages/simplycms/src/plugin-sdk',
     'simplycms/admin',
     'simplycms/plugins/types',
