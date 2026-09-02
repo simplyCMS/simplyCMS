@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { X } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+
+/**
+ * 🔴 Панель читає `section_property_assignments` + `section_properties` +
+ * `property_options` одним викликом (`getSectionFilters`) — `sectionProperties`
+ * лишається якорем ключа: саме її рядки формують видиму панель фільтрів.
+ */
+const sectionProperties = entityKey(ENTITY.sectionProperties);
 
 interface Property {
   id: string;
@@ -73,7 +81,7 @@ export function FilterSidebar({
    * характеристики й опції приходять однією транзакцією.
    */
   const { data } = useQuery({
-    queryKey: ['section-filters', sectionId],
+    queryKey: sectionProperties.scoped('section', sectionId ?? ''),
     queryFn: () =>
       getSectionFilters({ data: { sectionId: sectionId as string } }),
     enabled: !!sectionId,

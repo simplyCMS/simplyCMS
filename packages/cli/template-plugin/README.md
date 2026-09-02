@@ -14,7 +14,11 @@
 - **Налаштування** — Zod-схема в `definePlugin({ settings })`; форму рендерить
   адмінка, значення читай `usePluginConfig`.
 - **Власні таблиці** — SQL-міграції в теці `migrations/` з іменем
-  `<YYYYMMDDHHmmss>___PLUGIN_TABLE_PREFIX__<slug>.sql`; чіпати можна ЛИШЕ
+  `<YYYYMMDDHHmmss>___PLUGIN_TABLE_PREFIX__<slug>.sql`. 🔴 Імʼя мусить містити
+  префікс `__PLUGIN_TABLE_PREFIX__` — інакше воно колізує з каноном ядра
+  (`0001_init.sql` і компанія), і `db:diff` зупиниться на «одне імʼя, різний
+  вміст у двох канонах», не скопіювавши НІЧОГО. Саме тому скаффолд поклав
+  `0001___PLUGIN_TABLE_PREFIX__init.sql`. Чіпати можна ЛИШЕ
   таблиці `__PLUGIN_TABLE_PREFIX__*` (межа довіри — `simplycms db:diff` це
   лінтить). Забрати в магазин: `pnpm simplycms db:diff --write` → ревʼю →
   `psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -f <нова>.sql` (URL власника БД — `app_runtime` не має

@@ -49,12 +49,37 @@ description: "Правила роботи з даними та Supabase в Simpl
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
 - Кеш-інвалідація — через `staleTime`/router invalidate + in-memory TTL-кеші серверних функцій (ISR/`revalidatePath` не існує).
 
+### Контракт ключів кешу (React Query)
+
+🔴 **`queryKey` не пишеться літералом** (V2-К3, рішення К3-3). Сегмент 0
+завжди йде з реєстру `simplycms/contracts/entities`, а не з довільного
+рядка (`'admin'`, `'catalog'` тощо) — інакше та сама сутність отримує в
+різних місцях різні ключі, і мутація в одному не інвалідовує кеш іншого
+(виміряно: `pickup_points` жила під чотирма ключами до реєстру). Три
+механізми:
+- **`entityKey(ENTITY.x)`** — однотабличний ключ: `.all()` / `.list()` /
+  `.detail(id)` / `.scoped(relation, parentId)`.
+- **`AGGREGATE.x`** (`aggregateKey`) — запит, що одним походом читає
+  КІЛЬКА таблиць: `.key` — стабільний префікс для інвалідації, `.deps` —
+  повний список читаних таблиць (не декорація — саме звідси інвалідація
+  бере, що скидати).
+- **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній
+  таблиці (наприклад обчислене право доступу).
+
+Лінт (`eslint-rules/query-key-from-entity.mjs`) переводить це на `error`
+для `core/`, `*-ui/`, `react-query/`, `storefront-routes/` пакета ядра. 🔴
+`packages/simplycms/src/admin/**` — свідома виїмка з цієї зони: її ключі
+переписує наступний етап (Е1б–Е6), а не цей документ.
+
 ### Admin (Client-side)
 - TanStack React Query для data fetching в адмін-панелі:
   ```typescript
+  import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+
   const supabase = useSupabaseClient();
+  const productKeys = entityKey(ENTITY.products);
   const { data: products } = useQuery({
-    queryKey: ['admin', 'products'],
+    queryKey: productKeys.list(),
     queryFn: async () => {
       const { data, error } = await supabase.from('products').select('*');
       if (error) throw error;
@@ -64,6 +89,42 @@ description: "Правила роботи з даними та Supabase в Simpl
   ```
 - `useMutation` з invalidation для CUD-операцій.
 - Після mutations — інвалідація відповідних query keys.
+
+### Контракт id: ключ генерує викликач, не БД
+
+🔴 **Інваріант треку V2-К3 (етап Е0, 0.4.1; ревізія Е1а).** У 41 таблиці
+«Категорії A» знято `DEFAULT gen_random_uuid()`, тож **кожен** шлях вставки
+зобовʼязаний передати `id` явно:
+
+```typescript
+// сервер (SSR-лоадери, server fns, auth-провізія, реєстри тем/плагінів)
+import { randomUUID } from 'node:crypto';
+await db.insert(userAddresses).values({ id: randomUUID(), userId, ...input });
+
+// клієнт (сторінки адмінки, плагіни через usePluginTable)
+await port.insert({ id: crypto.randomUUID(), question, answer });
+```
+
+Чому не DEFAULT: оптимістичний рядок у клієнтському кеші мусить мати ТОЙ
+САМИЙ ключ, що й рядок у БД, — інакше після відповіді сервера кеш ловить
+дубль. Пропущений `id` тепер падає гучно (`23502 not_null_violation`), а не
+розходиться тихо.
+
+**Дві виїмки, і вони іменовані:**
+
+| Виїмка | Чому | Хто стереже |
+|---|---|---|
+| `users`, `sessions`, `accounts`, `verifications` | Better Auth із `generateId: 'uuid'` не кладе `id` в INSERT узагалі | `id-defaults.test.ts` (Категорія B) |
+| `packages/simplycms/src/admin/**` | застарілий шар на `supabase-js`, переписується в Е1–Е6 | `tests/admin-inserts-need-id.test.ts` — ратчет, число може лише зменшуватись |
+
+🔴 Ревізія Е1а: `orders` вийшла з винятків і перейшла в Категорію A —
+після Е0 її єдина вставка (`order-create.ts:99`) передає ключ явно, тож
+DEFAULT перестав бути страхувальною сіткою і став fail-silent пасткою в
+таблиці, яку адмінка отримує в керування.
+
+Гейт інваріанта — `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
+(`pnpm test:schema`): він **дискаверить** усі вставки в `packages/simplycms/src/**`,
+а не звіряється зі списком, тож нова вставка без `id` червонить його одразу.
 
 ### Типи та валідація
 - 🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)
@@ -133,6 +194,8 @@ export async function loadActiveTheme() {
 
 ### Mutations (admin)
 ```typescript
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+
 const mutation = useMutation({
   mutationFn: async (product: ProductInput) => {
     const { data, error } = await supabase
@@ -144,7 +207,7 @@ const mutation = useMutation({
     return data;
   },
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+    queryClient.invalidateQueries({ queryKey: entityKey(ENTITY.products).all() });
     toast.success('Товар створено');
   },
   onError: (error) => {
@@ -163,13 +226,23 @@ cookie-based клієнта. Це **навмисний виняток**: рез�
 
 ## ❌ NEVER
 - Не пиши SQL-міграції руками з нуля і не застосовуй їх через MCP (`apply_migration`) чи `execute_sql` — тільки `pnpm db:diff` → ревʼю → `pnpm test:schema`.
-- Не редагуй `packages/simplycms/drizzle/meta/*` вручну — це snapshot drizzle-kit.
+- Не редагуй `packages/simplycms/drizzle/meta/*` вручну для звичайних змін
+  схеми — зміни йдуть через `pnpm db:diff`. Виняток — точкова правка
+  BASELINE (`drizzle/0000_init.sql` + `drizzle/meta/0000_snapshot.json`,
+  синхронно з каноном і `schema.ts`), коли повний `db:diff` додав би зайвий
+  журнальний запис замість виправлення `0000` (застосовано в Е0 і Е1а).
+  Кожна така правка мусить лишити канон ≡ drizzle-baseline ≡ снапшот і
+  підтверджуватись `drizzle-kit generate` → «No schema changes».
 - Не імпортуй глобальний supabase-клієнт (його не існує) — тільки `useSupabaseClient()`/інжектований client.
 - Не імпортуй `simplycms/data-supabase` — субшляху не існує (0.4.1, шар знесено).
+- 🔴 Не покладайся на `DEFAULT gen_random_uuid()` при вставці — його знято
+  (Категорія A). Не «лагодь» падіння `23502` поверненням DEFAULT у схему:
+  ключ мусить передати викликач (див. «Контракт id»).
 - Не забувай інвалідацію query keys після мутацій в адмінці.
 - Не використовуй `queryClient.setQueryData()` для складних кейсів — invalidate замість цього.
 - Не роби DB calls у серверних функціях без обробки помилок.
-- Не хардкодь query keys — використовуй константи або фабрики.
+- Не хардкодь query keys — сегмент 0 з `entityKey`/`AGGREGATE`/`SESSION_KEY`
+  (`simplycms/contracts/entities`), див. «Контракт ключів кешу».
 
 ## ℹ️ Де шукати деталі
 - `packages/simplycms/src/supabase/` — клієнти Supabase адмінки (server/anon/SupabaseProvider).

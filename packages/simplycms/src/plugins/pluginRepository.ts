@@ -100,6 +100,11 @@ export async function installPlugin(
   const { data, error } = await supabase
     .from('plugins')
     .insert({
+      // 🔴 Контракт id (К3-Е0): `plugins` — Категорія A, DEFAULT знято, тож
+      // без явного ключа цей виклик падає на NOT NULL (23502). Це публічна
+      // поверхня пакета (`simplycms/plugins`), а не код адмінки, тому в
+      // виїмку ратчета не входить і мусить бути правильним уже зараз.
+      id: crypto.randomUUID(),
       name,
       display_name: displayName,
       version,

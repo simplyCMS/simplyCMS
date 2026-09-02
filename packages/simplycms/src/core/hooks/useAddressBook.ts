@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   deleteMyAddress,
   getMyAddresses,
@@ -25,7 +26,7 @@ export interface AddressFormInput {
  * лишала кабінет із застарілим списком. Спільний ключ прибирає розсинхрон
  * за побудовою — інвалідація одна на обидва екрани.
  */
-export const ADDRESS_BOOK_KEY = ['address-book'] as const;
+export const ADDRESS_BOOK_KEY = entityKey(ENTITY.userAddresses).list();
 
 /**
  * Книга адрес покупця: список + збереження + видалення.

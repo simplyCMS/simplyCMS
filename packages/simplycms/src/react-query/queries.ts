@@ -6,15 +6,24 @@
 // Ключі лишились: ними лоадер і клієнт домовляються про одну комірку кешу.
 
 import type { ProductQuery } from 'simplycms/contracts';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 
-/** Стабільний namespace ключів для кешу React Query. */
+const products = entityKey(ENTITY.products);
+
+/**
+ * Ключі каталогу. 🔴 Сегмент 0 — імʼя таблиці з ENTITY, не рядок
+ * `'catalog'`: інакше вітрина й адмінка адресують ту саму сутність
+ * різними ключами, і мутація в одній не інвалідовує другу.
+ *
+ * 🔴 Живий лише `sectionProducts` (карусель головної,
+ * `storefront-routes/pages/home/queries.ts`). Решта колишніх членів
+ * (`all`/`product`/`products`/`sections`/`properties`/`stock`) не мали
+ * жодного споживача поза власним тестом і прибрані фінальним рев'ю Е1а;
+ * `stock` до того ж колізував із `core/hooks/useStock.ts`
+ * (`[...AGGREGATE.stockInfo.key, modificationId, productId]`) — той самий
+ * ключ під різні типи payload при двох заданих id.
+ */
 export const catalogKeys = {
-  all: ['catalog'] as const,
-  product: (idOrSlug: string) => ['catalog', 'product', idOrSlug] as const,
-  products: (q: ProductQuery) => ['catalog', 'products', q] as const,
   sectionProducts: (sectionId: string, q?: ProductQuery) =>
-    ['catalog', 'section-products', sectionId, q ?? null] as const,
-  sections: ['catalog', 'sections'] as const,
-  properties: ['catalog', 'properties'] as const,
-  stock: (ids: string[]) => ['catalog', 'stock', ...ids] as const,
+    [...products.scoped('section', sectionId), q ?? null] as const,
 };

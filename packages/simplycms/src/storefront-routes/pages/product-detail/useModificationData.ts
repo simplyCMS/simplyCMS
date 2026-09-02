@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import { getModificationData } from '../../server/products';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
@@ -29,7 +30,7 @@ export function useModificationData(
   const productId = product?.id;
 
   const { data } = useQuery({
-    queryKey: ['product-modification-data', productId],
+    queryKey: [...AGGREGATE.modificationData.key, productId ?? ''],
     queryFn: () =>
       getModificationData({ data: { productId: productId as string } }),
     enabled: !!productId,

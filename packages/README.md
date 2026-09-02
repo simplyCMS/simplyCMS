@@ -36,10 +36,12 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `runtime/` | `simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
 | `i18n/` | `simplycms/i18n` | T2 | Request-scoped транслятор (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
 | `storefront/` | `simplycms/storefront` | T2 | SSR-лоадери (`withStorefrontDb` над Drizzle) + SEO-генератори — без Supabase |
+| `admin-server/` | `simplycms/admin-server` (+ службовий `./admin-server/impl`) | T2 | Серверний шар адмінки (трек К3, Е1б): фабрика операцій `defineAdminResource` + іменовані операції з інваріантами; публічна поверхня `index.ts` — ЛИШЕ топ-рівневі `createServerFn` (К3-4′), нутрощі — за bare-субшляхом `impl` (дзеркало `storefront/loaders` для Gate C, К3-9′). Upward-виняток `db`+`auth`, як у `storefront`: `withActor` + `requireGrant` |
 | `ui/` | `simplycms/ui` | T3 | Бібліотека примітивів shadcn/ui |
 | `themes/` | `simplycms/themes` | T4 | Система тем v3 (`ThemeRegistry`, `bootstrapThemes`, `applyTokens`, `validateThemeModule` + `./conformance` — гейт заявлених темою `views`) |
 | `plugins/` | `simplycms/plugins` | T4 | Система плагінів (`HookRegistry`, `PluginLoader`, `PluginSlot`) |
 | `plugin-sdk/` | `simplycms/plugin-sdk` | T4 | SDK плагіна: `definePlugin`, `validatePluginModule`, `usePluginT`, `usePluginTable` — єдина поверхня, дозволена плагіну (межа довіри, спека §7). 🔴 T4, а не T2: імпортує `plugins` |
+| `admin-data/` | `simplycms/admin-data` | T4 | Колекції TanStack DB адмінки: реєстр `getCollection`/`useCollection` (WeakMap по `QueryClient`), колекції без `schema` (тип — type-only з `schema/types`), ключі з `contracts/entities` |
 | `cart-ui/` | `simplycms/cart-ui` | T4 | Кошик: `CartButton`, `CartDrawer`, `CartItem`, `CartItemView` |
 | `catalog-ui/` | `simplycms/catalog-ui` | T4 | Каталог: `ProductCard`, `FilterSidebar`, `ProductGallery`, `ModificationSelector`, `StockDisplay` |
 | `checkout-ui/` | `simplycms/checkout-ui` | T4 | Оформлення: форми контактів, доставки, оплати, отримувача + підсумок |

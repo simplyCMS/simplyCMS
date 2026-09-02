@@ -17,6 +17,9 @@ export type {
   ThemeLoader,
 } from './config';
 
+// Контекст роутера (Route.useRouteContext) — тип-онлі, нуль рантайм-ваги.
+export type { RouterContext } from './router-context';
+
 /** Опис feature-модуля збірки (catalog/cart/checkout/orders/…). */
 export interface EngineModule {
   name: string;

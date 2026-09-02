@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { asc } from 'drizzle-orm';
 import { themes } from 'simplycms/schema';
 import {
@@ -50,6 +51,7 @@ export async function insertMissingThemes(
   await withStoreOperatorDb((db) =>
     db.insert(themes).values(
       missing.map((row) => ({
+        id: randomUUID(),
         name: row.name,
         displayName: row.display_name,
         version: row.version,

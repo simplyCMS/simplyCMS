@@ -105,7 +105,7 @@ describe('допуск в адмінку по сесії Better Auth', () => {
     // мусить діяти з наступного ж запиту.
     await queryRows(
       dbUrl,
-      `insert into public.user_roles (user_id, role) values ($1, 'admin')`,
+      `insert into public.user_roles (id, user_id, role) values (gen_random_uuid(), $1, 'admin')`,
       [userId],
     );
 

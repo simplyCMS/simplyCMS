@@ -5,6 +5,9 @@ import {
   dbClientZoneConfig,
 } from './eslint.db-client-zone.mjs';
 import { tierZoneConfigs } from './eslint.tier-zones.mjs';
+import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
+import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
+import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -56,6 +59,9 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
   'packages/simplycms/src/profile-ui/**/*.tsx',
   'packages/simplycms/src/reviews-ui/**/*.tsx',
+  // Реєстр колекцій адмінки (Task 9, Е1б): один .tsx у тесті (renderHook-
+  // обгортка), тож зона розширена явно, а не покладена на успадкування.
+  'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
   'themes/*/components/**/*.tsx',
   // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
@@ -103,6 +109,14 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
   'packages/simplycms-plugin-*/**/*.{ts,tsx}',
 ];
 
+// Точковий ратчет `mutation-cache-sync` (Task 11, Е1б): сторінки
+// `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
+// зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
+// PENDING_FILES) — стартово одна сторінка з Task 10.
+const MUTATION_CACHE_SYNC_RATCHET = [
+  'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
+];
+
 const pluginTrustBoundaryImports = [
   {
     group: [
@@ -128,6 +142,12 @@ const pluginTrustBoundaryImports = [
       'simplycms/schema/*',
       'simplycms/plugin-sdk/server',
       'simplycms/plugin-sdk/server/*',
+      // admin-server (Е1б, К3-4′): кожна операція за `impl` сама кличе
+      // requireGrant, тож дірки в авторизації немає — але імпорт із плагіна
+      // тягне весь серверний граф (db, auth, схему) у клієнтський бандл, а
+      // саме це межа й спиняє.
+      'simplycms/admin-server',
+      'simplycms/admin-server/*',
       'drizzle-orm',
       'drizzle-orm/*',
       'pg',
@@ -146,7 +166,7 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver|admin-server)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
@@ -244,6 +264,76 @@ const eslintConfig = [
   // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
   // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
   ...tierZoneConfigs,
+  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY (V2-К3,
+  // рішення К3-3), не літералом. Кастомне AST-правило, а не селектор у
+  // `no-restricted-syntax`: ця зона накриває `storefront-routes/**` і
+  // `*-ui/**`, які вже під i18n-зоною (`I18N_MIGRATED_FILES` вище), а flat
+  // config ЗАМІНЮЄ опції правила цілком — спільний `no-restricted-syntax`
+  // тут мовчки вимкнув би один із двох детекторів залежно від порядку
+  // конфігів. Окреме імʼя правила прибирає перетин повністю.
+  //
+  // 🔴 `src/admin/**` тут НЕМАЄ навмисно: її ~170 літеральних ключів
+  // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
+  // означало б робити роботу двічі. Додати теку — крок завершення
+  // переписування адмінки (DoD К3-3).
+  {
+    files: [
+      'packages/simplycms/src/core/**/*.{ts,tsx}',
+      'packages/simplycms/src/*-ui/**/*.{ts,tsx}',
+      'packages/simplycms/src/react-query/**/*.{ts,tsx}',
+      'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/__tests__/**'],
+    plugins: {
+      simplycms: { rules: { 'query-key-from-entity': queryKeyFromEntity } },
+    },
+    rules: { 'simplycms/query-key-from-entity': 'error' },
+  },
+  // Мутація без сліду в кеші (Task 11, Е1б) — клієнтська половина інваріанту
+  // «мутація ⇒ кеш бачить наслідок»; серверну половину (persistence-хендлери
+  // onInsert/onUpdate/onDelete) стереже окремий AST-гейт tests/handler-canon.test.ts.
+  // Зона — фабрики колекцій (`admin-data`) + точковий ратчет переписаних
+  // сторінок адмінки (`MUTATION_CACHE_SYNC_RATCHET`): список РОСТЕ з хвилями
+  // Е3–Е6 у міру того, як `src/admin/pages/*` переходять на TanStack DB —
+  // патерн, обернений до `PENDING_FILES` i18n-гейта (там список звужується
+  // до порожнього, тут — росте від порожнього). Окреме імʼя плагіна
+  // (`simplycms-cache-sync`, не `simplycms`) — з тієї самої причини, що в
+  // зоні `server-fn-top-level`: flat config замінює опції правила цілком,
+  // а не доливає, і обидві зони перетинаються на `admin-data/**`.
+  {
+    files: [
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      ...MUTATION_CACHE_SYNC_RATCHET,
+    ],
+    ignores: ['**/__tests__/**'],
+    plugins: {
+      'simplycms-cache-sync': {
+        rules: { 'mutation-cache-sync': mutationCacheSync },
+      },
+    },
+    rules: { 'simplycms-cache-sync/mutation-cache-sync': 'error' },
+  },
+  // К3-4′: createServerFn лише топ-рівневим `const` — компілятор Start
+  // на повільному шляху падає, а на fast-path (файли, де детектовано лише
+  // serverFn) МОВЧКИ пропускає нетоплевел-виклик, і серверний граф їде в
+  // клієнтський бандл (див. eslint-rules/server-fn-top-level.mjs). Окреме
+  // імʼя плагіна (`simplycms-serverfn`, не `simplycms`) — щоб опції не
+  // зливались із `query-key-from-entity` (flat config замінює опції
+  // правила цілком, а не доливає).
+  {
+    files: [
+      'packages/simplycms/src/**/*.{ts,tsx}',
+      'packages/simplycms/routes/**/*.tsx',
+      'src/**/*.{ts,tsx}',
+    ],
+    plugins: {
+      'simplycms-serverfn': {
+        rules: { 'server-fn-top-level': serverFnTopLevel },
+      },
+    },
+    rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
   {
     ignores: [
       'node_modules/**',

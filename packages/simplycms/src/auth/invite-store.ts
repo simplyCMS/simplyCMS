@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import { userRoles, users, verifications } from 'simplycms/schema';
@@ -69,7 +70,7 @@ export const ownerInviteStore: OwnerInviteStore = {
     await withActor({ role: 'app_admin' }, async (db) => {
       await db
         .insert(userRoles)
-        .values({ userId, role: 'admin' })
+        .values({ id: randomUUID(), userId, role: 'admin' })
         .onConflictDoNothing({
           target: [userRoles.userId, userRoles.role],
         });

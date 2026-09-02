@@ -105,6 +105,7 @@ const profiles: Profile[] = [
     'contracts',
     [
       'src/contracts/index.ts',
+      'src/contracts/entities.ts',
       'src/contracts/*/index.ts',
       'src/contracts/views/fixtures/index.ts',
     ],
@@ -182,6 +183,10 @@ const profiles: Profile[] = [
       'src/{cart,catalog,checkout,profile,reviews}-ui/*.tsx',
       'src/admin/index.ts',
       'src/admin/{components,pages,layouts}/*.tsx',
+      // Реєстр колекцій адмінки (Е1б, Task 9): клієнтський React-тір, спільні
+      // чанки легальні (на відміну від `admin-server` — там код мусить
+      // лишатися server-only й splitting:false тримає межу довіри).
+      'src/admin-data/index.ts',
       // Тір `core` (залишок розчиненого фасаду): `lib/**` і `components/**`
       // рекурсивні — wildcard-входи `./core/lib/*` і `./core/components/*`
       // накривають і вкладені шляхи (`lib/shipping/findZone`,
@@ -194,6 +199,17 @@ const profiles: Profile[] = [
       'src/core/components/**/*.tsx',
     ],
     { splitting: true },
+  ),
+  // serverFn-шар адмінки (Е1б, К3-9′): ДВА entry. index — serverFn-стаби
+  // (імпортує impl BARE-специфікатором, tsup лишає його зовнішнім);
+  // impl — server-only нутрощі (фабрика/операції/схеми інлайняться сюди,
+  // splitting:false). Саме ця пара дає Gate C розрізнення «стаб vs
+  // нетрансформований модуль» — механіка та сама, що server/ ↔ loaders/.
+  // БЕЗ platform:'node' — index імпортує клієнтський граф (стаби).
+  profile(
+    'admin-server',
+    ['src/admin-server/index.ts', 'src/admin-server/impl.ts'],
+    { splitting: false },
   ),
   // db-рантайм (Task 6, В2-К1а) — окремий NODE-профіль, а не рядок у `tiers`.
   // Дві причини, обидві не стильові:

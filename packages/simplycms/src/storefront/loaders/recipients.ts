@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { orders, userRecipients } from 'simplycms/schema';
 import type { ActorDb } from './db';
@@ -81,6 +82,7 @@ export async function createRecipient(
   const [row] = await db
     .insert(userRecipients)
     .values({
+      id: randomUUID(),
       userId,
       ...toColumns(input),
       isDefault: input.isDefault ?? false,

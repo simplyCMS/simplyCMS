@@ -3,8 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Loader2, ChevronRight, Tag } from 'lucide-react';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { PropertyWithOptions } from 'simplycms/storefront/loaders';
 import { getProperties } from '../server/properties';
+
+const sectionProperties = entityKey(ENTITY.sectionProperties);
 
 export interface PropertiesPageProps {
   properties?: PropertyWithOptions[];
@@ -21,7 +24,7 @@ export default function PropertiesPage({
    * з її опціями, тож лічильник — це довжина вже наявного масиву.
    */
   const { data: properties, isLoading } = useQuery({
-    queryKey: ['public-properties-with-pages'],
+    queryKey: sectionProperties.list(),
     queryFn: (): Promise<PropertyWithOptions[]> => getProperties(),
     initialData: initialProperties,
   });

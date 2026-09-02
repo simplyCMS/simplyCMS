@@ -23,7 +23,10 @@ import { useT, type MessageKey } from 'simplycms/i18n';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getOrderView } from '../server/order-view';
+
+const orders = entityKey(ENTITY.orders);
 
 // Мапи ключів, а не текстів: код способу приходить із БД, тож розкладка
 // «код → ключ каталогу» лишається на рівні модуля, а текст резолвиться під час
@@ -63,7 +66,7 @@ export default function OrderSuccess() {
    * чуже замовлення.
    */
   const { data: order = null, isLoading } = useQuery({
-    queryKey: ['order-view', orderId, token, user?.id],
+    queryKey: [...orders.detail(orderId), token, user?.id],
     queryFn: () => getOrderView({ data: { orderId, token } }),
     enabled: !!orderId,
   });

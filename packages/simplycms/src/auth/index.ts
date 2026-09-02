@@ -62,6 +62,9 @@ export type { SendAuthEmail } from './send-email';
 export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
 export type { SessionSubject } from './session';
 
+export { requireGrant, resolveRequestGrant } from './authz-request';
+export type { RequestGrant } from './authz-request';
+
 export {
   AUTHZ_MATRIX,
   AuthzError,

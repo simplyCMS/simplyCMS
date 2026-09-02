@@ -58,7 +58,7 @@ export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', '
 
 
 export const orderStatuses = pgTable("order_statuses", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	color: varchar({ length: 7 }).default('#6B7280'),
@@ -67,10 +67,14 @@ export const orderStatuses = pgTable("order_statuses", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
+	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
+	// нетранзакційні запити з браузера (перевірено — сторінка адмінки
+	// перемикає is_default по всій таблиці, без scope на батька).
+	uniqueIndex("idx_order_statuses_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const sections = pgTable("sections", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	slug: varchar({ length: 255 }).notNull(),
 	name: text().notNull(),
 	description: text(),
@@ -93,7 +97,7 @@ export const sections = pgTable("sections", {
 ]);
 
 export const sectionProperties = pgTable("section_properties", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id"),
 	name: text().notNull(),
 	slug: varchar({ length: 100 }).notNull(),
@@ -114,7 +118,7 @@ export const sectionProperties = pgTable("section_properties", {
 ]);
 
 export const userCategories = pgTable("user_categories", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	description: text(),
@@ -129,10 +133,13 @@ export const userCategories = pgTable("user_categories", {
 		}).onDelete("set null"),
 	unique("user_categories_code_key").on(table.code),
 	index("idx_user_categories_price_type_id").on(table.priceTypeId),
+	// К3-14: та сама глобальна семантика, що в order_statuses (перевірено —
+	// адмінка перемикає is_default по всій таблиці через `.neq('id', …)`).
+	uniqueIndex("idx_user_categories_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const languages = pgTable("languages", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	code: varchar({ length: 10 }).notNull(),
 	name: text().notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
@@ -140,10 +147,13 @@ export const languages = pgTable("languages", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("languages_code_key").on(table.code),
+	// К3-14: таблиця без parent-колонки — CRUD ще не реалізований (лише
+	// nav-заглушка), тож дефолт структурно глобальний.
+	uniqueIndex("idx_languages_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const userRoles = pgTable("user_roles", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	role: appRole().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -159,7 +169,7 @@ export const userRoles = pgTable("user_roles", {
 ]);
 
 export const wishlists = pgTable("wishlists", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	productId: uuid("product_id").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -180,7 +190,7 @@ export const wishlists = pgTable("wishlists", {
 ]);
 
 export const comparisons = pgTable("comparisons", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	productId: uuid("product_id").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -201,7 +211,7 @@ export const comparisons = pgTable("comparisons", {
 ]);
 
 export const orderItems = pgTable("order_items", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	orderId: uuid("order_id").notNull(),
 	productId: uuid("product_id"),
 	modificationId: uuid("modification_id"),
@@ -245,7 +255,7 @@ export const orderItems = pgTable("order_items", {
 ]);
 
 export const modificationPropertyValues = pgTable("modification_property_values", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	modificationId: uuid("modification_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	value: text(),
@@ -275,7 +285,7 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 ]);
 
 export const productPropertyValues = pgTable("product_property_values", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	value: text(),
@@ -304,7 +314,7 @@ export const productPropertyValues = pgTable("product_property_values", {
 ]);
 
 export const propertyOptions = pgTable("property_options", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	propertyId: uuid("property_id").notNull(),
 	name: text().notNull(),
 	slug: varchar({ length: 255 }).notNull(),
@@ -326,7 +336,7 @@ export const propertyOptions = pgTable("property_options", {
 ]);
 
 export const sectionPropertyAssignments = pgTable("section_property_assignments", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
@@ -350,7 +360,7 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 ]);
 
 export const services = pgTable("services", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	slug: varchar({ length: 255 }).notNull(),
 	name: text().notNull(),
 	description: text(),
@@ -365,7 +375,7 @@ export const services = pgTable("services", {
 ]);
 
 export const products = pgTable("products", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id"),
 	slug: varchar({ length: 255 }).notNull(),
 	name: text().notNull(),
@@ -404,7 +414,7 @@ export const products = pgTable("products", {
 ]);
 
 export const productModifications = pgTable("product_modifications", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
 	slug: varchar({ length: 255 }).notNull(),
 	name: text().notNull(),
@@ -422,10 +432,12 @@ export const productModifications = pgTable("product_modifications", {
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
+	// К3-14: дефолт scoped на product_id — модифікації належать товару.
+	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
 ]);
 
 export const serviceRequests = pgTable("service_requests", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	serviceId: uuid("service_id"),
 	userId: uuid("user_id"),
 	name: text().notNull(),
@@ -454,7 +466,7 @@ export const serviceRequests = pgTable("service_requests", {
 ]);
 
 export const pluginEvents = pgTable("plugin_events", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	pluginName: varchar("plugin_name").notNull(),
 	hookName: varchar("hook_name").notNull(),
 	payload: jsonb(),
@@ -465,7 +477,7 @@ export const pluginEvents = pgTable("plugin_events", {
 ]);
 
 export const plugins = pgTable("plugins", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: varchar().notNull(),
 	displayName: text("display_name").notNull(),
 	version: varchar().default('1.0.0').notNull(),
@@ -482,7 +494,7 @@ export const plugins = pgTable("plugins", {
 ]);
 
 export const shippingMethods = pgTable("shipping_methods", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	name: text().notNull(),
 	description: text(),
@@ -499,7 +511,7 @@ export const shippingMethods = pgTable("shipping_methods", {
 ]);
 
 export const shippingZones = pgTable("shipping_zones", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	isActive: boolean("is_active").default(true).notNull(),
@@ -509,10 +521,13 @@ export const shippingZones = pgTable("shipping_zones", {
 	cities: text().array().default([""]),
 	regions: text().array().default([""]),
 }, (table) => [
+	// К3-14: таблиця без parent-колонки — дефолт глобальний (перевірено —
+	// у ShippingZoneEdit.tsx unset-логіки взагалі немає, легасі-шлях мертвий).
+	uniqueIndex("idx_shipping_zones_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
 
 export const shippingRates = pgTable("shipping_rates", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	methodId: uuid("method_id").notNull(),
 	zoneId: uuid("zone_id").notNull(),
 	name: text().notNull(),
@@ -544,7 +559,7 @@ export const shippingRates = pgTable("shipping_rates", {
 ]);
 
 export const systemSettings = pgTable("system_settings", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	key: varchar({ length: 100 }).notNull(),
 	value: jsonb().default({}).notNull(),
 	description: text(),
@@ -555,7 +570,7 @@ export const systemSettings = pgTable("system_settings", {
 ]);
 
 export const pickupPoints = pgTable("pickup_points", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	methodId: uuid("method_id").notNull(),
 	name: text().notNull(),
 	address: text().notNull(),
@@ -585,7 +600,7 @@ export const pickupPoints = pgTable("pickup_points", {
 ]);
 
 export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	pickupPointId: uuid("pickup_point_id").notNull(),
 	productId: uuid("product_id"),
 	modificationId: uuid("modification_id"),
@@ -621,7 +636,7 @@ export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
 ]);
 
 export const profiles = pgTable("profiles", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	email: text(),
 	firstName: text("first_name"),
@@ -667,7 +682,7 @@ export const profiles = pgTable("profiles", {
 ]);
 
 export const userCategoryHistory = pgTable("user_category_history", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	fromCategoryId: uuid("from_category_id"),
 	toCategoryId: uuid("to_category_id").notNull(),
@@ -700,7 +715,7 @@ export const userCategoryHistory = pgTable("user_category_history", {
 ]);
 
 export const categoryRules = pgTable("category_rules", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	fromCategoryId: uuid("from_category_id"),
@@ -725,7 +740,7 @@ export const categoryRules = pgTable("category_rules", {
 ]);
 
 export const userRecipients = pgTable("user_recipients", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	firstName: text("first_name").notNull(),
 	lastName: text("last_name").notNull(),
@@ -738,12 +753,14 @@ export const userRecipients = pgTable("user_recipients", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_recipients_user_id").on(table.userId),
+	// К3-14: дефолт scoped на user_id — отримувач належить користувачу.
+	uniqueIndex("idx_user_recipients_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_recipients_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_recipients_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
 
 export const orders = pgTable("orders", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id"),
 	orderNumber: varchar("order_number", { length: 50 }).notNull(),
 	statusId: uuid("status_id"),
@@ -834,7 +851,7 @@ export const orders = pgTable("orders", {
 ]);
 
 export const userAddresses = pgTable("user_addresses", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	name: text().notNull(),
 	city: text().notNull(),
@@ -843,12 +860,14 @@ export const userAddresses = pgTable("user_addresses", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_addresses_user_id").on(table.userId),
+	// К3-14: дефолт scoped на user_id — адреса належить користувачу.
+	uniqueIndex("idx_user_addresses_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_addresses_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_addresses_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
 ]);
 
 export const productPrices = pgTable("product_prices", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	priceTypeId: uuid("price_type_id").notNull(),
 	productId: uuid("product_id").notNull(),
 	modificationId: uuid("modification_id"),
@@ -878,7 +897,7 @@ export const productPrices = pgTable("product_prices", {
 ]);
 
 export const themes = pgTable("themes", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: varchar({ length: 100 }).notNull(),
 	displayName: text("display_name").notNull(),
 	version: varchar({ length: 20 }).default('1.0.0').notNull(),
@@ -895,7 +914,7 @@ export const themes = pgTable("themes", {
 ]);
 
 export const priceTypes = pgTable("price_types", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	code: varchar().notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
@@ -907,7 +926,7 @@ export const priceTypes = pgTable("price_types", {
 ]);
 
 export const discountGroups = pgTable("discount_groups", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	operator: discountGroupOperator().default('and').notNull(),
@@ -928,7 +947,7 @@ export const discountGroups = pgTable("discount_groups", {
 ]);
 
 export const discountTargets = pgTable("discount_targets", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	discountId: uuid("discount_id").notNull(),
 	targetType: discountTargetType("target_type").default('all').notNull(),
 	targetId: uuid("target_id"),
@@ -943,7 +962,7 @@ export const discountTargets = pgTable("discount_targets", {
 ]);
 
 export const discountConditions = pgTable("discount_conditions", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	discountId: uuid("discount_id").notNull(),
 	conditionType: varchar("condition_type").notNull(),
 	operator: varchar().default('=').notNull(),
@@ -959,7 +978,7 @@ export const discountConditions = pgTable("discount_conditions", {
 ]);
 
 export const discounts = pgTable("discounts", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	groupId: uuid("group_id").notNull(),
@@ -988,7 +1007,7 @@ export const discounts = pgTable("discounts", {
 ]);
 
 export const productReviews = pgTable("product_reviews", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
 	userId: uuid("user_id").notNull(),
 	rating: integer().notNull(),
@@ -1015,7 +1034,7 @@ export const productReviews = pgTable("product_reviews", {
 ]);
 
 export const banners = pgTable("banners", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	title: text().notNull(),
 	subtitle: text(),
 	imageUrl: text("image_url").notNull(),

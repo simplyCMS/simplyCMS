@@ -63,6 +63,10 @@ const TIER_ZONES = [
   // заборона власного тіру виштовхнула б лоадери на голий пул, тобто рівно
   // туди, куди не можна.
   ['src/storefront', 2, 'storefront', ['db', 'auth']],
+  // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
+  // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
+  // requireGrant (auth). Ширшого не давати.
+  ['src/admin-server', 2, 'admin-server', ['db', 'auth']],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.
@@ -76,6 +80,9 @@ const TIER_ZONES = [
   ],
   ['src/themes', 4, 'themes', []],
   ['src/plugins', 4, 'plugins', []],
+  // Колекції адмінки (Е1б) — T4: над contracts/schema-типами, під
+  // сторінками. Окремо від src/admin (T5): колекція — module-level стан.
+  ['src/admin-data', 4, 'admin-data', []],
   ['src/plugin-sdk', 4, 'plugin-sdk', ['plugins']],
   ['src/cart-ui', 4, 'cart-ui', []],
   ['src/catalog-ui', 4, 'catalog-ui', ['core']],

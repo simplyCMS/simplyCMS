@@ -68,8 +68,16 @@ function generateOrderNumber(now: Date): string {
  *
  * 🔴 `userId` — з серверної сесії або `null` для гостя; політика
  * `orders_insert_own` приймає рівно ці два випадки. Гостю одразу видається
- * `access_token`, і саме він має бути в GUC `app.order_token` ЦІЄЇ транзакції:
- * без нього `insert … returning` впав би на власній же SELECT-політиці.
+ * `access_token`, і саме він має бути в GUC `app.order_token` ЦІЄЇ транзакції.
+ * Причина — НЕ `returning` (його знято): падає вставка ПОЗИЦІЙ. Політика
+ * `order_items_insert_own` має
+ * `WITH CHECK (exists (select 1 from orders where orders.id = order_items.order_id
+ * and (orders.user_id = (select app.current_user_id()) or orders.user_id is null)))`,
+ * і цей підзапит виконується під тим самим актором, тобто підпадає під RLS
+ * `orders`. Для гостя `orders_select_own_or_token` пускає рядок лише гілкою
+ * `access_token = current_setting('app.order_token')` — без токена в GUC
+ * підзапит нічого не бачить, `WITH CHECK` не виконується і `order_items`
+ * не вставляються.
  */
 export async function createOrder(
   db: ActorDb,
@@ -84,41 +92,44 @@ export async function createOrder(
     .limit(1);
 
   const orderNumber = generateOrderNumber(new Date());
-  const [row] = await db
-    .insert(orders)
-    .values({
-      userId,
-      accessToken,
-      orderNumber,
-      statusId: await loadDefaultStatusId(db),
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      phone: input.phone,
-      deliveryMethod: method?.code ?? null,
-      deliveryCity: input.deliveryCity,
-      deliveryAddress: input.deliveryAddress,
-      paymentMethod: input.paymentMethod,
-      notes: input.notes,
-      subtotal: input.subtotal.toFixed(2),
-      total: input.total.toFixed(2),
-      shippingMethodId: input.shippingMethodId,
-      shippingCost: input.shippingCost.toFixed(2),
-      pickupPointId: input.pickupPointId,
-      shippingData: {},
-      hasDifferentRecipient: input.hasDifferentRecipient,
-      recipientFirstName: input.recipientFirstName,
-      recipientLastName: input.recipientLastName,
-      recipientPhone: input.recipientPhone,
-      recipientEmail: input.recipientEmail,
-      savedRecipientId: input.savedRecipientId,
-      savedAddressId: input.savedAddressId,
-    })
-    .returning({ id: orders.id, orderNumber: orders.orderNumber });
+  // Ключ замовлення відомий ДО вставки — тому `.returning()` більше не
+  // потрібен: позиції нижче можуть посилатись на нього одразу.
+  const orderId = randomUUID();
+
+  await db.insert(orders).values({
+    id: orderId,
+    userId,
+    accessToken,
+    orderNumber,
+    statusId: await loadDefaultStatusId(db),
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    phone: input.phone,
+    deliveryMethod: method?.code ?? null,
+    deliveryCity: input.deliveryCity,
+    deliveryAddress: input.deliveryAddress,
+    paymentMethod: input.paymentMethod,
+    notes: input.notes,
+    subtotal: input.subtotal.toFixed(2),
+    total: input.total.toFixed(2),
+    shippingMethodId: input.shippingMethodId,
+    shippingCost: input.shippingCost.toFixed(2),
+    pickupPointId: input.pickupPointId,
+    shippingData: {},
+    hasDifferentRecipient: input.hasDifferentRecipient,
+    recipientFirstName: input.recipientFirstName,
+    recipientLastName: input.recipientLastName,
+    recipientPhone: input.recipientPhone,
+    recipientEmail: input.recipientEmail,
+    savedRecipientId: input.savedRecipientId,
+    savedAddressId: input.savedAddressId,
+  });
 
   await db.insert(orderItems).values(
     input.items.map((item) => ({
-      orderId: row.id,
+      id: randomUUID(),
+      orderId,
       productId: item.productId,
       modificationId: item.modificationId,
       name: item.name,
@@ -130,5 +141,5 @@ export async function createOrder(
     })),
   );
 
-  return { id: row.id, orderNumber: row.orderNumber, accessToken };
+  return { id: orderId, orderNumber, accessToken };
 }

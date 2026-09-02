@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import { getDiscountEnvironment, type DiscountActor } from '../lib/discounts';
 import {
   resolveDiscount,
@@ -30,7 +31,7 @@ const NO_GROUPS: DiscountGroup[] = [];
  */
 function useDiscountEnvironment() {
   return useQuery({
-    queryKey: ['discount-environment'],
+    queryKey: AGGREGATE.discountEnvironment.key,
     queryFn: () => getDiscountEnvironment(),
     staleTime: 2 * 60 * 1000,
   });

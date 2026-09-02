@@ -7,6 +7,7 @@ import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
 import { usePriceType } from 'simplycms/core/hooks/usePriceType';
 import { resolvePrice } from 'simplycms/domain/pricing';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import type {
   CatalogProductRow,
   OptionRow,
@@ -52,7 +53,7 @@ export default function PropertyPage({
       : undefined;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['property-option-page', propertySlug, optionSlug],
+    queryKey: [...AGGREGATE.propertyOptionPage.key, propertySlug, optionSlug],
     queryFn: (): Promise<PropertyOptionPageData | null> =>
       getPropertyOption({
         data: {

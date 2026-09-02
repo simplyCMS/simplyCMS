@@ -11,6 +11,14 @@
 > контуру К1′б і обслуговують код, який ще ходить через `supabase-js`.
 > Дублювання тут очікуване — не «оптимізуй» його передчасно.
 
+> 🔴 **Контракт id (трек V2-К3, Е0; ревізія Е1а).** 41 таблиця «Категорії A»
+> **не має** `DEFAULT gen_random_uuid()` — ключ передає викликач у кожному
+> INSERT. Не повертай `.defaultRandom()` у схему «щоб не падало»: падіння
+> `23502` — це й є fail-loud guard. DEFAULT лишається тільки в чотирьох
+> таблицях Better Auth (`users`/`sessions`/`accounts`/`verifications`).
+> Деталі — `.github/instructions/data-access.instructions.md`, розділ
+> «Контракт id».
+
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин

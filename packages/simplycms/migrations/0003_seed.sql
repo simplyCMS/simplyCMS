@@ -9,37 +9,45 @@
 -- Ідемпотентність обовʼязкова: файл котиться і на чисту БД, і повторно
 -- (докат канону в магазині, що вже стартував). Скрізь `on conflict do
 -- nothing` по природному унікальному ключу.
+--
+-- 🔴 Е0 (контракт id, В2-К3): id проставлені явно статичними UUID —
+-- контракт клієнтської генерації ключів вимагає цього і від сідів. Дані НЕ
+-- змінені, лише додано колонку id; FK між рядками сіду й далі резолвиться
+-- ПІДЗАПИТОМ за натуральним ключем (`code`), а не константою — на БД, яка
+-- вже мала сід, `price_types` несе старий випадковий id, і `on conflict do
+-- nothing` не підмінить його на нову константу.
 
 -- ── Статуси замовлень ──────────────────────────────────────────────────────
 -- `code` — контракт із кодом воронки покупки; назви й кольори адмін міняє.
-insert into public.order_statuses (name, code, color, sort_order, is_default)
+insert into public.order_statuses (id, name, code, color, sort_order, is_default)
 values
-  ('Новий', 'new', '#3B82F6', 0, true),
-  ('Підтверджено', 'confirmed', '#10B981', 1, false),
-  ('В обробці', 'processing', '#F59E0B', 2, false),
-  ('Відправлено', 'shipped', '#8B5CF6', 3, false),
-  ('Доставлено', 'delivered', '#22C55E', 4, false),
-  ('Скасовано', 'cancelled', '#EF4444', 5, false)
+  ('00000001-0000-4000-8000-000000000001', 'Новий', 'new', '#3B82F6', 0, true),
+  ('00000001-0000-4000-8000-000000000002', 'Підтверджено', 'confirmed', '#10B981', 1, false),
+  ('00000001-0000-4000-8000-000000000003', 'В обробці', 'processing', '#F59E0B', 2, false),
+  ('00000001-0000-4000-8000-000000000004', 'Відправлено', 'shipped', '#8B5CF6', 3, false),
+  ('00000001-0000-4000-8000-000000000005', 'Доставлено', 'delivered', '#22C55E', 4, false),
+  ('00000001-0000-4000-8000-000000000006', 'Скасовано', 'cancelled', '#EF4444', 5, false)
 on conflict (code) do nothing;
 
 -- ── Мова ───────────────────────────────────────────────────────────────────
 -- Магазин стартує україномовним (дефолт ядра); англійську додає адмін.
-insert into public.languages (code, name, is_default, is_active)
-values ('uk', 'Українська', true, true)
+insert into public.languages (id, code, name, is_default, is_active)
+values ('00000002-0000-4000-8000-000000000001', 'uk', 'Українська', true, true)
 on conflict (code) do nothing;
 
 -- ── Тип ціни ───────────────────────────────────────────────────────────────
 -- 🔴 Хоча б один `is_default` мусить існувати: `product_prices` посилається
 -- на тип, і без нього товар неможливо завести взагалі.
-insert into public.price_types (name, code, is_default, sort_order)
-values ('Роздрібна', 'retail', true, 0)
+insert into public.price_types (id, name, code, is_default, sort_order)
+values ('00000003-0000-4000-8000-000000000001', 'Роздрібна', 'retail', true, 0)
 on conflict (code) do nothing;
 
 -- ── Категорія покупця ──────────────────────────────────────────────────────
 -- Тією ж причиною: профіль створюється з категорією за замовчуванням
 -- (хук BA `user.create.after`, Task 7), а прайс-логіка бере з неї тип ціни.
-insert into public.user_categories (name, code, is_default, price_type_id)
+insert into public.user_categories (id, name, code, is_default, price_type_id)
 select
+  '00000004-0000-4000-8000-000000000001',
   'Роздріб',
   'retail',
   true,
@@ -47,10 +55,14 @@ select
 on conflict (code) do nothing;
 
 -- ── Системні налаштування ──────────────────────────────────────────────────
-insert into public.system_settings (key, value, description)
+insert into public.system_settings (id, key, value, description)
 values
-  ('active_theme', '"default"'::jsonb, 'Активна тема сайту'),
   (
+    '00000005-0000-4000-8000-000000000001',
+    'active_theme', '"default"'::jsonb, 'Активна тема сайту'
+  ),
+  (
+    '00000005-0000-4000-8000-000000000002',
     'stock_management',
     '{"decrease_on_order": false}'::jsonb,
     'Налаштування управління залишками'
@@ -62,8 +74,9 @@ on conflict (key) do nothing;
 -- теми приходить із конфігу магазину. `bootstrapThemes` дописав би його й
 -- сам, але тоді чистий магазин до першого відкриття адмінки не мав би
 -- активної теми взагалі.
-insert into public.themes (name, display_name, version, description, author, is_active)
+insert into public.themes (id, name, display_name, version, description, author, is_active)
 values (
+  '00000006-0000-4000-8000-000000000001',
   'default',
   'Default',
   '1.0.0',

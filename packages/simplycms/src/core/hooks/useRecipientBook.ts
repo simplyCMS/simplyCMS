@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   deleteMyRecipient,
   getMyRecipients,
@@ -22,7 +23,7 @@ export interface RecipientFormInput {
 }
 
 /** Ключ книги отримувачів — один на застосунок (див. `useAddressBook`). */
-export const RECIPIENT_BOOK_KEY = ['recipient-book'] as const;
+export const RECIPIENT_BOOK_KEY = entityKey(ENTITY.userRecipients).list();
 
 /**
  * Книга отримувачів покупця: список + збереження + видалення.

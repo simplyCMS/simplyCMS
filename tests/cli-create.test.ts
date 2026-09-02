@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
@@ -69,6 +69,107 @@ describe('cli create: скаффолд', () => {
     expect(index).toContain("name: 'my-faq'");
     expect(index).toContain("simplycms: '>=0.3.0'");
     expect(existsSync(join(target, 'messages.ts'))).toBe(true);
+  });
+
+  it('скаффолджений плагін несе міграцію власної таблиці БЕЗ DEFAULT на id', () => {
+    // Контракт К3-Е0: id генерує клієнт, тому scaffold-DDL не сміє мати
+    // DEFAULT gen_random_uuid() — інакше перший сторонній плагін одразу
+    // ловить розбіжність ключів між оптимістичним і серверним рядком.
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    const created = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+
+    expect(created).toContain('migrations/0001_plg_my_faq_init.sql');
+    const migration = readFileSync(
+      join(target, 'migrations/0001_plg_my_faq_init.sql'),
+      'utf8',
+    );
+    expect(migration).toContain('plg_my_faq_items');
+    expect(migration).not.toContain('default gen_random_uuid()');
+  });
+
+  it('згенерована міграція видає РІВНО два гранти й нічого зайвого', () => {
+    // Модель безпеки B5″: `app_runtime` прямих грантів не має — права
+    // дістає через SET LOCAL ROLE app_user|app_admin. Таблиця плагіна без
+    // grant валить перший виклик usePluginTable permission denied, хоча
+    // скаффолджений файл виглядає завершеним (хвіст Е0).
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+
+    const file = readdirSync(join(target, 'migrations'))[0];
+    const raw = readFileSync(join(target, 'migrations', file), 'utf8');
+
+    // 🔴 Прибрати коментарі: закоментований grant не дає прав, але
+    // регексу виглядає як справжній.
+    const sql = raw.replace(/--[^\n]*/g, '');
+
+    const grants = [
+      ...sql.matchAll(/grant\s+([^;]+?)\s+on\s+table\s+(\S+)\s+to\s+(\w+)/gi),
+    ].map((m) => ({
+      privileges: m[1]
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .sort()
+        .join(','),
+      role: m[3].toLowerCase(),
+    }));
+
+    expect(grants).toHaveLength(2);
+    expect(grants).toContainEqual({ privileges: 'select', role: 'app_user' });
+    expect(grants).toContainEqual({
+      privileges: 'delete,insert,select,update',
+      role: 'app_admin',
+    });
+
+    // Жодних прав рантайм-ролі: вона їх дістає через SET LOCAL ROLE (B5″).
+    expect(sql).not.toMatch(/to\s+app_runtime/i);
+  });
+
+  it('імена міграцій скаффолду не колізують із каноном ядра', () => {
+    // 🔴 Регресія C1: шаблон плагіна називався `0001_init.sql` — тим самим
+    // іменем, що й baseline ядра. `compareMigrationsMulti` бачив «одне імʼя,
+    // різний вміст у двох канонах» → `collision`, і `simplycms db:diff` падав
+    // з exitCode 1 ДО копіювання будь-чого: магазин після `create plugin` не
+    // міг забрати навіть міграції ядра (`doctor` №7 — error). Фікс — рендер
+    // плейсхолдерів в ІМЕНАХ файлів (`scaffoldTree`), тож імʼя унікальне на
+    // плагін. Гейт стереже саме цю властивість, а не конкретне імʼя.
+    const coreNames = readdirSync(
+      resolve(import.meta.dirname, '../packages/simplycms/migrations'),
+    ).filter((name) => name.endsWith('.sql'));
+    expect(coreNames.length).toBeGreaterThan(0);
+
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    const created = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+    const scaffolded = created
+      .filter((rel) => rel.startsWith('migrations/'))
+      .map((rel) => rel.slice('migrations/'.length));
+    expect(scaffolded.length).toBeGreaterThan(0);
+
+    const clashes = scaffolded.filter((name) => coreNames.includes(name));
+    expect(
+      clashes,
+      `імена міграцій плагіна збігаються з каноном ядра: ${clashes.join(', ')}`,
+    ).toEqual([]);
+
+    // Плейсхолдер в імені мусить бути розгорнутий, а не поїхати як є.
+    for (const name of scaffolded) {
+      expect(name).not.toContain('__');
+      expect(name).toContain('plg_my_faq_');
+    }
   });
 
   it('скаффолджені index.ts і messages.ts — валідний TypeScript', () => {

@@ -1,8 +1,11 @@
 // Запит товару картки (винесено з контейнера без зміни поведінки).
 
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getProduct } from '../../server/products';
 import type { ProductDetailProduct } from './types';
+
+const products = entityKey(ENTITY.products);
 
 /**
  * Товар з усіма приєднаними даними. SSR-значення приходить `initialData` —
@@ -17,7 +20,7 @@ export function useProductQuery(
   initialProduct?: ProductDetailProduct,
 ) {
   return useQuery({
-    queryKey: ['public-product', productSlug],
+    queryKey: products.detail(productSlug ?? ''),
     queryFn: (): Promise<ProductDetailProduct | null> =>
       getProduct({ data: { slug: productSlug as string } }),
     enabled: !!productSlug,

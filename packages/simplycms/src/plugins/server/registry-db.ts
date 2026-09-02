@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import { plugins } from 'simplycms/schema';
 import {
@@ -88,6 +89,7 @@ export async function insertMissingPlugins(
   await withStoreOperatorDb((db) =>
     db.insert(plugins).values(
       missing.map((row) => ({
+        id: randomUUID(),
         name: row.name,
         displayName: row.display_name,
         version: row.version,

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import { getPriceTypeContext } from '../lib/price-type';
 import { useAuth } from './useAuth';
 
@@ -13,7 +14,7 @@ export function usePriceType() {
   const { user } = useAuth();
 
   const { data } = useQuery({
-    queryKey: ['price-type-context', user?.id ?? null],
+    queryKey: [...AGGREGATE.priceTypeContext.key, user?.id ?? null],
     queryFn: () => getPriceTypeContext(),
     staleTime: 5 * 60 * 1000,
   });

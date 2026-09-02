@@ -4,11 +4,14 @@ import { useT } from 'simplycms/i18n';
 import { Card, CardContent } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, ChevronRight } from 'lucide-react';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type {
   OptionRow,
   PropertyWithOptions,
 } from 'simplycms/storefront/loaders';
 import { getPropertyBySlug } from '../server/properties';
+
+const sectionProperties = entityKey(ENTITY.sectionProperties);
 
 export interface PropertyDetailPageProps {
   property?: PropertyWithOptions;
@@ -32,7 +35,7 @@ export default function PropertyDetailPage({
    * Заодно зникає стан «характеристика вже є, опції ще ні».
    */
   const { data: property, isLoading: propertyLoading } = useQuery({
-    queryKey: ['property-by-slug-detail', propertySlug],
+    queryKey: sectionProperties.detail(propertySlug ?? ''),
     queryFn: (): Promise<PropertyWithOptions | null> =>
       getPropertyBySlug({ data: { slug: propertySlug as string } }),
     enabled: !!propertySlug,

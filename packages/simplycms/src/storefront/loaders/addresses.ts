@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { orders, userAddresses } from 'simplycms/schema';
 import type { ActorDb } from './db';
@@ -66,6 +67,7 @@ export async function createAddress(
   const [row] = await db
     .insert(userAddresses)
     .values({
+      id: randomUUID(),
       userId,
       name: input.name,
       city: input.city,

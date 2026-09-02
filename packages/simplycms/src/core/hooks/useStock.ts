@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import type { StockStatus } from 'simplycms/contracts';
+import { AGGREGATE, ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { Translator } from 'simplycms/i18n';
 import {
   getActivePickupPoints,
   getPickupPointsCount,
   getStockInfo,
 } from '../lib/stock';
+
+const pickupPoints = entityKey(ENTITY.pickupPoints);
 
 export type { StockStatus };
 export type {
@@ -26,7 +29,11 @@ export function useStock(
   modificationId?: string | null,
 ) {
   return useQuery({
-    queryKey: ['stock-info', modificationId ?? null, productId ?? null],
+    queryKey: [
+      ...AGGREGATE.stockInfo.key,
+      modificationId ?? null,
+      productId ?? null,
+    ],
     queryFn: () =>
       getStockInfo({
         data: {
@@ -42,7 +49,7 @@ export function useStock(
 /** Скільки точок видачі активні — заміна `rpc('get_active_pickup_points_count')`. */
 export function usePickupPointsCount() {
   return useQuery({
-    queryKey: ['pickup-points-count'],
+    queryKey: [...pickupPoints.list(), 'count'],
     queryFn: () => getPickupPointsCount(),
     staleTime: 60 * 1000,
   });
@@ -51,7 +58,7 @@ export function usePickupPointsCount() {
 /** Активні точки видачі — довідник самовивозу. */
 export function usePickupPoints() {
   return useQuery({
-    queryKey: ['active-pickup-points'],
+    queryKey: [...pickupPoints.list(), 'active'],
     queryFn: () => getActivePickupPoints(),
     staleTime: 60 * 1000,
   });

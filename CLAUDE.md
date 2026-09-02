@@ -195,6 +195,16 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 bare-субшлях `simplycms/<тека>` і відносний `../<тека>`), бо після злиття
 пакетів межу `dependencies` більше не тримає ніщо. Негативний контроль —
 `tests/tier-boundary.test.ts`. Селектори не послабляти.
+Пʼята (2026-08-30, трек V2-К3) — **контракт ключів кешу React Query**:
+кастомне AST-правило `eslint-rules/query-key-from-entity.mjs` забороняє
+літеральний перший сегмент `queryKey` (прямий, через константу-масив і в
+умовному виборі) — сегмент 0 мусить іти з реєстру `simplycms/contracts/entities`
+(`ENTITY`/`AGGREGATE`/`SESSION_KEY`). Зона — `core/`, `*-ui/`,
+`react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` —
+свідома виїмка до Е1б–Е6 (її ~170 літеральних ключів перепишуться разом зі
+сторінками адмінки). Контракт задокументований у
+[`data-access`](.github/instructions/data-access.instructions.md), розділ
+«Контракт ключів кешу».
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -295,7 +305,9 @@ simplyCMS/
 │   ├── simplycms/          simplycms                 # ФЛАГМАН: усе ядро одним пакетом
 │   │   ├── src/contracts/        # T0 Контракти + порти (0 runtime deps); субшляхи
 │   │   │                         #    ./views і ./views/fixtures — view-model-и вітрини
-│   │   │                         #    (контракт тем v3; react — type-only peer)
+│   │   │                         #    (контракт тем v3; react — type-only peer);
+│   │   │                         #    ./entities — реєстр ENTITY/AGGREGATE/SESSION_KEY +
+│   │   │                         #    фабрика entityKey() для queryKey React Query (К3-3)
 │   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle (B12, частина) — джерело
@@ -307,6 +319,9 @@ simplyCMS/
 │   │   ├── src/auth/             # T2 🔴 V2: серверний Better Auth (інстанс, databaseHooks,
 │   │   │                         #    invite власника, authz-матриця). ПІДКЛЮЧЕНИЙ у 0.4.1:
 │   │   │                         #    вхід, сесія і guard адмінки живуть із нього
+│   │   ├── src/admin-server/     # T2 🔴 К3 (Е1б): серверний шар адмінки — defineAdminResource
+│   │   │                         #    (операції+схеми) + іменовані операції; index.ts — ЛИШЕ
+│   │   │                         #    топ-рівневі createServerFn, нутрощі — bare-субшлях ./impl
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
 │   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів).
 │   │   │                         #    🔴 ЖИВИЙ ЛИШЕ під адмінкою — зноситься треком К3;
@@ -324,6 +339,8 @@ simplyCMS/
 │   │   ├── src/plugin-sdk/       # T4 definePlugin + порти плагінів (usePluginTable,
 │   │   │                         #    usePluginConfig, usePluginT) — ЄДИНА поверхня,
 │   │   │                         #    дозволена плагіну (межа довіри §7)
+│   │   ├── src/admin-data/       # T4 🔴 К3 (Е1б): колекції TanStack DB адмінки — реєстр по
+│   │   │                         #    QueryClient, колекції без schema, ключі з contracts/entities
 │   │   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
 │   │   ├── src/core/             # T5 Власні провайдери/хуки/компоненти (CMSProvider,
 │   │   │                         #    useAuth, useCart, useBanners…). Фасадна роль
@@ -395,6 +412,9 @@ simplyCMS/
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
+├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються):
+│                                     # query-key-from-entity.mjs — queryKey з реєстру
+│                                     # ENTITY/AGGREGATE/SESSION_KEY, не літералом (V2-К3)
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
@@ -616,6 +636,19 @@ Supabase-контуром магазину. Джерело типів для Н�
 `packages/simplycms/src/supabase/database.ts` лишається **замороженим**
 снапшотом рівно доти, доки на ньому типізується адмінка (трек К3), — не
 «оновлювати» і не «прибирати дублювання».
+
+🔴 **Контракт id (трек V2-К3, етап Е0; ревізія Е1а): ключ генерує ВИКЛИКАЧ,
+не БД.** У 41 таблиці «Категорії A» знято `DEFAULT gen_random_uuid()`, тож
+кожен INSERT зобовʼязаний передати `id` (`randomUUID()` на сервері,
+`crypto.randomUUID()` у браузері) — інакше `23502`. DEFAULT лишили тільки
+`users`/`sessions`/`accounts`/`verifications` (Better Auth не кладе `id` в
+INSERT — конструктивне делегування генерації базі). Виїмка на теку —
+`src/admin/**` (застарілий supabase-js-шар, переписує Е1–Е6) під ратчетом
+`tests/admin-inserts-need-id.test.ts`. Гейти інваріанта — `explicit-ids.test.ts`
+(дискаверить усі вставки в `packages/simplycms/src/**`) і `id-defaults.test.ts`
+(DDL) у `pnpm test:schema`. Повний опис —
+[`data-access`](.github/instructions/data-access.instructions.md), розділ
+«Контракт id».
 
 🔴 Міграції **не** застосовуються через Supabase MCP (`apply_migration`) — MCP лише
 для інспекції. `db:migrate` — файл-надгробок, який гучно пояснює, що канон

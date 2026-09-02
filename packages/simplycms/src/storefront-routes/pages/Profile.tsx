@@ -15,7 +15,15 @@ import { Badge } from 'simplycms/ui/badge';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getProfileOverview } from '../server/profile';
+
+/**
+ * 🔴 Огляд читає `profiles` + останні `orders`, але `profiles` лишається
+ * якорем: це «моя картка профілю», а замовлення — вкладений вихлоп для
+ * блоку «останні замовлення».
+ */
+const profiles = entityKey(ENTITY.profiles);
 
 export default function ProfilePage() {
   const t = useT();
@@ -28,7 +36,7 @@ export default function ProfilePage() {
    * `readSessionSubject`, і підставити чужий id нема куди: параметра немає.
    */
   const { data, isLoading } = useQuery({
-    queryKey: ['profile-overview', user?.id],
+    queryKey: profiles.scoped('overview', user?.id ?? ''),
     queryFn: () => getProfileOverview(),
     enabled: !!user,
   });

@@ -7,7 +7,7 @@ CREATE TYPE "public"."shipping_calculation_type" AS ENUM('flat', 'weight', 'orde
 CREATE TYPE "public"."shipping_method_type" AS ENUM('system', 'manual', 'plugin');--> statement-breakpoint
 CREATE TYPE "public"."stock_status" AS ENUM('in_stock', 'out_of_stock', 'on_order');--> statement-breakpoint
 CREATE TABLE "banners" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"title" text NOT NULL,
 	"subtitle" text,
 	"image_url" text NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE "banners" (
 );
 --> statement-breakpoint
 CREATE TABLE "category_rules" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"from_category_id" uuid,
@@ -45,7 +45,7 @@ CREATE TABLE "category_rules" (
 );
 --> statement-breakpoint
 CREATE TABLE "comparisons" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"product_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE "comparisons" (
 --> statement-breakpoint
 ALTER TABLE "comparisons" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "discount_conditions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"discount_id" uuid NOT NULL,
 	"condition_type" varchar NOT NULL,
 	"operator" varchar DEFAULT '=' NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE "discount_conditions" (
 );
 --> statement-breakpoint
 CREATE TABLE "discount_groups" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"operator" "discount_group_operator" DEFAULT 'and' NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE "discount_groups" (
 );
 --> statement-breakpoint
 CREATE TABLE "discount_targets" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"discount_id" uuid NOT NULL,
 	"target_type" "discount_target_type" DEFAULT 'all' NOT NULL,
 	"target_id" uuid,
@@ -85,7 +85,7 @@ CREATE TABLE "discount_targets" (
 );
 --> statement-breakpoint
 CREATE TABLE "discounts" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"group_id" uuid NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE "discounts" (
 );
 --> statement-breakpoint
 CREATE TABLE "languages" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"code" varchar(10) NOT NULL,
 	"name" text NOT NULL,
 	"is_default" boolean DEFAULT false NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE "languages" (
 );
 --> statement-breakpoint
 CREATE TABLE "modification_property_values" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"modification_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
 	"value" text,
@@ -122,7 +122,7 @@ CREATE TABLE "modification_property_values" (
 );
 --> statement-breakpoint
 CREATE TABLE "order_items" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"order_id" uuid NOT NULL,
 	"product_id" uuid,
 	"modification_id" uuid,
@@ -139,7 +139,7 @@ CREATE TABLE "order_items" (
 --> statement-breakpoint
 ALTER TABLE "order_items" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "order_statuses" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"code" varchar(50) NOT NULL,
 	"color" varchar(7) DEFAULT '#6B7280',
@@ -150,7 +150,7 @@ CREATE TABLE "order_statuses" (
 );
 --> statement-breakpoint
 CREATE TABLE "orders" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid,
 	"order_number" varchar(50) NOT NULL,
 	"status_id" uuid,
@@ -189,7 +189,7 @@ CREATE TABLE "orders" (
 --> statement-breakpoint
 ALTER TABLE "orders" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "pickup_points" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"method_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"address" text NOT NULL,
@@ -205,7 +205,7 @@ CREATE TABLE "pickup_points" (
 );
 --> statement-breakpoint
 CREATE TABLE "plugin_events" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"plugin_name" varchar NOT NULL,
 	"hook_name" varchar NOT NULL,
 	"payload" jsonb,
@@ -215,7 +215,7 @@ CREATE TABLE "plugin_events" (
 );
 --> statement-breakpoint
 CREATE TABLE "plugins" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" varchar NOT NULL,
 	"display_name" text NOT NULL,
 	"version" varchar DEFAULT '1.0.0' NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE "plugins" (
 );
 --> statement-breakpoint
 CREATE TABLE "price_types" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"code" varchar NOT NULL,
 	"is_default" boolean DEFAULT false NOT NULL,
@@ -241,7 +241,7 @@ CREATE TABLE "price_types" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_modifications" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
 	"slug" varchar(255) NOT NULL,
 	"name" text NOT NULL,
@@ -256,7 +256,7 @@ CREATE TABLE "product_modifications" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_prices" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"price_type_id" uuid NOT NULL,
 	"product_id" uuid NOT NULL,
 	"modification_id" uuid,
@@ -267,7 +267,7 @@ CREATE TABLE "product_prices" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_property_values" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
 	"value" text,
@@ -278,7 +278,7 @@ CREATE TABLE "product_property_values" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_reviews" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
 	"rating" integer NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE "product_reviews" (
 --> statement-breakpoint
 ALTER TABLE "product_reviews" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "products" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"section_id" uuid,
 	"slug" varchar(255) NOT NULL,
 	"name" text NOT NULL,
@@ -316,7 +316,7 @@ CREATE TABLE "products" (
 );
 --> statement-breakpoint
 CREATE TABLE "profiles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"email" text,
 	"first_name" text,
@@ -336,7 +336,7 @@ CREATE TABLE "profiles" (
 --> statement-breakpoint
 ALTER TABLE "profiles" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "property_options" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"property_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"slug" varchar(255) NOT NULL,
@@ -350,7 +350,7 @@ CREATE TABLE "property_options" (
 );
 --> statement-breakpoint
 CREATE TABLE "section_properties" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"section_id" uuid,
 	"name" text NOT NULL,
 	"slug" varchar(100) NOT NULL,
@@ -365,7 +365,7 @@ CREATE TABLE "section_properties" (
 );
 --> statement-breakpoint
 CREATE TABLE "section_property_assignments" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"section_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
@@ -376,7 +376,7 @@ CREATE TABLE "section_property_assignments" (
 );
 --> statement-breakpoint
 CREATE TABLE "sections" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"slug" varchar(255) NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -392,7 +392,7 @@ CREATE TABLE "sections" (
 );
 --> statement-breakpoint
 CREATE TABLE "service_requests" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"service_id" uuid,
 	"user_id" uuid,
 	"name" text NOT NULL,
@@ -406,7 +406,7 @@ CREATE TABLE "service_requests" (
 --> statement-breakpoint
 ALTER TABLE "service_requests" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "services" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"slug" varchar(255) NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -420,7 +420,7 @@ CREATE TABLE "services" (
 );
 --> statement-breakpoint
 CREATE TABLE "shipping_methods" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"code" varchar(50) NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -436,7 +436,7 @@ CREATE TABLE "shipping_methods" (
 );
 --> statement-breakpoint
 CREATE TABLE "shipping_rates" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"method_id" uuid NOT NULL,
 	"zone_id" uuid NOT NULL,
 	"name" text NOT NULL,
@@ -455,7 +455,7 @@ CREATE TABLE "shipping_rates" (
 );
 --> statement-breakpoint
 CREATE TABLE "shipping_zones" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"is_active" boolean DEFAULT true NOT NULL,
@@ -467,7 +467,7 @@ CREATE TABLE "shipping_zones" (
 );
 --> statement-breakpoint
 CREATE TABLE "stock_by_pickup_point" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"pickup_point_id" uuid NOT NULL,
 	"product_id" uuid,
 	"modification_id" uuid,
@@ -478,7 +478,7 @@ CREATE TABLE "stock_by_pickup_point" (
 );
 --> statement-breakpoint
 CREATE TABLE "system_settings" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"key" varchar(100) NOT NULL,
 	"value" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"description" text,
@@ -488,7 +488,7 @@ CREATE TABLE "system_settings" (
 );
 --> statement-breakpoint
 CREATE TABLE "themes" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"display_name" text NOT NULL,
 	"version" varchar(20) DEFAULT '1.0.0' NOT NULL,
@@ -503,7 +503,7 @@ CREATE TABLE "themes" (
 );
 --> statement-breakpoint
 CREATE TABLE "user_addresses" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"city" text NOT NULL,
@@ -514,7 +514,7 @@ CREATE TABLE "user_addresses" (
 --> statement-breakpoint
 ALTER TABLE "user_addresses" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "user_categories" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"code" varchar(50) NOT NULL,
 	"description" text,
@@ -525,7 +525,7 @@ CREATE TABLE "user_categories" (
 );
 --> statement-breakpoint
 CREATE TABLE "user_category_history" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"from_category_id" uuid,
 	"to_category_id" uuid NOT NULL,
@@ -537,7 +537,7 @@ CREATE TABLE "user_category_history" (
 --> statement-breakpoint
 ALTER TABLE "user_category_history" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "user_recipients" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"first_name" text NOT NULL,
 	"last_name" text NOT NULL,
@@ -552,7 +552,7 @@ CREATE TABLE "user_recipients" (
 --> statement-breakpoint
 ALTER TABLE "user_recipients" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "user_roles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"role" "app_role" NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -561,7 +561,7 @@ CREATE TABLE "user_roles" (
 --> statement-breakpoint
 ALTER TABLE "user_roles" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "wishlists" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"product_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -619,7 +619,7 @@ CREATE TABLE "verifications" (
 );
 --> statement-breakpoint
 CREATE TABLE "media" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"entity_type" text NOT NULL,
 	"entity_id" uuid,
 	"storage_key" text NOT NULL,
@@ -703,6 +703,7 @@ CREATE INDEX "idx_discount_groups_parent" ON "discount_groups" USING btree ("par
 CREATE INDEX "idx_discount_targets_discount" ON "discount_targets" USING btree ("discount_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_group" ON "discounts" USING btree ("group_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_price_type_id" ON "discounts" USING btree ("price_type_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_mod" ON "modification_property_values" USING btree ("modification_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_option" ON "modification_property_values" USING btree ("option_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_property" ON "modification_property_values" USING btree ("property_id");--> statement-breakpoint
@@ -710,6 +711,7 @@ CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id"
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_service_id" ON "order_items" USING btree ("service_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_shipping_method_id" ON "orders" USING btree ("shipping_method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_user_id" ON "orders" USING btree ("user_id");--> statement-breakpoint
@@ -723,6 +725,7 @@ CREATE INDEX "idx_pickup_points_city" ON "pickup_points" USING btree ("city" tex
 CREATE INDEX "idx_pickup_points_method_id" ON "pickup_points" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_pickup_points_zone_id" ON "pickup_points" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_price_types_single_default" ON "price_types" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_product_modifications_single_default" ON "product_modifications" USING btree ("product_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_product_prices_unique" ON "product_prices" USING btree (price_type_id,product_id,COALESCE(modification_id, '00000000-0000-0000-0000-000000000000'::uuid));--> statement-breakpoint
 CREATE INDEX "idx_product_prices_product_id" ON "product_prices" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_product_prices_modification_id" ON "product_prices" USING btree ("modification_id");--> statement-breakpoint
@@ -742,18 +745,22 @@ CREATE INDEX "idx_service_requests_service_id" ON "service_requests" USING btree
 CREATE INDEX "idx_service_requests_user_id" ON "service_requests" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_method_id" ON "shipping_rates" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_zone_id" ON "shipping_rates" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_shipping_zones_single_default" ON "shipping_zones" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_modification_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"modification_id" uuid_ops) WHERE (modification_id IS NOT NULL);--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_product_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"product_id" uuid_ops) WHERE ((product_id IS NOT NULL) AND (modification_id IS NULL));--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_product_id" ON "stock_by_pickup_point" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_modification_id" ON "stock_by_pickup_point" USING btree ("modification_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "themes_active_idx" ON "themes" USING btree ("is_active" bool_ops) WHERE (is_active = true);--> statement-breakpoint
 CREATE INDEX "idx_user_addresses_user_id" ON "user_addresses" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_addresses_single_default" ON "user_addresses" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_user_categories_price_type_id" ON "user_categories" USING btree ("price_type_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_categories_single_default" ON "user_categories" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_user_id" ON "user_category_history" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_from_category_id" ON "user_category_history" USING btree ("from_category_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_to_category_id" ON "user_category_history" USING btree ("to_category_id");--> statement-breakpoint
 CREATE INDEX "idx_user_category_history_rule_id" ON "user_category_history" USING btree ("rule_id");--> statement-breakpoint
 CREATE INDEX "idx_user_recipients_user_id" ON "user_recipients" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_user_recipients_single_default" ON "user_recipients" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_wishlists_product_id" ON "wishlists" USING btree ("product_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "accounts_issuer_account_id_key" ON "accounts" USING btree ("issuer","account_id");--> statement-breakpoint
 CREATE INDEX "idx_accounts_user_id" ON "accounts" USING btree ("user_id");--> statement-breakpoint
@@ -787,4 +794,6 @@ CREATE POLICY "user_recipients_own_all" ON "user_recipients" AS PERMISSIVE FOR A
 CREATE POLICY "user_recipients_admin_select" ON "user_recipients" AS PERMISSIVE FOR SELECT TO "app_admin" USING (true);--> statement-breakpoint
 CREATE POLICY "user_roles_select_own" ON "user_roles" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "user_roles_admin_all" ON "user_roles" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "wishlists_own_all" ON "wishlists" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));
+CREATE POLICY "wishlists_own_all" ON "wishlists" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
+COMMENT ON COLUMN "products"."id" IS 'Категорія A: ключ генерує ВИКЛИКАЧ, не БД. Для сторінок адмінки це браузер (crypto.randomUUID()), для суто серверних таблиць (themes, plugins, user_roles, profiles) — randomUUID() на сервері. DEFAULT знято навмисно — fail-loud guard проти розсинхрону оптимістичного й серверного ключа.';--> statement-breakpoint
+COMMENT ON COLUMN "orders"."id" IS 'Категорія A: client-generated UUID. Ключ шле сервер (order-create), DEFAULT знято в Е1а — сітка перестала страхувати після Е0.';

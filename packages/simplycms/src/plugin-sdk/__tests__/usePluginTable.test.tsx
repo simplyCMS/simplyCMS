@@ -76,7 +76,9 @@ describe('usePluginTable', () => {
   it('insert/update/remove проходять по id і повертають рядок', async () => {
     const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
 
-    await expect(result.current.insert({ question: 'A' })).resolves.toEqual({
+    await expect(
+      result.current.insert({ id: 'new', question: 'A' }),
+    ).resolves.toEqual({
       id: 'new',
       question: 'A',
     });
@@ -96,9 +98,17 @@ describe('usePluginTable', () => {
   it('undefined у рядку їде як null — транспорт бере лише JSON-скаляри', async () => {
     const { result } = renderHook(() => usePluginTable('faq', 'plg_faq_items'));
 
-    await result.current.insert({ question: 'A', product_id: undefined });
+    await result.current.insert({
+      id: 'new',
+      question: 'A',
+      product_id: undefined,
+    });
 
-    expect(calls[0].data.row).toEqual({ question: 'A', product_id: null });
+    expect(calls[0].data.row).toEqual({
+      id: 'new',
+      question: 'A',
+      product_id: null,
+    });
   });
 
   it('помилка сервера доїжджає до викликача, а не ковтається', async () => {

@@ -16,10 +16,16 @@ import {
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getMyOrders, getOrderStatuses } from '../server/profile-orders';
 
 /** Значення фільтра «усі статуси». */
 const ALL_STATUSES = 'all';
+
+// 🔴 Не `orders` — це імʼя вже займає локальний `data: orders` нижче
+// (перезапис module-level фабрики в тілі компонента дав би TDZ-помилку).
+const orderKeys = entityKey(ENTITY.orders);
+const orderStatuses = entityKey(ENTITY.orderStatuses);
 
 export default function ProfileOrdersPage() {
   const t = useT();
@@ -27,7 +33,7 @@ export default function ProfileOrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>(ALL_STATUSES);
 
   const { data: statuses = [] } = useQuery({
-    queryKey: ['order-statuses'],
+    queryKey: orderStatuses.list(),
     queryFn: () => getOrderStatuses(),
   });
 
@@ -37,7 +43,7 @@ export default function ProfileOrdersPage() {
    * замовлення показати — параметром НЕ їде і їхати не може.
    */
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['my-orders', user?.id, selectedStatus],
+    queryKey: [...orderKeys.scoped('customer', user?.id ?? ''), selectedStatus],
     queryFn: () =>
       getMyOrders({
         data:

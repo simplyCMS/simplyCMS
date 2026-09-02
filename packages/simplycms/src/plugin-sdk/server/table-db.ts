@@ -72,6 +72,12 @@ export async function insertPluginRow(
   table: string,
   row: Record<string, PluginCell>,
 ): Promise<PluginRow> {
+  if (typeof row.id !== 'string' || row.id.length === 0) {
+    throw new Error(
+      `[plugin-sdk] insert у ${table} (плагін ${pluginName}) без id. ` +
+        'Ключ генерує КЛІЄНТ (randomUUID) — інакше розійдеться з оптимістичним рядком.',
+    );
+  }
   const name = await guardedTable(pluginName, table);
   const columns = Object.keys(row).map(assertColumn);
   if (columns.length === 0) {

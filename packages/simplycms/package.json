@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./contracts": "./src/contracts/index.ts",
+    "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
@@ -24,6 +25,9 @@
     "./schema": "./src/schema/schema.ts",
     "./schema/relations": "./src/schema/relations.ts",
     "./schema/types": "./src/schema/types.ts",
+    "./admin-server": "./src/admin-server/index.ts",
+    "./admin-server/impl": "./src/admin-server/impl.ts",
+    "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./supabase": "./src/supabase/index.ts",
@@ -108,6 +112,10 @@
         "types": "./dist/contracts/index.d.ts",
         "import": "./dist/contracts/index.js"
       },
+      "./contracts/entities": {
+        "types": "./dist/contracts/entities.d.ts",
+        "import": "./dist/contracts/entities.js"
+      },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",
         "import": "./dist/contracts/objects/index.js"
@@ -167,6 +175,18 @@
       "./schema/types": {
         "types": "./dist/schema/types.d.ts",
         "import": "./dist/schema/types.js"
+      },
+      "./admin-server": {
+        "types": "./dist/admin-server/index.d.ts",
+        "import": "./dist/admin-server/index.js"
+      },
+      "./admin-server/impl": {
+        "types": "./dist/admin-server/impl.d.ts",
+        "import": "./dist/admin-server/impl.js"
+      },
+      "./admin-data": {
+        "types": "./dist/admin-data/index.d.ts",
+        "import": "./dist/admin-data/index.js"
       },
       "./db": {
         "types": "./dist/db/index.d.ts",
@@ -490,6 +510,8 @@
     "@radix-ui/react-tooltip": "^1.0.0",
     "@supabase/ssr": ">=0.5.0 <1.0.0",
     "@supabase/supabase-js": "^2.0.0",
+    "@tanstack/query-db-collection": "~1.2.11",
+    "@tanstack/react-db": "~0.3.6",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-start": "^1.0.0",
@@ -524,6 +546,7 @@
     "@tiptap/extension-text-align": "^3.29.2",
     "better-auth": "1.7.1",
     "clsx": "^2.1.1",
+    "drizzle-zod": "^0.8.3",
     "pg": "8.22.0",
     "tailwind-merge": "^3.6.0"
   },
