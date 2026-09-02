@@ -1,4 +1,4 @@
-# Трек T — міграція збірки пакетів tsup → tsdown (ред. 3)
+# Трек T — міграція збірки пакетів tsup → tsdown (ред. 3.1)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -59,7 +59,10 @@ vitest 4, ESLint 10.
 > **(10)** `/usr/bin/time` на машині немає — вимір RSS через python;
 > **(11)** декларації силами tsdown відкинуто ВИМІРОМ: OOM 3 ГБ за 25 с при
 > дефолтному паралелізмі і за 29 с при `--concurrency 1`, tsc — 11 с / 1,1 ГБ;
-> **(12)** додано `sideEffects: false` (нуль side-effect-імпортів і нуль
+> **(12)** ред. 3.1 після другого Codex-аудиту (обірвався на ліміті, але
+> встиг знайти блокер): шлях у dist виводиться з ДЖЕРЕЛА, а не з ключа
+> exports — інакше 37 явних цілей `publishConfig.exports` не збігалися б;
+> **(13)** додано `sideEffects: false` (нуль side-effect-імпортів і нуль
 > top-level мутацій глобалів у `src` ядра), знос барелю `simplycms/storefront`
 > без споживачів, `pilot:pack` у гейти релізу.
 > Рішення власника 2026-09-02: сім вкладених `.tsx` стають entry; барель
@@ -1237,8 +1240,8 @@ import { isServerOnlySubpath } from 'simplycms/contracts/server-only';
 // Збірка ядра — ДВІ групи замість профілів (трек T, ред. 3).
 //
 // 🔴 Список entry НЕ пишеться руками: він виводиться з dev-`exports`
-// package.json (ключ → джерело), тож `dist/` дзеркалить exports ЗА
-// ПОБУДОВОЮ. Wildcard-ціль `./src/ui/*.tsx` розгортається глобом
+// package.json (ключ → джерело; у dist файл лягає за шляхом ДЖЕРЕЛА), тож
+// `dist/` дзеркалить exports ЗА ПОБУДОВОЮ. Wildcard-ціль `./src/ui/*.tsx` розгортається глобом
 // `src/ui/**/*.tsx` — рівно стільки, скільки обіцяє exports-wildcard (він
 // матчить і вкладені шляхи; до ред. 3 сім вкладених `.tsx` під
 // `storefront-routes/pages/*` були обіцяні, але не зібрані). Цілі поза
@@ -1264,11 +1267,19 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as {
   exports: Record<string, string>;
 };
 
+/** `./src/schema/schema.ts` → `schema/schema`: шлях у dist = шлях джерела. */
+const outOf = (source: string): string =>
+  source.replace(/^\.?\/?src\//, '').replace(/\.tsx?$/, '');
+
+// 🔴 Шлях у dist береться з ДЖЕРЕЛА, а не з ключа exports: `dist/` дзеркалить
+// розкладку `src/`, а ключ лише вказує на файл (`./schema` → `schema/schema.js`,
+// `./contracts` → `contracts/index.js`, `./core/providers` →
+// `core/providers/CMSProvider.js`). Виведення з ключа дало б 37 розбіжностей
+// із `publishConfig.exports` (знахідка аудиту ред. 3).
 const entries = Object.entries(pkg.exports)
   .filter(([, target]) => target.startsWith('./src/'))
   .flatMap(([key, target]): Array<[string, string]> => {
-    const out = key === '.' ? 'index' : key.slice(2);
-    if (!key.includes('*')) return [[out, target]];
+    if (!key.includes('*')) return [[outOf(target), target]];
     const [dir, ext] = target.slice(2).split('*');
     const files = globSync(`${dir}**/*${ext || '.{ts,tsx}'}`)
       .map((file) => file.split('\\').join('/'))
@@ -1277,10 +1288,7 @@ const entries = Object.entries(pkg.exports)
     // Wildcard без збігів — одрук у exports або перенесена тека: падати
     // гучно, а не мовчки лишити пакет без частини entry.
     if (files.length === 0) throw new Error(`tsdown.config: ${key} без збігів`);
-    return files.map((file) => [
-      out.replace('*', file.slice(dir.length).replace(/\.tsx?$/, '')),
-      `./${file}`,
-    ]);
+    return files.map((file) => [outOf(file), `./${file}`]);
   });
 
 const group = (server: boolean): Record<string, string> =>
@@ -1360,7 +1368,11 @@ cd ../..
 ```
 
 Очікувано: `відсутніх: 0`, `.mjs` — 0, `ThemeRegistryClass` — 1 файл, сім
-нових entry під `pages/{home,catalog,product-detail}/` існують. Wildcard-цілі
+нових entry під `pages/{home,catalog,product-detail}/` існують. Перевірено
+на dev-exports HEAD `7a999992`: алгоритм дає 325 entry = 318 чинних tsup
++ 7 вкладених `.tsx` + `contracts/server-only` − `storefront/index`;
+серверна група — рівно 8 (`schema/{schema,relations,types}`,
+`admin-server/impl`, `db/index`, `auth/index`, `storefront/{loaders,seo}/index`). Wildcard-цілі
 доводить `published-exports-parity` (Крок 6).
 
 🔴 Якщо `tsdown` падає на імпорті `simplycms/contracts/server-only` у конфізі
