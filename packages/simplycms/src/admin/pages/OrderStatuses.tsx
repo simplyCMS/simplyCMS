@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
+import { useLiveQuery } from '@tanstack/react-db';
+import { useCollection, orderStatusesCollection } from 'simplycms/admin-data';
+import { reorderOrderStatus, setDefaultOrderStatus } from 'simplycms/admin-server';
+import type { OrderStatus } from 'simplycms/schema/types';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import { Input } from 'simplycms/ui/input';
@@ -34,16 +36,6 @@ import {
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface OrderStatus {
-  id: string;
-  name: string;
-  code: string;
-  color: string | null;
-  sort_order: number;
-  is_default: boolean;
-  created_at: string;
-}
-
 interface StatusFormData {
   name: string;
   code: string;
@@ -51,13 +43,28 @@ interface StatusFormData {
   is_default: boolean;
 }
 
+/**
+ * Перша сторінка адмінки на чистому Postgres (Е1б, Task 10).
+ *
+ * Читання — жива колекція (`useLiveQuery`, eager-режим К3-5): дані вже в
+ * памʼяті синхронно, сортування — на клієнті. Мутації — оптимістичні
+ * (`collection.insert/update/delete`) із авто-rollback і write-back через
+ * serverFn з `simplycms/admin-server` (Task 8), крім `setDefault`/`reorder`
+ * — вони міняють N рядків одразу, тож завершуються `refetch()`, а не
+ * write-back одного рядка (межа канону write-back, не виняток).
+ */
 export default function OrderStatuses() {
   const t = useT();
-  const supabase = useSupabaseClient();
-  const queryClient = useQueryClient();
+  const collection = useCollection(orderStatusesCollection);
+  // 🔴 Форма 0.3.6 — обʼєкт { query }; dependency-масиви legacy.
+  const { data: statuses, isLoading } = useLiveQuery({
+    query: (q) => q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
+  });
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState<OrderStatus | null>(null);
   const [deleteStatus, setDeleteStatus] = useState<OrderStatus | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<StatusFormData>({
     name: '',
     code: '',
@@ -65,149 +72,112 @@ export default function OrderStatuses() {
     is_default: false,
   });
 
-  const { data: statuses, isLoading } = useQuery({
-    queryKey: ['order-statuses'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('order_statuses')
-        .select('*')
-        .order('sort_order', { ascending: true });
+  /**
+   * setDefault/reorder — серверні операції, що міняють N рядків: write-back
+   * одного не описує стан → refetch. Це МЕЖА канону write-back, не виняток.
+   */
+  const applyDefault = async (id: string) => {
+    await setDefaultOrderStatus({ data: { id } });
+    await collection.utils.refetch();
+  };
 
-      if (error) throw error;
-      return data as OrderStatus[];
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: StatusFormData) => {
-      const maxSortOrder =
-        statuses?.reduce((max, s) => Math.max(max, s.sort_order), -1) ?? -1;
-
-      // If setting as default, unset other defaults first
-      if (data.is_default) {
-        await supabase
-          .from('order_statuses')
-          .update({ is_default: false })
-          .eq('is_default', true);
-      }
-
-      const { error } = await supabase.from('order_statuses').insert({
-        name: data.name,
-        code: data.code,
-        color: data.color,
-        is_default: data.is_default,
-        sort_order: maxSortOrder + 1,
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success(t('admin.orders.statuses.created'));
-      handleCloseDialog();
-    },
-    onError: (error) => {
-      toast.error(
-        t('admin.orders.statuses.createFailed') + ' ' + error.message,
-      );
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: StatusFormData }) => {
-      // If setting as default, unset other defaults first
-      if (data.is_default) {
-        await supabase
-          .from('order_statuses')
-          .update({ is_default: false })
-          .neq('id', id);
-      }
-
-      const { error } = await supabase
-        .from('order_statuses')
-        .update({
-          name: data.name,
-          code: data.code,
-          color: data.color,
-          is_default: data.is_default,
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success(t('common.statusUpdated'));
-      handleCloseDialog();
-    },
-    onError: (error) => {
-      toast.error(
-        t('admin.orders.statuses.updateFailed') + ' ' + error.message,
-      );
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('order_statuses')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success(t('admin.orders.statuses.deleted'));
-      setDeleteStatus(null);
-    },
-    onError: (error) => {
-      toast.error(
-        t('admin.orders.statuses.deleteFailed') + ' ' + error.message,
-      );
-    },
-  });
-
-  const reorderMutation = useMutation({
-    mutationFn: async ({
+  /** create: клієнт рахує max+1 — eager-колекція і є повна копія. */
+  const handleCreate = (form: StatusFormData) => {
+    if (!form.name.trim() || !form.code.trim()) {
+      toast.error(t('admin.orders.statuses.requiredFields'));
+      return;
+    }
+    const id = crypto.randomUUID(); // Е0: ключ генерує клієнт
+    const sortOrder =
+      statuses.reduce((max, s) => Math.max(max, s.sortOrder), -1) + 1;
+    const tx = collection.insert({
       id,
-      direction,
-    }: {
-      id: string;
-      direction: 'up' | 'down';
-    }) => {
-      if (!statuses) return;
+      name: form.name,
+      code: form.code,
+      color: form.color,
+      sortOrder,
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    } as OrderStatus);
+    // 🔴 Failure-state збережений (рев'ю р3, як у старій сторінці): діалог
+    // закривається ЛИШЕ після успішного персисту — при помилці введене
+    // лишається у формі. Рядок у СПИСКУ все одно зʼявляється миттєво
+    // (оптимістично) — DoD «створення миттєве» не страждає. `isSubmitting`
+    // — заміна старого mutation.isPending на кнопці Save.
+    setIsSubmitting(true);
+    tx.isPersisted.promise
+      .then(async () => {
+        handleCloseDialog();
+        // 🔴 Двофазність ЧЕСНА (рев'ю р2): insert уже закомічено, тож
+        // падіння setDefault — НЕ createFailed. Рядок створено — кажемо
+        // це, а про дефолт — окремою помилкою.
+        toast.success(t('admin.orders.statuses.created'));
+        if (form.is_default) {
+          try {
+            await applyDefault(id);
+          } catch (e) {
+            toast.error(
+              t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message,
+            );
+          }
+        }
+      })
+      .catch((e: Error) =>
+        toast.error(t('admin.orders.statuses.createFailed') + ' ' + e.message),
+      )
+      .finally(() => setIsSubmitting(false));
+  };
 
-      const currentIndex = statuses.findIndex((s) => s.id === id);
-      if (currentIndex === -1) return;
+  const handleUpdate = (id: string, form: StatusFormData) => {
+    const tx = collection.update(id, (draft) => {
+      draft.name = form.name;
+      draft.code = form.code;
+      draft.color = form.color;
+    });
+    setIsSubmitting(true);
+    tx.isPersisted.promise
+      .then(async () => {
+        handleCloseDialog();
+        // 🔴 Та сама чесна двофазність, що в create (рев'ю р3): update вже
+        // закомічений окремим withActor — statusUpdated ДО default-фази,
+        // її падіння — окремою помилкою, не «оновлення не вдалося».
+        toast.success(t('common.statusUpdated'));
+        if (form.is_default) {
+          try {
+            await applyDefault(id);
+          } catch (e) {
+            toast.error(
+              t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message,
+            );
+          }
+        }
+      })
+      .catch((e: Error) =>
+        toast.error(t('admin.orders.statuses.updateFailed') + ' ' + e.message),
+      )
+      .finally(() => setIsSubmitting(false));
+  };
 
-      const swapIndex =
-        direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (swapIndex < 0 || swapIndex >= statuses.length) return;
-
-      const currentStatus = statuses[currentIndex];
-      const swapStatus = statuses[swapIndex];
-
-      // Swap sort_order values
-      await supabase
-        .from('order_statuses')
-        .update({ sort_order: swapStatus.sort_order })
-        .eq('id', currentStatus.id);
-
-      await supabase
-        .from('order_statuses')
-        .update({ sort_order: currentStatus.sort_order })
-        .eq('id', swapStatus.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-statuses'] });
-    },
-    onError: (error) => {
-      toast.error(
-        t('admin.orders.statuses.reorderFailed') + ' ' + error.message,
+  const handleDelete = (id: string) => {
+    const tx = collection.delete(id);
+    tx.isPersisted.promise
+      .then(() => toast.success(t('admin.orders.statuses.deleted')))
+      .catch((e: Error) =>
+        toast.error(t('admin.orders.statuses.deleteFailed') + ' ' + e.message),
       );
-    },
-  });
+    setDeleteStatus(null);
+  };
+
+  const handleReorder = async (id: string, direction: 'up' | 'down') => {
+    try {
+      await reorderOrderStatus({ data: { id, direction } });
+      await collection.utils.refetch();
+    } catch (e) {
+      toast.error(
+        t('admin.orders.statuses.reorderFailed') + ' ' + (e as Error).message,
+      );
+    }
+  };
 
   const handleOpenCreate = () => {
     setEditingStatus(null);
@@ -226,7 +196,7 @@ export default function OrderStatuses() {
       name: status.name,
       code: status.code,
       color: status.color || '#6B7280',
-      is_default: status.is_default,
+      is_default: status.isDefault,
     });
     setIsDialogOpen(true);
   };
@@ -251,9 +221,9 @@ export default function OrderStatuses() {
     }
 
     if (editingStatus) {
-      updateMutation.mutate({ id: editingStatus.id, data: formData });
+      handleUpdate(editingStatus.id, formData);
     } else {
-      createMutation.mutate(formData);
+      handleCreate(formData);
     }
   };
 
@@ -306,7 +276,7 @@ export default function OrderStatuses() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {statuses?.length === 0 ? (
+            {statuses.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -316,7 +286,7 @@ export default function OrderStatuses() {
                 </TableCell>
               </TableRow>
             ) : (
-              statuses?.map((status, index) => (
+              statuses.map((status, index) => (
                 <TableRow key={status.id}>
                   <TableCell>
                     <div className="flex flex-col gap-1">
@@ -325,12 +295,7 @@ export default function OrderStatuses() {
                         size="icon"
                         className="h-6 w-6"
                         disabled={index === 0}
-                        onClick={() =>
-                          reorderMutation.mutate({
-                            id: status.id,
-                            direction: 'up',
-                          })
-                        }
+                        onClick={() => handleReorder(status.id, 'up')}
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -338,13 +303,8 @@ export default function OrderStatuses() {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        disabled={index === (statuses?.length ?? 0) - 1}
-                        onClick={() =>
-                          reorderMutation.mutate({
-                            id: status.id,
-                            direction: 'down',
-                          })
-                        }
+                        disabled={index === statuses.length - 1}
+                        onClick={() => handleReorder(status.id, 'down')}
                       >
                         <ArrowDown className="h-3 w-3" />
                       </Button>
@@ -368,7 +328,7 @@ export default function OrderStatuses() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {status.is_default && (
+                    {status.isDefault && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         {t('common.byDefault')}
                       </span>
@@ -387,7 +347,7 @@ export default function OrderStatuses() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteStatus(status)}
-                        disabled={status.is_default}
+                        disabled={status.isDefault}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -481,6 +441,17 @@ export default function OrderStatuses() {
                 onCheckedChange={(checked) =>
                   setFormData((prev) => ({ ...prev, is_default: checked }))
                 }
+                // К3-15: зняти дефолт без призначення нового не можна — нуль
+                // дефолтів заборонений доменом (див. removeManyOrderStatusesOp
+                // і setDefaultOrderStatusOp). Редагування вже-дефолтного рядка
+                // тому не дає зняти прапорець тут — лише призначити дефолтом
+                // ІНШИЙ рядок.
+                disabled={!!editingStatus?.isDefault}
+                title={
+                  editingStatus?.isDefault
+                    ? t('admin.orders.statuses.autoAssign')
+                    : undefined
+                }
               />
             </div>
 
@@ -492,10 +463,7 @@ export default function OrderStatuses() {
               >
                 {t('common.cancel')}
               </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {editingStatus ? t('common.save') : t('common.create')}
               </Button>
             </DialogFooter>
@@ -522,9 +490,7 @@ export default function OrderStatuses() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() =>
-                deleteStatus && deleteMutation.mutate(deleteStatus.id)
-              }
+              onClick={() => deleteStatus && handleDelete(deleteStatus.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t('common.delete')}

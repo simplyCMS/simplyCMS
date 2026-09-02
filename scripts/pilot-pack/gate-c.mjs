@@ -64,11 +64,6 @@ const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
  * `SERVER_FN_STUB` (той вимагає сегмент `/server/` ПІСЛЯ теки).
  * 🔴 `index`, НЕ `impl`: наявність index-стаба легальна й обовʼязкова —
  * саме заглушку клієнт мусить отримати, а не нутрощі (див. SERVER_PAYLOAD).
- * 🔴 Task 8: до Task 9/10 ЖОДЕН роут стора цей модуль не імпортує
- * (`/admin/order-statuses` ще на старому Supabase-шарі), тож у
- * `bundle-stats.client.json` цей маркер закономірно не знайдеться —
- * рахунок нижче ІНФОРМАЦІЙНИЙ (не гейтує); твердий, «не вхолосту» гейт
- * на цей момент — file-existence перевірка в dist (див. gateBundle).
  */
 const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 
@@ -150,22 +145,33 @@ export function gateBundle(storeDir) {
   const adminServerSplitOk =
     existsSync(join(adminServerDist, 'index.js')) &&
     existsSync(join(adminServerDist, 'impl.js'));
-  if (leaked.length || stubs === 0 || !adminServerSplitOk) {
+  /**
+   * 🔴 Task 10 (Е1б, Step 4б, R10): суворий assert повернуто. До цього
+   * коміту `/admin/order-statuses` сидів на старому Supabase-шарі — жоден
+   * роут стора не імпортував `simplycms/admin-server`, тож Vite СТРУКТУРНО
+   * не міг покласти стаб у клієнтський чанк (він не тягне в бандл модуль,
+   * якого ніхто не імпортує) — звідси тимчасовий INFO-лічильник у Task 8.
+   * Тепер `OrderStatuses.tsx` імпортує `setDefaultOrderStatus` і
+   * `reorderOrderStatus` напряму, а `admin-data`-колекція — решту чотирьох
+   * serverFn: стаб МУСИТЬ приїхати в клієнт, і 0 тут — реальний регрес
+   * спліту (не «ще не встигли перевести сторінку»).
+   */
+  if (leaked.length || stubs === 0 || adminServerStubs === 0 || !adminServerSplitOk) {
     ok = false;
     details.push(
       leaked.length
         ? `FAIL серверний вантаж у клієнті: ${leaked.join(', ')}`
         : stubs === 0
           ? 'FAIL заглушок server-fn у бандлі немає — перевіряти нема чого'
-          : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl.js (нутрощі)',
+          : adminServerStubs === 0
+            ? 'FAIL admin-server stub відсутній у клієнтських чанках — сторінка мала б його імпортувати (Task 10)'
+            : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl.js (нутрощі)',
     );
   } else {
     details.push(
       `OK   server-fn заглушок ${stubs}, серверного вантажу (server-client, loaders, admin-server/impl) — 0`,
     );
-    details.push(
-      `${adminServerStubs > 0 ? 'OK  ' : 'INFO'} admin-server: dist index/impl розділені; у клієнтському бандлі стаб-модулів ${adminServerStubs} (0 очікувано до Task 9/10 — сторінка ще не переведена на ці serverFn)`,
-    );
+    details.push(`OK   admin-server stub: ${adminServerStubs} ≥ 1`);
   }
 
   const initial = initialChunks(stats);

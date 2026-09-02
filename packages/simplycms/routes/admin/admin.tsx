@@ -13,6 +13,15 @@ import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
 export const Route = createFileRoute('/admin')({
   ssr: false,
   beforeLoad: async () => {
+    // К3-6: crypto.randomUUID існує лише в secure context — адмінка на
+    // http:// не-localhost мовчки отримала б undefined на кожному create.
+    // ПЕРШИЙ рядок beforeLoad: роут client-only (`ssr:false`), тож це
+    // виконується рівно один раз на старті адмінки, до будь-якого запиту.
+    if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') {
+      throw new Error(
+        '[simplycms/admin] Адмінка вимагає secure context (https:// або localhost): crypto.randomUUID недоступний.',
+      );
+    }
     // Розрізняємо кейси так само, як серверний guard у start.ts:
     // немає сесії → /auth; є сесія, але не admin → / (без bounce на /auth).
     const user = await getUser();

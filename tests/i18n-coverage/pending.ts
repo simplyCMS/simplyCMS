@@ -66,6 +66,12 @@ export const ALLOWLIST: Record<string, string> = {
     'throw new Error — відмова в записі не-адміну',
   'packages/simplycms/src/admin/lib/pluginSettingsFields.ts':
     'console.warn — діагностика непредставної settings-схеми плагіна',
+  // К3-6 (Е1б, Task 10): гард secure context у ПЕРШОМУ рядку beforeLoad
+  // layout-роуту адмінки. Спрацьовує ДО рендера AdminRoot — читає той, хто
+  // розгортає адмінку на http:// не-localhost (у консолі/на екрані помилки
+  // роутера), а не покупець вітрини: сторінки покупця цей роут не зачіпає.
+  'packages/simplycms/routes/admin/admin.tsx':
+    'throw new Error — діагностика для того, хто розгортає адмінку',
 };
 
 /**
