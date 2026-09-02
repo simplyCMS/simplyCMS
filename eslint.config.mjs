@@ -7,6 +7,7 @@ import {
 import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
 import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
+import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -106,6 +107,14 @@ const SERVER_ENV_FILES = [
 const PLUGIN_TRUST_BOUNDARY_FILES = [
   'plugins/**/*.{ts,tsx}',
   'packages/simplycms-plugin-*/**/*.{ts,tsx}',
+];
+
+// Точковий ратчет `mutation-cache-sync` (Task 11, Е1б): сторінки
+// `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
+// зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
+// PENDING_FILES) — стартово одна сторінка з Task 10.
+const MUTATION_CACHE_SYNC_RATCHET = [
+  'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
 ];
 
 const pluginTrustBoundaryImports = [
@@ -274,6 +283,30 @@ const eslintConfig = [
       simplycms: { rules: { 'query-key-from-entity': queryKeyFromEntity } },
     },
     rules: { 'simplycms/query-key-from-entity': 'error' },
+  },
+  // Мутація без сліду в кеші (Task 11, Е1б) — клієнтська половина інваріанту
+  // «мутація ⇒ кеш бачить наслідок»; серверну половину (persistence-хендлери
+  // onInsert/onUpdate/onDelete) стереже окремий AST-гейт tests/handler-canon.test.ts.
+  // Зона — фабрики колекцій (`admin-data`) + точковий ратчет переписаних
+  // сторінок адмінки (`MUTATION_CACHE_SYNC_RATCHET`): список РОСТЕ з хвилями
+  // Е3–Е6 у міру того, як `src/admin/pages/*` переходять на TanStack DB —
+  // патерн, обернений до `PENDING_FILES` i18n-гейта (там список звужується
+  // до порожнього, тут — росте від порожнього). Окреме імʼя плагіна
+  // (`simplycms-cache-sync`, не `simplycms`) — з тієї самої причини, що в
+  // зоні `server-fn-top-level`: flat config замінює опції правила цілком,
+  // а не доливає, і обидві зони перетинаються на `admin-data/**`.
+  {
+    files: [
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      ...MUTATION_CACHE_SYNC_RATCHET,
+    ],
+    ignores: ['**/__tests__/**'],
+    plugins: {
+      'simplycms-cache-sync': {
+        rules: { 'mutation-cache-sync': mutationCacheSync },
+      },
+    },
+    rules: { 'simplycms-cache-sync/mutation-cache-sync': 'error' },
   },
   // К3-4′: createServerFn лише топ-рівневим `const` — компілятор Start
   // на повільному шляху падає, а на fast-path (файли, де детектовано лише
