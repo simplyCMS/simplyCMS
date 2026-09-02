@@ -344,15 +344,24 @@ pnpm add -Dw tsdown@0.22.14
 - [ ] **Крок 2: Звірити поверхню опцій встановленої версії**
 
 ```bash
-grep -rn "neverBundle\|^  external\|external?:\|tsconfig?:\|target?:\|unbundle?:" node_modules/tsdown/dist/*.d.ts | head -20
+awk '/interface UserConfig/,/^}/' node_modules/tsdown/dist/types-*.d.mts \
+  | grep -oE "^\s+[a-zA-Z]+\??:" | tr -d ' ' | sort -u | tr '\n' ' '
+grep -rn "splitting" node_modules/tsdown/dist/types-*.d.mts
 ```
 
-Записати результат у коментар конфігу нижче: чи зовнішність задається полем
-`external`, чи `deps: { neverBundle: [...] }` (офіційний гайд міграції показує
-друге), і чи приймає воно `RegExp`. Далі в плані вживається `external` як
-основна форма; якщо типи її не мають — усюди підставляється
-`deps: { neverBundle: [...] }` з тим самим значенням. `pnpm typecheck`
-доводить вибір машинно: конфіги входять у кореневий tsconfig.
+🔴 Очікуваний результат уже виміряний на офіційному tarball `tsdown@0.22.14`
+(2026-09-02) — крок його **підтверджує**, а не з'ясовує наново:
+
+| Потрібне нам | Стан у 0.22.14 |
+|---|---|
+| `external` | Є, тип `ExternalOption` (приймає `RegExp[]`). `noExternal` — deprecated на користь `deps.alwaysBundle`, але `external` живий |
+| `platform` | Є; 🔴 `@default 'node'` — тому в `base` він ставиться ЯВНО (`'neutral'`), інакше субшляхи для браузера збиралися б із node-припущеннями |
+| `target`, `tsconfig`, `dts`, `clean`, `sourcemap`, `treeshake`, `outDir`, `outExtensions`, `outputOptions`, `hash`, `name` | Є всі |
+| `splitting` | **Немає** — у типах трапляється лише `css.splitting` (окрема опція для CSS). Це й є причина розкладки «один entry — один конфіг» |
+
+Якщо вимір розійшовся з таблицею (інша версія в lockfile) — зупинись і
+звір версію: план написаний під `0.22.x`. `pnpm typecheck` доводить вибір
+полів машинно, бо конфіги входять у кореневий tsconfig.
 
 - [ ] **Крок 3: Створити конфіг плагіна**
 
