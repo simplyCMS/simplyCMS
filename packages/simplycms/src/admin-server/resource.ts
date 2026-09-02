@@ -1,9 +1,18 @@
 import { eq, inArray, asc, desc, type Table } from 'drizzle-orm';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from 'drizzle-zod';
 import { z } from 'zod';
 import { requireGrant, dbRoleForSubject, type Operation } from 'simplycms/auth';
 import { withActor, type ActorDb } from 'simplycms/db';
-import { subsetInputSchema, toDrizzleSubset, type SubsetAllow, type SubsetPayload } from './subset';
+import {
+  subsetInputSchema,
+  toDrizzleSubset,
+  type SubsetAllow,
+  type SubsetPayload,
+} from './subset';
 
 /** Імена колонок Drizzle-таблиці (TS-ключі, camelCase). */
 type ColumnName<T extends Table> = Extract<keyof T['_']['columns'], string>;
@@ -46,9 +55,14 @@ export function defineAdminResource<
       ? unknown
       : { __overlappingColumns: Extract<W, R> }),
 ) {
-  const allow: SubsetAllow = { filterable: config.filterable, sortable: config.sortable };
+  const allow: SubsetAllow = {
+    filterable: config.filterable,
+    sortable: config.sortable,
+  };
   const columns = config.table as unknown as Record<string, never>;
-  const pickWritable = Object.fromEntries(config.writable.map((c) => [c, true])) as {
+  const pickWritable = Object.fromEntries(
+    config.writable.map((c) => [c, true]),
+  ) as {
     [K in W]: true;
   };
 
@@ -83,10 +97,12 @@ export function defineAdminResource<
   // `pickWritable` містить рівно ключі `W`.
   const insertSchemaFull = createInsertSchema(config.table);
   const updateSchemaFull = createUpdateSchema(config.table);
-  type InsertShape =
-    typeof insertSchemaFull extends { shape: infer S } ? S : never;
-  type UpdateShape =
-    typeof updateSchemaFull extends { shape: infer S } ? S : never;
+  type InsertShape = typeof insertSchemaFull extends { shape: infer S }
+    ? S
+    : never;
+  type UpdateShape = typeof updateSchemaFull extends { shape: infer S }
+    ? S
+    : never;
   // 🔴 `Pick<Shape, W>` напряму не типізується: вбудований `Pick` вимагає
   // `W extends keyof Shape`, а TS не може це довести генерично — insert-
   // shape виключає «завжди згенеровані» колонки (ColumnIsGeneratedAlwaysAs),
@@ -119,8 +135,14 @@ export function defineAdminResource<
   ) as unknown as z.ZodObject<SafePick<UpdateShape, W>>;
 
   const insertSchema = z.array(insertRowSchema).min(1).max(100);
-  const updateSchema = z.array(z.object({ id: z.uuid(), patch: patchSchema })).min(1).max(100);
-  const removeSchema = z.array(z.object({ id: z.uuid() })).min(1).max(100);
+  const updateSchema = z
+    .array(z.object({ id: z.uuid(), patch: patchSchema }))
+    .min(1)
+    .max(100);
+  const removeSchema = z
+    .array(z.object({ id: z.uuid() }))
+    .min(1)
+    .max(100);
 
   /**
    * Спільна склейка К3-13: перший рубіж → роль від субʼєкта → транзакція.
@@ -132,7 +154,10 @@ export function defineAdminResource<
    * Е4+) пишуться іменованими операціями, які scope ЧЕСНО звужують.
    */
   const run = async <Out>(
-    fn: (db: ActorDb, grant: Awaited<ReturnType<typeof requireGrant>>) => Promise<Out>,
+    fn: (
+      db: ActorDb,
+      grant: Awaited<ReturnType<typeof requireGrant>>,
+    ) => Promise<Out>,
   ): Promise<Out> => {
     const grant = await requireGrant(config.operation);
     if (grant.scope !== 'any')
@@ -140,7 +165,10 @@ export function defineAdminResource<
         `[admin-server] ${config.entity}: операція ${config.operation} дала scope '${grant.scope}' — фабрика обслуговує лише admin-scope 'any'; own-звуження пишеться іменованою операцією`,
       );
     return withActor(
-      { role: dbRoleForSubject(grant.subject), userId: grant.subject.userId ?? undefined },
+      {
+        role: dbRoleForSubject(grant.subject),
+        userId: grant.subject.userId ?? undefined,
+      },
       (db) => fn(db, grant),
     );
   };
@@ -148,13 +176,19 @@ export function defineAdminResource<
   return {
     entity: config.entity,
     mode: config.mode,
-    rowSchema, insertSchema, updateSchema, removeSchema,
+    rowSchema,
+    insertSchema,
+    updateSchema,
+    removeSchema,
     subsetSchema: subsetInputSchema,
 
     list: async ({ data }: { data: SubsetPayload }) =>
       run(async (db, _grant) => {
         const s = toDrizzleSubset(config.table, allow, data.subset ?? {});
-        let q = db.select().from(config.table as never).$dynamic();
+        let q = db
+          .select()
+          .from(config.table as never)
+          .$dynamic();
         if (s.where) q = q.where(s.where);
         if (s.orderBy) q = q.orderBy(...s.orderBy);
         else if (config.defaultOrder) {
@@ -164,23 +198,46 @@ export function defineAdminResource<
             throw new Error(
               `[admin-server] ${config.entity}: defaultOrder.column "${config.defaultOrder.column}" немає в таблиці`,
             );
-          q = q.orderBy(config.defaultOrder.direction === 'desc' ? desc(col) : asc(col));
+          q = q.orderBy(
+            config.defaultOrder.direction === 'desc' ? desc(col) : asc(col),
+          );
         }
         if (s.limit !== undefined) q = q.limit(s.limit);
         if (s.offset !== undefined) q = q.offset(s.offset);
-        return q;
+        // 🔴 Відхилення від брифа (typecheck), знахідка Task 8: `.from(config.table
+        // as never)` вище — той самий обхід генеричного `T` у drizzle-білдері,
+        // що й у insert/update/remove нижче — зводить РЕЗУЛЬТУЮЧИЙ тип рядка
+        // `q` до `never` (TS2339 на першому ж `.field` виклику споживача).
+        // До Task 8 це лишалось непоміченим: жоден виклик `.list()` досі не
+        // типізував результат жорстко (resource.test.ts перевіряє лише
+        // rejects/typeof). Явний каст awaited-результату до
+        // `T['$inferSelect'][]` — той самий рантайм-масив з SELECT, лише
+        // названий конкретним типом; ідентичний прийом уже застосований
+        // нижче для `update()`.
+        return (await q) as T['$inferSelect'][];
       }),
 
     insert: async ({ data }: { data: z.infer<typeof insertSchema> }) =>
       run(async (db) =>
         // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
         // мутацій «підтвердяться» локально без запису в БД.
-        db.insert(config.table).values(data as never).returning(),
+        db
+          .insert(config.table)
+          .values(data as never)
+          .returning(),
       ),
 
     update: async ({ data }: { data: z.infer<typeof updateSchema> }) =>
       run(async (db) => {
-        const out = [];
+        // 🔴 Відхилення від брифа (typecheck), знахідка Task 8 (build:packages,
+        // тобто `tsc -p tsconfig.dts.json`): `const out = []` — «evolving
+        // array» — під ЦИМ прогоном (emitDeclarationOnly) TS звужує елемент
+        // до `never` ще ДО першого `push`, тож `out.push(row)` дає TS2345
+        // (`T['$inferSelect']` не підходить під `never`). Кореневий
+        // `pnpm typecheck` (звичайний `tsc --noEmit`) цю розбіжність не
+        // бачить — той самий код у ньому чистий; мінімальний фікс — явна
+        // анотація типу масиву замість покладання на evolving-inference.
+        const out: T['$inferSelect'][] = [];
         for (const { id, patch } of data) {
           // 🔴 Відхилення від брифа (typecheck): `db.update(config.table)`
           // з генеричним `T extends Table` не звужує `.returning()` до
@@ -191,10 +248,15 @@ export function defineAdminResource<
           // рядків таблиці (`T['$inferSelect'][]`) — той самий рантайм-масив
           // з `UPDATE … RETURNING`, лише названий конкретним типом.
           const rows = (await db
-            .update(config.table).set(patch as never)
-            .where(eq(columns['id'], id as never)).returning()) as T['$inferSelect'][];
+            .update(config.table)
+            .set(patch as never)
+            .where(eq(columns['id'], id as never))
+            .returning()) as T['$inferSelect'][];
           const row = rows[0];
-          if (!row) throw new Error(`[admin-server] ${config.entity}: рядка ${id} не існує`);
+          if (!row)
+            throw new Error(
+              `[admin-server] ${config.entity}: рядка ${id} не існує`,
+            );
           out.push(row);
         }
         return out;
@@ -205,10 +267,13 @@ export function defineAdminResource<
         const ids = data.map((d) => d.id);
         const rows = await db
           .delete(config.table)
-          .where(inArray(columns['id'], ids as never)).returning();
+          .where(inArray(columns['id'], ids as never))
+          .returning();
         return { count: rows.length };
       }),
   };
 }
 
-export type AdminResourceOps<T extends Table> = ReturnType<typeof defineAdminResource<T, ColumnName<T>, ColumnName<T>>>;
+export type AdminResourceOps<T extends Table> = ReturnType<
+  typeof defineAdminResource<T, ColumnName<T>, ColumnName<T>>
+>;

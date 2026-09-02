@@ -196,6 +196,17 @@ const profiles: Profile[] = [
     ],
     { splitting: true },
   ),
+  // serverFn-шар адмінки (Е1б, К3-9′): ДВА entry. index — serverFn-стаби
+  // (імпортує impl BARE-специфікатором, tsup лишає його зовнішнім);
+  // impl — server-only нутрощі (фабрика/операції/схеми інлайняться сюди,
+  // splitting:false). Саме ця пара дає Gate C розрізнення «стаб vs
+  // нетрансформований модуль» — механіка та сама, що server/ ↔ loaders/.
+  // БЕЗ platform:'node' — index імпортує клієнтський граф (стаби).
+  profile(
+    'admin-server',
+    ['src/admin-server/index.ts', 'src/admin-server/impl.ts'],
+    { splitting: false },
+  ),
   // db-рантайм (Task 6, В2-К1а) — окремий NODE-профіль, а не рядок у `tiers`.
   // Дві причини, обидві не стильові:
   //   • `platform: 'node'` — модуль server-only за побудовою (пул `pg`), і

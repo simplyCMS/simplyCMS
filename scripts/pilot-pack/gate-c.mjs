@@ -7,7 +7,7 @@
  * кожного чанка). Тільки за ним видно, ЩО саме приїхало в initial-чанк.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -33,6 +33,11 @@ const SERVER_PAYLOAD = [
   // браузері (там `process` немає) — гейт має зловити раніше.
   /simplycms\/dist\/supabase\/anon-client/,
   /simplycms\/dist\/storefront\/loaders\//,
+  // Нутрощі admin-server (Е1б, Task 8): у клієнті їх не може бути ЗА ЖОДНИХ
+  // умов. Нетрансформований index тягне impl живим імпортом — маркер
+  // червоніє навіть якби drizzle туди не доїхав (делегуюча операція без
+  // drizzle).
+  /simplycms\/dist\/admin-server\/impl/,
   // db-рантайм v2: пул Postgres + транзакційна обгортка актора. Server-only
   // за побудовою (гард `typeof window`), тож у клієнті це гарантований збій.
   /simplycms\/dist\/db/,
@@ -53,6 +58,19 @@ const SERVER_PAYLOAD = [
  * `simplycms/dist/` немає, тож заглушка плагіна за ядро не зарахується.
  */
 const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
+
+/**
+ * Окремий стаб-маркер: форма `dist/admin-server/` не матчить
+ * `SERVER_FN_STUB` (той вимагає сегмент `/server/` ПІСЛЯ теки).
+ * 🔴 `index`, НЕ `impl`: наявність index-стаба легальна й обовʼязкова —
+ * саме заглушку клієнт мусить отримати, а не нутрощі (див. SERVER_PAYLOAD).
+ * 🔴 Task 8: до Task 9/10 ЖОДЕН роут стора цей модуль не імпортує
+ * (`/admin/order-statuses` ще на старому Supabase-шарі), тож у
+ * `bundle-stats.client.json` цей маркер закономірно не знайдеться —
+ * рахунок нижче ІНФОРМАЦІЙНИЙ (не гейтує); твердий, «не вхолосту» гейт
+ * на цей момент — file-existence перевірка в dist (див. gateBundle).
+ */
+const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
@@ -97,16 +115,56 @@ export function gateBundle(storeDir) {
     ),
   ];
   const stubs = allModules.filter((id) => SERVER_FN_STUB.test(id)).length;
-  if (leaked.length || stubs === 0) {
+  const adminServerStubs = allModules.filter((id) =>
+    ADMIN_SERVER_STUB.test(id),
+  ).length;
+  /**
+   * 🔴 ВІДХИЛЕННЯ ВІД БРИФА Task 8 (знахідка живого прогону `pilot:pack`,
+   * не компілятора): брифовий код асертував присутність
+   * `ADMIN_SERVER_STUB` у `allModules` — тобто вимагав, щоб стаб РЕАЛЬНО
+   * приїхав у клієнтський чанк скретч-стора. Емпірично: жоден роут стора
+   * СЬОГОДНІ не імпортує `simplycms/admin-server` — `/admin/order-statuses`
+   * і далі на старому Supabase-шарі (`src/admin/pages/OrderStatuses.tsx`),
+   * Task 9/10 щойно переводять сторінку на ці serverFn. Vite не тягне в
+   * бандл модуль, якого ніхто не імпортує, тож `allModules` СТРУКТУРНО не
+   * може містити admin-server до Task 9/10 — і це узгоджується з власним
+   * DoD Частини 2 в плані: «серверний шар доводиться test:schema і
+   * юнітами БЕЗ жодного клієнтського коду». Буквальна вимога брифа й DoD
+   * Частини 2 тут суперечать одна одній.
+   *
+   * Мінімальний чесний замінник, який доводить САМЕ те, за що відповідає
+   * Task 8 (коректний спліт entry index/impl у ЗІБРАНОМУ dist), не
+   * чіпаючи жодного клієнтського файлу: перевірка існування ОБОХ файлів
+   * у dist упакованого й встановленого в скретч-сторі пакета. Це не
+   * послаблює головний захист — leak-перевірка `impl` у SERVER_PAYLOAD
+   * лишається БЕЗУМОВНОЮ (вище, незалежно від того, юзається дана
+   * заглушка чи ні). `adminServerStubs` лишається інформаційним: 0
+   * ОЧІКУВАНО на цій межі, стане ненульовим після Task 9/10 — тоді
+   * презенс у bundle-stats можна повернути як твердий гейт (гейт не
+   * вхолосту), як і задумував бриф.
+   */
+  const adminServerDist = join(
+    storeDir,
+    'node_modules/simplycms/dist/admin-server',
+  );
+  const adminServerSplitOk =
+    existsSync(join(adminServerDist, 'index.js')) &&
+    existsSync(join(adminServerDist, 'impl.js'));
+  if (leaked.length || stubs === 0 || !adminServerSplitOk) {
     ok = false;
     details.push(
       leaked.length
         ? `FAIL серверний вантаж у клієнті: ${leaked.join(', ')}`
-        : 'FAIL заглушок server-fn у бандлі немає — перевіряти нема чого',
+        : stubs === 0
+          ? 'FAIL заглушок server-fn у бандлі немає — перевіряти нема чого'
+          : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl.js (нутрощі)',
     );
   } else {
     details.push(
-      `OK   server-fn заглушок ${stubs}, серверного вантажу (server-client, loaders) — 0`,
+      `OK   server-fn заглушок ${stubs}, серверного вантажу (server-client, loaders, admin-server/impl) — 0`,
+    );
+    details.push(
+      `${adminServerStubs > 0 ? 'OK  ' : 'INFO'} admin-server: dist index/impl розділені; у клієнтському бандлі стаб-модулів ${adminServerStubs} (0 очікувано до Task 9/10 — сторінка ще не переведена на ці serverFn)`,
     );
   }
 
