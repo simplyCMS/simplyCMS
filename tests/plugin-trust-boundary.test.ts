@@ -97,6 +97,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
         "const b = await import('simplycms/auth');\n" +
         "const c = await import('simplycms/schema');\n" +
         "const d = await import('simplycms/plugin-sdk/server');\n" +
+        "const g = await import('simplycms/admin-server/impl');\n" +
+        "const h = await import('simplycms/admin-server');\n" +
         "const e = await import('drizzle-orm');\n" +
         "const f = await import('pg');\n",
       {
@@ -108,7 +110,7 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
       (result?.messages ?? []).filter(
         (m) => m.ruleId === 'no-restricted-syntax',
       ),
-    ).toHaveLength(6);
+    ).toHaveLength(8);
   });
 
   it('НЕ чіпає ядро: той самий імпорт поза зоною чистий', async () => {

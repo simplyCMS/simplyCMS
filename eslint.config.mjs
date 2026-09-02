@@ -166,7 +166,7 @@ const pluginTrustBoundaryImports = [
 const pluginTrustBoundarySyntax = [
   {
     selector:
-      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
+      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver|admin-server)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
