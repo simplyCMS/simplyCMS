@@ -635,3 +635,26 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 - **мажор Postgres.** Асерт стоїть на списку перевірених `[16, 17]`: локальний
   харнес цього репо — 16, CI — 17. `pg_get_expr` між мажорами не гарантований,
   тож інший мажор падає окремим зрозумілим повідомленням, а не дифом політик.
+
+## 11. Гейти серверного шару адмінки (трек V2-К3, Е1б, 2026-09-02)
+
+Спека К3-8 обіцяла сім машинних гейтів; Е1б матеріалізував такі (кожен —
+з негативним контролем, прогнаним при прийомі етапу):
+
+| Гейт | Що ловить | Крок ланцюга | Межа |
+|---|---|---|---|
+| `eslint-rules/server-fn-top-level.mjs` + `tests/eslint-rules/server-fn-top-level.test.ts` | `createServerFn` не топ-рівневим `const` (компілятор Start або падає, або МОВЧКИ не трансформує — fast-path) | `pnpm lint` / `pnpm test` | лише форма оголошення |
+| `eslint-rules/mutation-cache-sync.mjs` + `tests/eslint-rules/mutation-cache-sync.test.ts` | мутація (`useMutation` або виклик serverFn з `simplycms/admin-server`) без синку кешу в ТІЙ САМІЙ функції | `pnpm lint` (зона `admin-data/**` + ратчет переписаних сторінок) | ратчет ручний — повноту списку сторінок ніщо не перевіряє (борг Е3) |
+| `tests/handler-canon.test.ts` | `return { refetch: false }` без БЕЗУМОВНОГО write-back у persistence-хендлері; порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота по рядках батчу (борг Е3 — поведінковий кейс у тесті колекції) |
+| `tests/tanstack-db-single-instance.test.ts` | два фізичні інстанси `@tanstack/db` у дереві (peer-контекст) — за `path` з `pnpm ls --json`, не за семвером | `pnpm test` | не сканує `.pnpm` напряму (сироти) |
+| тір-зони `admin-server` (T2) / `admin-data` (T4) — `tests/tier-boundary.test.ts` | імпорт угору по шарах, обидві форми специфікатора | `pnpm lint` / `pnpm test` | — |
+| `test-harness/pg/__tests__/aggregate-deps.test.ts` | неповні `deps` агрегатів — за ФАКТИЧНИМ SQL (spy на `pg.Client.prototype.query`), сценарії по гілках лоадерів | `pnpm test:schema` | реєстр сценаріїв ручний; `seen.size > 0` у кожному кейсі |
+| `test-harness/pg/__tests__/single-default.test.ts` | часткові unique-індекси `is_default` на 7 таблицях (23505), GLOBAL незалежно від сіду | `pnpm test:schema` | «не більше одного»; «принаймні один» — контракт операцій |
+| Gate C (`scripts/pilot-pack/gate-c.mjs`) | `admin-server/impl` у клієнтському бандлі; присутність стаба `admin-server/index` | `pnpm pilot:pack` | — |
+
+🔴 Урок Е1б для рев'ю: рев'ю ПО ДИФУ сліпе до парність-тестів за
+побудовою (файла, якого бракує після `template:sync`, у дифі немає) —
+після кожного етапу повний `pnpm test`, не лише лінзи по дифу. Паралельні
+прогони харнеса проти одного контейнера конфліктують на `CREATE DATABASE`
+(`fileParallelism: false` у `vitest.schema.config.ts` — навмисно).
+

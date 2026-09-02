@@ -2917,7 +2917,7 @@ export default {
 `packages/simplycms/src/admin/pages/OrderStatuses.tsx` (список росте з
 хвилями Е3–Е6, патерн `PENDING_FILES` навпаки).
 
-**Машинний тест правила** — гейт, а не ручний контроль. ✅ Усі 9 кейсів
+**Машинний тест правила** — гейт, а не ручний контроль. ✅ Усі 11 кейсів
 емпірично зелені на ESLint 10.8 + typescript-eslint 8 (прогін
 2026-09-01, правило витягнуте з цього плану); покривають знахідки р3/р4:
 змішана сторінка, useMutation поруч із синком, serverFn у mutationFn +
@@ -3100,10 +3100,20 @@ describe('реєстр server-first винятків (К3-2)', () => {
     expect(collections).not.toContain(toSnake(name));
   });
 
-  it('реєстр непорожній і жоден ключ не збігається з іменем ENTITY', () => {
-    const keys = Object.keys(ADMIN_SERVER_FIRST);
-    expect(keys.length).toBeGreaterThan(0);
-    for (const name of keys) expect(Object.values(ENTITY)).not.toContain(toSnake(name));
+  it('реєстр непорожній', () => {
+    expect(Object.keys(ADMIN_SERVER_FIRST).length).toBeGreaterThan(0);
+  });
+
+  /**
+   * 🔴 НЕ узагальнювати на весь реєстр (R13 пропонував — і це було ХИБНО):
+   * `systemSettings` ОДНОЧАСНО реальна таблиця схеми (ENTITY.systemSettings,
+   * під гейтом entity-parity) і законний запис реєстру («одиничний рядок —
+   * колекція безглузда»). Реєстр описує, ЯК сутність обслуговується, а не
+   * чи вона таблиця. Перевірний інваріант є лише для priceValidator —
+   * за власним описом це чисте обчислення, не сутність.
+   */
+  it('priceValidator — чисте обчислення, не таблиця схеми', () => {
+    expect(Object.values(ENTITY)).not.toContain(toSnake('priceValidator'));
   });
 });
 ```

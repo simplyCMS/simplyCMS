@@ -319,6 +319,9 @@ simplyCMS/
 │   │   ├── src/auth/             # T2 🔴 V2: серверний Better Auth (інстанс, databaseHooks,
 │   │   │                         #    invite власника, authz-матриця). ПІДКЛЮЧЕНИЙ у 0.4.1:
 │   │   │                         #    вхід, сесія і guard адмінки живуть із нього
+│   │   ├── src/admin-server/     # T2 🔴 К3 (Е1б): серверний шар адмінки — defineAdminResource
+│   │   │                         #    (операції+схеми) + іменовані операції; index.ts — ЛИШЕ
+│   │   │                         #    топ-рівневі createServerFn, нутрощі — bare-субшлях ./impl
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
 │   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів).
 │   │   │                         #    🔴 ЖИВИЙ ЛИШЕ під адмінкою — зноситься треком К3;
@@ -336,6 +339,8 @@ simplyCMS/
 │   │   ├── src/plugin-sdk/       # T4 definePlugin + порти плагінів (usePluginTable,
 │   │   │                         #    usePluginConfig, usePluginT) — ЄДИНА поверхня,
 │   │   │                         #    дозволена плагіну (межа довіри §7)
+│   │   ├── src/admin-data/       # T4 🔴 К3 (Е1б): колекції TanStack DB адмінки — реєстр по
+│   │   │                         #    QueryClient, колекції без schema, ключі з contracts/entities
 │   │   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
 │   │   ├── src/core/             # T5 Власні провайдери/хуки/компоненти (CMSProvider,
 │   │   │                         #    useAuth, useCart, useBanners…). Фасадна роль
