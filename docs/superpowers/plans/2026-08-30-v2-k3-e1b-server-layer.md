@@ -89,7 +89,7 @@ Task 11 (гейти кеш-синхронізації + Gate C + реєстр в
 | `eslint-rules/mutation-cache-sync.mjs` | Мутація в UI парує синк кешу |
 | `tests/handler-canon.test.ts` | AST-гейт write-back у persistence-хендлерах |
 | `tests/eslint-rules/server-fn-top-level.test.ts` | Машинні фікстури правила К3-4′ (Linter API, 8 кейсів) |
-| `tests/eslint-rules/mutation-cache-sync.test.ts` | Машинні фікстури function-scope правила (Linter API, 10 кейсів) |
+| `tests/eslint-rules/mutation-cache-sync.test.ts` | Машинні фікстури function-scope правила (Linter API, 11 it-блоків) |
 | `tests/tanstack-db-single-instance.test.ts` | Рівно один `@tanstack/db` у дереві |
 
 **Змінюються:**
@@ -542,7 +542,7 @@ Run: той самий. Expected: PASS усі.
 - [ ] **Step 5: Гейти й коміт**
 
 ```bash
-pnpm lint && pnpm test    # entity-parity.test.ts стереже entities.ts — мусить бути зелений
+pnpm lint && pnpm test && pnpm test:schema    # entity-parity стереже entities.ts; test:schema — новий файл харнеса
 git add packages/simplycms/test-harness packages/simplycms/src/contracts
 git commit -m "test(v2-k3): рантайм-гейт повноти deps + фікс pickup_points у двох агрегатах
 
@@ -563,6 +563,8 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Modify: `packages/simplycms/package.json`
 - Modify: `package.json` (корінь: devDeps для збірки монорепо)
 - Modify: `packages/create-simplycms-store/template/package.json.tpl`
+- Modify: `tests/pilot/store-template/package.json` (🔴 парність deps із шаблоном — `create-store-template-parity.test.ts:137`; без цього `pnpm test` червоніє)
+- Modify: `pnpm-lock.yaml`
 - Create: `tests/tanstack-db-single-instance.test.ts`
 
 **Interfaces:**
@@ -665,7 +667,7 @@ Expected: PASS. Негативний контроль: тимчасово пос
 
 ```bash
 pnpm install --frozen-lockfile && pnpm lint && pnpm test
-git add package.json packages/simplycms/package.json packages/create-simplycms-store/template pnpm-lock.yaml tests/tanstack-db-single-instance.test.ts
+git add package.json packages/simplycms/package.json packages/create-simplycms-store/template tests/pilot/store-template/package.json pnpm-lock.yaml tests/tanstack-db-single-instance.test.ts
 git commit -m "chore(v2-k3): TanStack DB — 2 peer-и вузько + гейт одного інстанса; drizzle-zod у deps ядра
 
 К3-10′: @tanstack/db не peer-иться — його точним піном несуть обидва
@@ -727,7 +729,7 @@ export type { RouterContext };
 
 ```bash
 pnpm template:sync
-pnpm build && pnpm typecheck && pnpm test
+pnpm lint && pnpm build && pnpm typecheck && pnpm test
 git add packages/simplycms/src/runtime src packages/cli/host packages/create-simplycms-store/template
 git commit -m "feat(v2-k3): RouterContext переїжджає в пакет (через наявний runtime-барель)
 
@@ -1022,7 +1024,7 @@ export async function requireGrant(operation: Operation): Promise<RequestGrant> 
 
 - [ ] **Step 3: Зелений прогін + лінт + коміт**
 
-Run: `pnpm vitest run packages/simplycms/src/auth/__tests__/authz-request.test.ts` → PASS 5/5; `pnpm lint && pnpm typecheck` → PASS.
+Run: `pnpm vitest run packages/simplycms/src/auth/__tests__/authz-request.test.ts` → PASS 5/5; `pnpm lint && pnpm typecheck && pnpm test` → PASS.
 
 ```bash
 git add packages/simplycms/src/auth
@@ -1455,10 +1457,25 @@ export function defineAdminResource<
   };
 
   const rowSchema = createSelectSchema(config.table);
-  const insertRowSchema = createInsertSchema(config.table)
-    .pick(pickWritable)
-    .extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = createUpdateSchema(config.table).pick(pickWritable);
+
+  // 🔴 SafePick (хвіст рев'ю Task 7, коміт 8938303c): `.pick(mask)` drizzle-zod
+  // типізований `M extends Mask<keyof Shape>` над ГЕНЕРИЧНИМ Shape — TS не
+  // може довести `{[K in W]: true}` як аргумент (TS2345), а `pick(x as never)`
+  // компілюється, але СТАТИЧНО повертає Shape незміненим (M падає до
+  // констрейнта) — тобто insert/update-схеми статично приймали б readonly-
+  // колонки. Фікс: каст на РЕЗУЛЬТАТ `.pick()` у справжній структурний
+  // `Pick<Shape, W & keyof Shape>` (перетин — бо insert-shape виключає
+  // generated-колонки, і `W extends keyof Shape` генерично не доводиться).
+  // Рантайм `.pick(pickWritable)` лишає рівно ключі W — тип і рантайм у згоді.
+  const insertSchemaFull = createInsertSchema(config.table);
+  const updateSchemaFull = createUpdateSchema(config.table);
+  type InsertShape = typeof insertSchemaFull extends { shape: infer S } ? S : never;
+  type UpdateShape = typeof updateSchemaFull extends { shape: infer S } ? S : never;
+  type SafePick<S, K> = Pick<S, K & keyof S>;
+  const insertRowSchema = (
+    insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<SafePick<InsertShape, W>>
+  ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
+  const patchSchema = updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<SafePick<UpdateShape, W>>;
 
   const insertSchema = z.array(insertRowSchema).min(1).max(100);
   const updateSchema = z.array(z.object({ id: z.uuid(), patch: patchSchema })).min(1).max(100);
@@ -1548,7 +1565,7 @@ export type AdminResourceOps<T extends Table> = ReturnType<typeof defineAdminRes
 🔴 `z.uuid()` — форма Zod 4 (не `z.string().uuid()`); якщо typecheck
 свариться — звірити з фактичним експортом встановленого zod і вжити чинну.
 
-Run: тест → PASS 5/5; `pnpm typecheck` → PASS (включно з `@ts-expect-error`-кейсами).
+Run: тест → PASS 5/5; `pnpm lint && pnpm typecheck && pnpm test` → PASS (включно з `@ts-expect-error`-кейсами).
 
 - [ ] **Step 3: Коміт**
 
@@ -1929,7 +1946,7 @@ tsup РОЗДІЛИВ entry — існування `dist/admin-server/index.js` 
 - [ ] **Step 6: Гейти й коміт**
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
+pnpm install --frozen-lockfile && pnpm lint && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
 git add packages/simplycms scripts/pilot-pack/gate-c.mjs
 git commit -m "feat(v2-k3): order_statuses — ops + 3 іменовані операції + явні serverFn
 
@@ -2232,7 +2249,7 @@ publishConfig-дзеркало. `tsup.config.ts`: `'src/admin-data/index.ts'` у
 масив entry профілю `tiers` (клієнтський React-тір, спільні чанки легальні).
 
 ```bash
-pnpm lint && pnpm test && pnpm build:packages && pnpm test:packaging
+pnpm install --frozen-lockfile && pnpm lint && pnpm test && pnpm build:packages && pnpm test:packaging
 ```
 Expected: PASS, 0 errors.
 
@@ -2258,6 +2275,8 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `packages/simplycms/src/admin/pages/OrderStatuses.tsx` (повне переписування, 537 рядків)
 - Modify: `packages/simplycms/routes/admin/admin/order-statuses/index.tsx`
+- Modify: `packages/simplycms/routes/admin/admin.tsx` (guard secure context, Step 2)
+- Modify: `scripts/pilot-pack/gate-c.mjs` (assert присутності стаба, Step 4б)
 
 **Interfaces:**
 - Consumes: `useCollection`/`getCollection`, `orderStatusesCollection` (`simplycms/admin-data`); `setDefaultOrderStatus`, `reorderOrderStatus` (`simplycms/admin-server`); `RouterContext` (`simplycms/runtime`); i18n-ключі `admin.orders.statuses.*` і `common.*` (усі вже в каталозі).
@@ -2661,6 +2680,7 @@ export default {
   meta: { type: 'problem', schema: [], messages: {
     noSync: 'Мутація без сліду в кеші у ЦІЙ функції: додай collection-синк або поясни // cache-sync-ok (див. eslint-rules/mutation-cache-sync.mjs).',
     invalidateOnly: 'invalidateQueries не будить TanStack DB-колекцію — потрібен collection.utils.* синк у цій функції.',
+    unresolvedConfig: 'useMutation з конфігом, який правило не може резолвити (не інлайн-обʼєкт і не const у цій області) — винеси в const або поясни // cache-sync-ok.',
   }},
   create(context) {
     const sourceCode = context.sourceCode;
@@ -2675,21 +2695,61 @@ export default {
     // 🔴 Persistence-виняток — по ВСІХ предках (рев'ю р4): serverFn у
     // вкладеному callback усередині onInsert має найближчою функцією той
     // callback, а не хендлер.
+    const COLLECTION_OPTION_FACTORIES = new Set(['queryCollectionOptions', 'createCollection']);
     const insidePersistenceHandler = (node) => {
-      for (let p = node.parent; p; p = p.parent)
-        if (p.type === 'Property' && HANDLERS.has(p.key?.name)) return true;
+      for (let p = node.parent; p; p = p.parent) {
+        if (p.type === 'Property' && HANDLERS.has(p.key?.name)) {
+          // Виняток — ЛИШЕ для onInsert/onUpdate/onDelete в config-обʼєкті
+          // фабрики колекції (р5: довільний `{ onInsert: … }` вимикав правило).
+          const obj = p.parent, call = obj?.parent;
+          return obj?.type === 'ObjectExpression' && call?.type === 'CallExpression' &&
+            COLLECTION_OPTION_FACTORIES.has(call.callee?.name);
+        }
+      }
       return false;
     };
     // 🔴 Opt-out шукається перед STATEMENT-ом, не перед call (рев'ю р4):
     // між `// cache-sync-ok:` і `reorderOrderStatus(...)` стоїть токен
     // `await`, і getCommentsBefore(call) порожній. Причина обовʼязкова.
     const hasExempt = (node) => {
+      // Піднімаємось, доки САМ вузол не стане Statement/Declaration (р5:
+      // перевірка parent-а віддавала getCommentsBefore дитину — `return
+      // serverFn()` і `const x = await serverFn()` opt-out не бачили).
+      // …і доки цей statement не стоїть безпосередньо в Block/Program: для
+      // `if (x) await serverFn()` без дужок директива стоїть над `if`, а не
+      // над вкладеним ExpressionStatement.
+      const isStmt = (n) => /Statement$|Declaration$/.test(n.type);
+      const atBlockLevel = (n) => n.parent?.type === 'BlockStatement' || n.parent?.type === 'Program';
       let s = node;
-      while (s.parent && !/Statement$|Declaration$/.test(s.parent.type)) s = s.parent;
-      return sourceCode.getCommentsBefore(s).some((c) => /cache-sync-ok:\s*\S/.test(c.value));
+      while (s.parent && !(isStmt(s) && atBlockLevel(s))) s = s.parent;
+      const comments = sourceCode.getCommentsBefore(s);
+      const last = comments[comments.length - 1];
+      // Директива — заякорена, з причиною, і РІВНО рядком вище (порожній
+      // рядок чи чужий префікс «no-cache-sync-ok» — не opt-out).
+      return !!last && /^\s*cache-sync-ok:\s*\S/.test(last.value) &&
+        last.loc.end.line === s.loc.start.line - 1;
     };
 
     const COLLECTION_FACTORIES = new Set(['useCollection', 'getCollection']);
+    const unwrap = (n) => {
+      while (n && (n.type === 'TSAsExpression' || n.type === 'TSSatisfiesExpression' || n.type === 'TSNonNullExpression')) n = n.expression;
+      return n;
+    };
+    /** Config useMutation: інлайн-обʼєкт або `const opts = {…}` через scope (р5). */
+    const resolveConfig = (arg, at) => {
+      let n = unwrap(arg);
+      if (n?.type === 'Identifier') {
+        for (let s = sourceCode.getScope(at); s; s = s.upper) {
+          const v = s.set.get(n.name);
+          if (v) { n = unwrap(v.defs[0]?.node?.init); break; }
+        }
+      }
+      return n?.type === 'ObjectExpression' ? n : null;
+    };
+    /** Обʼєкт «схожий на mutation-config»: має mutationFn (для guard-а serverFn). */
+    const isMutationConfig = (obj) =>
+      obj?.type === 'ObjectExpression' &&
+      obj.properties.some((p) => p.type === 'Property' && p.key?.name === 'mutationFn');
     const isCollectionVar = (ident, at) => {
       for (let s = sourceCode.getScope(at); s; s = s.upper) {
         const v = s.set.get(ident.name);
@@ -2752,8 +2812,10 @@ export default {
             if (s.type === 'ImportSpecifier' && !/^list/.test(s.imported.name)) serverFns.add(s.local.name);
       },
       'CallExpression[callee.name="useMutation"]'(node) {
-        const cfg = node.arguments[0];
-        check(node, cfg?.type === 'ObjectExpression' ? cfg : null);
+        if (hasExempt(node)) return;
+        const cfg = resolveConfig(node.arguments[0], node);
+        if (!cfg) { context.report({ node, messageId: 'unresolvedConfig' }); return; }
+        check(node, cfg);
       },
       'CallExpression[callee.type="Identifier"]'(node) {
         if (!serverFns.has(node.callee.name)) return;
@@ -2761,9 +2823,10 @@ export default {
         // serverFn усередині callback-а useMutation-config (mutationFn/
         // onSuccess…) стереже тригер useMutation — інакше синк у сусідньому
         // onSuccess дав би хибний noSync на mutationFn (самоперевірка р4).
+        // Розпізнаємо config за ФОРМОЮ (має mutationFn), не за позицією —
+        // працює і для винесеного `const opts = { mutationFn, onSuccess }` (р5).
         const cfg = fn?.parent?.type === 'Property' ? fn.parent.parent : null;
-        if (cfg?.type === 'ObjectExpression' && cfg.parent?.type === 'CallExpression' &&
-            cfg.parent.callee?.name === 'useMutation') return;
+        if (isMutationConfig(cfg)) return;
         check(node, fn);
       },
     };
@@ -2843,16 +2906,44 @@ describe('mutation-cache-sync (function-scope)', () => {
     }`)).toEqual([]);
   });
 
-  it('opt-out над await — працює лише з причиною', () => {
-    const body = (comment: string) => `export function Page() {
+  it('opt-out — лише з причиною, рівно рядком вище, у будь-якій формі statement', () => {
+    const body = (comment: string, stmt: string) => `export function Page() {
       const handleReorder = async (id) => {
-        ${'$'}{comment}
-        await reorderOrderStatus({ data: { id } });
+        ${comment}
+        ${stmt}
       };
       return null;
     }`;
-    expect(ids(body('// cache-sync-ok: refetch робить викликач'))).toEqual([]);
-    expect(ids(body('// cache-sync-ok:'))).toEqual(['noSync']);
+    const OK = '// cache-sync-ok: refetch робить викликач';
+    for (const stmt of [
+      'await reorderOrderStatus({ data: { id } });',
+      'return reorderOrderStatus({ data: { id } });',
+      'const r = await reorderOrderStatus({ data: { id } });',
+      'if (id) await reorderOrderStatus({ data: { id } });',
+    ]) expect(ids(body(OK, stmt)), stmt).toEqual([]);
+    expect(ids(body('// cache-sync-ok:', 'await reorderOrderStatus({ data: { id } });'))).toEqual(['noSync']);
+    expect(ids(body(OK + '\n', 'await reorderOrderStatus({ data: { id } });')), 'порожній рядок між').toEqual(['noSync']);
+    expect(ids(body('// no-cache-sync-ok: x', 'await reorderOrderStatus({ data: { id } });')), 'чужий префікс').toEqual(['noSync']);
+  });
+
+  it('useMutation з винесеним const-конфігом — резолвиться; нерезолвний — явний репорт', () => {
+    expect(ids(`export function Page() {
+      const collection = useCollection(orderStatusesCollection);
+      const opts = { mutationFn: (id) => setDefaultOrderStatus({ data: { id } }), onSuccess: () => collection.utils.refetch() };
+      const m = useMutation(opts);
+      return null;
+    }`)).toEqual([]);
+    expect(ids(`export function Page() {
+      const opts = { mutationFn: async (x) => fetch('/api', { body: x }) };
+      const m = useMutation(opts);
+      return null;
+    }`)).toEqual(['noSync']);
+    expect(ids(`export function Page() { const m = useMutation(getOpts()); return null; }`)).toEqual(['unresolvedConfig']);
+  });
+
+  it('persistence-виняток лише всередині фабрики колекції', () => {
+    expect(ids(`export const callbacks = { onInsert: () => setDefaultOrderStatus({ data: { id: 'a' } }) };`))
+      .toEqual(['noSync']);
   });
 
   it('колекція Task 9 (serverFn у persistence-хендлерах) — чиста', () => {
@@ -2889,7 +2980,7 @@ describe('mutation-cache-sync (function-scope)', () => {
 });
 ```
 
-Run: `pnpm vitest run tests/eslint-rules/mutation-cache-sync.test.ts` → PASS 9/9.
+Run: `pnpm vitest run tests/eslint-rules/mutation-cache-sync.test.ts` → PASS 11/11.
 
 **Смоук у реальній зоні (після Task 10):** тимчасово прибрати
 `collection.utils.refetch()` із `handleReorder` сторінки → `pnpm lint`
@@ -2971,7 +3062,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
    5) Task 6/9 — імпорт угору по тіру валить лінт (обидві нові зони, обидві форми специфікатора);
    6) Task 9 — id-mismatch кидає ДО write-back, двійників немає;
    7) Task 11 — `handler-canon` без write-back падає з файлом:рядком;
-   8) Task 11 — `mutation-cache-sync`: машинний тест 9/9 + смоук на сторінці.
+   8) Task 11 — `mutation-cache-sync`: машинний тест 11/11 + смоук на сторінці.
 3. **Жива сторінка** `/admin/order-statuses`: усі 10 пунктів прогону
    Task 10 Step 5, включно з авто-rollback і серверною відмовою на
    видалення дефолтного.
