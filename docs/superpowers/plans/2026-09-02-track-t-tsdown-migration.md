@@ -1,4 +1,4 @@
-# Трек T — міграція збірки пакетів tsup → tsdown (ред. 3.1)
+# Трек T — міграція збірки пакетів tsup → tsdown (ред. 3.2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -65,6 +65,15 @@ vitest 4, ESLint 10.
 > **(13)** додано `sideEffects: false` (нуль side-effect-імпортів і нуль
 > top-level мутацій глобалів у `src` ядра), знос барелю `simplycms/storefront`
 > без споживачів, `pilot:pack` у гейти релізу.
+> **(14)** ред. 3.2 після аудиту r2b (`gpt-5.6-luna`, REJECT: 1 блокер,
+> 2 major, 4 minor — усі підтверджені проти коду): конфіг ядра не залежить
+> від cwd (його імпортує і кореневий vitest); декларація доповнена
+> `storefront-routes/seo`; серверні хелпери `is-admin`/`theme-record`/
+> `revalidate-theme` переїжджають зі `storefront-routes/server` у
+> `storefront/loaders` (туди ж 2026-08-24 переїхав `withSessionDb` з тієї самої
+> причини), нутрощі адмінки — під `admin-server/impl/`; інвентаризація tsup
+> доповнена (72 збіги у 32 файлах); правило ловить `import(\`./impl\`)`; склад
+> гейтів релізу — під тестом; шаблон трейлерів комітів.
 > Рішення власника 2026-09-02: сім вкладених `.tsx` стають entry; барель
 > `storefront` зноситься; `schema` цілком server-only; `pilot:pack` у
 > `gates.mjs`; Import Protection у режимі `error` для dev і build.
@@ -111,8 +120,12 @@ vitest 4, ESLint 10.
   гейтах РЕЛІЗУ ще `pilot:pack`.
 - **Мінімальний гейт кожної задачі:** `pnpm lint && pnpm test` перед комітом
   (урок Е1б: рев'ю по дифу сліпе до парність-тестів).
-- **Кожен коміт** закінчується трейлерами атрибуції поточної сесії-виконавця
-  (`Co-Authored-By: …` і `Claude-Session: …`), як вимагає системне нагадування.
+- **Кожен коміт** закінчується двома трейлерами атрибуції сесії-виконавця,
+  дослівно (URL — тієї сесії, що виконує):
+  `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` і
+  `Claude-Session: https://claude.ai/code/session_<id сесії-виконавця>`.
+  Команди `git commit` нижче показують лише тіло повідомлення; перевірка після
+  коміту — `git show -s --format=%B HEAD | tail -2`.
 - **`$SCRATCH`** у командах — scratchpad поточної сесії-виконавця
   (`export SCRATCH=<шлях>`); у репо тимчасові файли не кладуться.
 - Робота йде в гілці `claude/track-t-tsdown` від `main`. Прямі коміти в `main`
@@ -131,6 +144,7 @@ vitest 4, ESLint 10.
 | `tests/eslint-rules/server-only-relative.test.ts` | Фікстури правила (5 «ловить», 5 «пропускає») |
 | `tests/lib/dist-graph.ts` | Спільний обхід `dist`: `distFiles`, `relativeImports`, `closure` |
 | `tests/dist-server-boundary.test.ts` | Гейт партиції `dist` ядра + `.d.ts` сателітів (packaging-suite) |
+| `tests/release-gates.test.ts` | Точний склад і порядок `GATES` релізу, включно з `pilot:pack` |
 | `packages/simplycms/tsdown.config.ts` | Дві збірки ядра; entry з exports; група за декларацією |
 | `packages/simplycms-theme-solarstore/tsdown.config.ts` | Тема: 1 entry, декларації бандлером |
 | `packages/simplycms-plugin-faq/tsdown.config.ts` | Плагін: 2 конфіги по одному entry (d.ts без спільних чанків) |
@@ -140,7 +154,8 @@ vitest 4, ESLint 10.
 | Файл | Що саме |
 |---|---|
 | `packages/simplycms/package.json` | exports: `+ ./contracts/server-only`, `- ./storefront` (обидві мапи); скрипт `build`; `sideEffects: false` |
-| `packages/simplycms/tsup.config.ts` | Task 1: `src/contracts/server-only.ts` у профіль `contracts`; Task 4: файл видаляється |
+| `packages/simplycms/tsup.config.ts` | Task 1: `src/contracts/server-only.ts` у профіль `contracts`, `impl/index.ts` у профіль `admin-server`; Task 4: файл видаляється |
+| `packages/simplycms/src/admin-server/**` → `admin-server/impl/**`; `storefront-routes/server/{is-admin,theme-record,revalidate-theme}.ts` → `storefront/loaders/` | Переїзд під префікси декларації (Task 1 Кроки 1а, 1б) разом із тестами й імпортерами |
 | `packages/simplycms/src/contracts/README.md` | Рядок таблиці про `server-only` |
 | `eslint.config.mjs:1-10, 120-176, ~330` | Групи межі плагінів — похідні від декларації; реєстрація правила |
 | `scripts/pilot-pack/gate-c.mjs:29-47, 186` | `SERVER_PAYLOAD` — похідний від декларації |
@@ -175,10 +190,12 @@ vitest 4, ESLint 10.
 | `scripts/pilot-pack/gate-c.mjs` | `SERVER_PAYLOAD` з `SERVER_ONLY` | серверний вантаж у клієнтських чанках скретч-магазину | Task 1, Task 4 |
 | Import Protection Start (хост, шаблон, пілот) | `specifiers` + `files`, `include: ['**']`, `behavior: 'error'` | те саме, але в КОЖНОМУ магазині, dev і build, з трасою імпорту | Task 1 |
 
-Склад `SERVER_ONLY`: `db`, `auth`, `schema`, `storefront`, `admin-server/impl`.
+Склад `SERVER_ONLY`: `db`, `auth`, `schema`, `storefront`,
+`storefront-routes/seo`, `admin-server/impl`.
 🔴 НЕ входять serverFn-модулі `plugin-sdk/server`, `themes/server`,
-`plugins/server`, `admin-server` (стаб), `storefront-routes/server/*`,
-`core/lib/*`: їх імпортує клієнт, а компілятор Start замінює хендлери
+`plugins/server`, `admin-server` (стаб), `storefront-routes/server/*` (після
+Task 1 Крок 1б там лишаються ЛИШЕ serverFn-модулі та ізоморфні схеми/мапери
+`checkout-input`, `product-list-item`), `core/lib/*`: їх імпортує клієнт, а компілятор Start замінює хендлери
 RPC-стабами і прибирає осиротілі серверні імпорти. Перевірено 2026-09-02:
 включення трьох перших дало 5 хибних спрацювань Import Protection на чистому
 хості (`usePluginTable` → `plugin-sdk/server`, `bootstrap` → `plugins/server`,
@@ -190,8 +207,8 @@ RPC-стабами і прибирає осиротілі серверні ім�
 
 | Група | Entry (з dev-`exports`) | Спільні чанки | platform |
 |---|---|---|---|
-| клієнтська | усе, що не server-only: `index`, `contracts/*`, `domain/*`, `supabase/*`, `react-query/*`, `runtime`, `i18n`, `ui/*`, `themes/*` (включно з `themes/server`), `plugins/*` (включно з `plugins/server`), `plugin-sdk/*` (включно з `plugin-sdk/server`), `*-ui/*`, `admin/*`, `admin-data`, `admin-server` (стаб), `core/*`, `storefront-routes/*` | між собою — так | `node` |
-| серверна | `db`, `auth`, `schema`, `schema/relations`, `schema/types`, `storefront/loaders`, `storefront/seo`, `admin-server/impl` | між собою — так | `node` |
+| клієнтська | усе, що не server-only: `index`, `contracts/*`, `domain/*`, `supabase/*`, `react-query/*`, `runtime`, `i18n`, `ui/*`, `themes/*` (включно з `themes/server`), `plugins/*` (включно з `plugins/server`), `plugin-sdk/*` (включно з `plugin-sdk/server`), `*-ui/*`, `admin/*`, `admin-data`, `admin-server` (стаб), `core/*`, `storefront-routes/*` крім `seo` (serverFn-модулі `server/*` та ізоморфні схеми/мапери) | між собою — так | `node` |
+| серверна | `db`, `auth`, `schema`, `schema/relations`, `schema/types`, `storefront/loaders`, `storefront/seo`, `storefront-routes/seo/{interceptor,robots,sitemap}`, `admin-server/impl/index` | між собою — так | `node` |
 
 Виміряно на прототипі (18 конфігів ред. 2, ті самі entry): 0,4 с wall,
 634 МБ max RSS проти 2,1 с / 448 МБ у tsup; ≈20 спільних чанків замість 267;
@@ -207,7 +224,10 @@ RPC-стабами і прибирає осиротілі серверні ім�
 - Create: `eslint-rules/server-only-relative.mjs`
 - Create: `tests/eslint-rules/server-only-relative.test.ts`
 - Modify: `packages/simplycms/package.json` (обидві exports-мапи)
-- Modify: `packages/simplycms/tsup.config.ts` (профіль `contracts`)
+- Modify: `packages/simplycms/tsup.config.ts` (профілі `contracts`, `admin-server`)
+- Move: `packages/simplycms/src/admin-server/{impl.ts,resource.ts,subset.ts,operations/,resources/,__tests__/}` → `packages/simplycms/src/admin-server/impl/` (Крок 1а)
+- Move: `packages/simplycms/src/storefront-routes/server/{is-admin,theme-record,revalidate-theme}.ts` → `packages/simplycms/src/storefront/loaders/` (Крок 1б)
+- Modify: `packages/simplycms/src/storefront/loaders/index.ts`, `packages/simplycms/src/storefront-routes/server/{auth,themes}.ts`, `packages/simplycms/routes/storefront/api/revalidate-theme.tsx`, `packages/simplycms/src/storefront-routes/__tests__/{revalidate-theme,revalidate-theme-route}.test.ts`, `packages/simplycms/src/core/lib/price-type.ts:28`, `packages/simplycms/src/themes/server/registry-db.ts:16`
 - Modify: `packages/simplycms/src/contracts/README.md`
 - Modify: `eslint.config.mjs:1-10, 120-176, ~330-336`
 - Modify: `scripts/pilot-pack/gate-c.mjs:1-12, 29-47, 186`
@@ -218,7 +238,7 @@ RPC-стабами і прибирає осиротілі серверні ім�
 
 **Interfaces:**
 - Produces (споживають Task 2, 4, 5):
-  - `SERVER_ONLY: readonly ['db','auth','schema','storefront','admin-server/impl']`
+  - `SERVER_ONLY: readonly ['db','auth','schema','storefront','storefront-routes/seo','admin-server/impl']`
   - `SERVER_ONLY_DEPS: readonly ['pg','drizzle-orm','drizzle-zod']`
   - `serverOnlyOwner(subpath: string): string | null` — префікс декларації або null
   - `isServerOnlySubpath(subpath: string): boolean`
@@ -264,6 +284,11 @@ export const SERVER_ONLY = [
   'auth',
   'schema',
   'storefront',
+  // Побудова sitemap/robots і перехоплювач SEO-запитів: їх кличе лише
+  // серверний entry магазину (`src/server.ts`), `sitemap` тягне лоадери.
+  'storefront-routes/seo',
+  // Після Task 1 Крок 1а — ЦІЛЕ піддерево нутрощів адмінки (index + resource +
+  // operations + resources + subset); стаб `admin-server/index` — клієнт.
   'admin-server/impl',
 ] as const;
 
@@ -306,6 +331,98 @@ export const serverOnlyFiles = (): RegExp[] => [
 `.mjs`-скрипти через розширення `.ts`): лише erasable-синтаксис — анотації
 типів, `as const`, `import type`. Жодних `enum`, `namespace`, параметрів
 конструктора з модифікаторами.
+
+- [ ] **Крок 1а: Нутрощі адмінки — під префікс `admin-server/impl/`**
+
+Декларація працює префіксами, а сьогодні server-only нутрощі адмінки
+(`resource.ts`, `subset.ts`, `operations/*`, `resources/*`) лежать ПОРУЧ із
+`impl.ts`, а не під ним: правило `server-only-relative` не бачило б
+відносного `./resource` зі стаба, а Е3 однаково розкладає сутності як
+`admin-server/impl/<entity>` (амендмент К3-9′). Переїзд — одна операція:
+
+```bash
+cd packages/simplycms/src/admin-server
+mkdir impl && git mv impl.ts impl/index.ts && git mv resource.ts subset.ts operations resources __tests__ impl/
+cd ../../../..
+```
+
+Відносні імпорти всередині піддерева не змінюються (усі сусіди переїхали
+разом); стаб `index.ts` імпортує лише bare `simplycms/admin-server/impl`, який
+тепер резолвиться в `impl/index.ts`. Оновити три посилання на файл:
+1. `packages/simplycms/package.json`: у `exports` —
+   `"./admin-server/impl": "./src/admin-server/impl/index.ts"`; у
+   `publishConfig.exports` — `"types": "./dist/admin-server/impl/index.d.ts"`,
+   `"import": "./dist/admin-server/impl/index.js"`;
+2. `packages/simplycms/tsup.config.ts`, профіль `admin-server`:
+   `'src/admin-server/impl.ts'` → `'src/admin-server/impl/index.ts'`;
+3. `scripts/pilot-pack/gate-c.mjs`: `existsSync(join(adminServerDist, 'impl.js'))`
+   → `existsSync(join(adminServerDist, 'impl/index.js'))`, і в тексті помилки
+   поруч «index.js (стаб) + impl.js (нутрощі)» → «+ impl/index.js».
+
+Перевірка: `pnpm vitest run packages/simplycms/src/admin-server` — зелено
+(тести переїхали разом, їхні `../resource` лишились чинними).
+
+- [ ] **Крок 1б: Серверні хелпери зі `storefront-routes/server` — у `storefront/loaders`**
+
+У `storefront-routes/server/` поруч із serverFn-модулями лежать три ЗВИЧАЙНІ
+серверні функції: `is-admin.ts` (`checkIsAdmin`: `simplycms/auth` +
+`getRequest`), `theme-record.ts` (`loadActiveTheme`/`invalidateThemeCache`:
+drizzle + схема + лоадери) і `revalidate-theme.ts` (HTTP-хендлер
+`POST /api/revalidate-theme`). serverFn-модулі `auth.ts` і `themes.ts` тягнуть
+їх ВІДНОСНО — у клієнтській збірці вони стають спільними чанками, і межу
+тримає лише DCE компілятора Start. Це той самий клас, з якого 2026-08-24 у
+`storefront/loaders` переїхав `withSessionDb` (див. шапку
+`storefront/loaders/session.ts`); ці три — його залишок. Після переїзду
+`storefront-routes/server/*` містить лише serverFn-модулі та ізоморфні
+схеми/мапери (`checkout-input`, `product-list-item`), а серверні хелпери
+живуть під префіксом декларації і збираються серверною групою.
+
+```bash
+cd packages/simplycms/src
+git mv storefront-routes/server/is-admin.ts storefront/loaders/is-admin.ts
+git mv storefront-routes/server/theme-record.ts storefront/loaders/theme-record.ts
+git mv storefront-routes/server/revalidate-theme.ts storefront/loaders/revalidate-theme.ts
+grep -n "withStorefrontDb" storefront/loaders/db.ts | head -1
+cd ../../..
+```
+
+(grep мусить дати рядок: `withStorefrontDb` живе в `./db`.) Правки:
+1. `storefront/loaders/theme-record.ts:4`:
+   `import { withStorefrontDb, type JsonValue } from 'simplycms/storefront/loaders';` →
+   `import { withStorefrontDb } from './db';` та окремо
+   `import type { JsonValue } from 'simplycms/storefront/loaders';`
+   (type-only self-import стирається при збірці — рантайм-циклу немає);
+   `revalidate-theme.ts` та `is-admin.ts` імпортів не міняють (`./is-admin`,
+   `./theme-record` — тепер сусіди в тій самій теці);
+2. `storefront/loaders/index.ts` — у кінець барелю:
+   ```ts
+   export * from './is-admin';
+   export * from './theme-record';
+   export * from './revalidate-theme';
+   ```
+3. `storefront-routes/server/auth.ts:4`: `import { checkIsAdmin } from './is-admin';`
+   → `import { checkIsAdmin } from 'simplycms/storefront/loaders';`
+4. `storefront-routes/server/themes.ts:2`: `import { loadActiveTheme } from './theme-record';`
+   → `import { loadActiveTheme } from 'simplycms/storefront/loaders';`
+   (якщо там є ще `type ThemeRecord` — так само з барелю);
+5. `packages/simplycms/routes/storefront/api/revalidate-theme.tsx:2`:
+   `from 'simplycms/storefront-routes/server/revalidate-theme'` →
+   `from 'simplycms/storefront/loaders'`;
+6. `storefront-routes/__tests__/revalidate-theme-route.test.ts:16,19,24`:
+   `vi.mock('simplycms/storefront-routes/server/is-admin', …)` →
+   `vi.mock('../../storefront/loaders/is-admin', …)`, так само для
+   `theme-record`; `import { revalidateTheme } from '../server/revalidate-theme'`
+   → `from '../../storefront/loaders/revalidate-theme'`;
+7. `storefront-routes/__tests__/revalidate-theme.test.ts:120-121`:
+   `'../server/revalidate-theme'` → `'../../storefront/loaders/revalidate-theme'`,
+   `'../server/theme-record'` → `'../../storefront/loaders/theme-record'`;
+8. коментарі зі старим шляхом: `core/lib/price-type.ts:28` і
+   `themes/server/registry-db.ts:16` — «`storefront-routes/server/is-admin`»
+   → «`storefront/loaders/is-admin`».
+
+Перевірка: `pnpm vitest run packages/simplycms/src/storefront-routes packages/simplycms/src/storefront`
+— зелено; `git grep -n "server/is-admin\|server/theme-record\|server/revalidate-theme" -- packages src`
+— 0 збігів.
 
 - [ ] **Крок 2: Субшлях в exports і в чинній збірці tsup**
 
@@ -433,6 +550,16 @@ const subpathOf = (absolute) => {
   return rel.replace(/\.(?:[cm]?[jt]sx?)$/, '').replace(/\/index$/, '');
 };
 
+/** Рядок специфікатора: літерал або template literal без підстановок (`import(\`./impl\`)`). */
+const specifierOf = (source) => {
+  if (!source) return null;
+  if (typeof source.value === 'string') return source.value;
+  if (source.type === 'TemplateLiteral' && source.expressions.length === 0) {
+    return source.quasis[0]?.value.cooked ?? null;
+  }
+  return null;
+};
+
 export default {
   meta: {
     type: 'problem',
@@ -448,8 +575,8 @@ export default {
     if (importer === null) return {};
     const importerOwner = serverOnlyOwner(importer);
     const check = (node) => {
-      const source = node.source?.value;
-      if (typeof source !== 'string' || !source.startsWith('.')) return;
+      const source = specifierOf(node.source);
+      if (source === null || !source.startsWith('.')) return;
       const target = subpathOf(resolve(dirname(context.filename), source));
       const owner = target === null ? null : serverOnlyOwner(target);
       if (owner === null || owner === importerOwner) return;
@@ -519,6 +646,7 @@ describe('server-only-relative (трек T)', () => {
     ['стаб → нутрощі', "import { ops } from './impl';", 'admin-server/index.ts'],
     ['стаб → нутрощі в теці', "export * from './impl/orders';", 'admin-server/index.ts'],
     ['динамічний import()', "const m = import('./impl');", 'admin-server/index.ts'],
+    ['динамічний import() з template literal', "const m = import(\`./impl\`);", 'admin-server/index.ts'],
     ['між двома server-only деревами', "import { pool } from '../db/client';", 'auth/index.ts'],
     ['клієнтський тір → лоадери', "import { x } from '../storefront/loaders/db';", 'core/lib/x.ts'],
   ])('ловить: %s', (_label, code, file) => {
@@ -541,7 +669,7 @@ describe('server-only-relative (трек T)', () => {
 pnpm vitest run tests/eslint-rules/server-only-relative.test.ts
 ```
 
-Очікувано: 10 passed (правило вже написане в Кроці 5; якщо якийсь кейс
+Очікувано: 11 passed (правило вже написане в Кроці 5; якщо якийсь кейс
 червоний — лагодити правило, не фікстуру).
 
 - [ ] **Крок 7: Кейс у негативному контролі межі плагінів**
@@ -659,8 +787,10 @@ pnpm build
 ```
 
 Очікувано: зелено (client + server), без `[import-protection]` у виводі.
-Виміряно 2026-09-02: на чинному коді хоста в режимі `error` з `include: ['**']`
-порушень нуль.
+Виміряно 2026-09-02 з фінальним складом `SERVER_ONLY`: чиста збірка хоста в
+режимі `error` з `include: ['**']` — 0 порушень (`host-build-ip-final-clean.log`
+у scratchpad сесії аналізу); з роутом-витоком — `EXIT=1`, «Denied by file
+pattern», importer `src/routes/my/ip-leak.tsx` (`host-build-ip-final-leak.log`).
 
 Негативний контроль — тимчасовий роут із живим серверним імпортом:
 
@@ -940,7 +1070,7 @@ describe('межа клієнт/сервер у зібраному ядрі', ()
     // (`dist/admin-server/index`), але не нутрощі (`dist/admin-server/impl`).
     const code = read('admin-server/index.js');
     expect(code).toContain('simplycms/admin-server/impl');
-    expect(relativeImports(code).filter((s) => /\/impl(\.js)?$/.test(s))).toEqual([]);
+    expect(relativeImports(code).filter((s) => /\/impl(\/index)?(\.js)?$/.test(s))).toEqual([]);
   });
 
   // 🔴 Сателіти: інваріант стосується ДЕКЛАРАЦІЙ, а не JS. Їхні .d.ts емітить
@@ -1048,10 +1178,18 @@ pnpm why rolldown | grep -E "^rolldown@" | sort -u
 pnpm dedupe --check
 ```
 
-Очікувано: `tsdown` у `devDependencies` кореня; рівно ОДНА версія
-`rolldown@1.2.x` (Vite 8 і tsdown обидва тягнуть `~1.2.0`, pnpm перевикористовує
-вже зафіксовану); `dedupe --check` без змін. 🔴 Дві версії — зупинись і зроби
-`pnpm dedupe`: план не передбачає двох копій native-бандлера в дереві.
+Очікувано: `tsdown` у `devDependencies` кореня. Vite 8 і tsdown обидва тягнуть
+`rolldown ~1.2.0`, але свіжа резолюція може дати ДРУГУ версію (у scratch-
+встановленні 2026-09-02 tsdown отримав 1.2.6 при 1.2.2 у Vite). Тому одразу:
+
+```bash
+pnpm dedupe && pnpm install --frozen-lockfile
+pnpm why rolldown | grep -E "^rolldown@" | sort -u
+```
+
+Очікувано після dedupe: рівно ОДНА версія `rolldown@1.2.x` в обох споживачів.
+🔴 Дві версії ПІСЛЯ dedupe — зупинись: план не передбачає двох копій
+native-бандлера в дереві.
 
 - [ ] **Крок 2: Звірити поверхню опцій встановленої версії**
 
@@ -1232,6 +1370,7 @@ cd ../..
 
 ```ts
 import { globSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig, type UserConfig } from 'tsdown';
 // Self-reference: конфіг лежить у пакеті, Node резолвить `simplycms/*` через
 // власний `exports` (dev-мапа → src), tsc — через paths кореневого tsconfig.
@@ -1263,9 +1402,14 @@ import { isServerOnlySubpath } from 'simplycms/contracts/server-only';
 // залежати сам від себе. Без правила граф вбудувався б у кожен entry й
 // задублював stateful-модулі (реєстри, пул) МОВЧКИ.
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as {
-  exports: Record<string, string>;
-};
+// 🔴 Усе — від теки пакета, не від cwd: конфіг імпортує і `tsdown` (cwd =
+// пакет), і `tests/dts-toolchain.test.ts` з кореневого vitest (cwd = корінь,
+// де `package.json` без `exports`, а глоби `src/**` порожні). Без цього
+// імпорт із кореня падав би на `Object.entries(undefined)` (знахідка аудиту).
+const PACKAGE_ROOT = import.meta.dirname;
+const pkg = JSON.parse(
+  readFileSync(resolve(PACKAGE_ROOT, 'package.json'), 'utf8'),
+) as { exports: Record<string, string> };
 
 /** `./src/schema/schema.ts` → `schema/schema`: шлях у dist = шлях джерела. */
 const outOf = (source: string): string =>
@@ -1279,16 +1423,16 @@ const outOf = (source: string): string =>
 const entries = Object.entries(pkg.exports)
   .filter(([, target]) => target.startsWith('./src/'))
   .flatMap(([key, target]): Array<[string, string]> => {
-    if (!key.includes('*')) return [[outOf(target), target]];
+    if (!key.includes('*')) return [[outOf(target), resolve(PACKAGE_ROOT, target)]];
     const [dir, ext] = target.slice(2).split('*');
-    const files = globSync(`${dir}**/*${ext || '.{ts,tsx}'}`)
+    const files = globSync(`${dir}**/*${ext || '.{ts,tsx}'}`, { cwd: PACKAGE_ROOT })
       .map((file) => file.split('\\').join('/'))
       .filter((file) => !file.includes('__tests__'))
       .sort();
     // Wildcard без збігів — одрук у exports або перенесена тека: падати
     // гучно, а не мовчки лишити пакет без частини entry.
     if (files.length === 0) throw new Error(`tsdown.config: ${key} без збігів`);
-    return files.map((file) => [outOf(file), `./${file}`]);
+    return files.map((file) => [outOf(file), resolve(PACKAGE_ROOT, file)]);
   });
 
 const group = (server: boolean): Record<string, string> =>
@@ -1311,7 +1455,8 @@ const base = {
   // tsconfig: тоді декларації емітить oxc без програми TypeScript.
   // Гард — tests/dts-toolchain.test.ts.
   dts: false,
-  tsconfig: './tsconfig.json',
+  cwd: PACKAGE_ROOT,
+  tsconfig: resolve(PACKAGE_ROOT, 'tsconfig.json'),
   sourcemap: true,
   // 🔴 target esnext: за нижчого таргета бандлер лоуерить `import.meta` у
   // `var import_meta = {}`, і опублікований dist читає `{}.env.VITE_…`.
@@ -1369,10 +1514,12 @@ cd ../..
 
 Очікувано: `відсутніх: 0`, `.mjs` — 0, `ThemeRegistryClass` — 1 файл, сім
 нових entry під `pages/{home,catalog,product-detail}/` існують. Перевірено
-на dev-exports HEAD `7a999992`: алгоритм дає 325 entry = 318 чинних tsup
-+ 7 вкладених `.tsx` + `contracts/server-only` − `storefront/index`;
-серверна група — рівно 8 (`schema/{schema,relations,types}`,
-`admin-server/impl`, `db/index`, `auth/index`, `storefront/{loaders,seo}/index`). Wildcard-цілі
+на dev-exports HEAD `2a0b7b7b`: алгоритм дає 322 entry = 318 чинних tsup
++ 7 вкладених `.tsx` + `contracts/server-only` − `storefront/index` − 3 хелпери,
+що переїхали в лоадери (Task 1 Крок 1б); серверна група — рівно 11
+(`schema/{schema,relations,types}`, `admin-server/impl/index`, `db/index`,
+`auth/index`, `storefront/{loaders,seo}/index`,
+`storefront-routes/seo/{interceptor,robots,sitemap}`). Wildcard-цілі
 доводить `published-exports-parity` (Крок 6).
 
 🔴 Якщо `tsdown` падає на імпорті `simplycms/contracts/server-only` у конфізі
@@ -1464,14 +1611,15 @@ Protection зі справжнього tarball-а.
 
 ```bash
 sed -i "s#from 'simplycms/admin-server/impl'#from './impl'#" packages/simplycms/src/admin-server/index.ts
-sed -i "s#isServerOnlySubpath(out) === server#(out !== 'admin-server/impl' \&\& isServerOnlySubpath(out)) === server#" packages/simplycms/tsdown.config.ts
-grep -c "out !== 'admin-server/impl'" packages/simplycms/tsdown.config.ts
+sed -i "s#isServerOnlySubpath(out) === server#(!out.startsWith('admin-server/impl') \&\& isServerOnlySubpath(out)) === server#" packages/simplycms/tsdown.config.ts
+grep -c "startsWith('admin-server/impl')" packages/simplycms/tsdown.config.ts
 pnpm --filter simplycms run build
 pnpm vitest run --config vitest.packaging.config.ts tests/dist-server-boundary.test.ts
 ```
 
-Очікувано: `1`, потім FAIL: `admin-server/impl.js` у замиканні клієнтського
-`admin-server/index.js` (entry-to-entry імпорт `./impl.js`) і стаб із `./impl`.
+Очікувано: `1`, потім FAIL: `admin-server/impl/index.js` у замиканні
+клієнтського `admin-server/index.js` (entry-to-entry імпорт `./impl/index.js`)
+і стаб із `./impl`.
 
 ```bash
 git checkout -- packages/simplycms/tsdown.config.ts packages/simplycms/src/admin-server/index.ts
@@ -1537,14 +1685,17 @@ simplycms/storefront без споживачів знято. Негативни�
 
 ```bash
 pnpm remove -Dw tsup
-git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/tasks' | wc -l
-git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/tasks'
+git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/superpowers/research' ':!docs/superpowers/specs' ':!docs/tasks' | wc -l
+git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/superpowers/research' ':!docs/superpowers/specs' ':!docs/tasks'
 ```
 
 🔴 `-w` обовʼязковий: без нього `assertSupportedVersion` дає хибний збіг.
-Історичні згадки (CHANGELOG, минулі плани, записи роадмапу про минулі
-роботи) НЕ чіпати — вони описують стан на дату. Усе інше — нижче, поіменно;
-після правок цей grep дає 0.
+Історичні згадки НЕ чіпати — вони описують стан на дату: CHANGELOG, минулі
+плани, `docs/superpowers/research/**`, `docs/superpowers/specs/**` (спека К0
+описує рішення 2026-08-20) і записи роадмапу про минулі роботи. Усе інше —
+нижче, поіменно (перелік звірено grep-ом на HEAD `2a0b7b7b`: 72 збіги у 32
+файлах, з них 5 конфігів/скриптів, що зникають, і 3 тести, що мігрують у
+Task 4); після правок цей grep дає 0.
 
 - [ ] **Крок 2: Гейт релізу**
 
@@ -1558,6 +1709,39 @@ git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpow
   // з Gate B), тож реліз — єдине місце, де він обовʼязковий.
   { name: 'pilot:pack', cmd: 'pnpm pilot:pack' },
 ```
+
+Гейт на сам список — створити `tests/release-gates.test.ts` (сьогодні
+`template-typecheck-coverage` перевіряє лише наявність одного рядка):
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { GATES } from '../scripts/release/gates.mjs';
+
+// Точний склад і порядок гейтів релізу — контракт, не деталь: CLAUDE.md і
+// release-process.md його цитують, а pilot:pack (трек T) мусить іти ПІСЛЯ
+// test:packaging — він пакує ті самі tarball-и.
+describe('гейти релізу', () => {
+  it('склад і порядок рівно такі, як задокументовано', () => {
+    expect(GATES.map((gate) => gate.name)).toEqual([
+      'install --frozen-lockfile',
+      'format:check',
+      'lint',
+      'build',
+      'typecheck',
+      'test',
+      'build:packages',
+      'typecheck:template',
+      'test:packaging',
+      'pilot:pack',
+    ]);
+  });
+});
+```
+
+🔴 Відхилення для рішення власника (не міняти мовчки): у `gates.mjs` немає
+`test:schema`, хоча порядок гейтів у CLAUDE.md його містить. Тест фіксує
+ЧИННИЙ склад; додавання `test:schema` у реліз — окреме рішення (потребує
+Postgres на машині релізу).
 
 - [ ] **Крок 3: Коментарі в коді — механізм замість інструмента**
 
@@ -1671,7 +1855,10 @@ Server-only субшляхи ядра задекларовано ОДИН раз
 `simplycms/supabase(/*)`, `@supabase/*`, `simplycms/plugin-sdk/server(/*)`,
 `simplycms/admin-server(/*)`; список у `eslint.config.mjs` — читач, не копія».
 
-`docs/architecture/themes.md:39, 212, 294`, `packages/README.md:126-130`,
+`README.md:148`, `docs/guides/themes.md:332`,
+`docs/architecture/release-process.md:69` (крок «збірка» у процесі релізу) і
+`:309`, `docs/architecture/test-contours.md` (згадка «dts поза tsup» — де
+покаже grep), `docs/architecture/themes.md:39, 212, 294`, `packages/README.md:126-130`,
 `.github/instructions/tooling.instructions.md:32`,
 `.github/instructions/ui-architecture.instructions.md:94`: «tsup» → «tsdown»;
 у `packages/README.md` п. 5 переписати: «Збірка — tsdown. У флагмані
@@ -1695,7 +1882,7 @@ dev-`exports` (ключ → джерело), тож `dist/` дзеркалить
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build \
   && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages \
   && pnpm typecheck:template && pnpm test:packaging && pnpm pilot:pack
-git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/tasks' | wc -l
+git grep -n -w -i "tsup" -- ':!pnpm-lock.yaml' ':!CHANGELOG.md' ':!docs/superpowers/plans' ':!docs/superpowers/research' ':!docs/superpowers/specs' ':!docs/tasks' | wc -l
 ```
 
 Очікувано: усе зелено; `pnpm lint` — 0 errors, warnings не більше 12; grep — 0.
@@ -1807,7 +1994,9 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
 3. `simplycms/contracts/server-only` — єдина декларація межі; її читають
    конфіг ядра, `dist-server-boundary`, `eslint.config.mjs` +
    `server-only-relative`, Gate C і три `vite.config.ts`. Жоден із них не
-   тримає копії списку.
+   тримає копії списку. Декларація ПРАВДИВА: нутрощі адмінки — під
+   `admin-server/impl/`, серверні хелпери вітрини — у `storefront/loaders`,
+   `storefront-routes/server/*` — лише serverFn-модулі та ізоморфні модулі.
 4. Import Protection увімкнено в хості, шаблоні й пілоті (`error`, `include: ['**']`,
    `specifiers` + `files`); негативний контроль (роут із `simplycms/db`)
    валить `pnpm build` — доведено на хості.
@@ -1821,7 +2010,8 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
    `build-config-typecheck` (код 2322), `audit-exports`, `plugin-trust-boundary`,
    `server-only-relative` зелені; кеп 3 ГБ і стеля 300 с витримані; час і
    max RSS збірки виміряні й записані в `test-contours.md`.
-8. `pilot:pack` зелений і входить у `scripts/release/gates.mjs`.
+8. `pilot:pack` зелений і входить у `scripts/release/gates.mjs`; склад і порядок
+   гейтів під `tests/release-gates.test.ts`.
 9. `sideEffects: false` у трьох пакетах; клієнтський бандл хоста не більший.
 10. Живий прогін: вітрина і `/admin/order-statuses` на чистому Postgres, у
     клієнтських чанках немає `drizzle`/`pg`.
