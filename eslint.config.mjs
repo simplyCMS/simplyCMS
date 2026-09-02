@@ -142,6 +142,12 @@ const pluginTrustBoundaryImports = [
       'simplycms/schema/*',
       'simplycms/plugin-sdk/server',
       'simplycms/plugin-sdk/server/*',
+      // admin-server (Е1б, К3-4′): кожна операція за `impl` сама кличе
+      // requireGrant, тож дірки в авторизації немає — але імпорт із плагіна
+      // тягне весь серверний граф (db, auth, схему) у клієнтський бандл, а
+      // саме це межа й спиняє.
+      'simplycms/admin-server',
+      'simplycms/admin-server/*',
       'drizzle-orm',
       'drizzle-orm/*',
       'pg',

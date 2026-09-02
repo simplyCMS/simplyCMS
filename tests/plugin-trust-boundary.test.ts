@@ -64,16 +64,21 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     }
   });
 
-  it('ловить обхідні шляхи контуру v2: лоадери, auth, схема, транспорт портів', async () => {
+  it('ловить обхідні шляхи контуру v2: лоадери, auth, схема, транспорт портів, admin-server', async () => {
     // 🔴 Ці групи додано разом із B9 і не з чистоти: доки єдиним каналом до
     // БД був PostgREST, заборони Supabase вистачало. Тепер поруч живуть
     // серверні лоадери вітрини, auth-контур, Drizzle-схема й сам транспорт
     // портів — кожен віддає плагінові рівно те, що межа довіри забирає.
+    // `admin-server`/`admin-server/impl` (Е1б, К3-4′) — той самий клас
+    // дірки: кожна операція за `impl` сама кличе requireGrant, але імпорт
+    // із плагіна все одно тягне серверний граф у клієнтський бандл.
     for (const bad of [
       "import { withStorefrontDb } from 'simplycms/storefront/loaders';",
       "import { readSessionSubject } from 'simplycms/auth';",
       "import { orders } from 'simplycms/schema';",
       "import { pluginTableList } from 'simplycms/plugin-sdk/server';",
+      "import { orderStatusesOps } from 'simplycms/admin-server/impl';",
+      "import { adminGrants } from 'simplycms/admin-server';",
       "import { sql } from 'drizzle-orm';",
       "import pg from 'pg';",
     ]) {

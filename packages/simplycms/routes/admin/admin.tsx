@@ -6,9 +6,13 @@ import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
 /**
  * Layout-роут адмінки.
  *
- * Адмінка повністю client-only (`ssr: false`) — уся data-логіка на React Query +
- * клієнтському Supabase. `beforeLoad` виконує client-side guard для навігацій після
- * гідрації; початковий запит на `/admin` додатково перевіряється в `src/start.ts`.
+ * Роут лишається client-only (`ssr: false`): більшість сторінок адмінки й
+ * досі читають/пишуть напряму з браузера легасі-шаром supabase-js — для них
+ * серверного шляху ще немає. Виняток під цим лейаутом — `/admin/order-statuses`:
+ * він уже ходить через serverFn-и `simplycms/admin-server` і TanStack DB-колекцію,
+ * решта сторінок перейде хвилями Е3–Е6. `beforeLoad` виконує client-side guard
+ * для навігацій після гідрації; початковий запит на `/admin` додатково
+ * перевіряється в `src/start.ts`.
  */
 
 /**
