@@ -1363,6 +1363,10 @@ describe('defineAdminResource (К3-4′)', () => {
     }
   });
 
+  it('updateSchema: порожній patch відбивається валідатором (400, не 500 з drizzle)', () => {
+    expect(ops.updateSchema.safeParse([{ id: crypto.randomUUID(), patch: {} }]).success).toBe(false);
+  });
+
   it('updateSchema: patch не приймає id і readonly', () => {
     const parsed = ops.updateSchema.safeParse([
       { id: crypto.randomUUID(), patch: { name: 'Y', isDefault: true } },
@@ -1475,7 +1479,10 @@ export function defineAdminResource<
   const insertRowSchema = (
     insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<SafePick<InsertShape, W>>
   ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<SafePick<UpdateShape, W>>;
+  const patchSchema = (
+    updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<SafePick<UpdateShape, W>>
+  ) // 🔴 Порожній patch — 400 на межі, не «No values to set» з drizzle (фінальне рев'ю Е1б, клас R9).
+    .refine((p) => Object.keys(p).length > 0, { message: 'patch не може бути порожнім' });
 
   const insertSchema = z.array(insertRowSchema).min(1).max(100);
   const updateSchema = z.array(z.object({ id: z.uuid(), patch: patchSchema })).min(1).max(100);
@@ -1565,7 +1572,7 @@ export type AdminResourceOps<T extends Table> = ReturnType<typeof defineAdminRes
 🔴 `z.uuid()` — форма Zod 4 (не `z.string().uuid()`); якщо typecheck
 свариться — звірити з фактичним експортом встановленого zod і вжити чинну.
 
-Run: тест → PASS 5/5; `pnpm lint && pnpm typecheck && pnpm test` → PASS (включно з `@ts-expect-error`-кейсами).
+Run: тест → PASS 6/6; `pnpm lint && pnpm typecheck && pnpm test` → PASS (включно з `@ts-expect-error`-кейсами).
 
 - [ ] **Step 3: Коміт**
 
@@ -1668,7 +1675,7 @@ export const setDefaultOrderStatusOp = async ({ data }: { data: z.infer<typeof s
 
 ```ts
 // packages/simplycms/src/admin-server/operations/order-status-reorder.ts
-import { asc, desc, eq, gt, lt } from 'drizzle-orm';
+import { asc, desc, eq, gt, inArray, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderStatuses } from 'simplycms/schema';
 import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
@@ -1686,18 +1693,27 @@ export const reorderInput = z.object({ id: z.uuid(), direction: z.enum(['up', 'd
 export const reorderOrderStatusOp = async ({ data }: { data: z.infer<typeof reorderInput> }) => {
   const { subject } = await requireGrant('catalog.write');
   return withActor({ role: dbRoleForSubject(subject), userId: subject.userId ?? undefined }, async (db) => {
-    // FOR UPDATE (рев'ю р2): конкурентні overlapping-swap без локів могли
-    // б лишити дубльовані sort_order.
-    const [current] = await db.select().from(orderStatuses)
-      .where(eq(orderStatuses.id, data.id)).for('update');
-    if (!current) throw new Error(`[admin-server] статусу ${data.id} не існує`);
-    const [neighbor] = await db.select().from(orderStatuses)
+    // 🔴 Локи — у ДЕТЕРМІНОВАНОМУ порядку (фінальне рев'ю Е1б, відтворений
+    // 40P01): «current → neighbor» для двох зустрічних свопів суміжної пари
+    // дає протилежний порядок і дедлок. Спершу знаходимо обидва id БЕЗ
+    // локів, потім блокуємо їх ОДНИМ запитом за зростанням id, і лише
+    // тоді пишемо. FOR UPDATE усе ще потрібен (рев'ю р2): без нього
+    // overlapping-swap лишали б дубльовані sort_order.
+    const [seen] = await db.select().from(orderStatuses).where(eq(orderStatuses.id, data.id));
+    if (!seen) throw new Error(`[admin-server] статусу ${data.id} не існує`);
+    const [next] = await db.select({ id: orderStatuses.id }).from(orderStatuses)
       .where(data.direction === 'up'
-        ? lt(orderStatuses.sortOrder, current.sortOrder)
-        : gt(orderStatuses.sortOrder, current.sortOrder))
+        ? lt(orderStatuses.sortOrder, seen.sortOrder)
+        : gt(orderStatuses.sortOrder, seen.sortOrder))
       .orderBy(data.direction === 'up' ? desc(orderStatuses.sortOrder) : asc(orderStatuses.sortOrder))
-      .limit(1).for('update');
-    if (!neighbor) return { swapped: [] as (typeof current)[] };
+      .limit(1);
+    if (!next) return { swapped: [] as (typeof seen)[] };
+    const locked = await db.select().from(orderStatuses)
+      .where(inArray(orderStatuses.id, [data.id, next.id]))
+      .orderBy(asc(orderStatuses.id)).for('update');
+    const current = locked.find((r) => r.id === data.id);
+    const neighbor = locked.find((r) => r.id === next.id);
+    if (!current || !neighbor) throw new Error('[admin-server] рядок зник між вибіркою і локом');
     const swapped = [
       (await db.update(orderStatuses).set({ sortOrder: neighbor.sortOrder })
         .where(eq(orderStatuses.id, current.id)).returning())[0],
@@ -1857,6 +1873,17 @@ describe('order_statuses: операції проти живої БД', () => {
     await expect(setDefaultOrderStatusOp({ data: { id: crypto.randomUUID() } })).rejects.toThrow();
     const after = await queryRows(dbUrl, `select is_default from public.order_statuses`);
     expect(after.filter((r) => r.is_default)).toHaveLength(1);
+  });
+
+  it('reorder: два зустрічні свопи суміжної пари — БЕЗ 40P01 (детермінований порядок локів)', async () => {
+    // Фінальне рев'ю Е1б: «current → neighbor» давав дедлок; тепер лок за id.
+    const list = await queryRows(dbUrl, `select id from public.order_statuses order by sort_order`);
+    const [a, b] = [list[0].id, list[1].id];
+    const results = await Promise.allSettled([
+      reorderOrderStatusOp({ data: { id: a, direction: 'down' } }),
+      reorderOrderStatusOp({ data: { id: b, direction: 'up' } }),
+    ]);
+    for (const r of results) expect(r.status, JSON.stringify(r)).toBe('fulfilled');
   });
 
   it('reorder свапає сусідів; на краю — no-op', async () => {
@@ -2119,6 +2146,20 @@ describe('колекція order_statuses', () => {
     await tx.isPersisted.promise;
     expect(c.has(id), 'після персисту рядок зник').toBe(true);
     expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toBe('2026-01-01');
+  });
+
+  it('batch write-back — КОЖЕН рядок батчу в кеші після персисту (не лише rows[0])', async () => {
+    // Фінальне рев'ю Е1б: handler-canon стереже НАЯВНІСТЬ write-back, а
+    // повноту по рядках батчу — лише цей поведінковий кейс. Шаблон для Е3–Е6.
+    const c = getCollection(new QueryClient(), orderStatusesCollection);
+    await c.preload();
+    const ids = [crypto.randomUUID(), crypto.randomUUID()];
+    const tx = c.insert(ids.map((id, i) => ({ id, name: `B${i}`, code: `b${i}`, color: null, sortOrder: 10 + i })) as never);
+    await tx.isPersisted.promise;
+    for (const id of ids) {
+      expect(c.has(id), `рядок ${id} відсутній у кеші після write-back`).toBe(true);
+      expect(c.get(id)?.createdAt, 'серверні поля не доїхали').toBe('2026-01-01');
+    }
   });
 
   it('розходження ключів — fail-loud ДО write-back, рядків-двійників немає', async () => {
