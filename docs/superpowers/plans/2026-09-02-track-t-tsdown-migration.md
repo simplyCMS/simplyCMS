@@ -319,7 +319,7 @@ export const serverOnlyDepSpecifier = (dep: {
 }): RegExp =>
   new RegExp(
     dep.clientSafe?.length
-      ? `^${dep.name}(/(?!${dep.clientSafe.join('|')})|$)`
+      ? `^${dep.name}(/(?!(?:${dep.clientSafe.join('|')})(?:/|$))|$)`
       : `^${dep.name}(/|$)`,
   );
 
@@ -512,7 +512,7 @@ git grep -n "server/is-admin\|server/theme-record\|server/revalidate-theme" \
 рядка `simplycms/contracts/views/fixtures` додати:
 
 ```markdown
-| `simplycms/contracts/server-only` | Декларація межі довіри клієнт/сервер: `SERVER_ONLY` (субшляхи ядра, що існують лише на сервері), `SERVER_ONLY_DEPS`, `isServerOnlySubpath`, і патерни `serverOnlySpecifiers()`/`serverOnlyFiles()` для Import Protection магазину. Лише дані — читачі: збірка ядра, гейт `dist-server-boundary`, лінт, Gate C, `vite.config.ts` магазину |
+| `simplycms/contracts/server-only` | Декларація межі довіри клієнт/сервер: `SERVER_ONLY` (субшляхи ядра, що існують лише на сервері), `SERVER_ONLY_DEPS` (обʼєкти `{ name, clientSafe? }` — `better-auth/react` лишається клієнтським), `serverOnlyOwner`/`isServerOnlySubpath`, `serverOnlyDepSpecifier` і три набори патернів Import Protection — `serverOnlySpecifiers()`, `serverOnlyFiles()`, `serverOnlyExcludeFiles()`. Лише дані — читачі: збірка ядра, гейт `dist-server-boundary`, лінт, Gate C, `vite.config.ts` магазину |
 ```
 
 - [ ] **Крок 4: Групи межі плагінів — похідні від декларації**
@@ -740,7 +740,14 @@ describe('server-only-relative (трек T)', () => {
     // звідти — тихий витік повз dist і повз Import Protection.
     ['роут ядра → db/client', "import { pool } from '../../src/db/client';", '../routes/storefront/x.tsx'],
   ])('ловить: %s', (_label, code, file) => {
-    expect(lint(code, file)).toHaveLength(1);
+    // 🔴 Асерт по ПРИЧИНІ, не по довжині масиву: ворнінг ESLint
+    // «File ignored» має `ruleId: null` і ту саму форму, що й спрацювання,
+    // тож `toHaveLength(1)` зеленіє на ньому (спіймано в треку T на
+    // роут-фікстурі `.tsx` при `files: ['**/*.ts']`). Фатальна помилка
+    // парсингу дала б довжину 1 так само.
+    expect(
+      lint(code, file).map((m) => [m.ruleId, m.messageId]),
+    ).toEqual([['b/server-only-relative', 'crossesBoundary']]);
   });
 
   it.each([
@@ -751,7 +758,40 @@ describe('server-only-relative (трек T)', () => {
     ['роут ядра bare-субшляхом', "import { withActor } from 'simplycms/db';", '../routes/storefront/x.tsx'],
     ['файл поза ПАКЕТОМ ядра', "import { x } from './impl';", '../../../src/routes/my/x.ts'],
   ])('пропускає: %s', (_label, code, file) => {
-    expect(lint(code, file)).toHaveLength(0);
+    expect(lint(code, file).map((m) => m.ruleId)).toEqual([]);
+  });
+});
+```
+
+Наприкінці файлу — контроль САМОЇ ЗОНИ на реальному конфізі (форма — як
+`tests/plugin-trust-boundary.test.ts:198-207`):
+
+```ts
+// 🔴 Фікстури вище ставлять правило ВЛАСНИМ інлайн-конфігом, тож вони
+// лишаться зеленими, навіть якщо зону в `eslint.config.mjs` звузять назад
+// до `src/**` або втратять `ignores`. Регресія була б ТИХОЮ — тому зону
+// перевіряємо реальним кореневим конфігом.
+describe('зона правила в кореневому конфізі', () => {
+  const eslint = new ESLint({ cwd: REPO });
+  const ruleIds = async (code: string, filePath: string) =>
+    (await eslint.lintText(code, { filePath: resolve(REPO, filePath) }))
+      .flatMap((r) => r.messages)
+      .filter((m) => m.ruleId === 'simplycms-boundary/server-only-relative');
+
+  it.each([
+    ['роут-тека ядра', "import { x } from '../../src/db/client';", 'packages/simplycms/routes/storefront/x.tsx'],
+    ['src ядра', "import { ops } from './impl';", 'packages/simplycms/src/admin-server/index.ts'],
+  ])('зона покриває %s', async (_label, code, file) => {
+    expect(await ruleIds(code, file)).toHaveLength(1);
+  });
+
+  it('ignores тестів не зʼїдений і не розширений', async () => {
+    expect(
+      await ruleIds(
+        "import { db } from '../../storefront/loaders/db';",
+        'packages/simplycms/src/storefront-routes/__tests__/x.test.ts',
+      ),
+    ).toEqual([]);
   });
 });
 ```
@@ -760,7 +800,8 @@ describe('server-only-relative (трек T)', () => {
 pnpm vitest run tests/eslint-rules/server-only-relative.test.ts
 ```
 
-Очікувано: 13 passed (7 «ловить» + 6 «пропускає»). Правило вже написане в
+Очікувано: 16 passed (7 «ловить» + 6 «пропускає» + 3 контролі зони).
+Правило вже написане в
 Кроці 5. 🔴 Якщо кейс червоний — спершу перевір АРИФМЕТИКУ шляху у фікстурі
 (правило резолвить специфікатор відносно імпортера, а не матчить сирий
 текст), і лише потім лагодь правило.
@@ -1993,6 +2034,17 @@ Server-only субшляхи ядра задекларовано ОДИН раз
 рівно там, де в магазині живе ядро, — тому декларація віддає власний
 `serverOnlyExcludeFiles()`, який дефолт ЗАМІЩУЄ (`pick(user, default)`,
 `plugin.js:694`).
+
+🔴 **Модель загрози, заради якої звужено `excludeFiles`** (неочевидна —
+плутали двічі): сторонній плагін або тема, поставлені як npm-пакет, мають
+`simplycms` у своїх залежностях, і pnpm кладе симлінк на ядро ПОРУЧ із ними
+(`node_modules/.pnpm/<пакет>@v/node_modules/simplycms`; у hoisted-розкладці
+npm — тим паче). Відносний шлях із їхнього `dist` у `simplycms/src/db`
+резолвиться, обходить `specifiers` (специфікатор не bare) і НІКОЛИ не
+потрапляє під наш лінт — чужий код ми не лінтимо. Єдиний бар'єр, який його
+бачить, — file-deny у збірці магазину, а він мертвий під дефолтним
+`excludeFiles`. Той самий клас із боку самого магазину — його `src/routes/**`
+і copy-in теми в `themes/<key>`.
 
 🔴 **Відкрите питання ПОЗА треком T** (рішення власника, не борг треку):
 `files` маніфеста ядра везе в tarball і `dist`, і `src` — 559 файлів джерел,
