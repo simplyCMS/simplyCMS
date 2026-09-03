@@ -12,11 +12,15 @@ import { defineConfig } from 'vitest/config';
 // React-плагін не потрібен: тести читають tarball-и, manifest-и й файли
 // `dist` напряму, без JSX. Alias нижче — виняток лише для гейту партиції.
 export default defineConfig({
-  // Один base-prefix ключ, як у vitest.config.ts: гейти треку T імпортують
-  // декларацію межі bare-субшляхом `simplycms/contracts/server-only`, а
-  // `dts-toolchain` імпортує `tsdown.config.ts`, який робить те саме.
+  // Один base-prefix ключ, як у vitest.config.ts: гейт партиції треку T
+  // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
+  // З Task 4 сюди додається `dts-toolchain`: він імпортуватиме
+  // `tsdown.config.ts` замість `tsup.config.ts`, а той конфіг читатиме ту
+  // саму декларацію тим самим специфікатором.
   resolve: {
-    alias: { simplycms: resolve(__dirname, 'packages/simplycms/src') },
+    alias: {
+      simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
+    },
   },
   test: {
     environment: 'node',
