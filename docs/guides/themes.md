@@ -329,7 +329,7 @@ pnpm simplycms theme:conformance aurora    # рендер заявлених vie
 | Імʼя пакета | базове імʼя починається з `simplycms-theme-` (`simplycms-theme-aurora` або `@vendor/simplycms-theme-aurora`) |
 | Entry | `src/index.ts`, default-export `ThemeModule`; `exports` лише `"."` |
 | `files` | `dist` **і `src`** — без `src` у tarball-і не працюватиме copy-in (§2.2) |
-| Збірка | tsup, ESM; 🔴 **класи мають лишатися літералами в dist-JS** — саме dist сканують Tailwind-глоби магазину; динамічна склейка імен класів = зникнення стилів |
+| Збірка | tsdown, ESM; 🔴 **класи мають лишатися літералами в dist-JS** — саме dist сканують Tailwind-глоби магазину; динамічна склейка імен класів = зникнення стилів |
 | Залежності | `simplycms` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт SupabaseProvider); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |
 | Сумісність | `engines.simplycms` у manifest |
 | `description` | англійською (показується з npm-реєстру) |

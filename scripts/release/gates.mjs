@@ -21,6 +21,12 @@ export const GATES = [
   // шаблон, з якого магазин може не зібратись.
   { name: 'typecheck:template', cmd: 'pnpm typecheck:template' },
   { name: 'test:packaging', cmd: 'pnpm test:packaging' },
+  // 🔴 Трек T: після зміни бандлера єдиний доказ межі клієнт/сервер у
+  // РЕАЛЬНОМУ клієнтському бандлі — Gate C пілота (плюс Import Protection
+  // шаблону з того самого tarball-а). БД не потребує (`--pack-only`),
+  // детермінований; у CI не ганяється (рішення 2026-08-01 стосується `pilot`
+  // з Gate B), тож реліз — єдине місце, де він обовʼязковий.
+  { name: 'pilot:pack', cmd: 'pnpm pilot:pack' },
 ];
 
 /**

@@ -312,10 +312,23 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
      ([`2026-08-20-package-consolidation-design.md`](../superpowers/specs/2026-08-20-package-consolidation-design.md)):
      це СУБШЛЯХИ пакета `simplycms`, нові пакети не створюються (ПК4/ПК5);
      theme-порти К5 приземлюються як `simplycms/theme-sdk`.
-4. 🔴 **Трек T — Тулчейн збірки: міграція tsup → tsdown** (нове,
-   2026-08-24; окремою задачею, НЕ змішувати з роботою над магазином).
+4. ✅ **Трек T — Тулчейн збірки: міграція tsup → tsdown; ЗАВЕРШЕНО 2026-09-03.**
 
-   **Чому це не «оновлення заради оновлення»:**
+   **Підсумок.** Три публіковані пакети збирає `tsdown` (Rolldown); `tsup`
+   знесено з дерева. Ядро — рівно ДВІ збірки, клієнтська й серверна, і хто
+   де — вирішує ЄДИНА декларація `simplycms/contracts/server-only`; entry
+   виводяться з dev-`exports`, тож `dist/` дзеркалить `publishConfig.exports`
+   за побудовою (бієкція доведена: 0 розбіжностей в обидва боки; −0 втрачених
+   entry проти tsup і +7 полагоджених субшляхів, які мали `.d.ts` і запис в
+   exports, але не мали `.js`). Ту саму декларацію читають гейт партиції
+   `dist`, лінт, Gate C пілота і — вперше — збірка КОЖНОГО магазину через
+   Import Protection TanStack Start у шаблоні й хості. Плюс `sideEffects:
+   false` у трьох пакетах і `pilot:pack` у гейтах релізу (склад і порядок
+   гейтів асертить `tests/release-gates.test.ts`). Механізм і пʼятеро читачів
+   межі — [`test-contours.md` §12](../architecture/test-contours.md); план —
+   [`2026-09-02-track-t-tsdown-migration.md`](../superpowers/plans/2026-09-02-track-t-tsdown-migration.md).
+
+   **Чому це не «оновлення заради оновлення»** (мотив рішення, 2026-08-24):
    - **tsup офіційно покинутий.** У README встановленої в нас версії
      дослівно: *«This project is not actively maintained anymore. Please
      consider using tsdown instead»* — з посиланням на гайд міграції. Баг,

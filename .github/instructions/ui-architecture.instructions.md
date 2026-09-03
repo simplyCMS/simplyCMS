@@ -91,7 +91,7 @@ themes/default/                          # Локальна тема (dev-loop/c
 🔴 Тема може також бути **npm-пакетом** (Фаза 4): референс ядра —
 `packages/simplycms-theme-<name>/` (npm `@simplycms/theme-<name>`), стороння
 — `simplycms-theme-<name>`/`@vendor/simplycms-theme-<name>`. Та сама
-структура файлів, лише в `src/` пакета + tsup-збірка. Установка —
+структура файлів, лише в `src/` пакета + tsdown-збірка. Установка —
 `simplycms add <pkg> --theme` (голий пакет) або `--theme --copy`
 (копія `src/*` у `themes/<key>/`, shadcn-модель). Деталі — `docs/architecture/themes.md`.
 

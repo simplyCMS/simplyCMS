@@ -36,7 +36,7 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 | | Де | Що демонструє |
 |---|---|---|
 | `themes/default` | `themes/default` (їде в шаблон магазину) | еталон fallback-токенів (спека §6) і живий зразок copy-in-форми; **private**, поза реліз-потягом ядра, поза `theme-manifest-parity` |
-| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore` (npm) | повний контур пакетного постачання: manifest+tokens+components+messages, tsup-збірка, публікація в реліз-потязі ядра |
+| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore` (npm) | повний контур пакетного постачання: manifest+tokens+components+messages, tsdown-збірка, публікація в реліз-потязі ядра |
 
 🔴 **Межі v1 — знати, перш ніж обіцяти можливості:**
 
@@ -209,7 +209,7 @@ conformance: рендер на фікстурах без БД (§7.1). Кано�
 `pnpm build`. Semver-фікси йдуть апстрімом; магазин лишається на голій
 залежності.
 
-**Форма пакета** (Р3, зразок — `@simplycms/plugin-faq`): tsup,
+**Форма пакета** (Р3, зразок — `@simplycms/plugin-faq`): tsdown,
 `format: esm`, `splitting: false` (тема — пасивний модуль без спільного
 singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms\//]`
 (🔴 після К0 ядро приходить unscoped-іменем — сам regexp `/^@simplycms\//`
@@ -291,7 +291,7 @@ singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms
 Референс-теми ядра (`@simplycms/theme-*`) уже покриті чинним
 `./node_modules/@simplycms/*/dist/**/*.js` (сам фреймворк-пакет — окремою
 парою глобів `./node_modules/simplycms/{dist,routes}/**`, К0). **Вимога «класи мають бути в
-зібраному dist-JS» — частина конвенції форми пакета** (tsup лишає
+зібраному dist-JS» — частина конвенції форми пакета** (бандлер лишає
 className-літерали в JS; перевірено на dist `plugin-faq`). Copy-in-теми
 (§3.2) під ці глоби НЕ потрапляють — вони йдуть під `./themes/**/*.{ts,tsx}`
 (сирці, вже покрито). Доведено `tests/theme-tailwind-globs.test.ts`:

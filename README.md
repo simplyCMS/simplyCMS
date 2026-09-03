@@ -145,7 +145,7 @@ Supabase: команди більше немає, `--e2e` падає з пояс
 Better Auth повертає трек К6 (деталі —
 [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md)).
 
-Ганяйте його після змін в `exports`, `peerDependencies`, `tsup`-конфігах, барелях
+Ганяйте його після змін в `exports`, `peerDependencies`, `tsdown`-конфігах, барелях
 або `routes/`.
 
 ### Реліз

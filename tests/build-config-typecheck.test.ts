@@ -54,11 +54,14 @@ const parsed = parseRootConfig();
  * Компілятор із оверлеєм: `file` читається з `text`, решта — з диска.
  *
  * Кеш решти файлів спільний на весь набір перевірок — без нього кожна
- * програма перепарсювала б `lib.dom.d.ts` і типи tsup (≈1.5 с проти ≈0.1 с).
- * Оверлей кладемо на РЕАЛЬНИЙ шлях конфігу: так резолв `tsup` і `node:fs`
+ * програма перепарсювала б `lib.dom.d.ts` і типи tsdown (≈1.5 с проти ≈0.1 с).
+ * Оверлей кладемо на РЕАЛЬНИЙ шлях конфігу: так резолв `tsdown` і `node:fs`
  * іде звичайним `node_modules` теки пакета, без підміни host-а.
  */
-const createOverlayChecker = (): ((file: string, text: string) => number[]) => {
+const createOverlayChecker = (): ((
+  file: string,
+  text: string,
+) => Array<{ code: number; text: string }>) => {
   const host = ts.createCompilerHost(parsed.options, true);
   const readFromDisk = host.getSourceFile.bind(host);
   const cache = new Map<string, ts.SourceFile | undefined>();
@@ -91,7 +94,10 @@ const createOverlayChecker = (): ((file: string, text: string) => number[]) => {
     return ts
       .getPreEmitDiagnostics(program)
       .filter((d) => d.file && resolve(d.file.fileName) === file)
-      .map((d) => d.code);
+      .map((d) => ({
+        code: d.code,
+        text: ts.flattenDiagnosticMessageText(d.messageText, ' '),
+      }));
   };
 };
 
@@ -107,9 +113,13 @@ const createOverlayChecker = (): ((file: string, text: string) => number[]) => {
 //   • інлайн-обʼєкт прямо в `defineConfig` (theme-solarstore) → ЛИШЕ TS2769:
 //     `defineConfig` перевантажений, тож помилка властивості згортається в
 //     «No overload matches this call» і per-property коду не лишається.
-// Спільний для всіх форм — 2769, його й вимагаємо. Специфічності це не
-// втрачає: сусідній асерт доводить, що НЕМУТОВАНИЙ той самий файл дає
-// порожній набір, тож 2769 тут може бути наслідком лише самої мутації.
+// Спільний для всіх форм — 2769, його й вимагаємо. Але сам по собі він
+// означає лише «жодне перевантаження не підійшло», тобто позеленів би й на
+// сторонній поламці конфігу, тож специфічність повертає ДРУГИЙ асерт — по
+// тексту діагностики: рядок «'"nodejs"' is not assignable» присутній у всіх
+// трьох формах (у 2820 там, де він є, інакше всередині ланцюга 2769).
+// Третій запобіжник — сусідній асерт, що НЕМУТОВАНИЙ той самий файл дає
+// порожній набір.
 const ANCHORS = ["platform: 'node',"] as const;
 const TYPO = "platform: 'nodejs',";
 
@@ -140,10 +150,19 @@ describe('конфіги збірки під типізацією', () => {
       ).toBeDefined();
       expect(check(file, source), `${where}: чистий конфіг`).toEqual([]);
 
-      const codes = check(file, source.replace(anchor as string, TYPO));
+      const diagnostics = check(file, source.replace(anchor as string, TYPO));
       // TS2769 — «No overload matches this call» на `defineConfig` (див.
       // вимір кодів у шапці ANCHORS/TYPO).
-      expect(codes, `${where}: одрук не спійманий`).toContain(2769);
+      expect(
+        diagnostics.map((d) => d.code),
+        `${where}: одрук не спійманий`,
+      ).toContain(2769);
+      // 🔴 Червоніти має саме НАША мутація, а не будь-яка інша поламка
+      // конфігу: код 2769 цього не розрізняє, текст — розрізняє.
+      expect(
+        diagnostics.map((d) => d.text),
+        `${where}: жодна діагностика не називає 'nodejs' неприсвоюваним`,
+      ).toContainEqual(expect.stringContaining(`'"nodejs"' is not assignable`));
     }
   });
 });

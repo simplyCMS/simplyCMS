@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
-// 🔴 BARE-специфікатор, не './impl': відносний імпорт tsup заінлайнив би,
-// і розрізнення «стаб vs нетрансформований» у dist зникло б (див. impl.ts).
+// 🔴 BARE-специфікатор, не './impl': відносний імпорт бандлер заінлайнив би,
+// і розрізнення «стаб vs нетрансформований» у dist зникло б (див. impl/).
+// Стереже правило server-only-relative.
 import {
   orderStatusesOps,
   setDefaultInput,

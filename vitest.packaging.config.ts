@@ -14,9 +14,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   // Один base-prefix ключ, як у vitest.config.ts: гейт партиції треку T
   // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
-  // З Task 4 сюди додається `dts-toolchain`: він імпортуватиме
-  // `tsdown.config.ts` замість `tsup.config.ts`, а той конфіг читатиме ту
-  // саму декларацію тим самим специфікатором.
+  // Тим самим специфікатором декларацію читає `tsdown.config.ts` ядра, а
+  // `dts-toolchain` імпортує сам конфіг — тож alias потрібен і йому.
   resolve: {
     alias: {
       simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
@@ -34,7 +33,7 @@ export default defineConfig({
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.
       'tests/dist-import-meta.test.ts',
-      // Структурний гард тулчейна декларацій (dts поза tsup + кеп памʼяті):
+      // Структурний гард тулчейна декларацій (dts поза бандлером + кеп памʼяті):
       // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
       'tests/dts-toolchain.test.ts',
       // Партиція dist ядра на серверну й клієнтську групи + .d.ts сателітів

@@ -29,7 +29,7 @@ pnpm test:watch             # Vitest watch mode
 pnpm test:packaging         # Tarball-parity suite (vitest.packaging.config.ts)
 
 # Пакети ядра
-pnpm build:packages         # tsup build публікованих пакетів
+pnpm build:packages         # tsdown build публікованих пакетів
 pnpm template:sync          # регенерація шаблону create-simplycms-store з монорепо (закомічені копії)
 pnpm pilot:pack             # tarball-пілот, гейти A/C/D/CLI — без Supabase, без БД
 pnpm pilot                  # той самий пілот + Gate B проти живої БД (.env.local)

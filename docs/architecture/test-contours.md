@@ -30,7 +30,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | Куди веде | `packages/simplycms/src/ui/button.tsx` — **сирці** | `node_modules/simplycms/dist/ui/button.js` — **збірка** |
 
 🔴 Усе, що лежить між цими двома шляхами, у монорепо **не виконується жодного
-разу**: збірка `tsup`, коректність `exports` і `publishConfig.exports`,
+разу**: збірка `tsdown`, коректність `exports` і `publishConfig.exports`,
 повнота `dependencies`, peer-діапазони, вміст tarball (`files`), робота
 `bin`. Тому зелений `pnpm test` **нічого не каже** про те, чи працює
 опублікований пакет.
@@ -658,3 +658,53 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 прогони харнеса проти одного контейнера конфліктують на `CREATE DATABASE`
 (`fileParallelism: false` у `vitest.schema.config.ts` — навмисно).
 
+## 12. Межа клієнт/сервер: одна декларація, пʼять читачів (трек T, 2026-09-02)
+
+Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
+(`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
+`admin-server/impl`; serverFn-модулі
+`plugin-sdk/server`, `themes/server`, `plugins/server`, стаби `admin-server` —
+НЕ server-only, їх клієнт імпортує легально). Читачі:
+
+| Читач | Що доводить | Негативний контроль |
+|---|---|---|
+| `packages/simplycms/tsdown.config.ts` | server-only entry — окрема збірка, спільних чанків з клієнтом немає за побудовою | Task 4 Крок 7 плану треку T |
+| `tests/dist-server-boundary.test.ts` (packaging-suite) | closure(server) ∩ closure(client) = ∅ по відносних імпортах `dist`; `.d.ts` сателітів без відносних ре-експортів | відносний `./impl` у стабі + impl у клієнтській групі → червоний |
+| `eslint-rules/server-only-relative.mjs` | відносний імпорт у server-only дерево ззовні — помилка лінту | `tests/eslint-rules/server-only-relative.test.ts` |
+| групи `no-restricted-imports` плагінів | плагін не імпортує серверний граф | `tests/plugin-trust-boundary.test.ts` |
+| `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
+| Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | роут із `import { withActor } from 'simplycms/db'` валить `pnpm build` хоста; роут із відносним `node_modules/simplycms/src/db/client` валить `pnpm build` скретч-магазину |
+
+🔴 ТРИ пастки Import Protection, усі виміряні: за замовчуванням перевіряються
+лише імпортери в `src/` — тому `include: ['**']`; у монорепо alias `simplycms/*`
+резолвить специфікатор РАНІШЕ за перевірку — тому поруч зі `specifiers` є
+`files`; дефолтний `excludeFiles: ['**/node_modules/**']` вимикає file-deny
+рівно там, де в магазині живе ядро, — тому декларація віддає власний
+`serverOnlyExcludeFiles()`, який дефолт ЗАМІЩУЄ (`pick(user, default)`,
+`plugin.js:694`).
+
+🔴 **Модель загрози, заради якої звужено `excludeFiles`** (неочевидна —
+плутали двічі): сторонній плагін або тема, поставлені як npm-пакет, мають
+`simplycms` у своїх залежностях, і pnpm кладе симлінк на ядро ПОРУЧ із ними
+(`node_modules/.pnpm/<пакет>@v/node_modules/simplycms`; у hoisted-розкладці
+npm — тим паче). Відносний шлях із їхнього `dist` у `simplycms/src/db`
+резолвиться, обходить `specifiers` (специфікатор не bare) і НІКОЛИ не
+потрапляє під наш лінт — чужий код ми не лінтимо. Єдиний бар'єр, який його
+бачить, — file-deny у збірці магазину, а він мертвий під дефолтним
+`excludeFiles`. Той самий клас із боку самого магазину — його `src/routes/**`
+і copy-in теми в `themes/<key>`.
+
+🔴 **Відкрите питання ПОЗА треком T** (рішення власника, не борг треку):
+`files` маніфеста ядра везе в tarball і `dist`, і `src` — 559 файлів джерел,
+включно з `src/db/client.ts`. Саме тому server-only дерево існує в магазині
+двічі й потребує `excludeFiles`. Прибрати `src` з `files` закрило б цей клас
+за побудовою, але має інші наслідки (щонайменше source maps і, ймовірно,
+`typecheck:template`, який типізує шаблон проти пакета) — не міряно.
+
+### Бюджет памʼяті після tsdown
+
+Кеп `--max-old-space-size=3072` стереже `tsc` (декларації ядра) і dts-плагін
+сателітів; native-памʼять Rolldown він не обмежує. Виміряно при перемиканні
+(Task 4 Крок 8): tsdown ядра — 1,0 с / 611 МБ; повний `build:packages` —
+15,2 с / 1163 МБ. Прототип 2026-09-02 на 18 конфігах: 0,4 с / 634 МБ (tsup:
+2,1 с / 448 МБ). Декларації силами tsdown відкинуто виміром: OOM 3 ГБ за 25 с.

@@ -67,6 +67,22 @@ const entries = Object.entries(pkg.exports)
     return files.map((file) => [outOf(file), resolve(PACKAGE_ROOT, file)]);
   });
 
+// 🔴 Гард колізії: дзеркало `dist` ↔ `publishConfig.exports` тримається на
+// тому, що кожен вихідний шлях має РІВНО одне джерело. `Object.fromEntries`
+// у `group()` при двох джерелах з однаковим `out` тихо лишив би ОСТАННЄ — і
+// субшлях поїхав би в npm не з того модуля, без жодного червоного гейта.
+// Падати гучно, як і на порожньому wildcard: сьогодні колізій нуль, і саме
+// це тут зафіксовано.
+const sourceByOut = new Map<string, string>();
+for (const [out, source] of entries) {
+  const previous = sourceByOut.get(out);
+  if (previous !== undefined && previous !== source)
+    throw new Error(
+      `tsdown.config: два джерела на один вихід «${out}» — ${previous} і ${source}`,
+    );
+  sourceByOut.set(out, source);
+}
+
 const group = (server: boolean): Record<string, string> =>
   Object.fromEntries(
     entries.filter(([out]) => isServerOnlySubpath(out) === server),

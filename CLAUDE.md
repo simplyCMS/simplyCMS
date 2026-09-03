@@ -18,10 +18,12 @@ pnpm format:check     # Prettier (check only)
 pnpm test             # Run tests (vitest run; packaging-suite виключено)
 pnpm test:watch       # Tests in watch mode
 pnpm build:packages   # Збірка публікованих пакетів. 🔴 Ходить через scripts/build-packages.mjs
-                      # із кепом купи 3 ГБ: JS видає tsup, ДЕКЛАРАЦІЇ — tsc
-                      # (tsconfig.dts.json), бо dts-воркер tsup жер 12 ГБ.
-                      # Форму стереже tests/dts-toolchain.test.ts, причина — урок №10
-                      # роадмапу. Наступний крок — трек T (tsup → tsdown)
+                      # із кепом купи 3 ГБ: JS видає tsdown (Rolldown), ДЕКЛАРАЦІЇ — tsc
+                      # (tsconfig.dts.json), бо dts-плагін бандлера тримає повну ts.Program
+                      # (виміряно двічі: tsup 2026-08-24, tsdown 2026-09-02). Ядро — ДВІ
+                      # збірки, клієнтська й серверна, entry виводяться з exports; межу
+                      # задає simplycms/contracts/server-only, стережуть
+                      # tests/dist-server-boundary.test.ts і tests/dts-toolchain.test.ts
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
 pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): накат канону міграцій на чистий
                       # Postgres + парність політик і грантів + ПОВЕДІНКОВА матриця RLS.
@@ -145,6 +147,9 @@ build → typecheck → test → test:schema → build:packages → typecheck:te
 test:packaging`.
 🔴 `test:schema` увійшов у ланцюг 2026-08-24 (трек К1а): він єдиний перевіряє
 накат канону міграцій і ПОВЕДІНКУ RLS — інші гейти схему БД не виконують.
+🔴 У гейтах РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` іде
+ще `pilot:pack` (трек T, 2026-09-02): Gate C пілота — єдиний доказ межі
+клієнт/сервер у реальному клієнтському бандлі; у CI він не ганяється.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
@@ -257,15 +262,18 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція):
 TS 7 — нативний Go-компілятор без стабільного програмного API до 7.1, тож
 `typescript-eslint` закрив запит підтримки як **not planned** (його peer —
-`typescript <6.1.0`), а `tsup --dts` ламається повністю: генерація декларацій
-кличе Compiler API. Обидва — наші гейти (`pnpm lint`, `pnpm build:packages`).
+`typescript <6.1.0`). Це наш гейт `pnpm lint`. Декларації пакетів емітить
+`tsc` (`tsconfig.dts.json`), тож на них TS 7 упреться в той самий Compiler API.
 Апстрім пропонує тримати два компілятори (`@typescript/typescript6` для
 тулінгу) — для нас це борг без вигоди.
-TS 6 пробували: він вимагає прибрати `baseUrl`, після чого `tsup` інжектує
+TS 6 пробували (вимір 2026-08-04, ще до переходу на tsdown; на ньому не
+переміряно): він вимагає прибрати `baseUrl`, після чого бандлер інжектує
 власний і падає з `TS5101`, а `ignoreDeprecations: "6.0"` відкриває наступний
 шар — `TS2209` (неоднозначний корінь проєкту, потрібен явний `rootDir` у
 кожному пакеті). Це окремий міграційний проєкт, а не бамп залежності.
-**Умова перегляду:** `typescript-eslint` і `tsup` оголосять підтримку TS 7.
+**Умова перегляду:** `typescript-eslint` оголосить підтримку TS 7 (декларації
+емітить tsc, tsdown має власний шлях через tsgo, але два компілятори в дереві
+— борг без вигоди).
 
 ## Project Structure
 
@@ -307,7 +315,9 @@ simplyCMS/
 │   │   │                         #    ./views і ./views/fixtures — view-model-и вітрини
 │   │   │                         #    (контракт тем v3; react — type-only peer);
 │   │   │                         #    ./entities — реєстр ENTITY/AGGREGATE/SESSION_KEY +
-│   │   │                         #    фабрика entityKey() для queryKey React Query (К3-3)
+│   │   │                         #    фабрика entityKey() для queryKey React Query (К3-3);
+│   │   │                         #    ./server-only — декларація межі клієнт/сервер (єдина;
+│   │   │                         #    читають збірка, гейт, лінт, Gate C, vite.config магазину)
 │   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle (B12, частина) — джерело
@@ -354,7 +364,7 @@ simplyCMS/
 │   │   │                         #    0003_seed; джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг
-│   │   └── tsup.config.ts        # МАСИВ профілів; 🔴 target: 'esnext' — у спільному base
+│   │   └── tsdown.config.ts      # ДВІ збірки (клієнт/сервер); entry з dev-exports; група — за contracts/server-only
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
 │   │                                                 # theme:conformance (гейт views, контракт тем v3);
