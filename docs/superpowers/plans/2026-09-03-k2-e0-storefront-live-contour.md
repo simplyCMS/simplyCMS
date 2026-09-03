@@ -90,6 +90,7 @@ React 19 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg`
 | `packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts` | Декремент залишку при замовленні, переворот статусу, відмова при нестачі |
 | `packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts` | Кошик → `placeOrder`-логіка → рядок в `orders`; три доменні відмови |
 | `packages/simplycms/src/storefront/loaders/checkout-items.ts` | Серверне читання позицій чекауту: назви, статуси, секції, ціни за id |
+| `packages/simplycms/src/storefront/loaders/place-order.ts` | `placeOrderFor` — уся логіка оформлення (валідація, ціни, доставка, запис) у server-only дереві; serverFn лишається тонким |
 | `tests/env-contract.test.ts` | Пін контракту env: `.env.example` ↔ `doctor-checks.mjs` |
 | `scripts/live-smoke.mjs` | DoD як скрипт: curl+SQL (через `gate-b.mjs`) + Playwright (кошик, бейдж, воронка) |
 
@@ -1744,6 +1745,7 @@ RLS-прийнятої вставки замовлення; app_user на обл
 - Modify: `packages/simplycms/src/storefront-routes/server/checkout-input.ts`
 - Modify: `packages/simplycms/src/storefront-routes/server/checkout.ts`
 - Create: `packages/simplycms/src/storefront/loaders/checkout-items.ts`
+- Create: `packages/simplycms/src/storefront/loaders/place-order.ts`
 - Modify: `packages/simplycms/src/storefront/loaders/pricing.ts` (`loadPricesByProduct`)
 - Modify: `packages/simplycms/src/storefront/loaders/index.ts` (реекспорт нового модуля)
 - Modify: `packages/simplycms/src/storefront-routes/pages/Checkout.tsx:170-262`
@@ -1755,7 +1757,8 @@ RLS-прийнятої вставки замовлення; app_user на обл
   - `checkoutItemSchema = { productId: uuid, modificationId: uuid | null, quantity: int > 0 }`; з `checkoutInputSchema` зникають `shippingCost` і поля ціни позицій;
   - `type PlaceOrderRejection = 'shipping_unavailable' | 'pickup_point_invalid' | 'not_purchasable'`;
   - `type PlaceOrderResult = { ok: true; order: PlacedOrder } | { ok: false; reason: PlaceOrderRejection }`;
-  - `placeOrder(...): Promise<PlaceOrderResult>`;
+  - `placeOrder(...): Promise<PlaceOrderResult>` — тонкий serverFn у `checkout.ts`;
+  - `placeOrderFor(input: PlaceOrderInput, userId: string | null): Promise<PlaceOrderResult>` і `type PlaceOrderInput` (поля `checkoutInputSchema`) — у `storefront/loaders/place-order.ts`. 🔴 Саме в server-only дереві, а НЕ як другий експорт `checkout.ts`: живий не-serverFn експорт поруч із serverFn лишається в клієнтському модулі й тягне `simplycms/storefront/loaders` у клієнтський граф — Import Protection тоді валить збірку магазину (той самий клас, що описано в `core/lib/price-type.ts` і `v2-state-map.md` §3.1);
   - `loadPricesByProduct(db, productIds): Promise<Record<string, PriceEntry[]>>` (`loaders/pricing.ts`);
   - `loadCheckoutProducts(db, ids)` і `loadCheckoutModifications(db, ids)` (`loaders/checkout-items.ts`);
   - `priceCheckoutItems(db, userId, items): Promise<NewOrderItem[] | PlaceOrderRejection>` — серверне ціноутворення (`loaders/checkout-items.ts`);
@@ -1766,8 +1769,8 @@ RLS-прийнятої вставки замовлення; app_user на обл
 
 `packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts` — тест
 викликає ЛОГІКУ `placeOrder` без RPC (serverFn поза HTTP не виконується), тому
-логіку хендлера винесено в чисту функцію `placeOrderFor(input, userId)`
-(Step 3), яку тест і кличе:
+логіка хендлера живе в server-only модулі `storefront/loaders/place-order.ts`
+(`placeOrderFor(input, userId)`, Step 3), який тест і кличе:
 
 ```ts
 // Воронка: кошик → placeOrderFor → рядок в orders; три доменні відмови
@@ -1776,8 +1779,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
-import { placeOrderFor } from 'simplycms/storefront-routes/server/checkout';
-import type { CheckoutInput } from 'simplycms/storefront-routes/server/checkout-input';
+import { placeOrderFor, type PlaceOrderInput } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles, createTempDatabase, dropTempDatabase, queryRows,
@@ -1787,7 +1789,7 @@ import {
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 interface IdRow { id: string }
 
-const input = (overrides: Partial<CheckoutInput>): CheckoutInput => ({
+const input = (overrides: Partial<PlaceOrderInput>): PlaceOrderInput => ({
   firstName: 'Тест', lastName: 'Покупець', email: 'buyer@example.test', phone: '+380000000000',
   shippingMethodId: '', deliveryCity: null, deliveryAddress: null, pickupPointId: null,
   paymentMethod: 'cash', notes: null, hasDifferentRecipient: false,
@@ -1914,19 +1916,9 @@ export const checkoutItemSchema = z.object({
 });
 ```
 
-Зі `checkoutInputSchema` прибрати `shippingCost`. Додати:
-
-```ts
-/** Доменні відмови оформлення — КОДОМ; текст — у каталозі повідомлень. */
-export type PlaceOrderRejection =
-  | 'shipping_unavailable'
-  | 'pickup_point_invalid'
-  | 'not_purchasable';
-
-export type PlaceOrderResult =
-  | { ok: true; order: PlacedOrder }
-  | { ok: false; reason: PlaceOrderRejection };
-```
+Зі `checkoutInputSchema` прибрати `shippingCost`. Типи результату живуть у
+`storefront/loaders/place-order.ts` (Step 3) — `checkout-input.ts` лишається
+ізоморфним модулем схеми без серверних імпортів.
 
 - [ ] **Step 3: Серверне ціноутворення й валідація**
 
@@ -2051,24 +2043,59 @@ export async function priceCheckoutItems(
 параметри, передати ті самі, що передає `core/hooks/useDiscountedPrice.ts`.)
 У `loaders/index.ts` — `export * from './checkout-items';`.
 
-`checkout.ts` — переписати хендлер у чисту функцію + тонкий serverFn:
+`packages/simplycms/src/storefront/loaders/place-order.ts` — уся логіка
+оформлення (сюди ж переїжджають `resolveRecipient` і `toOrderInput` із
+`checkout.ts`); `checkout.ts` стає тонким serverFn:
 
 ```ts
+// storefront-routes/server/checkout.ts — РІВНО один експорт-serverFn і
+// жодної звичайної функції (той самий урок, що в core/lib/price-type.ts).
 export const placeOrder = createServerFn({ method: 'POST' })
   .inputValidator(checkoutInputSchema)
-  .handler(async ({ data }): Promise<PlaceOrderResult> =>
-    placeOrderFor(data as CheckoutInput, await optionalSessionUserId()),
+  .handler(async ({ data }) =>
+    placeOrderFor(data as PlaceOrderInput, await optionalSessionUserId()),
   );
+```
+
+```ts
+// storefront/loaders/place-order.ts
+/** Поля запиту оформлення — дзеркало `checkoutInputSchema` (Zod живе в T5, тип — тут, у T2). */
+export interface PlaceOrderInput {
+  firstName: string; lastName: string; email: string; phone: string;
+  shippingMethodId: string; deliveryCity: string | null; deliveryAddress: string | null;
+  pickupPointId: string | null; paymentMethod: string; notes: string | null;
+  hasDifferentRecipient: boolean; recipientFirstName: string | null;
+  recipientLastName: string | null; recipientPhone: string | null;
+  recipientEmail: string | null; recipientCity: string | null;
+  recipientAddress: string | null; recipientNotes: string | null;
+  saveRecipient: boolean; savedRecipientId: string | null; savedAddressId: string | null;
+  items: CheckoutItemRef[];
+}
+
+/** Доменні відмови оформлення — КОДОМ; текст — у каталозі повідомлень. */
+export type PlaceOrderRejection =
+  | 'shipping_unavailable'
+  | 'pickup_point_invalid'
+  | 'not_purchasable';
+
+export type PlaceOrderResult =
+  | { ok: true; order: CreatedOrder }
+  | { ok: false; reason: PlaceOrderRejection };
 
 /**
  * Логіка оформлення без RPC-обгортки — щоб харнес доводив воронку напряму.
+ *
+ * 🔴 Живе в server-only дереві `storefront` (декларація межі), а не другим
+ * експортом поруч із serverFn: у клієнтському модулі не-serverFn експорт
+ * лишається живим і тягне лоадери в клієнтський граф — Import Protection
+ * валить збірку магазину.
  *
  * Порядок: довідники й ціни читаються під актором покупця (лише SELECT),
  * відмови повертаються КОДОМ до будь-якого запису; запис — одна транзакція
  * з ескалацією для обліку (див. `createOrder`).
  */
 export async function placeOrderFor(
-  input: CheckoutInput,
+  input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PlaceOrderResult> {
   const accessToken = userId === null ? randomUUID() : null;
@@ -2117,10 +2144,12 @@ export async function placeOrderFor(
 `toOrderInput(input, savedRecipientId, prepared)` — третій параметр
 `{ items: NewOrderItem[]; subtotal: number; shippingCost: number }`: замість
 `input.items`/`input.shippingCost`/локального `subtotal` брати з `prepared`;
-`total: prepared.subtotal + prepared.shippingCost`. Імпорти: `loadShippingDirectory`,
-`priceCheckoutItems`, `InsufficientStockError`, `OperatorEscalation` з
-`simplycms/storefront/loaders`; `findShippingZoneIn`, `resolveShippingRate` з
-`simplycms/domain/shipping`. 🔴 `directory.pickupPoints[].method_id` — звірити
+`total: prepared.subtotal + prepared.shippingCost`. Імпорти в `place-order.ts` —
+ВІДНОСНІ всередині дерева (`./shipping`, `./checkout-items`, `./order-create`,
+`./db`, `./recipients`), домен — `simplycms/domain/shipping`; у
+`loaders/index.ts` — `export * from './place-order';`. `checkout.ts` імпортує
+`placeOrderFor`, `PlaceOrderInput`, `optionalSessionUserId` з
+`simplycms/storefront/loaders` (bare, як і решта serverFn-модулів). 🔴 `directory.pickupPoints[].method_id` — звірити
 назву поля в `PickupPointRow` (`loaders/pickup-points.ts`); шапка serverFn
 лишається тонкою (правило `server-fn-top-level`).
 
