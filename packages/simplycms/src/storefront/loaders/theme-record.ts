@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { themes } from 'simplycms/schema';
 import type { Theme } from 'simplycms/schema/types';
-import { withStorefrontDb, type JsonValue } from 'simplycms/storefront/loaders';
+import { withStorefrontDb } from './db';
+// 🔴 Type-only self-import барелю стирається при збірці — рантайм-циклу немає.
+import type { JsonValue } from 'simplycms/storefront/loaders';
 
 /** Запис активної теми у формі, яку читають каркасні роути. */
 export interface ThemeRecord {

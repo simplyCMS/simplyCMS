@@ -27,6 +27,7 @@ pnpm add simplycms
 | `simplycms/contracts/ports` | Порти: `CatalogRepository`, `OrderRepository`, `IdentityProvider`, `LinkResolver`, `MediaProvider`, `ConfigProvider`, `ScopeResolver` — і контейнер `EngineContext`, який їх зводить докупи |
 | `simplycms/contracts/views` | View-model-и пʼятьох сторінок вітрини (`HomeViewModel`, `CatalogViewModel`, `CatalogSectionViewModel`, `ProductDetailViewModel`, `CartViewModel`) + рантайм-константи реквізитів (`REQUISITE_ATTRIBUTE`, `HOME_REQUISITES`, `CATALOG_REQUISITES`, `PRODUCT_DETAIL_REQUISITES`, `CART_REQUISITES`, `REQUIRED_REQUISITES`) |
 | `simplycms/contracts/views/fixtures` | Фікстури view-model-ів для conformance-kit-а тем — рантайм-обʼєкти, не типи |
+| `simplycms/contracts/server-only` | Декларація межі довіри клієнт/сервер. Дані: `SERVER_ONLY` (субшляхи ядра, що існують лише на сервері) і `SERVER_ONLY_DEPS` (обʼєкти `{ name, clientSafe? }` — `clientSafe` перелічує підшляхи, дозволені клієнту, як `better-auth/react`). Хелпери: `serverOnlyOwner`/`isServerOnlySubpath` (класифікація субшляху), `serverOnlyDepSpecifier` (патерн однієї залежності з урахуванням `clientSafe`) і три набори патернів Import Protection магазину — `serverOnlySpecifiers()`, `serverOnlyFiles()`, `serverOnlyExcludeFiles()`. Лише дані — читачів ШІСТЬ: збірка ядра, гейт `dist-server-boundary`, правило `server-only-relative`, групи `no-restricted-imports` плагінів, Gate C, Import Protection у `vite.config.ts` магазину (таблиця з негативними контролями — `docs/architecture/test-contours.md` §12) |
 
 ## Приклад
 

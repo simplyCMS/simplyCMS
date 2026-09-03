@@ -48,6 +48,11 @@ export default defineConfig({
       // Гард лоуереного `import.meta` у dist: читає артефакт збірки, тому
       // без `pnpm build:packages` перевіряв би вчорашній (або порожній) dist.
       'tests/dist-import-meta.test.ts',
+      // Потребує зібраного `dist` — місце в packaging-сюїті, не в дефолтному
+      // прогоні. Без цього рядка job `test` у CI (він не робить
+      // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:
+      // `entryFiles()` на порожньому dist дає `[]`, і перетин теж `[]`.
+      'tests/dist-server-boundary.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —

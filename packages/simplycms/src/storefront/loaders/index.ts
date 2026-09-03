@@ -32,7 +32,7 @@ export * from './sitemap';
 // побудови select-ів, а не публічний API. Причина не лише в чистоті межі:
 // їхні значення — Drizzle-колонки з глибоко генеричними типами, і `export *`
 // затягував увесь типовий граф ORM у публічний `.d.ts` пакета. Генерація
-// декларацій на цьому вичерпувала heap воркера tsup
+// декларацій на цьому вичерпувала heap dts-плагіна бандлера
 // (`ERR_WORKER_OUT_OF_MEMORY`) — тобто збірка падала не від обсягу коду, а
 // від того, що внутрішній інструмент протік у контракт. Назовні — рядки й мапери.
 export type {
@@ -74,3 +74,9 @@ export { toImageList } from './entities/product';
 export type { JsonValue, PropertyRow, OptionRow } from './entities/property';
 export { toPropertyRow } from './entities/property';
 export type { SectionRow, SectionRef } from './entities/section';
+// Серверні хелпери, що переїхали зі `storefront-routes/server` (трек T,
+// Крок 1б): вони не serverFn, а звичайні серверні функції — під префіксом
+// декларації межі їх збирає серверна група, а не спільний клієнтський чанк.
+export * from './is-admin';
+export * from './theme-record';
+export * from './revalidate-theme';

@@ -161,11 +161,14 @@ node server.mjs`.
   id, прийнятий від клієнта, вона перевірити не може за побудовою.
 - **Живий не-serverFn експорт у модулі поруч із serverFn тягне серверний граф
   у браузер.** Спіймано Gate C пілота: `withSessionDb` лежав у
-  `storefront-routes/server/`, tsup підняв його у спільний чанк, і разом із
-  ним у клієнтський бандл поїхали drizzle і пул Postgres. Лікується
+  `storefront-routes/server/`, бандлер підняв його у спільний чанк, і разом
+  із ним у клієнтський бандл поїхали drizzle і пул Postgres. Лікується
   перенесенням у модуль, який імпортується **bare-специфікатором**
-  (`simplycms/storefront/loaders`) — такі tsup вважає зовнішніми й у чанки не
-  кладе. Це структурна гарантія, а не домовленість.
+  (`simplycms/storefront/loaders`) — такі бандлер лишає зовнішніми й у чанки
+  не кладе. Після треку T (2026-09-02) гарантія ще сильніша: лоадери — це
+  server-only дерево за декларацією `simplycms/contracts/server-only`, і
+  збираються вони ОКРЕМОЮ збіркою, тож спільного чанка з клієнтом не може
+  бути за побудовою. Це структурна гарантія, а не домовленість.
 
 ### 3.2. Сховище файлів — порту немає (контур К4)
 
@@ -201,7 +204,9 @@ node server.mjs`.
 Сервер рахує **підсумки** з позицій (розбіжність «сума ≠ позиції» неможлива),
 але саму ціну позиції приймає з кошика клієнта — тобто підміна ціни в запиті
 ще проходить. Це не регрес (раніше браузер робив INSERT сам), але й не
-закрито. Належить контуру чекауту.
+закрито. 🔴 Закривається **К2-Е0** (рішення Е0-4: сервер рахує ціни позицій
+і доставку, `placeOrder` повертає доменну відмову замість throw) — спека
+[`2026-09-03-k2-e0-storefront-live-contour-design.md`](../superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md).
 
 ### 3.5. `pnpm owner:invite` у шаблоні магазину
 
@@ -250,9 +255,16 @@ node server.mjs`.
 
 ### 4.3. Збірка: декларації типів більше не через tsup
 
-Вендорений `rollup-plugin-dts` створює окрему повну `ts.Program` **на кожну
-теку** entry і тримає їх усі живими: 36 програм, 9 ГБ, 191 с. Тепер декларації
-емітить `tsc -p tsconfig.dts.json` — **39 с під кепом 3 ГБ**.
+Вендорений `rollup-plugin-dts` створював окрему повну `ts.Program` **на
+кожну теку** entry і тримав їх усі живими: 36 програм, 9 ГБ, 191 с (розтин
+2026-08-24). Декларації емітить `tsc -p tsconfig.dts.json` — тоді **39 с під
+кепом 3 ГБ**.
+
+🔴 Рішення виявилось ПОСТІЙНИМ, а не тимчасовим обхідом покинутого
+інструмента: після міграції на tsdown (трек T) вимір повторили 2026-09-02 —
+dts-плагін нового бандлера тримає одну повну `ts.Program` і теж вичерпує
+3 ГБ за 25 с, тоді як `tsc` робить те саме за 11 с / 1,1 ГБ. Повний
+`build:packages` після треку — 15,2 с.
 
 Запобіжники: кеп пам'яті в `scripts/build-packages.mjs` (діє в CI, релізі й
 локально), стеля часу 300 с, структурний тест `tests/dts-toolchain.test.ts`.
@@ -281,8 +293,11 @@ PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm db:demo
 # 2. .env.local
 DATABASE_URL=postgresql://<user>@127.0.0.1:5432/simplycms_demo
 BETTER_AUTH_SECRET=<довгий випадковий рядок>
-BETTER_AUTH_URL=http://localhost:3000
 VITE_SITE_URL=http://localhost:3000
+# BETTER_AUTH_URL=http://localhost:3000  # опційно: без нього база береться з
+#   запиту, а WARN «Base URL is not set» у лозі — очікуваний. 🔴 Задавати лише
+#   origin, з якого реально ходить браузер: з рядковим baseURL Better Auth
+#   довіряє РІВНО цьому origin і відкидає інші з 403 INVALID_ORIGIN
 
 # 3. Запуск
 pnpm build && pnpm start        # або pnpm dev
@@ -292,13 +307,16 @@ pnpm build && pnpm start        # або pnpm dev
 `simplycms` як залежність магазину):
 
 ```ts
-// npx tsx цей файл, з тими самими env
+// Зберегти як owner-invite.mts У КОРЕНІ репо (саме .mts: поза репо tsx бере
+// CJS і падає на top-level await) і запустити з тими самими env:
+//   set -a; . ./.env.local; set +a; npx tsx owner-invite.mts
 const m = await import('./packages/simplycms/src/auth/index.ts');
 const r = await m.issueOwnerInvite({
   email: 'admin@example.com',
   store: m.ownerInviteStore,
   siteUrl: 'http://localhost:3000',
-  sendEmail: async (mail) => console.log(mail.subject, mail.url),
+  // Лист не несе поля `url` — посилання повертає сам issueOwnerInvite (r.url).
+  sendEmail: async (mail) => console.log(mail.subject),
 });
 console.log(r.url);   // відкрити в браузері → форма пароля
 ```
@@ -317,9 +335,13 @@ console.log(r.url);   // відкрити в браузері → форма п�
    зникає `supabase-js` і можна зносити старий шар під корінь.
 2. **Storage-порт К4** (§3.2) — оживляє аватар і зображення.
 3. **SMTP + браузерний e2e** (§3.3, §3.6) — те, що недосяжне в CI-оточенні.
-4. **Перерахунок цін позицій** (§3.4).
-5. **Міграція на tsdown** — див. роадмап, окремим кроком; не змішувати з
-   роботою над магазином.
+4. **Перерахунок цін позицій** (§3.4) — поглинуто К2-Е0.
+5. ✅ **Міграція на tsdown** — виконано (трек T, 2026-09-03).
+6. 🔴 **К2-Е0 «Санація живого контуру вітрини»** — рішення власника
+   2026-09-03: **перед К3 Е2**, бо дефекти лежать на документованому шляху
+   §5 (кошик/гідратація, наявність, чекаут без доставки, `<lastmod>`);
+   спека
+   [`2026-09-03-k2-e0-storefront-live-contour-design.md`](../superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md).
 
 ---
 

@@ -13,7 +13,7 @@ import type { ThemeBootstrapRow } from '../types';
  * 🔴 Модуль навмисно окремий від `./index`, де живуть serverFn-обгортки.
  * Трансформація TanStack Start вирізає з клієнтського бандла тіла хендлерів
  * разом із їхніми імпортами; живий не-serverFn експорт поруч затягнув би
- * сюди пул Postgres (той самий урок, що дав `storefront-routes/server/is-admin`).
+ * сюди пул Postgres (той самий урок, що дав `storefront/loaders/is-admin`).
  * Тести теж імпортують саме звідси: контексту `createServerFn` у них немає.
  */
 

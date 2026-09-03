@@ -96,16 +96,18 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 Плагін **не отримує `SupabaseClient`** — лише порти SDK. Примус двошаровий:
 
 1. **dependency-lint** (eslint-зона `plugins/**` +
-   `packages/simplycms-plugin-*/**`): заборонені `simplycms/supabase(/*)`,
-   `@supabase/*`, `simplycms/db(/*)`, `simplycms/storefront(/*)`,
-   `simplycms/auth(/*)`, `simplycms/schema(/*)`, `simplycms/plugin-sdk/server(/*)`,
-   `drizzle-orm(/*)`, `pg` — і статичний import, і `export … from`, і
-   динамічний `import()` (окремий селектор). 🔴 Субшляху
+   `packages/simplycms-plugin-*/**`): заборонений список ПОХІДНИЙ від
+   `simplycms/contracts/server-only` (`SERVER_ONLY` — субшляхи ядра,
+   `SERVER_ONLY_DEPS` — серверні пакети на кшталт `drizzle-orm`/`pg`) плюс
+   поверхня, заборонена плагіну ПОНАД server-only: `simplycms/supabase(/*)`,
+   `@supabase/*`, `simplycms/plugin-sdk/server(/*)`,
+   `simplycms/admin-server(/*)`. Заборона накриває і статичний import, і
+   `export … from`, і динамічний `import()` (окремий селектор). 🔴 Список у
+   `eslint.config.mjs` — ЧИТАЧ декларації, а не її копія: розширення межі
+   правиться в одному файлі й доїжджає сюди само. 🔴 Субшляху
    `simplycms/data-supabase` у списку БІЛЬШЕ НЕМАЄ: шар знесено в 0.4.1, і
    специфікатор не резолвиться в принципі, тож правило стерегло б порожнечу, а
-   негативний контроль — неіснуючий модуль. Наступників (`simplycms/db`,
-   `simplycms/storefront`, `simplycms/schema`, `drizzle-orm`, `pg`) список
-   містить окремо. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
+   негативний контроль — неіснуючий модуль. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
    `plugins`/`plugin-sdk` — ядро, зона їх не покриває. Доводить не зелений
    лінт, а негативний контроль `tests/plugin-trust-boundary.test.ts`
    (синтетичне порушення в зоні й поза нею) — урок env-контракту: правило,

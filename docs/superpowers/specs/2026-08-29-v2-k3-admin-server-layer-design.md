@@ -1,7 +1,12 @@
 # Серверний шар адмінки + TanStack DB — трек V2-К3
 
 > **Статус: затверджено власником 2026-08-29** (брейнштормінг-сесія
-> `k3-admin-server-layer`); **у коді НЕ реалізовано.** Це виконання пункту
+> `k3-admin-server-layer`); **у коді — три етапи з восьми** (2026-09-02):
+> Е0 (контракт id), Е1а (ключі кешу + топологія `QueryClient`) і Е1б
+> (серверний шар `admin-server`, колекції `admin-data`, жива сторінка
+> `/admin/order-statuses`) змержені в `main` (PR #46, `1ad29034`);
+> попереду Е2 (storage-мінімум) → Е3 (каталог on-demand) → Е4–Е6 (хвилі
+> сутностей) → Е7–Е8 (знос `supabase-js` і живий прогін). Це виконання пункту
 > К3 спеки
 > [`2026-08-19-backend-contract-v2-design.md`](2026-08-19-backend-contract-v2-design.md)
 > (з амендментом 2026-08-23: B3′/B5″/B13) і прямий наступник контуру `0.4.1`
@@ -261,7 +266,11 @@ dataflow-аналіз. `BASELINE` гейта №2 порожній і лишає
 `./admin-server/impl` (дзеркало ролі `./storefront/loaders`: bare-імпорт
 з index робить нутрощі окремим dist-модулем, і Gate C розрізняє стаб від
 нетрансформованого entry payload-маркером; у публічну документацію
-субшлях не виноситься). (3) Клієнт
+субшлях не виноситься; 🔴 амендмент 2026-09-02, трек T: розкладка по
+сутностях у Е3 — `./admin-server/impl/<entity>`, а не
+`./admin-server/<entity>/impl`, бо межу задекларовано префіксами в
+`simplycms/contracts/server-only`, і префікс `admin-server/impl` накриває
+нові сутності без правки декларації). (3) Клієнт
 (`admin-data`, сторінки) отримує ТІЛЬКИ type-only типи рядків із
 `simplycms/schema/types`; `schema` у колекцію не передається — вона
 валідує лише оптимістичні insert/update (дані `queryFn` не валідуються
@@ -340,10 +349,15 @@ packages/simplycms/src/
 │      entity-parity.test.ts       T1  гейт №5
 │
 ├── admin-server/                  T2  🔴 єдиний, хто торкається БД
-│   ├── resource.ts                    defineAdminResource
-│   ├── subset.ts                      loadSubsetOptions → Drizzle where
-│   ├── resources/<entity>.ts          ← фіча
-│   └── operations/<name>.ts           ← інваріанти запису
+│   ├── index.ts                       клієнтський стаб: ЛИШЕ топ-рівневі
+│   │                                  createServerFn (див. К3-9′ (2))
+│   └── impl/                          server-only піддерево (декларація
+│       │                              simplycms/contracts/server-only)
+│       ├── index.ts                   реекспорт нутрощів для стабу
+│       ├── resource.ts                defineAdminResource
+│       ├── subset.ts                  loadSubsetOptions → Drizzle where
+│       ├── resources/<entity>.ts      ← фіча
+│       └── operations/<name>.ts       ← інваріанти запису
 │
 ├── admin-data/                    T4  колекції + похідні view
 │   ├── registry.ts                    WeakMap<QueryClient, …>
@@ -409,7 +423,9 @@ packages/simplycms/src/
 - Realtime будь-якого виду.
 - Віртуалізація великих таблиць в UI.
 - Переклад `<title>` роутів (борг К0-8) — належить К2.
-- Перерахунок цін позицій замовлення (борг 0.4.1-4) — контур чекауту.
+- Перерахунок цін позицій замовлення (борг 0.4.1-4) — **К2-Е0, рішення
+  Е0-4** (сервер рахує ціни й доставку; `placeOrder` → union), спека
+  [`2026-09-03-k2-e0-storefront-live-contour-design.md`](2026-09-03-k2-e0-storefront-live-contour-design.md).
 - Розселення `core` по тірах (борг К0-3) — розвантажується побіжно, але
   цільової перебудови не робиться.
 
@@ -517,7 +533,14 @@ tempId — may 404 on backend» (`docs/guides/mutations.md`).
 відсортованій колекції на 100 000 елементів — ~0.7 мс (differential
 dataflow d2ts, M1 Pro; `docs/overview.md`).
 
-**Б-6. Серіалізація.** Доменні таблиці — 63 із 63 `timestamp` у режимі
+**Б-6. Серіалізація.** 🔴 **Переглянуто 2026-09-03 (К2-Е0, рішення Е0-2).**
+Первісний вимір: доменні таблиці — 63 із 63 `timestamp` у режимі
 `mode: 'string'` (`schema.ts` 62 + `media.ts` 1); `numeric` Drizzle віддає
-рядком. Шар нормалізації не потрібен. `auth.ts` має 13 колонок у
-`mode: 'date'`, але його таблиці в колекції адмінки не входять.
+рядком; висновок «шар нормалізації не потрібен» був хибний — `mode: 'string'`
+віддає не ISO, а сирий текст Postgres (`drizzle-orm/node-postgres` підкладає
+identity-парсер для timestamptz), який доїжджав до `<lastmod>` sitemap і в
+браузер. Контракт дат після К2-Е0: **`Date` у застосунку, текст лише на межі
+виводу** — `mode: 'date'` на доменних колонках (той самий механізм, що в
+`auth.ts`), пул із `DateStyle=ISO,YMD`/`TimeZone=UTC`. Колекції адмінки
+Е3+ приймають `Date`; `numeric` лишається рядком. Спека —
+[`2026-09-03-k2-e0-storefront-live-contour-design.md`](2026-09-03-k2-e0-storefront-live-contour-design.md).

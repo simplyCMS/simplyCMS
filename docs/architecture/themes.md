@@ -36,7 +36,7 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 | | Де | Що демонструє |
 |---|---|---|
 | `themes/default` | `themes/default` (їде в шаблон магазину) | еталон fallback-токенів (спека §6) і живий зразок copy-in-форми; **private**, поза реліз-потягом ядра, поза `theme-manifest-parity` |
-| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore` (npm) | повний контур пакетного постачання: manifest+tokens+components+messages, tsup-збірка, публікація в реліз-потязі ядра |
+| `@simplycms/theme-solarstore` | `packages/simplycms-theme-solarstore` (npm) | повний контур пакетного постачання: manifest+tokens+components+messages, tsdown-збірка, публікація в реліз-потязі ядра |
 
 🔴 **Межі v1 — знати, перш ніж обіцяти можливості:**
 
@@ -209,12 +209,21 @@ conformance: рендер на фікстурах без БД (§7.1). Кано�
 `pnpm build`. Semver-фікси йдуть апстрімом; магазин лишається на голій
 залежності.
 
-**Форма пакета** (Р3, зразок — `@simplycms/plugin-faq`): tsup,
-`format: esm`, `splitting: false` (тема — пасивний модуль без спільного
-singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms\//]`
-(🔴 після К0 ядро приходить unscoped-іменем — сам regexp `/^@simplycms\//`
-більше не зовнішнить нічого корисного, обидві форми потрібні разом),
-`sideEffects: false`. Єдиний entry `src/index.ts` (default-export
+**Форма пакета** (Р3, зразок — `packages/simplycms-theme-solarstore/tsdown.config.ts`):
+tsdown, `format: ['esm']`, `platform: 'node'` + `fixedExtension: false`
+(🔴 разом: `platform: 'node'` лишає builtins Node зовнішніми без попереджень,
+але при ньому `fixedExtension` за замовчуванням дав би `.mjs` повз ключі
+`exports`), `deps: { neverBundle: [/^simplycms(\/|$)/, /^@simplycms\//] }`
+(ядро приходить до магазину окремим пакетом — вбудована копія дублювала б
+React-контексти; 🔴 після К0 ядро має unscoped-імʼя, тож сам `/^@simplycms\//`
+більше не зовнішнить нічого корисного — обидві форми потрібні разом),
+`dts: { sourcemap: true }` (🔴 не декор: топ-рівневий `sourcemap: true` чіпляє
+`//# sourceMappingURL=…d.ts.map` і на .d.ts, а сам файл мапи dts-плагін пише
+лише за цією опцією — інакше декларація посилається в порожнечу),
+`target: 'esnext'` (магазин добирає свій таргет сам), `clean: true`,
+`sideEffects: false` у маніфесті. 🔴 Опції `splitting` у tsdown НЕ ІСНУЄ, а
+`external` — deprecated (обидві приїхали з tsup): питання спільних чанків для
+теми не постає взагалі, бо entry один. Єдиний entry `src/index.ts` (default-export
 `ThemeModule`), `exports` лише `"."` (dev → `src/index.ts`, `publishConfig`
 → `dist/index.js`). `files: ["dist", "src", "!src/**/__tests__/**"]` —
 **`src` обовʼязково в tarball-і**: без нього copy-in-варіант (§3.2) не має
@@ -291,7 +300,7 @@ singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms
 Референс-теми ядра (`@simplycms/theme-*`) уже покриті чинним
 `./node_modules/@simplycms/*/dist/**/*.js` (сам фреймворк-пакет — окремою
 парою глобів `./node_modules/simplycms/{dist,routes}/**`, К0). **Вимога «класи мають бути в
-зібраному dist-JS» — частина конвенції форми пакета** (tsup лишає
+зібраному dist-JS» — частина конвенції форми пакета** (бандлер лишає
 className-літерали в JS; перевірено на dist `plugin-faq`). Copy-in-теми
 (§3.2) під ці глоби НЕ потрапляють — вони йдуть під `./themes/**/*.{ts,tsx}`
 (сирці, вже покрито). Доведено `tests/theme-tailwind-globs.test.ts`:

@@ -100,7 +100,13 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
         "const g = await import('simplycms/admin-server/impl');\n" +
         "const h = await import('simplycms/admin-server');\n" +
         "const e = await import('drizzle-orm');\n" +
-        "const f = await import('pg');\n",
+        "const f = await import('pg');\n" +
+        // 🔴 better-auth і тут: селектор ДЕРИВУЄТЬСЯ з `serverOnlyDepSpecifier`,
+        // і саме ці три рядки не дають копії логіки `clientSafe` тихо
+        // повернутись — форма з префіксним лукахедом пускала б `/reactor`.
+        "const i = await import('better-auth');\n" +
+        "const j = await import('better-auth/reactor');\n" +
+        "const k = await import('better-auth/react');\n",
       {
         filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
         warnIgnored: true,
@@ -110,7 +116,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
       (result?.messages ?? []).filter(
         (m) => m.ruleId === 'no-restricted-syntax',
       ),
-    ).toHaveLength(8);
+      // 10, не 11: `better-auth/react` — клієнтський SDK (`clientSafe`).
+    ).toHaveLength(10);
   });
 
   it('НЕ чіпає ядро: той самий імпорт поза зоною чистий', async () => {
@@ -159,6 +166,44 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
       'plugins/hello-world/fixture.ts',
     );
     expect(errors).toEqual([]);
+  });
+
+  it('похідна від декларації межі: server-only субшляхи й серверні залежності', async () => {
+    for (const bad of [
+      "import { pool } from 'simplycms/db';",
+      "import { ops } from 'simplycms/admin-server/impl';",
+      "import { createSelectSchema } from 'drizzle-zod';",
+    ]) {
+      const errors = await boundaryErrors(
+        bad,
+        'plugins/hello-world/fixture.ts',
+      );
+      expect(errors, bad).toHaveLength(1);
+    }
+  });
+
+  it('better-auth: корінь і серверні підшляхи заборонені, /react — ні', async () => {
+    // 🔴 Виняток описаний ДАНИМИ в декларації (`clientSafe: ['react']`), а не
+    // спецвипадком у читачі: корінь better-auth — серверний інстанс, а
+    // `better-auth/react` — клієнтський SDK, яким законно живе форма входу.
+    for (const bad of [
+      "import { betterAuth } from 'better-auth';",
+      "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
+      // 🔴 Лукахед звіряє ЦІЛИЙ сегмент: `reactor` — не `react`, тож виняток
+      // на нього не поширюється (префіксна форма пропустила б його).
+      "import { x } from 'better-auth/reactor';",
+    ]) {
+      const errors = await boundaryErrors(
+        bad,
+        'plugins/hello-world/fixture.ts',
+      );
+      expect(errors, bad).toHaveLength(1);
+    }
+    const ok = "import { createAuthClient } from 'better-auth/react';";
+    expect(
+      await boundaryErrors(ok, 'plugins/hello-world/fixture.ts'),
+      ok,
+    ).toEqual([]);
   });
 
   it('зона не зʼїдена ignores (страховка скоупінгу)', async () => {

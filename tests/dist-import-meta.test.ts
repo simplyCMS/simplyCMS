@@ -1,18 +1,19 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { publishableDirs } from '../scripts/pack-inspect.mjs';
+import { closure, distFiles } from './lib/dist-graph';
 
 // Гард форми `import.meta` в ОПУБЛІКОВАНОМУ коді (packaging-suite).
 //
-// 🔴 Причина, а не симптом: tsup віддає esbuild таргет із tsconfig (`ES2017`),
-// а за таргета нижче ES2020 esbuild ЛОУЕРИТЬ `import.meta` у локальну змінну
+// 🔴 Причина, а не симптом: бандлер бере таргет із tsconfig (`ES2017`), якщо
+// його не задано явно, а за таргета нижче ES2020 ЛОУЕРИТЬ `import.meta` у змінну
 // `var import_meta = {}`. Компілюється воно тихо — падає вже в магазині:
 // `resolveSupabaseKeys(({}).env)` = `resolveSupabaseKeys(undefined)` →
 // TypeError на гідрації, ще до дружнього throw про відсутній ключ. Форму
 // треба ЗБЕРЕГТИ, щоб її підставив бандлер магазину; лікує це
-// `target: 'esnext'` у `base` кожного tsup-конфігу.
+// `target: 'esnext'` у `base` кожного конфігу tsdown.
 //
 // Читаємо `dist/` з диска, а не вміст tarball-а: лоуерення стається на
 // збірці, а в `.tgz` лягає той самий `dist/` (його присутність там доводить
@@ -31,20 +32,6 @@ const FLAGSHIP = 'simplycms';
  */
 const LOWERED = /\bimport_meta\d*\b/;
 
-/** Рекурсивно: усі JS-модулі всередині `dist` пакета (шляхи від кореня репо). */
-const distFiles = (dir: string): string[] => {
-  const out: string[] = [];
-  const walk = (abs: string): void => {
-    for (const entry of readdirSync(abs, { withFileTypes: true })) {
-      const next = join(abs, entry.name);
-      if (entry.isDirectory()) walk(next);
-      else if (/\.[cm]?js$/.test(entry.name)) out.push(next);
-    }
-  };
-  if (existsSync(dir)) walk(dir);
-  return out;
-};
-
 /**
  * Пакети ядра, які мають зібраний `dist`.
  *
@@ -58,23 +45,6 @@ const built = publishableDirs()
     files: distFiles(join(ROOT, 'packages', dir, 'dist')),
   }))
   .filter((pkg) => pkg.files.length > 0);
-
-/** Транзитивне замикання по ЛОКАЛЬНИХ (`./`, `../`) імпортах entry-модуля. */
-const closure = (entry: string): string[] => {
-  const seen = new Set<string>([entry]);
-  const queue = [entry];
-  for (let file = queue.pop(); file !== undefined; file = queue.pop()) {
-    const code = readFileSync(file, 'utf8');
-    for (const [, spec] of code.matchAll(/from\s*["'](\.[^"']*)["']/g)) {
-      const next = resolve(dirname(file), spec);
-      if (existsSync(next) && !seen.has(next)) {
-        seen.add(next);
-        queue.push(next);
-      }
-    }
-  }
-  return [...seen];
-};
 
 describe('опублікований dist: форма import.meta збережена', () => {
   it('флагман зібрано — інакше гейт перевіряв би порожнечу', () => {
@@ -90,7 +60,7 @@ describe('опублікований dist: форма import.meta збереже
 
     expect(
       offenders,
-      `esbuild злоуерив \`import.meta\` — у tsup-конфігах цих пакетів бракує ` +
+      `бандлер злоуерив \`import.meta\` — у конфігах tsdown цих пакетів бракує ` +
         `\`target: 'esnext'\`:\n${offenders.join('\n')}`,
     ).toEqual([]);
   });
@@ -110,7 +80,7 @@ describe('опублікований dist: форма import.meta збереже
       `немає ${entry} — потрібен pnpm build:packages`,
     ).toBe(true);
 
-    const code = closure(entry)
+    const code = [...closure([entry])]
       .map((file) => readFileSync(file, 'utf8'))
       .join('\n');
     expect(code).toContain('import.meta.env');

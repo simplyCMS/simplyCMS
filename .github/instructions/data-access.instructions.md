@@ -180,7 +180,7 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 
 ### Server function + in-memory TTL cache (cross-request)
 ```typescript
-// packages/simplycms/src/storefront-routes/server/theme-record.ts — еталон патерну
+// packages/simplycms/src/storefront/loaders/theme-record.ts — еталон патерну
 const CACHE_TTL = 5 * 60 * 1000;
 let cache: { data: T | null; timestamp: number } | null = null;
 

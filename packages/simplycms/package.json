@@ -4,12 +4,14 @@
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
+  "sideEffects": false,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./contracts": "./src/contracts/index.ts",
     "./contracts/entities": "./src/contracts/entities.ts",
+    "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
@@ -26,7 +28,7 @@
     "./schema/relations": "./src/schema/relations.ts",
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
-    "./admin-server/impl": "./src/admin-server/impl.ts",
+    "./admin-server/impl": "./src/admin-server/impl/index.ts",
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
@@ -40,7 +42,6 @@
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./storefront": "./src/storefront/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
     "./ui": "./src/ui/index.ts",
@@ -116,6 +117,10 @@
         "types": "./dist/contracts/entities.d.ts",
         "import": "./dist/contracts/entities.js"
       },
+      "./contracts/server-only": {
+        "types": "./dist/contracts/server-only.d.ts",
+        "import": "./dist/contracts/server-only.js"
+      },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",
         "import": "./dist/contracts/objects/index.js"
@@ -181,8 +186,8 @@
         "import": "./dist/admin-server/index.js"
       },
       "./admin-server/impl": {
-        "types": "./dist/admin-server/impl.d.ts",
-        "import": "./dist/admin-server/impl.js"
+        "types": "./dist/admin-server/impl/index.d.ts",
+        "import": "./dist/admin-server/impl/index.js"
       },
       "./admin-data": {
         "types": "./dist/admin-data/index.d.ts",
@@ -235,10 +240,6 @@
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
-      },
-      "./storefront": {
-        "types": "./dist/storefront/index.d.ts",
-        "import": "./dist/storefront/index.js"
       },
       "./storefront/loaders": {
         "types": "./dist/storefront/loaders/index.d.ts",
@@ -475,7 +476,7 @@
     "directory": "packages/simplycms"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup && tsc -p tsconfig.dts.json",
+    "build": "tsdown && tsc -p tsconfig.dts.json",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },

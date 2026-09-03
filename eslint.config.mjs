@@ -8,6 +8,15 @@ import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
 import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
+import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
+import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
+// 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
+// (type stripping), а він резолвить лише явні розширення.
+import {
+  SERVER_ONLY,
+  SERVER_ONLY_DEPS,
+  serverOnlyDepSpecifier,
+} from './packages/simplycms/src/contracts/server-only.ts';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
 // Детектор саме на кирилицю — каталог uk-first, а `aria-hidden="true"` та інші
@@ -117,44 +126,44 @@ const MUTATION_CACHE_SYNC_RATCHET = [
   'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
 ];
 
+// 🔴 Похідне від ЄДИНОЇ декларації межі (`contracts/server-only.ts`): усі
+// server-only субшляхи ядра й серверні залежності — bare і з підшляхами.
+// Літерали нижче — те, що плагіну заборонено ПОНАД server-only: Supabase-шар
+// адмінки (до К3) і serverFn-модулі ядра (`admin-server`, `plugin-sdk/server`):
+// плагін кличе хуки SDK, а не хендлери під ними.
+const PLUGIN_BOUNDARY_MESSAGE =
+  'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).';
+// Залежності без винятків ідуть глобами; ті, що мають `clientSafe`, — ні:
+// gitignore-заперечення в `group` підшлях НЕ звільняє (перевірено на
+// ESLint 10.8 — усі три форми `better-auth` червоніли), тож для них
+// окремий патерн `regex` із лукахедом із самої декларації.
+const serverOnlyImportGroup = [
+  ...SERVER_ONLY.flatMap((sub) => [`simplycms/${sub}`, `simplycms/${sub}/*`]),
+  ...SERVER_ONLY_DEPS.filter((dep) => !dep.clientSafe?.length).flatMap(
+    (dep) => [dep.name, `${dep.name}/*`],
+  ),
+];
+const clientSafeDepPatterns = SERVER_ONLY_DEPS.filter(
+  (dep) => dep.clientSafe?.length,
+).map((dep) => ({
+  regex: serverOnlyDepSpecifier(dep).source,
+  message: PLUGIN_BOUNDARY_MESSAGE,
+}));
+const pluginOnlySurfaceGroup = [
+  'simplycms/supabase',
+  'simplycms/supabase/*',
+  '@supabase/*',
+  'simplycms/plugin-sdk/server',
+  'simplycms/plugin-sdk/server/*',
+  'simplycms/admin-server',
+  'simplycms/admin-server/*',
+];
 const pluginTrustBoundaryImports = [
   {
-    group: [
-      'simplycms/supabase',
-      'simplycms/supabase/*',
-      '@supabase/*',
-      // db-рантайм v2 (Task 6): плагінові він не поверхня взагалі — навіть
-      // `withActor`. Дані плагін бере портами SDK, які самі вирішують, під
-      // яким актором піде транзакція.
-      'simplycms/db',
-      'simplycms/db/*',
-      // 🔴 Обхідні шляхи до тієї самої БД, відкриті контуром v2 (B9). Доки
-      // єдиним каналом був PostgREST, заборони Supabase вистачало; тепер
-      // поруч живуть серверні лоадери вітрини, auth-контур і Drizzle-схема —
-      // і кожен із них дає плагінові рівно те, що межа довіри забирає.
-      // Транспорт портів (`plugin-sdk/server`) сюди ж: плагін кличе хуки,
-      // а не хендлери під ними.
-      'simplycms/storefront',
-      'simplycms/storefront/*',
-      'simplycms/auth',
-      'simplycms/auth/*',
-      'simplycms/schema',
-      'simplycms/schema/*',
-      'simplycms/plugin-sdk/server',
-      'simplycms/plugin-sdk/server/*',
-      // admin-server (Е1б, К3-4′): кожна операція за `impl` сама кличе
-      // requireGrant, тож дірки в авторизації немає — але імпорт із плагіна
-      // тягне весь серверний граф (db, auth, схему) у клієнтський бандл, а
-      // саме це межа й спиняє.
-      'simplycms/admin-server',
-      'simplycms/admin-server/*',
-      'drizzle-orm',
-      'drizzle-orm/*',
-      'pg',
-    ],
-    message:
-      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
+    group: [...pluginOnlySurfaceGroup, ...serverOnlyImportGroup],
+    message: PLUGIN_BOUNDARY_MESSAGE,
   },
+  ...clientSafeDepPatterns,
   // Flat config замінює опції правила цілком, тож глобальну зону
   // `simplycms/db/client` доливаємо сюди явно — інакше блок мовчки зняв би її
   // з `plugins/**` (той самий прийом, що з i18n-селекторами в env-зоні).
@@ -162,11 +171,28 @@ const pluginTrustBoundaryImports = [
 ];
 
 // no-restricted-imports НЕ бачить динамічний import() — його ловить окремий
-// селектор (знахідка рев'ю Фази 3). Регексп дзеркалить групи вище.
+// селектор (знахідка рев'ю Фази 3). Regex будується з тих самих списків, що
+// й групи вище; `/` у селекторі ESLint пишеться як \u002F.
+const esq = (items) => items.map((s) => s.replace(/\//g, '\\u002F')).join('|');
+// 🔴 Альтернатива кожної залежності ДЕРИВУЄТЬСЯ з `serverOnlyDepSpecifier`, а
+// не пишеться тут удруге: копія логіки `clientSafe` вже одного разу розійшлася
+// з декларацією (`better-auth/reactor` був заборонений статичним імпортом і
+// дозволений динамічним). Дві відмінності форми — вимушені:
+//   • `^` знімаємо: селектор має власний якір навколо всієї альтернації;
+//   • `.*` дописуємо: патерн декларації — ПРЕФІКСНИЙ тест (`^name(/|$)`), а тут
+//     альтернатива мусить покрити ЦІЛИЙ специфікатор до `$`.
+// `/` у селекторі ESLint пишеться як \u002F, причому в `source` слеш уже
+// екранований (`\/`) — звідси `\\?\/` у регексі заміни.
+const esqDeps = () =>
+  SERVER_ONLY_DEPS.map((dep) =>
+    `${serverOnlyDepSpecifier(dep).source.replace(/^\^/, '')}.*`.replace(
+      /\\?\//g,
+      '\\u002F',
+    ),
+  ).join('|');
 const pluginTrustBoundarySyntax = [
   {
-    selector:
-      'ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|db|storefront|auth|schema|plugin-sdk\\u002Fserver|admin-server)(?:\\u002F.*)?|@supabase\\u002F.*|drizzle-orm(?:\\u002F.*)?|pg)$/]',
+    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
@@ -333,6 +359,51 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
+  // Трек T: межа довіри всередині шару — відносний імпорт у server-only
+  // дерево ззовні нього (стаб `admin-server/index` → `./impl`) заінлайнив би
+  // серверні нутрощі в клієнтський модуль без сліду в `dist`.
+  // 🔴 Тести виведені з зони: правило стереже граф, який ЇДЕ в `dist`, а
+  // `__tests__` туди не потрапляють — відносний імпорт server-only дерева з
+  // тесту межу не пробиває.
+  {
+    files: ['packages/simplycms/{src,routes}/**/*.{ts,tsx}'],
+    ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
+    plugins: {
+      'simplycms-boundary': {
+        rules: { 'server-only-relative': serverOnlyRelative },
+      },
+    },
+    rules: { 'simplycms-boundary/server-only-relative': 'error' },
+  },
+  // Трек T увімкнув `"sideEffects": false` у трьох публікованих пакетах —
+  // отже, зобовʼязався тримати обіцянку правдивою. Причина, чому це окреме
+  // правило, а не селектор у спільному `no-restricted-syntax` (перетин із
+  // трьома чинними зонами того ж правила + заміщення опцій flat config-ом),
+  // і вимір, що це доводить, — у `eslint-rules/no-side-effect-import.mjs`.
+  //
+  // Зона — рівно ті теки, що їдуть у tarball кожного з трьох пакетів
+  // (`files` їхніх маніфестів): у ядрі й у плагіні це `src` + `routes`, у
+  // темі — `src`. Список пакетів із полем стереже
+  // `tests/published-exports-parity.test.ts`; `src/` host-а сюди НЕ входить
+  // — магазин ніхто не бандлить як бібліотеку, і side-effect-імпорти там
+  // (`./theme-registry`, `./styles/globals.css`) легальні за побудовою.
+  //
+  // 🔴 `__tests__` виведені: у tarball вони не їдуть (`!src/**/__tests__/**`
+  // у `files`), тож обіцянки маніфеста не стосуються.
+  {
+    files: [
+      'packages/simplycms/{src,routes}/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/{src,routes}/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
+    plugins: {
+      'simplycms-sideeffects': {
+        rules: { 'no-side-effect-import': noSideEffectImport },
+      },
+    },
+    rules: { 'simplycms-sideeffects/no-side-effect-import': 'error' },
   },
   {
     ignores: [

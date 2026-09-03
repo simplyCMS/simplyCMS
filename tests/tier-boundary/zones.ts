@@ -42,7 +42,7 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   ],
   [
     'packages/simplycms/src/admin-server',
-    'simplycms/storefront',
+    'simplycms/storefront/loaders',
     'simplycms/db',
   ],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],

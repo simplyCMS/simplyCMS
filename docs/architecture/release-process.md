@@ -66,7 +66,7 @@ gh pr create --base main --title "Реліз v0.2.0"
 npm для `create-*` CLI). Наслідки для реліз-потяга:
 
 - **без `build`-кроку** — це CLI + статичний шаблон (`src/` + `template/`),
-  не TypeScript-пакет ядра; `pnpm build:packages` (tsup) його не чіпає, у
+  не TypeScript-пакет ядра; `pnpm build:packages` (tsdown) його не чіпає, у
   `files` manifest-а йдуть сирі `src` і `template`;
 - **публікується тим самим `pnpm publish -r`** — жодного окремого workflow
   чи кроку не потрібно, `publishConfig.access: "public"` у manifest-і той
@@ -185,12 +185,27 @@ remote незворотне, а автоматичний код на це пра
 
 ### Гейти релізу
 
-Той самий порядок, що в `CLAUDE.md`:
+Той самий порядок, що в `CLAUDE.md`, з двома відмінностями — обидві свідомі:
+у релізі НЕМАЄ `test:schema` і Є `pilot:pack`.
 
 ```
 install --frozen-lockfile → format:check → lint → build
 → typecheck → test → build:packages → typecheck:template → test:packaging
+→ pilot:pack
 ```
+
+🔴 `pilot:pack` — останній і саме тут, а не в CI (трек T, 2026-09-02):
+Gate C пілота — єдиний доказ межі клієнт/сервер у РЕАЛЬНОМУ клієнтському
+бандлі скретч-магазину, зібраному з тих самих tarball-ів. У CI він не
+ганяється: рішення 2026-08-01 стосується `pnpm pilot` із Gate B, якому
+потрібна жива БД, — а `pilot:pack` бази не потребує й детермінований, тож
+реліз лишається єдиним місцем, де він обовʼязковий.
+
+🔴 `test:schema` у реліз НЕ входить, хоча в ланцюзі CLAUDE.md він є: гейт
+потребує Postgres на машині релізу, а реліз має лишатися запускним з
+ноутбука. Додавання — окреме рішення власника, не «забутий крок». Тому
+авторитетний для релізу саме цей список, а не ланцюг CLAUDE.md; його склад
+і порядок асертить `tests/release-gates.test.ts`.
 
 `install --frozen-lockfile` перший, бо це єдиний гейт, що ловить розсинхрон
 `pnpm-lock.yaml` з манифестами — у CI він дефолтний, тож розсинхрон валить
@@ -306,7 +321,7 @@ is required to publish packages.
 | `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |
-| Магазин падає на гідрації з TypeError у Supabase-клієнті, хоча гейти зелені | 🔴 профіль tsup **без `target: 'esnext'`**: esbuild лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsup.config.ts`, а не в окремих профілях; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
+| Магазин падає на гідрації з TypeError у Supabase-клієнті, хоча гейти зелені | 🔴 конфіг збірки **без `target: 'esnext'`**: бандлер лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsdown.config.ts` кожного пакета; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
 
 ## Пов'язане
 
