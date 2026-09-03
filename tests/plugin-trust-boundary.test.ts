@@ -100,7 +100,13 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
         "const g = await import('simplycms/admin-server/impl');\n" +
         "const h = await import('simplycms/admin-server');\n" +
         "const e = await import('drizzle-orm');\n" +
-        "const f = await import('pg');\n",
+        "const f = await import('pg');\n" +
+        // 🔴 better-auth і тут: селектор ДЕРИВУЄТЬСЯ з `serverOnlyDepSpecifier`,
+        // і саме ці три рядки не дають копії логіки `clientSafe` тихо
+        // повернутись — форма з префіксним лукахедом пускала б `/reactor`.
+        "const i = await import('better-auth');\n" +
+        "const j = await import('better-auth/reactor');\n" +
+        "const k = await import('better-auth/react');\n",
       {
         filePath: join(REPO, 'plugins/hello-world/fixture.ts'),
         warnIgnored: true,
@@ -110,7 +116,8 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
       (result?.messages ?? []).filter(
         (m) => m.ruleId === 'no-restricted-syntax',
       ),
-    ).toHaveLength(8);
+      // 10, не 11: `better-auth/react` — клієнтський SDK (`clientSafe`).
+    ).toHaveLength(10);
   });
 
   it('НЕ чіпає ядро: той самий імпорт поза зоною чистий', async () => {
