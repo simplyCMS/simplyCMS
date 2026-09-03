@@ -34,8 +34,8 @@
     "directory": "packages/simplycms-theme-solarstore"
   },
   "scripts": {
-    "build": "tsup",
-    "prepublishOnly": "tsup"
+    "build": "tsdown",
+    "prepublishOnly": "tsdown"
   },
   "peerDependencies": {
     "simplycms": "workspace:*",

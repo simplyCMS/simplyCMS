@@ -43,8 +43,8 @@
     "directory": "packages/simplycms-plugin-faq"
   },
   "scripts": {
-    "build": "tsup",
-    "prepublishOnly": "tsup"
+    "build": "tsdown",
+    "prepublishOnly": "tsdown"
   },
   "peerDependencies": {
     "simplycms": "workspace:*",
