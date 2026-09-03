@@ -118,8 +118,11 @@ vitest 4, ESLint 10.
   format:check → lint → build → typecheck → test → test:schema →
   build:packages → typecheck:template → test:packaging`; після треку в
   гейтах РЕЛІЗУ ще `pilot:pack`.
-- **Мінімальний гейт кожної задачі:** `pnpm lint && pnpm test` перед комітом
-  (урок Е1б: рев'ю по дифу сліпе до парність-тестів).
+- **Мінімальний гейт кожної задачі:** `pnpm format:check && pnpm lint && pnpm test`
+  перед комітом (урок Е1б: рев'ю по дифу сліпе до парність-тестів). 🔴
+  `format:check` тут НЕ зайвий: код у цьому плані писався руками, і блоки
+  ширші за `printWidth` prettier проходять і лінт, і тести, але валять job
+  `typecheck` у CI на другому кроці (спіймано на Task 2).
 - **Кожен коміт** закінчується двома трейлерами атрибуції сесії-виконавця,
   дослівно (URL — тієї сесії, що виконує):
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` і
@@ -1105,14 +1108,27 @@ export const relativeImports = (code: string): string[] => {
   return [...found];
 };
 
-/** Транзитивне замикання по відносних імпортах від набору файлів. */
-export const closure = (entries: Iterable<string>): Set<string> => {
+/**
+ * Транзитивне замикання по відносних імпортах від набору файлів.
+ *
+ * 🔴 Нерезолвлені ребра РАХУЮТЬСЯ, а не мовчки губляться: специфікатор без
+ * розширення або форма, якої обхід не знає, дали б нетрасовану гілку — тобто
+ * тихіший гейт. Сьогодні їх нуль, і гейт це асертить.
+ */
+export const closure = (
+  entries: Iterable<string>,
+  unresolved?: string[],
+): Set<string> => {
   const seen = new Set<string>(entries);
   const queue = [...seen];
   for (let file = queue.pop(); file !== undefined; file = queue.pop()) {
     for (const spec of relativeImports(readFileSync(file, 'utf8'))) {
       const next = resolve(dirname(file), spec);
-      if (existsSync(next) && !seen.has(next)) {
+      if (!existsSync(next)) {
+        unresolved?.push(`${file} → ${spec}`);
+        continue;
+      }
+      if (!seen.has(next)) {
         seen.add(next);
         queue.push(next);
       }
@@ -1146,11 +1162,17 @@ pnpm vitest run --config vitest.packaging.config.ts tests/dist-import-meta.test.
 `resolve` (перед `test`):
 
 ```ts
-  // Один base-prefix ключ, як у vitest.config.ts: гейти треку T імпортують
-  // декларацію межі bare-субшляхом `simplycms/contracts/server-only`, а
-  // `dts-toolchain` імпортує `tsdown.config.ts`, який робить те саме.
+  // Один base-prefix ключ, як у vitest.config.ts: гейт `dist-server-boundary`
+  // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
+  // З Task 4 сюди додається `dts-toolchain`: він імпортує `tsdown.config.ts`,
+  // який робить те саме (сьогодні той конфіг — ще tsup і декларації не читає).
+  // 🔴 `import.meta.dirname`, не `__dirname`: корінь — ESM (`type: module`),
+  // і `__dirname` тут друкує попередження configLoader у КОЖНОМУ прогоні
+  // сюїти, а вивід гейта має лишатись чистим.
   resolve: {
-    alias: { simplycms: resolve(__dirname, 'packages/simplycms/src') },
+    alias: {
+      simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
+    },
   },
 ```
 
@@ -1163,6 +1185,20 @@ pnpm vitest run --config vitest.packaging.config.ts tests/dist-import-meta.test.
       // досяжний із клієнтського entry.
       'tests/dist-server-boundary.test.ts',
 ```
+
+🔴 І ОДРАЗУ — у `vitest.config.ts`, у список `test.exclude`, поруч із
+`'tests/dist-import-meta.test.ts'`:
+
+```ts
+      // Потребує зібраного `dist` — місце в packaging-сюїті, не в дефолтному
+      // прогоні. Без цього рядка job `test` у CI (він не робить
+      // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:
+      // `entryFiles()` на порожньому dist дає `[]`, і перетин теж `[]`.
+      'tests/dist-server-boundary.test.ts',
+```
+
+Список у `vitest.config.ts` — ПОІМЕННИЙ, глоба немає: новий файл у `tests/`
+потрапляє в дефолтний прогін автоматично.
 
 - [ ] **Крок 5: Гейт партиції**
 
@@ -1210,6 +1246,8 @@ const entryFiles = (): string[] => {
     .filter((target) => target.endsWith('.js'));
   const expand = (target: string): string[] => {
     if (!target.includes('*')) return [resolve(CORE, target)].filter((f) => existsSync(f));
+    // Дві зірки мовчки взяли б середину як suffix — падати гучно.
+    if (target.split('*').length !== 2) throw new Error(`ціль із двома * : ${target}`);
     const [prefix, suffix] = target.split('*');
     return files.filter((file) => {
       const rel = `./${relative(CORE, file)}`;
@@ -1217,6 +1255,17 @@ const entryFiles = (): string[] => {
     });
   };
   return [...new Set(targets.flatMap(expand))];
+};
+
+/** Явні (не-wildcard) js-цілі exports, яких немає на диску. */
+const missingExplicitTargets = (): string[] => {
+  const pkg = JSON.parse(readFileSync(join(CORE, 'package.json'), 'utf8')) as {
+    publishConfig: { exports: Record<string, string | Record<string, string>> };
+  };
+  return Object.values(pkg.publishConfig.exports)
+    .flatMap((value) => (typeof value === 'string' ? [value] : Object.values(value)))
+    .filter((t) => t.endsWith('.js') && !t.includes('*'))
+    .filter((t) => !existsSync(resolve(CORE, t)));
 };
 
 /** `db/index.js` → `db`, `admin-server/impl.js` → `admin-server/impl`. */
@@ -1228,7 +1277,16 @@ const read = (rel: string): string => readFileSync(join(DIST, rel), 'utf8');
 describe('межа клієнт/сервер у зібраному ядрі', () => {
   it('dist ядра зібраний і кожне server-only дерево має entry (інакше гейт мовчав би)', () => {
     expect(existsSync(DIST), 'спершу `pnpm build:packages`').toBe(true);
-    const server = entryFiles().filter((f) => isServerOnlySubpath(subpathOf(f)));
+    const entries = entryFiles();
+    const server = entries.filter((f) => isServerOnlySubpath(subpathOf(f)));
+    // 🔴 Захист від вакууму з КЛІЄНТСЬКОГО боку — саме там, де міграція
+    // здатна зламати гейт мовчки: 18 із 88 js-цілей exports — wildcard, і
+    // якщо бандлер змінить розширення чи вкладеність виходу, глоб не
+    // збіжиться з жодним файлом, `client` стане порожнім, а тест партиції
+    // зеленітиме на порожньому перетині.
+    expect(entries.length - server.length).toBeGreaterThan(0);
+    // Явні (не-wildcard) цілі не мають тихо відпадати через `existsSync`.
+    expect(missingExplicitTargets()).toEqual([]);
     for (const sub of SERVER_ONLY) {
       expect(
         server.some((f) => subpathOf(f) === sub || subpathOf(f).startsWith(`${sub}/`)),
@@ -1241,8 +1299,12 @@ describe('межа клієнт/сервер у зібраному ядрі', ()
     const entries = entryFiles();
     const server = entries.filter((f) => isServerOnlySubpath(subpathOf(f)));
     const client = entries.filter((f) => !isServerOnlySubpath(subpathOf(f)));
-    const clientClosure = closure(client);
-    const shared = [...closure(server)]
+    const unresolved: string[] = [];
+    const clientClosure = closure(client, unresolved);
+    const serverClosure = closure(server, unresolved);
+    // Нетрасоване ребро — це діра в замиканні, тобто тихіший гейт.
+    expect(unresolved, 'відносні імпорти, яких обхід не резолвив').toEqual([]);
+    const shared = [...serverClosure]
       .filter((f) => clientClosure.has(f))
       .map((f) => relative(DIST, f));
     expect(
@@ -1328,8 +1390,9 @@ pnpm vitest run --config vitest.packaging.config.ts tests/dist-server-boundary.t
 - [ ] **Крок 9: Гейти й коміт**
 
 ```bash
-pnpm lint && pnpm test && pnpm test:packaging
-git add tests/lib/dist-graph.ts tests/dist-server-boundary.test.ts tests/dist-import-meta.test.ts vitest.packaging.config.ts
+pnpm format:check && pnpm lint && pnpm test && pnpm test:packaging
+git add tests/lib/dist-graph.ts tests/dist-server-boundary.test.ts tests/dist-import-meta.test.ts \
+  vitest.packaging.config.ts vitest.config.ts
 git commit -m "test(track-t): гейт партиції dist — серверні й клієнтські entry не ділять чанків
 
 Baseline на tsup перед міграцією. Інваріант читає декларацію межі, тому
