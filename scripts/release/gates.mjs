@@ -34,12 +34,23 @@ export const GATES = [
  *
  * Вивід гейтів глушиться (`stdio: 'pipe'`), але при падінні друкується
  * повністю — інакше причина фейлу лишилась би невидимою.
+ *
+ * 🔴 `maxBuffer` явний: дефолт `execSync` — 1 МіБ НА ПОТІК, а найбалакучіший
+ * гейт `pilot:pack` (доданий треком T — збирає скретч-магазин: `pnpm pack`
+ * × 5, install, `vite build`) дає 172 КБ stdout на ЗЕЛЕНОМУ прогоні (вимір
+ * 2026-09-03), тобто запас лише ×6. Балакучий саме червоний прогін — і
+ * переповнення обірвало б вивід `ENOBUFS`-ом, сховавши справжню причину
+ * фейлу за помилкою, що коду не стосується.
  */
 export function runGates({ log }) {
   for (const [index, gate] of GATES.entries()) {
     log(`  [${index + 1}/${GATES.length}] ${gate.name}…`);
     try {
-      execSync(gate.cmd, { stdio: 'pipe', encoding: 'utf8' });
+      execSync(gate.cmd, {
+        stdio: 'pipe',
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+      });
     } catch (error) {
       const output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
       throw new Error(
