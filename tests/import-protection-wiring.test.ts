@@ -41,7 +41,16 @@ const CONFIGS = [
  */
 const CLIENT_RULES = [
   ['specifiers', /\bspecifiers:\s*serverOnlySpecifiers\(\),/],
-  ['files', /\bfiles:\s*serverOnlyFiles\(\),/],
+  // 🔴 `files` — єдиний із трьох, де поруч із хелпером стоїть літерал, і це
+  // навмисно: `client.files` ЗАМІЩУЮТЬ дефолт Start (`pick(user, default)`),
+  // а не зливаються з ним, тож `'**/*.server.*'` треба дописати вручну —
+  // інакше конвенція Start мовчки перестала б діяти в кожному магазині.
+  // Асерт вимагає обидві частини разом, щоб вимкнути будь-яку поодинці було
+  // не можна.
+  [
+    'files',
+    /\bfiles:\s*\[\.\.\.serverOnlyFiles\(\),\s*'\*\*\/\*\.server\.\*'\],/,
+  ],
   ['excludeFiles', /\bexcludeFiles:\s*serverOnlyExcludeFiles\(\),/],
 ] as const;
 

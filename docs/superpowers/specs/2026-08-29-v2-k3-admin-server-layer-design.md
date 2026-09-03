@@ -349,10 +349,15 @@ packages/simplycms/src/
 │      entity-parity.test.ts       T1  гейт №5
 │
 ├── admin-server/                  T2  🔴 єдиний, хто торкається БД
-│   ├── resource.ts                    defineAdminResource
-│   ├── subset.ts                      loadSubsetOptions → Drizzle where
-│   ├── resources/<entity>.ts          ← фіча
-│   └── operations/<name>.ts           ← інваріанти запису
+│   ├── index.ts                       клієнтський стаб: ЛИШЕ топ-рівневі
+│   │                                  createServerFn (див. К3-9′ (2))
+│   └── impl/                          server-only піддерево (декларація
+│       │                              simplycms/contracts/server-only)
+│       ├── index.ts                   реекспорт нутрощів для стабу
+│       ├── resource.ts                defineAdminResource
+│       ├── subset.ts                  loadSubsetOptions → Drizzle where
+│       ├── resources/<entity>.ts      ← фіча
+│       └── operations/<name>.ts       ← інваріанти запису
 │
 ├── admin-data/                    T4  колекції + похідні view
 │   ├── registry.ts                    WeakMap<QueryClient, …>

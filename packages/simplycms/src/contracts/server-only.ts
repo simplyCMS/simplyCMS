@@ -10,14 +10,21 @@
  * `themes/server` і `plugins/server` у цьому списку дають пʼять хибних
  * спрацювань Import Protection на чистому коді.
  *
- * 🔴 Тут лише ДАНІ (тір T0 — нуль рантайм-залежностей). Читачів пʼять, кожен
+ * 🔴 Тут лише ДАНІ (тір T0 — нуль рантайм-залежностей). Читачів шість, кожен
  * своїм механізмом, і жоден не тримає власної копії списку:
  *   1. `packages/simplycms/tsdown.config.ts` — серверна група збірки;
  *   2. `tests/dist-server-boundary.test.ts` — партиція `dist` (packaging-suite);
- *   3. `eslint.config.mjs` + `eslint-rules/server-only-relative.mjs` — межа
- *      для плагінів і заборона відносного імпорту в server-only дерево;
- *   4. `scripts/pilot-pack/gate-c.mjs` — серверний вантаж у клієнтських чанках;
- *   5. `vite.config.ts` хоста, шаблону й пілота — Import Protection Start.
+ *   3. `eslint-rules/server-only-relative.mjs` — заборона ВІДНОСНОГО імпорту
+ *      в server-only дерево ззовні нього;
+ *   4. групи `no-restricted-imports` в `eslint.config.mjs` — межа довіри
+ *      плагінів (bare-специфікатори);
+ *   5. `scripts/pilot-pack/gate-c.mjs` — серверний вантаж у клієнтських чанках;
+ *   6. `vite.config.ts` хоста, шаблону й пілота — Import Protection Start.
+ *
+ * 🔴 Пункти 3 і 4 рахуються ОКРЕМО навмисно: це два різні детектори з різними
+ * негативними контролями (`tests/eslint-rules/server-only-relative.test.ts` і
+ * `tests/plugin-trust-boundary.test.ts`), а не «лінт» одним рядком — саме так
+ * їх перелічує таблиця §12 `docs/architecture/test-contours.md`.
  *
  * Legacy `supabase/*` навмисно НЕ тут: `supabase/keys` легально спільний для
  * anon- і browser-клієнта; Gate C тримає ці два файли літералами до К3.
@@ -50,16 +57,34 @@ export const SERVER_ONLY_DEPS = [
   { name: 'better-auth', clientSafe: ['react'] },
 ] as const;
 
+/**
+ * Екранування рядка для вставки в regex-літерал.
+ *
+ * 🔴 Не декор: імена пакетів і підшляхів ідуть у патерн ПІДСТАНОВКОЮ, і в них
+ * бувають метасимволи — `.` (`socket.io`), `+`, `-` у класі. Сьогодні таких у
+ * `SERVER_ONLY_DEPS` немає — але додана колись залежність із крапкою мовчки
+ * змінила б семантику межі: `.` збігся б із будь-яким символом, тобто патерн
+ * став би ШИРШИМ за намір.
+ *
+ * Експортується, бо форму патерна задає ЧИТАЧ: Gate C матчить id модуля в
+ * bundle-stats (сегмент шляху), а не bare-специфікатор, тож будує власний
+ * вираз — але екранує тим самим хелпером, а не своєю копією.
+ */
+export const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** Патерн специфікатора однієї серверної залежності (з урахуванням `clientSafe`). */
 export const serverOnlyDepSpecifier = (dep: {
   readonly name: string;
   readonly clientSafe?: readonly string[];
-}): RegExp =>
-  new RegExp(
+}): RegExp => {
+  const name = escapeRegExp(dep.name);
+  return new RegExp(
     dep.clientSafe?.length
-      ? `^${dep.name}(/(?!(?:${dep.clientSafe.join('|')})(?:/|$))|$)`
-      : `^${dep.name}(/|$)`,
+      ? `^${name}(/(?!(?:${dep.clientSafe.map(escapeRegExp).join('|')})(?:/|$))|$)`
+      : `^${name}(/|$)`,
   );
+};
 
 /** Префікс декларації, під яким лежить субшлях (без `simplycms/`), або null. */
 export const serverOnlyOwner = (subpath: string): string | null =>

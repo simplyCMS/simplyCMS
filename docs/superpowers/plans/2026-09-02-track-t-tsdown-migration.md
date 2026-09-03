@@ -55,7 +55,7 @@ vitest 4, ESLint 10.
 > **(8)** три serverFn-модулі (`plugin-sdk/server`, `themes/server`,
 > `plugins/server`) НЕ server-only: їх імпортує клієнт, стаби робить компілятор
 > Start — включення їх у декларацію дало 5 хибних спрацювань на чистому хості;
-> **(9)** негативна мутація `build-config-typecheck` дає TS2322, не TS2353;
+> **(9)** негативна мутація `build-config-typecheck` дає TS2769, не TS2353;
 > **(10)** `/usr/bin/time` на машині немає — вимір RSS через python;
 > **(11)** декларації силами tsdown відкинуто ВИМІРОМ: OOM 3 ГБ за 25 с при
 > дефолтному паралелізмі і за 29 с при `--concurrency 1`, tsc — 11 с / 1,1 ГБ;
@@ -167,7 +167,7 @@ vitest 4, ESLint 10.
 | `tests/dist-import-meta.test.ts:36-77, 7-17, 93` | Хелпер графа замість власного; текст без tsup |
 | `vitest.packaging.config.ts` | alias `simplycms`; новий тест у `include` |
 | `tests/dts-toolchain.test.ts` | Читає `tsdown.config.ts`; асерти скрипта `build` |
-| `tests/tsup-config-typecheck.test.ts` → `tests/build-config-typecheck.test.ts` | Глоб `tsdown.config.ts`; якір `platform`; код 2322 |
+| `tests/tsup-config-typecheck.test.ts` → `tests/build-config-typecheck.test.ts` | Глоб `tsdown.config.ts`; якір `platform`; код 2769 |
 | `tests/tier-boundary/zones.ts:45` | Фікстура `simplycms/storefront` → `simplycms/storefront/loaders` |
 | `packages/simplycms-{theme-solarstore,plugin-faq}/package.json` | Скрипти `build`/`prepublishOnly`; `sideEffects: false` |
 | `package.json` (корінь) | `+ tsdown`, `- tsup` |
@@ -1823,14 +1823,15 @@ git mv tests/tsup-config-typecheck.test.ts tests/build-config-typecheck.test.ts
 
 ```ts
 // Якір — рядок, що є в base КОЖНОГО конфігу репо; мутація — літерал поза
-// union-ом `'node' | 'neutral' | 'browser'`. Виміряно: tsc дає TS2322 (плюс
-// TS2820 «did you mean 'node'»). Заміна ІНШОГО якоря на `platform: …` дала б
-// TS1117 (дубль ключа) і нічого не довела б про union.
+// union-ом `'node' | 'neutral' | 'browser'`. Виміряно: спільний для всіх
+// трьох форм конфігу код — TS2769 (у `satisfies`-формі поруч іде ще TS2820).
+// Заміна ІНШОГО якоря на `platform: …` дала б TS1117 (дубль ключа) і нічого
+// не довела б про union.
 const ANCHORS = ["platform: 'node',"] as const;
 const TYPO = "platform: 'nodejs',";
 ```
 
-та `expect(codes, …).toContain(2353)` → `.toContain(2322)`;
+та `expect(codes, …).toContain(2353)` → `.toContain(2769)`;
 4. у шапці лишити історію про `dts: { tsconfig }` як реальний дефект, з
    поміткою, що інструмент і мутація змінились.
 
@@ -2081,7 +2082,7 @@ pnpm build:packages   # Збірка публікованих пакетів. �
 `docs/architecture/test-contours.md` — у кінець файлу дописати:
 
 ```markdown
-## 12. Межа клієнт/сервер: одна декларація, пʼять читачів (трек T, 2026-09-02)
+## 12. Межа клієнт/сервер: одна декларація, шість читачів (трек T, 2026-09-02)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
 (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
@@ -2346,7 +2347,7 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
    `.mjs`; сім вкладених `.tsx` під `storefront-routes/pages/*` збираються;
    барель `./storefront` знято.
 7. `dist-import-meta`, `published-exports-parity`, `dts-toolchain`,
-   `build-config-typecheck` (код 2322), `audit-exports`, `plugin-trust-boundary`,
+   `build-config-typecheck` (код 2769), `audit-exports`, `plugin-trust-boundary`,
    `server-only-relative` зелені; кеп 3 ГБ і стеля 300 с витримані; час і
    max RSS збірки виміряні й записані в `test-contours.md`.
 8. `pilot:pack` зелений і входить у `scripts/release/gates.mjs`; склад і порядок
@@ -2357,6 +2358,17 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
 11. Доки оновлені: CLAUDE.md, `test-contours.md` §12, `plugins.md`,
     `themes.md`, `release-process.md`, `packages/README.md`, інструкції,
     роадмап (трек T — ✅), спека К3 (амендмент К3-9′ уже в ред. 3).
+
+🔴 **Ред. 3.11: код діагностики в п. 7 виправлено з 2322 на 2769** (виміряно
+2026-09-02 на всіх ТРЬОХ конфігах, а не вгадано). 2322 недосяжний за
+побудовою: для string-літерала з близьким кандидатом TS емітить 2820 (варіант
+2322 із «did you mean 'node'?»), і лише у формі `base … satisfies UserConfig`
+(ядро, plugin-faq); в інлайн-формі теми `defineConfig` перевантажений, тож
+помилка властивості згортається в 2769 «No overload matches this call» і
+per-property коду не лишається взагалі. Спільний для всіх трьох форм — саме
+2769, його й асертить `tests/build-config-typecheck.test.ts` (плюс другий
+асерт по тексту діагностики, бо сам по собі 2769 означає лише «жодне
+перевантаження не підійшло»). Помилявся ПЛАН, не код.
 
 ## Що НЕ входить у трек T
 

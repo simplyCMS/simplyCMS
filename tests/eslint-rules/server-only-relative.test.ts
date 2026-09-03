@@ -39,6 +39,14 @@ describe('server-only-relative (трек T)', () => {
       'admin-server/index.ts',
     ],
     [
+      // ExportNamedDeclaration — окрема форма від `export *`: без цього
+      // кейсу третій зареєстрований хендлер правила лишався б без фікстури,
+      // і його видалення нічого б не зламало.
+      'іменований реекспорт нутрощів',
+      "export { ops } from './impl';",
+      'admin-server/index.ts',
+    ],
+    [
       'динамічний import()',
       "const m = import('./impl');",
       'admin-server/index.ts',

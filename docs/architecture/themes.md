@@ -209,12 +209,21 @@ conformance: рендер на фікстурах без БД (§7.1). Кано�
 `pnpm build`. Semver-фікси йдуть апстрімом; магазин лишається на голій
 залежності.
 
-**Форма пакета** (Р3, зразок — `@simplycms/plugin-faq`): tsdown,
-`format: esm`, `splitting: false` (тема — пасивний модуль без спільного
-singleton-стану між entry), `external: [/^simplycms(\/|$)/, /^@simplycms\//]`
-(🔴 після К0 ядро приходить unscoped-іменем — сам regexp `/^@simplycms\//`
-більше не зовнішнить нічого корисного, обидві форми потрібні разом),
-`sideEffects: false`. Єдиний entry `src/index.ts` (default-export
+**Форма пакета** (Р3, зразок — `packages/simplycms-theme-solarstore/tsdown.config.ts`):
+tsdown, `format: ['esm']`, `platform: 'node'` + `fixedExtension: false`
+(🔴 разом: `platform: 'node'` лишає builtins Node зовнішніми без попереджень,
+але при ньому `fixedExtension` за замовчуванням дав би `.mjs` повз ключі
+`exports`), `deps: { neverBundle: [/^simplycms(\/|$)/, /^@simplycms\//] }`
+(ядро приходить до магазину окремим пакетом — вбудована копія дублювала б
+React-контексти; 🔴 після К0 ядро має unscoped-імʼя, тож сам `/^@simplycms\//`
+більше не зовнішнить нічого корисного — обидві форми потрібні разом),
+`dts: { sourcemap: true }` (🔴 не декор: топ-рівневий `sourcemap: true` чіпляє
+`//# sourceMappingURL=…d.ts.map` і на .d.ts, а сам файл мапи dts-плагін пише
+лише за цією опцією — інакше декларація посилається в порожнечу),
+`target: 'esnext'` (магазин добирає свій таргет сам), `clean: true`,
+`sideEffects: false` у маніфесті. 🔴 Опції `splitting` у tsdown НЕ ІСНУЄ, а
+`external` — deprecated (обидві приїхали з tsup): питання спільних чанків для
+теми не постає взагалі, бо entry один. Єдиний entry `src/index.ts` (default-export
 `ThemeModule`), `exports` лише `"."` (dev → `src/index.ts`, `publishConfig`
 → `dist/index.js`). `files: ["dist", "src", "!src/**/__tests__/**"]` —
 **`src` обовʼязково в tarball-і**: без нього copy-in-варіант (§3.2) не має

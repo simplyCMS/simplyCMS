@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 // 🔴 Розширення `.ts`: скрипт виконує Node без транспіляції.
 import {
+  escapeRegExp,
   SERVER_ONLY,
   SERVER_ONLY_DEPS,
 } from '../../packages/simplycms/src/contracts/server-only.ts';
@@ -63,7 +64,9 @@ const SERVER_PAYLOAD = [
   // із магазину — його ловить Import Protection специфікатором
   // (`serverOnlyDepSpecifier`, лукахед на `clientSafe`).
   ...SERVER_ONLY_DEPS.filter((dep) => !dep.clientSafe?.length).map(
-    (dep) => new RegExp(`(^|[/"'])${dep.name}([/"']|$)`),
+    // Екранування — хелпером декларації, не власною копією: імʼя з крапкою
+    // (`socket.io`) інакше зробило б патерн ширшим за намір.
+    (dep) => new RegExp(`(^|[/"'])${escapeRegExp(dep.name)}([/"']|$)`),
   ),
 ];
 

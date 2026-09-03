@@ -51,8 +51,11 @@ pnpm release 0.4.1    # РЕЛІЗ: гарди + бамп версії всіх 
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
 pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магазину з нуля (канон міграцій +
-                      # демо-каталог) у Postgres із DATABASE_URL. Покроковий
-                      # локальний запуск — docs/tasks/v2-state-map.md §5
+                      # демо-каталог). 🔴 Підключення бере з PG_HARNESS_URL або
+                      # --url, а НЕ з DATABASE_URL: створює нову БД у кластері,
+                      # тож потрібен адмін-доступ до кластера, а не до бази
+                      # магазину; готовий DATABASE_URL скрипт ДРУКУЄ в кінці.
+                      # Покроковий локальний запуск — docs/tasks/v2-state-map.md §5
 pnpm db:pull / db:diff
                       # Схема БД — див. «Database Commands». 🔴 Генератора типів
                       # (db:generate-types, types:baseline) більше немає: знято в 0.4.1
@@ -571,7 +574,10 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
   при `vite build`, тож зміна вимагає перезбірки
 
 Поза контрактом магазину — dev-ключ `PG_HARNESS_URL`: готовий Postgres для
-`pnpm test:schema` (без нього харнес підіймає ефемерний кластер сам).
+`pnpm test:schema` (без нього харнес підіймає ефемерний кластер сам) і для
+`pnpm db:demo` (там альтернатива — прапорець `--url`; `DATABASE_URL` цим двом
+не джерело, бо обидва СТВОРЮЮТЬ базу в кластері, а не підключаються до
+готової).
 
 🔴 **`VITE_SUPABASE_*` магазину більше не потрібні** — ні вітрині, ні входу,
 ні `/api/health`; із `.env.example` їх знято, а пілот більше не підставляє

@@ -96,7 +96,12 @@ export default ({ mode }: { mode: string }) => {
           include: ['**'],
           client: {
             specifiers: serverOnlySpecifiers(),
-            files: serverOnlyFiles(),
+            // 🔴 Дефолт `['**/*.server.*']` дописано ВРУЧНУ: на відміну від
+            // `specifiers` (зливаються з дефолтом), `files` дефолт ЗАМІЩУЮТЬ
+            // (`pick(user, default)` у start-plugin-core). Без цього рядка
+            // конвенція Start «файл `*.server.ts` клієнту недоступний»
+            // мовчки перестала б діяти в кожному магазині з шаблону.
+            files: [...serverOnlyFiles(), '**/*.server.*'],
             // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
             // file-deny не бачив би `node_modules/simplycms/src/**`.
             excludeFiles: serverOnlyExcludeFiles(),
