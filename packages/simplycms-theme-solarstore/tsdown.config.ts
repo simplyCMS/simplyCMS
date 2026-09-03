@@ -10,7 +10,17 @@ export default defineConfig({
   platform: 'node',
   fixedExtension: false,
   deps: { neverBundle: [/^simplycms(\/|$)/, /^@simplycms\//] },
-  dts: true,
+  // 🔴 `sourcemap` тут не декор, а полагоджене висяче посилання. Топ-рівневий
+  // `sourcemap: true` — це опція ВИХОДУ rolldown, і вона чіпляє коментар
+  // `//# sourceMappingURL=index.d.ts.map` в тому числі на .d.ts-чанк; а сам
+  // файл мапи пише dts-плагін, чий власний `sourcemap` за замовчуванням
+  // резолвиться з `compilerOptions.declarationMap` (у наших tsconfig не
+  // заданий → false) і в `generateBundle` ВИДАЛЯЄ .d.ts.map із бандла.
+  // Наслідок до 2026-09-03: опублікований .d.ts посилався на файл, якого в
+  // tarball немає, і жоден гейт цього не бачив (tsc, IDE, publint, attw мовчать).
+  // Явне `true` вмикає запис мапи; `src/` у `files` пакета вже їде, тож
+  // go-to-definition із магазину веде в джерело.
+  dts: { sourcemap: true },
   tsconfig: './tsconfig.json',
   sourcemap: true,
   target: 'esnext',

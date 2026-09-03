@@ -9,6 +9,7 @@ import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
 import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
+import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
 import {
@@ -374,6 +375,35 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-boundary/server-only-relative': 'error' },
+  },
+  // Трек T увімкнув `"sideEffects": false` у трьох публікованих пакетах —
+  // отже, зобовʼязався тримати обіцянку правдивою. Причина, чому це окреме
+  // правило, а не селектор у спільному `no-restricted-syntax` (перетин із
+  // трьома чинними зонами того ж правила + заміщення опцій flat config-ом),
+  // і вимір, що це доводить, — у `eslint-rules/no-side-effect-import.mjs`.
+  //
+  // Зона — рівно ті теки, що їдуть у tarball кожного з трьох пакетів
+  // (`files` їхніх маніфестів): у ядрі й у плагіні це `src` + `routes`, у
+  // темі — `src`. Список пакетів із полем стереже
+  // `tests/published-exports-parity.test.ts`; `src/` host-а сюди НЕ входить
+  // — магазин ніхто не бандлить як бібліотеку, і side-effect-імпорти там
+  // (`./theme-registry`, `./styles/globals.css`) легальні за побудовою.
+  //
+  // 🔴 `__tests__` виведені: у tarball вони не їдуть (`!src/**/__tests__/**`
+  // у `files`), тож обіцянки маніфеста не стосуються.
+  {
+    files: [
+      'packages/simplycms/{src,routes}/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/{src,routes}/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
+    plugins: {
+      'simplycms-sideeffects': {
+        rules: { 'no-side-effect-import': noSideEffectImport },
+      },
+    },
+    rules: { 'simplycms-sideeffects/no-side-effect-import': 'error' },
   },
   {
     ignores: [

@@ -94,6 +94,39 @@ describe('published packages: tarball parity', () => {
     }),
   );
 
+  it('sideEffects: false доїжджає в tarball бібліотечних пакетів', () => {
+    // 🔴 Це гард НЕ проти втрати оптимізації, а проти мовчазної втрати ФІЧІ.
+    // Поле каже бандлеру магазину: «жоден модуль цього пакета не робить
+    // нічого при імпорті» — і дає йому право викинути модуль, з якого нічого
+    // не спожито поіменно. Доки це правда, все добре; але side-effect-імпорт
+    // (`import './register-x';`) чи top-level мутація глобала, додані колись
+    // усередині пакета, зникнуть у проді БЕЗ жодного червоного гейта — ані
+    // збірка, ані типи, ані тести цього не бачать. Трек T увімкнув поле, тож
+    // трек T зобовʼязаний лишити по собі пару гардів:
+    //   • цей — що поле не зникло мовчки з опублікованого manifest-а;
+    //   • ESLint-зона `no-restricted-syntax` в `eslint.config.mjs` — що в
+    //     джерелах цих пакетів не зʼявився side-effect-імпорт.
+    // Джерело правди — tarball, а не репозиторний package.json: pnpm піднімає
+    // publishConfig, і теоретично міг би поле перекрити.
+    //
+    // `@simplycms/cli` у переліку немає свідомо: це bin-інструмент, який
+    // ніхто не бандлить, тож поле в ньому не має ані користі, ані ризику.
+    const SIDE_EFFECT_FREE = [
+      '@simplycms/plugin-faq',
+      '@simplycms/theme-solarstore',
+      'simplycms',
+    ] as const;
+
+    // Ключем іде САМ перелік, а не порядок ітерації `packed`: пакет, що
+    // випав із tarball-набору, має дати `undefined`, а не тихо зникнути.
+    const actual = SIDE_EFFECT_FREE.map((name) => [
+      name,
+      (packed.get(name) as Entry | undefined)?.manifest.sideEffects,
+    ]);
+
+    expect(actual).toEqual(SIDE_EFFECT_FREE.map((name) => [name, false]));
+  });
+
   it(
     'кожна ціль export-а існує в tarball-і',
     each((name, { manifest, files }) => {
