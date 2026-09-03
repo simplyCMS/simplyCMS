@@ -106,6 +106,7 @@ const profiles: Profile[] = [
     [
       'src/contracts/index.ts',
       'src/contracts/entities.ts',
+      'src/contracts/server-only.ts',
       'src/contracts/*/index.ts',
       'src/contracts/views/fixtures/index.ts',
     ],
@@ -208,7 +209,7 @@ const profiles: Profile[] = [
   // БЕЗ platform:'node' — index імпортує клієнтський граф (стаби).
   profile(
     'admin-server',
-    ['src/admin-server/index.ts', 'src/admin-server/impl.ts'],
+    ['src/admin-server/index.ts', 'src/admin-server/impl/index.ts'],
     { splitting: false },
   ),
   // db-рантайм (Task 6, В2-К1а) — окремий NODE-профіль, а не рядок у `tiers`.

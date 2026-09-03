@@ -9,6 +9,11 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+// 🔴 Розширення `.ts`: скрипт виконує Node без транспіляції.
+import {
+  SERVER_ONLY,
+  SERVER_ONLY_DEPS,
+} from '../../packages/simplycms/src/contracts/server-only.ts';
 
 /**
  * Серверний ВАНТАЖ, якому в клієнтському бандлі не місце.
@@ -27,26 +32,22 @@ import { join } from 'node:path';
  * невидимим: у браузері він падає не гейтом, а рантаймом.
  */
 const SERVER_PAYLOAD = [
+  // Legacy Supabase-шар адмінки (зникає з К3): у декларації межі його немає,
+  // бо `supabase/keys` легально спільний для anon- і browser-клієнта.
   /simplycms\/dist\/supabase\/server-client/,
   // Anon-клієнт читає голий `process.env` у рантаймі (контракт серверного
   // env, спека CLI v1 §7): при витоку в клієнтський бандл він упав би вже в
   // браузері (там `process` немає) — гейт має зловити раніше.
   /simplycms\/dist\/supabase\/anon-client/,
-  /simplycms\/dist\/storefront\/loaders\//,
-  // Нутрощі admin-server (Е1б, Task 8): у клієнті їх не може бути ЗА ЖОДНИХ
-  // умов. Нетрансформований index тягне impl живим імпортом — маркер
-  // червоніє навіть якби drizzle туди не доїхав (делегуюча операція без
-  // drizzle).
-  /simplycms\/dist\/admin-server\/impl/,
-  // db-рантайм v2: пул Postgres + транзакційна обгортка актора. Server-only
-  // за побудовою (гард `typeof window`), тож у клієнті це гарантований збій.
-  /simplycms\/dist\/db/,
-  // Залежності того ж графа. Їх окремо, бо витекти вони можуть і без модулів
-  // ядра — прямим імпортом із роут-файлу чи теми.
-  /drizzle-orm/,
-  // Драйвер `pg`: сегментом шляху або цілим специфікатором, але НЕ підрядком
-  // (інакше збіг дав би будь-який `…pg…` на кшталт `jpg`).
-  /(^|[/"'])pg([/"']|$)/,
+  // 🔴 Похідне від ЄДИНОЇ декларації межі (contracts/server-only.ts): кожен
+  // server-only субшлях — як файл (`dist/admin-server/impl.js`) і як тека
+  // (`dist/storefront/loaders/…`). Це читач списку, не його копія.
+  ...SERVER_ONLY.map((sub) => new RegExp(`simplycms/dist/${sub}(/|\\.js)`)),
+  // Серверні залежності — сегментом шляху або цілим специфікатором, але НЕ
+  // підрядком (інакше `pg` збігся б із будь-яким `…jpg…`). Окремо від
+  // субшляхів, бо витекти вони можуть і без модулів ядра — прямим імпортом
+  // із роут-файлу чи теми.
+  ...SERVER_ONLY_DEPS.map((dep) => new RegExp(`(^|[/"'])${dep}([/"']|$)`)),
 ];
 
 /**
@@ -144,7 +145,7 @@ export function gateBundle(storeDir) {
   );
   const adminServerSplitOk =
     existsSync(join(adminServerDist, 'index.js')) &&
-    existsSync(join(adminServerDist, 'impl.js'));
+    existsSync(join(adminServerDist, 'impl/index.js'));
   /**
    * 🔴 Task 10 (Е1б, Step 4б, R10): суворий assert повернуто. До цього
    * коміту `/admin/order-statuses` сидів на старому Supabase-шарі — жоден
@@ -170,11 +171,11 @@ export function gateBundle(storeDir) {
           ? 'FAIL заглушок server-fn у бандлі немає — перевіряти нема чого'
           : adminServerStubs === 0
             ? 'FAIL admin-server stub відсутній у клієнтських чанках — сторінка мала б його імпортувати (Task 10)'
-            : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl.js (нутрощі)',
+            : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl/index.js (нутрощі)',
     );
   } else {
     details.push(
-      `OK   server-fn заглушок ${stubs}, серверного вантажу (server-client, loaders, admin-server/impl) — 0`,
+      `OK   server-fn заглушок ${stubs}, серверного вантажу (SERVER_ONLY + legacy supabase + deps) — 0`,
     );
     details.push(`OK   admin-server stub: ${adminServerStubs} ≥ 1`);
   }

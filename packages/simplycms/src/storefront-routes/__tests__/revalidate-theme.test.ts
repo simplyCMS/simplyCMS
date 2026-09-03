@@ -117,8 +117,11 @@ vi.mock('@tanstack/react-start/server', () => ({
   getRequest: () => new Request('http://shop.test/api/revalidate-theme'),
 }));
 
-import { revalidateTheme } from '../server/revalidate-theme';
-import { invalidateThemeCache, loadActiveTheme } from '../server/theme-record';
+import { revalidateTheme } from '../../storefront/loaders/revalidate-theme';
+import {
+  invalidateThemeCache,
+  loadActiveTheme,
+} from '../../storefront/loaders/theme-record';
 
 beforeEach(() => {
   currentUser = null;

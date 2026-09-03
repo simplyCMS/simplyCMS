@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { readSessionSubject } from 'simplycms/auth';
-import { checkIsAdmin } from './is-admin';
+import { checkIsAdmin } from 'simplycms/storefront/loaders';
 
 /** Ідентичність, яку ядро віддає роутам і компонентам. */
 export interface SessionUser {

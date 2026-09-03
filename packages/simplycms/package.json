@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./contracts": "./src/contracts/index.ts",
     "./contracts/entities": "./src/contracts/entities.ts",
+    "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
@@ -26,7 +27,7 @@
     "./schema/relations": "./src/schema/relations.ts",
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
-    "./admin-server/impl": "./src/admin-server/impl.ts",
+    "./admin-server/impl": "./src/admin-server/impl/index.ts",
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
@@ -116,6 +117,10 @@
         "types": "./dist/contracts/entities.d.ts",
         "import": "./dist/contracts/entities.js"
       },
+      "./contracts/server-only": {
+        "types": "./dist/contracts/server-only.d.ts",
+        "import": "./dist/contracts/server-only.js"
+      },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",
         "import": "./dist/contracts/objects/index.js"
@@ -181,8 +186,8 @@
         "import": "./dist/admin-server/index.js"
       },
       "./admin-server/impl": {
-        "types": "./dist/admin-server/impl.d.ts",
-        "import": "./dist/admin-server/impl.js"
+        "types": "./dist/admin-server/impl/index.d.ts",
+        "import": "./dist/admin-server/impl/index.js"
       },
       "./admin-data": {
         "types": "./dist/admin-data/index.d.ts",

@@ -161,6 +161,20 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     expect(errors).toEqual([]);
   });
 
+  it('похідна від декларації межі: server-only субшляхи й серверні залежності', async () => {
+    for (const bad of [
+      "import { pool } from 'simplycms/db';",
+      "import { ops } from 'simplycms/admin-server/impl';",
+      "import { createSelectSchema } from 'drizzle-zod';",
+    ]) {
+      const errors = await boundaryErrors(
+        bad,
+        'plugins/hello-world/fixture.ts',
+      );
+      expect(errors, bad).toHaveLength(1);
+    }
+  });
+
   it('зона не зʼїдена ignores (страховка скоупінгу)', async () => {
     expect(
       await eslint.isPathIgnored(join(REPO, 'plugins/hello-world/index.ts')),

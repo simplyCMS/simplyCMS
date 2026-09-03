@@ -5,6 +5,10 @@ import { writeFileSync } from 'node:fs';
 // #endregion pilot-only
 import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
+import {
+  serverOnlyFiles,
+  serverOnlySpecifiers,
+} from 'simplycms/contracts/server-only';
 
 /**
  * Vite-конфіг магазину.
@@ -78,6 +82,22 @@ export default ({ mode }: { mode: string }) => {
         router: { virtualRouteConfig: './routes.ts' },
         // Шлях резолвиться ВІД `srcDirectory` (`src/`), а не від кореня.
         server: { entry: './server.ts' },
+        // 🔴 Межа довіри клієнт/сервер у САМІЙ збірці магазину. Server-only
+        // субшляхи ядра й серверні залежності не можуть потрапити в
+        // клієнтський граф: Start валить збірку (dev і build) з трасою
+        // імпорту. Список — єдина декларація ядра, не копія. `include: ['**']`
+        // обовʼязковий: за замовчуванням перевіряються лише імпортери в `src/`,
+        // а теми, плагіни й сам пакет ядра в node_modules лишилися б поза
+        // перевіркою. Перевірка йде ПІСЛЯ компіляції serverFn, тож стаби з
+        // серверними імпортами в тілах хендлерів її не тригерять.
+        importProtection: {
+          behavior: 'error',
+          include: ['**'],
+          client: {
+            specifiers: serverOnlySpecifiers(),
+            files: serverOnlyFiles(),
+          },
+        },
       }),
       // #region pilot-only
       emitBundleStats(),

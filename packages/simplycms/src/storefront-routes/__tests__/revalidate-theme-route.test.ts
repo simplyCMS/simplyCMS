@@ -13,15 +13,15 @@ import { describe, it, expect, vi } from 'vitest';
  * Паритет URL «викликач ↔ файл роуту» — окремий гард `tests/api-url-parity`.
  */
 
-vi.mock('simplycms/storefront-routes/server/is-admin', () => ({
+vi.mock('../../storefront/loaders/is-admin', () => ({
   checkIsAdmin: async () => false,
 }));
-vi.mock('simplycms/storefront-routes/server/theme-record', () => ({
+vi.mock('../../storefront/loaders/theme-record', () => ({
   invalidateThemeCache: () => {},
 }));
 
 import * as routeModule from '../../../routes/storefront/api/revalidate-theme';
-import { revalidateTheme } from '../server/revalidate-theme';
+import { revalidateTheme } from '../../storefront/loaders/revalidate-theme';
 
 // `handlers` типізовано як «запис АБО фабрика» — у цьому роуті це запис.
 const handlers = routeModule.Route.options.server?.handlers as unknown as

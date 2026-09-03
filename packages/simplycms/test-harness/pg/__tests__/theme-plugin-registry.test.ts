@@ -21,7 +21,7 @@ import {
   selectActivePlugins,
   selectPluginNames,
 } from '../../../src/plugins/server/registry-db';
-import { loadActiveTheme } from 'simplycms/storefront-routes/server/theme-record';
+import { loadActiveTheme } from '../../../src/storefront/loaders/theme-record';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,

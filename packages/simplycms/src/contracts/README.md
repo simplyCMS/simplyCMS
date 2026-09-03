@@ -27,6 +27,7 @@ pnpm add simplycms
 | `simplycms/contracts/ports` | Порти: `CatalogRepository`, `OrderRepository`, `IdentityProvider`, `LinkResolver`, `MediaProvider`, `ConfigProvider`, `ScopeResolver` — і контейнер `EngineContext`, який їх зводить докупи |
 | `simplycms/contracts/views` | View-model-и пʼятьох сторінок вітрини (`HomeViewModel`, `CatalogViewModel`, `CatalogSectionViewModel`, `ProductDetailViewModel`, `CartViewModel`) + рантайм-константи реквізитів (`REQUISITE_ATTRIBUTE`, `HOME_REQUISITES`, `CATALOG_REQUISITES`, `PRODUCT_DETAIL_REQUISITES`, `CART_REQUISITES`, `REQUIRED_REQUISITES`) |
 | `simplycms/contracts/views/fixtures` | Фікстури view-model-ів для conformance-kit-а тем — рантайм-обʼєкти, не типи |
+| `simplycms/contracts/server-only` | Декларація межі довіри клієнт/сервер: `SERVER_ONLY` (субшляхи ядра, що існують лише на сервері), `SERVER_ONLY_DEPS`, `isServerOnlySubpath`, і патерни `serverOnlySpecifiers()`/`serverOnlyFiles()` для Import Protection магазину. Лише дані — читачі: збірка ядра, гейт `dist-server-boundary`, лінт, Gate C, `vite.config.ts` магазину |
 
 ## Приклад
 
