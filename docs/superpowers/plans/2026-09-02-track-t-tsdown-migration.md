@@ -1872,8 +1872,16 @@ pnpm vitest run --config vitest.packaging.config.ts tests/dist-server-boundary.t
 клієнтського `admin-server/index.js` (entry-to-entry імпорт `./impl/index.js`)
 і стаб із `./impl`.
 
+🔴 Відкат НЕ через `git checkout --`: `tsdown.config.ts` на цьому кроці ще
+НЕ закомічений (він створений у Кроці 2 цієї ж задачі), тож `git checkout`
+падає на невідомому шляху й не відкочує навіть другий файл. Відкочувати
+зворотними `sed`-ами й перевіряти результат:
+
 ```bash
-git checkout -- packages/simplycms/tsdown.config.ts packages/simplycms/src/admin-server/index.ts
+sed -i "s#from './impl'#from 'simplycms/admin-server/impl'#" packages/simplycms/src/admin-server/index.ts
+sed -i "s#(!out.startsWith('admin-server/impl') \&\& isServerOnlySubpath(out)) === server#isServerOnlySubpath(out) === server#" packages/simplycms/tsdown.config.ts
+grep -c "startsWith('admin-server/impl')" packages/simplycms/tsdown.config.ts   # очікувано 0
+git diff --stat packages/simplycms/src/admin-server/index.ts                    # очікувано порожньо
 pnpm --filter simplycms run build
 pnpm vitest run --config vitest.packaging.config.ts tests/dist-server-boundary.test.ts
 ```
