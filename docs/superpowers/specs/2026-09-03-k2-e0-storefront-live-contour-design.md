@@ -6,7 +6,9 @@
 > треку T»** — обидві хвилі йдуть одним планом, бо доводяться одним стендом.
 > Черга — рішення власника того ж дня: **після треку T, перед К3 Е2**.
 > Імплементаційний план (superpowers writing-plans) пишеться після рев'ю
-> цього документа.
+> цього документа. 🔴 Ред. 1.1 (2026-09-03): план пройшов Codex-аудит r1
+> (REJECT 5B/5M/3m, усі підтверджені) — правки в плані ред. 1.1; у спеці
+> змінено лише сентинел дерева `storefront` (T-3).
 >
 > 🔴 Рамка та сама, що у V2, К0 і К3: клієнтів і реальних магазинів немає —
 > зворотна сумісність НЕ підтримується, перехідних шимів немає. Критерій
@@ -90,9 +92,12 @@ CI job `packaging` після `test:packaging` (+≈1–2 хв на `pnpm instal
 `tests/dist-server-boundary.test.ts` — мапа **не похідна** від списку, по
 одному літералу на дерево: `db → '[simplycms/db]'`, `auth →
 '[simplycms/auth]'`, `schema → 'wishlists_own_all'`, `storefront →
-'[simplycms] Sign-in required'`, `admin-server/impl → 'patch не може бути
-порожнім'`, `storefront-routes/seo → літерал з interceptor.ts` (нині
-дерево без власного маркера; три SEO-літерали §12 живуть у `storefront/seo`).
+'Disallow: /admin/'` (🔴 ред. 1.1 після Codex r1: `[simplycms] Sign-in required`
+дублюють три клієнтські `core/lib/*`, тож сентинел — літерал `robots.ts`, який
+живе лише під `storefront/`), `admin-server/impl → 'patch не може бути
+порожнім'`, `storefront-routes/seo → 'public, max-age=3600,
+stale-while-revalidate=86400'` з `interceptor.ts`. Преflight унікальності —
+обовʼязковий крок плану.
 Асерти: (а) `Object.keys(SENTINELS)` дорівнює `SERVER_ONLY` — свідома друга
 копія, що ловить усічення списку; (б) літерал існує в **джерелі** свого
 дерева (позитивний контроль проти рефакторингу рядка); (в) літерал є в

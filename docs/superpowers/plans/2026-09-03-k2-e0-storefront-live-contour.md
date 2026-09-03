@@ -1,4 +1,4 @@
-# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації
+# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації (ред. 1.1)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -28,6 +28,27 @@ React 19 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg`
 **Spec:** [`docs/superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md`](../specs/2026-09-03-k2-e0-storefront-live-contour-design.md)
 (рішення T-1…T-5, Е0-1…Е0-8; рішення власника — Додаток А; відкинуті
 альтернативи з доказами — Додаток Б). Читати ОБИДВА документи.
+
+> 🔴 **Ред. 1.1 (2026-09-03) — після Codex-аудиту r1** (`gpt-5.6-sol`, reasoning
+> high, read-only, HEAD `4f48286`; вердикт REJECT: 5 блокерів, 5 major, 3 minor —
+> усі підтверджені проти коду). Що змінено: **(B1)** сентинел дерева `storefront`
+> — `Disallow: /admin/` (`storefront/seo/robots.ts`), бо `[simplycms] Sign-in
+> required` живе ще й у трьох клієнтських `core/lib/*`; преflight унікальності —
+> крок Task 3; **(B2)** `priceCheckoutItems` дзеркалить `getDiscountEnvironment`
+> (`core/lib/discounts.ts`): дефолтні тип ціни й категорія, `loadDiscountGroups(db,
+> priceTypeId)`, `loadUserCategoryId` з `./categories`; **(B3)** `placeOrderFor` —
+> ОДНА транзакція (валідація, ціни, отримувач, запис); **(B4)** демо-сід і
+> харнес: `on conflict (code) do nothing` у фікстурах, showcase рахує точки з
+> демо-точкою; **(B5)** `id`/`htmlFor` у полях контактної форми, селектори
+> live-smoke — по них; **(M6)** чекліст споживачів дат із конкретними файлами;
+> **(M7)** pickup — за `method.code === 'pickup'`, `null`-тариф →
+> `shipping_unavailable`; **(M8)** ескалація повертає роль лише на success-path
+> (в aborted-транзакції `set local role` дав би `25P02` і замаскував причину);
+> **(M9)** `startStore`/`pnpm build` у live-smoke з явним env (shell не
+> перекриває тестову БД); **(M10)** конкурентний anti-oversell кейс; **(m11)**
+> мілісекундна точність задокументована; **(m12)** cleanup live-smoke у одному
+> `try/finally`; **(m13)** `contracts/README.md`. Власна знахідка при верифікації:
+> `shipping_rates.zone_id NOT NULL` — сід і фікстури заводять зону; пін сіду — 20.
 
 ## Global Constraints
 
@@ -98,10 +119,10 @@ React 19 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg`
 
 | Файл | Що саме |
 |---|---|
-| `packages/simplycms/src/contracts/server-only.ts` | три хелпери → `importProtection()` (T-1) |
+| `packages/simplycms/src/contracts/server-only.ts`, `contracts/README.md` | три хелпери → `importProtection()`; рядок README (T-1) |
 | `vite.config.ts`, `packages/create-simplycms-store/template/vite.config.ts`, `tests/pilot/store-template/vite.config.ts` | один рядок `importProtection: importProtection(),`; `import.meta.dirname`; розширення `.ts` (T-1, T-4) |
 | `tests/import-protection-wiring.test.ts` | DATA-тест + анкерований рядок (T-1) |
-| `scripts/pilot-pack/run.mjs` | крок Gate IP наприкінці (T-2) |
+| `scripts/pilot-pack/run.mjs`, `scripts/pilot-pack/build.mjs` | крок Gate IP наприкінці (T-2); `startStore(storeDir, port, extraEnv)` (Е0-8) |
 | `.github/workflows/workflow.yml` | крок `pnpm pilot:pack` у job `packaging`; коментар про пілот (T-2) |
 | `tests/dist-server-boundary.test.ts` | `SENTINELS` (T-3) |
 | `packages/create-simplycms-store/template/tsconfig.json`, `tsconfig.template.json` | `vite.config.ts` в `include` (T-4) |
@@ -122,11 +143,11 @@ React 19 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg`
 | `packages/simplycms/src/storefront-routes/server/{checkout,checkout-input}.ts` | union, серверні ціни/доставка, валідація (Е0-4) |
 | `packages/simplycms/src/storefront/loaders/pricing.ts` | `loadPricesByProduct` (Е0-4) |
 | `packages/simplycms/src/storefront-routes/pages/Checkout.tsx` | мапа `reason → i18n`, нова форма запиту (Е0-4) |
-| `packages/simplycms/src/checkout-ui/CheckoutDeliveryForm.tsx`, `CheckoutOrderSummary.tsx` | empty-state, `FormMessage`, `disabled` (Е0-4) |
+| `packages/simplycms/src/checkout-ui/CheckoutDeliveryForm.tsx`, `CheckoutOrderSummary.tsx`, `CheckoutContactForm.tsx` | empty-state, `FormMessage`, `disabled`; `id`/`htmlFor` полів контактів (Е0-4) |
 | `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts` | ключі `checkout.rejected.*`, `checkout.noShippingMethods.*` (Е0-4) |
 | `packages/simplycms/src/react-query/useCart.tsx` | стор на `useSyncExternalStore` (Е0-5) |
 | `.github/instructions/optimization.instructions.md:54` | рецепт гідратації (Е0-5) |
-| `packages/simplycms/migrations/demo/demo-seed.sql`, `test-harness/pg/__tests__/seed-determinism.test.ts` | доставка/точка/тариф/залишки; банери `NULL`; пін 15 → 19 (Е0-6) |
+| `packages/simplycms/migrations/demo/demo-seed.sql`, `test-harness/pg/__tests__/seed-determinism.test.ts`, `test-harness/pg/__tests__/fixtures/{storefront-client,showcase}.ts`, `storefront-showcase.test.ts` | доставка/зона/точка/тариф/залишки; банери `NULL`; пін 15 → 20; фікстури `on conflict (code)`; лічильник точок (Е0-6) |
 | `packages/simplycms/src/storefront/loaders/entities/home-product.ts`, `loaders/home.ts`, `loaders/home-sections.ts`, `storefront-routes/pages/home/{types,toCardViewModel}.ts` | ціна на головній (Е0-6) |
 | `.env.example`, `docs/tasks/v2-state-map.md` §2 | env-тексти; датований прогін (Е0-7, Е0-8) |
 | `package.json` | скрипт `live:smoke` (Е0-8) |
@@ -143,6 +164,7 @@ React 19 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg`
 - Modify: `vite.config.ts:5-11, 38-60`
 - Modify: `packages/create-simplycms-store/template/vite.config.ts:5-9, 35-59`
 - Modify: `tests/pilot/store-template/vite.config.ts` (той самий блок, що в шаблоні; парність — `tests/create-store-template-parity.test.ts`)
+- Modify: `packages/simplycms/src/contracts/README.md:30` (рядок про `server-only`)
 - Test: `tests/import-protection-wiring.test.ts` (переписати)
 
 **Interfaces:**
@@ -363,6 +385,14 @@ export const importProtection = (): ImportProtectionOptions => ({
 поза `#region pilot-only`; парність асертить
 `tests/create-store-template-parity.test.ts`).
 
+- [ ] **Step 4а: README контрактів**
+
+У `packages/simplycms/src/contracts/README.md:30` фрагмент «і три набори патернів
+Import Protection магазину — `serverOnlySpecifiers()`, `serverOnlyFiles()`,
+`serverOnlyExcludeFiles()`» → «і `importProtection()` — повний обʼєкт опції
+Import Protection Start (читач 6), який три `vite.config.ts` передають одним
+рядком».
+
 - [ ] **Step 5: Зелено**
 
 Run: `pnpm vitest run tests/import-protection-wiring.test.ts tests/create-store-template-parity.test.ts`
@@ -387,7 +417,7 @@ Expected: обидва прогони — `failed` (перший — на анк
 
 ```bash
 pnpm format:check && pnpm lint && pnpm test && pnpm build
-git add packages/simplycms/src/contracts/server-only.ts vite.config.ts packages/create-simplycms-store/template/vite.config.ts tests/pilot/store-template/vite.config.ts tests/import-protection-wiring.test.ts
+git add packages/simplycms/src/contracts/server-only.ts packages/simplycms/src/contracts/README.md vite.config.ts packages/create-simplycms-store/template/vite.config.ts tests/pilot/store-template/vite.config.ts tests/import-protection-wiring.test.ts
 git commit -m "test(k2-e0): Import Protection — один читач importProtection() і DATA-гейт замість тексту
 
 Три копії блоку в vite.config.ts злито в хелпер декларації; тест перевіряє
@@ -492,6 +522,27 @@ __dirname і імпорт без розширення (T-4)."
 - Consumes: `SERVER_ONLY`, `closure`, `distFiles`, `entryFiles()` (той самий файл).
 - Produces: нічого зовнішнього.
 
+- [ ] **Step 0: Преflight унікальності — літерал живе ЛИШЕ у своєму дереві**
+
+🔴 Codex r1 спіймав: `[simplycms] Sign-in required` є ще й у трьох клієнтських
+`core/lib/{review-form,user-addresses,user-recipients}.ts` — сентинел, що
+доживає до клієнтського `dist`, червонить гейт завжди. Кожен кандидат перед
+внесенням у мапу — через цей преflight (нуль файлів поза деревом, тести
+виключені):
+
+```bash
+P=packages/simplycms/src
+for pair in "db|[simplycms/db]" "auth|[simplycms/auth]" "schema|wishlists_own_all" \
+  "storefront|Disallow: /admin/" "storefront-routes/seo|public, max-age=3600, stale-while-revalidate=86400" \
+  "admin-server/impl|patch не може бути порожнім"; do
+  tree=${pair%%|*}; lit=${pair#*|}
+  n=$(grep -rlF -- "$lit" $P | grep -v __tests__ | grep -vc "^$P/$tree/")
+  printf '%-24s %-52s поза деревом: %s\n' "$tree" "$lit" "$n"
+done
+```
+
+Expected: `0` у кожному рядку (перевірено 2026-09-03 на HEAD `4f48286`).
+
 - [ ] **Step 1: Написати блок сентинелів — спершу червоний на навмисно неповній мапі**
 
 Дописати в кінець `tests/dist-server-boundary.test.ts`:
@@ -517,7 +568,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   db: '[simplycms/db]',
   auth: '[simplycms/auth]',
   schema: 'wishlists_own_all',
-  storefront: '[simplycms] Sign-in required',
+  storefront: 'Disallow: /admin/',
   'storefront-routes/seo': 'public, max-age=3600, stale-while-revalidate=86400',
   'admin-server/impl': 'patch не може бути порожнім',
 };
@@ -570,6 +621,10 @@ describe('сентинели server-only дерев (контроль списк
 });
 ```
 
+🔴 `storefront → 'Disallow: /admin/'`: літерал живе в `storefront/seo/robots.ts`
+(дерево `storefront`, entry `storefront/seo`) і ніде більше в `src` — тому саме
+він, а не рядок із `loaders/session.ts`, який дублюють serverFn-модулі `core/lib`.
+
 Додати в імпорти файлу `readdirSync` (з `node:fs`). 🔴 Перед запуском —
 тимчасово прибрати з `SENTINELS` рядок `db:` (щоб побачити, що перший кейс
 падає), запустити, повернути.
@@ -586,8 +641,8 @@ git checkout -- packages/simplycms/src/contracts/server-only.ts
 pnpm build:packages
 ```
 
-Expected: FAIL (щонайменше «мапа сентинелів…» і «[simplycms] Sign-in required
-ПРОТІК у клієнтський dist»); після відкату й ре-білду — PASS.
+Expected: FAIL (щонайменше «мапа сентинелів…» і «Disallow: /admin/ ПРОТІК у
+клієнтський dist»); після відкату й ре-білду — PASS.
 
 - [ ] **Step 3: Гейти й коміт**
 
@@ -1065,7 +1120,25 @@ typecheck 2>&1 | grep -c "error TS"` — це **список споживачі�
    стають `Date` автоматично; де є `expect(...).toEqual(expect.any(String))` на
    датах у тестах — `expect.any(Date)`.
 6. Будь-який `new Date(row.created_at)` у `packages/simplycms/src` — прибрати
-   обгортку (значення вже `Date`): `grep -rn "new Date(.*\(created_at\|updated_at\)" packages/simplycms/src`.
+   обгортку (значення вже `Date`): `grep -rn "new Date(.*\(created_at\|updated_at\)" packages/simplycms/src`
+   (відомий: `storefront/loaders/entities/banner.ts:79`).
+7. 🔴 ЗАПИСИ ISO-рядків у Date-колонки — тепер помилка типу, бо колонка чекає
+   `Date`: `storefront/loaders/profile.ts:72`, `storefront/loaders/orders.ts:111`,
+   `plugin-sdk/server/config-db.ts:52` — передавати `new Date()`. Пошук:
+   `grep -rn "toISOString()" packages/simplycms/src --include='*.ts' | grep -v seo/sitemap`.
+8. Ручні контракти з датами-рядками: `contracts/objects/discount.ts:31`
+   (`starts_at`/`ends_at` тощо) → `Date | null`; домен `resolveDiscount`
+   порівнює дати — звірити, що він приймає `Date` (або `new Date(x)` всередині).
+9. 🔴 Моки колекцій адмінки повертають РЯДКИ там, де serverFn віддасть `Date`:
+   `admin-data/__tests__/order-statuses-collection.test.ts:15,89` — фікстури
+   `created_at: new Date(…)` і асерти `toBeInstanceOf(Date)`; колекція без runtime-схеми
+   (`admin-data/collections/order-statuses.ts:19`) типізується з `schema/types`
+   автоматично. `admin/pages/OrderStatuses.tsx:104` — legacy `supabase-js` на
+   замороженому `database.ts`, НЕ чіпати.
+10. Точність: `Date` — мілісекунди; мікросекунди Postgres (`.331961`) відкидаються
+    (`pg-core/columns/timestamp.js:30` → `new Date(value)`). Місць, де це
+    критично, не знайдено (аудит r1) — зафіксувати в докблоці `schema.ts` (крок 4)
+    і в розділі «Контракт дат» (крок 8) одним реченням.
 
 Run: `pnpm typecheck && pnpm test`
 Expected: PASS.
@@ -1451,7 +1524,8 @@ describe('замовлення списує залишок', () => {
       ...readdirSync(MIGRATIONS_DIR).filter((n) => n.endsWith('.sql')).sort().map((n) => join(MIGRATIONS_DIR, n)),
       join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
     ]);
-    await queryRows(dbUrl, `insert into public.shipping_methods (id, code, name) values (gen_random_uuid(), 'pickup', 'Самовивіз')`);
+    // `on conflict (code)`: з Task 13 демо-сід сам везе метод `pickup` (B4 аудиту r1).
+    await queryRows(dbUrl, `insert into public.shipping_methods (id, code, name) values (gen_random_uuid(), 'pickup', 'Самовивіз') on conflict (code) do nothing`);
     [{ id: methodId }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'pickup'`)) as IdRow[];
     [{ id: productId }] = (await queryRows(dbUrl, `select id from public.products where slug = $1`, [PRODUCT_SLUG])) as IdRow[];
     await queryRows(dbUrl,
@@ -1503,6 +1577,23 @@ describe('замовлення списує залишок', () => {
     ).rejects.toBeInstanceOf(InsufficientStockError);
     const after = (await queryRows(dbUrl, `select count(*)::int as c from public.orders`)) as { c: number }[];
     expect(after[0].c).toBe(before[0].c);
+  });
+
+  it('🔴 два конкурентні замовлення на залишок 3 по 2 шт — рівно одне проходить (guarded UPDATE)', async () => {
+    // Послідовні кейси вище зеленіли б і для «SELECT → безумовний UPDATE», який
+    // оверселить при перетині транзакцій; тут дві транзакції справді перетинаються.
+    const [{ id: third }] = (await queryRows(dbUrl, `select id from public.products where slug = 'sonyachna-panel-600w-bifacial'`)) as IdRow[];
+    await queryRows(dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       select gen_random_uuid(), pp.id, $1, null, 3 from public.pickup_points pp where pp.name = '${POINT_A}'`, [third]);
+    const attempt = () => { const token = crypto.randomUUID(); return withOrderTokenDb(token, (db, operator) =>
+      createOrder(db, null, token, baseInput(third, 2, methodId), operator)); };
+    const settled = await Promise.allSettled([attempt(), attempt()]);
+    const ok = settled.filter((r) => r.status === 'fulfilled').length;
+    const rejected = settled.filter((r) => r.status === 'rejected' && r.reason instanceof InsufficientStockError).length;
+    expect([ok, rejected]).toEqual([1, 1]);
+    const [{ quantity }] = (await queryRows(dbUrl, `select quantity from public.stock_by_pickup_point where product_id = $1`, [third])) as QtyRow[];
+    expect(Number(quantity)).toBe(1);
   });
 
   it('товар без рядків залишків — обліку немає, замовлення проходить, статус не змінюється', async () => {
@@ -1563,12 +1654,13 @@ function escalationFor(
 ): OperatorEscalation {
   return async (fn) => {
     await client.query('set local role app_admin');
-    try {
-      return await fn(db);
-    } finally {
-      // Імʼя ролі — з валідованого `Actor`, не з рядка ззовні.
-      await client.query(`set local role ${actor.role}`);
-    }
+    const result = await fn(db);
+    // 🔴 Роль повертається ЛИШЕ на success-path. Якщо `fn` кинув, транзакція
+    // вже aborted — будь-який наступний запит, включно з `set local role`,
+    // впав би з 25P02 і ЗАМАСКУВАВ би першопричину; outer rollback у
+    // `withActor` сам скидає SET LOCAL ROLE. Імʼя ролі — з валідованого `Actor`.
+    await client.query(`set local role ${actor.role}`);
+    return result;
   };
 }
 
@@ -1712,7 +1804,7 @@ createOrder(db, userId, null, input, operator))` (у `checkout.ts` `run` пер�
 в Task 10; тут — лише щоб `typecheck` був зелений: `run` приймає `fn(db, operator)`).
 
 Run: `pnpm typecheck && pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts`
-Expected: PASS (4 кейси).
+Expected: PASS (5 кейсів).
 
 - [ ] **Step 4: Негативний контроль ролі — списання без ескалації падає**
 
@@ -1789,6 +1881,16 @@ import {
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 interface IdRow { id: string }
 
+/**
+ * 10 % на панель для категорії `retail` (за замовчуванням) — форма стейтментів
+ * ТА САМА, що в `fixtures/showcase.ts` (discount_groups → discounts →
+ * discount_targets); скопіювати звідти й підставити ціль/відсоток.
+ */
+const RETAIL_DISCOUNT_FIXTURE: string[] = [
+  // …скопійовані стейтменти showcase з категорією 'retail', відсотком 10 і
+  // ціллю product = 'sonyachna-panel-450w-mono'
+];
+
 const input = (overrides: Partial<PlaceOrderInput>): PlaceOrderInput => ({
   firstName: 'Тест', lastName: 'Покупець', email: 'buyer@example.test', phone: '+380000000000',
   shippingMethodId: '', deliveryCity: null, deliveryAddress: null, pickupPointId: null,
@@ -1817,15 +1919,21 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       ...readdirSync(MIGRATIONS_DIR).filter((n) => n.endsWith('.sql')).sort().map((n) => join(MIGRATIONS_DIR, n)),
       join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
     ]);
+    // `on conflict (code)`: з Task 13 демо-сід сам везе `pickup` (B4 аудиту r1).
     await queryRows(dbUrl, `insert into public.shipping_methods (id, code, name, is_active)
-      values (gen_random_uuid(), 'pickup', 'Самовивіз', true), (gen_random_uuid(), 'old', 'Вимкнений', false)`);
+      values (gen_random_uuid(), 'pickup', 'Самовивіз', true), (gen_random_uuid(), 'old', 'Вимкнений', false)
+      on conflict (code) do nothing`);
+    // 🔴 `shipping_rates.zone_id` — NOT NULL: тариф без зони не вставиться.
+    await queryRows(dbUrl, `insert into public.shipping_zones (id, name, is_active, is_default)
+      values (gen_random_uuid(), 'Тестова зона', true, true)`);
+    const [{ id: zoneId }] = (await queryRows(dbUrl, `select id from public.shipping_zones where name = 'Тестова зона'`)) as IdRow[];
     [{ id: activeMethod }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'pickup'`)) as IdRow[];
     [{ id: inactiveMethod }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'old'`)) as IdRow[];
     await queryRows(dbUrl, `insert into public.pickup_points (id, method_id, name, address, city, is_active)
       values (gen_random_uuid(), $1, 'Склад', 'вул. Тестова, 1', 'Київ', true)`, [activeMethod]);
     [{ id: pickupPoint }] = (await queryRows(dbUrl, `select id from public.pickup_points where name = 'Склад'`)) as IdRow[];
-    await queryRows(dbUrl, `insert into public.shipping_rates (id, method_id, name, calculation_type, base_cost, is_active, sort_order)
-      values (gen_random_uuid(), $1, 'Безкоштовно', 'flat', 0, true, 0)`, [activeMethod]);
+    await queryRows(dbUrl, `insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
+      values (gen_random_uuid(), $1, $2, 'Безкоштовно', 'flat', 0, true, 0)`, [activeMethod, zoneId]);
     [{ id: panel }] = (await queryRows(dbUrl, `select id from public.products where slug = 'sonyachna-panel-450w-mono'`)) as IdRow[];
     [{ id: outOfStock }] = (await queryRows(dbUrl, `select id from public.products where slug = 'sonyachna-panel-550w-mono'`)) as IdRow[];
     await queryRows(dbUrl, `update public.products set stock_status = 'out_of_stock' where id = $1`, [outOfStock]);
@@ -1872,13 +1980,50 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   it('точка видачі чужого методу — pickup_point_invalid', async () => {
     await queryRows(dbUrl, `insert into public.shipping_methods (id, code, name, is_active) values (gen_random_uuid(), 'courier', 'Курʼєр', true)`);
     const [{ id: courier }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'courier'`)) as IdRow[];
-    await queryRows(dbUrl, `insert into public.shipping_rates (id, method_id, name, calculation_type, base_cost, is_active, sort_order)
-      values (gen_random_uuid(), $1, 'Тариф', 'flat', 100, true, 0)`, [courier]);
+    const [{ id: zoneId }] = (await queryRows(dbUrl, `select id from public.shipping_zones where name = 'Тестова зона'`)) as IdRow[];
+    await queryRows(dbUrl, `insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
+      values (gen_random_uuid(), $1, $2, 'Тариф', 'flat', 100, true, 0)`, [courier, zoneId]);
     const result = await placeOrderFor(
       input({ shippingMethodId: courier, pickupPointId: pickupPoint, items: [{ productId: panel, modificationId: null, quantity: 1 }] }),
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
+  });
+
+  it('pickup-метод без точки видачі — pickup_point_invalid', async () => {
+    const result = await placeOrderFor(
+      input({ shippingMethodId: activeMethod, pickupPointId: null, items: [{ productId: panel, modificationId: null, quantity: 1 }] }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
+  });
+
+  it('активний метод без застосовного тарифу — shipping_unavailable, а не безкоштовно', async () => {
+    await queryRows(dbUrl, `insert into public.shipping_methods (id, code, name, is_active) values (gen_random_uuid(), 'norate', 'Без тарифу', true) on conflict (code) do nothing`);
+    const [{ id: norate }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'norate'`)) as IdRow[];
+    const result = await placeOrderFor(
+      input({ shippingMethodId: norate, items: [{ productId: panel, modificationId: null, quantity: 1 }] }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
+  });
+
+  it('гість отримує знижку категорії за замовчуванням — як у getDiscountEnvironment', async () => {
+    // Фікстура знижки — за зразком блоку знижок у fixtures/showcase.ts
+    // (discount_groups → discounts → discount_targets), але ціль — категорія
+    // `retail` (за замовчуванням), 10 % на товар `panel`. Без дзеркала
+    // getDiscountEnvironment гість платив би 4800, а картка показує 4320.
+    for (const statement of RETAIL_DISCOUNT_FIXTURE) await queryRows(dbUrl, statement);
+    const result = await placeOrderFor(
+      input({ shippingMethodId: activeMethod, pickupPointId: pickupPoint,
+        items: [{ productId: panel, modificationId: null, quantity: 1 }] }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const [row] = (await queryRows(dbUrl, `select price, base_price from public.order_items where order_id = $1`, [result.order.id])) as { price: string; base_price: string | null }[];
+    expect(row.price).toBe('4320.00');
+    expect(row.base_price).toBe('4800.00');
   });
 
   it('позиція out_of_stock — not_purchasable', async () => {
@@ -1895,6 +2040,13 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
 🔴 Імена колонок `shipping_rates` (`calculation_type`, `base_cost`) звірити з
 `packages/simplycms/src/schema/schema.ts` (`shippingRates`) перед запуском; якщо
 відрізняються — правити SQL фікстури, не схему.
+
+Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts`
+🔴 Кейс зі знижкою: SQL фікстури взяти дослівно з блоку знижок
+`fixtures/showcase.ts` (`SHOWCASE_FIXTURE_STATEMENTS`, група → знижка →
+ціль), замінивши категорію-ціль на `retail` і відсоток на 10 — це не
+плейсхолдер, а вказівка перевикористати наявну фікстуру; якщо форма
+таблиць знижок інша, ніж у showcase, — правити тест, не домен.
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts`
 Expected: FAIL (`placeOrderFor` не існує).
@@ -1951,10 +2103,11 @@ import { resolveDiscount } from 'simplycms/domain/discounts';
 import { isPurchasable } from 'simplycms/domain/inventory';
 import { resolvePrice } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
+import { loadDefaultUserCategoryId, loadUserCategoryId } from './categories';
 import { loadDiscountGroups } from './discounts';
 import type { NewOrderItem } from './order-create';
 import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
-import { loadUserCategoryId, loadUserPriceTypeId } from './profile';
+import { loadUserPriceTypeId } from './profile';
 
 /** Позиція запиту чекауту — ідентичність і кількість. */
 export interface CheckoutItemRef {
@@ -1966,10 +2119,13 @@ export interface CheckoutItemRef {
 /**
  * Серверне ціноутворення позицій (К2-Е0, Е0-4).
  *
- * 🔴 Той самий ланцюг, що на картці товару: `resolvePrice` за типом ціни
- * покупця з відкатом на дефолтний, далі `resolveDiscount` по активних
- * групах знижок. Кошик несе лише id і кількість — назва, ціна і статус
- * беруться з БД у цій же транзакції. Повертає позиції або код відмови.
+ * 🔴 Той самий ланцюг, що на картці товару, і те саме СЕРЕДОВИЩЕ знижок, що
+ * будує `core/lib/discounts.ts::getDiscountEnvironment`: тип ціни і категорія
+ * — персональні, з відкатом на ДЕФОЛТНІ (гість і покупець без категорії
+ * дістають категорію за замовчуванням, не `null`); групи знижок читаються за
+ * ефективним типом ціни (`loadDiscountGroups(db, priceTypeId)`). Інакше
+ * чекаут рахував би інші знижки, ніж каталог (B2 аудиту r1). Кошик несе лише
+ * id і кількість — назва, ціна і статус беруться з БД у цій же транзакції.
  */
 export async function priceCheckoutItems(
   db: ActorDb,
@@ -1992,15 +2148,18 @@ export async function priceCheckoutItems(
         .where(inArray(productModifications.id, modIds))
     : [];
   const prices = await loadPricesByProduct(db, productIds);
-  const userPriceType = userId ? await loadUserPriceTypeId(db, userId) : null;
   const defaultPriceType = await loadDefaultPriceTypeId(db);
-  const userCategoryId = userId ? await loadUserCategoryId(db, userId) : null;
-  const groups = await loadDiscountGroups(db);
+  const defaultCategory = await loadDefaultUserCategoryId(db);
+  const userPriceType = userId ? await loadUserPriceTypeId(db, userId) : null;
+  const userCategory = userId ? await loadUserCategoryId(db, userId) : null;
+  const priceTypeId = userPriceType ?? defaultPriceType;
+  const userCategoryId = userCategory ?? defaultCategory;
+  const groups = priceTypeId ? await loadDiscountGroups(db, priceTypeId) : [];
 
   const byProduct = new Map(productRows.map((p) => [p.id, p]));
   const byMod = new Map(modRows.map((m) => [m.id, m]));
   const cartTotal = items.reduce((sum, item) => {
-    const base = resolvePrice(prices[item.productId] ?? [], userPriceType, defaultPriceType, item.modificationId).price ?? 0;
+    const base = resolvePrice(prices[item.productId] ?? [], priceTypeId, defaultPriceType, item.modificationId).price ?? 0;
     return sum + base * item.quantity;
   }, 0);
 
@@ -2012,7 +2171,7 @@ export async function priceCheckoutItems(
     if (item.modificationId && (!mod || mod.product_id !== item.productId)) return 'not_purchasable';
     if (!isPurchasable(mod ? mod.stock_status : product.stock_status)) return 'not_purchasable';
 
-    const { price: basePrice } = resolvePrice(prices[item.productId] ?? [], userPriceType, defaultPriceType, item.modificationId);
+    const { price: basePrice } = resolvePrice(prices[item.productId] ?? [], priceTypeId, defaultPriceType, item.modificationId);
     if (basePrice === null) return 'not_purchasable';
 
     const discount = resolveDiscount(basePrice, groups, {
@@ -2104,36 +2263,43 @@ export async function placeOrderFor(
       ? withOrderTokenDb(accessToken as string, fn)
       : withCustomerDb(userId, fn);
 
-  const prepared = await run(async (db) => {
-    const directory = await loadShippingDirectory(db);
-    const method = directory.methods.find((m) => m.id === input.shippingMethodId && m.is_active);
-    if (!method) return { reason: 'shipping_unavailable' as const };
-
-    const methodPoints = directory.pickupPoints.filter((p) => p.method_id === method.id);
-    if (input.pickupPointId !== null && !methodPoints.some((p) => p.id === input.pickupPointId)) {
-      return { reason: 'pickup_point_invalid' as const };
-    }
-    if (input.pickupPointId === null && methodPoints.length > 0) {
-      return { reason: 'pickup_point_invalid' as const };
-    }
-
-    const items = await priceCheckoutItems(db, userId, input.items);
-    if (items === 'not_purchasable') return { reason: 'not_purchasable' as const };
-
-    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
-    const rate = resolveShippingRate({ method, zone, cart: { items: [], subtotal } }, directory.rates);
-    return { items, subtotal, shippingCost: rate?.cost ?? 0 };
-  });
-  if ('reason' in prepared) return { ok: false, reason: prepared.reason };
-
   try {
-    const order = await run(async (db, operator) => {
+    // 🔴 ОДНА транзакція на все: довідники, ціни, отримувач, запис. Дві
+    // послідовні (спершу читання, потім запис) залишали б вікно, у якому
+    // ціна, тариф чи залишок змінюються між ними (B3 аудиту r1). Відмови —
+    // значеннями (до жодного запису), нестача залишку — винятком з відкатом.
+    return await run(async (db, operator) => {
+      const directory = await loadShippingDirectory(db);
+      const method = directory.methods.find(
+        (m) => m.id === input.shippingMethodId && m.is_active,
+      );
+      if (!method) return { ok: false, reason: 'shipping_unavailable' } as const;
+
+      // Pickup — за КОДОМ методу, як і UI (`CheckoutDeliveryForm`: `code === 'pickup'`):
+      // pickup вимагає активну точку ЦЬОГО методу; не-pickup точки не приймає.
+      const isPickup = method.code === 'pickup';
+      const point = input.pickupPointId
+        ? directory.pickupPoints.find(
+            (p) => p.id === input.pickupPointId && p.method_id === method.id && p.is_active,
+          )
+        : null;
+      if (isPickup && !point) return { ok: false, reason: 'pickup_point_invalid' } as const;
+      if (!isPickup && input.pickupPointId) return { ok: false, reason: 'pickup_point_invalid' } as const;
+
+      const items = await priceCheckoutItems(db, userId, input.items);
+      if (items === 'not_purchasable') return { ok: false, reason: 'not_purchasable' } as const;
+
+      const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
+      const rate = resolveShippingRate({ method, zone, cart: { items: [], subtotal } }, directory.rates);
+      // `null` — жодного застосовного тарифу: це НЕ «безкоштовно», а відмова.
+      if (rate === null) return { ok: false, reason: 'shipping_unavailable' } as const;
+
       const savedRecipientId = await resolveRecipient(db, userId, input);
-      return createOrder(db, userId, accessToken,
-        toOrderInput(input, savedRecipientId, prepared), operator);
+      const order = await createOrder(db, userId, accessToken,
+        toOrderInput(input, savedRecipientId, { items, subtotal, shippingCost: rate.cost }), operator);
+      return { ok: true, order } as const;
     });
-    return { ok: true, order };
   } catch (error) {
     if (error instanceof InsufficientStockError) return { ok: false, reason: 'not_purchasable' };
     throw error;
@@ -2149,12 +2315,14 @@ export async function placeOrderFor(
 `./db`, `./recipients`), домен — `simplycms/domain/shipping`; у
 `loaders/index.ts` — `export * from './place-order';`. `checkout.ts` імпортує
 `placeOrderFor`, `PlaceOrderInput`, `optionalSessionUserId` з
-`simplycms/storefront/loaders` (bare, як і решта serverFn-модулів). 🔴 `directory.pickupPoints[].method_id` — звірити
+`simplycms/storefront/loaders` (bare, як і решта serverFn-модулів).
+Поле `method_id`/`is_active` у `PickupPointRow` — звірити назви з
+`loaders/pickup-points.ts` (`Omit<PickupPoint, 'zone'>` → контракт `PickupPoint`). 🔴 `directory.pickupPoints[].method_id` — звірити
 назву поля в `PickupPointRow` (`loaders/pickup-points.ts`); шапка serverFn
 лишається тонкою (правило `server-fn-top-level`).
 
 Run: `pnpm typecheck && pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts`
-Expected: PASS (4 кейси).
+Expected: PASS (7 кейсів).
 
 - [ ] **Step 4: Клієнт — новий запит і мапа відмов**
 
@@ -2217,6 +2385,7 @@ union {ok, reason}, клієнт мапить код на каталог. Зак
 - Modify: `packages/simplycms/src/checkout-ui/CheckoutDeliveryForm.tsx:195-225`
 - Modify: `packages/simplycms/src/storefront-routes/pages/Checkout.tsx` (передати `canSubmit` у `CheckoutOrderSummary`; `FormMessage` для `shippingMethodId`)
 - Modify: `packages/simplycms/src/checkout-ui/CheckoutOrderSummary.tsx:16-25, 115-119`
+- Modify: `packages/simplycms/src/checkout-ui/CheckoutContactForm.tsx:31-70` (`id`/`htmlFor` чотирьох полів)
 - Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts`
 - Test: `packages/simplycms/src/checkout-ui/__tests__/CheckoutDeliveryForm.test.tsx` (новий)
 
@@ -2339,6 +2508,15 @@ Expected: FAIL (тексту немає; пропа немає).
 
 Run: `pnpm vitest run packages/simplycms/src/checkout-ui packages/simplycms/src/storefront-routes && pnpm typecheck`
 Expected: PASS.
+
+- [ ] **Step 3а: Поля контактів — `id` + `htmlFor` (доступність і селектори live-smoke)**
+
+У `CheckoutContactForm.tsx` кожна пара `<label>`/`<input>` (імʼя, прізвище,
+email, телефон) отримує звʼязок: `<label htmlFor="checkout-first-name" …>` і
+`<input id="checkout-first-name" …>`; ідентифікатори — `checkout-first-name`,
+`checkout-last-name`, `checkout-email`, `checkout-phone`. 🔴 Без цього
+`getByLabel` Playwright і скрінрідери поля не знаходять (B5 аудиту r1); лейбл
+без `htmlFor` над інпутом-сусідом — не звʼязок.
 
 - [ ] **Step 4: Гейти й коміт**
 
@@ -2567,9 +2745,9 @@ optimization.instructions виправлено (Е0-5)."
 
 - [ ] **Step 1: Пін детермінізму — спершу червоний**
 
-У `seed-determinism.test.ts:21` `15` → `19` (чотири нові `insert into` з явним
-списком колонок: спосіб доставки, точка видачі, тариф, залишки) і в коментарі
-`:12` «15 у `demo/demo-seed.sql`» → «19».
+У `seed-determinism.test.ts:21` `15` → `20` (пʼять нових `insert into` з явним
+списком колонок: спосіб доставки, зона, точка видачі, тариф, залишки) і в
+коментарі `:12` «15 у `demo/demo-seed.sql`» → «20».
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts`
 Expected: FAIL (у файлі ще 15).
@@ -2597,15 +2775,23 @@ values ('1000000a-0000-4000-8000-000000000001'::uuid, 'pickup', 'Самовив�
         'Забрати зі складу у Києві', 'system', true, 0)
 on conflict (code) do nothing;
 
+-- 🔴 `shipping_rates.zone_id` — NOT NULL: одна дефолтна зона на всю країну;
+-- `findShippingZoneIn` дефолтну зону пропускає, тож тариф застосовується без
+-- прив'язки до міста (правило домену, не сіду).
+insert into public.shipping_zones (id, name, description, is_active, is_default, sort_order)
+values ('1000000e-0000-4000-8000-000000000001'::uuid, 'Україна', 'Дефолтна зона демо', true, true, 0)
+on conflict (id) do nothing;
+
 insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
 values ('1000000b-0000-4000-8000-000000000001'::uuid,
         '1000000a-0000-4000-8000-000000000001'::uuid,
         'Склад у Києві', 'вул. Сонячна, 1', 'Київ', true, 0)
 on conflict (id) do nothing;
 
-insert into public.shipping_rates (id, method_id, name, calculation_type, base_cost, is_active, sort_order)
+insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
 values ('1000000c-0000-4000-8000-000000000001'::uuid,
         '1000000a-0000-4000-8000-000000000001'::uuid,
+        '1000000e-0000-4000-8000-000000000001'::uuid,
         'Безкоштовно зі складу', 'flat', 0, true, 0)
 on conflict (id) do nothing;
 
@@ -2622,17 +2808,28 @@ join public.products p on p.slug = v.product_slug
 on conflict (pickup_point_id, product_id) where product_id is not null and modification_id is null do nothing;
 ```
 
-🔴 Перед запуском звірити зі `schema.ts`: унікальний ключ `shipping_methods.code`
-(інакше `on conflict (code)` → `on conflict (id)`), колонки `shipping_rates`
-(`calculation_type`, `base_cost`) і предикат часткового індексу
-`unique_stock_product_per_point` — форма `on conflict … where …` мусить
-дослівно повторювати його. Якщо у `shipping_rates` є обовʼязкові колонки без
-дефолту — додати їх у список. Пін у кроці 1 — **19**: рівно чотири `insert into`
-цієї секції; будь-який пʼятий стейтмент вимагає правки піна свідомо.
+Звірено зі `schema.ts` (аудит r1 + верифікація): `shipping_methods_code_key`
+(unique на `code`) існує → `on conflict (code)` коректний; `shipping_rates`:
+`method_id`, `zone_id` (NOT NULL), `name`, `calculation_type`, `base_cost`,
+`is_active`, `sort_order` — решта з дефолтами; предикат часткового індексу
+`unique_stock_product_per_point` — `((product_id IS NOT NULL) AND
+(modification_id IS NULL))`, форма `on conflict … where …` вище йому
+відповідає. Пін у кроці 1 — **20**: рівно пʼять `insert into` цієї секції.
+
+🔴 **Колізія з харнесом (B4 аудиту r1).** Демо-сід тепер везе `code='pickup'`,
+а дві фікстури вставляють той самий код БЕЗ `on conflict` і котяться поверх
+демо-сіду: `fixtures/storefront-client.ts:24` і `fixtures/showcase.ts:110-111`.
+Правка в обох: `… values (gen_random_uuid(), 'pickup', 'Самовивіз', true) on
+conflict (code) do nothing` — точки далі беруть метод `select … where code =
+'pickup'`, тобто вже посилаються на сідовий рядок. `storefront-showcase.test.ts:252`
+`expect(points).toBe(1)` → `toBe(2)` з коментарем «демо-точка + відкрита
+фікстурна; закрита не рахується». Нові тести Tasks 9/10 уже вставляють з
+`on conflict (code)`.
 
 Run: `pnpm test:schema` (включно з `seed-determinism`, `demo-seed`,
-`storefront-showcase` — усі читають демо-сід) і `pnpm template:sync && git
-status --porcelain` (копія сіду в шаблоні оновилась; парність —
+`storefront-showcase`, `storefront-client-queries`, `order-stock`,
+`checkout-flow` — усі читають демо-сід) і `pnpm template:sync && git status
+--porcelain` (копія сіду в шаблоні оновилась; парність —
 `tests/create-store-template-parity.test.ts`).
 Expected: PASS; у дифі — `packages/create-simplycms-store/template/…/demo-seed.sql`.
 
@@ -2668,7 +2865,7 @@ Expected: PASS (тести головної, якщо є, — оновити ф�
 
 ```bash
 pnpm format:check && pnpm lint && pnpm test && pnpm test:schema
-git add -A packages/simplycms/migrations/demo packages/create-simplycms-store/template packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts packages/simplycms/src/storefront packages/simplycms/src/storefront-routes/pages/home
+git add -A packages/simplycms/migrations/demo packages/create-simplycms-store/template packages/simplycms/test-harness/pg/__tests__ packages/simplycms/src/storefront packages/simplycms/src/storefront-routes/pages/home
 git commit -m "feat(k2-e0): покупний демо-сід (доставка, точка, залишки), ціна на головній, банери без фото
 
 Демо доходить до рядка в orders; обидві гілки правила наявності в одному
@@ -2773,12 +2970,23 @@ origin — дев на іншому порту отримав би 403). Три 
 
 **Files:**
 - Create: `scripts/live-smoke.mjs`
+- Modify: `scripts/pilot-pack/build.mjs:74-80` (`startStore(storeDir, port, extraEnv = {})`)
 - Modify: `package.json` (скрипт `live:smoke`)
 - Modify: `CLAUDE.md` (Quick Reference: `live:smoke`; `db:demo` — покупний демо), `docs/architecture/test-contours.md` §12 (рядок «живий прогін = `pnpm live:smoke`»), `docs/tasks/v2-state-map.md` §2 (датований прогін), `docs/tasks/platform-roadmap.md` (К2-Е0 → ✅)
 
 **Interfaces:**
 - Consumes: `expectedProducts`, `gateHttp` з `scripts/pilot-pack/gate-b.mjs`; `startStore` з `scripts/pilot-pack/build.mjs`; `@playwright/test`.
 - Produces: команда `PG_HARNESS_URL=… pnpm live:smoke` з нульовим кодом виходу на зеленому прогоні.
+
+- [ ] **Step 0: `startStore` приймає явний env**
+
+У `scripts/pilot-pack/build.mjs` сигнатура `startStore(storeDir, port)` →
+`startStore(storeDir, port, extraEnv = {})`, а `env: { ...process.env, PORT:
+String(port), HOST: '127.0.0.1' }` → `env: { ...process.env, ...extraEnv, PORT:
+String(port), HOST: '127.0.0.1' }`. 🔴 Причина (M9 аудиту r1): `server.mjs`
+наповнює `process.env` із `.env.local` лише для ВІДСУТНІХ ключів, тож
+`DATABASE_URL` із shell чи CI перекрив би тестову БД, а прямий SQL скрипта
+дивився б в іншу базу. Пілот викликає без третього аргумента — без змін.
 
 - [ ] **Step 1: Скрипт**
 
@@ -2827,19 +3035,33 @@ const sql = async (url, text, values = []) => {
 const rows = [];
 const check = (label, passed, fact) => { rows.push([label, passed ? 'OK' : 'FAIL', fact]); };
 
+/** Ідентифікатори полів контактної форми — `id`/`htmlFor` з CheckoutContactForm (Task 11). */
+const FIELD = { firstName: '#checkout-first-name', lastName: '#checkout-last-name', phone: '#checkout-phone' };
+
 async function main() {
   // 1. Чиста демо-БД (той самий скрипт, що й у доках).
   execFileSync('node', ['scripts/demo-db.mjs', '--url', adminUrl, '--name', DB_NAME], { cwd: ROOT, stdio: 'inherit' });
   const dbUrl = withDb(adminUrl, DB_NAME);
-
-  // 2. env рівно з трьох ключів контракту; оригінал відкладається й повертається.
-  if (existsSync(ENV_FILE)) writeFileSync(ENV_BACKUP, readFileSync(ENV_FILE));
   const port = await freePort();
-  writeFileSync(ENV_FILE, `DATABASE_URL=${dbUrl}\nBETTER_AUTH_SECRET=${randomBytes(32).toString('hex')}\nVITE_SITE_URL=http://127.0.0.1:${port}\n`);
+  // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
+  // DATABASE_URL/BETTER_AUTH_URL, а server.mjs бере .env.local лише для
+  // відсутніх ключів (M9 аудиту r1).
+  const env = {
+    DATABASE_URL: dbUrl,
+    BETTER_AUTH_SECRET: randomBytes(32).toString('hex'),
+    BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
+    VITE_SITE_URL: `http://127.0.0.1:${port}`,
+  };
+
   let server;
+  let browser;
+  let envBackedUp = false;
   try {
-    execFileSync('pnpm', ['build'], { cwd: ROOT, stdio: 'inherit' });
-    server = await startStore(ROOT, port);
+    // 2. env рівно з контракту; оригінал відкладається й повертається у finally.
+    if (existsSync(ENV_FILE)) { writeFileSync(ENV_BACKUP, readFileSync(ENV_FILE)); envBackedUp = true; }
+    writeFileSync(ENV_FILE, Object.entries(env).map(([k, v]) => `${k}=${v}`).join('\n') + '\n');
+    execFileSync('pnpm', ['build'], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...env } });
+    server = await startStore(ROOT, port, env);
     const base = `http://127.0.0.1:${port}`;
 
     // 3. curl+SQL — гейт B пілота як є.
@@ -2853,7 +3075,7 @@ async function main() {
 
     // 4. Браузер.
     const { chromium } = await import('@playwright/test');
-    const browser = await chromium.launch();
+    browser = await chromium.launch();
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -2875,9 +3097,12 @@ async function main() {
     const [{ c: before }] = await sql(dbUrl, `select count(*)::int as c from public.orders`);
     const [{ quantity: qtyBefore }] = await sql(dbUrl, `select quantity from public.stock_by_pickup_point s join public.products p on p.id = s.product_id where p.slug = $1`, [product.slug]);
     await page.goto(`${base}/checkout`, { waitUntil: 'networkidle' });
-    await page.getByLabel(/Ім'я/).fill('Тест');
-    await page.getByLabel(/Прізвище/).fill('Покупець');
-    await page.getByLabel(/Телефон/).fill('+380501234567');
+    await page.locator(FIELD.firstName).fill('Тест');
+    await page.locator(FIELD.lastName).fill('Покупець');
+    await page.locator(FIELD.phone).fill('+380501234567');
+    // Демо-метод — pickup з однією точкою: форма обирає метод автоматично,
+    // точку — треба клікнути (перша й єдина).
+    await page.getByRole('radio').first().check().catch(() => {});
     await page.getByRole('button', { name: /Підтвердити замовлення/ }).click();
     await page.waitForURL(/\/order-success\//, { timeout: 15_000 });
     const [{ c: after }] = await sql(dbUrl, `select count(*)::int as c from public.orders`);
@@ -2885,10 +3110,13 @@ async function main() {
     check('orders +1', after === before + 1, `${before} → ${after}`);
     const [{ value }] = await sql(dbUrl, `select value from public.system_settings where key = 'stock_management'`);
     check('списання залишку', value.decrease_on_order ? qtyAfter === qtyBefore - 1 : qtyAfter === qtyBefore, `decrease_on_order=${value.decrease_on_order}, ${qtyBefore} → ${qtyAfter}`);
-    await browser.close();
   } finally {
+    // 🔴 Один finally на все: браузер, сервер, env — у зворотному порядку;
+    // падіння на будь-якому кроці не лишає ні процесів, ні чужого .env.local.
+    await browser?.close().catch(() => {});
     server?.stop();
-    if (existsSync(ENV_BACKUP)) { writeFileSync(ENV_FILE, readFileSync(ENV_BACKUP)); rmSync(ENV_BACKUP); } else rmSync(ENV_FILE, { force: true });
+    if (envBackedUp) { writeFileSync(ENV_FILE, readFileSync(ENV_BACKUP)); rmSync(ENV_BACKUP); }
+    else rmSync(ENV_FILE, { force: true });
   }
 
   console.log('\n| Перевірка | Результат | Факт |\n|---|---|---|');
@@ -2901,11 +3129,11 @@ async function main() {
 main().catch((e) => { console.error(`\n[live-smoke] ${e.message}`); process.exit(1); });
 ```
 
-🔴 Селектори форми (`getByLabel(/Ім'я/)` тощо) звірити з реальними лейблами
-`CheckoutContactForm` (`t('checkout.contact.firstName')` у каталозі `uk`);
-поле email або телефон — обовʼязкове одне з двох. Якщо `decrease_on_order`
-у демо `false` (канон `0003_seed`), рядок «списання» очікує незмінний залишок —
-це чесно: сід канону тумблер не вмикає.
+Селектори полів — по `id` з Task 11 Step 3а (лейбли `CheckoutContactForm`
+до того не мали `htmlFor`, і `getByLabel` їх не знаходив — B5 аудиту r1);
+поле email або телефон — обовʼязкове одне з двох (телефон заповнюється).
+Якщо `decrease_on_order` у демо `false` (канон `0003_seed`), рядок «списання»
+очікує незмінний залишок — це чесно: сід канону тумблер не вмикає.
 
 `package.json`: `"live:smoke": "node scripts/live-smoke.mjs",` (після `db:demo`).
 
@@ -2932,7 +3160,7 @@ Expected: усі рядки `OK`, `live-smoke: ЗЕЛЕНИЙ`, код вихо�
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm pilot:pack
-git add scripts/live-smoke.mjs package.json CLAUDE.md docs/architecture/test-contours.md docs/tasks/v2-state-map.md docs/tasks/platform-roadmap.md
+git add scripts/live-smoke.mjs scripts/pilot-pack/build.mjs package.json CLAUDE.md docs/architecture/test-contours.md docs/tasks/v2-state-map.md docs/tasks/platform-roadmap.md
 git commit -m "feat(k2-e0): live-smoke — DoD як скрипт; документи під живий прогін
 
 curl+SQL через gate-b пілота + Playwright: кошик без React #418, бейдж
