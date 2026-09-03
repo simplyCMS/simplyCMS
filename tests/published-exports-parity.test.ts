@@ -104,8 +104,11 @@ describe('published packages: tarball parity', () => {
     // збірка, ані типи, ані тести цього не бачать. Трек T увімкнув поле, тож
     // трек T зобовʼязаний лишити по собі пару гардів:
     //   • цей — що поле не зникло мовчки з опублікованого manifest-а;
-    //   • ESLint-зона `no-restricted-syntax` в `eslint.config.mjs` — що в
-    //     джерелах цих пакетів не зʼявився side-effect-імпорт.
+    //   • ESLint-зона `simplycms-sideeffects/no-side-effect-import` в
+    //     `eslint.config.mjs` — що в джерелах цих пакетів не зʼявився
+    //     side-effect-імпорт. 🔴 Саме окреме правило, а НЕ селектор у
+    //     спільному `no-restricted-syntax`: чому — в
+    //     `eslint-rules/no-side-effect-import.mjs`.
     // Джерело правди — tarball, а не репозиторний package.json: pnpm піднімає
     // publishConfig, і теоретично міг би поле перекрити.
     //
