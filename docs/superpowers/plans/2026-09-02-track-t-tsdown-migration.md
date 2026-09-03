@@ -602,6 +602,13 @@ export default {
 ```js
   {
     files: ['packages/simplycms/src/**/*.{ts,tsx}'],
+    // 🔴 Тести — поза зоною: правило стереже граф, який ЇДЕ в `dist`, а
+    // `__tests__` туди не їдуть. Без цього Крок 1б сам себе червонив би —
+    // `storefront-routes/__tests__/revalidate-theme*.test.ts` легально
+    // тягнуть `../../storefront/loaders/*` відносно (importer поза деревом
+    // `storefront`). Фікстур правила це не стосується: вони ставлять його
+    // власним інлайн-конфігом через `Linter`.
+    ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
     plugins: {
       'simplycms-boundary': {
         rules: { 'server-only-relative': serverOnlyRelative },
@@ -1101,7 +1108,9 @@ pnpm vitest run --config vitest.packaging.config.ts tests/dist-server-boundary.t
 
 🔴 Мутація мусить змінити ГРАФ модулів, а не лише опцію: між
 `admin-server/index` і `impl` немає спільного локального модуля, тож сама
-опція чанку не створює. Дві правки: відносний імпорт у стабі (створює
+опція чанку не створює. 🔴 Форма профілю — ПІСЛЯ Task 1 Крок 1а
+(`'src/admin-server/impl/index.ts'`): нутрощі вже переїхали під `impl/`.
+Дві правки: відносний імпорт у стабі (створює
 спільний модуль) і `splitting: true` для профілю `admin-server` (дозволяє
 esbuild винести його в чанк; за `splitting: false` esbuild заінлайнив би
 impl у стаб без сліду — саме той клас, який ловить лінт, а не цей гейт).
@@ -1112,7 +1121,7 @@ python3 - <<'EOF'
 import re, pathlib
 p = pathlib.Path('packages/simplycms/tsup.config.ts')
 s = p.read_text()
-new, n = re.subn(r"('admin-server',\n\s+\['src/admin-server/index\.ts', 'src/admin-server/impl\.ts'\],\n\s+\{ splitting: )false", r"\1true", s)
+new, n = re.subn(r"('admin-server',\n\s+\['src/admin-server/index\.ts', 'src/admin-server/impl/index\.ts'\],\n\s+\{ splitting: )false", r"\1true", s)
 assert n == 1, 'профіль admin-server не знайдено'
 p.write_text(new)
 EOF
@@ -1675,7 +1684,11 @@ simplycms/storefront без споживачів знято. Негативни�
 - Modify: `scripts/build-packages.mjs:1-12, 54-58`
 - Modify: `packages/simplycms/tsconfig.dts.json:2-11`
 - Modify: `tests/dist-import-meta.test.ts:7-17, 93`, `vitest.packaging.config.ts` (коментар), `tests/cli-pack.test.ts:21`
-- Modify: `packages/simplycms/src/{storefront/loaders/session.ts:19-27, storefront/loaders/index.ts:35, storefront-routes/server/is-admin.ts:20, admin-server/index.ts:2, admin-server/impl.ts:4, schema/index.ts:13, supabase/vite-env.d.ts:5}`
+- Modify: `packages/simplycms/src/{storefront/loaders/session.ts:19-27, storefront/loaders/index.ts:35, storefront/loaders/is-admin.ts, admin-server/index.ts:2, admin-server/impl/index.ts, schema/index.ts:13, supabase/vite-env.d.ts:5}`
+  🔴 Два шляхи — ПІСЛЯ переїздів Task 1: `is-admin.ts` переїхав зі
+  `storefront-routes/server/` у `storefront/loaders/` (Крок 1б), `impl.ts`
+  став `admin-server/impl/index.ts` (Крок 1а). Номери рядків у них зсунулись —
+  шукати за текстом коментаря, не за номером.
 - Modify: `CLAUDE.md`, `docs/architecture/test-contours.md`, `docs/architecture/plugins.md:96-110`, `docs/architecture/themes.md:39,212,294`, `docs/architecture/release-process.md:192`, `packages/README.md:126-130`, `.github/instructions/tooling.instructions.md:32`, `.github/instructions/ui-architecture.instructions.md:94`, `docs/tasks/platform-roadmap.md` (пункт 4)
 
 **Interfaces:**
@@ -1773,10 +1786,10 @@ Postgres на машині релізу).
   зовнішній. Стережуть: правило `server-only-relative`, гейт
   `dist-server-boundary`, Import Protection магазину»;
 - `src/storefront/loaders/index.ts:35` — «heap воркера tsup» → «heap dts-плагіна бандлера»;
-- `src/storefront-routes/server/is-admin.ts:20` — «в один tsup-чанк» → «в один чанк бандлера»;
+- `src/storefront/loaders/is-admin.ts` (після переїзду Task 1 Крок 1б) — «в один tsup-чанк» → «в один чанк бандлера»;
 - `src/admin-server/index.ts:2` — «відносний імпорт tsup заінлайнив би» →
   «відносний імпорт бандлер заінлайнив би; стереже правило server-only-relative»;
-- `src/admin-server/impl.ts:4` — «tsup лишає» → «бандлер лишає (deps.neverBundle)»;
+- `src/admin-server/impl/index.ts` (після переїзду Task 1 Крок 1а) — «tsup лишає» → «бандлер лишає (deps.neverBundle)»;
 - `src/schema/index.ts:13` — «Entry-точкою tsup барель НЕ стає» → «Entry-точкою
   збірки барель НЕ стає (entry виводяться з exports, а ключа для нього немає)»;
 - `src/supabase/vite-env.d.ts:5` — «(tsup поза host-програмою)» → «(бандлер пакета поза host-програмою)».
@@ -1821,7 +1834,8 @@ pnpm build:packages   # Збірка публікованих пакетів. �
 ## 12. Межа клієнт/сервер: одна декларація, пʼять читачів (трек T, 2026-09-02)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
-(`db`, `auth`, `schema`, `storefront`, `admin-server/impl`; serverFn-модулі
+(`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
+`admin-server/impl`; serverFn-модулі
 `plugin-sdk/server`, `themes/server`, `plugins/server`, стаби `admin-server` —
 НЕ server-only, їх клієнт імпортує легально). Читачі:
 
