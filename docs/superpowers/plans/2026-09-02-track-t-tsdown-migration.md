@@ -242,7 +242,9 @@ RPC-стабами і прибирає осиротілі серверні ім�
   - `SERVER_ONLY_DEPS: readonly ['pg','drizzle-orm','drizzle-zod']`
   - `serverOnlyOwner(subpath: string): string | null` — префікс декларації або null
   - `isServerOnlySubpath(subpath: string): boolean`
-  - `serverOnlySpecifiers(): RegExp[]`, `serverOnlyFiles(): RegExp[]` — для Import Protection
+  - `serverOnlyDepSpecifier(dep): RegExp` — регекс залежності з урахуванням `clientSafe`
+  - `serverOnlySpecifiers(): RegExp[]`, `serverOnlyFiles(): RegExp[]`,
+    `serverOnlyExcludeFiles(): RegExp[]` — для Import Protection
   - субшлях `simplycms/contracts/server-only` в обох exports-мапах.
 - Consumes: нічого нового.
 
@@ -293,7 +295,33 @@ export const SERVER_ONLY = [
 ] as const;
 
 /** Зовнішні залежності, що існують лише на сервері. */
-export const SERVER_ONLY_DEPS = ['pg', 'drizzle-orm', 'drizzle-zod'] as const;
+export const SERVER_ONLY_DEPS = [
+  { name: 'pg' },
+  { name: 'drizzle-orm' },
+  { name: 'drizzle-zod' },
+  // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
+  // Виняток живе ДАНИМИ, а не хардкодом у якогось одного читача: інакше
+  // Import Protection його бачив би, а Gate C і межа плагінів — ні.
+  { name: 'better-auth', clientSafe: ['react'] },
+] as const;
+
+/**
+ * Регекс специфікатора залежності з урахуванням клієнтських підшляхів.
+ *
+ * 🔴 Заперечення gitignore-стилю (`'!better-auth/react'`) у `group` правила
+ * `no-restricted-imports` підшлях НЕ звільняє (перевірено на ESLint 10.8:
+ * усі три імпорти червоні) — тому для deps із `clientSafe` читачі беруть
+ * саме цей регекс, а не патерн-глоб.
+ */
+export const serverOnlyDepSpecifier = (dep: {
+  readonly name: string;
+  readonly clientSafe?: readonly string[];
+}): RegExp =>
+  new RegExp(
+    dep.clientSafe?.length
+      ? `^${dep.name}(/(?!${dep.clientSafe.join('|')})|$)`
+      : `^${dep.name}(/|$)`,
+  );
 
 /** Префікс декларації, під яким лежить субшлях (без `simplycms/`), або null. */
 export const serverOnlyOwner = (subpath: string): string | null =>
@@ -315,15 +343,37 @@ const alternation = SERVER_ONLY.join('|');
  */
 export const serverOnlySpecifiers = (): RegExp[] => [
   new RegExp(`^simplycms/(${alternation})(/|$)`),
-  ...SERVER_ONLY_DEPS.map((dep) => new RegExp(`^${dep}(/|$)`)),
-  // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
-  /^better-auth(\/(?!react)|$)/,
+  ...SERVER_ONLY_DEPS.map(serverOnlyDepSpecifier),
 ];
 
 export const serverOnlyFiles = (): RegExp[] => [
-  new RegExp(
-    `(packages/simplycms/src|simplycms/dist)/(${alternation})(/|\\.[tj]sx?$)`,
-  ),
+  // 🔴 `src` — не лише в монорепо: `files` маніфеста везе `src/` у tarball
+  // (559 файлів, `src/db/client.ts` серед них), тож у магазині server-only
+  // дерево існує ДВІЧІ — `node_modules/simplycms/{src,dist}`. Форма
+  // `simplycms/(src|dist)/` покриває обидві й не чіпає `simplycms-theme-*`.
+  new RegExp(`simplycms/(src|dist)/(${alternation})(/|\\.[tj]sx?$)`),
+];
+
+/**
+ * Ціль, яку file-deny НЕ перевіряє (Import Protection, клієнт).
+ *
+ * 🔴 Дефолт Start — `['**/node_modules/**']`, і користувацьке значення його
+ * ЗАМІЩУЄ, а не доповнює (`pick(user, default)`, `plugin.js:694,699`). З
+ * дефолтом відносна втеча `routes/** → ../../src/db/client` у магазині
+ * невидима: `src/` їде в tarball, ціль лежить у node_modules, специфікатор
+ * відносний (повз `specifiers`). Тому виключаємо все в node_modules, КРІМ
+ * самого пакета ядра. Ціни немає: `excludeFiles` — фільтр ЦІЛІ перед
+ * file-deny (`plugin.js:238,841`), а не обхід дерева; додається один
+ * regex-тест на імпорт.
+ *
+ * Lookahead на початку рядка, бо в pnpm реальний шлях —
+ * `node_modules/.pnpm/simplycms@x/node_modules/simplycms/src/…`. Слеш у
+ * `simplycms/` обовʼязковий: `simplycms-theme-*` лишаються виключеними, і це
+ * правильно — їхні файли не є нашими server-only деревами, а їхній
+ * bare-імпорт `simplycms/db` ловлять `specifiers`.
+ */
+export const serverOnlyExcludeFiles = (): RegExp[] => [
+  /^(?!.*node_modules\/simplycms\/).*node_modules\//,
 ];
 ```
 
@@ -421,8 +471,17 @@ cd ../../..
    → «`storefront/loaders/is-admin`».
 
 Перевірка: `pnpm vitest run packages/simplycms/src/storefront-routes packages/simplycms/src/storefront`
-— зелено; `git grep -n "server/is-admin\|server/theme-record\|server/revalidate-theme" -- packages src`
-— 0 збігів.
+— зелено; перевірка мертвих посилань — по ВСЬОМУ репо, не лише по коду:
+
+```bash
+git grep -n "server/is-admin\|server/theme-record\|server/revalidate-theme" \
+  -- ':!docs/superpowers/plans' ':!CHANGELOG.md'
+```
+
+🔴 Обсяг саме такий: обмеження `-- packages src` сховало б два мертві якорі
+в `.github/instructions/{optimization,data-access}.instructions.md`, які
+подають `theme-record.ts` як ЕТАЛОН патерну (спіймано рев'ю Task 1). Очікувано
+0 збігів.
 
 - [ ] **Крок 2: Субшлях в exports і в чинній збірці tsup**
 
@@ -480,7 +539,13 @@ import {
 // плагін кличе хуки SDK, а не хендлери під ними.
 const serverOnlyImportGroup = [
   ...SERVER_ONLY.flatMap((sub) => [`simplycms/${sub}`, `simplycms/${sub}/*`]),
-  ...SERVER_ONLY_DEPS.flatMap((dep) => [dep, `${dep}/*`]),
+  // Глоб-патерни — лише для deps БЕЗ клієнтських підшляхів; ті, що з
+  // `clientSafe`, ідуть окремим обʼєктом `{ regex }` нижче (заперечення в
+  // `group` підшлях не звільняє).
+  ...SERVER_ONLY_DEPS.filter((dep) => !('clientSafe' in dep)).flatMap((dep) => [
+    dep.name,
+    `${dep.name}/*`,
+  ]),
 ];
 const pluginOnlySurfaceGroup = [
   'simplycms/supabase',
@@ -500,6 +565,13 @@ const pluginTrustBoundaryImports = [
   // Flat config замінює опції правила цілком, тож глобальну зону
   // `simplycms/db/client` доливаємо сюди явно — інакше блок мовчки зняв би її
   // з `plugins/**` (той самий прийом, що з i18n-селекторами в env-зоні).
+  // deps із клієнтськими підшляхами — регексом, не глобом: `better-auth`
+  // і `better-auth/adapters/*` заборонені, `better-auth/react` дозволений.
+  ...SERVER_ONLY_DEPS.filter((dep) => 'clientSafe' in dep).map((dep) => ({
+    regex: serverOnlyDepSpecifier(dep).source,
+    message:
+      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
+  })),
   dbClientImportGroup,
 ];
 ```
@@ -541,7 +613,8 @@ import { serverOnlyOwner } from '../packages/simplycms/src/contracts/server-only
 // (`auth` → `../db/client` продублював би пул у auth.js): перехід між
 // деревами — лише bare-субшляхом, який бандлер лишає зовнішнім.
 
-const SRC = resolve(import.meta.dirname, '../packages/simplycms/src');
+const PKG = resolve(import.meta.dirname, '../packages/simplycms');
+const SRC = resolve(PKG, 'src');
 
 /** Субшлях файла відносно src ядра (`db`, `admin-server/impl/x`) або null поза src. */
 const subpathOf = (absolute) => {
@@ -571,9 +644,16 @@ export default {
     },
   },
   create(context) {
-    const importer = subpathOf(context.filename);
-    if (importer === null) return {};
-    const importerOwner = serverOnlyOwner(importer);
+    // 🔴 Межа зони — ПАКЕТ, а не `src`: `routes/**` теж їде в tarball
+    // (`files` маніфеста), тож відносна втеча звідти в `src/db/client`
+    // резолвиться в магазині в TS-джерело з node_modules — повз `dist`,
+    // повз декларацію і повз Import Protection (специфікатор відносний,
+    // file-deny у node_modules вимкнений дефолтним `excludeFiles`).
+    // Файл поза пакетом (хост, теми, плагіни) правило не стосується.
+    if (relative(PKG, context.filename).startsWith('..')) return {};
+    const importerSub = subpathOf(context.filename);
+    const importerOwner =
+      importerSub === null ? null : serverOnlyOwner(importerSub);
     const check = (node) => {
       const source = specifierOf(node.source);
       if (source === null || !source.startsWith('.')) return;
@@ -601,7 +681,7 @@ export default {
 
 ```js
   {
-    files: ['packages/simplycms/src/**/*.{ts,tsx}'],
+    files: ['packages/simplycms/{src,routes}/**/*.{ts,tsx}'],
     // 🔴 Тести — поза зоною: правило стереже граф, який ЇДЕ в `dist`, а
     // `__tests__` туди не їдуть. Без цього Крок 1б сам себе червонив би —
     // `storefront-routes/__tests__/revalidate-theme*.test.ts` легально
@@ -655,7 +735,10 @@ describe('server-only-relative (трек T)', () => {
     ['динамічний import()', "const m = import('./impl');", 'admin-server/index.ts'],
     ['динамічний import() з template literal', "const m = import(\`./impl\`);", 'admin-server/index.ts'],
     ['між двома server-only деревами', "import { pool } from '../db/client';", 'auth/index.ts'],
-    ['клієнтський тір → лоадери', "import { x } from '../storefront/loaders/db';", 'core/lib/x.ts'],
+    ['клієнтський тір → лоадери', "import { x } from '../../storefront/loaders/db';", 'core/lib/x.ts'],
+    // 🔴 `routes/**` їде в tarball разом із `src/`, тож відносна втеча
+    // звідти — тихий витік повз dist і повз Import Protection.
+    ['роут ядра → db/client', "import { pool } from '../../src/db/client';", '../routes/storefront/x.tsx'],
   ])('ловить: %s', (_label, code, file) => {
     expect(lint(code, file)).toHaveLength(1);
   });
@@ -665,7 +748,8 @@ describe('server-only-relative (трек T)', () => {
     ['усередині impl/', "import { defineAdminResource } from './resource';", 'admin-server/impl/orders.ts'],
     ['bare-субшлях', "import { ops } from 'simplycms/admin-server/impl';", 'admin-server/index.ts'],
     ['відносний імпорт клієнтського модуля', "import { x } from './usePluginT';", 'plugin-sdk/index.ts'],
-    ['файл поза src ядра', "import { x } from './impl';", '../../../src/routes/my/x.ts'],
+    ['роут ядра bare-субшляхом', "import { withActor } from 'simplycms/db';", '../routes/storefront/x.tsx'],
+    ['файл поза ПАКЕТОМ ядра', "import { x } from './impl';", '../../../src/routes/my/x.ts'],
   ])('пропускає: %s', (_label, code, file) => {
     expect(lint(code, file)).toHaveLength(0);
   });
@@ -676,8 +760,10 @@ describe('server-only-relative (трек T)', () => {
 pnpm vitest run tests/eslint-rules/server-only-relative.test.ts
 ```
 
-Очікувано: 11 passed (правило вже написане в Кроці 5; якщо якийсь кейс
-червоний — лагодити правило, не фікстуру).
+Очікувано: 13 passed (7 «ловить» + 6 «пропускає»). Правило вже написане в
+Кроці 5. 🔴 Якщо кейс червоний — спершу перевір АРИФМЕТИКУ шляху у фікстурі
+(правило резолвить специфікатор відносно імпортера, а не матчить сирий
+текст), і лише потім лагодь правило.
 
 - [ ] **Крок 7: Кейс у негативному контролі межі плагінів**
 
@@ -690,10 +776,24 @@ pnpm vitest run tests/eslint-rules/server-only-relative.test.ts
       "import { pool } from 'simplycms/db';",
       "import { ops } from 'simplycms/admin-server/impl';",
       "import { createSelectSchema } from 'drizzle-zod';",
+      // Корінь better-auth і його серверні підшляхи — заборонені…
+      "import { betterAuth } from 'better-auth';",
+      "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
     ]) {
       const errors = await boundaryErrors(bad, 'plugins/hello-world/fixture.ts');
       expect(errors, bad).toHaveLength(1);
     }
+  });
+
+  it('клієнтський підшлях залежності з clientSafe лишається дозволеним', async () => {
+    // …а `better-auth/react` — клієнтський SDK, і плагін має на нього право.
+    // Саме цей кейс доводить, що виняток працює РЕГЕКСОМ: заперечення
+    // gitignore-стилю в `group` підшлях не звільняє (ESLint 10.8).
+    const errors = await boundaryErrors(
+      "import { createAuthClient } from 'better-auth/react';",
+      'plugins/hello-world/fixture.ts',
+    );
+    expect(errors).toHaveLength(0);
   });
 ```
 
@@ -728,7 +828,14 @@ const SERVER_PAYLOAD = [
   // підрядком (інакше `pg` збігся б із будь-яким `…jpg…`). Окремо від
   // субшляхів, бо витекти вони можуть і без модулів ядра — прямим імпортом
   // із роут-файлу чи теми.
-  ...SERVER_ONLY_DEPS.map((dep) => new RegExp(`(^|[/"'])${dep}([/"']|$)`)),
+  // 🔴 Лише deps БЕЗ `clientSafe`: module id не несе субшляху, тож
+  // відрізнити `better-auth/react` від кореня на цьому рівні неможливо.
+  // Корінь better-auth може приїхати в клієнт лише через `simplycms/auth`
+  // (server-only — ловиться субшляхом вище) або прямим імпортом із магазину
+  // (ловить Import Protection специфікатором).
+  ...SERVER_ONLY_DEPS.filter((dep) => !('clientSafe' in dep)).map(
+    (dep) => new RegExp(`(^|[/"'])${dep.name}([/"']|$)`),
+  ),
 ];
 ```
 
@@ -750,6 +857,7 @@ paths, а конфіг Vite бандлить esbuild-ом без alias-ів, —
 // Хост не має залежності `simplycms` — резолвить ядро alias-ом, якого
 // конфіг Vite не бачить, тож декларація межі береться відносним шляхом.
 import {
+  serverOnlyExcludeFiles,
   serverOnlyFiles,
   serverOnlySpecifiers,
 } from './packages/simplycms/src/contracts/server-only';
@@ -761,6 +869,7 @@ import {
 
 ```ts
 import {
+  serverOnlyExcludeFiles,
   serverOnlyFiles,
   serverOnlySpecifiers,
 } from 'simplycms/contracts/server-only';
@@ -783,6 +892,9 @@ import {
           client: {
             specifiers: serverOnlySpecifiers(),
             files: serverOnlyFiles(),
+            // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
+            // file-deny не бачив би `node_modules/simplycms/src/**`.
+            excludeFiles: serverOnlyExcludeFiles(),
           },
         },
 ```
@@ -821,6 +933,32 @@ environment`, `Denied by file pattern: …packages/simplycms/src…`, траса
 `packages/simplycms/src/db/index.ts`); лагодити декларацію, не контроль.
 Без Import Protection цей самий роут збирається зеленим і кладе `Pool`
 з `pg` у `dist/client/assets/ip-leak-*.js` (виміряно).
+
+- [ ] **Крок 10а: Негативний контроль у СКРЕТЧ-МАГАЗИНІ (доводить `excludeFiles`)**
+
+🔴 Хост цього контролю НЕ дає: у нього `simplycms` — workspace-симлінк, ціль
+резолвиться в `packages/simplycms/src/**`, де `node_modules` у шляху немає, і
+`excludeFiles` не бере участі взагалі. Доводить лише магазин.
+
+```bash
+pnpm pilot:pack   # лишає скретч-магазин на диску; шлях друкує сам пілот
+cd <scratch-store>
+cat > src/routes/my/leak.tsx <<'EOF'
+import { createFileRoute } from '@tanstack/react-router';
+import { withActor } from '../../../node_modules/simplycms/src/db/client';
+
+export const Route = createFileRoute('/my/leak')({
+  component: () => <div>{String(typeof withActor)}</div>,
+});
+EOF
+pnpm build; echo "EXIT=$?"
+rm src/routes/my/leak.tsx && pnpm build; echo "CLEAN_EXIT=$?"
+```
+
+Очікувано: `EXIT=1` із `[import-protection]`, «Denied by file pattern» і ціллю
+під `node_modules/.pnpm/…/simplycms/src/db/client.ts`; потім `CLEAN_EXIT=0`.
+🔴 Якщо перша збірка зелена — `excludeFiles` не замістив дефолт; лагодити
+декларацію, не контроль.
 
 - [ ] **Крок 11: Гейти**
 
@@ -1846,11 +1984,22 @@ Server-only субшляхи ядра задекларовано ОДИН раз
 | `eslint-rules/server-only-relative.mjs` | відносний імпорт у server-only дерево ззовні — помилка лінту | `tests/eslint-rules/server-only-relative.test.ts` |
 | групи `no-restricted-imports` плагінів | плагін не імпортує серверний граф | `tests/plugin-trust-boundary.test.ts` |
 | `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
-| Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту | роут із `import { withActor } from 'simplycms/db'` валить `pnpm build` (перевірено 2026-09-02) |
+| Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | роут із `import { withActor } from 'simplycms/db'` валить `pnpm build` хоста; роут із відносним `node_modules/simplycms/src/db/client` валить `pnpm build` скретч-магазину |
 
-🔴 Дві пастки Import Protection, обидві виміряні: за замовчуванням перевіряються
+🔴 ТРИ пастки Import Protection, усі виміряні: за замовчуванням перевіряються
 лише імпортери в `src/` — тому `include: ['**']`; у монорепо alias `simplycms/*`
-резолвить специфікатор РАНІШЕ за перевірку — тому поруч зі `specifiers` є `files`.
+резолвить специфікатор РАНІШЕ за перевірку — тому поруч зі `specifiers` є
+`files`; дефолтний `excludeFiles: ['**/node_modules/**']` вимикає file-deny
+рівно там, де в магазині живе ядро, — тому декларація віддає власний
+`serverOnlyExcludeFiles()`, який дефолт ЗАМІЩУЄ (`pick(user, default)`,
+`plugin.js:694`).
+
+🔴 **Відкрите питання ПОЗА треком T** (рішення власника, не борг треку):
+`files` маніфеста ядра везе в tarball і `dist`, і `src` — 559 файлів джерел,
+включно з `src/db/client.ts`. Саме тому server-only дерево існує в магазині
+двічі й потребує `excludeFiles`. Прибрати `src` з `files` закрило б цей клас
+за побудовою, але має інші наслідки (щонайменше source maps і, ймовірно,
+`typecheck:template`, який типізує шаблон проти пакета) — не міряно.
 
 ### Бюджет памʼяті після tsdown
 
@@ -2011,9 +2160,18 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
    тримає копії списку. Декларація ПРАВДИВА: нутрощі адмінки — під
    `admin-server/impl/`, серверні хелпери вітрини — у `storefront/loaders`,
    `storefront-routes/server/*` — лише serverFn-модулі та ізоморфні модулі.
-4. Import Protection увімкнено в хості, шаблоні й пілоті (`error`, `include: ['**']`,
-   `specifiers` + `files`); негативний контроль (роут із `simplycms/db`)
-   валить `pnpm build` — доведено на хості.
+4. Import Protection увімкнено в хості, шаблоні й пілоті (`error`,
+   `include: ['**']`, `specifiers` + `files` + `excludeFiles`); ДВА негативні
+   контролі: роут із bare `simplycms/db` валить `pnpm build` хоста, і роут із
+   відносним `node_modules/simplycms/src/db/client` валить `pnpm build`
+   скретч-магазину (другий доводить `excludeFiles` — хост його не перевіряє,
+   бо резолвить ядро workspace-симлінком повз `node_modules`).
+4а. Фікстури кожного НОВОГО правила лінту асертять ПРИЧИНУ помилки
+   (`ruleId`, `messageId`, а для `server-only-relative` ще `data.owner`), а
+   не довжину масиву діагностик. 🔴 Урок треку: ворнінг ESLint «File ignored»
+   має `ruleId: null` і ту саму форму, що й спрацювання, тож `toHaveLength(1)`
+   зеленіє на ньому — спіймано на кейсі з роут-файлом `.tsx` при
+   `files: ['**/*.ts']` в інлайн-конфізі тесту.
 5. `dist-server-boundary` зелений на tsdown і має ДВА доведені негативні
    контролі — на esbuild (Task 2) і на tsdown (Task 4); обидва мутують граф
    модулів, не лише опцію.
