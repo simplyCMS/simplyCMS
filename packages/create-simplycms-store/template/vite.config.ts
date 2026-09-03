@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
 import {
+  serverOnlyExcludeFiles,
   serverOnlyFiles,
   serverOnlySpecifiers,
 } from 'simplycms/contracts/server-only';
@@ -48,6 +49,9 @@ export default ({ mode }: { mode: string }) => {
           client: {
             specifiers: serverOnlySpecifiers(),
             files: serverOnlyFiles(),
+            // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
+            // file-deny не бачив би `node_modules/simplycms/src/**`.
+            excludeFiles: serverOnlyExcludeFiles(),
           },
         },
       }),

@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 // Хост не має залежності `simplycms` — резолвить ядро alias-ом, якого
 // конфіг Vite не бачить, тож декларація межі береться відносним шляхом.
 import {
+  serverOnlyExcludeFiles,
   serverOnlyFiles,
   serverOnlySpecifiers,
 } from './packages/simplycms/src/contracts/server-only';
@@ -47,6 +48,9 @@ export default ({ mode }: { mode: string }) => {
           client: {
             specifiers: serverOnlySpecifiers(),
             files: serverOnlyFiles(),
+            // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
+            // file-deny не бачив би `node_modules/simplycms/src/**`.
+            excludeFiles: serverOnlyExcludeFiles(),
           },
         },
       }),

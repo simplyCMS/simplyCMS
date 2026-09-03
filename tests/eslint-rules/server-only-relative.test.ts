@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
-import { Linter } from 'eslint';
+import { ESLint, Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import rule from '../../eslint-rules/server-only-relative.mjs';
 
 // Фікстури правила server-only-relative (трек T). Шлях файла — частина
@@ -70,7 +70,12 @@ describe('server-only-relative (трек T)', () => {
       '../routes/storefront/x.tsx',
     ],
   ])('ловить: %s', (_label, code, file) => {
-    expect(lint(code, file)).toHaveLength(1);
+    // 🔴 Асерт саме на пару rule/message, а не на довжину: фатальна помилка
+    // парсингу і ворнінг «File ignored» з `ruleId: null` дають довжину 1 так
+    // само — і кейс зеленів би, доки правило мовчить (спіймано на `.tsx`).
+    expect(lint(code, file).map((m) => [m.ruleId, m.messageId])).toEqual([
+      ['b/server-only-relative', 'crossesBoundary'],
+    ]);
   });
 
   it.each([
@@ -107,6 +112,61 @@ describe('server-only-relative (трек T)', () => {
       '../../../src/routes/my/x.ts',
     ],
   ])('пропускає: %s', (_label, code, file) => {
-    expect(lint(code, file)).toHaveLength(0);
+    // Порожнім має бути ВЕСЬ вивід: ворнінг парсера тут теж означав би, що
+    // кейс перевіряє не те, що заявляє.
+    expect(lint(code, file).map((m) => m.ruleId)).toEqual([]);
+  });
+});
+
+/**
+ * Контроль САМОЇ зони на РЕАЛЬНОМУ кореневому конфізі.
+ *
+ * 🔴 Фікстури вище ставлять правило власним інлайн-конфігом, тож звуження
+ * зони назад до `src/**` або втрата/розростання `ignores` були б ТИХОЮ
+ * регресією: усі 13 кейсів лишились би зеленими. Тут ESLint читає
+ * `eslint.config.mjs` репо — той самий прийом, що в
+ * `tests/plugin-trust-boundary.test.ts`.
+ */
+const RULE_ID = 'simplycms-boundary/server-only-relative';
+
+describe('зона правила в кореневому конфізі', () => {
+  let eslint: ESLint;
+
+  beforeAll(() => {
+    eslint = new ESLint({ cwd: REPO });
+  });
+
+  const ruleIds = async (code: string, filePath: string) => {
+    const [result] = await eslint.lintText(code, {
+      filePath: resolve(REPO, filePath),
+      warnIgnored: true,
+    });
+    return (result?.messages ?? [])
+      .filter((m) => m.ruleId === RULE_ID)
+      .map((m) => m.ruleId);
+  };
+
+  it.each([
+    [
+      'роут-тека ядра в зоні',
+      "import { x } from '../../src/db/client';",
+      'packages/simplycms/routes/storefront/x.tsx',
+    ],
+    [
+      'src ядра в зоні',
+      "import { ops } from './impl';",
+      'packages/simplycms/src/admin-server/index.ts',
+    ],
+  ])('%s', async (_label, code, filePath) => {
+    expect(await ruleIds(code, filePath)).toEqual([RULE_ID]);
+  });
+
+  it('тести виведені з зони (ignores не зʼїдений і не розширений)', async () => {
+    expect(
+      await ruleIds(
+        "import { db } from '../../storefront/loaders/db';",
+        'packages/simplycms/src/storefront-routes/__tests__/x.test.ts',
+      ),
+    ).toEqual([]);
   });
 });

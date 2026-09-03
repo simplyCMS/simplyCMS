@@ -57,7 +57,7 @@ export const serverOnlyDepSpecifier = (dep: {
 }): RegExp =>
   new RegExp(
     dep.clientSafe?.length
-      ? `^${dep.name}(/(?!${dep.clientSafe.join('|')})|$)`
+      ? `^${dep.name}(/(?!(?:${dep.clientSafe.join('|')})(?:/|$))|$)`
       : `^${dep.name}(/|$)`,
   );
 
@@ -91,4 +91,26 @@ export const serverOnlySpecifiers = (): RegExp[] => [
  */
 export const serverOnlyFiles = (): RegExp[] => [
   new RegExp(`simplycms/(src|dist)/(${alternation})(/|\\.[tj]sx?$)`),
+];
+
+/**
+ * Ціль, яку file-deny НЕ перевіряє (Import Protection, клієнт).
+ *
+ * 🔴 Дефолт Start виключає з file-deny увесь `node_modules` (глоб `**`
+ * перед `/node_modules/` і після), а користувацьке значення дефолт
+ * ЗАМІЩУЄ, а не доповнює (`pick(user, default)`). З дефолтом file-deny у
+ * магазині мертвий рівно там, де живе ядро, — тож сторонній плагін або тема
+ * (у них `simplycms` у залежностях, і pnpm кладе симлінк на ядро ПОРУЧ)
+ * обходить `specifiers` одним відносним шляхом у `simplycms/src/**`, і наш
+ * лінт цього коду не бачить ніколи. Виключаємо все в node_modules, КРІМ
+ * самого пакета ядра.
+ *
+ * Lookahead на початку рядка, бо в pnpm реальний шлях —
+ * `node_modules/.pnpm/simplycms@x/node_modules/simplycms/src/…`. Слеш у
+ * `simplycms/` обовʼязковий: `simplycms-theme-*` лишаються виключеними — їхні
+ * файли не є нашими server-only деревами, а їхній bare `simplycms/db` ловлять
+ * `specifiers`.
+ */
+export const serverOnlyExcludeFiles = (): RegExp[] => [
+  /^(?!.*node_modules\/simplycms\/).*node_modules\//,
 ];

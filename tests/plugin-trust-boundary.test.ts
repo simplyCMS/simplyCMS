@@ -182,6 +182,9 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     for (const bad of [
       "import { betterAuth } from 'better-auth';",
       "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
+      // 🔴 Лукахед звіряє ЦІЛИЙ сегмент: `reactor` — не `react`, тож виняток
+      // на нього не поширюється (префіксна форма пропустила б його).
+      "import { x } from 'better-auth/reactor';",
     ]) {
       const errors = await boundaryErrors(
         bad,
