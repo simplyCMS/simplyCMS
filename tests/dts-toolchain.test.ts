@@ -4,30 +4,35 @@ import { describe, expect, it } from 'vitest';
 
 // Структурний гард тулчейна декларацій (розтин OOM 2026-08-24).
 //
-// 🔴 Що саме стережемо. Вендорений rollup-plugin-dts (dts-механізм tsup)
-// створює окрему повну ts.Program на КОЖНУ теку entry профілю і тримає їх
-// усі живими: 228 entry у 34 теках давали 36 програм і 9 ГБ heap. Тому
-// декларації пакета ядра НАЗАВЖДИ емітить `tsc -p tsconfig.dts.json`, а
-// збірка йде під кепом памʼяті (scripts/build-packages.mjs). Поведінковий
-// бік (реальний прогін під кепом) перевіряє сам крок build:packages у
-// кожному контурі; тут — дешеві структурні асерти, що ламаються ПЕРШИМИ,
-// коли хтось «повертає як було».
+// 🔴 Що саме стережемо. dts-механізм бандлера (rollup-plugin-dts у tsup,
+// rolldown-plugin-dts у tsdown — обидва тримають повну ts.Program; виміряно
+// 2026-08-24 і 2026-09-02) вичерпує памʼять саме на цьому пакеті: у tsup він
+// створював окрему повну ts.Program на КОЖНУ теку entry профілю і тримав їх
+// усі живими (228 entry у 34 теках → 36 програм і 9 ГБ heap), у tsdown одна
+// програма зʼїдає 3 ГБ за 25 с. Тому декларації пакета ядра НАЗАВЖДИ емітить
+// `tsc -p tsconfig.dts.json` (11 с і 1,1 ГБ), а збірка йде під кепом памʼяті
+// (scripts/build-packages.mjs). Поведінковий бік (реальний прогін під кепом)
+// перевіряє сам крок build:packages у кожному контурі; тут — дешеві
+// структурні асерти, що ламаються ПЕРШИМИ, коли хтось «повертає як було».
 
 const root = resolve(import.meta.dirname, '..');
 const read = (rel: string): string => readFileSync(resolve(root, rel), 'utf8');
 
-describe('тулчейн декларацій: dts поза tsup', () => {
-  it('жоден профіль tsup не вмикає dts (декларації — лише tsc)', async () => {
+describe('тулчейн декларацій: dts поза бандлером', () => {
+  it('жодна збірка tsdown ядра не вмикає dts (декларації — лише tsc)', async () => {
     // Імпорт, не регекс: конфіг — код, і форма запису може мінятись.
     const mod = (await import(
-      resolve(root, 'packages/simplycms/tsup.config.ts')
-    )) as { default: Array<{ name?: string; dts?: unknown }> };
+      resolve(root, 'packages/simplycms/tsdown.config.ts')
+    )) as { default: Array<{ dts?: unknown; entry: Record<string, string> }> };
+    // Рівно дві збірки — клієнтська й серверна (трек T): третя означала б,
+    // що межу знову тримає розкладка профілів, а не декларація.
+    expect(mod.default).toHaveLength(2);
     const offenders = mod.default
-      .filter((profile) => Boolean(profile.dts))
-      .map((profile) => profile.name ?? '(без назви)');
+      .filter((config) => Boolean(config.dts))
+      .map((config) => Object.keys(config.entry).slice(0, 3).join(','));
     expect(
       offenders,
-      'профілі з dts: true — це шлях назад до 36 ts.Program і OOM',
+      'збірки з dts: true — це шлях назад до OOM (dts-плагін бандлера тримає повну ts.Program)',
     ).toEqual([]);
   });
 
@@ -59,5 +64,6 @@ describe('тулчейн декларацій: dts поза tsup', () => {
       scripts: Record<string, string>;
     };
     expect(pkg.scripts.build).toContain('tsc -p tsconfig.dts.json');
+    expect(pkg.scripts.build).toBe('tsdown && tsc -p tsconfig.dts.json');
   });
 });

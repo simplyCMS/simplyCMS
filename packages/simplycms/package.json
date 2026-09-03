@@ -41,7 +41,6 @@
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./storefront": "./src/storefront/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
     "./ui": "./src/ui/index.ts",
@@ -240,10 +239,6 @@
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
-      },
-      "./storefront": {
-        "types": "./dist/storefront/index.d.ts",
-        "import": "./dist/storefront/index.js"
       },
       "./storefront/loaders": {
         "types": "./dist/storefront/loaders/index.d.ts",
@@ -480,7 +475,7 @@
     "directory": "packages/simplycms"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup && tsc -p tsconfig.dts.json",
+    "build": "tsdown && tsc -p tsconfig.dts.json",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
