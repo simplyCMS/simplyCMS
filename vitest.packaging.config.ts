@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 // Окремий конфіг для packaging-suite (Task 1.4).
@@ -8,8 +9,15 @@ import { defineConfig } from 'vitest/config';
 // у vitest 4 CLI-прапорець `--exclude` ДОПОВНЮЄ `test.exclude`, а не заміщає
 // його, тож єдиний чесний спосіб — окремий конфіг.
 //
-// Аліаси й react-плагін не потрібні: тест читає лише tarball-и й manifest-и.
+// React-плагін не потрібен: тести читають tarball-и, manifest-и й файли
+// `dist` напряму, без JSX. Alias нижче — виняток лише для гейту партиції.
 export default defineConfig({
+  // Один base-prefix ключ, як у vitest.config.ts: гейти треку T імпортують
+  // декларацію межі bare-субшляхом `simplycms/contracts/server-only`, а
+  // `dts-toolchain` імпортує `tsdown.config.ts`, який робить те саме.
+  resolve: {
+    alias: { simplycms: resolve(__dirname, 'packages/simplycms/src') },
+  },
   test: {
     environment: 'node',
     // Жорсткий список: сюди входить усе, що перевіряє ОПУБЛІКОВАНІ артефакти
@@ -25,6 +33,10 @@ export default defineConfig({
       // Структурний гард тулчейна декларацій (dts поза tsup + кеп памʼяті):
       // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
       'tests/dts-toolchain.test.ts',
+      // Партиція dist ядра на серверну й клієнтську групи + .d.ts сателітів
+      // (трек T): ламається першою, коли серверний код потрапляє в чанк,
+      // досяжний із клієнтського entry.
+      'tests/dist-server-boundary.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.
