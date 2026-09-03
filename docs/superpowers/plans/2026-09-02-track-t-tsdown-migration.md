@@ -2304,13 +2304,22 @@ admin/tiptap/recharts) і живим прогоном вітрини та адм
    | Файл | Згадок |
    |---|---|
    | `CLAUDE.md` | 1 |
-   | `docs/architecture/test-contours.md` | 1 |
+   | `docs/architecture/test-contours.md` | 3 |
+   | `docs/architecture/themes.md` | 1 |
    | `packages/simplycms/tsdown.config.ts` | 1 |
    | `packages/simplycms-plugin-faq/tsdown.config.ts` | 1 |
    | `scripts/build-packages.mjs` | 1 |
    | `tests/build-config-typecheck.test.ts` | 4 |
    | `tests/dts-toolchain.test.ts` | 2 |
-   | **разом** | **11** |
+   | **разом** | **14** |
+
+   🔴 Таблиця виросла з 7/11 до 8/14 у фінальній хвилі — і це саме те, що
+   критерій (в) дозволяє: `themes.md` тепер прямо каже авторам тем, що
+   `splitting`/`external` «приїхали з tsup» і в tsdown непридатні, а
+   `test-contours.md` фіксує транзитивний зсув `esbuild` 0.27.7 → 0.28.1,
+   спричинений саме зносом tsup. Обидві згадки порівняльні; жодна не
+   стверджує, що tsup чинний. Лічильник росте законно — червоніє лише
+   згадка, яка не проходить (в).
 
    **(в) Якісний критерій:** кожна згадка датована або порівняльна («був
    дефолтом tsup», «у tsup … у tsdown», «2026-08-24»), і жодна не стоїть у
