@@ -114,8 +114,9 @@ const base = {
 } satisfies UserConfig;
 
 export default defineConfig([
-  // Клієнтська група. `clean: true` рівно тут: tsdown чистить outDir один
-  // раз для всього масиву, до першого запису; `tsc` дописує .d.ts після.
+  // Клієнтська група. `clean: true` тут явно, хоча в tsdown це дефолт для
+  // КОЖНОГО конфігу масиву: чистка все одно одна — `cleanOutDir` мемоізований
+  // і виконується до першого запису будь-якої збірки; `tsc` дописує .d.ts після.
   { ...base, clean: true, entry: group(false) },
   // Серверна група: db, auth, schema/*, storefront/{loaders,seo},
   // admin-server/impl. Спільні чанки — лише між собою.

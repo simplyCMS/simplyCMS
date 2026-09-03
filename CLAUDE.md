@@ -431,9 +431,14 @@ simplyCMS/
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
-├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються):
+├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються), пʼять:
 │                                     # query-key-from-entity.mjs — queryKey з реєстру
-│                                     # ENTITY/AGGREGATE/SESSION_KEY, не літералом (V2-К3)
+│                                     # ENTITY/AGGREGATE/SESSION_KEY, не літералом (V2-К3);
+│                                     # server-fn-top-level.mjs — createServerFn лише топ-рівнем;
+│                                     # mutation-cache-sync.mjs — мутація синхронізує кеш (К3 Е1б);
+│                                     # server-only-relative.mjs — відносний імпорт у server-only
+│                                     # дерево ззовні нього; no-side-effect-import.mjs —
+│                                     # side-effect-імпорт у пакетах із sideEffects:false (трек T)
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)

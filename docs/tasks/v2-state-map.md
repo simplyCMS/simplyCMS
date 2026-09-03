@@ -291,8 +291,11 @@ PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm db:demo
 # 2. .env.local
 DATABASE_URL=postgresql://<user>@127.0.0.1:5432/simplycms_demo
 BETTER_AUTH_SECRET=<довгий випадковий рядок>
-BETTER_AUTH_URL=http://localhost:3000
 VITE_SITE_URL=http://localhost:3000
+# BETTER_AUTH_URL=http://localhost:3000  # опційно: без нього база береться з
+#   запиту, а WARN «Base URL is not set» у лозі — очікуваний. 🔴 Задавати лише
+#   origin, з якого реально ходить браузер: з рядковим baseURL Better Auth
+#   довіряє РІВНО цьому origin і відкидає інші з 403 INVALID_ORIGIN
 
 # 3. Запуск
 pnpm build && pnpm start        # або pnpm dev
@@ -302,13 +305,16 @@ pnpm build && pnpm start        # або pnpm dev
 `simplycms` як залежність магазину):
 
 ```ts
-// npx tsx цей файл, з тими самими env
+// Зберегти як owner-invite.mts У КОРЕНІ репо (саме .mts: поза репо tsx бере
+// CJS і падає на top-level await) і запустити з тими самими env:
+//   set -a; . ./.env.local; set +a; npx tsx owner-invite.mts
 const m = await import('./packages/simplycms/src/auth/index.ts');
 const r = await m.issueOwnerInvite({
   email: 'admin@example.com',
   store: m.ownerInviteStore,
   siteUrl: 'http://localhost:3000',
-  sendEmail: async (mail) => console.log(mail.subject, mail.url),
+  // Лист не несе поля `url` — посилання повертає сам issueOwnerInvite (r.url).
+  sendEmail: async (mail) => console.log(mail.subject),
 });
 console.log(r.url);   // відкрити в браузері → форма пароля
 ```
