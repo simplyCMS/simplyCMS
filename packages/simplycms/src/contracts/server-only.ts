@@ -35,8 +35,31 @@ export const SERVER_ONLY = [
   'admin-server/impl',
 ] as const;
 
-/** Зовнішні залежності, що існують лише на сервері. */
-export const SERVER_ONLY_DEPS = ['pg', 'drizzle-orm', 'drizzle-zod'] as const;
+/**
+ * Зовнішні залежності, що існують лише на сервері.
+ *
+ * `clientSafe` — підшляхи пакета, які клієнту МОЖНА: виняток описується
+ * даними тут, а не спецвипадком у котромусь читачі, інакше кожен читач знав
+ * би про межу своє.
+ */
+export const SERVER_ONLY_DEPS = [
+  { name: 'pg' },
+  { name: 'drizzle-orm' },
+  { name: 'drizzle-zod' },
+  // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
+  { name: 'better-auth', clientSafe: ['react'] },
+] as const;
+
+/** Патерн специфікатора однієї серверної залежності (з урахуванням `clientSafe`). */
+export const serverOnlyDepSpecifier = (dep: {
+  readonly name: string;
+  readonly clientSafe?: readonly string[];
+}): RegExp =>
+  new RegExp(
+    dep.clientSafe?.length
+      ? `^${dep.name}(/(?!${dep.clientSafe.join('|')})|$)`
+      : `^${dep.name}(/|$)`,
+  );
 
 /** Префікс декларації, під яким лежить субшлях (без `simplycms/`), або null. */
 export const serverOnlyOwner = (subpath: string): string | null =>
@@ -57,13 +80,15 @@ const alternation = SERVER_ONLY.join('|');
  */
 export const serverOnlySpecifiers = (): RegExp[] => [
   new RegExp(`^simplycms/(${alternation})(/|$)`),
-  ...SERVER_ONLY_DEPS.map((dep) => new RegExp(`^${dep}(/|$)`)),
-  // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
-  /^better-auth(\/(?!react)|$)/,
+  ...SERVER_ONLY_DEPS.map(serverOnlyDepSpecifier),
 ];
 
+/**
+ * 🔴 `simplycms/(src|dist)`, а не `packages/simplycms/src`: та сама форма
+ * покриває монорепо (`packages/simplycms/src/...`) і магазин
+ * (`node_modules/simplycms/src/...` — `src` їде в tarball разом із `dist`).
+ * Сторонніх `simplycms-*` це не чіпає: між іменем і `/src` у них дефіс.
+ */
 export const serverOnlyFiles = (): RegExp[] => [
-  new RegExp(
-    `(packages/simplycms/src|simplycms/dist)/(${alternation})(/|\\.[tj]sx?$)`,
-  ),
+  new RegExp(`simplycms/(src|dist)/(${alternation})(/|\\.[tj]sx?$)`),
 ];

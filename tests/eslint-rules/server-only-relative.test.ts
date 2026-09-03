@@ -12,7 +12,10 @@ const REPO = resolve(import.meta.dirname, '../..');
 const linter = new Linter({ configType: 'flat' });
 const config: Linter.Config[] = [
   {
-    files: ['**/*.ts'],
+    // 🔴 І `.tsx` теж: роут-файли ядра мають саме це розширення, а файл, до
+    // якого не підійшов жоден блок конфігу, дав би ворнінг «File ignored» —
+    // і кейс «ловить» зарахувався б за цим ворнінгом, а не за помилкою правила.
+    files: ['**/*.{ts,tsx}'],
     languageOptions: { parser: tseslint.parser },
     plugins: { b: { rules: { 'server-only-relative': rule } } },
     rules: { 'b/server-only-relative': 'error' },
@@ -58,6 +61,14 @@ describe('server-only-relative (трек T)', () => {
       "import { x } from '../../storefront/loaders/db';",
       'core/lib/x.ts',
     ],
+    [
+      // Роут-теки ядра теж їдуть у tarball (`files` маніфеста), тож відносна
+      // втеча звідти резолвиться в магазині в TS-джерело з node_modules —
+      // повз `dist` і повз Import Protection.
+      'роут-файл ядра → src/db',
+      "import { x } from '../../src/db/client';",
+      '../routes/storefront/x.tsx',
+    ],
   ])('ловить: %s', (_label, code, file) => {
     expect(lint(code, file)).toHaveLength(1);
   });
@@ -84,7 +95,14 @@ describe('server-only-relative (трек T)', () => {
       'plugin-sdk/index.ts',
     ],
     [
-      'файл поза src ядра',
+      'bare-субшлях із роут-файлу ядра',
+      "import { withActor } from 'simplycms/db';",
+      '../routes/storefront/x.tsx',
+    ],
+    [
+      // Файл ХОСТА — поза пакетом ядра, тож правило до нього не застосовується
+      // (bare-межу там тримають тір-зони й Import Protection).
+      'файл поза пакетом ядра',
       "import { x } from './impl';",
       '../../../src/routes/my/x.ts',
     ],

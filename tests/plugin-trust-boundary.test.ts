@@ -175,6 +175,27 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     }
   });
 
+  it('better-auth: корінь і серверні підшляхи заборонені, /react — ні', async () => {
+    // 🔴 Виняток описаний ДАНИМИ в декларації (`clientSafe: ['react']`), а не
+    // спецвипадком у читачі: корінь better-auth — серверний інстанс, а
+    // `better-auth/react` — клієнтський SDK, яким законно живе форма входу.
+    for (const bad of [
+      "import { betterAuth } from 'better-auth';",
+      "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
+    ]) {
+      const errors = await boundaryErrors(
+        bad,
+        'plugins/hello-world/fixture.ts',
+      );
+      expect(errors, bad).toHaveLength(1);
+    }
+    const ok = "import { createAuthClient } from 'better-auth/react';";
+    expect(
+      await boundaryErrors(ok, 'plugins/hello-world/fixture.ts'),
+      ok,
+    ).toEqual([]);
+  });
+
   it('зона не зʼїдена ignores (страховка скоупінгу)', async () => {
     expect(
       await eslint.isPathIgnored(join(REPO, 'plugins/hello-world/index.ts')),

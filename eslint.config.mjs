@@ -14,6 +14,7 @@ import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import {
   SERVER_ONLY,
   SERVER_ONLY_DEPS,
+  serverOnlyDepSpecifier,
 } from './packages/simplycms/src/contracts/server-only.ts';
 
 // Хардкоджені UI-рядки: кирилиця в JSX-тексті та в текстових JSX-атрибутах.
@@ -129,10 +130,24 @@ const MUTATION_CACHE_SYNC_RATCHET = [
 // Літерали нижче — те, що плагіну заборонено ПОНАД server-only: Supabase-шар
 // адмінки (до К3) і serverFn-модулі ядра (`admin-server`, `plugin-sdk/server`):
 // плагін кличе хуки SDK, а не хендлери під ними.
+const PLUGIN_BOUNDARY_MESSAGE =
+  'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).';
+// Залежності без винятків ідуть глобами; ті, що мають `clientSafe`, — ні:
+// gitignore-заперечення в `group` підшлях НЕ звільняє (перевірено на
+// ESLint 10.8 — усі три форми `better-auth` червоніли), тож для них
+// окремий патерн `regex` із лукахедом із самої декларації.
 const serverOnlyImportGroup = [
   ...SERVER_ONLY.flatMap((sub) => [`simplycms/${sub}`, `simplycms/${sub}/*`]),
-  ...SERVER_ONLY_DEPS.flatMap((dep) => [dep, `${dep}/*`]),
+  ...SERVER_ONLY_DEPS.filter((dep) => !dep.clientSafe?.length).flatMap(
+    (dep) => [dep.name, `${dep.name}/*`],
+  ),
 ];
+const clientSafeDepPatterns = SERVER_ONLY_DEPS.filter(
+  (dep) => dep.clientSafe?.length,
+).map((dep) => ({
+  regex: serverOnlyDepSpecifier(dep).source,
+  message: PLUGIN_BOUNDARY_MESSAGE,
+}));
 const pluginOnlySurfaceGroup = [
   'simplycms/supabase',
   'simplycms/supabase/*',
@@ -145,9 +160,9 @@ const pluginOnlySurfaceGroup = [
 const pluginTrustBoundaryImports = [
   {
     group: [...pluginOnlySurfaceGroup, ...serverOnlyImportGroup],
-    message:
-      'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).',
+    message: PLUGIN_BOUNDARY_MESSAGE,
   },
+  ...clientSafeDepPatterns,
   // Flat config замінює опції правила цілком, тож глобальну зону
   // `simplycms/db/client` доливаємо сюди явно — інакше блок мовчки зняв би її
   // з `plugins/**` (той самий прийом, що з i18n-селекторами в env-зоні).
@@ -158,9 +173,17 @@ const pluginTrustBoundaryImports = [
 // селектор (знахідка рев'ю Фази 3). Regex будується з тих самих списків, що
 // й групи вище; `/` у селекторі ESLint пишеться як \u002F.
 const esq = (items) => items.map((s) => s.replace(/\//g, '\\u002F')).join('|');
+// Кожна залежність несе ВЛАСНЕ правило підшляхів: у `better-auth` клієнтський
+// SDK живе субшляхом (`clientSafe`), тож її альтернатива йде з лукахедом.
+const esqDeps = () =>
+  SERVER_ONLY_DEPS.map((dep) =>
+    dep.clientSafe?.length
+      ? `${dep.name}(?:\\u002F(?!${dep.clientSafe.join('|')}).*)?`
+      : `${dep.name}(?:\\u002F.*)?`,
+  ).join('|');
 const pluginTrustBoundarySyntax = [
   {
-    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esq(SERVER_ONLY_DEPS)})(?:\\u002F.*)?)$/]`,
+    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
@@ -335,7 +358,7 @@ const eslintConfig = [
   // `__tests__` туди не потрапляють — відносний імпорт server-only дерева з
   // тесту межу не пробиває.
   {
-    files: ['packages/simplycms/src/**/*.{ts,tsx}'],
+    files: ['packages/simplycms/{src,routes}/**/*.{ts,tsx}'],
     ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
     plugins: {
       'simplycms-boundary': {

@@ -15,7 +15,8 @@ import { serverOnlyOwner } from '../packages/simplycms/src/contracts/server-only
 // (`auth` → `../db/client` продублював би пул у auth.js): перехід між
 // деревами — лише bare-субшляхом, який бандлер лишає зовнішнім.
 
-const SRC = resolve(import.meta.dirname, '../packages/simplycms/src');
+const PKG = resolve(import.meta.dirname, '../packages/simplycms');
+const SRC = resolve(PKG, 'src');
 
 /** Субшлях файла відносно src ядра (`db`, `admin-server/impl/x`) або null поза src. */
 const subpathOf = (absolute) => {
@@ -46,9 +47,15 @@ export default {
     },
   },
   create(context) {
-    const importer = subpathOf(context.filename);
-    if (importer === null) return {};
-    const importerOwner = serverOnlyOwner(importer);
+    // Межа зони — ПАКЕТ, а не `src`: `routes/**` теж їде в tarball
+    // (`files` маніфеста), тож відносна втеча звідти в `src/db/client`
+    // резолвиться в магазині в TS-джерело з node_modules — повз `dist`,
+    // повз декларацію і повз Import Protection (відносний специфікатор,
+    // file-deny у node_modules вимкнений дефолтним excludeFiles).
+    if (relative(PKG, context.filename).startsWith('..')) return {};
+    const importerSub = subpathOf(context.filename);
+    const importerOwner =
+      importerSub === null ? null : serverOnlyOwner(importerSub);
     const check = (node) => {
       const source = specifierOf(node.source);
       if (source === null || !source.startsWith('.')) return;
