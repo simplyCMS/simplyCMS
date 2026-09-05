@@ -1,27 +1,30 @@
-# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації (ред. 1.2)
+# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації (ред. 1.3)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Закрити чотири патерни дефектів, доведені живим прогоном (гейт-текст
 замість поведінки; N копій доменного правила; стан не в тій фазі рендеру;
 список декларації без контролю) — так, щоб демо-магазин із `pnpm db:demo`
-проходив картку → кошик → чекаут → рядок в `orders` зі списанням залишку без
-помилок консолі, з валідним sitemap і правдивим бейджем наявності; і щоб гейти
+проходив картку → кошик → чекаут → рядок в `orders` зі списанням залишку —
+і поверненням того ж залишку при скасуванні — без помилок консолі, з валідним sitemap і правдивим бейджем наявності; і щоб гейти
 межі клієнт/сервер червоніли на вимкненому захисті й на усіченому списку.
 
 **Architecture:** Дві хвилі одним планом. Хвиля 0 (Tasks 1–5) — борги треку T
 у порядку T-1 → T-4 → T-3 → T-2 → T-5: один читач `importProtection()` замість
 трьох копій блоку + DATA-тест (T-1); одразу за ним типізація й
-`import.meta.dirname` у ВСІХ трьох конфігах, `engines` скаффолдера як у Start
-(T-4 — типізує рядок, який поклав T-1); сентинели дерев у
+`import.meta.dirname` у ВСІХ трьох конфігах і `engines.node >= 22.12.0` у ВСІХ
+пʼятьох публікованих пакетах та в `template/package.json.tpl` (T-4, Р6 —
+типізує рядок, який поклав T-1); сентинели дерев у
 `dist-server-boundary` (T-3); мутаційний крок Import Protection у пілоті й
 `pilot:pack` у CI (T-2); §12 без чисел (T-5, документує решту). Хвиля 1
 (Tasks 6–14) — К2-Е0: контракт дат «`Date` у застосунку, текст лише на межі
 виводу» (`mode: 'date'`); **демо-сід — єдиний власник активної доставки й
 залишків** (харнес-фікстури лише додають негативні рядки, ідемпотентно);
 `isPurchasable` у домені як єдине правило + write-side декремент під
-`decrease_on_order` через `SELECT … FOR UPDATE` і scoped-ескалацію ролі в тій
-самій транзакції (той самий механізм закриває тритранзакційне `cancelMyOrder`);
+`decrease_on_order` через `SELECT … FOR UPDATE` **з однієї детермінованої
+точки** і scoped-ескалацію ролі в тій самій транзакції — і симетричне
+повернення `releaseStock` у ту саму точку при скасуванні (той самий механізм
+закриває тритранзакційне `cancelMyOrder`);
 `placeOrder` → union з типами в T0 і серверним розрахунком цін і доставки;
 кошик на `useSyncExternalStore`; `scripts/live-smoke.mjs` як DoD.
 
@@ -30,12 +33,13 @@
 (`useSyncExternalStore`, `hydrateRoot`), Drizzle 0.45 + `pg` (`mode: 'date'`,
 pool `options`, `.for('update', { of })`), Zod 4 (`satisfies z.ZodType<…>`),
 vitest 4 + jsdom, `@playwright/test` 1.61, Postgres 17 (харнес `test-harness/pg`),
+ESLint 10 + `eslint-plugin-jsx-a11y` (одне правило на зону воронки),
 pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 
 **Spec:** [`docs/superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md`](../specs/2026-09-03-k2-e0-storefront-live-contour-design.md)
 (рішення T-1…T-5, Е0-1…Е0-8; рішення власника — Додаток А; відкинуті
-альтернативи з доказами — Додаток Б; рішення аудиту r2 — Додаток В). Читати
-ОБИДВА документи.
+альтернативи з доказами — Додаток Б; рішення аудиту r2 — Додаток В; шість
+рішень брейншторму ред. 1.3 — Додаток Г). Читати ОБИДВА документи.
 
 > 🔴 **Ред. 1.2 (2026-09-04) — після аудиту r2** (Claude Fable, read-only, HEAD
 > `f6f1ef5b`; 4 блокери, 10 major, 9 minor — усі підтверджені проти коду й
@@ -89,6 +93,71 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 > `readonly CartItem[]` зі споживачем `CheckoutOrderSummary`; решта — якорі й
 > лічильники в докблоках.
 
+> 🔴 **Ред. 1.3 (2026-09-05) — брейншторм-сесія з власником.** Шість рішень:
+> три ЗМЕНШУЮТЬ етап (Р2, Р3, Р4 — знімають DDL і розкладання по точках),
+> три РОЗШИРЮЮТЬ (Р1, Р5, Р6 — повернення залишку, воронка замість однієї
+> теки, всі пакети замість скаффолдера). **(Р1)** Скасування замовлення ПОВЕРТАЄ
+> залишок: у ред. 1.2 списання було, повернення — ні, тобто інваріант
+> асиметричний (демо-стенд після кількох скасувань показував нуль залишку при
+> нулі продажів). Додається `releaseStock` у той самий модуль; `cancelMyOrder`
+> в одній транзакції і скасовує, і повертає. **(Р2)** Списання й повернення —
+> з ОДНІЄЇ детермінованої точки (`orders.pickup_point_id` → `is_system` →
+> перша активна за `sort_order, id`) замість розкладання по кількох: точка
+> замовлення вже записана в `orders` (`schema.ts:785`, чекаут її проносить
+> `checkout-input.ts:39` → `checkout.ts:110` → `order-create.ts:118`), тож
+> повернення точне БЕЗ таблиці резервів. **(Р3)** Банери демо — inline
+> `data:`-SVG, а не DDL: `nullable` тягнув би за собою T0-контракт
+> (`contracts/objects/banner.ts:14`), заморожений `supabase/database.ts:39`
+> (на ньому типізується адмінка до К3), `BannerEdit.tsx:656` (вимагає фото) і
+> `BannerSlider.tsx:130` (рендерить `<img>` беззастережно) — а тема банер без
+> фото не показує, а ІГНОРУЄ (`HeroBanner.tsx:53`). **К2-Е0 стає етапом БЕЗ
+> жодної зміни схеми БД** — міграція `0004` і крок `db:diff` зникають.
+> **(Р4)** `decrease_on_order = true` — УМОВНИМ `update` у демо-сіді:
+> предикат робить повторний накат НЕ-ПИСЬМОВИМ, коли значення вже `true`
+> (той самий клас ідемпотентності, що `on conflict do nothing` у файлі), і
+> не перезаписує значення, змінене власником після першого накату; канон
+> `0003_seed.sql` не чіпається (А.4). **(Р5)** Правило доступних імен — на ВСЮ воронку (24 підписи
+> `checkout-ui` + 13 `profile-ui` + хвости `catalog-ui`/`reviews-ui`, усі при
+> нулі `htmlFor`), а гейт — зона `jsx-a11y/label-has-associated-control`, бо
+> правило лише для `checkout-ui` лишало б два стандарти в одній воронці.
+> **(Р6)** `engines.node >= 22.12.0` — на всі пʼять пакетів і шаблон: `>=20`
+> стояв рівно там, де Start не тягнеться (`cli`, скаффолдер), а флагман і
+> `package.json.tpl`, які його тягнуть, не декларували нічого.
+
+## Ступінь обовʼязковості — читати ПЕРШИМ
+
+🔴 Цей документ — план імплементації, а не специфікація до останнього рядка.
+Дві категорії з різним статусом; плутати їх дорого в обидва боки.
+
+**КАНОН — обовʼязковий. Розбіжність із ним — привід зупинитись і спитати,
+а не вирішити самому:**
+
+- контракти репо: дат (Е0-2), `id`, серверного env, ключів кешу React Query;
+- межі: клієнт/сервер (`contracts/server-only`), тір-зони T0→T5, ролі й
+  транзакції (ескалація, `withActor`), RLS і гранти;
+- **що саме мусить доводити кожен гейт** — урок P1 §1 спеки: гейт не обіцяє
+  більше, ніж перевіряє; якщо крок не може довести обіцяне, змінюється
+  обіцянка, а не формулювання;
+- рішення власника: Додаток А спеки (2026-09-03) і Додаток Г (2026-09-05);
+- канон 150 рядків на файл; коментарі українською, що пояснюють ПРИЧИНУ;
+  новий рядок інтерфейсу — в ОБИДВА каталоги i18n;
+- DoD кожної задачі й порядок задач у хвилі.
+
+**ОРІЄНТИР — виконавець змінює сам, якщо канон не постраждав, і НЕ приходить
+за дозволом:**
+
+- сніпети коду: імена локальних змінних, порядок аргументів, розкладка на
+  модулі та їхні назви (канон тут — лише 150 рядків і межа server-only);
+- якорі `файл:рядок` — вимір на момент написання плану; шукати за унікальним
+  текстом, номер лише орієнтир;
+- лічильники: скільки кейсів у тесті, скільки рядків стане у файлі;
+- точні формулювання коментарів, повідомлень і тіла комітів.
+
+**Правило вирішення конфлікту:** якщо код розійшовся з ОРІЄНТИРОМ — переважає
+код, план мовчки адаптується. Якщо код розійшовся з КАНОНОМ — зупинись і
+принеси розбіжність замовникові: можливо, змінився канон, і тоді правиться
+спека, а не задача.
+
 ## Global Constraints
 
 Діють у кожній задачі; у кроках не повторюються.
@@ -104,7 +173,9 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
   `mode: 'date'` з `schema/auth.ts`; харнес `test-harness/pg` + `fixtures/`
   (демо-сід — база, фікстури — лише дельта); `scripts/pilot-pack/report.mjs::step`;
   `gate-b.mjs` для live-smoke; ескалація ролі — ОДИН механізм для списання
-  залишку й скасування замовлення.
+  залишку, його повернення і скасування замовлення; механізм ЗОН
+  `eslint.config.mjs` (як у тір-правил та i18n-селекторів) — для гейта
+  доступних імен.
 - **Коментарі в коді — українською, пояснюють ПРИЧИНУ** (🔴 для
   неочевидного), не переказують код (`coding-style.instructions.md`).
 - **Порядок гейтів** (CLAUDE.md): `pnpm install --frozen-lockfile →
@@ -154,18 +225,22 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 | `scripts/pilot-pack/gate-ip.mjs` | Мутаційний гейт: роут-витік (bare і відносний) валить `vite build` скретча з `[import-protection]`; чистий ре-білд після |
 | `packages/simplycms/src/react-query/__tests__/cart-hydration.test.tsx` | Гідраційний негативний контроль: `renderToString` → jsdom → `hydrateRoot` з передзаповненим `localStorage`, нуль recoverable errors |
 | `packages/simplycms/test-harness/pg/__tests__/db-session-options.test.ts` | `DateStyle`/`TimeZone` сесії детерміновані пулом |
-| `packages/simplycms/migrations/0004_banners-image-nullable.sql` (+ журнал `packages/simplycms/drizzle/`) | `banners.image_url` nullable — банер без фото легітимний (тема вже малює «порожній круг») |
 | `packages/simplycms/test-harness/pg/__tests__/fixtures/discounts.ts` | Білдер `percentDiscountStatements()` — один ланцюг group → discount → condition → target для showcase і checkout-flow |
 | `packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts` | Декремент залишку при замовленні, переворот статусу за ЗАБЛОКОВАНИМ залишком, два конкурентні кейси, відмова при нестачі |
 | `packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts` | Кошик → `placeOrderFor` → рядок в `orders`; серверна ціна й знижка; три доменні відмови |
 | `packages/simplycms/src/storefront/loaders/checkout-items.ts` | Серверне ціноутворення позицій: назви, статуси, секції, ціни за id — те саме середовище знижок, що `getDiscountEnvironment` |
-| `packages/simplycms/src/storefront/loaders/stock-reservation.ts` | `reserveStock` під `FOR UPDATE`, `InsufficientStockError`, `loadStockManagement` — окремий модуль, бо `order-create.ts` уже 145 рядків (канон — до 150) |
+| `packages/simplycms/src/storefront/loaders/entities/new-order.ts` | `NewOrderItem`, `NewOrderInput`, `CreatedOrder` — форми даних виїжджають з `order-create.ts` (145 рядків при каноні 150) |
+| `packages/simplycms/src/storefront/loaders/stock-write.ts` | `StockTarget`, `StockLine`, `LockedStockRow`, `resolveStockPoint` (одна детермінована точка), `lockTargetStock` (`SELECT … FOR UPDATE`) |
+| `packages/simplycms/src/storefront/loaders/stock-status.ts` | `setTargetStatus` — переворот `stock_status` цілі за ЗАБЛОКОВАНОЮ сумою залишку |
+| `packages/simplycms/src/storefront/loaders/stock-reservation.ts` | `InsufficientStockError`, `reserveStock`, `releaseStock` — правила однієї позиції над заблокованими рядками |
+| `packages/simplycms/src/storefront/loaders/order-stock.ts` | `loadStockManagement`, `reserveOrderStock`, `releaseOrderStock` — рівень замовлення, єдиний вхід для `createOrder` і `cancelMyOrder` |
 | `packages/simplycms/src/storefront/loaders/place-order.ts` | `placeOrderFor` — уся логіка оформлення (валідація, ціни, доставка, запис) у server-only дереві; serverFn лишається тонким |
-| `packages/simplycms/src/checkout-ui/__tests__/accessible-controls.ts` | Спільний асерт: кожен текстовий контрол форми має `id` і `label[for]` |
+| `packages/simplycms/src/checkout-ui/__tests__/accessible-controls.ts` | Спільний ПОВЕДІНКОВИЙ асерт форм чекауту (`getByLabelText` справді знаходить контрол); структурний гейт на всю воронку дає ESLint-зона |
 | `packages/simplycms/src/checkout-ui/__tests__/CheckoutDeliveryForm.test.tsx` | Empty-state без способів доставки; автовибір єдиної точки; доступні імена контролів |
 | `packages/simplycms/src/checkout-ui/__tests__/CheckoutContactForm.test.tsx` | Доступні імена чотирьох полів контактів |
 | `tests/env-contract.test.ts` | Пін контракту env: `.env.example` ↔ `doctor-checks.mjs` |
-| `scripts/live-smoke.mjs` | DoD як скрипт: curl+SQL (через `gate-b.mjs`) + Playwright (кошик, бейдж, автовибір точки, воронка зі списанням, `pageerror`); один файл у межах канону 150 рядків |
+| `scripts/live-smoke.mjs` + `scripts/live-smoke/{sql,funnel}.mjs` | DoD як скрипт: оркестрація, прямий SQL (через `gate-b.mjs`) і браузерна воронка (кошик, бейдж, автовибір точки, оформлення зі списанням, скасування з поверненням, `pageerror`) — три файли, бо один вийшов би за канон 150 рядків |
+| `tests/engines-node-floor.test.ts` | Пін порогу Node: жоден із пʼяти пакетів і шаблон не слабші за вимогу встановленого `@tanstack/react-start` (T-4) |
 
 **Змінюються:**
 
@@ -178,7 +253,7 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 | `.github/workflows/workflow.yml:95, 127-130, 175-181` | крок `pnpm pilot:pack --skip-build` у job `packaging`, таймаут 20 хв; коментар про пілот (T-2) |
 | `tests/dist-server-boundary.test.ts` | `SENTINELS` (T-3) |
 | `packages/create-simplycms-store/template/tsconfig.json`, `tsconfig.template.json` | `vite.config.ts` в `include` (T-4) |
-| `packages/create-simplycms-store/package.json`, `tests/create-store-template-parity.test.ts` | `engines.node >= 22.12` + пін «не слабший за Start» (T-4) |
+| `packages/simplycms/package.json`, `packages/cli/package.json`, `packages/create-simplycms-store/package.json`, `packages/simplycms-theme-solarstore/package.json`, `packages/simplycms-plugin-faq/package.json`, `packages/create-simplycms-store/template/package.json.tpl` | `engines.node >= 22.12.0` у ВСІХ пʼяти публікованих пакетах і в шаблоні (T-4) |
 | `vitest.config.ts` | `import.meta.dirname` (T-4) |
 | `docs/architecture/test-contours.md` §12 | структурні твердження (T-5, Task 14) |
 | `CLAUDE.md` | `pilot:pack` у CI і `IP` у Quick Reference (`:39`); env-тексти; `db:demo` покупний; `live:smoke` |
@@ -189,11 +264,10 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 | `packages/simplycms/src/admin/pages/OrderStatuses.tsx`, `admin-data/__tests__/order-statuses-collection.test.ts:15,90,121,135`, `domain/discounts.ts` | `createdAt: new Date()` — жива сторінка на колекції; моки й асерти тесту на `Date`; `isWithinDateRange(Date \| null …)` (Е0-2) |
 | `packages/simplycms/src/storefront/loaders/entities/order.ts:28`, `loaders/reviews.ts:23-24`, `contracts/objects/{banner,order,shipping,catalog,discount}.ts` | рядки й контракти з датами → `Date` (Е0-2) |
 | `packages/simplycms/src/plugins/types.ts:70-77`, `plugins/server/registry-db.ts:63-64`, `plugins/__tests__/bootstrap.test.ts:42-43` | `PluginRecord.installed_at/updated_at: Date \| null`; `Plugin` (supabase-шар адмінки) лишається на рядках (Е0-2) |
-| `packages/simplycms/src/schema/schema.ts:1040`, `contracts/objects/banner.ts:14`, `storefront-routes/components/BannerSlider.tsx:130`, `test-harness/pg/__tests__/baseline.test.ts:51-57`, `tests/create-store-template-parity.test.ts:60-68`, `packages/simplycms/migrations/README.md` | `image_url` nullable: схема, контракт, слайдер, піни списку канону (Е0-6) |
 | `packages/simplycms/src/storefront-routes/__tests__/home-n-plus-one.test.tsx:84-91` | фабрика `HomeProduct` з `price`/`old_price` (Е0-6) |
 | `packages/simplycms/src/domain/README.md:27`, `contracts/entities.ts:170,196` | документація правила наявності й читань лістингу (Е0-3) |
 | `.github/instructions/data-access.instructions.md` | розділи «Контракт дат» (Е0-2) і «Ескалація ролі покупцем» (Е0-3) |
-| `packages/simplycms/migrations/demo/demo-seed.sql`, `test-harness/pg/__tests__/seed-determinism.test.ts:12,21,33` | доставка/зона/точка/тариф/залишки; `decrease_on_order = true`; банери `NULL`; пін 15 → 20 (Е0-6) |
+| `packages/simplycms/migrations/demo/demo-seed.sql`, `test-harness/pg/__tests__/seed-determinism.test.ts:12,21,33` | доставка/зона/ОДНА системна точка (`is_system = true` — склад для замовлень без власної точки видачі)/тариф/залишки; `decrease_on_order = true` УМОВНИМ `update`; банери — inline `data:`-SVG замість неіснуючих файлів; лічильники піна (Е0-6) |
 | `packages/simplycms/test-harness/pg/__tests__/fixtures/{shipping,showcase,storefront-client}.ts`, `storefront-showcase.test.ts` | одна декларація `pickup` — сід; фікстури ідемпотентні; лічильник точок (Е0-6) |
 | `packages/simplycms/src/storefront/loaders/pricing.ts`, `loaders/entities/home-product.ts`, `loaders/home.ts`, `loaders/home-sections.ts`, `storefront-routes/pages/home/{types,toCardViewModel}.ts`, `storefront-routes/views/HomeView.tsx` | `loadPricesByProduct`; ціна на головній; посилання «Ф1» зняті (Е0-6) |
 | `packages/simplycms/src/domain/inventory.ts`, `domain/__tests__/inventory.test.ts`, `contracts/objects/inventory.ts` | `isPurchasable`, `schemaOrgAvailability`; `stock_status: StockStatus \| null` (Е0-3) |
@@ -202,12 +276,13 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 | `packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx` | JSON-LD через `schemaOrgAvailability` (Е0-3) |
 | `packages/simplycms/test-harness/pg/__tests__/fixtures/storefront-client.ts`, `storefront-client-queries.test.ts` | фікстура `tryfazny` → `out_of_stock` (Е0-3) |
 | `packages/simplycms/src/storefront/loaders/db.ts`, `loaders/session.ts` | `OperatorEscalation` у `withCustomerDb`/`withOrderTokenDb`, прокидання через `withSessionDb` (Е0-3) |
-| `packages/simplycms/src/storefront/loaders/order-create.ts`, `loaders/index.ts` | `createOrder(…, operator)` списує через `reserveStock` з нового модуля; повертає `PlacedOrder`; реекспорти `stock-reservation`, `checkout-items`, `place-order` (Е0-3, Е0-4) |
-| `packages/simplycms/src/storefront-routes/server/profile-orders.ts`, `test-harness/pg/__tests__/storefront-personal-data.test.ts` | `cancelMyOrder` — одна транзакція з ескалацією (Е0-3) |
+| `packages/simplycms/src/storefront/loaders/order-create.ts`, `loaders/index.ts` | `createOrder(…, operator)` списує через `reserveOrderStock` (`order-stock.ts`); повертає `PlacedOrder`; реекспорти `stock-reservation`, `order-stock`, типи `entities/new-order`, `checkout-items`, `place-order` — 🔴 `stock-write` і `stock-status` НЕ реекспортуються (Е0-3, Е0-4) |
+| `packages/simplycms/src/storefront-routes/server/profile-orders.ts`, `test-harness/pg/__tests__/storefront-personal-data.test.ts` | `cancelMyOrder` — одна транзакція з ескалацією, яка скасовує І ПОВЕРТАЄ залишок у ту саму точку (Е0-3) |
 | `packages/simplycms/src/contracts/objects/order.ts` | `CheckoutItemInput`, `PlaceOrderInput`, `PlaceOrderRejection`, `PlacedOrder`, `PlaceOrderResult` (Е0-4) |
 | `packages/simplycms/src/storefront-routes/server/{checkout,checkout-input}.ts` | тонкий serverFn; схема `satisfies` контракту (Е0-4) |
 | `packages/simplycms/src/storefront-routes/pages/Checkout.tsx` | мапа `reason → MessageKey`, нова форма запиту, `FormMessage`, `canSubmit` (Е0-4) |
-| `packages/simplycms/src/checkout-ui/*.tsx` | empty-state; автовибір єдиної точки; `id`/`htmlFor` на КОЖНОМУ текстовому контролі шести форм; `disabled` (Е0-4) |
+| `packages/simplycms/src/{checkout,profile,catalog,reviews}-ui/*.tsx` | empty-state, автовибір єдиної точки й `disabled` — у `checkout-ui`; `id`/`htmlFor` на КОЖНОМУ контролі ВСІЄЇ воронки: 24 підписи `checkout-ui`, 13 `profile-ui`, по одному-трьох у `catalog-ui`/`reviews-ui` (Е0-4) |
+| `eslint.config.mjs`, `package.json`, `pnpm-lock.yaml` | зона `jsx-a11y/label-has-associated-control` (error) на пʼять `*-ui` тек воронки; devDep `eslint-plugin-jsx-a11y`; 🔴 лок перегенеровано В ТОМУ Ж кроці — інакше `--frozen-lockfile` валить увесь CI (урок PR #20) (Е0-4) |
 | `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts` | ключі `checkout.rejected.*`, `checkout.noShippingMethods.*` (Е0-4) |
 | `packages/simplycms/src/react-query/useCart.tsx`, `checkout-ui/CheckoutOrderSummary.tsx:11` | стор на `useSyncExternalStore`; контекст `readonly CartItem[]` (Е0-5) |
 | `.github/instructions/optimization.instructions.md:54` | рецепт гідратації (Е0-5) |
@@ -509,7 +584,7 @@ git commit -m "test(k2-e0): Import Protection — один читач importProt
 
 ---
 
-### Task 2: Типізація конфігів, `import.meta.dirname` у ТРЬОХ конфігах, `engines` як у Start (T-4)
+### Task 2: Типізація конфігів, `import.meta.dirname` у ТРЬОХ конфігах, `engines.node` як у Start у ВСІХ пʼятьох пакетах і шаблоні (T-4, Р6)
 
 **Files:**
 - Modify: `packages/create-simplycms-store/template/tsconfig.json:22`
@@ -518,9 +593,18 @@ git commit -m "test(k2-e0): Import Protection — один читач importProt
 - Modify: `vite.config.ts` (усі `__dirname`: `loadEnv(mode, __dirname, '')` і аліаси `resolve(__dirname, …)`; 🔴 номери рядків після Task 1 зсунуті — шукати за текстом)
 - Modify: `packages/create-simplycms-store/template/vite.config.ts` (`loadEnv` і аліаси `@themes`/`@plugins`)
 - Modify: `tests/pilot/store-template/vite.config.ts` (те саме + `resolve(__dirname, \`bundle-stats.${env}.json\`)` усередині `#region pilot-only`)
-- Modify: `packages/create-simplycms-store/package.json:14-16` (`engines.node`)
+- Modify: `packages/create-simplycms-store/package.json:14-16` (`engines.node`: `">=20"` → `">=22.12.0"`)
+- Modify: `packages/cli/package.json:29-31` (`engines.node`: `">=20"` → `">=22.12.0"`)
+- Modify: `packages/simplycms/package.json:472` (блоку `engines` НЕМАЄ — додати після `"license": "MIT",`, перед `"repository"`)
+- Modify: `packages/simplycms-theme-solarstore/package.json:30` (те саме — блоку немає)
+- Modify: `packages/simplycms-plugin-faq/package.json:39` (те саме — блоку немає)
+- Modify: `packages/create-simplycms-store/template/package.json.tpl:6` (блоку немає — додати після `packageManager`)
 - Test: `tests/template-typecheck-coverage.test.ts` (існує; сам почервоніє без пари)
-- Test: `tests/create-store-template-parity.test.ts` (дописати кейс `engines`)
+- Test: Create `tests/engines-node-floor.test.ts` (пін ШЕСТИ порогів проти
+  встановленого `@tanstack/react-start`) — 🔴 ОКРЕМИЙ файл, а не кейс у
+  `tests/create-store-template-parity.test.ts`, як планувала ред. 1.2: після Р6
+  інваріант стосується пʼятьох пакетів ЯДРА, а той тест — про парність ШАБЛОНУ
+  з монорепо (повне обґрунтування — Step 6)
 
 **Interfaces:** нічого не продукує; споживає Task 1 (рядок `importProtection` у
 конфізі шаблону тепер типізується проти `dist`).
@@ -532,8 +616,16 @@ forward-compat до майбутнього дефолту `native`. Магази
 ШАБЛОННИМ конфігом, тож DoD «Vite не попереджає» без шаблону й оверлею
 стосувався б лише монорепо. `import.meta.dirname` потребує Node ≥ 20.11, але
 реальний поріг магазину вищий: `@tanstack/react-start` вимагає `>=22.12.0`
-(`node_modules/@tanstack/react-start/package.json`), Vite — `^20.19 ||
->=22.12`; `engines.node: ">=20"` скаффолдера був хибним ще до цієї задачі.
+(`node_modules/@tanstack/react-start/package.json`, перевірено на
+встановленому `1.167.42`), Vite — `^20.19 || >=22.12`. 🔴 Заміряно по всіх
+пʼятьох маніфестах: `engines.node: ">=20"` у скаффолдера й `@simplycms/cli` був
+хибним ще до цієї задачі, а `simplycms`, `@simplycms/theme-solarstore` і
+`@simplycms/plugin-faq` не заявляли порогу ВЗАГАЛІ — при тому що саме
+`simplycms` тримає `@tanstack/react-start` у `peerDependencies`
+(`packages/simplycms/package.json:518`, `^1.0.0`). Власні прогони новий поріг
+не червонить: усі job-и CI ставлять `node-version: lts/*`
+(`.github/workflows/workflow.yml`), тобто Node ≥ 22 — до `Unsupported engine`
+там не дійде.
 
 - [ ] **Step 1: Додати `vite.config.ts` у include шаблону — coverage-тест червоніє**
 
@@ -613,57 +705,167 @@ Expected: `0` і `0`.
 захоплює вивід `vite build` і червонить рядок `unsupported by \`configLoader:
 'native'\`` — регрес у шаблоні чи оверлеї ловиться в `pnpm pilot:pack` і CI.
 
-- [ ] **Step 5: `engines` скаффолдера — не слабший за Start, з піном**
+- [ ] **Step 5: Пін шести порогів — новий тест червоніє**
 
-У `packages/create-simplycms-store/package.json` `"node": ">=20"` →
-`"node": ">=22.12"`.
-
-У `tests/create-store-template-parity.test.ts` дописати кейс (поруч із
-кейсом про `packageManager`):
+Create `tests/engines-node-floor.test.ts`:
 
 ```ts
-  // 🔴 Скаффолдер обіцяв `>=20`, тоді як Start у згенерованому магазині
-  // вимагає `>=22.12.0`: користувач на Node 20 проходив `npm create` і падав
-  // на першому `pnpm dev`. Поріг скаффолдера не може бути нижчим за поріг
-  // фреймворку, який він встановлює.
-  it('engines.node скаффолдера не слабший за @tanstack/react-start', () => {
-    const require = createRequire(import.meta.url);
-    const scaffolder = JSON.parse(read('packages/create-simplycms-store/package.json')) as {
-      engines: { node: string };
-    };
-    const start = JSON.parse(
-      readFileSync(require.resolve('@tanstack/react-start/package.json'), 'utf8'),
-    ) as { engines: { node: string } };
-    // major/minor — окремими цілими: як одне число «22.10» було б МЕНШЕ за «22.9».
-    const floor = (range: string) =>
-      /(\d+)\.(\d+)/.exec(range)!.slice(1).map(Number) as [number, number];
-    const [sMaj, sMin] = floor(scaffolder.engines.node);
-    const [tMaj, tMin] = floor(start.engines.node);
-    expect(sMaj > tMaj || (sMaj === tMaj && sMin >= tMin)).toBe(true);
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+import { readPublishableManifests } from '../scripts/release/bump.mjs';
+
+// 🔴 Скаффолдер і CLI обіцяли `>=20`, три інші пакети — нічого, тоді як Start
+// у згенерованому магазині вимагає `>=22.12.0`: користувач на Node 20
+// проходив `npm create` і падав на першому `pnpm dev`. Поріг пакета не може
+// бути нижчим за поріг фреймворку, який цей пакет у магазин приводить.
+// Еталон читається зі ВСТАНОВЛЕНОГО Start, а не з константи: бамп Start
+// підіймає поріг сам, і тест червоніє замість тихого дрейфу.
+// `createRequire` — бо файл ESM: голого `require` у ньому не існує.
+const require = createRequire(import.meta.url);
+const start = JSON.parse(
+  readFileSync(require.resolve('@tanstack/react-start/package.json'), 'utf8'),
+) as { engines: { node: string } };
+
+// Порівняння СЕМАНТИЧНЕ, не рядкове: `'>=22.12.0' === floor` зламалось би на
+// першому ж бампі Start, а «22.12» одним числом було б МЕНШЕ за «22.9».
+// Відсутні компоненти діапазону — нулі (`>=22` ⇒ 22.0.0).
+const floor = (range: string): [number, number, number] => {
+  const match = /(\d+)(?:\.(\d+))?(?:\.(\d+))?/.exec(range);
+  if (!match) throw new Error(`не semver-поріг: ${range}`);
+  return [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)];
+};
+
+const notBelow = (range: string, reference: string): boolean => {
+  const a = floor(range);
+  const b = floor(reference);
+  for (let i = 0; i < 3; i += 1) if (a[i] !== b[i]) return a[i] > b[i];
+  return true;
+};
+
+describe('engines.node: не нижче за поріг @tanstack/react-start', () => {
+  // 🔴 Набір береться з readPublishableManifests() (той самий дискавер, що й
+  // у реліз-бампі), а не списком рядком: точний склад пʼяти пакетів уже
+  // стереже tests/release-bump-coverage.test.ts, тож новий пакет потрапляє
+  // під пін автоматично, а не мовчки зʼїжджає з порогу. Дискавер читає
+  // відносний `packages/` — vitest працює з кореня репо, і саме так той тест
+  // його вже кличе (рядок 19).
+  it.each(
+    readPublishableManifests().map(
+      ({ manifest }) =>
+        [manifest.name, manifest.engines?.node] as [string, string | undefined],
+    ),
+  )('%s заявляє поріг і він не нижчий за Start', (name, range) => {
+    expect(range, `${name}: engines.node відсутній`).toBeDefined();
+    expect(notBelow(range!, start.engines.node)).toBe(true);
   });
+
+  // Шостий поріг — шаблон магазину. Файл із плейсхолдерами, але валідний JSON
+  // як є (обидва плейсхолдери стоять ЗНАЧЕННЯМИ рядків), тож підстановка тут
+  // не потрібна — так само його читає scripts/pilot-pack/create-pkg-checks.mjs.
+  it('шаблон магазину (package.json.tpl) не нижчий за Start', () => {
+    const tpl = JSON.parse(
+      readFileSync(
+        'packages/create-simplycms-store/template/package.json.tpl',
+        'utf8',
+      ),
+    ) as { engines?: { node?: string } };
+    expect(tpl.engines?.node).toBeDefined();
+    expect(notBelow(tpl.engines!.node!, start.engines.node)).toBe(true);
+  });
+});
 ```
 
-У блок імпортів файлу додати `import { createRequire } from 'node:module';`
-(файл ESM, `require` у ньому не визначений); `read` — хелпер, що вже є у
-файлі.
+Run: `pnpm vitest run tests/engines-node-floor.test.ts`
+Expected: FAIL — шість кейсів червоні: `@simplycms/cli` і
+`create-simplycms-store` дають `>=20` (нижче за `>=22.12.0`), `simplycms`,
+`@simplycms/theme-solarstore`, `@simplycms/plugin-faq` і шаблон — `undefined`.
 
-Run: `pnpm vitest run tests/create-store-template-parity.test.ts`
-Expected: PASS; тимчасове повернення `>=20` — FAIL.
+- [ ] **Step 6: `engines.node` у ШЕСТИ файлах — два правляться, чотири додаються**
 
-- [ ] **Step 6: Гейти й коміт**
+Два блоки вже є — міняється лише значення:
+- `packages/cli/package.json:29-31`: `"node": ">=20"` → `"node": ">=22.12.0"`;
+- `packages/create-simplycms-store/package.json:14-16`: те саме.
+
+Чотирьох блоків немає — додати, НЕ ламаючи порядку ключів манифеста. Місце
+береться з тих пакетів, що блок уже мають: у `@simplycms/cli` `engines` стоїть
+між `"license"` і `"repository"`, і рівно та сама пара є в усіх трьох пакетах,
+яким блок додається:
+- `packages/simplycms/package.json` — після `"license": "MIT",` (рядок 472), перед `"repository"` (473);
+- `packages/simplycms-theme-solarstore/package.json` — після рядка 30, перед 31;
+- `packages/simplycms-plugin-faq/package.json` — після рядка 39, перед 40.
+
+```json
+  "engines": {
+    "node": ">=22.12.0"
+  },
+```
+
+🔴 Порядок ключів тут не косметика: `bumpTo` у `scripts/release/bump.mjs`
+перезаписує манифест як `JSON.stringify(manifest, null, 2)`, тобто зберігає
+порядок, отриманий із `JSON.parse` — блок, поставлений «куди попало», рівно
+таким і поїде в реєстр на першому ж релізі. Місце обирається один раз, руками.
+
+Шостий файл — шаблон магазину `packages/create-simplycms-store/template/package.json.tpl`.
+🔴 Синтаксис перевірено ПЕРЕД правкою: попри розширення `.tpl` файл — валідний
+JSON як є (`JSON.parse` бере його без підстановки, бо обидва плейсхолдери,
+`__STORE_NAME__` і `__SIMPLYCMS_VERSION__`, стоять значеннями рядків). Пари
+`license`/`repository` в ньому немає, тож блок кладеться після
+`"packageManager": "pnpm@11.20.0",` (рядок 6), перед `"scripts"` — поруч із
+єдиним іншим полем про тулчейн:
+
+```json
+  "engines": {
+    "node": ">=22.12.0"
+  },
+```
+
+🔴 Окремий рядок у `tests/create-store-template-parity.test.ts` НЕ потрібен, і
+це вимір, а не економія:
+- поріг самого шаблону вже пінить `tests/engines-node-floor.test.ts` (Step 5) —
+  він читає той самий `package.json.tpl` напряму (парність-тест перед
+  `JSON.parse` ще й підставляє плейсхолдери — `:117-119`; для поля `engines`
+  підстановка нічого не змінює);
+- парність-тест звіряє шаблон з оверлеєм пілота
+  (`tests/pilot/store-template/package.json`) лише по полях, що змінюють
+  ПОВЕДІНКУ pnpm у скретчі: `packageManager`, склад `dependencies`/
+  `devDependencies`, відсутність npm-івського `overrides`. `engines` у це коло
+  не входить — заміряно на цій машині: `pnpm install` у теці з
+  `"engines": {"node": ">=99.0.0"}` друкує `[WARN] Unsupported engine` і
+  виходить з кодом `0` (pnpm 11.20.0, `engine-strict` за замовчуванням
+  вимкнений). Оверлей лишається без `engines` свідомо; рядок парності
+  знадобиться лише тоді, коли скретч колись піде з `engine-strict=true`.
+
+🔴 Не плутати з `engines.simplycms` — це діапазон сумісності з ЯДРОМ, і живе
+він у двох інших місцях: у TS-маніфесті теми/плагіна
+(`tests/cli-theme-conformance-run.test.ts:66`) і в записі маркетплейс-індексу
+(`tests/marketplace-index.test.ts:45-47, 67` — `engineSchema` = `{ simplycms:
+string }`). Інша сутність, інші файли; `scripts/release/manifest-version.mjs`
+навмисно її не чіпає — його патерн бʼє лише по літералу `version:`
+(`tests/release-bump-coverage.test.ts:102`).
+
+Run: `pnpm vitest run tests/engines-node-floor.test.ts`
+Expected: PASS (6/6); тимчасове повернення `">=20"` у будь-якому з шести —
+FAIL саме на ньому.
+
+- [ ] **Step 7: Гейти й коміт**
 
 ```bash
 pnpm format:check && pnpm lint && pnpm test && pnpm build && pnpm typecheck && pnpm build:packages && pnpm typecheck:template
-git add packages/create-simplycms-store/template/tsconfig.json tsconfig.template.json vitest.config.ts vite.config.ts packages/create-simplycms-store/template/vite.config.ts tests/pilot/store-template/vite.config.ts packages/create-simplycms-store/package.json tests/create-store-template-parity.test.ts
-git commit -m "build(k2-e0): vite.config.ts шаблону під typecheck:template; import.meta.dirname у трьох конфігах; engines >=22.12
+git add packages/create-simplycms-store/template/tsconfig.json tsconfig.template.json vitest.config.ts vite.config.ts packages/create-simplycms-store/template/vite.config.ts tests/pilot/store-template/vite.config.ts packages/simplycms/package.json packages/cli/package.json packages/simplycms-theme-solarstore/package.json packages/simplycms-plugin-faq/package.json packages/create-simplycms-store/package.json packages/create-simplycms-store/template/package.json.tpl tests/engines-node-floor.test.ts
+git commit -m "build(k2-e0): vite.config.ts шаблону під typecheck:template; import.meta.dirname у трьох конфігах; engines.node >=22.12.0
 
 Шаблон типізується проти dist (негативний контроль — зіпсований тип entry
 ловиться); coverage-тест вимагає пару include. Vite не попереджає про
-__dirname ні в монорепо, ні в магазині зі шаблону; поріг Node скаффолдера
-дорівнює порогу Start і пінується тестом (T-4)."
+__dirname ні в монорепо, ні в магазині зі шаблону. Поріг Node усіх пʼятьох
+публікованих пакетів і шаблону магазину не нижчий за поріг Start (>=22.12.0):
+два пакети мали хибний >=20, три не заявляли порогу взагалі; пін —
+tests/engines-node-floor.test.ts, набір пакетів бере з readPublishableManifests
+(T-4, Р6)."
 ```
 
 ---
+
 ### Task 3: Сентинели дерев у `dist-server-boundary` (T-3)
 
 **Files:**
@@ -817,7 +1019,7 @@ git commit -m "test(k2-e0): сентинели server-only дерев — усі
 - Modify: `scripts/pilot-pack/run.mjs:31-60`
 - Modify: `scripts/pilot-pack.mjs:16-17, 24, 33, 70-72` (усі чотири текстові згадки набору гейтів і `describeScope`)
 - Modify: `.github/workflows/workflow.yml:95, 127-130, 175-181`
-- Modify: `CLAUDE.md` (Quick Reference `:39`, рядок про `pilot:pack` у CI/CD-таблиці й у «Порядку гейтів»)
+- Modify: `CLAUDE.md` (Quick Reference `:39`; рядок job `packaging` у CI/CD-таблиці `:693`; два речення «Порядку гейтів» — `:155` і `:174-175`; 🔴 абзац «Пілот пакування в CI НЕ ганяється» `:700-704` — він стоїть двома рядками під тією ж таблицею й після задачі суперечив би їй)
 
 **Interfaces:**
 - Produces: `gateImportProtection(storeDir): { ok: boolean; details: string[] }`.
@@ -1034,6 +1236,18 @@ Expected: `Gate IP: FAIL` з двома рядками «збірка ПРОЙШ
 «ловив її лише `pnpm pilot:pack`, якого на той час у CI не було (з 2026-09-03
 він у job `packaging`)»; у Quick Reference (`:39`) `pnpm pilot:pack #
 tarball-пілот: гейти A/C/D + CLI/TOOL` → `гейти A/C/D/IP + CLI/TOOL`.
+
+🔴 Четверте місце — абзац «**Пілот пакування в CI НЕ ганяється**» (`:700-704`),
+і пропустити його не можна: він стоїть за два рядки ПІД тією самою таблицею
+CI/CD, рядок якої цей крок міняє, тож інакше один розділ казав би водночас
+«`pilot:pack` — крок job `packaging`» і «пілот пакування в CI не ганяється».
+Звузити рівно так, як коментар `workflow.yml` вище: заголовок → «🔴 **`pnpm
+pilot` (Gate B проти живої БД) у CI НЕ ганяється**»; `pnpm pilot:pack` зняти
+з переліку «відповідальність розробника» (`:703`) і назвати кроком job
+`packaging` з 2026-09-03; останнє речення (`:704`) → «Передрелізний гейт у CI
+— детерміністичний tarball-parity плюс `pilot:pack --skip-build`». Дата й
+авторство рішення 2026-08-01 лишаються: воно не скасоване, а звужене
+(роадмап, борг №2 — `docs/tasks/platform-roadmap.md:491-500`).
 
 Run: `pnpm test` (тести читають `workflow.yml`: `template-typecheck-coverage`).
 Expected: PASS.
@@ -1413,21 +1627,41 @@ DateStyle=ISO,YMD/TimeZone=UTC (гейт харнеса), <lastmod> через t
 ### Task 7: Покупний демо-сід — єдиний власник доставки й залишків; ціна на головній (Е0-6)
 
 **Files:**
-- Modify: `packages/simplycms/src/schema/schema.ts:1040` (`image_url` nullable) → Create: `packages/simplycms/migrations/0004_banners-image-nullable.sql` (+ журнал `packages/simplycms/drizzle/`)
-- Modify: `packages/simplycms/test-harness/pg/__tests__/baseline.test.ts:51-57`, `tests/create-store-template-parity.test.ts:60-68`, `packages/simplycms/migrations/README.md` (піни списку канону)
-- Modify: `packages/simplycms/src/contracts/objects/banner.ts:14`, `storefront-routes/components/BannerSlider.tsx:130`
 - Modify: `packages/simplycms/migrations/demo/demo-seed.sql` (шапка; секція 9; нова секція 10)
 - Modify: `packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts:12,21,33`
+- Modify: `packages/simplycms/test-harness/pg/__tests__/demo-seed.test.ts:50-59` (лічильники нових таблиць під кейсом ідемпотентності)
 - Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/shipping.ts` (ідемпотентність поверх сіду)
 - Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/showcase.ts:110-111`, `fixtures/storefront-client.ts:1-5, 21-25`
 - Modify: `packages/simplycms/test-harness/pg/__tests__/storefront-showcase.test.ts:252`
 - Modify: `packages/simplycms/src/storefront/loaders/pricing.ts` (`loadPricesByProduct`)
 - Modify: `packages/simplycms/src/storefront/loaders/entities/home-product.ts`, `loaders/home.ts:64-80`, `loaders/home-sections.ts:23-70`, `storefront-routes/pages/home/{types,toCardViewModel}.ts`, `storefront-routes/views/HomeView.tsx:17`, `storefront-routes/__tests__/home-n-plus-one.test.tsx:84-91`
-- Sync: `pnpm template:sync` (копії канону й сіду в шаблоні)
+- Sync: `pnpm template:sync` (копія сіду в шаблоні)
 
 **Interfaces:**
-- Produces: `banners.image_url` nullable (канон `0004`, `Banner.image_url: string | null`); демо-сід везе активний метод `pickup` (`type: 'system'`), дефолтну зону, активну точку, безкоштовний `flat`-тариф, залишки для двох панелей і `decrease_on_order = true`; `SHIPPING_FIXTURES = [...ACTIVE_SHIPPING_FIXTURES, ...HIDDEN_SHIPPING_FIXTURES]` — активна частина ідемпотентна поверх сіду, негативна — придатна для композиції з сідом; `loadPricesByProduct(db, productIds): Promise<Record<string, PriceEntry[]>>`; `HomeProductRow.price: number | null`, `HomeProductRow.old_price: number | null`.
+- Produces: демо-сід везе активний метод `pickup` (`type: 'system'`), дефолтну зону, ОДНУ **системну** точку видачі (`is_system = true` — вона ж склад правила Р2), безкоштовний `flat`-тариф, залишки на цій точці для двох панелей і `decrease_on_order = true`; `banners.image_url` — inline `data:image/svg+xml` плейсхолдер (схема **не змінюється**: колонка лишається `text NOT NULL`); `SHIPPING_FIXTURES = [...ACTIVE_SHIPPING_FIXTURES, ...HIDDEN_SHIPPING_FIXTURES]` — активна частина ідемпотентна поверх сіду, негативна — придатна для композиції з сідом; `loadPricesByProduct(db, productIds): Promise<Record<string, PriceEntry[]>>`; `HomeProductRow.price: number | null`, `HomeProductRow.old_price: number | null`.
 - Consumes: `resolvePrice` (`simplycms/domain/pricing`), `loadDefaultPriceTypeId`, `priceColumns`/`groupPricesByProduct` (`./entities/price`).
+
+🔴 **Етап БЕЗ жодної зміни схеми БД (ред. 1.3, рішення Р3).** Ця задача була
+єдиним носієм DDL у К2-Е0 — і його знято. Ред. 1.2 робила `banners.image_url`
+nullable міграцією `0004`; це відкидається, бо nullable ламало б три чинні
+контракти одразу: `BannerSlider.tsx:130` рендерить `<img src={banner.image_url}>`
+**беззастережно** (бита картинка), `contracts/objects/banner.ts:14` і заморожений
+`supabase/database.ts` оголошують `image_url: string` (baseline адмінки став би
+брехливим до К3), а тема-еталон від NULL не виграє взагалі —
+`themes/default/components/HeroBanner.tsx:52-54` шукає `banners.find((item) =>
+item.desktop_image_url || item.image_url)` і банер без фото просто **ігнорує**,
+тобто демо-мета «зробити магазин видним» не досягається. Тому колонка лишається
+`text NOT NULL` (`0001_init.sql:13`, `schema.ts:1040`), а видимість дає
+data-URI-плейсхолдер у самому сіді. Наслідок: канон і далі — рівно чотири файли,
+`baseline.test.ts`, `create-store-template-parity.test.ts` і
+`migrations/README.md` цю задачу не зачіпають, кроку `db:diff` тут немає.
+Нових грантів етап теж не потребує: `stock_by_pickup_point` уже повністю
+відкрита `app_admin` (`0002_grants.sql:156`).
+Побічно цим закривається відомий борг демо-даних: 404 на
+`/demo/banners/solar-home.jpg` записаний у двох місцях
+(`docs/architecture/test-contours.md` §12, таблиця живого прогону 2026-09-03;
+`docs/tasks/v2-state-map.md` §2.1). 🔴 Обидва — ДАТОВАНІ записи прогонів, тож
+заднім числом їх не правлять: новий стан фіксує датований прогін Task 14.
 
 🔴 Чому сід — власник (ред. 1.2). До цієї задачі активний `pickup` вставляли
 три фікстури харнесу незалежно (`fixtures/shipping.ts:26`, `showcase.ts:110`,
@@ -1435,8 +1669,11 @@ DateStyle=ISO,YMD/TimeZone=UTC (гейт харнеса), <lastmod> через t
 Сід з доставкою став би пʼятою декларацією і зламав би два нові тести (другий
 дефолт зони проти `idx_shipping_zones_single_default`; залишки тих самих
 слагів). Тому активна доставка декларується ОДИН раз — у сіді, який і так
-накатують сім тестів харнесу; фікстури лишають собі лише негативні й
-специфічні рядки, а та, що котиться й на чистому каноні
+накатують ШІСТЬ тестів харнесу (`demo-seed`, `single-default`,
+`aggregate-deps`, `storefront-showcase`, `storefront-client-queries`,
+`storefront-loaders`; сьомий, `seed-determinism`, читає файл статично, без
+БД); фікстури лишають собі лише негативні й специфічні рядки, а та, що
+котиться й на чистому каноні
 (`shipping-directory.test.ts`), стає ідемпотентною.
 
 - [ ] **Step 1: Пін детермінізму — спершу червоний**
@@ -1450,64 +1687,83 @@ insert» → «усі 26 insert» (6 + 20).
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/seed-determinism.test.ts`
 Expected: FAIL (у файлі ще 15).
 
-- [ ] **Step 1а: `banners.image_url` — nullable (DDL через `db:diff`)**
-
-🔴 Колонка `image_url` у каноні — `text NOT NULL` (`schema.ts:1040`,
-`0001_init.sql`): `null` у сіді впав би з `23502` і поклав би всі сім тестів,
-що накатують демо. А банер без зображення — легітимний стан теми:
-`themes/default/components/HeroBanner.tsx:52-55` бере перший банер ІЗ
-зображенням і без нього малює «порожній круг» (рішення власника). Схема
-суперечила контракту, який тема вже виконує, — вирівнюється схема, штатним
-шляхом канону (`schema.ts` → `db:diff` → ревʼю → `test:schema`).
-
-1. `schema.ts:1040`: `imageUrl: text("image_url").notNull()` → `imageUrl: text("image_url")`.
-2. `pnpm db:diff banners-image-nullable` → новий файл канону
-   `packages/simplycms/migrations/0004_banners-image-nullable.sql` з рівно
-   одним стейтментом `ALTER TABLE "banners" ALTER COLUMN "image_url" DROP NOT NULL;`
-   (ревʼю обовʼязкове); журнал і snapshot у `packages/simplycms/drizzle/`
-   оновлюються тим самим викликом і комітяться.
-3. Піни списку канону: `test-harness/pg/__tests__/baseline.test.ts:51-57`
-   (назва кейсу → «рівно з пʼяти упорядкованих файлів», у список —
-   `'0004_banners-image-nullable.sql'`), `tests/create-store-template-parity.test.ts:60-68`
-   (той самий список перед `README.md`; назва кейсу «0000_prelude → 0003_seed +
-   README + demo/» → «0000_prelude → 0004_banners-image-nullable + README +
-   demo/»), `packages/simplycms/migrations/README.md`
-   — рядок таблиці «Склад»: `0004_banners-image-nullable.sql | banners.image_url
-   nullable — банер без фото легітимний (К2-Е0) | drizzle-kit generate`.
-4. Контракт і споживачі: `contracts/objects/banner.ts:14` → `image_url: string | null`;
-   `storefront-routes/components/BannerSlider.tsx:130` — слайдер рендерить
-   лише банери із зображенням (той самий фільтр, що `HeroBanner.find`);
-   `themes/default` уже тримає відсутнє фото; legacy `admin/pages/BannerEdit.tsx:135`
-   робить `|| ''` і не ламається.
-
-Run: `pnpm typecheck && pnpm test && pnpm test:schema`
-Expected: PASS; `baseline` бачить пʼять файлів канону; `pnpm template:sync`
-у Step 5 донесе `0004` у копію шаблону (парність).
-
-- [ ] **Step 2: Сід — доставка, точка, залишки, тумблер, банери NULL**
+- [ ] **Step 2: Сід — доставка, системна точка, залишки, тумблер, банери-плейсхолдери**
 
 У шапці `demo-seed.sql` (після абзацу «БЕЗ користувачів…») додати:
 
 ```sql
--- 🔴 К2-Е0 (2026-09-04): демо-магазин мусить бути ПОКУПНИМ — доходити до
+-- 🔴 К2-Е0 (2026-09-05): демо-магазин мусить бути ПОКУПНИМ — доходити до
 -- рядка в `orders` живим прогоном (`pnpm live:smoke`) ЗІ СПИСАННЯМ залишку.
--- Тому тут є один спосіб доставки, одна точка видачі, безкоштовний тариф,
--- залишки для частини товарів (решта — «статус без обліку»: обидві гілки
--- правила наявності в одному сіді) і тумблер `decrease_on_order = true`.
--- Канон `0003_seed.sql` доставки як не віз, так і не везе — її заводить
--- магазин. 🔴 Це ЄДИНА декларація активної доставки для харнесу: фікстури
--- тестів додають лише вимкнені/специфічні рядки, ідемпотентно
--- (`fixtures/shipping.ts`). Зображень банерів у пакеті немає, тож
--- `image_url` — NULL: тема малює чесний стан без фото (рішення власника,
--- HeroBanner «порожній круг»).
+-- Тому тут є один спосіб доставки, одна СИСТЕМНА точка видачі
+-- (`is_system = true` — вона ж склад, з якого списують і на який повертають
+-- залишок), безкоштовний тариф, залишки для частини товарів (решта —
+-- «статус без обліку»: обидві гілки правила наявності в одному сіді) і
+-- тумблер `decrease_on_order = true`. Канон `0003_seed.sql` доставки як не
+-- віз, так і не везе — її заводить магазин. 🔴 Це ЄДИНА декларація активної
+-- доставки для харнесу: фікстури тестів додають лише вимкнені/специфічні
+-- рядки, ідемпотентно (`fixtures/shipping.ts`).
+--
+-- 🔴 Банери: `image_url` — inline `data:image/svg+xml`, а не шлях до файлу.
+-- Причина не в схемі (колонка була й лишається `text NOT NULL`), а в тому,
+-- що файлів статики демо не везе НІ монорепо (`public/` має рівно
+-- `favicon.ico` і `placeholder.svg`), НІ шаблон магазину — теки
+-- `template/public/` не існує взагалі. Тобто `/demo/banners/*.jpg` були
+-- гарантованим 404 у кожному магазині, піднятому `pnpm db:demo`.
 ```
 
 У переліку префіксів id тієї ж шапки дописати: `shipping_methods 1000000a,
 pickup_points 1000000b, shipping_rates 1000000c, stock_by_pickup_point
 1000000d, shipping_zones 1000000e`.
 
-У секції 9 обидва `'/demo/banners/….jpg'` (`:234`, `:249`) → `null` (колонка
-nullable з кроку 1а).
+**Секція 9 — банери.** Обидва `'/demo/banners/….jpg'` (`:234`, `:249`)
+замінюються на плейсхолдери. Над секцією — коментар про межі формату:
+
+```sql
+-- 🔴 Плейсхолдер-SVG інлайном. Чотири обмеження, які не можна порушити:
+-- (1) усередині SVG — ЛИШЕ подвійні лапки: одинарна в SQL-літералі вимагала
+--     б подвоєння ('') і зробила б рядок нечитабельним;
+-- (2) жодного `#` — у data-URI він відкриває фрагмент і відрізав би решту
+--     розмітки, тому кольори НАЗВАНІ (`darkslateblue`), а не hex;
+-- (3) жодного `%` (percent-escape) і `&` (XML-сутність) — звідси абсолютні
+--     розміри `width="1200"`, а не `width="100%"`;
+-- (4) `charset=utf-8` — через кириличний підпис. Формально XML і без нього
+--     дефолтиться на UTF-8, але явний параметр знімає залежність від того,
+--     який шар вирішує кодування (URL-декодер чи XML-парсер).
+-- Один рядок ~250 символів: розбивати перенесенням не можна (перенос усе-
+-- редині SQL-літерала кладе в значення справжній `\n`), тож він свідомо
+-- довший за решту файлу.
+```
+
+Рядок першого банера (`:234`):
+
+```sql
+  'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkslateblue"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Сонячна енергія</text></svg>',
+```
+
+Рядок другого (`:249`):
+
+```sql
+  'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkgoldenrod"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Бі-фаціальні панелі</text></svg>',
+```
+
+🔴 Підпис усередині SVG — скорочений заголовок банера, а не декор: сам
+заголовок обидва споживачі малюють оверлеєм поверх картинки
+(`BannerSlider.tsx` — `banner.title`), тож у зображенні він потрібен рівно
+для того, щоб плейсхолдер читався як плейсхолдер саме цього банера.
+Обидва споживачі задають зображенню розмір через CSS (`BannerSlider` —
+`absolute inset-0 w-full h-full object-cover`, `HeroBanner` — `h-full w-full
+object-cover` у круглій підложці), тому SVG без інтринсік-розмірів, лише з
+`viewBox`, малюється коректно в обох. React SSR екранує значення атрибута
+(`<` → `&lt;`), а парсер браузера розекранує назад — HTML-межу рядок
+проходить без втрат. Заборона на `&` — не про неї, а про XML: голий `&`
+всередині SVG це помилка розбору (сутність без імені).
+
+🔴 Що плейсхолдер справді МАЛЮЄТЬСЯ, не доводить жоден гейт цієї задачі —
+ні SQL, ні TS картинку не рендерять. Тому перевірка ока — окремим пунктом
+Step 5. Якщо кирилиця в data-URI десь не доїде (percent-декодування
+підпису), найдешевший відкат — прибрати `<text>` зовсім: заголовок обидва
+споживачі й так малюють оверлеєм, тож плейсхолдер лишиться робочим і без
+підпису.
 
 Наприкінці файлу — секція 10:
 
@@ -1527,9 +1783,19 @@ insert into public.shipping_zones (id, name, description, is_active, is_default,
 values ('1000000e-0000-4000-8000-000000000001'::uuid, 'Україна', 'Дефолтна зона демо', true, true, 0)
 on conflict (is_default) where (is_default = true) do nothing;
 
-insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+-- 🔴 `is_system = true` — не косметика, а опора write-side. Списання й
+-- повернення залишку йдуть у точку самого замовлення (`orders.pickup_point_id`);
+-- якщо її немає (кур'єрська доставка) — у системну точку; якщо немає й
+-- такої — у першу активну за (sort_order, id). Демо має рівно одну точку,
+-- тож усі три гілки правила приземляються в один рядок, і залишки нижче
+-- лежать саме на ньому. Побічний наслідок, свідомо прийнятий: адмінка не
+-- дасть її видалити (`PickupPoints.tsx:178` — кнопки видалення для
+-- системної точки в списку просто немає; `PickupPointEdit.tsx:202` пояснює
+-- це підписом `admin.shipping.points.systemLocked` — «Системна точка — не
+-- може бути видалена»), і це правильно.
+insert into public.pickup_points (id, method_id, name, address, city, is_active, is_system, sort_order)
 select '1000000b-0000-4000-8000-000000000001'::uuid, m.id,
-       'Склад у Києві', 'вул. Сонячна, 1', 'Київ', true, 0
+       'Склад у Києві', 'вул. Сонячна, 1', 'Київ', true, true, 0
   from public.shipping_methods m where m.code = 'pickup'
 on conflict (id) do nothing;
 
@@ -1542,6 +1808,9 @@ on conflict (id) do nothing;
 
 -- Залишки лише для двох панелей: решта каталогу лишається «в наявності за
 -- статусом без обліку» — так живий прогін бачить обидві гілки правила.
+-- Точка резолвиться join-ом за іменем, а не константою-UUID: константа
+-- вдруге в файлі порушила б і конвенцію шапки («батьківські рядки — за
+-- натуральним ключем»), і пін унікальності UUID-літералів.
 insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
 select v.id, pp.id, p.id, null, v.quantity
 from (
@@ -1555,22 +1824,34 @@ on conflict (pickup_point_id, product_id) where product_id is not null and modif
 
 -- 🔴 Демо веде облік: списання при оформленні увімкнене, щоб live-smoke
 -- доводив write-side правила наявності, а не лише читання. Це `update`
--- канонічного рядка `0003_seed.sql`, не `insert` — пін детермінізму його
--- не рахує; ідемпотентний.
+-- канонічного рядка `0003_seed.sql` (де `'{"decrease_on_order": false}'`),
+-- не `insert` — пін детермінізму його не рахує. Предикат — по ПОТОЧНОМУ
+-- значенню, а не просто по ключу: повторний накат файлу по рядку, який уже
+-- `true`, не пише НІЧОГО — та сама ідемпотентність, що й `on conflict do
+-- nothing` вище. 🔴 Межа, названа чесно: власника, який вимкнув облік уже
+-- ПІСЛЯ сіду, повторний накат демо поверне до `true` — від цього предикат
+-- не рятує. Прийнятно саме тому, що файл — ДЕМО (`pnpm db:demo` піднімає
+-- НОВУ базу), а не міграція чинного магазину. Канон не чіпаємо: чистий
+-- магазин і далі стартує з обліком вимкненим.
 update public.system_settings
    set value = jsonb_set(value, '{decrease_on_order}', 'true'::jsonb)
- where key = 'stock_management';
+ where key = 'stock_management'
+   and value->>'decrease_on_order' = 'false';
 ```
 
-Звірено зі `schema.ts`: `shipping_methods_code_key` (unique на `code`) →
+Звірено зі `schema.ts`: `shipping_methods_code_key` (unique на `code`, `:510`) →
 `on conflict (code)`; `shippingMethodType` містить `'system'`,
 `shippingCalculationType` — `'flat'`; `shipping_rates`: `method_id`, `zone_id`
 (NOT NULL), `name`, `calculation_type`, `base_cost`, `is_active`, `sort_order`
-— решта з дефолтами; предикат часткового індексу `unique_stock_product_per_point`
+— решта з дефолтами; `pickup_points.is_system` — `boolean default false not
+null` (`schema.ts:585`); предикат часткового індексу `unique_stock_product_per_point`
 — `((product_id IS NOT NULL) AND (modification_id IS NULL))`, форма `on
 conflict … where …` вище йому відповідає; `idx_shipping_zones_single_default`
 — `(is_default) where (is_default = true)`. Пін у кроці 1 — **20**: рівно
 пʼять `insert into` цієї секції; `update` — поза лічильником.
+🔴 `single-default.test.ts` від дефолтної зони сіду не червоніє: його
+GLOBAL-кейс спершу робить `update … set is_default = false where is_default`
+і лише потім вставляє свою пару (перевірено — тіло `it.each(GLOBAL)`).
 
 - [ ] **Step 3: Фікстури харнесу — одна декларація активної доставки**
 
@@ -1615,13 +1896,29 @@ public.pickup_points where name = '${ACTIVE_POINT_NAME}')`. Негативна �
 наявність модифікацій і характеристики картки перевірялися б на порожній
 множині — тому тут складський рядок для модифікації й характеристика на ній».
 
+`demo-seed.test.ts` — у `counts()` (`:50-59`) дописати лічильники нових
+таблиць (`shipping_methods`, `shipping_zones`, `shipping_rates`,
+`pickup_points`, `stock_by_pickup_point`). 🔴 Не косметика: кейс
+«ідемпотентний: повторний докат демо-файлу не міняє лічильники» (`:116`)
+сьогодні рахує лише каталог, тож жодна з пʼяти нових вставок під ним не
+стоїть — а саме в них уперше зʼявляються дві нетривіальні форми `on
+conflict` (інференс часткових індексів зон і залишків), де помилка дає
+тихий дубль, а не помилку. Без цих лічильників слово «ідемпотентність» у
+шапці сіду для секції 10 — віра, а не гейт.
+
 `storefront-showcase.test.ts:252` `expect(points).toBe(1)` → `toBe(2)` з
-коментарем «демо-точка + відкрита фікстурна; закрита не рахується».
+коментарем «системна демо-точка + відкрита фікстурна; закрита не рахується».
+🔴 Це єдиний лічильник точок у харнесі, який зсуває сід: перевірено —
+`loadActivePickupPointsCount` (`stock-info.ts:118`) фільтрує лише
+`is_active`, а `is_system` не звужує ні його, ні `loadPickupPoints`
+(`pickup-points.ts:14-19`), тож системна точка сіду видима як звичайна;
+`storefront-client-queries`, `storefront-loaders` і `aggregate-deps` кількість
+точок не асертять узагалі.
 
 Run: `pnpm test:schema`
-Expected: PASS (усі, хто накатує сід: `seed-determinism`, `demo-seed`,
-`single-default`, `aggregate-deps`, `storefront-showcase`,
-`storefront-client-queries`, `storefront-loaders`; і `shipping-directory` на
+Expected: PASS (усі шестеро, хто накатує сід: `demo-seed`, `single-default`,
+`aggregate-deps`, `storefront-showcase`, `storefront-client-queries`,
+`storefront-loaders`; статичний `seed-determinism`; і `shipping-directory` на
 чистому каноні).
 
 - [ ] **Step 4: `loadPricesByProduct` і ціна на головній — той самий резолв, що в каталозі**
@@ -1678,14 +1975,17 @@ old_price: number | null;`; `toHomeProduct(row, sectionSlug, price: ResolvedPric
 `insert … select` дістають один `now()` (8 товарів сіду; 8 фікстурних у
 `fixtures/storefront.ts`), тож `ORDER BY created_at DESC LIMIT 12` без
 вторинного ключа відсікає «які трапляться». Додати `asc(products.id)` другим
-ключем у `loadHomeProducts` (`home.ts:73-76`) і у вікно `row_number() over
+ключем у `loadHomeProducts` (`home.ts:77`, `.orderBy(desc(products.createdAt))`)
+і у вікно `row_number() over
 (partition by … order by created_at desc, id)` у `loadSectionProducts`
 (`home-sections.ts:40-42`) — це правило показу головної, не лише тесту.
 
 Гейт ЗНАЧЕННЯ, не лише типу: у `test-harness/pg/__tests__/storefront-loaders.test.ts`
-(накатує демо-сід) додати кейс — `loadHomeProducts(db, true)` (featured: пʼять
-сідових товарів, фікстурні — `is_featured = false`, тож набір під лімітом 12
-детермінований незалежно від порядку) містить
+(накатує демо-сід і `FIXTURE_STATEMENTS`) додати кейс — `loadHomeProducts(db,
+true)` (featured: пʼять сідових товарів; фікстурні у добірку не входять —
+вісім наповнювачів мають `is_featured = false`, а «чернетка» з `is_featured =
+true` відсіюється фільтром `is_active`, `fixtures/storefront.ts:35-39`; тож
+набір під лімітом 12 детермінований незалежно від порядку) містить
 `sonyachna-panel-450w-mono` з `price: 4800, old_price: null` і
 `sonyachna-panel-600w-bifacial` з `price: 7200, old_price: 8100` (ціни
 `product_prices` сіду за дефолтним типом ціни), а
@@ -1704,26 +2004,40 @@ Expected: PASS.
 ```bash
 pnpm template:sync && git status --porcelain
 pnpm format:check && pnpm lint && pnpm test && pnpm test:schema
+# 🔴 Око: db:demo друкує готовий DATABASE_URL — узяти його в .env.local,
+# підняти `pnpm dev` і відкрити `/`.
+pnpm db:demo
 ```
 
-Expected: у дифі — `packages/create-simplycms-store/template/…/demo-seed.sql`
-(парність — `tests/create-store-template-parity.test.ts`); усе зелене.
+Expected: у дифі — рівно
+`packages/create-simplycms-store/template/supabase/migrations/demo/demo-seed.sql`
+(парність — `tests/create-store-template-parity.test.ts`, кейс «тека
+`packages/simplycms/migrations` байт-ідентична»); склад канону там не
+змінюється, бо DDL етап не везе; усе зелене. На `/` — банер суцільним
+кольоровим прямокутником із підписом і НУЛЬ 404 у мережевій панелі (раніше
+там був `/demo/banners/solar-home.jpg`). 🔴 Це не гейт, а єдиний доказ
+data-URI-плейсхолдера: автоматики, яка рендерить `<img>`, етап не має —
+браузерний контур повертає трек К6.
 
 - [ ] **Step 6: Коміт**
 
 ```bash
-git add -A packages/simplycms/migrations packages/simplycms/drizzle packages/simplycms/src/schema/schema.ts packages/simplycms/src/contracts/objects/banner.ts packages/simplycms/src/storefront-routes/components/BannerSlider.tsx tests/create-store-template-parity.test.ts packages/create-simplycms-store/template packages/simplycms/test-harness/pg/__tests__ packages/simplycms/src/storefront packages/simplycms/src/storefront-routes/pages/home packages/simplycms/src/storefront-routes/views/HomeView.tsx packages/simplycms/src/storefront-routes/__tests__/home-n-plus-one.test.tsx
-git commit -m "feat(k2-e0): покупний демо-сід — доставка, точка, залишки, decrease_on_order; ціна на головній; banners.image_url nullable
+git add -A packages/simplycms/migrations packages/create-simplycms-store/template packages/simplycms/test-harness/pg/__tests__ packages/simplycms/src/storefront packages/simplycms/src/storefront-routes/pages/home packages/simplycms/src/storefront-routes/views/HomeView.tsx packages/simplycms/src/storefront-routes/__tests__/home-n-plus-one.test.tsx
+git commit -m "feat(k2-e0): покупний демо-сід — доставка, системна точка, залишки, decrease_on_order; ціна на головній
 
 Демо доходить до рядка в orders зі списанням; обидві гілки правила наявності
 в одному сіді; сід — єдина декларація активної доставки для харнесу, фікстури
-розщеплено на активну (ідемпотентну поверх сіду) і негативну частини. Банер
-без фото легітимний: канон 0004 знімає NOT NULL з image_url, контракт і
-слайдер — string | null. Пін детермінізму 20, копії канону й сіду в шаблоні
-синхронні. Картки головної отримують ціну тим самим resolvePrice, що каталог (Е0-6)."
+розщеплено на активну (ідемпотентну поверх сіду) і негативну частини. Точка
+видачі — системна (is_system), вона ж склад списання й повернення залишку.
+Тумблер decrease_on_order піднімається умовним UPDATE (повтор накату не пише
+нічого). Банери — inline data:image/svg+xml замість неіснуючих файлів
+статики: схема БД не змінюється жодним рядком. Пін
+детермінізму 20, копія сіду в шаблоні синхронна. Картки головної отримують
+ціну тим самим resolvePrice, що каталог (Е0-6)."
 ```
 
 ---
+
 ### Task 8: Наявність — `isPurchasable` як єдине правило на читанні (Е0-3, read-side)
 
 **Files:**
@@ -1982,15 +2296,19 @@ out_of_stock замість інверсії, щоб негативний кон
 
 ---
 
-### Task 9: Write-side — декремент під `FOR UPDATE` і ескалація в тій самій транзакції (Е0-3)
+### Task 9: Write-side — списання й повернення залишку в ОДНІЙ точці під `FOR UPDATE` (Е0-3)
 
 **Files:**
-- Modify: `packages/simplycms/src/storefront/loaders/db.ts:27-48` (`OperatorEscalation` у двох обгортках)
+- Modify: `packages/simplycms/src/storefront/loaders/db.ts:31-49` (`OperatorEscalation` у двох обгортках)
 - Modify: `packages/simplycms/src/storefront/loaders/session.ts:29-34` (прокидання `operator`)
-- Create: `packages/simplycms/src/storefront/loaders/stock-reservation.ts` (`InsufficientStockError`, `loadStockManagement`, `reserveStock`)
-- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts` (пʼятий параметр, виклик `reserveStock`), `loaders/index.ts` (реекспорт)
-- Modify: `packages/simplycms/src/storefront-routes/server/profile-orders.ts:60-82`, `server/checkout.ts:40-52` (лише сигнатура `run`)
-- Modify: `packages/simplycms/test-harness/pg/__tests__/storefront-personal-data.test.ts:24,185,206,228-253`
+- Create: `packages/simplycms/src/storefront/loaders/entities/new-order.ts` (`NewOrderItem`, `NewOrderInput`, `CreatedOrder` — переїзд типів заради канону 150 рядків)
+- Create: `packages/simplycms/src/storefront/loaders/stock-write.ts` (`StockTarget`, `StockLine`, `LockedStockRow`, `resolveStockPoint`, `lockTargetStock` — 112 рядків)
+- Create: `packages/simplycms/src/storefront/loaders/stock-status.ts` (`setTargetStatus` — 51)
+- Create: `packages/simplycms/src/storefront/loaders/stock-reservation.ts` (`InsufficientStockError`, `reserveStock`, `releaseStock` — 113)
+- Create: `packages/simplycms/src/storefront/loaders/order-stock.ts` (`loadStockManagement`, `reserveOrderStock`, `releaseOrderStock` — 87)
+- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts` (типи виїжджають; пʼятий параметр `operator`; виклик `reserveOrderStock`), `loaders/orders.ts:113` (`lockOrderStatus`), `loaders/index.ts` (реекспорти)
+- Modify: `packages/simplycms/src/storefront-routes/server/profile-orders.ts:50-80` (одна транзакція + повернення залишку), `server/checkout.ts:41-54` (лише сигнатура `run`)
+- Modify: `packages/simplycms/test-harness/pg/__tests__/storefront-personal-data.test.ts:24,184-186,205-207,226-258`
 - Modify: `.github/instructions/data-access.instructions.md` («Storefront (SSR)» — правило ескалації)
 - Create: `packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts`
 
@@ -2000,10 +2318,22 @@ out_of_stock замість інверсії, щоб негативний кон
   - `withCustomerDb(userId, fn: (db, operator) => …)`, `withOrderTokenDb(token, fn: (db, operator) => …)`, `withSessionDb(fn: (db, userId, operator) => …)` — новий аргумент опційний для чинних викликачів;
   - `createOrder(db, userId, accessToken, input, operator: OperatorEscalation): Promise<CreatedOrder>` (5-й параметр обовʼязковий);
   - `class InsufficientStockError extends Error { readonly productId; readonly modificationId }`;
-  - `loadStockManagement(db): Promise<{ decrease_on_order: boolean }>`.
-- Consumes: `withActor` (`fn(db, client)`), `Actor` з `simplycms/db`; демо-сід Task 7 (метод `pickup`, точка «Склад у Києві», залишки `450w=5`, `550w=3`, `decrease_on_order = true`).
+  - `loadStockManagement(db): Promise<{ decrease_on_order: boolean }>` (`order-stock.ts`);
+  - `resolveStockPoint(db, pickupPointId: string | null): Promise<string | null>` (`stock-write.ts`);
+  - `reserveOrderStock(db, lines: StockLine[], pickupPointId: string | null): Promise<void>`,
+    `releaseOrderStock(db, orderId: string): Promise<void>` (`order-stock.ts`);
+  - `lockOrderStatus(db, orderId): Promise<{ statusId: string | null } | null>` (`orders.ts`).
+- Consumes: `withActor` (`fn(db, client)`, `db/with-actor.ts:41-44`), `Actor` з `simplycms/db` (`db/index.ts:10-11`); демо-сід Task 7 (метод `pickup`, СИСТЕМНА точка «Склад у Києві» з `is_system = true`, залишки `450w=5`, `550w=3`, `decrease_on_order = true` умовним апдейтом).
 
-🔴 Чому `SELECT … FOR UPDATE`, а не guarded UPDATE (ред. 1.2). Guarded UPDATE
+🔴 **DDL етап не потребує — і це перевірено, а не припущено.** `app_admin`
+має `select, insert, update, delete` на `stock_by_pickup_point`
+(`0002_grants.sql:156`, той самий блок дає `products` — `:145` — і
+`product_modifications` — `:141`), а `app_user` має на цю таблицю рівно
+`select` (`0002_grants.sql:87`). Тобто механізм списання й повернення
+збирається на чинних грантах і чинній схемі: жодної міграції, жодного
+`db:diff`, жодної правки `schema.ts`.
+
+🔴 **Чому `SELECT … FOR UPDATE`, а не guarded UPDATE.** Guarded UPDATE
 (`where quantity >= take`) захищає від оверселу, але переворот статусу
 рахувався б від залишку, прочитаного ДО блокування: два паралельні
 замовлення по одиниці на залишок 2 обидва бачили б «лишається 1», жоден не
@@ -2012,9 +2342,71 @@ out_of_stock замість інверсії, щоб негативний кон
 (під READ COMMITTED заблокований `FOR UPDATE` після чужого коміту віддає
 оновлену версію рядка), тож і арифметика, і фліп — від реального залишку;
 guard і гілка «0 оновлених рядків» зникають. Drizzle: `.for('update', { of:
-stockByPickupPoint })` (`pg-core/query-builders/select.js:722`, діалект емітить
-`for update of "stock_by_pickup_point"` — блокуються лише рядки залишків, не
-точок).
+stockByPickupPoint })` (`pg-core/query-builders/select.js:722`, діалект
+емітить `for update of "stock_by_pickup_point"` — `pg-core/dialect.js:291`;
+блокуються лише рядки залишків, не точок).
+
+🔴 **Списання й повернення йдуть в ОДНУ детерміновану точку (рішення Р2).**
+Розкладка по кількох точках «у порядку показу» знята: вона робила повернення
+при скасуванні неможливим без окремої таблиці резервів (магазин не знає, з
+яких саме точок узяли), а сам порядок був довільним правилом показу, а не
+обліку. Точка резолвиться `resolveStockPoint` за трьома кроками:
+1. `orders.pickup_point_id`, якщо він є (`schema.ts:785`, uuid nullable, FK
+   `orders_pickup_point_id_fkey`; чекаут уже проносить це поле:
+   `checkout-input.ts:39` → `checkout.ts:110` → `order-create.ts:118`);
+2. інакше — точка з `pickup_points.is_system = true` (`schema.ts:585`,
+   `boolean default false not null`; на write-path читача сьогодні немає,
+   адмінка прапорець уже знає — `PickupPointEdit.tsx:191`);
+3. інакше — перша активна за `(sort_order, id)`.
+Повернення йде В ТУ САМУ точку тим самим правилом: для замовлення точка вже
+записана в `orders`, тож повернення точне без таблиці резервів. Наслідок
+семантики, свідомо прийнятий власником: залишок 3+2 у двох точках **не
+продасть 4** — точка є одиницею обліку, а не сумою по магазину.
+
+🔴 **Названа межа цієї точності — видалена точка видачі.** FK
+`orders_pickup_point_id_fkey` — `ON DELETE set null` (`0001_init.sql:651`), а
+`stock_by_pickup_point_pickup_point_id_fkey` — `ON DELETE cascade`
+(`0001_init.sql:684`). Тож якщо магазин видалив НЕсистемну точку вже після
+оформлення (`PickupPoints.tsx:178` це дозволяє; системну — ні), звʼязок
+замовлення з нею рветься, її рядки залишків зникають каскадом, і скасування
+такого замовлення повертає кількість у резолвлену запасну точку — системну
+або першу активну. Етап це не лагодить і не має: колонка, яку не обнуляє
+видалення, — це DDL, а К2-Е0 без DDL за рішенням Р3. Межа названа явно;
+шлях без DDL, якщо власник захоче точності й тут, — писати id точки списання
+в наявний `orders.shipping_data` (jsonb) і читати його першим у
+`releaseOrderStock`.
+
+🔴 **Що означає «рядка залишків немає» (оверсел).** Питання не косметичне:
+після Task 8 покупність визначає СТАТУС, і фліп статусу — єдина ниточка від
+кількості до вітрини. Рішення таке:
+- **немає жодного рядка `stock_by_pickup_point` по ЖОДНІЙ точці, яка може
+  обслужити замовлення** (`is_active` або `is_system`) — магазин обліку цієї
+  цілі не веде (сьогоднішня поведінка, і саме на ній тримається демо-сід:
+  залишки заведено двом панелям із восьми). Тихий вихід, замовлення
+  проходить, статус не чіпається;
+- **рядки на обслуговуючих точках є, але не на резолвленій** — облік
+  ведеться, а точка видачі його не покриває. Це `InsufficientStockError`, а
+  не тихий продаж: інакше замовлення без самовивозу (резолв у системну точку)
+  списувало б із повітря, поки залишок лежить на роздрібній точці.
+
+Тому блокований `SELECT` бере рядки цілі по ВСІХ точках, які взагалі можуть
+обслужити замовлення (`is_active` або `is_system`), а списується рівно ОДИН —
+рядок резолвленої точки. Той самий знімок дає і чесний фліп: статус
+перевертається за СУМОЮ по точках, а не за однією точкою (інакше товар із
+залишком на сусідній точці зникав би з продажу разом із першою спорожнілою).
+
+🔴 Обидві гілки міряються саме по ОБСЛУГОВУЮЧИХ точках, а не по всіх, — і це
+названа межа, а не недогляд: залишок, що лежить ЛИШЕ на закритій несистемній
+точці, дає першу гілку (тихий вихід), а не другу. Так write-side узгоджений
+із читанням — read-side такий залишок уже вважає неіснуючим
+(`stock-info.ts:76` фільтрує `is_active`), тож правило тут не суворіше за те,
+що бачить покупець на картці.
+
+🔴 **Чому повернення при скасуванні обовʼязкове саме тут (рішення Р1).**
+Етап вмикає write-side декремент; без симетричного повернення інваріант
+асиметричний — демо-магазин після кількох скасувань показує нуль залишку при
+нулі продажів. Тому `releaseStock` живе в тому ж модулі, що й `reserveStock`,
+і `cancelMyOrder` в ОДНІЙ транзакції і скасовує, і повертає.
 
 - [ ] **Step 1: Харнес-тест — спершу червоний**
 
@@ -2022,9 +2414,10 @@ stockByPickupPoint })` (`pg-core/query-builders/select.js:722`, діалект �
 
 ```ts
 // Write-side правила наявності (К2-Е0, Е0-3) ПОВЕРХ покупного демо-сіду
-// (Task 7): метод `pickup`, точка «Склад у Києві», залишки 450w=5 і 550w=3,
-// decrease_on_order=true — з сіду; тест додає лише те, чого сід не має
-// (дві власні точки, залишки для товарів без сідового обліку).
+// (Task 7): метод `pickup`, СИСТЕМНА точка «Склад у Києві», залишки 450w=5 і
+// 550w=3, decrease_on_order=true — з сіду; тест додає лише те, чого сід не має
+// (дві власні точки для перевірки «одна точка, а не сума», залишки для товарів
+// без сідового обліку).
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -2032,6 +2425,8 @@ import { closeDbPool } from 'simplycms/db';
 import {
   InsufficientStockError,
   createOrder,
+  loadOrderDetail,
+  releaseOrderStock,
   withOrderTokenDb,
   type NewOrderInput,
 } from 'simplycms/storefront/loaders';
@@ -2042,15 +2437,19 @@ import {
 } from '../apply.mjs';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
-/** Панель із сідовим залишком 5 на єдиній сідовій точці. */
+/** Панель із сідовим залишком 5 на системній точці. */
 const SEEDED_SLUG = 'sonyachna-panel-450w-mono';
-/** Панель без сідового залишку — порядок списання по двох тестових точках. */
+/** Панель із сідовим залишком 3 — оформлення й скасування. */
+const CANCEL_SLUG = 'sonyachna-panel-550w-mono';
+/** Панель без сідового залишку — залишки на ДВОХ тестових точках. */
 const TWO_POINTS_SLUG = 'sonyachna-panel-600w-bifacial';
-/** Товари без сідового залишку — конкурентні кейси. */
+/** Товари без сідового залишку — конкурентні кейси (на системній точці). */
 const RACE_SLUG = 'stantsiya-nakopychennya-10kwh';
 const FLIP_RACE_SLUG = 'akumulyator-lifepo4-200ah';
 /** Товар без жодного рядка залишків — обліку немає. */
 const UNTRACKED_SLUG = 'invertor-gibrydnyi-8kw';
+/** Залишки на СИСТЕМНІЙ і на тестовій точці — третя ланка правила точки. */
+const FALLBACK_SLUG = 'akumulyator-lifepo4-100ah';
 // sort_order 10/11 — свідомо ДАЛІ за сідову точку (0): порядок показу без тайів.
 const POINT_A = 'Тестова точка A';
 const POINT_B = 'Тестова точка B';
@@ -2059,9 +2458,11 @@ interface IdRow { id: string }
 interface QtyRow { quantity: number }
 interface StatusRow { stock_status: string }
 
-const baseInput = (productId: string, quantity: number, methodId: string): NewOrderInput => ({
+const baseInput = (
+  productId: string, quantity: number, methodId: string, pickupPointId: string | null,
+): NewOrderInput => ({
   firstName: 'Тест', lastName: 'Покупець', email: 'buyer@example.test', phone: '+380000000000',
-  shippingMethodId: methodId, deliveryCity: null, deliveryAddress: null, pickupPointId: null,
+  shippingMethodId: methodId, deliveryCity: null, deliveryAddress: null, pickupPointId,
   paymentMethod: 'cash', notes: null, subtotal: 100 * quantity, shippingCost: 0,
   total: 100 * quantity, hasDifferentRecipient: false, recipientFirstName: null,
   recipientLastName: null, recipientPhone: null, recipientEmail: null,
@@ -2069,11 +2470,12 @@ const baseInput = (productId: string, quantity: number, methodId: string): NewOr
   items: [{ productId, modificationId: null, name: 'Позиція', price: 100, quantity, basePrice: null, discountData: null }],
 });
 
-describe('замовлення списує залишок', () => {
+describe('замовлення списує залишок і повертає його при скасуванні', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_order_stock');
   let dbUrl = '';
   let methodId = '';
+  let pointA = '';
   const ids: Record<string, string> = {};
 
   const idOf = async (slug: string): Promise<string> =>
@@ -2088,10 +2490,10 @@ describe('замовлення списує залишок', () => {
     ((await queryRows(dbUrl, `select stock_status from public.products where id = $1`, [productId])) as StatusRow[])[0].stock_status;
   const ordersCount = async (): Promise<number> =>
     ((await queryRows(dbUrl, `select count(*)::int as c from public.orders`)) as { c: number }[])[0].c;
-  const place = (productId: string, quantity: number) => {
+  const place = (productId: string, quantity: number, pickupPointId: string | null = null) => {
     const token = crypto.randomUUID();
     return withOrderTokenDb(token, (db, operator) =>
-      createOrder(db, null, token, baseInput(productId, quantity, methodId), operator));
+      createOrder(db, null, token, baseInput(productId, quantity, methodId, pickupPointId), operator));
   };
 
   beforeAll(async () => {
@@ -2103,30 +2505,50 @@ describe('замовлення списує залишок', () => {
       join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
     ]);
     [{ id: methodId }] = (await queryRows(dbUrl, `select id from public.shipping_methods where code = 'pickup'`)) as IdRow[];
-    for (const slug of [SEEDED_SLUG, TWO_POINTS_SLUG, RACE_SLUG, FLIP_RACE_SLUG, UNTRACKED_SLUG]) ids[slug] = await idOf(slug);
+    for (const slug of [SEEDED_SLUG, CANCEL_SLUG, TWO_POINTS_SLUG, RACE_SLUG, FLIP_RACE_SLUG, UNTRACKED_SLUG, FALLBACK_SLUG])
+      ids[slug] = await idOf(slug);
     await queryRows(dbUrl,
       `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
        values (gen_random_uuid(), $1, '${POINT_A}', 'вул. А, 1', 'Київ', true, 10),
               (gen_random_uuid(), $1, '${POINT_B}', 'вул. Б, 2', 'Київ', true, 11)`, [methodId]);
+    [{ id: pointA }] = (await queryRows(dbUrl,
+      `select id from public.pickup_points where name = '${POINT_A}'`)) as IdRow[];
+    // Конкурентні кейси — на СИСТЕМНІЙ точці (замовлення без самовивозу
+    // резолвиться саме туди); двоточковий кейс — на тестових точках; кейс
+    // третьої ланки правила — на обох одразу, щоб було видно, ЯКУ з активних
+    // точок вибрав резолв, коли системної немає.
     await queryRows(dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
        select gen_random_uuid(), pp.id, v.product_id::uuid, null, v.quantity
-         from (values ($1, '${POINT_A}', 2), ($1, '${POINT_B}', 3), ($2, '${POINT_A}', 3), ($3, '${POINT_A}', 2))
+         from (values ($1, '${POINT_A}', 3), ($1, '${POINT_B}', 2), ($2, 'SYSTEM', 3),
+                      ($3, 'SYSTEM', 2), ($4, 'SYSTEM', 2), ($4, '${POINT_A}', 2))
               as v(product_id, point_name, quantity)
-         join public.pickup_points pp on pp.name = v.point_name`,
-      [ids[TWO_POINTS_SLUG], ids[RACE_SLUG], ids[FLIP_RACE_SLUG]]);
+         join public.pickup_points pp
+           on (v.point_name = 'SYSTEM' and pp.is_system) or pp.name = v.point_name`,
+      [ids[TWO_POINTS_SLUG], ids[RACE_SLUG], ids[FLIP_RACE_SLUG], ids[FALLBACK_SLUG]]);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
 
   afterAll(async () => {
     await closeDbPool();
-    await dropTempDatabase(harness.url, dbName);
-    await harness.teardown();
+    // 🔴 Ключ прибирається, як у решті 15 харнес-тестів: `fileParallelism:
+    // false` не дає ізоляції процесу, тож лишений `DATABASE_URL` тек би в
+    // наступний файл сюїти.
+    delete process.env.DATABASE_URL;
+    if (dbUrl) await dropTempDatabase(harness.url, dbName);
+    await harness?.teardown();
   });
 
   it('передумова: демо-сід вмикає облік', async () => {
     const [{ value }] = (await queryRows(dbUrl, `select value from public.system_settings where key = 'stock_management'`)) as { value: { decrease_on_order: boolean } }[];
     expect(value.decrease_on_order).toBe(true);
+  });
+
+  it('передумова: демо-сід має рівно одну СИСТЕМНУ точку', async () => {
+    // 🔴 Саме на ній тримається крок 2 резолву: без неї замовлення без
+    // самовивозу пішло б у «першу активну», тобто в довільну роздрібну точку.
+    const rows = await queryRows(dbUrl, `select name from public.pickup_points where is_system`);
+    expect(rows).toHaveLength(1);
   });
 
   it('списує із сідового залишку і не чіпає статус, доки залишок є', async () => {
@@ -2148,8 +2570,40 @@ describe('замовлення списує залишок', () => {
     expect(await ordersCount()).toBe(before);
   });
 
-  it('списує з точок у порядку показу', async () => {
-    await place(ids[TWO_POINTS_SLUG], 3);
+  it('🔴 скасування ПОВЕРТАЄ залишок і статус: стан той самий, що до замовлення', async () => {
+    const before = await quantities(ids[CANCEL_SLUG]);
+    const beforeStatus = await statusOf(ids[CANCEL_SLUG]);
+    const order = await place(ids[CANCEL_SLUG], 3);
+    expect(await quantities(ids[CANCEL_SLUG])).toEqual([0]);
+    expect(await statusOf(ids[CANCEL_SLUG])).toBe('out_of_stock');
+
+    // Те саме, що робить `cancelMyOrder`, і в тому самому порядку: спершу
+    // читання ПІД АКТОРОМ (право доводить RLS), і лише потім ескалація в тій
+    // же транзакції. Сам serverFn потребує сесії Better Auth — його
+    // орчестрацію тримають typecheck і live-smoke.
+    await withOrderTokenDb(order.accessToken as string, async (db, operator) => {
+      expect(await loadOrderDetail(db, order.id)).not.toBeNull();
+      await operator((odb) => releaseOrderStock(odb, order.id));
+    });
+
+    expect(await quantities(ids[CANCEL_SLUG])).toEqual(before);
+    expect(await statusOf(ids[CANCEL_SLUG])).toBe(beforeStatus);
+  });
+
+  it('🔴 замовлення без самовивозу йде в СИСТЕМНУ точку: рядка там немає — відмова, а не тихий продаж', async () => {
+    const before = await ordersCount();
+    await expect(place(ids[TWO_POINTS_SLUG], 1)).rejects.toBeInstanceOf(InsufficientStockError);
+    expect(await ordersCount()).toBe(before);
+    expect(await quantities(ids[TWO_POINTS_SLUG])).toEqual([3, 2]);
+  });
+
+  it('🔴 одна точка не збирає залишок із сусідньої: 3+2 не продасть 4', async () => {
+    await expect(place(ids[TWO_POINTS_SLUG], 4, pointA)).rejects.toBeInstanceOf(InsufficientStockError);
+    expect(await quantities(ids[TWO_POINTS_SLUG])).toEqual([3, 2]);
+  });
+
+  it('списує рівно з названої точки; статус тримається СУМОЮ по точках', async () => {
+    await place(ids[TWO_POINTS_SLUG], 3, pointA);
     expect(await quantities(ids[TWO_POINTS_SLUG])).toEqual([0, 2]);
     expect(await statusOf(ids[TWO_POINTS_SLUG])).toBe('in_stock');
   });
@@ -2179,11 +2633,26 @@ describe('замовлення списує залишок', () => {
     expect(order.orderNumber).toMatch(/^\d{6}-[0-9A-F]{6}$/);
     expect(await statusOf(ids[UNTRACKED_SLUG])).toBe('in_stock');
   });
+
+  it('🔴 без системної точки резолв падає в ПЕРШУ АКТИВНУ за (sort_order, id)', async () => {
+    // Третя ланка правила Р2 — єдина, яку демо-сід сам не відтворює: у ньому
+    // рівно одна точка, і вона системна. Прапорець знімається на час кейса,
+    // лишаються три активні точки, і найменший sort_order у сідової (0 проти
+    // 10 і 11) — тож списання мусить піти саме в неї, а не в тестову.
+    await queryRows(dbUrl, `update public.pickup_points set is_system = false`);
+    try {
+      await place(ids[FALLBACK_SLUG], 1);
+      expect(await quantities(ids[FALLBACK_SLUG])).toEqual([1, 2]);
+    } finally {
+      await queryRows(dbUrl,
+        `update public.pickup_points set is_system = true where name = 'Склад у Києві'`);
+    }
+  });
 });
 ```
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts`
-Expected: FAIL (`operator` не існує; `InsufficientStockError` не експортується).
+Expected: FAIL (`operator` не існує; `InsufficientStockError` і `releaseOrderStock` не експортуються).
 
 - [ ] **Step 2: Scoped-ескалація в обгортках `loaders/db.ts` і прокидання через `withSessionDb`**
 
@@ -2201,14 +2670,15 @@ import type pg from 'pg';
  *
  * 🔴 Навіщо, коли є `withStoreOperatorDb`: списання залишку мусить бути в
  * ТІЙ САМІЙ транзакції, що й вставка замовлення (інакше замовлення без
- * списання або списання без замовлення), а скасування — у тій самій, що
- * й перевірка права (інакше між «перевірив» і «записав» — вікно). `app_user`
- * за `0002_grants.sql` має на `stock_by_pickup_point`/`products` лише SELECT
- * і не має UPDATE на `orders` — і це правильно: покупець не пише в облік і
- * не редагує замовлення. Тому роль перемикається рівно на час службової дії
- * тим самим `SET LOCAL ROLE`, яким її ставить `withActor`; runtime-роль має
- * `set true` на обидві (`0000_prelude.sql:94-95`), а членство Postgres
- * перевіряє проти session user, не проти поточної ролі.
+ * списання або списання без замовлення), а скасування з поверненням залишку
+ * — у тій самій, що й перевірка права (інакше між «перевірив» і «записав» —
+ * вікно). `app_user` за `0002_grants.sql` має на
+ * `products` (`:78`) і `stock_by_pickup_point` (`:87`) лише SELECT і не має
+ * UPDATE на `orders` (`:104`) — і це правильно: покупець не пише в облік і не редагує
+ * замовлення. Тому роль перемикається рівно на час службової дії тим самим
+ * `SET LOCAL ROLE`, яким її ставить `withActor`; runtime-роль має `set true`
+ * на обидві (`0000_prelude.sql:94-95`), а членство Postgres перевіряє проти
+ * session user, не проти поточної ролі.
  *
  * Правило використання — те саме, що в `withStoreOperatorDb`, лише всередині
  * однієї транзакції: викликати ПІСЛЯ того, як RLS уже прийняла читання чи
@@ -2228,14 +2698,38 @@ function escalationFor(
 ): OperatorEscalation {
   return async (fn) => {
     await client.query('set local role app_admin');
-    const result = await fn(db);
-    // 🔴 Роль повертається ЛИШЕ на success-path. Якщо `fn` кинув, транзакція
-    // вже aborted — будь-який наступний запит, включно з `set local role`,
-    // впав би з 25P02 і ЗАМАСКУВАВ би першопричину; outer rollback у
-    // `withActor` сам скидає SET LOCAL ROLE. Імʼя ролі — з валідованого `Actor`.
-    await client.query(`set local role ${actor.role}`);
-    return result;
+    try {
+      return await fn(db);
+    } finally {
+      await restoreRoleQuietly(client, actor);
+    }
   };
+}
+
+/**
+ * Повернення ролі актора, яке не підміняє собою первинну помилку.
+ *
+ * 🔴 Саме `finally`, а не success-path: `InsufficientStockError` кидається
+ * чистим JS ПІСЛЯ успішного `SELECT … FOR UPDATE`, тобто транзакція в цей
+ * момент ЖИВА — без повернення ролі решта транзакції лишилася б під
+ * `app_admin`, і ескалація пережила б `fn`, хоч контракт обіцяє «рівно на
+ * час `fn`».
+ *
+ * 🔴 І саме ТИХО — точно як `rollbackQuietly` (`db/with-actor.ts:81-87`):
+ * якщо `fn` упав ЗАПИТОМ, транзакція вже aborted, і `set local role` кинув
+ * би 25P02, замаскувавши першопричину. Гасити помилку тут безпечно: таку
+ * транзакцію `withActor` однаково відкотить, а ROLLBACK сам скидає
+ * `SET LOCAL ROLE`. Імʼя ролі — з валідованого `Actor`.
+ */
+async function restoreRoleQuietly(
+  client: pg.PoolClient,
+  actor: Actor,
+): Promise<void> {
+  try {
+    await client.query(`set local role ${actor.role}`);
+  } catch {
+    // Свідомо тихо — див. докблок вище.
+  }
 }
 
 export function withCustomerDb<T>(
@@ -2276,20 +2770,251 @@ export async function withSessionDb<T>(
 }
 ```
 
-(імпорт типу `OperatorEscalation` з `./db`).
+(імпорт типу `OperatorEscalation` з `./db`). Чинні викликачі
+(`server/profile.ts`, `server/order-view.ts`, `server/profile-orders.ts`)
+беруть один-два параметри й лишаються як є.
 
-- [ ] **Step 3: `stock-reservation.ts` — списання під `FOR UPDATE`; `createOrder` кличе його**
+- [ ] **Step 3: Розвантажити `order-create.ts` під канон 150 рядків**
 
-Створити `packages/simplycms/src/storefront/loaders/stock-reservation.ts`
-(🔴 окремий модуль, не дописування в `order-create.ts`: той уже 145 рядків, а
-канон `coding-style` — до 150 на файл; імпорти: `and, asc, eq, isNull` з
-`drizzle-orm`; `pickupPoints, productModifications, products,
-stockByPickupPoint, systemSettings` зі схеми; `type ActorDb` з `./db`;
-`type NewOrderItem` з `./order-create` — лише тип, тож цикл модулів не
-виникає). `reserveStock` — експортована; у `loaders/index.ts` —
-`export * from './stock-reservation';`:
+🔴 Крок не косметичний, а вимушений і виміряний: `order-create.ts` — рівно
+145 рядків (`wc -l`), а Step 5 додає туди ~12 (імпорт, пʼятий параметр,
+абзац докблока, виклик списання) — тобто 157 при канонічній межі 150
+(`coding-style.instructions.md:43`). Виносяться ЧИСТІ форми даних, яким і
+місце в `entities/` поруч із рештою рядкових типів.
+
+Створити `packages/simplycms/src/storefront/loaders/entities/new-order.ts` і
+перенести туди без змін `NewOrderItem` (`order-create.ts:8-17`),
+`NewOrderInput` (`:19-42`) і `CreatedOrder` (`:44-50`) разом із їхніми
+докблоками; імпорт `JsonValue` — з `./property` (той самий відносний рівень).
+В `order-create.ts` замість них — `import type { CreatedOrder, NewOrderInput }
+from './entities/new-order';` (сам `NewOrderItem` там більше не згадується).
+🔴 Разом із типами з `order-create.ts` ЙДЕ і `import type { JsonValue } from
+'./entities/property'` (`:4`): його єдиний споживач — `NewOrderItem.discountData`,
+тож після переїзду він стає мертвим і валить `no-unused-vars`.
+
+У `loaders/index.ts` — поруч із рештою явних експортів `entities/`:
 
 ```ts
+export type {
+  NewOrderItem,
+  NewOrderInput,
+  CreatedOrder,
+} from './entities/new-order';
+```
+
+🔴 Без цього рядка `export * from './order-create'` (`index.ts:12`) перестав
+би віддавати ці типи, і `server/checkout.ts:9` (`type NewOrderInput`) та
+харнес-тести зламалися б на порожньому місці.
+
+🔴 Наслідок для Task 10 — уже зведений у ред. 1.3, тут лишається орієнтиром:
+після цього кроку `NewOrderItem`, `NewOrderInput` і `CreatedOrder` живуть в
+`entities/new-order.ts`, тож Task 10 і імпортує їх звідти, і видаляє
+`CreatedOrder` саме там. Анотація повернення `createOrder` при цьому
+лишається в `order-create.ts` — у новий файл переїжджають лише форми даних,
+не функція.
+
+- [ ] **Step 4: `stock-write.ts` і `stock-status.ts` — точка, блокування рядків, статус цілі**
+
+🔴 Модулів чотири, а не один, і межа між ними — не смак, а канон 150 рядків
+на файл (`coding-style.instructions.md:43`): разом із правилами списання й
+повернення це ~365 рядків. Розкладка — по відповідальності: «де лежить
+залишок» (`stock-write.ts`, 112 рядків), «статус цілі» (`stock-status.ts`,
+51), «правила однієї позиції» (`stock-reservation.ts`, 113, Step 5) і «рівень
+замовлення» (`order-stock.ts`, 87, Step 5). Циклів між ними немає: залежності
+йдуть лише згори вниз — `order-stock` → `stock-reservation` → `stock-status` →
+`stock-write`, і жоден нижній модуль не знає про верхні.
+
+Створити `packages/simplycms/src/storefront/loaders/stock-write.ts`:
+
+```ts
+import { and, asc, desc, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { pickupPoints, stockByPickupPoint } from 'simplycms/schema';
+import type { ActorDb } from './db';
+
+/**
+ * Адресація обліку залишків (К2-Е0, Е0-3): яка точка обслуговує замовлення
+ * і як заблокувати рядки цілі в цій транзакції. Переворот статусу —
+ * `./stock-status`, правила «скільки списати й повернути» —
+ * `./stock-reservation`.
+ */
+
+/** Ціль обліку: модифікація має пріоритет над простим товаром. */
+export interface StockTarget {
+  productId: string | null;
+  modificationId: string | null;
+}
+
+/** Позиція замовлення в тому вигляді, який потрібен обліку. */
+export interface StockLine extends StockTarget {
+  quantity: number;
+}
+
+/** Рядок залишку, заблокований `FOR UPDATE` у поточній транзакції. */
+export interface LockedStockRow {
+  id: string;
+  pointId: string;
+  quantity: number;
+}
+
+/**
+ * Точка, яка обслуговує це замовлення, — рівно ОДНА і детермінована.
+ *
+ * Порядок: (1) точка самовивозу самого замовлення; (2) системна точка
+ * (`is_system` — склад магазину, звідки їдуть курʼєрські замовлення);
+ * (3) перша активна за `(sort_order, id)`.
+ *
+ * 🔴 `is_system` навмисно НЕ фільтрується по `is_active`: `is_active` керує
+ * тим, чи пропонувати точку покупцеві як самовивіз (`loadPickupPoints`), а
+ * не тим, чи існує склад. Системна точка обслуговує облік і тоді, коли
+ * магазин прибрав її з вибору самовивозу.
+ *
+ * 🔴 `null` означає «точок немає взагалі» — облік у такому магазині вести
+ * нічим, і write-side не вигадує його за магазин.
+ */
+export async function resolveStockPoint(
+  db: ActorDb,
+  pickupPointId: string | null,
+): Promise<string | null> {
+  if (pickupPointId) return pickupPointId;
+  const [row] = await db
+    .select({ id: pickupPoints.id })
+    .from(pickupPoints)
+    .where(or(eq(pickupPoints.isSystem, true), eq(pickupPoints.isActive, true)))
+    .orderBy(
+      desc(pickupPoints.isSystem),
+      asc(pickupPoints.sortOrder),
+      asc(pickupPoints.id),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Предикат цілі: модифікація або простий товар (`modification_id is null`). */
+function targetScope(target: StockTarget): SQL | undefined {
+  return target.modificationId
+    ? eq(stockByPickupPoint.modificationId, target.modificationId)
+    : and(
+        eq(stockByPickupPoint.productId, target.productId as string),
+        isNull(stockByPickupPoint.modificationId),
+      );
+}
+
+/**
+ * Залишки цілі по точках, які взагалі можуть обслужити замовлення, —
+ * заблоковані `FOR UPDATE OF stock_by_pickup_point`.
+ *
+ * 🔴 Беруться ВСІ такі рядки, хоч списується рівно один: цей самий знімок
+ * відповідає на два питання, на які інакше довелося б відповідати окремими
+ * (і вже неблокованими) запитами — «чи веде магазин облік цієї цілі взагалі»
+ * і «яка сума по точках після операції» (від неї фліп статусу). Предикат
+ * точок — той самий, що в `resolveStockPoint`, інакше сума рахувалася б по
+ * рядках, які нікого не обслуговують.
+ *
+ * 🔴 `of: stockByPickupPoint` обовʼязкове: у запиті є join на `pickup_points`,
+ * а блокувати треба лише залишки (діалект емітить `for update of
+ * "stock_by_pickup_point"`). Порядок `(sort_order, id)` — однаковий у всіх
+ * транзакціях, тож рядки однієї цілі захоплюються в тій самій послідовності.
+ */
+export async function lockTargetStock(
+  db: ActorDb,
+  target: StockTarget,
+): Promise<LockedStockRow[]> {
+  return db
+    .select({
+      id: stockByPickupPoint.id,
+      pointId: stockByPickupPoint.pickupPointId,
+      quantity: stockByPickupPoint.quantity,
+    })
+    .from(stockByPickupPoint)
+    .innerJoin(
+      pickupPoints,
+      eq(pickupPoints.id, stockByPickupPoint.pickupPointId),
+    )
+    .where(
+      and(
+        targetScope(target),
+        or(eq(pickupPoints.isSystem, true), eq(pickupPoints.isActive, true)),
+      ),
+    )
+    .orderBy(asc(pickupPoints.sortOrder), asc(stockByPickupPoint.id))
+    .for('update', { of: stockByPickupPoint });
+}
+```
+
+Далі — `packages/simplycms/src/storefront/loaders/stock-status.ts`:
+
+```ts
+import { and, eq, isNull, or } from 'drizzle-orm';
+import { productModifications, products } from 'simplycms/schema';
+import type { ActorDb } from './db';
+import type { StockTarget } from './stock-write';
+
+/**
+ * Переводить статус цілі — ГВАРДОВАНО.
+ *
+ * 🔴 `on_order` не чіпається ніколи: «під замовлення» — рішення магазину, що
+ * товар продається й на нулі (`isPurchasable('on_order') === true`, Task 8),
+ * і безумовний фліп затер би його. Тому в `out_of_stock` переходять лише
+ * `in_stock` і NULL, а назад в `in_stock` — лише `out_of_stock`.
+ *
+ * 🔴 Матриця сама по собі пари взаємно оберненою НЕ робить: `in_stock` і
+ * NULL зводяться в `out_of_stock` в один стан. Умову «повернути рівно те, що
+ * було» тримає ВИКЛИКАЧ — `releaseStock` фліпає назад лише з нуля (див. його
+ * гвард), інакше скасування старого замовлення підняло б у продаж товар,
+ * який магазин зняв вручну.
+ *
+ * 🔴 `updatedAt` — `Date`, а не ISO-рядок: після «Контракту дат» (Е0-2) усі
+ * timestamp схеми — `mode: 'date'`, тож запис рядка сюди — помилка типу.
+ */
+export async function setTargetStatus(
+  db: ActorDb,
+  target: StockTarget,
+  next: 'in_stock' | 'out_of_stock',
+): Promise<void> {
+  const updatedAt = new Date();
+  if (target.modificationId) {
+    const col = productModifications.stockStatus;
+    const from =
+      next === 'out_of_stock'
+        ? or(isNull(col), eq(col, 'in_stock'))
+        : eq(col, 'out_of_stock');
+    await db
+      .update(productModifications)
+      .set({ stockStatus: next, updatedAt })
+      .where(and(eq(productModifications.id, target.modificationId), from));
+    return;
+  }
+  if (!target.productId) return;
+  const col = products.stockStatus;
+  const from =
+    next === 'out_of_stock'
+      ? or(isNull(col), eq(col, 'in_stock'))
+      : eq(col, 'out_of_stock');
+  await db
+    .update(products)
+    .set({ stockStatus: next, updatedAt })
+    .where(and(eq(products.id, target.productId), from));
+}
+```
+
+🔴 `stock-write.ts` і `stock-status.ts` у `loaders/index.ts` **не**
+реекспортуються: назовні потрібні лише правила (`./stock-reservation`) і
+рівень замовлення (`./order-stock`), а `lockTargetStock` та `setTargetStatus`
+— внутрішні примітиви, які в публічному API лише запрошували б обійти
+правила (та сама логіка, що й у коментарі `index.ts:31-37` про мапи колонок).
+
+- [ ] **Step 5: `stock-reservation.ts` і `order-stock.ts` — списання й повернення; `createOrder` кличе списання**
+
+Створити `packages/simplycms/src/storefront/loaders/stock-reservation.ts` —
+правила ОДНІЄЇ позиції:
+
+```ts
+import { eq } from 'drizzle-orm';
+import { stockByPickupPoint } from 'simplycms/schema';
+import type { ActorDb } from './db';
+import { setTargetStatus } from './stock-status';
+import { lockTargetStock, type StockLine } from './stock-write';
+
 /** Нестача залишку: транзакція відкочується, замовлення не створюється. */
 export class InsufficientStockError extends Error {
   constructor(
@@ -2300,6 +3025,120 @@ export class InsufficientStockError extends Error {
     this.name = 'InsufficientStockError';
   }
 }
+
+/**
+ * Списує позицію з ОДНІЄЇ точки — тієї, що обслуговує замовлення.
+ *
+ * 🔴 Викликається ПІД `app_admin` (operator) у транзакції замовлення.
+ * Рядки залишків беруться `FOR UPDATE`: доки транзакція не завершилась, вони
+ * наші, тож і достатність, і переворот статусу рахуються від РЕАЛЬНОГО
+ * залишку, а не від знімка до чужого коміту (два паралельні замовлення по
+ * одиниці на залишок 2 інакше лишили б нуль при `in_stock`).
+ *
+ * Дві різні відсутності — два різні наслідки, і плутати їх не можна:
+ * жодного рядка по жодній ОБСЛУГОВУЮЧІЙ точці (`is_active` або `is_system` —
+ * предикат `lockTargetStock`) — магазин обліку цієї цілі НЕ веде, вихід без
+ * змін; рядки на обслуговуючих точках є, але не на нашій (або їх там менше)
+ * — облік ведеться, а точка не покриває, тобто `InsufficientStockError`, а
+ * не тихий продаж із повітря. Залишок, що лежить лише на закритій точці,
+ * навмисно потрапляє в ПЕРШУ гілку: read-side його теж не бачить
+ * (`stock-info.ts:76`).
+ *
+ * Коли сума по точках стає 0 — статус переводиться в `out_of_stock`: саме
+ * так read-side правило `isPurchasable` (статус, не кількість) лишається
+ * правдивим для магазину, що веде облік. Фліп саме за СУМОЮ, а не за нашою
+ * точкою: товар із залишком на сусідній точці інакше зникав би з продажу
+ * разом із першою спорожнілою.
+ */
+export async function reserveStock(
+  db: ActorDb,
+  line: StockLine,
+  pointId: string,
+): Promise<void> {
+  // Позиція без цілі обліку (ні товару, ні модифікації) — нічого списувати.
+  if (!line.modificationId && !line.productId) return;
+  const rows = await lockTargetStock(db, line);
+  if (rows.length === 0) return;
+
+  const row = rows.find((candidate) => candidate.pointId === pointId);
+  if (!row || row.quantity < line.quantity) {
+    throw new InsufficientStockError(line.productId, line.modificationId);
+  }
+
+  await db
+    .update(stockByPickupPoint)
+    .set({
+      quantity: row.quantity - line.quantity,
+      updatedAt: new Date(),
+    })
+    .where(eq(stockByPickupPoint.id, row.id));
+
+  const left =
+    rows.reduce((sum, item) => sum + item.quantity, 0) - line.quantity;
+  if (left === 0) await setTargetStatus(db, line, 'out_of_stock');
+}
+
+/**
+ * Повертає позицію В ТУ САМУ точку — дзеркало `reserveStock`.
+ *
+ * 🔴 Не кидає, якщо рядка на точці більше немає: точку могли закрити або
+ * прибрати рядок обліку між замовленням і скасуванням, а скасування — право
+ * покупця, і воно не сміє впасти через стан складу. Повертати в такому разі
+ * нікуди, і вигадувати рядок замість магазину write-side не буде. Випадок
+ * «точку ВИДАЛИЛИ після оформлення» сюди не доходить: `releaseOrderStock`
+ * резолвить уже іншу точку, і кількість ляже на неї — названа межа правила
+ * Р2 вище.
+ *
+ * 🔴 Дзеркало не абсолютне, і це свідомо: кількість повертається завжди, а
+ * статус — лише з нуля (гвард нижче).
+ */
+export async function releaseStock(
+  db: ActorDb,
+  line: StockLine,
+  pointId: string,
+): Promise<void> {
+  if (!line.modificationId && !line.productId) return;
+  const rows = await lockTargetStock(db, line);
+  if (rows.length === 0) return;
+  const row = rows.find((candidate) => candidate.pointId === pointId);
+  if (!row) return;
+
+  // Сума ДО повернення — із того самого заблокованого знімка.
+  const before = rows.reduce((sum, item) => sum + item.quantity, 0);
+
+  await db
+    .update(stockByPickupPoint)
+    .set({
+      quantity: row.quantity + line.quantity,
+      updatedAt: new Date(),
+    })
+    .where(eq(stockByPickupPoint.id, row.id));
+
+  // 🔴 Фліп назад — ЛИШЕ коли до повернення сума по точках була нулем: інакше
+  // `out_of_stock` поставив не цей облік, а магазин (зняв товар з продажу при
+  // ненульовому залишку), і скасування старого замовлення тихо скасувало б це
+  // рішення. Дзеркальний вигляд `if (before + line.quantity > 0)` умовою не є
+  // взагалі: `quantity` позиції завжди ≥ 1 (`order_items_positive_quantity`,
+  // `schema.ts:247`), тобто такий гвард істинний завжди.
+  if (before === 0) await setTargetStatus(db, line, 'in_stock');
+}
+```
+
+Далі — `packages/simplycms/src/storefront/loaders/order-stock.ts`: тумблер
+обліку, однаковий порядок блокувань і дві «замовленнєві» обгортки. У
+`loaders/index.ts` — `export * from './stock-reservation';` і
+`export * from './order-stock';`:
+
+```ts
+import { eq } from 'drizzle-orm';
+import { orderItems, orders, systemSettings } from 'simplycms/schema';
+import type { ActorDb } from './db';
+import { releaseStock, reserveStock } from './stock-reservation';
+import {
+  resolveStockPoint,
+  type StockLine,
+  type StockTarget,
+} from './stock-write';
 
 /** Налаштування обліку: чи списувати залишок при оформленні. */
 export async function loadStockManagement(
@@ -2315,120 +3154,189 @@ export async function loadStockManagement(
 }
 
 /**
- * Списує `quantity` позиції з точок видачі в порядку показу.
- *
- * 🔴 Викликається ПІД `app_admin` (operator) у транзакції замовлення.
- * Рядки залишків беруться `FOR UPDATE OF stock_by_pickup_point`: доки
- * транзакція не завершилась, вони наші, тож і `available`, і переворот
- * статусу рахуються від РЕАЛЬНОГО залишку, а не від знімка до чужого коміту
- * (два паралельні замовлення по одиниці на залишок 2 інакше лишили б нуль
- * при `in_stock`). Без рядків залишків — облік для цілі не ведеться, нічого
- * не змінюється. Коли сума по цілі стає 0 — статус переводиться в
- * `out_of_stock`: саме так read-side правило `isPurchasable` (статус, не
- * кількість) лишається правдивим для магазину, що веде облік.
+ * Однаковий порядок блокувань у всіх транзакціях: два кошики з тими самими
+ * товарами в різному порядку інакше могли б зійтися в дедлок (40P01).
+ * Той самий порядок — і на поверненні.
  */
-export async function reserveStock(db: ActorDb, item: NewOrderItem): Promise<void> {
-  // Позиція без цілі обліку (продукт і модифікація відсутні) — нічого списувати.
-  if (!item.modificationId && !item.productId) return;
-  const scope = item.modificationId
-    ? eq(stockByPickupPoint.modificationId, item.modificationId)
-    : and(
-        eq(stockByPickupPoint.productId, item.productId!),
-        isNull(stockByPickupPoint.modificationId),
-      );
-  const rows = await db
-    .select({ id: stockByPickupPoint.id, quantity: stockByPickupPoint.quantity })
-    .from(stockByPickupPoint)
-    .innerJoin(pickupPoints, eq(pickupPoints.id, stockByPickupPoint.pickupPointId))
-    .where(and(scope, eq(pickupPoints.isActive, true)))
-    .orderBy(asc(pickupPoints.sortOrder), asc(stockByPickupPoint.id))
-    .for('update', { of: stockByPickupPoint });
-  if (rows.length === 0) return;
+function sortForLock<T extends StockTarget>(lines: T[]): T[] {
+  return [...lines].sort((a, b) =>
+    `${a.productId}/${a.modificationId}`.localeCompare(
+      `${b.productId}/${b.modificationId}`,
+    ),
+  );
+}
 
-  const available = rows.reduce((sum, row) => sum + row.quantity, 0);
-  if (available < item.quantity) {
-    throw new InsufficientStockError(item.productId, item.modificationId);
-  }
+/** Списати залишок усього замовлення — під ескалацією, у його транзакції. */
+export async function reserveOrderStock(
+  db: ActorDb,
+  lines: StockLine[],
+  pickupPointId: string | null,
+): Promise<void> {
+  const { decrease_on_order } = await loadStockManagement(db);
+  if (!decrease_on_order) return;
+  const pointId = await resolveStockPoint(db, pickupPointId);
+  if (!pointId) return;
+  for (const line of sortForLock(lines)) await reserveStock(db, line, pointId);
+}
 
-  let left = item.quantity;
-  for (const row of rows) {
-    if (left === 0) break;
-    const take = Math.min(row.quantity, left);
-    if (take === 0) continue;
-    await db
-      .update(stockByPickupPoint)
-      .set({ quantity: row.quantity - take, updatedAt: new Date() })
-      .where(eq(stockByPickupPoint.id, row.id));
-    left -= take;
-  }
+/**
+ * Повернути залишок усього замовлення — під ескалацією, у транзакції
+ * скасування.
+ *
+ * 🔴 Позиції й точка читаються З БАЗИ за `orderId`, а не приймаються
+ * параметром: на скасуванні кошика в руках немає, а `orders.pickup_point_id`
+ * — це і є та сама точка, у яку списували. Тому повернення точне без
+ * окремої таблиці резервів. Той самий тумблер `decrease_on_order`, що й на
+ * списанні: магазин без обліку скасуванням нічого не чіпає.
+ */
+export async function releaseOrderStock(
+  db: ActorDb,
+  orderId: string,
+): Promise<void> {
+  const { decrease_on_order } = await loadStockManagement(db);
+  if (!decrease_on_order) return;
 
-  if (available === item.quantity) {
-    const flip = { stockStatus: 'out_of_stock' as const, updatedAt: new Date() };
-    if (item.modificationId) {
-      await db.update(productModifications).set(flip).where(eq(productModifications.id, item.modificationId));
-    } else {
-      await db.update(products).set(flip).where(eq(products.id, item.productId!));
-    }
-  }
+  const [order] = await db
+    .select({ pickupPointId: orders.pickupPointId })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+  if (!order) return;
+
+  const pointId = await resolveStockPoint(db, order.pickupPointId);
+  if (!pointId) return;
+
+  const lines = await db
+    .select({
+      productId: orderItems.productId,
+      modificationId: orderItems.modificationId,
+      quantity: orderItems.quantity,
+    })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId));
+
+  for (const line of sortForLock(lines)) await releaseStock(db, line, pointId);
 }
 ```
 
-У `order-create.ts`: імпорт `import { loadStockManagement, reserveStock } from
-'./stock-reservation';` і `type OperatorEscalation` з `./db`; сигнатуру
-`createOrder` розширити пʼятим параметром `operator: OperatorEscalation`, а
-після вставки `orderItems` (перед `return`):
+У `order-create.ts`: імпорт `import { reserveOrderStock } from
+'./order-stock';`, тип `OperatorEscalation` — у наявний
+`import type { ActorDb } from './db';`; сигнатуру `createOrder` розширити
+пʼятим параметром `operator: OperatorEscalation`, а після вставки
+`orderItems` (перед `return`):
 
 ```ts
-  // 🔴 Списання — після того, як RLS прийняла вставку замовлення й позицій
-  // покупцем: право на цю транзакцію вже доведено, службова дія йде під
-  // операторською роллю в тій самій транзакції (див. `escalationFor`).
-  const { decrease_on_order } = await loadStockManagement(db);
-  if (decrease_on_order) {
-    // Однаковий порядок блокувань у всіх транзакціях: два кошики з тими
-    // самими товарами в різному порядку інакше могли б зійтися в дедлок (40P01).
-    const ordered = [...input.items].sort((a, b) =>
-      `${a.productId}/${a.modificationId}`.localeCompare(`${b.productId}/${b.modificationId}`),
-    );
-    await operator(async (odb) => {
-      for (const item of ordered) await reserveStock(odb, item);
-    });
-  }
+  // 🔴 Списання — ПІСЛЯ того, як RLS прийняла вставку замовлення й позицій
+  // покупцем: право на цю транзакцію вже доведено, а службова дія йде під
+  // операторською роллю в ТІЙ САМІЙ транзакції (див. `escalationFor`).
+  // `NewOrderItem` структурно є `StockLine`, тож перекладати нічого.
+  await operator((odb) =>
+    reserveOrderStock(odb, input.items, input.pickupPointId),
+  );
 ```
+
+🔴 `InsufficientStockError`, кинутий усередині `operator`, виходить назовні
+через `finally`: `restoreRoleQuietly` віддає роль актора (на цьому кидку
+транзакція ще жива), а далі `withActor` відкочує її цілком, тож рядка в
+`orders` не лишиться (кейс «нестача — відмова» це й пінить).
 
 Викликачі `createOrder` без `operator` — передати його з обгортки:
 `storefront-personal-data.test.ts:185,206,228` →
 `withCustomerDb(userA, (db, operator) => createOrder(db, userA, null, orderInput('alice'), operator))`
 (і так само для гостя з `withOrderTokenDb`); у `checkout.ts` `run` приймає
 `fn(db, operator)` і передає `operator` у `createOrder` — лише щоб `typecheck`
-був зелений (`run` цілком переписується в Task 10).
+був зелений (`run` цілком переписується в Task 10). У його імпорті з
+`simplycms/storefront/loaders` (`:3-11`) до `type ActorDb` додається
+`type OperatorEscalation`:
+
+```ts
+    const run = <T>(
+      fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
+    ): Promise<T> =>
+      userId === null
+        ? withOrderTokenDb(accessToken as string, fn)
+        : withCustomerDb(userId, fn);
+
+    return run(async (db, operator) => {
+      const savedRecipientId = await resolveRecipient(db, userId, input);
+      return createOrder(
+        db,
+        userId,
+        accessToken,
+        toOrderInput(input, savedRecipientId),
+        operator,
+      );
+    });
+```
 
 Run: `pnpm typecheck && pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts`
-Expected: PASS (8 кейсів).
+Expected: PASS (13 кейсів).
 
-- [ ] **Step 4: Негативний контроль ролі — списання без ескалації падає**
+- [ ] **Step 6: Негативний контроль ролі — списання без ескалації падає**
 
-Тимчасово в `createOrder` замінити `await operator(async (odb) => …)` на
-`await (async () => { for (const item of ordered) await reserveStock(db, item); })()`
+Тимчасово в `createOrder` замінити `await operator((odb) => reserveOrderStock(…))`
+на `await reserveOrderStock(db, input.items, input.pickupPointId);`
 і прогнати той самий тест.
 
 Expected: кейс «списує із сідового залишку» FAIL із `permission denied for
 table stock_by_pickup_point` вже на `SELECT … FOR UPDATE` (блокування вимагає
-права UPDATE) — доказ, що `app_user` не пише в облік і ескалація не
+права UPDATE, а `app_user` має на цю таблицю лише SELECT —
+`0002_grants.sql:87`) — доказ, що покупець у облік не пише і ескалація не
 декоративна. Повернути правку ВРУЧНУ (`order-create.ts` — трекований файл з
 іншими змінами задачі, `git checkout` відкотив би все), тест знову PASS.
 
-- [ ] **Step 5: `cancelMyOrder` — одна транзакція замість трьох**
+- [ ] **Step 7: `cancelMyOrder` — одна транзакція: право, повернення залишку, статус**
 
-У `storefront-routes/server/profile-orders.ts:60-82`:
+Спершу — блокування рядка замовлення. У `loaders/orders.ts` (після
+`setOrderStatus`, файл лишається в межах канону: 113 → ~139 рядків):
 
 ```ts
+/**
+ * Блокує рядок замовлення й віддає його поточний статус.
+ *
+ * 🔴 Виконується під `app_admin` (ескалація): `select … for update` вимагає
+ * права UPDATE, якого `app_user` на `orders` не має за побудовою
+ * (`0002_grants.sql:104`).
+ *
+ * 🔴 Потрібне саме блокування, а не «ще одна перевірка статусу»: подвійний
+ * клік по «Скасувати» дає ДВІ паралельні транзакції, і під READ COMMITTED
+ * обидві прочитали б `new` — залишок повернувся б ДВІЧІ. Заблокований рядок
+ * пропускає рівно одну; друга бачить уже змінений `status_id` і виходить.
+ */
+export async function lockOrderStatus(
+  db: ActorDb,
+  orderId: string,
+): Promise<{ statusId: string | null } | null> {
+  const [row] = await db
+    .select({ statusId: orders.statusId })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1)
+    .for('update');
+
+  return row ?? null;
+}
+```
+
+Далі — `storefront-routes/server/profile-orders.ts:50-80`:
+
+```ts
+/**
+ * Скасувати власне замовлення — ОДНІЄЮ транзакцією.
+ *
+ * 🔴 Право доводиться читанням під актором покупця (RLS віддасть рядок лише
+ * власнику), запис — ескалацією в ТІЙ САМІЙ транзакції. Три транзакції ред.
+ * до К2-Е0 лишали вікно між «перевірив» і «записав», а тепер вікна немає за
+ * побудовою: між перевіркою і записом транзакція не завершується.
+ *
+ * 🔴 Порядок усередині ескалації обовʼязковий: блокування рядка замовлення →
+ * повернення залишку → статус. Повернення ПІСЛЯ статусу лишало б стан, у
+ * якому замовлення вже скасоване, а склад ще ні.
+ */
 export const cancelMyOrder = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data: input }): Promise<OrderCancelResult> => {
     const { orderId } = input as { orderId: string };
-    // 🔴 ОДНА транзакція: право доводиться читанням під актором покупця
-    // (RLS віддасть рядок лише власнику), запис — ескалацією в ній же. Три
-    // транзакції ред. до К2-Е0 лишали вікно між «перевірив» і «записав».
     return withSessionDb(async (db, _userId, operator) => {
       const own = await loadOrderDetail(db, orderId);
       if (!own) return { ok: false, reason: 'not_found' };
@@ -2437,61 +3345,96 @@ export const cancelMyOrder = createServerFn({ method: 'POST' })
       }
       const cancelled = await loadStatusByCode(db, CANCELLED);
       if (!cancelled) return { ok: false, reason: 'status_missing' };
-      await operator((odb) => setOrderStatus(odb, orderId, cancelled.id));
-      return { ok: true };
+
+      const done = await operator(async (odb) => {
+        const locked = await lockOrderStatus(odb, orderId);
+        // Хтось випередив (подвійний клік, адмінка) — повернення НЕ повторюємо.
+        if (!locked || locked.statusId !== own.status_id) return false;
+        await releaseOrderStock(odb, orderId);
+        await setOrderStatus(odb, orderId, cancelled.id);
+        return true;
+      });
+
+      return done ? { ok: true } : { ok: false, reason: 'not_cancellable' };
     });
   });
 ```
 
-Докблок над функцією переписати відповідно (перший абзац про «два акти»
-замінити на абзац вище); з імпортів прибрати `withStoreOperatorDb`
-(`withStorefrontDb` лишається для `getOrderStatuses`). У
-`storefront-personal-data.test.ts` позитивна гілка скасування (`:251-253`,
+З імпортів прибрати `withStoreOperatorDb`, додати `lockOrderStatus` і
+`releaseOrderStock` (`withStorefrontDb` лишається для `getOrderStatuses`).
+🔴 `loadStatusByCode` тепер читається під актором покупця, а не окремою
+транзакцією вітрини: `order_statuses` — публічний довідник із грантом SELECT
+для `app_user` (`0002_grants.sql:71`), тож зайва транзакція була лише
+історією.
+
+У `storefront-personal-data.test.ts` позитивна гілка скасування (`:251-253`,
 `await withStoreOperatorDb((db) => setOrderStatus(...))`) →
 `withCustomerDb(userA, (db, operator) => operator((odb) => setOrderStatus(odb, created.id, cancelled!.id)))`,
 а імпорт `withStoreOperatorDb` (`:24`) — прибрати (інших входжень у файлі
 немає); негативний контроль (прямий `setOrderStatus` під `app_user` →
-`permission denied` у `cause`, `:228-250`) лишається як є.
+`permission denied` у `cause`, `:226-249`) лишається як є.
 
 Run: `pnpm typecheck && pnpm test:schema`
 Expected: PASS.
 
-- [ ] **Step 6: Канон `data-access` — правило ескалації**
+- [ ] **Step 8: Канон `data-access` — правило ескалації**
 
 У `.github/instructions/data-access.instructions.md`, розділ «Storefront (SSR)»,
 після пункту про `withStorefrontDb` додати:
 
 ```markdown
 - 🔴 **Ескалація ролі покупцем.** Службова дія, яку **ініціює покупець** у
-  власній транзакції (списання залишку при оформленні, скасування свого
-  замовлення), виконується через `operator(fn)` — другий аргумент `fn` у
-  `withCustomerDb`/`withOrderTokenDb` (третій у `withSessionDb`): `SET LOCAL
-  ROLE app_admin` рівно на час `fn`, ПІСЛЯ того, як RLS уже прийняла читання
-  чи запис покупця в цій транзакції, і лише над обліком магазину. Дія, яку
-  **ініціює сервер або адмінка** (реєстр плагінів, конфіг плагіна,
-  модерація), — `withStoreOperatorDb`. Дві транзакції «спершу перевірити,
-  потім писати з іншої ролі» — заборонена форма: між ними вікно. Гейти —
-  `test-harness/pg/__tests__/order-stock.test.ts` (негативний контроль:
-  списання без `operator` → `permission denied`), `storefront-personal-data.test.ts`.
+  власній транзакції (списання залишку при оформленні, повернення залишку й
+  скасування свого замовлення), виконується через `operator(fn)` — другий
+  аргумент `fn` у `withCustomerDb`/`withOrderTokenDb` (третій у
+  `withSessionDb`): `SET LOCAL ROLE app_admin` рівно на час `fn`, ПІСЛЯ того,
+  як RLS уже прийняла читання чи запис покупця в цій транзакції, і лише над
+  обліком магазину. Дія, яку **ініціює сервер або адмінка** (реєстр плагінів,
+  конфіг плагіна, модерація), — `withStoreOperatorDb`. Дві транзакції «спершу
+  перевірити, потім писати з іншої ролі» — заборонена форма: між ними вікно.
+  Дію, яку можна натиснути двічі, всередині ескалації додатково прикриває
+  блокування рядка (`lockOrderStatus`), бо READ COMMITTED сам по собі двох
+  однакових скасувань не розрізняє. Гейти —
+  `test-harness/pg/__tests__/order-stock.test.ts` (його позитивні кейси
+  проходять ЛИШЕ під ескалацією: без `operator` списання падає вже на
+  `SELECT … FOR UPDATE` з `permission denied`, бо `app_user` має на
+  `stock_by_pickup_point` тільки SELECT — `0002_grants.sql:87`);
+  `storefront-personal-data.test.ts` — комітований негативний контроль
+  сусідньої межі: `setOrderStatus` під `app_user` → `permission denied` у
+  `cause`.
 ```
 
-- [ ] **Step 7: Гейти й коміт**
+- [ ] **Step 9: Гейти й коміт**
 
 ```bash
+wc -l packages/simplycms/src/storefront/loaders/{order-create,orders,stock-write,stock-status,stock-reservation,order-stock}.ts packages/simplycms/src/storefront/loaders/entities/new-order.ts
 pnpm format:check && pnpm lint && pnpm test && pnpm test:schema
-git add packages/simplycms/src/storefront/loaders/db.ts packages/simplycms/src/storefront/loaders/session.ts packages/simplycms/src/storefront/loaders/stock-reservation.ts packages/simplycms/src/storefront/loaders/order-create.ts packages/simplycms/src/storefront/loaders/index.ts packages/simplycms/src/storefront-routes/server/checkout.ts packages/simplycms/src/storefront-routes/server/profile-orders.ts packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts packages/simplycms/test-harness/pg/__tests__/storefront-personal-data.test.ts .github/instructions/data-access.instructions.md
-git commit -m "feat(k2-e0): замовлення списує залишок під FOR UPDATE в транзакції покупця; cancelMyOrder — одна транзакція
+git add packages/simplycms/src/storefront/loaders/db.ts packages/simplycms/src/storefront/loaders/session.ts packages/simplycms/src/storefront/loaders/entities/new-order.ts packages/simplycms/src/storefront/loaders/stock-write.ts packages/simplycms/src/storefront/loaders/stock-status.ts packages/simplycms/src/storefront/loaders/stock-reservation.ts packages/simplycms/src/storefront/loaders/order-stock.ts packages/simplycms/src/storefront/loaders/order-create.ts packages/simplycms/src/storefront/loaders/orders.ts packages/simplycms/src/storefront/loaders/index.ts packages/simplycms/src/storefront-routes/server/checkout.ts packages/simplycms/src/storefront-routes/server/profile-orders.ts packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts packages/simplycms/test-harness/pg/__tests__/storefront-personal-data.test.ts .github/instructions/data-access.instructions.md
+git commit -m "feat(k2-e0): замовлення списує залишок в одній точці під FOR UPDATE; скасування повертає його тією ж транзакцією
 
-Ескалація до app_admin — scoped, усередині транзакції покупця, після
-RLS-прийнятого запису; app_user на облік не пише (негативний контроль —
-permission denied без ескалації). Залишки читаються під FOR UPDATE, тож
-арифметика й переворот статусу — від реального залишку (два конкурентні по 1
-на залишок 2 → out_of_stock); нестача — InsufficientStockError і відкат без
-рядка в orders. Той самий механізм замінив три транзакції cancelMyOrder;
-правило — у data-access (Е0-3)."
+Точка обліку — детермінована: точка самовивозу замовлення, інакше системна,
+інакше перша активна; списання й повернення йдуть у ту саму точку, тож
+резервів окремою таблицею не треба. Ескалація до app_admin — scoped, усередині
+транзакції покупця, після RLS-прийнятого запису; app_user на облік не пише
+(негативний контроль — permission denied без ескалації). Залишки читаються під
+FOR UPDATE, тож арифметика й переворот статусу — від реального залишку (два
+конкурентні по 1 на залишок 2 → out_of_stock); нестача — InsufficientStockError
+і відкат без рядка в orders. cancelMyOrder з трьох транзакцій став однією і
+повертає залишок під блокуванням рядка замовлення (подвійний клік не повертає
+двічі). Схему й гранти етап не чіпає: app_admin уже має повний доступ до
+stock_by_pickup_point. Правило — у data-access (Е0-3)."
 ```
 
+- [ ] **DoD Task 9:** `pnpm test:schema` зелений, у ньому `order-stock.test.ts`
+  — 13 кейсів; `wc -l` кожного зачепленого модуля ≤ 150 (очікувані: `stock-write`
+  112, `stock-status` 51, `stock-reservation` 113, `order-stock` 87,
+  `entities/new-order` ~48, `order-create` ~115, `orders` ~139 — розбіжність у
+  кілька рядків після `prettier` нормальна, вихід за 150 — ні); негативний
+  контроль Step 6 показав `permission denied` і повернутий; `grep -rn
+  "withStoreOperatorDb" packages/simplycms/src/storefront-routes` порожній.
+
 ---
+
 ### Task 10: Чекаут — сервер рахує і відмовляє доменно; контракт у T0 (Е0-4, сервер)
 
 **Files:**
@@ -2500,8 +3443,9 @@ permission denied без ескалації). Залишки читаються 
 - Modify: `packages/simplycms/src/storefront-routes/server/checkout.ts`
 - Create: `packages/simplycms/src/storefront/loaders/checkout-items.ts`
 - Create: `packages/simplycms/src/storefront/loaders/place-order.ts`
-- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts` (інтерфейс `CreatedOrder` після `NewOrderInput` і тип повернення `createOrder` → `PlacedOrder`; номери рядків після Task 9 зсунуті)
-- Modify: `packages/simplycms/src/storefront/loaders/index.ts` (реекспорт двох нових модулів)
+- Modify: `packages/simplycms/src/storefront/loaders/entities/new-order.ts` (інтерфейс `CreatedOrder` видаляється — його місце займає `PlacedOrder` з T0; сам файл створює Task 9 Step 3)
+- Modify: `packages/simplycms/src/storefront/loaders/order-create.ts` (тип повернення `createOrder` → `PlacedOrder`; `CreatedOrder` зникає з `import type … from './entities/new-order'`, натомість `import type { PlacedOrder } from 'simplycms/contracts'`)
+- Modify: `packages/simplycms/src/storefront/loaders/index.ts` (реекспорт двох нових модулів + зняти `CreatedOrder` з блоку `export type … from './entities/new-order'`, доданого Task 9 Step 3)
 - Modify: `packages/simplycms/src/storefront-routes/pages/Checkout.tsx:170-262`
 - Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts`
 - Create: `packages/simplycms/test-harness/pg/__tests__/fixtures/discounts.ts`
@@ -2924,10 +3868,14 @@ export const checkoutInputSchema = z.object({
 (зникають `shippingCost`, ціни позицій, `discountData`, імпорт `JsonValue` з
 лоадерів і локальний `PlacedOrder`).
 
-`order-create.ts:45-49`: інтерфейс `CreatedOrder` видалити, `createOrder`
-повертає `Promise<PlacedOrder>` (`import type { PlacedOrder } from
-'simplycms/contracts'`); `checkout.ts` більше не імпортує `PlacedOrder` із
-`./checkout-input`.
+`entities/new-order.ts` (файл створює Task 9 Step 3, туди ж переїхали типи):
+інтерфейс `CreatedOrder` видалити — його місце займає `PlacedOrder` з T0. В
+`order-create.ts` — прибрати `CreatedOrder` з `import type { CreatedOrder,
+NewOrderInput } from './entities/new-order'`, додати `import type { PlacedOrder }
+from 'simplycms/contracts'` і повертати `Promise<PlacedOrder>`. У
+`loaders/index.ts` — зняти `CreatedOrder` з блоку реекспорту
+`./entities/new-order` (інакше TS2305 на неіснуючому типі). `checkout.ts`
+більше не імпортує `PlacedOrder` із `./checkout-input`.
 
 - [ ] **Step 4: Серверне ціноутворення й валідація**
 
@@ -2943,8 +3891,8 @@ import { resolvePrice } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
 import { loadDefaultUserCategoryId, loadUserCategoryId } from './categories';
 import { loadDiscountGroups } from './discounts';
+import type { NewOrderItem } from './entities/new-order';
 import type { JsonValue } from './entities/property';
-import type { NewOrderItem } from './order-create';
 import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
 import { loadUserPriceTypeId } from './profile';
 
@@ -3050,7 +3998,8 @@ import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
 import { findShippingZoneIn, resolveShippingRate } from 'simplycms/domain/shipping';
 import { withCustomerDb, withOrderTokenDb, type ActorDb, type OperatorEscalation } from './db';
 import { priceCheckoutItems } from './checkout-items';
-import { createOrder, type NewOrderInput, type NewOrderItem } from './order-create';
+import type { NewOrderInput, NewOrderItem } from './entities/new-order';
+import { createOrder } from './order-create';
 import { createRecipient } from './recipients';
 import { InsufficientStockError } from './stock-reservation';
 import { loadShippingDirectory } from './shipping';
@@ -3223,26 +4172,76 @@ contracts, Zod-схема satisfies контракт, клієнт мапить 
 ### Task 11: Чекаут — empty-state, видима валідація, доступні контроли, автовибір точки (Е0-4, UI)
 
 **Files:**
-- Modify: `packages/simplycms/src/checkout-ui/CheckoutDeliveryForm.tsx:17-22, 191-197, 266-292, 327-343`
+- Modify: `packages/simplycms/src/checkout-ui/CheckoutDeliveryForm.tsx:17-22, 191-197, 227-236, 266-292, 327-343`
 - Modify: `packages/simplycms/src/checkout-ui/CheckoutContactForm.tsx:31-70`
-- Modify: `packages/simplycms/src/checkout-ui/CheckoutRecipientForm.tsx` (лейбли `:284,297,312` і решта полів), `CheckoutOrderSummary.tsx:10-17, 101-110, 115-119`, `CheckoutAuthBlock.tsx:201-263`
+- Modify: `packages/simplycms/src/checkout-ui/CheckoutRecipientForm.tsx` (лейбли `:226,284,297,312,324,338,349,363`), `CheckoutOrderSummary.tsx:10-17, 101-110, 113-119`, `CheckoutAuthBlock.tsx:201-303`, `CheckoutPaymentForm.tsx:44-70`
+- Modify: `packages/simplycms/src/checkout-ui/{AddressSelectorPopup,RecipientSelectorPopup}.tsx` (`:87,94` і `:92,99` — контроли БЕЗ лейбла, їм `aria-label`)
+- Modify: `packages/simplycms/src/profile-ui/{AddressesList,RecipientsList,AvatarUpload}.tsx` (13 лейблів)
+- Modify: `packages/simplycms/src/catalog-ui/{ModificationSelector,FilterSidebar}.tsx` (1 лейбл-заголовок + 4 поля без лейбла)
+- Modify: `packages/simplycms/src/reviews-ui/ReviewForm.tsx:63, 96, 113`
 - Modify: `packages/simplycms/src/storefront-routes/pages/Checkout.tsx` (`canSubmit` у `CheckoutOrderSummary`; `FormMessage` для `shippingMethodId`; імпорти форм з `simplycms/checkout-ui`)
 - Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts`
+- Modify: `eslint.config.mjs` (зона `jsx-a11y/label-has-associated-control`), `package.json` (devDependency), `pnpm-lock.yaml` (перегенерований)
 - Create: `packages/simplycms/src/checkout-ui/__tests__/accessible-controls.ts`
 - Create: `packages/simplycms/src/checkout-ui/__tests__/CheckoutDeliveryForm.test.tsx`
 - Create: `packages/simplycms/src/checkout-ui/__tests__/CheckoutContactForm.test.tsx`
 
 **Interfaces:**
-- Produces: проп `CheckoutDeliveryFormProps.onAvailabilityChange?: (hasMethods: boolean) => void`; проп `CheckoutOrderSummaryProps.canSubmit: boolean`; i18n `checkout.noShippingMethods.title|description`; правило `id`/`htmlFor` для КОЖНОГО текстового контролу `checkout-ui` (префікс `checkout-`), `<select>` точки — `checkout-pickup-point`; автовибір єдиної точки видачі.
+- Produces: проп `CheckoutDeliveryFormProps.onAvailabilityChange?: (hasMethods: boolean) => void`; проп `CheckoutOrderSummaryProps.canSubmit: boolean`; i18n `checkout.noShippingMethods.title|description`; правило `id`/`htmlFor` для КОЖНОГО лейбла пʼяти тек воронки, що підписує контрол (у чекауті префікс `checkout-`; чотири лейбли-заголовки натомість перестають бути `<label>` — крок 5), `<select>` точки — `checkout-pickup-point`; автовибір єдиної точки видачі; структурний гейт `jsx-a11y/label-has-associated-control` на зону воронки в `eslint.config.mjs`.
 - Consumes: `FormField`/`FormItem`/`FormMessage` з `simplycms/ui/form`.
 
-🔴 Правило доступних імен — одне на всю теку (ред. 1.2). У `checkout-ui`
-сьогодні нуль `id`/`htmlFor` при двох десятках текстових контролів у шести
-формах: жоден лейбл не звʼязаний з полем, тож `getByLabel` Playwright і
-скрінрідери поля не знаходять (B5 аудиту r1 лікував лише чотири поля
-контактів). Radio методів доставки й оплати та checkbox отримувача обгорнуті
-в `<label>` і мають імʼя за побудовою — їх правило не чіпає. Гейт — один
-спільний асерт по DOM, без нових залежностей.
+🔴 Правило доступних імен — одне на всю **воронку**, а не лише на чекаут
+(рішення Р5, ред. 1.3). Виміряно `grep` по `packages/simplycms/src/<тека>/*.tsx`
+(2026-09-05):
+
+| Тека | `<label>` | з `htmlFor` | контролів `input|select|textarea` |
+|---|---|---|---|
+| `checkout-ui` | 24 | 0 | 28 |
+| `profile-ui` | 13 | 0 | 13 |
+| `catalog-ui` | 5 | 4 | 8 |
+| `reviews-ui` | 4 | 1 | 2 |
+| `cart-ui` | 0 | 0 | 0 (форм немає) |
+
+Тобто **41 лейбл** у зоні не звʼязаний із жодним полем: ні скрінрідер, ні
+`getByLabelText`/`getByLabel` Playwright його не бачать (B5 аудиту r1 лікував
+чотири поля контактів — 10 % проблеми). `cart-ui` входить у зону наперед: там
+сьогодні нуль форм, і саме тому гейт мусить стояти ДО того, як там зʼявиться
+перша.
+
+🔴 Доказ, що механічної правки без гейта замало і що дефолт правила гейтом
+**не є**: `eslint-plugin-jsx-a11y@6.10.2` під ESLint 10.8.0 прогнано по копії
+зони (5 тек, поточний код).
+
+| Конфігурація правила | Помилок на зоні |
+|---|---|
+| `assert: 'either'` (дефолт) | **5** |
+| `assert: 'nesting'` | 5 |
+| `assert: 'htmlFor'`, `depth: 2` (дефолт) | 41, з них 2 — «must have accessible text» |
+| `assert: 'htmlFor'`, `depth: 3` | **41**, усі — «must be associated with a control» |
+
+Дефолт пропускає 36 із 41, бо будь-який `JSXExpressionContainer` усередині
+лейбла (`<label>{t('…')}</label>` — форма ВСІХ лейблів воронки) правило
+трактує як «можливо, контрол вкладений» і мовчить. Ловить воно лише три
+лейбли з голим рядковим дитям (`>Email<`) і два з текстом глибше двох рівнів.
+Тому конфігурація зони — `{ assert: 'htmlFor', depth: 3 }`: `htmlFor` —
+єдиний режим, що дає справжній гейт; `depth: 3` знімає дві помилки «must have
+accessible text» на лейблах-обгортках radio/checkbox, де підпис лежить у
+`label > div > span` (`CheckoutPaymentForm:44`, `CheckoutRecipientForm:226`).
+
+🔴 Наслідок вибору `htmlFor`, який треба знати заздалегідь: radio/checkbox,
+обгорнуті в `<label>`, ПІД гейт підпадають (виміряно: `CheckoutDeliveryForm:227`,
+`CheckoutPaymentForm:44`, `CheckoutRecipientForm:226`, `RecipientsList:354`,
+`AddressesList:268`) — їм теж потрібні `id` + `htmlFor`. Це не надмірність:
+HTML дозволяє обидві форми звʼязку одночасно, а явний `for` робить radio
+адресовним для `getByLabelText`, чого сама обгортка не дає.
+
+🔴 Сліпа зона правила, яку гейт НЕ закриває: воно спрацьовує на `<label>`,
+тож контрол **узагалі без лейбла** для нього невидимий. У зоні таких девʼять:
+`AddressSelectorPopup.tsx:87,94` і `RecipientSelectorPopup.tsx:92,99` (пошук +
+сортування), `FilterSidebar.tsx:230,241,354,368` (числові діапазони ціни й
+властивостей), `AvatarUpload.tsx:62` (прихований `disabled` `input[type=file]`).
+Їх закриває механічна правка кроку 5 (`aria-label`), а не гейт — і це записано
+тут, щоб зелений лінт не читався як «уся воронка доступна».
 
 - [ ] **Step 1: Спільний асерт доступності і юніти — спершу червоні**
 
@@ -3254,8 +4253,9 @@ import { expect } from 'vitest';
 /**
  * Кожен текстовий контрол форми має `id` і `<label for>` (К2-Е0, Е0-4):
  * без цього скрінрідери й `getByLabel` Playwright поля не знаходять, а
- * лейбл-сусід без `htmlFor` — не звʼязок. Radio/checkbox, обгорнуті в
- * `<label>`, мають імʼя за побудовою і тут не рахуються.
+ * лейбл-сусід без `htmlFor` — не звʼязок. Radio/checkbox тут не рахуються:
+ * їхній звʼязок стереже ESLint-зона (крок 3), а поведінковий асерт по DOM
+ * тримає саме текстові поля — ті, що заповнює live-smoke.
  */
 export function expectLabelledControls(container: HTMLElement): void {
   const controls = container.querySelectorAll<HTMLElement>(
@@ -3347,7 +4347,8 @@ describe('CheckoutDeliveryForm', () => {
 
 (Обʼєкти `PICKUP`/`POINT` — мінімальні поля, які читає рендер; якщо тип
 `ShippingMethodRow`/`PickupPointRow` вимагає ще щось — дописати в фікстуру
-тесту, не в компонент.)
+тесту, не в компонент. Регекс `/Оберіть пункт самовивозу/` збігається з
+чинним `checkout.delivery.pickupPointLabel` — `'Оберіть пункт самовивозу *'`.)
 
 `packages/simplycms/src/checkout-ui/__tests__/CheckoutContactForm.test.tsx`:
 
@@ -3422,30 +4423,170 @@ Expected: FAIL (тексту немає; пропа немає; контроли
   }
 ```
 
-(усі хуки — вище цього `return`, інакше `react-hooks/rules-of-hooks`).
+(усі хуки — вище цього `return`, інакше `react-hooks/rules-of-hooks`.
+`Truck` уже імпортований — `CheckoutDeliveryForm.tsx:2`.)
 
 Каталоги: `uk` — `'checkout.noShippingMethods.title': 'Доставка не налаштована'`,
 `'checkout.noShippingMethods.description': 'Магазин ще не додав жодного способу доставки. Оформлення стане доступним, щойно він зʼявиться.'`;
 `en` — `'Shipping is not set up'`, `'The store has not added any shipping method yet. Checkout becomes available as soon as one appears.'`.
 
-- [ ] **Step 3: Доступні імена — кожен текстовий контрол шести форм**
+- [ ] **Step 3: Гейт `jsx-a11y/label-has-associated-control` на зону воронки — спершу червоний**
+
+🔴 Плагін і lockfile — В ОДНОМУ кроці. `pnpm install --frozen-lockfile` — ПЕРШИЙ
+гейт ланцюга, і жоден інший не звіряє `pnpm-lock.yaml` з манифестами; локально
+`pnpm install` мовчки лагодить розсинхрон, а на PR усі job-и падають із
+`ERR_PNPM_OUTDATED_LOCKFILE` ще до першого кроку (урок PR #20, зафіксований у
+CLAUDE.md — там це коштувало повного червоного CI на правці, де просто забули
+перегенерувати lockfile).
+
+```bash
+pnpm add -D -w eslint-plugin-jsx-a11y@6.10.2   # у корінь монорепо; lockfile оновиться тут же
+git status --short pnpm-lock.yaml              # має зʼявитися у змінених
+```
+
+🔴 Версія пінується точно (`6.10.2`, latest на 2026-09-05), бо її
+`peerDependencies` — `eslint: '^3 || … || ^9'`, а в репо ESLint **10.8.0**:
+peer не збігається. Що це означає практично, перевірено, а не припущено:
+`npm install` без `--legacy-peer-deps` таку пару відмовляється ставити; pnpm 11
+ставить із ворнінгом (`strict-peer-dependencies` за замовчуванням вимкнено і в
+`pnpm-workspace.yaml` репо не вмикається); саме правило під ESLint 10.8.0
+працює — прогін по копії зони дав рівно ті 41/5 помилок, що в таблиці вище.
+Якщо pnpm колись переведуть у strict-режим — лікується
+`peerDependencyRules.allowedVersions` у `pnpm-workspace.yaml`, а не відкотом
+гейта.
+
+`eslint.config.mjs` — імпорт поруч із рештою плагінів (`import jsxA11y from
+'eslint-plugin-jsx-a11y';`), константа зони поруч із `I18N_MIGRATED_FILES` і
+блок конфігу після зони `query-key-from-entity`:
+
+```js
+// Доступні імена контролів воронки (К2-Е0, Е0-4, рішення Р5): у пʼяти теках
+// воронки 41 `<label>` не звʼязаний ні з чим — скрінрідер і `getByLabelText`
+// поля не знаходять. `cart-ui` у зоні наперед: форм там сьогодні нуль, і гейт
+// має стояти ДО появи першої.
+//
+// 🔴 `src/admin/**` тут НЕМАЄ навмисно — з тієї ж причини, що й у зоні
+// `query-key-from-entity` вище: ~52 файли адмінки переписуються треком К3,
+// правити їхні лейбли зараз означало б робити роботу двічі.
+const A11Y_LABEL_ZONE = [
+  'packages/simplycms/src/checkout-ui/**/*.tsx',
+  'packages/simplycms/src/profile-ui/**/*.tsx',
+  'packages/simplycms/src/catalog-ui/**/*.tsx',
+  'packages/simplycms/src/reviews-ui/**/*.tsx',
+  'packages/simplycms/src/cart-ui/**/*.tsx',
+];
+
+// …
+
+  // Зона доступних імен. Імʼя правила (`jsx-a11y/label-has-associated-control`)
+  // унікальне, тож пастки flat config-у «опції правила ЗАМІЩУЮТЬСЯ, а не
+  // доливаються» тут немає: зона перетинається з i18n-зоною й із
+  // `query-key-from-entity`, але жодна з них цього правила не ставить.
+  //
+  // 🔴 `assert: 'htmlFor'`, а не дефолт: з дефолтним `'either'` правило на
+  // цьому коді дає 5 помилок замість 41 — будь-який `{t('…')}` усередині
+  // лейбла воно вважає «можливо, контрол вкладений» і мовчить (виміряно
+  // прогоном 6.10.2 під ESLint 10.8.0). `depth: 3` — щоб лейбли-обгортки
+  // radio/checkbox, де підпис лежить у `label > div > span`, не червоніли
+  // окремим повідомленням «must have accessible text».
+  //
+  // 🔴 Правило бачить лише `<label>`: контрол БЕЗ лейбла для нього невидимий
+  // (у зоні таких 9 — попапи чекауту, числові діапазони фільтра, прихований
+  // avatar-input). Зелений лінт доступності воронки не доводить.
+  {
+    files: A11Y_LABEL_ZONE,
+    ignores: ['**/__tests__/**'],
+    plugins: { 'jsx-a11y': jsxA11y },
+    rules: {
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        { assert: 'htmlFor', depth: 3 },
+      ],
+    },
+  },
+```
+
+Run: `pnpm lint`
+Expected: FAIL — рівно **41** помилка `jsx-a11y/label-has-associated-control`
+(24 `checkout-ui`, 13 `profile-ui`, 1 `catalog-ui`, 3 `reviews-ui`), усі з
+текстом «A form label must be associated with a control». Інші лічильники
+лінта не рухаються: норма репо — 0 errors / 12 warnings.
+
+- [ ] **Step 4: Доступні імена — шість форм чекауту (24 лейбли)**
 
 Правило: `<label htmlFor="checkout-<поле>">` + `<input id="checkout-<поле>">`
-(`<select>`/`<textarea>` — так само); radio/checkbox в обгортці `<label>` не
-чіпати. Ідентифікатори:
+(`<select>`/`<textarea>` — так само). Ідентифікатори (номери рядків — до
+вставки кроку 2, вона зсуває `CheckoutDeliveryForm`):
 
 | Форма | Контроли → `id` |
 |---|---|
 | `CheckoutContactForm` (`:31-70`) | `checkout-first-name`, `checkout-last-name`, `checkout-email`, `checkout-phone` |
-| `CheckoutDeliveryForm` | `<select>` точки (`:273`) → `checkout-pickup-point`; місто (`:331`) → `checkout-city`; адреса (`:343`) → `checkout-address` |
-| `CheckoutRecipientForm` (лейбли `:284,297,312` і далі) | `checkout-recipient-first-name`, `-last-name`, `-phone`, `-email`, `-city`, `-address`, `-notes` (textarea) |
+| `CheckoutDeliveryForm` | radio методу (`:235`) → `checkout-shipping-${method.id}`; `<select>` точки (`:273`) → `checkout-pickup-point`; місто (`:330`) → `checkout-city`; адреса (`:342`) → `checkout-address` |
+| `CheckoutPaymentForm` (`:44-70`) | radio способу оплати → `checkout-payment-${method.id}` |
+| `CheckoutRecipientForm` | checkbox «інший отримувач» (`:226/227`) → `checkout-different-recipient`; поля `:284…363` → `checkout-recipient-first-name`, `-last-name`, `-phone`, `-email`, `-city`, `-address`, `-notes` (textarea) |
 | `CheckoutOrderSummary` (`:101-110`) | textarea приміток → `checkout-notes` |
-| `CheckoutAuthBlock` (`:201-263`) | `checkout-auth-email`, `checkout-auth-password`, `checkout-auth-first-name` і решта полів реєстрації — те саме правило; юніт-гейта немає (потребує моків auth-клієнта), тому цей файл проходиться вручну за таблицею |
+| `CheckoutAuthBlock` (`:201-303`) | шість полів входу й реєстрації: `checkout-auth-email`, `checkout-auth-password`, `checkout-auth-first-name`, `checkout-auth-last-name`, `checkout-auth-register-email`, `checkout-auth-register-password` — вкладки `login`/`register` взаємовиключні (`activeTab === …`, `:198,255`), тож у DOM вони не зустрічаються; імена все одно різні, щоб `getByLabelText` не залежав від активної вкладки |
 
-- [ ] **Step 4: Submit блокується; помилка `shippingRequired` видима; імпорти з `checkout-ui`**
+🔴 `id` усередині `.map()` (radio доставки й оплати) деривується з `method.id`,
+а не з лічильника — інакше два рендери списку дали б однакові `id`. Той самий
+патерн уже вживається в `catalog-ui/ModificationSelector.tsx:75,89`
+(`htmlFor={mod.id}` / `id={mod.id}`) — він і є зразком.
+
+🔴 Юніт-гейта на `CheckoutAuthBlock` немає (потребує моків auth-клієнта), тож
+цей файл проходиться вручну за таблицею — але ESLint-зона кроку 3 його
+покриває, і саме вона ловить пропущене поле.
+
+- [ ] **Step 5: Доступні імена — решта воронки (17 лейблів) + негативний контроль**
+
+`profile-ui` (13): `AddressesList.tsx:233,245,257` → `address-name`,
+`address-city`, `address-line` (третій лейбл — `common.address`, не
+«вулиця»); checkbox «за замовчуванням» (`:268/270`) → `address-default`. `RecipientsList.tsx:272,283,296,309,321,332,343` →
+`recipient-first-name`, `-last-name`, `-phone`, `-email`, `-city`, `-address`,
+`-notes`; checkbox (`:354/358`) → `recipient-default`.
+
+🔴 Чотири лейбли зони не адресують жодного контролу — їм потрібен не
+`htmlFor`, а **перестати бути `<label>`**: підпис, що нічого не підписує, це
+й є дефект, який правило називає.
+- `profile-ui/AvatarUpload.tsx:42` — заголовок блоку аватара (сам
+  `input[type=file]` на `:62` прихований і `disabled`) → `<span>` + `aria-label`
+  на прихованому полі;
+- `catalog-ui/ModificationSelector.tsx:61` — заголовок групи radio → `<span>`,
+  а групі дати `role="group"` + `aria-labelledby` на цей `id`;
+- `reviews-ui/ReviewForm.tsx:63` — підпис над `StarRating` (там кнопки, не
+  контрол) → те саме: `<span id="review-rating-label">` + `aria-labelledby`;
+- `reviews-ui/ReviewForm.tsx:113` — підпис над слотом `renderImageUpload`
+  (компонент магазину, `id` якого ядро не контролює) → `<span>`.
+
+`reviews-ui/ReviewForm.tsx:96` — окремий випадок: контролом є `<textarea>`
+(`:102`) ЛИШЕ коли слот `renderEditor` не переданий. Тому `<label
+htmlFor="review-content">` рендериться в тій самій гілці, що й `<textarea
+id="review-content">`, а в гілці слота лишається `<span>`; інакше `htmlFor`
+вказував би в порожнечу — лінт цього не бачить (він перевіряє наявність
+атрибута, не існування цілі), а скрінрідер бачить.
+
+`catalog-ui/FilterSidebar.tsx:230,241,354,368` і попапи чекауту
+(`AddressSelectorPopup.tsx:87,94`, `RecipientSelectorPopup.tsx:92,99`) —
+контроли БЕЗ лейбла, правилу невидимі: дати `aria-label` з наявних i18n-ключів
+(жодного нового кириличного літерала — теки під i18n-error-зоною).
+
+Негативний контроль зони (обовʼязковий — зелений лінт скоупінг зони не
+доводить, урок env-контракту):
+
+```bash
+# прибрати htmlFor рівно в одному лейблі одного файла зони
+sed -i 's/ htmlFor="checkout-email"//' packages/simplycms/src/checkout-ui/CheckoutContactForm.tsx
+pnpm lint   # Expected: FAIL — 1 error jsx-a11y/label-has-associated-control
+git checkout -- packages/simplycms/src/checkout-ui/CheckoutContactForm.tsx
+pnpm lint   # Expected: PASS — 0 errors / 12 warnings
+```
+
+Run: `pnpm lint`
+Expected: PASS (0 errors / 12 warnings — норма репо).
+
+- [ ] **Step 6: Submit блокується; помилка `shippingRequired` видима; імпорти з `checkout-ui`**
 
 `CheckoutOrderSummary.tsx`: проп `canSubmit: boolean` (в інтерфейс `:10-17` і
-деструктуризацію), кнопка `disabled={isSubmitting || !canSubmit}` (`:118`).
+деструктуризацію), кнопка `disabled={isSubmitting || !canSubmit}` (`:117`).
 
 `Checkout.tsx`: `const [hasShippingMethods, setHasShippingMethods] = useState(true);`
 → `<CheckoutDeliveryForm … onAvailabilityChange={setHasShippingMethods} />`,
@@ -3468,31 +4609,61 @@ Expected: FAIL (тексту немає; пропа немає; контроли
 ```
 
 (`FormField`, `FormItem`, `FormMessage` — з `simplycms/ui/form`, як у
-`storefront-routes/components/SetPasswordForm.tsx:9-13`.)
+`storefront-routes/components/SetPasswordForm.tsx:7-14`. 🔴 Імпорт `Form` із
+цього ж модуля в `Checkout.tsx` уже є — `:8`; три імені дописуються В НЬОГО,
+а не другим рядком імпорту з того самого специфікатора.)
 
-🔴 Усі шість імпортів форм чекауту в `Checkout.tsx` (`CheckoutAuthBlock`,
-`CheckoutContactForm`, `CheckoutRecipientForm`, `CheckoutDeliveryForm`,
-`CheckoutPaymentForm`, `CheckoutOrderSummary`) сьогодні йдуть через
-re-export-шими `simplycms/core/components/checkout/*`, які канон
-(`architecture-core`, NEVER) забороняє. Перевести всі шість на
+🔴 Усі шість імпортів форм чекауту в `Checkout.tsx` (`:15-20`:
+`CheckoutAuthBlock`, `CheckoutContactForm`, `CheckoutDeliveryForm`,
+`CheckoutPaymentForm`, `CheckoutOrderSummary`, `CheckoutRecipientForm`)
+сьогодні йдуть через re-export-шими `simplycms/core/components/checkout/*`,
+які канон (`architecture-core`, NEVER) забороняє. Перевести всі шість на
 `simplycms/checkout-ui` — джерело (лише шлях імпорту, поведінка та сама);
 самі файли-шими не видаляти — їх знімає розселення `core`, поза К2-Е0.
 
 Run: `pnpm vitest run packages/simplycms/src/checkout-ui packages/simplycms/src/storefront-routes && pnpm typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Гейти й коміт**
+- [ ] **Step 7: Гейти й коміт**
+
+🔴 `pnpm install --frozen-lockfile` іде ПЕРШИМ саме тут: крок 3 додав
+devDependency, і без перегенерованого `pnpm-lock.yaml` цей гейт червоніє
+локально рівно так само, як CI (див. крок 3).
 
 ```bash
-pnpm format:check && pnpm lint && pnpm test
-git add -A packages/simplycms/src/checkout-ui packages/simplycms/src/storefront-routes/pages/Checkout.tsx packages/simplycms/src/i18n/catalogs
-git commit -m "feat(k2-e0): чекаут — empty-state без доставки, видима помилка, заблокований submit, доступні контроли, автовибір точки
+pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm test
+git add -A eslint.config.mjs package.json pnpm-lock.yaml \
+  packages/simplycms/src/checkout-ui packages/simplycms/src/profile-ui \
+  packages/simplycms/src/catalog-ui packages/simplycms/src/reviews-ui \
+  packages/simplycms/src/storefront-routes/pages/Checkout.tsx \
+  packages/simplycms/src/i18n/catalogs
+git commit -m "feat(k2-e0): чекаут — empty-state без доставки, видима помилка, заблокований submit, автовибір точки; доступні імена всієї воронки під ESLint-гейтом
 
 Порожній довідник показує блокуючий стан (патерн CartView), submit вимкнено,
 validation.shippingRequired рендериться через FormMessage; єдина точка
-видачі обирається тим самим правилом, що й метод; кожен текстовий контрол
-шести форм має id і label[for] (спільний асерт) (Е0-4)."
+видачі обирається тим самим правилом, що й метод. 41 лейбл пʼяти тек воронки
+отримав htmlFor (або перестав бути лейблом там, де підписує не контрол), а
+регрес стереже jsx-a11y/label-has-associated-control у режимі htmlFor —
+дефолтний either на цьому коді пропускає 36 із 41 (Е0-4)."
 ```
+
+- [ ] **DoD Task 11:** `pnpm vitest run packages/simplycms/src/checkout-ui`
+зелений (два нові тест-файли плюс спільний асерт `accessible-controls.ts`);
+`pnpm typecheck` зелений; `pnpm lint` — 0 errors / 12 warnings із
+УВІМКНЕНОЮ зоною `A11Y_LABEL_ZONE`; негативний контроль кроку 5 показав
+FAIL→PASS; `pnpm install --frozen-lockfile` проходить (lockfile у коміті);
+жоден новий кириличний літерал не зʼявився (i18n-error-зона покриває всі пʼять
+тек воронки).
+
+🔴 Борг, який ця задача НЕ закриває і свідомо лишає: ДЕСЯТЬ із торкнутих
+файлів уже за каноном «файл ≤ 150 рядків», і кроки 2/4/5/6 їх ще подовжують —
+`profile-ui/RecipientsList.tsx` (448), `checkout-ui/CheckoutRecipientForm.tsx`
+(427), `CheckoutDeliveryForm.tsx` (399), `catalog-ui/FilterSidebar.tsx` (390),
+`profile-ui/AddressesList.tsx` (358), `storefront-routes/pages/Checkout.tsx`
+(353), `CheckoutAuthBlock.tsx` (339), `RecipientSelectorPopup.tsx` (187),
+`AddressSelectorPopup.tsx` (177), `catalog-ui/ModificationSelector.tsx` (171).
+Розділення — окрема робота поза К2-Е0; тут воно змішало б функціональну правку
+з рефакторингом і зробило б рев'ю нечитним.
 
 ---
 
@@ -3801,14 +4972,14 @@ origin — дев на іншому порту отримав би 403). Три 
 ### Task 14: `scripts/live-smoke.mjs` — DoD як скрипт (Е0-8) + фінальна синхронізація
 
 **Files:**
-- Create: `scripts/live-smoke.mjs`
+- Create: `scripts/live-smoke.mjs` (оркестрація), `scripts/live-smoke/sql.mjs` (прямий SQL), `scripts/live-smoke/funnel.mjs` (браузерна воронка)
 - Modify: `scripts/pilot-pack/build.mjs:74-80` (`startStore(storeDir, port, extraEnv = {})`)
 - Modify: `package.json` (скрипт `live:smoke`)
-- Modify: `CLAUDE.md` (Quick Reference: `live:smoke`, `db:demo` — покупний демо; «Database Commands»: те саме про `db:demo`), `docs/architecture/test-contours.md` §12 (рядок «живий прогін = `pnpm live:smoke`»), `docs/tasks/v2-state-map.md` §1, §2, §3.4, §6, `docs/tasks/platform-roadmap.md` (К2-Е0 → ✅; борги T; борг 0.4.1-4)
+- Modify: `CLAUDE.md` (Quick Reference: `live:smoke`, `db:demo` — покупний демо; «Database Commands»: те саме про `db:demo`; «Project Structure», тека `scripts/`; «Tech Stack»: поріг Node; лінт-зони: шоста зона a11y), `docs/architecture/test-contours.md` §12 (рядок «живий прогін = `pnpm live:smoke`»), `docs/tasks/v2-state-map.md` §1, §2, §3.4, §5, §6, `docs/tasks/platform-roadmap.md` (лише позначки завершення: К2-Е0 → ✅; борги T; борг 0.4.1-4; рядок таблиці «Магазин на чистому Postgres» — опис ред. 1.3 у роадмапі вже стоїть)
 
 **Interfaces:**
-- Consumes: `gateHttp` з `scripts/pilot-pack/gate-b.mjs` (усередині читає товари через `expectedProducts`); `startStore`, `freePort` з `scripts/pilot-pack/build.mjs`; `withDbName` з `packages/simplycms/test-harness/pg/apply.mjs`; `@playwright/test`; `id`-и контролів чекауту з Task 11.
-- Produces: команда `PG_HARNESS_URL=… pnpm live:smoke` з нульовим кодом виходу на зеленому прогоні.
+- Consumes: `gateHttp` з `scripts/pilot-pack/gate-b.mjs` (усередині читає товари через `expectedProducts`); `startStore`, `freePort` з `scripts/pilot-pack/build.mjs`; `withDbName` з `packages/simplycms/test-harness/pg/apply.mjs`; `@playwright/test` (devDependency `1.61.1`, вже в дереві); `id`-и контролів чекауту з Task 11; `id`-и форми реєстрації з `Auth.tsx` (`#firstName`, `#lastName`, `#register-email`, `#register-password`, `#confirmPassword` — уже є); поведінка `cancelMyOrder` з Task 9 (скасування і `releaseStock` — в ОДНІЙ транзакції); 🔴 форма демо-сіду з Task 7: **рівно одна** активна точка видачі, і вона ж помічена `is_system = true` — на ній тримаються і автовибір точки з Task 11, і асерт форми демо нижче.
+- Produces: команда `PG_HARNESS_URL=… pnpm live:smoke` з нульовим кодом виходу на зеленому прогоні; `runFunnel({ page, base, dbUrl, check })`; `sql`, `stockSnapshot`, `ordersCount`, `orderStatusCode`, `activePickupPoints`.
 
 🔴 Ред. 1.2: скрипт НЕ підміняє `.env.local` розробника — після M9 (r1) env
 уже передається явно і в `pnpm build`, і в `startStore`, а `loadEnv`
@@ -3817,9 +4988,35 @@ origin — дев на іншому порту отримав би 403). Три 
 лишалась єдиним місцем, де SIGINT міг знищити чужий env. Точка видачі —
 `<select>`, не radio; після Task 11 єдина точка обирається сама, і smoke це
 ДОВОДИТЬ, читаючи значення `#checkout-pickup-point`. Асерт `pageerror` — у
-кінці, після `order-success`: ця сторінка форматує `Date` через `Intl`, тож
-рядок замість `Date` через serverFn дав би тут `RangeError` (єдиний
-поведінковий гейт контракту дат на межі RPC).
+кінці, після всіх сторінок: `order-success` і сторінки кабінету форматують
+`Date` через `Intl` (Task 6 робить `formatDate(date: Date)` в усіх чотирьох —
+`OrderSuccess`, `ProfileOrders`, `ProfileOrderDetail`, `Profile`), тож рядок
+замість `Date` через serverFn дав би тут `RangeError` (єдиний поведінковий
+гейт контракту дат на межі RPC).
+
+🔴 **Ред. 1.3 — скрипт доводить і ПОВЕРНЕННЯ залишку (Р1), а це тягне
+реєстрацію покупця.** Скасування живе за сесією за побудовою: `cancelMyOrder`
+(`storefront-routes/server/profile-orders.ts:60`) бере власника з
+`withSessionDb`, тобто з cookie Better Auth, і гість своє замовлення
+скасувати не може взагалі — `placeOrder` кладе гостю `user_id = null` і видає
+`access_token` (`server/checkout.ts:38-44`), а сторінки кабінету лежать під
+`_protected`. Тому воронка живого прогону починається з реєстрації через ту
+саму форму, що й у покупця (`/auth`, вкладка «Реєстрація»): вона ж провізіює
+профіль (`auth/provision.ts:15`), а отже додатково доводить, що чекаут
+префілюється профілем. Обхід «покликати serverFn повз UI» відкинуто: він
+перевіряв би не той контур, у якому дефект.
+
+🔴 **Межа доказу, названа чесно.** Демо-сід (Task 7) везе залишок **5** на
+панель, а прогін купує одну штуку, тож `stock_status` тут не фліпається — і
+рівність «після скасування = до замовлення» по статусу тривіальна.
+Ескалацію статусу в обидва боки (`in_stock` → `out_of_stock` → `in_stock`)
+доводить харнес-тест Task 9
+(`packages/simplycms/test-harness/pg/__tests__/order-stock.test.ts`), а
+live-smoke доводить те, чого харнес не бачить: що ту саму арифметику робить
+РЕАЛЬНИЙ контур — браузер, serverFn, транзакція покупця з ескалацією.
+Купувати весь залишок кліками «Додати в кошик» свідомо не робимо: `addItem`
+відкриває дровер (`react-query/useCart.tsx:102`), і цикл кліків залежав би
+від оверлею, а не від правила наявності.
 
 - [ ] **Step 0: `startStore` приймає явний env**
 
@@ -3831,13 +5028,248 @@ String(port), HOST: '127.0.0.1' }`. 🔴 Причина (M9 аудиту r1): `s
 `DATABASE_URL` із shell чи CI перекрив би тестову БД, а прямий SQL скрипта
 дивився б в іншу базу. Пілот викликає без третього аргумента — без змін.
 
-- [ ] **Step 1: Скрипт**
+- [ ] **Step 1: Три файли замість одного — і чому саме так**
 
-🔴 Канон `coding-style` — до 150 рядків на файл: скрипт нижче укладається
-одним файлом (≈145 рядків з докблоком). Якщо при реалізації він переросте
-ліміт — виносити браузерні перевірки (від коментаря `// 3.`) у
-`scripts/live-smoke/checks.mjs` за зразком `scripts/pilot-pack/*`, не
-роздувати один файл.
+🔴 Канон `coding-style` — до 150 рядків на файл. У ред. 1.2 скрипт був один
+(≈145 рядків) і вже впирався в межу; крок доказу Р1 (реєстрація + скасування
++ знімки залишку до/після) додає ≈35 рядків, тобто одним файлом канон
+порушується. Розкладка — та сама, що в `scripts/pilot-pack/*` (там 25 модулів
+рівно з цієї причини), і межа різання не довільна: **оркестрація** (БД,
+збірка, сервер, таблиця виводу) / **прямий SQL** (єдине джерело «що насправді
+в базі») / **браузерна воронка** (єдиний споживач Playwright). Обсяг:
+`sql.mjs` — 78 рядків, `funnel.mjs` — 141, `live-smoke.mjs` — 105; кожен
+читається окремо. 🔴 `funnel.mjs` найближчий до межі: якщо при реалізації він
+переросте 150, першою виїжджає `register` (`scripts/live-smoke/register.mjs`)
+— вона самодостатня й ні від чого в воронці не залежить.
+
+`scripts/live-smoke/sql.mjs`:
+
+```js
+/**
+ * Прямий SQL живого прогону — єдине джерело «що насправді в базі».
+ *
+ * Окремим модулем (канон 150 рядків, розкладка як у `scripts/pilot-pack/*`):
+ * оркестрація і браузерна воронка звертаються сюди, а не пишуть запити самі.
+ * Підключення — адмінське (`PG_HARNESS_URL`, той самий доступ, що й у
+ * `pnpm db:demo`), тому преамбула `set local role` тут не потрібна: власник
+ * кластера RLS не підпадає (`force row level security` канон не вмикає).
+ */
+import pg from 'pg';
+
+/** Один запит окремим зʼєднанням: прогін короткий, пул тут зайвий. */
+export async function sql(url, text, values = []) {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    return (await client.query(text, values)).rows;
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Знімок наявності товару: статус + залишок ПО КОЖНІЙ точці видачі.
+ *
+ * 🔴 Мапа по точках, а не сума: списання й повернення йдуть в ОДНУ
+ * детерміновану точку (Е0-3: `orders.pickup_point_id` → системна → перша
+ * активна), і «повернулось як було» — це рівність саме мап, а не сум.
+ */
+export async function stockSnapshot(url, slug) {
+  const [product] = await sql(
+    url,
+    `select p.id, p.stock_status, s.slug as section
+       from public.products p
+       join public.sections s on s.id = p.section_id
+      where p.slug = $1`,
+    [slug],
+  );
+  if (!product) throw new Error(`[live-smoke] у демо-БД немає товару «${slug}»`);
+  const rows = await sql(
+    url,
+    `select pickup_point_id, quantity from public.stock_by_pickup_point
+      where product_id = $1 order by pickup_point_id`,
+    [product.id],
+  );
+  const byPoint = Object.fromEntries(
+    rows.map((r) => [r.pickup_point_id, Number(r.quantity)]),
+  );
+  const total = Object.values(byPoint).reduce((sum, q) => sum + q, 0);
+  return { section: product.section, status: product.stock_status, byPoint, total };
+}
+
+/** Скільки рядків у `orders` — до і після оформлення. */
+export async function ordersCount(url) {
+  const [{ c }] = await sql(url, 'select count(*)::int as c from public.orders');
+  return c;
+}
+
+/** Код статусу замовлення — доказ, що скасування доїхало до БД. */
+export async function orderStatusCode(url, orderId) {
+  const [row] = await sql(
+    url,
+    `select st.code from public.orders o
+       join public.order_statuses st on st.id = o.status_id
+      where o.id = $1`,
+    [orderId],
+  );
+  return row?.code ?? null;
+}
+
+/** Активні точки видачі демо — форма, від якої залежать автовибір і Е0-3. */
+export async function activePickupPoints(url) {
+  return sql(
+    url,
+    `select id, is_system from public.pickup_points
+      where is_active order by sort_order, id`,
+  );
+}
+```
+
+`scripts/live-smoke/funnel.mjs`:
+
+```js
+/**
+ * Браузерна воронка живого прогону: реєстрація → картка → кошик → чекаут →
+ * СКАСУВАННЯ. Єдиний споживач Playwright; оркестрація його не імпортує.
+ *
+ * 🔴 Реєстрація — не декор: скасування замовлення живе за сесією
+ * (`cancelMyOrder` → `withSessionDb`), а гість зі своїм `access_token`
+ * кабінету не має. Заодно доводиться префіл чекауту з профілю.
+ */
+import { randomUUID } from 'node:crypto';
+import {
+  activePickupPoints,
+  ordersCount,
+  orderStatusCode,
+  stockSnapshot,
+} from './sql.mjs';
+
+const PRODUCT_SLUG = 'sonyachna-panel-450w-mono';
+const PASSWORD = 'live-smoke-2026';
+/** id контролів чекауту — `id`/`htmlFor` з Task 11 (checkout-ui). */
+const FIELD = {
+  firstName: '#checkout-first-name',
+  phone: '#checkout-phone',
+  pickupPoint: '#checkout-pickup-point',
+};
+
+/** Реєстрація тією самою формою, що й у покупця (вкладка «Реєстрація»). */
+async function register(page, base) {
+  const email = `live-smoke-${randomUUID().slice(0, 8)}@example.test`;
+  await page.goto(`${base}/auth`, { waitUntil: 'networkidle' });
+  await page.getByRole('tab', { name: 'Реєстрація' }).click();
+  await page.locator('#firstName').fill('Тест');
+  await page.locator('#lastName').fill('Покупець');
+  await page.locator('#register-email').fill(email);
+  await page.locator('#register-password').fill(PASSWORD);
+  await page.locator('#confirmPassword').fill(PASSWORD);
+  await page.getByRole('button', { name: /Зареєструватися/ }).click();
+  // Успішна реєстрація логінить і веде на головну (`Auth.tsx`).
+  await page.waitForURL(`${base}/`, { timeout: 15_000 });
+  return email;
+}
+
+/**
+ * Уся воронка одним викликом: `page` — сторінка Playwright, `base` — URL
+ * піднятого магазину, `dbUrl` — та сама БД прямим SQL, `check` — збирач
+ * фактів оркестрації (вердикт + ФАКТ, як у гейтах пілота).
+ */
+export async function runFunnel({ page, base, dbUrl, check }) {
+  await register(page, base);
+  const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
+
+  // 1. Картка: бейдж і JSON-LD проти БД (те, чого curl не бачить).
+  await page.goto(`${base}/catalog/${before.section}/${PRODUCT_SLUG}`, {
+    waitUntil: 'networkidle',
+  });
+  const badge =
+    (await page
+      .locator('text=/В наявності|Немає в наявності|Під замовлення/')
+      .first()
+      .textContent()) ?? '';
+  check(
+    'бейдж = БД',
+    before.status === 'in_stock'
+      ? badge.includes('В наявності') && !badge.includes('Немає')
+      : true,
+    `stock_status=${before.status}, залишок ${before.total}, бейдж «${badge.trim()}»`,
+  );
+  const jsonLd = await page
+    .locator('script[type="application/ld+json"]')
+    .first()
+    .textContent();
+  check(
+    'JSON-LD availability',
+    (jsonLd ?? '').includes('schema.org/InStock'),
+    (jsonLd ?? '').match(/schema\.org\/\w+/)?.[0] ?? '—',
+  );
+
+  // 2. Кошик і сторінки з НЕПОРОЖНІМ кошиком (гідратація — Е0-5).
+  await page.getByRole('button', { name: /Додати в кошик/ }).first().click();
+  for (const path of ['/', '/catalog', '/cart']) {
+    await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+  }
+
+  // 3. Чекаут → рядок в `orders` зі списанням.
+  const ordersBefore = await ordersCount(dbUrl);
+  await page.goto(`${base}/checkout`, { waitUntil: 'networkidle' });
+  // 🔴 Спершу дочекатись префілу з профілю: `getProfileSettings` заповнює
+  // форму в `useEffect`, тож `fill` до нього був би затертий після нього.
+  // 🔴 Саме `?? ''`: доки поля ще немає в DOM, `?.value` — `undefined`, і
+  // предикат `?.value !== ''` пройшов би ЩЕ ДО рендеру форми — чекання
+  // виродилось би в no-op рівно в тому випадку, заради якого існує.
+  await page.waitForFunction(
+    (sel) => (document.querySelector(sel)?.value ?? '') !== '',
+    FIELD.firstName,
+  );
+  check(
+    'чекаут префілено профілем покупця',
+    (await page.locator(FIELD.firstName).inputValue()) === 'Тест',
+    await page.locator(FIELD.firstName).inputValue(),
+  );
+  await page.locator(FIELD.phone).fill('+380501234567');
+  // Демо-метод — pickup з однією точкою: метод і точку форма обирає сама
+  // (Task 11); smoke це доводить, а не клікає замість покупця.
+  const points = await activePickupPoints(dbUrl);
+  check(
+    'демо: одна активна точка видачі, вона ж системна',
+    points.length === 1 && points[0].is_system === true,
+    `точок ${points.length}, is_system ${points.map((p) => p.is_system).join(',')}`,
+  );
+  const pickedPoint = await page.locator(FIELD.pickupPoint).inputValue();
+  check('єдина точка видачі обрана автоматично', pickedPoint !== '', pickedPoint || 'порожньо');
+  await page.getByRole('button', { name: /Підтвердити замовлення/ }).click();
+  await page.waitForURL(/\/order-success\//, { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
+  const orderId = /\/order-success\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
+  const ordersAfter = await ordersCount(dbUrl);
+  const placed = await stockSnapshot(dbUrl, PRODUCT_SLUG);
+  check('orders +1', ordersAfter === ordersBefore + 1, `${ordersBefore} → ${ordersAfter}`);
+  // Демо вмикає decrease_on_order (Task 7): списання — безумовне очікування.
+  check(
+    'списання залишку',
+    placed.total === before.total - 1,
+    `${before.total} → ${placed.total}, точка ${pickedPoint}`,
+  );
+
+  // 4. Скасування в кабінеті → ПОВЕРНЕННЯ залишку (Р1, Task 9).
+  await page.goto(`${base}/profile/orders/${orderId}`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Скасувати', exact: true }).click();
+  await page.getByRole('button', { name: /Так, скасувати/ }).click();
+  await page.waitForURL(/\/profile\/orders$/, { timeout: 15_000 });
+  const released = await stockSnapshot(dbUrl, PRODUCT_SLUG);
+  const statusCode = await orderStatusCode(dbUrl, orderId);
+  check('замовлення скасовано', statusCode === 'cancelled', `status → ${statusCode}`);
+  // 🔴 Рівність ЗНІМКІВ, а не сум: повертається та сама точка, і статус теж
+  // мусить відкотитись (асиметрія «списали й не повернули» — саме той стан,
+  // через який демо показував нуль залишку при нулі продажів).
+  check(
+    'повернення залишку і статусу',
+    JSON.stringify(released) === JSON.stringify(before),
+    `${placed.total} → ${released.total}, stock_status ${placed.status} → ${released.status}`,
+  );
+}
+```
 
 `scripts/live-smoke.mjs`:
 
@@ -3847,11 +5279,13 @@ String(port), HOST: '127.0.0.1' }`. 🔴 Причина (M9 аудиту r1): `s
  * Живий прогін вітрини — DoD К2-Е0 як скрипт, не як таблиця (Е0-8).
  *
  * Що доводить і чим: (1) curl+SQL — той самий `gateHttp` пілота (SSR, sitemap,
- * robots, health, guard); (2) браузер — те, чого curl не бачить: бейдж
- * наявності після гідратації, JSON-LD, автовибір єдиної точки видачі, сама
- * воронка картка → кошик → чекаут → рядок в `orders` ЗІ списанням, і нуль
- * `pageerror` на всіх сторінках включно з `order-success` (форматує Date).
- * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
+ * robots, health, guard); (2) браузер — те, чого curl не бачить: реєстрація
+ * покупця, бейдж наявності після гідратації, JSON-LD, автовибір єдиної точки
+ * видачі, сама воронка картка → кошик → чекаут → рядок в `orders` ЗІ
+ * СПИСАННЯМ, скасування в кабінеті З ПОВЕРНЕННЯМ залишку і статусу, і нуль
+ * `pageerror` на всіх сторінках включно з `order-success` і кабінетом (усі
+ * форматують `Date` через `Intl`). Друкує таблицю — §12 test-contours.md
+ * посилається сюди замість рукопису.
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
  * `pnpm db:demo`) і Chromium для Playwright (`pnpm exec playwright install
@@ -3866,29 +5300,16 @@ String(port), HOST: '127.0.0.1' }`. 🔴 Причина (M9 аудиту r1): `s
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
-import pg from 'pg';
 import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
+import { runFunnel } from './live-smoke/funnel.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const DB_NAME = 'simplycms_live_smoke';
-const PRODUCT_SLUG = 'sonyachna-panel-450w-mono';
-/** id контролів чекауту — `id`/`htmlFor` з Task 11 (checkout-ui). */
-const FIELD = {
-  firstName: '#checkout-first-name',
-  lastName: '#checkout-last-name',
-  phone: '#checkout-phone',
-  pickupPoint: '#checkout-pickup-point',
-};
 
 const adminUrl = process.env.PG_HARNESS_URL;
 if (!adminUrl) throw new Error('[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера, як для pnpm db:demo)');
-
-const sql = async (url, text, values = []) => {
-  const c = new pg.Client({ connectionString: url }); await c.connect();
-  try { return (await c.query(text, values)).rows; } finally { await c.end(); }
-};
 
 const rows = [];
 const check = (label, passed, fact) => { rows.push([label, passed ? 'OK' : 'FAIL', fact]); };
@@ -3934,47 +5355,18 @@ async function main() {
     const lastmods = [...sitemap.matchAll(/<lastmod>([^<]*)<\/lastmod>/g)].map((m) => m[1]);
     check('sitemap lastmod W3C', lastmods.length > 0 && lastmods.every((v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(v)), `${lastmods.length} url, зразок ${lastmods[0] ?? '—'}`);
 
-    // 3. Браузер.
+    // 3. Браузер: реєстрація → картка → кошик → чекаут → скасування.
     const { chromium } = await import('@playwright/test');
     browser = await chromium.launch();
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
+    await runFunnel({ page, base, dbUrl, check });
 
-    const [product] = await sql(dbUrl, `select p.slug, s.slug as section, p.stock_status from public.products p join public.sections s on s.id = p.section_id where p.slug = $1`, [PRODUCT_SLUG]);
-    await page.goto(`${base}/catalog/${product.section}/${product.slug}`, { waitUntil: 'networkidle' });
-    const badge = (await page.locator('text=/В наявності|Немає в наявності|Під замовлення/').first().textContent()) ?? '';
-    check('бейдж = БД', product.stock_status === 'in_stock' ? badge.includes('В наявності') && !badge.includes('Немає') : true, `stock_status=${product.stock_status}, бейдж «${badge.trim()}»`);
-    const jsonLd = await page.locator('script[type="application/ld+json"]').first().textContent();
-    check('JSON-LD availability', (jsonLd ?? '').includes('schema.org/InStock'), (jsonLd ?? '').match(/schema\.org\/\w+/)?.[0] ?? '—');
-
-    await page.getByRole('button', { name: /Додати в кошик/ }).first().click();
-    for (const path of ['/', '/catalog', '/cart']) {
-      await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
-    }
-
-    // 4. Воронка до рядка в orders зі списанням.
-    const [{ c: before }] = await sql(dbUrl, `select count(*)::int as c from public.orders`);
-    const [{ quantity: qtyBefore }] = await sql(dbUrl, `select s.quantity from public.stock_by_pickup_point s join public.products p on p.id = s.product_id where p.slug = $1`, [PRODUCT_SLUG]);
-    await page.goto(`${base}/checkout`, { waitUntil: 'networkidle' });
-    await page.locator(FIELD.firstName).fill('Тест');
-    await page.locator(FIELD.lastName).fill('Покупець');
-    await page.locator(FIELD.phone).fill('+380501234567');
-    // Демо-метод — pickup з однією точкою: метод і точку форма обирає сама
-    // (Task 11); smoke це доводить, а не клікає замість покупця.
-    const pickedPoint = await page.locator(FIELD.pickupPoint).inputValue();
-    check('єдина точка видачі обрана автоматично', pickedPoint !== '', pickedPoint || 'порожньо');
-    await page.getByRole('button', { name: /Підтвердити замовлення/ }).click();
-    await page.waitForURL(/\/order-success\//, { timeout: 15_000 });
-    await page.waitForLoadState('networkidle');
-    const [{ c: after }] = await sql(dbUrl, `select count(*)::int as c from public.orders`);
-    const [{ quantity: qtyAfter }] = await sql(dbUrl, `select s.quantity from public.stock_by_pickup_point s join public.products p on p.id = s.product_id where p.slug = $1`, [PRODUCT_SLUG]);
-    check('orders +1', after === before + 1, `${before} → ${after}`);
-    // Демо вмикає decrease_on_order (Task 7): списання — безумовне очікування.
-    check('списання залишку', Number(qtyAfter) === Number(qtyBefore) - 1, `${qtyBefore} → ${qtyAfter}`);
-    // 5. Нуль pageerror на ВСІХ пройдених сторінках, включно з order-success
-    // (Date через serverFn і Intl — рядок замість Date дав би RangeError тут).
-    check('pageerror з непорожнім кошиком і на order-success', errors.length === 0, errors.length === 0 ? '0' : errors.join(' | '));
+    // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
+    // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на
+    // межі RPC дав би тут `RangeError` (поведінковий гейт Е0-2).
+    check('pageerror за весь прогін (кошик, order-success, кабінет)', errors.length === 0, errors.length === 0 ? '0' : errors.join(' | '));
   } finally {
     await shutdown();
   }
@@ -3989,11 +5381,18 @@ async function main() {
 main().catch((e) => { console.error(`\n[live-smoke] ${e.message}`); process.exit(1); });
 ```
 
-Тексти кнопок — з каталогу `uk`: `product.addToCart` «Додати в кошик»,
-`checkout.orderSummary.submit` «Підтвердити замовлення». Поле email або
-телефон — обовʼязкове одне з двох (телефон заповнюється).
+Тексти, на які спирається воронка, — з каталогу `uk`: `product.addToCart`
+«Додати в кошик», `checkout.orderSummary.submit` «Підтвердити замовлення»,
+`auth.register.title` «Реєстрація» (назва вкладки), `auth.register.submit`
+«Зареєструватися», `common.cancel` «Скасувати» (тригер діалогу),
+`profile.order.cancel.confirm` «Так, скасувати» (підтвердження). Поле email
+або телефон — обовʼязкове одне з двох: email приїжджає префілом профілю,
+телефон заповнюємо (профіль його не має).
 
-`package.json`: `"live:smoke": "node scripts/live-smoke.mjs",` (після `db:demo`).
+`package.json`: `"live:smoke": "node scripts/live-smoke.mjs"` — після `db:demo`
+(`:35`). 🔴 `db:demo` сьогодні ОСТАННІЙ рядок блоку `scripts` і йде без коми,
+тож кома дописується саме до нього, а новий рядок лишається без коми — інакше
+`package.json` перестає бути валідним JSON і падає вже `pnpm install`.
 
 - [ ] **Step 2: Прогін**
 
@@ -4010,22 +5409,34 @@ Expected: усі рядки `OK`, `live-smoke: ЗЕЛЕНИЙ`, код вихо�
 
 - [ ] **Step 3: Документи — один дотик**
 
-- `CLAUDE.md` Quick Reference: рядок `pnpm live:smoke  # DoD К2-Е0: db:demo → build → server → curl+SQL (gate-b) + Playwright (кошик без #418, бейдж = БД, автовибір точки, воронка до orders зі списанням). Потребує Postgres і Chromium; не CI — гейти релізу окремим рішенням`; у рядку `pnpm db:demo` дописати «покупний демо (доставка, точка, залишки, `decrease_on_order = true`) з К2-Е0»; у розділі «Database Commands» (сніпет `pnpm db:pull / db:diff / test:schema`) — той самий рядок про `db:demo` як покупний демо-магазин (§5 спеки вимагає обох секцій).
-- `docs/architecture/test-contours.md` §12: у підрозділ «Живий прогін» першим абзацом — «Живий прогін = `pnpm live:smoke` (Е0-8): таблиця нижче — його вивід на дату, не рукопис; рядки додаються лише разом із перевіркою в скрипті» і вклеїти вивід прогону з кроку 2 з датою.
-- `docs/tasks/v2-state-map.md`: §2 — новий підрозділ «2.2. К2-Е0 — підтверджено `pnpm live:smoke` <дата>» з тим самим виводом; §1 «Головне за 30 секунд» — речення про покупний демо-магазин; §3.4 «Ціни позицій замовлення не перераховуються» → «✅ Закрито К2-Е0 <дата> (Е0-4): ціни й доставку рахує сервер, `placeOrder` повертає доменну відмову»; §6 п.4 і п.6 → ✅.
-- `docs/tasks/platform-roadmap.md`: етап К2-Е0 → `- [x] ✅ … ЗАВЕРШЕНО <дата>`; секція «Борги треку T» — T-1…T-5 → `✅ ЗАКРИТО <дата>`; борг 0.4.1-4 → `✅ ЗАКРИТО <дата> (К2-Е0 Е0-4)`; рядок таблиці «Магазин на чистому Postgres» — без «🔴 чекаут … мовчить» (замінити на «покупний демо: картка → кошик → чекаут → `orders` зі списанням, `pnpm live:smoke`»).
+🔴 Етап К2-Е0 у ред. 1.3 — **без жодної зміни схеми БД** (рішення Р3: банери
+демо їдуть inline `data:`-SVG, колонка `banners.image_url` лишається
+`NOT NULL`). Тому в жодному документі, який пише цей крок, не зʼявляється ні
+міграція `0004`, ні обіцянка `nullable` для банерів. 🔴 У роадмапі цю правку
+вже зроблено — разом зі спекою, у цьому ж наборі змін (абзац «План ред. 1.3»,
+`:258-299`; речення про `nullable` там лишилось ЛИШЕ як пояснення, чому
+альтернативу відкинуто). Тобто крок роадмап не переписує, а лише датує.
+
+- `CLAUDE.md` Quick Reference: рядок `pnpm live:smoke  # DoD К2-Е0: db:demo → build → server → curl+SQL (gate-b) + Playwright (реєстрація, кошик без #418, бейдж = БД, автовибір точки, воронка до orders зі СПИСАННЯМ, скасування з ПОВЕРНЕННЯМ залишку). Потребує Postgres (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням`; у рядку `pnpm db:demo` (`:53`) дописати «покупний демо (доставка, системна точка видачі, залишки, `decrease_on_order = true`) з К2-Е0»; у розділі «Database Commands» (сніпет `pnpm db:pull / db:diff / test:schema`) — той самий рядок про `db:demo` як покупний демо-магазин (§5 спеки вимагає обох секцій).
+- `CLAUDE.md` «Project Structure», тека `scripts/` (`:396-409`): після `demo-db.mjs` — `live-smoke.mjs + live-smoke/  # DoD К2-Е0: sql.mjs (прямий SQL) + funnel.mjs (Playwright-воронка)`. 🔴 `demo-db.mjs` (`:409`) перестає бути останнім вузлом теки: його `└──` міняється на `├──`, а `└──` переїжджає на новий рядок — інакше ASCII-дерево ламається.
+- `CLAUDE.md` «Tech Stack» (список `:253-263`, після рядка **Package Manager:**): рядок **Runtime:** Node `>=22.12` — поріг `@tanstack/react-start`; стоїть у ВСІХ пʼяти публікованих пакетах і в `packages/create-simplycms-store/template/package.json.tpl`, під тестом-піном парності (Task 2, рішення Р6). До К2-Е0 порогу не було взагалі в трьох пакетах, а у двох стояв хибний `">=20"`.
+- `CLAUDE.md` блок лінт-зон (після абзацу «Пʼята (2026-08-30, трек V2-К3)…», `:206-215`): **шоста** зона — доступні імена контролів. `eslint-plugin-jsx-a11y` з ОДНИМ правилом `jsx-a11y/label-has-associated-control` (error) на пʼять тек воронки пакета ядра (`cart-ui`, `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), тим самим механізмом зон, що й тір-зони та i18n-селектори (Task 11, рішення Р5). 🔴 Це нова devDependency, тож `pnpm-lock.yaml` перегенеровано в тому ж коміті — інакше `pnpm install --frozen-lockfile`, ПЕРШИЙ гейт, валить увесь CI (урок PR #20).
+- `docs/architecture/test-contours.md` §12: у підрозділ «Живий прогін» першим абзацом — «Живий прогін = `pnpm live:smoke` (Е0-8): таблиця нижче — його вивід на дату, не рукопис; рядки додаються лише разом із перевіркою в скрипті» і вклеїти вивід прогону з кроку 2 з датою. У тому ж абзаці — межа: фліп `stock_status` в обидва боки доводить харнес-тест `order-stock.test.ts`, live-smoke доводить арифметику й симетрію в реальному контурі.
+- `docs/tasks/v2-state-map.md`: §2 — новий підрозділ «2.2. К2-Е0 — підтверджено `pnpm live:smoke` <дата>» з тим самим виводом; §1 «Головне за 30 секунд» — речення про покупний демо-магазин (картка → кошик → чекаут → `orders`, скасування повертає залишок); §3.4 «Ціни позицій замовлення не перераховуються» → «✅ Закрито К2-Е0 <дата> (Е0-4): ціни й доставку рахує сервер, `placeOrder` повертає доменну відмову»; §5 «Як підняти це локально» — після кроку з `pnpm db:demo` рядок «перевірити весь контур одразу — `PG_HARNESS_URL=… pnpm live:smoke`»; §6 п.4 і п.6 → ✅.
+- `docs/tasks/platform-roadmap.md` — **лише позначки завершення** (опис ред. 1.3, зняте речення про `nullable` і уточнений T-4 туди вже приземлилися разом зі спекою): етап К2-Е0 (`:229-299`) → `- [x] ✅ … ЗАВЕРШЕНО <дата>`; секція «Борги треку T» — T-1…T-5 (`:798-843`) → `✅ ЗАКРИТО <дата>`; борг 0.4.1-4 (`:731`) → `✅ ЗАКРИТО <дата> (К2-Е0 Е0-4)`; рядок таблиці «Магазин на чистому Postgres» (`:113`) — без «🔴 чекаут … мовчить» (замінити на «покупний демо: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`»). 🔴 Абзац «🔴 **План ред. 1.2**» (`:246-257`) НЕ чіпати: роадмап веде редакції накопиченням, і це історія аудиту r2 поруч із чинним абзацом ред. 1.3 (`:258-299`). Якорі перевірити перед правкою — вони від правки роадмапу цього ж набору змін.
 
 - [ ] **Step 4: Повний ланцюг гейтів і коміт**
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm pilot:pack
-git add scripts/live-smoke.mjs scripts/pilot-pack/build.mjs package.json CLAUDE.md docs/architecture/test-contours.md docs/tasks/v2-state-map.md docs/tasks/platform-roadmap.md
+git add scripts/live-smoke.mjs scripts/live-smoke/ scripts/pilot-pack/build.mjs package.json CLAUDE.md docs/architecture/test-contours.md docs/tasks/v2-state-map.md docs/tasks/platform-roadmap.md
 git commit -m "feat(k2-e0): live-smoke — DoD як скрипт; документи під живий прогін
 
-curl+SQL через gate-b пілота + Playwright: кошик без React #418, бейдж
-наявності = БД, JSON-LD, автовибір єдиної точки, воронка до рядка в orders зі
-списанням, нуль pageerror включно з order-success (Date через serverFn). §12,
-карта стану й роадмап посилаються на прогін, а не на рукопис (Е0-8)."
+curl+SQL через gate-b пілота + Playwright: реєстрація покупця, кошик без
+React #418, бейдж наявності = БД, JSON-LD, автовибір єдиної точки, воронка до
+рядка в orders зі списанням і скасування з поверненням залишку, нуль pageerror
+включно з order-success і кабінетом (Date через serverFn). §12, карта стану й
+роадмап посилаються на прогін, а не на рукопис (Е0-8)."
 ```
 
 ---
@@ -4035,7 +5446,8 @@ curl+SQL через gate-b пілота + Playwright: кошик без React #4
 Після Task 14 — повернутись на валідацію з артефактами: вивід повного ланцюга
 гейтів; вивід `pnpm pilot:pack` (з Gate IP); вивід `pnpm live:smoke`; `git log
 --oneline main..HEAD`. Гілка НЕ мержиться без рішення власника — мерж у `main`
-публікує пакети на npm. Рішення ред. 1.2, що потребують підтвердження власника
-при затвердженні плану, — Додаток В спеки.
+публікує пакети на npm. Шість рішень ред. 1.3 — Додаток Г
+спеки; підтвердження власника вони НЕ потребують (ухвалені на брейнштормі
+2026-09-05). Додаток В — рішення ред. 1.2, закриті тим самим брейнштормом.
 
 Наступний план — **К3 Е2: Storage-мінімум** (роадмап, блок К3).
