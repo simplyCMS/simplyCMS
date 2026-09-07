@@ -1,192 +1,45 @@
-# SimplyCMS
+# simplyCMS
 
-Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
+Хочу розробити міні інтернет магазин для продажу товарів для альтернативної енергетики - акумуляторні батареї, інвертори, сонячні панелі та послуги з їх монтажу.
+на сайті має бути лендінг, розділи зі списком товарів цього розділу та детальна картка товару. Також потрібно, щоб в кожному розділі була велика кількість всіляких фільтрів по товарах, які я міг би налаштувати для кожного товару в адмінці.
 
-**Ядро постачається пʼятьма npm-пакетами** (трек К0): unscoped фреймворк
-`simplycms` — увесь двигун одним пакетом, шар береться субшляхом
-(`simplycms/ui`, `simplycms/plugin-sdk`, `simplycms/contracts/views`, …) —
-плюс сателіти [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
-[`@simplycms/plugin-faq`](https://www.npmjs.com/package/@simplycms/plugin-faq),
-[`@simplycms/theme-solarstore`](https://www.npmjs.com/package/@simplycms/theme-solarstore)
-і скаффолдер [`create-simplycms-store`](https://www.npmjs.com/package/create-simplycms-store).
-Версія в усіх пʼятьох одна.
-🔴 У [реєстрі](https://www.npmjs.com/search?q=%40simplycms) поки лежить
-ПОПЕРЕДНЯ топологія (`@simplycms/*@0.3.0`, 25 пакетів) — нова їде з мержем
-гілки К0, після чого 22 злиті імені отримають `npm deprecate`.
+потрібна публічна частина сайту, куди будуть заходити відвідувачі, кабінет користувача з інформацією про замовлення і їх статуси та додатковою інформацією в майбутньмоу, а також адмінка для управління даними - тобто, CMS система.
 
-## Vision: e-commerce platform
+хочу щоб була можливість створювати розділи, визначати для розділів властивості товарів, при додаванні товарів - можна було заповнювати ці властивості товарів значеннями.
+також обов'язково має бути можливість завантажувати зображення як самих товарів в спеціальні картки, так і завантажувати зображення в текст опису товару за потреби, або вставляти посилання на відео на ютубі.
 
-SimplyCMS розвивається в OpenCart-подібну платформу нового покоління:
+Додаю логотип та фавікон для сайту. Кольори логотипу #1192DC
 
-- **Ядро** постачає готовий магазин (SSR-вітрина + адмінка) версіонованими npm-пакетами — магазин це **тонка збірка** (~8 файлів + конфіг), а не форк репозиторію.
-- **`pnpm update` приносить нові сторінки й фікси** існуючим магазинам без ручного переносу коду.
-- **Плагіни й теми** — встановлювані npm-пакети (`simplycms add …` + rebuild); активація й налаштування — з адмінки, без перезбірки.
-- **Канонічні сторінки** (каталог, товар, checkout…) — SEO/AI-оптимізовані з коробки й однакові для всіх магазинів; кастомізація — через теми (токени + брендові компоненти), слоти плагінів і власні сторінки.
+в налаштуваннях властивостей має бути можливість відображати в інтерфейсі як посилання зі своєю сторінкою, де я міг би додавати зображення для цієї сторінки та задавати додатковий опис. Наприклад, це може бути властивість Виробник із сторінкою виробника, або матеріали - з мультивибором в товарі та окремою сторінкою в інтерфейсі.
 
-Детально: [Як це працює](docs/how-it-works.md) · [Специфікація архітектури](docs/superpowers/specs/2026-07-30-platform-architecture-design.md) · [Роадмап](docs/tasks/platform-roadmap.md)
+якщо в тебе є питання або уточнення - задай мені максимально велику кількість, щоб я міг тобі відповісти, а ти на основі цих відповідей міг сформувати повноцінний БРД документ і по ньому рухатись в процесі виконання завдання.
 
-## Статус
+потрібна також градація користувачів по категоріях, у відповідності до категорії - може бути відображена інша ціна або наявність.
 
-| | Стан |
-|---|---|
-| Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу К0) |
-| Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
-| Production-запуск | ✅ `pnpm build && pnpm start` |
-| `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
-| CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
-| Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
-| Теми як npm-пакети | ✅ Фаза 4: `@simplycms/theme-solarstore` + copy-in + маркетплейс-контракт |
+також потрібно передбачити, що в товара можуть бути модифікації (наприклад, потужність, колір і т.д.). При цьому має бути одна картка товару з одним описом, але в інтерфейсі має бути перемикач цих властивостей. Кожна властивість може мати своє окреме зображення, залишок і ціну, а також свій унікальний уточнений адрес в браузері.
 
-Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
-обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
-доганянням host-файлів і донесенням міграцій (ядра і плагінів). Плагін — це
-`definePlugin` з `simplycms/plugin-sdk`: слоти сторінок, власні таблиці
-`plg_*` (міграції їдуть у пакеті), сторінки адмінки, Zod-настройки, власний
-каталог перекладів — механізм цілком описаний у
-[`docs/architecture/plugins.md`](docs/architecture/plugins.md). Тема — npm-пакет
-(`@simplycms/theme-solarstore` — референс ядра) або copy-in-тека `themes/<name>`
-(`simplycms add … --theme --copy`), синхронізація з БД —
-`bootstrapThemes`; механізм цілком описаний у
-[`docs/architecture/themes.md`](docs/architecture/themes.md). Контракт подачі
-стороннього пакета в маркетплейс-індекс — [`docs/marketplace/README.md`](docs/marketplace/README.md).
+інтерфейс потрібно чучасний, стильний, тематичний для сайтів подібного формату з можливістю перемикання світлої/темної/системної теми.
+в інтерфейсі мають бути мінімалістичні анімації, а сайт загалом має бути професійний діловий стиль, оформлений в фірмових кольорах
 
-## Створити магазин на SimplyCMS
+This project was built with [Lovable](https://lovable.dev).
 
-Магазин — окремий проєкт, який ставить ядро з npm. Форкати цей репозиторій не треба.
+**Live app**: https://simplycms.lovable.app
 
-```bash
-pnpm create simplycms-store my-store
-cd my-store && pnpm install && pnpm build && pnpm start
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/55be2028-bb29-45e7-b3c2-916677c98cad).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `vite-last` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
+npm run dev
 ```
-
-Скаффолдер розгортає повний каркас магазину (host-обвʼязка, міграції
-Supabase, дефолтна тема) із версіями ядра, що відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
-`pnpm-workspace.yaml` везе `allowBuilds`, без якого install обривається.
-
-🔴 У перші 24 години після виходу нової версії ядра install упреться в
-`minimumReleaseAge` (дефолт pnpm 11 — 1 доба). Обхід описаний у README
-згенерованого магазину.
-
-📁 **Джерело правди каркаса — [`packages/create-simplycms-store/template/`](packages/create-simplycms-store/template/).**
-Той самий шаблон розгортає пілот пакування, тож він гарантовано робочий на
-поточній версії ядра. `tests/pilot/store-template/` — не окрема копія каркаса, а
-тонкий оверлей із двох файлів (`vite.config.ts` + `package.json`), який
-`scaffold.mjs` накладає поверх `template/` пакета.
-
-Що ви отримуєте одразу: SSR-вітрину з каталогом, кошиком і checkout, адмінку,
-профілі користувачів, `sitemap.xml`/`robots.txt`, і теми.
-
-### Обслуговування магазину — `simplycms` CLI
-
-Свіжий магазин уже має [`@simplycms/cli`](packages/cli/) у `devDependencies`
-(в існуючий — `pnpm add -D @simplycms/cli`):
-
-```bash
-pnpm simplycms doctor            # діагностика: версії, env, host-файли, міграції, конфіг↔БД
-pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/тему (pnpm add + запис у конфіг)
-pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
-pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
-pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
-                                  # for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done)
-```
-
-Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
-[`docs/architecture/cli.md`](docs/architecture/cli.md); механізм плагінів
-(контракт, межа довіри, таблиці `plg_*`, i18n) —
-[`docs/architecture/plugins.md`](docs/architecture/plugins.md).
-
-### Потрібна Supabase
-
-Ядро працює поверх Supabase (Postgres + Auth + Storage). Схема ядра — 40 таблиць
-із RLS; канон міграцій лежить у
-[`packages/simplycms/migrations/`](packages/simplycms/migrations/).
-
-## Розробка самого ядра
-
-Це для тих, хто розвиває SimplyCMS, а не будує на ньому магазин.
-
-```bash
-pnpm install
-cp .env.example .env.local     # заповнити ключі Supabase
-pnpm dev                       # dev-сервер (Vite, порт 5173+)
-pnpm build && pnpm start       # production-запуск (порт 3000)
-```
-
-### Перевірки
-
-```bash
-pnpm install --frozen-lockfile   # ловить розсинхрон lockfile — має бути ПЕРШИМ
-pnpm format:check
-pnpm lint
-pnpm build                       # генерує src/routeTree.gen.ts — перед typecheck
-pnpm typecheck
-pnpm test
-pnpm build:packages && pnpm test:packaging
-```
-
-🔴 **Порядок не випадковий.** `build` іде перед `typecheck`, бо генерує роутрі.
-`install --frozen-lockfile` перший, бо це єдиний крок, що звіряє `pnpm-lock.yaml`
-з манифестами.
-
-### Пілот пакування
-
-Зелені тести в монорепо **не означають**, що опублікований пакет працює: аліаси
-Vite резолвлять те, чого немає в `exports`, а tree-shaking вирізає з сирців те,
-що в зібраному чанку лишається живим. Тому є пілот — він збирає магазин зі
-справжніх tarball-ів, без workspace-аліасів:
-
-```bash
-pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundle-guard, Tailwind, смоуки обох CLI-пакетів. Без БД
-pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local)
-```
-
-🔴 `pnpm pilot:e2e` і Gate E — **decommissioned у 0.4.1** разом зі стеком
-Supabase: команди більше немає, `--e2e` падає з поясненням. Owner-флоу на
-Better Auth повертає трек К6 (деталі —
-[`docs/architecture/test-contours.md`](docs/architecture/test-contours.md)).
-
-Ганяйте його після змін в `exports`, `peerDependencies`, `tsdown`-конфігах, барелях
-або `routes/`.
-
-### Реліз
-
-```bash
-pnpm release 0.2.0     # гарди + бамп версії всіх пакетів + гейти + коміт
-```
-
-Далі PR у `main`; мерж публікує на npmjs. Повний опис — [`docs/architecture/release-process.md`](docs/architecture/release-process.md).
-
-## Структура репозиторію
-
-```
-src/                      # Host — тонка збірка магазину, 13 файлів
-  routes/__root.tsx       #   root route; routes/my/ — власні сторінки магазину
-  server.ts · start.ts    #   server entry (SEO-інтерсептор) · middleware (admin guard)
-  engine*.ts              #   DI-контекст ядра
-packages/       # Публіковані пакети — рівно пʼять
-  simplycms/              # ФЛАГМАН: увесь двигун, тіри T0→T5 теками src/*
-    src/contracts/        #   контракти + порти (0 deps) + view-model-и вітрини
-    src/domain/           #   чиста логіка: pricing, discounts, inventory, shipping
-    src/schema/           #   Drizzle-схема ядра + RLS у TS
-    src/supabase/         #   клієнти + baseline типів БД
-    src/storefront-routes/#   канонічні сторінки (pages/ + views/) + shells + SEO
-    src/admin/            #   сторінки й компоненти адмінки
-    src/themes/ plugins/  #   ThemeRegistry · HookRegistry, PluginSlot, validatePluginModule
-    src/plugin-sdk/       #   definePlugin + порти плагінів (docs/architecture/plugins.md)
-    src/ui/ *-ui/         #   shadcn-примітиви + feature-UI
-    routes/{storefront,admin}/  #   роут-файли — монтуються physical()
-    migrations/ skills/   #   канон core-міграцій · агентні скіли для магазинів
-  cli/                    # simplycms CLI: doctor/add/create (plugin|theme)/update/db:diff (docs/architecture/cli.md)
-  simplycms-plugin-faq/   # референс-плагін повного контуру (@simplycms/plugin-faq)
-  simplycms-theme-solarstore/  # референс-тема повного контуру (@simplycms/theme-solarstore)
-  create-simplycms-store/ # скаффолдер + вбудований шаблон магазину
-themes/ plugins/          # Референсні теми й локальні плагіни магазину (@plugins/*)
-supabase/                 # Міграції, seed, згенеровані типи, edge functions
-scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз
-```
-
-Повний довідник розробника — [`CLAUDE.md`](CLAUDE.md).
-
-## License
-
-MIT

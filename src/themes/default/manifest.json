@@ -1,0 +1,36 @@
+{
+  "name": "default",
+  "displayName": "SolarStore Default",
+  "version": "1.0.0",
+  "description": "Стандартна тема SolarStore з підтримкою світлої/темної теми",
+  "author": "SolarStore Team",
+  "previewImage": "/themes/default/preview.png",
+  "supports": {
+    "darkMode": true,
+    "customColors": true,
+    "catalogLayouts": ["grid", "list"],
+    "productLayouts": ["default"]
+  },
+  "settings": {
+    "primaryColor": {
+      "type": "color",
+      "default": "#1192DC",
+      "label": "Основний колір"
+    },
+    "showBrandInHeader": {
+      "type": "boolean",
+      "default": true,
+      "label": "Показувати логотип у хедері"
+    },
+    "productsPerRow": {
+      "type": "select",
+      "default": "4",
+      "label": "Товарів у рядку",
+      "options": [
+        { "value": "3", "label": "3 товари" },
+        { "value": "4", "label": "4 товари" },
+        { "value": "5", "label": "5 товарів" }
+      ]
+    }
+  }
+}

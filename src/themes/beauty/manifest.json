@@ -1,0 +1,86 @@
+{
+  "name": "beauty",
+  "displayName": "Beauty Store",
+  "version": "1.0.0",
+  "description": "Елегантна тема з теплою бежево-кремовою палітрою та коралово-червоними акцентами. Натхнення — AlpenStore.",
+  "author": "SimplyCMS",
+  "previewImage": "/themes/beauty/preview.png",
+  "supports": {
+    "darkMode": false,
+    "customColors": true,
+    "catalogLayouts": ["grid"],
+    "productLayouts": ["default"]
+  },
+  "settings": {
+    "primaryColor": {
+      "type": "color",
+      "default": "#D4574E",
+      "label": "Основний колір (акцент)"
+    },
+    "backgroundColor": {
+      "type": "color",
+      "default": "#F5EDE3",
+      "label": "Колір фону"
+    },
+    "showAnnouncementBar": {
+      "type": "boolean",
+      "default": true,
+      "label": "Показувати промо-стрічку"
+    },
+    "announcementBarText": {
+      "type": "text",
+      "default": "При сумі замовлення понад 1500 грн — доставка безкоштовна!",
+      "label": "Текст промо-стрічки"
+    },
+    "logoUrl": {
+      "type": "text",
+      "default": "",
+      "label": "URL логотипу"
+    },
+    "storeName": {
+      "type": "text",
+      "default": "Beauty Store",
+      "label": "Назва магазину"
+    },
+    "storeSlogan": {
+      "type": "text",
+      "default": "Краса починається тут",
+      "label": "Слоган магазину"
+    },
+    "showBrandCarousel": {
+      "type": "boolean",
+      "default": true,
+      "label": "Показувати карусель брендів"
+    },
+    "showNewsletter": {
+      "type": "boolean",
+      "default": true,
+      "label": "Показувати блок підписки"
+    },
+    "showBlogPreview": {
+      "type": "boolean",
+      "default": true,
+      "label": "Показувати блок статей"
+    },
+    "productsPerRow": {
+      "type": "select",
+      "default": "4",
+      "label": "Товарів у рядку",
+      "options": [
+        { "value": "3", "label": "3 товари" },
+        { "value": "4", "label": "4 товари" },
+        { "value": "5", "label": "5 товарів" }
+      ]
+    },
+    "socialFacebook": {
+      "type": "text",
+      "default": "",
+      "label": "Facebook URL"
+    },
+    "socialInstagram": {
+      "type": "text",
+      "default": "",
+      "label": "Instagram URL"
+    }
+  }
+}

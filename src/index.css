@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SolarStore Design System
+   Brand color: #1192DC (HSL: 200 85% 47%)
+   Professional e-commerce style with clean aesthetics
+*/
+
+@layer base {
+  :root {
+    /* Brand colors */
+    --brand: 200 85% 47%;
+    --brand-light: 200 85% 55%;
+    --brand-dark: 200 85% 35%;
+    --brand-foreground: 0 0% 100%;
+
+    /* Background */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Primary - Brand Blue */
+    --primary: 200 85% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 215 25% 25%;
+
+    /* Muted */
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Accent */
+    --accent: 200 85% 95%;
+    --accent-foreground: 200 85% 35%;
+
+    /* Destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Border */
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 200 85% 47%;
+
+    /* Radius */
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 25%;
+    --sidebar-primary: 200 85% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 85% 97%;
+    --sidebar-accent-foreground: 200 85% 35%;
+    --sidebar-border: 214 20% 92%;
+    --sidebar-ring: 200 85% 47%;
+  }
+
+  .dark {
+    /* Background */
+    --background: 220 20% 10%;
+    --foreground: 210 20% 95%;
+
+    /* Card */
+    --card: 220 18% 14%;
+    --card-foreground: 210 20% 95%;
+
+    /* Popover */
+    --popover: 220 18% 14%;
+    --popover-foreground: 210 20% 95%;
+
+    /* Primary - Brand Blue */
+    --primary: 200 85% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    /* Muted */
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    /* Accent */
+    --accent: 200 50% 20%;
+    --accent-foreground: 200 85% 70%;
+
+    /* Destructive */
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 142 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 38 80% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Border */
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 200 85% 50%;
+
+    /* Sidebar */
+    --sidebar-background: 220 18% 12%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 200 85% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 40% 18%;
+    --sidebar-accent-foreground: 200 85% 70%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 200 85% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth transitions for theme switching */
+  html {
+    transition: color-scheme 0.3s ease;
+  }
+
+  /* Focus visible improvements */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Brand gradient utilities */
+  .gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--brand)) 0%, hsl(var(--brand-light)) 100%);
+  }
+
+  .gradient-brand-subtle {
+    background: linear-gradient(135deg, hsl(var(--brand) / 0.1) 0%, hsl(var(--brand-light) / 0.05) 100%);
+  }
+
+  /* Text gradient */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--brand)) 0%, hsl(var(--brand-light)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Skeleton loading animation */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+
+  /* Hover card shadow */
+  .hover-shadow {
+    @apply transition-shadow duration-200 hover:shadow-lg;
+  }
+
+  /* Container utilities */
+  .container-fluid {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
