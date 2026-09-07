@@ -1,73 +1,45 @@
-# Welcome to your Lovable project
+# simplyCMS
 
-## Project info
+Хочу розробити міні інтернет магазин для продажу товарів для альтернативної енергетики - акумуляторні батареї, інвертори, сонячні панелі та послуги з їх монтажу.
+на сайті має бути лендінг, розділи зі списком товарів цього розділу та детальна картка товару. Також потрібно, щоб в кожному розділі була велика кількість всіляких фільтрів по товарах, які я міг би налаштувати для кожного товару в адмінці.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+потрібна публічна частина сайту, куди будуть заходити відвідувачі, кабінет користувача з інформацією про замовлення і їх статуси та додатковою інформацією в майбутньмоу, а також адмінка для управління даними - тобто, CMS система.
 
-## How can I edit this code?
+хочу щоб була можливість створювати розділи, визначати для розділів властивості товарів, при додаванні товарів - можна було заповнювати ці властивості товарів значеннями.
+також обов'язково має бути можливість завантажувати зображення як самих товарів в спеціальні картки, так і завантажувати зображення в текст опису товару за потреби, або вставляти посилання на відео на ютубі.
 
-There are several ways of editing your application.
+Додаю логотип та фавікон для сайту. Кольори логотипу #1192DC
 
-**Use Lovable**
+в налаштуваннях властивостей має бути можливість відображати в інтерфейсі як посилання зі своєю сторінкою, де я міг би додавати зображення для цієї сторінки та задавати додатковий опис. Наприклад, це може бути властивість Виробник із сторінкою виробника, або матеріали - з мультивибором в товарі та окремою сторінкою в інтерфейсі.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+якщо в тебе є питання або уточнення - задай мені максимально велику кількість, щоб я міг тобі відповісти, а ти на основі цих відповідей міг сформувати повноцінний БРД документ і по ньому рухатись в процесі виконання завдання.
 
-Changes made via Lovable will be committed automatically to this repo.
+потрібна також градація користувачів по категоріях, у відповідності до категорії - може бути відображена інша ціна або наявність.
 
-**Use your preferred IDE**
+також потрібно передбачити, що в товара можуть бути модифікації (наприклад, потужність, колір і т.д.). При цьому має бути одна картка товару з одним описом, але в інтерфейсі має бути перемикач цих властивостей. Кожна властивість може мати своє окреме зображення, залишок і ціну, а також свій унікальний уточнений адрес в браузері.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+інтерфейс потрібно чучасний, стильний, тематичний для сайтів подібного формату з можливістю перемикання світлої/темної/системної теми.
+в інтерфейсі мають бути мінімалістичні анімації, а сайт загалом має бути професійний діловий стиль, оформлений в фірмових кольорах
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+This project was built with [Lovable](https://lovable.dev).
 
-Follow these steps:
+**Live app**: https://simplycms.lovable.app
+
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/55be2028-bb29-45e7-b3c2-916677c98cad).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `vite-last` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+git clone <this-repository-url>
+cd <repository-name>
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
