@@ -1,0 +1,181 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  typecheck:
+    name: TypeScript
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+  test:
+    name: Tests
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+  www:
+    name: Landing (apps/www)
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # build ПЕРЕД typecheck — той самий інваріант, що в job typecheck:
+      # `vite build` генерує apps/www/src/routeTree.gen.ts
+      - name: Build landing (static prerender)
+        run: pnpm build:www
+
+      - name: Typecheck landing
+        run: pnpm typecheck:www
+
+  packaging:
+    name: Packaging
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
+      # тому вимагає зібраних `dist/` кожного пакета, яких у test-job немає.
+      - name: Build packages
+        run: pnpm build:packages
+
+      # 🔴 Після `build:packages`: типізує шаблон магазину проти зібраного
+      # `dist` — того самого, що бачить згенерований магазин. Кореневий
+      # `pnpm typecheck` шаблон ВИКЛЮЧАЄ, тому без цього кроку помилка типів
+      # у `template/routes.ts` проходить усі job-и зеленими, а магазин із
+      # такого шаблону не збирається.
+      - name: Typecheck store template
+        run: pnpm typecheck:template
+
+      - name: Tarball parity
+        run: pnpm test:packaging
+
+  schema:
+    name: Schema (PG harness)
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    # Service-контейнер: те саме, чим гейт користується локально через
+    # PG_HARNESS_URL (розробник піднімає власний кластер) — тут CI піднімає
+    # його сам, без Docker-у самого джоба (GitHub Actions services — це
+    # окремий контейнер поруч, не наш `docker run`). Мажор 17 — той самий,
+    # проти якого знято еталонний дамп політик (Task 5).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pgtest
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U pgtest"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PG_HARNESS_URL: postgresql://pgtest@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Schema gate
+        run: pnpm test:schema
+
+# 🔴 Пілот пакування (`pnpm pilot:pack` / `pilot` / `pilot:e2e`) у CI НЕ ганяється
+# — рішення власника (2026-08-01). Причина: `pilot` і `pilot:e2e` потребують
+# бази (живої або локального стеку в Docker), а це зовнішній стан, від дрейфу
+# якого гейт червонів би без регресії коду. Прогін пілота — відповідальність
+# розробника перед релізом; команди й порядок — у CLAUDE.md.
+# Передрелізним гейтом у CI лишається tarball-parity (job `packaging` вище і
+# крок у `publish-packages.yml`) — він детерміністичний і бази не потребує.

@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  Індекс колекції фікстурного «сайту» з одниною — обслуговується за `/product`
+  (див. index.html). Розмітка навмисно РЕАЛІСТИЧНА для вітрини: CollectionPage
+  з ItemList, усередині якого лежать Product. Тобто `browserVisitProbe`
+  зніме тут `Product` серед `jsonLdTypes` — і правило mismatch для `listing`
+  все одно мовчить, бо карток на сторінці більше за поріг. Саме так і має
+  бути: сама лише Product-розмітка списком не керує.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Product — Singular Fixture Store</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "All watches",
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "item": {
+                "@type": "Product",
+                "name": "Omega Speedmaster Professional"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "item": { "@type": "Product", "name": "Tissot PRX" }
+            }
+          ]
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+      </nav>
+    </header>
+    <main>
+      <h1>All watches</h1>
+      <section>
+        <a href="/product/omega-speedmaster-professional"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Omega Speedmaster Professional"
+            width="80"
+            height="80"
+          /><span>Omega Speedmaster Professional</span></a
+        >
+        <a href="/product/tissot-prx"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Tissot PRX"
+            width="80"
+            height="80"
+          /><span>Tissot PRX</span></a
+        >
+        <a href="/product/casio-a168"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Casio A168"
+            width="80"
+            height="80"
+          /><span>Casio A168</span></a
+        >
+        <a href="/product/seiko-5"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Seiko 5"
+            width="80"
+            height="80"
+          /><span>Seiko 5</span></a
+        >
+        <a href="/product/orient-bambino"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Orient Bambino"
+            width="80"
+            height="80"
+          /><span>Orient Bambino</span></a
+        >
+        <a href="/product/citizen-nj"
+          ><img
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            alt="Citizen NJ"
+            width="80"
+            height="80"
+          /><span>Citizen NJ</span></a
+        >
+      </section>
+    </main>
+  </body>
+</html>

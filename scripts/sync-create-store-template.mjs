@@ -1,0 +1,109 @@
+#!/usr/bin/env node
+
+/**
+ * Синхронізація генерованої частини шаблону `create-simplycms-store`
+ * і канонічних артефактів ядра для `@simplycms/cli` (спека CLI v1, §5).
+ *
+ * Шаблон магазину — джерело правди скаффолдера, але частина його файлів
+ * буквально дублює монорепо (host-каркас, міграції, дефолтна тема,
+ * референс-плагін). Тримати їх форком — гарантований дрейф після першої ж
+ * правки, тож вони СИНКУЮТЬСЯ звідси, а `tests/create-store-template-parity.test.ts`
+ * червоніє, щойно копія розійдеться з джерелом (модель `pilot-seed`).
+ *
+ * Додаткова ціль того самого механізму: `SYNCED_FILES` → `packages/cli/host/`
+ * (канон для `simplycms update`, зі збереженням відносних шляхів).
+ *
+ * 🔴 Міграції течуть у ЗВОРОТНОМУ напрямку від того, що було до B13. Раніше
+ * джерелом були кореневі `supabase/migrations/`, а `packages/simplycms/migrations/`
+ * — їхнім дзеркалом. Тепер канон САМ по собі джерело правди (baseline + сід,
+ * пишеться руками й `pnpm db:diff`), а копія в шаблоні — похідна від нього.
+ * Кореневої теки `supabase/migrations/` більше не існує.
+ *
+ * Статичні файли шаблону (`package.json.tpl`, `vite.config.ts`, `routes.ts`,
+ * `README.md`, `supabase/config.toml` тощо) скрипт НЕ чіпає — їхнє джерело
+ * правди сам шаблон.
+ *
+ * Використання: node scripts/sync-create-store-template.mjs
+ */
+
+import { cpSync, mkdirSync, rmSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+
+const REPO_ROOT = resolve(import.meta.dirname, '..');
+
+export const TEMPLATE_DIR = 'packages/create-simplycms-store/template';
+
+/** Канон host-файлів пакета CLI — тека сама собі маніфест для `simplycms update`. */
+export const CLI_HOST_DIR = 'packages/cli/host';
+
+/** Канон міграцій ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
+export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
+
+/** Host-файли: байт-ідентичні кореню монорепо (та сама 10-ка, що в пілоті). */
+export const SYNCED_FILES = [
+  'server.mjs',
+  'server-runtime.mjs',
+  'src/styles/globals.css',
+  'src/routes/__root.tsx',
+  'src/start.ts',
+  'src/client.tsx',
+  'src/router.tsx',
+  'src/server.ts',
+  'src/engine-provider.tsx',
+  // 🔴 Увійшов у канон 0.4.1. Доти файл був поза синком «бо template-варіант
+  // навмисно відрізняється» — після знесення шару репозиторіїв копії стали
+  // байт-ідентичними, і єдине, що тримало їх такими, — ручна правка обох при
+  // кожній зміні. Рев'ю спіймало це як клас помилок: розсинхрон не побачив би
+  // жоден гейт.
+  'src/engine.shared.ts',
+  'src/theme-registry.ts',
+];
+
+/** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
+export const SYNCED_DIRS = [
+  // Канон ядра → тека міграцій магазину. Імена тек різні навмисно:
+  // перейменування `<store>/supabase/` — окремий крок (К6), а зміст уже
+  // не Supabase-специфічний.
+  { from: SCHEMA_MIGRATIONS_DIR, to: 'supabase/migrations' },
+  { from: 'themes/default', to: 'themes/default' },
+  { from: 'plugins/hello-world', to: 'plugins/hello-world' },
+  // 🔴 Скілів тут НЕМАЄ (трек К0): вони їдуть у магазин текою `skills/`
+  // пакета `simplycms`, а `.agents/skills/` і `.claude/skills/` магазину —
+  // симлінки на неї (створює скаффолдер, лагодить `simplycms update`).
+  // Копія в шаблоні була б форком, що старіє мовчки при оновленні ядра.
+];
+
+/**
+ * Перезаписати синковану частину шаблону вмістом монорепо.
+ *
+ * @param {string} root Корінь репозиторію (за замовчуванням — цей репозиторій).
+ */
+export function syncTemplate(root = REPO_ROOT) {
+  for (const file of SYNCED_FILES) {
+    const target = join(root, TEMPLATE_DIR, file);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(join(root, file), target);
+  }
+  for (const { from, to } of SYNCED_DIRS) {
+    const target = join(root, TEMPLATE_DIR, to);
+    rmSync(target, { recursive: true, force: true });
+    cpSync(join(root, from), target, { recursive: true });
+  }
+  // Канон host/ пакета CLI: та сама множина SYNCED_FILES зі збереженням
+  // відносних шляхів. Теку пересоздаємо цілком — застарілий чи зайвий файл
+  // (включно з .gitkeep) не переживає синк.
+  const hostRoot = join(root, CLI_HOST_DIR);
+  rmSync(hostRoot, { recursive: true, force: true });
+  for (const file of SYNCED_FILES) {
+    const target = join(hostRoot, file);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(join(root, file), target);
+  }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  syncTemplate();
+  console.log(
+    '[template:sync] шаблон і канон host/ CLI синхронізовано з монорепо.',
+  );
+}

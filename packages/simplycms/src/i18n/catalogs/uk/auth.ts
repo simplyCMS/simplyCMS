@@ -1,0 +1,77 @@
+/** Автентифікація. */
+export const messages = {
+  // Встановлення пароля після запрошення власника
+  'auth.setPassword.title': 'Встановіть пароль',
+  'auth.setPassword.description':
+    'Ви прийняли запрошення. Задайте пароль для входу в магазин.',
+  'auth.setPassword.password': 'Пароль',
+  'auth.setPassword.confirm': 'Повторіть пароль',
+  'auth.setPassword.submit': 'Зберегти і продовжити',
+  'auth.setPassword.mismatch': 'Паролі не збігаються',
+  'auth.setPassword.tooShort': 'Мінімум 8 символів',
+  'auth.setPassword.noSession':
+    'Посилання недійсне або протермінувалось. Попросіть надіслати запрошення повторно.',
+  'auth.setPassword.backToAuth': 'Перейти до входу',
+  'auth.setPassword.error': 'Не вдалося зберегти пароль. Спробуйте ще раз.',
+
+  // Прийняття запрошення власника (`/auth/invite`)
+  'auth.invite.title': 'Запрошення власника',
+  'auth.invite.description':
+    'Задайте пароль — після цього ви одразу увійдете в адмінку магазину.',
+  'auth.invite.badLink':
+    'Посилання неповне: у ньому немає пошти або токена. Скопіюйте його з листа цілком або попросіть надіслати запрошення ще раз.',
+  'auth.invite.notFound':
+    'Запрошення вже використане або не існує. Попросіть надіслати нове.',
+  'auth.invite.expired':
+    'Термін дії запрошення минув. Попросіть надіслати нове.',
+  'auth.invite.mismatch':
+    'Токен у посиланні не збігається із запрошенням. Скопіюйте посилання з листа повністю.',
+  'auth.invite.passwordRejected':
+    'Пароль не прийнято. Спробуйте інший — довший або складніший.',
+  'auth.invite.signInFailed':
+    'Пароль збережено, але автоматичний вхід не вдався. Увійдіть вручну.',
+  'auth.invite.backToAuth': 'Перейти до входу',
+
+  // Сторінка входу / реєстрації
+  // 🔴 `auth.brand` і `auth.tagline` — брендовий текст магазину, що історично
+  // осів у канонічній сторінці ядра. Міграція його лише локалізує; винесення
+  // в налаштування магазину — окремий борг (див. план i18n, §5).
+  //
+  // 🔴 Дефолт `auth.brand` — НЕЙТРАЛЬНИЙ («SimplyCMS Store», як у `<title>`
+  // решти роутів вітрини). Доти тут стояла зашита назва референс-ТЕМИ
+  // (`SolarStore`), тобто магазин на будь-якій іншій темі малював чужий
+  // бренд на сторінці входу. Кириличні i18n-гейти цього не бачили —
+  // латиниця; від повернення стереже tests/core-brand-leak.test.ts.
+  'auth.brand': 'SimplyCMS Store',
+  'auth.tagline': 'Альтернативна енергетика для вашого дому',
+  'auth.login.title': 'Вхід в акаунт',
+  'auth.login.subtitle': 'Увійдіть для доступу до особистого кабінету',
+  'auth.login.tab': 'Вхід',
+  'auth.login.submit': 'Увійти',
+  'auth.login.pending': 'Вхід...',
+  'auth.login.failed': 'Помилка входу',
+  'auth.login.badCredentials': 'Невірний email або пароль',
+  'auth.login.success': 'Успішний вхід',
+  'auth.login.welcome': 'Ласкаво просимо!',
+
+  'auth.register.title': 'Реєстрація',
+  'auth.register.subtitle':
+    'Створіть акаунт для покупок та відстеження замовлень',
+  'auth.register.submit': 'Зареєструватися',
+  'auth.register.pending': 'Реєстрація...',
+  'auth.register.failed': 'Помилка реєстрації',
+  'auth.register.success': 'Реєстрація успішна',
+  'auth.register.created': 'Ваш акаунт створено!',
+
+  'auth.password': 'Пароль',
+  'auth.passwordConfirm': 'Підтвердити пароль',
+  'auth.firstNamePlaceholder': 'Іван',
+  'auth.lastNamePlaceholder': 'Петренко',
+  'auth.google': 'Продовжити з Google',
+  'auth.googleFailed': 'Помилка Google авторизації',
+  'auth.forgot.link': 'Забули пароль?',
+  'auth.forgot.needEmail': 'Спершу введіть email — на нього прийде посилання.',
+  'auth.forgot.sent': 'Якщо такий email є в системі, ми надіслали посилання.',
+  'auth.backHome': 'Повернутися на головну',
+  'auth.genericError': 'Щось пішло не так. Спробуйте ще раз.',
+} as const;

@@ -1,0 +1,6 @@
+// Перенесено в simplycms/catalog-ui. Re-export для зворотної сумісності.
+// 🔴 Тільки ІМЕНОВАНІ re-export-и: `export * from '<external>'` esbuild при
+// splitting лишає у спільному чанку й НЕ піднімає в entry — опублікований
+// пакет виходив без експортів (знахідка пілота Task 3.1).
+export { ModificationSelector } from 'simplycms/catalog-ui/ModificationSelector';
+export type { ModificationStockInfo } from 'simplycms/catalog-ui/ModificationSelector';
