@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -13,24 +17,38 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-
     "paths": {
-      "@simplycms/plugin-faq": ["./packages/simplycms-plugin-faq/src"],
+      "@simplycms/plugin-faq": [
+        "./packages/simplycms-plugin-faq/src"
+      ],
       "@simplycms/plugin-faq/pages/*": [
         "./packages/simplycms-plugin-faq/src/pages/*"
       ],
-      "@simplycms/plugin-faq/*": ["./packages/simplycms-plugin-faq/src/*"],
+      "@simplycms/plugin-faq/*": [
+        "./packages/simplycms-plugin-faq/src/*"
+      ],
       "@simplycms/theme-solarstore": [
         "./packages/simplycms-theme-solarstore/src"
       ],
-      "simplycms": ["./packages/simplycms/src"],
-      "simplycms/*": ["./packages/simplycms/src/*"],
-      "@themes/*": ["./themes/*"],
-      "@plugins/*": ["./plugins/*"]
-    },
-    "baseUrl": "."
+      "simplycms": [
+        "./packages/simplycms/src"
+      ],
+      "simplycms/*": [
+        "./packages/simplycms/src/*"
+      ],
+      "@themes/*": [
+        "./themes/*"
+      ],
+      "@plugins/*": [
+        "./plugins/*"
+      ]
+    }
   },
-  "include": ["src", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "src",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
   "exclude": [
     "node_modules",
     "temp",
