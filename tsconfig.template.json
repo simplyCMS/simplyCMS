@@ -1,0 +1,56 @@
+{
+  // Типізація ШАБЛОНУ МАГАЗИНУ (`packages/create-simplycms-store/template`).
+  //
+  // 🔴 Навіщо окремий конфіг. Кореневий `tsconfig.json` шаблон ВИКЛЮЧАЄ, і
+  // не помилково: його імпорти (`simplycms/*`) у магазині резолвляться з
+  // `node_modules`, а не workspace-аліасами, тож у кореневій програмі вони
+  // або не знайшлися б, або знайшлися б НЕ ТИМ шляхом. Наслідок цього
+  // виключення був такий: `tsc`, `eslint`, `vitest`, `build:packages` і
+  // `test:packaging` — усі зелені на шаблоні з помилкою типів і зверненням
+  // до неіснуючого ідентифікатора. Ловив це лише `pnpm pilot:pack`, який у
+  // CI не ганяється, тобто в реєстр міг поїхати шаблон, з якого магазин не
+  // збирається (перевірено навмисною поламкою `template/routes.ts`).
+  //
+  // 🔴 Резолв — через `dist`, а НЕ через `packages/simplycms/src`. Магазин
+  // бачить саме опубліковані `.d.ts`, тож перевіряти треба їх: аліас на
+  // `src` тягне в програму шаблону вихідники ядра з іншим набором `types`
+  // і дає помилки, яких у магазині не буває. Звідси залежність від
+  // `pnpm build:packages` — без нього гейт нема з чим звіряти.
+  //
+  // Повноту exports-мапи цей гейт НЕ доводить (`paths` обходить `exports`) —
+  // її стереже `scripts/audit-exports.mjs`, який шаблон уже сканує.
+  "extends": "./packages/create-simplycms-store/template/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "simplycms": ["./packages/simplycms/dist/index.d.ts"],
+      "simplycms/*": ["./packages/simplycms/dist/*"],
+      "@simplycms/theme-solarstore": [
+        "./packages/simplycms-theme-solarstore/dist/index.d.ts"
+      ],
+      "@simplycms/plugin-faq": [
+        "./packages/simplycms-plugin-faq/dist/index.d.ts"
+      ],
+      "@simplycms/plugin-faq/*": ["./packages/simplycms-plugin-faq/dist/*"],
+      "@themes/*": ["./packages/create-simplycms-store/template/themes/*"],
+      "@plugins/*": ["./packages/create-simplycms-store/template/plugins/*"]
+    }
+  },
+  "include": [
+    "packages/create-simplycms-store/template/routes.ts",
+    "packages/create-simplycms-store/template/simplycms.config.ts",
+    "packages/create-simplycms-store/template/themes",
+    "packages/create-simplycms-store/template/plugins",
+    "packages/create-simplycms-store/template/src"
+  ],
+  // 🔴 `src/router.tsx` імпортує `./routeTree.gen` — файл, який генерує
+  // `vite build` У МАГАЗИНІ, і якого в шаблоні немає за побудовою. Він же —
+  // синхронізований host-файл (байт-ідентичний кореню монорепо), тож його
+  // типи вже покриті кореневим `pnpm typecheck`; парність стереже
+  // `tests/create-store-template-parity.test.ts`.
+  "exclude": [
+    "node_modules",
+    "dist",
+    "packages/create-simplycms-store/template/src/router.tsx"
+  ]
+}

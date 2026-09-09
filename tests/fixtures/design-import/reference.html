@@ -1,0 +1,186 @@
+<!doctype html>
+<!--
+  Фікстура для смоку `tests/design-import-inspect.test.ts` (Фаза 2, задача
+  §2.A, план Р3). Кольори/шрифти/radius/googleapis-лінки навмисно ІДЕНТИЧНІ
+  `tests/fixtures/design-import/inspection.fixture.mjs` (Фаза 1) — контракт
+  між скриптами перевіряється і без браузера (`mapTokens(sampleInspection)`),
+  і з браузером (`inspect.mjs` семплить саме цей HTML). Рендериться через
+  `page.setContent` — мережі немає, `<link>` на googleapis НЕ завантажується
+  фактично, лише його `href` читається семплером.
+
+  Фаза 1 (план Р1/Р1b/Р2) додає: `.filler` — висота, що вимагає кількох
+  кроків `scrollThrough`; ДВІ ліниві секції через IntersectionObserver
+  (`.lazy-desktop` — колір проявляється на будь-якому viewport лише після
+  скролу; `.lazy-mobile` — видима ЛИШЕ на mobile-層, `display:none` поза
+  `@media (max-width:500px)`); `.desktop-only` — НЕ лінивий, просто прихований
+  на вузьких лейаутах (`@media (max-width:700px){display:none}`) — доводить,
+  що семплінг тепер явно десктопний (Р1b), а не з останнього viewport циклу
+  скріншотів (390px); `.pill-button` — `border-radius:9999px`, ловиться
+  sanity-фільтром радіуса (Р2, `radiusDropped`).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Design Import Reference</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&display=swap"
+    />
+    <style>
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #18181b;
+        font-family: Inter, system-ui, sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+      }
+      h1 {
+        font-family: Manrope, system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 32px;
+      }
+      section {
+        background: #cccccc;
+        padding: 24px;
+        margin-bottom: 32px;
+      }
+      .card {
+        background: #ffffff;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .card img {
+        border-radius: 8px;
+      }
+      .primary-button {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+      }
+      .accent {
+        background: #7c3aed;
+        color: #ffffff;
+        border-radius: 8px;
+        padding: 4px 8px;
+      }
+      .badge {
+        background: #fbbf24;
+        border-radius: 4px;
+        display: inline-block;
+        padding: 2px 6px;
+      }
+      /* Фаза 1 (план Р1): скролер-запобіжник — вимагає кілька кроків
+         scrollThrough, щоб дійти до лінивих секцій нижче. */
+      .filler {
+        height: 1600px;
+      }
+      /* Ліниві секції (план Р1): колір до `.revealed` — той самий, що фон
+         body, тож без реального спрацювання IntersectionObserver він у
+         семплі нерозрізнимий від фону; унікальний колір зʼявляється лише
+         після реального скролу. */
+      .lazy-desktop {
+        background: #ffffff;
+        padding: 24px;
+      }
+      .lazy-desktop.revealed {
+        background: #10b981;
+      }
+      .lazy-mobile {
+        background: #ffffff;
+        padding: 24px;
+        display: none;
+      }
+      .lazy-mobile.revealed {
+        background: #f43f5e;
+      }
+      @media (max-width: 500px) {
+        .lazy-mobile {
+          display: block;
+        }
+      }
+      /* НЕ лінива — просто прихована на вузьких лейаутах (план Р1b):
+         доводить, що семплінг явно десктопний, а не з 390px. */
+      .desktop-only {
+        background: #0ea5e9;
+        padding: 16px;
+      }
+      @media (max-width: 700px) {
+        .desktop-only {
+          display: none;
+        }
+      }
+      /* Сучасні колірні простори: Chrome лишає їх у computed styles саме в
+         тому просторі, у якому вони записані (`oklch()`/`lab()`), і регекс
+         `rgba?()` у семплері губив їх ПОВНІСТЮ. Tailwind v4 — а отже і сам
+         SimplyCMS, і типовий сучасний референс — генерує саме такі. Очікувані
+         sRGB-еквіваленти зафіксовані в асертах смоку. */
+      .modern-surface {
+        background: oklch(0.7 0.15 250); /* → #4ba3f7 */
+        color: lab(2.75381 0 0); /* → #0a0a0a */
+        border: 1px solid lab(91.6229 -0.159115 -2.26791); /* → #e5e7eb */
+        padding: 16px;
+      }
+      /* Pill-радіус (план Р2): має бути відфільтрований sanity-межею. */
+      .pill-button {
+        background: #111827;
+        color: #ffffff;
+        border: none;
+        border-radius: 9999px;
+        padding: 8px 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reference storefront</h1>
+    <section>
+      <div class="card">
+        <img src="data:," width="64" height="64" alt="" />
+        <p>Card body text describing a product.</p>
+        <button class="primary-button">Buy now</button>
+        <span class="accent">Featured</span>
+        <span class="badge">New</span>
+      </div>
+      <ul>
+        <li>First list item with body copy.</li>
+        <li>Second list item with body copy.</li>
+      </ul>
+      <button class="pill-button">Subscribe</button>
+    </section>
+    <div class="filler"></div>
+    <section class="lazy lazy-desktop">
+      <p>Lazy desktop section revealed on scroll.</p>
+    </section>
+    <section class="lazy lazy-mobile">
+      <p>Lazy mobile-only section revealed on scroll.</p>
+    </section>
+    <div class="desktop-only">
+      <p>Visible only on desktop-width layouts.</p>
+    </div>
+    <div class="modern-surface">
+      <p>Surface painted with modern CSS color functions.</p>
+    </div>
+    <script>
+      // Реальний IntersectionObserver — доводить, що `scrollThrough`
+      // (lib/browser.mjs) справді проявляє ліниві секції, а не лише
+      // прокручує сторінку (план Р1).
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) entry.target.classList.add('revealed');
+        });
+      });
+      document.querySelectorAll('.lazy').forEach(function (el) {
+        observer.observe(el);
+      });
+    </script>
+  </body>
+</html>

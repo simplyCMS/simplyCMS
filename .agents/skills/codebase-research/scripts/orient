@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+# orient — орієнтація в кодовій базі одним викликом.
+#
+# Ховає за собою наявність graphify: якщо граф є — питає граф (швидко, дешево,
+# бачить транзитивних споживачів через барелі); якщо графа немає (cloud-сесія
+# claude.ai/code, свіжий клон, інша машина) — тихо падає на ripgrep із тим самим
+# форматом виводу. Тому правило «для орієнтації клич orient» правдиве всюди.
+#
+# Використання:
+#   .agents/skills/codebase-research/scripts/orient <Symbol> [Symbol...]
+#                                               карта символів: де лежить + хто споживає
+#   … orient --plan <file.md>                   валідація якорів плану проти коду
+#   … orient --doctor                           діагностика: є граф? свіжий? скільки привидів?
+#   … orient --help
+#
+# Прапорці:
+#   --depth N      глибина зворотного обходу для споживачів (типово 2)
+#   --max N        скільки споживачів друкувати на символ (типово 12)
+#
+# Змінні оточення:
+#   ORIENT_NO_GRAPH=1   примусовий fallback-режим (для тестів)
+#
+# Теки пошуку визначаються АВТОМАТИЧНО з git-індексу (див. detect_search_dirs),
+# тому скрипт репо-агностичний: той самий файл працює в будь-якому репо без правок.
+# Перевизначити — файлом `.orientrc` у корені: по одній теці на рядок, `#` — коментар.
+#
+# Фаза застосування — ОРІЄНТАЦІЯ (де що лежить, кого зачепить зміна).
+# У фазі імплементації, коли файл уже відомий, це не потрібно: читай файл напряму.
+
+set -uo pipefail
+
+# Корінь репо: скрипт живе у скілі (scripts/), але кличуть його і через симлінк
+# .agents/bin/orient, і прямим шляхом, і з будь-якої підтеки — тому резолвимо через
+# git, а не через кількість `..` від BASH_SOURCE.
+SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+REPO_ROOT="$(git -C "$(dirname "$SELF")" rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$REPO_ROOT" ] || REPO_ROOT="$(cd "$(dirname "$SELF")/../../../.." && pwd)"
+DEPTH=2
+MAX_CONSUMERS=12
+MODE=symbols
+PLAN=""
+SYMBOLS=()
+
+# Шапка файлу і є довідка. Друкуємо її до першого не-коментаря, а не фіксованим
+# діапазоном рядків: інакше будь-яка правка шапки мовчки обрізає --help.
+usage() {
+  awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "${BASH_SOURCE[0]}"
+  exit 0
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h) usage ;;
+    --doctor) MODE=doctor; shift ;;
+    --plan) MODE=plan; PLAN="${2:-}"; shift 2 || true ;;
+    --depth) DEPTH="${2:-2}"; shift 2 || true ;;
+    --max) MAX_CONSUMERS="${2:-12}"; shift 2 || true ;;
+    -*) echo "orient: невідомий прапорець $1" >&2; exit 2 ;;
+    *) SYMBOLS+=("$1"); shift ;;
+  esac
+done
+
+cd "$REPO_ROOT" || exit 1
+
+# ---------------------------------------------------------------- детект бекенду
+HAVE_GRAPH=0
+if [ "${ORIENT_NO_GRAPH:-0}" != "1" ] \
+   && command -v graphify >/dev/null 2>&1 \
+   && [ -f graphify-out/graph.json ]; then
+  HAVE_GRAPH=1
+fi
+
+if command -v rg >/dev/null 2>&1; then
+  GREP_CMD=rg
+else
+  GREP_CMD=grep
+fi
+
+# ------------------------------------------------------------- теки пошуку
+# Зашитий список тек — головна причина, чому копії цього скрипта в різних репо
+# розходяться. Тому визначаємо їх із git-індексу: беремо верхньорівневі теки, у
+# яких git бачить код. Побічний ефект приємний — усе, що в .gitignore
+# (node_modules, dist, .output, graphify-out), відпадає само, без списку винятків.
+detect_search_dirs() {
+  local d
+
+  # 1) Явний override для репо з нетиповою розкладкою.
+  if [ -f .orientrc ]; then
+    while IFS= read -r d; do
+      d="${d%%#*}"
+      d="$(printf '%s' "$d" | tr -d '[:space:]')"
+      [ -n "$d" ] && [ -d "$d" ] && SEARCH_DIRS+=("$d")
+    done < .orientrc
+    [ ${#SEARCH_DIRS[@]} -gt 0 ] && return
+  fi
+
+  # 2) Автодетект. Генерат і білд-артефакти відсіює сам git; лишається прибрати
+  #    теки, які в індексі є, але шукати в них нічого (снапшоти, кеші).
+  while IFS= read -r d; do
+    case "$d" in
+      graphify-out|coverage|.tanstack|.output|dist|build) continue ;;
+    esac
+    [ -n "$d" ] && [ -d "$d" ] && SEARCH_DIRS+=("$d")
+  done < <(git ls-files -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' '*.sql' 2>/dev/null \
+           | grep '/' | cut -d/ -f1 | sort -u)
+
+  # 3) Не git-репо або порожній індекс — шукаємо від кореня.
+  [ ${#SEARCH_DIRS[@]} -eq 0 ] && SEARCH_DIRS=(.)
+}
+
+SEARCH_DIRS=()
+detect_search_dirs
+
+# rg/grep-обгортка: список файлів, що згадують токен (без тек-сміття)
+grep_files() {
+  local needle="$1"
+  if [ "$GREP_CMD" = rg ]; then
+    rg -l --no-messages -g '!node_modules' -g '!dist' -g '!.turbo' -g '!graphify-out' \
+       -- "\\b${needle}\\b" "${SEARCH_DIRS[@]}" 2>/dev/null
+  else
+    grep -rl --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.turbo \
+         -E "\\b${needle}\\b" "${SEARCH_DIRS[@]}" 2>/dev/null
+  fi
+}
+
+# rg/grep-обгортка: місце оголошення символа
+grep_definition() {
+  local needle="$1"
+  local pat="(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?(function|const|class|interface|type|enum)[[:space:]]+${needle}\\b"
+  if [ "$GREP_CMD" = rg ]; then
+    rg -n --no-heading --no-messages -m1 -g '!node_modules' -g '!dist' -g '!graphify-out' \
+       -- "$pat" "${SEARCH_DIRS[@]}" 2>/dev/null | head -1
+  else
+    grep -rnE --exclude-dir=node_modules --exclude-dir=dist \
+         "$pat" "${SEARCH_DIRS[@]}" 2>/dev/null | head -1
+  fi
+}
+
+# Перевіряє відповідь графа проти диска. Граф накопичує «привидів» після
+# rename/видалення, поки не прогнати `graphify update . --force`, а ще explain
+# може влучити в markdown-згадку замість коду. Обидва випадки позначаємо явно.
+verify_graph_hit() {
+  local sym="$1" src="$2"
+  local file="${src%% L*}"
+  if [ -n "$file" ] && [ ! -e "$file" ]; then
+    echo "  де:        ⚠ $src"
+    echo "             ФАЙЛУ НЕМАЄ — граф стейл. Полагодь: graphify update . --force"
+    local def; def="$(grep_definition "$sym")"
+    [ -n "$def" ] && echo "             факт (rg): ${def%%:*} L$(echo "$def" | cut -d: -f2)"
+    return
+  fi
+  # Граф однаково індексує згадку символа в доках і в маніфестах (package.json,
+  # tsconfig) — обидва не є оголошенням. Показуємо факт із rg, інакше агент піде
+  # читати package.json замість файлу з кодом.
+  case "$file" in
+    *.md|*.json)
+      local what="згадка в доках"
+      case "$file" in *.json) what="згадка в маніфесті" ;; esac
+      echo "  де:        ⚠ $src — це $what, не оголошення"
+      local def2; def2="$(grep_definition "$sym")"
+      if [ -n "$def2" ]; then
+        echo "             код (rg):  ${def2%%:*} L$(echo "$def2" | cut -d: -f2)"
+      else
+        echo "             у коді оголошення не знайдено — символ, імовірно, вже прибрано"
+      fi
+      ;;
+    *) echo "  де:        $src" ;;
+  esac
+}
+
+# ---------------------------------------------------------------- режим: символи
+report_symbol() {
+  local sym="$1"
+  echo "## $sym"
+
+  if [ "$HAVE_GRAPH" = 1 ]; then
+    local src
+    src="$(graphify explain "$sym" 2>/dev/null | awk -F'Source: *' '/Source:/ {print $2; exit}')"
+    if [ -n "$src" ]; then
+      verify_graph_hit "$sym" "$src"
+    else
+      echo "  де:        (у графі не знайдено — символ новий або перейменований)"
+      local def; def="$(grep_definition "$sym")"
+      [ -n "$def" ] && echo "  grep:      ${def%%:*}:$(echo "$def" | cut -d: -f2)"
+    fi
+
+    local consumers total
+    consumers="$(graphify affected "$sym" --depth "$DEPTH" 2>/dev/null | grep '^- ' || true)"
+    total="$(printf '%s' "$consumers" | grep -c '^- ' || true)"
+    if [ "${total:-0}" -gt 0 ]; then
+      echo "  споживачі: $total (граф, глибина $DEPTH — разом із транзитивними через барелі)"
+      printf '%s\n' "$consumers" | head -n "$MAX_CONSUMERS" | sed 's/^- /    /'
+      [ "$total" -gt "$MAX_CONSUMERS" ] && echo "    … ще $((total - MAX_CONSUMERS)) (повний список: graphify affected \"$sym\" --depth $DEPTH)"
+    else
+      echo "  споживачі: 0 у графі"
+    fi
+  else
+    local def; def="$(grep_definition "$sym")"
+    if [ -n "$def" ]; then
+      echo "  де:        ${def%%:*} L$(echo "$def" | cut -d: -f2)  (rg — графа немає)"
+    else
+      echo "  де:        не знайдено (rg — графа немає)"
+    fi
+    local files total
+    files="$(grep_files "$sym")"
+    total="$(printf '%s' "$files" | grep -c . || true)"
+    echo "  споживачі: ${total:-0} файлів (rg, лише прямі згадки — транзитивних через барелі НЕ видно)"
+    printf '%s\n' "$files" | head -n "$MAX_CONSUMERS" | sed 's/^/    /'
+    [ "${total:-0}" -gt "$MAX_CONSUMERS" ] && echo "    … ще $((total - MAX_CONSUMERS))"
+  fi
+  echo
+}
+
+# ---------------------------------------------------------------- режим: план
+# Витягує з плану superpowers перевірні якорі й звіряє їх із кодом:
+#   • шляхи файлів (Files-блоки й інлайн-беківки) — існують?
+#   • посилання виду path:NNN — чи є в файлі стільки рядків?
+#   • символи в беківках (PascalCase / use*) — де лежать за графом?
+report_plan() {
+  local plan="$1"
+  [ -f "$plan" ] || { echo "orient: файл плану не знайдено: $plan" >&2; exit 1; }
+
+  echo "# Валідація якорів плану: $plan"
+  echo "# бекенд: $([ "$HAVE_GRAPH" = 1 ] && echo 'graphify (граф)' || echo 'rg (графа немає)')"
+  echo
+
+  # Альтернація тек будується з тих самих SEARCH_DIRS, що й пошук символів, плюс
+  # теки, де коду немає, але плани на них посилаються постійно (доки, канон, тулінг).
+  local dir_re
+  dir_re="$(printf '%s\n' "${SEARCH_DIRS[@]}" docs .agents .github .claude \
+            | sed 's/\./\\./g' | sort -u | paste -sd'|' -)"
+
+  local paths
+  paths="$(grep -oE "(${dir_re})/[A-Za-z0-9_@./-]+\.(ts|tsx|js|jsx|mjs|cjs|sql|md|json|yml|yaml|toml|css)(:[0-9]+(-[0-9]+)?)?" "$plan" \
+           | sort -u)"
+
+  echo "## Шляхи"
+  local bad=0 good=0
+  while IFS= read -r ref; do
+    [ -z "$ref" ] && continue
+    local file="${ref%%:*}"
+    local line="${ref#*:}"; [ "$line" = "$ref" ] && line=""
+    line="${line%%-*}"
+    if [ ! -e "$file" ]; then
+      echo "  ✗ НЕМАЄ   $ref"
+      bad=$((bad + 1))
+    elif [ -n "$line" ]; then
+      local n; n="$(wc -l < "$file" 2>/dev/null || echo 0)"
+      if [ "$line" -gt "$n" ]; then
+        echo "  ✗ РЯДОК   $ref — у файлі лише $n рядків"
+        bad=$((bad + 1))
+      else
+        echo "  ✓ $ref"
+        good=$((good + 1))
+      fi
+    else
+      echo "  ✓ $file"
+      good=$((good + 1))
+    fi
+  done <<< "$paths"
+  echo "  разом: ✓ $good | ✗ $bad"
+  echo
+
+  local syms
+  syms="$(grep -oE '`[A-Z][A-Za-z0-9_]{3,}`|`use[A-Z][A-Za-z0-9_]{2,}`' "$plan" \
+          | tr -d '`' | sort -u | head -40)"
+  if [ -n "$syms" ]; then
+    echo "## Символи (де лежать за фактом)"
+    while IFS= read -r s; do
+      [ -z "$s" ] && continue
+      if [ "$HAVE_GRAPH" = 1 ]; then
+        local src; src="$(graphify explain "$s" 2>/dev/null | awk -F'Source: *' '/Source:/ {print $2; exit}')"
+        local sfile="${src%% L*}"
+        if [ -z "$src" ]; then
+          echo "  ? $s → у графі немає (новий/перейменований/зовнішній)"
+        elif [ ! -e "$sfile" ]; then
+          echo "  ✗ $s → $src — ФАЙЛУ НЕМАЄ (граф стейл: graphify update . --force)"
+        else
+          case "$sfile" in
+            *.md) local d; d="$(grep_definition "$s")"
+                  if [ -n "$d" ]; then echo "  ✓ $s → ${d%%:*} L$(echo "$d" | cut -d: -f2)"
+                  else echo "  ✗ $s → лише згадка в доках ($sfile), у коді немає"; fi ;;
+            *)    echo "  ✓ $s → $src" ;;
+          esac
+        fi
+      else
+        local def; def="$(grep_definition "$s")"
+        if [ -n "$def" ]; then echo "  ✓ $s → ${def%%:*} L$(echo "$def" | cut -d: -f2)"; else echo "  ? $s → rg не знайшов оголошення"; fi
+      fi
+    done <<< "$syms"
+    echo
+  fi
+
+  echo "# ✗ вище = якір плану не збігається з диском. УВАГА: план описує і майбутнє —"
+  echo "# файл із «Create:» ще не існує за визначенням, і це НЕ дрейф. Дрейф — це ✗ на"
+  echo "# тому, що план вважає наявним (Modify/Delete, посилання :рядок, символ у беківках)."
+  echo "# Справжня розбіжність у скоупі → рішення власника, не мовчазне «довіряй коду»."
+}
+
+# ---------------------------------------------------------------- режим: doctor
+# Відповідає на «чи можна вірити графу прямо зараз»: є він? відстає від HEAD?
+# скільки в ньому файлів, яких уже немає на диску (привиди після rename/видалень)?
+report_doctor() {
+  echo "# orient --doctor"
+  echo
+
+  if ! command -v graphify >/dev/null 2>&1; then
+    echo "graphify:   НЕ ВСТАНОВЛЕНО → orient працює через rg-fallback."
+    echo "            Це нормально для cloud-сесій і Copilot. Ставити не обовʼязково;"
+    echo "            локально: uv tool install \"graphifyy[mcp,sql]\", далі /граф-онови."
+    return
+  fi
+  echo "graphify:   $(graphify --version 2>&1 | head -1)"
+
+  if [ ! -f graphify-out/graph.json ]; then
+    echo "граф:       ВІДСУТНІЙ (graphify-out/graph.json) → rg-fallback."
+    echo "            Побудувати AST-граф (без LLM, ~1 хв): graphify update ."
+    echo "            Семантику доків і назви спільнот — /граф-онови (🔴 з явною"
+    echo "            дешевою моделлю: claude-cli без --model бере Opus)."
+    return
+  fi
+
+  local g_mtime head_time head_sha
+  g_mtime="$(stat -c %Y graphify-out/graph.json 2>/dev/null || echo 0)"
+  head_time="$(git log -1 --format=%ct 2>/dev/null || echo 0)"
+  head_sha="$(git log -1 --format=%h 2>/dev/null || echo '?')"
+
+  python3 - "$g_mtime" "$head_time" "$head_sha" <<'PY'
+import json, os, signal, sys, time
+from pathlib import Path
+
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # тихо вмирати під `| head`
+
+g_mtime, head_time, head_sha = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+data = json.loads(Path('graphify-out/graph.json').read_text(encoding='utf-8'))
+nodes = data.get('nodes', [])
+links = data.get('links', data.get('edges', []))
+
+files = {n.get('source_file') for n in nodes if n.get('source_file')}
+files.discard(None)
+missing = sorted(f for f in files if f and not os.path.exists(f))
+
+age = int(time.time()) - g_mtime
+print(f"граф:       {len(nodes)} вузлів / {len(links)} звʼязків / {len(files)} файлів")
+print(f"перебудова: {age // 60} хв тому" + (f" (HEAD {head_sha} — {(g_mtime - head_time) // 60} хв після коміту)" if head_time else ""))
+
+if g_mtime < head_time:
+    print("свіжість:   ⚠ ГРАФ СТАРШИЙ ЗА HEAD — ребілд не відпрацював (напр. GRAPHIFY_SKIP_HOOK=1).")
+    print("            Полагодь: graphify update .")
+else:
+    print("свіжість:   ✓ граф новіший за останній коміт")
+
+if missing:
+    print(f"привиди:    ⚠ {len(missing)} файлів у графі НЕ існують на диску (rename/видалення без ребілду)")
+    for f in missing[:8]:
+        print(f"              {f}")
+    if len(missing) > 8:
+        print(f"              … ще {len(missing) - 8}")
+    print("            Полагодь: graphify update . --force")
+else:
+    print("привиди:    ✓ немає — усі файли графа існують на диску")
+PY
+
+  echo
+  echo "# Семантика доків і назви спільнот жодним хуком не оновлюються — це /граф-онови."
+}
+
+# ---------------------------------------------------------------- запуск
+if [ "$MODE" = doctor ]; then
+  report_doctor
+  exit 0
+fi
+
+if [ "$MODE" = plan ]; then
+  report_plan "$PLAN"
+  exit 0
+fi
+
+if [ ${#SYMBOLS[@]} -eq 0 ]; then
+  echo "orient: вкажи символи або --plan <file>. Довідка: orient --help" >&2
+  exit 2
+fi
+
+echo "# orient — бекенд: $([ "$HAVE_GRAPH" = 1 ] && echo 'graphify (граф)' || echo 'rg (графа немає)')"
+echo "# теки:   ${SEARCH_DIRS[*]}"
+echo
+for s in "${SYMBOLS[@]}"; do
+  report_symbol "$s"
+done
+echo "# Це КАРТА (де і хто), не істина про зміст. Сигнатури/типи/поведінку — читай у файлах."

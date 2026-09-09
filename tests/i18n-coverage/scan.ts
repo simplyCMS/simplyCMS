@@ -1,0 +1,178 @@
+import ts from 'typescript';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Знайдений кириличний рядок інтерфейсу. */
+export interface Hardcoded {
+  file: string;
+  line: number;
+  kind: string;
+  text: string;
+}
+
+const CYRILLIC = /[Ѐ-ӿ]/;
+
+/**
+ * Мігровані зони. Тести всередині них не скануються: кирилиця там — це назви
+ * `describe`/`it` і дані фікстур («Товар p1», «Іван»), тобто не інтерфейс.
+ *
+ * 🔴 Список розширено 2026-08-09 з двох пакетів на всю воронку покупки, host і
+ * теми. До цього AST-тест доводив завершеність ЛИШЕ для `storefront-routes` і
+ * `admin`, через що 293 хардкоджені рядки в `*-ui` лишались невидимими для
+ * гейтів — борг закрили аж тоді, коли його знайшли ручним сканом по всіх
+ * теках. Тепер регрес у будь-якій із цих зон валить `pnpm test`.
+ */
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** Теки першого рівня всередині `dir`, відсортовані; неіснуюча тека → `[]`. */
+function subdirs(dir: string): string[] {
+  return readdirSync(join(REPO, dir), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
+/**
+ * Референс-пакети плагінів дискавляться з диска, а не перелічуються
+ * поіменно: наступний `packages/simplycms-plugin-*` потрапляє під скан
+ * автоматично (той самий аргумент, що в `plugin-messages-parity`).
+ */
+function pluginPackageRoots(): string[] {
+  return subdirs('packages')
+    .filter((name) => name.startsWith('simplycms-plugin-'))
+    .map((name) => `packages/${name}/src`);
+}
+
+/**
+ * Теми теж дискавляться, і з ДВОХ коренів (Фаза 4): локальні `themes/<name>`
+ * (форма copy-in і еталон `default`) та референс-пакети
+ * `packages/simplycms-theme-<name>/src`. Поіменний список тут уже одного
+ * разу ставав пасткою — нова тема мовчки лишалася б поза сканом.
+ */
+function themeRoots(): string[] {
+  return [
+    ...subdirs('themes').map((name) => `themes/${name}`),
+    ...subdirs('packages')
+      .filter((name) => name.startsWith('simplycms-theme-'))
+      .map((name) => `packages/${name}/src`),
+  ];
+}
+
+export const SCANNED_ROOTS = [
+  'src',
+  // К0: тіри ядра — теки флагмана. Перелічені саме теки, а не
+  // `packages/simplycms/src` цілком: core-каталоги
+  // (`src/i18n/catalogs/**`) — кирилиця за побудовою, і суцільний корінь
+  // вимагав би перекладу від перекладу (той самий аргумент, що для
+  // `messages.ts` тем).
+  'packages/simplycms/src/storefront-routes',
+  'packages/simplycms/src/admin',
+  'packages/simplycms/src/cart-ui',
+  'packages/simplycms/src/catalog-ui',
+  'packages/simplycms/src/checkout-ui',
+  'packages/simplycms/src/profile-ui',
+  'packages/simplycms/src/reviews-ui',
+  'packages/simplycms/src/core',
+  'packages/simplycms/src/storefront',
+  'packages/simplycms/src/themes',
+  'packages/simplycms/src/plugins',
+  'packages/simplycms/src/plugin-sdk',
+  // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
+  // у `SCANNED_ROOTS` їх не було, а eslint-зона `I18N_MIGRATED_FILES` бачить
+  // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
+  // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
+  // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
+  // Самі рядки поки в `PENDING_FILES`: перекласти їх нічим — `head()` це
+  // звичайна функція поза React-контекстом, а локаль магазину ядру недоступна.
+  'packages/simplycms/routes',
+  ...pluginPackageRoots(),
+  ...themeRoots(),
+  // Локальні плагіни магазину-монорепо цілком (як themes/): новий плагін
+  // потрапляє під скан без ручної реєстрації. Каталоги messages.ts
+  // виключає CATALOG_FILES нижче.
+  'plugins',
+];
+
+/**
+ * Файли, які самі Є каталогом перекладів, а не його споживачем.
+ *
+ * 🔴 Тема несе власні повідомлення (`ThemeModule.messages`, контракт v2.1), і
+ * український бік цього каталогу — кирилиця за побудовою. Сканувати його
+ * означало б вимагати перекладу від перекладу. Core-каталоги
+ * (`packages/simplycms/src/i18n/catalogs/**`) у `SCANNED_ROOTS` не входять
+ * узагалі й тому окремого винятку не потребують.
+ */
+const CATALOG_FILES = /(^|\/)messages\.ts$/;
+
+function walk(dir: string, out: string[]): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== '__tests__') walk(full, out);
+    } else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+export function sourceFiles(repoRoot: string): string[] {
+  return SCANNED_ROOTS.flatMap((root) => walk(join(repoRoot, root), []))
+    .map((f) => relative(repoRoot, f))
+    .filter((f) => !CATALOG_FILES.test(f))
+    .sort();
+}
+
+/**
+ * AST-прохід, а не regexp по тексту.
+ *
+ * 🔴 Причина принципова: коментарі українською — вимога стилю проєкту (їх у цих
+ * пакетах 325 рядків), а в AST вони лежать у trivia й у обхід вузлів не
+ * потрапляють за побудовою. Пошук по тексту не відрізнив би їх від хардкоду й
+ * тягнув би за собою правки, що знищують документацію.
+ */
+export function scanFile(repoRoot: string, file: string): Hardcoded[] {
+  const src = readFileSync(join(repoRoot, file), 'utf8');
+  const sf = ts.createSourceFile(
+    file,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const found: Hardcoded[] = [];
+
+  const record = (node: ts.Node, kind: string, text: string) => {
+    found.push({
+      file,
+      line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1,
+      kind,
+      text: text.trim().slice(0, 60),
+    });
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxText(node)) {
+      if (CYRILLIC.test(node.text) && node.text.trim()) {
+        record(node, 'JSXText', node.text);
+      }
+    } else if (
+      ts.isStringLiteral(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node)
+    ) {
+      if (CYRILLIC.test(node.text)) record(node, 'StringLiteral', node.text);
+    } else if (ts.isTemplateExpression(node)) {
+      const raw = node.getText(sf);
+      if (CYRILLIC.test(raw)) record(node, 'TemplateExpression', raw);
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sf);
+  return found;
+}
+
+export function scanAll(repoRoot: string): Hardcoded[] {
+  return sourceFiles(repoRoot).flatMap((f) => scanFile(repoRoot, f));
+}

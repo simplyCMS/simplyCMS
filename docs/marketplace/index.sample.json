@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "solarstore",
+      "displayName": "SolarStore Default",
+      "type": "theme",
+      "package": "@simplycms/theme-solarstore",
+      "version": "0.3.0",
+      "description": "Reference SimplyCMS theme (contract v2): manifest, design tokens, Header/Footer/HeroBanner/HomeSections components and a uk/en message catalog for an alternative-energy storefront.",
+      "license": "MIT",
+      "engines": { "simplycms": ">=0.1.0" },
+      "author": "SimplyCMS",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/simplyCMS/simplyCMS.git",
+        "directory": "packages/simplycms-theme-solarstore"
+      }
+    },
+    {
+      "name": "faq",
+      "displayName": "FAQ",
+      "type": "plugin",
+      "package": "@simplycms/plugin-faq",
+      "version": "0.3.0",
+      "description": "Reference FAQ plugin: product questions and answers with admin CRUD.",
+      "license": "MIT",
+      "engines": { "simplycms": ">=0.3.0" },
+      "author": "SimplyCMS",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/simplyCMS/simplyCMS.git",
+        "directory": "packages/simplycms-plugin-faq"
+      }
+    }
+  ]
+}

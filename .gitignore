@@ -1,18 +1,31 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build / TanStack Start (Vite + Nitro)
+dist
+dist-ssr
+.output
+.nitro
+.tanstack
+*.tsbuildinfo
+
+# Environment
+*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # Logs
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,3 +35,37 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+coverage
+
+# Temp reference (keep in git for migration)
+# temp/node_modules
+temp/node_modules
+temp/.env.local
+/supabase/.temp
+/supabase/.branches
+
+# Package pack artifacts (npm/pnpm pack)
+*.tgz
+packages/*/package/
+
+# Knowledge graph (graphify) — локальний артефакт, росте снапшотами по датах
+graphify-out/
+
+# Playwright (pnpm test:e2e) — звіти й трейси прогону
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Артефакти інспекцій редизайну (скріншоти + JSON лайв-тестів скіла
+# redesign-from-reference) — робочий процес, не код (рішення власника
+# 2026-08-17). Скіл каже комітити їх У МАГАЗИНІ як аудитований слід —
+# це стосується магазинів; у монорепо вони лишаються локально.
+docs/design-references/
+
+# Demo-датасет діагностичного стенда: згенерований дамп ЧУЖОГО каталогу
+# (scripts/dev-stand/dump-demo-data.mjs). Комітяться скрипт, allowlist,
+# фікстура й README — самі дані в OSS-репо не їдуть.
+scripts/dev-stand/seed-demo.sql
