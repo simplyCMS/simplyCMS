@@ -42,6 +42,17 @@ import { sql } from "drizzle-orm"
 // `app.current_user_id()` (читач GUC `app.user_id`) і ролі `app_user`/
 // `app_admin` створюються ДО цих таблиць — файлом `0000_prelude.sql`
 // канону міграцій (Task 3); гранти — `0002_grants.sql` (Task 4).
+//
+// 🔴 Контракт дат (К2-Е0, Е0-2): усі timestamp — `mode: 'date'`, як у
+// `./auth.ts`. `mode: 'string'` віддавав не ISO, а сирий текст Postgres
+// (`drizzle-orm/node-postgres` підкладає identity-парсер для timestamptz), і
+// він доїжджав до `<lastmod>` sitemap і в браузер. У застосунку дата — `Date`;
+// рядком вона стає лише на межі виводу (`toISOString()` у sitemap, `Intl` в
+// UI). Через loader-payload і RPC serverFn `Date` проходить як `Date`: він у
+// `DefaultSerializable` серіалізатора Start (`@tanstack/router-core`,
+// `ssr/serializer/transformer.d.ts`). Точність — мілісекунди: мікросекунди
+// Postgres драйвер відкидає (`pg-core/columns/timestamp.js` → `new Date()`),
+// місць, де це критично, у коді немає (аудит r1). DDL від `mode` не залежить.
 import { users } from "./auth";
 
 export * from "./auth";
@@ -64,7 +75,7 @@ export const orderStatuses = pgTable("order_statuses", {
 	color: varchar({ length: 7 }).default('#6B7280'),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
 	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
@@ -84,8 +95,8 @@ export const sections = pgTable("sections", {
 	isActive: boolean("is_active").default(true).notNull(),
 	metaTitle: text("meta_title"),
 	metaDescription: text("meta_description"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.parentId],
@@ -107,7 +118,7 @@ export const sectionProperties = pgTable("section_properties", {
 	hasPage: boolean("has_page").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	options: jsonb(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.sectionId],
@@ -123,7 +134,7 @@ export const userCategories = pgTable("user_categories", {
 	code: varchar({ length: 50 }).notNull(),
 	description: text(),
 	isDefault: boolean("is_default").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	priceTypeId: uuid("price_type_id"),
 }, (table) => [
 	foreignKey({
@@ -144,7 +155,7 @@ export const languages = pgTable("languages", {
 	name: text().notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	unique("languages_code_key").on(table.code),
 	// К3-14: таблиця без parent-колонки — CRUD ще не реалізований (лише
@@ -156,7 +167,7 @@ export const userRoles = pgTable("user_roles", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	role: appRole().notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.userId],
@@ -172,7 +183,7 @@ export const wishlists = pgTable("wishlists", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	productId: uuid("product_id").notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.productId],
@@ -193,7 +204,7 @@ export const comparisons = pgTable("comparisons", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	productId: uuid("product_id").notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.productId],
@@ -220,7 +231,7 @@ export const orderItems = pgTable("order_items", {
 	price: numeric({ precision: 12, scale:  2 }).notNull(),
 	quantity: integer().default(1).notNull(),
 	total: numeric({ precision: 12, scale:  2 }).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	basePrice: numeric("base_price"),
 	discountData: jsonb("discount_data"),
 }, (table) => [
@@ -261,7 +272,7 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 	value: text(),
 	numericValue: numeric("numeric_value"),
 	optionId: uuid("option_id"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_modification_property_values_mod").using("btree", table.modificationId.asc().nullsLast().op("uuid_ops")),
 	index("idx_modification_property_values_option").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
@@ -290,7 +301,7 @@ export const productPropertyValues = pgTable("product_property_values", {
 	propertyId: uuid("property_id").notNull(),
 	value: text(),
 	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	optionId: uuid("option_id"),
 }, (table) => [
 	index("idx_product_property_values_option_id").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
@@ -319,7 +330,7 @@ export const propertyOptions = pgTable("property_options", {
 	name: text().notNull(),
 	slug: varchar({ length: 255 }).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	description: text(),
 	imageUrl: text("image_url"),
 	metaTitle: text("meta_title"),
@@ -340,7 +351,7 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 	sectionId: uuid("section_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	appliesTo: text("applies_to").default('product').notNull(),
 }, (table) => [
 	index("idx_section_property_assignments_property").using("btree", table.propertyId.asc().nullsLast().op("uuid_ops")),
@@ -367,8 +378,8 @@ export const services = pgTable("services", {
 	price: numeric({ precision: 12, scale:  2 }),
 	isActive: boolean("is_active").default(true).notNull(),
 	imageUrl: text("image_url"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	unique("services_slug_key").on(table.slug),
 	check("services_positive_price", sql`(price IS NULL) OR (price >= (0)::numeric)`),
@@ -385,8 +396,8 @@ export const products = pgTable("products", {
 	isFeatured: boolean("is_featured").default(false).notNull(),
 	metaTitle: text("meta_title"),
 	metaDescription: text("meta_description"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	images: jsonb().default([]),
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
@@ -422,8 +433,8 @@ export const productModifications = pgTable("product_modifications", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	images: jsonb().default([]),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	stockStatus: stockStatus("stock_status").default('in_stock'),
 }, (table) => [
 	foreignKey({
@@ -445,7 +456,7 @@ export const serviceRequests = pgTable("service_requests", {
 	phone: text(),
 	message: text(),
 	status: varchar({ length: 50 }).default('new').notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.serviceId],
@@ -472,7 +483,7 @@ export const pluginEvents = pgTable("plugin_events", {
 	payload: jsonb(),
 	result: jsonb(),
 	error: text(),
-	executedAt: timestamp("executed_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	executedAt: timestamp("executed_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [
 ]);
 
@@ -487,8 +498,8 @@ export const plugins = pgTable("plugins", {
 	config: jsonb().default({}),
 	hooks: jsonb().default([]),
 	migrationsApplied: jsonb("migrations_applied").default([]),
-	installedAt: timestamp("installed_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	installedAt: timestamp("installed_at", { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [
 	unique("plugins_name_key").on(table.name),
 ]);
@@ -504,8 +515,8 @@ export const shippingMethods = pgTable("shipping_methods", {
 	sortOrder: integer("sort_order").default(0).notNull(),
 	config: jsonb().default({}),
 	icon: text(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	unique("shipping_methods_code_key").on(table.code),
 ]);
@@ -517,7 +528,7 @@ export const shippingZones = pgTable("shipping_zones", {
 	isActive: boolean("is_active").default(true).notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	cities: text().array().default([""]),
 	regions: text().array().default([""]),
 }, (table) => [
@@ -542,7 +553,7 @@ export const shippingRates = pgTable("shipping_rates", {
 	isActive: boolean("is_active").default(true).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	config: jsonb().default({}),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_shipping_rates_method_id").using("btree", table.methodId.asc().nullsLast().op("uuid_ops")),
 	index("idx_shipping_rates_zone_id").using("btree", table.zoneId.asc().nullsLast().op("uuid_ops")),
@@ -563,8 +574,8 @@ export const systemSettings = pgTable("system_settings", {
 	key: varchar({ length: 100 }).notNull(),
 	value: jsonb().default({}).notNull(),
 	description: text(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [
 	unique("system_settings_key_key").on(table.key),
 ]);
@@ -581,7 +592,7 @@ export const pickupPoints = pgTable("pickup_points", {
 	isActive: boolean("is_active").default(true).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	coordinates: jsonb(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	isSystem: boolean("is_system").default(false).notNull(),
 }, (table) => [
 	index("idx_pickup_points_city").using("btree", table.city.asc().nullsLast().op("text_ops")),
@@ -605,8 +616,8 @@ export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
 	productId: uuid("product_id"),
 	modificationId: uuid("modification_id"),
 	quantity: integer().default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [
 	uniqueIndex("unique_stock_modification_per_point").using("btree", table.pickupPointId.asc().nullsLast().op("uuid_ops"), table.modificationId.asc().nullsLast().op("uuid_ops")).where(sql`(modification_id IS NOT NULL)`),
 	uniqueIndex("unique_stock_product_per_point").using("btree", table.pickupPointId.asc().nullsLast().op("uuid_ops"), table.productId.asc().nullsLast().op("uuid_ops")).where(sql`((product_id IS NOT NULL) AND (modification_id IS NULL))`),
@@ -643,8 +654,8 @@ export const profiles = pgTable("profiles", {
 	lastName: text("last_name"),
 	phone: text(),
 	categoryId: uuid("category_id"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	avatarUrl: text("avatar_url"),
 	defaultShippingMethodId: uuid("default_shipping_method_id"),
 	defaultPickupPointId: uuid("default_pickup_point_id"),
@@ -689,7 +700,7 @@ export const userCategoryHistory = pgTable("user_category_history", {
 	reason: text(),
 	ruleId: uuid("rule_id"),
 	changedBy: uuid("changed_by"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.fromCategoryId],
@@ -723,7 +734,7 @@ export const categoryRules = pgTable("category_rules", {
 	conditions: jsonb().default({"type":"all","rules":[]}).notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
 	priority: integer().default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.fromCategoryId],
@@ -750,7 +761,7 @@ export const userRecipients = pgTable("user_recipients", {
 	address: text().notNull(),
 	notes: text(),
 	isDefault: boolean("is_default").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_recipients_user_id").on(table.userId),
 	// К3-14: дефолт scoped на user_id — отримувач належить користувачу.
@@ -775,8 +786,8 @@ export const orders = pgTable("orders", {
 	subtotal: numeric({ precision: 12, scale:  2 }).notNull(),
 	total: numeric({ precision: 12, scale:  2 }).notNull(),
 	notes: text(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	accessToken: text("access_token"),
 	shippingMethodId: uuid("shipping_method_id"),
 	shippingZoneId: uuid("shipping_zone_id"),
@@ -857,7 +868,7 @@ export const userAddresses = pgTable("user_addresses", {
 	city: text().notNull(),
 	address: text().notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_user_addresses_user_id").on(table.userId),
 	// К3-14: дефолт scoped на user_id — адреса належить користувачу.
@@ -873,8 +884,8 @@ export const productPrices = pgTable("product_prices", {
 	modificationId: uuid("modification_id"),
 	price: numeric().notNull(),
 	oldPrice: numeric("old_price"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	uniqueIndex("idx_product_prices_unique").using("btree", sql`price_type_id`, sql`product_id`, sql`COALESCE(modification_id, '00000000-0000-0000-0000-000000000000'::uuid)`),
 	foreignKey({
@@ -906,8 +917,8 @@ export const themes = pgTable("themes", {
 	previewImage: text("preview_image"),
 	isActive: boolean("is_active").default(false).notNull(),
 	settings: jsonb().default({}),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [
 	uniqueIndex("themes_active_idx").using("btree", table.isActive.asc().nullsLast().op("bool_ops")).where(sql`(is_active = true)`),
 	unique("themes_name_key").on(table.name),
@@ -919,7 +930,7 @@ export const priceTypes = pgTable("price_types", {
 	code: varchar().notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	uniqueIndex("idx_price_types_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 	unique("price_types_code_key").on(table.code),
@@ -933,10 +944,10 @@ export const discountGroups = pgTable("discount_groups", {
 	parentGroupId: uuid("parent_group_id"),
 	isActive: boolean("is_active").default(true).notNull(),
 	priority: integer().default(0).notNull(),
-	startsAt: timestamp("starts_at", { withTimezone: true, mode: 'string' }),
-	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'string' }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	startsAt: timestamp("starts_at", { withTimezone: true, mode: 'date' }),
+	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'date' }),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_discount_groups_parent").using("btree", table.parentGroupId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({
@@ -951,7 +962,7 @@ export const discountTargets = pgTable("discount_targets", {
 	discountId: uuid("discount_id").notNull(),
 	targetType: discountTargetType("target_type").default('all').notNull(),
 	targetId: uuid("target_id"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_discount_targets_discount").using("btree", table.discountId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({
@@ -967,7 +978,7 @@ export const discountConditions = pgTable("discount_conditions", {
 	conditionType: varchar("condition_type").notNull(),
 	operator: varchar().default('=').notNull(),
 	value: jsonb().default({}).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_discount_conditions_discount").using("btree", table.discountId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({
@@ -986,10 +997,10 @@ export const discounts = pgTable("discounts", {
 	discountValue: numeric("discount_value").notNull(),
 	priority: integer().default(0).notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
-	startsAt: timestamp("starts_at", { withTimezone: true, mode: 'string' }),
-	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'string' }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	startsAt: timestamp("starts_at", { withTimezone: true, mode: 'date' }),
+	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'date' }),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	priceTypeId: uuid("price_type_id").notNull(),
 }, (table) => [
 	index("idx_discounts_group").using("btree", table.groupId.asc().nullsLast().op("uuid_ops")),
@@ -1016,8 +1027,8 @@ export const productReviews = pgTable("product_reviews", {
 	images: jsonb().default([]),
 	status: text().default('pending').notNull(),
 	adminComment: text("admin_comment"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.productId],
@@ -1040,13 +1051,13 @@ export const banners = pgTable("banners", {
 	imageUrl: text("image_url").notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	placement: text().default('home').notNull(),
 	sectionId: uuid("section_id"),
 	buttons: jsonb().default([]),
-	dateFrom: timestamp("date_from", { withTimezone: true, mode: 'string' }),
-	dateTo: timestamp("date_to", { withTimezone: true, mode: 'string' }),
+	dateFrom: timestamp("date_from", { withTimezone: true, mode: 'date' }),
+	dateTo: timestamp("date_to", { withTimezone: true, mode: 'date' }),
 	scheduleDays: integer("schedule_days").array(),
 	scheduleTimeFrom: time("schedule_time_from"),
 	scheduleTimeTo: time("schedule_time_to"),

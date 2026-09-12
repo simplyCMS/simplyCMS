@@ -108,6 +108,6 @@ export async function setOrderStatus(
 ): Promise<void> {
   await db
     .update(orders)
-    .set({ statusId, updatedAt: new Date().toISOString() })
+    .set({ statusId, updatedAt: new Date() })
     .where(eq(orders.id, orderId));
 }

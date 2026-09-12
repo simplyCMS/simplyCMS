@@ -69,7 +69,7 @@ export async function updateProfile(
       firstName: update.firstName,
       lastName: update.lastName,
       phone: update.phone,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     })
     .where(eq(profiles.userId, userId));
 }

@@ -34,8 +34,8 @@ const banner: Banner = {
   animation_duration: 400,
   overlay_color: null,
   text_position: 'left',
-  created_at: '2026-01-01T00:00:00.000Z',
-  updated_at: '2026-01-01T00:00:00.000Z',
+  created_at: new Date('2026-01-01T00:00:00.000Z'),
+  updated_at: new Date('2026-01-01T00:00:00.000Z'),
 };
 
 const product: ProductCardViewModel = {

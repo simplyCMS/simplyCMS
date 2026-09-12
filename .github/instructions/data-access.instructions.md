@@ -126,6 +126,19 @@ DEFAULT перестав бути страхувальною сіткою і с�
 (`pnpm test:schema`): він **дискаверить** усі вставки в `packages/simplycms/src/**`,
 а не звіряється зі списком, тож нова вставка без `id` червонить його одразу.
 
+### Контракт дат (К2-Е0, 2026-09-04)
+
+Усі `timestamp` доменної схеми — `mode: 'date'`: у застосунку дата — `Date`.
+Рядком вона стає ЛИШЕ на межі виводу, там, де формат диктує зовнішній контракт:
+`toISOString()` у `storefront/seo/sitemap.ts` (W3C Datetime), `Intl.DateTimeFormat`
+у UI. Пул `simplycms/db` ставить `DateStyle=ISO,YMD`/`TimeZone=UTC` на кожне
+зʼєднання — текст драйвера не залежить від кластера. Через loader-payload і
+serverFn `Date` проходить як `Date` (`DefaultSerializable` Start). 🔴 `new
+Date(рядок)` у коді вітрини — сигнал, що межу перетнули не там. Гейти:
+`seo/__tests__/sitemap.test.ts` (W3C-регекс), `test-harness/pg/__tests__/
+storefront-loaders.test.ts` (`instanceof Date`), `db-session-options.test.ts`,
+live-smoke (`order-success` форматує `Date`).
+
 ### Типи та валідація
 - 🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)
   разом із генератом `supabase/types.ts`: типи для НОВОГО серверного коду

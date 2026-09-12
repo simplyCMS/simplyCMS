@@ -28,12 +28,12 @@ export type {
 
 // --- Date check ---
 function isWithinDateRange(
-  startsAt: string | null,
-  endsAt: string | null,
+  startsAt: Date | null,
+  endsAt: Date | null,
   now: Date,
 ): boolean {
-  if (startsAt && new Date(startsAt) > now) return false;
-  if (endsAt && new Date(endsAt) < now) return false;
+  if (startsAt && startsAt > now) return false;
+  if (endsAt && endsAt < now) return false;
   return true;
 }
 

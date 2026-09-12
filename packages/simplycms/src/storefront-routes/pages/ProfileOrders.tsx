@@ -57,14 +57,14 @@ export default function ProfileOrdersPage() {
   // (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uk-UA', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(dateString));
+    }).format(date);
   };
 
   return (

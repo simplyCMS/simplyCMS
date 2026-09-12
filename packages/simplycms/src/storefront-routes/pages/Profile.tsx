@@ -49,12 +49,12 @@ export default function ProfilePage() {
   // (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uk-UA', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-    }).format(new Date(dateString));
+    }).format(date);
   };
 
   if (isLoading) {

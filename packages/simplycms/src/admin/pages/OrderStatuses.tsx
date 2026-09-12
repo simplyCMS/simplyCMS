@@ -101,7 +101,7 @@ export default function OrderStatuses() {
       color: form.color,
       sortOrder,
       isDefault: false,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     } as OrderStatus);
     // 🔴 Failure-state збережений (рев'ю р3, як у старій сторінці): діалог
     // закривається ЛИШЕ після успішного персисту — при помилці введене

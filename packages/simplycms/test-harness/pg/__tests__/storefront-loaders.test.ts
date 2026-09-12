@@ -189,8 +189,10 @@ describe('лоадери вітрини проти живого Postgres', () =>
       data.products.find((row) => row.slug === VISIBLE_PRODUCT_SLUG)
         ?.section_slug,
     ).toBe('sonyachni-paneli');
-    // `updated_at` мусить приїхати рядком ISO — саме він іде в `<lastmod>`.
-    expect(data.products[0].updated_at).toEqual(expect.any(String));
+    // `updated_at` — Date (контракт К2-Е0): рядком він стає лише в
+    // `<lastmod>` через toISOString(). Регекс ФОРМАТУ драйвера тут пінив би
+    // GUC кластера, а не код.
+    expect(data.products[0].updated_at).toBeInstanceOf(Date);
   });
 
   it('сторінка значення характеристики не показує неактивних товарів', async () => {

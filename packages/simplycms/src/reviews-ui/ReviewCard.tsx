@@ -66,7 +66,7 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
               <div className="flex items-center gap-2">
                 <StarRating value={review.rating} readonly size="sm" />
                 <span className="text-xs text-muted-foreground">
-                  {format(new Date(review.created_at), 'd MMM yyyy', {
+                  {format(review.created_at, 'd MMM yyyy', {
                     locale: uk,
                   })}
                 </span>

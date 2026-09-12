@@ -28,8 +28,8 @@ export interface Discount {
   discount_value: number;
   priority: number;
   is_active: boolean;
-  starts_at: string | null;
-  ends_at: string | null;
+  starts_at: Date | null;
+  ends_at: Date | null;
   targets: DiscountTarget[];
   conditions: DiscountCondition[];
 }
@@ -41,8 +41,8 @@ export interface DiscountGroup {
   operator: GroupOperator;
   is_active: boolean;
   priority: number;
-  starts_at: string | null;
-  ends_at: string | null;
+  starts_at: Date | null;
+  ends_at: Date | null;
   discounts: Discount[];
   children: DiscountGroup[];
 }

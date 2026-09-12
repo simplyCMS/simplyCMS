@@ -50,12 +50,14 @@ ${urls.join('\n')}
 
 function entry(
   loc: string,
-  lastmod?: string,
+  lastmod?: Date,
   changefreq?: string,
   priority?: number,
 ): string {
   const parts = [`  <url>\n    <loc>${escapeXml(loc)}</loc>`];
-  if (lastmod) parts.push(`    <lastmod>${lastmod}</lastmod>`);
+  // Єдине місце, де дата стає рядком: W3C Datetime для sitemaps.org; текст
+  // драйвера (`2026-07-01 00:00:00+00`) роботи відкидають.
+  if (lastmod) parts.push(`    <lastmod>${lastmod.toISOString()}</lastmod>`);
   if (changefreq) parts.push(`    <changefreq>${changefreq}</changefreq>`);
   if (priority !== undefined)
     parts.push(`    <priority>${priority}</priority>`);

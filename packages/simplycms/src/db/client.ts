@@ -82,6 +82,13 @@ export function getDbPool(): pg.Pool {
   pool ??= new pg.Pool({
     connectionString: resolveDatabaseUrl(process.env),
     connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+    // 🔴 Текст, яким драйвер віддає timestamptz, — властивість КЛАСТЕРА
+    // (GUC DateStyle/TimeZone), не коду: під `SQL,DMY` `new Date()` у V8
+    // читає `01/07/2026` як 7 січня. Startup-опції роблять його
+    // детермінованим для кожного зʼєднання пулу; парсер дат Drizzle
+    // (`mode: 'date'`) далі працює з передбачуваним входом. Гейт —
+    // test-harness/pg/__tests__/db-session-options.test.ts.
+    options: '-c DateStyle=ISO,YMD -c TimeZone=UTC',
   });
   return pool;
 }

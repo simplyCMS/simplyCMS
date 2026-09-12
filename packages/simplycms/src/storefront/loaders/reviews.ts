@@ -20,8 +20,8 @@ export interface ProductReviewRow {
   images: string[];
   status: string;
   admin_comment: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
   profile?: ReviewAuthor | null;
 }
 

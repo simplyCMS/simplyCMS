@@ -34,8 +34,8 @@ export interface Order {
   } | null;
   comment: string | null;
   userId: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface CreateOrderInput {

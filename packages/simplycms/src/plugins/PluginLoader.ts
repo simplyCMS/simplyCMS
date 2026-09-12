@@ -1,6 +1,6 @@
 import { listActivePlugins } from 'simplycms/plugins/server';
 import { hookRegistry } from './HookRegistry';
-import type { Plugin, PluginModule } from './types';
+import type { PluginModule, PluginRecord } from './types';
 
 // Map of available plugins (populated by dynamic imports on bootstrap)
 const pluginModules: Map<string, PluginModule> = new Map();
@@ -35,8 +35,8 @@ export function removePluginHooks(pluginName: string): void {
  * Активний у БД, але невідомий модуль (магазин видалив пакет, рядок лишився)
  * не валить застосунок — помилка логується, плагін пропускається (спека §8).
  */
-export async function loadPlugins(): Promise<Plugin[]> {
-  let plugins: Plugin[];
+export async function loadPlugins(): Promise<PluginRecord[]> {
+  let plugins: PluginRecord[];
   try {
     plugins = await listActivePlugins();
   } catch (error) {
@@ -44,7 +44,7 @@ export async function loadPlugins(): Promise<Plugin[]> {
     return [];
   }
 
-  const loadedPlugins: Plugin[] = [];
+  const loadedPlugins: PluginRecord[] = [];
 
   for (const plugin of plugins) {
     const pluginModule = pluginModules.get(plugin.name);

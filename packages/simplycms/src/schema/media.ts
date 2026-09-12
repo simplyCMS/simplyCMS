@@ -49,7 +49,7 @@ export const media = pgTable(
     sizeBytes: integer('size_bytes').notNull(),
     mimeType: text('mime_type').notNull(),
     uploadedBy: uuid('uploaded_by'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
   },

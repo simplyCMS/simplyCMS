@@ -19,8 +19,8 @@ export interface Banner {
   section_id: string | null;
   sort_order: number;
   is_active: boolean;
-  date_from: string | null;
-  date_to: string | null;
+  date_from: Date | null;
+  date_to: Date | null;
   schedule_days: number[] | null;
   schedule_time_from: string | null;
   schedule_time_to: string | null;
@@ -29,6 +29,6 @@ export interface Banner {
   animation_duration: number;
   overlay_color: string | null;
   text_position: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }

@@ -6,7 +6,7 @@ import type { CatalogFiltersState, NumericProperty } from './types';
 /** Мінімум полів товару, потрібний фільтрам і сортуванню. */
 export interface FilterableProduct {
   price: number | null;
-  created_at: string;
+  created_at: Date;
   isAvailable: boolean;
   section: { id: string } | null;
   propertyValues: Array<{

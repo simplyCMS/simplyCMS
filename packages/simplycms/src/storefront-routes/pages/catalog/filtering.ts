@@ -91,8 +91,7 @@ function sortProducts<T extends FilterableProduct>(
       return products.sort((a, b) => (b.price || 0) - (a.price || 0));
     case 'newest':
       return products.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) => b.created_at.getTime() - a.created_at.getTime(),
       );
     default:
       return products;

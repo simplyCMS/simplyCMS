@@ -14,13 +14,13 @@ import type { ActorDb } from './db';
 /** Розділ каталогу в sitemap. */
 export interface SitemapSection {
   readonly slug: string;
-  readonly updated_at: string;
+  readonly updated_at: Date;
 }
 
 /** Товар у sitemap разом зі slug-ом розділу, з якого будується URL. */
 export interface SitemapProduct {
   readonly slug: string;
-  readonly updated_at: string;
+  readonly updated_at: Date;
   /** `null` — товар без розділу; URL тоді йде під технічним `products`. */
   readonly section_slug: string | null;
 }

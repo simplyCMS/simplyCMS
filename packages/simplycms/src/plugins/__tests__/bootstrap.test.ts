@@ -39,8 +39,8 @@ function seedRow(name: string, isActive: boolean): void {
     config: {},
     hooks: [],
     migrations_applied: [],
-    installed_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
+    installed_at: new Date('2026-01-01T00:00:00Z'),
+    updated_at: new Date('2026-01-01T00:00:00Z'),
   });
 }
 

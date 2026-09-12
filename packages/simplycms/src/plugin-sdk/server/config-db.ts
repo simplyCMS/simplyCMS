@@ -49,7 +49,7 @@ export async function savePluginConfig(
   await withStoreOperatorDb((db) =>
     db
       .update(plugins)
-      .set({ config, updatedAt: new Date().toISOString() })
+      .set({ config, updatedAt: new Date() })
       .where(eq(plugins.name, pluginName)),
   );
 
