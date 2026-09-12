@@ -56,6 +56,24 @@ describe('демо-сід: накат поверх канону', () => {
       await queryRows(dbUrl, 'select id from public.product_modifications')
     ).length,
     banners: (await queryRows(dbUrl, 'select id from public.banners')).length,
+    // К2-Е0: доставка й залишки — п'ять нових вставок секції 10, чиї
+    // нетривіальні форми `on conflict` (часткові індекси зон і залишків)
+    // саме тут і доводять ідемпотентність (кейс нижче).
+    shippingMethods: (
+      await queryRows(dbUrl, 'select id from public.shipping_methods')
+    ).length,
+    shippingZones: (
+      await queryRows(dbUrl, 'select id from public.shipping_zones')
+    ).length,
+    shippingRates: (
+      await queryRows(dbUrl, 'select id from public.shipping_rates')
+    ).length,
+    pickupPoints: (
+      await queryRows(dbUrl, 'select id from public.pickup_points')
+    ).length,
+    stockByPickupPoint: (
+      await queryRows(dbUrl, 'select id from public.stock_by_pickup_point')
+    ).length,
   });
 
   it('накатується без помилок і дає непорожній каталог', async () => {

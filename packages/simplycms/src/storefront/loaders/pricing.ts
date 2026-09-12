@@ -1,6 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { priceTypes } from 'simplycms/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { priceTypes, productPrices } from 'simplycms/schema';
+import type { PriceEntry } from 'simplycms/contracts';
 import type { ActorDb } from './db';
+import { groupPricesByProduct, priceColumns } from './entities/price';
 
 /**
  * ID типу ціни «за замовчуванням». Потрібен серверному резолву цін у списках
@@ -20,4 +22,17 @@ export async function loadDefaultPriceTypeId(
     .limit(1);
 
   return row?.id ?? null;
+}
+
+/** Ціни кількох товарів одним запитом — для головної й серверного резолву позицій чекауту. */
+export async function loadPricesByProduct(
+  db: ActorDb,
+  productIds: string[],
+): Promise<Record<string, PriceEntry[]>> {
+  if (productIds.length === 0) return {};
+  const rows = await db
+    .select(priceColumns)
+    .from(productPrices)
+    .where(inArray(productPrices.productId, productIds));
+  return groupPricesByProduct(rows);
 }

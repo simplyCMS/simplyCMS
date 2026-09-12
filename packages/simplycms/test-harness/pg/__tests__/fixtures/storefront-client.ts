@@ -1,8 +1,9 @@
 // Фікстури контуру «браузер більше не ходить у базу» (В2-К1а).
 //
-// 🔴 Поверх демо-сіду й фікстур `./storefront`: демо не має ні складських
-// рядків, ні характеристик модифікацій, тож наявність і таблиця характеристик
-// картки перевірялися б на порожній множині — тобто не перевірялися б.
+// 🔴 Поверх демо-сіду й фікстур `./storefront`: сід має залишки лише для
+// простих товарів, тож наявність модифікацій і характеристики картки
+// перевірялися б на порожній множині — тому тут складський рядок для
+// модифікації й характеристика на ній.
 
 /** Розділ, на якому міряється звуження вибірки й панель фільтрів. */
 export const FILTERED_SECTION_SLUG = 'sonyachni-paneli';
@@ -19,11 +20,8 @@ export const STOCK_QUANTITY = 7;
 export const SHIPPING_METHOD_CODE = 'pickup';
 
 export const CLIENT_FIXTURE_STATEMENTS: string[] = [
-  // Канонічний сід способів доставки не везе (їх заводить магазин), а точка
-  // видачі без `method_id` не вставляється — тож заводимо обидва тут.
-  `insert into public.shipping_methods (id, code, name, is_active)
-     values (gen_random_uuid(), '${SHIPPING_METHOD_CODE}', 'Самовивіз', true)`,
-
+  // Спосіб доставки `pickup` — із демо-сіду; точка видачі без `method_id`
+  // не вставляється, тож заводимо власну точку тут.
   `insert into public.pickup_points (id, method_id, name, address, city, is_active)
    select gen_random_uuid(), m.id, 'Склад №1', 'вул. Тестова, 1', 'Київ', true
      from public.shipping_methods m where m.code = '${SHIPPING_METHOD_CODE}'`,

@@ -16,13 +16,33 @@
 -- `on conflict do nothing` там, де є природний унікальний ключ; для
 -- `banners`, де такого ключа немає, — `where not exists (...)` по title.
 --
+-- 🔴 К2-Е0 (2026-09-05): демо-магазин мусить бути ПОКУПНИМ — доходити до
+-- рядка в `orders` живим прогоном (`pnpm live:smoke`) ЗІ СПИСАННЯМ залишку.
+-- Тому тут є один спосіб доставки, одна СИСТЕМНА точка видачі
+-- (`is_system = true` — вона ж склад, з якого списують і на який повертають
+-- залишок), безкоштовний тариф, залишки для частини товарів (решта —
+-- «статус без обліку»: обидві гілки правила наявності в одному сіді) і
+-- тумблер `decrease_on_order = true`. Канон `0003_seed.sql` доставки як не
+-- віз, так і не везе — її заводить магазин. 🔴 Це ЄДИНА декларація активної
+-- доставки для харнесу: фікстури тестів додають лише вимкнені/специфічні
+-- рядки, ідемпотентно (`fixtures/shipping.ts`).
+--
+-- 🔴 Банери: `image_url` — inline `data:image/svg+xml`, а не шлях до файлу.
+-- Причина не в схемі (колонка була й лишається `text NOT NULL`), а в тому,
+-- що файлів статики демо не везе НІ монорепо (`public/` має рівно
+-- `favicon.ico` і `placeholder.svg`), НІ шаблон магазину — теки
+-- `template/public/` не існує взагалі. Тобто `/demo/banners/*.jpg` були
+-- гарантованим 404 у кожному магазині, піднятому `pnpm db:demo`.
+--
 -- 🔴 Е0 (контракт id, В2-К3): id проставлені явно статичними UUID (префікс
 -- на таблицю: sections 10000001, products 10000002, product_modifications
 -- 10000003, product_prices 10000004, section_properties 10000005,
 -- section_property_assignments 10000006, property_options 10000007,
--- product_property_values 10000008, banners 10000009; суфікс — порядковий
--- номер рядка). Дані НЕ змінені, лише додано колонку id; посилання на
--- батьківські рядки й далі резолвляться підзапитом/join-ом за натуральним
+-- product_property_values 10000008, banners 10000009, shipping_methods
+-- 1000000a, pickup_points 1000000b, shipping_rates 1000000c,
+-- stock_by_pickup_point 1000000d, shipping_zones 1000000e; суфікс —
+-- порядковий номер рядка). Дані НЕ змінені, лише додано колонку id; посилання
+-- на батьківські рядки й далі резолвляться підзапитом/join-ом за натуральним
 -- ключем (slug/code), а не константою.
 
 -- ── 1. Секції каталогу (дерево: батьківська + дві дочірні) ─────────────────
@@ -225,13 +245,26 @@ join public.section_properties sp on sp.slug = 'tip-invertora'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
 on conflict (product_id, property_id) do nothing;
 
+-- 🔴 Плейсхолдер-SVG інлайном. Чотири обмеження, які не можна порушити:
+-- (1) усередині SVG — ЛИШЕ подвійні лапки: одинарна в SQL-літералі вимагала
+--     б подвоєння ('') і зробила б рядок нечитабельним;
+-- (2) жодного `#` — у data-URI він відкриває фрагмент і відрізав би решту
+--     розмітки, тому кольори НАЗВАНІ (`darkslateblue`), а не hex;
+-- (3) жодного `%` (percent-escape) і `&` (XML-сутність) — звідси абсолютні
+--     розміри `width="1200"`, а не `width="100%"`;
+-- (4) `charset=utf-8` — через кириличний підпис. Формально XML і без нього
+--     дефолтиться на UTF-8, але явний параметр знімає залежність від того,
+--     який шар вирішує кодування (URL-декодер чи XML-парсер).
+-- Один рядок ~250 символів: розбивати перенесенням не можна (перенос усе-
+-- редині SQL-літерала кладе в значення справжній `\n`), тож він свідомо
+-- довший за решту файлу.
 -- ── 9. Банери (унікального ключа в таблиці немає — ґард по title) ────────
 insert into public.banners (id, title, subtitle, image_url, placement, section_id, sort_order, is_active, buttons)
 select
   '10000009-0000-4000-8000-000000000001'::uuid,
   'Сонячна енергія для вашого дому',
   'Комплектні рішення: панелі, інвертори, накопичувачі.',
-  '/demo/banners/solar-home.jpg',
+  'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkslateblue"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Сонячна енергія</text></svg>',
   'home',
   null,
   0,
@@ -246,7 +279,7 @@ select
   '10000009-0000-4000-8000-000000000002'::uuid,
   'Знижки на бі-фаціальні панелі',
   'До -15% на серію 600 Вт цього місяця.',
-  '/demo/banners/bifacial-sale.jpg',
+  'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkgoldenrod"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Бі-фаціальні панелі</text></svg>',
   'home',
   s.id,
   1,
@@ -257,3 +290,73 @@ where s.slug = 'sonyachni-paneli'
   and not exists (
     select 1 from public.banners where title = 'Знижки на бі-фаціальні панелі'
   );
+
+-- ── 10. Доставка й залишки (К2-Е0): магазин, у якому можна купити ─────────
+insert into public.shipping_methods (id, code, name, description, type, is_active, sort_order)
+values ('1000000a-0000-4000-8000-000000000001'::uuid, 'pickup', 'Самовивіз',
+        'Забрати зі складу у Києві', 'system', true, 0)
+on conflict (code) do nothing;
+
+-- 🔴 `shipping_rates.zone_id` — NOT NULL: одна дефолтна зона на всю країну;
+-- `findShippingZoneIn` дефолтну зону пропускає й повертає її лише як fallback,
+-- тож тариф застосовується без прив'язки до міста (правило домену, не сіду).
+-- Дефолт — не більше одного (`idx_shipping_zones_single_default`), тому
+-- конфлікт — по частковому індексу, а не по id.
+insert into public.shipping_zones (id, name, description, is_active, is_default, sort_order)
+values ('1000000e-0000-4000-8000-000000000001'::uuid, 'Україна', 'Дефолтна зона демо', true, true, 0)
+on conflict (is_default) where (is_default = true) do nothing;
+
+-- 🔴 `is_system = true` — не косметика, а опора write-side. Списання й
+-- повернення залишку йдуть у точку самого замовлення (`orders.pickup_point_id`);
+-- якщо її немає (кур'єрська доставка) — у системну точку; якщо немає й
+-- такої — у першу активну за (sort_order, id). Демо має рівно одну точку,
+-- тож усі три гілки правила приземляються в один рядок, і залишки нижче
+-- лежать саме на ньому. Побічний наслідок, свідомо прийнятий: адмінка не
+-- дасть її видалити (`PickupPoints.tsx:178` — кнопки видалення для
+-- системної точки в списку просто немає; `PickupPointEdit.tsx:202` пояснює
+-- це підписом `admin.shipping.points.systemLocked` — «Системна точка — не
+-- може бути видалена»), і це правильно.
+insert into public.pickup_points (id, method_id, name, address, city, is_active, is_system, sort_order)
+select '1000000b-0000-4000-8000-000000000001'::uuid, m.id,
+       'Склад у Києві', 'вул. Сонячна, 1', 'Київ', true, true, 0
+  from public.shipping_methods m where m.code = 'pickup'
+on conflict (id) do nothing;
+
+insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
+select '1000000c-0000-4000-8000-000000000001'::uuid, m.id, z.id,
+       'Безкоштовно зі складу', 'flat', 0, true, 0
+  from public.shipping_methods m, public.shipping_zones z
+ where m.code = 'pickup' and z.is_default = true
+on conflict (id) do nothing;
+
+-- Залишки лише для двох панелей: решта каталогу лишається «в наявності за
+-- статусом без обліку» — так живий прогін бачить обидві гілки правила.
+-- Точка резолвиться join-ом за іменем, а не константою-UUID: константа
+-- вдруге в файлі порушила б і конвенцію шапки («батьківські рядки — за
+-- натуральним ключем»), і пін унікальності UUID-літералів.
+insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+select v.id, pp.id, p.id, null, v.quantity
+from (
+  values
+    ('1000000d-0000-4000-8000-000000000001'::uuid, 'sonyachna-panel-450w-mono', 5),
+    ('1000000d-0000-4000-8000-000000000002'::uuid, 'sonyachna-panel-550w-mono', 3)
+) as v(id, product_slug, quantity)
+join public.products p on p.slug = v.product_slug
+join public.pickup_points pp on pp.name = 'Склад у Києві'
+on conflict (pickup_point_id, product_id) where product_id is not null and modification_id is null do nothing;
+
+-- 🔴 Демо веде облік: списання при оформленні увімкнене, щоб live-smoke
+-- доводив write-side правила наявності, а не лише читання. Це `update`
+-- канонічного рядка `0003_seed.sql` (де `'{"decrease_on_order": false}'`),
+-- не `insert` — пін детермінізму його не рахує. Предикат — по ПОТОЧНОМУ
+-- значенню, а не просто по ключу: повторний накат файлу по рядку, який уже
+-- `true`, не пише НІЧОГО — та сама ідемпотентність, що й `on conflict do
+-- nothing` вище. 🔴 Межа, названа чесно: власника, який вимкнув облік уже
+-- ПІСЛЯ сіду, повторний накат демо поверне до `true` — від цього предикат
+-- не рятує. Прийнятно саме тому, що файл — ДЕМО (`pnpm db:demo` піднімає
+-- НОВУ базу), а не міграція чинного магазину. Канон не чіпаємо: чистий
+-- магазин і далі стартує з обліком вимкненим.
+update public.system_settings
+   set value = jsonb_set(value, '{decrease_on_order}', 'true'::jsonb)
+ where key = 'stock_management'
+   and value->>'decrease_on_order' = 'false';

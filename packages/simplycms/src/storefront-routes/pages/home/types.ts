@@ -7,6 +7,8 @@ export interface HomeProduct {
   short_description: string | null;
   stock_status: string | null;
   section: { slug: string } | null;
+  price: number | null;
+  old_price: number | null;
 }
 
 /** Кореневий розділ каталогу (категорія) */

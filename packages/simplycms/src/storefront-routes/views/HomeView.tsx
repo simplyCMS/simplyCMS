@@ -14,7 +14,7 @@ import { useActiveThemeModule } from '../shells/useActiveThemeModule';
  * секції теми саме так, і цей канонічний view відтворює ту саму поведінку.
  * Читання контексту теми — той самий клас render-контекстного хука, що й
  * `useT`; жодного фетчу тут немає (сам `HomeSections` теми фетчить дані
- * свідомо — спека §6, звіт Ф1).
+ * свідомо — спека §6).
  */
 export function HomeView({
   hero,

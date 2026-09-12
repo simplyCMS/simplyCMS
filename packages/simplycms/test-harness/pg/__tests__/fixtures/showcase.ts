@@ -107,9 +107,7 @@ export const SHOWCASE_FIXTURE_STATEMENTS: string[] = [
            '${BANNER_PLACEMENT}', 91, true, now() - interval '1 day')`,
 
   // ── Точки видачі: відкрита й закрита, обидві із залишком ─────────────────
-  `insert into public.shipping_methods (id, code, name, is_active)
-   values (gen_random_uuid(), 'pickup', 'Самовивіз', true)`,
-
+  // Метод `pickup` — із демо-сіду; тут лише дві точки: відкрита й закрита.
   `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
    select gen_random_uuid(), m.id, '${OPEN_POINT_NAME}', 'вул. Відкрита, 1', 'Київ', true, 0
      from public.shipping_methods m where m.code = 'pickup'`,
@@ -118,13 +116,17 @@ export const SHOWCASE_FIXTURE_STATEMENTS: string[] = [
    select gen_random_uuid(), m.id, '${CLOSED_POINT_NAME}', 'вул. Закрита, 2', 'Київ', false, 1
      from public.shipping_methods m where m.code = 'pickup'`,
 
+  // 🔴 `pp.name in (...)` — не декор: демо-сід везе власну (СИСТЕМНУ) точку
+  // видачі, тож голий `cross join public.pickup_points` підхопив би і її,
+  // подвоївши залишок цієї модифікації на непричетній до фікстури точці.
   `insert into public.stock_by_pickup_point (id, pickup_point_id, modification_id, quantity)
    select gen_random_uuid(), pp.id, m.id,
           case when pp.is_active then ${OPEN_POINT_QUANTITY} else ${CLOSED_POINT_QUANTITY} end
      from public.pickup_points pp
      cross join public.product_modifications m
      join public.products p on p.id = m.product_id
-    where p.slug = '${STOCK_PRODUCT_SLUG}' and m.slug = '${STOCK_MOD_SLUG}'`,
+    where p.slug = '${STOCK_PRODUCT_SLUG}' and m.slug = '${STOCK_MOD_SLUG}'
+      and pp.name in ('${OPEN_POINT_NAME}', '${CLOSED_POINT_NAME}')`,
 
   // ── Відгуки: дві схвалені оцінки й одна нерозглянута ─────────────────────
   `insert into public.product_reviews (id, product_id, user_id, rating, title, status)

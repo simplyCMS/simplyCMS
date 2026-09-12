@@ -11,6 +11,8 @@ import { closeDbPool } from 'simplycms/db';
 import {
   loadDefaultPriceTypeId,
   loadHomePageData,
+  loadHomeProducts,
+  loadOneSectionProducts,
   loadProduct,
   loadProductList,
   loadProperties,
@@ -147,6 +149,43 @@ describe('лоадери вітрини проти живого Postgres', () =>
     );
     // Віконний зріз: рівно ліміт каруселі, скільки б товарів не було в розділі.
     expect(data.sectionProducts[filled!.id]).toHaveLength(PER_SECTION_LIMIT);
+  });
+
+  it('головна: ціна картки — той самий резолв, що в каталозі (К2-Е0)', async () => {
+    const { featured, panels } = await withStorefrontDb(async (db) => {
+      const section = await loadSectionBySlug(db, 'sonyachni-paneli');
+      return {
+        featured: await loadHomeProducts(db, true),
+        // Розділ панелей ДОЧІРНІЙ до `sonyachna-energetyka`, тож кореневі
+        // бакети `loadSectionProducts` цих товарів не містять — беремо його
+        // напряму, як клієнтський перезапит каруселі.
+        panels: await loadOneSectionProducts(db, section!),
+      };
+    });
+
+    // П'ять сідових товарів мають `is_featured = true`; фікстурні наповнювачі
+    // — ні, тож набір під лімітом 12 детермінований незалежно від порядку.
+    expect(featured).toHaveLength(5);
+
+    const priceOf = (rows: typeof featured, slug: string) =>
+      rows.find((row) => row.slug === slug);
+
+    expect(priceOf(featured, 'sonyachna-panel-450w-mono')).toMatchObject({
+      price: 4800,
+      old_price: null,
+    });
+    expect(priceOf(featured, 'sonyachna-panel-600w-bifacial')).toMatchObject({
+      price: 7200,
+      old_price: 8100,
+    });
+    expect(priceOf(panels, 'sonyachna-panel-450w-mono')).toMatchObject({
+      price: 4800,
+      old_price: null,
+    });
+    expect(priceOf(panels, 'sonyachna-panel-600w-bifacial')).toMatchObject({
+      price: 7200,
+      old_price: 8100,
+    });
   });
 
   it('тип ціни за замовчуванням резолвиться з канонічного сіду', async () => {
