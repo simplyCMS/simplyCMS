@@ -2057,7 +2057,16 @@ git commit -m "feat(k2-e0): покупний демо-сід — доставк�
 - Modify: `packages/simplycms/src/domain/README.md:27`, `contracts/entities.ts:170,196` (документація правила й читань)
 - Modify: `packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx:59-62`
 - Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/storefront-client.ts`, `storefront-client-queries.test.ts:174-175`
-- Test: `packages/simplycms/src/domain/__tests__/inventory.test.ts`
+- 🔴 Modify (додано 2026-09-12, рішення L — перелік споживачів у спеці був неповний):
+  `packages/simplycms/src/storefront-routes/views/slots/ProductStockBadge.tsx`,
+  `storefront-routes/pages/product-detail/pricing.ts`,
+  `catalog-ui/ModificationSelector.tsx` — власні копії формули;
+  `core/hooks/useStock.ts` (`getStockStatusLabel` — гілка `default`) і
+  каталоги `i18n/catalogs/{uk,en}/product.ts` (ключ `product.stockUnknown` знято).
+  Разом із ними звужено тип `stockStatus` до `StockStatus | null` у ланцюгу
+  `product-detail/types.ts` → `slot-context.tsx` → слот (був `string | null`).
+- Test: `packages/simplycms/src/domain/__tests__/inventory.test.ts`,
+  `storefront-routes/__tests__/product-slots.test.tsx` (кейс `null` → бейджа немає)
 
 **Interfaces:**
 - Produces: `isPurchasable(status: StockStatus | null | undefined): boolean`;

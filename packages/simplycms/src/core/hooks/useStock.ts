@@ -80,7 +80,13 @@ export function getStockStatusLabel(
     case 'on_order':
       return t('product.onOrder');
     default:
-      return t('product.stockUnknown');
+      // 🔴 `null`/`undefined` — «статус не заданий», а DEFAULT колонки —
+      // `in_stock`: відсутність твердження за каноном схеми і Є «в наявності».
+      // Окремий текст «Невідомо» був ТРЕТІМ голосом правила поруч із доменним
+      // `isPurchasable` і зі слотом бейджа — на тому самому `null` вони казали
+      // різне. Ключ `product.stockUnknown` знято з обох каталогів разом із цією
+      // гілкою: інших читачів у нього не було.
+      return t('product.inStock');
   }
 }
 

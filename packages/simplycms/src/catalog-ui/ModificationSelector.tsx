@@ -1,6 +1,7 @@
 import { cn } from 'simplycms/ui/utils';
 import { Check } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+import { isPurchasable } from 'simplycms/domain/inventory';
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -50,7 +51,9 @@ export function ModificationSelector({
       };
     }
     return {
-      isAvailable: mod.stock_status !== 'out_of_stock',
+      // 🔴 Те саме доменне правило, що в бейджі й у лоадерах: окрема копія
+      // формули тут була четвертим місцем, де ухвалювалось те саме рішення.
+      isAvailable: isPurchasable(mod.stock_status),
       totalQuantity: 0,
       isOnOrder: mod.stock_status === 'on_order',
     };

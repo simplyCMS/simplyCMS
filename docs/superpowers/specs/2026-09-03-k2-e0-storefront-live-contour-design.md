@@ -213,11 +213,19 @@ RPC serverFn проносять його як `Date`, а `strict`-перевір
   boolean` — `out_of_stock → false`, `on_order → true`, `in_stock | null →
   true`. Без опцій-тумблерів. `calculateProductAvailability` зводиться до
   неї (модифікації — `some`).
-- Шість споживачів переходять на неї: `stock-info.ts:82`, `stock.ts:97`,
+- ВІСІМ споживачів переходять на неї: `stock-info.ts:82`, `stock.ts:97`,
   `catalog-products.ts:133` (→ фільтр `inStockOnly`; зайві читання залишків
   у лістингу знімаються), `ModificationSelector` і `ProductCard` (уже так),
   JSON-LD у `$productSlug.tsx`: `in_stock → InStock`, `on_order →
-  BackOrder`, `out_of_stock → OutOfStock`. 🔴 Ред. 1.2: сьома формула —
+  BackOrder`, `out_of_stock → OutOfStock`. 🔴 Ред. 2026-09-12 (рішення L):
+  перелік був неповний — «шість» не рахував слот бейджа
+  (`views/slots/ProductStockBadge.tsx`) і `product-detail/pricing.ts`. Обидва
+  мали ВЛАСНУ формулу `=== 'in_stock' || === 'on_order'`, яка на `null`
+  давала «немає в наявності» проти доменного `isPurchasable(null) === true`
+  — третій і четвертий голос того самого правила. Разом із ними на канон
+  приведено `getStockStatusLabel` (`core/hooks/useStock.ts`), чия гілка
+  `default` віддавала окремий текст «Невідомо»; ключ `product.stockUnknown`
+  знято з обох каталогів (інших читачів не мав). 🔴 Ред. 1.2: сьома формула —
   мертва `core/hooks/useStock.ts::isProductAvailable` («`in_stock → qty >
   0`», нуль викликів, реекспорт у `core/index.ts`) — ВИДАЛЯЄТЬСЯ;
   `ProductAvailabilityInput.stock_status` звужується до `StockStatus | null`.

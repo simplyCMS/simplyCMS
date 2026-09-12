@@ -1,5 +1,6 @@
 // Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
 
+import type { StockStatus } from 'simplycms/contracts';
 import type { DiscountResult } from 'simplycms/domain/discounts';
 import type { ProductDetailRow } from 'simplycms/storefront/loaders';
 
@@ -47,7 +48,7 @@ export interface ModificationPrice {
 
 /** Ціна, наявність і артикул для ПОТОЧНОГО вибору (товар або модифікація). */
 export interface CurrentPricing {
-  stockStatus: string | null;
+  stockStatus: StockStatus | null;
   price: number | undefined;
   oldPrice: number | null | undefined;
   sku: string | null | undefined;
