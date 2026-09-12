@@ -11,7 +11,8 @@ export const FILTERED_SECTION_SLUG = 'sonyachni-paneli';
 export const MODIFIED_PRODUCT_SLUG = 'invertor-merezhevyi-5kw';
 /** Модифікація, у якої є залишок на точці видачі. */
 export const IN_STOCK_MOD_SLUG = 'odnofazny';
-/** Модифікація без залишку — негативний контроль наявності. */
+/** Модифікація зі статусом `out_of_stock` — негативний контроль наявності
+ * (К2-Е0: статус, не кількість). */
 export const OUT_OF_STOCK_MOD_SLUG = 'tryfazny';
 /** Скільки одиниць лежить на точці видачі. */
 export const STOCK_QUANTITY = 7;
@@ -35,6 +36,15 @@ export const CLIENT_FIXTURE_STATEMENTS: string[] = [
     where p.slug = '${MODIFIED_PRODUCT_SLUG}'
       and m.slug = '${IN_STOCK_MOD_SLUG}'
       and pp.name = 'Склад №1'`,
+
+  // Негативний контроль правила «статус — джерело правди»: без цього рядка
+  // модифікація без залишку була б ДОСТУПНОЮ (DEFAULT статусу — in_stock).
+  `update public.product_modifications m
+      set stock_status = 'out_of_stock'
+     from public.products p
+    where p.id = m.product_id
+      and p.slug = '${MODIFIED_PRODUCT_SLUG}'
+      and m.slug = '${OUT_OF_STOCK_MOD_SLUG}'`,
 
   // Характеристика НА МОДИФІКАЦІЇ: саме її старий клієнт тягнув окремим
   // запитом, а наявність — ще й окремим RPC на кожну модифікацію.

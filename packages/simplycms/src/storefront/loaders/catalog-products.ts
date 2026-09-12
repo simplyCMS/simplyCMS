@@ -20,7 +20,6 @@ import { productColumns, toImageList } from './entities/product';
 import { groupPricesByProduct, priceColumns } from './entities/price';
 import { sectionRefColumns } from './entities/section';
 import { loadModificationValues } from './modification-values';
-import { loadStockByModification, loadStockByProduct } from './stock';
 
 /**
  * Вибірка каталогу з усім, що потрібно фільтрам: модифікації, ціни,
@@ -99,8 +98,6 @@ export async function loadCatalogProductsWhere(
   }
 
   const valuesByModification = await loadModificationValues(db, modIds);
-  const modificationStock = await loadStockByModification(db, modIds);
-  const productStock = await loadStockByProduct(db, ids);
   const pricesByProduct = groupPricesByProduct(priceRows);
 
   const valuesByProduct: Record<string, CatalogPropertyValueRow[]> = {};
@@ -130,16 +127,13 @@ export async function loadCatalogProductsWhere(
         ...(valuesByProduct[product.id] ?? []),
         ...mods.flatMap((mod) => valuesByModification[mod.id] ?? []),
       ],
-      isAvailable: calculateProductAvailability(
-        {
-          id: product.id,
-          has_modifications: product.has_modifications,
-          stock_status: product.stock_status,
-          product_modifications: mods,
-          stock_by_pickup_point: [],
-        },
-        { modificationStock, productStock },
-      ),
+      isAvailable: calculateProductAvailability({
+        id: product.id,
+        has_modifications: product.has_modifications,
+        stock_status: product.stock_status,
+        product_modifications: mods,
+        stock_by_pickup_point: [],
+      }),
     };
   });
 }

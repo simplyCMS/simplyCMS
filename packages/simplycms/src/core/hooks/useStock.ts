@@ -64,16 +64,6 @@ export function usePickupPoints() {
   });
 }
 
-// Helper to check availability based on stock status
-export function isProductAvailable(
-  stockStatus: StockStatus | null,
-  totalQuantity: number,
-): boolean {
-  if (stockStatus === 'on_order') return true;
-  if (stockStatus === 'in_stock') return totalQuantity > 0;
-  return false;
-}
-
 // Status display helpers.
 // 🔴 `getStockStatusLabel` — не хук (викликається з ternary/мап поза
 // компонентом), тому `useT()` тут заборонений — транслятор приймає параметром,

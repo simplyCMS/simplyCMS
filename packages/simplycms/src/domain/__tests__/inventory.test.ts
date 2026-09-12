@@ -2,41 +2,60 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateProductAvailability,
   enrichProductsWithAvailability,
+  isPurchasable,
+  schemaOrgAvailability,
 } from '../inventory';
-import type { ProductAvailabilityInput, StockData } from '../inventory';
+import type { ProductAvailabilityInput } from '../inventory';
 
-const emptyStock: StockData = { modificationStock: {}, productStock: {} };
+describe('isPurchasable — статус є джерелом правди (К2-Е0, Е0-3)', () => {
+  it('in_stock — доступний навіть без жодного рядка залишків', () => {
+    expect(isPurchasable('in_stock')).toBe(true);
+  });
+  it('null (статус не заданий) — доступний, як і DEFAULT схеми', () => {
+    expect(isPurchasable(null)).toBe(true);
+    expect(isPurchasable(undefined)).toBe(true);
+  });
+  it('on_order — доступний під замовлення', () => {
+    expect(isPurchasable('on_order')).toBe(true);
+  });
+  it('out_of_stock — недоступний, навіть якщо залишки хтось забув обнулити', () => {
+    expect(isPurchasable('out_of_stock')).toBe(false);
+  });
+});
+
+describe('schemaOrgAvailability', () => {
+  it('три статуси → три URL schema.org; on_order — BackOrder, не OutOfStock', () => {
+    expect(schemaOrgAvailability('in_stock')).toBe(
+      'https://schema.org/InStock',
+    );
+    expect(schemaOrgAvailability('on_order')).toBe(
+      'https://schema.org/BackOrder',
+    );
+    expect(schemaOrgAvailability('out_of_stock')).toBe(
+      'https://schema.org/OutOfStock',
+    );
+    expect(schemaOrgAvailability(null)).toBe('https://schema.org/InStock');
+  });
+});
 
 describe('calculateProductAvailability', () => {
-  it('simple product available via inline stock', () => {
-    const p: ProductAvailabilityInput = {
+  it('простий товар: статус, а не кількість', () => {
+    const inStock: ProductAvailabilityInput = {
       id: 'p1',
       stock_status: 'in_stock',
       has_modifications: false,
-      stock_by_pickup_point: [{ quantity: 3 }],
     };
-    expect(calculateProductAvailability(p, emptyStock)).toBe(true);
-  });
-
-  it('simple product on_order is available with zero stock', () => {
-    const p: ProductAvailabilityInput = {
-      id: 'p1',
-      stock_status: 'on_order',
-      has_modifications: false,
-    };
-    expect(calculateProductAvailability(p, emptyStock)).toBe(true);
-  });
-
-  it('simple product out_of_stock with zero qty is unavailable', () => {
-    const p: ProductAvailabilityInput = {
-      id: 'p1',
+    const out: ProductAvailabilityInput = {
+      id: 'p2',
       stock_status: 'out_of_stock',
       has_modifications: false,
+      stock_by_pickup_point: [{ quantity: 3 }],
     };
-    expect(calculateProductAvailability(p, emptyStock)).toBe(false);
+    expect(calculateProductAvailability(inStock)).toBe(true);
+    expect(calculateProductAvailability(out)).toBe(false);
   });
 
-  it('product with modifications: available if any modification has stock', () => {
+  it('товар із модифікаціями: доступний, якщо доступна будь-яка', () => {
     const p: ProductAvailabilityInput = {
       id: 'p1',
       stock_status: 'out_of_stock',
@@ -56,17 +75,33 @@ describe('calculateProductAvailability', () => {
         },
       ],
     };
-    const stock: StockData = { modificationStock: { m2: 5 }, productStock: {} };
-    expect(calculateProductAvailability(p, stock)).toBe(true);
+    expect(calculateProductAvailability(p)).toBe(true);
+  });
+
+  it('товар із модифікаціями, усі out_of_stock — недоступний', () => {
+    const p: ProductAvailabilityInput = {
+      id: 'p1',
+      stock_status: 'in_stock',
+      has_modifications: true,
+      product_modifications: [
+        {
+          id: 'm1',
+          stock_status: 'out_of_stock',
+          is_default: true,
+          sort_order: 0,
+        },
+      ],
+    };
+    expect(calculateProductAvailability(p)).toBe(false);
   });
 });
 
 describe('enrichProductsWithAvailability', () => {
-  it('adds isAvailable flag', () => {
-    const products: ProductAvailabilityInput[] = [
+  it('додає прапорець isAvailable за статусом', () => {
+    const res = enrichProductsWithAvailability([
       { id: 'p1', stock_status: 'on_order', has_modifications: false },
-    ];
-    const res = enrichProductsWithAvailability(products, {});
-    expect(res[0].isAvailable).toBe(true);
+      { id: 'p2', stock_status: 'out_of_stock', has_modifications: false },
+    ]);
+    expect(res.map((p) => p.isAvailable)).toEqual([true, false]);
   });
 });

@@ -1,5 +1,6 @@
 import { and, inArray, isNull, sql } from 'drizzle-orm';
 import { productModifications, stockByPickupPoint } from 'simplycms/schema';
+import { isPurchasable } from 'simplycms/domain/inventory';
 import type { ActorDb } from './db';
 
 /** Наявність однієї модифікації — форма, яку читає селектор на картці товару. */
@@ -71,8 +72,9 @@ export async function loadStockByProduct(
  * Наявність модифікацій одного товару.
  *
  * 🔴 Заміна функції БД `get_stock_info`, якої в схемі v2 НЕМАЄ (baseline B13
- * не везе жодної plpgsql-функції, крім читача актора). Правило збережено
- * дослівно: доступно, якщо є залишок АБО статус — «під замовлення».
+ * не везе жодної plpgsql-функції, крім читача актора). Доступність —
+ * `isPurchasable` (домен): статус, не кількість; `totalQuantity` — деталь
+ * показу.
  */
 export async function loadModificationStock(
   db: ActorDb,
@@ -94,7 +96,7 @@ export async function loadModificationStock(
     const totalQuantity = quantities[row.id] ?? 0;
     stock[row.id] = {
       totalQuantity,
-      isAvailable: totalQuantity > 0 || row.stock_status === 'on_order',
+      isAvailable: isPurchasable(row.stock_status),
     };
   }
   return stock;

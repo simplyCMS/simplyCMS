@@ -1,6 +1,7 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import ProductDetailPage from 'simplycms/storefront-routes/pages/ProductDetail';
 import { getProduct } from 'simplycms/storefront-routes/server/products';
+import { schemaOrgAvailability } from 'simplycms/domain/inventory';
 
 const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
 
@@ -56,10 +57,7 @@ export const Route = createFileRoute(
         '@type': 'Offer',
         priceCurrency: 'UAH',
         ...(basePrice != null ? { price: basePrice } : {}),
-        availability:
-          product.stock_status === 'in_stock'
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
+        availability: schemaOrgAvailability(product.stock_status),
       },
     };
 

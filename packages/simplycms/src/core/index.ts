@@ -37,7 +37,6 @@ export {
   useStock,
   usePickupPointsCount,
   usePickupPoints,
-  isProductAvailable,
   getStockStatusLabel,
   getStockStatusColor,
 } from './hooks/useStock';
