@@ -8,32 +8,26 @@ import { describe, expect, it } from 'vitest';
  * Гейт VALUE-імпортів з `.ts`/`.tsx`-розширенням (трек T; К2-Е0, T-1, amend).
  *
  * 🔴 Загроза. Кореневий `tsconfig.json` отримав `allowImportingTsExtensions:
- * true` — потрібен рівно для ОДНОГО імпорту: специфікатора межі
- * клієнт/сервер у кореневому `vite.config.ts` (`.ts`-розширення тут вимагає
- * сам Vite під `configLoader: 'native'`). Але `packages/simplycms/
- * tsconfig.dts.json` УСПАДКОВУЄ кореневий tsconfig (`extends`), а саме він
- * емітить публікований `.d.ts` (`emitDeclarationOnly`, `pnpm
- * build:packages`). Тобто прапорець мовчки дозволив би value-імпорт із
- * `.ts` де завгодно в `src/**` будь-якого пакета — і `typecheck`, і
- * `build:packages` пройшли б зелено, а рядок поїхав би ДОСЛІВНО в
- * опублікований `.d.ts`, де без прапорця в tsconfig магазину він валить
- * `tsc` з TS5097 у `node_modules` — уже пізно й дорого. До правки цей клас
- * ловив сам `pnpm typecheck`; тепер — цей тест.
+ * true` заради РІВНО ОДНОГО імпорту — специфікатора межі клієнт/сервер у
+ * кореневому `vite.config.ts` (`.ts`-розширення тут вимагає сам Vite під
+ * `configLoader: 'native'`). Але `packages/simplycms/tsconfig.dts.json`
+ * УСПАДКОВУЄ кореневий (`extends`), а саме він емітить публікований `.d.ts`
+ * (`emitDeclarationOnly`). Тобто прапорець мовчки дозволив би value-імпорт із
+ * `.ts` де завгодно в `src/**`: `typecheck` і `build:packages` пройшли б
+ * зелено, а рядок поїхав би ДОСЛІВНО в опублікований `.d.ts`, де в магазині
+ * без прапорця валить `tsc` з TS5097 у `node_modules` — пізно й дорого.
+ * До правки цей клас ловив сам `pnpm typecheck`; тепер — цей тест.
  *
- * 🔴 Чому не окремий `tsconfig.node.json` для конфігів (ізолювати прапорець
- * від `packages/**`): `tests/build-config-typecheck.test.ts` фіксує канон —
- * конфіги збірки входять у програму КОРЕНЕВОГО `pnpm typecheck`. Другий
- * tsconfig дав би ДВІ програми замість однієї — той розкол, який
- * `build-config-typecheck.test.ts` уже закрив 2026-08-21. Тому межа тут —
- * allowlist, не інший tsconfig.
+ * 🔴 Чому не окремий `tsconfig.node.json` для конфігів:
+ * `tests/build-config-typecheck.test.ts` фіксує канон — конфіги збірки
+ * входять у програму КОРЕНЕВОГО `pnpm typecheck`. Другий tsconfig дав би ДВІ
+ * програми замість однієї, тобто розкол, який той тест закрив 2026-08-21.
  *
- * Метод: файли — з `ts.parseJsonConfigFileContent` кореневого
- * `tsconfig.json` (та сама програма, що й `pnpm typecheck`, не самописний
- * glob), кожен розбирається СИНТАКСИЧНО (`ts.createSourceFile`, без
- * `Program`/checker — ~900 файлів менш ніж за секунду) у пошуках
- * value-імпортів/експортів/динамічного `import()` з `.ts`/`.tsx`.
- * `import type`/`export type` — НЕ знахідка: TS дозволяє їх з `.ts` і БЕЗ
- * прапорця (доказ у репо, зелений і до цієї правки, — `src/routeTree.gen.ts`).
+ * Метод: файли — з `ts.parseJsonConfigFileContent` кореневого `tsconfig.json`
+ * (та сама програма, що й `pnpm typecheck`, не самописний glob), кожен
+ * розбирається СИНТАКСИЧНО (`ts.createSourceFile`, без `Program`/checker).
+ * `import type`/`export type` — НЕ знахідка: TS дозволяє їх з `.ts` і без
+ * прапорця (доказ у репо — `src/routeTree.gen.ts`).
  */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,9 +37,8 @@ type Hit = { specifier: string; line: number };
 type Finding = Hit & { file: string };
 
 /**
- * VALUE-імпорти/експорти/динамічний `import()` зі специфікатором `.ts`/
- * `.tsx`. Синтаксичний розбір без резолву модулів: специфікатор може вести
- * в неіснуючий файл — це не заважає йому потрапити в опублікований `.d.ts`.
+ * VALUE-імпорти/експорти/динамічний `import()` зі специфікатором `.ts`/`.tsx`.
+ * Розбір синтаксичний, без резолву: неіснуючий файл теж їде в `.d.ts`.
  */
 const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
   const sourceFile = ts.createSourceFile(
@@ -108,12 +101,14 @@ describe('value-імпорти з .ts/.tsx (allowImportingTsExtensions)', () => 
   it('чекер: value-імпорт — знахідка, import type — ні (негативний контроль)', () => {
     // 🔴 Без цього тесту другий `it` міг би зеленіти і від «витоку немає»,
     // і від «обхід AST порожній».
-    const value = `import { x } from './mod.ts';`;
-    const typeOnly = `import type { X } from './mod.ts';`;
-    expect(findValueTsExtensionImports('snippet.ts', value)).toEqual([
-      { specifier: './mod.ts', line: 1 },
-    ]);
-    expect(findValueTsExtensionImports('snippet.ts', typeOnly)).toEqual([]);
+    // 🔴 Третій кейс — динамічний `import()`: цю гілку чекера переписано з
+    // внутрішнього `ts.isImportCall` на публічну пару, і без інлайн-сніпета
+    // її правильність доводилась би лише відсутністю збігів у дереві.
+    const check = (code: string) => findValueTsExtensionImports('s.ts', code);
+    const found = [{ specifier: './mod.ts', line: 1 }];
+    expect(check(`import { x } from './mod.ts';`)).toEqual(found);
+    expect(check(`import type { X } from './mod.ts';`)).toEqual([]);
+    expect(check(`await import('./mod.ts');`)).toEqual(found);
   });
 
   it('у програмі кореневого typecheck такий value-імпорт є ЛИШЕ в allowlist', () => {
