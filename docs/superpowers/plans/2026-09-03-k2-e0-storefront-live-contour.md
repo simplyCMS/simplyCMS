@@ -183,7 +183,15 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
   build:packages → typecheck:template → test:packaging`; у релізі ще
   `pilot:pack`.
 - **Мінімальний гейт кожної задачі перед комітом:** `pnpm format:check &&
-  pnpm lint && pnpm test`. Задачі з харнесом — ще `pnpm test:schema`
+  pnpm lint && pnpm typecheck && pnpm test`. 🔴 `typecheck` доданий
+  2026-09-12 після Task 2: Task 1 поїхала з червоним `tsc`
+  (`ts.isImportCall` — внутрішній хелпер, якого немає в публічному
+  `typescript.d.ts`, TS2339 у новому тесті), а `pnpm test` цього не бачить
+  за побудовою — vitest транспілює без перевірки типів. Кореневий tsconfig
+  включає `tests/**`, тож саме `typecheck` — єдиний гейт на типи нових
+  тестів, які пише майже кожна задача плану. Задача, що торкається роутів,
+  ганяє `pnpm build` ПЕРЕД `typecheck` (регенерація `routeTree.gen.ts`).
+  Задачі з харнесом — ще `pnpm test:schema`
   (потрібен Postgres: `docker start simplycms-review-pg` →
   `PG_HARNESS_URL=postgresql://pgtest@127.0.0.1:55434/postgres`, або
   ефемерний `initdb`). Задачі з `dist` — ще `pnpm build:packages && pnpm
