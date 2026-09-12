@@ -136,4 +136,21 @@ describe('демо-сід: накат поверх канону', () => {
     await applySqlFiles(dbUrl, [DEMO_FILE]);
     expect(await counts()).toEqual(before);
   }, 60_000);
+
+  // 🔴 Лічильники рядків тумблер `decrease_on_order` НЕ покривають: він їде
+  // `update`-ом канонічного рядка, а не `insert`-ом, тож повторний накат із
+  // зіпсованим предикатом лишив би лічильники незмінними й зеленими. Асерт
+  // на ЗНАЧЕННЯ — єдине, що ловить це в гейті, а не в ручному psql.
+  it('вмикає облік списання і лишає його увімкненим після повторного накату', async () => {
+    const read = async () =>
+      (
+        await queryRows(
+          dbUrl,
+          "select value->>'decrease_on_order' as v from public.system_settings where key = 'stock_management'",
+        )
+      )[0]?.v;
+    expect(await read()).toBe('true');
+    await applySqlFiles(dbUrl, [DEMO_FILE]);
+    expect(await read()).toBe('true');
+  }, 60_000);
 });
