@@ -2,11 +2,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
-import {
-  serverOnlyExcludeFiles,
-  serverOnlyFiles,
-  serverOnlySpecifiers,
-} from 'simplycms/contracts/server-only';
+import { importProtection } from 'simplycms/contracts/server-only';
 
 /**
  * Vite-конфіг магазину.
@@ -35,30 +31,12 @@ export default ({ mode }: { mode: string }) => {
         router: { virtualRouteConfig: './routes.ts' },
         // Шлях резолвиться ВІД `srcDirectory` (`src/`), а не від кореня.
         server: { entry: './server.ts' },
-        // 🔴 Межа довіри клієнт/сервер у САМІЙ збірці магазину. Server-only
-        // субшляхи ядра й серверні залежності не можуть потрапити в
-        // клієнтський граф: Start валить збірку (dev і build) з трасою
-        // імпорту. Список — єдина декларація ядра, не копія. `include: ['**']`
-        // обовʼязковий: за замовчуванням перевіряються лише імпортери в `src/`,
-        // а теми, плагіни й сам пакет ядра в node_modules лишилися б поза
-        // перевіркою. Перевірка йде ПІСЛЯ компіляції serverFn, тож стаби з
-        // серверними імпортами в тілах хендлерів її не тригерять.
-        importProtection: {
-          behavior: 'error',
-          include: ['**'],
-          client: {
-            specifiers: serverOnlySpecifiers(),
-            // 🔴 Дефолт `['**/*.server.*']` дописано ВРУЧНУ: на відміну від
-            // `specifiers` (зливаються з дефолтом), `files` дефолт ЗАМІЩУЮТЬ
-            // (`pick(user, default)` у start-plugin-core). Без цього рядка
-            // конвенція Start «файл `*.server.ts` клієнту недоступний»
-            // мовчки перестала б діяти в кожному магазині з шаблону.
-            files: [...serverOnlyFiles(), '**/*.server.*'],
-            // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
-            // file-deny не бачив би `node_modules/simplycms/src/**`.
-            excludeFiles: serverOnlyExcludeFiles(),
-          },
-        },
+        // 🔴 Межа довіри клієнт/сервер у САМІЙ збірці магазину: Start валить
+        // збірку (dev і build) з трасою імпорту. Обʼєкт опції — з єдиної
+        // декларації ядра (там же пояснено три пастки Start); тут — один
+        // рядок, і гейт `tests/import-protection-wiring.test.ts` стереже,
+        // що він саме такий і без `enabled:` поруч.
+        importProtection: importProtection(),
       }),
     ],
     resolve: {
