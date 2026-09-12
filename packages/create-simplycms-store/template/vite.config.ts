@@ -19,7 +19,12 @@ export default ({ mode }: { mode: string }) => {
   // файлові значення у `process.env` — ЛИШЕ відсутні ключі: реальний env
   // процесу завжди виграє (`loadEnv` і сам ставить `process.env` вище файлів,
   // а `.env.local` — вище `.env`). У prod те саме робить `server.mjs`.
-  const fileEnv = loadEnv(mode, __dirname, '');
+  // `import.meta.dirname`, не `__dirname`: конфіг — ESM у пакеті з
+  // `"type": "module"`; Vite попереджає про `__dirname` під майбутнім
+  // дефолтом `configLoader: 'native'`, а прямий імпорт конфігу в тестах
+  // падав саме на ньому (`ReferenceError: __dirname is not defined`).
+  // Node ≥ 20.11 для цього є за побудовою: Start вимагає ≥ 22.12.
+  const fileEnv = loadEnv(mode, import.meta.dirname, '');
   for (const [key, value] of Object.entries(fileEnv)) {
     if (!(key in process.env)) process.env[key] = value;
   }
@@ -42,8 +47,8 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
-        '@themes': resolve(__dirname, 'themes'),
-        '@plugins': resolve(__dirname, 'plugins'),
+        '@themes': resolve(import.meta.dirname, 'themes'),
+        '@plugins': resolve(import.meta.dirname, 'plugins'),
       },
     },
     // 🔴 Порт dev-сервера прибитий до 3000 — того самого, що `pnpm start`

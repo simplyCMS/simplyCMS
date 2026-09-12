@@ -13,7 +13,12 @@ export default ({ mode }: { mode: string }) => {
   // файлові значення у `process.env` — ЛИШЕ відсутні ключі: реальний env
   // процесу завжди виграє (`loadEnv` і сам ставить `process.env` вище файлів,
   // а `.env.local` — вище `.env`). У prod те саме робить `server.mjs`.
-  const fileEnv = loadEnv(mode, __dirname, '');
+  // `import.meta.dirname`, не `__dirname`: конфіг — ESM у пакеті з
+  // `"type": "module"`; Vite попереджає про `__dirname` під майбутнім
+  // дефолтом `configLoader: 'native'`, а прямий імпорт конфігу в тестах
+  // падав саме на ньому (`ReferenceError: __dirname is not defined`).
+  // Node ≥ 20.11 для цього є за побудовою: Start вимагає ≥ 22.12.
+  const fileEnv = loadEnv(mode, import.meta.dirname, '');
   for (const [key, value] of Object.entries(fileEnv)) {
     if (!(key in process.env)) process.env[key] = value;
   }
@@ -42,18 +47,18 @@ export default ({ mode }: { mode: string }) => {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
         '@simplycms/plugin-faq': resolve(
-          __dirname,
+          import.meta.dirname,
           'packages/simplycms-plugin-faq/src',
         ),
         '@simplycms/theme-solarstore': resolve(
-          __dirname,
+          import.meta.dirname,
           'packages/simplycms-theme-solarstore/src',
         ),
         // Unscoped-флагман (К0): base-prefix, як і решта — @rollup/plugin-alias
         // матчить `simplycms` та `simplycms/<sub>`, але не `simplycms-*`.
-        simplycms: resolve(__dirname, 'packages/simplycms/src'),
-        '@themes': resolve(__dirname, 'themes'),
-        '@plugins': resolve(__dirname, 'plugins'),
+        simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
+        '@themes': resolve(import.meta.dirname, 'themes'),
+        '@plugins': resolve(import.meta.dirname, 'plugins'),
       },
     },
   };

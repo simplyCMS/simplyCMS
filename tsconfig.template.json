@@ -36,9 +36,15 @@
       "@plugins/*": ["./packages/create-simplycms-store/template/plugins/*"]
     }
   },
+  // 🔴 `vite.config.ts` шаблону — у програмі: трек T поклав у нього
+  // типізований виклик декларації межі, а поза `include` він не типізувався
+  // НІДЕ (кореневий tsconfig шаблон виключає) — та сама діра, що колись у
+  // `routes.ts`. Пару в `template/tsconfig.json` стереже
+  // `tests/template-typecheck-coverage.test.ts`.
   "include": [
     "packages/create-simplycms-store/template/routes.ts",
     "packages/create-simplycms-store/template/simplycms.config.ts",
+    "packages/create-simplycms-store/template/vite.config.ts",
     "packages/create-simplycms-store/template/themes",
     "packages/create-simplycms-store/template/plugins",
     "packages/create-simplycms-store/template/src"

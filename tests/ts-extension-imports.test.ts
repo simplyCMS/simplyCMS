@@ -72,7 +72,17 @@ const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
     } else if (ts.isExportDeclaration(node)) {
       if (!node.isTypeOnly && node.moduleSpecifier)
         record(node.moduleSpecifier);
-    } else if (ts.isImportCall(node) && node.arguments[0]) {
+    } else if (
+      // 🔴 `ts.isImportCall` — внутрішній хелпер компілятора, у ПУБЛІЧНОМУ
+      // `typescript.d.ts` його немає (є в рантаймі, TS2339 у typecheck):
+      // знахідка, успадкована з Task 1, не моя. Публічний еквівалент —
+      // `CallExpression`, чий `expression` має вигляд ключового слова
+      // `import` (`SyntaxKind.ImportKeyword`) — так сам компілятор різнить
+      // `import('x')` від звичайного виклику функції.
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0]
+    ) {
       record(node.arguments[0]);
     }
     ts.forEachChild(node, visit);
