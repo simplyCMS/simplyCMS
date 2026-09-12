@@ -36,7 +36,7 @@ pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): нак�
 #                       auth. Прапорець --e2e тепер ПАДАЄ з поясненням, а не мовчки
 #                       ігнорується. Браузерний контур і Gate E (owner-флоу вже на
 #                       Better Auth) повертає трек К6
-pnpm pilot:pack       # tarball-пілот: гейти A/C/D + CLI/TOOL — БЕЗ БД (Gate B відсутній)
+pnpm pilot:pack       # tarball-пілот: гейти A/C/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
                       # BETTER_AUTH_SECRET із .env.local (Supabase-ключів пілот більше
                       # не підставляє); назви товарів Gate B бере прямим SQL — HTTP-API
@@ -152,7 +152,9 @@ test:packaging`.
 накат канону міграцій і ПОВЕДІНКУ RLS — інші гейти схему БД не виконують.
 🔴 У гейтах РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` іде
 ще `pilot:pack` (трек T, 2026-09-02): Gate C пілота — єдиний доказ межі
-клієнт/сервер у реальному клієнтському бандлі; у CI він не ганяється.
+клієнт/сервер у реальному клієнтському бандлі, а Gate IP (К2-Е0, T-2) — що
+витік ВАЛИТЬ збірку магазину; з 2026-09-03 `pilot:pack` ганяється і в CI
+(job `packaging`); `pilot` з Gate B — ні.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
@@ -171,8 +173,8 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 (його імпорти резолвляться з `node_modules` магазину, не workspace-аліасами),
 тому `pnpm typecheck` шаблону не бачить. Розрив був не теоретичний: помилка
 типів у `template/routes.ts` проходила `tsc`, `lint`, `test`, `build:packages`
-і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого в CI
-немає. `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
+і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого на той
+час у CI не було (з 2026-09-03 він у job `packaging`). `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
 що бачить магазин), тому потребує `build:packages` перед собою. Список файлів
 під ним стереже `tests/template-typecheck-coverage.test.ts`.
 
@@ -690,18 +692,21 @@ INSERT — конструктивне делегування генерації 
 |----------|-----|-------|------|
 | `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
 | `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
-| `workflow.yml` | `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `workflow.yml` | `packaging` | `install` → `build:packages` → `typecheck:template` → `test:packaging` → `pilot:pack --skip-build` | push/PR/manual |
 | `workflow.yml` | `schema` | `install` → `test:schema` (service-контейнер `postgres:17`) | push/PR/manual |
 | `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
 
 `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
 потребує зібраних `dist/` кожного пакета.
 
-🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pnpm pilot`
-потребує живої бази (`DATABASE_URL`), а це зовнішній стан, від дрейфу якого гейт
-червонів би без регресії коду. Прогін пілота перед
-релізом — відповідальність розробника (`pnpm pilot:pack` не потребує нічого, решта —
-див. Quick Reference). Передрелізний гейт у CI — детерміністичний tarball-parity.
+🔴 **`pnpm pilot` (Gate B проти живої БД) у CI НЕ ганяється** (рішення власника
+2026-08-01, звужене 2026-09-03). `pnpm pilot` потребує живої бази (`DATABASE_URL`),
+а це зовнішній стан, від дрейфу якого гейт червонів би без регресії коду. Прогін
+`pilot` перед релізом — відповідальність розробника (див. Quick Reference).
+🔴 А от `pnpm pilot:pack` (без БД) — крок job `packaging` з 2026-09-03: Gate C і
+Gate IP — єдиний поведінковий доказ межі клієнт/сервер у реальному магазині з
+tarball-ів. Передрелізний гейт у CI — детерміністичний tarball-parity плюс
+`pilot:pack --skip-build`.
 
 ## Публікація пакетів (npmjs)
 

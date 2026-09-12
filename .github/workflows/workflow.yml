@@ -92,7 +92,7 @@ jobs:
 
   packaging:
     name: Packaging
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     steps:
@@ -125,6 +125,16 @@ jobs:
 
       - name: Tarball parity
         run: pnpm test:packaging
+
+      # 🔴 Пілот пакування БЕЗ бази (рішення власника 2026-09-03, К2-Е0 T-2):
+      # єдиний поведінковий доказ межі клієнт/сервер у реальному магазині з
+      # tarball-ів — Gate C (серверного вантажу немає в чанках) і Gate IP
+      # (витік ВАЛИТЬ збірку). Детермінований; +≈3–5 хв: install скретча і
+      # три збірки скретча (дві червоні + чиста) поверх основної.
+      # `--skip-build`: dist пакетів уже свіжий після кроку `Build packages`
+      # вище — без прапорця пілот повторив би `build:packages` (кеп купи 3 ГБ).
+      - name: Pilot (pack-only)
+        run: pnpm pilot:pack --skip-build
 
   schema:
     name: Schema (PG harness)
@@ -172,10 +182,7 @@ jobs:
       - name: Schema gate
         run: pnpm test:schema
 
-# 🔴 Пілот пакування (`pnpm pilot:pack` / `pilot` / `pilot:e2e`) у CI НЕ ганяється
-# — рішення власника (2026-08-01). Причина: `pilot` і `pilot:e2e` потребують
-# бази (живої або локального стеку в Docker), а це зовнішній стан, від дрейфу
-# якого гейт червонів би без регресії коду. Прогін пілота — відповідальність
-# розробника перед релізом; команди й порядок — у CLAUDE.md.
-# Передрелізним гейтом у CI лишається tarball-parity (job `packaging` вище і
-# крок у `publish-packages.yml`) — він детерміністичний і бази не потребує.
+# 🔴 `pnpm pilot` (Gate B проти живої БД) у CI НЕ ганяється — рішення власника
+# (2026-08-01): зовнішній стан бази дрейфує без регресії коду. `pnpm
+# pilot:pack` (без БД) у CI Є з 2026-09-03 — job `packaging` вище. Прогін
+# `pilot` перед релізом — відповідальність розробника; команди — у CLAUDE.md.

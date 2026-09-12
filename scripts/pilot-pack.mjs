@@ -13,15 +13,15 @@
  *
  * | Режим              | Команда           | Гейти              | Джерело даних     |
  * |--------------------|-------------------|--------------------|-------------------|
- * | пакувальність      | `pnpm pilot:pack` | A, C, D, CLI, TOOL | нічого (без БД)   |
- * | повний (проти БД)  | `pnpm pilot`      | A-D, CLI, TOOL     | `.env.local`      |
+ * | пакувальність      | `pnpm pilot:pack` | A, C, D, IP, CLI, TOOL | нічого (без БД) |
+ * | повний (проти БД)  | `pnpm pilot`      | A-D, IP, CLI, TOOL | `.env.local`      |
  *
  * 🔴 Режиму `--e2e` більше немає: він піднімав локальний стек Supabase, а
  * магазин контракту v2 ходить у чистий Postgres — стек не був би ні джерелом
  * даних магазину, ні джерелом auth. Разом із ним знято Gate E (bootstrap
  * власника через service_role): owner-флоу на Better Auth повертає контур К6.
  *
- * A/C/D, CLI і TOOL (резолв tarball-ів, route tree з node_modules, відсутність
+ * A/C/D, IP, CLI і TOOL (резолв tarball-ів, route tree з node_modules, відсутність
  * серверного вантажу в клієнті, Tailwind, вміст tarball-ів скаффолдера й
  * @simplycms/cli) до БД не звертаються — тому `--pack-only` не потребує ані
  * ключів, ані піднятого сервера й ніколи не червоніє через зміну даних. Gate B
@@ -30,7 +30,7 @@
  *
  * Використання:
  *   node scripts/pilot-pack.mjs               # повний прогін (потрібна БД)
- *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, CLI, TOOL (без БД)
+ *   node scripts/pilot-pack.mjs --pack-only   # gates A, C, D, IP, CLI, TOOL (без БД)
  *   node scripts/pilot-pack.mjs --keep        # не прибирати /tmp-магазин
  *   node scripts/pilot-pack.mjs --skip-build  # dist пакетів уже свіжий
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
@@ -68,7 +68,9 @@ function describeMode() {
 
 /** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
 function describeScope() {
-  return packOnly ? 'гейти A/C/D + CLI/TOOL' : 'гейти A-D + CLI/TOOL (E знято)';
+  return packOnly
+    ? 'гейти A/C/D/IP + CLI/TOOL'
+    : 'гейти A-D/IP + CLI/TOOL (E знято)';
 }
 
 async function main() {
