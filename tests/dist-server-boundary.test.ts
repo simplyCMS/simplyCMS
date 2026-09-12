@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -149,4 +149,84 @@ describe('межа клієнт/сервер у зібраному ядрі', ()
     );
     expect(relativeImports(readFileSync(file, 'utf8'))).toEqual([]);
   });
+});
+
+/**
+ * Сентинели дерев — контроль САМОГО списку `SERVER_ONLY` (К2-Е0, T-3).
+ *
+ * 🔴 Усі шість читачів декларації похідні від списку: приберіть звідти
+ * `'storefront'` — лоадери переїдуть у клієнтську групу збірки
+ * (`tsdown.config.ts`), Import Protection і Gate C перестануть їх бачити,
+ * а партиція вище лишиться зеленою, бо ітерує той самий усічений список.
+ * Єдиний контроль, не похідний від списку, — літерал із ДЖЕРЕЛА кожного
+ * дерева: він мусить (а) існувати в джерелі (інакше рефакторинг рядка
+ * зробить сентинел порожнім мовчки), (б) бути в серверному замиканні
+ * `dist`, (в) бути відсутнім у клієнтському. Мапа — свідома друга копія
+ * списку: її ключі й `SERVER_ONLY` мусять збігатися.
+ *
+ * 🔴 Літерали — РЯДКИ коду, не ідентифікатори: клієнтська збірка магазину
+ * мініфікує імена, а ці літерали в `dist` пакета лишаються дослівно.
+ */
+const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
+  db: '[simplycms/db]',
+  auth: '[simplycms/auth]',
+  schema: 'wishlists_own_all',
+  storefront: 'Disallow: /admin/',
+  'storefront-routes/seo': 'public, max-age=3600, stale-while-revalidate=86400',
+  'admin-server/impl': 'patch не може бути порожнім',
+};
+
+const SRC = resolve(CORE, 'src');
+
+/** Усі `.ts`/`.tsx` під деревом джерел (без тестів). */
+const sourceFilesOf = (tree: string): string[] => {
+  const out: string[] = [];
+  const walk = (dir: string): void => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const next = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== '__tests__') walk(next);
+      } else if (/\.tsx?$/.test(entry.name)) out.push(next);
+    }
+  };
+  walk(resolve(SRC, tree));
+  return out;
+};
+
+describe('сентинели server-only дерев (контроль списку декларації)', () => {
+  it('мапа сентинелів покриває рівно список SERVER_ONLY', () => {
+    expect(Object.keys(SENTINELS).sort()).toEqual([...SERVER_ONLY].sort());
+  });
+
+  it.each(Object.entries(SENTINELS))(
+    '%s: літерал є в джерелі дерева',
+    (tree, literal) => {
+      const hit = sourceFilesOf(tree).some((file) =>
+        readFileSync(file, 'utf8').includes(literal),
+      );
+      expect(hit, `«${literal}» зник із packages/simplycms/src/${tree}`).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each(Object.entries(SENTINELS))(
+    '%s: літерал у серверному замиканні dist і відсутній у клієнтському',
+    (_tree, literal) => {
+      const entries = entryFiles();
+      const server = closure(
+        entries.filter((f) => isServerOnlySubpath(subpathOf(f))),
+      );
+      const client = closure(
+        entries.filter((f) => !isServerOnlySubpath(subpathOf(f))),
+      );
+      const has = (set: Set<string>) =>
+        [...set].some((f) => readFileSync(f, 'utf8').includes(literal));
+      expect(has(server), `«${literal}» не знайдено в серверному dist`).toBe(
+        true,
+      );
+      expect(has(client), `«${literal}» ПРОТІК у клієнтський dist`).toBe(false);
+    },
+  );
 });
