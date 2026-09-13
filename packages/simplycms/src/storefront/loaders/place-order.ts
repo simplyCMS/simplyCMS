@@ -34,6 +34,16 @@ export async function placeOrderFor(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PlaceOrderResult> {
+  // 🔴 Порожній кошик — відмова ДО транзакції, а не лише `.min(1)` у T5-схемі
+  // (рев'ю M2): `placeOrderFor` — «уся логіка оформлення» за докблоком нижче,
+  // і кличеться напряму (харнес, будь-який майбутній не-Zod клієнт) в обхід
+  // валідатора однієї RPC. Без гварда тут `inArray(col, [])` у drizzle тихо
+  // повертає `false` (не кидок), цикл цін не виконується, і пішло б
+  // замовлення з нуля позицій і `total = 0`.
+  if (input.items.length === 0) {
+    return { ok: false, reason: 'not_purchasable' };
+  }
+
   const accessToken = userId === null ? randomUUID() : null;
   const run = <T>(
     fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
@@ -66,6 +76,15 @@ export async function placeOrderFor(
         return { ok: false, reason: 'pickup_point_invalid' } as const;
       if (!isPickup && input.pickupPointId)
         return { ok: false, reason: 'pickup_point_invalid' } as const;
+
+      // 🔴 Місто визначає ЗОНУ, а зона — тариф: це гроші (рев'ю M7). Порожнє
+      // місто для НЕ-pickup методу мовчки падало б на ДЕФОЛТНУ зону
+      // (`findShippingZoneIn(zones, '')` завжди повертає її) — тобто тариф
+      // обирала б відсутність даних, а не покупець. Pickup міста не потребує:
+      // адресу видачі задає точка, а не місто.
+      if (!isPickup && !input.deliveryCity) {
+        return { ok: false, reason: 'shipping_unavailable' } as const;
+      }
 
       const items = await priceCheckoutItems(db, userId, input.items);
       if (items === 'not_purchasable')

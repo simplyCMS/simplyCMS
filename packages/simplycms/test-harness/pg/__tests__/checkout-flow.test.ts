@@ -5,6 +5,16 @@
 // HIDDEN_SHIPPING_FIXTURES (лише негативна частина: активну доставку дає сід,
 // повний набір додав би другий активний тариф на ту саму пару метод+зона);
 // решта негативних рядків — тест-локальні.
+//
+// 🔴 Рев'ю (Opus) до цього файлу додало кейси, яких перша версія не мала:
+// I1 — курʼєр із МІСТОМ фактично рахує ненульову доставку (єдиний асерт
+// раніше був `shipping_cost = '0.00'`, невідрізненний від дефолту/бага);
+// M7 — НЕ-pickup метод БЕЗ міста відмовляється (`shipping_unavailable`), а
+// не мовчки їде на дефолтну зону; M2 — порожній кошик відмовляється як
+// `not_purchasable` ДО транзакції; M3 — відсутність рядка в `orders`
+// перевірена на КОЖНІЙ відмові; M4 — три гілки ідентичності
+// `priceCheckoutItems` (неактивний товар, чужа модифікація, товар без ціни
+// для типу) мають по власному кейсу.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -30,6 +40,10 @@ import { percentDiscountStatements } from './fixtures/discounts';
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 const PANEL_SLUG = 'sonyachna-panel-450w-mono';
 const OUT_OF_STOCK_SLUG = 'sonyachna-panel-550w-mono';
+/** Активний товар БЕЗ модифікацій, який деактивуємо (M4) — не чіпає інші кейси. */
+const INACTIVE_SLUG = 'sonyachna-panel-600w-bifacial';
+/** Товар З модифікаціями: продукт-рівневої ціни немає, лише per-мод (M4). */
+const NO_PRICE_SLUG = 'invertor-merezhevyi-5kw';
 interface IdRow {
   id: string;
 }
@@ -71,6 +85,9 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   let point = '';
   let panel = '';
   let outOfStock = '';
+  let inactiveProduct = '';
+  let noPriceProduct = '';
+  let foreignMod = '';
 
   const one = async (sql: string, params: unknown[] = []): Promise<string> =>
     ((await queryRows(dbUrl, sql, params)) as IdRow[])[0].id;
@@ -97,7 +114,8 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     for (const statement of HIDDEN_SHIPPING_FIXTURES)
       await queryRows(dbUrl, statement);
     // Тест-локальні негативні методи: курʼєр із тарифом на дефолтній зоні
-    // (точка чужого методу) і активний метод без жодного тарифу.
+    // (точка чужого методу; і, з рев'ю, справжня платна доставка) і активний
+    // метод без жодного тарифу.
     await queryRows(
       dbUrl,
       `insert into public.shipping_methods (id, code, name, is_active)
@@ -136,6 +154,26 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       dbUrl,
       `update public.products set stock_status = 'out_of_stock' where id = $1`,
       [outOfStock],
+    );
+    // M4: товар, який деактивуємо (не чіпаючи is_active решти сіду), і
+    // товар, у якого ціна є ЛИШЕ на модифікаціях (продукт-рівневого рядка
+    // `product_prices` немає взагалі) — обидва вже в сіді, лише читаємо id.
+    inactiveProduct = await one(
+      `select id from public.products where slug = $1`,
+      [INACTIVE_SLUG],
+    );
+    noPriceProduct = await one(
+      `select id from public.products where slug = $1`,
+      [NO_PRICE_SLUG],
+    );
+    foreignMod = await one(
+      `select id from public.product_modifications where product_id = $1 and slug = 'odnofazny'`,
+      [noPriceProduct],
+    );
+    await queryRows(
+      dbUrl,
+      `update public.products set is_active = false where id = $1`,
+      [inactiveProduct],
     );
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
@@ -190,19 +228,23 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(await ordersCount()).toBe(before);
   });
 
-  it('точка видачі чужого методу — pickup_point_invalid', async () => {
+  it('точка видачі чужого методу — pickup_point_invalid, рядка немає', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: courier,
+        deliveryCity: 'Львів',
         pickupPointId: point,
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
+    expect(await ordersCount()).toBe(before);
   });
 
-  it('pickup-метод без точки видачі — pickup_point_invalid', async () => {
+  it('pickup-метод без точки видачі — pickup_point_invalid, рядка немає', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -212,17 +254,66 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
+    expect(await ordersCount()).toBe(before);
   });
 
   it('активний метод без застосовного тарифу — shipping_unavailable, а не безкоштовно', async () => {
+    // 🔴 Місто ОБОВʼЯЗКОВО задане: інакше кейс ловить не «немає тарифу»
+    // (те, що перевіряє назва), а новий гвард M7 «немає міста» — обидва
+    // повертають той самий код, тож без міста тест мовчки перестав би
+    // доводити те, що обіцяє.
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: norate,
+        deliveryCity: 'Дніпро',
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
+    expect(await ordersCount()).toBe(before);
+  });
+
+  it('НЕ-pickup метод без міста — shipping_unavailable (M7)', async () => {
+    // Курʼєр БЕЗ міста інакше мовчки поїхав би на ДЕФОЛТНУ зону
+    // (`findShippingZoneIn(zones, '')`) — тариф обирала б відсутність даних.
+    const before = await ordersCount();
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: null,
+        items: [{ productId: panel, modificationId: null, quantity: 1 }],
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
+    expect(await ordersCount()).toBe(before);
+  });
+
+  it('курʼєр із містом — сервер рахує НЕНУЛЬОВУ доставку (I1)', async () => {
+    // 🔴 До рев'ю єдиний асерт `shipping_cost` у файлі був '0.00' — невідрізненний
+    // від дефолту/бага. Курʼєр на дефолтній зоні (тариф `flat 100` з beforeAll)
+    // доводить, що `rate.cost` справді летить у запис, а не літеральний нуль.
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: 'Одеса',
+        pickupPointId: null,
+        items: [{ productId: panel, modificationId: null, quantity: 1 }],
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const [row] = (await queryRows(
+      dbUrl,
+      `select subtotal, shipping_cost, total from public.orders where id = $1`,
+      [result.order.id],
+    )) as { subtotal: string; shipping_cost: string; total: string }[];
+    expect(row.subtotal).toBe('4800.00');
+    expect(row.shipping_cost).toBe('100.00');
+    expect(row.total).toBe('4900.00');
   });
 
   it('гість отримує знижку категорії за замовчуванням — як у getDiscountEnvironment', async () => {
@@ -266,8 +357,61 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
   });
 
+  it('неактивний товар у кошику — not_purchasable (M4)', async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        items: [
+          { productId: inactiveProduct, modificationId: null, quantity: 1 },
+        ],
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+  });
+
+  it('модифікація належить іншому товару — not_purchasable (M4)', async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        // `foreignMod` — модифікація NO_PRICE_SLUG, а не `panel`.
+        items: [{ productId: panel, modificationId: foreignMod, quantity: 1 }],
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+  });
+
+  it('товар без ціни для типу (лише мод-рівневі рядки) — not_purchasable (M4)', async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        // Без modificationId — продукт-рівневого `product_prices` рядка немає.
+        items: [
+          { productId: noPriceProduct, modificationId: null, quantity: 1 },
+        ],
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+  });
+
+  it('порожній кошик — not_purchasable до транзакції (M2)', async () => {
+    const before = await ordersCount();
+    const result = await placeOrderFor(
+      input({ shippingMethodId: pickup }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+    expect(await ordersCount()).toBe(before);
+  });
+
   it('нестача залишку в транзакції — not_purchasable без рядка в orders', async () => {
-    // Сідовий залишок 450w — 5; два попередні замовлення списали 3. Запит на 10
+    // Сідовий залишок 450w — 5; попередні успішні замовлення цього файлу
+    // (тест 1, курʼєр I1, знижка) списали 4 — лишається 1. Запит на 10
     // проходить читання (статус in_stock), але падає у списанні → відкат.
     const before = await ordersCount();
     const result = await placeOrderFor(
