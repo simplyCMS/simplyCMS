@@ -18,7 +18,9 @@ describe('mediaKey', () => {
   });
 
   it('ключі не повторюються', () => {
-    const keys = new Set(Array.from({ length: 500 }, () => mediaKey('image/png')));
+    const keys = new Set(
+      Array.from({ length: 500 }, () => mediaKey('image/png')),
+    );
     expect(keys.size).toBe(500);
   });
 
@@ -35,7 +37,11 @@ describe('mediaKey', () => {
   it('MEDIA_KEY_RE відбиває traversal і чужі розширення', () => {
     expect('../etc/passwd').not.toMatch(MEDIA_KEY_RE);
     expect('ab/../../etc/passwd').not.toMatch(MEDIA_KEY_RE);
-    expect('ab/ab000000-0000-4000-8000-000000000000.svg').not.toMatch(MEDIA_KEY_RE);
-    expect('ab/ab000000-0000-4000-8000-000000000000.png\n').not.toMatch(MEDIA_KEY_RE);
+    expect('ab/ab000000-0000-4000-8000-000000000000.svg').not.toMatch(
+      MEDIA_KEY_RE,
+    );
+    expect('ab/ab000000-0000-4000-8000-000000000000.png\n').not.toMatch(
+      MEDIA_KEY_RE,
+    );
   });
 });

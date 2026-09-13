@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { inspectUpload } from '../inspect';
 
-const file = (bytes: Uint8Array<ArrayBuffer>, name = 'a.png', type = 'image/png') =>
-  new File([bytes], name, { type });
+const file = (
+  bytes: Uint8Array<ArrayBuffer>,
+  name = 'a.png',
+  type = 'image/png',
+) => new File([bytes], name, { type });
 const ascii = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0));
-const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+const PNG = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4,
+]);
 
 describe('inspectUpload', () => {
   it('валідний PNG → ok із байтами, MIME і розміром', async () => {
@@ -28,13 +33,18 @@ describe('inspectUpload', () => {
   });
 
   it('PNG-сигнатура при брехливому file.type приймається за сигнатурою', async () => {
-    const result = await inspectUpload(file(PNG, 'x.bin', 'application/octet-stream'));
+    const result = await inspectUpload(
+      file(PNG, 'x.bin', 'application/octet-stream'),
+    );
     expect(result.ok && result.mime).toBe('image/png');
   });
 
   it('понад ліміт → too_large, і байти НЕ читаються', async () => {
     const big = file(new Uint8Array(11 * 1024 * 1024));
-    expect(await inspectUpload(big)).toEqual({ ok: false, reason: 'too_large' });
+    expect(await inspectUpload(big)).toEqual({
+      ok: false,
+      reason: 'too_large',
+    });
   });
 
   it('ліміт — параметр: аватарна стеля жорсткіша', async () => {

@@ -32,7 +32,9 @@ export interface MediaStorageDriver {
 /** Ключ не відповідає контракту або веде за межі кореня сховища. */
 export class MediaKeyError extends Error {
   constructor(readonly key: string) {
-    super(`[simplycms/storage] Неприпустимий ключ медіа: ${JSON.stringify(key)}.`);
+    super(
+      `[simplycms/storage] Неприпустимий ключ медіа: ${JSON.stringify(key)}.`,
+    );
     this.name = 'MediaKeyError';
   }
 }

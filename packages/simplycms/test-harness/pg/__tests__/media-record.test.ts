@@ -35,7 +35,9 @@ const canonFiles = (): string[] =>
     .sort()
     .map((name) => join(MIGRATIONS, name));
 
-const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+const PNG = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4,
+]);
 
 describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -145,7 +147,13 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const record = await withActor({ role: 'app_admin' }, (db) =>
       writeMedia(
         db,
-        { bytes: PNG, mime: 'image/png', entityType: 'banner', entityId: null, uploadedBy: null },
+        {
+          bytes: PNG,
+          mime: 'image/png',
+          entityType: 'banner',
+          entityId: null,
+          uploadedBy: null,
+        },
         real,
       ),
     );
@@ -178,7 +186,13 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const record = await withActor({ role: 'app_admin' }, (db) =>
       writeMedia(
         db,
-        { bytes: PNG, mime: 'image/png', entityType: 'banner', entityId: null, uploadedBy: null },
+        {
+          bytes: PNG,
+          mime: 'image/png',
+          entityType: 'banner',
+          entityId: null,
+          uploadedBy: null,
+        },
         real,
       ),
     );
@@ -190,7 +204,9 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     };
 
     await expect(
-      withActor({ role: 'app_admin' }, (db) => eraseMedia(db, record.ref, broken)),
+      withActor({ role: 'app_admin' }, (db) =>
+        eraseMedia(db, record.ref, broken),
+      ),
     ).rejects.toThrow('сховище недоступне');
 
     const [row] = (await queryRows(
@@ -201,7 +217,9 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     expect(row?.storage_key).toBe(record.ref);
     expect(await real.open(record.ref)).not.toBeNull();
 
-    await withActor({ role: 'app_admin' }, (db) => eraseMedia(db, record.ref, real));
+    await withActor({ role: 'app_admin' }, (db) =>
+      eraseMedia(db, record.ref, real),
+    );
   });
 
   it('eraseMedia неіснуючого референсу — false, без винятку', async () => {
@@ -218,7 +236,13 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const record = await withActor({ role: 'app_admin' }, (db) =>
       writeMedia(
         db,
-        { bytes: PNG, mime: 'image/png', entityType: 'banner', entityId: null, uploadedBy: null },
+        {
+          bytes: PNG,
+          mime: 'image/png',
+          entityType: 'banner',
+          entityId: null,
+          uploadedBy: null,
+        },
         real,
       ),
     );
@@ -239,7 +263,13 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const record = await withActor({ role: 'app_admin' }, (db) =>
       writeMedia(
         db,
-        { bytes: PNG, mime: 'image/png', entityType: 'avatar', entityId: null, uploadedBy: null },
+        {
+          bytes: PNG,
+          mime: 'image/png',
+          entityType: 'avatar',
+          entityId: null,
+          uploadedBy: null,
+        },
         real,
       ),
     );
@@ -256,7 +286,9 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
       (err: unknown) => err,
     );
     expect(error).toBeInstanceOf(Error);
-    expect((error as { cause?: Error }).cause?.message).toMatch(/permission denied/i);
+    expect((error as { cause?: Error }).cause?.message).toMatch(
+      /permission denied/i,
+    );
 
     expect(await real.open(record.ref), 'файл мав лишитись').not.toBeNull();
     const [row] = (await queryRows(
@@ -266,7 +298,9 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     )) as { storage_key: string }[];
     expect(row?.storage_key).toBe(record.ref);
 
-    await withActor({ role: 'app_admin' }, (db) => eraseMedia(db, record.ref, real));
+    await withActor({ role: 'app_admin' }, (db) =>
+      eraseMedia(db, record.ref, real),
+    );
   });
 
   it('тимчасові файли після всіх прогонів не лишились', async () => {

@@ -28,7 +28,8 @@ export function sniffImageMime(bytes: Uint8Array): MediaMime | null {
   // обовʼязковий.
   if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp';
   // ISO-BMFF: розмір бокса (4 байти) → 'ftyp' → бренд.
-  if (ascii(4, 'ftyp') && (ascii(8, 'avif') || ascii(8, 'avis'))) return 'image/avif';
+  if (ascii(4, 'ftyp') && (ascii(8, 'avif') || ascii(8, 'avis')))
+    return 'image/avif';
 
   return null;
 }

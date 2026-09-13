@@ -37,7 +37,8 @@ export function localFsDriver(root: string = mediaRoot()): MediaStorageDriver {
     // 🔴 `resolve` спершу, перевірка ПОТІМ: перевіряти сирий рядок марно —
     // `ab/../../x` виглядає невинно, доки його не нормалізувати.
     const target = resolve(base, key);
-    if (target !== base && !target.startsWith(base + sep)) throw new MediaKeyError(key);
+    if (target !== base && !target.startsWith(base + sep))
+      throw new MediaKeyError(key);
     if (target === base) throw new MediaKeyError(key);
     return target;
   };
@@ -92,7 +93,9 @@ export function localFsDriver(root: string = mediaRoot()): MediaStorageDriver {
       return {
         size,
         stream: () =>
-          Readable.toWeb(createReadStream(target)) as ReadableStream<Uint8Array>,
+          Readable.toWeb(
+            createReadStream(target),
+          ) as ReadableStream<Uint8Array>,
       };
     },
   };
