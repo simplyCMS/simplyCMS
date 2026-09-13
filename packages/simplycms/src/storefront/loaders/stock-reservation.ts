@@ -79,64 +79,14 @@ export async function reserveStock(
     })
     .where(eq(stockByPickupPoint.id, row.id));
 
+  // 🔴 Сума — ЛИШЕ по обслуговуючих точках (`row.serving`), симетрично до
+  // `releaseStock`: сьогодні `rows` тут і так вузький (без `includePointId`),
+  // тож фільтр — no-op, але без нього обидва місця залежали б від того, що
+  // ЖОДЕН майбутній виклик тут ніколи не додасть `includePointId` — крихке
+  // припущення, яке саме тут коштувало регресії I1.
   const left =
-    rows.reduce((sum, item) => sum + item.quantity, 0) - line.quantity;
+    rows
+      .filter((item) => item.serving)
+      .reduce((sum, item) => sum + item.quantity, 0) - line.quantity;
   if (left === 0) await setTargetStatus(db, line, 'out_of_stock');
-}
-
-/**
- * Повертає позицію В ТУ САМУ точку — дзеркало `reserveStock`.
- *
- * 🔴 Знімок береться з `includePointId: pointId` (рев'ю I1) — точка
- * ПОВЕРНЕННЯ мусить потрапити в блокування, навіть якщо магазин ЗНЯВ
- * прапорець `is_active` між замовленням і скасуванням: рядок залишку
- * (`stock_by_pickup_point`) при деактивації нікуди не дівається, і без
- * розширеного предиката `lockTargetStock` його ховала б та сама умова, що
- * ховає точку від НОВИХ бронювань, — залишок губився б НАЗАВЖДИ, бо гілка
- * «рядка немає» нижче мовчки виходить.
- *
- * 🔴 Тому `if (!row) return` тут означає рівно одне: рядка `stock_by_pickup_point`
- * на цій точці більше немає У БД ФІЗИЧНО — або точку ВИДАЛИЛИ (не
- * деактивували) і `stock_by_pickup_point_pickup_point_id_fkey`
- * (`ON DELETE cascade`) забрав рядок разом із нею, або сам рядок обліку
- * прибрали вручну. Це право покупця (скасування не сміє впасти через стан
- * складу), і вигадувати рядок замість магазину write-side не буде. Сюди ж
- * потрапляє й перша гілка `reserveStock` («обліку немає взагалі») зі свого
- * боку: `releaseOrderStock` резолвить уже ІНШУ точку для цього ордера, і
- * кількість ляже на неї — названа межа правила Р2 вище.
- *
- * 🔴 Дзеркало не абсолютне, і це свідомо: кількість повертається завжди, а
- * статус — лише з нуля (гвард нижче). Для `on_order` це працює саме тому,
- * що гвард дивиться на `out_of_stock → in_stock`: `on_order` під нього не
- * підпадає і лишається як є — окремої гілки тут не треба.
- */
-export async function releaseStock(
-  db: ActorDb,
-  line: StockLine,
-  pointId: string,
-): Promise<void> {
-  if (!line.modificationId && !line.productId) return;
-  const rows = await lockTargetStock(db, line, pointId);
-  if (rows.length === 0) return;
-  const row = rows.find((candidate) => candidate.pointId === pointId);
-  if (!row) return;
-
-  // Сума ДО повернення — із того самого заблокованого знімка.
-  const before = rows.reduce((sum, item) => sum + item.quantity, 0);
-
-  await db
-    .update(stockByPickupPoint)
-    .set({
-      quantity: row.quantity + line.quantity,
-      updatedAt: new Date(),
-    })
-    .where(eq(stockByPickupPoint.id, row.id));
-
-  // 🔴 Фліп назад — ЛИШЕ коли до повернення сума по точках була нулем: інакше
-  // `out_of_stock` поставив не цей облік, а магазин (зняв товар з продажу при
-  // ненульовому залишку), і скасування старого замовлення тихо скасувало б це
-  // рішення. Дзеркальний вигляд `if (before + line.quantity > 0)` умовою не є
-  // взагалі: `quantity` позиції завжди ≥ 1 (`order_items_positive_quantity`,
-  // `schema.ts:247`), тобто такий гвард істинний завжди.
-  if (before === 0) await setTargetStatus(db, line, 'in_stock');
 }

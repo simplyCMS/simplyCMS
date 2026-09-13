@@ -13,6 +13,7 @@ export * from './order-create';
 export * from './order-statuses';
 export * from './order-stock';
 export * from './orders';
+export * from './stock-release';
 export * from './stock-reservation';
 export * from './addresses';
 export * from './pickup-points';

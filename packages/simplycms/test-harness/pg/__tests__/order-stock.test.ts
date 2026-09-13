@@ -469,6 +469,68 @@ describe('замовлення списує залишок і повертає �
     expect(await quantities(productId)).toEqual([5]);
   });
 
+  it('🔴 I1-регрес: точку ЄДИНУ й ВИЧЕРПАНУ ДО НУЛЯ деактивували — скасування НЕ фліпає статус в in_stock', async () => {
+    // Сценарій повторного рев'ю: перший фікс I1 давав правильну кількість,
+    // але хибно повертав `stock_status` в `in_stock` через ту саму точку,
+    // яку read-side і write-side-резервування вже не бачать, — тихий
+    // необмежений оверсел. Точка — ЄДИНА обслуговуюча для цього SKU, і
+    // замовлення забирає ВЕСЬ залишок (не частину, як у кейсі I1 вище), щоб
+    // дійсно дійти до фліпу `out_of_stock` під час списання.
+    const [{ id: pointId }] = (await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values (gen_random_uuid(), $1, 'Тестова точка I1-регрес', 'вул. І1Р, 1', 'Київ', true, 24)
+       returning id`,
+      [methodId],
+    )) as IdRow[];
+    const productId = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, 'test-i1-regress-full-deplete', 'Тест I1-регрес')`,
+      [productId],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $2, null, 3)`,
+      [pointId, productId],
+    );
+
+    const order = await place(productId, 3, pointId);
+    expect(await quantities(productId)).toEqual([0]);
+    expect(await statusOf(productId)).toBe('out_of_stock');
+
+    // Точку деактивовано ПІСЛЯ того, як вона вичерпала весь облік цього SKU.
+    await queryRows(
+      dbUrl,
+      `update public.pickup_points set is_active = false where id = $1`,
+      [pointId],
+    );
+
+    await withOrderTokenDb(
+      order.accessToken as string,
+      async (db, operator) => {
+        await operator((odb) => releaseOrderStock(odb, order.id));
+      },
+    );
+
+    // Кількість повернулась у рядок ТІЄЇ точки (I1 лишається закритим)…
+    expect(await quantities(productId)).toEqual([3]);
+    // …АЛЕ статус НЕ фліпнувся в `in_stock`: точка, куди лягла кількість,
+    // сама вже не обслуговує, тож read-side і так вважає SKU відсутнім —
+    // без `row.serving`-гварда тут було б `in_stock` при нулі обслуговуючих
+    // точок, тобто хибна реклама наявності.
+    expect(await statusOf(productId)).toBe('out_of_stock');
+
+    // Другий, дешевий ланцюжок: наступне замовлення на цей SKU (та сама
+    // деактивована точка) не падає — це прийнята межа Р2 (облік на закритій
+    // точці для НОВИХ бронювань не ведеться, `stock-info.ts:76`), і хибний
+    // `in_stock` тут ні до чого не додав би нового — важливо лише те, що
+    // статус і далі `out_of_stock`, а не тихо піднятий цим замовленням.
+    await place(productId, 1, pointId);
+    expect(await statusOf(productId)).toBe('out_of_stock');
+  });
+
   it('🔴 I2: списання й повернення працюють так само для МОДИФІКАЦІЇ, не лише простого товару', async () => {
     const [{ id: modificationId }] = (await queryRows(
       dbUrl,

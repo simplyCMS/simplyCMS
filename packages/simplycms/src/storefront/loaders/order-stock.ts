@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { orderItems, orders, systemSettings } from 'simplycms/schema';
 import type { ActorDb } from './db';
-import { releaseStock, reserveStock } from './stock-reservation';
+import { releaseStock } from './stock-release';
+import { reserveStock } from './stock-reservation';
 import {
   resolveStockPoint,
   type StockLine,

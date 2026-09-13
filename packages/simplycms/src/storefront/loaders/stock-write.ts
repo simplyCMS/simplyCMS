@@ -1,12 +1,12 @@
-import { and, asc, desc, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { pickupPoints, stockByPickupPoint } from 'simplycms/schema';
 import type { ActorDb } from './db';
 
 /**
  * Адресація обліку залишків (К2-Е0, Е0-3): яка точка обслуговує замовлення
  * і як заблокувати рядки цілі в цій транзакції. Переворот статусу —
- * `./stock-status`, правила «скільки списати й повернути» —
- * `./stock-reservation`.
+ * `./stock-status`; правило списання — `./stock-reservation`, повернення —
+ * `./stock-release` (розкладені по файлах заради канону 150 рядків).
  */
 
 /** Ціль обліку: модифікація має пріоритет над простим товаром. */
@@ -20,11 +20,23 @@ export interface StockLine extends StockTarget {
   quantity: number;
 }
 
-/** Рядок залишку, заблокований `FOR UPDATE` у поточній транзакції. */
+/**
+ * Рядок залишку, заблокований `FOR UPDATE` у поточній транзакції.
+ *
+ * 🔴 `serving` — чи ця ТОЧКА (не рядок) обслуговує замовлення (`is_system`
+ * або `is_active`) — НЕЗАЛЕЖНО від того, чому рядок узагалі потрапив у
+ * знімок. Потрібне рівно для того, щоб відокремити дві різні семантики,
+ * які інакше злилися б в один запит (рев'ю I1-регрес): «куди писати
+ * інкремент/декремент» (адресується `pointId`, бачить і НЕобслуговуючу
+ * точку через `includePointId`) і «яка сума йде у фліп статусу» (мусить
+ * бачити ЛИШЕ обслуговуючі точки — див. `stock-reservation.ts` і
+ * `stock-release.ts`).
+ */
 export interface LockedStockRow {
   id: string;
   pointId: string;
   quantity: number;
+  serving: boolean;
 }
 
 /**
@@ -71,15 +83,17 @@ function targetScope(target: StockTarget): SQL | undefined {
 }
 
 /**
- * Залишки цілі по точках, які взагалі можуть обслужити замовлення, —
- * заблоковані `FOR UPDATE OF stock_by_pickup_point`.
+ * Залишки цілі по точках, які взагалі можуть обслужити замовлення (плюс,
+ * опційно, одна конкретна точка поза цим правилом — `includePointId`), —
+ * заблоковані `FOR UPDATE OF stock_by_pickup_point`. Що таке `serving` у
+ * результаті — докблок `LockedStockRow` вище; тут — лише звідки береться
+ * знімок.
  *
  * 🔴 Беруться ВСІ такі рядки, хоч списується рівно один: цей самий знімок
  * відповідає на два питання, на які інакше довелося б відповідати окремими
  * (і вже неблокованими) запитами — «чи веде магазин облік цієї цілі взагалі»
- * і «яка сума по точках після операції» (від неї фліп статусу). Предикат
- * точок — той самий, що в `resolveStockPoint`, інакше сума рахувалася б по
- * рядках, які нікого не обслуговують.
+ * і «яка сума по ОБСЛУГОВУЮЧИХ точках після операції» (звідси й `serving` —
+ * рахувати ту суму слід лише по ньому, див. `stock-reservation.ts`).
  *
  * 🔴 `includePointId` (рев'ю I1) — точка, яку треба бачити в знімку НЕЗАЛЕЖНО
  * від `is_active`/`is_system`. Потрібна ЛИШЕ на поверненні: замовлення могло
@@ -107,6 +121,7 @@ export async function lockTargetStock(
       id: stockByPickupPoint.id,
       pointId: stockByPickupPoint.pickupPointId,
       quantity: stockByPickupPoint.quantity,
+      serving: sql<boolean>`(${pickupPoints.isSystem} or ${pickupPoints.isActive})`,
     })
     .from(stockByPickupPoint)
     .innerJoin(
