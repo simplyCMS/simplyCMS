@@ -67,6 +67,11 @@ const TIER_ZONES = [
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
   // requireGrant (auth). Ширшого не давати.
   ['src/admin-server', 2, 'admin-server', ['db', 'auth']],
+  // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
+  // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
+  // до Postgres немає. `auth` НЕ у винятку — грант перевіряє викликач
+  // (serverFn), а не сам порт.
+  ['src/storage', 2, 'storage', ['db']],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.

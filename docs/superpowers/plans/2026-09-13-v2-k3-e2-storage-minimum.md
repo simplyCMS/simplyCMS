@@ -608,7 +608,7 @@ git commit -m "feat(k3-e2): медіа-референс — resolveMediaUrl у T
 `ENOENT` ще до першого правила — див. пояснення в Step 17. Почати з конфігу
 «щоб одразу правильно» — найдорожчий спосіб пройти цю задачу.
 
-- [ ] **Step 1: Написати падаючі тести ключів**
+- [X] **Step 1: Написати падаючі тести ключів**
 
 `packages/simplycms/src/storage/__tests__/keys.test.ts`:
 
@@ -656,7 +656,7 @@ describe('mediaKey', () => {
 });
 ```
 
-- [ ] **Step 2: Написати падаючі тести MIME-сніфера**
+- [X] **Step 2: Написати падаючі тести MIME-сніфера**
 
 `packages/simplycms/src/storage/__tests__/mime.test.ts`:
 
@@ -714,12 +714,12 @@ describe('sniffImageMime', () => {
 });
 ```
 
-- [ ] **Step 3: Прогнати обидва — мають впасти**
+- [X] **Step 3: Прогнати обидва — мають впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/`
 Expected: FAIL — модулів `../keys` і `../mime` немає.
 
-- [ ] **Step 4: Написати `storage/keys.ts`**
+- [X] **Step 4: Написати `storage/keys.ts`**
 
 ```ts
 import { randomUUID } from 'node:crypto';
@@ -782,7 +782,7 @@ export const MIME_BY_EXT: Readonly<Record<string, MediaMime>> =
   );
 ```
 
-- [ ] **Step 5: Написати `storage/mime.ts`**
+- [X] **Step 5: Написати `storage/mime.ts`**
 
 ```ts
 import type { MediaMime } from './keys';
@@ -817,7 +817,7 @@ export function sniffImageMime(bytes: Uint8Array): MediaMime | null {
 }
 ```
 
-- [ ] **Step 5a: Написати `storage/inspect.ts` — ОДНА перевірка вмісту на обидва serverFn**
+- [X] **Step 5a: Написати `storage/inspect.ts` — ОДНА перевірка вмісту на обидва serverFn**
 
 🔴 Це не зручність, а канон «одна копія правила». serverFn завантаження
 **два** (`uploadMedia` в адмінці і `uploadMyAvatar` у кабінеті), і кожен
@@ -875,7 +875,7 @@ export async function inspectUpload(
 export { inspectUpload, type UploadInspection } from './inspect';
 ```
 
-- [ ] **Step 5b: Юніт `inspectUpload` на фікстурах сигнатур**
+- [X] **Step 5b: Юніт `inspectUpload` на фікстурах сигнатур**
 
 `packages/simplycms/src/storage/__tests__/inspect.test.ts`:
 
@@ -936,12 +936,12 @@ describe('inspectUpload', () => {
 });
 ```
 
-- [ ] **Step 6: Прогнати — мають пройти**
+- [X] **Step 6: Прогнати — мають пройти**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/`
 Expected: PASS (`keys`, `mime`, `inspect`).
 
-- [ ] **Step 7: Написати падаючі тести драйвера**
+- [X] **Step 7: Написати падаючі тести драйвера**
 
 `packages/simplycms/src/storage/__tests__/local-fs.test.ts`:
 
@@ -1061,12 +1061,12 @@ describe('localFsDriver', () => {
 });
 ```
 
-- [ ] **Step 8: Прогнати — має впасти**
+- [X] **Step 8: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/local-fs.test.ts`
 Expected: FAIL — модуля `../local-fs` немає.
 
-- [ ] **Step 9: Написати `storage/driver.ts`**
+- [X] **Step 9: Написати `storage/driver.ts`**
 
 ```ts
 /** Обʼєкт сховища, готовий до роздачі. */
@@ -1117,7 +1117,7 @@ export class MediaKeyCollisionError extends Error {
 }
 ```
 
-- [ ] **Step 10: Написати `storage/env.ts`**
+- [X] **Step 10: Написати `storage/env.ts`**
 
 ```ts
 import { resolve } from 'node:path';
@@ -1141,7 +1141,7 @@ export function mediaRoot(): string {
 }
 ```
 
-- [ ] **Step 11: Написати `storage/local-fs.ts`**
+- [X] **Step 11: Написати `storage/local-fs.ts`**
 
 ```ts
 import { randomUUID } from 'node:crypto';
@@ -1260,7 +1260,7 @@ export function getMediaDriver(): MediaStorageDriver {
 export { MediaKeyCollisionError, MediaKeyError };
 ```
 
-- [ ] **Step 12: Написати `storage/index.ts`**
+- [X] **Step 12: Написати `storage/index.ts`**
 
 ```ts
 // Порт сховища файлів — server-only піддерево (`contracts/server-only`).
@@ -1280,12 +1280,12 @@ export {
 export { getMediaDriver, localFsDriver } from './local-fs';
 ```
 
-- [ ] **Step 13: Прогнати тести драйвера**
+- [X] **Step 13: Прогнати тести драйвера**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/`
 Expected: PASS (усі три файли).
 
-- [ ] **Step 14: Оголосити межу клієнт/сервер**
+- [X] **Step 14: Оголосити межу клієнт/сервер**
 
 У `packages/simplycms/src/contracts/server-only.ts` у масив `SERVER_ONLY` додати останнім рядком:
 
@@ -1295,14 +1295,14 @@ Expected: PASS (усі три файли).
   'storage',
 ```
 
-- [ ] **Step 15: Прогнати packaging-suite — гейт сентинелів мусить ЧЕРВОНІТИ**
+- [X] **Step 15: Прогнати packaging-suite — гейт сентинелів мусить ЧЕРВОНІТИ**
 
 ```bash
 pnpm build:packages && pnpm test:packaging
 ```
 Expected: FAIL у `tests/dist-server-boundary.test.ts` — `Object.keys(SENTINELS)` не збігається з `SERVER_ONLY`. **Це гейт у дії.** Зафіксуй текст помилки в звіті задачі — він і є негативний контроль цього кроку.
 
-- [ ] **Step 16: Додати сентинел**
+- [X] **Step 16: Додати сентинел**
 
 У `tests/dist-server-boundary.test.ts` у мапу `SENTINELS` (≈рядок 170) додати запис для `storage`. Літерал — рядок, який ГАРАНТОВАНО є в джерелі піддерева й не є в клієнтському `dist`; візьми унікальний фрагмент коментаря драйвера:
 
@@ -1316,7 +1316,7 @@ grep -c 'Тимчасовий файл лежить у ТІЙ САМІЙ шар�
 ```
 Expected: `1`.
 
-- [ ] **Step 17: Додати тір-зону**
+- [X] **Step 17: Додати тір-зону**
 
 🔴 **Порядок кроків тут не косметичний: зона додається ПІСЛЯ того, як тека
 існує на диску.** `eslint.tier-relative.mjs:43-58` рахує глибину вкладеності
@@ -1335,7 +1335,7 @@ Expected: `1`.
   ['src/storage', 2, 'storage', ['db']],
 ```
 
-- [ ] **Step 18: Додати субшлях в exports**
+- [X] **Step 18: Додати субшлях в exports**
 
 У `packages/simplycms/package.json` — `exports`:
 
@@ -1349,7 +1349,7 @@ Expected: `1`.
 "./storage": { "types": "./dist/storage/index.d.ts", "import": "./dist/storage/index.js" },
 ```
 
-- [ ] **Step 19: Розширити контракт env опційним ключем**
+- [X] **Step 19: Розширити контракт env опційним ключем**
 
 У `.env.example` — новий блок ПІСЛЯ блоку Site і ПЕРЕД блоком PG-харнеса:
 
@@ -1370,7 +1370,7 @@ Expected: `1`.
 Той самий блок — у `packages/create-simplycms-store/template/env.example`.
 🔴 Ці два файли **не** синкуються `template:sync` (їх немає в `SYNCED_FILES`) — правиш обидва руками.
 
-- [ ] **Step 20: Ігнорувати теку сховища в git**
+- [X] **Step 20: Ігнорувати теку сховища в git**
 
 У `.gitignore` (корінь) і в `packages/create-simplycms-store/template/gitignore`:
 
@@ -1379,7 +1379,7 @@ Expected: `1`.
 .data/
 ```
 
-- [ ] **Step 21: Написати падаючий тест на опційні ключі**
+- [X] **Step 21: Написати падаючий тест на опційні ключі**
 
 У `tests/env-contract.test.ts` — після константи `SERVER_ONLY` додати:
 
@@ -1427,17 +1427,17 @@ const OPTIONAL = ['BETTER_AUTH_URL', 'MEDIA_ROOT'] as const;
   });
 ```
 
-- [ ] **Step 22: Прогнати env-контракт**
+- [X] **Step 22: Прогнати env-контракт**
 
 Run: `pnpm vitest run tests/env-contract.test.ts`
 Expected: PASS (усі блоки, включно з наявним «активні ключі — рівно контракт» — `MEDIA_ROOT` закоментований, тож контракт лишається трьома ключами).
 
-- [ ] **Step 23: Негативний контроль контракту (прогнати руками, не комітити)**
+- [X] **Step 23: Негативний контроль контракту (прогнати руками, не комітити)**
 
 Розкоментуй `MEDIA_ROOT=` у `.env.example` (зроби активним) і прожени той самий файл.
 Expected: FAIL одразу в ДВОХ тестах — «активні ключі — рівно контракт» (зʼявився четвертий) і «MEDIA_ROOT — присутній коментарем». Поверни коментар.
 
-- [ ] **Step 24: Повний гейт задачі**
+- [X] **Step 24: Повний гейт задачі**
 
 ```bash
 pnpm install --frozen-lockfile
@@ -1446,7 +1446,7 @@ pnpm build:packages && pnpm typecheck:template && pnpm test:packaging
 ```
 Expected: усе PASS. `test:packaging` тепер зелений — сентинел на місці.
 
-- [ ] **Step 25: Коміт**
+- [X] **Step 25: Коміт**
 
 ```bash
 git add packages/simplycms/src/storage packages/simplycms/src/contracts/server-only.ts \

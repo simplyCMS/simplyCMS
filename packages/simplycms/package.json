@@ -33,6 +33,7 @@
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./storage": "./src/storage/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -205,6 +206,10 @@
       "./auth": {
         "types": "./dist/auth/index.d.ts",
         "import": "./dist/auth/index.js"
+      },
+      "./storage": {
+        "types": "./dist/storage/index.d.ts",
+        "import": "./dist/storage/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",

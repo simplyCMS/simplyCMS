@@ -42,6 +42,9 @@ export const SERVER_ONLY = [
   // Після Task 1 Крок 1а — ЦІЛЕ піддерево нутрощів адмінки (index + resource +
   // operations + resources + subset); стаб `admin-server/index` — клієнт.
   'admin-server/impl',
+  // Порт сховища: `node:fs`, корінь із env і драйвер. Клієнт бере лише
+  // `domain/media` (чистий резолв URL) — сюди йому не треба нічого.
+  'storage',
 ] as const;
 
 /**

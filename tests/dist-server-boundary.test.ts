@@ -174,6 +174,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   storefront: 'Disallow: /admin/',
   'storefront-routes/seo': 'public, max-age=3600, stale-while-revalidate=86400',
   'admin-server/impl': 'patch не може бути порожнім',
+  storage: 'Тимчасовий файл лежить у ТІЙ САМІЙ шард-теці',
 };
 
 const SRC = resolve(CORE, 'src');
