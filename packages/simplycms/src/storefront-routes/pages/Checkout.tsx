@@ -206,9 +206,16 @@ export default function Checkout() {
     userKey: user?.id ?? null,
   });
   // Submit без свіжої квоти неможливий (M-8): доставка обрана, квота вдала
-  // і рахована саме на ПОТОЧНИХ входах.
+  // і рахована саме на ПОТОЧНИХ входах. 🔴 `!blocked` — не надлишок: коли
+  // рефетч довідника віддає список БЕЗ обраного методу, `moneyKey` не
+  // змінюється, тож `matchesCurrent` лишається true разом зі старою квотою —
+  // підсумок каже «заповніть дані доставки», а кнопка була б активна.
   const canSubmit =
-    hasShippingMethods && quote?.ok === true && !quoting && matchesCurrent;
+    hasShippingMethods &&
+    quote?.ok === true &&
+    !quoting &&
+    matchesCurrent &&
+    !blocked;
   // 🔴 Рев'ю I4: індикативна ціна в списку методів (CheckoutDeliveryForm)
   // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер, — розбіжність
   // лишав лише вхідний `subtotal` (клієнтський `totalPrice` без знижок

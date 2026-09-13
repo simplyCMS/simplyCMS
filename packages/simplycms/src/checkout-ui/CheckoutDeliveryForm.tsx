@@ -211,6 +211,20 @@ export function CheckoutDeliveryForm({
   );
 
   useEffect(() => {
+    // 🔴 Точка ЧУЖОГО методу скидається — інакше покупець заганяє себе в
+    // безвихідь кліками: обрав самовивіз (точка підставилась сама) →
+    // перемкнувся на курʼєра. Сервер має на це власний предикат
+    // (`prepareCheckout`: `!isPickup && input.pickupPointId` →
+    // `pickup_point_invalid`), а інтерфейсу ЗНЯТИ точку не існує — випадайка
+    // для не-pickup прихована. Без скидання квота відмовляє назавжди, і
+    // submit мертвий без жодної підказки, що робити.
+    if (
+      values.pickupPointId &&
+      !ownPickupPoints.some((p) => p.id === values.pickupPointId)
+    ) {
+      onChange('pickupPointId', '');
+      return;
+    }
     // Єдина точка видачі обирається сама — тим самим правилом, що й перший
     // метод вище: плейсхолдер «Оберіть пункт» при одній точці лишав submit,
     // який сервер відкидає з `pickup_point_invalid`.

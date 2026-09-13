@@ -95,4 +95,23 @@ describe('CheckoutDeliveryForm', () => {
     expect(screen.getByLabelText(/Оберіть пункт самовивозу/)).toBeTruthy();
     expectLabelledControls(document.body);
   });
+
+  // 🔴 Негативний контроль безвиході, у яку покупець заганяв себе кліками:
+  // обрав самовивіз (точка підставилась сама) → перемкнувся на курʼєра.
+  // Сервер має власний предикат на «курʼєр із точкою» (`prepareCheckout`:
+  // `!isPickup && input.pickupPointId` → `pickup_point_invalid`), а
+  // інтерфейсу ЗНЯТИ точку не існує — випадайка для не-pickup прихована.
+  // Без скидання квота відмовляла назавжди і submit був мертвий без підказки.
+  it('точка ЧУЖОГО методу скидається при переході на курʼєра', () => {
+    directory.methods = [
+      PICKUP,
+      { ...PICKUP, id: 'm2', code: 'courier', name: 'Курʼєр' },
+    ];
+    directory.pickupPoints = [POINT];
+    const { onChange } = renderForm({
+      shippingMethodId: 'm2',
+      pickupPointId: 'p1',
+    });
+    expect(onChange).toHaveBeenCalledWith('pickupPointId', '');
+  });
 });
