@@ -149,7 +149,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 |---|---|
 | `packages/simplycms/src/domain/media.ts` | T1, чистий: `MediaRef`, `MEDIA_URL_BASE`, `resolveMediaUrl`, `resolveMediaUrls`, `ACCEPTED_IMAGE_MIME`/`ACCEPT_ATTRIBUTE`, `MAX_UPLOAD_BYTES`/`MAX_AVATAR_BYTES`, реєстр `MEDIA_COLUMNS` |
 | `packages/simplycms/src/domain/__tests__/media.test.ts` | Юніти трьох форм референсу + нормалізація бази |
-| `packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts` | Гейт: кожна медіа-колонка схеми є в `MEDIA_COLUMNS` |
+| `tests/media-columns-coverage.test.ts` | Гейт: кожна медіа-колонка схеми є в `MEDIA_COLUMNS` |
 | `packages/simplycms/src/storage/index.ts` | Барель server-only піддерева (експорт публічної поверхні) |
 | `packages/simplycms/src/storage/env.ts` | `mediaRoot()` — `process.env.MEDIA_ROOT` у рантаймі, дефолт `./.data/media` |
 | `packages/simplycms/src/storage/keys.ts` | `MediaMime`, `mediaKey()` (шардинг `ab/<uuid>.<ext>`), `MEDIA_KEY_RE` |
@@ -222,7 +222,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 **Files:**
 - Create: `packages/simplycms/src/domain/media.ts`
 - Create: `packages/simplycms/src/domain/__tests__/media.test.ts`
-- Create: `tests/media-columns-coverage.test.ts` 🔴 **не** `packages/simplycms/src/
+- Create: `tests/media-columns-coverage.test.ts` — 🔴 у КОРЕНЕВОМУ `tests/`, не в `schema/__tests__/`: гейт імпортує `MEDIA_COLUMNS` (T1 `domain`) і схему (T1 `schema`), а тір-зона забороняє імпорт не лише вгору, а й **на свій шар** — зона `src/schema` тримає `simplycms/domain` серед 112 заборон (виміряно прогоном `tierZoneConfigs()`). Крос-зонні guard-и живуть у корені; прецедент — `tests/tier-boundary.test.ts` 🔴 **не** `packages/simplycms/src/
   schema/__tests__/`, як писав первинний план — див. приписку виконавця під
   Step 5: `schema` і `domain` обидва T1, і `eslint.tier-zones.mjs` (КАНОН)
   забороняє імпорт НАВІТЬ у межах одного шару, тож гейт парності двох
@@ -408,7 +408,7 @@ export function resolveMediaUrls(
  * 🔴 Реєстр існує заради ГЕЙТА, а не заради коду: нова медіа-колонка,
  * додана в схему без резолву на вітрині, показала б покупцеві голий
  * storage key замість картинки — і виявилось би це аж на живому магазині.
- * Тест `schema/__tests__/media-columns-coverage.test.ts` звіряє цей список
+ * Тест `tests/media-columns-coverage.test.ts` звіряє цей список
  * зі схемою; Task 6 доводить, що кожен запис резолвиться при читанні.
  */
 export const MEDIA_COLUMNS = [
@@ -421,6 +421,13 @@ export const MEDIA_COLUMNS = [
   { table: 'sections', column: 'image_url' },
   { table: 'property_options', column: 'image_url' },
   { table: 'profiles', column: 'avatar_url' },
+  // 🔴 Знайдено ГЕЙТОМ на першому ж прогоні — у переліку автора плану цієї
+  // колонки не було (`schema.ts:380`). Лоадера `services` у вітрині зараз
+  // немає взагалі: таблицю читає лише лічильник `count` у
+  // `admin/pages/Dashboard.tsx`, тож резолвити нема де. Запис усе одно
+  // правильний — коли сторінка послуг зʼявиться, гейт нагадає. Це і є
+  // його робота, і саме так він спрацював проти автора реєстру.
+  { table: 'services', column: 'image_url' },
 ] as const satisfies readonly { table: string; column: string }[];
 ```
 
@@ -431,13 +438,13 @@ Expected: PASS (8 тестів).
 
 - [X] **Step 5: Написати падаючий гейт покриття колонок**
 
-`packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts`:
+`tests/media-columns-coverage.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
 import { getTableColumns, getTableName, is, Table } from 'drizzle-orm';
 import { MEDIA_COLUMNS } from 'simplycms/domain/media';
-import * as schema from '../schema';
+import * as schema from '../packages/simplycms/src/schema/schema';
 
 /**
  * Нова медіа-колонка в схемі мусить зʼявитись і в реєстрі `MEDIA_COLUMNS`.
@@ -449,8 +456,14 @@ import * as schema from '../schema';
  */
 const LOOKS_LIKE_MEDIA = /^(images|avatar_url|.*image_url|image)$/;
 
-/** Колонки, що збігаються з евристикою, але медіа НЕ несуть. */
-const NOT_MEDIA: readonly string[] = [];
+/**
+ * Колонки, що збігаються з евристикою, але медіа НЕ несуть.
+ *
+ * 🔴 `users.image` — канонічне поле Better Auth (`getAuthTables`), схему
+ * якого ми не контролюємо; аватар магазину живе в `profiles.avatar_url`.
+ * Знайдено тим самим першим прогоном, що й `services.image_url`.
+ */
+const NOT_MEDIA: readonly string[] = ['users.image'];
 
 describe('реєстр медіа-колонок', () => {
   const found: string[] = [];
@@ -486,7 +499,7 @@ describe('реєстр медіа-колонок', () => {
 
 - [X] **Step 6: Прогнати гейт — він мусить бути ЗЕЛЕНИМ одразу**
 
-Run: `pnpm vitest run packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts`
+Run: `pnpm vitest run tests/media-columns-coverage.test.ts`
 Expected: PASS. Якщо перший тест червоний — евристика знайшла колонку, якої немає в реєстрі: **не підганяй регекс**, додай колонку в `MEDIA_COLUMNS` і в Task 6 (резолв при читанні). Якщо червоний другий — звір імена з `schema.ts`.
 
 - [X] **Step 7: Негативний контроль гейта (прогнати руками, не комітити)**
@@ -589,6 +602,11 @@ git commit -m "feat(k3-e2): медіа-референс — resolveMediaUrl у T
   - `export class MediaKeyError extends Error`, `export class MediaKeyCollisionError extends Error`
   - `export function localFsDriver(root?: string): MediaStorageDriver`
   - `export function getMediaDriver(): MediaStorageDriver` (мемоізований дефолт)
+
+🔴 **Порядок кроків обовʼязковий: спершу файли, і лише потім тір-зона
+(Step 17).** Рядок зони при відсутній теці `src/storage` валить eslint із
+`ENOENT` ще до першого правила — див. пояснення в Step 17. Почати з конфігу
+«щоб одразу правильно» — найдорожчий спосіб пройти цю задачу.
 
 - [ ] **Step 1: Написати падаючі тести ключів**
 
@@ -1299,6 +1317,13 @@ grep -c 'Тимчасовий файл лежить у ТІЙ САМІЙ шар�
 Expected: `1`.
 
 - [ ] **Step 17: Додати тір-зону**
+
+🔴 **Порядок кроків тут не косметичний: зона додається ПІСЛЯ того, як тека
+існує на диску.** `eslint.tier-relative.mjs:43-58` рахує глибину вкладеності
+через `readdirSync(root, { recursive: true })` **без обробки помилки**, тож
+рядок `['src/storage', …]` при відсутній теці валить БУДЬ-ЯКИЙ запуск eslint
+з `ENOENT: scandir .../src/storage`. Симптом виглядає як поломка тулінгу, а не
+як «ти почав не з того кроку», — тому кроки 4–12 (файли) йдуть перед цим.
 
 У `eslint.tier-zones.mjs` у масив `TIER_ZONES` — після рядка `['src/admin-server', 2, 'admin-server', ['db', 'auth']],`:
 
@@ -3085,7 +3110,12 @@ export function toBanner(row: RawBannerRow): Banner {
   return {
     ...row,
     // Три медіа-колонки банера — той самий референс-контракт, що й у товару.
-    image_url: resolveMediaUrl(row.image_url),
+    // 🔴 `?? row.image_url` — бо `Banner.image_url` у контракті `string`, не
+    // `string | null` (`contracts/objects/banner.ts:14`, NOT NULL у схемі), і
+    // без fallback `tsc` дає TS2322. Це страховка від порожнього рядка, не
+    // бізнес-логіка: `resolveMediaUrl` повертає `null` лише на порожньому чи
+    // пробільному вході. `desktop_`/`mobile_` nullable — їм fallback не треба.
+    image_url: resolveMediaUrl(row.image_url) ?? row.image_url,
     desktop_image_url: resolveMediaUrl(row.desktop_image_url),
     mobile_image_url: resolveMediaUrl(row.mobile_image_url),
     buttons: Array.isArray(row.buttons) ? row.buttons.filter(isBannerButton) : [],
@@ -3875,6 +3905,247 @@ git checkout -- packages/simplycms/src/admin/pages/Users.tsx
 ```
 Обидва результати зафіксувати у звіті задачі.
 
+- [ ] **Step 6d: Сьомий читач межі — клієнтська тека не імпортує server-only**
+
+🔴 **Дірка ширша за `storage` і передує етапу.** Тір-зони ловлять імпорт угору
+й на свій шар, а server-only дерева лежать НИЖЧЕ (T1–T2) за своїх потенційних
+порушників (T4–T5). Виміряно прогоном `tierZoneConfigs()`:
+
+```
+src/admin/     → заборонено server-only: []
+src/profile-ui → заборонено server-only: []
+src/cart-ui    → заборонено server-only: []
+```
+
+Тобто `src/admin/pages/*.tsx` може імпортувати `simplycms/db` **сьогодні**, і
+`pnpm lint` промовчить. Найраніший гейт, що це ловить, — `pnpm build` хоста
+(Import Protection, `vite.config.ts:43`), тобто третій крок ланцюга; далі
+Gate C. Редактор мовчить у всіх випадках.
+
+🔴 **Вимір перед написанням — ОБОВʼЯЗКОВИЙ, і він уже зроблений; повтори його
+першим кроком.** Прогін по шести теках на всі шість субшляхів `SERVER_ONLY`
+плюс чотири `SERVER_ONLY_DEPS` дав рівно ОДНЕ спрацювання, і воно визначає
+форму гейта:
+
+```bash
+git grep -n -E "from '(simplycms/(db|auth|schema|storefront|storefront-routes/seo|admin-server/impl)([/']|$)|pg'|drizzle-orm|drizzle-zod|better-auth')" \
+  -- packages/simplycms/src/admin packages/simplycms/src/*-ui
+```
+```
+admin/pages/OrderStatuses.tsx:8:import type { OrderStatus } from 'simplycms/schema/types';
+```
+
+🔴 **Це ХИБНИЙ позитив, і саме він задає реалізацію.** Імпорт `import type`
+стирається компілятором і в бандл не потрапляє ніколи. `OrderStatuses.tsx` —
+жива сторінка Е1а, єдина працююча в адмінці, а `simplycms/schema/types` для
+неї канон, а не випадковість (докблок `schema/types.ts`: джерело типів для
+нового коду). Гейт, що заборонив би цей рядок, заборонив би рівно те, що К3
+щойно збудував.
+
+🔴 **Тому доливання групи в наявну тір-зону НЕ ПІДХОДИТЬ** (спокуслива форма —
+третім елементом `patterns`, як `dbClientImportGroup`): базове
+`no-restricted-imports` **не має** опції `allowTypeImports` — вона є лише в
+`@typescript-eslint/no-restricted-imports`. Перевірено машинно: у репо **26
+зон, усі 26 на базовому правилі, жодної на typescript-eslint-версії**.
+Перевести одну зону на неї означає вимкнути базове й перенести ВСІ її
+патерни — тобто те саме заміщення, від якого ми тікаємо.
+
+🔴 **Робоча форма — власне правило, і це ЗАКОННИЙ сьомий читач, не дубль.**
+Е2-11 вимагає одну копію **ДАНИХ**, а не один механізм. Докблок самої
+декларації це вже допускає дослівно: «пункти 3 і 4 рахуються ОКРЕМО навмисно:
+це два різні детектори з різними негативними контролями». Правило **імпортує**
+`SERVER_ONLY`/`SERVER_ONLY_DEPS`, а не переписує їх, тож список лишається
+один.
+
+`eslint-rules/no-server-only-in-client.mjs`:
+
+```js
+import {
+  SERVER_ONLY,
+  SERVER_ONLY_DEPS,
+  serverOnlyDepSpecifier,
+} from '../packages/simplycms/src/contracts/server-only.ts';
+
+/**
+ * Клієнтська тека ядра не імпортує server-only субшлях чи серверну
+ * залежність. Сьомий читач ЄДИНОЇ декларації межі.
+ *
+ * 🔴 Власне правило, а не група в тір-зоні: базове `no-restricted-imports`
+ * не розрізняє `import` і `import type`, а `import type` стирається
+ * компілятором і в бандл не потрапляє — забороняти його немає причини.
+ * Жива сторінка `admin/pages/OrderStatuses.tsx` робить саме так із
+ * `simplycms/schema/types`, і це канон Е1а, а не недогляд. Опція
+ * `allowTypeImports` існує лише в typescript-eslint-версії правила, а всі
+ * 26 зон репо — на базовій (виміряно).
+ *
+ * 🔴 Список НЕ переписується: він імпортується з декларації. Е2-11 про одну
+ * копію даних, не про один механізм — той самий розріз, яким уже розділені
+ * читачі 3 і 4.
+ *
+ * 🔴 Межа: ловить лише СТАТИЧНИЙ import/export-from. `await import(...)`
+ * не бачить жоден `no-restricted-*` за побудовою — відома дірка з нульовим
+ * населенням (шапка `eslint.tier-zones.mjs`). Останній рубіж — Import
+ * Protection і Gate C.
+ */
+const SUBPATHS = new Set(SERVER_ONLY.map((sub) => `simplycms/${sub}`));
+const DEP_PATTERNS = SERVER_ONLY_DEPS.map(serverOnlyDepSpecifier);
+
+const isServerOnly = (spec) =>
+  typeof spec === 'string' &&
+  (SUBPATHS.has(spec) ||
+    [...SUBPATHS].some((p) => spec.startsWith(`${p}/`)) ||
+    DEP_PATTERNS.some((re) => re.test(spec)));
+
+/**
+ * Чи ЕМІТИТЬ цей імпорт рантайм-звʼязок.
+ *
+ * 🔴 Три форми, і всі три треба розрізнити: `import type {...}` не емітить
+ * нічого; `import { a, type B }` емітить через `a`; side-effect
+ * `import 'x'` емітить САМ ПО СОБІ, специфікаторів не маючи, — тож
+ * «немає специфікаторів» означає «звіт», а не «пропустити».
+ */
+function emitsRuntime(node) {
+  if (node.importKind === 'type' || node.exportKind === 'type') return false;
+  if (!node.specifiers || node.specifiers.length === 0) return true;
+  return node.specifiers.some((s) => s.importKind !== 'type');
+}
+
+/** @type {import('eslint').Rule.RuleModule} */
+export default {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      serverOnly:
+        'Клієнтська тека не імпортує server-only "{{spec}}": дані беруться ' +
+        'serverFn. Інакше drizzle, пул Postgres або node:fs їдуть у бандл ' +
+        'браузера — ловить це лише `pnpm build` хоста, не редактор. ' +
+        '`import type` дозволений: він стирається компілятором.',
+    },
+  },
+  create(context) {
+    const check = (node) => {
+      const spec = node.source?.value;
+      if (!isServerOnly(spec) || !emitsRuntime(node)) return;
+      context.report({ node, messageId: 'serverOnly', data: { spec } });
+    };
+    return {
+      ImportDeclaration: check,
+      ExportNamedDeclaration: check,
+      ExportAllDeclaration: check,
+    };
+  },
+};
+```
+
+Підключення в `eslint.config.mjs` — окреме імʼя плагіна, нічого не заміщує:
+
+```js
+import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
+// …
+  {
+    files: [
+      'packages/simplycms/src/admin/**/*.{ts,tsx}',
+      'packages/simplycms/src/{cart,catalog,checkout,profile,reviews}-ui/**/*.{ts,tsx}',
+    ],
+    plugins: {
+      'simplycms-boundary': {
+        rules: { 'no-server-only-in-client': noServerOnlyInClient },
+      },
+    },
+    rules: { 'simplycms-boundary/no-server-only-in-client': 'error' },
+  },
+```
+
+🔴 `core` у списку НЕМАЄ навмисно: `core/lib/**` — serverFn-модулі, які
+легально імпортують `simplycms/storefront/loaders` (`user-addresses.ts`
+робить це зараз), і Start вирізає їх трансформацією. Решта клієнтських тек
+(`ui`, `react-query`, `themes`, `plugins`) — борг етапу, див. нижче.
+
+- [ ] **Step 6d-bis: Фікстури правила — позитивні контролі важливіші за негативні**
+
+`tests/eslint-rules/no-server-only-in-client.test.ts` (Linter API, як у
+сусідніх правил):
+
+```ts
+it.each([
+  ['значення з server-only субшляху', "import { withActor } from 'simplycms/db';"],
+  ['змішаний специфікатор — емітить через значення', "import { a, type B } from 'simplycms/db';"],
+  ['side-effect import емітить сам по собі', "import 'simplycms/db';"],
+  ['ре-експорт емітить', "export { x } from 'simplycms/auth';"],
+  ['серверна залежність', "import { drizzle } from 'drizzle-orm';"],
+])('валить: %s', (_l, code) => expect(lint(code)).toHaveLength(1));
+
+it.each([
+  // 🔴 ЦЕЙ кейс — причина існування правила в такій формі. Реальний рядок
+  // `admin/pages/OrderStatuses.tsx:8`; якби гейт його валив, він заборонив
+  // би канон Е1а.
+  ['import type стирається компілятором', "import type { OrderStatus } from 'simplycms/schema/types';"],
+  ['inline type-специфікатор теж', "import { type OrderStatus } from 'simplycms/schema/types';"],
+  ['клієнтський субшлях', "import { Button } from 'simplycms/ui/button';"],
+  ['clientSafe-підшлях залежності', "import { useSession } from 'better-auth/react';"],
+  ['стаб admin-server — клієнту легальний', "import { listOrderStatuses } from 'simplycms/admin-server';"],
+])('не валить: %s', (_l, code) => expect(lint(code)).toHaveLength(0));
+```
+
+- [ ] **Step 6d-ter: Прогнати правило по ЖИВОМУ коду, не лише по фікстурах**
+
+```bash
+pnpm lint
+```
+Expected: **нуль** спрацювань нового правила. 🔴 Якщо `OrderStatuses.tsx:8`
+червоніє — `emitsRuntime` не розрізнив `import type`, і правило в такому
+вигляді ландити не можна: воно зламало б єдину живу сторінку адмінки.
+
+- [ ] **Step 6e: Негативний І позитивний контроль сьомого читача**
+
+У `tests/tier-boundary.test.ts` — тим самим механізмом, що для решти зон:
+
+```ts
+it('клієнтська тека не сміє імпортувати server-only субшлях', () => {
+  expect(
+    lintFixture('packages/simplycms/src/checkout-ui/x.tsx', "import { withActor } from 'simplycms/db';"),
+  ).toHaveLength(1);
+});
+
+// 🔴 Позитивний контроль виїмки — важливіший за негативний: без нього
+// зона могла б «працювати», зламавши весь наявний serverFn-шар кабінету.
+it('core/lib СМІЄ імпортувати лоадери — це serverFn-модулі', () => {
+  expect(
+    lintFixture(
+      'packages/simplycms/src/core/lib/x.ts',
+      "import { withCustomerDb } from 'simplycms/storefront/loaders';",
+    ),
+  ).toHaveLength(0);
+});
+```
+
+🔴 Звір хелпер фікстур із фактичним `tests/tier-boundary.test.ts` і приведи
+виклики до нього — механізм там уже є для решти зон.
+
+- [ ] **Step 6f: Оновити три документи — читачів тепер СІМ**
+
+🔴 Саме СІМ, і причина та сама, якою вже розділені читачі 3 і 4: це окремий
+ДЕТЕКТОР із власним механізмом і власним негативним контролем, а не друга
+копія даних (список він імпортує). Декларація має рівно стільки читачів,
+скільки перелічено, — розходження тут дорожче за звичайну стару доку, бо
+наступний автор довіриться переліку.
+
+- `packages/simplycms/src/contracts/server-only.ts` — «Читачів шість» → сім,
+  з описом сьомого і з причиною, чому він не група в тір-зоні (базове
+  `no-restricted-imports` не розрізняє `import type`).
+- `docs/architecture/test-contours.md` §12 — сьомий рядок таблиці читачів,
+  негативний контроль `tests/eslint-rules/no-server-only-in-client.test.ts`.
+- `CLAUDE.md` — рядок «читачів ШІСТЬ, кожен своїм механізмом» → сім.
+
+🔴 **Борг етапу, занести у звіт:** прапорець `clientOnly` вмикає зону одним
+рядком, але решта клієнтських тек (`ui`, `react-query`, `themes`, `plugins`)
+в Е2 **не** вмикається. Причина не «забули»: кожна потребує власного проходу
+винятків, як `core/lib` тут, — а робити шість проходів усередині
+storage-етапу означало б знову розтягнути скоуп. Запис у борг мусить нести
+цей перелік і цю причину, інакше наступний читач вважатиме чотири вимкнені
+зони недоглядом.
+
 - [ ] **Step 7: Переписати інструкцію по сховищу**
 
 `.github/instructions/storage.instructions.md` — повністю замінити (файл досі описує Supabase Storage як архітектуру):
@@ -3913,7 +4184,7 @@ description: "Робота з файловим сховищем: порт simply
   щоб контракт тем v3 отримував готові URL-рядки.
 - Нова медіа-колонка в схемі → запис у `MEDIA_COLUMNS`
   (`simplycms/domain/media`) + резолв при читанні. Гейт —
-  `schema/__tests__/media-columns-coverage.test.ts`.
+  `tests/media-columns-coverage.test.ts`.
 - `<img>` на вітрині: `loading="lazy"`, явні `width`/`height` або
   `aspect-ratio`.
 
