@@ -39,6 +39,30 @@ export async function serveMedia(
   driver: MediaStorageDriver = getMediaDriver(),
 ): Promise<Response> {
   const { pathname } = new URL(ctx.request.url);
+  // 🔴 HEAD обслуговується ЦИМ САМИМ хендлером, але без тіла.
+  //
+  // Механізм, дослівно (`createStartHandler.js:374`):
+  //   handlers[request.method.toUpperCase()] ?? handlers['ANY']
+  // Простий lookup по імені методу — виведення HEAD із GET там відсутнє за
+  // побудовою. Незареєстрований HEAD дає `undefined`, запит іде далі по
+  // ланцюгу й потрапляє в SSR, тобто віддає `text/html` на URL картинки.
+  //
+  // 🔴 Чому це фікс, а не документована межа: на цих URL стоїть
+  // `Cache-Control: …, immutable`, а `immutable` означає, що клієнт НЕ
+  // ревалідує взагалі — навіть примусове перезавантаження не питає сервер.
+  // Зіпсований запис не лікується ні на CDN, ні в браузері, який його
+  // одержав; єдиний вихід — зміна URL, а він у нас іммутабельний за
+  // побудовою. Дефект на три рядки з НЕОБОРОТНИМ наслідком.
+  //
+  // 🔴 `ANY` (той самий рядок 374) — один хендлер на всі методи — тут
+  // помилка, хоч і коротша: роздача публічна й неавтентифікована, і роут
+  // почав би відповідати на POST/PUT/DELETE. Явний `HEAD:` лишає allowlist
+  // методів закритим. Не «спрощувати».
+  //
+  // 🔴 `null`-тіло переживає Node-runner: `server-runtime.mjs:87-89` має
+  // явну гілку `if (!response.body) { res.end(); return; }` — перевірено,
+  // бо `Readable.fromWeb(null)` тут падав би.
+  const bodyless = ctx.request.method === 'HEAD';
   if (!pathname.startsWith(PREFIX)) return notFound();
 
   let key: string;
@@ -62,7 +86,7 @@ export async function serveMedia(
   }
   if (!object) return notFound();
 
-  return new Response(object.stream(), {
+  return new Response(bodyless ? null : object.stream(), {
     status: 200,
     headers: {
       'content-type': contentType,

@@ -44,6 +44,24 @@ describe('serveMedia', () => {
     expect(response.headers.get('etag')).toBe(`"${KEY}"`);
   });
 
+  // 🔴 HEAD окремим кейсом: Start не виводить його з GET, і без явної
+  // реєстрації запит віддає HTML замість заголовків файлу — те, що кешують
+  // CDN і проксі.
+  it('HEAD віддає ті самі заголовки без тіла', async () => {
+    const response = await serveMedia(
+      {
+        request: new Request(`http://localhost/media/${KEY}`, {
+          method: 'HEAD',
+        }),
+      },
+      driver,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.headers.get('content-length')).toBe(String(PNG.length));
+    expect(response.body).toBeNull();
+  });
+
   it('404 на відсутній ключ правильної форми', async () => {
     const response = await get(
       '/media/cd/cd000000-0000-4000-8000-000000000000.png',

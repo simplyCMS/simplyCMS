@@ -21,6 +21,12 @@ export const Route = createFileRoute('/media/$')({
   server: {
     handlers: {
       GET: ({ request }: { request: Request }) => serveMedia({ request }),
+      // 🔴 HEAD реєструється ЯВНО: Start робить lookup `handlers[METHOD]`
+      // (`createStartHandler.js:374`) і з GET його не виводить, тож без цього
+      // рядка HEAD падає в SSR і віддає HTML замість заголовків файлу — те,
+      // що CDN закешує НАЗАВЖДИ через `immutable`. `ANY` замість двох рядків
+      // не брати: роздача публічна, і роут почав би відповідати на запис.
+      HEAD: ({ request }: { request: Request }) => serveMedia({ request }),
     },
   },
 });
