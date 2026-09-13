@@ -1475,7 +1475,7 @@ git commit -m "feat(k3-e2): порт сховища simplycms/storage — дра
   - `export async function writeMedia(db: ActorDb, input: WriteMediaInput, driver?: MediaStorageDriver): Promise<MediaRecord>`
   - `export async function eraseMedia(db: ActorDb, ref: string, driver?: MediaStorageDriver): Promise<boolean>`
 
-- [ ] **Step 1: Написати падаючий харнес-тест**
+- [X] **Step 1: Написати падаючий харнес-тест**
 
 `packages/simplycms/test-harness/pg/__tests__/media-record.test.ts`:
 
@@ -1804,12 +1804,12 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
 });
 ```
 
-- [ ] **Step 2: Прогнати — має впасти**
+- [X] **Step 2: Прогнати — має впасти**
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/media-record.test.ts`
 Expected: FAIL — модуля `simplycms/storage/record` немає.
 
-- [ ] **Step 3: Написати `storage/record.ts`**
+- [X] **Step 3: Написати `storage/record.ts`**
 
 ```ts
 import { randomUUID } from 'node:crypto';
@@ -1986,7 +1986,7 @@ export async function eraseMedia(
 }
 ```
 
-- [ ] **Step 4: Реекспортувати з барелю й додати субшлях**
+- [X] **Step 4: Реекспортувати з барелю й додати субшлях**
 
 У `packages/simplycms/src/storage/index.ts` додати:
 
@@ -2002,29 +2002,29 @@ export {
 
 🔴 Окремого субшляху `./storage/record` **не заводимо**: усе піддерево server-only й імпортується через один барель `simplycms/storage`. Нова публічна поверхня має ціну (бієкція `exports` ↔ `dist` під гейтом треку T), а виграшу тут нема — модуль ніхто не імпортує вибірково.
 
-- [ ] **Step 5: Прогнати харнес-тест**
+- [X] **Step 5: Прогнати харнес-тест**
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/media-record.test.ts`
 Expected: PASS (7 тестів).
 
-- [ ] **Step 6: Перевірити, що гейт `explicit-ids` бачить нову вставку**
+- [X] **Step 6: Перевірити, що гейт `explicit-ids` бачить нову вставку**
 
 Run: `pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
 Expected: PASS — вставка в `writeMedia` передає `id` явно.
 
-- [ ] **Step 7: Негативний контроль контракту id (прогнати руками, не комітити)**
+- [X] **Step 7: Негативний контроль контракту id (прогнати руками, не комітити)**
 
 Прибери `id,` з обʼєкта `.values({...})` у `writeMedia` і прожени `explicit-ids`.
 Expected: FAIL із назвою `record.ts`. Поверни рядок.
 
-- [ ] **Step 8: Гейт задачі**
+- [X] **Step 8: Гейт задачі**
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm test:schema
 ```
 Expected: PASS.
 
-- [ ] **Step 9: Коміт**
+- [X] **Step 9: Коміт**
 
 ```bash
 git add packages/simplycms/src/storage packages/simplycms/package.json \

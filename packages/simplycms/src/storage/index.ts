@@ -14,3 +14,10 @@ export {
 } from './driver';
 export { getMediaDriver, localFsDriver } from './local-fs';
 export { inspectUpload, type UploadInspection } from './inspect';
+export {
+  discardMedia,
+  eraseMedia,
+  writeMedia,
+  type MediaRecord,
+  type WriteMediaInput,
+} from './record';
