@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { profiles } from 'simplycms/schema';
 import {
+  discardMedia,
   eraseMedia,
   writeMedia,
   type MediaMime,
@@ -13,6 +14,23 @@ import type { OperatorEscalation } from './escalation';
 export interface AvatarBytes {
   readonly bytes: Uint8Array;
   readonly mime: MediaMime;
+}
+
+/** Опції заміни аватара. */
+export interface ReplaceAvatarOptions {
+  readonly driver?: MediaStorageDriver;
+  /**
+   * Кличеться ОДРАЗУ після публікації файлу — до `update profiles` і до
+   * прибирання старого.
+   *
+   * 🔴 Не «зайвий гачок», а єдиний спосіб віддати викликачу референс у
+   * момент, коли обʼєкт уже НЕОБОРОТНО на диску, а транзакція ще може впасти.
+   * Значення, повернене з функції, приходить лише після УСПІХУ — тобто вікно
+   * між `driver.put` і COMMIT (падіння `update profiles` чи `eraseMedia`
+   * старого) лишалося б без прибирання, і файл ставав орфаном. Саме цей
+   * дефект жив у `uploadMyAvatar` до 2026-09-13.
+   */
+  readonly onPublished?: (ref: string) => void;
 }
 
 /** Поточний референс аватара покупця або `null`. */
@@ -54,7 +72,7 @@ export async function replaceAvatarFor(
   operator: OperatorEscalation,
   userId: string,
   input: AvatarBytes,
-  driver?: MediaStorageDriver,
+  options: ReplaceAvatarOptions = {},
 ): Promise<{ ref: string }> {
   const previous = await currentAvatarRef(db, userId);
 
@@ -67,17 +85,49 @@ export async function replaceAvatarFor(
       entityId: userId,
       uploadedBy: userId,
     },
-    driver,
+    options.driver,
   );
+  // 🔴 Тут, а не після `return`: далі йдуть ДВА фалібельні кроки, і кидок у
+  // будь-якому з них відкотить рядок, лишивши файл на диску.
+  options.onPublished?.(record.ref);
 
   await db
     .update(profiles)
     .set({ avatarUrl: record.ref })
     .where(eq(profiles.userId, userId));
 
-  if (previous) await operator((tx) => eraseMedia(tx, previous, driver));
+  if (previous)
+    await operator((tx) => eraseMedia(tx, previous, options.driver));
 
   return { ref: record.ref };
+}
+
+/**
+ * Прогнати заміну аватара так, щоб опублікований файл не пережив відкоту.
+ *
+ * 🔴 Живе в лоадерах, а не в serverFn, з тієї самої причини, що й
+ * `replaceAvatarFor`: харнес мусить ганяти СПРАВЖНЄ прибирання, а не свою
+ * копію (патерн P1 — гейт обіцяє більше, ніж перевіряє).
+ *
+ * 🔴 Холдер-обʼєкт, а не `let written: string | null`: присвоєння з колбека
+ * потік керування TS не бачить, тож у `catch` проста змінна звужується до
+ * рівно `null`, і `tsc --strict` МОВЧКИ погоджується з мертвою гілкою
+ * прибирання. Компілятор тут не ловить дефект, а маскує його.
+ */
+export async function withAvatarOrphanCleanup<T>(
+  runInTx: (onPublished: (ref: string) => void) => Promise<T>,
+  driver?: MediaStorageDriver,
+): Promise<T> {
+  const published: { ref: string | null } = { ref: null };
+  try {
+    return await runInTx((ref) => {
+      published.ref = ref;
+    });
+  } catch (error) {
+    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
+    if (published.ref !== null) await discardMedia(published.ref, driver);
+    throw error;
+  }
 }
 
 /** Прибрати аватар. Ідемпотентна: без аватара — no-op. */

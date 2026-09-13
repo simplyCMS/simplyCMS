@@ -7,9 +7,10 @@ import {
 import {
   clearAvatarFor,
   replaceAvatarFor,
+  withAvatarOrphanCleanup,
   withSessionDb,
 } from 'simplycms/storefront/loaders';
-import { discardMedia, inspectUpload } from 'simplycms/storage';
+import { inspectUpload } from 'simplycms/storage';
 
 /** Машинні коди відмов: клієнт мапить їх у рядки каталогу. */
 export const AVATAR_BAD_FORMAT = 'avatar/bad-format';
@@ -50,30 +51,28 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
     const checked = await inspectUpload(file, MAX_AVATAR_BYTES);
     if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
 
-    // 🔴 `written` живе ПОЗА транзакцією: якщо вона впаде після публікації
-    // файлу, rollback прибере рядок, але диск про транзакції не знає —
-    // обʼєкт лишився б орфаном. `catch` нижче його прибирає.
-    let written: string | null = null;
-    try {
-      const { ref } = await withSessionDb(async (db, userId, operator) => {
-        const result = await replaceAvatarFor(db, operator, userId, {
-          bytes: checked.bytes,
-          mime: checked.mime,
-        });
-        written = result.ref;
-        return result;
-      });
-      const url = resolveMediaUrl(ref, MEDIA_URL_BASE);
-      // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок замість
-      // `!` тримає межу чесною — тип звужується доказом, а не обіцянкою.
-      if (url === null) throw new Error(AVATAR_BAD_FORMAT);
-      return { url };
-    } catch (error) {
-      // Прибирання best-effort і НЕ маскує первинну помилку: `discardMedia`
-      // нічого не кидає, а виняток летить далі незмінним.
-      if (written) await discardMedia(written);
-      throw error;
-    }
+    // 🔴 Прибирання орфана — у `withAvatarOrphanCleanup` (лоадери), а не тут:
+    // вікно «файл уже на диску, транзакція ще може впасти» відкривається
+    // всередині `replaceAvatarFor` і закривається лише на COMMIT, тож
+    // референс приходить колбеком `onPublished`. Значення, повернене з
+    // `withSessionDb`, є вже після успіху — на нього спиратись не можна.
+    const { ref } = await withAvatarOrphanCleanup((onPublished) =>
+      withSessionDb((db, userId, operator) =>
+        replaceAvatarFor(
+          db,
+          operator,
+          userId,
+          { bytes: checked.bytes, mime: checked.mime },
+          { onPublished },
+        ),
+      ),
+    );
+
+    const url = resolveMediaUrl(ref, MEDIA_URL_BASE);
+    // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок замість
+    // `!` тримає межу чесною — тип звужується доказом, а не обіцянкою.
+    if (url === null) throw new Error(AVATAR_BAD_FORMAT);
+    return { url };
   });
 
 /** Прибрати аватар власника сесії. */

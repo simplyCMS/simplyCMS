@@ -8,7 +8,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
-import { replaceAvatarFor, withCustomerDb } from 'simplycms/storefront/loaders';
+import {
+  replaceAvatarFor,
+  withAvatarOrphanCleanup,
+  withCustomerDb,
+} from 'simplycms/storefront/loaders';
 import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -72,6 +76,15 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
       [randomUUID(), id, email],
     );
     return id;
+  };
+
+  /** Усі опубліковані обʼєкти сховища — знімок для порівняння «до/після». */
+  const diskKeys = async (): Promise<string[]> => {
+    const keys: string[] = [];
+    for (const shard of await readdir(root))
+      for (const name of await readdir(join(root, shard)))
+        keys.push(`${shard}/${name}`);
+    return keys.sort();
   };
 
   const countMedia = async (): Promise<number> => {
@@ -318,7 +331,12 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
   // зібрану в тесті: копія доводила б властивість копії (патерн P1 — гейт
   // обіцяє більше, ніж перевіряє). Функція чиста й бере `db`+`operator`
   // параметрами саме для цього. Борг хвилі B, закритий у Task 5.
-  it('відмова на видаленні СТАРОГО: старий аватар цілий, нового немає', async () => {
+  //
+  // 🔴 Прогін іде через `withAvatarOrphanCleanup` — той самий шов, що в
+  // `uploadMyAvatar`: без нього кейс доводив би лише стан БД, а ФАЙЛ нового
+  // аватара лишався б орфаном (rollback прибирає рядок, диск про транзакції
+  // не знає). Саме цей розрив і був дефектом до 2026-09-13.
+  it('відмова на видаленні СТАРОГО: старий цілий, нового ні в БД, ні на диску', async () => {
     const real = driver();
     const userId = await seedUser(dbUrl);
     const oldRecord = await withActor({ role: 'app_admin' }, (db) =>
@@ -347,15 +365,21 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
       },
     };
 
+    const filesBefore = await diskKeys();
+
     await expect(
-      withCustomerDb(userId, (db, operator) =>
-        replaceAvatarFor(
-          db,
-          operator,
-          userId,
-          { bytes: PNG, mime: 'image/png' },
-          broken,
-        ),
+      withAvatarOrphanCleanup(
+        (onPublished) =>
+          withCustomerDb(userId, (db, operator) =>
+            replaceAvatarFor(
+              db,
+              operator,
+              userId,
+              { bytes: PNG, mime: 'image/png' },
+              { driver: broken, onPublished },
+            ),
+          ),
+        real,
       ),
     ).rejects.toThrow('сховище недоступне');
 
@@ -374,6 +398,13 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
       "select count(*)::int as n from public.media where entity_type = 'avatar'",
     )) as { n: number }[];
     expect(n).toBe(1);
+
+    // 🔴 І нового ФАЙЛУ немає: rollback диска не чіпає, тож єдиний, хто
+    // прибирає опублікований обʼєкт, — прибирання орфана. Знімок «до/після»,
+    // а не пошук конкретного ключа: ref нового аватара назовні не виходить.
+    expect(await diskKeys(), 'опублікований файл лишився орфаном').toEqual(
+      filesBefore,
+    );
   });
 
   it('тимчасові файли після всіх прогонів не лишились', async () => {

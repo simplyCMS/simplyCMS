@@ -1,4 +1,5 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { resolveMediaUrl } from 'simplycms/domain/media';
 import { productReviews, profiles } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
@@ -75,6 +76,12 @@ export async function loadProductReviews(
  * авторів відгуків на вітрині публічні за задумом. Межу тримають ДВІ умови —
  * набір id закритий рядками, які актор уже законно побачив, і читаються рівно
  * три колонки підпису. Ані пошти, ані телефону, ані категорії тут немає.
+ *
+ * 🔴 `avatar_url` резолвиться ТУТ, а не в компоненті: у колонці лежить
+ * РЕФЕРЕНС (рішення Е2-1), і `ReviewCard` кладе значення просто в `src`.
+ * Без резолву браузер добудовував би адресу відносно `/product/<slug>` —
+ * биту картинку видно лише на живій вітрині. Другий читач тієї самої
+ * колонки — `loadProfile`; обидва під гейтом `tests/media-read-resolve.test.ts`.
  */
 export async function loadReviewAuthors(
   db: ActorDb,
@@ -97,7 +104,7 @@ export async function loadReviewAuthors(
     authors[row.user_id] = {
       first_name: row.first_name,
       last_name: row.last_name,
-      avatar_url: row.avatar_url,
+      avatar_url: resolveMediaUrl(row.avatar_url),
     };
   }
   return authors;
