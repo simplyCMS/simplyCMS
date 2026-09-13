@@ -26,6 +26,8 @@
 | Е2-8 | **Ключ ніколи не перезаписується**; запис через тимчасовий файл + атомарна публікація | Частково записаний файл не стає видимим роуту роздачі; колізія ключа падає, а не мовчки перезаписує чужий обʼєкт |
 | Е2-9 | **`ReviewDetail.tsx` не чіпаємо**; лінт-заборона прямих storage-викликів — ратчетом зі списком виїмок | Сторінка мертва й переписується хвилею відгуків цілком. Ратчет не дає Е3–Е6 завести НОВИЙ прямий виклик |
 | Е2-10 | **SVG заборонений на upload**; MIME — за магічними байтами | SVG несе скрипти. Це рядок валідатора, а не «потім». Allowlist Е2: png/jpeg/webp/gif/avif |
+| Е2-11 | 🔴 **Одна копія правила** (2026-09-13, суцільний прохід перед стартом): перевірка вмісту — `inspectUpload`, ліміти й `accept` — `domain/media` (T1), `MIME_BY_EXT` виводиться з `EXT_BY_MIME`, `MediaMime` — з `ACCEPTED_IMAGE_MIME` | Кожне з цих правил стояло в плані ДВІЧІ або тричі: сніфер у двох serverFn, ліміт у трьох місцях (і вже з двома різними значеннями), таблиця розширень двома літералами. Жодна копія не падає одразу — розсинхрон виявляється тим, що роздача віддає 404 на наявний файл або що аватар приймає те, що відкидає адмінка |
+| Е2-12 | 🔴 **Оркестрація заміни — `storefront/loaders/avatar.ts`, не `storage`** | `storage` — узагальнений порт; залежність від `schema.profiles` була б інверсією, яка з другим споживачем стала б `storage → products`. Заміна аватара — дія покупця, що залучає файл, як `placeOrderFor` — дія покупця, що залучає залишки. Лоадери при цьому імпортують ПОРТ, а не `node:fs`. Ціна — `storefront: ['db','auth','storage']` у тір-зонах: класифікація дерева, а не послаблення межі |
 
 **Другий інваріант §4-К4 роботи в Е2 не потребує — і це перевірено, а не
 припущено.** Незмінність колонок власності (`entity_type`/`entity_id`/
@@ -49,6 +51,52 @@
 **Що Е2 чесно НЕ доводить:** «завантаження й видалення зображення товару працює» (DoD К3 п.6). `ImageUpload` переписується на порт тут і покривається юнітами, але його пʼять сторінок-споживачів лишаються на `supabase-js` до Е3–Е6 — живого доказу на товарі в Е2 бути не може. DoD К3 п.6 закривається хвилею каталогу.
 
 ---
+
+## Ступінь обовʼязковості — читати ПЕРШИМ
+
+🔴 Цей документ — план імплементації, а не специфікація до останнього рядка.
+Дві категорії з різним статусом; плутати їх дорого в обидва боки.
+
+**КАНОН — обовʼязковий. Розбіжність із ним — привід зупинитись і спитати,
+а не вирішити самому:**
+
+- контракти репо: `id`, серверного env, ключів кешу React Query;
+- межі: клієнт/сервер (`contracts/server-only`), тір-зони T0→T5, ролі й
+  транзакції (ескалація, `withActor`), RLS і гранти;
+- **що саме мусить доводити кожен гейт** — гейт не обіцяє більше, ніж
+  перевіряє; якщо крок не може довести обіцяне, змінюється обіцянка, а не
+  формулювання;
+- рішення архітектора: таблиця «Ухвалені рішення етапу» нижче;
+- 🔴 **інваріант «одна копія правила»**: MIME, ліміт розміру, відображення
+  розширення в MIME, база URL медіа — кожне живе рівно в одному місці.
+  Друга копія — це не стиль, це дефект (урок К2-Е0);
+- канон 150 рядків на файл; коментарі українською, що пояснюють ПРИЧИНУ;
+  новий рядок інтерфейсу — в ОБИДВА каталоги i18n;
+- DoD кожної задачі й порядок задач.
+
+**ОРІЄНТИР — виконавець змінює сам, якщо канон не постраждав, і НЕ приходить
+за дозволом:**
+
+- сніпети коду: імена локальних змінних, порядок аргументів, розкладка на
+  модулі та їхні назви (канон тут — лише 150 рядків і межа server-only);
+- якорі `файл:рядок` — вимір на момент написання плану; шукати за унікальним
+  текстом, номер лише орієнтир;
+- лічильники: скільки кейсів у тесті, скільки рядків стане у файлі;
+- точні формулювання коментарів, повідомлень і тіла комітів.
+
+**Правило вирішення конфлікту:** якщо код розійшовся з ОРІЄНТИРОМ — переважає
+код, план мовчки адаптується. Якщо код розійшовся з КАНОНОМ — зупинись і
+принеси розбіжність замовникові: можливо, змінився канон, і тоді правиться
+спека, а не задача.
+
+🔴 **Адресація задач — заголовками `## Task N:`, не номерами рядків.**
+Рівно два дієзи — саме так задачі витягуються з цього файлу
+(`awk '/^## Task 3:/,/^## Task 4:/'`). Номер рядка — вимір на момент
+написання (канон скіла `codebase-research`,
+`.agents/skills/codebase-research/SKILL.md:135`: «Шукай за унікальним
+текстом, номер — лише орієнтир»), і будь-яка правка вище по файлу його
+зсуває. Рівень заголовка не міняти: це зламало б витяг одразу в усіх
+девʼятьох виконавців.
 
 ## Global Constraints
 
@@ -99,13 +147,17 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 
 | Файл | Відповідальність |
 |---|---|
-| `packages/simplycms/src/domain/media.ts` | T1, чистий: `MediaRef`, `MEDIA_URL_BASE`, `resolveMediaUrl`, `resolveMediaUrls`, реєстр `MEDIA_COLUMNS` |
+| `packages/simplycms/src/domain/media.ts` | T1, чистий: `MediaRef`, `MEDIA_URL_BASE`, `resolveMediaUrl`, `resolveMediaUrls`, `ACCEPTED_IMAGE_MIME`/`ACCEPT_ATTRIBUTE`, `MAX_UPLOAD_BYTES`/`MAX_AVATAR_BYTES`, реєстр `MEDIA_COLUMNS` |
 | `packages/simplycms/src/domain/__tests__/media.test.ts` | Юніти трьох форм референсу + нормалізація бази |
 | `packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts` | Гейт: кожна медіа-колонка схеми є в `MEDIA_COLUMNS` |
 | `packages/simplycms/src/storage/index.ts` | Барель server-only піддерева (експорт публічної поверхні) |
 | `packages/simplycms/src/storage/env.ts` | `mediaRoot()` — `process.env.MEDIA_ROOT` у рантаймі, дефолт `./.data/media` |
 | `packages/simplycms/src/storage/keys.ts` | `MediaMime`, `mediaKey()` (шардинг `ab/<uuid>.<ext>`), `MEDIA_KEY_RE` |
 | `packages/simplycms/src/storage/mime.ts` | `sniffImageMime()` — MIME за магічними байтами, allowlist без SVG |
+| `packages/simplycms/src/storage/inspect.ts` | `inspectUpload(file, maxBytes)` — ЄДИНА перевірка вмісту на обидва serverFn |
+| `packages/simplycms/src/storage/__tests__/inspect.test.ts` | Юніти на фікстурах сигнатур (SVG як `.png`, брехливий `file.type`, ліміт) |
+| `packages/simplycms/src/storefront/loaders/avatar.ts` | `replaceAvatarFor`/`clearAvatarFor` — оркестрація заміни, чиста щодо транзакції |
+| `packages/simplycms/src/admin/components/ImageGrid.tsx` | Сітка прев'ю (розбиття `ImageUpload` під канон 150) |
 | `packages/simplycms/src/storage/driver.ts` | Інтерфейс `MediaStorageDriver` + `MediaObject` + класи помилок |
 | `packages/simplycms/src/storage/local-fs.ts` | Драйвер диска: `put` (tmp + `link`), `delete` (ідемпотентний), `open` (стрім) |
 | `packages/simplycms/src/storage/record.ts` | `writeMedia`/`eraseMedia` — файл і рядок `media` в одній транзакції актора |
@@ -132,7 +184,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 | `packages/simplycms/src/contracts/ports/index.ts` | `MediaProvider` звужується до `{ url(ref: string): string \| null }` — `upload` зникає (пішов у serverFn) |
 | `packages/simplycms/src/contracts/server-only.ts` | `SERVER_ONLY` += `'storage'` |
 | `tests/dist-server-boundary.test.ts` | `SENTINELS` += літерал для `storage` |
-| `eslint.tier-zones.mjs` | Зона `['src/storage', 2, 'storage', ['db']]` (Task 2) + `storage` в upward-виняток `admin-server` (Task 7) |
+| `eslint.tier-zones.mjs` | Зона `['src/storage', 2, 'storage', ['db']]` (Task 2) + `storage` в upward-виняток `storefront` (Task 5) і `admin-server` (Task 7) |
 | `eslint.config.mjs` | Зона заборони прямих storage-викликів (Task 8) |
 | `packages/simplycms/package.json` | `exports` + `publishConfig.exports`: `./domain/media`, `./storage` |
 | `.env.example`, `packages/create-simplycms-store/template/env.example` | Закоментований `MEDIA_ROOT` із поясненням |
@@ -269,6 +321,41 @@ export type MediaRef = string;
 
 /** База URL роздачі драйвера `local-fs` (роут `/media/$`, Task 4). */
 export const MEDIA_URL_BASE = '/media';
+
+/**
+ * MIME, які приймає завантаження. Живуть у T1, а НЕ в `simplycms/storage`,
+ * бо потрібні обом бокам межі: сервер звіряє з ними магічні байти, клієнт
+ * підставляє в атрибут `accept`. Без цього рядок `accept` дублювався б у
+ * кожному компоненті завантаження — третя копія того самого правила.
+ *
+ * 🔴 SVG відсутній свідомо (рішення Е2-10): він несе скрипти.
+ */
+export const ACCEPTED_IMAGE_MIME = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+] as const;
+
+/** Значення атрибута `accept` для `<input type="file">`. */
+export const ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_MIME.join(',');
+
+/**
+ * Стеля розміру завантаження, байти.
+ *
+ * 🔴 Два різні значення — навмисно, НЕ розсинхрон: «вирівняти» їх означало б
+ * або дозволити 10-мегабайтний аватар (він показується мініатюрою 96×96, тож
+ * це чисті витрати диска й трафіку), або обрізати зображення товару до 5 МБ
+ * (а там знімок із камери — норма). Різниця в призначенні, не в недогляді.
+ *
+ * 🔴 Обидві — тут, у T1, а не в компонентах: до Е2 ліміт стояв у ТРЬОХ
+ * місцях (два компоненти + сервер), і клієнтські копії вже розійшлися між
+ * собою. Сервер лишається джерелом правди — клієнтська перевірка існує лише
+ * щоб не вантажити 50 МБ заради відмови.
+ */
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 // Форми, які вже Є адресою й не потребують бази. `blob:` — локальне прев’ю,
 // яке браузер створює до завантаження; воно ніколи не доходить до БД, але
@@ -497,7 +584,8 @@ git commit -m "feat(k3-e2): медіа-референс — resolveMediaUrl у T
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { MEDIA_KEY_RE, mediaKey } from '../keys';
+import { ACCEPTED_IMAGE_MIME } from 'simplycms/domain/media';
+import { EXT_BY_MIME, MEDIA_KEY_RE, MIME_BY_EXT, mediaKey } from '../keys';
 
 describe('mediaKey', () => {
   it('форма — <2 hex>/<uuid>.<ext>, шард дорівнює першим двом символам uuid', () => {
@@ -517,6 +605,16 @@ describe('mediaKey', () => {
   it('ключі не повторюються', () => {
     const keys = new Set(Array.from({ length: 500 }, () => mediaKey('image/png')));
     expect(keys.size).toBe(500);
+  });
+
+  // 🔴 Дві мапи, що мусять лишатись взаємно оберненими, — саме той клас
+  // дрейфу, який не падає одразу: забутий формат виявиться тим, що роздача
+  // віддасть 404 на файл, який лежить на диску.
+  it('EXT_BY_MIME і MIME_BY_EXT взаємно обернені', () => {
+    for (const mime of ACCEPTED_IMAGE_MIME) {
+      expect(MIME_BY_EXT[EXT_BY_MIME[mime]]).toBe(mime);
+    }
+    expect(Object.keys(MIME_BY_EXT)).toHaveLength(ACCEPTED_IMAGE_MIME.length);
   });
 
   it('MEDIA_KEY_RE відбиває traversal і чужі розширення', () => {
@@ -596,15 +694,15 @@ Expected: FAIL — модулів `../keys` і `../mime` немає.
 ```ts
 import { randomUUID } from 'node:crypto';
 
-/** MIME, які приймає порт у Е2. SVG відсутній свідомо (рішення Е2-10). */
-export type MediaMime =
-  | 'image/png'
-  | 'image/jpeg'
-  | 'image/webp'
-  | 'image/gif'
-  | 'image/avif';
+/**
+ * MIME, які приймає порт.
+ *
+ * 🔴 Виводиться з `ACCEPTED_IMAGE_MIME` (T1), а не перелічується вдруге:
+ * той самий список у двох місцях розійшовся б на першому ж новому форматі.
+ */
+export type MediaMime = (typeof ACCEPTED_IMAGE_MIME)[number];
 
-const EXT_BY_MIME: Readonly<Record<MediaMime, string>> = {
+export const EXT_BY_MIME: Readonly<Record<MediaMime, string>> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
@@ -639,14 +737,19 @@ export function mediaKey(mime: MediaMime): string {
 export const MEDIA_KEY_RE =
   /^[0-9a-f]{2}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:png|jpg|webp|gif|avif)$/;
 
-/** MIME за ключем — для заголовка роздачі, якщо рядок `media` недоступний. */
-export const MIME_BY_EXT: Readonly<Record<string, MediaMime>> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  avif: 'image/avif',
-};
+/**
+ * MIME за розширенням ключа — для заголовка роздачі (Task 4).
+ *
+ * 🔴 ВИВОДИТЬСЯ з `EXT_BY_MIME`, а не пишеться другою таблицею. Дві
+ * літеральні мапи, що мусять лишатись взаємно оберненими, — класичний
+ * дрейф: додати формат в одну й забути в другій нічого не ламає одразу,
+ * а виявляється тим, що роздача віддає готовий файл із 404. Стереже
+ * юніт «таблиці взаємно обернені».
+ */
+export const MIME_BY_EXT: Readonly<Record<string, MediaMime>> =
+  Object.fromEntries(
+    Object.entries(EXT_BY_MIME).map(([mime, ext]) => [ext, mime as MediaMime]),
+  );
 ```
 
 - [ ] **Step 5: Написати `storage/mime.ts`**
@@ -684,10 +787,129 @@ export function sniffImageMime(bytes: Uint8Array): MediaMime | null {
 }
 ```
 
+- [ ] **Step 5a: Написати `storage/inspect.ts` — ОДНА перевірка вмісту на обидва serverFn**
+
+🔴 Це не зручність, а канон «одна копія правила». serverFn завантаження
+**два** (`uploadMedia` в адмінці і `uploadMyAvatar` у кабінеті), і кожен
+мусив би сам просніфати байти й звірити розмір. Друга копія розійшлася б на
+першому ж новому форматі — рівно клас, з якого починалась санація К2-Е0.
+Межова роль serverFn лишається за ними: мапити `reason` у рядок каталогу.
+
+```ts
+import { MAX_UPLOAD_BYTES } from 'simplycms/domain/media';
+import type { MediaMime } from './keys';
+import { sniffImageMime } from './mime';
+
+/**
+ * Результат перевірки завантаженого файлу.
+ *
+ * 🔴 `ok`-дискримінант, а не `'reason' in result`: звуження читається
+ * однозначно й не ламається від першого ж додаткового поля в успішній
+ * гілці. Домашній патерн — `OrderCancelResult`
+ * (`storefront-routes/server/profile-orders.ts`).
+ *
+ * 🔴 Причина — КОДОМ, не текстом: текст належить каталогу повідомлень, а
+ * серверний хендлер живе поза React і транслятора не має.
+ */
+export type UploadInspection =
+  | { ok: true; bytes: Uint8Array; mime: MediaMime; size: number }
+  | { ok: false; reason: 'unsupported_type' | 'too_large' };
+
+/**
+ * Прочитати файл і вирішити, чи його можна прийняти.
+ *
+ * 🔴 `mime` — з СИГНАТУРИ файлу, ніколи з `file.type` і ніколи з
+ * розширення: обидва задає той, хто вантажить. `payload.php.png` із
+ * `type: image/png` пройшов би обидві «перевірки».
+ *
+ * 🔴 Розмір звіряється ДО читання в памʼять: Start буферизує тіло цілком,
+ * тож читати 50 МБ заради відмови — марна алокація.
+ */
+export async function inspectUpload(
+  file: File,
+  maxBytes: number = MAX_UPLOAD_BYTES,
+): Promise<UploadInspection> {
+  if (file.size > maxBytes) return { ok: false, reason: 'too_large' };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mime = sniffImageMime(bytes);
+  if (!mime) return { ok: false, reason: 'unsupported_type' };
+
+  return { ok: true, bytes, mime, size: bytes.byteLength };
+}
+```
+
+Додати в `storage/index.ts`:
+
+```ts
+export { inspectUpload, type UploadInspection } from './inspect';
+```
+
+- [ ] **Step 5b: Юніт `inspectUpload` на фікстурах сигнатур**
+
+`packages/simplycms/src/storage/__tests__/inspect.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { inspectUpload } from '../inspect';
+
+const file = (bytes: Uint8Array, name = 'a.png', type = 'image/png') =>
+  new File([bytes], name, { type });
+const ascii = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0));
+const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+
+describe('inspectUpload', () => {
+  it('валідний PNG → ok із байтами, MIME і розміром', async () => {
+    const result = await inspectUpload(file(PNG));
+    expect(result).toEqual({
+      ok: true,
+      bytes: PNG,
+      mime: 'image/png',
+      size: PNG.length,
+    });
+  });
+
+  // 🔴 Два кейси, заради яких сніфер узагалі існує: обидва канали, якими
+  // клієнт «повідомляє» тип, тут брешуть — а байти ні.
+  it('SVG із розширенням .png і type image/png → unsupported_type', async () => {
+    const svg = ascii('<svg xmlns="http://www.w3.org/2000/svg"/>');
+    expect(await inspectUpload(file(svg, 'photo.png', 'image/png'))).toEqual({
+      ok: false,
+      reason: 'unsupported_type',
+    });
+  });
+
+  it('PNG-сигнатура при брехливому file.type приймається за сигнатурою', async () => {
+    const result = await inspectUpload(file(PNG, 'x.bin', 'application/octet-stream'));
+    expect(result.ok && result.mime).toBe('image/png');
+  });
+
+  it('понад ліміт → too_large, і байти НЕ читаються', async () => {
+    const big = file(new Uint8Array(11 * 1024 * 1024));
+    expect(await inspectUpload(big)).toEqual({ ok: false, reason: 'too_large' });
+  });
+
+  it('ліміт — параметр: аватарна стеля жорсткіша', async () => {
+    const sixMb = file(new Uint8Array(6 * 1024 * 1024));
+    expect(await inspectUpload(sixMb, 5 * 1024 * 1024)).toEqual({
+      ok: false,
+      reason: 'too_large',
+    });
+  });
+
+  it('порожній файл → unsupported_type, а не збій', async () => {
+    expect(await inspectUpload(file(new Uint8Array()))).toEqual({
+      ok: false,
+      reason: 'unsupported_type',
+    });
+  });
+});
+```
+
 - [ ] **Step 6: Прогнати — мають пройти**
 
-Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/keys.test.ts packages/simplycms/src/storage/__tests__/mime.test.ts`
-Expected: PASS.
+Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/`
+Expected: PASS (`keys`, `mime`, `inspect`).
 
 - [ ] **Step 7: Написати падаючі тести драйвера**
 
@@ -1232,6 +1454,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
+import { replaceAvatarFor, withCustomerDb } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -1275,6 +1498,23 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     if (dbUrl) await dropTempDatabase(harness.url, dbName);
     await harness?.teardown();
   });
+
+  /** Користувач + порожній профіль: заміні аватара потрібен рядок `profiles`. */
+  const seedUser = async (url: string): Promise<string> => {
+    const id = randomUUID();
+    await queryRows(
+      url,
+      `insert into public.users (id, email, name, "emailVerified", "createdAt", "updatedAt")
+       values ($1, $2, 'Живий Тест', false, now(), now())`,
+      [id, `media-${id.slice(0, 8)}@example.test`],
+    );
+    await queryRows(
+      url,
+      'insert into public.profiles (id, user_id, email) values ($1, $2, $3)',
+      [randomUUID(), id, `media-${id.slice(0, 8)}@example.test`],
+    );
+    return id;
+  };
 
   const countMedia = async (): Promise<number> => {
     const [row] = (await queryRows(
@@ -1469,6 +1709,55 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     await withActor({ role: 'app_admin' }, (db) => eraseMedia(db, record.ref, real));
   });
 
+  // 🔴 Пʼятий кейс ганяє СПРАВЖНЮ `replaceAvatarFor`, а не послідовність,
+  // зібрану в тесті: копія доводила б властивість копії (патерн P1 — гейт
+  // обіцяє більше, ніж перевіряє). Функція чиста й бере `db`+`operator`
+  // параметрами саме для цього.
+  it('відмова на видаленні СТАРОГО: старий аватар цілий, нового немає', async () => {
+    const real = driver();
+    const userId = await seedUser(dbUrl);
+    const oldRecord = await withActor({ role: 'app_admin' }, (db) =>
+      writeMedia(
+        db,
+        { bytes: PNG, mime: 'image/png', entityType: 'avatar', entityId: userId, uploadedBy: userId },
+        real,
+      ),
+    );
+    await queryRows(dbUrl, 'update public.profiles set avatar_url = $1 where user_id = $2', [
+      oldRecord.ref,
+      userId,
+    ]);
+
+    const broken = {
+      ...real,
+      delete: async () => {
+        throw new Error('сховище недоступне');
+      },
+    };
+
+    await expect(
+      withCustomerDb(userId, (db, operator) =>
+        replaceAvatarFor(db, operator, userId, { bytes: PNG, mime: 'image/png' }, broken),
+      ),
+    ).rejects.toThrow('сховище недоступне');
+
+    // Старий цілий і в БД, і на диску.
+    const [profile] = (await queryRows(
+      dbUrl,
+      'select avatar_url from public.profiles where user_id = $1',
+      [userId],
+    )) as { avatar_url: string }[];
+    expect(profile.avatar_url).toBe(oldRecord.ref);
+    expect(await real.open(oldRecord.ref)).not.toBeNull();
+
+    // Нового рядка немає — його прибрав rollback.
+    const [{ n }] = (await queryRows(
+      dbUrl,
+      "select count(*)::int as n from public.media where entity_type = 'avatar'",
+    )) as { n: number }[];
+    expect(n).toBe(1);
+  });
+
   it('тимчасові файли після всіх прогонів не лишились', async () => {
     for (const shard of await readdir(root)) {
       const files = await readdir(join(root, shard));
@@ -1529,6 +1818,12 @@ export interface MediaRecord {
  *
  * 🔴 `id` передається ЯВНО: `DEFAULT gen_random_uuid()` знято на всіх
  * таблицях Категорії A (К3-Е0), тож вставка без `id` дала б `23502`.
+ *
+ * 🔴 Дзеркального `discardMedia` всередині НЕМАЄ, і це не пропуск: якщо
+ * `driver.put` кидає, обʼєкт не опублікований (тимчасовий файл прибирає
+ * `finally` драйвера), а рядок відкочує транзакція викликача. Прибирати
+ * нічого. «Вирівнювати» з `eraseMedia` заради симетрії не треба — там
+ * необоротна дія вже сталась, тут ні.
  */
 export async function writeMedia(
   db: ActorDb,
@@ -1555,6 +1850,34 @@ export async function writeMedia(
 }
 
 /**
+ * Best-effort прибирання щойно записаного обʼєкта після ВІДКОТУ транзакції.
+ *
+ * 🔴 Потрібне там, де файл уже опубліковано, а транзакція впала пізніше:
+ * rollback прибирає рядок `media`, але диск транзакцій не знає — обʼєкт
+ * лишився б орфаном. Кличеться з `catch` ЗОВНІ транзакції (всередині вона
+ * вже мертва).
+ *
+ * 🔴 ОДНЕ документоване місце, де помилка прибирання ковтається. Саме одне:
+ * розсипані по викликачах `.catch(() => {})` рано чи пізно проковтнуть щось
+ * інше. Первинну помилку це не маскує — функція нічого не кидає, а викликач
+ * перекидає свою далі сам.
+ *
+ * 🔴 `console.warn`, а не тиша: орфан мусить лишати слід, інакше sweep К4 не
+ * має жодного сигналу, що він узагалі потрібен. `ref` у повідомленні
+ * обовʼязковий — без нього запис у лозі не дає чим шукати обʼєкт.
+ */
+export async function discardMedia(
+  ref: string,
+  driver: MediaStorageDriver = getMediaDriver(),
+): Promise<void> {
+  try {
+    await driver.delete(ref);
+  } catch (error) {
+    console.warn('[simplycms/storage] discard failed', ref, error);
+  }
+}
+
+/**
  * Прибрати файл і його рядок. Повертає `false`, якщо рядка не було.
  *
  * 🔴 ІНВАРІАНТ (амендмент §4-К4 від 2026-09-13, рішення Е2-7): обʼєкт
@@ -1570,6 +1893,13 @@ export async function writeMedia(
  *   • **fail-open неможливий за побудовою**: стан «рядок закомічено, обʼєкт
  *     лишився» недосяжний, а це і є «квота, яку неможливо звільнити» —
  *     задокументована граблина MetaHub.
+ *
+ * 🔴 ПРИНЦИП, що обʼєднує це рішення з порядком заміни аватара: необоротна
+ * дія (`unlink`, `deleteObject`) стоїть якомога пізніше в транзакції, одразу
+ * перед COMMIT, щоб вікно «необоротне вже сталось, а відкат ще можливий»
+ * звужувалось до самого коміту. Тут це реалізовано ВСЕРЕДИНІ одного
+ * видалення; у заміні аватара — між кількома кроками, тож старий обʼєкт
+ * прибирається останнім (`storefront/loaders/avatar.ts`).
  *
  * 🔴 Залишковий стан рівно ОДИН: падіння COMMIT уже після успішного
  * `driver.delete` лишає рядок без обʼєкта. Облік ПЕРЕоцінює обсяг (тариф не
@@ -1625,6 +1955,7 @@ export async function eraseMedia(
 
 ```ts
 export {
+  discardMedia,
   eraseMedia,
   writeMedia,
   type MediaRecord,
@@ -1979,24 +2310,153 @@ git commit -m "feat(k3-e2): роут /media/\$ — роздача обʼєкті
 Run: `pnpm vitest run tests/i18n-catalog-parity.test.ts packages/simplycms/src/i18n/__tests__/catalog-integrity.test.ts`
 Expected: PASS. Червоне тут = ключ додано лише в один каталог.
 
-- [ ] **Step 4: Написати serverFn кабінету**
+- [ ] **Step 4: Написати оркестрацію заміни — `storefront/loaders/avatar.ts`**
+
+🔴 **Чому в лоадерах, а не в `storage`** (рішення архітектора 2026-09-13 після
+заперечення): `storage` — узагальнений порт файлів, і залежність від
+`schema.profiles` була б інверсією — з другим споживачем вона стала б ще й
+`storage → products`. Заміна аватара — це дія ПОКУПЦЯ, що залучає файл, рівно
+як `placeOrderFor` — дія покупця, що залучає залишки; обидві живуть тут.
+Лоадери при цьому не дізнаються про ФС: вони імпортують ПОРТ, а не `node:fs`.
+Третього місця не існує за побудовою — `storefront-routes/server` тримає лише
+serverFn (правило Е1б).
+
+`packages/simplycms/src/storefront/loaders/avatar.ts`:
+
+```ts
+import { eq } from 'drizzle-orm';
+import { profiles } from 'simplycms/schema';
+import {
+  eraseMedia,
+  writeMedia,
+  type MediaMime,
+  type MediaStorageDriver,
+} from 'simplycms/storage';
+import type { ActorDb } from 'simplycms/db';
+import type { OperatorEscalation } from './escalation';
+
+/** Вже перевірений вміст: сніфер і ліміт відпрацювали в serverFn. */
+export interface AvatarBytes {
+  readonly bytes: Uint8Array;
+  readonly mime: MediaMime;
+}
+
+/**
+ * Замінити аватар власника сесії: новий файл, новий рядок `media`,
+ * оновлений профіль, прибраний старий.
+ *
+ * 🔴 Функція ЧИСТА щодо транзакції — `db` і `operator` приходять параметрами.
+ * Саме тому харнес може прогнати справжню послідовність, а не свою копію
+ * (патерн `placeOrderFor`/`prepareCheckout`); serverFn лишається тонким.
+ *
+ * 🔴 ПОРЯДОК: старий аватар прибирається ОСТАННІМ, і це окреме рішення від
+ * інваріанта `eraseMedia` («рядок, потім обʼєкт» — він діє ВСЕРЕДИНІ одного
+ * видалення й забезпечується самою `eraseMedia`). Принцип, що обʼєднує
+ * обидва: НЕОБОРОТНА дія стоїть якомога пізніше в транзакції, одразу перед
+ * COMMIT, щоб вікно «необоротне вже сталось, а відкат ще можливий»
+ * звужувалось до самого коміту. Якби видалення старого стояло першим, будь-яка
+ * подальша відмова відкотила б РЯДОК старого аватара, але не повернула б його
+ * ФАЙЛ — покупець лишився б із профілем, що посилається в нікуди.
+ *
+ * 🔴 Старий рядок прибирається через `operator`: `app_user` не має гранта
+ * `DELETE` на `media` (`0002_grants.sql:120`), і це навмисно — саме
+ * відсутність права тримає інваріант незмінності власності.
+ */
+export async function replaceAvatarFor(
+  db: ActorDb,
+  operator: OperatorEscalation,
+  userId: string,
+  input: AvatarBytes,
+  driver?: MediaStorageDriver,
+): Promise<{ ref: string }> {
+  const [current] = await db
+    .select({ avatarUrl: profiles.avatarUrl })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .limit(1);
+
+  const record = await writeMedia(
+    db,
+    {
+      bytes: input.bytes,
+      mime: input.mime,
+      entityType: 'avatar',
+      entityId: userId,
+      uploadedBy: userId,
+    },
+    driver,
+  );
+
+  await db
+    .update(profiles)
+    .set({ avatarUrl: record.ref })
+    .where(eq(profiles.userId, userId));
+
+  const previous = current?.avatarUrl;
+  if (previous) await operator((tx) => eraseMedia(tx, previous, driver));
+
+  return { ref: record.ref };
+}
+
+/** Прибрати аватар. Ідемпотентна: без аватара — no-op. */
+export async function clearAvatarFor(
+  db: ActorDb,
+  operator: OperatorEscalation,
+  userId: string,
+  driver?: MediaStorageDriver,
+): Promise<void> {
+  const [current] = await db
+    .select({ avatarUrl: profiles.avatarUrl })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .limit(1);
+  if (!current?.avatarUrl) return;
+
+  await db
+    .update(profiles)
+    .set({ avatarUrl: null })
+    .where(eq(profiles.userId, userId));
+  await operator((tx) => eraseMedia(tx, current.avatarUrl!, driver));
+}
+```
+
+Додати обидві в барель `storefront/loaders/index.ts` поруч із рештою.
+
+- [ ] **Step 4a: Відкрити `storefront` доступ до `storage`**
+
+У `eslint.tier-zones.mjs` розширити рядок `storefront`:
+
+```js
+  // `storage` у винятку поруч із `db` і `auth`: для лоадерів вітрини це та
+  // сама інфраструктурна залежність — єдиний канал до файлів, як `withActor`
+  // до Postgres. Класифікація дерева, а не послаблення межі.
+  ['src/storefront', 2, 'storefront', ['db', 'auth', 'storage']],
+```
+
+Прогнати `pnpm lint && pnpm vitest run tests/tier-boundary.test.ts`. Expected: PASS.
+
+- [ ] **Step 4b: Написати ТОНКИЙ serverFn кабінету**
 
 `packages/simplycms/src/core/lib/profile-avatar.ts`:
 
 ```ts
 import { createServerFn } from '@tanstack/react-start';
-import { eq } from 'drizzle-orm';
-import { MEDIA_URL_BASE, resolveMediaUrl } from 'simplycms/domain/media';
-import { profiles } from 'simplycms/schema';
-import { withSessionDb } from 'simplycms/storefront/loaders';
-import { eraseMedia, sniffImageMime, writeMedia } from 'simplycms/storage';
+import { MAX_AVATAR_BYTES, MEDIA_URL_BASE, resolveMediaUrl } from 'simplycms/domain/media';
+import {
+  clearAvatarFor,
+  replaceAvatarFor,
+  withSessionDb,
+} from 'simplycms/storefront/loaders';
+import { discardMedia, inspectUpload } from 'simplycms/storage';
 
-/** Стеля розміру аватара. Start буферизує тіло цілком — межу тримаємо тут. */
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+/** Машинні коди відмов: клієнт мапить їх у рядки каталогу. */
+export const AVATAR_BAD_FORMAT = 'avatar/bad-format';
+export const AVATAR_TOO_LARGE = 'avatar/too-large';
 
-/** Машинні коди відмов: клієнт мапить їх у свої рядки каталогу. */
-const BAD_FORMAT = 'avatar/bad-format';
-const TOO_LARGE = 'avatar/too-large';
+const REASON_CODE = {
+  unsupported_type: AVATAR_BAD_FORMAT,
+  too_large: AVATAR_TOO_LARGE,
+} as const;
 
 /**
  * Завантажити аватар власника сесії.
@@ -2006,15 +2466,13 @@ const TOO_LARGE = 'avatar/too-large';
  * профіль, і RLS не врятувала б: вона звіряє рядки саме з тим актором, якого
  * їй назвали.
  *
- * 🔴 Три дії — вставка рядка `media`, запис файлу і оновлення `profiles` —
- * лежать в ОДНІЙ транзакції актора. Прибирання СТАРОГО аватара — теж у ній,
- * але через `operator`: `app_user` не має `DELETE` на `media` (гранти
- * `0002_grants.sql:120`), і це навмисно — саме відсутність права тримає
- * інваріант незмінності власності.
+ * 🔴 Роль цього модуля — МЕЖОВА, і лише вона: розібрати `FormData`, кликнути
+ * спільний `inspectUpload` і перекласти його `reason` у код для клієнта. Уся
+ * послідовність — у `replaceAvatarFor` (`storefront/loaders`), щоб харнес
+ * ганяв справжній код, а не копію.
  *
- * 🔴 Валідатор не Zod, а функція: `inputValidator` зі схемою Zod не приймає
- * `FormData` (Start типізує цю гілку окремо), тож форма перевіряється тут,
- * а вміст — магічними байтами нижче.
+ * 🔴 Валідатор — функція, а не Zod-схема: `inputValidator` зі схемою не
+ * приймає `FormData` (Start типізує цю гілку окремо).
  */
 export const uploadMyAvatar = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown): FormData => {
@@ -2025,82 +2483,42 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<{ url: string }> => {
     const file = data.get('file');
-    if (!(file instanceof File)) throw new Error(BAD_FORMAT);
-    if (file.size > MAX_AVATAR_BYTES) throw new Error(TOO_LARGE);
+    if (!(file instanceof File)) throw new Error(AVATAR_BAD_FORMAT);
 
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const mime = sniffImageMime(bytes);
-    // 🔴 Саме просніфаний MIME, а не `file.type`: останній браузер бере з
-    // розширення, тобто його задає той самий, хто вантажить файл.
-    if (!mime) throw new Error(BAD_FORMAT);
+    const checked = await inspectUpload(file, MAX_AVATAR_BYTES);
+    if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
 
-    return withSessionDb(async (db, userId, operator) => {
-      const [current] = await db
-        .select({ avatarUrl: profiles.avatarUrl })
-        .from(profiles)
-        .where(eq(profiles.userId, userId))
-        .limit(1);
-
-      const record = await writeMedia(db, {
-        bytes,
-        mime,
-        entityType: 'avatar',
-        entityId: userId,
-        uploadedBy: userId,
+    // 🔴 `written` живе ПОЗА транзакцією: якщо вона впаде після публікації
+    // файлу, rollback прибере рядок, але диск про транзакції не знає —
+    // обʼєкт лишився б орфаном. `catch` нижче його прибирає.
+    let written: string | null = null;
+    try {
+      const { ref } = await withSessionDb(async (db, userId, operator) => {
+        const result = await replaceAvatarFor(db, operator, userId, {
+          bytes: checked.bytes,
+          mime: checked.mime,
+        });
+        written = result.ref;
+        return result;
       });
-
-      await db
-        .update(profiles)
-        .set({ avatarUrl: record.ref })
-        .where(eq(profiles.userId, userId));
-
-      // 🔴 Старий аватар прибираємо ОСТАННІМ кроком транзакції — і це не те
-      // саме, що інваріант `eraseMedia`. Той інваріант («рядок, потім обʼєкт»)
-      // діє ВСЕРЕДИНІ одного видалення й тут дотриманий: його забезпечує сама
-      // `eraseMedia`. А от МІСЦЕ цього видалення в послідовності заміни —
-      // окреме рішення, і воно протилежне: старе йде після нового, не перед.
-      //
-      // Причина — ширина вікна, в якому старий файл уже знищено, а транзакція
-      // ще може відкотитись. Якби видалення старого стояло ПЕРШИМ, то будь-яка
-      // подальша відмова (запис нового файлу, оновлення профілю, COMMIT)
-      // відкотила б рядок старого аватара — але не повернула б його ФАЙЛ, і
-      // покупець лишився б із профілем, що посилається в нікуди. Ставлячи його
-      // останнім, ми звужуємо це вікно до самого COMMIT.
-      //
-      // Залишковий стан при обриві тут: новий файл записано, старий ще на
-      // місці — осиротілий новий обʼєкт, який змете sweep К4. Це дешевше за
-      // зламаний аватар.
-      const previous = current?.avatarUrl;
-      if (previous) await operator((tx) => eraseMedia(tx, previous));
-
-      return { url: resolveMediaUrl(record.ref, MEDIA_URL_BASE)! };
-    });
+      return { url: resolveMediaUrl(ref, MEDIA_URL_BASE)! };
+    } catch (error) {
+      // Прибирання best-effort і НЕ маскує первинну помилку: `discardMedia`
+      // нічого не кидає, а виняток летить далі незмінним.
+      if (written) await discardMedia(written);
+      throw error;
+    }
   });
 
-/** Прибрати аватар власника сесії. Ідемпотентна: без аватара — no-op. */
+/** Прибрати аватар власника сесії. */
 export const removeMyAvatar = createServerFn({ method: 'POST' }).handler(
   async (): Promise<void> => {
-    await withSessionDb(async (db, userId, operator) => {
-      const [current] = await db
-        .select({ avatarUrl: profiles.avatarUrl })
-        .from(profiles)
-        .where(eq(profiles.userId, userId))
-        .limit(1);
-      if (!current?.avatarUrl) return;
-
-      await db
-        .update(profiles)
-        .set({ avatarUrl: null })
-        .where(eq(profiles.userId, userId));
-      await operator((tx) => eraseMedia(tx, current.avatarUrl!));
-    });
+    await withSessionDb((db, userId, operator) =>
+      clearAvatarFor(db, operator, userId),
+    );
   },
 );
-
-export { BAD_FORMAT, TOO_LARGE };
 ```
-
-🔴 Підпис `operator` звірено з `storefront/loaders/escalation.ts:22-24` — це `<T>(fn: (db: ActorDb) => Promise<T>) => Promise<T>`, тобто виклики вище коректні як є. 🔴 Не захоплюй `operator` за межі колбека `withSessionDb`: після завершення транзакції він гучно кидає (`escalation.ts:47-52`).
 
 - [ ] **Step 5: Написати падаючі тести компонента**
 
@@ -2243,6 +2661,7 @@ Expected: FAIL — компонент іще відмовляє, інпут `dis
 import { useRef, useState } from 'react';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
+import { ACCEPT_ATTRIBUTE, MAX_AVATAR_BYTES } from 'simplycms/domain/media';
 import {
   removeMyAvatar,
   uploadMyAvatar,
@@ -2256,8 +2675,6 @@ interface AvatarUploadProps {
   /** Новий URL або `null` після видалення. */
   onUpdate: (url: string | null) => void;
 }
-
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 /**
  * Аватар покупця — ПЕРШИЙ живий споживач порту сховища (рішення Е2-6).
@@ -2360,7 +2777,7 @@ export function AvatarUpload({
             ref={inputRef}
             type="file"
             data-testid="avatar-file-input"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+            accept={ACCEPT_ATTRIBUTE}
             disabled={busy}
             className="hidden"
             onChange={(e) => void handleSelect(e.target.files?.[0])}
@@ -2751,18 +3168,19 @@ describe('parseUploadForm', () => {
     await expect(parseUploadForm(fd)).rejects.toThrow();
   });
 
-  it('відбиває SVG навіть із розширенням .png', async () => {
+  // 🔴 Тут — лише МАПА `reason → код`, бо саму перевірку вмісту доводить
+  // юніт `inspectUpload` (Task 2 Step 5b). Дублювати там фікстури сигнатур
+  // означало б доводити те саме двічі й розсинхронити при зміні allowlist.
+  it('reason від inspectUpload перекладається в код клієнта', async () => {
     const svg = new File([new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>')], 'a.png');
-    await expect(parseUploadForm(form({ file: svg, entityType: 'product' }))).rejects.toThrow(
-      /format/i,
-    );
-  });
+    await expect(
+      parseUploadForm(form({ file: svg, entityType: 'product' })),
+    ).rejects.toThrow('media/bad-format');
 
-  it('відбиває файл понад стелю розміру', async () => {
     const big = new File([new Uint8Array(11 * 1024 * 1024)], 'big.png');
-    await expect(parseUploadForm(form({ file: big, entityType: 'product' }))).rejects.toThrow(
-      /large/i,
-    );
+    await expect(
+      parseUploadForm(form({ file: big, entityType: 'product' })),
+    ).rejects.toThrow('media/too-large');
   });
 });
 ```
@@ -2793,16 +3211,18 @@ Expected: FAIL — ні `media.write` у матриці, ні модуля `../o
 import { z } from 'zod';
 import { dbRoleForSubject, requireGrant } from 'simplycms/auth';
 import { withActor } from 'simplycms/db';
-import { MEDIA_URL_BASE, resolveMediaUrl } from 'simplycms/domain/media';
 import {
+  MAX_UPLOAD_BYTES,
+  MEDIA_URL_BASE,
+  resolveMediaUrl,
+} from 'simplycms/domain/media';
+import {
+  discardMedia,
   eraseMedia,
-  sniffImageMime,
+  inspectUpload,
   writeMedia,
   type MediaMime,
 } from 'simplycms/storage';
-
-/** Стеля розміру. Start буферизує тіло цілком — межа мусить бути явною. */
-const MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * Сутності, до яких адмінка сміє привʼязати файл.
@@ -2828,9 +3248,21 @@ export interface ParsedUpload {
   readonly entityId: string | null;
 }
 
+const REASON_CODE = {
+  unsupported_type: 'media/bad-format',
+  too_large: 'media/too-large',
+} as const;
+
 /**
  * Розбір форми завантаження. Винесено з хендлера окремою чистою функцією
  * саме заради тестів: сам хендлер без сесії й БД не запускається.
+ *
+ * 🔴 Перевірку ВМІСТУ (магічні байти + ліміт розміру) робить спільний
+ * `inspectUpload` із `simplycms/storage`, а не цей модуль. serverFn
+ * завантаження два — адмінський і кабінетний — і власний сніфер у кожному
+ * був би другою копією правила, яка розійдеться на першому ж новому форматі.
+ * Тут лишається те, що справді належить АДМІНСЬКІЙ формі: `entityType` з
+ * allowlist і `entityId` як uuid.
  *
  * 🔴 Тексти помилок англійською: це серверна діагностика, яку клієнт мапить
  * у власні рядки каталогу, а не рядок інтерфейсу.
@@ -2838,7 +3270,6 @@ export interface ParsedUpload {
 export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const file = data.get('file');
   if (!(file instanceof File)) throw new Error('media/no-file');
-  if (file.size > MAX_BYTES) throw new Error('media/too-large');
 
   const entityTypeRaw = data.get('entityType');
   if (typeof entityTypeRaw !== 'string') throw new Error('media/no-entity-type');
@@ -2850,11 +3281,10 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
     typeof entityIdRaw === 'string' && entityIdRaw !== '' ? entityIdRaw : null,
   );
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const mime = sniffImageMime(bytes);
-  if (!mime) throw new Error('media/bad-format');
+  const checked = await inspectUpload(file, MAX_UPLOAD_BYTES);
+  if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
 
-  return { bytes, mime, entityType, entityId };
+  return { bytes: checked.bytes, mime: checked.mime, entityType, entityId };
 }
 
 /** Завантажити файл від імені адміна. */
@@ -3006,7 +3436,14 @@ import { deleteMedia, uploadMedia } from 'simplycms/admin-server';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 ```
 
-3. Props: замінити `folder`/`bucket` на `entityType: 'product' | 'product_modification' | 'section' | 'banner' | 'property_option'` і опційний `entityId?: string | null`. Оновити пʼять місць виклику (`ProductEdit.tsx:298`, `SectionEdit.tsx:273`, `BannerEdit.tsx:281,291,305`, `PropertyOptionEdit.tsx:287`, `ProductModifications.tsx:410`), передавши відповідний `entityType`.
+3. Props: замінити `folder`/`bucket` на `entityType: 'product' | 'product_modification' | 'section' | 'banner' | 'property_option'` і опційний `entityId?: string | null`.
+
+   🔴 Оновити **СІМ викликів у ПʼЯТЬОХ файлах** — не пʼять: `BannerEdit.tsx` містить три (`:281`, `:291`, `:305`), по одному на кожну медіа-колонку банера, і всі три йдуть із `entityType="banner"`. Решта — по одному: `ProductEdit.tsx:298` (`product`), `SectionEdit.tsx:273` (`section`), `PropertyOptionEdit.tsx:287` (`property_option`), `ProductModifications.tsx:410` (`product_modification`). Порахуй перед правкою:
+
+   ```bash
+   grep -rn "<ImageUpload" packages/simplycms/src/admin/
+   ```
+   Expected: сім рядків. Якщо більше — правити всі, план може відстати.
 4. `uploadFile`:
 
 ```ts
@@ -3063,7 +3500,29 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 ```
 
 6. Прев’ю в гриді: `src={resolveMediaUrl(url) ?? undefined}` (у гриді тепер референси, не URL).
-7. Прибрати перевірку розширення за іменем файлу (`allowedExts`) — MIME визначає сервер за байтами; лишити `accept` на інпуті як UX-підказку, додавши `image/avif`.
+7. Прибрати перевірку розширення за іменем файлу (`allowedExts`) — MIME визначає сервер за байтами. `accept` на інпуті лишається UX-підказкою, але значення береться з `ACCEPT_ATTRIBUTE` (`simplycms/domain/media`), а не пишеться рядком: інакше це третя копія списку форматів.
+8. Локальну стелю розміру брати з `MAX_UPLOAD_BYTES` (`simplycms/domain/media`), а не літералом. До Е2 ліміт стояв у трьох місцях із двома різними значеннями — це вже був розсинхрон, не гіпотеза.
+
+- [ ] **Step 8a: Розбити `ImageUpload` — канон 150 рядків**
+
+🔴 Файл має **295 рядків** при каноні 150 (`coding-style.instructions.md:43`), тобто подвійне порушення. Ми його й так переписуємо в цій задачі, тож лишати борг у файлі, який щойно чіпали, — свідоме рішення на гірше. За шкалою «Ступеня обовʼязковості» розкладка на модулі — ОРІЄНТИР, і канон тут саме 150 рядків, тож це виклик виконавця, а не питання до замовника.
+
+Розбиття — по шву «стан vs подання», він тут природний:
+
+| Файл | Що лишається |
+|---|---|
+| `admin/components/ImageUpload.tsx` | Стан (`isUploading`, `dragOver`), `uploadFile`/`removeImage`/`handleFileSelect`, drag-and-drop зона, інпут. ~130 рядків |
+| `admin/components/ImageGrid.tsx` | Сітка прев'ю: `<img>`, кнопки порядку (`moveImage`), кнопка видалення, бейдж «Головне», лічильник. Props: `{ images, onMove, onRemove, disabled }`. ~90 рядків |
+
+`ImageGrid` — чиста функція від props, без жодного виклику serverFn: рух і видалення він лише піднімає колбеками. Саме тому `mutation-cache-sync` його не зачіпає, а `ImageUpload` лишається єдиним місцем, де живе мутація.
+
+Перевірити після розбиття:
+
+```bash
+wc -l packages/simplycms/src/admin/components/ImageUpload.tsx \
+      packages/simplycms/src/admin/components/ImageGrid.tsx
+```
+Expected: обидва ≤ 150.
 
 - [ ] **Step 9: Перевірити, що `supabase.storage` в `ImageUpload` не лишилось**
 
@@ -3646,7 +4105,9 @@ git commit -m "docs(k3-e2): живий крок аватара в live:smoke, с
 3. У `profiles.avatar_url` і `media.storage_key` лежить **референс**, у `<img src>` — URL: доведено прямим SQL у смоку.
 4. `media.size_bytes` дорівнює фактичному розміру файлу на диску; падіння запису файлу відкочує рядок (харнес Task 3).
 5. Видалення прибирає рядок ДО обʼєкта, усередині однієї транзакції: падіння `driver.delete` відкочує рядок (обидва цілі), `app_user` без гранта падає на рядку й **не торкається файлу**, повтор після dangling-рядка проходить (харнес Task 3, чотири кейси).
-6. SVG відбивається і за байтами, і за розширенням `.png`; роздача ставить `nosniff`.
+6. SVG відбивається і за байтами, і за розширенням `.png`; брехливий `file.type` не проходить; роздача ставить `nosniff`.
+6a. **Одна копія кожного правила**, перевірено `grep`-ом: одне оголошення `MAX_*_BYTES`, один `accept` (з `ACCEPT_ATTRIBUTE`), один сніфер (`inspectUpload` кличуть обидва serverFn), `MIME_BY_EXT` виведена, юніт «таблиці взаємно обернені» зелений.
+6b. `ImageUpload.tsx` і `ImageGrid.tsx` — обидва ≤ 150 рядків (`wc -l`).
 7. Traversal (сирий і процентно-кодований) дає 404 і не називає шляхів; драйвер відбиває ключ за межами кореня незалежно від роуту.
 8. `storage` у `SERVER_ONLY`; сентинел у `dist-server-boundary` зелений; `pilot:pack` (Gate C + Gate IP) зелений.
 9. Контракт env лишається **трьома** ключами; `MEDIA_ROOT` задокументований коментарем у `.env.example` і в шаблоні магазину; негативний контроль (активний ключ → червоний) прогнано.
