@@ -2,7 +2,11 @@ import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import { setTargetStatus } from './stock-status';
-import { lockTargetStock, type StockLine } from './stock-write';
+import {
+  lockTargetStock,
+  servingQuantity,
+  type StockLine,
+} from './stock-write';
 
 /**
  * Повертає позицію В ТУ САМУ точку — дзеркало `reserveStock`
@@ -52,9 +56,7 @@ export async function releaseStock(
 
   // Сума ДО повернення — із того самого заблокованого знімка, ЛИШЕ по
   // обслуговуючих точках (див. докблок вище).
-  const before = rows
-    .filter((item) => item.serving)
-    .reduce((sum, item) => sum + item.quantity, 0);
+  const before = servingQuantity(rows);
 
   await db
     .update(stockByPickupPoint)
@@ -73,7 +75,7 @@ export async function releaseStock(
   // змінює видиму (read-side, майбутнє `reserveStock`) суму ВЗАГАЛІ. Коли ж
   // точка сама обслуговує, вона вже частина `before`, і нуль там — правдивий.
   // Арифметика `before + line.quantity > 0` тут ні до чого: `quantity`
-  // позиції завжди ≥ 1 (`order_items_positive_quantity`, `schema.ts:247`) —
+  // позиції завжди ≥ 1 (`order_items_positive_quantity`, `schema.ts:258`) —
   // увесь сенс гварда саме в `row.serving`.
   if (row.serving && before === 0) {
     await setTargetStatus(db, line, 'in_stock');

@@ -2,7 +2,11 @@ import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import { loadTargetStatus, setTargetStatus } from './stock-status';
-import { lockTargetStock, type StockLine } from './stock-write';
+import {
+  lockTargetStock,
+  servingQuantity,
+  type StockLine,
+} from './stock-write';
 
 /** Нестача залишку: транзакція відкочується, замовлення не створюється. */
 export class InsufficientStockError extends Error {
@@ -79,14 +83,14 @@ export async function reserveStock(
     })
     .where(eq(stockByPickupPoint.id, row.id));
 
-  // 🔴 Сума — ЛИШЕ по обслуговуючих точках (`row.serving`), симетрично до
-  // `releaseStock`: сьогодні `rows` тут і так вузький (без `includePointId`),
-  // тож фільтр — no-op, але без нього обидва місця залежали б від того, що
-  // ЖОДЕН майбутній виклик тут ніколи не додасть `includePointId` — крихке
-  // припущення, яке саме тут коштувало регресії I1.
-  const left =
-    rows
-      .filter((item) => item.serving)
-      .reduce((sum, item) => sum + item.quantity, 0) - line.quantity;
+  // 🔴 Інваріант, а не обіцянка: списуємо з рядка, який САМ обслуговує.
+  // Сьогодні це no-op (`lockTargetStock` тут без `includePointId`), але
+  // якщо колись передадуть — `left` віднімав би кількість із суми, у якій
+  // цього рядка НЕМАЄ, і статус хибно фліпнув би в `out_of_stock`. Дзеркало
+  // гварда `row.serving` у `releaseStock`: обидва шляхи фліпають статус лише
+  // тоді, коли записаний рядок належить обслуговуючому набору.
+  if (!row.serving) return;
+
+  const left = servingQuantity(rows) - line.quantity;
   if (left === 0) await setTargetStatus(db, line, 'out_of_stock');
 }
