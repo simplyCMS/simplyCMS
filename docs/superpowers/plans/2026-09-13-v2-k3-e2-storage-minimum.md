@@ -246,6 +246,11 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 - Modify: `packages/simplycms/src/contracts/ports/index.ts:76-79`
 - Modify: `packages/simplycms/package.json` (`exports` + `publishConfig.exports`)
 
+> 🔴 **Звірено з комітом `008d2f2a` (4 файлів).** Перелік вище — НАМІР на момент
+> написання плану; фактичну розкладку задає коміт. Розбіжність не помилка
+> виконання (розкладка на модулі — ОРІЄНТИР), але читати «Files» як опис
+> ЗРОБЛЕНОГО не можна. Що зʼявилося понад перелік: нічого — тут намір і факт збіглися.
+
 **Interfaces:**
 - Consumes: нічого (перша задача).
 - Produces:
@@ -604,6 +609,11 @@ git commit -m "feat(k3-e2): медіа-референс — resolveMediaUrl у T
 - Modify: `.env.example`, `packages/create-simplycms-store/template/env.example`
 - Modify: `.gitignore`, `packages/create-simplycms-store/template/gitignore`
 - Modify: `tests/env-contract.test.ts`
+
+> 🔴 **Звірено з комітом `330f054f` (21 файлів).** Перелік вище — НАМІР на момент
+> написання плану; фактичну розкладку задає коміт. Розбіжність не помилка
+> виконання (розкладка на модулі — ОРІЄНТИР), але читати «Files» як опис
+> ЗРОБЛЕНОГО не можна. Що зʼявилося понад перелік: `storage/inspect.ts` + його юніти (рішення Е2-11, `inspectUpload` як єдина перевірка вмісту), `storage/driver.ts` окремим модулем, `packages/create-simplycms-store/template/{env.example,gitignore}`.
 
 **Interfaces:**
 - Consumes: нічого з Task 1 (незалежна).
@@ -2381,6 +2391,11 @@ git commit -m "feat(k3-e2): роут /media/\$ — роздача обʼєкті
 - Modify: `packages/simplycms/src/storefront/loaders/profile.ts:55`
 - Modify: `packages/simplycms/src/i18n/catalogs/uk/profile.ts`, `packages/simplycms/src/i18n/catalogs/en/profile.ts`
 
+> 🔴 **Звірено з комітом `d814f0ce` (16 файлів).** Перелік вище — НАМІР на момент
+> написання плану; фактичну розкладку задає коміт. Розбіжність не помилка
+> виконання (розкладка на модулі — ОРІЄНТИР), але читати «Files» як опис
+> ЗРОБЛЕНОГО не можна. Що зʼявилося понад перелік: 🔴 `storefront/loaders/avatar.ts` — ЦЕНТРАЛЬНИЙ файл задачі, який у перелік не потрапив, бо рішення Е2-12 ухвалили вже після написання «Files»; `profile-ui/AvatarPreview.tsx` (розбиття під канон 150), обидва `index.ts` барелів, `eslint.tier-zones.mjs`, `tests/storage-port-consumers.test.ts`.
+
 **Interfaces:**
 - Consumes: Task 1 (`resolveMediaUrl`), Task 3 (`writeMedia`/`eraseMedia`), Task 4 (роздача).
 - Produces:
@@ -3317,6 +3332,11 @@ git commit -m "feat(k3-e2): вітрина резолвить медіа-реф�
 - Modify: `packages/simplycms/src/admin-server/impl/index.ts`
 - Modify: `packages/simplycms/src/admin-server/index.ts`
 - Modify: `packages/simplycms/src/admin/components/ImageUpload.tsx`
+
+> 🔴 **Звірено з комітом `df2d38ae` (16 файлів).** Перелік вище — НАМІР на момент
+> написання плану; фактичну розкладку задає коміт. Розбіжність не помилка
+> виконання (розкладка на модулі — ОРІЄНТИР), але читати «Files» як опис
+> ЗРОБЛЕНОГО не можна. Що зʼявилося понад перелік: `admin/components/ImageDropzone.tsx` — розбиття виявилось на ТРИ файли, не два; `eslint.tier-zones.mjs` (upward-виняток `storage`), `domain/media.ts` (`MEDIA_ENTITY_TYPES` — Е2-11 учетверте).
 
 **Interfaces:**
 - Consumes: Task 3 — `writeMedia`/`eraseMedia`; Task 1 — `resolveMediaUrl`.
@@ -4282,8 +4302,9 @@ description: "Робота з файловим сховищем: порт simply
   (`simplycms/admin-server`) для адмінки, `uploadMyAvatar`/`removeMyAvatar`
   (`simplycms/core/lib/profile-avatar`) для кабінету.
 - Рядок `media` і файл пишуться **однією транзакцією актора** —
-  `writeMedia(db, …)`; видалення — `eraseMedia(db, ref)`, СПЕРШУ обʼєкт,
-  ПОТІМ рядок.
+  `writeMedia(db, …)`; видалення — `eraseMedia(db, ref)`, СПЕРШУ **рядок**,
+  ПОТІМ обʼєкт, усе в ОДНІЙ транзакції: помилка сховища відкочує рядок,
+  помилка БД не торкається обʼєкта, fail-open неможливий за побудовою.
 - MIME визначається **магічними байтами** (`sniffImageMime`), не
   розширенням і не `file.type`.
 - Вітрина резолвить референс **на сервері**, у лоадері чи мапері сутності —
@@ -4338,6 +4359,11 @@ git commit -m "feat(k3-e2): лінт-ратчет прямих викликів 
 
 ## Task 9: `live:smoke`, доки й DoD етапу
 
+> ✅ **ВИКОНАНА** — коміти `c8d9f0c1` і `1bef6df0`. Кроки нижче позначені
+> виконаними ретроспективно: виконавець закомітив роботу, але чекбокси не
+> закрив, і план виглядав так, ніби задача попереду. Заголовок лишається
+> точно `## Task 9:` — саме за ним секція витягується з файлу.
+
 **Files:**
 - Create: `scripts/live-smoke/avatar.mjs`
 - Modify: `scripts/live-smoke/funnel.mjs`
@@ -4350,7 +4376,7 @@ git commit -m "feat(k3-e2): лінт-ратчет прямих викликів 
 - Consumes: усі попередні задачі.
 - Produces: DoD-звіт етапу.
 
-- [ ] **Step 1: Написати модуль кроку аватара**
+- [x] **Step 1: Написати модуль кроку аватара**
 
 🔴 Окремий файл, а не вставка в `funnel.mjs`: цей файл уже в каноні 150 рядків
 і вже раз розділявся саме з цієї причини (`register.mjs`). Крок аватара
@@ -4429,7 +4455,9 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
     `${row?.size_bytes} Б / ${row?.mime_type}`,
   );
 
-  // Видалення — друга половина інваріанта Е2-7: спершу обʼєкт, потім рядок.
+  // Видалення — друга половина інваріанта Е2-7: спершу РЯДОК, потім обʼєкт,
+  // усе всередині однієї транзакції (порядок переглянуто 2026-09-13; факт —
+  // `scripts/live-smoke/avatar.mjs:75`).
   await page.getByRole('button', { name: 'Видалити фото' }).click();
   await page.waitForFunction(
     () => !document.querySelector('img[src^="/media/"]'),
@@ -4450,7 +4478,7 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
 }
 ```
 
-- [ ] **Step 2: Підключити крок в оркестрації**
+- [x] **Step 2: Підключити крок в оркестрації**
 
 У `scripts/live-smoke/funnel.mjs` — імпорт і виклик одразу після `register`:
 
@@ -4464,7 +4492,7 @@ import { runAvatarStep } from './avatar.mjs';
 🔴 Саме тут, а не в кінці: сторінка кабінету вимагає сесії, і після
 скасування замовлення воронка вже не гарантує стан кабінету.
 
-- [ ] **Step 3: Прогнати живий смок**
+- [x] **Step 3: Прогнати живий смок**
 
 ```bash
 pnpm exec playwright install chromium   # якщо ще не стоїть
@@ -4472,14 +4500,14 @@ PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm live:smoke
 ```
 Expected: таблиця з усіма `OK`, включно з чотирма новими рядками аватара.
 
-- [ ] **Step 4: Перевірити, що прогін не насмітив у репо**
+- [x] **Step 4: Перевірити, що прогін не насмітив у репо**
 
 ```bash
 git status --porcelain
 ```
 Expected: порожньо. 🔴 Якщо зʼявилась `.data/` — або `.gitignore` не підхопився (Task 2), або смок пише в корінь репо замість тимчасової теки: у другому випадку задай `MEDIA_ROOT` у env смоку явно, у тимчасову теку, і прибирай її по собі.
 
-- [ ] **Step 5: Оновити `CLAUDE.md`**
+- [x] **Step 5: Оновити `CLAUDE.md`**
 
 Три точкові правки:
 1. У Quick Reference до `pnpm live:smoke` дописати `+ аватар (порт сховища Е2)`.
@@ -4495,7 +4523,7 @@ Expected: порожньо. 🔴 Якщо зʼявилась `.data/` — або
 
 4. У блоці статусу К3 замінити «storage-порт без драйверів (К4, мінімум — етап Е2)» на факт: порт і драйвер `local-fs` приземлені в Е2, живий споживач — аватар; `s3`, `transform` і sweep орфанів лишаються К4.
 
-- [ ] **Step 6: Оновити роадмап**
+- [x] **Step 6: Оновити роадмап**
 
 У `docs/tasks/platform-roadmap.md` у списку етапів К3 замінити рядок `- [ ] **Е2** (storage-мінімум …)` на позначений виконаним із підсумком:
 
@@ -4515,18 +4543,18 @@ Expected: порожньо. 🔴 Якщо зʼявилась `.data/` — або
 
 У пункті «К4 Storage» уточнити залишок: `s3`, `transform`/srcset, presigned direct-upload, облік невдалих видалень і sweep орфанів, привʼязка `entity_id` для медіатеки.
 
-- [ ] **Step 7: Оновити карту стану**
+- [x] **Step 7: Оновити карту стану**
 
 У `docs/tasks/v2-state-map.md` §3.2 «Сховище файлів — порту немає» переписати під факт: порт є, аватар живий, зображення адмінки чекають на свої сторінки; `ReviewDetail` лишається на `supabase.storage` під ратчетом. У §5 «Як підняти локально» додати рядок про `MEDIA_ROOT` і про те, що `.data/media` створюється сама.
 
-- [ ] **Step 8: Оновити межі тестування**
+- [x] **Step 8: Оновити межі тестування**
 
 У `docs/architecture/test-contours.md`:
 1. §11 (гейти К3) — додати рядки таблиці: `simplycms-storage/no-direct-storage` (+ фікстури), `storage-direct-calls` (ратчет файлового скану), `media-columns-coverage`, `media-record` (харнес), `storage/__tests__/serve` (юніти роздачі), із колонкою «Межа» — що саме кожен НЕ доводить. 🔴 Правило й ратчет — ДВА детектори з різними негативними контролями, як `server-only-relative` і групи межі плагінів у §12: рахувати їх одним рядком «лінт» було б неточно.
 2. §12 (межа клієнт/сервер) — додати `storage` у перелік субшляхів `SERVER_ONLY` у вступному абзаці.
 3. Дописати короткий підрозділ «Чого storage-контур не доводить»: орфани після обриву між `put` і COMMIT (К4), поведінка під конкурентним завантаженням того самого файлу двома адмінами (різні ключі — дублікат байтів, не помилка), і те, що `ImageUpload` не має живої сторінки в Е2.
 
-- [ ] **Step 9: Повний ланцюг гейтів**
+- [x] **Step 9: Повний ланцюг гейтів**
 
 ```bash
 pnpm install --frozen-lockfile
@@ -4543,7 +4571,7 @@ pnpm pilot:pack
 ```
 Expected: усі зелені. 🔴 Зафіксувати в DoD-звіті: кількість warnings `pnpm lint` (не більша за замір Task 1) і таблицю `live:smoke`.
 
-- [ ] **Step 10: Коміт**
+- [x] **Step 10: Коміт**
 
 ```bash
 git add scripts/live-smoke CLAUDE.md \
