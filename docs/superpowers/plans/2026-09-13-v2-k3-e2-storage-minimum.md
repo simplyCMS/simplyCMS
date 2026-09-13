@@ -2127,6 +2127,20 @@ describe('serveMedia', () => {
     expect(response.headers.get('etag')).toBe(`"${KEY}"`);
   });
 
+  // 🔴 HEAD окремим кейсом: Start не виводить його з GET, і без явної
+  // реєстрації запит віддає HTML замість заголовків файлу — те, що кешують
+  // CDN і проксі.
+  it('HEAD віддає ті самі заголовки без тіла', async () => {
+    const response = await serveMedia(
+      { request: new Request(`http://localhost/media/${KEY}`, { method: 'HEAD' }) },
+      driver,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.headers.get('content-length')).toBe(String(PNG.length));
+    expect(response.body).toBeNull();
+  });
+
   it('404 на відсутній ключ правильної форми', async () => {
     const response = await get('/media/cd/cd000000-0000-4000-8000-000000000000.png');
     expect(response.status).toBe(404);
@@ -2208,6 +2222,30 @@ export async function serveMedia(
   driver: MediaStorageDriver = getMediaDriver(),
 ): Promise<Response> {
   const { pathname } = new URL(ctx.request.url);
+  // 🔴 HEAD обслуговується ЦИМ САМИМ хендлером, але без тіла.
+  //
+  // Механізм, дослівно (`createStartHandler.js:374`):
+  //   handlers[request.method.toUpperCase()] ?? handlers['ANY']
+  // Простий lookup по імені методу — виведення HEAD із GET там відсутнє за
+  // побудовою. Незареєстрований HEAD дає `undefined`, запит іде далі по
+  // ланцюгу й потрапляє в SSR, тобто віддає `text/html` на URL картинки.
+  //
+  // 🔴 Чому це фікс, а не документована межа: на цих URL стоїть
+  // `Cache-Control: …, immutable`, а `immutable` означає, що клієнт НЕ
+  // ревалідує взагалі — навіть примусове перезавантаження не питає сервер.
+  // Зіпсований запис не лікується ні на CDN, ні в браузері, який його
+  // одержав; єдиний вихід — зміна URL, а він у нас іммутабельний за
+  // побудовою. Дефект на три рядки з НЕОБОРОТНИМ наслідком.
+  //
+  // 🔴 `ANY` (той самий рядок 374) — один хендлер на всі методи — тут
+  // помилка, хоч і коротша: роздача публічна й неавтентифікована, і роут
+  // почав би відповідати на POST/PUT/DELETE. Явний `HEAD:` лишає allowlist
+  // методів закритим. Не «спрощувати».
+  //
+  // 🔴 `null`-тіло переживає Node-runner: `server-runtime.mjs:87-89` має
+  // явну гілку `if (!response.body) { res.end(); return; }` — перевірено,
+  // бо `Readable.fromWeb(null)` тут падав би.
+  const bodyless = ctx.request.method === 'HEAD';
   if (!pathname.startsWith(PREFIX)) return notFound();
 
   let key: string;
@@ -2231,7 +2269,7 @@ export async function serveMedia(
   }
   if (!object) return notFound();
 
-  return new Response(object.stream(), {
+  return new Response(bodyless ? null : object.stream(), {
     status: 200,
     headers: {
       'content-type': contentType,
@@ -2285,6 +2323,12 @@ export const Route = createFileRoute('/media/$')({
   server: {
     handlers: {
       GET: ({ request }: { request: Request }) => serveMedia({ request }),
+      // 🔴 HEAD реєструється ЯВНО: Start робить lookup `handlers[METHOD]`
+      // (`createStartHandler.js:374`) і з GET його не виводить, тож без цього
+      // рядка HEAD падає в SSR і віддає HTML замість заголовків файлу — те,
+      // що CDN закешує НАЗАВЖДИ через `immutable`. `ANY` замість двох рядків
+      // не брати: роздача публічна, і роут почав би відповідати на запис.
+      HEAD: ({ request }: { request: Request }) => serveMedia({ request }),
     },
   },
 });
@@ -4106,11 +4150,16 @@ import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
       'packages/simplycms/src/{cart,catalog,checkout,profile,reviews}-ui/**/*.{ts,tsx}',
     ],
     plugins: {
-      'simplycms-boundary': {
+      // 🔴 `simplycms-client-boundary`, НЕ `simplycms-boundary`: останнє вже
+      // зайняте правилом `server-only-relative` на тих самих файлах
+      // (`eslint.config.mjs:430`), і ESLint 10 падає з
+      // `ConfigError: Cannot redefine plugin`. Кожне власне правило —
+      // власне імʼя плагіна; це вже четверте.
+      'simplycms-client-boundary': {
         rules: { 'no-server-only-in-client': noServerOnlyInClient },
       },
     },
-    rules: { 'simplycms-boundary/no-server-only-in-client': 'error' },
+    rules: { 'simplycms-client-boundary/no-server-only-in-client': 'error' },
   },
 ```
 
