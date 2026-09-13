@@ -69,6 +69,9 @@ export const messages: Catalog = {
   'checkout.saveDialog.updateTitle': 'Update "{name}"',
   'checkout.saveDialog.cancelChanges': 'Discard changes',
 
+  'checkout.noShippingMethods.title': 'Shipping is not set up',
+  'checkout.noShippingMethods.description':
+    'The store has not added any shipping method yet. Checkout becomes available as soon as one appears.',
   'checkout.delivery.addressCreated': 'New address saved',
   'checkout.delivery.pickupPointLabel': 'Choose a pickup point *',
   'checkout.delivery.pickupPointPlaceholder': 'Choose a point',

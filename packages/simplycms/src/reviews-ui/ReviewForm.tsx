@@ -60,17 +60,19 @@ export function ReviewForm({
       <h3 className="font-semibold text-lg">{t('reviews.writeReview')}</h3>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">
+        <span id="review-rating-label" className="text-sm font-medium">
           {t('reviews.form.ratingLabel')}
-        </label>
-        <StarRating
-          value={rating}
-          onChange={(v) => {
-            setRating(v);
-            setRatingError(false);
-          }}
-          size="lg"
-        />
+        </span>
+        <div role="group" aria-labelledby="review-rating-label">
+          <StarRating
+            value={rating}
+            onChange={(v) => {
+              setRating(v);
+              setRatingError(false);
+            }}
+            size="lg"
+          />
+        </div>
         {ratingError && (
           <p className="text-sm text-destructive">
             {t('reviews.form.ratingRequired')}
@@ -93,13 +95,20 @@ export function ReviewForm({
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">
-          {t('reviews.form.contentLabel')}
-        </label>
+        {renderEditor ? (
+          <span className="text-sm font-medium">
+            {t('reviews.form.contentLabel')}
+          </span>
+        ) : (
+          <label htmlFor="review-content" className="text-sm font-medium">
+            {t('reviews.form.contentLabel')}
+          </label>
+        )}
         {renderEditor ? (
           renderEditor({ content, onChange: setContent })
         ) : (
           <textarea
+            id="review-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={t('reviews.form.contentPlaceholder')}
@@ -110,9 +119,9 @@ export function ReviewForm({
 
       {renderImageUpload && (
         <div className="space-y-1">
-          <label className="text-sm font-medium">
+          <span className="text-sm font-medium">
             {t('reviews.form.photosLabel')}
-          </label>
+          </span>
           {renderImageUpload({
             images,
             onImagesChange: setImages,

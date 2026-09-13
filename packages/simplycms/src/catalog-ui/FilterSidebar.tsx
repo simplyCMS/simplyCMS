@@ -229,6 +229,7 @@ export function FilterSidebar({
           <div className="flex items-center gap-2">
             <input
               type="number"
+              aria-label={t('catalog.filters.priceMinAria')}
               value={localPriceRange[0]}
               onChange={(e) => {
                 const val = parseInt(e.target.value) || 0;
@@ -240,6 +241,7 @@ export function FilterSidebar({
             <span className="text-muted-foreground">&mdash;</span>
             <input
               type="number"
+              aria-label={t('catalog.filters.priceMaxAria')}
               value={localPriceRange[1]}
               onChange={(e) => {
                 const val = parseInt(e.target.value) || priceRange.max;
@@ -353,6 +355,9 @@ export function FilterSidebar({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  aria-label={t('catalog.filters.propertyMinAria', {
+                    property: property.name,
+                  })}
                   value={localNumericRanges[property.slug]?.[0] ?? range.min}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || range.min;
@@ -367,6 +372,9 @@ export function FilterSidebar({
                 <span className="text-muted-foreground">&mdash;</span>
                 <input
                   type="number"
+                  aria-label={t('catalog.filters.propertyMaxAria', {
+                    property: property.name,
+                  })}
                   value={localNumericRanges[property.slug]?.[1] ?? range.max}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || range.max;

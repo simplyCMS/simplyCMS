@@ -39,9 +39,9 @@ export function AvatarUpload({
 
   return (
     <div className="space-y-4">
-      <label className="text-sm font-medium">
+      <span className="text-sm font-medium">
         {t('profile.settings.avatar')}
-      </label>
+      </span>
       <div className="flex items-center gap-4">
         <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-2xl font-medium">
           {currentAvatarUrl ? (
@@ -61,6 +61,7 @@ export function AvatarUpload({
         <div className="flex flex-col gap-2">
           <input
             type="file"
+            aria-label={t('profile.settings.avatar')}
             data-testid="avatar-file-input"
             accept="image/jpeg,image/png,image/webp"
             disabled

@@ -103,6 +103,35 @@ export interface PlacedOrder {
 export type PlaceOrderResult =
   { ok: true; order: PlacedOrder } | { ok: false; reason: PlaceOrderRejection };
 
+/**
+ * Позиція КВОТИ — ті самі поля, що летять у замовлення (розділ M рішень
+ * архітектора), без ідентифікатора БД: квота нічого не записує.
+ */
+export interface QuotedItem {
+  productId: string | null;
+  modificationId: string | null;
+  name: string;
+  price: number;
+  basePrice: number | null;
+  quantity: number;
+}
+
+/**
+ * Квота чекауту — ті самі числа, які запише `placeOrderFor`, без запису.
+ * Рахує їх та сама функція `prepareCheckout`, що й оформлення, тож
+ * «показане = записане» тримається ЗА ПОБУДОВОЮ (розділ M).
+ */
+export interface CheckoutQuote {
+  items: QuotedItem[];
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+}
+
+export type QuoteCheckoutResult =
+  | { ok: true; quote: CheckoutQuote }
+  | { ok: false; reason: PlaceOrderRejection };
+
 export interface OrderQuery extends PageQuery {
   status?: string;
   userId?: string;

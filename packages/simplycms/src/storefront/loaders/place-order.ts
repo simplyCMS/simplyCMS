@@ -1,20 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
 import {
-  findShippingZoneIn,
-  resolveShippingRate,
-} from 'simplycms/domain/shipping';
-import {
   withCustomerDb,
   withOrderTokenDb,
   type ActorDb,
   type OperatorEscalation,
 } from './db';
-import { priceCheckoutItems } from './checkout-items';
+import { prepareCheckout } from './prepare-checkout';
 import { createOrder } from './order-create';
 import { resolveRecipient, toOrderInput } from './place-order-support';
 import { InsufficientStockError } from './stock-reservation';
-import { loadShippingDirectory } from './shipping';
 
 /**
  * Логіка оформлення без RPC-обгортки — щоб харнес доводив воронку напряму.
@@ -54,54 +49,8 @@ export async function placeOrderFor(
 
   try {
     return await run(async (db, operator) => {
-      const directory = await loadShippingDirectory(db);
-      const method = directory.methods.find(
-        (m) => m.id === input.shippingMethodId && m.is_active,
-      );
-      if (!method)
-        return { ok: false, reason: 'shipping_unavailable' } as const;
-
-      // Pickup — за КОДОМ методу, як і UI (`CheckoutDeliveryForm`: `code === 'pickup'`):
-      // pickup вимагає активну точку ЦЬОГО методу; не-pickup точки не приймає.
-      const isPickup = method.code === 'pickup';
-      const point = input.pickupPointId
-        ? directory.pickupPoints.find(
-            (p) =>
-              p.id === input.pickupPointId &&
-              p.method_id === method.id &&
-              p.is_active,
-          )
-        : null;
-      if (isPickup && !point)
-        return { ok: false, reason: 'pickup_point_invalid' } as const;
-      if (!isPickup && input.pickupPointId)
-        return { ok: false, reason: 'pickup_point_invalid' } as const;
-
-      // 🔴 Місто визначає ЗОНУ, а зона — тариф: це гроші (рев'ю M7). Порожнє
-      // місто для НЕ-pickup методу мовчки падало б на ДЕФОЛТНУ зону
-      // (`findShippingZoneIn(zones, '')` завжди повертає її) — тобто тариф
-      // обирала б відсутність даних, а не покупець. Pickup міста не потребує:
-      // адресу видачі задає точка, а не місто.
-      if (!isPickup && !input.deliveryCity) {
-        return { ok: false, reason: 'shipping_unavailable' } as const;
-      }
-
-      const items = await priceCheckoutItems(db, userId, input.items);
-      if (items === 'not_purchasable')
-        return { ok: false, reason: 'not_purchasable' } as const;
-
-      const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const zone = findShippingZoneIn(
-        directory.zones,
-        input.deliveryCity ?? '',
-      );
-      const rate = resolveShippingRate(
-        { method, zone, cart: { items: [], subtotal } },
-        directory.rates,
-      );
-      // `null` — жодного застосовного тарифу: це НЕ «безкоштовно», а відмова.
-      if (rate === null)
-        return { ok: false, reason: 'shipping_unavailable' } as const;
+      const prepared = await prepareCheckout(db, input, userId);
+      if (!prepared.ok) return prepared;
 
       const savedRecipientId = await resolveRecipient(db, userId, input);
       const order = await createOrder(
@@ -109,9 +58,9 @@ export async function placeOrderFor(
         userId,
         accessToken,
         toOrderInput(input, savedRecipientId, {
-          items,
-          subtotal,
-          shippingCost: rate.cost,
+          items: prepared.items,
+          subtotal: prepared.subtotal,
+          shippingCost: prepared.shippingCost,
         }),
         operator,
       );

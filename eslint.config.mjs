@@ -10,6 +10,7 @@ import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
 import {
@@ -75,6 +76,22 @@ const I18N_MIGRATED_FILES = [
   // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
   'packages/simplycms-theme-*/**/*.tsx',
+];
+
+// Доступні імена контролів воронки (К2-Е0, Е0-4, рішення Р5): у пʼяти теках
+// воронки 41 `<label>` не звʼязаний ні з чим — скрінрідер і `getByLabelText`
+// поля не знаходять. `cart-ui` у зоні наперед: форм там сьогодні нуль, і гейт
+// має стояти ДО появи першої.
+//
+// 🔴 `src/admin/**` тут НЕМАЄ навмисно — з тієї ж причини, що й у зоні
+// `query-key-from-entity` нижче: ~52 файли адмінки переписуються треком К3,
+// правити їхні лейбли зараз означало б робити роботу двічі.
+const A11Y_LABEL_ZONE = [
+  'packages/simplycms/src/checkout-ui/**/*.tsx',
+  'packages/simplycms/src/profile-ui/**/*.tsx',
+  'packages/simplycms/src/catalog-ui/**/*.tsx',
+  'packages/simplycms/src/reviews-ui/**/*.tsx',
+  'packages/simplycms/src/cart-ui/**/*.tsx',
 ];
 
 // Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ
@@ -404,6 +421,32 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-sideeffects/no-side-effect-import': 'error' },
+  },
+  // Зона доступних імен. Імʼя правила (`jsx-a11y/label-has-associated-control`)
+  // унікальне, тож пастки flat config-у «опції правила ЗАМІЩУЮТЬСЯ, а не
+  // доливаються» тут немає: зона перетинається з i18n-зоною й із
+  // `query-key-from-entity`, але жодна з них цього правила не ставить.
+  //
+  // 🔴 `assert: 'htmlFor'`, а не дефолт: з дефолтним `'either'` правило на
+  // цьому коді дає 5 помилок замість 41 — будь-який `{t('…')}` усередині
+  // лейбла воно вважає «можливо, контрол вкладений» і мовчить (виміряно
+  // прогоном 6.10.2 під ESLint 10.8.0). `depth: 3` — щоб лейбли-обгортки
+  // radio/checkbox, де підпис лежить у `label > div > span`, не червоніли
+  // окремим повідомленням «must have accessible text».
+  //
+  // 🔴 Правило бачить лише `<label>`: контрол БЕЗ лейбла для нього невидимий
+  // (у зоні таких 9 — попапи чекауту, числові діапазони фільтра, прихований
+  // avatar-input). Зелений лінт доступності воронки не доводить.
+  {
+    files: A11Y_LABEL_ZONE,
+    ignores: ['**/__tests__/**'],
+    plugins: { 'jsx-a11y': jsxA11y },
+    rules: {
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        { assert: 'htmlFor', depth: 3 },
+      ],
+    },
   },
   {
     ignores: [

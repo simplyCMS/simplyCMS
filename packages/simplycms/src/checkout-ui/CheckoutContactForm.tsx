@@ -28,10 +28,14 @@ export function CheckoutContactForm({
       <div className="p-4 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">
+            <label
+              htmlFor="checkout-first-name"
+              className="text-sm font-medium mb-1 block"
+            >
               {t('checkout.contactForm.firstNameLabel')}
             </label>
             <input
+              id="checkout-first-name"
               placeholder={t('profile.settings.firstNamePlaceholder')}
               value={values.firstName}
               onChange={(e) => onChange('firstName', e.target.value)}
@@ -39,10 +43,14 @@ export function CheckoutContactForm({
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
+            <label
+              htmlFor="checkout-last-name"
+              className="text-sm font-medium mb-1 block"
+            >
               {t('checkout.contactForm.lastNameLabel')}
             </label>
             <input
+              id="checkout-last-name"
               placeholder={t('profile.settings.lastNamePlaceholder')}
               value={values.lastName}
               onChange={(e) => onChange('lastName', e.target.value)}
@@ -53,8 +61,14 @@ export function CheckoutContactForm({
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">Email</label>
+            <label
+              htmlFor="checkout-email"
+              className="text-sm font-medium mb-1 block"
+            >
+              Email
+            </label>
             <input
+              id="checkout-email"
               type="email"
               placeholder="email@example.com"
               value={values.email}
@@ -63,10 +77,14 @@ export function CheckoutContactForm({
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
+            <label
+              htmlFor="checkout-phone"
+              className="text-sm font-medium mb-1 block"
+            >
               {t('common.phone')}
             </label>
             <input
+              id="checkout-phone"
               type="tel"
               placeholder="+380"
               value={values.phone}

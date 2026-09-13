@@ -198,10 +198,16 @@ export function CheckoutAuthBlock({
         {activeTab === 'login' && (
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium mb-1 block">Email</label>
+              <label
+                htmlFor="checkout-auth-email"
+                className="text-sm font-medium mb-1 block"
+              >
+                Email
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
+                  id="checkout-auth-email"
                   type="email"
                   placeholder="your@email.com"
                   className="w-full pl-10 pr-3 py-2 border rounded-md text-sm"
@@ -212,12 +218,16 @@ export function CheckoutAuthBlock({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">
+              <label
+                htmlFor="checkout-auth-password"
+                className="text-sm font-medium mb-1 block"
+              >
                 {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
+                  id="checkout-auth-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="........"
                   className="w-full pl-10 pr-10 py-2 border rounded-md text-sm"
@@ -256,10 +266,14 @@ export function CheckoutAuthBlock({
           <div className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="checkout-auth-first-name"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.firstName')}
                 </label>
                 <input
+                  id="checkout-auth-first-name"
                   placeholder={t('auth.firstNamePlaceholder')}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   disabled={isLoading}
@@ -268,10 +282,14 @@ export function CheckoutAuthBlock({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="checkout-auth-last-name"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.lastName')}
                 </label>
                 <input
+                  id="checkout-auth-last-name"
                   placeholder={t('auth.lastNamePlaceholder')}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   disabled={isLoading}
@@ -281,10 +299,16 @@ export function CheckoutAuthBlock({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Email</label>
+              <label
+                htmlFor="checkout-auth-register-email"
+                className="text-sm font-medium mb-1 block"
+              >
+                Email
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
+                  id="checkout-auth-register-email"
                   type="email"
                   placeholder="your@email.com"
                   className="w-full pl-10 pr-3 py-2 border rounded-md text-sm"
@@ -295,12 +319,16 @@ export function CheckoutAuthBlock({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">
+              <label
+                htmlFor="checkout-auth-register-password"
+                className="text-sm font-medium mb-1 block"
+              >
                 {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
+                  id="checkout-auth-register-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="........"
                   className="w-full pl-10 pr-10 py-2 border rounded-md text-sm"

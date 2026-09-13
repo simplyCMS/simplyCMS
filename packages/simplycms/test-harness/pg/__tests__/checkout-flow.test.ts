@@ -12,15 +12,22 @@
 // M7 — НЕ-pickup метод БЕЗ міста відмовляється (`shipping_unavailable`), а
 // не мовчки їде на дефолтну зону; M2 — порожній кошик відмовляється як
 // `not_purchasable` ДО транзакції; M3 — відсутність рядка в `orders`
-// перевірена на КОЖНІЙ відмові; M4 — три гілки ідентичності
+// перевірена на КОЖНІЙ відмові (ре-рев'ю: кейс `out_of_stock` спершу
+// лишався без цього асерту — виправлено); M4 — три гілки ідентичності
 // `priceCheckoutItems` (неактивний товар, чужа модифікація, товар без ціни
 // для типу) мають по власному кейсу.
+//
+// Розділ M (серверна квота, К2-Е0): `quoteCheckoutFor` ділить `prepareCheckout`
+// із `placeOrderFor`, тож три кейси нижче (M-10a/b/c) доводять «показане =
+// записане» — курʼєр із тарифом, знижка за кількістю (квота НЕ дорівнює
+// подвоєній ціні картки з quantity:1/cartTotal:0) і три відмови, ОДНАКОВІ
+// для квоти й оформлення на тих самих входах.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
-import type { PlaceOrderInput } from 'simplycms/contracts';
-import { placeOrderFor } from 'simplycms/storefront/loaders';
+import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
+import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -44,6 +51,12 @@ const OUT_OF_STOCK_SLUG = 'sonyachna-panel-550w-mono';
 const INACTIVE_SLUG = 'sonyachna-panel-600w-bifacial';
 /** Товар З модифікаціями: продукт-рівневої ціни немає, лише per-мод (M4). */
 const NO_PRICE_SLUG = 'invertor-merezhevyi-5kw';
+/**
+ * Товар БЕЗ обліку залишку (сід веде облік лише для двох панелей — див.
+ * коментар у `demo-seed.sql`): M-10 бере саме його, щоб квота й оформлення
+ * можна було ганяти повторно, не рахуючи наперед, скільки лишилось на складі.
+ */
+const UNTRACKED_SLUG = 'invertor-gibrydnyi-8kw';
 interface IdRow {
   id: string;
 }
@@ -88,6 +101,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   let inactiveProduct = '';
   let noPriceProduct = '';
   let foreignMod = '';
+  let untracked = '';
 
   const one = async (sql: string, params: unknown[] = []): Promise<string> =>
     ((await queryRows(dbUrl, sql, params)) as IdRow[])[0].id;
@@ -175,6 +189,9 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       `update public.products set is_active = false where id = $1`,
       [inactiveProduct],
     );
+    untracked = await one(`select id from public.products where slug = $1`, [
+      UNTRACKED_SLUG,
+    ]);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
 
@@ -346,6 +363,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   });
 
   it('позиція out_of_stock — not_purchasable', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -355,6 +373,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+    expect(await ordersCount()).toBe(before);
   });
 
   it('неактивний товар у кошику — not_purchasable (M4)', async () => {
@@ -424,5 +443,130 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
+  });
+
+  // Розділ M рішень архітектора: `quoteCheckoutFor` і `placeOrderFor` ділять
+  // `prepareCheckout` — нижче це доводиться напряму, а не з коментаря.
+  // `UNTRACKED_SLUG` — без обліку залишку, тож незалежний від решти файлу.
+
+  it('квота = записане замовлення: курʼєр із тарифом (M-10a)', async () => {
+    const request = input({
+      shippingMethodId: courier,
+      deliveryCity: 'Одеса',
+      items: [{ productId: untracked, modificationId: null, quantity: 1 }],
+    });
+    const quoted = await quoteCheckoutFor(request, null);
+    expect(quoted.ok).toBe(true);
+    if (!quoted.ok) return;
+    expect(quoted.quote.shippingCost).toBe(100);
+
+    const placed = await placeOrderFor(request, null);
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+    const [row] = (await queryRows(
+      dbUrl,
+      `select shipping_cost, total from public.orders where id = $1`,
+      [placed.order.id],
+    )) as { shipping_cost: string; total: string }[];
+    expect(row.shipping_cost).toBe('100.00');
+    expect(Number(row.total)).toBe(quoted.quote.total);
+  });
+
+  it('квота = записане замовлення при знижці за кількістю; НЕ дорівнює подвоєній ціні картки (M-10b)', async () => {
+    // Умова `min_quantity >= 2`: картка товару рахує з quantity:1/cartTotal:0
+    // (не бачить кошика) і цієї знижки НЕ дасть — розбіжність показ/запис,
+    // яку розділ M і закриває.
+    await queryRows(
+      dbUrl,
+      `insert into public.discount_groups (id, name, operator, is_active)
+       values (gen_random_uuid(), 'Кількісна знижка', 'and', true)`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.discounts (id, name, group_id, discount_type, discount_value, is_active, price_type_id)
+       select gen_random_uuid(), 'Від 2 шт — 20%', g.id, 'percent', 20, true, pt.id
+         from public.discount_groups g cross join public.price_types pt
+        where g.name = 'Кількісна знижка' and pt.code = 'retail'`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.discount_conditions (id, discount_id, condition_type, operator, value)
+       select gen_random_uuid(), d.id, 'min_quantity', '>=', '2'::jsonb
+         from public.discounts d where d.name = 'Від 2 шт — 20%'`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.discount_targets (id, discount_id, target_type, target_id)
+       select gen_random_uuid(), d.id, 'product', p.id
+         from public.discounts d cross join public.products p
+        where d.name = 'Від 2 шт — 20%' and p.id = $1`,
+      [untracked],
+    );
+
+    const request = input({
+      shippingMethodId: pickup,
+      pickupPointId: point,
+      items: [{ productId: untracked, modificationId: null, quantity: 2 }],
+    });
+    const quoted = await quoteCheckoutFor(request, null);
+    expect(quoted.ok).toBe(true);
+    if (!quoted.ok) return;
+    // 24500 базова ціна; 20% лише від qty>=2 → 19600/шт = 39200 разом,
+    // а не 2×24500 = 49000, яке дала б картка (quantity:1, cartTotal:0).
+    expect(quoted.quote.subtotal).toBe(39200);
+    expect(quoted.quote.subtotal).not.toBe(2 * 24500);
+
+    const placed = await placeOrderFor(request, null);
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+    const [row] = (await queryRows(
+      dbUrl,
+      `select subtotal from public.orders where id = $1`,
+      [placed.order.id],
+    )) as { subtotal: string }[];
+    expect(row.subtotal).toBe('39200.00');
+  });
+
+  it('квота повертає ті самі три відмови, що й оформлення (M-10c)', async () => {
+    const cases: {
+      reason: PlaceOrderRejection;
+      overrides: Partial<PlaceOrderInput>;
+    }[] = [
+      {
+        reason: 'shipping_unavailable',
+        overrides: {
+          shippingMethodId: hidden,
+          items: [{ productId: panel, modificationId: null, quantity: 1 }],
+        },
+      },
+      {
+        reason: 'pickup_point_invalid',
+        overrides: {
+          shippingMethodId: pickup,
+          pickupPointId: null,
+          items: [{ productId: panel, modificationId: null, quantity: 1 }],
+        },
+      },
+      {
+        reason: 'not_purchasable',
+        overrides: {
+          shippingMethodId: pickup,
+          pickupPointId: point,
+          items: [{ productId: outOfStock, modificationId: null, quantity: 1 }],
+        },
+      },
+    ];
+
+    for (const { reason, overrides } of cases) {
+      const request = input(overrides);
+      expect(await quoteCheckoutFor(request, null)).toEqual({
+        ok: false,
+        reason,
+      });
+      expect(await placeOrderFor(request, null)).toEqual({
+        ok: false,
+        reason,
+      });
+    }
   });
 });

@@ -23,4 +23,9 @@ export const messages: Catalog = {
   'catalog.filters.clearAll': 'Clear all',
   'catalog.filters.inStockOnly': 'In stock only',
   'catalog.filters.noOptions': 'No options available',
+
+  'catalog.filters.priceMinAria': 'Price from',
+  'catalog.filters.priceMaxAria': 'Price to',
+  'catalog.filters.propertyMinAria': '{property}: value from',
+  'catalog.filters.propertyMaxAria': '{property}: value to',
 };

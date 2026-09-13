@@ -1,25 +1,29 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
-import { Form } from 'simplycms/ui/form';
+import { Form, FormField, FormItem, FormMessage } from 'simplycms/ui/form';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import type { PlaceOrderRejection } from 'simplycms/contracts';
 import { getProfileSettings } from '../server/profile';
 import { placeOrder } from '../server/checkout';
-import { useT, type MessageKey, type Translator } from 'simplycms/i18n';
+import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
-import { CheckoutAuthBlock } from 'simplycms/core/components/checkout/CheckoutAuthBlock';
-import { CheckoutContactForm } from 'simplycms/core/components/checkout/CheckoutContactForm';
-import { CheckoutDeliveryForm } from 'simplycms/core/components/checkout/CheckoutDeliveryForm';
-import { CheckoutPaymentForm } from 'simplycms/core/components/checkout/CheckoutPaymentForm';
-import { CheckoutOrderSummary } from 'simplycms/core/components/checkout/CheckoutOrderSummary';
-import { CheckoutRecipientForm } from 'simplycms/core/components/checkout/CheckoutRecipientForm';
+import {
+  CheckoutAuthBlock,
+  CheckoutContactForm,
+  CheckoutDeliveryForm,
+  CheckoutPaymentForm,
+  CheckoutOrderSummary,
+  CheckoutRecipientForm,
+  REJECTION_KEY,
+} from 'simplycms/checkout-ui';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
+import { toCheckoutItems } from './checkout/build-quote-input';
+import { useCheckoutQuote } from './checkout/useCheckoutQuote';
 
 /**
  * Фабрика схеми, а не константа модуля: повідомлення валідації беруться з
@@ -105,20 +109,13 @@ const buildCheckoutSchema = (t: Translator) =>
 
 type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
-/** Код відмови сервера → ключ каталогу (як CheckoutAuthBlock мапить коди Better Auth). */
-const REJECTION_KEY: Record<PlaceOrderRejection, MessageKey> = {
-  shipping_unavailable: 'checkout.rejected.shipping_unavailable',
-  pickup_point_invalid: 'checkout.rejected.pickup_point_invalid',
-  not_purchasable: 'checkout.rejected.not_purchasable',
-};
-
 export default function Checkout() {
   const t = useT();
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shippingCost, setShippingCost] = useState<number>(0);
+  const [hasShippingMethods, setHasShippingMethods] = useState(true);
   const checkoutSchema = useMemo(() => buildCheckoutSchema(t), [t]);
 
   const form = useForm<CheckoutFormData>({
@@ -173,6 +170,31 @@ export default function Checkout() {
     }
   }, [items, navigate]);
 
+  // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
+  // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
+  // клієнтські `totalPrice`/ціни кошика в підсумку більше не беруть участі.
+  // 🔴 `useWatch`, а не `form.watch()`: значення тут ідуть далі в
+  // залежності ефекту (`useCheckoutQuote`) — `form.watch()` повертає
+  // нестабільну функцію, яку React Compiler не вміє безпечно
+  // мемоїзувати саме в такому вжитку (`react-hooks/incompatible-library`).
+  const shippingMethodId =
+    useWatch({ control: form.control, name: 'shippingMethodId' }) || '';
+  const pickupPointId =
+    useWatch({ control: form.control, name: 'pickupPointId' }) || '';
+  const deliveryCity =
+    useWatch({ control: form.control, name: 'deliveryCity' }) || '';
+  const { quote, quoting, matchesCurrent } = useCheckoutQuote({
+    items,
+    shippingMethodId,
+    pickupPointId,
+    deliveryCity,
+    userKey: user?.id ?? null,
+  });
+  // Submit без свіжої квоти неможливий (M-8): доставка обрана, квота вдала
+  // і рахована саме на ПОТОЧНИХ входах.
+  const canSubmit =
+    hasShippingMethods && quote?.ok === true && !quoting && matchesCurrent;
+
   /**
    * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
    * записів у базу (отримувач → статус → спосіб доставки → замовлення →
@@ -221,13 +243,7 @@ export default function Checkout() {
               ? data.savedRecipientId
               : null,
           savedAddressId: data.savedAddressId || null,
-          items: items
-            .filter((item) => item.productId)
-            .map((item) => ({
-              productId: item.productId,
-              modificationId: item.modificationId,
-              quantity: item.quantity,
-            })),
+          items: toCheckoutItems(items),
         },
       });
 
@@ -335,7 +351,19 @@ export default function Checkout() {
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
                 subtotal={totalPrice}
-                onShippingCostChange={setShippingCost}
+                onAvailabilityChange={setHasShippingMethods}
+              />
+              <FormField
+                control={form.control}
+                name="shippingMethodId"
+                render={() => (
+                  <FormItem>
+                    {/* Поля-радіо живуть у CheckoutDeliveryForm; повідомлення
+                        validation.shippingRequired до К2-Е0 не мало де
+                        зʼявитись — тому лише FormMessage. */}
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <CheckoutPaymentForm
                 selectedMethod={form.watch('paymentMethod')}
@@ -353,12 +381,12 @@ export default function Checkout() {
             {/* Order summary column */}
             <div className="lg:col-span-1">
               <CheckoutOrderSummary
-                items={items}
-                totalPrice={totalPrice}
-                shippingCost={shippingCost}
+                quote={quote}
+                quoting={quoting}
                 notes={form.watch('notes') || ''}
                 onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}
+                canSubmit={canSubmit}
               />
             </div>
           </div>

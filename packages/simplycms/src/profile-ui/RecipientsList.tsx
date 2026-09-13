@@ -269,10 +269,14 @@ export function RecipientsList() {
             >
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="recipient-first-name"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('common.firstName')}
                   </label>
                   <input
+                    id="recipient-first-name"
                     value={formFirstName}
                     onChange={(e) => setFormFirstName(e.target.value)}
                     className="w-full px-3 py-2 border rounded-md text-sm"
@@ -280,10 +284,14 @@ export function RecipientsList() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="recipient-last-name"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('common.lastName')}
                   </label>
                   <input
+                    id="recipient-last-name"
                     value={formLastName}
                     onChange={(e) => setFormLastName(e.target.value)}
                     className="w-full px-3 py-2 border rounded-md text-sm"
@@ -293,10 +301,14 @@ export function RecipientsList() {
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="recipient-phone"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('common.phone')}
                   </label>
                   <input
+                    id="recipient-phone"
                     type="tel"
                     placeholder="+380..."
                     value={formPhone}
@@ -306,10 +318,14 @@ export function RecipientsList() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="recipient-email"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('profile.recipients.emailOptionalLabel')}
                   </label>
                   <input
+                    id="recipient-email"
                     type="email"
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
@@ -318,10 +334,14 @@ export function RecipientsList() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="recipient-city"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.city')}
                 </label>
                 <input
+                  id="recipient-city"
                   value={formCity}
                   onChange={(e) => setFormCity(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -329,10 +349,14 @@ export function RecipientsList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="recipient-address"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.address')}
                 </label>
                 <input
+                  id="recipient-address"
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
@@ -340,10 +364,14 @@ export function RecipientsList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="recipient-notes"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('profile.recipients.notesLabel')}
                 </label>
                 <textarea
+                  id="recipient-notes"
                   placeholder={t('profile.recipients.notesPlaceholder')}
                   rows={2}
                   value={formNotes}
@@ -351,12 +379,16 @@ export function RecipientsList() {
                   className="w-full px-3 py-2 border rounded-md text-sm resize-none"
                 />
               </div>
-              <label className="flex items-center justify-between rounded-lg border p-3 cursor-pointer">
+              <label
+                htmlFor="recipient-default"
+                className="flex items-center justify-between rounded-lg border p-3 cursor-pointer"
+              >
                 <span className="text-sm">
                   {t('profile.recipients.defaultCheckboxLabel')}
                 </span>
                 <input
                   type="checkbox"
+                  id="recipient-default"
                   checked={formIsDefault}
                   onChange={(e) => setFormIsDefault(e.target.checked)}
                   className="rounded"

@@ -43,6 +43,7 @@ export function CheckoutPaymentForm({
           {paymentMethods.map((method) => (
             <label
               key={method.id}
+              htmlFor={`checkout-payment-${method.id}`}
               className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
                 method.disabled ? 'opacity-50 cursor-not-allowed' : ''
               } ${
@@ -53,6 +54,7 @@ export function CheckoutPaymentForm({
             >
               <input
                 type="radio"
+                id={`checkout-payment-${method.id}`}
                 name="paymentMethod"
                 value={method.id}
                 checked={selectedMethod === method.id}

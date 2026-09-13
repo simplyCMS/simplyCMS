@@ -73,6 +73,10 @@ export const messages = {
   'checkout.saveDialog.cancelChanges': 'Скасувати зміни',
 
   // Спосіб доставки — CheckoutDeliveryForm
+  // Порожній довідник способів доставки — блокуючий empty-state (К2-Е0, Е0-4)
+  'checkout.noShippingMethods.title': 'Доставка не налаштована',
+  'checkout.noShippingMethods.description':
+    'Магазин ще не додав жодного способу доставки. Оформлення стане доступним, щойно він зʼявиться.',
   'checkout.delivery.addressCreated': 'Нову адресу створено',
   'checkout.delivery.pickupPointLabel': 'Оберіть пункт самовивозу *',
   'checkout.delivery.pickupPointPlaceholder': 'Оберіть пункт',

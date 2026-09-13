@@ -61,10 +61,14 @@ export function ModificationSelector({
 
   return (
     <div className="space-y-3">
-      <label className="text-base font-medium">
+      <span id="modification-group-label" className="text-base font-medium">
         {t('product.modification')}
-      </label>
-      <div className="grid gap-3">
+      </span>
+      <div
+        role="group"
+        aria-labelledby="modification-group-label"
+        className="grid gap-3"
+      >
         {modifications.map((mod) => {
           const availability = getModificationAvailability(mod);
           const isUnavailable =

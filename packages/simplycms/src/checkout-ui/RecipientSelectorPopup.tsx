@@ -90,6 +90,7 @@ export function RecipientSelectorPopup({
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              aria-label={t('checkout.recipientSelector.searchPlaceholder')}
               placeholder={t('checkout.recipientSelector.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -97,6 +98,7 @@ export function RecipientSelectorPopup({
             />
           </div>
           <select
+            aria-label={t('common.sortOrder')}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="w-[140px] border rounded-md text-sm px-2"
