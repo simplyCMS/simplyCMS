@@ -60,7 +60,9 @@ pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магази
 pnpm live:smoke       # DoD К2-Е0: db:demo → build → server → curl+SQL (gate-b) +
                       # Playwright (реєстрація, кошик без #418, бейдж = БД, автовибір
                       # точки, воронка до orders зі СПИСАННЯМ, скасування з ПОВЕРНЕННЯМ
-                      # залишку). Потребує Postgres (PG_HARNESS_URL) і Chromium; не CI —
+                      # залишку) + аватар (порт сховища Е2: завантаження, роздача
+                      # /media/<key>, референс у БД, видалення обʼєкта й рядка).
+                      # Потребує Postgres (PG_HARNESS_URL) і Chromium; не CI —
                       # гейти релізу окремим рішенням
 pnpm db:pull / db:diff
                       # Схема БД — див. «Database Commands». 🔴 Генератора типів
@@ -84,7 +86,7 @@ Supabase-механік нижче читати саме в цих межах.
 
 ✅ **Трек К0 (консолідація пакетів) — ЗАВЕРШЕНО; код і реєстр зведені 2026-08-24.** 26 npm-пакетів зведено в 5: unscoped фреймворк-пакет `simplycms` (усе ядро T0–T5 теками `packages/simplycms/src/*`) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`; фасад `@simplycms/core` розчинено; дисципліну шарів тримають eslint-тір-зони; агентні скіли доставляються магазинам симлінками на `node_modules/simplycms/skills/`. Спека — [`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md). ✅ У реєстрі npm — **5 пакетів**, а всі 22 злитих імені `@simplycms/*` (версії 0.1.0–0.3.0) позначені `npm deprecate` з вказівником на `simplycms` (перевірено читанням реєстру 2026-08-29). 🔴 **Версія в коді й у реєстрі — `0.4.1`** (опубліковано мержем PR #45, перевірено `npm view simplycms version` 2026-09-02): публікує мерж PR у `main`, і це рішення власника. Опис нижче в цьому файлі — стан коду ПІСЛЯ К0.
 
-🔴 **Стратегічний напрям 2026-08-19 затверджено власником; бекенд-контракт v2 — ЧАСТКОВО в коді.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; трек К1а закритий, вітрина переведена — плани в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md` і `docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. 🔴 Стан на `0.4.1`: вітрина, вхід, воронка й `/api/health` живуть на чистому Postgres + Better Auth; **адмінка оживає посторінково треком К3** — з 2026-09-02 (Е0+Е1а+Е1б, PR #46) жива одна сторінка `/admin/order-statuses` на серверному шарі `simplycms/admin-server` + колекції `simplycms/admin-data`, решта 52 файли `src/admin/**` лишаються на `supabase-js` і не працюють; storage-порт без драйверів (К4, мінімум — етап Е2). Що саме доведено живим прогоном — [`v2-state-map.md`](docs/tasks/v2-state-map.md). Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
+🔴 **Стратегічний напрям 2026-08-19 затверджено власником; бекенд-контракт v2 — ЧАСТКОВО в коді.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; трек К1а закритий, вітрина переведена — плани в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md` і `docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. 🔴 Стан на `0.4.1`: вітрина, вхід, воронка й `/api/health` живуть на чистому Postgres + Better Auth; **адмінка оживає посторінково треком К3** — з 2026-09-02 (Е0+Е1а+Е1б, PR #46) жива одна сторінка `/admin/order-statuses` на серверному шарі `simplycms/admin-server` + колекції `simplycms/admin-data`, решта 52 файли `src/admin/**` лишаються на `supabase-js` і не працюють; порт сховища `simplycms/storage` із драйвером `local-fs` приземлено етапом Е2 (2026-09-13), живий споживач — аватар покупця; `s3`, `transform` і sweep орфанів лишаються К4. Що саме доведено живим прогоном — [`v2-state-map.md`](docs/tasks/v2-state-map.md). Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
 
 ## Mandatory Instructions
 
@@ -97,7 +99,7 @@ All detailed coding rules, architecture decisions, and domain-specific guideline
 | [`data-access`](.github/instructions/data-access.instructions.md) | `app/**`, `packages/**` | Дані вітрини (`withActor` над Drizzle), кеш, Supabase-клієнти адмінки (до К3) |
 | [`ui-architecture`](.github/instructions/ui-architecture.instructions.md) | `app/**`, `themes/**`, `ui/**` | UI components, theme structure, shadcn/ui |
 | [`editor`](.github/instructions/editor.instructions.md) | `core/**` | Tiptap editor integration |
-| [`storage`](.github/instructions/storage.instructions.md) | `core/**`, `app/**` | Supabase Storage patterns (лишається під адмінкою; порт К4) |
+| [`storage`](.github/instructions/storage.instructions.md) | `packages/simplycms/src/**`, `src/**` | Порт `simplycms/storage`, драйвер `local-fs`, медіа-референси (V2, К3-Е2) |
 | [`tooling`](.github/instructions/tooling.instructions.md) | `**/*` | Commands, formatting, testing |
 | [`optimization`](.github/instructions/optimization.instructions.md) | `**/*.ts,tsx` | Performance, bundle, rendering optimization |
 
@@ -192,9 +194,10 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / 12 warnings — це НОРМА** (станом на 2026-08-29;
-після i18n-міграції). Ворнінги — `react-hooks/*` і `no-unused-vars`, до i18n
-стосунку не мають. Два `no-restricted-syntax`-селектори (i18n) переведено
+🔴 **`pnpm lint` = 0 errors / 10 warnings — це НОРМА** (станом на 2026-09-13).
+Було 12 до К3-Е2: переписаний під порт сховища `ImageUpload` прибрав два
+`react-hooks/exhaustive-deps`. Це покращення, а не регресія — «лагодити» назад
+до 12 не треба. Ворнінги, що лишились, — `react-hooks/*` і `no-unused-vars`. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
 (`routes/storefront` і `routes/admin`), `src/storefront-routes`, `src/admin`
 і пʼять `src/*-ui` пакета ядра плюс компоненти тем — новий кириличний рядок
@@ -207,7 +210,7 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 серверних модулях env-контракту (див. «Environment Variables»).
 Четверта (2026-08-20, трек К0) — **тір-зони напрямку шарів**:
 `eslint.tier-zones.mjs` + `eslint.tier-relative.mjs` забороняють імпорт
-угору по тірах усередині пакета ядра (23 зони; обидві форми специфікатора —
+угору по тірах усередині пакета ядра (27 зон; обидві форми специфікатора —
 bare-субшлях `simplycms/<тека>` і відносний `../<тека>`), бо після злиття
 пакетів межу `dependencies` більше не тримає ніщо. Негативний контроль —
 `tests/tier-boundary.test.ts`. Селектори не послабляти.
@@ -227,8 +230,25 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 на пʼять тек воронки пакета ядра (`cart-ui`, `catalog-ui`, `checkout-ui`,
 `profile-ui`, `reviews-ui`), тим самим механізмом зон, що й тір-зони та
 i18n-селектори. 🔴 Правило бачить лише `<label>` — контрол без лейбла (попапи
-чекауту, числові діапазони фільтра, прихований avatar-input) йому невидимий:
-зелений лінт доступності воронки не доводить її повноти.
+чекауту, числові діапазони фільтра) йому невидимий: зелений лінт доступності
+воронки не доводить її повноти.
+Сьома і восьма (2026-09-13, трек К3-Е2) — **дві межі порту сховища**, обидві
+власними AST-правилами й обидві з власним іменем плагіна:
+`simplycms-storage/no-direct-storage` (зона — увесь `packages/simplycms/src/**`
+з єдиною виїмкою-ратчетом `admin/pages/ReviewDetail.tsx`) забороняє `supabase.storage`, `x.storage.from(…)`,
+`x['storage']` та імпорт `@supabase/storage-js`;
+`simplycms-client-boundary/no-server-only-in-client` (зона — `src/admin/**` і
+пʼять `src/*-ui/**`) забороняє СТАТИЧНИЙ `import`/`export…from` на server-only
+субшлях чи серверну залежність, лишаючи стираний `import type` легальним.
+🔴 Імена плагінів різні НЕ для краси: ESLint 10 падає з
+`ConfigError: Cannot redefine plugin`, якщо два блоки на тих самих файлах
+оголошують один ключ, а flat config замінює опції правила цілком — тому й
+власне правило замість чергового `no-restricted-syntax`, який замістив би
+i18n-селектори адмінки й воронки. Негативні контролі —
+`tests/eslint-rules/no-direct-storage.test.ts`,
+`tests/eslint-rules/no-server-only-in-client.test.ts` і
+`tests/tier-boundary-client-boundary.test.ts`; файловий двійник лінту —
+ратчет `tests/storage-direct-calls.test.ts`.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -362,6 +382,10 @@ simplyCMS/
 │   │   ├── src/admin-server/     # T2 🔴 К3 (Е1б): серверний шар адмінки — defineAdminResource
 │   │   │                         #    (операції+схеми) + іменовані операції; index.ts — ЛИШЕ
 │   │   │                         #    топ-рівневі createServerFn, нутрощі — bare-субшлях ./impl
+│   │   ├── src/storage/          # T2 🔴 Е2: порт сховища файлів — драйвер local-fs,
+│   │   │                         #    іммутабельні ключі, MIME за байтами, запис
+│   │   │                         #    файлу й рядка `media` однією транзакцією актора.
+│   │   │                         #    server-only за contracts/server-only
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
 │   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів).
 │   │   │                         #    🔴 ЖИВИЙ ЛИШЕ під адмінкою — зноситься треком К3;
@@ -430,6 +454,8 @@ simplyCMS/
 │   ├── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
 │   └── live-smoke.mjs + live-smoke/     # DoD К2-Е0 (`pnpm live:smoke`): sql.mjs (прямий SQL) +
 │                                        # register.mjs (реєстрація) + funnel.mjs (Playwright-воронка)
+│                                        # + avatar.mjs (К3-Е2: ЄДИНИЙ живий доказ порту сховища —
+│                                        # завантаження, роздача /media, референс у БД, видалення)
 ├── packages/simplycms/test-harness/pg/  # 🔴 V2: контур `pnpm test:schema` — підйом Postgres
 │                                     # без Docker (PG_HARNESS_URL або ефемерний initdb),
 │                                     # накат канону, інтроспекція ACL/політик, актори
@@ -454,14 +480,20 @@ simplyCMS/
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
-├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються), пʼять:
+├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються), СІМ.
+│                                     # 🔴 Кожне правило — ВЛАСНЕ імʼя плагіна: ESLint 10 падає з
+│                                     # «Cannot redefine plugin», якщо два блоки на тих самих файлах
+│                                     # оголошують один ключ (спіймано в К3-Е2). Перелік:
 │                                     # query-key-from-entity.mjs — queryKey з реєстру
 │                                     # ENTITY/AGGREGATE/SESSION_KEY, не літералом (V2-К3);
 │                                     # server-fn-top-level.mjs — createServerFn лише топ-рівнем;
 │                                     # mutation-cache-sync.mjs — мутація синхронізує кеш (К3 Е1б);
 │                                     # server-only-relative.mjs — відносний імпорт у server-only
 │                                     # дерево ззовні нього; no-side-effect-import.mjs —
-│                                     # side-effect-імпорт у пакетах із sideEffects:false (трек T)
+│                                     # side-effect-імпорт у пакетах із sideEffects:false (трек T);
+│                                     # no-direct-storage.mjs — файли лише через simplycms/storage,
+│                                     # no-server-only-in-client.mjs — клієнтська тека ядра не тягне
+│                                     # server-only субшлях статичним import (обидва — К3-Е2)
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)
@@ -607,6 +639,15 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
   `INVALID_ORIGIN`. Контракт стереже `tests/env-contract.test.ts`
 - `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt); запікається
   при `vite build`, тож зміна вимагає перезбірки
+
+🔴 **`MEDIA_ROOT` — опційний серверний ключ, а не четвертий у контракті**
+(рішення Е2-4): корінь драйвера `local-fs`, дефолт `./.data/media` відносно
+робочої теки процесу. Магазин без нього працює; у проді його задають на
+змонтований том, бо дефолт лежить усередині теки деплою й після нового
+деплою сховище було б порожнім. У `.env.example` і в шаблоні магазину ключ
+лежить **закоментованим** — так само, як `BETTER_AUTH_URL`, і рівно тому
+контракт лишається трьома ключами (`tests/env-contract.test.ts` рахує
+активні рядки; розкоментований `MEDIA_ROOT` зробив би гейт червоним).
 
 Поза контрактом магазину — dev-ключ `PG_HARNESS_URL`: готовий Postgres для
 `pnpm test:schema` (без нього харнес підіймає ефемерний кластер сам) і для
