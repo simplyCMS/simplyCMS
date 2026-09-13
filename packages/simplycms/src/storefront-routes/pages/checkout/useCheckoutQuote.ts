@@ -34,6 +34,20 @@ export interface CheckoutQuoteState {
    * і не відмова.
    */
   blocked: boolean;
+  /**
+   * 🔴 Рев'ю I-2: відмова САМОГО ПРОМІСА (мережа, 500, кидок
+   * `inputValidator`) — НЕ те саме, що `blocked` (детерміновано, без
+   * мережі) і НЕ те саме, що серверна бізнес-відмова `quote.ok === false`
+   * (та має `reason` і показується `REJECTION_KEY`). Причина тут клієнту
+   * невідома, тому текст нейтральний. Без цього прапорця purposeful
+   * `setQuoting(false)` у гілці відмови лишав `quotedKey`
+   * недооновленим — `matchesCurrent` назавжди `false`, і
+   * `CheckoutOrderSummary` малював вічний скелет без жодного повідомлення.
+   * Скидається на `false`, щойно стартує НАСТУПНА спроба (зміна входів
+   * запускає ефект наново, дебаунс — `QUOTE_DEBOUNCE_MS`) — стара відмова
+   * не переживає нового запиту.
+   */
+  failed: boolean;
 }
 
 /**
@@ -75,6 +89,7 @@ export function useCheckoutQuote({
   const [quote, setQuote] = useState<QuoteCheckoutResult | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quotedKey, setQuotedKey] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const requestIdRef = useRef(0);
   const key = moneyKey({
     items,
@@ -94,6 +109,13 @@ export function useCheckoutQuote({
 
     const requestId = ++requestIdRef.current;
     const timer = setTimeout(() => {
+      // Нова спроба стартує — попередня відмова (I-2) більше не описує
+      // поточний стан входів. Скидається ТУТ, а не синхронно в тілі
+      // ефекту (react-hooks/set-state-in-effect: setState напряму в тілі
+      // ефекту, поза колбеком, — окремий клас застороги лінту): до
+      // спрацювання таймера рендер ще встигає показати старий текст
+      // відмови, далі його заступить скелет на час самого запиту.
+      setFailed(false);
       setQuoting(true);
       const data = buildQuoteInput({
         items,
@@ -111,6 +133,7 @@ export function useCheckoutQuote({
         () => {
           if (requestIdRef.current !== requestId) return;
           setQuoting(false);
+          setFailed(true);
         },
       );
     }, QUOTE_DEBOUNCE_MS);
@@ -126,5 +149,11 @@ export function useCheckoutQuote({
     key,
   ]);
 
-  return { quote, quoting, matchesCurrent: quotedKey === key, blocked };
+  return {
+    quote,
+    quoting,
+    matchesCurrent: quotedKey === key,
+    blocked,
+    failed,
+  };
 }

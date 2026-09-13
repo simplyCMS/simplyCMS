@@ -90,6 +90,10 @@ export const messages = {
   // Метод/точку/місто ще не обрано — не скелет і не відмова (рев'ю I2/I3)
   'checkout.orderSummary.awaitingDelivery':
     'Заповніть дані доставки, щоб побачити суму замовлення',
+  // Рев'ю I-2: НЕДЕТЕРМІНОВАНА відмова проміса квоти (мережа/500/кидок
+  // валідатора) — причина невідома клієнту, текст навмисно нейтральний
+  'checkout.orderSummary.quoteFailed':
+    'Не вдалося порахувати суму замовлення. Спробуйте ще раз',
   'checkout.orderSummary.itemsCount': 'Товари ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Додаткова інформація...',
   'checkout.orderSummary.submitting': 'Оформлення...',

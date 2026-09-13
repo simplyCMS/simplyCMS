@@ -56,6 +56,7 @@ export async function placeOrderFor(
           subtotal: prepared.subtotal,
           shippingCost: prepared.shippingCost,
           total: prepared.total,
+          methodCode: prepared.method.code,
         }),
         operator,
       );

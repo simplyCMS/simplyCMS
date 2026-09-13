@@ -46,6 +46,9 @@ export async function resolveRecipient(
  * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
  * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
  * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
+ * `methodCode` — з `PreparedCheckout.method.code` (рев'ю M-2): той самий
+ * рядок, який `prepareCheckout` уже знайшов і провалідував на `is_active`,
+ * тож `createOrder` більше не запитує його вдруге.
  */
 export function toOrderInput(
   input: PlaceOrderInput,
@@ -55,6 +58,7 @@ export function toOrderInput(
     subtotal: number;
     shippingCost: number;
     total: number;
+    methodCode: string;
   },
 ): NewOrderInput {
   return {
@@ -63,6 +67,7 @@ export function toOrderInput(
     email: input.email,
     phone: input.phone,
     shippingMethodId: input.shippingMethodId,
+    shippingMethodCode: prepared.methodCode,
     deliveryCity: input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,

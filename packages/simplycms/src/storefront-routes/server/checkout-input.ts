@@ -51,5 +51,10 @@ export const checkoutInputSchema = z.object({
   saveRecipient: z.boolean(),
   savedRecipientId: z.string().uuid().nullable(),
   savedAddressId: z.string().uuid().nullable(),
-  items: z.array(checkoutItemSchema).min(1),
+  // 🔴 Рев'ю M-6: `quoteCheckout` анонімний і дьоргається з дебаунсом 300 мс
+  // — без верхньої межі кожен виклик міг би нести довільно великий кошик
+  // (6+ запитів у БД на позицію в `priceCheckoutItems`). `.max(100)` тут
+  // накриває ОБИДВА шляхи (`placeOrder` читає ТУ САМУ схему), тож окремого
+  // ліміту для квоти не потрібно.
+  items: z.array(checkoutItemSchema).min(1).max(100),
 }) satisfies z.ZodType<PlaceOrderInput>;

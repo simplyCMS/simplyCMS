@@ -46,6 +46,7 @@ const renderSummary = (
         quoting={false}
         matchesCurrent={true}
         blocked={false}
+        failed={false}
         notes=""
         onNotesChange={vi.fn()}
         isSubmitting={false}
@@ -106,5 +107,20 @@ describe('CheckoutOrderSummary', () => {
       0,
     );
     expect(document.getElementById('checkout-total')).toBeNull();
+  });
+
+  // Рев'ю I-2: відмова ПРОМІСА квоти (мережа/500/кидок валідатора) — до
+  // фіксу цей стан не існував узагалі, і `matchesCurrent: false` малював
+  // вічний скелет БЕЗ жодного тексту. `failed` показує нейтральне
+  // повідомлення, а НЕ скелет і НЕ REJECTION_KEY (та відмова — серверна
+  // бізнес-відмова з `reason`, ця — клієнту причина невідома).
+  it('відмова проміса (failed) — текст про помилку, а не скелет, submit disabled', () => {
+    const { container } = renderSummary(null, {
+      matchesCurrent: false,
+      failed: true,
+    });
+    expect(container.querySelectorAll('.animate-pulse').length).toBe(0);
+    screen.getByText('Не вдалося порахувати суму замовлення. Спробуйте ще раз');
+    expect(submitButton().disabled).toBe(true);
   });
 });

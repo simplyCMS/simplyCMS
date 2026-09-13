@@ -87,6 +87,7 @@ const baseInput = (
   email: 'buyer@example.test',
   phone: '+380000000000',
   shippingMethodId: methodId,
+  shippingMethodCode: null,
   deliveryCity: null,
   deliveryAddress: null,
   pickupPointId,

@@ -327,7 +327,7 @@ export function CheckoutDeliveryForm({
             })}
           </div>
 
-          {isPickup && pickupPoints.length > 0 && (
+          {isPickup && ownPickupPoints.length > 0 && (
             <div className="pt-4 border-t">
               <label
                 htmlFor="checkout-pickup-point"
@@ -344,7 +344,7 @@ export function CheckoutDeliveryForm({
                 <option value="">
                   {t('checkout.delivery.pickupPointPlaceholder')}
                 </option>
-                {pickupPoints.map((point) => (
+                {ownPickupPoints.map((point) => (
                   <option key={point.id} value={point.id}>
                     {point.name} - {point.city}, {point.address}
                   </option>

@@ -83,6 +83,8 @@ export const messages: Catalog = {
   'checkout.orderSummary.title': 'Your order',
   'checkout.orderSummary.awaitingDelivery':
     'Fill in the delivery details to see the order total',
+  'checkout.orderSummary.quoteFailed':
+    'Could not calculate the order total. Please try again',
   'checkout.orderSummary.itemsCount': 'Items ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Any special requests...',
   'checkout.orderSummary.submitting': 'Placing order...',

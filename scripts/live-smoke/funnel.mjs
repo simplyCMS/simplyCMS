@@ -14,6 +14,7 @@ import {
   ordersCount,
   stockSnapshot,
 } from './sql.mjs';
+import { badgeTextFor, jsonLdAvailabilityFor } from './stock-labels.mjs';
 
 const PRODUCT_SLUG = 'sonyachna-panel-450w-mono';
 /** id контролів чекауту — `id`/`htmlFor` з Task 11 (checkout-ui). */
@@ -47,20 +48,21 @@ export async function runFunnel({ page, base, dbUrl, check }) {
       .locator('text=/В наявності|Немає в наявності|Під замовлення/')
       .first()
       .textContent()) ?? '';
-  const badgeOk =
-    before.status !== 'in_stock' ||
-    (badge.includes('В наявності') && !badge.includes('Немає'));
-  const badgeFact = `stock_status=${before.status}, залишок ${before.total}, бейдж «${badge.trim()}»`;
+  const expectedBadgeText = badgeTextFor(before.status);
+  const badgeOk = badge.includes(expectedBadgeText);
+  const badgeFact = `stock_status=${before.status}, залишок ${before.total}, очікували «${expectedBadgeText}», бейдж «${badge.trim()}»`;
   check('бейдж = БД', badgeOk, badgeFact);
   const jsonLd =
     (await page
       .locator('script[type="application/ld+json"]')
       .first()
       .textContent()) ?? '';
+  const expectedAvailability = jsonLdAvailabilityFor(before.status);
+  const actualAvailability = jsonLd.match(/schema\.org\/\w+/)?.[0] ?? '—';
   check(
     'JSON-LD availability',
-    jsonLd.includes('schema.org/InStock'),
-    jsonLd.match(/schema\.org\/\w+/)?.[0] ?? '—',
+    jsonLd.includes(expectedAvailability),
+    `stock_status=${before.status}, очікували ${expectedAvailability}, отримали ${actualAvailability}`,
   );
 
   // 2. Кошик і сторінки з НЕПОРОЖНІМ кошиком (гідратація — Е0-5).

@@ -18,6 +18,12 @@ export interface NewOrderInput {
   email: string;
   phone: string;
   shippingMethodId: string;
+  /**
+   * Рев'ю M-2: код методу з `prepareCheckout` (уже провалідований на
+   * `is_active`) — `createOrder` більше не робить власний `select` по
+   * `shipping_methods` заради того самого фільтра.
+   */
+  shippingMethodCode: string | null;
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;

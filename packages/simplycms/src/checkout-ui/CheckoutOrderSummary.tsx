@@ -12,6 +12,12 @@ interface CheckoutOrderSummaryProps {
   matchesCurrent: boolean;
   /** Метод/точку/місто ще не обрано — нема що рахувати (рев'ю I2/I3). */
   blocked: boolean;
+  /**
+   * Відмова ПРОМІСА квоти (мережа/500/кидок валідатора) — рев'ю I-2.
+   * Відрізнити від `quote.ok === false` (серверна бізнес-відмова з
+   * `reason`) і від `blocked` (детерміновано, без мережі).
+   */
+  failed: boolean;
   notes: string;
   onNotesChange: (notes: string) => void;
   isSubmitting: boolean;
@@ -32,6 +38,7 @@ export function CheckoutOrderSummary({
   quoting,
   matchesCurrent,
   blocked,
+  failed,
   notes,
   onNotesChange,
   isSubmitting,
@@ -54,6 +61,14 @@ export function CheckoutOrderSummary({
           // (це нормальний проміжний стан заповнення форми, не помилка).
           <p className="text-sm text-muted-foreground text-center py-4">
             {t('checkout.orderSummary.awaitingDelivery')}
+          </p>
+        ) : failed ? (
+          // 🔴 Рев'ю I-2: відмова ПРОМІСА (мережа/500/кидок валідатора) —
+          // ПЕРЕД перевіркою скелета: без цього порядку `matchesCurrent`
+          // лишається `false` (квота так і не прийшла), і гілка нижче
+          // намалювала б вічний скелет замість тексту про відмову.
+          <p className="text-sm text-destructive" role="alert">
+            {t('checkout.orderSummary.quoteFailed')}
           </p>
         ) : quote === null || quoting || !matchesCurrent ? (
           // `!matchesCurrent` — рев'ю #6: без цього у вікні дебаунсу тут

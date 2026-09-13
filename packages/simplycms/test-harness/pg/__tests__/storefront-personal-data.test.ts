@@ -48,6 +48,7 @@ const orderInput = (name: string) => ({
   email: `${name}@example.test`,
   phone: '+380000000000',
   shippingMethodId: SHIPPING_METHOD_ID,
+  shippingMethodCode: null,
   deliveryCity: 'Київ',
   deliveryAddress: 'вул. Тестова, 1',
   pickupPointId: null,

@@ -197,7 +197,7 @@ export default function Checkout() {
     useWatch({ control: form.control, name: 'pickupPointId' }) || '';
   const deliveryCity =
     useWatch({ control: form.control, name: 'deliveryCity' }) || '';
-  const { quote, quoting, matchesCurrent, blocked } = useCheckoutQuote({
+  const { quote, quoting, matchesCurrent, blocked, failed } = useCheckoutQuote({
     items,
     shippingMethodId,
     pickupPointId,
@@ -423,6 +423,7 @@ export default function Checkout() {
                 quoting={quoting}
                 matchesCurrent={matchesCurrent}
                 blocked={blocked}
+                failed={failed}
                 notes={form.watch('notes') || ''}
                 onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}

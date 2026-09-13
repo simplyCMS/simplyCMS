@@ -7,12 +7,20 @@ import type { ActorDb } from './db';
 import { priceCheckoutItems } from './checkout-items';
 import type { NewOrderItem } from './entities/new-order';
 import { loadShippingDirectory, type ShippingMethodRow } from './shipping';
-import type { PickupPointRow } from './pickup-points';
 
-/** Що рахує підготовка чекауту, коли довідники й ціни узгоджені. */
+/**
+ * Що рахує підготовка чекауту, коли довідники й ціни узгоджені.
+ *
+ * 🔴 Рев'ю M-2: точка видачі (`PickupPointRow`) сюди НЕ виходить — вона
+ * потрібна лише ЛОКАЛЬНО, щоб підтвердити `pickup_point_invalid`
+ * (`input.pickupPointId` уже несе саму адресу як id, більше нікому нічого з
+ * рядка точки не треба). `method` лишається — єдиний споживач,
+ * `toOrderInput`, читає з нього `code` замість повторного `select` по
+ * `shipping_methods`, який `prepareCheckout` уже провалидував на
+ * `is_active`.
+ */
 export interface PreparedCheckout {
   method: ShippingMethodRow;
-  point: PickupPointRow | null;
   items: NewOrderItem[];
   subtotal: number;
   shippingCost: number;
@@ -105,7 +113,6 @@ export async function prepareCheckout(
   return {
     ok: true,
     method,
-    point,
     items,
     subtotal,
     shippingCost: rate.cost,
