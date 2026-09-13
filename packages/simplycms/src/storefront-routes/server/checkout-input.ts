@@ -1,31 +1,32 @@
 import { z } from 'zod';
-import type { JsonValue } from 'simplycms/storefront/loaders';
+import type { PlaceOrderInput } from 'simplycms/contracts';
 
 /**
- * Схема оформлення — ЄДИНЕ джерело форми запиту.
+ * Схема оформлення — ЄДИНЕ джерело валідації запиту НА СЕРВЕРІ.
  *
- * 🔴 Живе окремим модулем без жодного серверного імпорту: її читає і
- * `inputValidator` серверної функції, і сама сторінка (щоб типи форми й
- * запиту не розʼїхались). Тримати її поруч із хендлером не можна — модуль
- * із живим експортом затягнув би серверний контур у клієнтський бандл.
+ * 🔴 Живе окремим модулем без жодного серверного імпорту, але читає її ЛИШЕ
+ * `inputValidator` серверної функції (`storefront-routes/server/checkout.ts`)
+ * — рев'ю M1 звірило факт: сторінка (`Checkout.tsx`) цю схему НЕ імпортує,
+ * вона валідує форму власною `buildCheckoutSchema` із менш строгими
+ * правилами (напр. `savedAddressId` там `z.string().optional()`, тут
+ * `.uuid().nullable()`). Розходження двох схем не спливе помилкою поля у
+ * формі — воно впаде сирим текстом винятку `inputValidator` в тості
+ * `checkout.failed`/`checkout.retry` (борг, не ця задача).
+ *
+ * Форма — контракт T0 `PlaceOrderInput`; `satisfies` гарантує, що в об'єкті
+ * ЄСТЬ усі поля контракту з правильним ТИПОМ (пропустити чи змінити тип
+ * поля не вийде), але не захищає від ЗАЙВОГО поля схеми (`ZodType`
+ * коваріантний по Output) — цю межу тримає сам контракт T0, у якому
+ * цінових полів немає фізично, і `z.object`, який зрізає невідомі ключі на
+ * парсингу.
+ *
+ * Позиція кошика — ЛИШЕ ідентичність і кількість (К2-Е0, Е0-4): усе, що
+ * приїхало б із кошика як «істина», можна підмінити в запиті (борг 0.4.1-4).
  */
 export const checkoutItemSchema = z.object({
-  productId: z.string().uuid().nullable(),
+  productId: z.string().uuid(),
   modificationId: z.string().uuid().nullable(),
-  name: z.string().min(1),
-  price: z.number().nonnegative(),
   quantity: z.number().int().positive(),
-  basePrice: z.number().nonnegative().nullable(),
-  /**
-   * 🔴 `jsonb` без форми: рушій знижок кладе сюди власну структуру. Валідувати
-   * її схемою означало б продублювати домен у контракті запиту, тож тут лише
-   * звуження типу — а зміст перевіряє той, хто його читає.
-   */
-  discountData: z
-    .unknown()
-    .transform(
-      (value): JsonValue | null => (value ?? null) as JsonValue | null,
-    ),
 });
 
 export const checkoutInputSchema = z.object({
@@ -39,7 +40,6 @@ export const checkoutInputSchema = z.object({
   pickupPointId: z.string().uuid().nullable(),
   paymentMethod: z.enum(['cash', 'online']),
   notes: z.string().max(5000).nullable(),
-  shippingCost: z.number().nonnegative(),
   hasDifferentRecipient: z.boolean(),
   recipientFirstName: z.string().nullable(),
   recipientLastName: z.string().nullable(),
@@ -48,20 +48,13 @@ export const checkoutInputSchema = z.object({
   recipientCity: z.string().nullable(),
   recipientAddress: z.string().nullable(),
   recipientNotes: z.string().nullable(),
-  /** Зберегти нового отримувача в книгу покупця. */
   saveRecipient: z.boolean(),
-  /** Обраний зі списку отримувач; `null` — новий або без отримувача. */
   savedRecipientId: z.string().uuid().nullable(),
   savedAddressId: z.string().uuid().nullable(),
-  items: z.array(checkoutItemSchema).min(1),
-});
-
-export type CheckoutInput = z.infer<typeof checkoutInputSchema>;
-
-/** Що повертається сторінці після успішного оформлення. */
-export interface PlacedOrder {
-  id: string;
-  orderNumber: string;
-  /** Токен гостьового замовлення; для залогіненого — `null`. */
-  accessToken: string | null;
-}
+  // 🔴 Рев'ю M-6: `quoteCheckout` анонімний і дьоргається з дебаунсом 300 мс
+  // — без верхньої межі кожен виклик міг би нести довільно великий кошик
+  // (6+ запитів у БД на позицію в `priceCheckoutItems`). `.max(100)` тут
+  // накриває ОБИДВА шляхи (`placeOrder` читає ТУ САМУ схему), тож окремого
+  // ліміту для квоти не потрібно.
+  items: z.array(checkoutItemSchema).min(1).max(100),
+}) satisfies z.ZodType<PlaceOrderInput>;

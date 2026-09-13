@@ -25,11 +25,11 @@ export interface StockData {
 /** Мінімальний контракт товару для pure-розрахунку доступності. */
 export interface ProductAvailabilityInput {
   id: string;
-  stock_status: string | null;
+  stock_status: StockStatus | null;
   has_modifications?: boolean | null;
   product_modifications?: Array<{
     id: string;
-    stock_status: string | null;
+    stock_status: StockStatus | null;
     is_default: boolean;
     sort_order: number;
   }> | null;

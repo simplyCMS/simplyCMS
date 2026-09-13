@@ -1,6 +1,12 @@
-import { withActor, type ActorDb } from 'simplycms/db';
+import { withActor, type Actor, type ActorDb } from 'simplycms/db';
+import {
+  escalationFor,
+  type EscalationState,
+  type OperatorEscalation,
+} from './escalation';
 
 export type { ActorDb };
+export type { OperatorEscalation } from './escalation';
 
 /**
  * Транзакція вітрини — вхід у БД для ПУБЛІЧНОГО читання (В2-К1а).
@@ -21,7 +27,13 @@ export function withStorefrontDb<T>(
 }
 
 /**
- * Транзакція ЗАЛОГІНЕНОГО покупця: `app_user` + GUC `app.user_id`.
+ * Транзакція ЗАЛОГІНЕНОГО покупця: `app_user` + GUC `app.user_id`, плюс
+ * `operator` — службова дія ВСЕРЕДИНІ цієї транзакції під `app_admin`
+ * (списання/повернення залишку, скасування замовлення). Реалізація й повна
+ * причина — `./escalation`; правило використання — `data-access.
+ * instructions.md`, «Ескалація ролі покупцем»: `operator` кличеться ЛИШЕ
+ * ПІСЛЯ того, як RLS уже прийняла читання чи запис покупця в ЦІЙ транзакції,
+ * і лише для обліку магазину — ніколи для читання чи запису чужих рядків.
  *
  * 🔴 `userId` сюди приходить ЛИШЕ з `readSessionSubject` серверної сесії й
  * ніколи з параметра клієнта. Актора задає сервер, тож підставлений у запит
@@ -30,22 +42,35 @@ export function withStorefrontDb<T>(
  */
 export function withCustomerDb<T>(
   userId: string,
-  fn: (db: ActorDb) => Promise<T>,
+  fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
 ): Promise<T> {
-  return withActor({ role: 'app_user', userId }, (db) => fn(db));
+  const actor: Actor = { role: 'app_user', userId };
+  const state: EscalationState = { finished: false };
+  return withActor(actor, (db, client) =>
+    fn(db, escalationFor(client, db, actor, state)),
+  ).finally(() => {
+    state.finished = true;
+  });
 }
 
 /**
- * Транзакція ГОСТЬОВОГО замовлення: `app_user` + GUC `app.order_token`.
+ * Транзакція ГОСТЬОВОГО замовлення: `app_user` + GUC `app.order_token`,
+ * плюс `operator` — те саме, що в `withCustomerDb`.
  *
  * Гість не має ідентичності — його доступ до одного замовлення доводить
  * одноразовий токен із посилання (`orders_select_own_or_token`).
  */
 export function withOrderTokenDb<T>(
   orderToken: string,
-  fn: (db: ActorDb) => Promise<T>,
+  fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
 ): Promise<T> {
-  return withActor({ role: 'app_user', orderToken }, (db) => fn(db));
+  const actor: Actor = { role: 'app_user', orderToken };
+  const state: EscalationState = { finished: false };
+  return withActor(actor, (db, client) =>
+    fn(db, escalationFor(client, db, actor, state)),
+  ).finally(() => {
+    state.finished = true;
+  });
 }
 
 /**
@@ -57,6 +82,9 @@ export function withOrderTokenDb<T>(
  * спершу довести право під `withCustomerDb` (RLS віддасть рядок лише
  * власнику), і лише потім писати звідси. Виклик без такої перевірки —
  * підвищення прав, а не оптимізація.
+ *
+ * 🔴 Для дій, які ініціює ПОКУПЕЦЬ у власній транзакції, — не ця обгортка, а
+ * `operator` з `withCustomerDb`/`withOrderTokenDb`/`withSessionDb`.
  */
 export function withStoreOperatorDb<T>(
   fn: (db: ActorDb) => Promise<T>,

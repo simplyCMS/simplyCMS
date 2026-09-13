@@ -69,13 +69,18 @@ export function freePort() {
 /**
  * Підняти production-runner скретча (`node server.mjs`) і дочекатися готовності.
  *
+ * 🔴 `extraEnv` (Task 14, live-smoke): `server.mjs` наповнює `process.env` із
+ * `.env.local`/`.env` лише для ВІДСУТНІХ ключів, тож `DATABASE_URL` із
+ * shell/CI перекрив би тестову БД скрипта. Явний третій аргумент іде ПІСЛЯ
+ * `process.env` у мерджі — виграє завжди; пілот кличе без нього.
+ *
  * @returns {Promise<{ stop: () => void; logs: () => string }>}
  */
-export async function startStore(storeDir, port) {
+export async function startStore(storeDir, port, extraEnv = {}) {
   let logs = '';
   const child = spawn('node', ['server.mjs'], {
     cwd: storeDir,
-    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1' },
+    env: { ...process.env, ...extraEnv, PORT: String(port), HOST: '127.0.0.1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stdout.on('data', (chunk) => (logs += chunk));

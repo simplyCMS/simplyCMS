@@ -1,6 +1,8 @@
+import { useId } from 'react';
 import { cn } from 'simplycms/ui/utils';
 import { Check } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+import { isPurchasable } from 'simplycms/domain/inventory';
 
 type StockStatus = 'in_stock' | 'out_of_stock' | 'on_order';
 
@@ -35,6 +37,10 @@ export function ModificationSelector({
   stockByModification = {},
 }: ModificationSelectorProps) {
   const t = useT();
+  // useId — не літерал (рев'ю #13): два екземпляри селектора на одній
+  // сторінці інакше ділили б один id, і `aria-labelledby` вказував би на
+  // ПЕРШИЙ у DOM для обох.
+  const groupLabelId = useId();
 
   if (modifications.length <= 1) {
     return null;
@@ -50,7 +56,9 @@ export function ModificationSelector({
       };
     }
     return {
-      isAvailable: mod.stock_status !== 'out_of_stock',
+      // 🔴 Те саме доменне правило, що в бейджі й у лоадерах: окрема копія
+      // формули тут була четвертим місцем, де ухвалювалось те саме рішення.
+      isAvailable: isPurchasable(mod.stock_status),
       totalQuantity: 0,
       isOnOrder: mod.stock_status === 'on_order',
     };
@@ -58,10 +66,10 @@ export function ModificationSelector({
 
   return (
     <div className="space-y-3">
-      <label className="text-base font-medium">
+      <span id={groupLabelId} className="text-base font-medium">
         {t('product.modification')}
-      </label>
-      <div className="grid gap-3">
+      </span>
+      <div role="group" aria-labelledby={groupLabelId} className="grid gap-3">
         {modifications.map((mod) => {
           const availability = getModificationAvailability(mod);
           const isUnavailable =

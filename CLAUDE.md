@@ -36,7 +36,7 @@ pnpm test:schema      # СХЕМНИЙ контур (трек V2-К1а): нак�
 #                       auth. Прапорець --e2e тепер ПАДАЄ з поясненням, а не мовчки
 #                       ігнорується. Браузерний контур і Gate E (owner-флоу вже на
 #                       Better Auth) повертає трек К6
-pnpm pilot:pack       # tarball-пілот: гейти A/C/D + CLI/TOOL — БЕЗ БД (Gate B відсутній)
+pnpm pilot:pack       # tarball-пілот: гейти A/C/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
                       # BETTER_AUTH_SECRET із .env.local (Supabase-ключів пілот більше
                       # не підставляє); назви товарів Gate B бере прямим SQL — HTTP-API
@@ -51,11 +51,17 @@ pnpm release 0.4.1    # РЕЛІЗ: гарди + бамп версії всіх 
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
 pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магазину з нуля (канон міграцій +
-                      # демо-каталог). 🔴 Підключення бере з PG_HARNESS_URL або
-                      # --url, а НЕ з DATABASE_URL: створює нову БД у кластері,
-                      # тож потрібен адмін-доступ до кластера, а не до бази
+                      # покупний демо-каталог з К2-Е0: доставка, СИСТЕМНА точка видачі,
+                      # залишки, decrease_on_order = true). 🔴 Підключення бере з
+                      # PG_HARNESS_URL або --url, а НЕ з DATABASE_URL: створює нову БД
+                      # у кластері, тож потрібен адмін-доступ до кластера, а не до бази
                       # магазину; готовий DATABASE_URL скрипт ДРУКУЄ в кінці.
                       # Покроковий локальний запуск — docs/tasks/v2-state-map.md §5
+pnpm live:smoke       # DoD К2-Е0: db:demo → build → server → curl+SQL (gate-b) +
+                      # Playwright (реєстрація, кошик без #418, бейдж = БД, автовибір
+                      # точки, воронка до orders зі СПИСАННЯМ, скасування з ПОВЕРНЕННЯМ
+                      # залишку). Потребує Postgres (PG_HARNESS_URL) і Chromium; не CI —
+                      # гейти релізу окремим рішенням
 pnpm db:pull / db:diff
                       # Схема БД — див. «Database Commands». 🔴 Генератора типів
                       # (db:generate-types, types:baseline) більше немає: знято в 0.4.1
@@ -152,7 +158,9 @@ test:packaging`.
 накат канону міграцій і ПОВЕДІНКУ RLS — інші гейти схему БД не виконують.
 🔴 У гейтах РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` іде
 ще `pilot:pack` (трек T, 2026-09-02): Gate C пілота — єдиний доказ межі
-клієнт/сервер у реальному клієнтському бандлі; у CI він не ганяється.
+клієнт/сервер у реальному клієнтському бандлі, а Gate IP (К2-Е0, T-2) — що
+витік ВАЛИТЬ збірку магазину; з 2026-09-03 `pilot:pack` ганяється і в CI
+(job `packaging`); `pilot` з Gate B — ні.
 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої
 правки `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами,
 а звичайний `pnpm install` мовчки лагодить розсинхрон замість червоніти. У CI
@@ -171,8 +179,8 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 (його імпорти резолвляться з `node_modules` магазину, не workspace-аліасами),
 тому `pnpm typecheck` шаблону не бачить. Розрив був не теоретичний: помилка
 типів у `template/routes.ts` проходила `tsc`, `lint`, `test`, `build:packages`
-і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого в CI
-немає. `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
+і `test:packaging` ЗЕЛЕНИМИ — ловив її лише `pnpm pilot:pack`, якого на той
+час у CI не було (з 2026-09-03 він у job `packaging`). `typecheck:template` типізує шаблон проти зібраного `dist` (те саме,
 що бачить магазин), тому потребує `build:packages` перед собою. Список файлів
 під ним стереже `tests/template-typecheck-coverage.test.ts`.
 
@@ -213,6 +221,14 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 сторінками адмінки). Контракт задокументований у
 [`data-access`](.github/instructions/data-access.instructions.md), розділ
 «Контракт ключів кешу».
+Шоста (2026-09-05, трек К2-Е0) — **доступні імена контролів**:
+`eslint-plugin-jsx-a11y` з ОДНИМ правилом
+`jsx-a11y/label-has-associated-control` (`error`, `assert: 'htmlFor', depth: 3`)
+на пʼять тек воронки пакета ядра (`cart-ui`, `catalog-ui`, `checkout-ui`,
+`profile-ui`, `reviews-ui`), тим самим механізмом зон, що й тір-зони та
+i18n-селектори. 🔴 Правило бачить лише `<label>` — контрол без лейбла (попапи
+чекауту, числові діапазони фільтра, прихований avatar-input) йому невидимий:
+зелений лінт доступності воронки не доводить її повноти.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -254,6 +270,10 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 - **Language:** TypeScript 5.9 (strict mode) — 🔴 **свідомо не 6/7**, див. нижче
 - **Linting:** ESLint 10 + typescript-eslint 8
 - **Package Manager:** pnpm 11.20 (workspaces; налаштування — у `pnpm-workspace.yaml`, не в `package.json`)
+- **Runtime:** Node `>=22.12` — поріг `@tanstack/react-start`; стоїть у ВСІХ пʼяти
+  публікованих пакетах і в `packages/create-simplycms-store/template/package.json.tpl`,
+  під тестом-піном парності (трек T, рішення Р6). До К2-Е0 порогу не було взагалі в
+  трьох пакетах, а у двох стояв хибний `">=20"`
 - **Database:** чистий **PostgreSQL 17** (Drizzle + `pg`-пул, `simplycms/db`); auth — **Better Auth**. 🔴 Supabase — лише один із можливих провайдерів Postgres; `supabase-js` лишається в дереві до К3 як шар адмінки
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4
@@ -406,7 +426,9 @@ simplyCMS/
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду.
 │   │                                    # 🔴 gate-e.mjs знято в 0.4.1 разом зі стеком Supabase
 │   ├── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
-│   └── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+│   ├── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+│   └── live-smoke.mjs + live-smoke/     # DoD К2-Е0 (`pnpm live:smoke`): sql.mjs (прямий SQL) +
+│                                        # register.mjs (реєстрація) + funnel.mjs (Playwright-воронка)
 ├── packages/simplycms/test-harness/pg/  # 🔴 V2: контур `pnpm test:schema` — підйом Postgres
 │                                     # без Docker (PG_HARNESS_URL або ефемерний initdb),
 │                                     # накат канону, інтроспекція ACL/політик, актори
@@ -578,7 +600,10 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
 - `BETTER_AUTH_SECRET` — **серверний**: підпис сесій Better Auth
   (`simplycms/auth`). `VITE_`-префікса тут не може бути за побудовою — секрет
   у клієнтському бандлі не секрет. Опційний сусід — `BETTER_AUTH_URL`
-  (без нього базовий URL береться із самого запиту)
+  (без нього базовий URL береться із самого запиту) — у dev це очікуваний
+  WARN Better Auth; у проді `BETTER_AUTH_URL` рекомендований: з рядковим
+  baseURL Better Auth довіряє рівно цьому origin і відкидає інші з 403
+  `INVALID_ORIGIN`. Контракт стереже `tests/env-contract.test.ts`
 - `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt); запікається
   при `vite build`, тож зміна вимагає перезбірки
 
@@ -654,6 +679,9 @@ Schema-тулінг (`drizzle/`, `drizzle.config.ts`,
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
 pnpm db:diff <name>            # schema.ts → SQL у packages/simplycms/migrations/ (ревʼю обовʼязкове)
 pnpm test:schema               # накат канону на чисту БД харнеса (db:migrate — decommissioned, B2/B13)
+pnpm db:demo                   # покупний демо-магазин (К2-Е0): доставка, СИСТЕМНА точка
+                                # видачі, залишки, decrease_on_order = true — перевірка
+                                # одним прогоном далі, `pnpm live:smoke`
 ```
 
 🔴 **Генератора типів БД більше немає** (знято в 0.4.1). `pnpm db:generate-types`,
@@ -690,18 +718,21 @@ INSERT — конструктивне делегування генерації 
 |----------|-----|-------|------|
 | `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
 | `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
-| `workflow.yml` | `packaging` | `install` → `build:packages` → `test:packaging` | push/PR/manual |
+| `workflow.yml` | `packaging` | `install` → `build:packages` → `typecheck:template` → `test:packaging` → `pilot:pack --skip-build` | push/PR/manual |
 | `workflow.yml` | `schema` | `install` → `test:schema` (service-контейнер `postgres:17`) | push/PR/manual |
 | `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
 
 `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і
 потребує зібраних `dist/` кожного пакета.
 
-🔴 **Пілот пакування в CI НЕ ганяється** (рішення власника 2026-08-01). `pnpm pilot`
-потребує живої бази (`DATABASE_URL`), а це зовнішній стан, від дрейфу якого гейт
-червонів би без регресії коду. Прогін пілота перед
-релізом — відповідальність розробника (`pnpm pilot:pack` не потребує нічого, решта —
-див. Quick Reference). Передрелізний гейт у CI — детерміністичний tarball-parity.
+🔴 **`pnpm pilot` (Gate B проти живої БД) у CI НЕ ганяється** (рішення власника
+2026-08-01, звужене 2026-09-03). `pnpm pilot` потребує живої бази (`DATABASE_URL`),
+а це зовнішній стан, від дрейфу якого гейт червонів би без регресії коду. Прогін
+`pilot` перед релізом — відповідальність розробника (див. Quick Reference).
+🔴 А от `pnpm pilot:pack` (без БД) — крок job `packaging` з 2026-09-03: Gate C і
+Gate IP — єдиний поведінковий доказ межі клієнт/сервер у реальному магазині з
+tarball-ів. Передрелізний гейт у CI — детерміністичний tarball-parity плюс
+`pilot:pack --skip-build`.
 
 ## Публікація пакетів (npmjs)
 

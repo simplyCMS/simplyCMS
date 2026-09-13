@@ -6,6 +6,7 @@ import {
   stockByPickupPoint,
 } from 'simplycms/schema';
 import type { StockStatus } from 'simplycms/contracts';
+import { isPurchasable } from 'simplycms/domain/inventory';
 import type { ActorDb } from './db';
 
 /** Залишок на одній точці видачі. */
@@ -41,8 +42,8 @@ const EMPTY: StockInfoRow = {
  * `get_stock_info`, якої в схемі v2 НЕМАЄ (baseline B13 не везе жодної
  * plpgsql-функції, крім читача актора).
  *
- * Правило доступності збережено дослівно: доступно, якщо є залишок АБО
- * статус — «під замовлення».
+ * Доступність — `isPurchasable` (домен): статус, не кількість; `totalQuantity`
+ * і `byPoint` — деталь показу.
  *
  * 🔴 `is_active` точок видачі фільтрується КОДОМ: RLS на `pickup_points`
  * немає, і без предиката покупець побачив би залишок на складі, який магазин
@@ -79,7 +80,7 @@ export async function loadStockInfo(
   const totalQuantity = rows.reduce((sum, row) => sum + row.quantity, 0);
   return {
     totalQuantity,
-    isAvailable: totalQuantity > 0 || stockStatus === 'on_order',
+    isAvailable: isPurchasable(stockStatus),
     stockStatus,
     byPoint: rows,
   };

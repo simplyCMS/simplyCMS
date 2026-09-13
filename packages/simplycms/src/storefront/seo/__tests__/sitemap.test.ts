@@ -13,14 +13,18 @@ import type { SitemapData } from '../../loaders/sitemap';
  */
 
 const DATA: SitemapData = {
-  sections: [{ slug: 'shoes', updated_at: '2026-07-01T00:00:00Z' }],
+  sections: [{ slug: 'shoes', updated_at: new Date('2026-07-01T00:00:00Z') }],
   products: [
     {
       slug: 'boot',
-      updated_at: '2026-07-02T00:00:00Z',
+      updated_at: new Date('2026-07-02T00:00:00Z'),
       section_slug: 'shoes',
     },
-    { slug: 'orphan', updated_at: '2026-07-03T00:00:00Z', section_slug: null },
+    {
+      slug: 'orphan',
+      updated_at: new Date('2026-07-03T00:00:00Z'),
+      section_slug: null,
+    },
   ],
 };
 
@@ -45,9 +49,15 @@ describe('renderSitemapXml', () => {
     expect(xml).not.toContain('/catalog//');
   });
 
-  it('lastmod береться з рядка БД', () => {
-    expect(xml).toContain('<lastmod>2026-07-01T00:00:00Z</lastmod>');
-    expect(xml).toContain('<lastmod>2026-07-02T00:00:00Z</lastmod>');
+  it('lastmod — W3C Datetime (toISOString), а не текст драйвера', () => {
+    // 🔴 sitemaps.org вимагає W3C Datetime; текст Postgres
+    // (`2026-07-01 00:00:00+00`) роботи відкидають. Межа виводу — єдине
+    // місце, де Date стає рядком.
+    expect(xml).toContain('<lastmod>2026-07-01T00:00:00.000Z</lastmod>');
+    expect(xml).toContain('<lastmod>2026-07-02T00:00:00.000Z</lastmod>');
+    for (const m of xml.matchAll(/<lastmod>([^<]*)<\/lastmod>/g)) {
+      expect(m[1]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    }
   });
 
   it('спецсимволи в slug екрануються', () => {
@@ -57,7 +67,7 @@ describe('renderSitemapXml', () => {
         products: [
           {
             slug: 'a&b',
-            updated_at: '2026-07-02T00:00:00Z',
+            updated_at: new Date('2026-07-02T00:00:00Z'),
             section_slug: 'x<y',
           },
         ],

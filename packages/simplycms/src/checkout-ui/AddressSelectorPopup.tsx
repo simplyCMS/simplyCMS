@@ -85,6 +85,7 @@ export function AddressSelectorPopup({
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              aria-label={t('checkout.addressSelector.searchPlaceholder')}
               placeholder={t('checkout.addressSelector.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -92,6 +93,7 @@ export function AddressSelectorPopup({
             />
           </div>
           <select
+            aria-label={t('common.sortOrder')}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="w-[140px] border rounded-md text-sm px-2"

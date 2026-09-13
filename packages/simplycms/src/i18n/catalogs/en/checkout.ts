@@ -11,6 +11,14 @@ export const messages: Catalog = {
   'checkout.failed': 'Could not place the order',
   'checkout.retry': 'Please try again',
 
+  // Domain rejections on checkout — code from the server, text here (К2-Е0)
+  'checkout.rejected.shipping_unavailable':
+    'Selected shipping method is unavailable — pick another',
+  'checkout.rejected.pickup_point_invalid':
+    'Pick a pickup point for this shipping method',
+  'checkout.rejected.not_purchasable':
+    'Some items in your cart are unavailable — review the cart',
+
   'checkout.shipping.pickup': 'Pickup',
   'checkout.shipping.novaPoshta': 'Nova Poshta',
   'checkout.shipping.courier': 'Courier',
@@ -61,6 +69,9 @@ export const messages: Catalog = {
   'checkout.saveDialog.updateTitle': 'Update "{name}"',
   'checkout.saveDialog.cancelChanges': 'Discard changes',
 
+  'checkout.noShippingMethods.title': 'Shipping is not set up',
+  'checkout.noShippingMethods.description':
+    'The store has not added any shipping method yet. Checkout becomes available as soon as one appears.',
   'checkout.delivery.addressCreated': 'New address saved',
   'checkout.delivery.pickupPointLabel': 'Choose a pickup point *',
   'checkout.delivery.pickupPointPlaceholder': 'Choose a point',
@@ -70,6 +81,10 @@ export const messages: Catalog = {
   'checkout.delivery.saveAddress': 'Save address',
 
   'checkout.orderSummary.title': 'Your order',
+  'checkout.orderSummary.awaitingDelivery':
+    'Fill in the delivery details to see the order total',
+  'checkout.orderSummary.quoteFailed':
+    'Could not calculate the order total. Please try again',
   'checkout.orderSummary.itemsCount': 'Items ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Any special requests...',
   'checkout.orderSummary.submitting': 'Placing order...',

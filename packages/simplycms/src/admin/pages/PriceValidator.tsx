@@ -223,8 +223,11 @@ export default function PriceValidator() {
           operator: g.operator as GroupOperator,
           is_active: g.is_active,
           priority: g.priority,
-          starts_at: g.starts_at,
-          ends_at: g.ends_at,
+          // Supabase-рядок → Date: контракт домену (`simplycms/domain/discounts`)
+          // приймає лише `Date | null`, а `database.ts` (заморожений baseline
+          // адмінки) досі віддає timestamptz текстом.
+          starts_at: g.starts_at ? new Date(g.starts_at) : null,
+          ends_at: g.ends_at ? new Date(g.ends_at) : null,
           discounts: [],
           children: [],
         });
@@ -241,8 +244,8 @@ export default function PriceValidator() {
             discount_value: Number(d.discount_value),
             priority: d.priority,
             is_active: d.is_active,
-            starts_at: d.starts_at,
-            ends_at: d.ends_at,
+            starts_at: d.starts_at ? new Date(d.starts_at) : null,
+            ends_at: d.ends_at ? new Date(d.ends_at) : null,
             targets: d.discount_targets || [],
             conditions: d.discount_conditions || [],
           });

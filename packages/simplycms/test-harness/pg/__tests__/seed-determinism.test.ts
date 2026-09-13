@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
-// вручну (6 у `0003_seed.sql`, 15 у `demo/demo-seed.sql`). Це не косметика:
+// вручну (6 у `0003_seed.sql`, 20 у `demo/demo-seed.sql`). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
 // негативним контролем нижче) — тобто скан «чи знайдено хоч один INSERT»
@@ -18,7 +18,7 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 // незалежно від того, чи всі ЗНАЙДЕНІ вставки формально мають `id`.
 const SEEDS = [
   ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 6],
-  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 15],
+  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 20],
 ] as const;
 
 /**
@@ -30,7 +30,7 @@ const SEEDS = [
  * список колонок одразу після імені таблиці. Форма `insert into T select
  * a, b from …` (без дужок — INSERT покладається на порядковий номер
  * колонок таблиці) під нього не підпадає і мовчки випадає з результату.
- * У сідах цієї задачі такої форми немає (усі 21 insert називають список
+ * У сідах цієї задачі такої форми немає (усі 26 insert називають список
  * колонок явно), а точне число в `SEEDS` — компенсаційний контроль на
  * випадок, якщо вона колись з'явиться.
  */

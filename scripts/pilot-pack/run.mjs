@@ -12,6 +12,7 @@ import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateTailwind } from './gate-d.mjs';
+import { gateImportProtection } from './gate-ip.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
 import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
 
@@ -57,6 +58,11 @@ export async function runGates(opts) {
 
   // Gate B потребує живого сервера і живої БД, тож у `--pack-only` не існує.
   if (!opts.packOnly) results.push(await gateServer(opts));
+
+  // 🔴 Останнім: кожна червона збірка спорожнює dist скретча, а Gate C/D і
+  // Gate B читають його. Гейт сам перезбирає скретч наприкінці.
+  step('Gate IP — Import Protection валить витік у збірці магазину');
+  results.push(['IP', gateImportProtection(opts.storeDir)]);
   return results;
 }
 

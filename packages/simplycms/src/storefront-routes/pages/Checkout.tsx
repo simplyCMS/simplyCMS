@@ -1,24 +1,29 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
-import { Form } from 'simplycms/ui/form';
+import { Form, FormField, FormItem, FormMessage } from 'simplycms/ui/form';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { getProfileSettings } from '../server/profile';
 import { placeOrder } from '../server/checkout';
 import { useT, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
-import { CheckoutAuthBlock } from 'simplycms/core/components/checkout/CheckoutAuthBlock';
-import { CheckoutContactForm } from 'simplycms/core/components/checkout/CheckoutContactForm';
-import { CheckoutDeliveryForm } from 'simplycms/core/components/checkout/CheckoutDeliveryForm';
-import { CheckoutPaymentForm } from 'simplycms/core/components/checkout/CheckoutPaymentForm';
-import { CheckoutOrderSummary } from 'simplycms/core/components/checkout/CheckoutOrderSummary';
-import { CheckoutRecipientForm } from 'simplycms/core/components/checkout/CheckoutRecipientForm';
+import {
+  CheckoutAuthBlock,
+  CheckoutContactForm,
+  CheckoutDeliveryForm,
+  CheckoutPaymentForm,
+  CheckoutOrderSummary,
+  CheckoutRecipientForm,
+  REJECTION_KEY,
+} from 'simplycms/checkout-ui';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
+import { toCheckoutItems } from './checkout/build-quote-input';
+import { useCheckoutQuote } from './checkout/useCheckoutQuote';
 
 /**
  * Фабрика схеми, а не константа модуля: повідомлення валідації беруться з
@@ -107,10 +112,11 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 export default function Checkout() {
   const t = useT();
   const navigate = useNavigate();
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, hydrated } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shippingCost, setShippingCost] = useState<number>(0);
+  const [hasShippingMethods, setHasShippingMethods] = useState(true);
+  const [isPickupMethod, setIsPickupMethod] = useState(false);
   const checkoutSchema = useMemo(() => buildCheckoutSchema(t), [t]);
 
   const form = useForm<CheckoutFormData>({
@@ -158,12 +164,65 @@ export default function Checkout() {
     });
   }, [user, form]);
 
-  // Redirect if cart is empty
+  // 🔴 Гвард гонки (знайдено live-smoke, Task 14): `onSubmit` спорожняє кошик
+  // (`clearCart()`) ще на цій сторінці — Checkout не встигає розмонтуватись
+  // до того, як ефект нижче побачить `items.length === 0` і перехопить
+  // навігацію на `/order-success` редиректом на `/cart`. Прапорець виставляє
+  // ЛИШЕ успішне оформлення (перед `clearCart()`), тому пряма реакція на
+  // порожній кошик (видалення позицій руками) лишається чинною.
+  const orderPlacedRef = useRef(false);
+
+  // Redirect if cart is empty. 🔴 Гейт на `hydrated` (Е0-5, рішення А
+  // архітектора): гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
+  // (`getServerSnapshot`), а passive-ефекти комітяться дітьми-вперед — без
+  // гейту цей ефект відпрацював би РАНІШЕ за перечитування localStorage в
+  // `CartProvider` і хибно редиректив би на /cart при прямому вході на
+  // /checkout з непорожнім кошиком.
   useEffect(() => {
-    if (items.length === 0) {
+    if (hydrated && items.length === 0 && !orderPlacedRef.current) {
       navigate({ to: '/cart' });
     }
-  }, [items, navigate]);
+  }, [hydrated, items, navigate]);
+
+  // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
+  // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
+  // клієнтські `totalPrice`/ціни кошика в підсумку більше не беруть участі.
+  // 🔴 `useWatch`, а не `form.watch()`: значення тут ідуть далі в
+  // залежності ефекту (`useCheckoutQuote`) — `form.watch()` повертає
+  // нестабільну функцію, яку React Compiler не вміє безпечно
+  // мемоїзувати саме в такому вжитку (`react-hooks/incompatible-library`).
+  const shippingMethodId =
+    useWatch({ control: form.control, name: 'shippingMethodId' }) || '';
+  const pickupPointId =
+    useWatch({ control: form.control, name: 'pickupPointId' }) || '';
+  const deliveryCity =
+    useWatch({ control: form.control, name: 'deliveryCity' }) || '';
+  const { quote, quoting, matchesCurrent, blocked, failed } = useCheckoutQuote({
+    items,
+    shippingMethodId,
+    pickupPointId,
+    deliveryCity,
+    isPickup: isPickupMethod,
+    userKey: user?.id ?? null,
+  });
+  // Submit без свіжої квоти неможливий (M-8): доставка обрана, квота вдала
+  // і рахована саме на ПОТОЧНИХ входах. 🔴 `!blocked` — не надлишок: коли
+  // рефетч довідника віддає список БЕЗ обраного методу, `moneyKey` не
+  // змінюється, тож `matchesCurrent` лишається true разом зі старою квотою —
+  // підсумок каже «заповніть дані доставки», а кнопка була б активна.
+  const canSubmit =
+    hasShippingMethods &&
+    quote?.ok === true &&
+    !quoting &&
+    matchesCurrent &&
+    !blocked;
+  // 🔴 Рев'ю I4: індикативна ціна в списку методів (CheckoutDeliveryForm)
+  // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер, — розбіжність
+  // лишав лише вхідний `subtotal` (клієнтський `totalPrice` без знижок
+  // проти реального). Коли квота вже є, підставляємо ЇЇ subtotal — ту саму
+  // суму, яку бачить `prepareCheckout`; до першої квоти — клієнтський
+  // знімок кошика (інакше список методів був би порожнім до відповіді).
+  const indicativeSubtotal = quote?.ok ? quote.quote.subtotal : totalPrice;
 
   /**
    * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
@@ -184,7 +243,10 @@ export default function Checkout() {
     setIsSubmitting(true);
 
     try {
-      const order = await placeOrder({
+      // 🔴 Кошик несе ЛИШЕ ідентичність і кількість — ціну, назву й знижку
+      // рахує сервер у власній транзакції (`priceCheckoutItems`), тож
+      // клієнтські значення тут нізвідки підмінити.
+      const result = await placeOrder({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -196,7 +258,6 @@ export default function Checkout() {
           pickupPointId: data.pickupPointId || null,
           paymentMethod: data.paymentMethod,
           notes: data.notes || null,
-          shippingCost,
           hasDifferentRecipient: data.hasDifferentRecipient,
           recipientFirstName: data.recipientFirstName || null,
           recipientLastName: data.recipientLastName || null,
@@ -211,20 +272,23 @@ export default function Checkout() {
               ? data.savedRecipientId
               : null,
           savedAddressId: data.savedAddressId || null,
-          items: items.map((item) => ({
-            productId: item.productId || null,
-            modificationId: item.modificationId || null,
-            name: item.modificationName
-              ? `${item.name} - ${item.modificationName}`
-              : item.name,
-            price: item.price,
-            quantity: item.quantity,
-            basePrice: item.basePrice ?? null,
-            discountData: item.discountData ?? null,
-          })),
+          items: toCheckoutItems(items),
         },
       });
 
+      if (!result.ok) {
+        toast({
+          title: t('checkout.failed'),
+          description: t(REJECTION_KEY[result.reason]),
+          variant: 'destructive',
+        });
+        return;
+      }
+      const { order } = result;
+
+      // 🔴 Прапорець ПЕРЕД `clearCart()` — саме він спорожнює кошик, який
+      // ефект/рендер-гілка нижче ще встигнуть побачити на цьому ж рендері.
+      orderPlacedRef.current = true;
       clearCart();
 
       toast({
@@ -255,7 +319,12 @@ export default function Checkout() {
     // Profile will be loaded by the useEffect when user changes
   };
 
-  if (items.length === 0) {
+  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище (плюс `orderPlacedRef`
+  // — та сама гонка на спорожнений кошик після успішного оформлення): до
+  // гідратації `items` завжди порожній, і без гейту тут був би спалах
+  // «порожній кошик» на прямому вході в /checkout, доки CartProvider не
+  // перечитає localStorage.
+  if (hydrated && items.length === 0 && !orderPlacedRef.current) {
     return null;
   }
 
@@ -318,8 +387,21 @@ export default function Checkout() {
                 onChange={(field, value) =>
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
-                subtotal={totalPrice}
-                onShippingCostChange={setShippingCost}
+                subtotal={indicativeSubtotal}
+                onAvailabilityChange={setHasShippingMethods}
+                onPickupChange={setIsPickupMethod}
+              />
+              <FormField
+                control={form.control}
+                name="shippingMethodId"
+                render={() => (
+                  <FormItem>
+                    {/* Поля-радіо живуть у CheckoutDeliveryForm; повідомлення
+                        validation.shippingRequired до К2-Е0 не мало де
+                        зʼявитись — тому лише FormMessage. */}
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <CheckoutPaymentForm
                 selectedMethod={form.watch('paymentMethod')}
@@ -337,12 +419,15 @@ export default function Checkout() {
             {/* Order summary column */}
             <div className="lg:col-span-1">
               <CheckoutOrderSummary
-                items={items}
-                totalPrice={totalPrice}
-                shippingCost={shippingCost}
+                quote={quote}
+                quoting={quoting}
+                matchesCurrent={matchesCurrent}
+                blocked={blocked}
+                failed={failed}
                 notes={form.watch('notes') || ''}
                 onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}
+                canSubmit={canSubmit}
               />
             </div>
           </div>

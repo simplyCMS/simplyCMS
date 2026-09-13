@@ -55,13 +55,17 @@ export async function selectActivePlugins(): Promise<PluginRecord[]> {
       .orderBy(asc(plugins.installedAt)),
   );
 
-  // Колонки `is_active`/дат у схемі nullable (дефолти на боці БД) — рантайм
-  // же обіцяє плоский рядок без `null` у цих полях.
+  // 🔴 `is_active` нормалізується до boolean (колонка nullable, дефолт на
+  // боці БД) — рантайм обіцяє плоский прапорець без `null`. Дати (`Date |
+  // null`) лишаються як є: `installedAt`/`updatedAt` — теж nullable-колонки
+  // з `defaultNow()`, але споживач (`PluginRecord`) читає `Date` напряму, і
+  // підміняти `null` вигаданою датою тут значило б брехати про момент, якого
+  // насправді не було.
   return rows.map((row) => ({
     ...row,
     is_active: row.is_active ?? false,
-    installed_at: row.installed_at ?? '',
-    updated_at: row.updated_at ?? '',
+    installed_at: row.installed_at,
+    updated_at: row.updated_at,
     config: (row.config ?? {}) as PluginJson,
     hooks: (row.hooks ?? []) as PluginJson,
     migrations_applied: (row.migrations_applied ?? []) as PluginJson,

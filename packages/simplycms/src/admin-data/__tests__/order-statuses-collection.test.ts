@@ -12,7 +12,7 @@ const { insertMock } = vi.hoisted(() => ({
   insertMock: vi.fn(async ({ data }: { data: { id: string }[] }) =>
     data.map((r) => ({
       isDefault: false,
-      createdAt: '2026-01-01',
+      createdAt: new Date('2026-01-01'),
       color: null,
       sortOrder: 0,
       ...r,
@@ -86,8 +86,8 @@ describe('колекція order_statuses', () => {
     );
     await tx.isPersisted.promise;
     expect(c.has(id), 'після персисту рядок зник').toBe(true);
-    expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toBe(
-      '2026-01-01',
+    expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toEqual(
+      new Date('2026-01-01'),
     );
   });
 
@@ -117,8 +117,8 @@ describe('колекція order_statuses', () => {
       expect(c.has(id), `рядок ${id} відсутній у кеші після write-back`).toBe(
         true,
       );
-      expect(c.get(id)?.createdAt, 'серверні поля не доїхали').toBe(
-        '2026-01-01',
+      expect(c.get(id)?.createdAt, 'серверні поля не доїхали').toEqual(
+        new Date('2026-01-01'),
       );
     }
   });
@@ -132,7 +132,7 @@ describe('колекція order_statuses', () => {
         color: null,
         sortOrder: 0,
         isDefault: false,
-        createdAt: '2026-01-01',
+        createdAt: new Date('2026-01-01'),
       },
     ]);
     const c = getCollection(new QueryClient(), orderStatusesCollection);

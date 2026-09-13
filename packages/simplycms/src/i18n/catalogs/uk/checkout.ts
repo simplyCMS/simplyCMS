@@ -10,6 +10,14 @@ export const messages = {
   'checkout.failed': 'Помилка оформлення',
   'checkout.retry': 'Спробуйте ще раз',
 
+  // Доменні відмови оформлення — код із сервера, текст тут (К2-Е0)
+  'checkout.rejected.shipping_unavailable':
+    'Обраний спосіб доставки недоступний — оберіть інший',
+  'checkout.rejected.pickup_point_invalid':
+    'Оберіть точку видачі для цього способу доставки',
+  'checkout.rejected.not_purchasable':
+    'Частина товарів у кошику зараз недоступна — перевірте кошик',
+
   // Способи доставки й оплати
   'checkout.shipping.pickup': 'Самовивіз',
   'checkout.shipping.novaPoshta': 'Нова Пошта',
@@ -65,6 +73,10 @@ export const messages = {
   'checkout.saveDialog.cancelChanges': 'Скасувати зміни',
 
   // Спосіб доставки — CheckoutDeliveryForm
+  // Порожній довідник способів доставки — блокуючий empty-state (К2-Е0, Е0-4)
+  'checkout.noShippingMethods.title': 'Доставка не налаштована',
+  'checkout.noShippingMethods.description':
+    'Магазин ще не додав жодного способу доставки. Оформлення стане доступним, щойно він зʼявиться.',
   'checkout.delivery.addressCreated': 'Нову адресу створено',
   'checkout.delivery.pickupPointLabel': 'Оберіть пункт самовивозу *',
   'checkout.delivery.pickupPointPlaceholder': 'Оберіть пункт',
@@ -75,6 +87,13 @@ export const messages = {
 
   // Підсумок замовлення — CheckoutOrderSummary
   'checkout.orderSummary.title': 'Ваше замовлення',
+  // Метод/точку/місто ще не обрано — не скелет і не відмова (рев'ю I2/I3)
+  'checkout.orderSummary.awaitingDelivery':
+    'Заповніть дані доставки, щоб побачити суму замовлення',
+  // Рев'ю I-2: НЕДЕТЕРМІНОВАНА відмова проміса квоти (мережа/500/кидок
+  // валідатора) — причина невідома клієнту, текст навмисно нейтральний
+  'checkout.orderSummary.quoteFailed':
+    'Не вдалося порахувати суму замовлення. Спробуйте ще раз',
   'checkout.orderSummary.itemsCount': 'Товари ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Додаткова інформація...',
   'checkout.orderSummary.submitting': 'Оформлення...',

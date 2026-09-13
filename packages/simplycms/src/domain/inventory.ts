@@ -1,54 +1,62 @@
-// Pure-розрахунок наявності товару. Перенесено з core/hooks/useProductsWithStock
-// (тільки чисті функції; data-fetch лишається у data-шарі).
+// Pure-правило наявності — ЄДИНЕ місце, де вирішується «можна купити».
+// Перенесено з core/hooks/useProductsWithStock; переписано К2-Е0 (Е0-3).
 
-import type { StockData, ProductAvailabilityInput } from 'simplycms/contracts';
+import type {
+  ProductAvailabilityInput,
+  StockStatus,
+} from 'simplycms/contracts';
 
-export type { StockData, ProductAvailabilityInput } from 'simplycms/contracts';
+export type { ProductAvailabilityInput, StockData } from 'simplycms/contracts';
 
 /**
- * Обчислює доступність товару тією ж логікою, що й RPC get_stock_info:
- * is_available = total_quantity > 0 OR stock_status = 'on_order'
+ * 🔴 Статус — джерело правди на читанні; кількість по точках — його деталь.
+ *
+ * До К2-Е0 у коді жило СІМ формул: три — перенос plpgsql `get_stock_info`
+ * («qty > 0 або on_order»), дві — лише статус, JSON-LD — своя, і мертва
+ * `isProductAvailable` у `core/hooks/useStock` («in_stock → qty > 0»). Перша
+ * дає «Немає в наявності» кожному магазину, що не веде обліку по точках (а
+ * DEFAULT статусу в схемі — `in_stock`, тобто канон обіцяє протилежне).
+ * Правдивість статусу при обліку тримає write-side: `createOrder` списує
+ * залишок під `FOR UPDATE` і переводить статус в `out_of_stock` на нулі
+ * (`storefront/loaders/order-create.ts`).
  */
-export function calculateProductAvailability(
-  product: ProductAvailabilityInput,
-  stockData: StockData,
-): boolean {
-  const mods = product.product_modifications || [];
-  const hasModifications = product.has_modifications ?? true;
+export function isPurchasable(status: StockStatus | null | undefined): boolean {
+  return status !== 'out_of_stock';
+}
 
-  if (hasModifications && mods.length > 0) {
-    // Для товарів з модифікаціями: доступний, якщо доступна БУДЬ-ЯКА модифікація
-    return mods.some((m) => {
-      const modQty = stockData.modificationStock[m.id] || 0;
-      return modQty > 0 || m.stock_status === 'on_order';
-    });
-  } else {
-    // Для простих товарів: перевіряємо склад з inline-даних або stockData
-    const inlineStock = (product.stock_by_pickup_point || []).reduce(
-      (sum, s) => sum + (s.quantity || 0),
-      0,
-    );
-    const productQty = stockData.productStock[product.id] || inlineStock;
-    return productQty > 0 || product.stock_status === 'on_order';
-  }
+/** Значення `availability` для schema.org Offer — з того самого статусу. */
+export function schemaOrgAvailability(
+  status: StockStatus | null | undefined,
+):
+  | 'https://schema.org/InStock'
+  | 'https://schema.org/BackOrder'
+  | 'https://schema.org/OutOfStock' {
+  if (status === 'out_of_stock') return 'https://schema.org/OutOfStock';
+  if (status === 'on_order') return 'https://schema.org/BackOrder';
+  return 'https://schema.org/InStock';
 }
 
 /**
- * Збагачує товари полем isAvailable на основі даних про склад.
+ * Доступність товару: для товару з модифікаціями — доступна будь-яка
+ * модифікація; для простого — статус самого товару.
  */
+export function calculateProductAvailability(
+  product: ProductAvailabilityInput,
+): boolean {
+  const mods = product.product_modifications || [];
+  const hasModifications = product.has_modifications ?? true;
+  if (hasModifications && mods.length > 0) {
+    return mods.some((m) => isPurchasable(m.stock_status));
+  }
+  return isPurchasable(product.stock_status);
+}
+
+/** Збагачує товари полем isAvailable. */
 export function enrichProductsWithAvailability<
   T extends ProductAvailabilityInput,
->(
-  products: T[],
-  modStockData: Record<string, number>,
-): (T & { isAvailable: boolean })[] {
-  const stockData: StockData = {
-    modificationStock: modStockData,
-    productStock: {},
-  };
-
+>(products: T[]): (T & { isAvailable: boolean })[] {
   return products.map((product) => ({
     ...product,
-    isAvailable: calculateProductAvailability(product, stockData),
+    isAvailable: calculateProductAvailability(product),
   }));
 }

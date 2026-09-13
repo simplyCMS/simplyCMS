@@ -2,31 +2,29 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
-  useRef,
+  useSyncExternalStore,
   ReactNode,
 } from 'react';
-import type { Json } from 'simplycms/contracts';
+import {
+  EMPTY_CART,
+  subscribe,
+  getSnapshot,
+  getServerSnapshot,
+  getHydratedSnapshot,
+  getHydratedServerSnapshot,
+  writeCart,
+  type CartItem,
+} from './cart-store';
 
-// Клієнтський стан кошика (localStorage). Перенесено з тіру `simplycms/core` у
-// Tier-2, щоб feature-ui (cart-ui/checkout-ui) не залежали від god-package.
+// Клієнтський стан кошика (localStorage). Сам стор (снапшот,
+// useSyncExternalStore) — у `cart-store.ts`; тут лише React-обвʼязка
+// (контекст, провайдер, дії).
 
-export interface CartItem {
-  productId: string;
-  modificationId: string | null;
-  name: string;
-  modificationName?: string;
-  price: number;
-  basePrice?: number | null;
-  discountData?: Json | null;
-  quantity: number;
-  image?: string;
-  sku?: string;
-}
+export type { CartItem };
 
 interface CartContextType {
-  items: CartItem[];
+  items: readonly CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeItem: (productId: string, modificationId: string | null) => void;
   updateQuantity: (
@@ -39,49 +37,29 @@ interface CartContextType {
   totalPrice: number;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  /**
+   * Гідратація завершена (Е0-5, рішення А архітектора): до цього `items` —
+   * ЗАВЖДИ порожній, навіть якщо localStorage непорожній (інакше React
+   * #418). Редирект і гілка «кошик порожній» гейтяться саме на цьому
+   * прапорці — це ЄДИНА ознака гідратації кошика в застосунку.
+   */
+  hydrated: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = 'simplycms-cart';
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  // Ініціалізація кошика з localStorage (SSR-safe через lazy initializer)
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to load cart from localStorage:', e);
-    }
-    return [];
-  });
+  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const hydrated = useSyncExternalStore(
+    subscribe,
+    getHydratedSnapshot,
+    getHydratedServerSnapshot,
+  );
   const [isOpen, setIsOpen] = useState(false);
-  const isInitializedRef = useRef(typeof window !== 'undefined');
-
-  // Помічаємо ініціалізацію після першого рендеру на клієнті
-  useEffect(() => {
-    isInitializedRef.current = true;
-  }, []);
-
-  // Save cart to localStorage when items change
-  useEffect(() => {
-    if (isInitializedRef.current) {
-      try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-      } catch (e) {
-        console.error('Failed to save cart to localStorage:', e);
-      }
-    }
-  }, [items]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-      setItems((prev) => {
+      writeCart((prev) => {
         const existingIndex = prev.findIndex(
           (i) =>
             i.productId === item.productId &&
@@ -106,7 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = useCallback(
     (productId: string, modificationId: string | null) => {
-      setItems((prev) =>
+      writeCart((prev) =>
         prev.filter(
           (i) =>
             !(i.productId === productId && i.modificationId === modificationId),
@@ -123,7 +101,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setItems((prev) =>
+      writeCart((prev) =>
         prev.map((i) =>
           i.productId === productId && i.modificationId === modificationId
             ? { ...i, quantity }
@@ -134,9 +112,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [removeItem],
   );
 
-  const clearCart = useCallback(() => {
-    setItems([]);
-  }, []);
+  const clearCart = useCallback(() => writeCart(() => EMPTY_CART), []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
@@ -156,6 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         totalPrice,
         isOpen,
         setIsOpen,
+        hydrated,
       }}
     >
       {children}

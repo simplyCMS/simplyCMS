@@ -34,8 +34,8 @@ export interface Order {
   } | null;
   comment: string | null;
   userId: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface CreateOrderInput {
@@ -47,6 +47,90 @@ export interface CreateOrderInput {
   comment?: string | null;
   userId?: string | null;
 }
+
+/** Позиція запиту оформлення — ЛИШЕ ідентичність і кількість (К2-Е0, Е0-4). */
+export interface CheckoutItemInput {
+  productId: string;
+  modificationId: string | null;
+  quantity: number;
+}
+
+/**
+ * Запит оформлення замовлення — канонічний ТИП (T0). Zod-схема живе в T5
+ * (`storefront-routes/server/checkout-input.ts`) і оголошує
+ * `satisfies z.ZodType<PlaceOrderInput>`: одна форма для валідатора,
+ * сторінки й сервера. Цін і вартості доставки тут немає — їх рахує сервер.
+ */
+export interface PlaceOrderInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  shippingMethodId: string;
+  deliveryCity: string | null;
+  deliveryAddress: string | null;
+  pickupPointId: string | null;
+  paymentMethod: 'cash' | 'online';
+  notes: string | null;
+  hasDifferentRecipient: boolean;
+  recipientFirstName: string | null;
+  recipientLastName: string | null;
+  recipientPhone: string | null;
+  recipientEmail: string | null;
+  recipientCity: string | null;
+  recipientAddress: string | null;
+  recipientNotes: string | null;
+  /** Зберегти нового отримувача в книгу покупця. */
+  saveRecipient: boolean;
+  /** Обраний зі списку отримувач; `null` — новий або без отримувача. */
+  savedRecipientId: string | null;
+  savedAddressId: string | null;
+  items: CheckoutItemInput[];
+}
+
+/** Доменні відмови оформлення — КОДОМ; текст — у каталозі повідомлень. */
+export type PlaceOrderRejection =
+  'shipping_unavailable' | 'pickup_point_invalid' | 'not_purchasable';
+
+/** Що повертається після успішного оформлення. */
+export interface PlacedOrder {
+  id: string;
+  orderNumber: string;
+  /** Токен гостьового замовлення; для залогіненого — `null`. */
+  accessToken: string | null;
+}
+
+export type PlaceOrderResult =
+  { ok: true; order: PlacedOrder } | { ok: false; reason: PlaceOrderRejection };
+
+/**
+ * Позиція КВОТИ — ті самі поля, що летять у замовлення (розділ M рішень
+ * архітектора), без ідентифікатора БД: квота нічого не записує.
+ */
+export interface QuotedItem {
+  productId: string | null;
+  modificationId: string | null;
+  name: string;
+  price: number;
+  basePrice: number | null;
+  quantity: number;
+}
+
+/**
+ * Квота чекауту — ті самі числа, які запише `placeOrderFor`, без запису.
+ * Рахує їх та сама функція `prepareCheckout`, що й оформлення, тож
+ * «показане = записане» тримається ЗА ПОБУДОВОЮ (розділ M).
+ */
+export interface CheckoutQuote {
+  items: QuotedItem[];
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+}
+
+export type QuoteCheckoutResult =
+  | { ok: true; quote: CheckoutQuote }
+  | { ok: false; reason: PlaceOrderRejection };
 
 export interface OrderQuery extends PageQuery {
   status?: string;

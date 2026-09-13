@@ -20,9 +20,13 @@ import {
 const BASE_URL = 'https://shop.test';
 
 const DATA: SitemapData = {
-  sections: [{ slug: 'shoes', updated_at: '2026-07-01T00:00:00Z' }],
+  sections: [{ slug: 'shoes', updated_at: new Date('2026-07-01T00:00:00Z') }],
   products: [
-    { slug: 'boot', updated_at: '2026-07-01T00:00:00Z', section_slug: 'shoes' },
+    {
+      slug: 'boot',
+      updated_at: new Date('2026-07-01T00:00:00Z'),
+      section_slug: 'shoes',
+    },
   ],
 };
 

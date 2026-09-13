@@ -51,4 +51,12 @@ description: 'Правила оптимізації для SimplyCMS'
 - Storefront-роути — SSR (`_storefront`): HTML з даними для краулерів.
 - Інтерактивні частини — звичайні React-компоненти з хуками (стан, ефекти);
   жодних Server Components / `'use client'` — це Vite/TanStack Start, не Next.js.
-- `suppressHydrationWarning` для елементів з різним SSR/client рендером (dark mode, cart count).
+- Стан, якого сервер не знає (localStorage: кошик), читати через
+  `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` з порожнім
+  серверним снапшотом (зразок — `react-query/useCart.tsx`, `plugins/HookRegistry.ts`).
+  🔴 `suppressHydrationWarning` лишається для елемента, чиї АТРИБУТИ законно
+  різняться між SSR і клієнтом (dark mode: `attribute="class"` на `<html>` у
+  `src/routes/__root.tsx`), але не рятує умовно ПРИСУТНІЙ вузол (бейдж
+  лічильника): він гасить розбіжність атрибутів/тексту одного елемента, а
+  зайвий вузол дає React #418 попри нього. Гейт —
+  `react-query/__tests__/cart-hydration.test.tsx`.

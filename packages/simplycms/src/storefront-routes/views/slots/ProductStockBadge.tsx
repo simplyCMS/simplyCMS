@@ -1,4 +1,6 @@
+import type { StockStatus } from 'simplycms/contracts';
 import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import { isPurchasable } from 'simplycms/domain/inventory';
 import { useT } from 'simplycms/i18n';
 import { Badge } from 'simplycms/ui/badge';
 import { cn } from 'simplycms/ui/utils';
@@ -6,7 +8,7 @@ import { cn } from 'simplycms/ui/utils';
 export interface ProductStockBadgeProps {
   className?: string;
   /** Статус наявності товару або обраної модифікації. */
-  stockStatus: string | null;
+  stockStatus: StockStatus | null;
 }
 
 /**
@@ -22,7 +24,11 @@ export function ProductStockBadge({
   stockStatus,
 }: ProductStockBadgeProps) {
   const t = useT();
-  const isInStock = stockStatus === 'in_stock' || stockStatus === 'on_order';
+  // 🔴 Правило наявності — ОДНЕ, з домену: `null` тут означає «статус не
+  // заданий», а DEFAULT колонки — `in_stock`, тож відсутність твердження
+  // за каноном схеми і є «в наявності». Власна формула тут давала на `null`
+  // «немає в наявності» — третій голос проти домену й проти write-side.
+  const isInStock = isPurchasable(stockStatus);
 
   return (
     <div

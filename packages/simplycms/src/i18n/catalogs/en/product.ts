@@ -13,7 +13,6 @@ export const messages: Catalog = {
   'product.availabilityInStores': 'Availability in stores',
   'product.inStockCount': 'In stock: {count} pcs',
   'product.unitsCount': '{count} pcs',
-  'product.stockUnknown': 'Unknown',
 
   'product.addToCart': 'Add to cart',
   'product.addedToCart': 'Added to cart',

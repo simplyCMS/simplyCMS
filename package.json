@@ -32,7 +32,8 @@
     "db:pull": "pnpm --filter simplycms run db:pull",
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
-    "db:demo": "node scripts/demo-db.mjs"
+    "db:demo": "node scripts/demo-db.mjs",
+    "live:smoke": "node scripts/live-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
@@ -111,12 +112,14 @@
     "@tanstack/virtual-file-routes": "1.161.7",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "drizzle-kit": "0.31.10",
     "drizzle-orm": "0.45.2",
     "eslint": "^10.8.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^30.0.1",
     "pg": "8.22.0",

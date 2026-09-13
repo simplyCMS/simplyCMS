@@ -18,7 +18,10 @@ interface CheckoutDeliveryFormProps {
   values: Record<string, string | boolean>;
   onChange: (field: string, value: string | boolean) => void;
   subtotal: number;
-  onShippingCostChange: (cost: number) => void;
+  /** Чи є хоч один спосіб доставки — батько блокує submit, поки `false`. */
+  onAvailabilityChange?: (hasMethods: boolean) => void;
+  /** Обраний метод — pickup чи ні; батько цим гейтить запит квоти (рев'ю I3). */
+  onPickupChange?: (isPickup: boolean) => void;
 }
 
 const MAX_VISIBLE_CARDS = 3;
@@ -43,7 +46,8 @@ export function CheckoutDeliveryForm({
   values,
   onChange,
   subtotal,
-  onShippingCostChange,
+  onAvailabilityChange,
+  onPickupChange,
 }: CheckoutDeliveryFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -184,15 +188,50 @@ export function CheckoutDeliveryForm({
   };
 
   useEffect(() => {
-    const rate = selectedMethodId ? rateFor(selectedMethodId) : null;
-    onShippingCostChange(rate?.cost ?? 0);
-  }, [selectedMethodId, rateFor, onShippingCostChange]);
-
-  useEffect(() => {
     if (methods.length > 0 && !selectedMethodId) {
       onChange('shippingMethodId', methods[0].id);
     }
   }, [methods, selectedMethodId, onChange]);
+
+  useEffect(() => {
+    onAvailabilityChange?.(methods.length > 0);
+  }, [methods.length, onAvailabilityChange]);
+
+  useEffect(() => {
+    onPickupChange?.(isPickup);
+  }, [isPickup, onPickupChange]);
+
+  // Точки з directory.pickupPoints можуть належати ІНШОМУ методу (рев'ю
+  // #14) — звужуємо до точок ЦЬОГО методу, як і сервер (`prepareCheckout`:
+  // `p.method_id === method.id`); інакше при двох pickup-методах автовибір
+  // міг підставити чужу точку → серверний `pickup_point_invalid`.
+  const ownPickupPoints = useMemo(
+    () => pickupPoints.filter((p) => p.method_id === selectedMethodId),
+    [pickupPoints, selectedMethodId],
+  );
+
+  useEffect(() => {
+    // 🔴 Точка ЧУЖОГО методу скидається — інакше покупець заганяє себе в
+    // безвихідь кліками: обрав самовивіз (точка підставилась сама) →
+    // перемкнувся на курʼєра. Сервер має на це власний предикат
+    // (`prepareCheckout`: `!isPickup && input.pickupPointId` →
+    // `pickup_point_invalid`), а інтерфейсу ЗНЯТИ точку не існує — випадайка
+    // для не-pickup прихована. Без скидання квота відмовляє назавжди, і
+    // submit мертвий без жодної підказки, що робити.
+    if (
+      values.pickupPointId &&
+      !ownPickupPoints.some((p) => p.id === values.pickupPointId)
+    ) {
+      onChange('pickupPointId', '');
+      return;
+    }
+    // Єдина точка видачі обирається сама — тим самим правилом, що й перший
+    // метод вище: плейсхолдер «Оберіть пункт» при одній точці лишав submit,
+    // який сервер відкидає з `pickup_point_invalid`.
+    if (isPickup && ownPickupPoints.length === 1 && !values.pickupPointId) {
+      onChange('pickupPointId', ownPickupPoints[0].id);
+    }
+  }, [isPickup, ownPickupPoints, values.pickupPointId, onChange]);
 
   if (methodsLoading) {
     return (
@@ -205,6 +244,27 @@ export function CheckoutDeliveryForm({
           <div className="animate-pulse h-20 w-full bg-muted rounded" />
           <div className="animate-pulse h-20 w-full bg-muted rounded" />
         </div>
+      </div>
+    );
+  }
+
+  // 🔴 Порожній довідник — стан, у якому оформити замовлення НЕМОЖЛИВО, і
+  // покупець мусить це бачити: до К2-Е0 сітка `methods.map` рендерилась
+  // порожньою, поле для помилки валідації не існувало, а submit лишався
+  // активним і мовчав. Той самий блокуючий патерн, що в CartView для
+  // порожнього кошика.
+  if (methods.length === 0) {
+    return (
+      <div className="border rounded-lg p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+          <Truck className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-1">
+          {t('checkout.noShippingMethods.title')}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {t('checkout.noShippingMethods.description')}
+        </p>
       </div>
     );
   }
@@ -226,6 +286,7 @@ export function CheckoutDeliveryForm({
               return (
                 <label
                   key={method.id}
+                  htmlFor={`checkout-shipping-${method.id}`}
                   className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
                     selectedMethodId === method.id
                       ? 'border-primary'
@@ -234,6 +295,7 @@ export function CheckoutDeliveryForm({
                 >
                   <input
                     type="radio"
+                    id={`checkout-shipping-${method.id}`}
                     name="shippingMethod"
                     value={method.id}
                     checked={selectedMethodId === method.id}
@@ -265,12 +327,16 @@ export function CheckoutDeliveryForm({
             })}
           </div>
 
-          {isPickup && pickupPoints.length > 0 && (
+          {isPickup && ownPickupPoints.length > 0 && (
             <div className="pt-4 border-t">
-              <label className="text-sm font-medium mb-1 block">
+              <label
+                htmlFor="checkout-pickup-point"
+                className="text-sm font-medium mb-1 block"
+              >
                 {t('checkout.delivery.pickupPointLabel')}
               </label>
               <select
+                id="checkout-pickup-point"
                 value={String(values.pickupPointId || '')}
                 onChange={(e) => onChange('pickupPointId', e.target.value)}
                 className="w-full px-3 py-2 border rounded-md text-sm"
@@ -278,7 +344,7 @@ export function CheckoutDeliveryForm({
                 <option value="">
                   {t('checkout.delivery.pickupPointPlaceholder')}
                 </option>
-                {pickupPoints.map((point) => (
+                {ownPickupPoints.map((point) => (
                   <option key={point.id} value={point.id}>
                     {point.name} - {point.city}, {point.address}
                   </option>
@@ -324,10 +390,14 @@ export function CheckoutDeliveryForm({
               )}
 
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="checkout-city"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('checkout.cityLabel')}
                 </label>
                 <input
+                  id="checkout-city"
                   placeholder={t('checkout.cityPlaceholder')}
                   value={currentCity || ''}
                   onChange={(e) => onChange('deliveryCity', e.target.value)}
@@ -336,10 +406,14 @@ export function CheckoutDeliveryForm({
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="checkout-address"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('checkout.delivery.addressLabel')}
                 </label>
                 <input
+                  id="checkout-address"
                   placeholder={t('checkout.streetAddressPlaceholder')}
                   value={currentAddress || ''}
                   onChange={(e) => onChange('deliveryAddress', e.target.value)}

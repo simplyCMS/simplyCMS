@@ -230,10 +230,14 @@ export function AddressesList() {
               className="space-y-4"
             >
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="address-name"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.name')}
                 </label>
                 <input
+                  id="address-name"
                   placeholder={t('profile.addresses.namePlaceholder')}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -242,10 +246,14 @@ export function AddressesList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="address-city"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.city')}
                 </label>
                 <input
+                  id="address-city"
                   placeholder={t('profile.addresses.cityPlaceholder')}
                   value={formCity}
                   onChange={(e) => setFormCity(e.target.value)}
@@ -254,10 +262,14 @@ export function AddressesList() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="address-line"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('common.address')}
                 </label>
                 <input
+                  id="address-line"
                   placeholder={t('profile.addresses.addressPlaceholder')}
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
@@ -265,10 +277,14 @@ export function AddressesList() {
                   required
                 />
               </div>
-              <label className="flex items-center justify-between rounded-lg border p-3 cursor-pointer">
+              <label
+                htmlFor="address-default"
+                className="flex items-center justify-between rounded-lg border p-3 cursor-pointer"
+              >
                 <span className="text-sm">{t('common.byDefault')}</span>
                 <input
                   type="checkbox"
+                  id="address-default"
                   checked={formIsDefault}
                   onChange={(e) => setFormIsDefault(e.target.checked)}
                   className="rounded"

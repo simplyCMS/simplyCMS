@@ -3,12 +3,7 @@
 import type { ProductCardViewModel } from 'simplycms/contracts/views';
 import type { HomeProduct } from './types';
 
-/**
- * 🔴 `HomeProduct` не несе ціни (звіт Ф1, ризик №4): скорочений SELECT
- * головної їх не тягне. `ProductCardViewModel` вимагає поля явно, тож
- * контейнер дописує `null` — картка на головній рендериться без ціни, як і
- * до спліту.
- */
+/** Ціна приходить із лоадера головної тим самим резолвом, що в каталозі (К2-Е0). */
 export function toCardViewModel(
   products: HomeProduct[],
 ): ProductCardViewModel[] {
@@ -20,7 +15,7 @@ export function toCardViewModel(
     short_description: product.short_description,
     section: product.section,
     stock_status: product.stock_status,
-    price: null,
-    old_price: null,
+    price: product.price,
+    old_price: product.old_price,
   }));
 }

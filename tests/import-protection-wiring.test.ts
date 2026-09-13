@@ -2,26 +2,30 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { importProtection } from 'simplycms/contracts/server-only';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Гейт ПІДКЛЮЧЕННЯ Import Protection у трьох vite-конфігах (трек T).
+ * Гейт підключення Import Protection (трек T; переписаний К2-Е0, T-1).
  *
- * 🔴 Без цього тесту видалення будь-якого з трьох рядків `client` пройшло б
- * ЗЕЛЕНО: parity-тест шаблону ловить лише розходження шаблон↔пілот (обидва
- * зникли б синхронно), хост ні з чим не звіряється, а Gate C сканує чанки
- * скретча, у якому витоку немає. Тобто механізм тримався б на ручному
- * прогоні — а він не відтворюваний.
- *
- * Перевіряється саме ПІДКЛЮЧЕННЯ (текст конфігу), не поведінка: поведінку
- * патернів доводять фікстури декларації та її читачів. Той самий прийом, що в
- * `tests/create-store-template-parity.test.ts`, — конфіги виконуються лише
- * всередині Vite, тож імпортувати їх тут нічим.
+ * 🔴 Попередня версія перевіряла ТЕКСТ трьох конфігів неанкерованими
+ * регексами — і зеленіла на закоментованому блоці та на `enabled: false`
+ * (штатна опція Start, яка вимикає плагін цілком). Тепер дві половини:
+ *   1. ДАНІ — сам обʼєкт, який конфіги передають плагіну, перевіряється
+ *      викликом хелпера декларації, а не читанням файлу;
+ *   2. ТЕКСТ — рівно один анкерований рядок на конфіг: конфіг передає саме
+ *      цей обʼєкт і не має поруч `enabled:`.
+ * Поведінку (що збірка справді падає) доводить Gate IP пілота — `pnpm
+ * pilot:pack`, у CI job `packaging`.
  */
 
 const CONFIGS = [
-  ['хост', 'vite.config.ts', './packages/simplycms/src/contracts/server-only'],
+  [
+    'хост',
+    'vite.config.ts',
+    './packages/simplycms/src/contracts/server-only.ts',
+  ],
   [
     'шаблон магазину',
     'packages/create-simplycms-store/template/vite.config.ts',
@@ -34,64 +38,83 @@ const CONFIGS = [
   ],
 ] as const;
 
-/**
- * Три набори патернів `client` — кожен ЛИШЕ викликом хелпера декларації.
- * Літеральний масив чи власний regex на цьому місці означав би другу копію
- * межі, а весь трек T саме її й ліквідовує.
- */
-const CLIENT_RULES = [
-  ['specifiers', /\bspecifiers:\s*serverOnlySpecifiers\(\),/],
-  // 🔴 `files` — єдиний із трьох, де поруч із хелпером стоїть літерал, і це
-  // навмисно: `client.files` ЗАМІЩУЮТЬ дефолт Start (`pick(user, default)`),
-  // а не зливаються з ним, тож `'**/*.server.*'` треба дописати вручну —
-  // інакше конвенція Start мовчки перестала б діяти в кожному магазині.
-  // Асерт вимагає обидві частини разом, щоб вимкнути будь-яку поодинці було
-  // не можна.
-  [
-    'files',
-    /\bfiles:\s*\[\.\.\.serverOnlyFiles\(\),\s*'\*\*\/\*\.server\.\*'\],/,
-  ],
-  ['excludeFiles', /\bexcludeFiles:\s*serverOnlyExcludeFiles\(\),/],
-] as const;
+describe('Import Protection: дані декларації', () => {
+  const options = importProtection();
+
+  it('режим error, усі імпортери, жодного enabled', () => {
+    expect(options.behavior).toBe('error');
+    expect(options.include).toEqual(['**']);
+    // 🔴 Відсутність ключа, а не `enabled !== false`: `enabled: undefined`
+    // теж читається плагіном як «увімкнено», але ключ у обʼєкті — сигнал,
+    // що хтось уже торкався перемикача.
+    expect('enabled' in options).toBe(false);
+  });
+
+  it('client: три набори, і files несе дефолт Start вручну', () => {
+    const client = options.client!;
+    expect(client.specifiers!.length).toBeGreaterThanOrEqual(2);
+    expect(client.files).toContain('**/*.server.*');
+    expect(client.files!.length).toBe(2);
+    expect(client.excludeFiles!.length).toBe(1);
+  });
+
+  it('specifiers ловлять server-only субшляхи й серверні залежності, пускають клієнтське', () => {
+    const rx = (client: NonNullable<typeof options.client>) =>
+      client.specifiers!.filter((p): p is RegExp => p instanceof RegExp);
+    const denied = (s: string) => rx(options.client!).some((r) => r.test(s));
+    expect(denied('simplycms/db')).toBe(true);
+    expect(denied('simplycms/storefront/loaders')).toBe(true);
+    expect(denied('simplycms/admin-server/impl')).toBe(true);
+    expect(denied('better-auth')).toBe(true);
+    expect(denied('better-auth/reactor')).toBe(true);
+    expect(denied('better-auth/react')).toBe(false);
+    expect(denied('simplycms/ui')).toBe(false);
+    expect(denied('simplycms/admin-server')).toBe(false);
+  });
+
+  it('files ловлять server-only дерева і в src, і в dist; excludeFiles пускає лише ядро з node_modules', () => {
+    const files = options.client!.files!.filter(
+      (p): p is RegExp => p instanceof RegExp,
+    );
+    const deniedFile = (s: string) => files.some((r) => r.test(s));
+    expect(deniedFile('packages/simplycms/src/db/index.ts')).toBe(true);
+    expect(
+      deniedFile(
+        'node_modules/.pnpm/simplycms@0.4.1/node_modules/simplycms/dist/auth/index.js',
+      ),
+    ).toBe(true);
+    expect(deniedFile('packages/simplycms/src/ui/button.tsx')).toBe(false);
+    expect(deniedFile('packages/simplycms-theme-solarstore/src/index.ts')).toBe(
+      false,
+    );
+
+    const [exclude] = options.client!.excludeFiles as RegExp[];
+    expect(exclude.test('node_modules/react/index.js')).toBe(true);
+    expect(
+      exclude.test(
+        'node_modules/.pnpm/simplycms@0.4.1/node_modules/simplycms/src/db/client.ts',
+      ),
+    ).toBe(false);
+  });
+});
 
 describe.each(CONFIGS)(
   'Import Protection у конфізі: %s',
-  (_label, file, specifier) => {
+  (_l, file, specifier) => {
     const source = readFileSync(join(REPO, file), 'utf8');
 
-    it('вантажить усі три хелпери саме з декларації межі', () => {
-      const importBlock = new RegExp(
-        `import \\{([^}]*)\\} from '${specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}';`,
-      ).exec(source);
-      expect(
-        importBlock,
-        `${file}: імпорту з ${specifier} немає`,
-      ).not.toBeNull();
-      const names = (importBlock?.[1] ?? '')
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean);
-      expect(names.sort()).toEqual([
-        'serverOnlyExcludeFiles',
-        'serverOnlyFiles',
-        'serverOnlySpecifiers',
-      ]);
+    it('імпортує рівно хелпер importProtection з декларації', () => {
+      const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(source).toMatch(
+        new RegExp(`^import \\{ importProtection \\} from '${escaped}';$`, 'm'),
+      );
     });
 
-    it('вмикає перевірку в режимі error і на ВСІХ імпортерах', () => {
-      // `include: ['**']` не косметика: за замовчуванням перевіряються лише
-      // імпортери в `src/`, тож теми, плагіни й сам пакет ядра в node_modules
-      // лишились би поза перевіркою — і гейт зеленів би вхолосту.
-      expect(source).toMatch(/importProtection:\s*\{/);
-      expect(source).toMatch(/\bbehavior:\s*'error',/);
-      expect(source).toMatch(/\binclude:\s*\['\*\*'\],/);
+    it('передає обʼєкт декларації одним анкерованим рядком і не чіпає enabled', () => {
+      // 🔴 Анкер `^\s*` — щоб `// importProtection: …` (закоментований) не
+      // рахувався; `enabled:` у будь-якій формі — червоне.
+      expect(source).toMatch(/^\s*importProtection: importProtection\(\),$/m);
+      expect(source).not.toMatch(/^\s*enabled\s*:/m);
     });
-
-    it.each(CLIENT_RULES)(
-      'client.%s — виклик хелпера декларації',
-      (_name, rx) => {
-        expect(rx.test(source), `${file}: ${rx}`).toBe(true);
-      },
-    );
   },
 );

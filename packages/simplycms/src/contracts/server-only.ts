@@ -1,3 +1,5 @@
+import type { tanstackStart } from '@tanstack/react-start/plugin/vite';
+
 /**
  * Межа довіри клієнт/сервер ядра — ЄДИНА декларація (трек T, 2026-09-02).
  *
@@ -95,47 +97,54 @@ export const isServerOnlySubpath = (subpath: string): boolean =>
 
 const alternation = SERVER_ONLY.join('|');
 
-/**
- * Патерни для Import Protection (Vite-плагін Start), клієнтське середовище.
- *
- * `specifiers` ловлять bare-імпорт у магазині (там alias-ів немає); `files` —
- * резолвлений шлях, бо в монорепо alias `simplycms/*` спрацьовує РАНІШЕ за
- * перевірку і специфікатор до неї не доходить (виміряно 2026-09-02: без
- * `files` витік `simplycms/db` у роут хоста збирався зеленим).
- */
-export const serverOnlySpecifiers = (): RegExp[] => [
-  new RegExp(`^simplycms/(${alternation})(/|$)`),
-  ...SERVER_ONLY_DEPS.map(serverOnlyDepSpecifier),
-];
+/** Форма опції `importProtection` плагіна Start — з його ж сигнатури. */
+export type ImportProtectionOptions = NonNullable<
+  NonNullable<Parameters<typeof tanstackStart>[0]>['importProtection']
+>;
 
 /**
- * 🔴 `simplycms/(src|dist)`, а не `packages/simplycms/src`: та сама форма
- * покриває монорепо (`packages/simplycms/src/...`) і магазин
- * (`node_modules/simplycms/src/...` — `src` їде в tarball разом із `dist`).
- * Сторонніх `simplycms-*` це не чіпає: між іменем і `/src` у них дефіс.
- */
-export const serverOnlyFiles = (): RegExp[] => [
-  new RegExp(`simplycms/(src|dist)/(${alternation})(/|\\.[tj]sx?$)`),
-];
-
-/**
- * Ціль, яку file-deny НЕ перевіряє (Import Protection, клієнт).
+ * Читач 6 — Import Protection (Vite-плагін Start), КЛІЄНТСЬКЕ середовище.
+ * Повний обʼєкт опції, який три `vite.config.ts` (хост, шаблон магазину,
+ * оверлей пілота) передають плагіну ОДНИМ рядком — складання на місці дало
+ * б три копії, які розходяться (саме так гейт колись зеленів на
+ * `enabled: false`).
  *
- * 🔴 Дефолт Start виключає з file-deny увесь `node_modules` (глоб `**`
- * перед `/node_modules/` і після), а користувацьке значення дефолт
- * ЗАМІЩУЄ, а не доповнює (`pick(user, default)`). З дефолтом file-deny у
- * магазині мертвий рівно там, де живе ядро, — тож сторонній плагін або тема
- * (у них `simplycms` у залежностях, і pnpm кладе симлінк на ядро ПОРУЧ)
- * обходить `specifiers` одним відносним шляхом у `simplycms/src/**`, і наш
- * лінт цього коду не бачить ніколи. Виключаємо все в node_modules, КРІМ
- * самого пакета ядра.
+ * 🔴 Три пастки Start, усі виміряні (2026-09-02): (1) за замовчуванням
+ * перевіряються лише імпортери в `src/` — тому `include: ['**']`, інакше
+ * теми, плагіни й сам пакет ядра в node_modules лишились би поза перевіркою;
+ * (2) у монорепо alias `simplycms/*` резолвить специфікатор РАНІШЕ за
+ * перевірку — тому поруч зі `specifiers` є `files` по резолвленому шляху
+ * (`simplycms/(src|dist)` покриває і `packages/simplycms/src/…`, і
+ * `node_modules/simplycms/src/…`, не чіпаючи сторонні `simplycms-*`);
+ * (3) `files`/`excludeFiles` дефолт Start ЗАМІЩУЮТЬ (`specifiers` —
+ * зливаються), тому глоб `**` перед `/*.server.*` дописано вручну (інакше
+ * конвенція Start зникла б), а дефолтний виняток
+ * `node_modules` замінено лукахедом, що виключає все, КРІМ симлінка ядра
+ * поруч із залежним пакетом
+ * (`node_modules/.pnpm/simplycms@x/node_modules/simplycms/src/…`) — інакше
+ * відносний шлях звідти обійшов би `specifiers`, а наш лінт чужого коду не
+ * бачить.
  *
- * Lookahead на початку рядка, бо в pnpm реальний шлях —
- * `node_modules/.pnpm/simplycms@x/node_modules/simplycms/src/…`. Слеш у
- * `simplycms/` обовʼязковий: `simplycms-theme-*` лишаються виключеними — їхні
- * файли не є нашими server-only деревами, а їхній bare `simplycms/db` ловлять
- * `specifiers`.
+ * `behavior: 'error'` — рішення власника 2026-09-02; ключа `enabled` тут
+ * немає навмисно — його наявність у будь-якому конфізі валить
+ * `tests/import-protection-wiring.test.ts`.
+ *
+ * 🔴 `import type` з peer-пакета `@tanstack/react-start` — єдине зовнішнє
+ * ребро T0 (лише типове, без рантайм-залежності); споживач `.d.ts` мусить
+ * мати Start у дереві — магазин має його за побудовою.
  */
-export const serverOnlyExcludeFiles = (): RegExp[] => [
-  /^(?!.*node_modules\/simplycms\/).*node_modules\//,
-];
+export const importProtection = (): ImportProtectionOptions => ({
+  behavior: 'error',
+  include: ['**'],
+  client: {
+    specifiers: [
+      new RegExp(`^simplycms/(${alternation})(/|$)`),
+      ...SERVER_ONLY_DEPS.map(serverOnlyDepSpecifier),
+    ],
+    files: [
+      new RegExp(`simplycms/(src|dist)/(${alternation})(/|\\.[tj]sx?$)`),
+      '**/*.server.*',
+    ],
+    excludeFiles: [/^(?!.*node_modules\/simplycms\/).*node_modules\//],
+  },
+});

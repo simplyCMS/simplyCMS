@@ -14,7 +14,6 @@ export const messages = {
   // а частина — лише статус (див. product.inStock).
   'product.inStockCount': 'В наявності: {count} шт',
   'product.unitsCount': '{count} шт',
-  'product.stockUnknown': 'Невідомо',
 
   // Дії
   'product.addToCart': 'Додати в кошик',

@@ -15,6 +15,7 @@ vi.mock('simplycms/core/hooks/use-toast', () => ({
 
 import { SlotHarness, requisite } from './slots-harness';
 import { ProductPriceBlock } from '../views/slots/ProductPriceBlock';
+import type { StockStatus } from 'simplycms/contracts';
 import { ProductStockBadge } from '../views/slots/ProductStockBadge';
 import { ProductAddToCart } from '../views/slots/ProductAddToCart';
 import {
@@ -59,21 +60,29 @@ describe('slot-компоненти картки товару', () => {
     expect(root?.querySelectorAll('span')).toHaveLength(1);
   });
 
+  // 🔴 `null` тут — негативний контроль ПРАВИЛА, а не крайовий випадок рендеру:
+  // саме на ньому слот раніше розходився з доменом (`isPurchasable(null) === true`,
+  // а власна формула слота давала «немає в наявності»). DEFAULT колонки —
+  // `in_stock`, тож відсутність твердження і є «в наявності»: бейджа немає.
   it.each([
     ['in_stock', 0],
     ['on_order', 1],
     ['out_of_stock', 1],
-  ])('ProductStockBadge: маркер є завжди (%s)', (status, badges) => {
-    const { container } = render(
-      <SlotHarness>
-        <ProductStockBadge stockStatus={status} />
-      </SlotHarness>,
-    );
+    [null, 0],
+  ] as ReadonlyArray<readonly [StockStatus | null, number]>)(
+    'ProductStockBadge: маркер є завжди (%s)',
+    (status, badges) => {
+      const { container } = render(
+        <SlotHarness>
+          <ProductStockBadge stockStatus={status} />
+        </SlotHarness>,
+      );
 
-    const root = requisite(container, PRODUCT_DETAIL_REQUISITES.StockBadge);
-    expect(root).not.toBeNull();
-    expect(root?.children).toHaveLength(badges);
-  });
+      const root = requisite(container, PRODUCT_DETAIL_REQUISITES.StockBadge);
+      expect(root).not.toBeNull();
+      expect(root?.children).toHaveLength(badges);
+    },
+  );
 
   it('ProductAddToCart: кладе позицію в кошик і показує toast', () => {
     const { container } = render(

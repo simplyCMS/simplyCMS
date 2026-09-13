@@ -249,7 +249,8 @@ describe('вітрина: знижки, банери, залишки, відгу
     expect(stock.byPoint.map((point) => point.point_name)).toEqual([
       OPEN_POINT_NAME,
     ]);
-    expect(points).toBe(1);
+    // Системна демо-точка + відкрита фікстурна; закрита не рахується.
+    expect(points).toBe(2);
   });
 
   it('невідома ціль наявності віддає порожній, а не «в наявності»', async () => {

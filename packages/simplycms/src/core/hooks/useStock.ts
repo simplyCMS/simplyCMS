@@ -64,16 +64,6 @@ export function usePickupPoints() {
   });
 }
 
-// Helper to check availability based on stock status
-export function isProductAvailable(
-  stockStatus: StockStatus | null,
-  totalQuantity: number,
-): boolean {
-  if (stockStatus === 'on_order') return true;
-  if (stockStatus === 'in_stock') return totalQuantity > 0;
-  return false;
-}
-
 // Status display helpers.
 // 🔴 `getStockStatusLabel` — не хук (викликається з ternary/мап поза
 // компонентом), тому `useT()` тут заборонений — транслятор приймає параметром,
@@ -90,7 +80,13 @@ export function getStockStatusLabel(
     case 'on_order':
       return t('product.onOrder');
     default:
-      return t('product.stockUnknown');
+      // 🔴 `null`/`undefined` — «статус не заданий», а DEFAULT колонки —
+      // `in_stock`: відсутність твердження за каноном схеми і Є «в наявності».
+      // Окремий текст «Невідомо» був ТРЕТІМ голосом правила поруч із доменним
+      // `isPurchasable` і зі слотом бейджа — на тому самому `null` вони казали
+      // різне. Ключ `product.stockUnknown` знято з обох каталогів разом із цією
+      // гілкою: інших читачів у нього не було.
+      return t('product.inStock');
   }
 }
 

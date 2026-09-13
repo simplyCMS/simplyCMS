@@ -29,6 +29,25 @@ description: "Правила роботи з даними та Supabase в Simpl
   `simplycms/storefront/loaders` (обгортка над `withActor`, роль `app_user` без
   `userId`). Кожен лоадер приймає `ActorDb` першим аргументом, тож уся сторінка
   збирається в ОДНІЙ транзакції. Supabase-клієнта в цьому шарі немає.
+- 🔴 **Ескалація ролі покупцем.** Службова дія, яку **ініціює покупець** у
+  власній транзакції (списання залишку при оформленні, повернення залишку й
+  скасування свого замовлення), виконується через `operator(fn)` — другий
+  аргумент `fn` у `withCustomerDb`/`withOrderTokenDb` (третій у
+  `withSessionDb`): `SET LOCAL ROLE app_admin` рівно на час `fn`, ПІСЛЯ того,
+  як RLS уже прийняла читання чи запис покупця в цій транзакції, і лише над
+  обліком магазину. Дія, яку **ініціює сервер або адмінка** (реєстр плагінів,
+  конфіг плагіна, модерація), — `withStoreOperatorDb`. Дві транзакції «спершу
+  перевірити, потім писати з іншої ролі» — заборонена форма: між ними вікно.
+  Дію, яку можна натиснути двічі, всередині ескалації додатково прикриває
+  блокування рядка (`lockOrderStatus`), бо READ COMMITTED сам по собі двох
+  однакових скасувань не розрізняє. Гейти —
+  `test-harness/pg/__tests__/order-stock.test.ts` (його позитивні кейси
+  проходять ЛИШЕ під ескалацією: без `operator` списання падає вже на
+  `SELECT … FOR UPDATE` з `permission denied`, бо `app_user` має на
+  `stock_by_pickup_point` тільки SELECT — `0002_grants.sql:87`);
+  `storefront-personal-data.test.ts` — комітований негативний контроль
+  сусідньої межі: `setOrderStatus` під `app_user` → `permission denied` у
+  `cause`.
 - 🔴 **Видимість фільтрує КОД.** На каталозі RLS немає — `app_user` має SELECT на
   всю таблицю, бо «активність» це правило показу, а не право доступу. Кожен
   публічний запит зобовʼязаний нести предикат явно (`is_active = true`,
@@ -125,6 +144,19 @@ DEFAULT перестав бути страхувальною сіткою і с�
 Гейт інваріанта — `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts`
 (`pnpm test:schema`): він **дискаверить** усі вставки в `packages/simplycms/src/**`,
 а не звіряється зі списком, тож нова вставка без `id` червонить його одразу.
+
+### Контракт дат (К2-Е0, 2026-09-04)
+
+Усі `timestamp` доменної схеми — `mode: 'date'`: у застосунку дата — `Date`.
+Рядком вона стає ЛИШЕ на межі виводу, там, де формат диктує зовнішній контракт:
+`toISOString()` у `storefront/seo/sitemap.ts` (W3C Datetime), `Intl.DateTimeFormat`
+у UI. Пул `simplycms/db` ставить `DateStyle=ISO,YMD`/`TimeZone=UTC` на кожне
+зʼєднання — текст драйвера не залежить від кластера. Через loader-payload і
+serverFn `Date` проходить як `Date` (`DefaultSerializable` Start). 🔴 `new
+Date(рядок)` у коді вітрини — сигнал, що межу перетнули не там. Гейти:
+`seo/__tests__/sitemap.test.ts` (W3C-регекс), `test-harness/pg/__tests__/
+storefront-loaders.test.ts` (`instanceof Date`), `db-session-options.test.ts`,
+live-smoke (`order-success` форматує `Date`).
 
 ### Типи та валідація
 - 🔴 `pnpm db:generate-types` і `pnpm types:baseline` — **ВИДАЛЕНІ** (0.4.1)

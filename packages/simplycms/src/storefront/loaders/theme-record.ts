@@ -16,8 +16,8 @@ export interface ThemeRecord {
   preview_image: Theme['previewImage'];
   is_active: Theme['isActive'];
   settings: Record<string, JsonValue>;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface CacheEntry {
@@ -77,8 +77,8 @@ export async function loadActiveTheme(): Promise<ThemeRecord | null> {
       : {
           ...record,
           settings: (record.settings ?? {}) as Record<string, JsonValue>,
-          created_at: record.created_at ?? new Date().toISOString(),
-          updated_at: record.updated_at ?? new Date().toISOString(),
+          created_at: record.created_at ?? new Date(),
+          updated_at: record.updated_at ?? new Date(),
         };
 
   themeCache = { data, timestamp: now };

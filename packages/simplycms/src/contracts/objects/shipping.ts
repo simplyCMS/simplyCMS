@@ -15,8 +15,8 @@ export interface ShippingMethod {
   sort_order: number;
   config: Record<string, unknown>;
   icon: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface ShippingZone {
@@ -28,7 +28,7 @@ export interface ShippingZone {
   is_active: boolean;
   is_default: boolean;
   sort_order: number;
-  created_at: string;
+  created_at: Date;
   // Joined data
   rates?: ShippingRate[];
 }
@@ -49,7 +49,7 @@ export interface ShippingRate {
   is_active: boolean;
   sort_order: number;
   config: Record<string, unknown>;
-  created_at: string;
+  created_at: Date;
   // Joined data
   method?: ShippingMethod;
   zone?: ShippingZone;
@@ -68,7 +68,7 @@ export interface PickupPoint {
   is_system: boolean;
   sort_order: number;
   coordinates: Coordinates | null;
-  created_at: string;
+  created_at: Date;
   // Joined data
   zone?: ShippingZone;
 }

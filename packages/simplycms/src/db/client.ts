@@ -82,6 +82,26 @@ export function getDbPool(): pg.Pool {
   pool ??= new pg.Pool({
     connectionString: resolveDatabaseUrl(process.env),
     connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+    // 🔴 Текст, яким драйвер віддає timestamptz, — властивість КЛАСТЕРА
+    // (GUC DateStyle/TimeZone), не коду: під `SQL,DMY` `new Date()` у V8
+    // читає `01/07/2026` як 7 січня. Startup-опції роблять його
+    // детермінованим для кожного зʼєднання пулу; парсер дат Drizzle
+    // (`mode: 'date'`) далі працює з передбачуваним входом. Гейт —
+    // test-harness/pg/__tests__/db-session-options.test.ts.
+    //
+    // 🔴 РИЗИК, ЯКОГО НЕ БАЧИТЬ ЖОДЕН ГЕЙТ РЕПО: `options` — це STARTUP-
+    // параметр, і транзакційні пулери його відкидають. PgBouncer падає з
+    // `unsupported startup parameter: options`, доки в його конфізі немає
+    // `ignore_startup_parameters=options`; поведінка Supavisor у session
+    // mode НЕ перевірена. Харнес і `live:smoke` ходять у ЧИСТИЙ Postgres,
+    // тож увесь ланцюг гейтів лишається зеленим, а магазин за пулером упав
+    // би на першому ж `connect()` — не на даті, а на зʼєднанні. Для Supabase
+    // це не теоретично: робочий `DATABASE_URL` там — саме session pooler
+    // (прямий `db.<ref>` лише IPv6). Запасний механізм, якщо провайдер не
+    // пропускає: `set_config('DateStyle'|'TimeZone', …, true)` у
+    // `buildActorPrelude` (`db/actor.ts`) — вони йдуть УСЕРЕДИНІ транзакції,
+    // а не на старті, тож працюють у всіх режимах пулера.
+    options: '-c DateStyle=ISO,YMD -c TimeZone=UTC',
   });
   return pool;
 }

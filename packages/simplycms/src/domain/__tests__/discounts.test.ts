@@ -53,6 +53,23 @@ describe('resolveDiscount', () => {
     expect(res.appliedDiscounts).toHaveLength(1);
   });
 
+  // 🔴 Негативний контроль округлення до центів (фінальне рев'ю К2-Е0, B).
+  // Ціна позиції їде в `order_items.price`, а сума — в `order_items.total` і
+  // далі в `orders.subtotal`/`total`. Без округлення покупець бачить ціну
+  // 10.01, множить на 3 і чекає 30.03, а в замовленні лежить 30.02 (бо
+  // 10.005 × 3 = 30.015). Клас пре-існуючий: до етапу те саме число
+  // приходило з клієнта — етап переніс розрахунок на сервер і мусив закрити.
+  it('округлює до центів: 20.01 −50 % дає рівно 10.01, а не 10.005', () => {
+    const groups = [
+      makeGroup({ discounts: [makeDiscount({ discount_value: 50 })] }),
+    ];
+    const res = resolveDiscount(20.01, groups, baseCtx);
+    expect(res.finalPrice).toBe(10.01);
+    expect(res.totalDiscount).toBe(10);
+    // Головне: сума позиції ДОРІВНЮЄ добутку показаної ціни на кількість.
+    expect(res.finalPrice * 3).toBeCloseTo(30.03, 10);
+  });
+
   it('AND sums discounts', () => {
     const groups = [
       makeGroup({

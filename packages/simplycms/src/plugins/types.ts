@@ -69,11 +69,13 @@ export interface PluginBootstrapRow {
  */
 export interface PluginRecord extends Omit<
   Plugin,
-  'config' | 'hooks' | 'migrations_applied'
+  'config' | 'hooks' | 'migrations_applied' | 'installed_at' | 'updated_at'
 > {
   config: PluginJson;
   hooks: PluginJson;
   migrations_applied: PluginJson;
+  installed_at: Date | null;
+  updated_at: Date | null;
 }
 
 /** JSON без `undefined` — рівно те, що переживає серіалізацію serverFn. */

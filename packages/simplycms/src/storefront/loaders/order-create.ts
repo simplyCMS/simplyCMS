@@ -1,53 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
-import { orderItems, orders, shippingMethods } from 'simplycms/schema';
-import type { JsonValue } from './entities/property';
-import type { ActorDb } from './db';
+import { orderItems, orders } from 'simplycms/schema';
+import type { PlacedOrder } from 'simplycms/contracts';
+import type { ActorDb, OperatorEscalation } from './db';
+import type { NewOrderInput } from './entities/new-order';
 import { loadDefaultStatusId } from './order-statuses';
-
-/** Позиція кошика в тому вигляді, в якому вона лягає в замовлення. */
-export interface NewOrderItem {
-  productId: string | null;
-  modificationId: string | null;
-  name: string;
-  price: number;
-  quantity: number;
-  basePrice: number | null;
-  discountData: JsonValue | null;
-}
-
-/** Контактні й доставкові дані оформлення. */
-export interface NewOrderInput {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  shippingMethodId: string;
-  deliveryCity: string | null;
-  deliveryAddress: string | null;
-  pickupPointId: string | null;
-  paymentMethod: string;
-  notes: string | null;
-  subtotal: number;
-  shippingCost: number;
-  total: number;
-  hasDifferentRecipient: boolean;
-  recipientFirstName: string | null;
-  recipientLastName: string | null;
-  recipientPhone: string | null;
-  recipientEmail: string | null;
-  savedRecipientId: string | null;
-  savedAddressId: string | null;
-  items: NewOrderItem[];
-}
-
-/** Що повертається клієнту після оформлення. */
-export interface CreatedOrder {
-  id: string;
-  orderNumber: string;
-  /** Токен гостьового замовлення; для залогіненого — `null`. */
-  accessToken: string | null;
-}
+import { reserveOrderStock } from './order-stock';
 
 /**
  * Номер замовлення.
@@ -84,13 +41,8 @@ export async function createOrder(
   userId: string | null,
   accessToken: string | null,
   input: NewOrderInput,
-): Promise<CreatedOrder> {
-  const [method] = await db
-    .select({ code: shippingMethods.code })
-    .from(shippingMethods)
-    .where(eq(shippingMethods.id, input.shippingMethodId))
-    .limit(1);
-
+  operator: OperatorEscalation,
+): Promise<PlacedOrder> {
   const orderNumber = generateOrderNumber(new Date());
   // Ключ замовлення відомий ДО вставки — тому `.returning()` більше не
   // потрібен: позиції нижче можуть посилатись на нього одразу.
@@ -106,7 +58,10 @@ export async function createOrder(
     lastName: input.lastName,
     email: input.email,
     phone: input.phone,
-    deliveryMethod: method?.code ?? null,
+    // Рев'ю M-2: код методу — з `PreparedCheckout.method.code`, а не з
+    // повторного `select` по `shipping_methods`: `prepareCheckout` уже
+    // знайшов і провалідував цей рядок на `is_active`.
+    deliveryMethod: input.shippingMethodCode ?? null,
     deliveryCity: input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     paymentMethod: input.paymentMethod,
@@ -139,6 +94,14 @@ export async function createOrder(
       basePrice: item.basePrice === null ? null : item.basePrice.toFixed(2),
       discountData: item.discountData ?? null,
     })),
+  );
+
+  // 🔴 Списання — ПІСЛЯ того, як RLS прийняла вставку замовлення й позицій
+  // покупцем: право на цю транзакцію вже доведено, а службова дія йде під
+  // операторською роллю в ТІЙ САМІЙ транзакції (див. `escalationFor`).
+  // `NewOrderItem` структурно є `StockLine`, тож перекладати нічого.
+  await operator((odb) =>
+    reserveOrderStock(odb, orderId, input.items, input.pickupPointId),
   );
 
   return { id: orderId, orderNumber, accessToken };

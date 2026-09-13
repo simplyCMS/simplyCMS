@@ -25,7 +25,7 @@ export interface OrderListRow {
   id: string;
   order_number: string;
   total: number;
-  created_at: string;
+  created_at: Date;
   status_id: string | null;
   status: OrderStatusRow | null;
   items: OrderItemRow[];

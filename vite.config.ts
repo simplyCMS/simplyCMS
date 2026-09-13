@@ -4,11 +4,7 @@ import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
 // Хост не має залежності `simplycms` — резолвить ядро alias-ом, якого
 // конфіг Vite не бачить, тож декларація межі береться відносним шляхом.
-import {
-  serverOnlyExcludeFiles,
-  serverOnlyFiles,
-  serverOnlySpecifiers,
-} from './packages/simplycms/src/contracts/server-only';
+import { importProtection } from './packages/simplycms/src/contracts/server-only.ts';
 
 export default ({ mode }: { mode: string }) => {
   // Контракт серверного env (спека CLI v1 §7): серверний код читає ЛИШЕ
@@ -17,7 +13,12 @@ export default ({ mode }: { mode: string }) => {
   // файлові значення у `process.env` — ЛИШЕ відсутні ключі: реальний env
   // процесу завжди виграє (`loadEnv` і сам ставить `process.env` вище файлів,
   // а `.env.local` — вище `.env`). У prod те саме робить `server.mjs`.
-  const fileEnv = loadEnv(mode, __dirname, '');
+  // `import.meta.dirname`, не `__dirname`: конфіг — ESM у пакеті з
+  // `"type": "module"`; Vite попереджає про `__dirname` під майбутнім
+  // дефолтом `configLoader: 'native'`, а прямий імпорт конфігу в тестах
+  // падав саме на ньому (`ReferenceError: __dirname is not defined`).
+  // Node ≥ 20.11 для цього є за побудовою: Start вимагає ≥ 22.12.
+  const fileEnv = loadEnv(mode, import.meta.dirname, '');
   for (const [key, value] of Object.entries(fileEnv)) {
     if (!(key in process.env)) process.env[key] = value;
   }
@@ -34,48 +35,30 @@ export default ({ mode }: { mode: string }) => {
         // від кореня — `'./src/server.ts'` тут мовчки не знайдеться і плагін
         // відкотиться на дефолтний entry (resolve-entries.js: `from: srcDirectory`).
         server: { entry: './server.ts' },
-        // 🔴 Межа довіри клієнт/сервер у САМІЙ збірці магазину. Server-only
-        // субшляхи ядра й серверні залежності не можуть потрапити в
-        // клієнтський граф: Start валить збірку (dev і build) з трасою
-        // імпорту. Список — єдина декларація ядра, не копія. `include: ['**']`
-        // обовʼязковий: за замовчуванням перевіряються лише імпортери в `src/`,
-        // а теми, плагіни й сам пакет ядра в node_modules лишилися б поза
-        // перевіркою. Перевірка йде ПІСЛЯ компіляції serverFn, тож стаби з
-        // серверними імпортами в тілах хендлерів її не тригерять.
-        importProtection: {
-          behavior: 'error',
-          include: ['**'],
-          client: {
-            specifiers: serverOnlySpecifiers(),
-            // 🔴 Дефолт `['**/*.server.*']` дописано ВРУЧНУ: на відміну від
-            // `specifiers` (зливаються з дефолтом), `files` дефолт ЗАМІЩУЮТЬ
-            // (`pick(user, default)` у start-plugin-core). Без цього рядка
-            // конвенція Start «файл `*.server.ts` клієнту недоступний»
-            // мовчки перестала б діяти в кожному магазині з шаблону.
-            files: [...serverOnlyFiles(), '**/*.server.*'],
-            // Заміщує дефолт `['**/node_modules/**']`, інакше в магазині
-            // file-deny не бачив би `node_modules/simplycms/src/**`.
-            excludeFiles: serverOnlyExcludeFiles(),
-          },
-        },
+        // 🔴 Межа довіри клієнт/сервер у САМІЙ збірці магазину: Start валить
+        // збірку (dev і build) з трасою імпорту. Обʼєкт опції — з єдиної
+        // декларації ядра (там же пояснено три пастки Start); тут — один
+        // рядок, і гейт `tests/import-protection-wiring.test.ts` стереже,
+        // що він саме такий і без `enabled:` поруч.
+        importProtection: importProtection(),
       }),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', '@tanstack/react-query'],
       alias: {
         '@simplycms/plugin-faq': resolve(
-          __dirname,
+          import.meta.dirname,
           'packages/simplycms-plugin-faq/src',
         ),
         '@simplycms/theme-solarstore': resolve(
-          __dirname,
+          import.meta.dirname,
           'packages/simplycms-theme-solarstore/src',
         ),
         // Unscoped-флагман (К0): base-prefix, як і решта — @rollup/plugin-alias
         // матчить `simplycms` та `simplycms/<sub>`, але не `simplycms-*`.
-        simplycms: resolve(__dirname, 'packages/simplycms/src'),
-        '@themes': resolve(__dirname, 'themes'),
-        '@plugins': resolve(__dirname, 'plugins'),
+        simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
+        '@themes': resolve(import.meta.dirname, 'themes'),
+        '@plugins': resolve(import.meta.dirname, 'plugins'),
       },
     },
   };

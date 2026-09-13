@@ -11,6 +11,7 @@ import type {
   AppliedDiscount,
   RejectedDiscount,
 } from 'simplycms/contracts';
+import { roundMoney } from './pricing';
 
 export type {
   DiscountType,
@@ -28,12 +29,12 @@ export type {
 
 // --- Date check ---
 function isWithinDateRange(
-  startsAt: string | null,
-  endsAt: string | null,
+  startsAt: Date | null,
+  endsAt: Date | null,
   now: Date,
 ): boolean {
-  if (startsAt && new Date(startsAt) > now) return false;
-  if (endsAt && new Date(endsAt) < now) return false;
+  if (startsAt && startsAt > now) return false;
+  if (endsAt && endsAt < now) return false;
   return true;
 }
 
@@ -426,9 +427,20 @@ export function resolveDiscount(
   // Ensure discount doesn't exceed base price
   totalDiscount = Math.min(totalDiscount, basePrice);
 
+  // 🔴 Округлюємо ЦІНУ, а знижку виводимо з неї — не навпаки. Ціна — те, що
+  // бачить покупець і що їде в `order_items.price`, а сума позиції рахується
+  // ЯК price × quantity; отже саме ціна мусить бути цілими центами, інакше
+  // `order_items.total` і `orders.subtotal` не дорівнюють добутку показаного
+  // числа (20.01 −50 % × 3: у БД 30.015, а покупець рахує 3 × 10.01 = 30.03).
+  // Зворотний порядок (округлити знижку) зсунув би саму ціну: 10.005 → знижка
+  // 10.01 → ціна 10.00, тобто покупцеві показали б інше число, ніж дає домен.
+  // Виведення знижки з округленої ціни лишає `basePrice - totalDiscount ===
+  // finalPrice` ТОЧНОЮ рівністю, а не наближенням.
+  const finalPrice = roundMoney(Math.max(0, basePrice - totalDiscount));
+
   return {
-    finalPrice: Math.max(0, basePrice - totalDiscount),
-    totalDiscount,
+    finalPrice,
+    totalDiscount: roundMoney(basePrice - finalPrice),
     appliedDiscounts: allApplied,
     rejectedDiscounts: allRejected,
   };

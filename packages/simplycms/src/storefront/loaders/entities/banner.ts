@@ -76,8 +76,8 @@ function isBannerButton(item: unknown): item is BannerButton {
  * як день тижня й «години:хвилини».
  */
 export function isBannerVisible(banner: Banner, now: Date): boolean {
-  if (banner.date_from && new Date(banner.date_from) > now) return false;
-  if (banner.date_to && new Date(banner.date_to) < now) return false;
+  if (banner.date_from && banner.date_from > now) return false;
+  if (banner.date_to && banner.date_to < now) return false;
 
   if (
     banner.schedule_days?.length &&

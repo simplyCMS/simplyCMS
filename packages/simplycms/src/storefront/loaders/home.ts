@@ -1,6 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { banners, products, sections } from 'simplycms/schema';
 import type { Banner } from 'simplycms/contracts';
+import { resolvePrice } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
 import { bannerColumns, toBanner } from './entities/banner';
 import {
@@ -10,6 +11,7 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
+import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
 import { loadRootSections } from './sections';
 
 /** Скільки товарів у добірках «популярне» й «новинки». */
@@ -74,8 +76,23 @@ export async function loadHomeProducts(
     .from(products)
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
-    .orderBy(desc(products.createdAt))
+    // Другий ключ — щоб LIMIT не відсікав «які трапляться» серед рядків з
+    // однаковим `created_at` (усі рядки одного `insert … select` дістають
+    // один `now()`, тож без `id` порядок нижче ліміту недетермінований).
+    .orderBy(desc(products.createdAt), asc(products.id))
     .limit(FEATURED_LIMIT);
 
-  return rows.map((row) => toHomeProduct(row, row.section_slug));
+  // Ціна — ТИМ САМИМ доменним резолвом, що в каталозі (`product-list-item`):
+  // окремий MIN(price)-агрегат був би другим способом рахувати ціну.
+  const prices = await loadPricesByProduct(
+    db,
+    rows.map((row) => row.id),
+  );
+  const defaultPriceType = await loadDefaultPriceTypeId(db);
+  const priceOf = (id: string) =>
+    resolvePrice(prices[id] ?? [], defaultPriceType, defaultPriceType, null);
+
+  return rows.map((row) =>
+    toHomeProduct(row, row.section_slug, priceOf(row.id)),
+  );
 }

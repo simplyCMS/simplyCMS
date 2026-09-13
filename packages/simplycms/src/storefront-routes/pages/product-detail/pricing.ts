@@ -3,6 +3,8 @@
 
 import { applyDiscount } from 'simplycms/core/hooks/useDiscountedPrice';
 import type { DiscountGroup, DiscountResult } from 'simplycms/domain/discounts';
+import type { StockStatus } from 'simplycms/contracts';
+import { isPurchasable } from 'simplycms/domain/inventory';
 import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
 import type {
   CurrentPricing,
@@ -74,7 +76,7 @@ export function resolveCurrentPricing(
   const { product, section, hasModifications, selectedMod } = input;
   const productPrices = (product.product_prices ?? []) as PriceEntry[];
 
-  const stockStatus: string | null = hasModifications
+  const stockStatus: StockStatus | null = hasModifications
     ? (selectedMod?.stock_status ?? 'in_stock')
     : (product.stock_status ?? 'in_stock');
   const modificationId = hasModifications ? selectedMod?.id || null : null;
@@ -114,7 +116,10 @@ export function resolveCurrentPricing(
     sku,
     basePrice,
     discountResult,
-    isInStock: stockStatus === 'in_stock' || stockStatus === 'on_order',
+    // 🔴 Те саме правило, що в бейджі й у домені: `null` — «в наявності»
+    // (DEFAULT колонки — `in_stock`). Власна формула давала тут на `null`
+    // вимкнену кнопку при доступному товарі.
+    isInStock: isPurchasable(stockStatus),
     discountPercent:
       oldPrice && price && oldPrice > price
         ? Math.round(((oldPrice - price) / oldPrice) * 100)

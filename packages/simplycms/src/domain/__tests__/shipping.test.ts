@@ -24,7 +24,7 @@ function makeRate(over: Partial<ShippingRate>): ShippingRate {
     is_active: true,
     sort_order: 0,
     config: {},
-    created_at: '',
+    created_at: new Date('2026-01-01T00:00:00Z'),
     ...over,
   };
 }
@@ -44,8 +44,8 @@ function makeCtx(
       sort_order: 0,
       config: {},
       icon: null,
-      created_at: '',
-      updated_at: '',
+      created_at: new Date('2026-01-01T00:00:00Z'),
+      updated_at: new Date('2026-01-01T00:00:00Z'),
     },
     zone: null,
     cart: { items: [], subtotal: 1000 },

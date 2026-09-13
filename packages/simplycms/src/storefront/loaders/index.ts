@@ -10,8 +10,15 @@ export * from './catalog-filters';
 export * from './catalog-products';
 export * from './modification-values';
 export * from './order-create';
+export * from './checkout-items';
+export * from './prepare-checkout';
+export * from './place-order';
+export * from './quote-checkout';
 export * from './order-statuses';
+export * from './order-stock';
 export * from './orders';
+export * from './stock-release';
+export * from './stock-reservation';
 export * from './addresses';
 export * from './pickup-points';
 export * from './profile';
@@ -73,6 +80,7 @@ export type { ProductRow } from './entities/product';
 export { toImageList } from './entities/product';
 export type { JsonValue, PropertyRow, OptionRow } from './entities/property';
 export { toPropertyRow } from './entities/property';
+export type { NewOrderItem, NewOrderInput } from './entities/new-order';
 export type { SectionRow, SectionRef } from './entities/section';
 // Серверні хелпери, що переїхали зі `storefront-routes/server` (трек T,
 // Крок 1б): вони не serverFn, а звичайні серверні функції — під префіксом

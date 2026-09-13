@@ -108,6 +108,32 @@ export async function setOrderStatus(
 ): Promise<void> {
   await db
     .update(orders)
-    .set({ statusId, updatedAt: new Date().toISOString() })
+    .set({ statusId, updatedAt: new Date() })
     .where(eq(orders.id, orderId));
+}
+
+/**
+ * Блокує рядок замовлення й віддає його поточний статус.
+ *
+ * 🔴 Виконується під `app_admin` (ескалація): `select … for update` вимагає
+ * права UPDATE, якого `app_user` на `orders` не має за побудовою
+ * (`0002_grants.sql:104`).
+ *
+ * 🔴 Потрібне саме блокування, а не «ще одна перевірка статусу»: подвійний
+ * клік по «Скасувати» дає ДВІ паралельні транзакції, і під READ COMMITTED
+ * обидві прочитали б `new` — залишок повернувся б ДВІЧІ. Заблокований рядок
+ * пропускає рівно одну; друга бачить уже змінений `status_id` і виходить.
+ */
+export async function lockOrderStatus(
+  db: ActorDb,
+  orderId: string,
+): Promise<{ statusId: string | null } | null> {
+  const [row] = await db
+    .select({ statusId: orders.statusId })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1)
+    .for('update');
+
+  return row ?? null;
 }

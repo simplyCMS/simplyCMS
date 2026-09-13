@@ -56,6 +56,24 @@ describe('демо-сід: накат поверх канону', () => {
       await queryRows(dbUrl, 'select id from public.product_modifications')
     ).length,
     banners: (await queryRows(dbUrl, 'select id from public.banners')).length,
+    // К2-Е0: доставка й залишки — п'ять нових вставок секції 10, чиї
+    // нетривіальні форми `on conflict` (часткові індекси зон і залишків)
+    // саме тут і доводять ідемпотентність (кейс нижче).
+    shippingMethods: (
+      await queryRows(dbUrl, 'select id from public.shipping_methods')
+    ).length,
+    shippingZones: (
+      await queryRows(dbUrl, 'select id from public.shipping_zones')
+    ).length,
+    shippingRates: (
+      await queryRows(dbUrl, 'select id from public.shipping_rates')
+    ).length,
+    pickupPoints: (
+      await queryRows(dbUrl, 'select id from public.pickup_points')
+    ).length,
+    stockByPickupPoint: (
+      await queryRows(dbUrl, 'select id from public.stock_by_pickup_point')
+    ).length,
   });
 
   it('накатується без помилок і дає непорожній каталог', async () => {
@@ -117,5 +135,22 @@ describe('демо-сід: накат поверх канону', () => {
     const before = await counts();
     await applySqlFiles(dbUrl, [DEMO_FILE]);
     expect(await counts()).toEqual(before);
+  }, 60_000);
+
+  // 🔴 Лічильники рядків тумблер `decrease_on_order` НЕ покривають: він їде
+  // `update`-ом канонічного рядка, а не `insert`-ом, тож повторний накат із
+  // зіпсованим предикатом лишив би лічильники незмінними й зеленими. Асерт
+  // на ЗНАЧЕННЯ — єдине, що ловить це в гейті, а не в ручному psql.
+  it('вмикає облік списання і лишає його увімкненим після повторного накату', async () => {
+    const read = async () =>
+      (
+        await queryRows(
+          dbUrl,
+          "select value->>'decrease_on_order' as v from public.system_settings where key = 'stock_management'",
+        )
+      )[0]?.v;
+    expect(await read()).toBe('true');
+    await applySqlFiles(dbUrl, [DEMO_FILE]);
+    expect(await read()).toBe('true');
   }, 60_000);
 });

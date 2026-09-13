@@ -26,7 +26,7 @@ function product(
   return {
     id,
     price: 100,
-    created_at: '2026-01-01T00:00:00.000Z',
+    created_at: new Date('2026-01-01T00:00:00.000Z'),
     isAvailable: true,
     section: { id: 'sec-1' },
     propertyValues: [],
@@ -158,8 +158,8 @@ describe('filterAndSortProducts', () => {
 
   it('сортування newest — за спаданням дати створення', () => {
     const products = [
-      product('old', { created_at: '2025-01-01T00:00:00.000Z' }),
-      product('new', { created_at: '2026-06-01T00:00:00.000Z' }),
+      product('old', { created_at: new Date('2025-01-01T00:00:00.000Z') }),
+      product('new', { created_at: new Date('2026-06-01T00:00:00.000Z') }),
     ];
 
     const result = filterAndSortProducts(products, {

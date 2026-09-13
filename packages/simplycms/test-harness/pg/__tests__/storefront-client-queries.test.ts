@@ -171,8 +171,8 @@ describe('вибірки вітрини, знятi з браузера', () => {
       totalQuantity: STOCK_QUANTITY,
       isAvailable: true,
     });
-    // 🔴 Модифікація БЕЗ складського рядка мусить бути в мапі й недоступною:
-    // її відсутність селектор показав би як «немає даних», а не «немає в наявності».
+    // 🔴 Модифікація `out_of_stock` мусить бути в мапі й недоступною — за
+    // СТАТУСОМ, не за нулем залишку.
     expect(stock[without.id]).toEqual({ totalQuantity: 0, isAvailable: false });
     expect(values[withStock.id]?.[0].property?.slug).toBe('tip-invertora');
   });

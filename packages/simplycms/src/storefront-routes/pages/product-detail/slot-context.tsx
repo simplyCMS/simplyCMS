@@ -1,6 +1,7 @@
 // Прив'язки slot-компонентів картки товару (контракт тем v3, Фаза 3).
 
 import { createContext, useContext, type ReactNode } from 'react';
+import type { StockStatus } from 'simplycms/contracts';
 import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type { ModificationPrice, ProductModificationRow } from './types';
@@ -11,7 +12,7 @@ export interface ProductDetailBindings {
   pluginContext: Record<string, unknown>;
   /** Контекст хука плагінів після вмісту сторінки (з характеристиками). */
   pluginAfterContext: Record<string, unknown>;
-  stockStatus: string | null;
+  stockStatus: StockStatus | null;
   price: number | undefined;
   oldPrice: number | null | undefined;
   modifications: ProductModificationRow[];

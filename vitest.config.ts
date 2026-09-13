@@ -2,7 +2,12 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
-const pkg = (p: string) => resolve(__dirname, 'packages', p);
+// `import.meta.dirname`, не `__dirname`: конфіг — ESM у пакеті з
+// `"type": "module"`; Vite попереджає про `__dirname` під майбутнім
+// дефолтом `configLoader: 'native'`, а прямий імпорт конфігу в тестах
+// падав саме на ньому (`ReferenceError: __dirname is not defined`).
+// Node ≥ 20.11 для цього є за побудовою: Start вимагає ≥ 22.12.
+const pkg = (p: string) => resolve(import.meta.dirname, 'packages', p);
 
 // Окремий конфіг для тестів: @vitejs/plugin-react (а не tanstackStart, що
 // SSR-трансформує і ламає hook-тести) + дедуп React + ті самі workspace-аліаси,
@@ -17,9 +22,9 @@ export default defineConfig({
       // 🔴 Навмисно `resolve`, а не хелпер `pkg`: рядок у лапках, що
       // починається з імені флагмана й слеша, audit-exports читає як
       // субшлях-специфікатор ядра й вимагає для нього ключ у exports.
-      simplycms: resolve(__dirname, 'packages/simplycms/src'),
-      '@themes': resolve(__dirname, 'themes'),
-      '@plugins': resolve(__dirname, 'plugins'),
+      simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
+      '@themes': resolve(import.meta.dirname, 'themes'),
+      '@plugins': resolve(import.meta.dirname, 'plugins'),
     },
   },
   test: {

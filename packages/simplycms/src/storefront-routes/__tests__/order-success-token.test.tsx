@@ -51,7 +51,7 @@ const orderFixture = {
   notes: null,
   subtotal: 100,
   total: 100,
-  created_at: new Date().toISOString(),
+  created_at: new Date(),
   status_id: null,
   status: null,
   has_different_recipient: false,

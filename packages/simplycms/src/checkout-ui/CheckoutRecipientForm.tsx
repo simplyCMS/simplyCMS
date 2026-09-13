@@ -223,9 +223,13 @@ export function CheckoutRecipientForm({
           </h3>
         </div>
         <div className="p-4 space-y-4">
-          <label className="flex items-start gap-3 cursor-pointer">
+          <label
+            htmlFor="checkout-different-recipient"
+            className="flex items-start gap-3 cursor-pointer"
+          >
             <input
               type="checkbox"
+              id="checkout-different-recipient"
               checked={!!hasDifferentRecipient}
               onChange={(e) =>
                 onChange('hasDifferentRecipient', e.target.checked)
@@ -281,10 +285,14 @@ export function CheckoutRecipientForm({
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-first-name"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.recipientForm.firstNameLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-first-name"
                     placeholder={t('profile.settings.firstNamePlaceholder')}
                     value={currentValues.firstName || ''}
                     onChange={(e) =>
@@ -294,10 +302,14 @@ export function CheckoutRecipientForm({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-last-name"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.recipientForm.lastNameLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-last-name"
                     placeholder={t('profile.settings.lastNamePlaceholder')}
                     value={currentValues.lastName || ''}
                     onChange={(e) =>
@@ -309,10 +321,14 @@ export function CheckoutRecipientForm({
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-phone"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.recipientForm.phoneLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-phone"
                     type="tel"
                     placeholder="+380"
                     value={currentValues.phone || ''}
@@ -321,10 +337,14 @@ export function CheckoutRecipientForm({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-email"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.recipientForm.emailLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-email"
                     type="email"
                     placeholder="email@example.com"
                     value={currentValues.email || ''}
@@ -335,10 +355,14 @@ export function CheckoutRecipientForm({
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-city"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.cityLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-city"
                     placeholder={t('checkout.cityPlaceholder')}
                     value={currentValues.city || ''}
                     onChange={(e) => onChange('recipientCity', e.target.value)}
@@ -346,10 +370,14 @@ export function CheckoutRecipientForm({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">
+                  <label
+                    htmlFor="checkout-recipient-address"
+                    className="text-sm font-medium mb-1 block"
+                  >
                     {t('checkout.recipientForm.addressLabel')}
                   </label>
                   <input
+                    id="checkout-recipient-address"
                     placeholder={t('checkout.streetAddressPlaceholder')}
                     value={currentValues.address || ''}
                     onChange={(e) =>
@@ -360,10 +388,14 @@ export function CheckoutRecipientForm({
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">
+                <label
+                  htmlFor="checkout-recipient-notes"
+                  className="text-sm font-medium mb-1 block"
+                >
                   {t('checkout.recipientForm.notesLabel')}
                 </label>
                 <textarea
+                  id="checkout-recipient-notes"
                   placeholder={t('checkout.recipientForm.notesPlaceholder')}
                   value={currentValues.notes || ''}
                   onChange={(e) => onChange('recipientNotes', e.target.value)}

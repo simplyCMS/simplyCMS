@@ -166,8 +166,8 @@ export const AGGREGATE = {
    * `product_modifications`). Товари приходять НЕ голими рядками —
    * `loadProductsByOption` делегує в спільний `loadCatalogProductsWhere`
    * (`storefront/loaders/catalog-products.ts`), а той доклеює секцію
-   * (`sections`, leftJoin), ціни (`product_prices`) і залишки через
-   * `loadStockByModification`/`loadStockByProduct` (обидва — `stock_by_pickup_point`).
+   * (`sections`, leftJoin), ціни (`product_prices`) — доступність зі
+   * `stock_status` рядка, без окремого читання залишків (К2-Е0, Е0-3).
    * `PropertyOptionPageData.products` документовано як «уже з
    * модифікаціями й цінами» — deps звіряють саме це, а не тільки join
    * ідентифікації опції (Task 6, fix-раунд 2: перша редакція пропустила
@@ -191,12 +191,11 @@ export const AGGREGATE = {
    * товари + розділ (leftJoin, `sections`) + модифікації
    * (`product_modifications`) + ціни (`product_prices`) + характеристики
    * товару (`product_property_values`) й модифікацій
-   * (`modification_property_values`, через `loadModificationValues`) +
-   * залишки по точках видачі (`stock_by_pickup_point`, і по товару, і по
-   * модифікації, через `loadStockByProduct`/`loadStockByModification`) —
-   * сім таблиць одним походом. Раніше йшла під `entityKey(ENTITY.products)`,
-   * тож мутація ціни чи залишку не мала шляху до інвалідації списку
-   * (фінальне рев'ю Е1а, фікс-раунд 3).
+   * (`modification_property_values`, через `loadModificationValues`) —
+   * шість таблиць одним походом; доступність — зі `stock_status` рядка,
+   * без окремого читання залишків (К2-Е0, Е0-3). Раніше йшла під
+   * `entityKey(ENTITY.products)`, тож мутація ціни не мала шляху до
+   * інвалідації списку (фінальне рев'ю Е1а, фікс-раунд 3).
    */
   catalogProducts: aggregateKey('catalog-products', [
     ENTITY.products,
