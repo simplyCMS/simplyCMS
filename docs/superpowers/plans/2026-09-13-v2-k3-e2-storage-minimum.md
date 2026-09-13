@@ -27,7 +27,7 @@
 | Е2-9 | **`ReviewDetail.tsx` не чіпаємо**; лінт-заборона прямих storage-викликів — ратчетом зі списком виїмок | Сторінка мертва й переписується хвилею відгуків цілком. Ратчет не дає Е3–Е6 завести НОВИЙ прямий виклик |
 | Е2-10 | **SVG заборонений на upload**; MIME — за магічними байтами | SVG несе скрипти. Це рядок валідатора, а не «потім». Allowlist Е2: png/jpeg/webp/gif/avif |
 | Е2-11 | 🔴 **Одна копія правила** (2026-09-13, суцільний прохід перед стартом): перевірка вмісту — `inspectUpload`, ліміти й `accept` — `domain/media` (T1), `MIME_BY_EXT` виводиться з `EXT_BY_MIME`, `MediaMime` — з `ACCEPTED_IMAGE_MIME` | Кожне з цих правил стояло в плані ДВІЧІ або тричі: сніфер у двох serverFn, ліміт у трьох місцях (і вже з двома різними значеннями), таблиця розширень двома літералами. Жодна копія не падає одразу — розсинхрон виявляється тим, що роздача віддає 404 на наявний файл або що аватар приймає те, що відкидає адмінка |
-| Е2-12 | 🔴 **Оркестрація заміни — `storefront/loaders/avatar.ts`, не `storage`** | `storage` — узагальнений порт; залежність від `schema.profiles` була б інверсією, яка з другим споживачем стала б `storage → products`. Заміна аватара — дія покупця, що залучає файл, як `placeOrderFor` — дія покупця, що залучає залишки. Лоадери при цьому імпортують ПОРТ, а не `node:fs`. Ціна — `storefront: ['db','auth','storage']` у тір-зонах: класифікація дерева, а не послаблення межі |
+| Е2-12 | 🔴 **Оркестрація заміни — `storefront/loaders/avatar.ts`, не `storage`** | `storage` — узагальнений порт; залежність від `schema.profiles` була б інверсією, яка з другим споживачем стала б `storage → products`. Заміна аватара — дія покупця, що залучає файл, як `placeOrderFor` — дія покупця, що залучає залишки. Лоадери при цьому імпортують ПОРТ, а не `node:fs`. Ціна — `storefront: ['db','auth','storage']` у тір-зонах: класифікація дерева, а не послаблення межі. 🔴 Зона ширша за намір (тір-зони не вміють вужче за теку), тож факт «порт імпортує рівно `avatar.ts`» пінується ратчетом `tests/storage-port-consumers.test.ts`. Варіант «тримати оркестрацію в `core/lib` (T5)» відкинуто з причини сильнішої за `schema.profiles`: `core/lib` **не** є server-only деревом (у `SERVER_ONLY` його немає), тож захист там був би домовленістю, а в `storefront/loaders` його тримають Import Protection, Gate C і партиція `dist`. 🔴 І заборона не теоретична — вона вже ОПЛАЧЕНА в трьох місцях: `core/lib/{user-addresses,user-recipients,review-form}.ts` тримають власну НЕекспортовану копію `withSessionDb` саме тому, що «живий не-serverFn експорт утримав би `simplycms/auth` і пул Postgres у клієнтському бандлі» (`user-addresses.ts:80-81`). Класти туди експортовану `replaceAvatarFor` означало б зламати рівно те правило, заради якого ці три файли дублюють шість рядків |
 
 **Другий інваріант §4-К4 роботи в Е2 не потребує — і це перевірено, а не
 припущено.** Незмінність колонок власності (`entity_type`/`entity_id`/
@@ -175,6 +175,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 | `eslint-rules/no-direct-storage.mjs` | Шосте власне правило: прямий виклик сховища поза портом |
 | `tests/eslint-rules/no-direct-storage.test.ts` | Машинні фікстури правила (Linter API) |
 | `tests/storage-direct-calls.test.ts` | Ратчет: прямі storage-виклики поза портом — список виїмок може лише скорочуватись |
+| `tests/storage-port-consumers.test.ts` | Ратчет: які лоадери вітрини сміють імпортувати порт (тір-зона ширша за намір) |
 | `scripts/live-smoke/avatar.mjs` | Крок аватара живого прогону (окремим модулем — канон 150 рядків `funnel.mjs`) |
 
 **Змінюються:**
@@ -2435,6 +2436,73 @@ export async function clearAvatarFor(
 
 Прогнати `pnpm lint && pnpm vitest run tests/tier-boundary.test.ts`. Expected: PASS.
 
+- [ ] **Step 4c: Ратчет споживачів порту — бо тір-зона ширша за намір**
+
+🔴 Тір-зони працюють на рівні ТЕКИ й вужче не вміють. Тобто виняток із
+Step 4a відкриває `simplycms/storage` **будь-якому** лоадеру вітрини, хоч
+намір — рівно один файл. Сам по собі відкритий виняток наступний етап
+прочитає як «файлова система в лоадерах — норма», і це станеться мовчки.
+
+Лікуємо тим самим механізмом, що й прямі storage-виклики (Task 8): зона
+лишається широкою, а факт пінується ратчетом зі списком, який може тільки
+скорочуватись.
+
+`tests/storage-port-consumers.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+import { sourceFiles } from '../packages/simplycms/test-harness/pg/insert-scan';
+
+const LOADERS = resolve(
+  import.meta.dirname,
+  '../packages/simplycms/src/storefront/loaders',
+);
+
+/**
+ * Хто з лоадерів вітрини сміє імпортувати порт сховища.
+ *
+ * 🔴 Існує тому, що тір-зона не вміє бути вужчою за теку: виняток
+ * `storefront: ['db','auth','storage']` (рішення Е2-12) технічно відкриває
+ * `simplycms/storage` всім лоадерам, хоч намір — рівно `avatar.ts`. Без
+ * цього піна наступний етап побачив би відкритий виняток і вважав би
+ * файлову систему в лоадерах нормою — мовчки, бо жоден гейт не червонів би.
+ *
+ * 🔴 Список може тільки СКОРОЧУВАТИСЬ або рости РІШЕННЯМ, а не звичкою:
+ * новий запис тут — це заявка на те, що ще один лоадер працює з файлами,
+ * і вона мусить пройти рев'ю як рішення, а не проїхати в дифі.
+ */
+const ALLOWED = ['avatar.ts'] as const;
+
+const IMPORTS_PORT = /from\s+['"]simplycms\/storage['"]/;
+
+describe('споживачі порту сховища серед лоадерів вітрини', () => {
+  const consumers = sourceFiles(LOADERS)
+    .filter((file) => IMPORTS_PORT.test(readFileSync(file, 'utf8')))
+    .map((file) => relative(LOADERS, file).replaceAll('\\', '/'));
+
+  it('порт імпортують рівно дозволені лоадери', () => {
+    expect(
+      consumers.filter((f) => !ALLOWED.includes(f as never)),
+      'новий лоадер працює з файлами — це рішення, а не деталь: додай його в ALLOWED свідомо',
+    ).toEqual([]);
+  });
+
+  it('у списку немає мертвих записів', () => {
+    expect(
+      ALLOWED.filter((f) => !consumers.includes(f)),
+      'лоадер більше не імпортує порт — прибери його зі списку',
+    ).toEqual([]);
+  });
+});
+```
+
+🔴 Негативний контроль (прогнати руками, не комітити): додай
+`import { mediaRoot } from 'simplycms/storage';` у
+`packages/simplycms/src/storefront/loaders/products.ts` і прожени тест.
+Expected: FAIL зі списком `['products.ts']`. Прибери рядок.
+
 - [ ] **Step 4b: Написати ТОНКИЙ serverFn кабінету**
 
 `packages/simplycms/src/core/lib/profile-avatar.ts`:
@@ -4111,7 +4179,7 @@ git commit -m "docs(k3-e2): живий крок аватара в live:smoke, с
 7. Traversal (сирий і процентно-кодований) дає 404 і не називає шляхів; драйвер відбиває ключ за межами кореня незалежно від роуту.
 8. `storage` у `SERVER_ONLY`; сентинел у `dist-server-boundary` зелений; `pilot:pack` (Gate C + Gate IP) зелений.
 9. Контракт env лишається **трьома** ключами; `MEDIA_ROOT` задокументований коментарем у `.env.example` і в шаблоні магазину; негативний контроль (активний ключ → червоний) прогнано.
-10. Правило `simplycms-storage/no-direct-storage` і ратчет `storage-direct-calls` зелені, список виїмок — рівно один файл; обидва негативні контролі прогнано, включно з доказом, що нова зона НЕ замістила i18n-селектори.
+10. Ратчет `storage-port-consumers` зелений зі списком рівно з одного лоадера (`avatar.ts`), негативний контроль прогнано. Правило `simplycms-storage/no-direct-storage` і ратчет `storage-direct-calls` зелені, список виїмок — рівно один файл; обидва негативні контролі прогнано, включно з доказом, що нова зона НЕ замістила i18n-селектори.
 11. Гейт `MEDIA_COLUMNS` зелений; негативний контроль (прибраний рядок реєстру → червоний) прогнано.
 12. Повний ланцюг гейтів + `pilot:pack` зелений; warnings `pnpm lint` не зросли.
 13. `git status --porcelain` після всіх прогонів порожній.
