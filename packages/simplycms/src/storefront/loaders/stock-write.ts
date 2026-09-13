@@ -81,6 +81,17 @@ function targetScope(target: StockTarget): SQL | undefined {
  * точок — той самий, що в `resolveStockPoint`, інакше сума рахувалася б по
  * рядках, які нікого не обслуговують.
  *
+ * 🔴 `includePointId` (рев'ю I1) — точка, яку треба бачити в знімку НЕЗАЛЕЖНО
+ * від `is_active`/`is_system`. Потрібна ЛИШЕ на поверненні: замовлення могло
+ * списати з точки, яку магазин деактивував уже ПІСЛЯ оформлення (рядок
+ * залишку і далі існує — каскадом його прибирає лише ВИДАЛЕННЯ точки, не
+ * зняття прапорця). Без цього параметра предикат «обслуговуючих» точок
+ * ховає рядок від `releaseStock`, і той виходить гілкою «рядка немає»
+ * (`if (!row) return`), хоча рядок насправді є і тримає списану кількість —
+ * залишок губиться назавжди. На резервуванні цей параметр не передається:
+ * там ховати рядки неактивної точки — навмисна поведінка (нову броню з
+ * точки, яку магазин зняв із продажу, брати не можна).
+ *
  * 🔴 `of: stockByPickupPoint` обовʼязкове: у запиті є join на `pickup_points`,
  * а блокувати треба лише залишки (діалект емітить `for update of
  * "stock_by_pickup_point"`). Порядок `(sort_order, id)` — однаковий у всіх
@@ -89,6 +100,7 @@ function targetScope(target: StockTarget): SQL | undefined {
 export async function lockTargetStock(
   db: ActorDb,
   target: StockTarget,
+  includePointId?: string,
 ): Promise<LockedStockRow[]> {
   return db
     .select({
@@ -104,7 +116,13 @@ export async function lockTargetStock(
     .where(
       and(
         targetScope(target),
-        or(eq(pickupPoints.isSystem, true), eq(pickupPoints.isActive, true)),
+        or(
+          eq(pickupPoints.isSystem, true),
+          eq(pickupPoints.isActive, true),
+          includePointId
+            ? eq(stockByPickupPoint.pickupPointId, includePointId)
+            : undefined,
+        ),
       ),
     )
     .orderBy(asc(pickupPoints.sortOrder), asc(stockByPickupPoint.id))

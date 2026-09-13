@@ -4,6 +4,14 @@
 // (дві власні точки для перевірки «одна точка, а не сума», залишки для товарів
 // без сідового обліку, і два товари для рішень архітектора B/L — `on_order`
 // і реальний `NULL` у `stock_status`).
+//
+// 🔴 Рев'ю (Opus) до цього файлу додало ще чотири кейси (кожен заводить
+// ВЛАСНУ точку й самодостатній, щоб не мішати стан зі спільними
+// POINT_A/POINT_B): I1 — деактивована точка не губить залишок на
+// поверненні; I2 — та сама пара «списання/повернення» на МОДИФІКАЦІЇ, не
+// лише простому товарі; I3 — подвійне скасування повертає залишок рівно
+// ОДИН раз (гвард `lockOrderStatus`); M4 — реальний `NULL` фліпається у
+// `out_of_stock` write-side, не лише читається як доступний.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -13,10 +21,13 @@ import {
   createOrder,
   loadOrderDetail,
   loadStockInfo,
+  lockOrderStatus,
   releaseOrderStock,
+  setOrderStatus,
   withOrderTokenDb,
   withStorefrontDb,
   type NewOrderInput,
+  type OperatorEscalation,
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -409,6 +420,220 @@ describe('замовлення списує залишок і повертає �
     );
     expect(await quantities(ids[ON_ORDER_SLUG])).toEqual([0]);
     expect(await statusOf(ids[ON_ORDER_SLUG])).toBe('on_order');
+  });
+
+  it('🔴 I1: точку ДЕАКТИВУВАЛИ між замовленням і скасуванням — залишок повертається', async () => {
+    // Власна точка й товар — сценарій самодостатній, не займає стан
+    // POINT_A/POINT_B, яким послуговуються сусідні кейси.
+    const [{ id: pointId }] = (await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values (gen_random_uuid(), $1, 'Тестова точка I1', 'вул. І1, 1', 'Київ', true, 20)
+       returning id`,
+      [methodId],
+    )) as IdRow[];
+    const productId = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, 'test-i1-deactivated-point', 'Тест I1')`,
+      [productId],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $2, null, 5)`,
+      [pointId, productId],
+    );
+
+    const order = await place(productId, 3, pointId);
+    expect(await quantities(productId)).toEqual([2]);
+
+    // Магазин деактивує точку ПІСЛЯ оформлення. Рядок залишку і далі існує —
+    // деактивація не каскадить (лише ВИДАЛЕННЯ точки прибирає рядок).
+    await queryRows(
+      dbUrl,
+      `update public.pickup_points set is_active = false where id = $1`,
+      [pointId],
+    );
+
+    await withOrderTokenDb(
+      order.accessToken as string,
+      async (db, operator) => {
+        await operator((odb) => releaseOrderStock(odb, order.id));
+      },
+    );
+
+    // Без `includePointId` у `lockTargetStock` рядок ховав той самий предикат
+    // «обслуговуючих» точок, і `releaseStock` мовчки виходив на «рядка немає»
+    // — залишок лишився б [2] назавжди.
+    expect(await quantities(productId)).toEqual([5]);
+  });
+
+  it('🔴 I2: списання й повернення працюють так само для МОДИФІКАЦІЇ, не лише простого товару', async () => {
+    const [{ id: modificationId }] = (await queryRows(
+      dbUrl,
+      `select id from public.product_modifications where slug = 'chornyi' and product_id = $1`,
+      [ids[FALLBACK_SLUG]],
+    )) as IdRow[];
+    const [{ id: pointId }] = (await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values (gen_random_uuid(), $1, 'Тестова точка I2', 'вул. І2, 1', 'Київ', true, 21)
+       returning id`,
+      [methodId],
+    )) as IdRow[];
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, null, $2, 2)`,
+      [pointId, modificationId],
+    );
+
+    const modQuantity = async (): Promise<number> =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select quantity from public.stock_by_pickup_point where modification_id = $1`,
+          [modificationId],
+        )) as QtyRow[]
+      )[0].quantity;
+    const modStatus = async (): Promise<string | null> =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select stock_status from public.product_modifications where id = $1`,
+          [modificationId],
+        )) as StatusRow[]
+      )[0].stock_status;
+
+    // `productId` тут ЗНАЧЕННЯ не має — items нижче перевизначає позицію на
+    // цільову модифікацію (`baseInput` лишає інші поля контакту/доставки).
+    const input: NewOrderInput = {
+      ...baseInput(ids[FALLBACK_SLUG], 2, methodId, pointId),
+      items: [
+        {
+          productId: null,
+          modificationId,
+          name: 'Модифікація',
+          price: 100,
+          quantity: 2,
+          basePrice: null,
+          discountData: null,
+        },
+      ],
+    };
+    const token = crypto.randomUUID();
+    const order = await withOrderTokenDb(token, (db, operator) =>
+      createOrder(db, null, token, input, operator),
+    );
+
+    expect(await modQuantity()).toBe(0);
+    expect(await modStatus()).toBe('out_of_stock');
+
+    await withOrderTokenDb(
+      order.accessToken as string,
+      async (db, operator) => {
+        await operator((odb) => releaseOrderStock(odb, order.id));
+      },
+    );
+    expect(await modQuantity()).toBe(2);
+    expect(await modStatus()).toBe('in_stock');
+  });
+
+  it('🔴 I3: подвійне скасування (гвард lockOrderStatus) повертає залишок РІВНО один раз', async () => {
+    const [{ id: pointId }] = (await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values (gen_random_uuid(), $1, 'Тестова точка I3', 'вул. І3, 1', 'Київ', true, 22)
+       returning id`,
+      [methodId],
+    )) as IdRow[];
+    const productId = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, 'test-i3-double-cancel', 'Тест I3')`,
+      [productId],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $2, null, 5)`,
+      [pointId, productId],
+    );
+
+    const order = await place(productId, 3, pointId);
+    expect(await quantities(productId)).toEqual([2]);
+
+    const [{ id: cancelledId }] = (await queryRows(
+      dbUrl,
+      `select id from public.order_statuses where code = 'cancelled'`,
+    )) as IdRow[];
+    const [{ status_id: originalStatusId }] = (await queryRows(
+      dbUrl,
+      `select status_id from public.orders where id = $1`,
+      [order.id],
+    )) as { status_id: string }[];
+
+    // Дві паралельні транзакції, кожна відтворює РІВНО те, що робить
+    // `cancelMyOrder` усередині ескалації: блокування рядка замовлення →
+    // гвард статусу → повернення залишку → зміна статусу. Без
+    // `lockOrderStatus` обидві прочитали б старий `status_id` під READ
+    // COMMITTED і повернули б залишок ДВІЧІ.
+    const cancelOnce = (): Promise<boolean> =>
+      withOrderTokenDb(order.accessToken as string, (_db, operator) =>
+        operator(async (odb) => {
+          const locked = await lockOrderStatus(odb, order.id);
+          if (!locked || locked.statusId !== originalStatusId) return false;
+          await releaseOrderStock(odb, order.id);
+          await setOrderStatus(odb, order.id, cancelledId);
+          return true;
+        }),
+      );
+
+    const results = await Promise.all([cancelOnce(), cancelOnce()]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(await quantities(productId)).toEqual([5]);
+  });
+
+  it('🔴 M1: захоплений operator, викликаний ПІСЛЯ завершення своєї транзакції, кидає гучну помилку', async () => {
+    // Замикання над `pg.PoolClient` не робить «ескалацію з нізвідки»
+    // неможливою — сама по собі це лише функція. Гарантія тримається
+    // прапорцем `finished`, а не структурою: перевіряємо, що виклик ПІСЛЯ
+    // коміту (і повернення зʼєднання в пул) падає гучно, а не тихо чіпляє
+    // роль до зʼєднання, яке пул тим часом міг віддати іншому запиту.
+    const token = crypto.randomUUID();
+    let leaked: OperatorEscalation | undefined;
+    await withOrderTokenDb(token, async (_db, operator) => {
+      leaked = operator;
+    });
+
+    await expect(leaked!(async () => {})).rejects.toThrow(/already finished/);
+  });
+
+  it('🔴 M4: реальний NULL фліпається в out_of_stock на нулі (рішення L, write-side)', async () => {
+    const [{ id: pointId }] = (await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values (gen_random_uuid(), $1, 'Тестова точка M4', 'вул. М4, 1', 'Київ', true, 23)
+       returning id`,
+      [methodId],
+    )) as IdRow[];
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $2, null, 2)`,
+      [pointId, ids[NULL_STATUS_SLUG]],
+    );
+
+    // Перед замовленням статус — САМЕ NULL (той самий рядок, що й у read-side
+    // кейсі вище), не рядок 'in_stock': гвард `or(isNull(col), eq(col,
+    // 'in_stock'))` мусить спрацювати саме на NULL-гілці, інакше товар із
+    // DEFAULT-статусом ніколи не переходив би в `out_of_stock`.
+    expect(await statusOf(ids[NULL_STATUS_SLUG])).toBeNull();
+
+    await place(ids[NULL_STATUS_SLUG], 2, pointId);
+    expect(await quantities(ids[NULL_STATUS_SLUG])).toEqual([0]);
+    expect(await statusOf(ids[NULL_STATUS_SLUG])).toBe('out_of_stock');
   });
 
   it('🔴 без системної точки резолв падає в ПЕРШУ АКТИВНУ за (sort_order, id)', async () => {

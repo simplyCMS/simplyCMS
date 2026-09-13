@@ -1,7 +1,12 @@
 import { withActor, type Actor, type ActorDb } from 'simplycms/db';
-import type pg from 'pg';
+import {
+  escalationFor,
+  type EscalationState,
+  type OperatorEscalation,
+} from './escalation';
 
 export type { ActorDb };
+export type { OperatorEscalation } from './escalation';
 
 /**
  * Транзакція вітрини — вхід у БД для ПУБЛІЧНОГО читання (В2-К1а).
@@ -22,75 +27,13 @@ export function withStorefrontDb<T>(
 }
 
 /**
- * Службова дія магазину ВСЕРЕДИНІ транзакції покупця — під `app_admin`,
- * з негайним поверненням до ролі актора.
- *
- * 🔴 Навіщо, коли є `withStoreOperatorDb`: списання залишку мусить бути в
- * ТІЙ САМІЙ транзакції, що й вставка замовлення (інакше замовлення без
- * списання або списання без замовлення), а скасування з поверненням залишку
- * — у тій самій, що й перевірка права (інакше між «перевірив» і «записав» —
- * вікно). `app_user` за `0002_grants.sql` має на
- * `products` (`:78`) і `stock_by_pickup_point` (`:87`) лише SELECT і не має
- * UPDATE на `orders` (`:104`) — і це правильно: покупець не пише в облік і не редагує
- * замовлення. Тому роль перемикається рівно на час службової дії тим самим
- * `SET LOCAL ROLE`, яким її ставить `withActor`; runtime-роль має `set true`
- * на обидві (`0000_prelude.sql:94-95`), а членство Postgres перевіряє проти
- * session user, не проти поточної ролі.
- *
- * Правило використання — те саме, що в `withStoreOperatorDb`, лише всередині
- * однієї транзакції: викликати ПІСЛЯ того, як RLS уже прийняла читання чи
- * запис покупця в цій транзакції, і лише для обліку магазину — ніколи для
- * читання чи запису чужих рядків. Функція недоступна поза обгортками нижче:
- * її створює сама транзакція, тож «ескалація з нізвідки» неможлива за
- * побудовою. Канон — `data-access.instructions.md`, «Ескалація ролі покупцем».
- */
-export type OperatorEscalation = <T>(
-  fn: (db: ActorDb) => Promise<T>,
-) => Promise<T>;
-
-function escalationFor(
-  client: pg.PoolClient,
-  db: ActorDb,
-  actor: Actor,
-): OperatorEscalation {
-  return async (fn) => {
-    await client.query('set local role app_admin');
-    try {
-      return await fn(db);
-    } finally {
-      await restoreRoleQuietly(client, actor);
-    }
-  };
-}
-
-/**
- * Повернення ролі актора, яке не підміняє собою первинну помилку.
- *
- * 🔴 Саме `finally`, а не success-path: `InsufficientStockError` кидається
- * чистим JS ПІСЛЯ успішного `SELECT … FOR UPDATE`, тобто транзакція в цей
- * момент ЖИВА — без повернення ролі решта транзакції лишилася б під
- * `app_admin`, і ескалація пережила б `fn`, хоч контракт обіцяє «рівно на
- * час `fn`».
- *
- * 🔴 І саме ТИХО — точно як `rollbackQuietly` (`db/with-actor.ts:81-87`):
- * якщо `fn` упав ЗАПИТОМ, транзакція вже aborted, і `set local role` кинув
- * би 25P02, замаскувавши першопричину. Гасити помилку тут безпечно: таку
- * транзакцію `withActor` однаково відкотить, а ROLLBACK сам скидає
- * `SET LOCAL ROLE`. Імʼя ролі — з валідованого `Actor`.
- */
-async function restoreRoleQuietly(
-  client: pg.PoolClient,
-  actor: Actor,
-): Promise<void> {
-  try {
-    await client.query(`set local role ${actor.role}`);
-  } catch {
-    // Свідомо тихо — див. докблок вище.
-  }
-}
-
-/**
- * Транзакція ЗАЛОГІНЕНОГО покупця: `app_user` + GUC `app.user_id`.
+ * Транзакція ЗАЛОГІНЕНОГО покупця: `app_user` + GUC `app.user_id`, плюс
+ * `operator` — службова дія ВСЕРЕДИНІ цієї транзакції під `app_admin`
+ * (списання/повернення залишку, скасування замовлення). Реалізація й повна
+ * причина — `./escalation`; правило використання — `data-access.
+ * instructions.md`, «Ескалація ролі покупцем»: `operator` кличеться ЛИШЕ
+ * ПІСЛЯ того, як RLS уже прийняла читання чи запис покупця в ЦІЙ транзакції,
+ * і лише для обліку магазину — ніколи для читання чи запису чужих рядків.
  *
  * 🔴 `userId` сюди приходить ЛИШЕ з `readSessionSubject` серверної сесії й
  * ніколи з параметра клієнта. Актора задає сервер, тож підставлений у запит
@@ -102,13 +45,17 @@ export function withCustomerDb<T>(
   fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
 ): Promise<T> {
   const actor: Actor = { role: 'app_user', userId };
+  const state: EscalationState = { finished: false };
   return withActor(actor, (db, client) =>
-    fn(db, escalationFor(client, db, actor)),
-  );
+    fn(db, escalationFor(client, db, actor, state)),
+  ).finally(() => {
+    state.finished = true;
+  });
 }
 
 /**
- * Транзакція ГОСТЬОВОГО замовлення: `app_user` + GUC `app.order_token`.
+ * Транзакція ГОСТЬОВОГО замовлення: `app_user` + GUC `app.order_token`,
+ * плюс `operator` — те саме, що в `withCustomerDb`.
  *
  * Гість не має ідентичності — його доступ до одного замовлення доводить
  * одноразовий токен із посилання (`orders_select_own_or_token`).
@@ -118,9 +65,12 @@ export function withOrderTokenDb<T>(
   fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
 ): Promise<T> {
   const actor: Actor = { role: 'app_user', orderToken };
+  const state: EscalationState = { finished: false };
   return withActor(actor, (db, client) =>
-    fn(db, escalationFor(client, db, actor)),
-  );
+    fn(db, escalationFor(client, db, actor, state)),
+  ).finally(() => {
+    state.finished = true;
+  });
 }
 
 /**
