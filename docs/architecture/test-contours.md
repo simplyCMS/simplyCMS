@@ -673,7 +673,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 прогони харнеса проти одного контейнера конфліктують на `CREATE DATABASE`
 (`fileParallelism: false` у `vitest.schema.config.ts` — навмисно).
 
-## 12. Межа клієнт/сервер: одна декларація, шість читачів (трек T, 2026-09-02)
+## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
 (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
@@ -690,6 +690,7 @@ Server-only субшляхи ядра задекларовано ОДИН раз
 | `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
 | Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** пілота (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
 | `tests/dist-server-boundary.test.ts`, блок сентинелів | контроль САМОГО списку `SERVER_ONLY`: мапа літералів не похідна від списку, кожен є в джерелі дерева, у серверному `dist` і відсутній у клієнтському | закоментований рядок `'storefront'` у декларації → червоний packaging |
+| `eslint-rules/no-server-only-in-client.mjs` (зона `simplycms-client-boundary`, К3-Е2) | клієнтська тека ядра (`admin/**`, пʼять `*-ui/**`) не імпортує server-only субшлях чи серверну залежність зі СТАТИЧНОГО `import`/`export…from` — окремий детектор, бо базовий `no-restricted-imports` не розрізняє `import` і стираний компілятором `import type` (канон `OrderStatuses.tsx:8`) | `tests/eslint-rules/no-server-only-in-client.test.ts` (фікстури Linter API) + `tests/tier-boundary-client-boundary.test.ts` (реальний конфіг: заборона в `checkout-ui`, виїмка `core/lib`, чистий `import type` в `admin`) |
 
 Три пастки Start (include за замовчуванням лише `src/`; alias резолвить
 раніше за `specifiers`; `files`/`excludeFiles` заміщують дефолт) —

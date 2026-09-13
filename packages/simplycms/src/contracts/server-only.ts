@@ -12,7 +12,7 @@ import type { tanstackStart } from '@tanstack/react-start/plugin/vite';
  * `themes/server` і `plugins/server` у цьому списку дають пʼять хибних
  * спрацювань Import Protection на чистому коді.
  *
- * 🔴 Тут лише ДАНІ (тір T0 — нуль рантайм-залежностей). Читачів шість, кожен
+ * 🔴 Тут лише ДАНІ (тір T0 — нуль рантайм-залежностей). Читачів СІМ, кожен
  * своїм механізмом, і жоден не тримає власної копії списку:
  *   1. `packages/simplycms/tsdown.config.ts` — серверна група збірки;
  *   2. `tests/dist-server-boundary.test.ts` — партиція `dist` (packaging-suite);
@@ -21,12 +21,23 @@ import type { tanstackStart } from '@tanstack/react-start/plugin/vite';
  *   4. групи `no-restricted-imports` в `eslint.config.mjs` — межа довіри
  *      плагінів (bare-специфікатори);
  *   5. `scripts/pilot-pack/gate-c.mjs` — серверний вантаж у клієнтських чанках;
- *   6. `vite.config.ts` хоста, шаблону й пілота — Import Protection Start.
+ *   6. `vite.config.ts` хоста, шаблону й пілота — Import Protection Start;
+ *   7. `eslint-rules/no-server-only-in-client.mjs` (зона
+ *      `simplycms-client-boundary`, К3-Е2) — клієнтські теки ядра (`admin`,
+ *      пʼять `*-ui`) не імпортують server-only субшлях чи серверну
+ *      залежність. НЕ група в тір-зоні: базовий `no-restricted-imports` не
+ *      розрізняє `import` і `import type` (`allowTypeImports` є лише в
+ *      typescript-eslint-версії правила, якої в жодній із 26 зон репо
+ *      немає), а `import type` стирається компілятором і в бандл не
+ *      потрапляє — заборона на нього зламала б живий канон
+ *      `admin/pages/OrderStatuses.tsx:8`.
  *
- * 🔴 Пункти 3 і 4 рахуються ОКРЕМО навмисно: це два різні детектори з різними
- * негативними контролями (`tests/eslint-rules/server-only-relative.test.ts` і
- * `tests/plugin-trust-boundary.test.ts`), а не «лінт» одним рядком — саме так
- * їх перелічує таблиця §12 `docs/architecture/test-contours.md`.
+ * 🔴 Пункти 3, 4 і 7 рахуються ОКРЕМО навмисно: це три різні детектори з
+ * різними негативними контролями (`tests/eslint-rules/server-only-relative.test.ts`,
+ * `tests/plugin-trust-boundary.test.ts`,
+ * `tests/eslint-rules/no-server-only-in-client.test.ts` +
+ * `tests/tier-boundary-client-boundary.test.ts`), а не «лінт» одним рядком —
+ * саме так їх перелічує таблиця §12 `docs/architecture/test-contours.md`.
  *
  * Legacy `supabase/*` навмисно НЕ тут: `supabase/keys` легально спільний для
  * anon- і browser-клієнта; Gate C тримає ці два файли літералами до К3.

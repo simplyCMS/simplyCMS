@@ -1,41 +1,58 @@
 ---
-applyTo: "packages/simplycms/src/{core,admin}/**/*.{ts,tsx},src/**/*.{ts,tsx}"
-description: "Правила роботи з файловим сховищем Supabase Storage в SimplyCMS"
+applyTo: "packages/simplycms/src/**/*.{ts,tsx},src/**/*.{ts,tsx}"
+description: "Робота з файловим сховищем: порт simplycms/storage, драйвер local-fs, медіа-референси"
 ---
 
 # Storage Rules
 
-## Архітектура
+## Архітектура (V2, етап К3-Е2)
 
-SimplyCMS використовує **Supabase Storage** для зберігання файлів:
-- Зображення товарів
-- Банери
-- Аватари користувачів
-- Файли відгуків
+Файли живуть за портом **`simplycms/storage`** — server-only піддерево.
+Драйвер за замовчуванням — `local-fs` (диск, корінь із `MEDIA_ROOT`,
+дефолт `./.data/media`); `s3` приходить у К4 як друга реалізація того
+самого інтерфейсу `MediaStorageDriver`.
+
+**У БД лежить РЕФЕРЕНС, не URL.** Референс — це storage key
+(`ab/<uuid>.<ext>`) для завантаженого файлу; зовнішні `https?:`, вбудовані
+`data:` і корене-відносні `/…` проходять як є. Резолв у URL — одна чиста
+функція `resolveMediaUrl` із `simplycms/domain/media`.
 
 ## ✅ ALWAYS
 
-### Upload
-- Використовуй Supabase Storage API через обгортки `simplycms/core`.
-- Валідуй файли перед upload (розмір, MIME type).
-- Задавай `loading="lazy"`, явні `width`/`height` (або aspect-ratio) для зображень на storefront.
-- Генеруй унікальні імена файлів для уникнення конфліктів.
-
-### Storage Paths
-- Формат: `{section}/{entity_id}/{filename}`
-- Секції: `products`, `banners`, `avatars`, `reviews`
-- Приклад: `products/123/main-image.jpg`
-
-### Зображення
-- Storefront: стандартний `<img>` з public URL Supabase Storage (`/storage/v1/object/public/**`); lazy loading + розміри обовʼязково.
-- Admin: `ImageUpload` компонент з `simplycms/admin`.
-- Публічні бакети для зображень товарів та банерів.
+- Завантаження й видалення — **лише serverFn**: `uploadMedia`/`deleteMedia`
+  (`simplycms/admin-server`) для адмінки, `uploadMyAvatar`/`removeMyAvatar`
+  (`simplycms/core/lib/profile-avatar`) для кабінету.
+- Рядок `media` і файл пишуться **однією транзакцією актора** —
+  `writeMedia(db, …)`; видалення — `eraseMedia(db, ref)`, СПЕРШУ обʼєкт,
+  ПОТІМ рядок.
+- MIME визначається **магічними байтами** (`sniffImageMime`), не
+  розширенням і не `file.type`.
+- Вітрина резолвить референс **на сервері**, у лоадері чи мапері сутності —
+  щоб контракт тем v3 отримував готові URL-рядки.
+- Нова медіа-колонка в схемі → запис у `MEDIA_COLUMNS`
+  (`simplycms/domain/media`) + резолв при читанні. Гейт —
+  `tests/media-columns-coverage.test.ts`.
+- `<img>` на вітрині: `loading="lazy"`, явні `width`/`height` або
+  `aspect-ratio`.
 
 ## ❌ NEVER
-- Не викликай `supabase.storage.from()` напряму в компонентах — використовуй обгортки.
-- Не хардкодь Storage URL — використовуй змінні оточення.
-- Не завантажуй файли без валідації (розмір, тип).
-- Не використовуй signed URLs для публічних зображень — використовуй public URLs.
+
+- Не викликай `supabase.storage` і не імпортуй `@supabase/storage-js` —
+  правило `simplycms-storage/no-direct-storage` і ратчет
+  `tests/storage-direct-calls.test.ts` це валять. Єдина виїмка —
+  `admin/pages/ReviewDetail.tsx` (мертва сторінка, переписується хвилею
+  відгуків).
+- Не приймай **SVG** на завантаження: він несе скрипти. Allowlist —
+  png/jpeg/webp/gif/avif.
+- Не клади URL у колонку сутності — лише референс.
+- Не перезаписуй ключ: обʼєкти іммутабельні, нове зображення = новий ключ
+  (на цьому тримається `Cache-Control: immutable` роздачі).
+- Не читай `MEDIA_ROOT` на модуль-рівні — лише в рантаймі, всередині
+  функції (контракт серверного env).
 
 ## ℹ️ Де шукати деталі
-- `packages/simplycms/src/admin/components/ImageUpload.tsx` — компонент upload.
+
+- `packages/simplycms/src/storage/` — порт, драйвер, запис, роздача.
+- `packages/simplycms/src/domain/media.ts` — референси й резолв.
+- `packages/simplycms/routes/storefront/media/$.tsx` — роздача `/media/*`.
+- План етапу — `docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md`.

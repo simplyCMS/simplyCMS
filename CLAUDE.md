@@ -342,11 +342,12 @@ simplyCMS/
 │   │   │                         #    ./entities — реєстр ENTITY/AGGREGATE/SESSION_KEY +
 │   │   │                         #    фабрика entityKey() для queryKey React Query (К3-3);
 │   │   │                         #    ./server-only — декларація межі клієнт/сервер (єдина;
-│   │   │                         #    читачів ШІСТЬ: збірка ядра, гейт dist-server-boundary,
+│   │   │                         #    читачів СІМ: збірка ядра, гейт dist-server-boundary,
 │   │   │                         #    правило server-only-relative, групи no-restricted-imports
-│   │   │                         #    плагінів, Gate C, Import Protection у vite.config магазину.
-│   │   │                         #    🔴 Два лінт-детектори рахуються ОКРЕМО: різні механізми
-│   │   │                         #    й різні негативні контролі — test-contours.md §12)
+│   │   │                         #    плагінів, Gate C, Import Protection у vite.config магазину,
+│   │   │                         #    правило no-server-only-in-client (К3-Е2, зона клієнтських
+│   │   │                         #    тек ядра). 🔴 Три лінт-детектори рахуються ОКРЕМО: різні
+│   │   │                         #    механізми й різні негативні контролі — test-contours.md §12)
 │   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle (B12, частина) — джерело

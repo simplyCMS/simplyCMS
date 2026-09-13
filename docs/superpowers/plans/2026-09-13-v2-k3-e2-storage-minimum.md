@@ -3728,7 +3728,7 @@ git commit -m "feat(k3-e2): media.write, serverFn завантаження ад�
 - Consumes: Task 7 (після нього прямий виклик лишається рівно один).
 - Produces: `export const STORAGE_DIRECT_CALL_EXEMPTIONS: readonly string[]`
 
-- [ ] **Step 1: Виміряти фактичний залишок**
+- [X] **Step 1: Виміряти фактичний залишок**
 
 ```bash
 grep -rn "\.storage\.from(\|supabase\.storage\|@supabase/storage-js" \
@@ -3736,7 +3736,7 @@ grep -rn "\.storage\.from(\|supabase\.storage\|@supabase/storage-js" \
 ```
 Expected після Task 7: рівно один файл — `admin/pages/ReviewDetail.tsx`. 🔴 Якщо файлів більше — **не піднімай список виїмок**, з'ясуй, звідки взявся новий виклик; список може лише скорочуватись.
 
-- [ ] **Step 2: Написати падаючий ратчет-тест**
+- [X] **Step 2: Написати падаючий ратчет-тест**
 
 `tests/storage-direct-calls.test.ts`:
 
@@ -3792,17 +3792,17 @@ describe('прямі виклики сховища поза портом', () =>
 
 🔴 Підпис звірено: `sourceFiles(dir: string): string[]` (`test-harness/pg/insert-scan.ts:75-79`) — рекурсивний обхід теки з фільтром `.ts`/`.tsx`, повертає абсолютні шляхи. Виклик вище коректний як є.
 
-- [ ] **Step 3: Прогнати — має пройти на обох тестах**
+- [X] **Step 3: Прогнати — має пройти на обох тестах**
 
 Run: `pnpm vitest run tests/storage-direct-calls.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Негативний контроль ратчета (прогнати руками, не комітити)**
+- [X] **Step 4: Негативний контроль ратчета (прогнати руками, не комітити)**
 
 Додай у будь-який файл `packages/simplycms/src/admin/pages/Users.tsx` рядок-коментар `// supabase.storage` і прожени тест.
 Expected: FAIL із `['admin/pages/Users.tsx']`. Прибери рядок.
 
-- [ ] **Step 5: Написати кастомне правило (а НЕ `no-restricted-*`)**
+- [X] **Step 5: Написати кастомне правило (а НЕ `no-restricted-*`)**
 
 🔴 **Чому саме кастомне правило.** Спокуса — додати блок із
 `no-restricted-syntax` і `no-restricted-imports` на
@@ -3870,7 +3870,7 @@ export default {
 саме в `ReviewDetail.tsx`), а вузький селектор «лише `supabase.storage`»
 пропустив би `const s = getClient(); s.storage.from(...)`.
 
-- [ ] **Step 6: Написати машинні фікстури правила**
+- [X] **Step 6: Написати машинні фікстури правила**
 
 `tests/eslint-rules/no-direct-storage.test.ts` — за зразком сусіднього
 `tests/eslint-rules/server-fn-top-level.test.ts` (Linter API):
@@ -3909,12 +3909,12 @@ describe('no-direct-storage', () => {
 });
 ```
 
-- [ ] **Step 6a: Прогнати фікстури**
+- [X] **Step 6a: Прогнати фікстури**
 
 Run: `pnpm vitest run tests/eslint-rules/no-direct-storage.test.ts`
 Expected: PASS (8 кейсів).
 
-- [ ] **Step 6b: Підключити правило зоною**
+- [X] **Step 6b: Підключити правило зоною**
 
 У `eslint.config.mjs` — імпорт поруч із рештою (рядок ≈12):
 
@@ -3940,7 +3940,7 @@ import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
   },
 ```
 
-- [ ] **Step 6c: Негативний контроль зони — і i18n-зони теж**
+- [X] **Step 6c: Негативний контроль зони — і i18n-зони теж**
 
 ```bash
 # 1. Нове правило спрацьовує на реальному файлі
@@ -3962,7 +3962,7 @@ git checkout -- packages/simplycms/src/admin/pages/Users.tsx
 ```
 Обидва результати зафіксувати у звіті задачі.
 
-- [ ] **Step 6d: Сьомий читач межі — клієнтська тека не імпортує server-only**
+- [X] **Step 6d: Сьомий читач межі — клієнтська тека не імпортує server-only**
 
 🔴 **Дірка ширша за `storage` і передує етапу.** Тір-зони ловлять імпорт угору
 й на свій шар, а server-only дерева лежать НИЖЧЕ (T1–T2) за своїх потенційних
@@ -4119,7 +4119,7 @@ import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
 робить це зараз), і Start вирізає їх трансформацією. Решта клієнтських тек
 (`ui`, `react-query`, `themes`, `plugins`) — борг етапу, див. нижче.
 
-- [ ] **Step 6d-bis: Фікстури правила — позитивні контролі важливіші за негативні**
+- [X] **Step 6d-bis: Фікстури правила — позитивні контролі важливіші за негативні**
 
 `tests/eslint-rules/no-server-only-in-client.test.ts` (Linter API, як у
 сусідніх правил):
@@ -4145,7 +4145,7 @@ it.each([
 ])('не валить: %s', (_l, code) => expect(lint(code)).toHaveLength(0));
 ```
 
-- [ ] **Step 6d-ter: Прогнати правило по ЖИВОМУ коду, не лише по фікстурах**
+- [X] **Step 6d-ter: Прогнати правило по ЖИВОМУ коду, не лише по фікстурах**
 
 ```bash
 pnpm lint
@@ -4154,7 +4154,7 @@ Expected: **нуль** спрацювань нового правила. 🔴 Я
 червоніє — `emitsRuntime` не розрізнив `import type`, і правило в такому
 вигляді ландити не можна: воно зламало б єдину живу сторінку адмінки.
 
-- [ ] **Step 6e: Негативний І позитивний контроль сьомого читача**
+- [X] **Step 6e: Негативний І позитивний контроль сьомого читача**
 
 У `tests/tier-boundary.test.ts` — тим самим механізмом, що для решти зон:
 
@@ -4180,7 +4180,7 @@ it('core/lib СМІЄ імпортувати лоадери — це serverFn-м
 🔴 Звір хелпер фікстур із фактичним `tests/tier-boundary.test.ts` і приведи
 виклики до нього — механізм там уже є для решти зон.
 
-- [ ] **Step 6f: Оновити три документи — читачів тепер СІМ**
+- [X] **Step 6f: Оновити три документи — читачів тепер СІМ**
 
 🔴 Саме СІМ, і причина та сама, якою вже розділені читачі 3 і 4: це окремий
 ДЕТЕКТОР із власним механізмом і власним негативним контролем, а не друга
@@ -4203,7 +4203,7 @@ storage-етапу означало б знову розтягнути скоу�
 цей перелік і цю причину, інакше наступний читач вважатиме чотири вимкнені
 зони недоглядом.
 
-- [ ] **Step 7: Переписати інструкцію по сховищу**
+- [X] **Step 7: Переписати інструкцію по сховищу**
 
 `.github/instructions/storage.instructions.md` — повністю замінити (файл досі описує Supabase Storage як архітектуру):
 
@@ -4268,14 +4268,14 @@ description: "Робота з файловим сховищем: порт simply
 - План етапу — `docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md`.
 ```
 
-- [ ] **Step 8: Гейт задачі**
+- [X] **Step 8: Гейт задачі**
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test
 ```
 Expected: PASS, кількість warnings не зросла проти заміру Task 1.
 
-- [ ] **Step 9: Коміт**
+- [X] **Step 9: Коміт**
 
 ```bash
 git add eslint.config.mjs eslint-rules/no-direct-storage.mjs \

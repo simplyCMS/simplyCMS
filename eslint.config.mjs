@@ -10,6 +10,8 @@ import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
+import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
+import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
@@ -376,6 +378,44 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
+  // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
+  // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.
+  // 🔴 `ignores` — ратчет: `ReviewDetail.tsx` мертвий і переписується
+  // хвилею відгуків разом із цим викликом. Список дзеркалиться в
+  // `tests/storage-direct-calls.test.ts` і може тільки скорочуватись.
+  {
+    files: ['packages/simplycms/src/**/*.{ts,tsx}'],
+    ignores: ['packages/simplycms/src/admin/pages/ReviewDetail.tsx'],
+    plugins: {
+      'simplycms-storage': { rules: { 'no-direct-storage': noDirectStorage } },
+    },
+    rules: { 'simplycms-storage/no-direct-storage': 'error' },
+  },
+  // Сьомий читач межі довіри клієнт/сервер (contracts/server-only): клієнтська
+  // тека не імпортує server-only субшлях чи серверну залежність. Власне
+  // правило, бо базовий `no-restricted-imports` не розрізняє `import` і
+  // `import type` — `import type` стирається компілятором і в бандл не
+  // потрапляє, тож заборона на нього зламала б канон `OrderStatuses.tsx`
+  // (Е1а). `core` тут навмисно немає: `core/lib/**` — serverFn-модулі, які
+  // легально імпортують `simplycms/storefront/loaders`.
+  // 🔴 Плагін НЕ `simplycms-boundary` (як у сусіднього `server-only-relative`,
+  // хоч план це й пропонував): flat config забороняє редефініцію плагіна під
+  // тим самим імʼям, якщо два конфіги з різними rules-обʼєктами покривають
+  // ті самі файли (`admin/**` і `*-ui/**` — підмножина зони server-only-relative)
+  // — перевірено `pnpm lint`: `ConfigError: Cannot redefine plugin
+  // "simplycms-boundary"`. Тому окреме імʼя.
+  {
+    files: [
+      'packages/simplycms/src/admin/**/*.{ts,tsx}',
+      'packages/simplycms/src/{cart,catalog,checkout,profile,reviews}-ui/**/*.{ts,tsx}',
+    ],
+    plugins: {
+      'simplycms-client-boundary': {
+        rules: { 'no-server-only-in-client': noServerOnlyInClient },
+      },
+    },
+    rules: { 'simplycms-client-boundary/no-server-only-in-client': 'error' },
   },
   // Трек T: межа довіри всередині шару — відносний імпорт у server-only
   // дерево ззовні нього (стаб `admin-server/index` → `./impl`) заінлайнив би
