@@ -27,7 +27,7 @@
 | Е2-9 | **`ReviewDetail.tsx` не чіпаємо**; лінт-заборона прямих storage-викликів — ратчетом зі списком виїмок | Сторінка мертва й переписується хвилею відгуків цілком. Ратчет не дає Е3–Е6 завести НОВИЙ прямий виклик |
 | Е2-10 | **SVG заборонений на upload**; MIME — за магічними байтами | SVG несе скрипти. Це рядок валідатора, а не «потім». Allowlist Е2: png/jpeg/webp/gif/avif |
 | Е2-11 | 🔴 **Одна копія правила** (2026-09-13, суцільний прохід перед стартом): перевірка вмісту — `inspectUpload`, ліміти й `accept` — `domain/media` (T1), `MIME_BY_EXT` виводиться з `EXT_BY_MIME`, `MediaMime` — з `ACCEPTED_IMAGE_MIME` | Кожне з цих правил стояло в плані ДВІЧІ або тричі: сніфер у двох serverFn, ліміт у трьох місцях (і вже з двома різними значеннями), таблиця розширень двома літералами. Жодна копія не падає одразу — розсинхрон виявляється тим, що роздача віддає 404 на наявний файл або що аватар приймає те, що відкидає адмінка |
-| Е2-12 | 🔴 **Оркестрація заміни — `storefront/loaders/avatar.ts`, не `storage`** | `storage` — узагальнений порт; залежність від `schema.profiles` була б інверсією, яка з другим споживачем стала б `storage → products`. Заміна аватара — дія покупця, що залучає файл, як `placeOrderFor` — дія покупця, що залучає залишки. Лоадери при цьому імпортують ПОРТ, а не `node:fs`. Ціна — `storefront: ['db','auth','storage']` у тір-зонах: класифікація дерева, а не послаблення межі. 🔴 Зона ширша за намір (тір-зони не вміють вужче за теку), тож факт «порт імпортує рівно `avatar.ts`» пінується ратчетом `tests/storage-port-consumers.test.ts`. Варіант «тримати оркестрацію в `core/lib` (T5)» відкинуто з причини сильнішої за `schema.profiles`: `core/lib` **не** є server-only деревом (у `SERVER_ONLY` його немає), тож захист там був би домовленістю, а в `storefront/loaders` його тримають Import Protection, Gate C і партиція `dist`. 🔴 І заборона не теоретична — вона вже ОПЛАЧЕНА в трьох місцях: `core/lib/{user-addresses,user-recipients,review-form}.ts` тримають власну НЕекспортовану копію `withSessionDb` саме тому, що «живий не-serverFn експорт утримав би `simplycms/auth` і пул Postgres у клієнтському бандлі» (`user-addresses.ts:80-81`). Класти туди експортовану `replaceAvatarFor` означало б зламати рівно те правило, заради якого ці три файли дублюють шість рядків |
+| Е2-12 | 🔴 **Оркестрація заміни — `storefront/loaders/avatar.ts`, не `storage`** | `storage` — узагальнений порт; залежність від `schema.profiles` була б інверсією, яка з другим споживачем стала б `storage → products`. Заміна аватара — дія покупця, що залучає файл, як `placeOrderFor` — дія покупця, що залучає залишки. Лоадери при цьому імпортують ПОРТ, а не `node:fs`. Ціна — `storefront: ['db','auth','storage']` у тір-зонах: класифікація дерева, а не послаблення межі. 🔴 Зона ширша за намір (тір-зони не вміють вужче за теку), тож факт «порт імпортує рівно `avatar.ts`» пінується ратчетом `tests/storage-port-consumers.test.ts`. Варіант «тримати оркестрацію в `core/lib` (T5)» відкинуто з причини сильнішої за `schema.profiles`: `core/lib` **не** є server-only деревом (у `SERVER_ONLY` його немає), тож захист там був би домовленістю, а в `storefront/loaders` його тримають Import Protection, Gate C і партиція `dist`. 🔴 І заборона не теоретична — вона вже ОПЛАЧЕНА в трьох місцях: `core/lib/{user-addresses,user-recipients,review-form}.ts` тримають власну НЕекспортовану копію `withSessionDb` саме тому, що «живий не-serverFn експорт утримав би `simplycms/auth` і пул Postgres у клієнтському бандлі» (`user-addresses.ts:80-81`). Класти туди експортовану оркестрацію заміни означало б зламати рівно те правило, заради якого ці три файли дублюють шість рядків |
 
 **Другий інваріант §4-К4 роботи в Е2 не потребує — і це перевірено, а не
 припущено.** Незмінність колонок власності (`entity_type`/`entity_id`/
@@ -172,7 +172,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 | `packages/simplycms/src/storage/mime.ts` | `sniffImageMime()` — MIME за магічними байтами, allowlist без SVG |
 | `packages/simplycms/src/storage/inspect.ts` | `inspectUpload(file, maxBytes)` — ЄДИНА перевірка вмісту на обидва serverFn |
 | `packages/simplycms/src/storage/__tests__/inspect.test.ts` | Юніти на фікстурах сигнатур (SVG як `.png`, брехливий `file.type`, ліміт) |
-| `packages/simplycms/src/storefront/loaders/avatar.ts` | `replaceAvatarFor`/`clearAvatarFor` — оркестрація заміни, чиста щодо транзакції |
+| `packages/simplycms/src/storefront/loaders/avatar.ts` | `replaceAvatar` (публічна, відкриває транзакцію й прибирає орфана) + `clearAvatarFor`; `replaceAvatarFor` — модуль-приватна після фінального проходу |
 | `packages/simplycms/src/admin/components/ImageGrid.tsx` | Сітка прев'ю (розбиття `ImageUpload` під канон 150) |
 | `packages/simplycms/src/storage/driver.ts` | Інтерфейс `MediaStorageDriver` + `MediaObject` + класи помилок |
 | `packages/simplycms/src/storage/local-fs.ts` | Драйвер диска: `put` (tmp + `link`), `delete` (ідемпотентний), `open` (стрім) |
@@ -1521,7 +1521,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
-import { replaceAvatarFor, withCustomerDb } from 'simplycms/storefront/loaders';
+import { replaceAvatar } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -1783,7 +1783,7 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     await withActor({ role: 'app_admin' }, (db) => eraseMedia(db, record.ref, real));
   });
 
-  // 🔴 Пʼятий кейс ганяє СПРАВЖНЮ `replaceAvatarFor`, а не послідовність,
+  // 🔴 Пʼятий кейс ганяє СПРАВЖНЮ функцію заміни, а не послідовність,
   // зібрану в тесті: копія доводила б властивість копії (патерн P1 — гейт
   // обіцяє більше, ніж перевіряє). Функція чиста й бере `db`+`operator`
   // параметрами саме для цього.
@@ -1811,7 +1811,10 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
 
     await expect(
       withCustomerDb(userId, (db, operator) =>
-        replaceAvatarFor(db, operator, userId, { bytes: PNG, mime: 'image/png' }, broken),
+        // 🔴 Чинна сигнатура — `replaceAvatar(userId, input, { driver })`:
+        // транзакцію вона відкриває сама, тож обгортка `withCustomerDb`
+        // звідси пішла разом із нею (фінальний прохід 2026-09-13).
+        replaceAvatar(userId, { bytes: PNG, mime: 'image/png' }, { driver: broken }),
       ),
     ).rejects.toThrow('сховище недоступне');
 
@@ -2451,6 +2454,24 @@ serverFn (правило Е1б).
 
 `packages/simplycms/src/storefront/loaders/avatar.ts`:
 
+> 🔴 **РОЗІЙШЛОСЯ З КОДОМ ПІСЛЯ ФІНАЛЬНОГО ПРОХОДУ (2026-09-13).** Нижче —
+> намір плану; чинний API інший, і різниця принципова, а не косметична.
+> `replaceAvatarFor` стала **модуль-приватною**; назовні
+> `storefront/loaders/avatar.ts` віддає `replaceAvatar(userId, input,
+> options)`, яка САМА відкриває транзакцію (`withCustomerDb`) і САМА прибирає
+> орфана. Причина — знахідка верифікації: у формі нижче `written`
+> присвоювалось лише ПІСЛЯ повернення з транзакції, тож два фалібельні кроки
+> після публікації файлу (`db.update(profiles)`, `eraseMedia(previous)`)
+> лишались непокритими — доведено орфаном на диску. Фікс тримає обовʼязковий
+> колбек `onPublished`, який кличеться в момент публікації, і холдер-обʼєкт
+> замість `let`: просту змінну `tsc --strict` звузив би в `catch` до рівно
+> `null` і **мовчки погодився б із мертвою гілкою прибирання**.
+>
+> 🔴 Мутація «повернути форму нижче» тепер не компілюється —
+> `TS2724: has no exported member named 'replaceAvatarFor'`. Це найсильніший
+> гейт із можливих: не тест, а тип. Фактичний код —
+> `storefront/loaders/avatar.ts:64-100`.
+
 ```ts
 import { eq } from 'drizzle-orm';
 import { profiles } from 'simplycms/schema';
@@ -2634,6 +2655,13 @@ Expected: FAIL зі списком `['products.ts']`. Прибери рядок.
 
 `packages/simplycms/src/core/lib/profile-avatar.ts`:
 
+> 🔴 **РОЗІЙШЛОСЯ З КОДОМ.** Чинний serverFn НЕ тримає `try/catch` із
+> `written` і НЕ кличе `withSessionDb`: прибирання орфана переїхало всередину
+> `replaceAvatar`, бо зібрати цю послідовність із кроків ззовні стало
+> неможливо — вони з лоадерів більше не виходять. Тут лишився рівно межовий
+> шар: розбір `FormData`, `inspectUpload`, мапа `reason` у код клієнта і
+> `requireSessionUserId()`. Факт — `core/lib/profile-avatar.ts:47-69`.
+
 ```ts
 import { createServerFn } from '@tanstack/react-start';
 import { MAX_AVATAR_BYTES, MEDIA_URL_BASE, resolveMediaUrl } from 'simplycms/domain/media';
@@ -2718,7 +2746,7 @@ export const removeMyAvatar = createServerFn({ method: 'POST' }).handler(
 - [X] **Step 4c: Додати ВОСЬМИЙ кейс у харнес Task 3 — борг хвилі B**
 
 🔴 Task 3 планував кейс «відмова на видаленні СТАРОГО: старий аватар цілий,
-нового немає», який кличе `replaceAvatarFor` і `withCustomerDb`. У хвилі B
+нового немає», який кличе функцію заміни з лоадерів. У хвилі B
 його **не додано свідомо**: обидва експорти зʼявляються лише тут, у Task 5, а
 імпорт неіснуючого експорту звалив би `typecheck` і завадив прогону решти
 семи кейсів. Виконавець лишив у шапці
