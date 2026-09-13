@@ -51,11 +51,17 @@ pnpm release 0.4.1    # РЕЛІЗ: гарди + бамп версії всіх 
                       # Повний опис — docs/architecture/release-process.md
 pnpm version:packages 0.2.0   # «сирий» бамп версій БЕЗ гейтів і коміту (нетипові випадки)
 pnpm db:demo          # 🔴 V2: підняти ЧИСТУ базу магазину з нуля (канон міграцій +
-                      # демо-каталог). 🔴 Підключення бере з PG_HARNESS_URL або
-                      # --url, а НЕ з DATABASE_URL: створює нову БД у кластері,
-                      # тож потрібен адмін-доступ до кластера, а не до бази
+                      # покупний демо-каталог з К2-Е0: доставка, СИСТЕМНА точка видачі,
+                      # залишки, decrease_on_order = true). 🔴 Підключення бере з
+                      # PG_HARNESS_URL або --url, а НЕ з DATABASE_URL: створює нову БД
+                      # у кластері, тож потрібен адмін-доступ до кластера, а не до бази
                       # магазину; готовий DATABASE_URL скрипт ДРУКУЄ в кінці.
                       # Покроковий локальний запуск — docs/tasks/v2-state-map.md §5
+pnpm live:smoke       # DoD К2-Е0: db:demo → build → server → curl+SQL (gate-b) +
+                      # Playwright (реєстрація, кошик без #418, бейдж = БД, автовибір
+                      # точки, воронка до orders зі СПИСАННЯМ, скасування з ПОВЕРНЕННЯМ
+                      # залишку). Потребує Postgres (PG_HARNESS_URL) і Chromium; не CI —
+                      # гейти релізу окремим рішенням
 pnpm db:pull / db:diff
                       # Схема БД — див. «Database Commands». 🔴 Генератора типів
                       # (db:generate-types, types:baseline) більше немає: знято в 0.4.1
@@ -215,6 +221,14 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 сторінками адмінки). Контракт задокументований у
 [`data-access`](.github/instructions/data-access.instructions.md), розділ
 «Контракт ключів кешу».
+Шоста (2026-09-05, трек К2-Е0) — **доступні імена контролів**:
+`eslint-plugin-jsx-a11y` з ОДНИМ правилом
+`jsx-a11y/label-has-associated-control` (`error`, `assert: 'htmlFor', depth: 3`)
+на пʼять тек воронки пакета ядра (`cart-ui`, `catalog-ui`, `checkout-ui`,
+`profile-ui`, `reviews-ui`), тим самим механізмом зон, що й тір-зони та
+i18n-селектори. 🔴 Правило бачить лише `<label>` — контрол без лейбла (попапи
+чекауту, числові діапазони фільтра, прихований avatar-input) йому невидимий:
+зелений лінт доступності воронки не доводить її повноти.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -256,6 +270,10 @@ bare-субшлях `simplycms/<тека>` і відносний `../<тека>`
 - **Language:** TypeScript 5.9 (strict mode) — 🔴 **свідомо не 6/7**, див. нижче
 - **Linting:** ESLint 10 + typescript-eslint 8
 - **Package Manager:** pnpm 11.20 (workspaces; налаштування — у `pnpm-workspace.yaml`, не в `package.json`)
+- **Runtime:** Node `>=22.12` — поріг `@tanstack/react-start`; стоїть у ВСІХ пʼяти
+  публікованих пакетах і в `packages/create-simplycms-store/template/package.json.tpl`,
+  під тестом-піном парності (трек T, рішення Р6). До К2-Е0 порогу не було взагалі в
+  трьох пакетах, а у двох стояв хибний `">=20"`
 - **Database:** чистий **PostgreSQL 17** (Drizzle + `pg`-пул, `simplycms/db`); auth — **Better Auth**. 🔴 Supabase — лише один із можливих провайдерів Postgres; `supabase-js` лишається в дереві до К3 як шар адмінки
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms:** react-hook-form + Zod 4
@@ -408,7 +426,9 @@ simplyCMS/
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду.
 │   │                                    # 🔴 gate-e.mjs знято в 0.4.1 разом зі стеком Supabase
 │   ├── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
-│   └── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+│   ├── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+│   └── live-smoke.mjs + live-smoke/     # DoD К2-Е0 (`pnpm live:smoke`): sql.mjs (прямий SQL) +
+│                                        # register.mjs (реєстрація) + funnel.mjs (Playwright-воронка)
 ├── packages/simplycms/test-harness/pg/  # 🔴 V2: контур `pnpm test:schema` — підйом Postgres
 │                                     # без Docker (PG_HARNESS_URL або ефемерний initdb),
 │                                     # накат канону, інтроспекція ACL/політик, актори
@@ -659,6 +679,9 @@ Schema-тулінг (`drizzle/`, `drizzle.config.ts`,
 pnpm db:pull                   # Introspect live DB → Drizzle baseline
 pnpm db:diff <name>            # schema.ts → SQL у packages/simplycms/migrations/ (ревʼю обовʼязкове)
 pnpm test:schema               # накат канону на чисту БД харнеса (db:migrate — decommissioned, B2/B13)
+pnpm db:demo                   # покупний демо-магазин (К2-Е0): доставка, СИСТЕМНА точка
+                                # видачі, залишки, decrease_on_order = true — перевірка
+                                # одним прогоном далі, `pnpm live:smoke`
 ```
 
 🔴 **Генератора типів БД більше немає** (знято в 0.4.1). `pnpm db:generate-types`,

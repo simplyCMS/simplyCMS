@@ -32,7 +32,8 @@
     "db:pull": "pnpm --filter simplycms run db:pull",
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
-    "db:demo": "node scripts/demo-db.mjs"
+    "db:demo": "node scripts/demo-db.mjs",
+    "live:smoke": "node scripts/live-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

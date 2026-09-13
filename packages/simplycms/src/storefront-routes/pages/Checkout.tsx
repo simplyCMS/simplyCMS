@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -164,6 +164,14 @@ export default function Checkout() {
     });
   }, [user, form]);
 
+  // 🔴 Гвард гонки (знайдено live-smoke, Task 14): `onSubmit` спорожняє кошик
+  // (`clearCart()`) ще на цій сторінці — Checkout не встигає розмонтуватись
+  // до того, як ефект нижче побачить `items.length === 0` і перехопить
+  // навігацію на `/order-success` редиректом на `/cart`. Прапорець виставляє
+  // ЛИШЕ успішне оформлення (перед `clearCart()`), тому пряма реакція на
+  // порожній кошик (видалення позицій руками) лишається чинною.
+  const orderPlacedRef = useRef(false);
+
   // Redirect if cart is empty. 🔴 Гейт на `hydrated` (Е0-5, рішення А
   // архітектора): гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
   // (`getServerSnapshot`), а passive-ефекти комітяться дітьми-вперед — без
@@ -171,7 +179,7 @@ export default function Checkout() {
   // `CartProvider` і хибно редиректив би на /cart при прямому вході на
   // /checkout з непорожнім кошиком.
   useEffect(() => {
-    if (hydrated && items.length === 0) {
+    if (hydrated && items.length === 0 && !orderPlacedRef.current) {
       navigate({ to: '/cart' });
     }
   }, [hydrated, items, navigate]);
@@ -271,6 +279,9 @@ export default function Checkout() {
       }
       const { order } = result;
 
+      // 🔴 Прапорець ПЕРЕД `clearCart()` — саме він спорожнює кошик, який
+      // ефект/рендер-гілка нижче ще встигнуть побачити на цьому ж рендері.
+      orderPlacedRef.current = true;
       clearCart();
 
       toast({
@@ -301,10 +312,12 @@ export default function Checkout() {
     // Profile will be loaded by the useEffect when user changes
   };
 
-  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище: до гідратації
-  // `items` завжди порожній, і без гейту тут був би спалах «порожній кошик»
-  // на прямому вході в /checkout, доки CartProvider не перечитає localStorage.
-  if (hydrated && items.length === 0) {
+  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище (плюс `orderPlacedRef`
+  // — та сама гонка на спорожнений кошик після успішного оформлення): до
+  // гідратації `items` завжди порожній, і без гейту тут був би спалах
+  // «порожній кошик» на прямому вході в /checkout, доки CartProvider не
+  // перечитає localStorage.
+  if (hydrated && items.length === 0 && !orderPlacedRef.current) {
     return null;
   }
 
