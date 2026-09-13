@@ -89,7 +89,7 @@ export function resolveMediaUrls(
  * 🔴 Реєстр існує заради ГЕЙТА, а не заради коду: нова медіа-колонка,
  * додана в схему без резолву на вітрині, показала б покупцеві голий
  * storage key замість картинки — і виявилось би це аж на живому магазині.
- * Тест `schema/__tests__/media-columns-coverage.test.ts` звіряє цей список
+ * Тест `tests/media-columns-coverage.test.ts` звіряє цей список
  * зі схемою; Task 6 доводить, що кожен запис резолвиться при читанні.
  */
 export const MEDIA_COLUMNS = [
@@ -103,7 +103,7 @@ export const MEDIA_COLUMNS = [
   { table: 'property_options', column: 'image_url' },
   { table: 'profiles', column: 'avatar_url' },
   // 🔴 Не було в первинному переліку плану — знайдено гейтом покриття
-  // (`schema/__tests__/media-columns-coverage.test.ts`): колонка існує в
+  // (`tests/media-columns-coverage.test.ts`): колонка існує в
   // схемі, а в реєстрі її не було.
   { table: 'services', column: 'image_url' },
 ] as const satisfies readonly { table: string; column: string }[];
