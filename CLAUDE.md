@@ -580,7 +580,10 @@ ThemeModule = { manifest, tokens, components, settings?, messages?, fonts?, view
 - `BETTER_AUTH_SECRET` — **серверний**: підпис сесій Better Auth
   (`simplycms/auth`). `VITE_`-префікса тут не може бути за побудовою — секрет
   у клієнтському бандлі не секрет. Опційний сусід — `BETTER_AUTH_URL`
-  (без нього базовий URL береться із самого запиту)
+  (без нього базовий URL береться із самого запиту) — у dev це очікуваний
+  WARN Better Auth; у проді `BETTER_AUTH_URL` рекомендований: з рядковим
+  baseURL Better Auth довіряє рівно цьому origin і відкидає інші з 403
+  `INVALID_ORIGIN`. Контракт стереже `tests/env-contract.test.ts`
 - `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt); запікається
   при `vite build`, тож зміна вимагає перезбірки
 
