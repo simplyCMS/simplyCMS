@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { localFsDriver } from '../local-fs';
@@ -77,6 +77,20 @@ describe('serveMedia', () => {
     '/media/ab',
   ])('404 на неприпустимий ключ: %s', async (path) => {
     const response = await get(path);
+    expect(response.status).toBe(404);
+  });
+
+  // 🔴 ДИСКРИМІНУЮЧИЙ кейс гарда форми — єдиний, що падає саме на
+  // `MEDIA_KEY_RE`. Файл існує, лежить під коренем сховища і має дозволене
+  // розширення, тож усі інші рубежі його пропускають: `new URL()` тут нічого
+  // не нормалізує, `MIME_BY_EXT['png']` є, драйвер віддає обʼєкт. Без звірки
+  // з формою роздача віддала б 200 на файл, якого порт не створював.
+  //
+  // 🔴 Саме цей рубіж поїде в драйвер S3 (К4), де перевірки кореня ФС —
+  // другого рубежа — не буде взагалі.
+  it('404 на ключ поза формою, який РЕАЛЬНО існує під коренем', async () => {
+    await writeFile(join(root, 'ab', 'plain.png'), PNG);
+    const response = await get('/media/ab/plain.png');
     expect(response.status).toBe(404);
   });
 

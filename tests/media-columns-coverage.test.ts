@@ -21,8 +21,14 @@ import * as schema from 'simplycms/schema';
  * `avatar*` або `images`. Хибне спрацювання лікується одним рядком у реєстрі
  * (або в `NOT_MEDIA` нижче з причиною) — пропущена колонка коштувала б
  * зламаної картинки на живій вітрині.
+ *
+ * 🔴 Форма регексу мусить дослівно відповідати цьому переліку. Попередня
+ * редакція (`^(images|avatar_url|.*image_url|image)$`) обіцяла ту саму
+ * широту, а насправді вимагала суфікса `_url`: `hero_image`, `avatar` чи
+ * `image_key` проходили повз гейт мовчки (знайдено рев'ю Е2). Звужувати
+ * назад — лише разом із цим докблоком.
  */
-const LOOKS_LIKE_MEDIA = /^(images|avatar_url|.*image_url|image)$/;
+const LOOKS_LIKE_MEDIA = /^(images|image.*|.*_image.*|avatar.*)$/;
 
 /**
  * Колонки, що збігаються з евристикою, але медіа НЕ несуть.
@@ -33,7 +39,15 @@ const LOOKS_LIKE_MEDIA = /^(images|avatar_url|.*image_url|image)$/;
  * `profiles.avatar_url` (Task 5), а не тут; звести їх в одне поле означало б
  * дати серверному auth-контуру писати в доменну колонку вітрини.
  */
-const NOT_MEDIA: readonly string[] = ['users.image'];
+const NOT_MEDIA: readonly string[] = [
+  'users.image',
+  // `themes.preview_image` — прев'ю теми, а не завантажений обʼєкт: порт
+  // сховища його не створює, `bootstrapThemes` колонку не пише взагалі
+  // (`themes/types.ts`), а єдиний читач — адмінка, що ставить значення прямо
+  // в `<img src>` (`admin/components/ThemeCard.tsx`). Це URL із метаданих
+  // теми, тож резолверу медіа-референсів тут нема чого резолвити.
+  'themes.preview_image',
+];
 
 describe('реєстр медіа-колонок', () => {
   const found: string[] = [];

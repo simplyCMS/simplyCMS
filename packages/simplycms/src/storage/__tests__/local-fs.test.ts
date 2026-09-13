@@ -6,6 +6,7 @@ import {
   MediaKeyCollisionError,
   MediaKeyError,
   localFsDriver,
+  mediaTmpName,
 } from '../local-fs';
 import { MEDIA_KEY_RE } from '../keys';
 
@@ -47,21 +48,16 @@ describe('localFsDriver', () => {
   // 🔴 Не косметика імені: сирота `.tmp-*` після падіння між `link` і
   // `unlink` — названа межа Е2, і єдине, що робить її нешкідливою, — те,
   // що роут роздачі такого імені не приймає.
-  it('імʼя тимчасового файлу НЕ матчить MEDIA_KEY_RE', async () => {
-    let captured = '';
-    const spy = localFsDriver(root);
-    // Перехоплюємо імена, що зʼявляються в шард-теці під час запису.
-    const watcher = setInterval(async () => {
-      const names = await readdir(join(root, 'cd')).catch(() => []);
-      const tmp = names.find((n) => !MEDIA_KEY_RE.test(`cd/${n}`));
-      if (tmp) captured = tmp;
-    }, 1);
-    await spy.put('cd/cd000000-0000-4000-8000-000000000000.png', PAYLOAD);
-    clearInterval(watcher);
-    // Незалежно від того, чи встиг таймер, сама форма імені перевіряється
-    // детерміністично: жодне `.tmp-*` не може пройти регекс ключа.
-    expect(MEDIA_KEY_RE.test(`cd/.tmp-${'0'.repeat(36)}`)).toBe(false);
-    if (captured) expect(MEDIA_KEY_RE.test(`cd/${captured}`)).toBe(false);
+  //
+  // 🔴 Асерт іде проти САМОЇ `mediaTmpName` — функції, якою драйвер будує
+  // імʼя. Попередня редакція перевіряла регекс проти рядка, який тест писав
+  // сам, тож зміна форми імені в драйвері лишала гейт зеленим.
+  it('імʼя тимчасового файлу НЕ матчить MEDIA_KEY_RE', () => {
+    const name = mediaTmpName();
+    expect(MEDIA_KEY_RE.test(`cd/${name}`)).toBe(false);
+    // Друга властивість того ж імені — унікальність: колізія двох одночасних
+    // записів у шарді впала б на `writeFile(..., { flag: 'wx' })`.
+    expect(mediaTmpName()).not.toBe(name);
   });
 
   it('delete прибирає обʼєкт', async () => {

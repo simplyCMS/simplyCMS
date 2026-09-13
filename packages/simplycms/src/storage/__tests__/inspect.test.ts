@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { inspectUpload } from '../inspect';
 
 const file = (
@@ -39,12 +39,18 @@ describe('inspectUpload', () => {
     expect(result.ok && result.mime).toBe('image/png');
   });
 
+  // 🔴 «Байти НЕ читаються» — не прикраса назви, а сама причина перевіряти
+  // розмір першим: Start буферизує тіло цілком, тож `arrayBuffer()` заради
+  // відмови алокує весь файл. Асерт на шпигуна, бо без нього кейс лишався
+  // зеленим і тоді, коли читання переїхало б ПЕРЕД перевіркою.
   it('понад ліміт → too_large, і байти НЕ читаються', async () => {
     const big = file(new Uint8Array(11 * 1024 * 1024));
+    const read = vi.spyOn(big, 'arrayBuffer');
     expect(await inspectUpload(big)).toEqual({
       ok: false,
       reason: 'too_large',
     });
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('ліміт — параметр: аватарна стеля жорсткіша', async () => {
