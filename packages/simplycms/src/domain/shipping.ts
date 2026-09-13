@@ -8,6 +8,7 @@ import type {
   ShippingCalculationResult,
 } from 'simplycms/contracts';
 import { formatPrice } from './money';
+import { roundMoney } from './pricing';
 
 export type {
   ShippingMethod,
@@ -55,8 +56,11 @@ export function calculateShippingCost(
     }
 
     case 'order_total': {
-      // Percentage of order total (base_cost is percentage)
-      return (cart.subtotal * rate.base_cost) / 100;
+      // Percentage of order total (base_cost is percentage).
+      // 🔴 Округлення до центів: вартість доставки їде в `orders.shipping_cost`
+      // і в `total = subtotal + shippingCost`. Відсоток від довільної суми дає
+      // дріб, і «до сплати» перестало б збігатися з сумою доданків.
+      return roundMoney((cart.subtotal * rate.base_cost) / 100);
     }
 
     case 'free_from': {

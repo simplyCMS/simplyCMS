@@ -101,7 +101,7 @@ export async function createOrder(
   // операторською роллю в ТІЙ САМІЙ транзакції (див. `escalationFor`).
   // `NewOrderItem` структурно є `StockLine`, тож перекладати нічого.
   await operator((odb) =>
-    reserveOrderStock(odb, input.items, input.pickupPointId),
+    reserveOrderStock(odb, orderId, input.items, input.pickupPointId),
   );
 
   return { id: orderId, orderNumber, accessToken };

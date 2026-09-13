@@ -142,6 +142,16 @@ describe('замовлення списує залишок і повертає �
         [productId],
       )) as QtyRow[]
     ).map((r) => Number(r.quantity));
+  /** Залишок на КОНКРЕТНІЙ точці — на відміну від `quantities`, яка бере всі. */
+  const stockAt = async (pointId: string, productId: string): Promise<number> =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select quantity from public.stock_by_pickup_point
+          where pickup_point_id = $1 and product_id = $2 and modification_id is null`,
+        [pointId, productId],
+      )) as { quantity: number }[]
+    )[0].quantity;
   const statusOf = async (productId: string): Promise<string | null> =>
     (
       (await queryRows(
@@ -468,6 +478,88 @@ describe('замовлення списує залишок і повертає �
     // «обслуговуючих» точок, і `releaseStock` мовчки виходив на «рядка немає»
     // — залишок лишився б [2] назавжди.
     expect(await quantities(productId)).toEqual([5]);
+  });
+
+  // 🔴 Знахідка A фінального рев'ю гілки, ВІДТВОРЕНА скептиком прямим SQL:
+  // для замовлення БЕЗ самовивозу `orders.pickup_point_id` порожній, тож до
+  // фіксу точка резолвилась ОКРЕМО на списанні й на поверненні. Деактивація
+  // P1 між оформленням і скасуванням змінювала результат резолву — списане з
+  // P1 поверталось у P2: P1 назавжди в мінусі, P2 плюс із повітря.
+  // Фікс: точка списання пишеться в `orders.shipping_data.stock_point_id`
+  // (наявна jsonb-колонка, без DDL) і читається ПЕРШОЮ на поверненні.
+  it('🔴 A: курʼєрське замовлення — P1 деактивовано між оформленням і скасуванням, повернення йде в P1', async () => {
+    const first = crypto.randomUUID();
+    const second = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values ($1, $3, 'A-точка перша', 'вул. А, 1', 'Київ', true, -2),
+              ($2, $3, 'A-точка друга', 'вул. А, 2', 'Київ', true, -1)`,
+      [first, second, methodId],
+    );
+    const productId = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, 'test-a-drift-courier', 'Тест A: дрейф точки')`,
+      [productId],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $3, null, 10),
+              (gen_random_uuid(), $2, $3, null, 10)`,
+      [first, second, productId],
+    );
+    // Системну точку демо-сіду тимчасово знімаємо з резолву (інакше вона
+    // виграє другим кроком порядку), а власним точкам даємо відʼємний
+    // `sort_order`, щоб першою активною була саме A-точка перша.
+    await queryRows(
+      dbUrl,
+      `update public.pickup_points set is_system = false where is_system`,
+    );
+
+    try {
+      // pickupPointId = null — саме курʼєрський випадок, у якому дрейф і жив.
+      const order = await place(productId, 3, null);
+      expect(await stockAt(first, productId)).toBe(7);
+      expect(await stockAt(second, productId)).toBe(10);
+
+      await queryRows(
+        dbUrl,
+        `update public.pickup_points set is_active = false where id = $1`,
+        [first],
+      );
+
+      await withOrderTokenDb(
+        order.accessToken as string,
+        async (db, operator) => {
+          await operator((odb) => releaseOrderStock(odb, order.id));
+        },
+      );
+
+      // Повернення пішло В ТУ САМУ точку, з якої списували, попри те що
+      // резолв тепер віддав би другу.
+      expect(await stockAt(first, productId)).toBe(10);
+      expect(await stockAt(second, productId)).toBe(10);
+    } finally {
+      // 🔴 Прибираємо за собою ПОВНІСТЮ, а не лише прапорці: точки з
+      // відʼємним `sort_order` лишились би першими в резолві й мовчки
+      // змінили б сенс сусіднього кейсу про «першу активну за (sort_order, id)».
+      await queryRows(
+        dbUrl,
+        `delete from public.stock_by_pickup_point where pickup_point_id in ($1, $2)`,
+        [first, second],
+      );
+      await queryRows(
+        dbUrl,
+        `delete from public.pickup_points where id in ($1, $2)`,
+        [first, second],
+      );
+      await queryRows(
+        dbUrl,
+        `update public.pickup_points set is_system = true where name = 'Склад у Києві'`,
+      );
+    }
   });
 
   it('🔴 I1-регрес: точку ЄДИНУ й ВИЧЕРПАНУ ДО НУЛЯ деактивували — скасування НЕ фліпає статус в in_stock', async () => {

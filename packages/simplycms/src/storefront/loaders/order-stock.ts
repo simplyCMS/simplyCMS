@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { orderItems, orders, systemSettings } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import { releaseStock } from './stock-release';
@@ -39,9 +39,20 @@ function sortForLock<T extends StockTarget>(lines: T[]): T[] {
   });
 }
 
-/** Списати залишок усього замовлення — під ескалацією, у його транзакції. */
+/**
+ * Списати залишок усього замовлення — під ескалацією, у його транзакції.
+ *
+ * 🔴 Резолвлена точка ЗАПИСУЄТЬСЯ в `orders.shipping_data.stock_point_id`.
+ * Причина: для замовлення БЕЗ самовивозу `orders.pickup_point_id` порожній,
+ * тож `resolveStockPoint` довелося б кликати вдруге на поверненні — і якби
+ * між оформленням і скасуванням магазин деактивував ту точку, резолв віддав
+ * би ІНШУ: списане з P1 повернулося б у P2 (P1 назавжди в мінусі, P2 плюс
+ * із повітря). Запис у наявну jsonb-колонку — саме той шлях, який план
+ * називає для видаленої точки, і він не потребує DDL.
+ */
 export async function reserveOrderStock(
   db: ActorDb,
+  orderId: string,
   lines: StockLine[],
   pickupPointId: string | null,
 ): Promise<void> {
@@ -49,6 +60,14 @@ export async function reserveOrderStock(
   if (!decrease_on_order) return;
   const pointId = await resolveStockPoint(db, pickupPointId);
   if (!pointId) return;
+
+  await db
+    .update(orders)
+    .set({
+      shippingData: sql`coalesce(${orders.shippingData}, '{}'::jsonb) || ${JSON.stringify({ stock_point_id: pointId })}::jsonb`,
+    })
+    .where(eq(orders.id, orderId));
+
   for (const line of sortForLock(lines)) await reserveStock(db, line, pointId);
 }
 
@@ -70,13 +89,25 @@ export async function releaseOrderStock(
   if (!decrease_on_order) return;
 
   const [order] = await db
-    .select({ pickupPointId: orders.pickupPointId })
+    .select({
+      pickupPointId: orders.pickupPointId,
+      shippingData: orders.shippingData,
+    })
     .from(orders)
     .where(eq(orders.id, orderId))
     .limit(1);
   if (!order) return;
 
-  const pointId = await resolveStockPoint(db, order.pickupPointId);
+  // 🔴 Точка СПИСАННЯ читається першою — вона записана при оформленні. Резолв
+  // лишається лише відкатом для замовлень, оформлених ДО цієї правки: для них
+  // `orders.pickup_point_id` або веде в ту саму точку (самовивіз), або
+  // порожній, і тоді резолв може віддати іншу точку, ніж списували.
+  const stored = (order.shippingData as { stock_point_id?: unknown } | null)
+    ?.stock_point_id;
+  const pointId =
+    typeof stored === 'string' && stored
+      ? stored
+      : await resolveStockPoint(db, order.pickupPointId);
   if (!pointId) return;
 
   const lines = await db
