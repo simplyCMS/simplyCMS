@@ -1,14 +1,6 @@
 // Шапка — той самий патерн, що в admin-order-statuses.test.ts: resolveHarness
 // → createTempDatabase → канон → app_runtime у DATABASE_URL; afterAll із
 // closeDbPool() ПЕРШИМ.
-//
-// 🔴 Борг Task 3 (розходження з планом, ОРІЄНТИР-рівень — лічильник кейсів):
-// у ПЛАНІ цей файл мав восьмий кейс "відмова на видаленні СТАРОГО" через
-// СПРАВЖНЮ `replaceAvatarFor`/`withCustomerDb` з `simplycms/storefront/
-// loaders` — але обидва зʼявляться лише в Task 5 (ще не приземлений на цій
-// хвилі). Імпорт неіснуючого експорту звалив би `typecheck` і завадив би
-// прогону решти кейсів, тож той кейс сюди НЕ додано — Task 5 додає його
-// сюди сам, коли `replaceAvatarFor` існуватиме.
 import { readdirSync } from 'node:fs';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
+import { replaceAvatarFor, withCustomerDb } from 'simplycms/storefront/loaders';
 import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -62,6 +55,24 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     if (dbUrl) await dropTempDatabase(harness.url, dbName);
     await harness?.teardown();
   });
+
+  /** Користувач + порожній профіль: заміні аватара потрібен рядок `profiles`. */
+  const seedUser = async (url: string): Promise<string> => {
+    const id = randomUUID();
+    const email = `media-${id.slice(0, 8)}@example.test`;
+    await queryRows(
+      url,
+      `insert into public.users (id, email, name, email_verified, created_at, updated_at)
+       values ($1, $2, 'Живий Тест', false, now(), now())`,
+      [id, email],
+    );
+    await queryRows(
+      url,
+      'insert into public.profiles (id, user_id, email) values ($1, $2, $3)',
+      [randomUUID(), id, email],
+    );
+    return id;
+  };
 
   const countMedia = async (): Promise<number> => {
     const [row] = (await queryRows(
@@ -301,6 +312,68 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     await withActor({ role: 'app_admin' }, (db) =>
       eraseMedia(db, record.ref, real),
     );
+  });
+
+  // 🔴 Девʼятий кейс ганяє СПРАВЖНЮ `replaceAvatarFor`, а не послідовність,
+  // зібрану в тесті: копія доводила б властивість копії (патерн P1 — гейт
+  // обіцяє більше, ніж перевіряє). Функція чиста й бере `db`+`operator`
+  // параметрами саме для цього. Борг хвилі B, закритий у Task 5.
+  it('відмова на видаленні СТАРОГО: старий аватар цілий, нового немає', async () => {
+    const real = driver();
+    const userId = await seedUser(dbUrl);
+    const oldRecord = await withActor({ role: 'app_admin' }, (db) =>
+      writeMedia(
+        db,
+        {
+          bytes: PNG,
+          mime: 'image/png',
+          entityType: 'avatar',
+          entityId: userId,
+          uploadedBy: userId,
+        },
+        real,
+      ),
+    );
+    await queryRows(
+      dbUrl,
+      'update public.profiles set avatar_url = $1 where user_id = $2',
+      [oldRecord.ref, userId],
+    );
+
+    const broken = {
+      ...real,
+      delete: async () => {
+        throw new Error('сховище недоступне');
+      },
+    };
+
+    await expect(
+      withCustomerDb(userId, (db, operator) =>
+        replaceAvatarFor(
+          db,
+          operator,
+          userId,
+          { bytes: PNG, mime: 'image/png' },
+          broken,
+        ),
+      ),
+    ).rejects.toThrow('сховище недоступне');
+
+    // Старий цілий і в БД, і на диску.
+    const [profile] = (await queryRows(
+      dbUrl,
+      'select avatar_url from public.profiles where user_id = $1',
+      [userId],
+    )) as { avatar_url: string }[];
+    expect(profile.avatar_url).toBe(oldRecord.ref);
+    expect(await real.open(oldRecord.ref)).not.toBeNull();
+
+    // Нового рядка немає — його прибрав rollback.
+    const [{ n }] = (await queryRows(
+      dbUrl,
+      "select count(*)::int as n from public.media where entity_type = 'avatar'",
+    )) as { n: number }[];
+    expect(n).toBe(1);
   });
 
   it('тимчасові файли після всіх прогонів не лишились', async () => {

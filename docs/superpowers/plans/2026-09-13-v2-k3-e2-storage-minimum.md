@@ -2344,7 +2344,7 @@ git commit -m "feat(k3-e2): роут /media/\$ — роздача обʼєкті
   - `export const removeMyAvatar: ServerFn` — повертає `void`
   - `AvatarUpload` props: `{ currentAvatarUrl, firstName?, lastName?, email?, onUpdate }` (проп `userId` прибрано)
 
-- [ ] **Step 1: Додати ключі i18n (uk)**
+- [X] **Step 1: Додати ключі i18n (uk)**
 
 У `packages/simplycms/src/i18n/catalogs/uk/profile.ts` ЗАМІНИТИ `'profile.avatar.unavailable'` на:
 
@@ -2359,7 +2359,7 @@ git commit -m "feat(k3-e2): роут /media/\$ — роздача обʼєкті
   'profile.avatar.failed': 'Не вдалося зберегти фото',
 ```
 
-- [ ] **Step 2: Дзеркалити ключі в `en`**
+- [X] **Step 2: Дзеркалити ключі в `en`**
 
 У `packages/simplycms/src/i18n/catalogs/en/profile.ts` — ті самі вісім ключів, прибравши `'profile.avatar.unavailable'`:
 
@@ -2374,12 +2374,12 @@ git commit -m "feat(k3-e2): роут /media/\$ — роздача обʼєкті
   'profile.avatar.failed': 'Could not save the photo',
 ```
 
-- [ ] **Step 3: Прогнати i18n-гейти — мають бути зелені**
+- [X] **Step 3: Прогнати i18n-гейти — мають бути зелені**
 
 Run: `pnpm vitest run tests/i18n-catalog-parity.test.ts packages/simplycms/src/i18n/__tests__/catalog-integrity.test.ts`
 Expected: PASS. Червоне тут = ключ додано лише в один каталог.
 
-- [ ] **Step 4: Написати оркестрацію заміни — `storefront/loaders/avatar.ts`**
+- [X] **Step 4: Написати оркестрацію заміни — `storefront/loaders/avatar.ts`**
 
 🔴 **Чому в лоадерах, а не в `storage`** (рішення архітектора 2026-09-13 після
 заперечення): `storage` — узагальнений порт файлів, і залежність від
@@ -2491,7 +2491,7 @@ export async function clearAvatarFor(
 
 Додати обидві в барель `storefront/loaders/index.ts` поруч із рештою.
 
-- [ ] **Step 4a: Відкрити `storefront` доступ до `storage`**
+- [X] **Step 4a: Відкрити `storefront` доступ до `storage`**
 
 У `eslint.tier-zones.mjs` розширити рядок `storefront`:
 
@@ -2504,7 +2504,7 @@ export async function clearAvatarFor(
 
 Прогнати `pnpm lint && pnpm vitest run tests/tier-boundary.test.ts`. Expected: PASS.
 
-- [ ] **Step 4c: Ратчет споживачів порту — бо тір-зона ширша за намір**
+- [X] **Step 4c: Ратчет споживачів порту — бо тір-зона ширша за намір**
 
 🔴 Тір-зони працюють на рівні ТЕКИ й вужче не вміють. Тобто виняток із
 Step 4a відкриває `simplycms/storage` **будь-якому** лоадеру вітрини, хоч
@@ -2571,7 +2571,7 @@ describe('споживачі порту сховища серед лоадері
 `packages/simplycms/src/storefront/loaders/products.ts` і прожени тест.
 Expected: FAIL зі списком `['products.ts']`. Прибери рядок.
 
-- [ ] **Step 4b: Написати ТОНКИЙ serverFn кабінету**
+- [X] **Step 4b: Написати ТОНКИЙ serverFn кабінету**
 
 `packages/simplycms/src/core/lib/profile-avatar.ts`:
 
@@ -2656,7 +2656,7 @@ export const removeMyAvatar = createServerFn({ method: 'POST' }).handler(
 );
 ```
 
-- [ ] **Step 4c: Додати ВОСЬМИЙ кейс у харнес Task 3 — борг хвилі B**
+- [X] **Step 4c: Додати ВОСЬМИЙ кейс у харнес Task 3 — борг хвилі B**
 
 🔴 Task 3 планував кейс «відмова на видаленні СТАРОГО: старий аватар цілий,
 нового немає», який кличе `replaceAvatarFor` і `withCustomerDb`. У хвилі B
@@ -2681,7 +2681,7 @@ pnpm vitest run --config vitest.schema.config.ts \
 ```
 Expected: девʼять `it`, усі зелені.
 
-- [ ] **Step 5: Написати падаючі тести компонента**
+- [X] **Step 5: Написати падаючі тести компонента**
 
 `packages/simplycms/src/profile-ui/__tests__/avatar-upload.test.tsx`:
 
@@ -2809,12 +2809,12 @@ describe('AvatarUpload', () => {
 });
 ```
 
-- [ ] **Step 6: Прогнати — має впасти**
+- [X] **Step 6: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/profile-ui/__tests__/avatar-upload.test.tsx`
 Expected: FAIL — компонент іще відмовляє, інпут `disabled`.
 
-- [ ] **Step 7: Оживити `AvatarUpload`**
+- [X] **Step 7: Оживити `AvatarUpload`**
 
 Замінити `packages/simplycms/src/profile-ui/AvatarUpload.tsx` цілком:
 
@@ -2976,7 +2976,7 @@ export function AvatarUpload({
 }
 ```
 
-- [ ] **Step 8: Прибрати застарілий тест і оновити сторінку**
+- [X] **Step 8: Прибрати застарілий тест і оновити сторінку**
 
 ```bash
 git rm packages/simplycms/src/profile-ui/__tests__/avatar-upload-disabled.test.tsx
@@ -2998,7 +2998,7 @@ git rm packages/simplycms/src/profile-ui/__tests__/avatar-upload-disabled.test.t
 
 🔴 `<CardTitle>{t('profile.settings.avatar')}</CardTitle>` у `<CardHeader>` (рядки 220-222) **ЛИШИТИ**. Це заголовок картки, а не другий `<label>`: він структурує секцію, а підпис інпута дає `<label className="sr-only" htmlFor="avatar-file-input">` усередині компонента. Дублювання `label` не виникає, і `jsx-a11y/label-has-associated-control` задоволене (перевірено в коді 2026-09-13).
 
-- [ ] **Step 9: Резолвити аватар при читанні профілю**
+- [X] **Step 9: Резолвити аватар при читанні профілю**
 
 У `packages/simplycms/src/storefront/loaders/profile.ts` — імпорт і рядок 55:
 
@@ -3008,12 +3008,12 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
     avatar_url: resolveMediaUrl(row.avatar_url),
 ```
 
-- [ ] **Step 10: Прогнати тести компонента**
+- [X] **Step 10: Прогнати тести компонента**
 
 Run: `pnpm vitest run packages/simplycms/src/profile-ui/__tests__/avatar-upload.test.tsx`
 Expected: PASS (5 тестів).
 
-- [ ] **Step 11: Живий прогін — ГОЛОВНИЙ доказ етапу**
+- [X] **Step 11: Живий прогін — ГОЛОВНИЙ доказ етапу**
 
 🔴 **Форма прогону.** Вісім пунктів нижче можна пройти або руками в браузері,
 або одноразовим Playwright-скриптом у scratchpad-теці (НЕ комітити — канонічним
@@ -3041,14 +3041,14 @@ Expected, і кожен пункт перевірити:
 
 Зафіксувати результат кожного пункту в звіті задачі. 🔴 Прибрати `.data/` після прогону і перевірити `git status --porcelain` — має бути порожньо.
 
-- [ ] **Step 12: Гейт задачі**
+- [X] **Step 12: Гейт задачі**
 
 ```bash
 pnpm lint && pnpm build && pnpm typecheck && pnpm test
 ```
 Expected: PASS. 🔴 Окремо звір, що `pnpm lint` не дав нових error від i18n-зони (`profile-ui` у ній) — жодного кириличного літерала в компоненті немає.
 
-- [ ] **Step 13: Коміт**
+- [X] **Step 13: Коміт**
 
 ```bash
 git add packages/simplycms/src/core/lib/profile-avatar.ts \

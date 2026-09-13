@@ -105,8 +105,14 @@ export const messages = {
   'profile.usedInOrders.one': 'Використано в {count} замовленні',
   'profile.usedInOrders.many': 'Використано в {count} замовленнях',
 
-  // Фото профілю (simplycms/profile-ui, AvatarUpload) — до контуру К4
-  // (порт сховища файлів) завантаження вимкнене, ключ пояснює чому.
-  'profile.avatar.unavailable':
-    'Завантаження аватара тимчасово недоступне — сховище файлів підключається в наступному оновленні',
+  // Фото профілю (simplycms/profile-ui, AvatarUpload) — з К3-Е2 контур живий:
+  // порт сховища приймає файл, тож ключі описують дію й причини відмови.
+  'profile.avatar.upload': 'Завантажити фото',
+  'profile.avatar.remove': 'Видалити фото',
+  'profile.avatar.uploading': 'Завантаження…',
+  'profile.avatar.badFormat': 'Непідтримуваний формат',
+  'profile.avatar.allowedFormats': 'PNG, JPEG, WebP, GIF або AVIF',
+  'profile.avatar.tooLarge': 'Файл завеликий',
+  'profile.avatar.maxSize': 'Максимальний розмір: 5 МБ',
+  'profile.avatar.failed': 'Не вдалося зберегти фото',
 } as const;
