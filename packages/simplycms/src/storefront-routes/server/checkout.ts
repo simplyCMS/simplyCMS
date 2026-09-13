@@ -7,6 +7,7 @@ import {
   withOrderTokenDb,
   type ActorDb,
   type NewOrderInput,
+  type OperatorEscalation,
   optionalSessionUserId,
 } from 'simplycms/storefront/loaders';
 import {
@@ -38,18 +39,21 @@ export const placeOrder = createServerFn({ method: 'POST' })
     const userId = await optionalSessionUserId();
     const accessToken = userId === null ? randomUUID() : null;
 
-    const run = <T>(fn: (db: ActorDb) => Promise<T>): Promise<T> =>
+    const run = <T>(
+      fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
+    ): Promise<T> =>
       userId === null
         ? withOrderTokenDb(accessToken as string, fn)
         : withCustomerDb(userId, fn);
 
-    return run(async (db) => {
+    return run(async (db, operator) => {
       const savedRecipientId = await resolveRecipient(db, userId, input);
       return createOrder(
         db,
         userId,
         accessToken,
         toOrderInput(input, savedRecipientId),
+        operator,
       );
     });
   });

@@ -1,7 +1,7 @@
 import { getRequest } from '@tanstack/react-start/server';
 import { readSessionSubject } from 'simplycms/auth';
 import { withCustomerDb } from './db';
-import type { ActorDb } from './db';
+import type { ActorDb, OperatorEscalation } from './db';
 
 /**
  * Транзакція від імені ВЛАСНИКА поточної сесії.
@@ -27,10 +27,10 @@ import type { ActorDb } from './db';
  * `dist-server-boundary`, Import Protection магазину.
  */
 export async function withSessionDb<T>(
-  fn: (db: ActorDb, userId: string) => Promise<T>,
+  fn: (db: ActorDb, userId: string, operator: OperatorEscalation) => Promise<T>,
 ): Promise<T> {
   const userId = await requireSessionUserId();
-  return withCustomerDb(userId, (db) => fn(db, userId));
+  return withCustomerDb(userId, (db, operator) => fn(db, userId, operator));
 }
 
 /** Id власника сесії або виняток. */

@@ -1,13 +1,14 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
+  lockOrderStatus,
   loadOrderDetail,
   loadOrderStatuses,
   loadStatusByCode,
   loadUserOrders,
+  releaseOrderStock,
   setOrderStatus,
   withStorefrontDb,
-  withStoreOperatorDb,
   type OrderDetailRow,
   type OrderListRow,
   type OrderStatusRow,
@@ -48,35 +49,46 @@ export const getMyOrder = createServerFn({ method: 'GET' })
   });
 
 /**
- * Скасувати власне замовлення.
+ * Скасувати власне замовлення — ОДНІЄЮ транзакцією.
  *
- * 🔴 Двоактна операція, і саме в такому порядку. Спершу читання ПІД
- * АКТОРОМ ПОКУПЦЯ: якщо замовлення чуже, RLS не віддасть рядок і далі справа
- * не піде. Лише потім — запис під `app_admin`, бо `0002_grants.sql` навмисно
- * не дає `app_user` UPDATE на `orders` (замовлення не редагується покупцем).
- * Переставити ці два кроки місцями означало б писати від імені адміна за
- * недоведеним правом.
+ * 🔴 Право доводиться читанням під актором покупця (RLS віддасть рядок лише
+ * власнику), запис — ескалацією в ТІЙ САМІЙ транзакції. Три транзакції ред.
+ * до К2-Е0 лишали вікно між «перевірив» і «записав», а тепер вікна немає за
+ * побудовою: між перевіркою і записом транзакція не завершується.
+ *
+ * 🔴 Порядок усередині ескалації обовʼязковий: блокування рядка замовлення →
+ * повернення залишку → статус. Повернення ПІСЛЯ статусу лишало б стан, у
+ * якому замовлення вже скасоване, а склад ще ні.
+ *
+ * 🔴 `loadStatusByCode` тепер читається під актором покупця, а не окремою
+ * транзакцією вітрини: `order_statuses` — публічний довідник із грантом
+ * SELECT для `app_user` (`0002_grants.sql:71`), тож зайва транзакція була
+ * лише історією.
  */
 export const cancelMyOrder = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data: input }): Promise<OrderCancelResult> => {
     const { orderId } = input as { orderId: string };
+    return withSessionDb(async (db, _userId, operator) => {
+      const own = await loadOrderDetail(db, orderId);
+      if (!own) return { ok: false, reason: 'not_found' };
+      if (own.status?.code !== CANCELLABLE_FROM) {
+        return { ok: false, reason: 'not_cancellable' };
+      }
+      const cancelled = await loadStatusByCode(db, CANCELLED);
+      if (!cancelled) return { ok: false, reason: 'status_missing' };
 
-    const own = await withSessionDb((db) => loadOrderDetail(db, orderId));
-    if (!own) return { ok: false, reason: 'not_found' };
-    if (own.status?.code !== CANCELLABLE_FROM) {
-      return { ok: false, reason: 'not_cancellable' };
-    }
+      const done = await operator(async (odb) => {
+        const locked = await lockOrderStatus(odb, orderId);
+        // Хтось випередив (подвійний клік, адмінка) — повернення НЕ повторюємо.
+        if (!locked || locked.statusId !== own.status_id) return false;
+        await releaseOrderStock(odb, orderId);
+        await setOrderStatus(odb, orderId, cancelled.id);
+        return true;
+      });
 
-    const cancelled = await withStorefrontDb((db) =>
-      loadStatusByCode(db, CANCELLED),
-    );
-    if (!cancelled) return { ok: false, reason: 'status_missing' };
-
-    await withStoreOperatorDb((db) =>
-      setOrderStatus(db, orderId, cancelled.id),
-    );
-    return { ok: true };
+      return done ? { ok: true } : { ok: false, reason: 'not_cancellable' };
+    });
   });
 
 /**

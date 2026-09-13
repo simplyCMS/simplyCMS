@@ -21,7 +21,6 @@ import {
   updateProfile,
   withCustomerDb,
   withOrderTokenDb,
-  withStoreOperatorDb,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
@@ -181,8 +180,8 @@ describe('персональні дані вітрини під актором',
   });
 
   it('🔴 замовлення: список і картка звужені актором', async () => {
-    const created = await withCustomerDb(userA, (db) =>
-      createOrder(db, userA, null, orderInput('alice')),
+    const created = await withCustomerDb(userA, (db, operator) =>
+      createOrder(db, userA, null, orderInput('alice'), operator),
     );
 
     const mine = await withCustomerDb(userA, (db) => loadUserOrders(db, userA));
@@ -202,8 +201,8 @@ describe('персональні дані вітрини під актором',
 
   it('🔴 гостьове замовлення: читається лише за своїм токеном', async () => {
     const token = '11111111-2222-4333-8444-555555555555';
-    const created = await withOrderTokenDb(token, (db) =>
-      createOrder(db, null, token, orderInput('guest')),
+    const created = await withOrderTokenDb(token, (db, operator) =>
+      createOrder(db, null, token, orderInput('guest'), operator),
     );
 
     const byToken = await withOrderTokenDb(token, (db) =>
@@ -224,8 +223,8 @@ describe('персональні дані вітрини під актором',
   });
 
   it('🔴 скасування: покупець не має UPDATE, операція йде під app_admin', async () => {
-    const created = await withCustomerDb(userA, (db) =>
-      createOrder(db, userA, null, orderInput('cancel')),
+    const created = await withCustomerDb(userA, (db, operator) =>
+      createOrder(db, userA, null, orderInput('cancel'), operator),
     );
     const cancelled = await withStorefrontDb((db) =>
       loadStatusByCode(db, 'cancelled'),
@@ -248,8 +247,8 @@ describe('персональні дані вітрини під актором',
       (failure as { cause?: { message?: string } }).cause?.message,
     ).toMatch(/permission denied/i);
 
-    await withStoreOperatorDb((db) =>
-      setOrderStatus(db, created.id, cancelled!.id),
+    await withCustomerDb(userA, (db, operator) =>
+      operator((odb) => setOrderStatus(odb, created.id, cancelled!.id)),
     );
     const after = await withCustomerDb(userA, (db) =>
       loadOrderDetail(db, created.id),
