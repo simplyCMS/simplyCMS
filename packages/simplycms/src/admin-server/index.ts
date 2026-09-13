@@ -3,6 +3,9 @@ import { createServerFn } from '@tanstack/react-start';
 // і розрізнення «стаб vs нетрансформований» у dist зникло б (див. impl/).
 // Стереже правило server-only-relative.
 import {
+  deleteMediaInput,
+  deleteMediaOp,
+  uploadMediaOp,
   orderStatusesOps,
   setDefaultInput,
   setDefaultOrderStatusOp,
@@ -44,3 +47,19 @@ export const setDefaultOrderStatus = createServerFn({ method: 'POST' })
 export const reorderOrderStatus = createServerFn({ method: 'POST' })
   .inputValidator(reorderInput)
   .handler(reorderOrderStatusOp);
+
+// 🔴 Валідатор — функція, а не Zod-схема: `inputValidator` зі схемою не
+// приймає FormData (Start типізує цю гілку окремо). Вміст форми перевіряє
+// `parseUploadForm` усередині операції.
+export const uploadMedia = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown): FormData => {
+    if (!(data instanceof FormData)) {
+      throw new Error('[simplycms] uploadMedia expects FormData.');
+    }
+    return data;
+  })
+  .handler(uploadMediaOp);
+
+export const deleteMedia = createServerFn({ method: 'POST' })
+  .inputValidator(deleteMediaInput)
+  .handler(deleteMediaOp);

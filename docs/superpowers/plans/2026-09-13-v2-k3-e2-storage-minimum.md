@@ -3283,7 +3283,7 @@ git commit -m "feat(k3-e2): вітрина резолвить медіа-реф�
 
 **🔴 Межа цієї задачі, названа чесно.** `ImageUpload` переписується на порт і покривається юнітами, але **всі пʼять його сторінок-споживачів** (`ProductEdit`, `SectionEdit`, `BannerEdit`, `PropertyOptionEdit`, `ProductModifications`) читають і пишуть дані через `supabase-js` і на чистому Postgres не працюють до хвиль Е3–Е6. Живого доказу «зображення товару працює» в Е2 бути не може — DoD К3 п.6 закривається хвилею каталогу. Робимо це зараз, бо (а) інакше хвиля каталогу тягла б storage-борг усередину себе, і (б) лінт-заборона Task 8 неможлива, поки `ImageUpload` кличе `supabase.storage`.
 
-- [ ] **Step 1: Написати падаючий тест операції**
+- [X] **Step 1: Написати падаючий тест операції**
 
 `packages/simplycms/src/admin-server/impl/__tests__/media.test.ts`:
 
@@ -3351,12 +3351,12 @@ describe('parseUploadForm', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнати — має впасти**
+- [X] **Step 2: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/admin-server/impl/__tests__/media.test.ts`
 Expected: FAIL — ні `media.write` у матриці, ні модуля `../operations/media`.
 
-- [ ] **Step 3: Завести операцію в матриці authz**
+- [X] **Step 3: Завести операцію в матриці authz**
 
 У `packages/simplycms/src/auth/authz.ts` у `Operation` додати `| 'media.write'`, у `AUTHZ_MATRIX` — рядок:
 
@@ -3369,7 +3369,7 @@ Expected: FAIL — ні `media.write` у матриці, ні модуля `../o
   'media.write': { admin: 'any' },
 ```
 
-- [ ] **Step 4: Написати операції адмінки**
+- [X] **Step 4: Написати операції адмінки**
 
 `packages/simplycms/src/admin-server/impl/operations/media.ts`:
 
@@ -3497,7 +3497,7 @@ export async function deleteMediaOp({
 
 🔴 Підпис звірено: `requireGrant(operation)` повертає `RequestGrant = { subject, scope }` (`auth/authz-request.ts:47-58`) і сам ставить `setResponseStatus(403)` перед прокиданням `AuthzError` — деструктуризація `{ subject }` вище коректна. 🔴 `requireGrant` **не можна** кликати зсередини відкритої транзакції: `readSessionSubject` бере власне зʼєднання, і на вичерпаному пулі це self-deadlock (докблок `resolveRequestGrant`). Порядок «грант → `withActor`» тут не стилістичний.
 
-- [ ] **Step 4a: Відкрити `admin-server` доступ до `storage`**
+- [X] **Step 4a: Відкрити `admin-server` доступ до `storage`**
 
 🔴 `admin-server` і `storage` — ОБИДВА T2, тож імпорт `simplycms/storage`
 звідти тір-зона трактує як «на свій шар» і валить. Це не помилка зони:
@@ -3538,7 +3538,7 @@ Expected: PASS. 🔴 Негативний контроль зони `storage` (�
 `import 'simplycms/admin-server';` (імпорт угору з T2 у T2 без винятку),
 прожени `pnpm lint` — має бути error від тір-зони; прибери рядок.
 
-- [ ] **Step 5: Реекспортувати з `impl/index.ts` і додати serverFn**
+- [X] **Step 5: Реекспортувати з `impl/index.ts` і додати serverFn**
 
 У `packages/simplycms/src/admin-server/impl/index.ts`:
 
@@ -3577,12 +3577,12 @@ export const deleteMedia = createServerFn({ method: 'POST' })
   .handler(deleteMediaOp);
 ```
 
-- [ ] **Step 6: Прогнати тести операцій**
+- [X] **Step 6: Прогнати тести операцій**
 
 Run: `pnpm vitest run packages/simplycms/src/admin-server/impl/__tests__/media.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Прогнати гейти форми serverFn**
+- [X] **Step 7: Прогнати гейти форми serverFn**
 
 ```bash
 pnpm lint
@@ -3590,7 +3590,7 @@ pnpm vitest run tests/handler-canon.test.ts tests/eslint-rules/server-fn-top-lev
 ```
 Expected: PASS. 🔴 Якщо `handler-canon` чи `server-fn-top-level` червоніють на FormData-валідаторі — **не глуши правило**: додай передбачений ним якір-виняток із причиною в коментарі й зафіксуй це в звіті задачі як зміну контракту гейта (архітектор назвав саме цей ризик).
 
-- [ ] **Step 8: Переписати `ImageUpload` на порт**
+- [X] **Step 8: Переписати `ImageUpload` на порт**
 
 У `packages/simplycms/src/admin/components/ImageUpload.tsx`:
 
@@ -3669,7 +3669,7 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 7. Прибрати перевірку розширення за іменем файлу (`allowedExts`) — MIME визначає сервер за байтами. `accept` на інпуті лишається UX-підказкою, але значення береться з `ACCEPT_ATTRIBUTE` (`simplycms/domain/media`), а не пишеться рядком: інакше це третя копія списку форматів.
 8. Локальну стелю розміру брати з `MAX_UPLOAD_BYTES` (`simplycms/domain/media`), а не літералом. До Е2 ліміт стояв у трьох місцях із двома різними значеннями — це вже був розсинхрон, не гіпотеза.
 
-- [ ] **Step 8a: Розбити `ImageUpload` — канон 150 рядків**
+- [X] **Step 8a: Розбити `ImageUpload` — канон 150 рядків**
 
 🔴 Файл має **295 рядків** при каноні 150 (`coding-style.instructions.md:43`), тобто подвійне порушення. Ми його й так переписуємо в цій задачі, тож лишати борг у файлі, який щойно чіпали, — свідоме рішення на гірше. За шкалою «Ступеня обовʼязковості» розкладка на модулі — ОРІЄНТИР, і канон тут саме 150 рядків, тож це виклик виконавця, а не питання до замовника.
 
@@ -3690,14 +3690,14 @@ wc -l packages/simplycms/src/admin/components/ImageUpload.tsx \
 ```
 Expected: обидва ≤ 150.
 
-- [ ] **Step 9: Перевірити, що `supabase.storage` в `ImageUpload` не лишилось**
+- [X] **Step 9: Перевірити, що `supabase.storage` в `ImageUpload` не лишилось**
 
 ```bash
 grep -n "supabase" packages/simplycms/src/admin/components/ImageUpload.tsx
 ```
 Expected: жодного збігу.
 
-- [ ] **Step 10: Гейт задачі**
+- [X] **Step 10: Гейт задачі**
 
 ```bash
 pnpm lint && pnpm build && pnpm typecheck && pnpm test
@@ -3705,7 +3705,7 @@ pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
 ```
 Expected: PASS. 🔴 `pilot:pack` — бо `admin-server` дістав нову поверхню, і Gate C стереже, що `admin-server/impl` (а тепер і `storage`) не поїхали в клієнтський бандл.
 
-- [ ] **Step 11: Коміт**
+- [X] **Step 11: Коміт**
 
 ```bash
 git add packages/simplycms/src/auth/authz.ts packages/simplycms/src/admin-server \

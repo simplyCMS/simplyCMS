@@ -35,6 +35,27 @@ export const ACCEPTED_IMAGE_MIME = [
 export const ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_MIME.join(',');
 
 /**
+ * Сутності, до яких адмінка сміє привʼязати завантажений файл.
+ *
+ * 🔴 Живе в T1 з тієї самої причини, що `ACCEPTED_IMAGE_MIME`: список
+ * потрібен ОБОМ бокам межі — сервер звіряє з ним `entity_type` перед
+ * вставкою в `media` (довільне значення від клієнта зробило б облік
+ * незведéним, а sweep орфанів К4 — сліпим), клієнт типізує ним пропс
+ * `ImageUpload`. Друга копія списку розійшлася б на першій же новій
+ * сутності, і розійшлася б МОВЧКИ: компонент приймав би тип, який сервер
+ * відкидає.
+ */
+export const MEDIA_ENTITY_TYPES = [
+  'product',
+  'product_modification',
+  'section',
+  'banner',
+  'property_option',
+] as const;
+
+export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
+
+/**
  * Стеля розміру завантаження, байти.
  *
  * 🔴 Два різні значення — навмисно, НЕ розсинхрон: «вирівняти» їх означало б

@@ -289,6 +289,8 @@ export default function PropertyOptionEdit() {
                 onImagesChange={(urls) =>
                   handleChange('image_url', urls[0] || '')
                 }
+                entityType="property_option"
+                entityId={isNew ? null : optionId}
                 maxImages={1}
               />
             </div>

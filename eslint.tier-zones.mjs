@@ -71,7 +71,10 @@ const TIER_ZONES = [
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
   // requireGrant (auth). Ширшого не давати.
-  ['src/admin-server', 2, 'admin-server', ['db', 'auth']],
+  // `storage` (Е2) у винятку з тієї ж причини, що `db` і `auth`: канал до
+  // файлів один — порт, і заборона власного тіру виштовхнула б адмінку на
+  // прямий `node:fs`, тобто рівно туди, куди не можна.
+  ['src/admin-server', 2, 'admin-server', ['db', 'auth', 'storage']],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
   // до Postgres немає. `auth` НЕ у винятку — грант перевіряє викликач

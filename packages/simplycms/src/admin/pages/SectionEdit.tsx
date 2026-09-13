@@ -273,7 +273,8 @@ export default function SectionEdit() {
                 <ImageUpload
                   images={sectionImage}
                   onImagesChange={setSectionImage}
-                  folder="sections"
+                  entityType="section"
+                  entityId={isNew ? null : sectionId}
                   maxImages={1}
                 />
               </CardContent>
