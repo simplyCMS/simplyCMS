@@ -81,6 +81,8 @@ export const messages: Catalog = {
   'checkout.delivery.saveAddress': 'Save address',
 
   'checkout.orderSummary.title': 'Your order',
+  'checkout.orderSummary.awaitingDelivery':
+    'Fill in the delivery details to see the order total',
   'checkout.orderSummary.itemsCount': 'Items ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Any special requests...',
   'checkout.orderSummary.submitting': 'Placing order...',

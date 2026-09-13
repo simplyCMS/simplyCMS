@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
@@ -35,6 +35,9 @@ export function ReviewForm({
   renderImageUpload,
 }: ReviewFormProps) {
   const t = useT();
+  // useId — не літерал (рев'ю #13): два відгуки на одній сторінці інакше
+  // ділили б один id групи рейтингу.
+  const ratingLabelId = useId();
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -60,10 +63,10 @@ export function ReviewForm({
       <h3 className="font-semibold text-lg">{t('reviews.writeReview')}</h3>
 
       <div className="space-y-1">
-        <span id="review-rating-label" className="text-sm font-medium">
+        <span id={ratingLabelId} className="text-sm font-medium">
           {t('reviews.form.ratingLabel')}
         </span>
-        <div role="group" aria-labelledby="review-rating-label">
+        <div role="group" aria-labelledby={ratingLabelId}>
           <StarRating
             value={rating}
             onChange={(v) => {

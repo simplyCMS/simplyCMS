@@ -8,6 +8,10 @@ interface CheckoutOrderSummaryProps {
   /** `null` — квоти ще немає (перший рендер або гейт `hydrated`). */
   quote: QuoteCheckoutResult | null;
   quoting: boolean;
+  /** Квота відповідає ПОТОЧНИМ входам (рев'ю #6) — `false` у вікні дебаунсу. */
+  matchesCurrent: boolean;
+  /** Метод/точку/місто ще не обрано — нема що рахувати (рев'ю I2/I3). */
+  blocked: boolean;
   notes: string;
   onNotesChange: (notes: string) => void;
   isSubmitting: boolean;
@@ -26,6 +30,8 @@ interface CheckoutOrderSummaryProps {
 export function CheckoutOrderSummary({
   quote,
   quoting,
+  matchesCurrent,
+  blocked,
   notes,
   onNotesChange,
   isSubmitting,
@@ -42,7 +48,17 @@ export function CheckoutOrderSummary({
         </h3>
       </div>
       <div className="p-4 space-y-4">
-        {quote === null || quoting ? (
+        {blocked ? (
+          // 🔴 Рев'ю I2/I3: НЕ скелет (нема чого чекати — запит навіть не
+          // йде, `useCheckoutQuote` це знає наперед) і НЕ червона відмова
+          // (це нормальний проміжний стан заповнення форми, не помилка).
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {t('checkout.orderSummary.awaitingDelivery')}
+          </p>
+        ) : quote === null || quoting || !matchesCurrent ? (
+          // `!matchesCurrent` — рев'ю #6: без цього у вікні дебаунсу тут
+          // показувались би числа ПОПЕРЕДНЬОЇ квоти як актуальні (гроші в
+          // безпеці — submit і так заблокований, але показ був би неточний).
           <div className="space-y-3">
             <div className="animate-pulse h-4 w-full bg-muted rounded" />
             <div className="animate-pulse h-4 w-2/3 bg-muted rounded" />

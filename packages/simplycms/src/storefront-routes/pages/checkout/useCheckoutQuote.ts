@@ -11,6 +11,8 @@ interface CheckoutQuoteParams {
   shippingMethodId: string;
   pickupPointId: string;
   deliveryCity: string;
+  /** Той самий предикат, що вже рахує `CheckoutDeliveryForm` для власного UI. */
+  isPickup: boolean;
   /** У запит НЕ йде — лише тригерить перезапит при вході/виході з сесії. */
   userKey: string | null;
 }
@@ -20,10 +22,26 @@ export interface CheckoutQuoteState {
   quoting: boolean;
   /** Квота відповідає ПОТОЧНИМ входам — без цього submit неможливий (M-8). */
   matchesCurrent: boolean;
+  /**
+   * 🔴 Рев'ю I2/I3: сервер (`prepareCheckout`) відмовляє детерміновано, коли
+   * метод/точку/місто ще не обрано — запит на квоту в цьому стані
+   * ГАРАНТОВАНО падає (`shippingMethodId: z.string().uuid()` кидає на
+   * порожньому рядку) або дає хибну ЧЕРВОНУ відмову на нормальному
+   * проміжному стані заповнення форми. Клієнт передбачає це БЕЗ мережі —
+   * тим самим предикатом, що вже стоїть у `prepareCheckout` — і взагалі не
+   * питає. `true` — щось із трьох (метод / точка pickup / місто не-pickup)
+   * ще не обрано; це НЕ помилка мережі, показ — нейтральний стан, не скелет
+   * і не відмова.
+   */
+  blocked: boolean;
 }
 
-/** Ключ входів, що РУХАЮТЬ ГРОШІ (розділ M) — зміна ключа = нова квота. */
-function moneyKey(p: CheckoutQuoteParams): string {
+/**
+ * Ключ входів, що РУХАЮТЬ ГРОШІ (розділ M) — зміна ключа = нова квота.
+ * `isPickup` НЕ входить: він похідний від `shippingMethodId` (те саме
+ * правило, що й у `CheckoutDeliveryForm`), тож окремої зміни ключа не додає.
+ */
+function moneyKey(p: Omit<CheckoutQuoteParams, 'isPickup'>): string {
   return JSON.stringify([
     p.items.map((i) => [i.productId, i.modificationId, i.quantity]),
     p.shippingMethodId,
@@ -45,6 +63,7 @@ export function useCheckoutQuote({
   shippingMethodId,
   pickupPointId,
   deliveryCity,
+  isPickup,
   userKey,
 }: CheckoutQuoteParams): CheckoutQuoteState {
   // Ознака гідратації — ОДНА на застосунок (Task 12, рішення А): та сама, за
@@ -64,9 +83,14 @@ export function useCheckoutQuote({
     deliveryCity,
     userKey,
   });
+  // Дзеркало ДВОХ гвардів `prepareCheckout` (`!method` і `!isPickup &&
+  // !city` / `isPickup && !point`) — без мережі, тим самим предикатом.
+  const blocked =
+    shippingMethodId === '' ||
+    (isPickup ? pickupPointId === '' : deliveryCity === '');
 
   useEffect(() => {
-    if (!hydrated || items.length === 0) return;
+    if (!hydrated || items.length === 0 || blocked) return;
 
     const requestId = ++requestIdRef.current;
     const timer = setTimeout(() => {
@@ -92,7 +116,15 @@ export function useCheckoutQuote({
     }, QUOTE_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [hydrated, items, shippingMethodId, pickupPointId, deliveryCity, key]);
+  }, [
+    hydrated,
+    items,
+    blocked,
+    shippingMethodId,
+    pickupPointId,
+    deliveryCity,
+    key,
+  ]);
 
-  return { quote, quoting, matchesCurrent: quotedKey === key };
+  return { quote, quoting, matchesCurrent: quotedKey === key, blocked };
 }

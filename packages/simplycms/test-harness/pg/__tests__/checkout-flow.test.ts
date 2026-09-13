@@ -11,9 +11,9 @@
 // раніше був `shipping_cost = '0.00'`, невідрізненний від дефолту/бага);
 // M7 — НЕ-pickup метод БЕЗ міста відмовляється (`shipping_unavailable`), а
 // не мовчки їде на дефолтну зону; M2 — порожній кошик відмовляється як
-// `not_purchasable` ДО транзакції; M3 — відсутність рядка в `orders`
-// перевірена на КОЖНІЙ відмові (ре-рев'ю: кейс `out_of_stock` спершу
-// лишався без цього асерту — виправлено); M4 — три гілки ідентичності
+// `not_purchasable`, без запису; M3 — відсутність рядка в `orders`
+// перевірена на КОЖНІЙ відмові файлу (усі негативні кейси, включно з M4 і
+// циклом M-10c — жодного винятку); M4 — три гілки ідентичності
 // `priceCheckoutItems` (неактивний товар, чужа модифікація, товар без ціни
 // для типу) мають по власному кейсу.
 //
@@ -377,6 +377,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   });
 
   it('неактивний товар у кошику — not_purchasable (M4)', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -388,9 +389,11 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+    expect(await ordersCount()).toBe(before);
   });
 
   it('модифікація належить іншому товару — not_purchasable (M4)', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -401,9 +404,11 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+    expect(await ordersCount()).toBe(before);
   });
 
   it('товар без ціни для типу (лише мод-рівневі рядки) — not_purchasable (M4)', async () => {
+    const before = await ordersCount();
     const result = await placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -416,9 +421,10 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       null,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
+    expect(await ordersCount()).toBe(before);
   });
 
-  it('порожній кошик — not_purchasable до транзакції (M2)', async () => {
+  it('порожній кошик — not_purchasable, без запису (M2)', async () => {
     const before = await ordersCount();
     const result = await placeOrderFor(
       input({ shippingMethodId: pickup }),
@@ -527,7 +533,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(row.subtotal).toBe('39200.00');
   });
 
-  it('квота повертає ті самі три відмови, що й оформлення (M-10c)', async () => {
+  it('квота повертає той самий код відмови, що й оформлення, на трьох конкретних входах (M-10c)', async () => {
     const cases: {
       reason: PlaceOrderRejection;
       overrides: Partial<PlaceOrderInput>;
@@ -559,6 +565,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
 
     for (const { reason, overrides } of cases) {
       const request = input(overrides);
+      const before = await ordersCount();
       expect(await quoteCheckoutFor(request, null)).toEqual({
         ok: false,
         reason,
@@ -567,6 +574,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         ok: false,
         reason,
       });
+      expect(await ordersCount()).toBe(before);
     }
   });
 });

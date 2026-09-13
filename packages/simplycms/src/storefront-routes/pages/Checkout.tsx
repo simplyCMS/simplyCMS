@@ -116,6 +116,7 @@ export default function Checkout() {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasShippingMethods, setHasShippingMethods] = useState(true);
+  const [isPickupMethod, setIsPickupMethod] = useState(false);
   const checkoutSchema = useMemo(() => buildCheckoutSchema(t), [t]);
 
   const form = useForm<CheckoutFormData>({
@@ -188,17 +189,25 @@ export default function Checkout() {
     useWatch({ control: form.control, name: 'pickupPointId' }) || '';
   const deliveryCity =
     useWatch({ control: form.control, name: 'deliveryCity' }) || '';
-  const { quote, quoting, matchesCurrent } = useCheckoutQuote({
+  const { quote, quoting, matchesCurrent, blocked } = useCheckoutQuote({
     items,
     shippingMethodId,
     pickupPointId,
     deliveryCity,
+    isPickup: isPickupMethod,
     userKey: user?.id ?? null,
   });
   // Submit без свіжої квоти неможливий (M-8): доставка обрана, квота вдала
   // і рахована саме на ПОТОЧНИХ входах.
   const canSubmit =
     hasShippingMethods && quote?.ok === true && !quoting && matchesCurrent;
+  // 🔴 Рев'ю I4: індикативна ціна в списку методів (CheckoutDeliveryForm)
+  // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер, — розбіжність
+  // лишав лише вхідний `subtotal` (клієнтський `totalPrice` без знижок
+  // проти реального). Коли квота вже є, підставляємо ЇЇ subtotal — ту саму
+  // суму, яку бачить `prepareCheckout`; до першої квоти — клієнтський
+  // знімок кошика (інакше список методів був би порожнім до відповіді).
+  const indicativeSubtotal = quote?.ok ? quote.quote.subtotal : totalPrice;
 
   /**
    * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
@@ -358,8 +367,9 @@ export default function Checkout() {
                 onChange={(field, value) =>
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
-                subtotal={totalPrice}
+                subtotal={indicativeSubtotal}
                 onAvailabilityChange={setHasShippingMethods}
+                onPickupChange={setIsPickupMethod}
               />
               <FormField
                 control={form.control}
@@ -391,6 +401,8 @@ export default function Checkout() {
               <CheckoutOrderSummary
                 quote={quote}
                 quoting={quoting}
+                matchesCurrent={matchesCurrent}
+                blocked={blocked}
                 notes={form.watch('notes') || ''}
                 onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}

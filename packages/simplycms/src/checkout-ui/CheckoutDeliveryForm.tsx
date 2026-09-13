@@ -20,6 +20,8 @@ interface CheckoutDeliveryFormProps {
   subtotal: number;
   /** Чи є хоч один спосіб доставки — батько блокує submit, поки `false`. */
   onAvailabilityChange?: (hasMethods: boolean) => void;
+  /** Обраний метод — pickup чи ні; батько цим гейтить запит квоти (рев'ю I3). */
+  onPickupChange?: (isPickup: boolean) => void;
 }
 
 const MAX_VISIBLE_CARDS = 3;
@@ -45,6 +47,7 @@ export function CheckoutDeliveryForm({
   onChange,
   subtotal,
   onAvailabilityChange,
+  onPickupChange,
 }: CheckoutDeliveryFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -195,13 +198,26 @@ export function CheckoutDeliveryForm({
   }, [methods.length, onAvailabilityChange]);
 
   useEffect(() => {
+    onPickupChange?.(isPickup);
+  }, [isPickup, onPickupChange]);
+
+  // Точки з directory.pickupPoints можуть належати ІНШОМУ методу (рев'ю
+  // #14) — звужуємо до точок ЦЬОГО методу, як і сервер (`prepareCheckout`:
+  // `p.method_id === method.id`); інакше при двох pickup-методах автовибір
+  // міг підставити чужу точку → серверний `pickup_point_invalid`.
+  const ownPickupPoints = useMemo(
+    () => pickupPoints.filter((p) => p.method_id === selectedMethodId),
+    [pickupPoints, selectedMethodId],
+  );
+
+  useEffect(() => {
     // Єдина точка видачі обирається сама — тим самим правилом, що й перший
     // метод вище: плейсхолдер «Оберіть пункт» при одній точці лишав submit,
     // який сервер відкидає з `pickup_point_invalid`.
-    if (isPickup && pickupPoints.length === 1 && !values.pickupPointId) {
-      onChange('pickupPointId', pickupPoints[0].id);
+    if (isPickup && ownPickupPoints.length === 1 && !values.pickupPointId) {
+      onChange('pickupPointId', ownPickupPoints[0].id);
     }
-  }, [isPickup, pickupPoints, values.pickupPointId, onChange]);
+  }, [isPickup, ownPickupPoints, values.pickupPointId, onChange]);
 
   if (methodsLoading) {
     return (

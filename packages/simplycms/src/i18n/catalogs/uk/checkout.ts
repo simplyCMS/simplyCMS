@@ -87,6 +87,9 @@ export const messages = {
 
   // Підсумок замовлення — CheckoutOrderSummary
   'checkout.orderSummary.title': 'Ваше замовлення',
+  // Метод/точку/місто ще не обрано — не скелет і не відмова (рев'ю I2/I3)
+  'checkout.orderSummary.awaitingDelivery':
+    'Заповніть дані доставки, щоб побачити суму замовлення',
   'checkout.orderSummary.itemsCount': 'Товари ({count})',
   'checkout.orderSummary.notesPlaceholder': 'Додаткова інформація...',
   'checkout.orderSummary.submitting': 'Оформлення...',

@@ -44,6 +44,8 @@ const renderSummary = (
       <CheckoutOrderSummary
         quote={quote}
         quoting={false}
+        matchesCurrent={true}
+        blocked={false}
         notes=""
         onNotesChange={vi.fn()}
         isSubmitting={false}
@@ -83,5 +85,26 @@ describe('CheckoutOrderSummary', () => {
     renderSummary(QUOTE);
     expect(document.getElementById('checkout-total')?.textContent).toBe('250₴');
     expect(submitButton().disabled).toBe(false);
+  });
+
+  // Рев'ю I2/I3: довідник порожній АБО не-pickup без міста — раніше це
+  // давало вічний скелет або хибну червону відмову. `blocked` — окремий
+  // нейтральний стан: ні скелет, ні REJECTION_KEY.
+  it('заблоковано (немає методу/точки/міста) — НЕ скелет і НЕ відмова', () => {
+    const { container } = renderSummary(null, { blocked: true });
+    expect(container.querySelectorAll('.animate-pulse').length).toBe(0);
+    screen.getByText('Заповніть дані доставки, щоб побачити суму замовлення');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  // Рев'ю #6: у вікні дебаунсу `quotedKey !== key` (matchesCurrent: false) —
+  // підсумок не має показувати числа ПОПЕРЕДНЬОЇ квоти як актуальні.
+  it('квота застаріла (matchesCurrent: false) — скелет, а не старі числа', () => {
+    const { container } = renderSummary(QUOTE, { matchesCurrent: false });
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(
+      0,
+    );
+    expect(document.getElementById('checkout-total')).toBeNull();
   });
 });

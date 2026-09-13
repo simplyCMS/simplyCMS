@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { cn } from 'simplycms/ui/utils';
 import { Check } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
@@ -36,6 +37,10 @@ export function ModificationSelector({
   stockByModification = {},
 }: ModificationSelectorProps) {
   const t = useT();
+  // useId — не літерал (рев'ю #13): два екземпляри селектора на одній
+  // сторінці інакше ділили б один id, і `aria-labelledby` вказував би на
+  // ПЕРШИЙ у DOM для обох.
+  const groupLabelId = useId();
 
   if (modifications.length <= 1) {
     return null;
@@ -61,14 +66,10 @@ export function ModificationSelector({
 
   return (
     <div className="space-y-3">
-      <span id="modification-group-label" className="text-base font-medium">
+      <span id={groupLabelId} className="text-base font-medium">
         {t('product.modification')}
       </span>
-      <div
-        role="group"
-        aria-labelledby="modification-group-label"
-        className="grid gap-3"
-      >
+      <div role="group" aria-labelledby={groupLabelId} className="grid gap-3">
         {modifications.map((mod) => {
           const availability = getModificationAvailability(mod);
           const isUnavailable =

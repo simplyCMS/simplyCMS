@@ -29,16 +29,10 @@ export async function placeOrderFor(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PlaceOrderResult> {
-  // 🔴 Порожній кошик — відмова ДО транзакції, а не лише `.min(1)` у T5-схемі
-  // (рев'ю M2): `placeOrderFor` — «уся логіка оформлення» за докблоком нижче,
-  // і кличеться напряму (харнес, будь-який майбутній не-Zod клієнт) в обхід
-  // валідатора однієї RPC. Без гварда тут `inArray(col, [])` у drizzle тихо
-  // повертає `false` (не кидок), цикл цін не виконується, і пішло б
-  // замовлення з нуля позицій і `total = 0`.
-  if (input.items.length === 0) {
-    return { ok: false, reason: 'not_purchasable' };
-  }
-
+  // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceCheckoutItems
+  // (гвард живе там, спільний з квотою — рев'ю #9, докладніше в
+  // `prepare-checkout.ts`), не тут: другий незалежний гвард на той самий
+  // предикат — саме те дублювання, з яким весь розділ M бореться.
   const accessToken = userId === null ? randomUUID() : null;
   const run = <T>(
     fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
@@ -61,6 +55,7 @@ export async function placeOrderFor(
           items: prepared.items,
           subtotal: prepared.subtotal,
           shippingCost: prepared.shippingCost,
+          total: prepared.total,
         }),
         operator,
       );

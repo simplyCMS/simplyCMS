@@ -43,12 +43,19 @@ export async function resolveRecipient(
  *
  * 🔴 Ціна позиції, сума й доставка приходять уже РАХОВАНІ сервером
  * (`priceCheckoutItems` + `resolveShippingRate`) — клієнтський запит цих
- * полів не несе взагалі, тож підмінити їх нізвідки.
+ * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
+ * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
+ * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
  */
 export function toOrderInput(
   input: PlaceOrderInput,
   savedRecipientId: string | null,
-  prepared: { items: NewOrderItem[]; subtotal: number; shippingCost: number },
+  prepared: {
+    items: NewOrderItem[];
+    subtotal: number;
+    shippingCost: number;
+    total: number;
+  },
 ): NewOrderInput {
   return {
     firstName: input.firstName,
@@ -63,7 +70,7 @@ export function toOrderInput(
     notes: input.notes,
     subtotal: prepared.subtotal,
     shippingCost: prepared.shippingCost,
-    total: prepared.subtotal + prepared.shippingCost,
+    total: prepared.total,
     hasDifferentRecipient: input.hasDifferentRecipient,
     recipientFirstName: input.hasDifferentRecipient
       ? input.recipientFirstName

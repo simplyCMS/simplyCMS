@@ -16,6 +16,15 @@ export interface PreparedCheckout {
   items: NewOrderItem[];
   subtotal: number;
   shippingCost: number;
+  /**
+   * 🔴 Рахується ТУТ, а не в обох викликачах (рев'ю I1): `total` — число під
+   * `id="checkout-total"`, яке звірятиме live-smoke, і саме сюди адитивно
+   * приїде беклог `expectedTotal`/`total_changed`. Дві копії формули
+   * `subtotal + shippingCost` сьогодні механічно тотожні, але гейт M-10a
+   * тоді порівнював би два числа, пораховані ОДНІЄЮ формулою двічі, — це
+   * слабший доказ, ніж «показане = записане».
+   */
+  total: number;
 }
 
 export type PrepareCheckoutResult =
@@ -38,6 +47,18 @@ export async function prepareCheckout(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PrepareCheckoutResult> {
+  // 🔴 Порожній кошик — відмова ДО priceCheckoutItems, а не лише `.min(1)` у
+  // T5-схемі (рев'ю M2): обидва викликачі (`placeOrderFor`, `quoteCheckoutFor`)
+  // кличуться напряму (харнес, майбутній не-Zod клієнт) в обхід валідатора
+  // однієї RPC. Гвард живе в СПІЛЬНІЙ функції, а не дублюється в кожному
+  // викликачі (рев'ю #9 — дублікат був би саме тим класом розбіжності, з
+  // яким весь розділ M бореться): без нього `inArray(col, [])` у drizzle
+  // тихо повертає `false` (не кидок), цикл цін не виконується, і пішло б
+  // замовлення з нуля позицій і `total = 0`.
+  if (input.items.length === 0) {
+    return { ok: false, reason: 'not_purchasable' };
+  }
+
   const directory = await loadShippingDirectory(db);
   const method = directory.methods.find(
     (m) => m.id === input.shippingMethodId && m.is_active,
@@ -88,5 +109,6 @@ export async function prepareCheckout(
     items,
     subtotal,
     shippingCost: rate.cost,
+    total: subtotal + rate.cost,
   };
 }
