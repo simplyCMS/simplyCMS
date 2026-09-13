@@ -2046,7 +2046,7 @@ git commit -m "feat(k3-e2): writeMedia/eraseMedia — файл і рядок med
 - Consumes: з Task 2 — `MediaStorageDriver`, `MEDIA_KEY_RE`, `MIME_BY_EXT`, `getMediaDriver`.
 - Produces: `export async function serveMedia(ctx: { request: Request }, driver?: MediaStorageDriver): Promise<Response>`
 
-- [ ] **Step 1: Написати падаючі тести роздачі**
+- [X] **Step 1: Написати падаючі тести роздачі**
 
 `packages/simplycms/src/storage/__tests__/serve.test.ts`:
 
@@ -2127,12 +2127,12 @@ describe('serveMedia', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнати — має впасти**
+- [X] **Step 2: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/serve.test.ts`
 Expected: FAIL — модуля `../serve` немає.
 
-- [ ] **Step 3: Написати `storage/serve.ts`**
+- [X] **Step 3: Написати `storage/serve.ts`**
 
 ```ts
 import type { MediaStorageDriver } from './driver';
@@ -2212,12 +2212,12 @@ export async function serveMedia(
 }
 ```
 
-- [ ] **Step 4: Прогнати — мають пройти**
+- [X] **Step 4: Прогнати — мають пройти**
 
 Run: `pnpm vitest run packages/simplycms/src/storage/__tests__/serve.test.ts`
 Expected: PASS (усі кейси, включно з кодованим traversal).
 
-- [ ] **Step 5: Реекспортувати з барелю**
+- [X] **Step 5: Реекспортувати з барелю**
 
 У `packages/simplycms/src/storage/index.ts`:
 
@@ -2225,7 +2225,7 @@ Expected: PASS (усі кейси, включно з кодованим traversa
 export { serveMedia } from './serve';
 ```
 
-- [ ] **Step 6: Створити роут**
+- [X] **Step 6: Створити роут**
 
 `packages/simplycms/routes/storefront/media/$.tsx`:
 
@@ -2258,7 +2258,7 @@ export const Route = createFileRoute('/media/$')({
 });
 ```
 
-- [ ] **Step 7: Перевірити, що роут змонтувався**
+- [X] **Step 7: Перевірити, що роут змонтувався**
 
 ```bash
 pnpm build
@@ -2266,7 +2266,7 @@ grep -n "'/media/\$'" src/routeTree.gen.ts
 ```
 Expected: рядок знайдено — `routes.ts` монтує теку `packages/simplycms/routes/storefront` цілком, тож host правити не треба.
 
-- [ ] **Step 8: Живий смок роздачі (руками)**
+- [X] **Step 8: Живий смок роздачі (руками)**
 
 ```bash
 mkdir -p .data/media/ab
@@ -2277,7 +2277,7 @@ curl -sI http://localhost:3000/media/../../etc/passwd
 ```
 Expected: перший — `200` з `content-type: image/png`, `cache-control: public, max-age=31536000, immutable`, `x-content-type-options: nosniff`; другий — `404`. Прибрати `.data/` після перевірки.
 
-- [ ] **Step 9: Гейт задачі + Gate C**
+- [X] **Step 9: Гейт задачі + Gate C**
 
 ```bash
 pnpm lint && pnpm build && pnpm typecheck && pnpm test
@@ -2285,7 +2285,7 @@ pnpm build:packages && pnpm test:packaging && pnpm pilot:pack
 ```
 Expected: PASS. 🔴 `pilot:pack` тут обовʼязковий — Gate C і Gate IP єдині доводять, що новий роут не витягнув `node:fs` і драйвер у клієнтський бандл СКРЕТЧ-магазину (у монорепо-збірці цього не видно).
 
-- [ ] **Step 10: Коміт**
+- [X] **Step 10: Коміт**
 
 ```bash
 git add packages/simplycms/src/storage packages/simplycms/routes/storefront/media

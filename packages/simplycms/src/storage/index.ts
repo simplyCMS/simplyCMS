@@ -13,6 +13,7 @@ export {
   type MediaStorageDriver,
 } from './driver';
 export { getMediaDriver, localFsDriver } from './local-fs';
+export { serveMedia } from './serve';
 export { inspectUpload, type UploadInspection } from './inspect';
 export {
   discardMedia,
