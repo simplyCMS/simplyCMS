@@ -35,11 +35,3 @@ export interface NewOrderInput {
   savedAddressId: string | null;
   items: NewOrderItem[];
 }
-
-/** Що повертається клієнту після оформлення. */
-export interface CreatedOrder {
-  id: string;
-  orderNumber: string;
-  /** Токен гостьового замовлення; для залогіненого — `null`. */
-  accessToken: string | null;
-}

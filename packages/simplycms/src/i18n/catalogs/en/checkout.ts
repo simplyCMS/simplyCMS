@@ -11,6 +11,14 @@ export const messages: Catalog = {
   'checkout.failed': 'Could not place the order',
   'checkout.retry': 'Please try again',
 
+  // Domain rejections on checkout — code from the server, text here (К2-Е0)
+  'checkout.rejected.shipping_unavailable':
+    'Selected shipping method is unavailable — pick another',
+  'checkout.rejected.pickup_point_invalid':
+    'Pick a pickup point for this shipping method',
+  'checkout.rejected.not_purchasable':
+    'Some items in your cart are unavailable — review the cart',
+
   'checkout.shipping.pickup': 'Pickup',
   'checkout.shipping.novaPoshta': 'Nova Poshta',
   'checkout.shipping.courier': 'Courier',

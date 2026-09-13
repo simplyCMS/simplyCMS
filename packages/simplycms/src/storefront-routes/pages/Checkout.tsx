@@ -8,9 +8,10 @@ import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
 import { useCart } from 'simplycms/core/hooks/useCart';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
+import type { PlaceOrderRejection } from 'simplycms/contracts';
 import { getProfileSettings } from '../server/profile';
 import { placeOrder } from '../server/checkout';
-import { useT, type Translator } from 'simplycms/i18n';
+import { useT, type MessageKey, type Translator } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { CheckoutAuthBlock } from 'simplycms/core/components/checkout/CheckoutAuthBlock';
 import { CheckoutContactForm } from 'simplycms/core/components/checkout/CheckoutContactForm';
@@ -104,6 +105,13 @@ const buildCheckoutSchema = (t: Translator) =>
 
 type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
+/** Код відмови сервера → ключ каталогу (як CheckoutAuthBlock мапить коди Better Auth). */
+const REJECTION_KEY: Record<PlaceOrderRejection, MessageKey> = {
+  shipping_unavailable: 'checkout.rejected.shipping_unavailable',
+  pickup_point_invalid: 'checkout.rejected.pickup_point_invalid',
+  not_purchasable: 'checkout.rejected.not_purchasable',
+};
+
 export default function Checkout() {
   const t = useT();
   const navigate = useNavigate();
@@ -184,7 +192,10 @@ export default function Checkout() {
     setIsSubmitting(true);
 
     try {
-      const order = await placeOrder({
+      // 🔴 Кошик несе ЛИШЕ ідентичність і кількість — ціну, назву й знижку
+      // рахує сервер у власній транзакції (`priceCheckoutItems`), тож
+      // клієнтські значення тут нізвідки підмінити.
+      const result = await placeOrder({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -196,7 +207,6 @@ export default function Checkout() {
           pickupPointId: data.pickupPointId || null,
           paymentMethod: data.paymentMethod,
           notes: data.notes || null,
-          shippingCost,
           hasDifferentRecipient: data.hasDifferentRecipient,
           recipientFirstName: data.recipientFirstName || null,
           recipientLastName: data.recipientLastName || null,
@@ -211,19 +221,25 @@ export default function Checkout() {
               ? data.savedRecipientId
               : null,
           savedAddressId: data.savedAddressId || null,
-          items: items.map((item) => ({
-            productId: item.productId || null,
-            modificationId: item.modificationId || null,
-            name: item.modificationName
-              ? `${item.name} - ${item.modificationName}`
-              : item.name,
-            price: item.price,
-            quantity: item.quantity,
-            basePrice: item.basePrice ?? null,
-            discountData: item.discountData ?? null,
-          })),
+          items: items
+            .filter((item) => item.productId)
+            .map((item) => ({
+              productId: item.productId,
+              modificationId: item.modificationId,
+              quantity: item.quantity,
+            })),
         },
       });
+
+      if (!result.ok) {
+        toast({
+          title: t('checkout.failed'),
+          description: t(REJECTION_KEY[result.reason]),
+          variant: 'destructive',
+        });
+        return;
+      }
+      const { order } = result;
 
       clearCart();
 

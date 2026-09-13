@@ -4,6 +4,8 @@
 // тож усі чотири правила перевірялися б на порожній множині — тобто не
 // перевірялися б.
 
+import { percentDiscountStatements } from './discounts';
+
 /** Категорія, на яку націлена акція. Тип ціни в неї той САМИЙ, що в роздрібу: */
 /** інакше гуртовик не побачив би роздрібних правил і тест доводив би не те. */
 export const WHOLESALE_CODE = 'wholesale';
@@ -69,33 +71,21 @@ export const SHOWCASE_FIXTURE_STATEMENTS: string[] = [
      cross join public.user_categories c
     where u.email = '${REVIEWER_EMAIL}' and c.code = 'retail'`,
 
-  // ── Знижки ──────────────────────────────────────────────────────────────
-  `insert into public.discount_groups (id, name, operator, is_active)
-   values (gen_random_uuid(), 'Акції магазину', 'and', true)`,
-
-  `insert into public.discounts
-     (id, name, group_id, discount_type, discount_value, is_active, price_type_id)
-   select gen_random_uuid(), '${TARGETED_DISCOUNT}', g.id, 'percent',
-          ${DISCOUNT_PERCENT}, true, pt.id
-     from public.discount_groups g
-     cross join public.price_types pt
-    where g.name = 'Акції магазину' and pt.code = 'retail'`,
-
-  `insert into public.discounts
-     (id, name, group_id, discount_type, discount_value, is_active, price_type_id)
-   select gen_random_uuid(), '${DISABLED_DISCOUNT}', g.id, 'percent', 90, false, pt.id
-     from public.discount_groups g
-     cross join public.price_types pt
-    where g.name = 'Акції магазину' and pt.code = 'retail'`,
-
-  `insert into public.discount_conditions (id, discount_id, condition_type, operator, value)
-   select gen_random_uuid(), d.id, 'user_category', 'in',
-          to_jsonb(array[(select id::text from public.user_categories where code = '${WHOLESALE_CODE}')])
-     from public.discounts d where d.name = '${TARGETED_DISCOUNT}'`,
-
-  `insert into public.discount_targets (id, discount_id, target_type, target_id)
-   select gen_random_uuid(), d.id, 'all', null from public.discounts d
-    where d.name = '${TARGETED_DISCOUNT}'`,
+  // ── Знижки — через спільний білдер (fixtures/discounts.ts) ──────────────
+  ...percentDiscountStatements({
+    group: 'Акції магазину',
+    name: TARGETED_DISCOUNT,
+    percent: DISCOUNT_PERCENT,
+    categoryCode: WHOLESALE_CODE,
+    target: { type: 'all' },
+  }),
+  ...percentDiscountStatements({
+    group: 'Акції магазину',
+    name: DISABLED_DISCOUNT,
+    percent: 90,
+    isActive: false,
+    target: { type: 'all' },
+  }),
 
   // ── Банери: вимкнений і прострочений ────────────────────────────────────
   `insert into public.banners (id, title, image_url, placement, sort_order, is_active)

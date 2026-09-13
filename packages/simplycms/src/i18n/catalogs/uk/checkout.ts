@@ -10,6 +10,14 @@ export const messages = {
   'checkout.failed': 'Помилка оформлення',
   'checkout.retry': 'Спробуйте ще раз',
 
+  // Доменні відмови оформлення — код із сервера, текст тут (К2-Е0)
+  'checkout.rejected.shipping_unavailable':
+    'Обраний спосіб доставки недоступний — оберіть інший',
+  'checkout.rejected.pickup_point_invalid':
+    'Оберіть точку видачі для цього способу доставки',
+  'checkout.rejected.not_purchasable':
+    'Частина товарів у кошику зараз недоступна — перевірте кошик',
+
   // Способи доставки й оплати
   'checkout.shipping.pickup': 'Самовивіз',
   'checkout.shipping.novaPoshta': 'Нова Пошта',

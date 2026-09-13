@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { orderItems, orders, shippingMethods } from 'simplycms/schema';
+import type { PlacedOrder } from 'simplycms/contracts';
 import type { ActorDb, OperatorEscalation } from './db';
-import type { CreatedOrder, NewOrderInput } from './entities/new-order';
+import type { NewOrderInput } from './entities/new-order';
 import { loadDefaultStatusId } from './order-statuses';
 import { reserveOrderStock } from './order-stock';
 
@@ -42,7 +43,7 @@ export async function createOrder(
   accessToken: string | null,
   input: NewOrderInput,
   operator: OperatorEscalation,
-): Promise<CreatedOrder> {
+): Promise<PlacedOrder> {
   const [method] = await db
     .select({ code: shippingMethods.code })
     .from(shippingMethods)
