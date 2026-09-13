@@ -112,7 +112,7 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 export default function Checkout() {
   const t = useT();
   const navigate = useNavigate();
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, hydrated } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasShippingMethods, setHasShippingMethods] = useState(true);
@@ -163,12 +163,17 @@ export default function Checkout() {
     });
   }, [user, form]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty. 🔴 Гейт на `hydrated` (Е0-5, рішення А
+  // архітектора): гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
+  // (`getServerSnapshot`), а passive-ефекти комітяться дітьми-вперед — без
+  // гейту цей ефект відпрацював би РАНІШЕ за перечитування localStorage в
+  // `CartProvider` і хибно редиректив би на /cart при прямому вході на
+  // /checkout з непорожнім кошиком.
   useEffect(() => {
-    if (items.length === 0) {
+    if (hydrated && items.length === 0) {
       navigate({ to: '/cart' });
     }
-  }, [items, navigate]);
+  }, [hydrated, items, navigate]);
 
   // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
   // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
@@ -287,7 +292,10 @@ export default function Checkout() {
     // Profile will be loaded by the useEffect when user changes
   };
 
-  if (items.length === 0) {
+  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище: до гідратації
+  // `items` завжди порожній, і без гейту тут був би спалах «порожній кошик»
+  // на прямому вході в /checkout, доки CartProvider не перечитає localStorage.
+  if (hydrated && items.length === 0) {
     return null;
   }
 

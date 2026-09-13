@@ -1,36 +1,13 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { CartItem } from 'simplycms/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useCart, type CartItem } from 'simplycms/react-query';
 import type { QuoteCheckoutResult } from 'simplycms/contracts';
 import { quoteCheckout } from '../../server/checkout-quote';
 import { buildQuoteInput } from './build-quote-input';
 
 const QUOTE_DEBOUNCE_MS = 300;
 
-// Стабільні посилання для `useSyncExternalStore` нижче — нове замикання на
-// кожен рендер змусило б хук пере-підписуватись без жодної користі.
-const subscribeNever = () => () => {};
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
-
-/**
- * Гідратація кошика — ТИМЧАСОВА локальна ідіома (рішення А архітектора,
- * той самий `useSyncExternalStore(subscribe, () => true, () => false)`),
- * яку Task 12 додасть у `useCart()` як прапорець `hydrated`. До того часу
- * перший клієнтський рендер кошика вже коректний (`useCart` сьогодні на
- * lazy-`useState`, не на `useSyncExternalStore`), тож гейт нижче нічого не
- * ламає СЬОГОДНІ — він лише готує місце під прапорець, щоб Task 12 замінив
- * цей виклик одним рядком (`useCart().hydrated`), а не переписував ефект.
- */
-function useHydrated(): boolean {
-  return useSyncExternalStore(
-    subscribeNever,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
-}
-
 interface CheckoutQuoteParams {
-  items: CartItem[];
+  items: readonly CartItem[];
   shippingMethodId: string;
   pickupPointId: string;
   deliveryCity: string;
@@ -70,7 +47,12 @@ export function useCheckoutQuote({
   deliveryCity,
   userKey,
 }: CheckoutQuoteParams): CheckoutQuoteState {
-  const hydrated = useHydrated();
+  // Ознака гідратації — ОДНА на застосунок (Task 12, рішення А): та сама, за
+  // якою гейтяться редирект і рендер-гілка порожнього кошика в Checkout.tsx.
+  // Локальний `useSyncExternalStore` тут БУВ тимчасовим містком (Task 11) —
+  // друга незалежна ознака гідратації в одному застосунку є саме тим класом
+  // дефекту, з яким воює весь етап.
+  const { hydrated } = useCart();
   const [quote, setQuote] = useState<QuoteCheckoutResult | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quotedKey, setQuotedKey] = useState<string | null>(null);

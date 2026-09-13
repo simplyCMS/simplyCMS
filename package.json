@@ -111,6 +111,7 @@
     "@tanstack/virtual-file-routes": "1.161.7",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

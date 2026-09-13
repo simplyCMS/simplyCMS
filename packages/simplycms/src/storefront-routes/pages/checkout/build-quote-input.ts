@@ -2,7 +2,9 @@ import type { CartItem } from 'simplycms/react-query';
 import type { CheckoutItemInput, PlaceOrderInput } from 'simplycms/contracts';
 
 /** Кошик → позиції запиту: лише ідентичність і кількість (Е0-4, К2-Е0). */
-export function toCheckoutItems(items: CartItem[]): CheckoutItemInput[] {
+export function toCheckoutItems(
+  items: readonly CartItem[],
+): CheckoutItemInput[] {
   return items
     .filter((item) => item.productId)
     .map((item) => ({
@@ -13,7 +15,7 @@ export function toCheckoutItems(items: CartItem[]): CheckoutItemInput[] {
 }
 
 export interface QuoteMoneyInput {
-  items: CartItem[];
+  items: readonly CartItem[];
   shippingMethodId: string;
   pickupPointId: string;
   deliveryCity: string;
