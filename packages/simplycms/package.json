@@ -22,6 +22,7 @@
     "./domain/discounts": "./src/domain/discounts.ts",
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
+    "./domain/media": "./src/domain/media.ts",
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
@@ -160,6 +161,10 @@
       "./domain/shipping": {
         "types": "./dist/domain/shipping.d.ts",
         "import": "./dist/domain/shipping.js"
+      },
+      "./domain/media": {
+        "types": "./dist/domain/media.d.ts",
+        "import": "./dist/domain/media.js"
       },
       "./domain/money": {
         "types": "./dist/domain/money.d.ts",

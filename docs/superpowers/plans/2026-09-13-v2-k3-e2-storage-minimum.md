@@ -222,7 +222,11 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 **Files:**
 - Create: `packages/simplycms/src/domain/media.ts`
 - Create: `packages/simplycms/src/domain/__tests__/media.test.ts`
-- Create: `packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts`
+- Create: `tests/media-columns-coverage.test.ts` 🔴 **не** `packages/simplycms/src/
+  schema/__tests__/`, як писав первинний план — див. приписку виконавця під
+  Step 5: `schema` і `domain` обидва T1, і `eslint.tier-zones.mjs` (КАНОН)
+  забороняє імпорт НАВІТЬ у межах одного шару, тож гейт парності двох
+  T1-модулів фізично не міг лишитись усередині `src/schema/__tests__/`
 - Modify: `packages/simplycms/src/contracts/ports/index.ts:76-79`
 - Modify: `packages/simplycms/package.json` (`exports` + `publishConfig.exports`)
 
@@ -231,12 +235,19 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 - Produces:
   - `export type MediaRef = string`
   - `export const MEDIA_URL_BASE = '/media'`
+  - `export const ACCEPTED_IMAGE_MIME` / `ACCEPT_ATTRIBUTE` / `MAX_UPLOAD_BYTES`
+    / `MAX_AVATAR_BYTES` — 🔴 були в тілі Step 3, але не в цьому переліку
+    первинної редакції; додано виконавцем за прямою вказівкою брифа
   - `export function resolveMediaUrl(ref: string | null | undefined, base?: string): string | null`
   - `export function resolveMediaUrls(refs: readonly string[], base?: string): string[]`
   - `export const MEDIA_COLUMNS: readonly { table: string; column: string }[]`
+    — 🔴 гейт покриття знайшов ДВІ реальні розбіжності з первинним списком
+    Step 3: `services.image_url` (справжня медіа-колонка, додана в реєстр) і
+    `users.image` (канонічне поле Better Auth, нічим не читане й не писане —
+    додане в `NOT_MEDIA` гейта з причиною, а не в реєстр)
   - `MediaProvider` у T0 = `{ url(ref: string): string | null }`
 
-- [ ] **Step 1: Написати падаючий тест резолву**
+- [X] **Step 1: Написати падаючий тест резолву**
 
 `packages/simplycms/src/domain/__tests__/media.test.ts`:
 
@@ -298,12 +309,12 @@ describe('resolveMediaUrl', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнати — має впасти**
+- [X] **Step 2: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/domain/__tests__/media.test.ts`
 Expected: FAIL — `Failed to resolve import "../media"`.
 
-- [ ] **Step 3: Написати `domain/media.ts`**
+- [X] **Step 3: Написати `domain/media.ts`**
 
 ```ts
 // Медіа-референс і його резолв у URL — тір T1, без IO.
@@ -413,12 +424,12 @@ export const MEDIA_COLUMNS = [
 ] as const satisfies readonly { table: string; column: string }[];
 ```
 
-- [ ] **Step 4: Прогнати — має пройти**
+- [X] **Step 4: Прогнати — має пройти**
 
 Run: `pnpm vitest run packages/simplycms/src/domain/__tests__/media.test.ts`
 Expected: PASS (8 тестів).
 
-- [ ] **Step 5: Написати падаючий гейт покриття колонок**
+- [X] **Step 5: Написати падаючий гейт покриття колонок**
 
 `packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts`:
 
@@ -473,17 +484,17 @@ describe('реєстр медіа-колонок', () => {
 });
 ```
 
-- [ ] **Step 6: Прогнати гейт — він мусить бути ЗЕЛЕНИМ одразу**
+- [X] **Step 6: Прогнати гейт — він мусить бути ЗЕЛЕНИМ одразу**
 
 Run: `pnpm vitest run packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts`
 Expected: PASS. Якщо перший тест червоний — евристика знайшла колонку, якої немає в реєстрі: **не підганяй регекс**, додай колонку в `MEDIA_COLUMNS` і в Task 6 (резолв при читанні). Якщо червоний другий — звір імена з `schema.ts`.
 
-- [ ] **Step 7: Негативний контроль гейта (прогнати руками, не комітити)**
+- [X] **Step 7: Негативний контроль гейта (прогнати руками, не комітити)**
 
 Тимчасово закоментуй рядок `{ table: 'sections', column: 'image_url' },` у `MEDIA_COLUMNS` і прожени той самий тест.
 Expected: FAIL із `missing` = `['sections.image_url']`. Поверни рядок.
 
-- [ ] **Step 8: Звузити `MediaProvider` у T0**
+- [X] **Step 8: Звузити `MediaProvider` у T0**
 
 У `packages/simplycms/src/contracts/ports/index.ts` замінити блок
 
@@ -517,7 +528,7 @@ export interface MediaProvider {
 }
 ```
 
-- [ ] **Step 9: Додати субшлях `./domain/media` в exports**
+- [X] **Step 9: Додати субшлях `./domain/media` в exports**
 
 У `packages/simplycms/package.json` — у `exports` (алфавітно поруч з іншими `./domain/*`):
 
@@ -531,7 +542,7 @@ export interface MediaProvider {
 "./domain/media": { "types": "./dist/domain/media.d.ts", "import": "./dist/domain/media.js" },
 ```
 
-- [ ] **Step 10: Гейт задачі**
+- [X] **Step 10: Гейт задачі**
 
 ```bash
 pnpm install --frozen-lockfile
@@ -539,12 +550,12 @@ pnpm lint && pnpm typecheck && pnpm test
 ```
 Expected: PASS. 🔴 `install --frozen-lockfile` тут обовʼязковий — `package.json` змінено.
 
-- [ ] **Step 11: Коміт**
+- [X] **Step 11: Коміт**
 
 ```bash
 git add packages/simplycms/src/domain/media.ts \
         packages/simplycms/src/domain/__tests__/media.test.ts \
-        packages/simplycms/src/schema/__tests__/media-columns-coverage.test.ts \
+        tests/media-columns-coverage.test.ts \
         packages/simplycms/src/contracts/ports/index.ts \
         packages/simplycms/package.json
 git commit -m "feat(k3-e2): медіа-референс — resolveMediaUrl у T1, реєстр колонок і звужений MediaProvider"
