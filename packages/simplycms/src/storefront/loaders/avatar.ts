@@ -7,7 +7,7 @@ import {
   type MediaMime,
   type MediaStorageDriver,
 } from 'simplycms/storage';
-import type { ActorDb } from './db';
+import { withCustomerDb, type ActorDb } from './db';
 import type { OperatorEscalation } from './escalation';
 
 /** Вже перевірений вміст: сніфер і ліміт відпрацювали в serverFn. */
@@ -16,21 +16,20 @@ export interface AvatarBytes {
   readonly mime: MediaMime;
 }
 
-/** Опції заміни аватара. */
-export interface ReplaceAvatarOptions {
+/**
+ * Сховище заміни аватара.
+ *
+ * 🔴 Канал ОДИН: `driver` дістається і публікації, і прибиранню орфана. Доки
+ * їх було два незалежні параметри, викликач, який передав драйвер лише в
+ * заміну, мовчки прибирав орфан у РЕАЛЬНИЙ `MEDIA_ROOT` замість свого
+ * сховища: `discardMedia` ковтає помилку, а `local-fs.delete` вважає
+ * `ENOENT` успіхом. `discardWith` лишає розбіжність можливою, але вже як
+ * РІШЕННЯ — вона потрібна харнесу, де драйвер публікації навмисно зламаний
+ * саме на видаленні. Порожнє поле = той самий драйвер.
+ */
+export interface AvatarStorageOptions {
   readonly driver?: MediaStorageDriver;
-  /**
-   * Кличеться ОДРАЗУ після публікації файлу — до `update profiles` і до
-   * прибирання старого.
-   *
-   * 🔴 Не «зайвий гачок», а єдиний спосіб віддати викликачу референс у
-   * момент, коли обʼєкт уже НЕОБОРОТНО на диску, а транзакція ще може впасти.
-   * Значення, повернене з функції, приходить лише після УСПІХУ — тобто вікно
-   * між `driver.put` і COMMIT (падіння `update profiles` чи `eraseMedia`
-   * старого) лишалося б без прибирання, і файл ставав орфаном. Саме цей
-   * дефект жив у `uploadMyAvatar` до 2026-09-13.
-   */
-  readonly onPublished?: (ref: string) => void;
+  readonly discardWith?: MediaStorageDriver;
 }
 
 /** Поточний референс аватара покупця або `null`. */
@@ -47,32 +46,64 @@ async function currentAvatarRef(
 }
 
 /**
- * Замінити аватар власника сесії: новий файл, новий рядок `media`,
- * оновлений профіль, прибраний старий.
+ * Замінити аватар покупця: файл, рядок `media`, профіль і прибраний старий —
+ * без орфана, якщо транзакція впаде.
  *
- * 🔴 Функція ЧИСТА щодо транзакції — `db` і `operator` приходять параметрами.
- * Саме тому харнес може прогнати справжню послідовність, а не свою копію
- * (патерн `placeOrderFor`/`prepareCheckout`); serverFn лишається тонким.
+ * 🔴 ЄДИНИЙ вхід до заміни. Кроки всередині (`replaceAvatarFor`) назовні не
+ * виходять: доки їх можна було покликати окремо, існував шлях БЕЗ прибирання
+ * орфана — і саме ним ходив `uploadMyAvatar` до 2026-09-13.
  *
- * 🔴 ПОРЯДОК: старий аватар прибирається ОСТАННІМ, і це окреме рішення від
- * інваріанта `eraseMedia` («рядок, потім обʼєкт» — він діє ВСЕРЕДИНІ одного
- * видалення й забезпечується самою `eraseMedia`). Принцип, що обʼєднує
- * обидва: НЕОБОРОТНА дія стоїть якомога пізніше в транзакції, одразу перед
- * COMMIT, щоб вікно «необоротне вже сталось, а відкат ще можливий»
- * звужувалось до самого коміту. Якби видалення старого стояло першим, будь-яка
- * подальша відмова відкотила б РЯДОК старого аватара, але не повернула б його
- * ФАЙЛ — покупець лишився б із профілем, що посилається в нікуди.
+ * 🔴 `userId` параметром, транзакція своя: у serverFn id береться з cookie
+ * (`requireSessionUserId`), у харнесі — від сіду; прийнятий від КЛІЄНТА
+ * переписав би чужий профіль, тож ця межа лишається в serverFn.
+ *
+ * 🔴 Холдер-обʼєкт, а не `let`: присвоєння з колбека потік керування TS не
+ * бачить, тож у `catch` проста змінна звузилась би до рівно `null`, і
+ * `tsc --strict` МОВЧКИ погодився б із мертвою гілкою прибирання.
+ */
+export async function replaceAvatar(
+  userId: string,
+  input: AvatarBytes,
+  options: AvatarStorageOptions = {},
+): Promise<{ ref: string }> {
+  const published: { ref: string | null } = { ref: null };
+  try {
+    return await withCustomerDb(userId, (db, operator) =>
+      replaceAvatarFor(db, operator, userId, input, options.driver, (ref) => {
+        published.ref = ref;
+      }),
+    );
+  } catch (error) {
+    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
+    if (published.ref !== null)
+      await discardMedia(published.ref, options.discardWith ?? options.driver);
+    throw error;
+  }
+}
+
+/**
+ * Кроки заміни ВСЕРЕДИНІ транзакції. Модуль-приватна навмисно (`replaceAvatar`).
+ *
+ * 🔴 ПОРЯДОК: старий аватар прибирається ОСТАННІМ — необоротна дія якомога
+ * пізніше, одразу перед COMMIT. Якби видалення старого стояло першим,
+ * будь-яка подальша відмова відкотила б РЯДОК старого, але не повернула б
+ * його ФАЙЛ, і покупець лишився б із профілем, що веде в нікуди.
  *
  * 🔴 Старий рядок прибирається через `operator`: `app_user` не має гранта
- * `DELETE` на `media` (`0002_grants.sql:120`), і це навмисно — саме
- * відсутність права тримає інваріант незмінності власності.
+ * `DELETE` на `media` (`0002_grants.sql:120`) — саме відсутність права
+ * тримає інваріант незмінності власності.
+ *
+ * 🔴 `onPublished` ОБОВʼЯЗКОВИЙ і кличеться одразу після публікації: це
+ * єдиний момент, коли обʼєкт уже НЕОБОРОТНО на диску, а транзакція ще може
+ * впасти (значення з `return` приходить лише після УСПІХУ).
  */
-export async function replaceAvatarFor(
+async function replaceAvatarFor(
   db: ActorDb,
   operator: OperatorEscalation,
   userId: string,
   input: AvatarBytes,
-  options: ReplaceAvatarOptions = {},
+  driver: MediaStorageDriver | undefined,
+  onPublished: (ref: string) => void,
 ): Promise<{ ref: string }> {
   const previous = await currentAvatarRef(db, userId);
 
@@ -85,49 +116,20 @@ export async function replaceAvatarFor(
       entityId: userId,
       uploadedBy: userId,
     },
-    options.driver,
+    driver,
   );
   // 🔴 Тут, а не після `return`: далі йдуть ДВА фалібельні кроки, і кидок у
   // будь-якому з них відкотить рядок, лишивши файл на диску.
-  options.onPublished?.(record.ref);
+  onPublished(record.ref);
 
   await db
     .update(profiles)
     .set({ avatarUrl: record.ref })
     .where(eq(profiles.userId, userId));
 
-  if (previous)
-    await operator((tx) => eraseMedia(tx, previous, options.driver));
+  if (previous) await operator((tx) => eraseMedia(tx, previous, driver));
 
   return { ref: record.ref };
-}
-
-/**
- * Прогнати заміну аватара так, щоб опублікований файл не пережив відкоту.
- *
- * 🔴 Живе в лоадерах, а не в serverFn, з тієї самої причини, що й
- * `replaceAvatarFor`: харнес мусить ганяти СПРАВЖНЄ прибирання, а не свою
- * копію (патерн P1 — гейт обіцяє більше, ніж перевіряє).
- *
- * 🔴 Холдер-обʼєкт, а не `let written: string | null`: присвоєння з колбека
- * потік керування TS не бачить, тож у `catch` проста змінна звужується до
- * рівно `null`, і `tsc --strict` МОВЧКИ погоджується з мертвою гілкою
- * прибирання. Компілятор тут не ловить дефект, а маскує його.
- */
-export async function withAvatarOrphanCleanup<T>(
-  runInTx: (onPublished: (ref: string) => void) => Promise<T>,
-  driver?: MediaStorageDriver,
-): Promise<T> {
-  const published: { ref: string | null } = { ref: null };
-  try {
-    return await runInTx((ref) => {
-      published.ref = ref;
-    });
-  } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    if (published.ref !== null) await discardMedia(published.ref, driver);
-    throw error;
-  }
 }
 
 /** Прибрати аватар. Ідемпотентна: без аватара — no-op. */

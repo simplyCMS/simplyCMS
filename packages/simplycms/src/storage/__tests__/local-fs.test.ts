@@ -1,17 +1,38 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import {
   MediaKeyCollisionError,
   MediaKeyError,
   localFsDriver,
-  mediaTmpName,
 } from '../local-fs';
 import { MEDIA_KEY_RE } from '../keys';
 
 const KEY = 'ab/ab000000-0000-4000-8000-000000000000.png';
+const OTHER_KEY = 'cd/cd000000-0000-4000-8000-000000000001.webp';
 const PAYLOAD = Uint8Array.from([1, 2, 3, 4]);
+
+/**
+ * Куди драйвер писав НАСПРАВДІ.
+ *
+ * 🔴 Шпигун на `node:fs/promises`, а не асерт проти `mediaTmpName()`: гейт
+ * мусить червоніти на зміну самого `put`. Ізольований асерт функції цього не
+ * бачив — заміна `join(shard, mediaTmpName())` на `\`\${randomUUID()}.png\``
+ * лишала його зеленим, а роздача віддала б частково записаний файл під
+ * `immutable`-кешем. Шпигун ДЕЛЕГУЄ в реальний `writeFile`, тож решта сюїти
+ * працює з живою файловою системою.
+ */
+const written = vi.hoisted(() => [] as string[]);
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  const spy: typeof actual.writeFile = (file, data, options) => {
+    if (typeof file === 'string') written.push(file);
+    return actual.writeFile(file, data, options);
+  };
+  return { ...actual, writeFile: spy };
+});
 
 describe('localFsDriver', () => {
   let root: string;
@@ -20,6 +41,7 @@ describe('localFsDriver', () => {
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'simplycms-media-'));
     driver = localFsDriver(root);
+    written.length = 0;
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -47,17 +69,27 @@ describe('localFsDriver', () => {
 
   // 🔴 Не косметика імені: сирота `.tmp-*` після падіння між `link` і
   // `unlink` — названа межа Е2, і єдине, що робить її нешкідливою, — те,
-  // що роут роздачі такого імені не приймає.
-  //
-  // 🔴 Асерт іде проти САМОЇ `mediaTmpName` — функції, якою драйвер будує
-  // імʼя. Попередня редакція перевіряла регекс проти рядка, який тест писав
-  // сам, тож зміна форми імені в драйвері лишала гейт зеленим.
-  it('імʼя тимчасового файлу НЕ матчить MEDIA_KEY_RE', () => {
-    const name = mediaTmpName();
-    expect(MEDIA_KEY_RE.test(`cd/${name}`)).toBe(false);
-    // Друга властивість того ж імені — унікальність: колізія двох одночасних
-    // записів у шарді впала б на `writeFile(..., { flag: 'wx' })`.
-    expect(mediaTmpName()).not.toBe(name);
+  // що роут роздачі такого імені не приймає. `MEDIA_KEY_RE` не вимагає, щоб
+  // шард дорівнював префіксу uuid, тож `ab/<будь-який uuid>.png` регекс
+  // проходить — тимчасове імʼя з дозволеним розширенням роздалося б як
+  // готовий обʼєкт, ще й з `immutable`-кешем.
+  it('put пише під імʼям, яке роздача НЕ віддасть, і щоразу новим', async () => {
+    await driver.put(KEY, PAYLOAD);
+    await driver.put(OTHER_KEY, PAYLOAD);
+
+    expect(
+      written,
+      'шпигун не побачив запису — гейт став би порожнім',
+    ).toHaveLength(2);
+    const names = written.map((p) => relative(root, p).replaceAll('\\', '/'));
+    for (const [i, name] of names.entries()) {
+      expect(MEDIA_KEY_RE.test(name), `${name} матчить ключ роздачі`).toBe(
+        false,
+      );
+      // Той самий шард, що й у ключа: `link` не працює через межу ФС.
+      expect(dirname(name)).toBe(dirname([KEY, OTHER_KEY][i]));
+    }
+    expect(names[0]).not.toBe(names[1]);
   });
 
   it('delete прибирає обʼєкт', async () => {

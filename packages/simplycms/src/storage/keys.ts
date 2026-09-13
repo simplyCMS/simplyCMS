@@ -9,6 +9,18 @@ import { ACCEPTED_IMAGE_MIME } from 'simplycms/domain/media';
  */
 export type MediaMime = (typeof ACCEPTED_IMAGE_MIME)[number];
 
+/**
+ * Розширення файлу за MIME.
+ *
+ * 🔴 Таблиця вирішує не лише ЗАПИС, а й РОЗДАЧУ: із неї виводяться і
+ * `MEDIA_KEY_RE` (що роут `/media/$` узагалі приймає), і `MIME_BY_EXT`
+ * (з яким `Content-Type` віддає). Доки альтернація регексу була окремим
+ * літералом, новий формат давав на роздачі 404 — гучно; тепер він
+ * роздається одразу. Тобто додати сюди ключ = ДОЗВОЛИТИ роздачу цього
+ * типу, і зважувати треба саме це. Єдине, що після цього стоїть на шляху
+ * небезпечних типів, — сніфер `sniffImageMime` (гілки SVG у нього немає,
+ * і заборона Е2-10 тримається саме ним).
+ */
 export const EXT_BY_MIME: Readonly<Record<MediaMime, string>> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -45,7 +57,8 @@ export function mediaKey(mime: MediaMime): string {
  * пишеться третім літералом: новий формат, доданий лише в
  * `ACCEPTED_IMAGE_MIME`+`EXT_BY_MIME`, інакше пройшов би завантаження й
  * запис у БД, а роздача `/media/<key>` віддавала б 404 назавжди — і жоден
- * тест цього б не спіймав, бо регекс мовчки лишався б старим.
+ * тест цього б не спіймав, бо регекс мовчки лишався б старим. Ціна рішення
+ * — втрачений НЕЗАЛЕЖНИЙ allowlist роздачі: див. докблок `EXT_BY_MIME`.
  */
 const EXTENSIONS_ALTERNATION = Object.values(EXT_BY_MIME)
   .map((ext) => ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))

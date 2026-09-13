@@ -6,8 +6,8 @@ import {
 } from 'simplycms/domain/media';
 import {
   clearAvatarFor,
-  replaceAvatarFor,
-  withAvatarOrphanCleanup,
+  replaceAvatar,
+  requireSessionUserId,
   withSessionDb,
 } from 'simplycms/storefront/loaders';
 import { inspectUpload } from 'simplycms/storage';
@@ -25,14 +25,14 @@ const REASON_CODE = {
  * Завантажити аватар власника сесії.
  *
  * 🔴 `userId` у вході НЕМАЄ — він завжди з cookie Better Auth
- * (`withSessionDb`). Прийнятий від клієнта id дав би змогу переписати чужий
+ * (`requireSessionUserId`). Прийнятий від клієнта дав би змогу переписати чужий
  * профіль, і RLS не врятувала б: вона звіряє рядки саме з тим актором, якого
  * їй назвали.
  *
  * 🔴 Роль цього модуля — МЕЖОВА, і лише вона: розібрати `FormData`, кликнути
  * спільний `inspectUpload` і перекласти його `reason` у код для клієнта. Уся
- * послідовність — у `replaceAvatarFor` (`storefront/loaders`), щоб харнес
- * ганяв справжній код, а не копію.
+ * послідовність — у `replaceAvatar` (`storefront/loaders`), щоб харнес ганяв
+ * справжній код, а не копію.
  *
  * 🔴 Валідатор — функція, а не Zod-схема: `inputValidator` зі схемою не
  * приймає `FormData` (Start типізує цю гілку окремо).
@@ -51,22 +51,15 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
     const checked = await inspectUpload(file, MAX_AVATAR_BYTES);
     if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
 
-    // 🔴 Прибирання орфана — у `withAvatarOrphanCleanup` (лоадери), а не тут:
-    // вікно «файл уже на диску, транзакція ще може впасти» відкривається
-    // всередині `replaceAvatarFor` і закривається лише на COMMIT, тож
-    // референс приходить колбеком `onPublished`. Значення, повернене з
-    // `withSessionDb`, є вже після успіху — на нього спиратись не можна.
-    const { ref } = await withAvatarOrphanCleanup((onPublished) =>
-      withSessionDb((db, userId, operator) =>
-        replaceAvatarFor(
-          db,
-          operator,
-          userId,
-          { bytes: checked.bytes, mime: checked.mime },
-          { onPublished },
-        ),
-      ),
-    );
+    // 🔴 `replaceAvatar` відкриває транзакцію САМА і сама ж прибирає орфана:
+    // вікно «файл уже на диску, транзакція ще може впасти» закривається лише
+    // на COMMIT, тож зібрати цю послідовність тут із кроків неможливо — вони
+    // з лоадерів більше не виходять. Тут лишається тільки id власника сесії.
+    const userId = await requireSessionUserId();
+    const { ref } = await replaceAvatar(userId, {
+      bytes: checked.bytes,
+      mime: checked.mime,
+    });
 
     const url = resolveMediaUrl(ref, MEDIA_URL_BASE);
     // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок замість

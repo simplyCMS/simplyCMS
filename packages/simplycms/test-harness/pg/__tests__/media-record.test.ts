@@ -9,11 +9,7 @@ import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
-import {
-  replaceAvatarFor,
-  withAvatarOrphanCleanup,
-  withCustomerDb,
-} from 'simplycms/storefront/loaders';
+import { replaceAvatar } from 'simplycms/storefront/loaders';
 import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -436,15 +432,16 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     );
   });
 
-  // 🔴 Девʼятий кейс ганяє СПРАВЖНЮ `replaceAvatarFor`, а не послідовність,
+  // 🔴 Девʼятий кейс ганяє СПРАВЖНІЙ `replaceAvatar`, а не послідовність,
   // зібрану в тесті: копія доводила б властивість копії (патерн P1 — гейт
-  // обіцяє більше, ніж перевіряє). Функція чиста й бере `db`+`operator`
+  // обіцяє більше, ніж перевіряє). Функція бере `userId` і драйвери
   // параметрами саме для цього. Борг хвилі B, закритий у Task 5.
   //
-  // 🔴 Прогін іде через `withAvatarOrphanCleanup` — той самий шов, що в
-  // `uploadMyAvatar`: без нього кейс доводив би лише стан БД, а ФАЙЛ нового
-  // аватара лишався б орфаном (rollback прибирає рядок, диск про транзакції
-  // не знає). Саме цей розрив і був дефектом до 2026-09-13.
+  // 🔴 Прогін іде через `replaceAvatar` — той самий вхід, що й у
+  // `uploadMyAvatar`: кроки заміни з лоадерів не виходять, тож зібрати тут
+  // послідовність без прибирання орфана вже неможливо. Саме такий розрив і
+  // був дефектом до 2026-09-13: rollback прибирає рядок, диск про транзакції
+  // не знає, і ФАЙЛ нового аватара лишався б назавжди.
   it('відмова на видаленні СТАРОГО: старий цілий, нового ні в БД, ні на диску', async () => {
     const real = driver();
     const { userId, ref: oldRef } = await seedUserWithAvatar(real);
@@ -459,18 +456,12 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const filesBefore = await diskKeys();
 
     await expect(
-      withAvatarOrphanCleanup(
-        (onPublished) =>
-          withCustomerDb(userId, (db, operator) =>
-            replaceAvatarFor(
-              db,
-              operator,
-              userId,
-              { bytes: PNG, mime: 'image/png' },
-              { driver: broken, onPublished },
-            ),
-          ),
-        real,
+      replaceAvatar(
+        userId,
+        { bytes: PNG, mime: 'image/png' },
+        // Публікує зламаний драйвер, прибирає справний — розбіжність тут
+        // НАВМИСНА (у `broken` зламано саме `delete`), тому й названа полем.
+        { driver: broken, discardWith: real },
       ),
     ).rejects.toThrow('сховище недоступне');
 
@@ -497,7 +488,7 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
   });
 
   // 🔴 Happy-path заміни. До рев'ю Е2 його не було НІДЕ: єдиний кейс
-  // `replaceAvatarFor` ганяв лише гілку відкоту, тож видалення цілого блоку
+  // `replaceAvatar` ганяв лише гілку відкоту, тож видалення цілого блоку
   // `db.update(profiles)` лишало сюїту зеленою — заміна аватара могла б
   // перестати писати колонку непоміченою. `live:smoke` цього не ловить теж:
   // там аватар вантажиться один раз, тобто завжди з `previous === null`.
@@ -505,18 +496,10 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     const real = driver();
     const { userId, ref: oldRef } = await seedUserWithAvatar(real);
 
-    const { ref } = await withAvatarOrphanCleanup(
-      (onPublished) =>
-        withCustomerDb(userId, (db, operator) =>
-          replaceAvatarFor(
-            db,
-            operator,
-            userId,
-            { bytes: PNG, mime: 'image/png' },
-            { driver: real, onPublished },
-          ),
-        ),
-      real,
+    const { ref } = await replaceAvatar(
+      userId,
+      { bytes: PNG, mime: 'image/png' },
+      { driver: real },
     );
 
     expect(ref).not.toBe(oldRef);
@@ -555,18 +538,10 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     };
 
     await expect(
-      withAvatarOrphanCleanup(
-        (onPublished) =>
-          withCustomerDb(userId, (db, operator) =>
-            replaceAvatarFor(
-              db,
-              operator,
-              userId,
-              { bytes: PNG, mime: 'image/png' },
-              { driver: broken, onPublished },
-            ),
-          ),
-        broken,
+      replaceAvatar(
+        userId,
+        { bytes: PNG, mime: 'image/png' },
+        { driver: broken },
       ),
     ).rejects.toThrow('диск переповнено');
 
