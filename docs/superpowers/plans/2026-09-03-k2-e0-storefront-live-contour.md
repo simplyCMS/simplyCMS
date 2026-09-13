@@ -1,4 +1,18 @@
-# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації (ред. 1.3)
+# К2-Е0 «Санація живого контуру вітрини» + борги треку T — план імплементації (ред. 1.4)
+
+> 🔴 **Ред. 1.4 (2026-09-13) — правка ПІСЛЯ виконання, з фактів гілки.** План
+> ред. 1.3 не знав про рішення архітектора M (серверна квота чекауту), ухвалене
+> вже під час виконання: Task 11 виросла на `prepareCheckout`/`quoteCheckoutFor`/
+> serverFn-модуль `checkout-quote`/`useCheckoutQuote`/три типи T0, бо після
+> Task 10 показана покупцю сума й записана в замовлення могли розійтись
+> (знижка зі знімка кошика, дрейф прайсу, порогова доставка). Оновлено
+> `Files:` Task 10 і Task 11 та фактичні розміри в DoD Task 11. Повний дизайн
+> рішення M — у спеці, розділ Е0-4, абзац «ред. 1.4».
+>
+> 🔴 Інші рішення, ухвалені під час виконання й уже відображені в тексті:
+> мінімальний гейт задачі отримав `typecheck` (Task 1 поїхала з червоним `tsc`,
+> бо `vitest` типів не перевіряє за побудовою); вимогу двох трейлерів атрибуції
+> СКАСОВАНО рішенням власника.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -3467,6 +3481,9 @@ stock_by_pickup_point. Правило — у data-access (Е0-3)."
 - Modify: `packages/simplycms/src/storefront-routes/pages/Checkout.tsx:170-262`
 - Modify: `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts`
 - Create: `packages/simplycms/test-harness/pg/__tests__/fixtures/discounts.ts`
+- 🔴 Додано ред. 1.4 (рішення M): `place-order.ts` виніс `resolveRecipient`/`toOrderInput`
+  у `loaders/place-order-support.ts` (канон 150), а всю підготовку — у
+  `loaders/prepare-checkout.ts`, СПІЛЬНУ з квотою (див. Task 11)
 - Modify: `packages/simplycms/test-harness/pg/__tests__/fixtures/showcase.ts:72-99` (блок «Знижки» — на білдер)
 - Create: `packages/simplycms/test-harness/pg/__tests__/checkout-flow.test.ts`
 
@@ -4204,6 +4221,28 @@ contracts, Zod-схема satisfies контракт, клієнт мапить 
 - Create: `packages/simplycms/src/checkout-ui/__tests__/CheckoutDeliveryForm.test.tsx`
 - Create: `packages/simplycms/src/checkout-ui/__tests__/CheckoutContactForm.test.tsx`
 
+🔴 **Приріст ред. 1.4 — СЕРВЕРНА КВОТА (рішення архітектора M, ухвалене після
+написання плану).** Причина: після Task 10 показана покупцю сума й записана в
+замовлення могли РОЗІЙТИСЬ (знижка зі знімка кошика проти серверної з реальною
+кількістю; дрейф прайсу в `localStorage`; ПОРОГОВА доставка — поріг можна
+перетнути на одному боці й не перетнути на іншому). Квота й оформлення ділять
+ОДНУ `prepareCheckout`, тож «показане = записане» тримається за побудовою:
+
+- Create: `packages/simplycms/src/storefront/loaders/prepare-checkout.ts` — `prepareCheckout`,
+  спільна з `placeOrderFor`; несе `total` (єдина формула на обидва шляхи)
+- Create: `packages/simplycms/src/storefront/loaders/quote-checkout.ts` — `quoteCheckoutFor`
+- Create: `packages/simplycms/src/storefront-routes/server/checkout-quote.ts` — serverFn
+  `quoteCheckout`, ОКРЕМИМ модулем (один serverFn — один модуль, як `checkout.ts`)
+- Create: `packages/simplycms/src/storefront-routes/pages/checkout/useCheckoutQuote.ts`,
+  `quote-state.ts` (форми стану + `moneyKey`), `build-quote-input.ts`
+- Create: `packages/simplycms/src/checkout-ui/CheckoutQuoteDetails.tsx`,
+  `checkout-ui/rejection-key.ts` (`Record<PlaceOrderRejection, MessageKey>` — четвертий код
+  не скомпілюється)
+- Modify: `packages/simplycms/src/contracts/objects/order.ts` — `QuotedItem`,
+  `CheckoutQuote`, `QuoteCheckoutResult`
+- Create: тести `pages/checkout/__tests__/useCheckoutQuote.test.tsx`,
+  `checkout-ui/__tests__/CheckoutOrderSummary.test.tsx`
+
 **Interfaces:**
 - Produces: проп `CheckoutDeliveryFormProps.onAvailabilityChange?: (hasMethods: boolean) => void`; проп `CheckoutOrderSummaryProps.canSubmit: boolean`; i18n `checkout.noShippingMethods.title|description`; правило `id`/`htmlFor` для КОЖНОГО лейбла пʼяти тек воронки, що підписує контрол (у чекауті префікс `checkout-`; чотири лейбли-заголовки натомість перестають бути `<label>` — крок 5), `<select>` точки — `checkout-pickup-point`; автовибір єдиної точки видачі; структурний гейт `jsx-a11y/label-has-associated-control` на зону воронки в `eslint.config.mjs`.
 - Consumes: `FormField`/`FormItem`/`FormMessage` з `simplycms/ui/form`.
@@ -4674,12 +4713,16 @@ FAIL→PASS; `pnpm install --frozen-lockfile` проходить (lockfile у к
 тек воронки).
 
 🔴 Борг, який ця задача НЕ закриває і свідомо лишає: ДЕСЯТЬ із торкнутих
-файлів уже за каноном «файл ≤ 150 рядків», і кроки 2/4/5/6 їх ще подовжують —
-`profile-ui/RecipientsList.tsx` (448), `checkout-ui/CheckoutRecipientForm.tsx`
-(427), `CheckoutDeliveryForm.tsx` (399), `catalog-ui/FilterSidebar.tsx` (390),
-`profile-ui/AddressesList.tsx` (358), `storefront-routes/pages/Checkout.tsx`
-(353), `CheckoutAuthBlock.tsx` (339), `RecipientSelectorPopup.tsx` (187),
+файлів уже за каноном «файл ≤ 150 рядків», і кроки 2/4/5/6 їх ще подовжують.
+Числа — ФАКТИЧНІ на момент здачі гілки (ред. 1.4; у ред. 1.3 стояв вимір ДО
+приросту квоти, і `Checkout.tsx`/`CheckoutDeliveryForm.tsx` там були 353/399):
+`profile-ui/RecipientsList.tsx` (448), `CheckoutDeliveryForm.tsx` (473),
+`storefront-routes/pages/Checkout.tsx` (438), `checkout-ui/CheckoutRecipientForm.tsx`
+(427), `catalog-ui/FilterSidebar.tsx` (390), `profile-ui/AddressesList.tsx` (358),
+`CheckoutAuthBlock.tsx` (339), `RecipientSelectorPopup.tsx` (187),
 `AddressSelectorPopup.tsx` (177), `catalog-ui/ModificationSelector.tsx` (171).
+Борг адресований рішенням I: закриває той етап К2, що переводить форми на
+дескриптори, — рядок у роадмапі під К2.
 Розділення — окрема робота поза К2-Е0; тут воно змішало б функціональну правку
 з рефакторингом і зробило б рев'ю нечитним.
 

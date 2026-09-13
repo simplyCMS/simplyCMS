@@ -4,7 +4,9 @@
  *
  * Реєстрація винесена в `./register.mjs` (контингент брифа Task 14: з
  * доказом М-12 «підсумок = замовлення» цей файл переріс би канон 150 рядків;
- * `register` самодостатня й ні від чого тут не залежить).
+ * `register` самодостатня й ні від чого тут не залежить), а селектори й
+ * розбір чисел — у `./selectors.mjs`: це контракт РОЗМІТКИ, який живе своїм
+ * життям від кроків сценарію.
  */
 import { register } from './register.mjs';
 import {
@@ -15,20 +17,7 @@ import {
   stockSnapshot,
 } from './sql.mjs';
 import { badgeTextFor, jsonLdAvailabilityFor } from './stock-labels.mjs';
-
-const PRODUCT_SLUG = 'sonyachna-panel-450w-mono';
-/** id контролів чекауту — `id`/`htmlFor` з Task 11 (checkout-ui). */
-const FIELD = {
-  firstName: '#checkout-first-name',
-  phone: '#checkout-phone',
-  pickupPoint: '#checkout-pickup-point',
-  total: '#checkout-total',
-};
-
-/** "7 200,50 ₴" → 7200.5 — усе, крім цифр і десяткового роздільника, геть. */
-function parseMoney(text) {
-  return Number((text ?? '').replace(/[^\d,.-]/g, '').replace(',', '.'));
-}
+import { FIELD, PRODUCT_SLUG, parseMoney } from './selectors.mjs';
 
 /**
  * Уся воронка одним викликом: `page` — сторінка Playwright, `base` — URL
