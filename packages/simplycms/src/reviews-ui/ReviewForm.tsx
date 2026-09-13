@@ -21,14 +21,16 @@ interface ReviewFormProps {
   renderImageUpload?: (props: {
     images: string[];
     onImagesChange: (images: string[]) => void;
-    bucket: string;
-    folder: string;
     maxImages: number;
   }) => React.ReactNode;
 }
 
 export function ReviewForm({
-  productId,
+  // 🔴 Більше не використовується всередині: раніше йшов у знятий контракт
+  // `renderImageUpload({ folder: productId })` (легасі-бакет `review-images`).
+  // Лишається в типі — публічний контракт компонента, який рендериться
+  // всередині ProductReviews.tsx і передається саме productId.
+  productId: _productId,
   onSubmit,
   isSubmitting,
   renderEditor,
@@ -128,8 +130,6 @@ export function ReviewForm({
           {renderImageUpload({
             images,
             onImagesChange: setImages,
-            bucket: 'review-images',
-            folder: productId,
             maxImages: 5,
           })}
         </div>

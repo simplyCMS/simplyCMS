@@ -1,9 +1,15 @@
+import { MEDIA_URL_BASE } from 'simplycms/domain/media';
 import type { MediaStorageDriver } from './driver';
 import { MEDIA_KEY_RE, MIME_BY_EXT } from './keys';
 import { getMediaDriver } from './local-fs';
 
-/** Префікс роздачі — дзеркало `MEDIA_URL_BASE` з `simplycms/domain/media`. */
-const PREFIX = '/media/';
+/**
+ * Префікс роздачі — ВИВЕДЕНИЙ з `MEDIA_URL_BASE` (рішення Е2-11), а не
+ * друга копія того самого рядка: розходження тут ламало б резолв URL
+ * (`resolveMediaUrl`) і роздачу (`serveMedia`) мовчки — кожен читав би
+ * власну «правду» про базовий шлях.
+ */
+const PREFIX = `${MEDIA_URL_BASE.replace(/\/+$/, '')}/`;
 
 /** Одна відповідь «немає» на всі відмови (див. докблок нижче). */
 const notFound = (): Response =>

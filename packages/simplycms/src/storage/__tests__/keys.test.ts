@@ -10,6 +10,16 @@ describe('mediaKey', () => {
     expect(file.startsWith(shard)).toBe(true);
   });
 
+  // 🔴 Пін рішення Е2-11: MEDIA_KEY_RE виводиться з EXT_BY_MIME. Прогін для
+  // ВСІХ прийнятих MIME, а не лише png, — інакше новий формат, доданий у
+  // ACCEPTED_IMAGE_MIME+EXT_BY_MIME, але забутий у регексі (третій літерал),
+  // пройшов би цим тестом мовчки.
+  it('mediaKey() відповідає MEDIA_KEY_RE для КОЖНОГО прийнятого MIME', () => {
+    for (const mime of ACCEPTED_IMAGE_MIME) {
+      expect(mediaKey(mime)).toMatch(MEDIA_KEY_RE);
+    }
+  });
+
   it('розширення виводиться з MIME, jpeg → jpg', () => {
     expect(mediaKey('image/jpeg').endsWith('.jpg')).toBe(true);
     expect(mediaKey('image/webp').endsWith('.webp')).toBe(true);
