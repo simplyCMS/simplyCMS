@@ -2998,7 +2998,7 @@ git commit -m "feat(k3-e2): аватар покупця живий — перш�
 
 **Чому ця задача існує зараз, а не в Е3.** Демо-магазин сьогодні тримає в `images` порожні масиви, а в банерах — `data:`-URI, тож жоден референс іще не дійшов до вітрини. Саме тому зміна ЗАРАЗ безкоштовна і провірна: `resolveMediaUrl` за побудовою лишає `data:`/`http(s):`/`/…` незмінними. Якщо відкласти її до Е3, перша ж жива сторінка каталогу віддасть покупцеві голий storage key у `src` — і виявиться це на живому магазині, а не на гейті.
 
-- [ ] **Step 1: Написати падаючий тест резолву на рівні лоадерів**
+- [X] **Step 1: Написати падаючий тест резолву на рівні лоадерів**
 
 `packages/simplycms/src/storefront/loaders/__tests__/media-resolve.test.ts`:
 
@@ -3046,12 +3046,12 @@ describe('резолв медіа-референсів у лоадерах', () 
 });
 ```
 
-- [ ] **Step 2: Прогнати — має впасти**
+- [X] **Step 2: Прогнати — має впасти**
 
 Run: `pnpm vitest run packages/simplycms/src/storefront/loaders/__tests__/media-resolve.test.ts`
 Expected: FAIL — `toSectionRow`/`toOptionRow` не існують, `toImageList` не резолвить.
 
-- [ ] **Step 3: Резолв у `toImageList`**
+- [X] **Step 3: Резолв у `toImageList`**
 
 У `packages/simplycms/src/storefront/loaders/entities/product.ts` замінити:
 
@@ -3074,7 +3074,7 @@ export function toImageList(value: unknown): string[] {
 }
 ```
 
-- [ ] **Step 4: Резолв у `toBanner`**
+- [X] **Step 4: Резолв у `toBanner`**
 
 У `packages/simplycms/src/storefront/loaders/entities/banner.ts` у `toBanner`:
 
@@ -3094,7 +3094,7 @@ export function toBanner(row: RawBannerRow): Banner {
 }
 ```
 
-- [ ] **Step 5: Додати мапери розділу й опції**
+- [X] **Step 5: Додати мапери розділу й опції**
 
 У `packages/simplycms/src/storefront/loaders/entities/section.ts` (після типу `SectionRow`):
 
@@ -3124,13 +3124,13 @@ export function toOptionRow(row: OptionRow): OptionRow {
 }
 ```
 
-- [ ] **Step 6: Провести рядки через мапери**
+- [X] **Step 6: Провести рядки через мапери**
 
 - `packages/simplycms/src/storefront/loaders/sections.ts` — обидва `.select(sectionColumns)` (рядки 19 і 31): результат обгорнути `.map(toSectionRow)` (для одиничного рядка — `toSectionRow(row)`).
 - `packages/simplycms/src/storefront/loaders/properties.ts:72` — `.select(optionColumns)` → `.map(toOptionRow)`.
 - `packages/simplycms/src/storefront/loaders/property-option.ts:42` — `.select({ property: propertyColumns, option: optionColumns })` → опцію пропустити через `toOptionRow`.
 
-- [ ] **Step 7: Провести відгуки через `toImageList`**
+- [X] **Step 7: Провести відгуки через `toImageList`**
 
 У `packages/simplycms/src/storefront/loaders/reviews.ts:59` замінити
 
@@ -3148,26 +3148,26 @@ export function toOptionRow(row: OptionRow): OptionRow {
 
 (додати імпорт `toImageList` з `./entities/product`).
 
-- [ ] **Step 8: Прогнати тести**
+- [X] **Step 8: Прогнати тести**
 
 Run: `pnpm vitest run packages/simplycms/src/storefront/loaders/__tests__/media-resolve.test.ts`
 Expected: PASS.
 
-- [ ] **Step 9: Перевірити, що вітрина не змінилась на демо-даних**
+- [X] **Step 9: Перевірити, що вітрина не змінилась на демо-даних**
 
 ```bash
 pnpm vitest run --config vitest.schema.config.ts packages/simplycms/test-harness/pg/__tests__/storefront-showcase.test.ts packages/simplycms/test-harness/pg/__tests__/storefront-loaders.test.ts
 ```
 Expected: PASS без правок — демо не містить референсів, тож усі значення проходять незмінними. Червоне тут означає, що резолв зачепив форму, яку мав лишити як є: **не правь тест**, знайди форму й додай її в `ALREADY_ABSOLUTE`.
 
-- [ ] **Step 10: Гейт задачі**
+- [X] **Step 10: Гейт задачі**
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm test:schema
 ```
 Expected: PASS, включно з `media-columns-coverage`.
 
-- [ ] **Step 11: Коміт**
+- [X] **Step 11: Коміт**
 
 ```bash
 git add packages/simplycms/src/storefront/loaders

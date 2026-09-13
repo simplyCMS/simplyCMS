@@ -1,5 +1,6 @@
 import { propertyOptions, sectionProperties } from 'simplycms/schema';
 import type { PropertyOption, SectionProperty } from 'simplycms/schema/types';
+import { resolveMediaUrl } from 'simplycms/domain/media';
 
 /**
  * Значення довільного jsonb.
@@ -80,3 +81,8 @@ export type OptionRow = {
   meta_description: PropertyOption['metaDescription'];
   created_at: PropertyOption['createdAt'];
 };
+
+/** Те саме для опції характеристики — єдина медіа-колонка `image_url`. */
+export function toOptionRow(row: OptionRow): OptionRow {
+  return { ...row, image_url: resolveMediaUrl(row.image_url) };
+}

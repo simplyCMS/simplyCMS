@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { productReviews, profiles } from 'simplycms/schema';
 import type { ActorDb } from './db';
+import { toImageList } from './entities/product';
 
 /** Автор відгуку в тому обсязі, який показує вітрина. */
 export interface ReviewAuthor {
@@ -56,7 +57,9 @@ export async function loadProductReviews(
     rating: row.rating,
     title: row.title,
     content: row.content,
-    images: Array.isArray(row.images) ? (row.images as string[]) : [],
+    // Через спільну функцію, а не власним кастом: інакше зображення відгуку
+    // лишилось би єдиною медіа-колонкою без резолву.
+    images: toImageList(row.images),
     status: row.status,
     admin_comment: row.adminComment,
     created_at: row.createdAt,

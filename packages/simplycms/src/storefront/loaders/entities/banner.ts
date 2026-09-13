@@ -1,5 +1,6 @@
 import { banners } from 'simplycms/schema';
 import type { Banner, BannerButton } from 'simplycms/contracts';
+import { resolveMediaUrl } from 'simplycms/domain/media';
 
 /** Мапа select-а банера: доменний `Banner` вимагає рівно ці колонки. */
 export const bannerColumns = {
@@ -45,6 +46,12 @@ type RawBannerRow = Omit<Banner, 'buttons' | 'schedule_days'> & {
 export function toBanner(row: RawBannerRow): Banner {
   return {
     ...row,
+    // Три медіа-колонки банера — той самий референс-контракт, що й у товару.
+    // `image_url` в контракті обовʼязковий (NOT NULL у схемі), тож fallback
+    // на вихідне значення — лише страховка від порожнього рядка, не бізнес-логіка.
+    image_url: resolveMediaUrl(row.image_url) ?? row.image_url,
+    desktop_image_url: resolveMediaUrl(row.desktop_image_url),
+    mobile_image_url: resolveMediaUrl(row.mobile_image_url),
     buttons: Array.isArray(row.buttons)
       ? row.buttons.filter(isBannerButton)
       : [],

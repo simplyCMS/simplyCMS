@@ -4,6 +4,7 @@ import type { ActorDb } from './db';
 import {
   optionColumns,
   propertyColumns,
+  toOptionRow,
   toPropertyRow,
   type OptionRow,
   type PropertyRow,
@@ -68,16 +69,18 @@ async function withOptions(
 ): Promise<PropertyWithOptions[]> {
   if (rows.length === 0) return [];
 
-  const optionRows = await db
-    .select(optionColumns)
-    .from(propertyOptions)
-    .where(
-      inArray(
-        propertyOptions.propertyId,
-        rows.map((row) => row.id),
-      ),
-    )
-    .orderBy(asc(propertyOptions.sortOrder));
+  const optionRows = (
+    await db
+      .select(optionColumns)
+      .from(propertyOptions)
+      .where(
+        inArray(
+          propertyOptions.propertyId,
+          rows.map((row) => row.id),
+        ),
+      )
+      .orderBy(asc(propertyOptions.sortOrder))
+  ).map(toOptionRow);
 
   const byProperty: Record<string, OptionRow[]> = {};
   for (const option of optionRows) {
