@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -22,6 +22,7 @@
     "./domain/discounts": "./src/domain/discounts.ts",
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
+    "./domain/media": "./src/domain/media.ts",
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
@@ -32,6 +33,7 @@
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./storage": "./src/storage/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -161,6 +163,10 @@
         "types": "./dist/domain/shipping.d.ts",
         "import": "./dist/domain/shipping.js"
       },
+      "./domain/media": {
+        "types": "./dist/domain/media.d.ts",
+        "import": "./dist/domain/media.js"
+      },
       "./domain/money": {
         "types": "./dist/domain/money.d.ts",
         "import": "./dist/domain/money.js"
@@ -200,6 +206,10 @@
       "./auth": {
         "types": "./dist/auth/index.d.ts",
         "import": "./dist/auth/index.js"
+      },
+      "./storage": {
+        "types": "./dist/storage/index.d.ts",
+        "import": "./dist/storage/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",

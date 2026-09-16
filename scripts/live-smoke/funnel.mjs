@@ -8,6 +8,7 @@
  * розбір чисел — у `./selectors.mjs`: це контракт РОЗМІТКИ, який живе своїм
  * життям від кроків сценарію.
  */
+import { runAvatarStep } from './avatar.mjs';
 import { register } from './register.mjs';
 import {
   activePickupPoints,
@@ -28,6 +29,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   const goto = (path) =>
     page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
   await register(page, base);
+  await runAvatarStep({ page, base, dbUrl, check });
   const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
 
   // 1. Картка: бейдж і JSON-LD проти БД (те, чого curl не бачить).

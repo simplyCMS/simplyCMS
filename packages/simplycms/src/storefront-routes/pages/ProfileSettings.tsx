@@ -223,7 +223,6 @@ export default function ProfileSettingsPage() {
         </CardHeader>
         <CardContent>
           <AvatarUpload
-            userId={user?.id || ''}
             currentAvatarUrl={avatarUrl}
             firstName={profileData?.first_name}
             lastName={profileData?.last_name}

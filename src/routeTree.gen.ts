@@ -15,6 +15,7 @@ import { Route as ProtectedRouteImport } from './../packages/simplycms/routes/st
 import { Route as AuthIndexRouteImport } from './../packages/simplycms/routes/storefront/auth/index'
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
+import { Route as MediaSplatRouteImport } from './../packages/simplycms/routes/storefront/media/$'
 import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/routes/storefront/auth/set-password'
 import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
 import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
@@ -103,6 +104,11 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StorefrontRoute,
+} as any)
+const MediaSplatRoute = MediaSplatRouteImport.update({
+  id: '/media/$',
+  path: '/media/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/auth/set-password',
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/media/$': typeof MediaSplatRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -506,6 +513,7 @@ export interface FileRoutesByTo {
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/media/$': typeof MediaSplatRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/profile/settings': typeof ProtectedProfileSettingsRoute
@@ -574,6 +582,7 @@ export interface FileRoutesById {
   '/api/revalidate-theme': typeof ApiRevalidateThemeRoute
   '/auth/invite': typeof AuthInviteRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/media/$': typeof MediaSplatRoute
   '/_storefront/': typeof StorefrontIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -643,6 +652,7 @@ export interface FileRouteTypes {
     | '/api/revalidate-theme'
     | '/auth/invite'
     | '/auth/set-password'
+    | '/media/$'
     | '/admin/'
     | '/auth/'
     | '/profile/settings'
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/api/revalidate-theme'
     | '/auth/invite'
     | '/auth/set-password'
+    | '/media/$'
     | '/admin'
     | '/auth'
     | '/profile/settings'
@@ -775,6 +786,7 @@ export interface FileRouteTypes {
     | '/api/revalidate-theme'
     | '/auth/invite'
     | '/auth/set-password'
+    | '/media/$'
     | '/_storefront/'
     | '/admin/'
     | '/auth/'
@@ -842,6 +854,7 @@ export interface RootRouteChildren {
   ApiRevalidateThemeRoute: typeof ApiRevalidateThemeRoute
   AuthInviteRoute: typeof AuthInviteRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
+  MediaSplatRoute: typeof MediaSplatRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -889,6 +902,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof StorefrontIndexRouteImport
       parentRoute: typeof StorefrontRoute
+    }
+    '/media/$': {
+      id: '/media/$'
+      path: '/media/$'
+      fullPath: '/media/$'
+      preLoaderRoute: typeof MediaSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/set-password': {
       id: '/auth/set-password'
@@ -1468,6 +1488,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRevalidateThemeRoute: ApiRevalidateThemeRoute,
   AuthInviteRoute: AuthInviteRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
+  MediaSplatRoute: MediaSplatRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

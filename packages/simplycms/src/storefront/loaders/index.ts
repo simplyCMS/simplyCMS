@@ -20,6 +20,7 @@ export * from './orders';
 export * from './stock-release';
 export * from './stock-reservation';
 export * from './addresses';
+export * from './avatar';
 export * from './pickup-points';
 export * from './profile';
 export * from './recipients';

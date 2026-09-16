@@ -22,3 +22,10 @@ export {
   removeManyInput,
   removeManyOrderStatusesOp,
 } from './operations/order-status-remove';
+export {
+  deleteMediaInput,
+  deleteMediaOp,
+  parseUploadForm,
+  uploadMediaOp,
+} from './operations/media';
+export type { ParsedUpload } from './operations/media';

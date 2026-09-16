@@ -73,9 +73,23 @@ export interface LinkResolver {
   admin?(sub?: string): string;
 }
 
+/**
+ * Резолв медіа-референсу в URL — єдине, що потрібно КЛІЄНТУ (рішення Е2-1).
+ *
+ * 🔴 `upload` звідси пішов у V2: завантаження — серверна операція (serverFn),
+ * бо тільки сервер може перевірити грант і записати `size_bytes` у ту саму
+ * транзакцію, що й файл. Клієнтський порт із `upload(file)` обіцяв би
+ * контракт, якого браузер виконати не може.
+ *
+ * 🔴 Серверний драйвер сховища — ОКРЕМИЙ інтерфейс `MediaStorageDriver`
+ * у `simplycms/storage`: T0 не має рантайм-залежностей і не може нести
+ * `node:fs`-семантику.
+ *
+ * Реалізація — `resolveMediaUrl` із `simplycms/domain/media`, прибінджена до
+ * бази драйвера. `opts` зарезервовано під `transform` (К4).
+ */
 export interface MediaProvider {
-  url(path: string, opts?: ImageOpts): string;
-  upload(file: File): Promise<string>;
+  url(ref: string, opts?: ImageOpts): string | null;
 }
 
 export interface ConfigProvider {

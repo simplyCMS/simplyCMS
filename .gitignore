@@ -69,3 +69,6 @@ docs/design-references/
 # (scripts/dev-stand/dump-demo-data.mjs). Комітяться скрипт, allowlist,
 # фікстура й README — самі дані в OSS-репо не їдуть.
 scripts/dev-stand/seed-demo.sql
+
+# Локальне сховище медіа (драйвер local-fs, дефолт MEDIA_ROOT)
+.data/

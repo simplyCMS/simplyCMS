@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { resolveMediaUrl } from 'simplycms/domain/media';
 import { profiles, userCategories } from 'simplycms/schema';
 import type { ActorDb } from './db';
 
@@ -52,7 +53,10 @@ export async function loadProfile(
     last_name: row.last_name,
     email: row.email,
     phone: row.phone,
-    avatar_url: row.avatar_url,
+    // 🔴 У колонці лежить РЕФЕРЕНС, не URL (рішення Е2-1) — резолв робить
+    // читання, бо саме воно знає базу роздачі. Зовнішні адреси й
+    // плейсхолдери сіду функція повертає незмінними.
+    avatar_url: resolveMediaUrl(row.avatar_url),
     category: row.category_name === null ? null : { name: row.category_name },
   };
 }

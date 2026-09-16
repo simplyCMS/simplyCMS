@@ -20,3 +20,6 @@ supabase/.temp/
 # Логи та системне сміття
 *.log
 .DS_Store
+
+# Локальне сховище медіа (драйвер local-fs, дефолт MEDIA_ROOT)
+.data/

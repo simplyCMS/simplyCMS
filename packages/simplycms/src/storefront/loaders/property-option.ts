@@ -13,6 +13,7 @@ import type { CatalogProductRow } from './entities/catalog-product';
 import {
   optionColumns,
   propertyColumns,
+  toOptionRow,
   toPropertyRow,
   type OptionRow,
   type PropertyRow,
@@ -59,7 +60,7 @@ export async function loadPropertyOption(
 
   return {
     property: toPropertyRow(row.property),
-    option: row.option,
+    option: toOptionRow(row.option),
     products: await loadProductsByOption(db, row.option.id),
   };
 }

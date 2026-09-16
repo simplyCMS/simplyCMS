@@ -1,5 +1,6 @@
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
+import { resolveMediaUrls } from 'simplycms/domain/media';
 
 /**
  * Мапа select-а товару у snake_case (причина ключів — коментар у `./section`).
@@ -48,13 +49,16 @@ export type ProductRow = {
 };
 
 /**
- * Нормалізує jsonb-колонку `images` у масив рядків.
+ * Нормалізує jsonb-колонку `images` у масив ГОТОВИХ URL.
  *
- * 🔴 Перевірка рантаймова, а не каст. Колонка — `jsonb` без обмеження форми,
- * тож у ній може лежати що завгодно; галерея товару, що дістала `null` чи
- * обʼєкт замість масиву, падає вже в рендері — далеко від причини.
+ * 🔴 Резолв саме тут, а не на сторінці: через цю функцію проходять УСІ
+ * читання `images` у вітрині (товар, картка, модифікація, деталь) — один
+ * шов замість шести. У колонці лежить РЕФЕРЕНС (рішення Е2-1), і саме
+ * `resolveMediaUrls` лишає зовнішні URL та `data:`-плейсхолдери як є.
  */
 export function toImageList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === 'string');
+  return resolveMediaUrls(
+    value.filter((item): item is string => typeof item === 'string'),
+  );
 }

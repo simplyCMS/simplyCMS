@@ -281,8 +281,8 @@ export default function BannerEdit() {
                 <ImageUpload
                   images={form.image_url ? [form.image_url] : []}
                   onImagesChange={(imgs) => update('image_url', imgs[0] || '')}
-                  bucket="banner-images"
-                  folder="banners"
+                  entityType="banner"
+                  entityId={isNew ? null : bannerId}
                   maxImages={1}
                 />
               </div>
@@ -295,8 +295,8 @@ export default function BannerEdit() {
                   onImagesChange={(imgs) =>
                     update('desktop_image_url', imgs[0] || '')
                   }
-                  bucket="banner-images"
-                  folder="banners/desktop"
+                  entityType="banner"
+                  entityId={isNew ? null : bannerId}
                   maxImages={1}
                 />
               </div>
@@ -307,8 +307,8 @@ export default function BannerEdit() {
                   onImagesChange={(imgs) =>
                     update('mobile_image_url', imgs[0] || '')
                   }
-                  bucket="banner-images"
-                  folder="banners/mobile"
+                  entityType="banner"
+                  entityId={isNew ? null : bannerId}
                   maxImages={1}
                 />
               </div>

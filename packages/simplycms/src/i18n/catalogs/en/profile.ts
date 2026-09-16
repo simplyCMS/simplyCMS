@@ -97,8 +97,15 @@ export const messages: Catalog = {
   'profile.usedInOrders.one': 'Used in {count} order',
   'profile.usedInOrders.many': 'Used in {count} orders',
 
-  // Profile photo (simplycms/profile-ui, AvatarUpload) — disabled until К4
-  // (file storage port); the key explains why.
-  'profile.avatar.unavailable':
-    'Avatar upload is temporarily unavailable — file storage lands in an upcoming release',
+  // Profile photo (simplycms/profile-ui, AvatarUpload) — live since К3-Е2:
+  // the storage port accepts the file, so the keys describe the action and
+  // the refusal reasons.
+  'profile.avatar.upload': 'Upload photo',
+  'profile.avatar.remove': 'Remove photo',
+  'profile.avatar.uploading': 'Uploading…',
+  'profile.avatar.badFormat': 'Unsupported format',
+  'profile.avatar.allowedFormats': 'PNG, JPEG, WebP, GIF or AVIF',
+  'profile.avatar.tooLarge': 'File too large',
+  'profile.avatar.maxSize': 'Maximum size: 5 MB',
+  'profile.avatar.failed': 'Could not save the photo',
 };

@@ -36,6 +36,7 @@ export type Operation =
   | 'review.create'
   | 'review.moderate'
   | 'user.role.assign'
+  | 'media.write'
   | 'admin.access';
 
 /** Хто робить операцію. `userId: null` — анонім (гість вітрини). */
@@ -64,6 +65,12 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   'review.create': { user: 'own', admin: 'any' },
   'review.moderate': { admin: 'any' },
   'user.role.assign': { admin: 'any' },
+  // Завантаження й прибирання файлів адмінкою (рішення Е2-5). Не
+  // `catalog.write`: банери, розділи й відгуки каталогом не є, і менеджер
+  // контенту без права на каталог мусить мати змогу завантажити банер.
+  // Одна операція на upload і delete: прибрати власне завантаження — той
+  // самий акт, а не окреме право.
+  'media.write': { admin: 'any' },
   'admin.access': { admin: 'any' },
 };
 

@@ -1,5 +1,6 @@
 import { sections } from 'simplycms/schema';
 import type { Section } from 'simplycms/schema/types';
+import { resolveMediaUrl } from 'simplycms/domain/media';
 
 /**
  * Мапа select-а розділу: ключ — імʼя колонки в БД, значення — колонка Drizzle.
@@ -39,6 +40,17 @@ export type SectionRow = {
   created_at: Section['createdAt'];
   updated_at: Section['updatedAt'];
 };
+
+/**
+ * Доводить рядок розділу до вітрини.
+ *
+ * 🔴 Мапер заведено заради ОДНОГО поля, і це виправдано: без нього кожен із
+ * трьох `.select(sectionColumns)` мусив би памʼятати про резолв сам — саме
+ * той клас розсинхрону, який гейт `MEDIA_COLUMNS` і має ловити.
+ */
+export function toSectionRow(row: SectionRow): SectionRow {
+  return { ...row, image_url: resolveMediaUrl(row.image_url) };
+}
 
 /** Скорочений розділ для навігації й добірок головної. */
 export const sectionRefColumns = {

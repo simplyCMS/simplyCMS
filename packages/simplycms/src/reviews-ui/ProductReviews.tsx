@@ -19,8 +19,6 @@ interface ProductReviewsProps {
   renderImageUpload?: (props: {
     images: string[];
     onImagesChange: (images: string[]) => void;
-    bucket: string;
-    folder: string;
     maxImages: number;
   }) => React.ReactNode;
 }

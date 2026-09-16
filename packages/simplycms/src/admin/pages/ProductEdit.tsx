@@ -298,7 +298,8 @@ export default function ProductEdit() {
               <ImageUpload
                 images={images}
                 onImagesChange={setImages}
-                folder={`products/${productId || 'new'}`}
+                entityType="product"
+                entityId={isNew ? null : productId}
                 maxImages={10}
               />
             </CardContent>

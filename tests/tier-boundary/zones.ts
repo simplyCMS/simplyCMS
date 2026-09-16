@@ -45,6 +45,13 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
+  // Порт сховища (Е2) — T2 з upward-винятком лише на `db`; `supabase` того
+  // самого тіру у виняток НЕ входить, тож ловиться.
+  [
+    'packages/simplycms/src/storage',
+    'simplycms/supabase',
+    'simplycms/domain/media',
+  ],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

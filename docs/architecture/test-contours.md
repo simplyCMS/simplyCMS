@@ -64,7 +64,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 |---|---|---|
 | **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/simplycms/routes/{storefront,admin}` (з К0 — підтеки одного флагмана) плюс роут-теку плагіна `node_modules/@simplycms/plugin-faq/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
 | **B** | `createServerFn` працює в PRODUCTION-манифесті, а не лише в dev-режимі монорепо; SSR-рендер, guard `/admin`, sitemap/robots/health. 🔴 З 0.4.1 очікувані назви товарів беруться **прямим SQL за `DATABASE_URL`** — HTTP-API до БД у контракті v2 немає взагалі | `gate-b.mjs` |
-| **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 З треку T `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі ШІСТЬ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`) плюс серверні залежності `pg`, `drizzle-orm`, `drizzle-zod` (`better-auth` — свідомо без id-перевірки, див. §12). Літералами лишились два Supabase-файли адмінки, яких у декларації немає. До 0.4.1 список був ручний і бачив лише Supabase-фабрики й лоадери — серверний граф v2 витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
+| **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 З треку T `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі СІМ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`, `storage` — сьоме додав К3-Е2) плюс серверні залежності `pg`, `drizzle-orm`, `drizzle-zod` (`better-auth` — свідомо без id-перевірки, див. §12). Літералами лишились два Supabase-файли адмінки, яких у декларації немає. До 0.4.1 список був ручний і бачив лише Supabase-фабрики й лоадери — серверний граф v2 витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `simplycms/dist/**` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | ~~**E**~~ | 🔴 **ЗНЯТО в 0.4.1** разом зі стеком Supabase: гейт бутстрапив власника service_role-ключем GoTrue, якого в контракті v2 немає. Що він доводив (перший signup НЕ отримує `admin`; `owner:invite` ідемпотентний; перехід за посиланням ставить cookies) — тепер обовʼязок контуру К6 на Better Auth. У звіті пілота лишається **видимий рядок-skip із причиною**, а не тиша | ~~`gate-e.mjs`~~ |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; з К0 — ще й інваріанти топології 5 і доставки скілів: у tarball немає `template/.claude/**`, deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/` | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs` |
@@ -651,10 +651,11 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   харнес цього репо — 16, CI — 17. `pg_get_expr` між мажорами не гарантований,
   тож інший мажор падає окремим зрозумілим повідомленням, а не дифом політик.
 
-## 11. Гейти серверного шару адмінки (трек V2-К3, Е1б, 2026-09-02)
+## 11. Гейти серверного шару адмінки і порту сховища (трек V2-К3: Е1б 2026-09-02, Е2 2026-09-13)
 
-Спека К3-8 обіцяла сім машинних гейтів; Е1б матеріалізував такі (кожен —
-з негативним контролем, прогнаним при прийомі етапу):
+Спека К3-8 обіцяла сім машинних гейтів; Е1б матеріалізував перші вісім рядків
+таблиці, Е2 (порт сховища) — шість останніх. Кожен — з негативним контролем,
+прогнаним при прийомі свого етапу:
 
 | Гейт | Що ловить | Крок ланцюга | Межа |
 |---|---|---|---|
@@ -666,6 +667,12 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `test-harness/pg/__tests__/aggregate-deps.test.ts` | неповні `deps` агрегатів — за ФАКТИЧНИМ SQL (spy на `pg.Client.prototype.query`), сценарії по гілках лоадерів | `pnpm test:schema` | реєстр сценаріїв ручний; `seen.size > 0` у кожному кейсі |
 | `test-harness/pg/__tests__/single-default.test.ts` | часткові unique-індекси `is_default` на 7 таблицях (23505), GLOBAL незалежно від сіду | `pnpm test:schema` | «не більше одного»; «принаймні один» — контракт операцій |
 | Gate C (`scripts/pilot-pack/gate-c.mjs`) | `admin-server/impl` у клієнтському бандлі; присутність стаба `admin-server/index` | `pnpm pilot:pack` | — |
+| `eslint-rules/no-direct-storage.mjs` (зона `simplycms-storage`) + `tests/eslint-rules/no-direct-storage.test.ts` | прямий виклик сховища повз порт: `supabase.storage`, `x.storage.from(…)`, `x['storage']`, імпорт `@supabase/storage-js` | `pnpm lint` / `pnpm test` | бачить лише те, що ESLint парсить у СВОЇЙ зоні — тека поза зоною йому невидима (тому поруч файловий ратчет) |
+| `tests/storage-direct-calls.test.ts` | ті самі три форми, але СКАНОМ ПО ФАЙЛАХ усього `packages/simplycms/src/**`; список виїмок може тільки скорочуватись (сьогодні один файл — `admin/pages/ReviewDetail.tsx`) | `pnpm test` | регекс по тексту: виклик, зібраний динамічно, не ловиться |
+| `tests/storage-port-consumers.test.ts` | який лоадер вітрини сміє імпортувати `simplycms/storage` (allowlist рівно з `avatar.ts`) — пін під тір-зоною `storefront: ['db','auth','storage']`, яка не вміє бути вужчою за теку | `pnpm test` | лише лоадери вітрини; інші теки з винятком (`admin-server`) свого піна не мають |
+| `tests/media-columns-coverage.test.ts` | розбіжність реєстру `MEDIA_COLUMNS` зі схемою Drizzle: медіа-колонка, додана без резолву на вітрині, показала б покупцеві голий storage key | `pnpm test` | доводить ПОВНОТУ реєстру, а не те, що кожен читач справді кличе `resolveMediaUrl` |
+| `test-harness/pg/__tests__/media-record.test.ts` (девʼять кейсів) | `writeMedia`/`eraseMedia` проти ЖИВОГО Postgres: відкат рядка при падінні запису файлу, «рядок → обʼєкт» усередині однієї транзакції, `app_user` без гранта `DELETE` не торкається файлу, повтор після dangling-рядка, послідовність заміни зі зламаним видаленням старого | `pnpm test:schema` | драйвер — `local-fs`; поведінка S3 (К4) не покрита, орфан після обриву між `put` і COMMIT — теж |
+| `packages/simplycms/src/storage/__tests__/*.test.ts` (`serve`, `local-fs`, `inspect`, `mime`, `keys`) | заголовки роздачі (`nosniff`, `immutable`, `content-type` з розширення ключа), 404 на traversal (сирий і процентно-кодований), сніфер MIME за магічними байтами, взаємна оберненість `EXT_BY_MIME`/`MIME_BY_EXT` | `pnpm test` | у юнітах немає ні реального multipart-тіла, ні роздачі роутом Start — це доводить лише `pnpm live:smoke` |
 
 🔴 Урок Е1б для рев'ю: рев'ю ПО ДИФУ сліпе до парність-тестів за
 побудовою (файла, якого бракує після `template:sync`, у дифі немає) —
@@ -673,11 +680,33 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 прогони харнеса проти одного контейнера конфліктують на `CREATE DATABASE`
 (`fileParallelism: false` у `vitest.schema.config.ts` — навмисно).
 
-## 12. Межа клієнт/сервер: одна декларація, шість читачів (трек T, 2026-09-02)
+### Чого storage-контур НЕ доводить (Е2)
+
+- **Орфан після обриву між `put` і COMMIT.** ФС не бере участі в двофазному
+  коміті: успішний запис файлу й невдалий COMMIT після нього лишають обʼєкт
+  без рядка. Напрямок обрано безпечний (облік не рахує байтів, яких ніхто не
+  адресує), але sweep орфанів — К4, і жоден гейт Е2 його не заміняє.
+- **Конкурентне завантаження того самого файлу двома адмінами.** Ключі
+  іммутабельні й генеруються з `randomUUID()`, тож два завантаження дають
+  ДВА різні обʼєкти з однаковими байтами. Це не помилка й не перевіряється:
+  дедуплікація за хешем вмісту — не контракт Е2.
+- **`ImageUpload` на живій сторінці.** Компонент переведено на порт і
+  покрито юнітами, але всі пʼять його сторінок адмінки лишаються на
+  `supabase-js` і на чистому Postgres не працюють — живого прогону
+  зображення товару в Е2 немає за побудовою (DoD К3 п.6 закриває хвиля
+  каталогу, Е3–Е6).
+- **Роль підключення в `live:smoke`.** Скрипт віддає магазину `DATABASE_URL`,
+  виведений із `PG_HARNESS_URL` (адмінська роль кластера), а не окремий
+  `app_runtime`. RLS і гранти це не послаблює — `withActor` робить
+  `SET LOCAL ROLE`, і права рахуються від НЕЇ, — але запит, який забув
+  `SET LOCAL ROLE`, під адмінською роллю пройшов би. Fail-closed цього
+  класу доводить контракт env і `pnpm test:schema`, не смок.
+
+## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
 (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
-`admin-server/impl`; serverFn-модулі
+`admin-server/impl`, `storage`; serverFn-модулі
 `plugin-sdk/server`, `themes/server`, `plugins/server`, стаби `admin-server` —
 НЕ server-only, їх клієнт імпортує легально). Читачі:
 
@@ -690,6 +719,7 @@ Server-only субшляхи ядра задекларовано ОДИН раз
 | `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
 | Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** пілота (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
 | `tests/dist-server-boundary.test.ts`, блок сентинелів | контроль САМОГО списку `SERVER_ONLY`: мапа літералів не похідна від списку, кожен є в джерелі дерева, у серверному `dist` і відсутній у клієнтському | закоментований рядок `'storefront'` у декларації → червоний packaging |
+| `eslint-rules/no-server-only-in-client.mjs` (зона `simplycms-client-boundary`, К3-Е2) | клієнтська тека ядра (`admin/**`, пʼять `*-ui/**`) не імпортує server-only субшлях чи серверну залежність зі СТАТИЧНОГО `import`/`export…from` — окремий детектор, бо базовий `no-restricted-imports` не розрізняє `import` і стираний компілятором `import type` (канон `OrderStatuses.tsx:8`) | `tests/eslint-rules/no-server-only-in-client.test.ts` (фікстури Linter API) + `tests/tier-boundary-client-boundary.test.ts` (реальний конфіг: заборона в `checkout-ui`, виїмка `core/lib`, чистий `import type` в `admin`) |
 
 Три пастки Start (include за замовчуванням лише `src/`; alias резолвить
 раніше за `specifiers`; `files`/`excludeFiles` заміщують дефолт) —

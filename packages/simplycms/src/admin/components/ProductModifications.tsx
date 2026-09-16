@@ -410,7 +410,8 @@ export function ProductModifications({
                   <ImageUpload
                     images={images}
                     onImagesChange={setImages}
-                    folder={`modifications/${editingModification?.id || 'new'}`}
+                    entityType="product_modification"
+                    entityId={editingModification?.id ?? null}
                     maxImages={10}
                   />
                 </div>

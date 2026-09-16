@@ -4,6 +4,7 @@ import type { ActorDb } from './db';
 import {
   sectionColumns,
   sectionRefColumns,
+  toSectionRow,
   type SectionRef,
   type SectionRow,
 } from './entities/section';
@@ -15,11 +16,13 @@ import {
  * забутий предикат тут не дасть помилки — він тихо виведе чернетки в магазин.
  */
 export async function loadSections(db: ActorDb): Promise<SectionRow[]> {
-  return db
+  const rows = await db
     .select(sectionColumns)
     .from(sections)
     .where(eq(sections.isActive, true))
     .orderBy(asc(sections.sortOrder));
+
+  return rows.map(toSectionRow);
 }
 
 /** Розділ за slug — лише активний (див. коментар про видимість вище). */
@@ -33,7 +36,7 @@ export async function loadSectionBySlug(
     .where(and(eq(sections.slug, slug), eq(sections.isActive, true)))
     .limit(1);
 
-  return row ?? null;
+  return row ? toSectionRow(row) : null;
 }
 
 /** Кореневі розділи (без батька) для навігації й добірок головної. */
