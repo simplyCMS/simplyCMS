@@ -7,7 +7,11 @@ import {
   stockByPickupPoint,
 } from 'simplycms/schema';
 import { syncStatusWithQuantity, type StockTarget } from 'simplycms/inventory';
-import type { Product, ProductModification } from 'simplycms/schema/types';
+import type {
+  Product,
+  ProductModification,
+  StockByPickupPoint,
+} from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
 
@@ -75,7 +79,8 @@ export const saveStockOp = async ({
       .for('update');
     const byPoint = new Map(existing.map((r) => [r.pickupPointId, r]));
     const now = new Date();
-    const rows = [];
+    // Явний тип: пакетний tsconfig (noImplicitAny: false) виводить `[]` як never[].
+    const rows: StockByPickupPoint[] = [];
     for (const q of data.quantities) {
       const row = byPoint.get(q.pickupPointId);
       const [saved] = row

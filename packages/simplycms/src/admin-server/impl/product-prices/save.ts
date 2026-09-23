@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { productPrices } from 'simplycms/schema';
 import { MONEY_RE } from 'simplycms/domain/money';
+import type { ProductPrice } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
 
@@ -66,7 +67,8 @@ export const saveProductPricesOp = async ({
         .delete(productPrices)
         .where(inArray(productPrices.id, removedIds));
     const now = new Date();
-    const rows = [];
+    // Явний тип: пакетний tsconfig (noImplicitAny: false) виводить `[]` як never[].
+    const rows: ProductPrice[] = [];
     for (const p of data.prices) {
       const row = byType.get(p.priceTypeId);
       const [saved] = row
