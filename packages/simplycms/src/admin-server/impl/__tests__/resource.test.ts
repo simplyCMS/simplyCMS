@@ -202,7 +202,12 @@ describe('defineAdminResource (К3-4′)', () => {
   // без `id`, тож харнес-тест пагінації (Task 3) лишився б зеленим і без
   // фіксу.
   it('list: id asc — ОСТАННІЙ ключ сортування, і після defaultOrder, і після sorts', async () => {
-    const orderBy = vi.fn(function (this: unknown) {
+    // 🔴 Хвіст Task 3 (передіснуюча помилка typecheck, не чіплялась Task 1):
+    // мок без оголошених параметрів звужував `.mock.calls[n]` до `[]`
+    // (нуль-елементний tuple) — TS2493 на індексації нижче. Rest-параметр
+    // повертає тип виклику до `unknown[]`, рантайм не змінюється (той самий
+    // `this`-повернення для ланцюжка `.orderBy().limit()…`).
+    const orderBy = vi.fn(function (this: unknown, ..._cols: unknown[]) {
       return this;
     });
     const q = {

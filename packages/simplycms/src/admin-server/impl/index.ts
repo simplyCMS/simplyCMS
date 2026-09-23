@@ -27,3 +27,19 @@ export {
 } from './media/operations';
 export type { ParsedUpload } from './media/operations';
 export type { SubsetInput, SubsetPayload } from './subset';
+export { productsOps } from './products/resource';
+export { productModificationsOps } from './product-modifications/resource';
+export { productPricesOps } from './product-prices/resource';
+export { stockOps } from './stock/resource';
+export {
+  productPropertyValuesOps,
+  modificationPropertyValuesOps,
+} from './property-values/resources';
+export {
+  sectionsReadOps,
+  priceTypesReadOps,
+  sectionPropertyAssignmentsReadOps,
+  sectionPropertiesReadOps,
+  propertyOptionsReadOps,
+} from './catalog-read/resources';
+export { AdminConflictError } from './errors';
