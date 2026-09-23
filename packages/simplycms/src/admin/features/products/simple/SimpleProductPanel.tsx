@@ -5,6 +5,7 @@ import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
+import { reportTxError } from '../../../lib/report-tx-error';
 import { PricesEditor } from '../prices/PricesEditor';
 import { StockEditor } from '../stock/StockEditor';
 import { StockStatusSelect } from '../stock/StockStatusSelect';
@@ -60,11 +61,17 @@ export function SimpleProductPanel({ productId }: Props) {
             {row && (
               <StockStatusSelect
                 value={row.stockStatus ?? 'in_stock'}
-                onChange={(v) =>
-                  products.update(productId, (d) => {
+                onChange={(v) => {
+                  // 🔴 Item 2: без .catch — відхилена мутація тихо
+                  // відкочується (бібліотека сама) і лишає unhandled
+                  // rejection у консолі.
+                  const tx = products.update(productId, (d) => {
                     d.stockStatus = v;
-                  })
-                }
+                  });
+                  tx.isPersisted.promise.catch((e: unknown) =>
+                    reportTxError(t, e),
+                  );
+                }}
               />
             )}
           </div>

@@ -4,7 +4,9 @@ import {
   productModificationsCollection,
   useCollection,
 } from 'simplycms/admin-data';
+import { useT } from 'simplycms/i18n';
 import type { ProductModification } from 'simplycms/schema/types';
+import { reportTxError } from '../../../lib/report-tx-error';
 import { StockStatusSelect } from '../stock/StockStatusSelect';
 import type { ModificationFormValues } from './modification-form-schema';
 
@@ -24,6 +26,7 @@ interface Props {
  * `insert` (`useModifications.create`).
  */
 export function ModificationStatusControl({ mod, form }: Props) {
+  const t = useT();
   const mods = useCollection(productModificationsCollection);
   const { data: liveMod } = useLiveQuery(
     (q) =>
@@ -41,18 +44,21 @@ export function ModificationStatusControl({ mod, form }: Props) {
     return (
       <StockStatusSelect
         value={liveMod.stockStatus ?? 'in_stock'}
-        onChange={(v) =>
-          mods.update(mod.id, (d) => {
+        onChange={(v) => {
+          // 🔴 Item 2: без .catch — відхилена мутація тихо відкочується
+          // (бібліотека сама) і лишає unhandled rejection у консолі.
+          const tx = mods.update(mod.id, (d) => {
             d.stockStatus = v;
-          })
-        }
+          });
+          tx.isPersisted.promise.catch((e: unknown) => reportTxError(t, e));
+        }}
       />
     );
   }
 
   return (
     <StockStatusSelect
-      value={form.watch('stockStatus')}
+      value={form.watch('stockStatus') ?? 'in_stock'}
       onChange={(v) => form.setValue('stockStatus', v, { shouldDirty: true })}
     />
   );
