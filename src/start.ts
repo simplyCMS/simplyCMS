@@ -1,6 +1,7 @@
 import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
 import { readSessionSubject } from 'simplycms/auth';
+import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
 
 /**
  * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
@@ -46,6 +47,15 @@ const adminRequestGuard = createMiddleware().server(
   },
 );
 
+/**
+ * `serializationAdapters` (Е3-20): без нього `@tanstack/router-core`'s
+ * `ShallowErrorPlugin` серіалізує доменні помилки (`AdminConflictError`,
+ * `AuthzError`) голим `.message` — клієнт не бачить `name`/`kind`/
+ * `constraint`/`operation`, і адмінка показує технічний текст замість
+ * тосту з i18n-ключем. Адаптер — client-safe (`simplycms/runtime`), не
+ * server-only.
+ */
 export const startInstance = createStart(() => ({
+  serializationAdapters: [domainErrorAdapter],
   requestMiddleware: [adminRequestGuard],
 }));
