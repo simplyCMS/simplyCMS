@@ -29,6 +29,8 @@ export const messages = {
   'admin.products.slugLabel': 'URL (slug) *',
   'admin.products.slugHint':
     'Латиниця, цифри й дефіс — наприклад, wireless-mouse-100w',
+  'admin.products.nameError': 'Введіть назву товару',
+  'admin.products.fixFields': 'Перевірте виділені поля',
   'admin.products.seoTitle': 'SEO',
   'admin.products.metaTitle': 'Meta Title',
   'admin.products.metaDescription': 'Meta Description',

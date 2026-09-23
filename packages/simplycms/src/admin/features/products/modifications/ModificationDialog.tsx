@@ -104,7 +104,9 @@ export function ModificationDialog({
         <Form {...form}>
           <form
             id={DIALOG_FORM_ID}
-            onSubmit={form.handleSubmit(submit)}
+            onSubmit={form.handleSubmit(submit, () =>
+              toast.error(t('admin.products.fixFields')),
+            )}
             className="space-y-4"
           >
             <ModificationFormFields modId={mod?.id ?? null} />

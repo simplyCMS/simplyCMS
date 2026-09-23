@@ -19,7 +19,12 @@ interface Props {
  */
 export function ProductMainFields({ productId }: Props) {
   const t = useT();
-  const { register, watch, setValue } = useFormContext<ProductFormValues>();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useFormContext<ProductFormValues>();
 
   return (
     <>
@@ -33,14 +38,45 @@ export function ProductMainFields({ productId }: Props) {
               <Label htmlFor="product-name">
                 {t('common.nameRequiredLabel')}
               </Label>
-              <Input id="product-name" {...register('name')} required />
+              <Input
+                id="product-name"
+                {...register('name')}
+                required
+                aria-invalid={!!errors.name}
+                aria-describedby={
+                  errors.name ? 'product-name-error' : undefined
+                }
+              />
+              {errors.name && (
+                <p
+                  id="product-name-error"
+                  role="alert"
+                  className="text-xs text-destructive"
+                >
+                  {t('admin.products.nameError')}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="product-slug">
                 {t('admin.products.slugLabel')}
               </Label>
-              <Input id="product-slug" {...register('slug')} required />
-              <p className="text-xs text-muted-foreground">
+              <Input
+                id="product-slug"
+                {...register('slug')}
+                required
+                aria-invalid={!!errors.slug}
+                aria-describedby="product-slug-error"
+              />
+              <p
+                id="product-slug-error"
+                role={errors.slug ? 'alert' : undefined}
+                className={
+                  errors.slug
+                    ? 'text-xs text-destructive'
+                    : 'text-xs text-muted-foreground'
+                }
+              >
                 {t('admin.products.slugHint')}
               </p>
             </div>

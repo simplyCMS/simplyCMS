@@ -20,8 +20,12 @@ interface Props {
  */
 export function ModificationFormFields({ modId }: Props) {
   const t = useT();
-  const { register, watch, setValue } =
-    useFormContext<ModificationFormValues>();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useFormContext<ModificationFormValues>();
 
   return (
     <>
@@ -33,7 +37,18 @@ export function ModificationFormFields({ modId }: Props) {
             {...register('name')}
             placeholder={t('admin.products.mods.namePlaceholder')}
             required
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'mod-name-error' : undefined}
           />
+          {errors.name && (
+            <p
+              id="mod-name-error"
+              role="alert"
+              className="text-xs text-destructive"
+            >
+              {t('admin.products.nameError')}
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="mod-slug">{t('admin.products.slugLabel')}</Label>
@@ -42,7 +57,20 @@ export function ModificationFormFields({ modId }: Props) {
             {...register('slug')}
             placeholder="100w"
             required
+            aria-invalid={!!errors.slug}
+            aria-describedby="mod-slug-error"
           />
+          <p
+            id="mod-slug-error"
+            role={errors.slug ? 'alert' : undefined}
+            className={
+              errors.slug
+                ? 'text-xs text-destructive'
+                : 'text-xs text-muted-foreground'
+            }
+          >
+            {t('admin.products.slugHint')}
+          </p>
         </div>
       </div>
 

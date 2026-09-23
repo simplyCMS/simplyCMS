@@ -31,6 +31,8 @@ export const messages: Catalog = {
   'admin.products.slugLabel': 'URL (slug) *',
   'admin.products.slugHint':
     'Latin letters, digits and hyphens — e.g. wireless-mouse-100w',
+  'admin.products.nameError': 'Enter the product name',
+  'admin.products.fixFields': 'Check the highlighted fields',
   'admin.products.seoTitle': 'SEO',
   'admin.products.metaTitle': 'Meta Title',
   'admin.products.metaDescription': 'Meta Description',

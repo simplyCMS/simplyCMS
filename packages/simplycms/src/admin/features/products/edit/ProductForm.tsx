@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import { useT } from 'simplycms/i18n';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
@@ -57,6 +59,7 @@ export function ProductForm({
   meta,
   children,
 }: Props) {
+  const t = useT();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
@@ -65,7 +68,10 @@ export function ProductForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((values) => onSubmit(values))}
+        onSubmit={form.handleSubmit(
+          (values) => onSubmit(values),
+          () => toast.error(t('admin.products.fixFields')),
+        )}
         className="space-y-6"
       >
         <div className="flex justify-end">
