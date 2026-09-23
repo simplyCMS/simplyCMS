@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
+import { mergePropertyValues } from './merge-property-values';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
 export interface ProductContentInput {
@@ -76,12 +77,10 @@ export function useProductContent({
         ? propertyValuesByModification[selectedModId]
         : [];
 
-    // Характеристики модифікації перекривають однойменні характеристики товару
-    const propMap = new Map<string, ProductPropertyValueViewModel>();
-    productProps.forEach((pv) => propMap.set(pv.property_id, pv));
-    modProps.forEach((pv) => propMap.set(pv.property_id, pv));
-
-    return Array.from(propMap.values());
+    // Е3-13: рядок на опцію (multiselect) зводиться в один запис на
+    // властивість; характеристики модифікації перекривають характеристики
+    // товару цілком.
+    return mergePropertyValues(productProps, modProps);
   }, [product, selectedModId, propertyValuesByModification]);
 
   return { images, propertyValues };

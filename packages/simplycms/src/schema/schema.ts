@@ -292,7 +292,11 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 			foreignColumns: [sectionProperties.id],
 			name: "modification_property_values_property_id_fkey"
 		}).onDelete("cascade"),
-	unique("modification_property_values_modification_id_property_id_key").on(table.modificationId, table.propertyId),
+	// Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
+	// скалярну властивість в одному рядку (option_id NULL)
+	unique("modification_property_values_owner_property_option_key")
+		.on(table.modificationId, table.propertyId, table.optionId)
+		.nullsNotDistinct(),
 	index("idx_modification_property_values_property").on(table.propertyId),
 ]);
 
@@ -321,7 +325,11 @@ export const productPropertyValues = pgTable("product_property_values", {
 			foreignColumns: [sectionProperties.id],
 			name: "product_property_values_property_id_fkey"
 		}).onDelete("cascade"),
-	unique("product_property_values_product_id_property_id_key").on(table.productId, table.propertyId),
+	// Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
+	// скалярну властивість в одному рядку (option_id NULL)
+	unique("product_property_values_owner_property_option_key")
+		.on(table.productId, table.propertyId, table.optionId)
+		.nullsNotDistinct(),
 	index("idx_product_property_values_property_id").on(table.propertyId),
 ]);
 

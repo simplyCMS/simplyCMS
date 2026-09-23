@@ -1093,12 +1093,13 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "modification_property_values_modification_id_property_id_key": {
-          "name": "modification_property_values_modification_id_property_id_key",
-          "nullsNotDistinct": false,
+        "modification_property_values_owner_property_option_key": {
+          "name": "modification_property_values_owner_property_option_key",
+          "nullsNotDistinct": true,
           "columns": [
             "modification_id",
-            "property_id"
+            "property_id",
+            "option_id"
           ]
         }
       },
@@ -2741,12 +2742,13 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "product_property_values_product_id_property_id_key": {
-          "name": "product_property_values_product_id_property_id_key",
-          "nullsNotDistinct": false,
+        "product_property_values_owner_property_option_key": {
+          "name": "product_property_values_owner_property_option_key",
+          "nullsNotDistinct": true,
           "columns": [
             "product_id",
-            "property_id"
+            "property_id",
+            "option_id"
           ]
         }
       },

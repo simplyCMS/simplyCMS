@@ -218,7 +218,7 @@ from (
 ) as v(id, product_slug, numeric_value)
 join public.products p on p.slug = v.product_slug
 join public.section_properties sp on sp.slug = 'potuzhnist'
-on conflict (product_id, property_id) do nothing;
+on conflict (product_id, property_id, option_id) do nothing;
 
 insert into public.product_property_values (id, product_id, property_id, option_id)
 select v.id, p.id, sp.id, po.id
@@ -231,7 +231,7 @@ from (
 join public.products p on p.slug = v.product_slug
 join public.section_properties sp on sp.slug = 'tip-paneli'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
-on conflict (product_id, property_id) do nothing;
+on conflict (product_id, property_id, option_id) do nothing;
 
 insert into public.product_property_values (id, product_id, property_id, option_id)
 select v.id, p.id, sp.id, po.id
@@ -243,7 +243,7 @@ from (
 join public.products p on p.slug = v.product_slug
 join public.section_properties sp on sp.slug = 'tip-invertora'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
-on conflict (product_id, property_id) do nothing;
+on conflict (product_id, property_id, option_id) do nothing;
 
 -- 🔴 Плейсхолдер-SVG інлайном. Чотири обмеження, які не можна порушити:
 -- (1) усередині SVG — ЛИШЕ подвійні лапки: одинарна в SQL-літералі вимагала
