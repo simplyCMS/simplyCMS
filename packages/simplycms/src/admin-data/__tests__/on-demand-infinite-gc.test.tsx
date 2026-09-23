@@ -5,11 +5,19 @@
  * перезапитує вже видимі. Якби ЦЕЙ тест почервонів — фікс Е3-17 довелося б
  * переглядати (запасний варіант архітектора — `removeQueries` inactive у
  * write-шляху); тут gcTime:0 сторінкам не заважає.
+ *
+ * 🔴 `queryFn` поважає РЕАЛЬНІ `limit`/`offset` з `ctx.meta.loadSubsetOptions`
+ * (як `toSubsetPayload`/`listProducts`, не «всі рядки на будь-який запит») —
+ * інакше тест нічого не доводить: повертаючи весь SEED завжди, він не міг
+ * би відрізнити «сторінка довантажилась правильно» від «довантажилась
+ * будь-як, бо queryFn ігнорує пагінацію» (рев'ю item 4).
  */
 import { describe, expect, it } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createCollection, useLiveInfiniteQuery } from '@tanstack/react-db';
+import { parseLoadSubsetOptions } from '@tanstack/query-db-collection';
+import type { LoadSubsetOptions } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
 
@@ -30,8 +38,14 @@ describe('Е3-17 (4): useLiveInfiniteQuery з gcTime:0', () => {
         queryKey: ['infinite-gc', 'list'],
         getKey: (r) => r.id,
         queryFn: async (ctx) => {
-          calls.push(ctx.meta?.loadSubsetOptions);
-          return SEED;
+          const opts = ctx.meta?.loadSubsetOptions as
+            LoadSubsetOptions | undefined;
+          calls.push(opts);
+          const { limit } = parseLoadSubsetOptions(opts);
+          const offset = opts?.offset ?? 0;
+          return limit === undefined
+            ? SEED.slice(offset)
+            : SEED.slice(offset, offset + limit);
         },
       }),
     );
