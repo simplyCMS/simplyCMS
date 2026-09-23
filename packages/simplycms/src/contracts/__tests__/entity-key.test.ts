@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENTITY, entityKey } from '../entities';
+import { collectionKey, ENTITY, entityKey } from '../entities';
 
 describe('entityKey: єдина форма ключів кешу', () => {
   const k = entityKey(ENTITY.orderStatuses);
@@ -14,7 +14,7 @@ describe('entityKey: єдина форма ключів кешу', () => {
     // розширює базовий, лишає застарілі дані у кеші (спека, Додаток Б-2).
     const base = k.all();
     for (const derived of [
-      k.list(),
+      collectionKey(ENTITY.orderStatuses),
       k.detail('abc'),
       k.scoped('section', 'x'),
     ]) {
@@ -23,7 +23,6 @@ describe('entityKey: єдина форма ключів кешу', () => {
   });
 
   it('форма кожного ключа стабільна', () => {
-    expect(k.list()).toEqual(['order_statuses', 'list']);
     expect(k.detail('abc')).toEqual(['order_statuses', 'detail', 'abc']);
     expect(k.scoped('section', 'x')).toEqual([
       'order_statuses',
@@ -37,9 +36,24 @@ describe('entityKey: єдина форма ключів кешу', () => {
     expect(new Set(values).size).toBe(values.length);
   });
 
+  describe('collectionKey: ЄДИНИЙ легальний ужиток сегмента "list" (Е3-15′)', () => {
+    it('форма — [entity, "list"], та сама, що колишній entityKey(x).list()', () => {
+      expect(collectionKey(ENTITY.orderStatuses)).toEqual([
+        'order_statuses',
+        'list',
+      ]);
+    });
+
+    it('сегмент 0 — той самий, що в all()', () => {
+      expect(collectionKey(ENTITY.orderStatuses)[0]).toBe(k.all()[0]);
+    });
+  });
+
   describe('variant: скоуп форми, не FK-зріз (Е3-15)', () => {
-    it('без id — не збігається з list() (колекція admin-data)', () => {
-      expect(k.variant('storefront')).not.toEqual(k.list());
+    it('без id — не збігається з collectionKey (колекція admin-data)', () => {
+      expect(k.variant('storefront')).not.toEqual(
+        collectionKey(ENTITY.orderStatuses),
+      );
       expect(k.variant('storefront')).toEqual([
         'order_statuses',
         'variant',

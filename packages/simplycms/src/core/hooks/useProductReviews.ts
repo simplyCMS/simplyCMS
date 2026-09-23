@@ -14,7 +14,7 @@ const NO_REVIEWS: ProductReview[] = [];
 const productReviews = entityKey(ENTITY.productReviews);
 /** Рейтинги — SQL-агрегат ПО ТІЙ САМІЙ таблиці `product_reviews`, тож ключ
  * розширює її список: інвалідація по entity зачепить обидва кеші разом. */
-const productRatings = [...productReviews.list(), 'ratings'] as const;
+const productRatings = productReviews.variant('ratings');
 
 /**
  * Відгуки товару, рейтинг і власний відгук покупця.

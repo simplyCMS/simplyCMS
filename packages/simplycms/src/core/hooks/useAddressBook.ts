@@ -26,7 +26,7 @@ export interface AddressFormInput {
  * лишала кабінет із застарілим списком. Спільний ключ прибирає розсинхрон
  * за побудовою — інвалідація одна на обидва екрани.
  */
-export const ADDRESS_BOOK_KEY = entityKey(ENTITY.userAddresses).list();
+export const ADDRESS_BOOK_KEY = entityKey(ENTITY.userAddresses).variant('own');
 
 /**
  * Книга адрес покупця: список + збереження + видалення.

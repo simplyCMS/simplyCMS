@@ -1,13 +1,11 @@
 import { BTreeIndex, createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { PropertyOption } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import { listPropertyOptions } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
 import { toSubsetPayload } from '../subset-payload';
-
-const key = entityKey(ENTITY.propertyOptions);
 
 /**
  * Довідник на ЧИТАННЯ (Е3-1): опції характеристик — зріз по `propertyId`
@@ -19,7 +17,7 @@ function create(queryClient: QueryClient) {
     queryCollectionOptions<PropertyOption>({
       id: ENTITY.propertyOptions,
       queryClient,
-      queryKey: key.list(),
+      queryKey: collectionKey(ENTITY.propertyOptions),
       syncMode: 'on-demand',
       autoIndex: 'eager',
       defaultIndexType: BTreeIndex,

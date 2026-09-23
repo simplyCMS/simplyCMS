@@ -12,6 +12,7 @@ import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
+import noCollectionKeyOutsideAdminData from './eslint-rules/no-collection-key-outside-admin-data.mjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
@@ -391,6 +392,36 @@ const eslintConfig = [
       'simplycms-storage': { rules: { 'no-direct-storage': noDirectStorage } },
     },
     rules: { 'simplycms-storage/no-direct-storage': 'error' },
+  },
+  // Ключ колекції admin-data — лише для колекцій admin-data (Е3-15′,
+  // рішення архітектора). Власне правило (не тір-зона, не
+  // query-key-from-entity — та ловить літерали в queryKey, а не сам факт
+  // імпорту функції); власне імʼя плагіна — з тієї ж причини, що в сусідніх
+  // `simplycms-storage`/`simplycms-client-boundary`: flat config замінює
+  // опції правила цілком, а ESLint 10 падає на редефініції плагіна з іншим
+  // rules-обʼєктом на тих самих файлах.
+  // 🔴 `admin-data/**` і `__tests__/**` — НЕ виїмка-послаблення, а межа зони:
+  // усередині admin-data collectionKey — канон, а __tests__ (зокрема
+  // `contracts/__tests__/entity-key.test.ts`) юніт-тестує саму функцію
+  // напряму відносним імпортом — без ignores це хибне спрацювання.
+  {
+    files: [
+      'packages/simplycms/src/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/**/*.{ts,tsx}',
+    ],
+    ignores: ['packages/simplycms/src/admin-data/**', '**/__tests__/**'],
+    plugins: {
+      'simplycms-collection-key': {
+        rules: {
+          'no-collection-key-outside-admin-data':
+            noCollectionKeyOutsideAdminData,
+        },
+      },
+    },
+    rules: {
+      'simplycms-collection-key/no-collection-key-outside-admin-data': 'error',
+    },
   },
   // Сьомий читач межі довіри клієнт/сервер (contracts/server-only): клієнтська
   // тека не імпортує server-only субшлях чи серверну залежність. Власне

@@ -23,7 +23,9 @@ export interface RecipientFormInput {
 }
 
 /** Ключ книги отримувачів — один на застосунок (див. `useAddressBook`). */
-export const RECIPIENT_BOOK_KEY = entityKey(ENTITY.userRecipients).list();
+export const RECIPIENT_BOOK_KEY = entityKey(ENTITY.userRecipients).variant(
+  'own',
+);
 
 /**
  * Книга отримувачів покупця: список + збереження + видалення.

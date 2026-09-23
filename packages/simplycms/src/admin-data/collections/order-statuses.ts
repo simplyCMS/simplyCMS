@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { OrderStatus } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import {
   insertOrderStatuses,
@@ -12,11 +12,9 @@ import {
 import type { CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 
-const key = entityKey(ENTITY.orderStatuses);
-
 /**
  * Довідник статусів — режим eager (К3-5): обмежений розмір, повна
- * колекція в памʼяті. 🔴 queryKey = entityKey(...).list() — той самий
+ * колекція в памʼяті. 🔴 queryKey = collectionKey(...) — той самий
  * префікс, що в решти запитів сутності (Б-2). schema НЕ передається
  * (К3-9′ п.3): тип — generic OrderStatus, рантайм-валідація — на сервері.
  * Persistence — спільний канон `persistenceHandlers` (Task 5): перша
@@ -30,7 +28,7 @@ function create(queryClient: QueryClient) {
     queryCollectionOptions<OrderStatus>({
       id: ENTITY.orderStatuses,
       queryClient,
-      queryKey: key.list(),
+      queryKey: collectionKey(ENTITY.orderStatuses),
       getKey: (row) => row.id,
       queryFn: async () => listOrderStatuses({ data: {} }),
       ...persistenceHandlers<OrderStatus>(() => ref.current!, {

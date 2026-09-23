@@ -1,7 +1,7 @@
 import { BTreeIndex, createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { ProductModification } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import {
   insertProductModifications,
@@ -12,8 +12,6 @@ import {
 import type { CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 import { toSubsetPayload } from '../subset-payload';
-
-const key = entityKey(ENTITY.productModifications);
 
 /**
  * On-demand за товаром — картка товару читає зріз `productId eq` (Task 7).
@@ -28,7 +26,7 @@ function create(queryClient: QueryClient) {
     queryCollectionOptions<ProductModification>({
       id: ENTITY.productModifications,
       queryClient,
-      queryKey: key.list(),
+      queryKey: collectionKey(ENTITY.productModifications),
       syncMode: 'on-demand',
       autoIndex: 'eager',
       defaultIndexType: BTreeIndex,

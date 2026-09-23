@@ -1,7 +1,7 @@
 import { BTreeIndex, createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { Product } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import {
   insertProducts,
@@ -13,12 +13,10 @@ import type { CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 import { toSubsetPayload } from '../subset-payload';
 
-const key = entityKey(ENTITY.products);
-
 /**
  * Каталог росте — on-demand (К3-5): у памʼяті лише зрізи, які реально
  * запитав живий запит (сторінка списку, картка за id). `queryKey`
- * статичний `list()` — demand-суфікс дописує бібліотека, префікс
+ * статичний `collectionKey(...)` — demand-суфікс дописує бібліотека, префікс
  * лишається спільним для всіх зрізів (Б-2). `preload()` на такій
  * колекції — no-op: прогрів роуту робиться live-query (Task 6).
  */
@@ -29,7 +27,7 @@ function create(queryClient: QueryClient) {
     queryCollectionOptions<Product>({
       id: ENTITY.products,
       queryClient,
-      queryKey: key.list(),
+      queryKey: collectionKey(ENTITY.products),
       syncMode: 'on-demand',
       // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу
       // сортування друга сторінка не запитується (виміряно спайком).
