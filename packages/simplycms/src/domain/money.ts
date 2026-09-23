@@ -78,3 +78,12 @@ export function formatPrice(
   // сирий символ, -- щоб NBSP не загубився під час майбутнього редагування.
   return `${number}\u00a0${symbol}`;
 }
+
+/** Грошова сума як рядок numeric: невідʼємна, до двох знаків після крапки.
+ *  Кома як роздільник НЕ приймається тут — її нормалізує форма (Task 8);
+ *  на межі сервера формат один. */
+export const MONEY_RE = /^\d{1,12}(\.\d{1,2})?$/;
+export const isMoney = (value: string): boolean => MONEY_RE.test(value);
+/** «12,50» → «12.50»; пробіли всередині (розділювач тисяч) прибираються. */
+export const normalizeMoneyInput = (raw: string): string =>
+  raw.replace(/\s+/g, '').replace(',', '.');

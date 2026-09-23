@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatPrice } from '../money';
+import { formatPrice, isMoney, normalizeMoneyInput } from '../money';
 
 const UA = { locale: 'uk-UA', currency: 'UAH' };
 
@@ -73,5 +73,30 @@ describe('formatPrice', () => {
     expect(formatPrice(4200, { locale: 'en-US', currency: 'USD' })).toBe(
       '4,200 $',
     );
+  });
+});
+
+describe('normalizeMoneyInput (Task 4, Review Focus 4)', () => {
+  it.each([
+    ['12,50', '12.50'],
+    ['1 200,5', '1200.5'],
+    ['100', '100'],
+    ['  12.50  ', '12.50'],
+  ])('%p → %p', (raw, expected) => {
+    expect(normalizeMoneyInput(raw)).toBe(expected);
+  });
+});
+
+describe('isMoney (Task 4, Review Focus 4)', () => {
+  it.each([
+    ['0', true],
+    ['12.50', true],
+    ['1234567890.12', true],
+    ['-1', false],
+    ['1.234', false],
+    ['abc', false],
+    ['', false],
+  ])('isMoney(%p) === %p', (value, expected) => {
+    expect(isMoney(value)).toBe(expected);
   });
 });

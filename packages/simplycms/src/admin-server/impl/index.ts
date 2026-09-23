@@ -29,8 +29,21 @@ export type { ParsedUpload } from './media/operations';
 export type { SubsetInput, SubsetPayload } from './subset';
 export { productsOps } from './products/resource';
 export { productModificationsOps } from './product-modifications/resource';
+export {
+  setDefaultModificationInput,
+  setDefaultModificationOp,
+} from './product-modifications/set-default';
+export {
+  reorderModificationInput,
+  reorderModificationOp,
+} from './product-modifications/reorder';
 export { productPricesOps } from './product-prices/resource';
+export {
+  saveProductPricesInput,
+  saveProductPricesOp,
+} from './product-prices/save';
 export { stockOps } from './stock/resource';
+export { saveStockInput, saveStockOp } from './stock/save';
 export {
   productPropertyValuesOps,
   modificationPropertyValuesOps,

@@ -15,8 +15,16 @@ import {
   removeManyOrderStatusesOp,
   productsOps,
   productModificationsOps,
+  setDefaultModificationInput,
+  setDefaultModificationOp,
+  reorderModificationInput,
+  reorderModificationOp,
   productPricesOps,
+  saveProductPricesInput,
+  saveProductPricesOp,
   stockOps,
+  saveStockInput,
+  saveStockOp,
   productPropertyValuesOps,
   modificationPropertyValuesOps,
   sectionsReadOps,
@@ -112,13 +120,37 @@ export const removeProductModifications = createServerFn({ method: 'POST' })
   .inputValidator(productModificationsOps.removeSchema)
   .handler(productModificationsOps.remove);
 
+// 🔴 Task 4 (Е3): дефолт і порядок модифікацій — iменовані операції, не
+// фабричний insert/update (single-default індекс, контракт хвиль Е1б).
+export const setDefaultProductModification = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(setDefaultModificationInput)
+  .handler(setDefaultModificationOp);
+
+export const reorderProductModification = createServerFn({ method: 'POST' })
+  .inputValidator(reorderModificationInput)
+  .handler(reorderModificationOp);
+
 export const listProductPrices = createServerFn({ method: 'GET' })
   .inputValidator(productPricesOps.subsetSchema)
   .handler(productPricesOps.list);
 
+// 🔴 Атомарна заміна набору цін пари товар/модифікація (Е3-10) — не
+// фабричні insert/update/remove: одна кнопка «Зберегти ціни», один акт.
+export const saveProductPrices = createServerFn({ method: 'POST' })
+  .inputValidator(saveProductPricesInput)
+  .handler(saveProductPricesOp);
+
 export const listStock = createServerFn({ method: 'GET' })
   .inputValidator(stockOps.subsetSchema)
   .handler(stockOps.list);
+
+// 🔴 Ручний облік залишків з гвардованим переходом stock_status в ОДНІЙ
+// транзакції (Е3-3) — не фабричний ops.update.
+export const saveStock = createServerFn({ method: 'POST' })
+  .inputValidator(saveStockInput)
+  .handler(saveStockOp);
 
 export const listProductPropertyValues = createServerFn({ method: 'GET' })
   .inputValidator(productPropertyValuesOps.subsetSchema)
