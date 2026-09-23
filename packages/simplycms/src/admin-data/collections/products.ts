@@ -1,5 +1,4 @@
-import { BTreeIndex, createCollection } from '@tanstack/react-db';
-import { queryCollectionOptions } from '@tanstack/query-db-collection';
+import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { Product } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
@@ -11,6 +10,7 @@ import {
 } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
+import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
@@ -24,15 +24,12 @@ function create(queryClient: QueryClient) {
   // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.
   const ref: { current?: WriteBack<Product> } = {};
   const collection = createCollection(
-    queryCollectionOptions<Product>({
+    onDemandCollectionOptions<Product>({
       id: ENTITY.products,
       queryClient,
       queryKey: collectionKey(ENTITY.products),
-      syncMode: 'on-demand',
       // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу
       // сортування друга сторінка не запитується (виміряно спайком).
-      autoIndex: 'eager',
-      defaultIndexType: BTreeIndex,
       getKey: (row) => row.id,
       queryFn: async (ctx) =>
         listProducts({

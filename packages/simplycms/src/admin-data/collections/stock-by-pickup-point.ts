@@ -1,10 +1,10 @@
-import { BTreeIndex, createCollection } from '@tanstack/react-db';
-import { queryCollectionOptions } from '@tanstack/query-db-collection';
+import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { StockByPickupPoint } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import { listStock } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
+import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
@@ -15,13 +15,10 @@ import { toSubsetPayload } from '../subset-payload';
  */
 function create(queryClient: QueryClient) {
   return createCollection(
-    queryCollectionOptions<StockByPickupPoint>({
+    onDemandCollectionOptions<StockByPickupPoint>({
       id: ENTITY.stockByPickupPoint,
       queryClient,
       queryKey: collectionKey(ENTITY.stockByPickupPoint),
-      syncMode: 'on-demand',
-      autoIndex: 'eager',
-      defaultIndexType: BTreeIndex,
       getKey: (row) => row.id,
       queryFn: async (ctx) =>
         listStock({
