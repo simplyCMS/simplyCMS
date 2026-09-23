@@ -8,7 +8,10 @@
  * видачі, сама воронка картка → кошик → чекаут → рядок в `orders` ЗІ
  * СПИСАННЯМ і рівністю «підсумок = замовлення» (М-12), скасування в кабінеті
  * З ПОВЕРНЕННЯМ залишку і статусу, і нуль `pageerror` на всіх сторінках
- * включно з `order-success` і кабінетом (усі форматують `Date` через `Intl`).
+ * включно з `order-success` і кабінетом (усі форматують `Date` через `Intl`);
+ * (3) крок каталогу адмінки (К3-Е3) — запрошення власника → пароль → вхід →
+ * товар зі СВОЄЮ ціною/залишком/зображенням → вітрина його бачить → дубль
+ * slug → тост → видалення прибирає з вітрини.
  * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
@@ -27,6 +30,7 @@ import { join } from 'node:path';
 import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
+import { runAdminCatalogStep } from './live-smoke/admin-catalog.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -110,6 +114,10 @@ async function main() {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     await runFunnel({ page, base, dbUrl, check });
+
+    // 3б. Крок каталогу адмінки (К3-Е3) — ОКРЕМИЙ browser context, та сама
+    // БД: сесія власника не змішується із сесією покупця з `runFunnel`.
+    await runAdminCatalogStep({ browser, base, dbUrl, storeEnv: env, check });
 
     // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
     // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на
