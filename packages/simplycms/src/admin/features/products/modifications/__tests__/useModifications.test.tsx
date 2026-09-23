@@ -102,6 +102,7 @@ describe('useModifications', () => {
     // Колекція мусить бути в ready-стані ДО insert (виміряно —
     // `useProductSave.create`, той самий клас, що спричинив `preload()` у
     // `useStock.save`): useLiveQuery цього хука стартує sync асинхронно.
+    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
     await waitFor(() => expect(result.current.modifications).toEqual([]));
 
     const callOrder: string[] = [];

@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  pluginTableKey,
-  usePluginT,
-  usePluginTable,
-} from 'simplycms/plugin-sdk';
+import { usePluginT, usePluginTable } from 'simplycms/plugin-sdk';
 import { Button } from 'simplycms/ui/button';
 import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
@@ -15,11 +11,6 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { messages, type FaqKey } from '../messages';
 import type { FaqItem } from '../types';
 
-// 🔴 pluginTableKey(), не літерал (борг Е1а №8, Е3-12): зона правила
-// query-key-from-entity накриває референс-плагін, а `plg_faq_items` — не
-// сутність ядра з ENTITY.
-const QUERY_KEY = pluginTableKey('faq', 'plg_faq_items');
-
 /**
  * Адмін-сторінка референс-плагіна: CRUD по власній таблиці через
  * `usePluginTable` — жодного прямого Supabase-клієнта (межа довіри §7).
@@ -28,7 +19,7 @@ const QUERY_KEY = pluginTableKey('faq', 'plg_faq_items');
  */
 export default function FaqAdmin() {
   const t = usePluginT<FaqKey>(messages);
-  const port = usePluginTable<FaqItem>('faq', 'plg_faq_items');
+  const faq = usePluginTable<FaqItem>('faq', 'plg_faq_items');
   const queryClient = useQueryClient();
 
   const [question, setQuestion] = useState('');
@@ -38,16 +29,16 @@ export default function FaqAdmin() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: items, isLoading } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: () => port.list({ orderBy: 'sort_order' }),
+    queryKey: faq.queryKey,
+    queryFn: () => faq.list({ orderBy: 'sort_order' }),
   });
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    queryClient.invalidateQueries({ queryKey: faq.queryKey });
 
   const addMutation = useMutation({
     mutationFn: () =>
-      port.insert({
+      faq.insert({
         id: crypto.randomUUID(),
         question,
         answer,
@@ -68,13 +59,13 @@ export default function FaqAdmin() {
 
   const toggleMutation = useMutation({
     mutationFn: (item: FaqItem) =>
-      port.update(item.id, { is_active: !item.is_active }),
+      faq.update(item.id, { is_active: !item.is_active }),
     onSuccess: () => void invalidate(),
     onError: (error) => setFormError(error.message),
   });
 
   const removeMutation = useMutation({
-    mutationFn: (id: string) => port.remove(id),
+    mutationFn: (id: string) => faq.remove(id),
     onSuccess: () => void invalidate(),
     onError: (error) => setFormError(error.message),
   });

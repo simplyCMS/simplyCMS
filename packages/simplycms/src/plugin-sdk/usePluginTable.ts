@@ -39,6 +39,13 @@ export interface PluginTablePort<Row extends Record<string, unknown>> {
   insert(row: Partial<Row> & { id: string }): Promise<Row>;
   update(id: string, patch: Partial<Row>): Promise<Row>;
   remove(id: string): Promise<void>;
+  /**
+   * Ключ кешу React Query для ЦІЄЇ таблиці — той самий, яким порт іменує
+   * власні запити всередині (борг Е1а №8, Е3-12, П.1 доопрацювання).
+   * Стабільний між рендерами (та сама пам'ять `useMemo`, що й решта порту),
+   * тож придатний як `queryKey` без окремого `useMemo` у виклику.
+   */
+  readonly queryKey: readonly [string, string];
 }
 
 /** Звузити довільний обʼєкт рядка до скалярів, які приймає транспорт. */
@@ -55,11 +62,15 @@ function toCells(row: Record<string, unknown>): Record<string, Cell> {
  * Ключ кешу для власної таблиці плагіна — префіксується імʼям плагіна
  * (борг Е1а №8, Е3-12): таблиця плагіна (`plg_*`) не входить у `ENTITY`
  * (реєстр — лише таблиці ядра, `contracts/entities.ts`), а зона правила
- * `query-key-from-entity` накриває й референс-плагін. Функція, а не літерал
- * у місці вжитку — той самий патерн, що `entityKey`: рядок живе ОДИН раз
- * тут, а не копіюється по кожному запиту плагіна.
+ * `query-key-from-entity` накриває й референс-плагін.
+ *
+ * 🔴 НЕ публічна поверхня (не реекспортується з `plugin-sdk/index.ts`,
+ * П.1): дві функції, що обидві приймають `(pluginName, table)` і мають
+ * узгодити один рядок, — це друга копія тієї самої правди. Єдине джерело
+ * ключа — сам порт (`PluginTablePort.queryKey`), автор плагіна бере його
+ * звідти, а не будує повторно.
  */
-export function pluginTableKey(
+function pluginTableKey(
   pluginName: string,
   table: string,
 ): readonly [string, string] {
@@ -73,6 +84,7 @@ export function usePluginTable<Row extends Record<string, unknown>>(
 ): PluginTablePort<Row> {
   return useMemo<PluginTablePort<Row>>(
     () => ({
+      queryKey: pluginTableKey(pluginName, table),
       async list(options) {
         const rows = await pluginTableList({
           data: {
