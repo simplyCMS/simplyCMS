@@ -78,6 +78,15 @@ export async function runAdminCatalogStep({
       row?.id === productId,
       `${row?.id} vs ${productId}`,
     );
+    // 🔴 URL уже вказує на новий товар (`waitForURL` вище), але сама сторінка
+    // ще мить показує ТРАНЗИТНИЙ стан /new (`ImageUpload` з `entityId: null`
+    // — виміряно живим прогоном, вікно ~50мс): завантажений у цю мить файл
+    // піде БЕЗ entityId і згубиться при ремаунті на реальний `ProductEditPage`.
+    // «Зберегти» (не «Створити») існує лише в ЗАВАНТАЖЕНОМУ `ProductEditPage`
+    // — детермінований сигнал, що інстанс уже правильний, а не таймаут.
+    await page.getByRole('button', { name: 'Зберегти' }).first().waitFor({
+      timeout: 15_000,
+    });
 
     // 3. Зображення (DoD К3 п.6), ціна з комою, залишок.
     await page.setInputFiles(
@@ -92,8 +101,13 @@ export async function runAdminCatalogStep({
     const retail = await priceTypeByCode(dbUrl, 'retail');
     await page.locator(`#price-${retail.id}`).fill('1234,50');
     await page.getByRole('button', { name: 'Зберегти ціни' }).click();
+    // Тост успіху — детермінований сигнал, що мутація ДОЇХАЛА до БД: без
+    // нього прямий SQL нижче races проти ще не завершеного serverFn-запиту
+    // (виміряно живим прогоном — «залишок 3» читався як NULL).
+    await page.getByText('Ціни збережено').waitFor({ timeout: 10_000 });
     await page.locator('#stock-quantity').fill('3');
     await page.getByRole('button', { name: 'Зберегти залишки' }).click();
+    await page.getByText('Залишки збережено').waitFor({ timeout: 10_000 });
     const price = await productPrice(dbUrl, productId, retail.id);
     check(
       'адмін: ціна з комою збережена як 1234.50',

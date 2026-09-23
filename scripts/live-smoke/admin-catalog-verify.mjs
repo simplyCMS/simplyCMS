@@ -4,6 +4,7 @@
  * товар з вітрини. Виніс із `admin-catalog.mjs` — канон 150 рядків.
  */
 import { productCountBySlug } from './admin-sql.mjs';
+import { parseMoney } from './selectors.mjs';
 
 /**
  * @param {{page: import('@playwright/test').Page, base: string,
@@ -19,10 +20,14 @@ export async function verifyStorefront({ page, base, check, section, slug }) {
     res?.status() === 200 && text.includes('Живий товар Е3'),
     String(res?.status()),
   );
+  // 🔴 `formatPrice` (domain/money.ts) НЕ доповнює зайвими нулями за
+  // дизайном (0/2: 1234.5 → «1 234,5», не «1 234,50») — числове порівняння
+  // через `parseMoney`, не рядковий регекс на конкретну кількість знаків.
+  const priceMatch = text.match(/1[\s ]?234[,.]\d+/);
   check(
     'вітрина: ціна 1234,50',
-    /1\s?234[,.]50/.test(text.replace(/ /g, ' ')),
-    text.match(/1\s?234[^ ]*/)?.[0] ?? '—',
+    priceMatch !== null && parseMoney(priceMatch[0]) === 1234.5,
+    priceMatch?.[0] ?? '—',
   );
   check(
     'вітрина: бейдж «В наявності: 3 шт»',
