@@ -76,8 +76,19 @@ description: "Правила роботи з даними та Supabase в Simpl
 різних місцях різні ключі, і мутація в одному не інвалідовує кеш іншого
 (виміряно: `pickup_points` жила під чотирма ключами до реєстру). Три
 механізми:
-- **`entityKey(ENTITY.x)`** — однотабличний ключ: `.all()` / `.list()` /
-  `.detail(id)` / `.scoped(relation, parentId)`.
+- **`entityKey(ENTITY.x)`** — однотабличний ключ: `.all()` / `.detail(id)` /
+  `.scoped(relation, parentId)` (FK-зріз) / `.variant(qualifier, id?)`
+  (форма чи скоуп тієї самої сутності).
+- **`collectionKey(ENTITY.x)`** → `[entity, 'list']` — 🔴 ЛИШЕ колекції
+  `simplycms/admin-data` (Е3-15′). Вітрина й адмінка ділять один
+  `QueryClient`, а write-back колекції (`query-db-collection`,
+  `updateCacheData`) шукає ключі за ПРЕФІКСОМ і перезаписує всі, що
+  під ним, своїм набором рядків. Тому поза `admin-data` жоден ключ не
+  сміє починатися з `[entity, 'list']` — ні голим `.list()` (методу більше
+  немає), ні спредом, ні літералом. Стережуть правило
+  `eslint-rules/no-collection-key-outside-admin-data.mjs` (імпорт
+  `collectionKey` поза `admin-data`) і кейс `bareListSegment` у
+  `query-key-from-entity` (`[ENTITY.x, 'list', …]`).
 - **`AGGREGATE.x`** (`aggregateKey`) — запит, що одним походом читає
   КІЛЬКА таблиць: `.key` — стабільний префікс для інвалідації, `.deps` —
   повний список читаних таблиць (не декорація — саме звідси інвалідація
@@ -98,7 +109,7 @@ description: "Правила роботи з даними та Supabase в Simpl
   const supabase = useSupabaseClient();
   const productKeys = entityKey(ENTITY.products);
   const { data: products } = useQuery({
-    queryKey: productKeys.list(),
+    queryKey: productKeys.variant('legacy-admin'), // легасі-приклад; нові сторінки — колекції admin-data
     queryFn: async () => {
       const { data, error } = await supabase.from('products').select('*');
       if (error) throw error;

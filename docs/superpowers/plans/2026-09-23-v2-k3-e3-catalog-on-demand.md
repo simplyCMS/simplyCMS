@@ -32,7 +32,7 @@
 | Е3-12 | *(архітектор)* **Борги Е1а:** №4 (`detail()` slug vs uuid) — адмінка `detail()` НЕ вживає взагалі (колекції ключуються `list()` + demand-суфікс бібліотеки), борг документується як належний К2; №6 — `entityKey` отримує окремий `variant()` для не-FK кваліфікаторів; №8 — зона `query-key-from-entity` поширюється на референс-тему й референс-плагін | №4 проявляється лише при детальному ключі, якого адмінка не заводить; №6 і №8 — дешеві точкові фікси, які план Е1б прямо відклав «у каталог» |
 | Е3-13 | 🔴 **(власник, 2026-09-22) Multiselect — рядок на опцію.** Правка baseline (рамка B13, як К3-14): унікальність значень стає `(власник, property_id, option_id) NULLS NOT DISTINCT` в обох таблицях значень; скалярна властивість — рівно один рядок (`option_id` NULL), multiselect — рядок на кожну обрану опцію. Картка вітрини зливає рядки однієї властивості в один запис view-моделі | Виміряно: `option_id` — `uuid` FK (`schema.ts:274,305`), а легасі писав туди CSV id — на чистому Postgres `22P02`, і `unique(product_id, property_id)` забороняв кілька рядків. Тобто multiselect був зламаний схемою, а не лише кодом. Рядок на опцію — реляційно чесно (FK на опцію живий), фільтри вітрини читають рядки списком і працюють без змін; контракт тем v3 (один елемент на властивість) не міняється |
 | Е3-14 | *(архітектор)* **`isNull` входить у контракт subset** на обох боках (`toSubsetPayload` + `impl/subset.ts`) | Ціни й залишки РІВНЯ ТОВАРУ — рядки з `modification_id IS NULL`. `isNull` є у словнику push-down самої бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути ширший зріз і дофільтровувати в JS — тобто push-down на половину |
-| Е3-15 | 🔴 *(архітектор, аудит 2026-09-23)* **Голий `entityKey(e).list()` — ЛИШЕ для колекцій `admin-data`** (спека К3-3: `[entity, 'list']` — колекція). Вітринні запити, що сьогодні кешуються під голим `.list()` (`sections`, `propertyOptions`, `sectionProperties`, `orderStatuses`), переходять на `variant(...)`; гейт забороняє голий `.list()` поза `admin-data` | Виміряно аудитом: вітрина й адмінка ділять ОДИН `QueryClient` (`src/router.tsx`), а eager-колекція без demand-суфікса пише рівно в `[entity,'list']`. Вітринний `useSectionsQuery` кешує там лише активні розділи в snake_case, адмін-колекція — усі розділи в camelCase: після адмінки покупець бачив би чернетки або зламаний рендер до спливання `staleTime` 5 хв. Для `order_statuses` це ЖИВИЙ дефект уже в `main` (колекція Е1б × `ProfileOrders.tsx:36`). Канон спеки не міняється — порушник вітрина |
+| Е3-15′ | 🔴 *(архітектор; ред. після Task 5, 2026-09-23)* **Сегмент `'list'` належить ВИКЛЮЧНО колекціям `admin-data`.** `entityKey()` НЕ має методу `list()`; ключ колекції — окремий `collectionKey(entity) → [entity, 'list']` (спека К3-3 не змінюється: ключ колекції той самий). Поза `admin-data` (вітрина, core, профіль, `*-ui`, теми, плагіни) — `variant(qualifier, id?)` або `scoped()`. Гейти: власне правило `eslint-rules/no-collection-key-outside-admin-data.mjs` (плагін `simplycms-collection-key`, усі форми імпорту/реекспорту, зона — весь пакет крім `admin-data` + тема й плагін) і кейс `bareListSegment` у `query-key-from-entity` (`[ENTITY.x, 'list', …]` поза `admin-data`); поведінковий тест `admin-data/__tests__/collection-key-storefront-isolation.test.ts` на реальному write-back | Виміряно двічі. (1) Аудит плану: вітрина й адмінка ділять ОДИН `QueryClient`, eager-колекція пише в `[entity,'list']` — вітринний запит під тим самим ключем читав би чужу форму (для `order_statuses` — живий дефект Е1б у `main`). (2) Виконання Task 5: write-back колекції (`updateCacheData`, `query-db-collection@1.2.11` `src/query.ts:2211`) робить `findAll({ queryKey: baseKey })` — ПРЕФІКСНИЙ пошук і `setQueryData` всього набору в кожен знайдений ключ; тож і `[...list(), 'featured']` вітрини отримав би адмінські рядки. Перша редакція Е3-15 закривала лише точний збіг. Гейт — через API (без `list()` сегмента не отримати) і окреме правило, а не `no-restricted-imports`: той уже несе тір-зони, а flat config замінює опції правила цілком |
 | Е3-16 | 🔴 *(архітектор, виміряно спайком 2026-09-23)* **On-demand колекція, яку гортає `useLiveInfiniteQuery`, мусить мати індекс сортування:** `autoIndex: 'eager'` + `defaultIndexType: BTreeIndex` (з `@tanstack/react-db`) | Без індексу `fetchNextPage` НЕ робить другого `loadSubset` — видно лише рядки першої сторінки + peek, `hasNextPage` падає в `false`. З індексом друга сторінка йде окремим запитом `{ limit: 2, offset: 3, cursor }` і дає рівно 4 рядки (ізольований прогін на `@tanstack/db@0.8.6`). Offset-пагінація Е3-2 реалізовна без fallback |
 
 **Поза Е3 (план це каже вголос):** текстовий пошук в адмінці (П6); CRUD розділів, типів цін, властивостей і опцій (Е4); `AddProductToOrder` і замовлення (Е5); видалення файлів зображень при видаленні товару та sweep орфанів (К4 — рядки `media` лишаються, обʼєкти прибирає sweep); інвалідація кешу вітрини в ІНШІЙ вкладці браузера (SSR свіжий на кожен запит; клієнтський кеш вітрини — `staleTime` 5 хв, карта інвалідації між вкладками — К2); віртуалізація таблиць.
@@ -80,7 +80,7 @@ Task 9 Step 3 (фільтри вітрини на рядку-на-опцію б�
 - 🔴 **К3-13:** кожна операція — `requireGrant(op)` → `withActor({ role: dbRoleForSubject(subject), userId })`; з Task 1 — лише через `runAdmin`. 403/409 — `setResponseStatus` ДО `throw`; `Response` не кидати.
 - 🔴 **Write-back замість self-invalidation:** persistence-хендлер пише серверний рядок `writeUpsert`/`writeDelete` у `writeBatch` і повертає `{ refetch: false }`; хендлери обробляють УСІ `transaction.mutations`. Fail-loud на `serverRow.id !== optimisticId` ДО write-back.
 - 🔴 **Контракт id:** INSERT у таблицю Категорії A передає `id` — клієнт `crypto.randomUUID()`, сервер `randomUUID()` з `node:crypto`.
-- 🔴 `queryKey` колекції = `entityKey(ENTITY.x).list()`; demand-суфікс on-demand дописує бібліотека (`getLoadSubsetDemandKey`) — префікс зберігається. 🔴 Голий `.list()` належить ЛИШЕ колекціям `admin-data` (Е3-15); вітрина — `variant()`/`scoped()` або `.list()` з суфіксом.
+- 🔴 `queryKey` колекції = `collectionKey(ENTITY.x)` (= `[entity, 'list']`); demand-суфікс on-demand дописує бібліотека (`getLoadSubsetDemandKey`) — префікс зберігається. 🔴 Сегмент `'list'` — ЛИШЕ колекції `admin-data` (Е3-15′): `entityKey()` методу `list()` не має, `collectionKey` поза `admin-data` імпортувати заборонено правилом; поза `admin-data` — `variant()`/`scoped()`, і НІКОЛИ ключ під префіксом `[entity,'list']` (write-back колекції перезаписує всі ключі під ним).
 - 🔴 **Сторінка таблиці з single-default індексом переписується лише разом зі своєю named setDefault-операцією** (контракт хвиль Е1б) — тут це `product_modifications`.
 - 🔴 **Інваріант `template:sync`:** задача, що чіпає `SYNCED_DIRS`/`SYNCED_FILES`, — `pnpm template:sync` і коміт копій у ТІЙ САМІЙ задачі. За планом це рівно Task 9 (`migrations/0001_init.sql`); якщо інша задача зачепить `migrations/`, `themes/default/`, `plugins/hello-world/` чи host-файл — те саме правило.
 - Тіри: `admin-server` = T2 (upward `db/auth/storage` + з Task 2 `inventory`), `admin-data` = T4, `admin` = T5, нове `inventory` = T2 (upward `db`).
@@ -2262,7 +2262,7 @@ git commit -m "feat(k3-e3): іменовані операції каталогу
 - Create: `packages/simplycms/src/admin-data/__tests__/catalog-collections.test.ts`
 - Modify: `packages/simplycms/src/contracts/entities.ts` (`variant()`, Step 0) + тест
 - Modify: `packages/simplycms/src/storefront-routes/pages/{catalog/useCatalogQueries.ts,Properties.tsx,ProfileOrders.tsx}` (Step 0)
-- Create: `tests/bare-list-key.test.ts` (Step 0)
+- Create: `eslint-rules/no-collection-key-outside-admin-data.mjs` + тест; `admin-data/__tests__/collection-key-storefront-isolation.test.ts` (Step 0; ✅ виконано `fbe583ff` + `3097bfc8`)
 
 **Interfaces:**
 - Consumes: serverFn з Tasks 3–4; `toSubsetPayload` (Task 0); типи рядків `Product`, `ProductModification`, `ProductPrice`, `StockByPickupPoint`, `ProductPropertyValue`, `ModificationPropertyValue`, `Section`, `PriceType`, `SectionPropertyAssignment`, `SectionProperty`, `PropertyOption` (`import type` з `simplycms/schema/types`)
@@ -2283,16 +2283,18 @@ git commit -m "feat(k3-e3): іменовані операції каталогу
 
    (+ тест у тесті `contracts/entities`: `variant('storefront')` ≠ `list()`,
    `variant('numeric','s1')` ≠ `scoped('numeric','s1')`, перший сегмент = `all()[0]`.)
-2. Чотири вітринні запити з голим `.list()` → `variant('storefront')`:
-   `useCatalogQueries.ts` (`sections.list()`, `propertyOptions.list()`),
-   `Properties.tsx` (`sectionProperties.list()`), `ProfileOrders.tsx`
-   (`orderStatuses.list()` — живий дефект Е1б). Разом — їхні
-   `invalidateQueries`/`setQueryData`, якщо є (`git grep -n "<entity>.list()"`).
-   `[...X.list(), 'featured']` (з суфіксом) НЕ чіпати — точного збігу немає.
-3. Гейт `tests/bare-list-key.test.ts`: AST/regex-скан `packages/simplycms/src/**`
-   (крім `admin-data/**` і `__tests__`) на `queryKey: <ідентифікатор>.list()` як
-   ЦІЛИЙ ключ (не в spread) → офендерів 0. Негативний контроль: повернути
-   `sections.list()` у `useCatalogQueries.ts` → тест червоний.
+2. ✅ **Виконано й розширено (Е3-15′, `3097bfc8`)** — не повторювати. Первісний
+   пункт мігрував чотири вітринні ключі з голим `.list()`; виконання Task 5
+   показало, що write-back колекції б'є і по ключах ПІД префіксом, тож
+   зроблено ширше: `list()` прибрано з `entityKey`, `collectionKey()` для
+   колекцій, на `variant` переведено `sections` (storefront, root),
+   `propertyOptions`, `sectionProperties`, `orderStatuses`, `products`
+   (featured/new), `banners`, `productReviews` (ratings), `pickupPoints`
+   (count/active), `ADDRESS_BOOK_KEY`/`RECIPIENT_BOOK_KEY`.
+3. ✅ **Гейт — власне правило, не AST-скан** (`tests/bare-list-key.test.ts`
+   видалено: сліпий до `entityKey(X).list()`, констант і shorthand). Правило
+   `simplycms-collection-key/…` + кейс `bareListSegment` у
+   `query-key-from-entity` + поведінковий тест ізоляції (див. Е3-15′).
 4. Негативний тест колізії (той, що зловив би дефект): в одному `QueryClient`
    `getCollection(qc, orderStatusesCollection).preload()` і
    `qc.getQueryData(entityKey(ENTITY.orderStatuses).variant('storefront'))`
@@ -2466,7 +2468,7 @@ Run: `pnpm test -- packages/simplycms/src/admin-data tests/handler-canon.test.ts
 import { BTreeIndex, createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
-import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { ENTITY, collectionKey } from 'simplycms/contracts/entities';
 import type { Product } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import {
   insertProducts,
@@ -2490,7 +2492,7 @@ function create(queryClient: QueryClient) {
     queryCollectionOptions<Product>({
       id: ENTITY.products,
       queryClient,
-      queryKey: entityKey(ENTITY.products).list(),
+      queryKey: collectionKey(ENTITY.products),
       syncMode: 'on-demand',
       // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу сортування
       // друга сторінка не запитується (виміряно спайком).
@@ -2828,6 +2830,15 @@ export const Route = createFileRoute('/admin/products/')({
   component: ProductsPage,
 });
 ```
+
+🔴 **Рішення архітектора (точка зупинки знята, 2026-09-23):** exports-мапа має
+`./admin/pages/*`, але НЕ `./admin/features/*` і НЕ `./admin/lib/*` — нових
+публічних субшляхів не заводити (exports = публічний API + entry tsdown +
+parity-тести пакування). Роут імпортує `simplycms/admin/pages/Products` —
+однорядковий реекспорт `export { default } from '../features/products/list/ProductsPage';`;
+усередині `src/admin` фічі й `lib` (`adminErrorKey`, `adminPath` з `adminLinks`)
+імпортуються ВІДНОСНО. Так само для `ProductEdit` (Task 7). Абзац нижче —
+історичний, лишено для контексту.
 
 🔴 Якщо субшлях `simplycms/admin/features/...` не резолвиться (exports-мапа
 пакета не має `./admin/*`) — перевірити, як роут `order-statuses` імпортує
@@ -3711,7 +3722,7 @@ Run: `pnpm lint` → очікувано ЧЕРВОНИЙ на `Header.tsx` (`['s
 це негативний контроль розширення. Виправити: тема не бачить `ENTITY`
 напряму? — перевірити, чи `simplycms/contracts/entities` дозволений темі
 (межа довіри тем — `docs/architecture/themes.md`); якщо так —
-`queryKey: [...entityKey(ENTITY.sections).list(), 'root']` (той самий ключ,
+`queryKey: entityKey(ENTITY.sections).variant('root')` (той самий ключ після Е3-15′,
 яким ядро кешує `getRootSections()` — `rg -n "getRootSections" packages/simplycms/src`
 показує його; дві копії ключа одного запиту в одному `QueryClient` — і є
 дефект №8). Якщо тема не має права на `contracts` — зупинитись і принести
