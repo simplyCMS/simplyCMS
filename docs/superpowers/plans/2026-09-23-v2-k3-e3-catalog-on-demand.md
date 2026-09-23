@@ -74,7 +74,7 @@ Task 9 Step 3 (фільтри вітрини на рядку-на-опцію б�
 - Коментарі й документація — **українською**; рядки інтерфейсу — лише через i18n (`packages/simplycms/src/i18n/catalogs/{uk,en}/admin/products.ts` і сусіди); кириличний рядок у JSX `src/admin/**` валить лінт (i18n error-зона).
 - `pnpm lint` = **0 errors / 10 warnings** (виміряно 2026-09-22). Число warnings не має зрости; може впасти — тоді оновити CLAUDE.md у Task 12.
 - Порядок гейтів: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → test → test:schema → build:packages → typecheck:template → test:packaging`; плюс `pnpm pilot:pack --skip-build` (Gate C).
-- 🔴 **Мінімальний гейт КОЖНОЇ задачі перед комітом:** `pnpm lint && pnpm test` (+ `pnpm test:schema`, якщо задача чіпала `schema/`, `migrations/`, `test-harness/` або серверні операції). `pnpm exec prettier --write <змінені файли>` перед комітом — `format:check` у CI червоніє інакше (урок хвилі B Е2).
+- 🔴 **Мінімальний гейт КОЖНОЇ задачі перед комітом:** `pnpm lint && pnpm test` (+ `pnpm test:schema`, якщо задача чіпала `schema/`, `migrations/`, `test-harness/` або серверні операції; + `pnpm build:packages`, якщо задача чіпала серверний код пакета — урок хвилі B: пакетний tsconfig (`noImplicitAny: false`, emit декларацій) ловить `const rows = []` → `never[]`, якого кореневий `pnpm typecheck` не бачить, а `test:packaging` зеленіє на СТЕЙЛ-`dist`). `pnpm exec prettier --write <змінені файли>` перед комітом — `format:check` у CI червоніє інакше (урок хвилі B Е2).
 - 🔴 **К3-4′:** `createServerFn` — ЛИШЕ топ-рівневий `const` у `packages/simplycms/src/admin-server/index.ts`; фабрики serverFn не повертають (гейт `server-fn-top-level`).
 - 🔴 **К3-9′:** `admin-server/index.ts` експортує лише serverFn; нутрощі — під `admin-server/impl/**` (server-only за `contracts/server-only`), імпорт у index — BARE-специфікатором `simplycms/admin-server/impl`; клієнт (`admin-data`, сторінки) бере типи рядків лише `import type` з `simplycms/schema/types`; колекції БЕЗ `schema`.
 - 🔴 **К3-13:** кожна операція — `requireGrant(op)` → `withActor({ role: dbRoleForSubject(subject), userId })`; з Task 1 — лише через `runAdmin`. 403/409 — `setResponseStatus` ДО `throw`; `Response` не кидати.
@@ -1107,6 +1107,11 @@ export async function syncStatusWithQuantity(
 export { loadTargetStatus, setTargetStatus } from './stock-status';
 export type { StockTarget } from './stock-status';
 export { syncStatusWithQuantity } from './quantity-status';
+// Хвиля B, M1 (перенесено з storefront/loaders/stock-write.ts): ОДИН предикат
+// «обслуговуюча точка» (is_system OR is_active) і ОДИН порядок локів
+// (pickup_points.sort_order, stock.id) для вітрини й адмінки.
+export { lockTargetStock, servingQuantity } from './locked-stock';
+export type { LockedStockRow } from './locked-stock';
 ```
 
 Run: `pnpm test -- packages/simplycms/src/inventory` → PASS.
@@ -2017,7 +2022,9 @@ export const setDefaultModificationOp = async ({
 /** Грошова сума як рядок numeric: невідʼємна, до двох знаків після крапки.
  *  Кома як роздільник НЕ приймається тут — її нормалізує форма (Task 8);
  *  на межі сервера формат один. */
-export const MONEY_RE = /^\d{1,12}(\.\d{1,2})?$/;
+// 10 цифр до коми — стеля numeric(12,2) у orders/order_items (хвиля B, m5):
+// ціна, яку неможливо оформити (22003), не має бути збережена.
+export const MONEY_RE = /^\d{1,10}(\.\d{1,2})?$/;
 export const isMoney = (value: string): boolean => MONEY_RE.test(value);
 /** «12,50» → «12.50»; пробіли всередині (розділювач тисяч) прибираються. */
 export const normalizeMoneyInput = (raw: string): string =>
@@ -2111,10 +2118,15 @@ export const saveProductPricesOp = async ({
 ```ts
 // packages/simplycms/src/admin-server/impl/stock/save.ts
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNull, sum } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { productModifications, products, stockByPickupPoint } from 'simplycms/schema';
-import { syncStatusWithQuantity, type StockTarget } from 'simplycms/inventory';
+import { pickupPoints, productModifications, products, stockByPickupPoint } from 'simplycms/schema';
+import {
+  lockTargetStock,
+  servingQuantity,
+  syncStatusWithQuantity,
+  type StockTarget,
+} from 'simplycms/inventory';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
 
@@ -2124,6 +2136,7 @@ export const saveStockInput = z
     modificationId: z.uuid().nullable(),
     quantities: z
       .array(z.object({ pickupPointId: z.uuid(), quantity: z.number().int().min(0).max(1_000_000) }))
+      .min(1) // порожній запит — не дія власника (хвиля B, M1)
       .max(200),
   })
   // Рівно одна ціль — дзеркало check-обмеження stock_product_or_modification.
@@ -2145,11 +2158,20 @@ const scopeOf = (t: StockTarget) =>
 export const saveStockOp = async ({ data }: { data: z.infer<typeof saveStockInput> }) =>
   runAdmin('catalog.write', async (db) => {
     const target: StockTarget = { productId: data.productId, modificationId: data.modificationId };
-    // Порядок локів той самий, що у вітрини (залишок → ціль): advisory не
-    // рахується, далі рядки залишку, останнім — рядок товару в
-    // syncStatusWithQuantity. Зворотного порядку немає — дедлоку немає.
+    // advisory — лише серіалізація адмін-проти-адмін (перша вставка).
     await lockCatalogTarget(db, `stock:${target.productId ?? '-'}:${target.modificationId ?? '-'}`);
-    const existing = await db.select().from(stockByPickupPoint).where(scopeOf(target)).for('update');
+    // 🔴 M2: ВСІ наявні рядки цілі (і неактивних точок — адмін пише й туди)
+    // блокуються В ТОМУ САМОМУ ПОРЯДКУ, що й у вітрини (pickup_points.sort_order,
+    // stock.id; lockTargetStock бере підмножину в тому ж порядку) — перетин
+    // множин локів упорядкований однаково, 40P01 неможливий.
+    const existing = await db
+      .select({ row: stockByPickupPoint })
+      .from(stockByPickupPoint)
+      .innerJoin(pickupPoints, eq(pickupPoints.id, stockByPickupPoint.pickupPointId))
+      .where(scopeOf(target))
+      .orderBy(asc(pickupPoints.sortOrder), asc(stockByPickupPoint.id))
+      .for('update', { of: stockByPickupPoint })
+      .then((r) => r.map((x) => x.row));
     const byPoint = new Map(existing.map((r) => [r.pickupPointId, r]));
     const now = new Date();
     const rows = [];
@@ -2167,11 +2189,13 @@ export const saveStockOp = async ({ data }: { data: z.infer<typeof saveStockInpu
             .returning();
       rows.push(saved!);
     }
-    const [{ total }] = await db
-      .select({ total: sum(stockByPickupPoint.quantity) })
-      .from(stockByPickupPoint)
-      .where(scopeOf(target));
-    await syncStatusWithQuantity(db, target, Number(total ?? 0));
+    // 🔴 M1: сума — лише по ОБСЛУГОВУЮЧИХ точках (is_system OR is_active),
+    // тим самим lockTargetStock/servingQuantity, що й у вітрини. Інакше
+    // залишок деактивованої точки підняв би статус у in_stock, а оформлення
+    // впало б InsufficientStockError. Немає обслуговуючих рядків — облік
+    // не ведеться (як reserveStock: rows.length === 0 → return): статус не чіпати.
+    const serving = await lockTargetStock(db, target);
+    if (serving.length > 0) await syncStatusWithQuantity(db, target, servingQuantity(serving));
     const [updated] = target.modificationId
       ? await db.select().from(productModifications).where(eq(productModifications.id, target.modificationId))
       : await db.select().from(products).where(eq(products.id, target.productId as string));
@@ -2179,6 +2203,14 @@ export const saveStockOp = async ({ data }: { data: z.infer<typeof saveStockInpu
     return { rows, target: updated };
   });
 ```
+
+🔴 Хвиля B (M1/M2) — харнес-кейси обовʼязкові: системна S qty 0 + ДЕАКТИВОВАНА P
+qty 5, статус out_of_stock → «Зберегти» без змін → лишається out_of_stock;
+ціль без обслуговуючих рядків → статус не змінено; мутація «прибрати
+serving-фільтр» → червоне. Доказ advisory-lock — детермінований: окремий
+pg-клієнт тримає `pg_advisory_xact_lock(hashtextextended('<ключ>', 0))`,
+операція не резолвиться ~300 мс, після COMMIT — резолвиться; мутація «прибрати
+lockCatalogTarget» → червоне (для mod-default:, prices:, stock:).
 
 🔴 Точки, яких немає у вході, НЕ видаляються — форма завжди шле всі активні
 точки; видалення рядка залишку не є дією власника (кількість 0 — є).
@@ -2267,6 +2299,11 @@ git commit -m "feat(k3-e3): іменовані операції каталогу
    → `undefined` (колекція не пише у вітринний ключ).
 
 Run: `pnpm lint && pnpm test` → зелені.
+
+🔴 Після хвилі B (A1, m3): рядки з `simplycms/schema/types` уже несуть
+`images: string[]` і `JsonValue` (`schema/json.ts`) — жодних кастів `unknown`
+у колекціях; вхід `images` на сервері перевіряє `refine` ресурсу
+(`z.array(z.string())`), тож клієнтський draft з іншою формою відбивається 400.
 
 - [ ] **Step 1: Тест спільних хендлерів (червоний)**
 
@@ -4046,6 +4083,13 @@ git commit -m "test(k3-e3): живий прогін каталогу адмін�
 6. **Повний ланцюг гейтів** + `pilot:pack` зелені; `pnpm lint` = 0 errors, warnings ≤ 10.
 7. **Нуль `useSupabaseClient`** у файлах скоупу Е3-1 (`rg -n useSupabaseClient packages/simplycms/src/admin/features` порожньо; легасі-файли видалені).
 8. **Доки** оновлені (Task 13 Step 6).
+
+## Відомо, не виправлено (свідомо, записано в хвилі B)
+
+- `saveProductPrices` не перевіряє, що `modificationId` належить `productId` (впевненість 60).
+- Дубль `pickupPointId` у вході `saveStock` → 409 (унікальний індекс) замість 400 зі схеми (50).
+- Теоретичний дедлок `setDefault` ↔ `reorder` модифікацій одного товару (55).
+- `scopeOf` у `stock/save.ts` дублює приватний `targetScope` з `inventory/locked-stock.ts` (architecture, 60).
 
 ## Точка передачі
 
