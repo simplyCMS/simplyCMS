@@ -80,7 +80,7 @@ Task 9 Step 3 (фільтри вітрини на рядку-на-опцію б�
 - 🔴 **Контракт id:** INSERT у таблицю Категорії A передає `id` — клієнт `crypto.randomUUID()`, сервер `randomUUID()` з `node:crypto`.
 - 🔴 `queryKey` колекції = `entityKey(ENTITY.x).list()`; demand-суфікс on-demand дописує бібліотека (`getLoadSubsetDemandKey`) — префікс зберігається.
 - 🔴 **Сторінка таблиці з single-default індексом переписується лише разом зі своєю named setDefault-операцією** (контракт хвиль Е1б) — тут це `product_modifications`.
-- 🔴 **Інваріант `template:sync`:** Е3 не чіпає `SYNCED_DIRS`/`SYNCED_FILES` за планом; якщо задача все ж зачепить `migrations/`, `themes/default/`, `plugins/hello-world/` чи host-файл — `pnpm template:sync` і коміт копій у тій самій задачі.
+- 🔴 **Інваріант `template:sync`:** задача, що чіпає `SYNCED_DIRS`/`SYNCED_FILES`, — `pnpm template:sync` і коміт копій у ТІЙ САМІЙ задачі. За планом це рівно Task 9 (`migrations/0001_init.sql`); якщо інша задача зачепить `migrations/`, `themes/default/`, `plugins/hello-world/` чи host-файл — те саме правило.
 - Тіри: `admin-server` = T2 (upward `db/auth/storage` + з Task 2 `inventory`), `admin-data` = T4, `admin` = T5, нове `inventory` = T2 (upward `db`).
 - Коміти — conventional, скоуп `k3-e3`, опис українською малими: `feat(k3-e3): …`; трейлер `Co-Authored-By` — за конвенцією сесії-виконавця.
 
@@ -955,7 +955,7 @@ git commit -m "feat(k3-e3): runAdmin — одна склейка grant/scope/wit
 - Create: `packages/simplycms/src/inventory/quantity-status.ts`
 - Create: `packages/simplycms/src/inventory/__tests__/quantity-status.test.ts`
 - Modify: `packages/simplycms/src/storefront/loaders/{stock-write,stock-release,stock-reservation}.ts` (імпорт)
-- Modify: `packages/simplycms/src/contracts/server-only.ts`, `packages/simplycms/package.json`, `eslint.tier-zones.mjs`, `tests/tier-boundary.test.ts`
+- Modify: `packages/simplycms/src/contracts/server-only.ts`, `packages/simplycms/package.json`, `eslint.tier-zones.mjs`, `tests/tier-boundary.test.ts`, `tests/dist-server-boundary.test.ts` (сентинел `inventory`)
 
 **Interfaces:**
 - Produces (з `simplycms/inventory`):
@@ -1027,9 +1027,16 @@ export async function syncStatusWithQuantity(
   target: StockTarget,
   total: number,
 ): Promise<void> {
+  // Дзеркало check-обмеження stock_product_or_modification: ціль без
+  // жодного ключа — помилка викликача, а не «нічого не робити». Рядок
+  // повідомлення — заодно сентинел dist-server-boundary (Step 4).
+  if (!target.productId && !target.modificationId)
+    throw new Error('[simplycms/inventory] ціль залишку без товару й модифікації');
   await setTargetStatus(db, target, total > 0 ? 'in_stock' : 'out_of_stock');
 }
 ```
+
+(+ кейс у `quantity-status.test.ts`: ціль `{ productId: null, modificationId: null }` → throw, `setTargetStatus` не викликано.)
 
 ```ts
 // packages/simplycms/src/inventory/index.ts
@@ -1074,6 +1081,18 @@ Run: `pnpm test -- packages/simplycms/src/inventory` → PASS.
 Storefront-імпорти: `from './stock-status'` → `from 'simplycms/inventory'`
 (`stock-release.ts`, `stock-reservation.ts`; BARE — інакше бандлер заінлайнить
 і межа `dist` стане невидимою, та сама причина, що в `admin-server/impl`).
+
+🔴 **Сентинел dist-межі — обовʼязковий** (знахідка аудиту Codex 2026-09-23):
+`tests/dist-server-boundary.test.ts` тримає `SENTINELS: Record<(typeof SERVER_ONLY)[number], string>`
+і асертить збіг ключів із `SERVER_ONLY` — новий елемент декларації без
+сентинела червонить і typecheck, і тест. Додати:
+
+```ts
+  inventory: '[simplycms/inventory] ціль залишку без товару й модифікації',
+```
+
+(рядок — повідомлення guard-а `syncStatusWithQuantity`, Step 3: літерал
+доживає до `dist` дослівно, на відміну від імен.)
 
 - [ ] **Step 5: Негативний контроль тір-зони**
 
@@ -1589,6 +1608,7 @@ git commit -m "feat(k3-e3): ресурси каталогу on-demand і serverF
 
 **Files:**
 - Create: `packages/simplycms/src/admin-server/impl/product-modifications/{set-default,reorder}.ts`
+- Create: `packages/simplycms/src/admin-server/impl/catalog-lock.ts` (`lockCatalogTarget`, Step 1а)
 - Create: `packages/simplycms/src/admin-server/impl/product-prices/save.ts`
 - Create: `packages/simplycms/src/admin-server/impl/stock/save.ts`
 - Create: `packages/simplycms/src/domain/money.ts` (якщо в `domain/pricing.ts` немає парсера — див. Step 3)
@@ -1726,8 +1746,57 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
       saveStockInput.safeParse({ productId: PRODUCT, modificationId: PRODUCT, quantities: [] }).success,
     ).toBe(false);
   });
+
+  // 🔴 Конкурентність (знахідка аудиту Codex 2026-09-23): дві вкладки / подвійний
+  // клік по одній цілі. Без серіалізації друга транзакція падала б 23505 на
+  // частковому unique-індексі (дефолт, перший рядок ціни/залишку).
+  it('два одночасні setDefault різних модифікацій товару — обидва успішні, дефолт рівно один', async () => {
+    const e = await mod('e');
+    const f = await mod('f');
+    await Promise.all([
+      setDefaultModificationOp({ data: { id: e.id } }),
+      setDefaultModificationOp({ data: { id: f.id } }),
+    ]);
+    const defaults = await queryRows(
+      dbUrl,
+      `select id from public.product_modifications where product_id = $1 and is_default`,
+      [PRODUCT],
+    );
+    expect(defaults).toHaveLength(1);
+  });
+
+  it('два одночасні ПЕРШІ saveProductPrices однієї пари — обидва успішні, рядок один', async () => {
+    const pt = await retail();
+    const fresh = crypto.randomUUID();
+    await queryRows(dbUrl, `insert into public.products (id, slug, name) values ($1,'ops-race','R')`, [fresh]);
+    const input = (price: string) => ({
+      data: { productId: fresh, modificationId: null, prices: [{ priceTypeId: pt, price, oldPrice: null }] },
+    });
+    await Promise.all([saveProductPricesOp(input('10')), saveProductPricesOp(input('20'))]);
+    expect(await queryRows(dbUrl, `select 1 from public.product_prices where product_id = $1`, [fresh])).toHaveLength(1);
+  });
+
+  it('два одночасні ПЕРШІ saveStock однієї цілі — обидва успішні, рядок на точку один', async () => {
+    const fresh = crypto.randomUUID();
+    await queryRows(dbUrl, `insert into public.products (id, slug, name) values ($1,'ops-race-s','S')`, [fresh]);
+    const input = (quantity: number) => ({
+      data: { productId: fresh, modificationId: null, quantities: [{ pickupPointId: POINT, quantity }] },
+    });
+    await Promise.all([saveStockOp(input(1)), saveStockOp(input(2))]);
+    expect(
+      await queryRows(dbUrl, `select 1 from public.stock_by_pickup_point where product_id = $1`, [fresh]),
+    ).toHaveLength(1);
+  });
 });
 ```
+
+🔴 `Promise.all` двох операцій дає ДВІ транзакції лише якщо пул має ≥ 2
+зʼєднання — перевірити налаштування пулу `simplycms/db` у харнесі; якщо
+пул із одного зʼєднання, тест не доводить конкурентності (транзакції
+пройдуть послідовно й зелені «за побудовою») — тоді підняти розмір пулу
+для цього файла або відкрити другу транзакцію окремим клієнтом `pg`.
+Негативний контроль: закоментувати виклик `lockCatalogTarget` у
+`saveProductPricesOp` → тест про ціни мусить червоніти `23505`.
 
 Імпорти з `simplycms/admin-server/impl`: `productModificationsOps`,
 `setDefaultModificationOp`, `reorderModificationOp`, `saveProductPricesOp`,
@@ -1739,6 +1808,39 @@ DEFAULT); дописати, якщо insert падає `23502`.
 Run: `pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/admin-catalog-ops.test.ts`
 Expected: FAIL — операцій немає.
 
+- [ ] **Step 1а: Серіалізація за ціллю — `lockCatalogTarget`**
+
+```ts
+// packages/simplycms/src/admin-server/impl/catalog-lock.ts
+import { sql } from 'drizzle-orm';
+import type { ActorDb } from 'simplycms/db';
+
+/**
+ * Транзакційний advisory-lock, ключований ціллю операції (знахідка аудиту
+ * Codex 2026-09-23): FOR UPDATE на НАЯВНИХ рядках не серіалізує першу
+ * вставку (рядка ще немає — блокувати нічого), тож дві паралельні
+ * транзакції падали б 23505 на частковому unique-індексі.
+ *
+ * 🔴 Чому advisory, а не FOR UPDATE рядка товару: вітрина при оформленні
+ * блокує СПЕРШУ рядки залишку, ПОТІМ пише рядок товару (setTargetStatus);
+ * адмінка, що блокувала б товар першим, дала б зворотний порядок і
+ * дедлок 40P01. Advisory-lock у порядку рядкових локів не бере участі.
+ * xact-варіант знімається на COMMIT/ROLLBACK сам — сумісний із pgbouncer
+ * transaction-mode (спайк B5).
+ */
+export async function lockCatalogTarget(db: ActorDb, key: string): Promise<void> {
+  await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+}
+```
+
+Ключі (простір імен — префікс операції, щоб різні операції над тією самою
+ціллю не серіалізували одна одну без потреби): `mod-default:<productId>`,
+`prices:<productId>:<modificationId|->`, `stock:<productId|->:<modificationId|->`.
+🔴 Перевірити, що `app_admin` має право викликати `pg_advisory_xact_lock`
+(функція `PUBLIC` за замовчуванням; якщо `0000_prelude.sql`/`0002_grants.sql`
+відкликає `EXECUTE` у `PUBLIC` — це падіння `42501` у харнесі, і тоді
+питання до власника, а не локальний грант).
+
 - [ ] **Step 2: Дефолт і порядок модифікацій**
 
 ```ts
@@ -1747,6 +1849,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { productModifications } from 'simplycms/schema';
 import { runAdmin } from '../run';
+import { lockCatalogTarget } from '../catalog-lock';
 
 export const setDefaultModificationInput = z.object({ id: z.uuid() });
 
@@ -1766,9 +1869,11 @@ export const setDefaultModificationOp = async ({
     const [target] = await db
       .select({ productId: productModifications.productId })
       .from(productModifications)
-      .where(eq(productModifications.id, data.id))
-      .for('update');
+      .where(eq(productModifications.id, data.id));
     if (!target) throw new Error(`[admin-server] модифікації ${data.id} не існує`);
+    // Два одночасні setDefault різних модифікацій товару інакше обидва
+    // «зняли б інших» ДО коміту сусіда і впали 23505 (Step 1а).
+    await lockCatalogTarget(db, `mod-default:${target.productId}`);
     const now = new Date();
     const unset = await db
       .update(productModifications)
@@ -1855,6 +1960,7 @@ import { z } from 'zod';
 import { productPrices } from 'simplycms/schema';
 import { MONEY_RE } from 'simplycms/domain/money';
 import { runAdmin } from '../run';
+import { lockCatalogTarget } from '../catalog-lock';
 
 const money = z.string().regex(MONEY_RE);
 
@@ -1884,6 +1990,8 @@ export const saveProductPricesOp = async ({
   data: z.infer<typeof saveProductPricesInput>;
 }) =>
   runAdmin('catalog.write', async (db) => {
+    // Перша вставка пари не має рядка під FOR UPDATE — серіалізуємо ціль (Step 1а).
+    await lockCatalogTarget(db, `prices:${data.productId}:${data.modificationId ?? '-'}`);
     const scope = and(
       eq(productPrices.productId, data.productId),
       data.modificationId
@@ -1933,6 +2041,7 @@ import { z } from 'zod';
 import { productModifications, products, stockByPickupPoint } from 'simplycms/schema';
 import { syncStatusWithQuantity, type StockTarget } from 'simplycms/inventory';
 import { runAdmin } from '../run';
+import { lockCatalogTarget } from '../catalog-lock';
 
 export const saveStockInput = z
   .object({
@@ -1961,6 +2070,10 @@ const scopeOf = (t: StockTarget) =>
 export const saveStockOp = async ({ data }: { data: z.infer<typeof saveStockInput> }) =>
   runAdmin('catalog.write', async (db) => {
     const target: StockTarget = { productId: data.productId, modificationId: data.modificationId };
+    // Порядок локів той самий, що у вітрини (залишок → ціль): advisory не
+    // рахується, далі рядки залишку, останнім — рядок товару в
+    // syncStatusWithQuantity. Зворотного порядку немає — дедлоку немає.
+    await lockCatalogTarget(db, `stock:${target.productId ?? '-'}:${target.modificationId ?? '-'}`);
     const existing = await db.select().from(stockByPickupPoint).where(scopeOf(target)).for('update');
     const byPoint = new Map(existing.map((r) => [r.pickupPointId, r]));
     const now = new Date();
