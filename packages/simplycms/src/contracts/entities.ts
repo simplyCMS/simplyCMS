@@ -64,6 +64,17 @@ export function entityKey(entity: EntityName) {
     detail: (id: string) => [entity, 'detail', id] as const,
     scoped: (relation: string, parentId: string) =>
       [entity, relation, parentId] as const,
+    /** Варіант форми/скоупу тієї самої сутності (не FK-зріз): окремий
+     *  сегмент 'variant' — не зіткнеться ні з колекцією (`list`), ні з
+     *  FK-relation тієї самої назви (борг Е1а №6, розвʼязаний Е3-15).
+     *  Вітрина й `admin-data` ділять ОДИН QueryClient (`src/router.tsx`),
+     *  і eager-колекція без demand-суфікса пише РІВНО в `[entity,'list']`
+     *  — вітринний запит під тим самим голим ключем читав би чужу форму
+     *  рядка (camelCase проти snake_case, усі розділи проти активних). */
+    variant: (qualifier: string, id?: string) =>
+      (id === undefined
+        ? [entity, 'variant', qualifier]
+        : [entity, 'variant', qualifier, id]) as readonly string[],
   };
 }
 

@@ -36,4 +36,32 @@ describe('entityKey: єдина форма ключів кешу', () => {
     const values = Object.values(ENTITY);
     expect(new Set(values).size).toBe(values.length);
   });
+
+  describe('variant: скоуп форми, не FK-зріз (Е3-15)', () => {
+    it('без id — не збігається з list() (колекція admin-data)', () => {
+      expect(k.variant('storefront')).not.toEqual(k.list());
+      expect(k.variant('storefront')).toEqual([
+        'order_statuses',
+        'variant',
+        'storefront',
+      ]);
+    });
+
+    it('з id — не збігається з scoped() тим самим qualifier/id (FK-relation)', () => {
+      const numeric = entityKey(ENTITY.sectionProperties);
+      expect(numeric.variant('numeric', 's1')).not.toEqual(
+        numeric.scoped('numeric', 's1'),
+      );
+      expect(numeric.variant('numeric', 's1')).toEqual([
+        'section_properties',
+        'variant',
+        'numeric',
+        's1',
+      ]);
+    });
+
+    it('сегмент 0 — той самий, що в all()', () => {
+      expect(k.variant('storefront')[0]).toBe(k.all()[0]);
+    });
+  });
 });

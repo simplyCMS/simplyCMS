@@ -24,7 +24,9 @@ export default function PropertiesPage({
    * з її опціями, тож лічильник — це довжина вже наявного масиву.
    */
   const { data: properties, isLoading } = useQuery({
-    queryKey: sectionProperties.list(),
+    // 🔴 variant('storefront'), не list() (Е3-15): admin-data заводить
+    // on-demand колекцію sectionProperties під голим list().
+    queryKey: sectionProperties.variant('storefront'),
     queryFn: (): Promise<PropertyWithOptions[]> => getProperties(),
     initialData: initialProperties,
   });
