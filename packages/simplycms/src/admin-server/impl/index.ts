@@ -29,3 +29,4 @@ export {
   uploadMediaOp,
 } from './operations/media';
 export type { ParsedUpload } from './operations/media';
+export type { SubsetInput, SubsetPayload } from './subset';
