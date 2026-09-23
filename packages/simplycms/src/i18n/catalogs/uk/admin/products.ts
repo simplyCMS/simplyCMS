@@ -26,6 +26,15 @@ export const messages = {
   'admin.products.createdAt': 'Створено:',
   'admin.products.updatedAt': 'Оновлено:',
 
+  // Список товарів (Е3-2): фільтри + «Показати ще», без текстового пошуку.
+  'admin.products.loadMore': 'Показати ще',
+  'admin.products.filters.section': 'Розділ',
+  'admin.products.filters.active': 'Активність',
+  'admin.products.filters.stock': 'Наявність',
+  'admin.products.filters.all': 'Усі',
+  'admin.products.filters.activeOnly': 'Активні',
+  'admin.products.filters.inactiveOnly': 'Неактивні',
+
   // Модифікації
   'admin.products.mods.title': 'Модифікації товару',
   'admin.products.mods.created': 'Модифікацію створено',

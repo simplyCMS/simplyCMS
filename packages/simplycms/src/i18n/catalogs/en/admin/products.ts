@@ -28,6 +28,14 @@ export const messages: Catalog = {
   'admin.products.createdAt': 'Created:',
   'admin.products.updatedAt': 'Updated:',
 
+  'admin.products.loadMore': 'Show more',
+  'admin.products.filters.section': 'Section',
+  'admin.products.filters.active': 'Status',
+  'admin.products.filters.stock': 'Availability',
+  'admin.products.filters.all': 'All',
+  'admin.products.filters.activeOnly': 'Active',
+  'admin.products.filters.inactiveOnly': 'Inactive',
+
   'admin.products.mods.title': 'Product modifications',
   'admin.products.mods.created': 'Modification created',
   'admin.products.mods.updated': 'Modification updated',
