@@ -34,24 +34,4 @@ describe('adminErrorKey', () => {
     expect(adminErrorKey(new Error('boom'))).toBeNull();
     expect(adminErrorKey(undefined)).toBeNull();
   });
-
-  it('UPSTREAM:TSDB-5: конфлікт розгорнутий у .cause — теж знаходиться', () => {
-    const wrapper = new Error('outer');
-    (wrapper as Error & { cause?: unknown }).cause = conflict(
-      'unique',
-      'products_slug_key',
-    );
-    expect(adminErrorKey(wrapper)).toBe('admin.errors.slugTaken');
-  });
-
-  it('.cause-ланцюжок глибший за ліміт — null, не нескінченний цикл', () => {
-    const deepest = conflict('unique', 'products_slug_key');
-    let top: unknown = deepest;
-    for (let i = 0; i < 6; i++) {
-      const wrapper = new Error(`level ${i}`);
-      (wrapper as Error & { cause?: unknown }).cause = top;
-      top = wrapper;
-    }
-    expect(adminErrorKey(top)).toBeNull();
-  });
 });

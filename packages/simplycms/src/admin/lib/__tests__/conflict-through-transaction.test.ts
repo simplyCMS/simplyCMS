@@ -8,11 +8,14 @@ import { adminErrorKey } from '../admin-error';
 /**
  * Відтворює реальний шлях `products.update()` (TanStack DB, `handlers.ts`
  * onUpdate) — не `admin-error.test.ts`'s ручний `Object.assign(new
- * Error(...))`. Доведено прогоном (UPSTREAM:TSDB-5): без `normalizeThrown`
- * `@tanstack/db`'s `commit()` замінює ПЛОСКИЙ (не-Error) кинутий обʼєкт на
- * `new Error(String(x))` — властивості (`kind`/`constraint`) губляться
- * повністю, `.cause` теж не виставляється. Тут serverFn кидає САМЕ такий
- * плоский обʼєкт, як приходив би з seroval-межі serverFn.
+ * Error(...))`. Е3-20 (закрито): serverFn кидає САМЕ таку форму, яку
+ * `domainErrorAdapter` (`runtime/domain-error-adapter.test.ts` доводить це
+ * реальним seroval-раунд-тріпом) віддає клієнту — `Error` з `name`/полями
+ * НА ВЕРХНЬОМУ рівні (не плоский обʼєкт, не обгорнутий у `.cause`).
+ * `@tanstack/db`'s `commit()` (`error instanceof Error ? error : new
+ * Error(String(error))`) на такому вході бере гілку `instanceof Error` і
+ * ідентичність / поля НЕ чіпає — окремої нормалізації (`normalizeThrown`,
+ * знято) не треба.
  */
 type Row = { id: string; name: string };
 
@@ -29,12 +32,14 @@ function buildWithFailingUpdate() {
         entity: 'conflict-test',
         insert: async () => [],
         update: async () => {
-          throw {
-            name: 'AdminConflictError',
-            message: '[admin-server] конфлікт unique: products_slug_key',
-            kind: 'unique',
-            constraint: 'products_slug_key',
-          };
+          throw Object.assign(
+            new Error('[admin-server] конфлікт unique: products_slug_key'),
+            {
+              name: 'AdminConflictError',
+              kind: 'unique',
+              constraint: 'products_slug_key',
+            },
+          );
         },
         remove: async () => ({ count: 0 }),
       }),
@@ -45,7 +50,7 @@ function buildWithFailingUpdate() {
 }
 
 describe('adminErrorKey через реальну транзакцію TanStack DB', () => {
-  it('плоский конфлікт serverFn → tx.isPersisted.promise reject → adminErrorKey → slugTaken', async () => {
+  it('Error(name/kind/constraint) serverFn → tx.isPersisted.promise reject → adminErrorKey → slugTaken', async () => {
     const collection = buildWithFailingUpdate();
     await collection.preload();
 
@@ -61,6 +66,12 @@ describe('adminErrorKey через реальну транзакцію TanStack 
     }
 
     expect(caught).toBeInstanceOf(Error);
+    // 🔴 Поля НА ВЕРХНЬОМУ рівні, не під .cause — commit() зберігає
+    // ідентичність кинутого обʼєкта, коли він уже instanceof Error.
+    expect(caught).toMatchObject({
+      name: 'AdminConflictError',
+      kind: 'unique',
+    });
     expect(adminErrorKey(caught)).toBe('admin.errors.slugTaken');
   });
 });

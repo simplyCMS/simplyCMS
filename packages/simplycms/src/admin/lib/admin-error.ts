@@ -1,42 +1,32 @@
 import type { MessageKey } from 'simplycms/i18n';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 
 /**
  * Ключ повідомлення для конфлікту БД (Е3-7). Розрізняємо за полями, а не
- * `instanceof`: seroval десеріалізує помилку serverFn у голий `Error` з
- * накладеними властивостями (К3-13). Клас `AdminConflictError` живе в
- * server-only дереві — сюди він не імпортується навіть типом.
+ * `instanceof`: клас `AdminConflictError` живе в server-only дереві —
+ * сюди він не імпортується навіть типом, лише `DOMAIN_ERROR_NAME`
+ * (T0, `contracts/domain-errors`).
+ *
+ * 🔴 Без розгортання `.cause` (Е3-20, закрито): до `domainErrorAdapter`
+ * помилка мала б розгортатись, бо `@tanstack/db`'s `commit()` нібито
+ * замінював ПЛОСКИЙ (не-`Error`) обʼєкт на голий `Error(String(x))`.
+ * Корінь був у серіалізації Start (ShallowErrorPlugin губив поля, але
+ * ЛИШАВ `instanceof Error`) — адаптер тепер повертає `Error` з полями НА
+ * ВЕРХНЬОМУ рівні, і транзакція `@tanstack/db` (`error instanceof Error ?
+ * error : …`) їх більше не чіпає. Доказ —
+ * `__tests__/conflict-through-transaction.test.ts` (реальна колекція/
+ * транзакція, не ручний `Object.assign`). Реєстр TSDB-5
+ * (docs/architecture/upstream-workarounds.md) закритий.
  */
 type ConflictShape = {
   name?: unknown;
   kind?: unknown;
   constraint?: unknown;
-  cause?: unknown;
 };
 
-/** Скільки рівнів `.cause` розгортати — коло, не нескінченний цикл. */
-const MAX_CAUSE_DEPTH = 5;
-
-/**
- * Знаходить перший рівень (сам обʼєкт або якийсь `.cause` під ним), що несе
- * `name === 'AdminConflictError'`: через TanStack DB транзакцію помилка
- * теоретично може дійти обгорнутою в `.cause`; основний захист —
- * `normalizeThrown` (handlers.ts), тримає genuine Error ДО @tanstack/db,
- * це друга лінія.
- * UPSTREAM:TSDB-5 — docs/architecture/upstream-workarounds.md
- */
-function unwrapConflict(error: unknown): ConflictShape | null {
-  let current: unknown = error;
-  for (let depth = 0; depth < MAX_CAUSE_DEPTH && current; depth++) {
-    const e = current as ConflictShape;
-    if (e.name === 'AdminConflictError') return e;
-    current = e.cause;
-  }
-  return null;
-}
-
 export function adminErrorKey(error: unknown): MessageKey | null {
-  const e = unwrapConflict(error);
-  if (!e) return null;
+  const e = error as ConflictShape | null | undefined;
+  if (e?.name !== DOMAIN_ERROR_NAME.adminConflict) return null;
   if (e.kind === 'reference') return 'admin.errors.conflictReference';
   // Входження, не суфікс: product_modifications_product_slug_unique названо
   // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
