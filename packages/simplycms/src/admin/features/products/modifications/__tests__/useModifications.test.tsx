@@ -6,7 +6,9 @@
  * у ресурсі, дефолт ставиться окремою операцією); (б) write-back
  * `applyDefault` оновлює прапорець у ДВОХ рядках колекції (знятий і
  * поставлений); (в) sortOrder нового = max+1 навіть коли наявні мають
- * однакові sortOrder (легасі писав sort_order індексом масиву).
+ * однакові sortOrder (легасі писав sort_order індексом масиву); (г) рев'ю
+ * C6 item 1 — `update()` НЕ переписує `stockStatus`, щойно виставлений
+ * `ModificationStatusControl` напряму в живому рядку.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
@@ -66,6 +68,10 @@ vi.mock('simplycms/admin-server', () => ({
   listPropertyOptions: vi.fn(async () => []),
 }));
 
+import {
+  productModificationsCollection,
+  useCollection,
+} from 'simplycms/admin-data';
 import { useModifications } from '../useModifications';
 import type { ModificationFormValues } from '../modification-form-schema';
 
@@ -211,5 +217,65 @@ describe('useModifications', () => {
       { data: Array<{ id: string; sortOrder: number }> },
     ];
     expect(data[0]?.sortOrder).toBe(4);
+  });
+
+  it('(г) update() не переписує stockStatus, виставлений ModificationStatusControl напряму', async () => {
+    const row = {
+      id: 'm1',
+      productId: 'p1',
+      slug: 'a',
+      name: 'A',
+      sku: null as string | null,
+      isDefault: false,
+      images: [] as string[],
+      sortOrder: 0,
+      stockStatus: 'in_stock' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    listProductModifications.mockResolvedValueOnce([row]);
+    updateProductModifications.mockImplementation(
+      async ({
+        data,
+      }: {
+        data: Array<{ id: string; patch: Record<string, unknown> }>;
+      }) =>
+        data.map((p) => {
+          Object.assign(row, p.patch);
+          return { ...row };
+        }),
+    );
+
+    const { result } = renderHook(
+      () => ({
+        mods: useCollection(productModificationsCollection),
+        api: useModifications('p1'),
+      }),
+      { wrapper },
+    );
+    await waitFor(() =>
+      expect(result.current.api.modifications).toHaveLength(1),
+    );
+
+    // Симуляція `ModificationStatusControl`: миттєвий запис НАПРЯМУ в
+    // колекцію, окрема транзакція від Save діалогу.
+    const controlTx = result.current.mods.update('m1', (d) => {
+      d.stockStatus = 'out_of_stock';
+    });
+    await controlTx.isPersisted.promise;
+    expect(updateProductModifications).toHaveBeenCalledTimes(1);
+
+    // Save діалогу: форма несе СТЕЙЛ 'in_stock' — значення на момент
+    // відкриття діалогу, до того, як контрол переписав живий рядок.
+    await result.current.api.update('m1', {
+      ...FORM,
+      stockStatus: 'in_stock',
+    });
+
+    expect(updateProductModifications).toHaveBeenCalledTimes(2);
+    const [{ data: savePatch }] = updateProductModifications.mock.calls[1] as [
+      { data: Array<{ id: string; patch: object }> },
+    ];
+    expect(savePatch[0]?.patch).not.toHaveProperty('stockStatus');
   });
 });

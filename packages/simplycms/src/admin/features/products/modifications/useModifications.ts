@@ -59,7 +59,11 @@ export function useModifications(productId: string) {
       sku: form.sku || null,
       images: form.images,
       sortOrder,
-      stockStatus: form.stockStatus,
+      // 🔴 Живого рядка ще нема — статус іде з форми (симетрично
+      // toProductDraft товару); фолбек лише для типу (`stockStatus`
+      // optional у схемі, ModificationStatusControl завжди виставляє
+      // значення на create-гілці, `?? 'in_stock'` — той самий дефолт).
+      stockStatus: form.stockStatus ?? 'in_stock',
       isDefault: false,
       createdAt: now,
       updatedAt: now,
@@ -71,13 +75,19 @@ export function useModifications(productId: string) {
     return id;
   };
 
+  // 🔴 Рев'ю C6, item 1: `draft.stockStatus` тут НЕ виставляється — при
+  // редагуванні статус належить ЛИШЕ `ModificationStatusControl` (миттєвий
+  // `mods.update` над живим рядком) і `saveStock` (write-back). Форма несе
+  // стейл-значення з моменту відкриття діалогу (`useForm({defaultValues})`
+  // не стежить за зовнішнім write-back) — запис його тут перезаписував би
+  // щойно виставлений статус наступним Save (симетрично `toProductPatch`
+  // товару, яке з тієї ж причини не несе `stockStatus`).
   const update = async (id: string, form: ModificationFormValues) => {
     const tx = mods.update(id, (draft) => {
       draft.name = form.name;
       draft.slug = form.slug;
       draft.sku = form.sku || null;
       draft.images = form.images;
-      draft.stockStatus = form.stockStatus;
     });
     await tx.isPersisted.promise;
     if (form.isDefault) await applyDefault(id);

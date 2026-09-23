@@ -11,7 +11,13 @@ export const EMPTY_MODIFICATION_FORM: ModificationFormValues = {
   images: [],
 };
 
-/** БД → форма модифікації (`null` полів переведено в порожній рядок). */
+/**
+ * БД → форма модифікації (`null` полів переведено в порожній рядок).
+ * 🔴 `stockStatus` СВІДОМО відсутній (рев'ю C6, item 1) — редагування читає
+ * й пише статус напряму з живого рядка колекції
+ * (`ModificationStatusControl`), а не з форми; клавши сюди
+ * `mod.stockStatus`, лишили б мертве поле, яке ніхто не читає.
+ */
 export function toModificationFormValues(
   mod: ProductModification,
 ): ModificationFormValues {
@@ -19,7 +25,6 @@ export function toModificationFormValues(
     name: mod.name,
     slug: mod.slug,
     sku: mod.sku ?? '',
-    stockStatus: mod.stockStatus ?? 'in_stock',
     isDefault: mod.isDefault,
     images: mod.images ?? [],
   };
