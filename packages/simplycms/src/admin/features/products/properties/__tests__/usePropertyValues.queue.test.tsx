@@ -108,6 +108,7 @@ describe('usePropertyValues: серіалізація черги на propertyId
     // Дати on-demand колекції стати ready ДО гонки — інакше перший
     // insert() ще не встигає піти в 'ready'-стан і сама черга (не
     // серіалізація) стає джерелом шуму в тесті.
+    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
     await waitFor(() => expect(result.current.rowsOf('propA')).toHaveLength(0));
 
     result.current.saveScalar('propA', {

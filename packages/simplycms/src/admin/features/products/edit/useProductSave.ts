@@ -35,6 +35,7 @@ export function useProductSave() {
       // `preload()` на on-demand — no-op щодо даних (Б-1), але СТАРТУЄ
       // sync. Дрібне рев'ю: усередині try — відмова preload теж іде тостом,
       // не unhandled rejection.
+      // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
       await products.preload();
       const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт (К3-6)
       const tx = products.insert(toProductDraft(values, id, new Date()));

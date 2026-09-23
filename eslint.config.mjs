@@ -142,7 +142,13 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 // `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
 // зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
 // PENDING_FILES) — стартово одна сторінка з Task 10.
-const MUTATION_CACHE_SYNC_RATCHET = [
+//
+// 🔴 `packages/simplycms/src/admin/features/**` (уся хвиля К3-Е3, Tasks
+// 6–10) у цей список НЕ входить — вона в зоні правила за побудовою
+// (глоб нижче), окремий список лише для файлів ПОЗА `features/`. Export
+// — щоб `tests/mutation-cache-sync-coverage.test.ts` (Task 12) звіряв
+// повноту зони проти того самого джерела, а не другою копією.
+export const MUTATION_CACHE_SYNC_RATCHET = [
   'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
 ];
 
@@ -359,6 +365,9 @@ const eslintConfig = [
   {
     files: [
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      // Уся хвиля К3-Е3 (Tasks 6–10) — у зоні за побудовою: кожна фіча,
+      // що пише через serverFn/колекції, зобовʼязана мати write-back.
+      'packages/simplycms/src/admin/features/**/*.{ts,tsx}',
       ...MUTATION_CACHE_SYNC_RATCHET,
     ],
     ignores: ['**/__tests__/**'],

@@ -195,10 +195,14 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / 10 warnings — це НОРМА** (станом на 2026-09-13).
-Було 12 до К3-Е2: переписаний під порт сховища `ImageUpload` прибрав два
-`react-hooks/exhaustive-deps`. Це покращення, а не регресія — «лагодити» назад
-до 12 не треба. Ворнінги, що лишились, — `react-hooks/*` і `no-unused-vars`. Два `no-restricted-syntax`-селектори (i18n) переведено
+🔴 **`pnpm lint` = 0 errors / 8 warnings — це НОРМА** (станом на 2026-09-23).
+Було 10 до К3-Е3 Task 10: видалення легасі `AllProductProperties`/
+`ProductPropertyValues` (переписані на `PropertyValuesPanel` фічою
+`admin/features/products/properties`) прибрало ще два ворнінги разом із
+самими файлами. До того було 12 до К3-Е2: переписаний під порт сховища
+`ImageUpload` прибрав два `react-hooks/exhaustive-deps`. Це покращення, а
+не регресія — «лагодити» назад до попередніх чисел не треба. Ворнінги, що
+лишились, — `react-hooks/*` і `no-unused-vars`. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
 (`routes/storefront` і `routes/admin`), `src/storefront-routes`, `src/admin`
 і пʼять `src/*-ui` пакета ядра плюс компоненти тем — новий кириличний рядок

@@ -219,6 +219,65 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 
 ---
 
+### TSDB-B1 · ручний sync-запис на щойно отриманій on-demand колекції кидає `SyncNotInitializedError`
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/query-db-collection` (ручні sync-хелпери `createWriteUtils`) |
+| Знайдено на | 1.2.11 (2026-09-23, К3-Е3 Tasks 6/8) |
+| Перевірено на версії | 1.2.11 — 2026-09-23 |
+| Статус апстріму | не повідомлено |
+
+**Симптом.** Сторінка «новий товар» не монтує жодного `useLiveQuery` над
+`productsCollection` (список товарів — інша сторінка), тож колекція
+лишається без sync-контексту. Оптимістичний `products.insert()` минає, але
+write-back persistence-хендлера (`onInsert` → `target().utils.writeUpsert`
+ПІСЛЯ відповіді сервера, `admin-data/handlers.ts`) кидає `Collection must
+be in 'ready' state for manual sync operations. Sync not initialized yet.`
+— insert відкочується, власник бачить тост-помилку замість збереженого
+товару. Той самий клас — `useStock.save`: пише статус ЦІЛІ
+(`productsCollection`/`productModificationsCollection`) у колекцію, яка на
+сторінці картки товару могла не отримати жодної власної підписки
+`useLiveQuery` (підписана лише `stockCollection`, під яку й побудований
+хук). І `usePropertyValues` (Task 10, автозбереження): колекції значень
+властивостей ПІДПИСАНІ безумовно, але старт синку від `useLiveQuery`
+асинхронний — перший `saveScalar` одразу після монтування хука встигає
+раніше, ніж сформується sync-контекст.
+
+**Корінь.** `createWriteUtils` (`src/manual-sync.ts:236-242` пакета) кличе
+`ensureContext()`, який кидає `SyncNotInitializedError`
+(`src/errors.ts:48-53`), якщо `SyncContext` для колекції ще не створено.
+Контекст зʼявляється лише коли колекція РЕАЛЬНО почала синк — перша
+підписка (`useLiveQuery`) або явний `preload()`. `syncMode: 'on-demand'`
+(Е3-17) сам по собі синку не запускає: простий `useCollection()` лише
+дістає інстанс з реєстру `admin-data`, без підписки.
+
+**Наш обхід.** `await collection.preload()` ПЕРЕД будь-якою мутацією
+(оптимістичний `insert`, і ручний `writeUpsert` у ЦІЛЬОВУ колекцію), якщо
+ця колекція не гарантовано підписана активним `useLiveQuery` на тій самій
+сторінці: `useProductSave.create`, `useStock.save` (`mods.preload()` /
+`products.preload()` — не сама `stock`, вона вже підписана власним
+`useLiveQuery` хука). `preload()` на вже готовій колекції — no-op (доки
+пакета), повторний виклик безпечний. Для `usePropertyValues` (безумовна
+підписка, без явного `preload()`) — тести черги чекають ready-стану
+(`waitFor`) ПЕРЕД першою мутацією, щоб гонка старту синку не змішувалась із
+гонкою самої черги (Е3-19). Маркери —
+`git grep -n "UPSTREAM:TSDB-B1"`.
+
+**Перевірка виправлення.** Прибрати `await products.preload()` з
+`useProductSave.create` → `useProductSave.test.tsx` (сценарій «нова картка
+без змонтованого списку») мусить лишитися ЗЕЛЕНИМ на новій версії (сьогодні
+падає без preload, бо `writeUpsert` після серверної відповіді б'є по
+неготовій колекції).
+
+**Коли виправлять.** Прибрати точкові `preload()`-виклики в
+`useProductSave.create` і `useStock.save`, коли `syncMode: 'on-demand'`
+(або `writeUpsert`) сам гарантує готовий контекст до першого ручного
+запису. `waitFor` у тестах черги Task 10 можна лишити — там причина ширша
+за цей дефект (Е3-19: серіалізація самої черги).
+
+---
+
 ### DZOD-1 · `.pick()` і refinements drizzle-zod не типізуються для генеричної таблиці
 
 | Поле | Значення |

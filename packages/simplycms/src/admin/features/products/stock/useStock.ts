@@ -54,6 +54,7 @@ export function useStock(productId: string, modificationId: string | null) {
     // від `stock` (синк уже стартував власним `useLiveQuery` цього хука),
     // цільова колекція тут лише отримана через `useCollection`, без гарантії
     // підписки.
+    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
     if (modificationId) {
       await mods.preload();
       mods.utils.writeUpsert(res.target as ProductModification);

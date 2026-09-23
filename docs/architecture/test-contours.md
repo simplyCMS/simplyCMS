@@ -660,7 +660,8 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | Гейт | Що ловить | Крок ланцюга | Межа |
 |---|---|---|---|
 | `eslint-rules/server-fn-top-level.mjs` + `tests/eslint-rules/server-fn-top-level.test.ts` | `createServerFn` не топ-рівневим `const` (компілятор Start або падає, або МОВЧКИ не трансформує — fast-path) | `pnpm lint` / `pnpm test` | лише форма оголошення |
-| `eslint-rules/mutation-cache-sync.mjs` + `tests/eslint-rules/mutation-cache-sync.test.ts` | мутація (`useMutation` або виклик serverFn з `simplycms/admin-server`) без синку кешу в ТІЙ САМІЙ функції | `pnpm lint` (зона `admin-data/**` + ратчет переписаних сторінок) | ратчет ручний — повноту списку сторінок ніщо не перевіряє (борг Е3) |
+| `eslint-rules/mutation-cache-sync.mjs` + `tests/eslint-rules/mutation-cache-sync.test.ts` | мутація (`useMutation` або виклик serverFn з `simplycms/admin-server`) без синку кешу в ТІЙ САМІЙ функції | `pnpm lint` (зона `admin-data/**` + `admin/features/**` за побудовою + точковий ратчет `MUTATION_CACHE_SYNC_RATCHET` для решти сторінок) | бачить лише файли У зоні |
+| `tests/mutation-cache-sync-coverage.test.ts` (Task 12, К3-Е3) | повноту самої зони: кожен файл `src/admin/**`, що імпортує `simplycms/admin-(data\|server)`, — під `admin/features/**`, у `MUTATION_CACHE_SYNC_RATCHET` або в іменованому `EXEMPT` — інакше сторінка, переписана хвилею Е4–Е6 поза `features/`, лишилась би без гейта вище мовчки | `pnpm test` | бачить лише СТАТИЧНИЙ `from 'simplycms/admin-(data\|server)'` — динамічний імпорт чи реекспорт крізь проміжний модуль йому невидимі |
 | `tests/handler-canon.test.ts` | `return { refetch: false }` без БЕЗУМОВНОГО write-back у persistence-хендлері; порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота по рядках батчу (борг Е3 — поведінковий кейс у тесті колекції) |
 | `tests/tanstack-db-single-instance.test.ts` | два фізичні інстанси `@tanstack/db` у дереві (peer-контекст) — за `path` з `pnpm ls --json`, не за семвером | `pnpm test` | не сканує `.pnpm` напряму (сироти) |
 | тір-зони `admin-server` (T2) / `admin-data` (T4) — `tests/tier-boundary.test.ts` | імпорт угору по шарах, обидві форми специфікатора | `pnpm lint` / `pnpm test` | — |
@@ -706,7 +707,9 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
 (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`,
-`admin-server/impl`, `storage`; serverFn-модулі
+`admin-server/impl`, `storage`, `inventory` — восьмий, Task 2 К3-Е3: спільне
+server-only дерево для `admin-server` і `storefront/loaders` (Е3-5), а не
+імпорт одного з іншого через заборонену тір-зоною межу; serverFn-модулі
 `plugin-sdk/server`, `themes/server`, `plugins/server`, стаби `admin-server` —
 НЕ server-only, їх клієнт імпортує легально). Читачі:
 
