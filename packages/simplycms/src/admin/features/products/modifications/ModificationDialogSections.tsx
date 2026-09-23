@@ -8,26 +8,31 @@ import {
   CollapsibleTrigger,
 } from 'simplycms/ui/collapsible';
 import { PricesEditor } from '../prices/PricesEditor';
+import { PropertyValuesPanel } from '../properties/PropertyValuesPanel';
 import { StockEditor } from '../stock/StockEditor';
 
 interface Props {
   readonly productId: string;
   readonly modificationId: string;
-  /** Розділ товару — секція властивостей (Task 10, поки проп без вжитку). */
+  /** Розділ товару — секція властивостей значень модифікації (Task 10). */
   readonly sectionId: string | null;
 }
 
 /**
- * Ціни й залишки ІСНУЮЧОЇ модифікації — виніс із `ModificationDialog.tsx`
- * (канон 150 рядків). Властивості (Task 10) сюди додає наступна задача.
+ * Ціни, залишки й значення властивостей ІСНУЮЧОЇ модифікації — виніс із
+ * `ModificationDialog.tsx` (канон 150 рядків). Властивості (Task 10) —
+ * `target='modification', appliesTo='modification'`: рядки пишуться в
+ * `modification_property_values` з `modificationId`, не `productId`.
  */
 export function ModificationDialogSections({
   productId,
   modificationId,
+  sectionId,
 }: Props) {
   const t = useT();
   const [pricesOpen, setPricesOpen] = useState(true);
   const [stockOpen, setStockOpen] = useState(true);
+  const [propsOpen, setPropsOpen] = useState(true);
 
   return (
     <>
@@ -74,6 +79,34 @@ export function ModificationDialogSections({
           <StockEditor
             productId={productId}
             modificationId={modificationId}
+            showCard={false}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible open={propsOpen} onOpenChange={setPropsOpen}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            type="button"
+            className="flex w-full justify-between p-3 border rounded-lg hover:bg-muted/50"
+          >
+            <span className="font-medium">
+              {t('admin.properties.values.titleModification')}
+            </span>
+            {propsOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-3">
+          <PropertyValuesPanel
+            target="modification"
+            ownerId={modificationId}
+            sectionId={sectionId}
+            appliesTo="modification"
             showCard={false}
           />
         </CollapsibleContent>

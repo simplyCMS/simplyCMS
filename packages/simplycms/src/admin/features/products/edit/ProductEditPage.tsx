@@ -9,6 +9,7 @@ import { Button } from 'simplycms/ui/button';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { adminPath } from '../../../lib/adminLinks';
 import { ModificationsPanel } from '../modifications/ModificationsPanel';
+import { PropertyValuesPanel } from '../properties/PropertyValuesPanel';
 import { SimpleProductPanel } from '../simple/SimpleProductPanel';
 import { ProductForm } from './ProductForm';
 import { useProductSave } from './useProductSave';
@@ -46,6 +47,10 @@ function toFormValues(row: Product): ProductFormValues {
  * `ProductForm.tsx`). Перемикач панелі — за `data.hasModifications`
  * ЖИВОГО рядка колекції (Task 7 Step 3), не за незбереженим станом
  * форми: зміна перемикача типу товару без Save панель НЕ підмінює.
+ * Значення властивостей ТОВАРУ (Task 10) — теж сиблінг, за живим
+ * `data.sectionId`: `appliesTo='all'` для простого товару (усі
+ * призначення розділу — легасі `AllProductProperties`), `'product'` для
+ * товару з модифікаціями (легасі `ProductPropertyValues`).
  */
 export function ProductEditPage({ productId }: Props) {
   const t = useT();
@@ -118,6 +123,12 @@ export function ProductEditPage({ productId }: Props) {
             ) : (
               <SimpleProductPanel productId={productId} />
             )}
+            <PropertyValuesPanel
+              target="product"
+              ownerId={productId}
+              sectionId={data.sectionId}
+              appliesTo={data.hasModifications ? 'product' : 'all'}
+            />
             <PluginSlot
               name="admin.product.form.after"
               context={{ productId }}

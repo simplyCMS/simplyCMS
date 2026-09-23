@@ -12,7 +12,7 @@ import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
   readonly productId: string;
-  /** Розділ товару — для секції властивостей діалогу (Task 10, поки проп без вжитку). */
+  /** Розділ товару — протягується в `ModificationDialog` для секції властивостей (Task 10). */
   readonly sectionId: string | null;
 }
 

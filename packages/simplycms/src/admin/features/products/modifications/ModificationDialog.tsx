@@ -29,7 +29,7 @@ interface Props {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly productId: string;
-  /** Розділ товару — для секції властивостей (Task 10, поки без вжитку). */
+  /** Розділ товару — для секції властивостей `ModificationDialogSections` (Task 10). */
   readonly sectionId: string | null;
   /** `null` — нова модифікація (ціни/залишки/властивості — недоступні). */
   readonly mod: ProductModification | null;
