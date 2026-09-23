@@ -131,8 +131,18 @@ export function defineAdminResource<
         return (await q) as T['$inferSelect'][];
       }),
 
-    insert: async ({ data }: { data: z.infer<typeof insertSchema> }) =>
-      run(async (db) => {
+    // 🔴 Task 1 (А2): фабрика сама парсить вхід СВОЄЮ ж схемою, ДО `run`
+    // (тобто до першого рубежу/транзакції). `inputValidator` serverFn
+    // (Task 5) робить те саме на межі HTTP, але інваріант «readonly-поле не
+    // пишеться generic-write» мусить тримати ОПЕРАЦІЯ, а не лише межа —
+    // інакше прямий виклик `ops.insert(...)` повз serverFn (харнес-тести,
+    // майбутні internal-виклики) проносить readonly-поле аж до `.values()`.
+    // Zod-схема БЕЗ `.strict()` (дефолтний режим "strip") сама відкидає
+    // невідомі ключі — саме так `isDefault` у payload insert мовчки зникає,
+    // не падає помилкою.
+    insert: async ({ data }: { data: z.infer<typeof insertSchema> }) => {
+      const parsed = insertSchema.parse(data);
+      return run(async (db) => {
         // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
         // мутацій «підтвердяться» локально без запису в БД.
         // 🔴 Подвійний каст через `unknown`: генеричний `T["$inferSelect"]`
@@ -142,13 +152,20 @@ export function defineAdminResource<
         // resource-schemas.ts.
         const rows = (await db
           .insert(config.table)
-          .values(data as never)
+          .values(parsed as never)
           .returning()) as unknown as T['$inferSelect'][];
         return rows;
-      }),
+      });
+    },
 
-    update: async ({ data }: { data: z.infer<typeof updateSchema> }) =>
-      run(async (db) => {
+    update: async ({ data }: { data: z.infer<typeof updateSchema> }) => {
+      // 🔴 `patchSchema` (resource-schemas.ts) пікає лише writable-ключі й
+      // РЕФАЙНИТЬ непорожність ПІСЛЯ strip: patch, що складається лише з
+      // readonly-полів (напр. `{ isDefault: true }`), стає `{}` і валить
+      // `.parse()` тут ЖЕ, ще ДО `run` — readonly-патч ніколи не доходить
+      // до транзакції.
+      const parsed = updateSchema.parse(data);
+      return run(async (db) => {
         // 🔴 Відхилення від брифа (typecheck), знахідка Task 8 (build:packages,
         // тобто `tsc -p tsconfig.dts.json`): `const out = []` — «evolving
         // array» — під ЦИМ прогоном (emitDeclarationOnly) TS звужує елемент
@@ -158,7 +175,7 @@ export function defineAdminResource<
         // бачить — той самий код у ньому чистий; мінімальний фікс — явна
         // анотація типу масиву замість покладання на evolving-inference.
         const out: T['$inferSelect'][] = [];
-        for (const { id, patch } of data) {
+        for (const { id, patch } of parsed) {
           // 🔴 Відхилення від брифа (typecheck): `db.update(config.table)`
           // з генеричним `T extends Table` не звужує `.returning()` до
           // конкретного масиву — TS2488 на деструктуризації, TS7053 на
@@ -184,17 +201,20 @@ export function defineAdminResource<
           out.push(row);
         }
         return out;
-      }),
+      });
+    },
 
-    remove: async ({ data }: { data: z.infer<typeof removeSchema> }) =>
-      run(async (db) => {
-        const ids = data.map((d) => d.id);
+    remove: async ({ data }: { data: z.infer<typeof removeSchema> }) => {
+      const parsed = removeSchema.parse(data);
+      return run(async (db) => {
+        const ids = parsed.map((d) => d.id);
         const rows = await db
           .delete(config.table)
           .where(inArray(columns['id'], ids as never))
           .returning();
         return { count: rows.length };
-      }),
+      });
+    },
   };
 }
 

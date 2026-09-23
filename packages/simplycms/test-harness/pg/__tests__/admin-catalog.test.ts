@@ -232,28 +232,53 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     ).rejects.toThrow(/недозволеній колонці/);
   });
 
-  // 🔴 Відхилення від брифа (факт коду): `ops.insert()` САМ Zod НЕ ганяє —
-  // strip readonly-полів робить `inputValidator` на межі serverFn (Task 5),
-  // а не сама операція. Виклик `.insert()` напряму (як буквально в плані) з
-  // `isDefault: true` у payload проносить його аж до `db.insert().values()`
-  // без жодного strip — і `is_default` реально стає `true` (перевірено:
-  // тест зі старою формою РЕАЛЬНО червонів). Тут ЯВНО проганяємо
-  // `insertSchema.parse()` перед `.insert()` — це і є те, що робить
-  // inputValidator у реальному запиті; так тест доводить ПОВНИЙ шлях, а не
-  // хибне припущення про валідацію всередині операції.
-  it('модифікація: insert без isDefault у writable — прапорець лишається false (шлях через inputValidator)', async () => {
+  // 🔴 А2 (рішення архітектора): `ops.insert()` ТЕПЕР сам парсить вхід своєю
+  // ж `insertSchema` ДО `runAdmin` — інваріант «readonly-поле не пишеться
+  // generic-write» тримає ОПЕРАЦІЯ, а не лише `inputValidator` межі serverFn
+  // (Task 5). Буквальний виклик (як у плані): `isDefault: true` у payload,
+  // `as never` — той самий обхід TS excess-property check, що обходив би
+  // РЕАЛЬНИЙ виклик з мережі (там TS не існує). Schema strip-ить readonly-
+  // ключ мовчки, ще ДО `db.insert().values()`.
+  it('модифікація: insert без isDefault у writable — прапорець лишається false', async () => {
     const [p] = await productsOps.insert({ data: [product(6)] });
-    const parsed = productModificationsOps.insertSchema.parse([
-      {
-        id: crypto.randomUUID(),
-        productId: p!.id,
-        slug: 'm1',
-        name: 'M1',
-        isDefault: true,
-      },
-    ]);
-    const [m] = await productModificationsOps.insert({ data: parsed });
+    const [m] = await productModificationsOps.insert({
+      data: [
+        {
+          id: crypto.randomUUID(),
+          productId: p!.id,
+          slug: 'm1',
+          name: 'M1',
+          isDefault: true,
+        } as never,
+      ],
+    });
     expect(m!.isDefault).toBe(false);
+  });
+
+  // 🔴 А2, новий кейс: прямий `ops.update()` лише readonly-полем, повз
+  // серверну межу (харнес-виклик, як у решті цього файла). `patchSchema`
+  // (resource-schemas.ts) пікає ЛИШЕ writable-ключі — `isDefault` strip-иться
+  // ще ДО `.refine()`, тож патч стає ПОРОЖНІМ і саме РЕФАЙН валить парсинг
+  // («patch не може бути порожнім»): фактична поведінка — ZodError ДО
+  // транзакції, а не мовчазний no-op зі збереженим старим значенням.
+  it('А2: пряме update лише readonly-полем (isDefault) — ZodError від порожнього patch, прапорець не змінився', async () => {
+    const [p] = await productsOps.insert({ data: [product(9)] });
+    const [m] = await productModificationsOps.insert({
+      data: [
+        { id: crypto.randomUUID(), productId: p!.id, slug: 'm9', name: 'M9' },
+      ],
+    });
+    const err = await productModificationsOps
+      .update({ data: [{ id: m!.id, patch: { isDefault: true } as never }] })
+      .catch((e: unknown) => e);
+    expect((err as { name?: string }).name).toBe('ZodError');
+    expect(
+      await queryRows(
+        dbUrl,
+        `select is_default from public.product_modifications where id = $1`,
+        [m!.id],
+      ),
+    ).toEqual([{ is_default: false }]);
   });
 
   it('читальний ресурс розділів бачить і неактивні (адмін-поверхня)', async () => {
