@@ -27,6 +27,13 @@ export const messages: Catalog = {
   'admin.products.featured': 'Featured',
   'admin.products.createdAt': 'Created:',
   'admin.products.updatedAt': 'Updated:',
+  'admin.products.notFound': 'Product not found',
+  'admin.products.slugLabel': 'URL (slug) *',
+  'admin.products.slugHint':
+    'Latin letters, digits and hyphens — e.g. wireless-mouse-100w',
+  'admin.products.seoTitle': 'SEO',
+  'admin.products.metaTitle': 'Meta Title',
+  'admin.products.metaDescription': 'Meta Description',
 
   'admin.products.loadMore': 'Show more',
   'admin.products.filters.section': 'Section',

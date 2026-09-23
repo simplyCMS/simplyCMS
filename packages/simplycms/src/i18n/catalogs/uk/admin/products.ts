@@ -25,6 +25,13 @@ export const messages = {
   'admin.products.featured': 'Рекомендований',
   'admin.products.createdAt': 'Створено:',
   'admin.products.updatedAt': 'Оновлено:',
+  'admin.products.notFound': 'Товар не знайдено',
+  'admin.products.slugLabel': 'URL (slug) *',
+  'admin.products.slugHint':
+    'Латиниця, цифри й дефіс — наприклад, wireless-mouse-100w',
+  'admin.products.seoTitle': 'SEO',
+  'admin.products.metaTitle': 'Meta Title',
+  'admin.products.metaDescription': 'Meta Description',
 
   // Список товарів (Е3-2): фільтри + «Показати ще», без текстового пошуку.
   'admin.products.loadMore': 'Показати ще',
