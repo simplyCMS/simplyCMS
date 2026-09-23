@@ -292,6 +292,19 @@ describe('m3: refine ресурсу — images звужено до масиву 
     ).toBe(true);
   });
 
+  it('products.update: patch БЕЗ images — ok (рефайнена колонка лишається optional, а не стає required)', () => {
+    // Ловить розходження, яке НЕ зловили б тести вище: `refine` замінює
+    // саму zod-схему колонки, а nullable/optional довішує ПОВЕРХ рушій
+    // drizzle-zod (`updateConditions.optional` — завжди `true` для update).
+    // Якщо цю формулу загубити (наприклад, узяти рефайнер СИРИМ, без
+    // подальшого `.optional()`), `images` стала б обовʼязковим полем
+    // patch-а — кожен `update`, що не чіпає картинки, впав би.
+    expect(
+      productsOps.updateSchema.safeParse([{ id: P_ID, patch: { name: 'P2' } }])
+        .success,
+    ).toBe(true);
+  });
+
   it('product-modifications.insert: images: {} — ZodError; [] і [рядок] — валідні', () => {
     const row = { id: M_ID, productId: P_ID, slug: 'm1', name: 'M1' };
     expect(

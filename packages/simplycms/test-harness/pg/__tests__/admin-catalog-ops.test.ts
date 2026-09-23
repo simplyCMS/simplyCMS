@@ -427,7 +427,17 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   describe('advisory-lock: доказ серіалізації (mod-default/prices/stock)', () => {
     /** Тримає pg_advisory_xact_lock(hashtextextended(key,0)) у ВІДКРИТІЙ
      *  транзакції окремого зʼєднання — імітує конкурентну адмін-операцію
-     *  ДО того, як вона встигла зняти лок COMMIT-ом. */
+     *  ДО того, як вона встигла зняти лок COMMIT-ом.
+     *
+     * 🔴 `release`/`cleanup` — ІДЕМПОТЕНТНА пара (прапорець `closed`):
+     * `release` — штатний шлях (commit + end), `cleanup` — гард у
+     * `finally` тесту. Якщо проміжний `expect` між `holdLock` і `release`
+     * впаде, `release` НЕ встигне викликатись — без `finally` клієнт
+     * лишився б підключеним із ВІДКРИТОЮ транзакцією і лок висів би аж до
+     * завершення процесу vitest, б'ючи по НАСТУПНИХ тестах (той самий
+     * `key` заблокований). `cleanup` у такому разі відкочує транзакцію
+     * (лок знімається і на ROLLBACK, не лише на COMMIT) і закриває
+     * зʼєднання; якщо `release` уже відпрацював — `cleanup` no-op. */
     const holdLock = async (key: string) => {
       const client = new pg.Client({ connectionString: dbUrl });
       await client.connect();
@@ -436,10 +446,22 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         'select pg_advisory_xact_lock(hashtextextended($1, 0))',
         [key],
       );
+      let closed = false;
       return {
         release: async () => {
+          if (closed) return;
+          closed = true;
           await client.query('commit');
           await client.end();
+        },
+        cleanup: async () => {
+          if (closed) return;
+          closed = true;
+          try {
+            await client.query('rollback');
+          } finally {
+            await client.end();
+          }
         },
       };
     };
@@ -466,12 +488,16 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         [crypto.randomUUID(), fresh],
       );
       const lock = await holdLock(`mod-default:${fresh}`);
-      const op = setDefaultModificationOp({
-        data: { id: (m[0] as { id: string }).id },
-      });
-      expect(await stillPending(op, 300)).toBe(true);
-      await lock.release();
-      await expect(op).resolves.toBeDefined();
+      try {
+        const op = setDefaultModificationOp({
+          data: { id: (m[0] as { id: string }).id },
+        });
+        expect(await stillPending(op, 300)).toBe(true);
+        await lock.release();
+        await expect(op).resolves.toBeDefined();
+      } finally {
+        await lock.cleanup();
+      }
     });
 
     it('prices: конкурент тримає лок → saveProductPrices чекає ~300мс, резолвиться лише після release', async () => {
@@ -483,16 +509,20 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         [fresh],
       );
       const lock = await holdLock(`prices:${fresh}:-`);
-      const op = saveProductPricesOp({
-        data: {
-          productId: fresh,
-          modificationId: null,
-          prices: [{ priceTypeId: pt, price: '10', oldPrice: null }],
-        },
-      });
-      expect(await stillPending(op, 300)).toBe(true);
-      await lock.release();
-      await expect(op).resolves.toBeDefined();
+      try {
+        const op = saveProductPricesOp({
+          data: {
+            productId: fresh,
+            modificationId: null,
+            prices: [{ priceTypeId: pt, price: '10', oldPrice: null }],
+          },
+        });
+        expect(await stillPending(op, 300)).toBe(true);
+        await lock.release();
+        await expect(op).resolves.toBeDefined();
+      } finally {
+        await lock.cleanup();
+      }
     });
 
     it('stock: конкурент тримає лок → saveStock чекає ~300мс, резолвиться лише після release', async () => {
@@ -503,16 +533,20 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         [fresh],
       );
       const lock = await holdLock(`stock:${fresh}:-`);
-      const op = saveStockOp({
-        data: {
-          productId: fresh,
-          modificationId: null,
-          quantities: [{ pickupPointId: POINT, quantity: 1 }],
-        },
-      });
-      expect(await stillPending(op, 300)).toBe(true);
-      await lock.release();
-      await expect(op).resolves.toBeDefined();
+      try {
+        const op = saveStockOp({
+          data: {
+            productId: fresh,
+            modificationId: null,
+            quantities: [{ pickupPointId: POINT, quantity: 1 }],
+          },
+        });
+        expect(await stillPending(op, 300)).toBe(true);
+        await lock.release();
+        await expect(op).resolves.toBeDefined();
+      } finally {
+        await lock.cleanup();
+      }
     });
   });
 });
