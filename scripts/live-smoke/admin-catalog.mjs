@@ -50,6 +50,10 @@ export async function runAdminCatalogStep({
 
   const context = await browser.newContext();
   const page = await context.newPage();
+  // Окремий лічильник від `errors` воронки покупця (`live-smoke.mjs`) —
+  // інший browser context, інша сесія (Е3-20).
+  const adminErrors = [];
+  page.on('pageerror', (e) => adminErrors.push(String(e)));
   try {
     // 1. Запрошення → пароль → /admin.
     await page.goto(url, { waitUntil: 'networkidle' });
@@ -132,6 +136,13 @@ export async function runAdminCatalogStep({
     await verifyStorefront({ page, base, check, section, slug });
     await verifyDuplicateSlugToast({ page, base, check, section, slug });
     await verifyDelete({ page, base, dbUrl, check, section, slug });
+
+    // 7. Нуль pageerror — підсумок у ту саму таблицю `live-smoke.mjs`.
+    check(
+      'адмін pageerror за весь крок каталогу',
+      adminErrors.length === 0,
+      adminErrors.length === 0 ? '0' : adminErrors.join(' | '),
+    );
   } finally {
     await context.close();
   }

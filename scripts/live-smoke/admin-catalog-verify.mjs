@@ -59,10 +59,17 @@ export async function verifyDuplicateSlugToast({
   await page.locator('#product-section').click();
   await page.getByRole('option', { name: section.name }).click();
   await page.getByRole('button', { name: 'Створити' }).click();
+  // 🔴 НЕ `.isVisible({ timeout })`: `timeout` там deprecated і мовчки
+  // ігнорується (Playwright не чекає появи, читає DOM ОДРАЗУ) — гонка
+  // проти асинхронного 409+тосту, спіймана живим прогоном Е3-20.
+  // `.waitFor({ state: 'visible' })` реально чекає й ретраїть.
   const toast = page.getByText('Такий URL (slug) уже зайнятий');
   check(
     'адмін: дубль slug → тост i18n',
-    await toast.isVisible({ timeout: 10_000 }).catch(() => false),
+    await toast
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false),
     '',
   );
 }
