@@ -8,7 +8,11 @@ import {
   type SubsetAllow,
   type SubsetPayload,
 } from './subset';
-import { buildResourceSchemas, type ColumnName } from './resource-schemas';
+import {
+  buildResourceSchemas,
+  type ColumnName,
+  type ResourceRefine,
+} from './resource-schemas';
 import { runAdmin } from './run';
 
 /**
@@ -43,6 +47,9 @@ export function defineAdminResource<
     /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
      *  тригера updated_at у каноні немає). */
     touch?: ColumnName<T>;
+    /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
+     *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
+    refine?: ResourceRefine;
   } & ([Exclude<ColumnName<T>, W | R>] extends [never]
     ? unknown
     : { __missingColumns: Exclude<ColumnName<T>, W | R> }) &
@@ -58,7 +65,7 @@ export function defineAdminResource<
   };
   const columns = config.table as unknown as Record<string, never>;
   const { rowSchema, insertSchema, updateSchema, removeSchema } =
-    buildResourceSchemas(config.table, config.writable);
+    buildResourceSchemas(config.table, config.writable, config.refine);
 
   /**
    * Спільна склейка К3-13 — тепер `runAdmin` (Task 1): перший рубіж →
@@ -131,10 +138,11 @@ export function defineAdminResource<
         return (await q) as T['$inferSelect'][];
       }),
 
-    // 🔴 Task 1 (А2): фабрика сама парсить вхід СВОЄЮ ж схемою, ДО `run`
-    // (тобто до першого рубежу/транзакції). `inputValidator` serverFn
-    // (Task 5) робить те саме на межі HTTP, але інваріант «readonly-поле не
-    // пишеться generic-write» мусить тримати ОПЕРАЦІЯ, а не лише межа —
+    // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
+    // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
+    // `inputValidator` serverFn з admin-server/index.ts (Task 3) робить те
+    // саме на межі HTTP, але інваріант «readonly-поле не пишеться
+    // generic-write» мусить тримати ОПЕРАЦІЯ, а не лише межа —
     // інакше прямий виклик `ops.insert(...)` повз serverFn (харнес-тести,
     // майбутні internal-виклики) проносить readonly-поле аж до `.values()`.
     // Zod-схема БЕЗ `.strict()` (дефолтний режим "strip") сама відкидає

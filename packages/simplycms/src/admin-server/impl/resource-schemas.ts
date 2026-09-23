@@ -1,4 +1,4 @@
-import type { Table } from 'drizzle-orm';
+import type { Column, Table } from 'drizzle-orm';
 import {
   createInsertSchema,
   createSelectSchema,
@@ -13,13 +13,81 @@ export type ColumnName<T extends Table> = Extract<
 >;
 
 /**
+ * Форма `refine` ресурсу (m3, рев'ю хвилі B): ключ — імʼя колонки, значення —
+ * ФУНКЦІЯ `(defaultSchema) => ZodType`. 🔴 Саме функція, не голий `ZodType`:
+ * рантайм drizzle-zod (`handleColumns`, `index.mjs`) для голого `ZodType`
+ * робить `continue` ДО блоку `.nullable()/.optional()` — колонка без
+ * `.notNull()` стала б обовʼязковою в patch-і (кожен `update` мусив би нести
+ * поле, якого не чіпає). Функція той блок не пропускає: nullable/optional
+ * лишаються тими, що дає сама колонка (`insertConditions`/`updateConditions`).
+ */
+export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
+
+/**
+ * Застосовує `refine` ПОВЕРХ готової insert/update-схеми — рахуючи
+ * nullable/optional РІВНО тими самими умовами, що й сам рушій drizzle-zod
+ * (`insertConditions`/`updateConditions`, `index.mjs`): nullable — якщо
+ * колонка НЕ `notNull`; optional — на update ЗАВЖДИ, на insert — якщо
+ * колонка НЕ `notNull` АБО має DEFAULT. Це НЕ наївний override: наївний
+ * (`.extend({col: schema})` без цього розрахунку) загубив би саме ці дві
+ * умови — те, від чого явно застерігає задача m3.
+ *
+ * 🔴 Чому не буквально другий аргумент `createInsertSchema`/
+ * `createUpdateSchema`: генеричний `TRefine`, виведений із
+ * loosely-типізованого `ResourceRefine`, ламає інстанціацію типу для ВСІХ
+ * колонок одразу (TS2589 «excessively deep», а `refine as any` розвалює
+ * `.pick()` нижче на несумісний union перевантажень — `TS2349`), той самий
+ * клас нерозвʼязного інференсу, що вже задокументований нижче для `.pick()`.
+ * `applyRefine` — тотожність на рівні ТИПУ (`<S> → z.ZodObject<S>`), тож
+ * `InsertShape`/`UpdateShape` нижче лишаються тими самими, що й без refine;
+ * ціна — статичний тип РЕФАЙНЕНОЇ колонки лишається дефолтним
+ * (`jsonSchema`), а не звуженим до `z.array(z.string())` — рантайм-валідація
+ * від цього не залежить.
+ */
+function applyRefine<S extends z.ZodRawShape>(
+  full: z.ZodObject<S>,
+  table: Table,
+  refine: ResourceRefine | undefined,
+  mode: 'insert' | 'update',
+): z.ZodObject<S> {
+  if (!refine) return full;
+  const columns = table as unknown as Record<string, Column>;
+  // 🔴 `unknown`, не `z.ZodType`: `full.shape` типізований внутрішнім
+  // `$ZodType` (Zod-4-приватний), публічний `ZodType` з ним структурно НЕ
+  // збігається (TS2322) — той самий приймальний прийом, що вже застосовано
+  // трохи нижче для касту РЕЗУЛЬТАТУ `.pick()`.
+  const shape: Record<string, unknown> = { ...full.shape };
+  for (const [key, refiner] of Object.entries(refine)) {
+    const column = columns[key];
+    const notNull = column?.notNull === true;
+    const hasDefault = column?.hasDefault === true;
+    let schema = refiner(full.shape[key as keyof S] as never);
+    if (!notNull) schema = schema.nullable();
+    if (mode === 'update' || !notNull || hasDefault) schema = schema.optional();
+    shape[key] = schema;
+  }
+  return z.object(shape as never) as unknown as z.ZodObject<S>;
+}
+
+/**
  * Zod-схеми ресурсу адмінки, виведені з Drizzle-таблиці (винесено з
  * `defineAdminResource` — Task 1, амендмент К3-9′): rowSchema для
  * читання, insert/update/remove для запису, звужені до `writable`.
+ *
+ * 🔴 `refine` (m3) — рефайнменти drizzle-zod (форма, яку розуміє сам рушій
+ * генерації: `(schema) => ZodType`), а не НАЇВНИЙ override, накладений на
+ * вже готову схему без розрахунку nullable/optional. Буквально ДРУГИМ
+ * аргументом `createInsertSchema`/`createUpdateSchema` їх передати не
+ * вдалося (генеричний `TRefine` ламає інстанціацію типу для ВСІХ колонок —
+ * `applyRefine` нижче й чому саме); застосовуються ПІСЛЯ побудови, але за
+ * ТІЄЮ САМОЮ формулою nullable/optional, що й сам рушій. `createSelectSchema`
+ * рефайнмент НЕ отримує — читання рядків (`rowSchema`) лишається дефолтним
+ * виведенням drizzle-zod.
  */
 export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
   table: T,
   writable: readonly W[],
+  refine?: ResourceRefine,
 ) {
   const pickWritable = Object.fromEntries(writable.map((c) => [c, true])) as {
     [K in W]: true;
@@ -54,8 +122,18 @@ export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
   // від інференсу `M`) і кажемо компілятору, що саме такий тип повертає
   // рантайм-виклик `.pick(pickWritable)`. Це ТОЧНО те, що робить рантайм:
   // `pickWritable` містить рівно ключі `W`.
-  const insertSchemaFull = createInsertSchema(table);
-  const updateSchemaFull = createUpdateSchema(table);
+  const insertSchemaFull = applyRefine(
+    createInsertSchema(table),
+    table,
+    refine,
+    'insert',
+  );
+  const updateSchemaFull = applyRefine(
+    createUpdateSchema(table),
+    table,
+    refine,
+    'update',
+  );
   type InsertShape = typeof insertSchemaFull extends { shape: infer S }
     ? S
     : never;

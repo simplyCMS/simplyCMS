@@ -18,6 +18,8 @@ vi.mock('simplycms/db', () => ({
 }));
 
 import { defineAdminResource } from '../resource';
+import { productsOps } from '../products/resource';
+import { productModificationsOps } from '../product-modifications/resource';
 
 const ops = defineAdminResource({
   entity: 'order_statuses',
@@ -247,5 +249,76 @@ describe('defineAdminResource (К3-4′)', () => {
     expect(call2).toHaveLength(2);
     expect(render(call2[0])).toContain('"name" desc');
     expect(render(call2[1])).toContain('"id" asc');
+  });
+});
+
+// m3 (рев'ю хвилі B): `images` — jsonb БЕЗ власної форми в drizzle-zod
+// (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем);
+// дефолтна схема рушія — вільний `jsonSchema` (приймає `{}` як валідний
+// JSON). `refine` у products/resource.ts і product-modifications/resource.ts
+// звужує це до `z.array(z.string())`, зберігаючи nullable/optional (колонка
+// без `.notNull()`, з DEFAULT `[]`).
+describe('m3: refine ресурсу — images звужено до масиву рядків', () => {
+  const P_ID = '0e300000-0000-4000-8000-000000000001';
+  const M_ID = '0e300000-0000-4000-8000-000000000002';
+
+  it('products.insert: images: {} — ZodError; [] і [рядок] — валідні; відсутнє/null — валідні (nullable+optional)', () => {
+    const row = { id: P_ID, slug: 'p1', name: 'P1' };
+    expect(
+      productsOps.insertSchema.safeParse([{ ...row, images: {} }]).success,
+    ).toBe(false);
+    expect(
+      productsOps.insertSchema.safeParse([{ ...row, images: [] }]).success,
+    ).toBe(true);
+    expect(
+      productsOps.insertSchema.safeParse([{ ...row, images: ['ref'] }]).success,
+    ).toBe(true);
+    expect(productsOps.insertSchema.safeParse([row]).success).toBe(true);
+    expect(
+      productsOps.insertSchema.safeParse([{ ...row, images: null }]).success,
+    ).toBe(true);
+  });
+
+  it("products.update: patch.images: 'str' — ZodError; масив рядків — валідний", () => {
+    expect(
+      productsOps.updateSchema.safeParse([
+        { id: P_ID, patch: { images: 'str' } },
+      ]).success,
+    ).toBe(false);
+    expect(
+      productsOps.updateSchema.safeParse([
+        { id: P_ID, patch: { images: ['a', 'b'] } },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it('product-modifications.insert: images: {} — ZodError; [] і [рядок] — валідні', () => {
+    const row = { id: M_ID, productId: P_ID, slug: 'm1', name: 'M1' };
+    expect(
+      productModificationsOps.insertSchema.safeParse([{ ...row, images: {} }])
+        .success,
+    ).toBe(false);
+    expect(
+      productModificationsOps.insertSchema.safeParse([{ ...row, images: [] }])
+        .success,
+    ).toBe(true);
+    expect(
+      productModificationsOps.insertSchema.safeParse([
+        { ...row, images: ['ref'] },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it("product-modifications.update: patch.images: 'str' — ZodError; масив рядків — валідний", () => {
+    expect(
+      productModificationsOps.updateSchema.safeParse([
+        { id: M_ID, patch: { images: 'str' } },
+      ]).success,
+    ).toBe(false);
+    expect(
+      productModificationsOps.updateSchema.safeParse([
+        { id: M_ID, patch: { images: ['a'] } },
+      ]).success,
+    ).toBe(true);
   });
 });

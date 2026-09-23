@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { productModifications } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -17,6 +18,11 @@ export const productModificationsOps = defineAdminResource({
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
   touch: 'updatedAt',
+  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в drizzle-zod
+  // (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем) —
+  // без рефайнменту insert `{}`/update `'str'` проходили б як валідний
+  // `any`. Функція, не голий ZodType — `resource-schemas.ts` пояснює чому.
+  refine: { images: () => z.array(z.string()) },
   writable: [
     'productId',
     'slug',

@@ -11,9 +11,4 @@
 // призначений лише для jsonb-полів без домашньої структури (JSON-LD-подібні
 // обʼєкти `returnPolicy`/`shippingDetails`, довільна конфігурація `options`).
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue | undefined };
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };

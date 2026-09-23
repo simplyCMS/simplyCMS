@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { products } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -17,6 +18,9 @@ export const productsOps = defineAdminResource({
   sortable: ['createdAt', 'updatedAt', 'name'],
   defaultOrder: { column: 'createdAt', direction: 'desc' },
   touch: 'updatedAt',
+  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в drizzle-zod,
+  // те саме, що й у product-modifications/resource.ts.
+  refine: { images: () => z.array(z.string()) },
   writable: [
     'sectionId',
     'slug',

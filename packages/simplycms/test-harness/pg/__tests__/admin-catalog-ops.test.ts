@@ -7,6 +7,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import pg from 'pg';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -414,5 +415,104 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         [fresh],
       ),
     ).toHaveLength(1);
+  });
+
+  // Доказ advisory-lock (m3-m6, рев'ю хвилі B): детермінований, без
+  // покладання на випадкову перемогу гонки (Promise.all вище доводить лише
+  // «обидва успішні», не сам ФАКТ серіалізації). Окремий pg-клієнт (той
+  // самий владний dbUrl, що й фікстури) бере ТОЙ САМИЙ advisory-lock, що й
+  // операція (`pg_advisory_xact_lock(hashtextextended(key, 0))`,
+  // `impl/catalog-lock.ts`), і тримає його у ВІДКРИТІЙ транзакції — виклик
+  // операції не сміє резолвитись, доки конкурент не відпустить лок COMMIT-ом.
+  describe('advisory-lock: доказ серіалізації (mod-default/prices/stock)', () => {
+    /** Тримає pg_advisory_xact_lock(hashtextextended(key,0)) у ВІДКРИТІЙ
+     *  транзакції окремого зʼєднання — імітує конкурентну адмін-операцію
+     *  ДО того, як вона встигла зняти лок COMMIT-ом. */
+    const holdLock = async (key: string) => {
+      const client = new pg.Client({ connectionString: dbUrl });
+      await client.connect();
+      await client.query('begin');
+      await client.query(
+        'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [key],
+      );
+      return {
+        release: async () => {
+          await client.query('commit');
+          await client.end();
+        },
+      };
+    };
+
+    /** true — проміс НЕ зарезолвився за `ms` (лок тримає). */
+    const stillPending = (promise: Promise<unknown>, ms: number) => {
+      const TIMEOUT = Symbol('timeout');
+      return Promise.race([
+        promise.then(() => 'resolved' as const),
+        new Promise((r) => setTimeout(r, ms, TIMEOUT)),
+      ]).then((v) => v === TIMEOUT);
+    };
+
+    it('mod-default: конкурент тримає лок → setDefault чекає ~300мс, резолвиться лише після release', async () => {
+      const fresh = crypto.randomUUID();
+      await queryRows(
+        dbUrl,
+        `insert into public.products (id, slug, name) values ($1,'ops-lock-md','LM')`,
+        [fresh],
+      );
+      const m = await queryRows(
+        dbUrl,
+        `insert into public.product_modifications (id, product_id, slug, name) values ($1,$2,'lm1','LM1') returning id`,
+        [crypto.randomUUID(), fresh],
+      );
+      const lock = await holdLock(`mod-default:${fresh}`);
+      const op = setDefaultModificationOp({
+        data: { id: (m[0] as { id: string }).id },
+      });
+      expect(await stillPending(op, 300)).toBe(true);
+      await lock.release();
+      await expect(op).resolves.toBeDefined();
+    });
+
+    it('prices: конкурент тримає лок → saveProductPrices чекає ~300мс, резолвиться лише після release', async () => {
+      const pt = await retail();
+      const fresh = crypto.randomUUID();
+      await queryRows(
+        dbUrl,
+        `insert into public.products (id, slug, name) values ($1,'ops-lock-pr','LP')`,
+        [fresh],
+      );
+      const lock = await holdLock(`prices:${fresh}:-`);
+      const op = saveProductPricesOp({
+        data: {
+          productId: fresh,
+          modificationId: null,
+          prices: [{ priceTypeId: pt, price: '10', oldPrice: null }],
+        },
+      });
+      expect(await stillPending(op, 300)).toBe(true);
+      await lock.release();
+      await expect(op).resolves.toBeDefined();
+    });
+
+    it('stock: конкурент тримає лок → saveStock чекає ~300мс, резолвиться лише після release', async () => {
+      const fresh = crypto.randomUUID();
+      await queryRows(
+        dbUrl,
+        `insert into public.products (id, slug, name) values ($1,'ops-lock-st','LS')`,
+        [fresh],
+      );
+      const lock = await holdLock(`stock:${fresh}:-`);
+      const op = saveStockOp({
+        data: {
+          productId: fresh,
+          modificationId: null,
+          quantities: [{ pickupPointId: POINT, quantity: 1 }],
+        },
+      });
+      expect(await stillPending(op, 300)).toBe(true);
+      await lock.release();
+      await expect(op).resolves.toBeDefined();
+    });
   });
 });
