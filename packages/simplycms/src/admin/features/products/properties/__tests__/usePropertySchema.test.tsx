@@ -160,11 +160,14 @@ describe('usePropertySchema', () => {
     ]);
   });
 
-  it('rows — у порядку sortOrder призначень, не порядку відповіді сервера', async () => {
+  it('rows — у порядку sortOrder призначень, не порядку відповіді сервера й не id', async () => {
+    // 🔴 id НАВМИСНЕ алфавітно у ЗВОРОТНЬОМУ порядку до sortOrder — інакше
+    // `.orderBy` можна забрати, а тест лишиться зеленим (алфавітний
+    // порядок id збігся б із очікуваним).
     listSectionPropertyAssignments.mockResolvedValueOnce([
-      assignment('a2', 'p2', 2),
-      assignment('a0', 'p0', 0),
-      assignment('a1', 'p1', 1),
+      assignment('aaa', 'p2', 2),
+      assignment('zzz', 'p0', 0),
+      assignment('mmm', 'p1', 1),
     ]);
     listSectionProperties.mockResolvedValueOnce([
       textProperty('p0'),
@@ -176,9 +179,9 @@ describe('usePropertySchema', () => {
     });
     await waitFor(() => expect(result.current.rows).toHaveLength(3));
     expect(result.current.rows.map((r) => r.assignment.id)).toEqual([
-      'a0',
-      'a1',
-      'a2',
+      'zzz',
+      'mmm',
+      'aaa',
     ]);
   });
 });
