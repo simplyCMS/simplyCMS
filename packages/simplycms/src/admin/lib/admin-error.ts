@@ -6,13 +6,36 @@ import type { MessageKey } from 'simplycms/i18n';
  * накладеними властивостями (К3-13). Клас `AdminConflictError` живе в
  * server-only дереві — сюди він не імпортується навіть типом.
  */
+type ConflictShape = {
+  name?: unknown;
+  kind?: unknown;
+  constraint?: unknown;
+  cause?: unknown;
+};
+
+/** Скільки рівнів `.cause` розгортати — коло, не нескінченний цикл. */
+const MAX_CAUSE_DEPTH = 5;
+
+/**
+ * Знаходить перший рівень (сам обʼєкт або якийсь `.cause` під ним), що несе
+ * `name === 'AdminConflictError'`. UPSTREAM:TSDB-5 — через TanStack DB
+ * транзакцію помилка теоретично може дійти обгорнутою в `.cause`; основний
+ * захист — `normalizeThrown` (handlers.ts), тримає genuine Error ДО
+ * @tanstack/db, це друга лінія.
+ */
+function unwrapConflict(error: unknown): ConflictShape | null {
+  let current: unknown = error;
+  for (let depth = 0; depth < MAX_CAUSE_DEPTH && current; depth++) {
+    const e = current as ConflictShape;
+    if (e.name === 'AdminConflictError') return e;
+    current = e.cause;
+  }
+  return null;
+}
+
 export function adminErrorKey(error: unknown): MessageKey | null {
-  const e = error as {
-    name?: unknown;
-    kind?: unknown;
-    constraint?: unknown;
-  } | null;
-  if (e?.name !== 'AdminConflictError') return null;
+  const e = unwrapConflict(error);
+  if (!e) return null;
   if (e.kind === 'reference') return 'admin.errors.conflictReference';
   // Входження, не суфікс: product_modifications_product_slug_unique названо
   // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
