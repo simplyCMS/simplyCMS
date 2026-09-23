@@ -111,6 +111,7 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/CLI/TOOL — Gate E знято в 0.4.1 разом зі стеком Supabase), які зони не покриті й що змінить `apps/dev-store`
+- 🔴 [`docs/architecture/upstream-workarounds.md`](docs/architecture/upstream-workarounds.md) — **ЄДИНИЙ реєстр обходів дефектів залежностей** (TanStack DB, drizzle-zod, typescript-eslint, tsdown…): симптом, корінь у коді бібліотеки, наш обхід, як перевірити виправлення на новій версії і що тоді прибрати. У коді — маркери `UPSTREAM:<ID>` (`git grep`). При БУДЬ-ЯКОМУ бампі залежності — перевірити її записи; новий обхід — новий запис, не лише коментар
 - [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff/theme:conformance): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 - [`docs/architecture/plugins.md`](docs/architecture/plugins.md) — механізм плагінів (Фаза 3): контракт `definePlugin`, рантайм-контур, межа довіри, конвеєр міграцій `plg_*`, i18n плагінів, adminRoutes, інваріант імені, межі v1
 - [`docs/architecture/themes.md`](docs/architecture/themes.md) — механізм тем (Фаза 4): контракт `ThemeModule`, пакування npm vs copy-in, `bootstrapThemes` і БД, conformance-kit, межі v1
@@ -302,7 +303,7 @@ i18n-селектори адмінки й воронки. Негативні к�
 - **Testing:** Vitest 4 + Testing Library + jsdom 30
 - **Formatting:** Prettier 3
 
-🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція):
+🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція; реєстр — `UPSTREAM:TSESL-1`):
 TS 7 — нативний Go-компілятор без стабільного програмного API до 7.1, тож
 `typescript-eslint` закрив запит підтримки як **not planned** (його peer —
 `typescript <6.1.0`). Це наш гейт `pnpm lint` — і блокер тут ОДИН.

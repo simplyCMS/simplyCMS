@@ -34,6 +34,11 @@
 | Е3-14 | *(архітектор)* **`isNull` входить у контракт subset** на обох боках (`toSubsetPayload` + `impl/subset.ts`) | Ціни й залишки РІВНЯ ТОВАРУ — рядки з `modification_id IS NULL`. `isNull` є у словнику push-down самої бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути ширший зріз і дофільтровувати в JS — тобто push-down на половину |
 | Е3-15′ | 🔴 *(архітектор; ред. після Task 5, 2026-09-23)* **Сегмент `'list'` належить ВИКЛЮЧНО колекціям `admin-data`.** `entityKey()` НЕ має методу `list()`; ключ колекції — окремий `collectionKey(entity) → [entity, 'list']` (спека К3-3 не змінюється: ключ колекції той самий). Поза `admin-data` (вітрина, core, профіль, `*-ui`, теми, плагіни) — `variant(qualifier, id?)` або `scoped()`. Гейти: власне правило `eslint-rules/no-collection-key-outside-admin-data.mjs` (плагін `simplycms-collection-key`, усі форми імпорту/реекспорту, зона — весь пакет крім `admin-data` + тема й плагін) і кейс `bareListSegment` у `query-key-from-entity` (`[ENTITY.x, 'list', …]` поза `admin-data`); поведінковий тест `admin-data/__tests__/collection-key-storefront-isolation.test.ts` на реальному write-back | Виміряно двічі. (1) Аудит плану: вітрина й адмінка ділять ОДИН `QueryClient`, eager-колекція пише в `[entity,'list']` — вітринний запит під тим самим ключем читав би чужу форму (для `order_statuses` — живий дефект Е1б у `main`). (2) Виконання Task 5: write-back колекції (`updateCacheData`, `query-db-collection@1.2.11` `src/query.ts:2211`) робить `findAll({ queryKey: baseKey })` — ПРЕФІКСНИЙ пошук і `setQueryData` всього набору в кожен знайдений ключ; тож і `[...list(), 'featured']` вітрини отримав би адмінські рядки. Перша редакція Е3-15 закривала лише точний збіг. Гейт — через API (без `list()` сегмента не отримати) і окреме правило, а не `no-restricted-imports`: той уже несе тір-зони, а flat config замінює опції правила цілком |
 | Е3-16 | 🔴 *(архітектор, виміряно спайком 2026-09-23)* **On-demand колекція, яку гортає `useLiveInfiniteQuery`, мусить мати індекс сортування:** `autoIndex: 'eager'` + `defaultIndexType: BTreeIndex` (з `@tanstack/react-db`) | Без індексу `fetchNextPage` НЕ робить другого `loadSubset` — видно лише рядки першої сторінки + peek, `hasNextPage` падає в `false`. З індексом друга сторінка йде окремим запитом `{ limit: 2, offset: 3, cursor }` і дає рівно 4 рядки (ізольований прогін на `@tanstack/db@0.8.6`). Offset-пагінація Е3-2 реалізовна без fallback |
+| Е3-17 | 🔴 *(архітектор; блокер власника на демо, 2026-09-23)* **Усі on-demand колекції — ЛИШЕ через фабрику `onDemandCollectionOptions` (`admin-data`): `syncMode: 'on-demand'` + `gcTime: 0` + індекс сортування (Е3-16).** `syncMode: 'on-demand'` поза фабрикою забороняє `admin-data/__tests__/on-demand-factory-only.test.ts` | Власник: перейменував товар → повернувся в список → у списку лише цей товар (F5 — усі). Write-back записує synced-набір колекції в УСІ ключі під префіксом, включно з неактивними (реєстр `docs/architecture/upstream-workarounds.md`, **TSDB-1**); для on-demand synced = лише активні зрізи. `gcTime: 0` прибирає неактивні зрізи; виміряно: infinite-список сторінок не губить, надмножина в активних ключах у живих запитах не видна. Канон write-back К3-7 для on-demand без цього — хибний (помилка плану) |
+| Е3-18 | *(архітектор; рев'ю хвилі C)* **Форми адмінки: (1) панелі, що зберігають окремо (ціни, залишки, модифікації, властивості), — НІКОЛИ не нащадки `<form>` сутності** (сиблінги в межах `FormProvider`; у діалозі `<form>` обгортає лише поля, сабміт — `form={id}`), `type="button"` на кнопках панелей — другий рубіж; **(2) поле, яке змінює сервер поза формою (`stockStatus` за Е3-3), у patch форми не входить** — окремий миттєвий контрол над ЖИВИМ рядком колекції (`ModificationStatusControl` / контрол у `SimpleProductPanel`); **(3) невалідна форма не мовчить** — інлайн-помилки `role=alert` + тост `admin.products.fixFields` | (1) Вкладені форми: «Зберегти ціни/залишки», ↑/↓, «Видалити» сабмітили картку, а синтетичний submit спливав через портал діалогу (blocker рев'ю, доведено). (2) Знімок `defaultValues` перезаписував статус, перерахований `saveStock`, і обходив гвард Е3-3 звичайним сабмітом (major). (3) Порожній розділ / slug «Panel-1» → «Створити» без жодної реакції |
+
+**Обходи дефектів бібліотек** (TSDB-1…5, DZOD-1, DRZ-1, START-1) — у ЄДИНОМУ реєстрі
+`docs/architecture/upstream-workarounds.md`; у коді — маркери `UPSTREAM:<ID>`.
 
 **Поза Е3 (план це каже вголос):** текстовий пошук в адмінці (П6); CRUD розділів, типів цін, властивостей і опцій (Е4); `AddProductToOrder` і замовлення (Е5); видалення файлів зображень при видаленні товару та sweep орфанів (К4 — рядки `media` лишаються, обʼєкти прибирає sweep); інвалідація кешу вітрини в ІНШІЙ вкладці браузера (SSR свіжий на кожен запит; клієнтський кеш вітрини — `staleTime` 5 хв, карта інвалідації між вкладками — К2); віртуалізація таблиць.
 
@@ -2878,6 +2883,17 @@ git commit -m "feat(k3-e3): список товарів на on-demand коле�
 
 ## Task 7: Картка товару — форма, розділ, зображення, створення
 
+> 🔴 **Амендмент після хвилі C (Е3-17, Е3-18; коміти `674198af`, `37460a94`, `a2e4ddc1`, `6de79a53`).**
+> Код у репо — джерело правди для форми; сніпети нижче — первісна редакція. Відмінності:
+> панелі — діти `ProductForm` ПОЗА `<form>` (у межах `FormProvider`), перемикач панелей —
+> за ЖИВИМ рядком колекції (`data.hasModifications`, `data.sectionId`), не за `useWatch`;
+> `stockStatus` поза patch (контрол у `SimpleProductPanel`); `sectionId` НЕобовʼязковий
+> (легасі дозволяв, FK nullable); інлайн-помилки `#product-name-error`/`#product-slug-error`
+> + тост `admin.products.fixFields`; конфлікти — `adminErrorKey` з розгортанням `.cause`
+> (реєстр **TSDB-5**: транзакція `@tanstack/db` губить поля помилки serverFn — лікує
+> `normalizeThrown` у спільних хендлерах).
+
+
 **Files:**
 - Create: `packages/simplycms/src/admin/features/products/edit/{ProductEditPage,NewProductPage,ProductForm,ProductMainFields,ProductSeoFields,ProductSidebar,product-form-schema,useProductSave}.tsx|ts`
 - Create: `packages/simplycms/src/admin/features/products/edit/__tests__/{product-form-schema,useProductSave}.test.ts(x)`
@@ -2974,7 +2990,10 @@ export function toProductPatch(v: ProductFormValues) {
     hasModifications: v.hasModifications,
     images: v.images,
     sku: v.hasModifications ? null : orNull(v.sku),
-    stockStatus: v.hasModifications ? ('in_stock' as const) : v.stockStatus,
+    // 🔴 Е3-18: stockStatus у patch НЕ входить — його змінює сервер (saveStock,
+    // Е3-3), а знімок форми перезаписав би перерахований статус. Статус —
+    // окремий миттєвий контрол над живим рядком (Task 8). У draft створення
+    // (toProductDraft) початковий статус лишається.
   } satisfies Partial<Product>;
 }
 
@@ -3146,6 +3165,16 @@ git commit -m "feat(k3-e3): картка товару на колекції — 
 ```
 
 ## Task 8: Модифікації, ціни, залишки
+
+> 🔴 **Амендмент після хвилі C (Е3-18).** `ModificationDialog`: `<form>` лише над полями
+> модифікації, сабміт `form={id}`; `PricesEditor`/`StockEditor`/`PropertyValuesPanel` — поза
+> `<form>` діалогу. Статус модифікації: у формі — лише при СТВОРЕННІ (іде в insert); при
+> редагуванні — `ModificationStatusControl` над живим рядком `mods`. Негативний контроль
+> форм — СТРУКТУРНИЙ асерт (`button.closest('form') !== dialogForm`): jsdom не тригерить
+> нативний submit із кліку по вкладеній кнопці навіть на старій структурі, тож клік-тест не
+> дискримінує. Помилки іменованих операцій (`saveProductPrices`, `saveStock`, `setDefault`,
+> `reorder`) не проходять транзакцію колекції — `adminErrorKey` розпізнає їх у `catch` сторінки.
+
 
 **Files:**
 - Create: `packages/simplycms/src/admin/features/products/modifications/{ModificationsPanel,ModificationsTable,ModificationDialog,useModifications}.tsx|ts`
@@ -3540,6 +3569,13 @@ git commit -m "feat(k3-e3): multiselect — рядок на опцію (прав
 
 ## Task 10: Значення властивостей
 
+> 🔴 **Амендмент після хвилі C.** Підключення: `ProductEditPage` рендерить `PropertyValuesPanel`
+> як дитину `ProductForm` ПОЗА `<form>`, перемикач — за живим рядком (`data.hasModifications`,
+> `data.sectionId`); у діалозі модифікації — `sectionId` протягується
+> `ProductEditPage → ModificationsPanel → ModificationDialog` (секції діалогу поза його `<form>`).
+> Files/Modify доповнити: `ModificationsPanel`, `ModificationDialog`, `ModificationDialogSections`.
+
+
 **Files:**
 - Create: `packages/simplycms/src/admin/features/products/properties/{PropertyValuesPanel,PropertyInput,usePropertySchema,usePropertyValues}.tsx|ts`
 - Create: `__tests__/usePropertyValues.test.tsx`
@@ -3831,6 +3867,11 @@ describe('повнота зони mutation-cache-sync', () => {
 `import { listProducts } from 'simplycms/admin-server';` → тест червоний з
 цим файлом у `outside`. Повернути.
 
+🔴 **Виконано в хвилі C (`a2e4ddc1`):** `EXEMPT_DIRS` у `explicit-ids` звужено до
+`admin/pages/` і `admin/components/` — новий код `admin/features|hooks|lib|layouts` під
+основним гейтом за побудовою (раніше Task 7 звузив сканер ратчету, а виїмка лишалась на весь
+`admin/` — вставка без id у фічах не червонила жоден гейт). Нижче — лише ратчет легасі.
+
 - [ ] **Step 4: Ратчет id**
 
 Run: `pnpm test -- tests/admin-inserts-need-id.test.ts` — після видалення
@@ -3880,6 +3921,19 @@ git commit -m "test(k3-e3): повнота зони mutation-cache-sync, фіч�
 **Interfaces:**
 - Consumes: `issueOwnerInvite`, `ownerInviteStore` (`packages/simplycms/src/auth/index.ts`); id контролів з Tasks 7–8; демо-сід (`pnpm db:demo`: розділ `sonyachni-paneli`, СИСТЕМНА точка видачі, тип ціни `retail`)
 - Produces: `runAdminCatalogStep({ browser, base, dbUrl, storeEnv, check })`
+
+- [ ] **Step 0: Легасі-сторінки адмінки без Supabase env — заглушка, не падіння (рішення архітектора після хвилі C)**
+
+Власник після входу за запрошенням потрапляє на `/admin` (Dashboard) і бачить падіння
+«[simplycms/supabase] Відсутні змінні оточення…»: ~36 легасі-сторінок `admin/pages` досі на
+`supabase-js`, а контракт env магазину Supabase-ключів не містить (0.4.1). Живий прогін
+Step 4 проходить саме цим шляхом. Фікс — ОДНА точка на шляху легасі до клієнта Supabase
+(провайдер/`useSupabaseClient` адмінки або `browser-client.ts`, не кожна сторінка): без
+ключів — не кидати, а рендерити заглушку «Розділ ще не перенесено на V2» (новий i18n-ключ
+`admin.legacy.notMigrated` в обох локалях) з посиланням на живі розділи (товари, статуси
+замовлень). Редірект `/admin → /admin/products` НЕ робити (маскує стан, а Dashboard
+перепише Е4–Е6). Тест: рендер легасі-сторінки без Supabase env → заглушка, без throw;
+з env — легасі поведінка без змін. Зноситься разом із `supabase-js` у Е7.
 
 - [ ] **Step 1: Випуск запрошення поза магазином**
 
@@ -4100,6 +4154,10 @@ git commit -m "test(k3-e3): живий прогін каталогу адмін�
 - `saveProductPrices` не перевіряє, що `modificationId` належить `productId` (впевненість 60).
 - Дубль `pickupPointId` у вході `saveStock` → 409 (унікальний індекс) замість 400 зі схеми (50).
 - Теоретичний дедлок `setDefault` ↔ `reorder` модифікацій одного товару (55).
+- Ручний статус «в наявності» при нульовому обслуговуючому залишку дозволений — покупець
+  упреться у відмову на оформленні (продуктове питання для Е4).
+- Після відмови `applyDefault` діалог модифікації лишається в режимі створення (хвиля C, поріг).
+- Сироти цін/залишків у памʼяті колекцій після видалення модифікації до наступного запиту (поріг).
 - `scopeOf` у `stock/save.ts` дублює приватний `targetScope` з `inventory/locked-stock.ts` (architecture, 60).
 
 ## Точка передачі
