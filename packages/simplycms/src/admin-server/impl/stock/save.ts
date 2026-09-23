@@ -7,17 +7,17 @@ import {
   stockByPickupPoint,
 } from 'simplycms/schema';
 import { syncStatusWithQuantity, type StockTarget } from 'simplycms/inventory';
+import type { Product, ProductModification } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
-import { productModificationsOps } from '../product-modifications/resource';
-import { productsOps } from '../products/resource';
 
-// 🔴 Той самий принцип, що в product-modifications/*.ts: rowSchema, не
-// $inferSelect — обидві таблиці (products, product_modifications) мають
-// jsonb-колонки без `.$type()`, тож голе `$inferSelect` дає Drizzle
-// `unknown` (не серіалізовне createServerFn).
-type ProductRow = z.infer<typeof productsOps.rowSchema>;
-type ModificationRow = z.infer<typeof productModificationsOps.rowSchema>;
+// 🔴 Той самий принцип, що в product-modifications/*.ts: типи зі
+// schema/types (Drizzle `$inferSelect`), не rowSchema-каст — обидві таблиці
+// (products, product_modifications) мають jsonb-колонки, типізовані в
+// джерелі (`schema.ts`: `.$type<string[]>()` на `images`), тож голе
+// `$inferSelect` уже серіалізовне для createServerFn.
+type ProductRow = Product;
+type ModificationRow = ProductModification;
 
 export const saveStockInput = z
   .object({

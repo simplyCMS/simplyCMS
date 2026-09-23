@@ -112,41 +112,38 @@ export function defineAdminResource<
         if (order.length > 0) q = q.orderBy(...order);
         if (s.limit !== undefined) q = q.limit(s.limit);
         if (s.offset !== undefined) q = q.offset(s.offset);
-        // 🔴 Відхилення від брифа (typecheck), знахідка Task 8: `.from(config.table
-        // as never)` вище — той самий обхід генеричного `T` у drizzle-білдері,
-        // що й у insert/update/remove нижче — зводить РЕЗУЛЬТУЮЧИЙ тип рядка
-        // `q` до `never` (TS2339 на першому ж `.field` виклику споживача).
-        // До Task 8 це лишалось непоміченим: жоден виклик `.list()` досі не
-        // типізував результат жорстко (resource.test.ts перевіряє лише
-        // rejects/typeof). Явний каст awaited-результату — той самий рантайм-
-        // масив з SELECT, лише названий конкретним типом.
+        // 🔴 `.from(config.table as never)` вище — обхід генеричного `T` у
+        // drizzle-білдері, що й у insert/update/remove нижче — зводить
+        // РЕЗУЛЬТУЮЧИЙ тип рядка `q` до `never` (TS2339 на першому ж
+        // `.field` виклику споживача). Явний каст awaited-результату — той
+        // самий рантайм-масив з SELECT, лише названий конкретним типом.
         //
-        // 🔴 Відхилення від брифа (typecheck), знахідка Task 3: ціль касту —
-        // `z.infer<typeof rowSchema>[]`, НЕ `T['$inferSelect'][]`. jsonb-
-        // колонки без `.$type<Json>()` у schema.ts дають Drizzle-у `unknown`,
-        // а `unknown` не проходить перевірку серіалізовності createServerFn
-        // (`ValidateSerializable`: `unknown` не `extends object`, тож ловиться
-        // саме останньою гілкою — `SerializationError`). drizzle-zod, на
-        // відміну від Drizzle, типізує jsonb як рекурсивний `Json` уже
-        // сьогодні (без `.$type()`) — рівно те, що серіалізується. Рантайм
-        // не змінився: обидва каста йдуть на той самий масив із SELECT/
-        // RETURNING, різниця лише в тому, яким типом його назвати.
-        return (await q) as z.infer<typeof rowSchema>[];
+        // 🔴 Ціль касту — `T['$inferSelect'][]` (не `z.infer<typeof
+        // rowSchema>[]`, як робив обхід Task 3): jsonb-колонки БЕЗ
+        // `.$type<>()` у schema.ts давали Drizzle-у `unknown`, а `unknown`
+        // не проходить перевірку серіалізовності createServerFn
+        // (`ValidateSerializable`). Тепер усі jsonb-колонки, потрібні
+        // адмінці, типізовані в джерелі (`schema/json.ts`, `JsonValue`, і
+        // конкретні форми на кшталт `string[]` для `images`) — `$inferSelect`
+        // сам серіалізовний, і додатковий шар через drizzle-zod більше не
+        // потрібен. Рантайм не змінився: каст іде на той самий масив із
+        // SELECT/RETURNING, різниця лише в тому, яким типом його назвати.
+        return (await q) as T['$inferSelect'][];
       }),
 
     insert: async ({ data }: { data: z.infer<typeof insertSchema> }) =>
       run(async (db) => {
         // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
-        // мутацій «підтвердяться» локально без запису в БД. Каст — той
-        // самий принцип, що й у list() вище (jsonb → Json, не unknown).
+        // мутацій «підтвердяться» локально без запису в БД.
         // 🔴 Подвійний каст через `unknown`: генеричний `T["$inferSelect"]`
-        // insert-білдера і структурний тип rowSchema — надто різні форми,
-        // щоб TS визнав їх «достатньо перетинними» напряму (TS2352); той
-        // самий приймальний прийом, що вже застосовано в resource-schemas.ts.
+        // insert-білдера і `T['$inferSelect']` самої таблиці — надто різні
+        // форми, щоб TS визнав їх «достатньо перетинними» напряму (TS2352);
+        // той самий приймальний прийом, що вже застосовано в
+        // resource-schemas.ts.
         const rows = (await db
           .insert(config.table)
           .values(data as never)
-          .returning()) as unknown as z.infer<typeof rowSchema>[];
+          .returning()) as unknown as T['$inferSelect'][];
         return rows;
       }),
 
@@ -160,9 +157,7 @@ export function defineAdminResource<
         // `pnpm typecheck` (звичайний `tsc --noEmit`) цю розбіжність не
         // бачить — той самий код у ньому чистий; мінімальний фікс — явна
         // анотація типу масиву замість покладання на evolving-inference.
-        // 🔴 Тип елемента — `z.infer<typeof rowSchema>` (не `T['$inferSelect']`,
-        // знахідка Task 3): та сама причина, що в list()/insert() вище.
-        const out: z.infer<typeof rowSchema>[] = [];
+        const out: T['$inferSelect'][] = [];
         for (const { id, patch } of data) {
           // 🔴 Відхилення від брифа (typecheck): `db.update(config.table)`
           // з генеричним `T extends Table` не звужує `.returning()` до
@@ -170,9 +165,8 @@ export function defineAdminResource<
           // індексації: обидва боки умовного типу `TReturning extends
           // undefined ? QueryResult : TReturning[]` лишаються нерозвʼязані,
           // бо `T` ще не інстанційовано. Явний каст результату до масиву
-          // рядків таблиці (`z.infer<typeof rowSchema>[]`) — той самий
-          // рантайм-масив з `UPDATE … RETURNING`, лише названий конкретним,
-          // серіалізовним типом (jsonb → Json, не unknown).
+          // рядків таблиці (`T['$inferSelect'][]`) — той самий рантайм-масив
+          // з `UPDATE … RETURNING`, лише названий конкретним типом.
           const rows = (await db
             .update(config.table)
             .set(
@@ -181,7 +175,7 @@ export function defineAdminResource<
                 : patch) as never,
             )
             .where(eq(columns['id'], id as never))
-            .returning()) as z.infer<typeof rowSchema>[];
+            .returning()) as T['$inferSelect'][];
           const row = rows[0];
           if (!row)
             throw new Error(

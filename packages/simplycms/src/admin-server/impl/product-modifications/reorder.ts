@@ -1,12 +1,13 @@
 import { and, asc, desc, eq, gt, inArray, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { productModifications } from 'simplycms/schema';
+import type { ProductModification } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
-import { productModificationsOps } from './resource';
 
-// 🔴 Той самий принцип, що в set-default.ts: rowSchema, не $inferSelect —
-// jsonb-колонка `images` інакше дає Drizzle `unknown` (не серіалізовне).
-type ModificationRow = z.infer<typeof productModificationsOps.rowSchema>;
+// 🔴 Той самий принцип, що в set-default.ts: `ProductModification` зі
+// schema/types, не rowSchema-каст — jsonb-колонка `images` типізована в
+// джерелі (`.$type<string[]>()`).
+type ModificationRow = ProductModification;
 
 export const reorderModificationInput = z.object({
   id: z.uuid(),

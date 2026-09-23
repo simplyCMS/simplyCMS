@@ -1,16 +1,17 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { productModifications } from 'simplycms/schema';
+import type { ProductModification } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
-import { productModificationsOps } from './resource';
 
 export const setDefaultModificationInput = z.object({ id: z.uuid() });
 
-// 🔴 Каст на rowSchema-виведений тип (не T['$inferSelect']), той самий
-// принцип, що в resource.ts: jsonb-колонка `images` без `.$type()` дає
-// Drizzle `unknown`, а `unknown` не проходить серіалізовність createServerFn.
-type ModificationRow = z.infer<typeof productModificationsOps.rowSchema>;
+// 🔴 Тип рядка — `ProductModification` (Drizzle `$inferSelect` через
+// schema/types), не rowSchema-каст: jsonb-колонка `images` типізована в
+// джерелі (`schema.ts`: `.$type<string[]>()`), тож `$inferSelect` сам
+// серіалізовний для createServerFn.
+type ModificationRow = ProductModification;
 
 /**
  * Дефолт рівно один НА ТОВАР (індекс idx_product_modifications_single_default

@@ -54,6 +54,7 @@ import { sql } from "drizzle-orm"
 // Postgres драйвер відкидає (`pg-core/columns/timestamp.js` → `new Date()`),
 // місць, де це критично, у коді немає (аудит r1). DDL від `mode` не залежить.
 import { users } from "./auth";
+import type { JsonValue } from "./json";
 
 export * from "./auth";
 export * from "./media";
@@ -117,7 +118,7 @@ export const sectionProperties = pgTable("section_properties", {
 	isFilterable: boolean("is_filterable").default(false).notNull(),
 	hasPage: boolean("has_page").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	options: jsonb(),
+	options: jsonb().$type<JsonValue>(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({
@@ -398,7 +399,7 @@ export const products = pgTable("products", {
 	metaDescription: text("meta_description"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	images: jsonb().default([]),
+	images: jsonb().$type<string[]>().default([]),
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
 	stockStatus: stockStatus("stock_status").default('in_stock'),
@@ -412,8 +413,8 @@ export const products = pgTable("products", {
 	// jsonb, а не розкладка в колонки: форма — вкладений обʼєкт schema.org
 	// зі своїм словником, і розкладати його в 8-10 колонок означало б
 	// версіонувати чужий словник міграціями.
-	returnPolicy: jsonb("return_policy"),
-	shippingDetails: jsonb("shipping_details"),
+	returnPolicy: jsonb("return_policy").$type<JsonValue>(),
+	shippingDetails: jsonb("shipping_details").$type<JsonValue>(),
 }, (table) => [
 	foreignKey({
 			columns: [table.sectionId],
@@ -431,7 +432,7 @@ export const productModifications = pgTable("product_modifications", {
 	name: text().notNull(),
 	sku: varchar({ length: 100 }),
 	isDefault: boolean("is_default").default(false).notNull(),
-	images: jsonb().default([]),
+	images: jsonb().$type<string[]>().default([]),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -1024,7 +1025,7 @@ export const productReviews = pgTable("product_reviews", {
 	rating: integer().notNull(),
 	title: text(),
 	content: text(),
-	images: jsonb().default([]),
+	images: jsonb().$type<string[]>().default([]),
 	status: text().default('pending').notNull(),
 	adminComment: text("admin_comment"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
