@@ -518,12 +518,18 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
     devDependencies:
+      '@tanstack/router-core':
+        specifier: 1.168.15
+        version: 1.168.15
       '@types/pg':
         specifier: ^8.15.6
         version: 8.23.1
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      seroval:
+        specifier: ^1.6.0
+        version: 1.6.0
 
   packages/simplycms-plugin-faq:
     dependencies:
