@@ -399,6 +399,10 @@ const eslintConfig = [
   // потрапляє, тож заборона на нього зламала б канон `OrderStatuses.tsx`
   // (Е1а). `core` тут навмисно немає: `core/lib/**` — serverFn-модулі, які
   // легально імпортують `simplycms/storefront/loaders`.
+  // 🔴 `admin-data` — у зоні поруч з `admin`: колекції TanStack DB
+  // виконуються в браузері за побудовою (К3-9′ п.3), тож типи рядків беруть
+  // лише `import type` з `simplycms/schema/types`/`simplycms/admin-server/impl`
+  // — саме це стереже `tests/tier-boundary-client-boundary.test.ts`.
   // 🔴 Плагін НЕ `simplycms-boundary` (як у сусіднього `server-only-relative`,
   // хоч план це й пропонував): flat config забороняє редефініцію плагіна під
   // тим самим імʼям, якщо два конфіги з різними rules-обʼєктами покривають
@@ -409,6 +413,7 @@ const eslintConfig = [
     files: [
       'packages/simplycms/src/admin/**/*.{ts,tsx}',
       'packages/simplycms/src/{cart,catalog,checkout,profile,reviews}-ui/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
     ],
     plugins: {
       'simplycms-client-boundary': {

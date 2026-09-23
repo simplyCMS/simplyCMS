@@ -50,4 +50,28 @@ describe('сьомий читач межі клієнт/сервер (no-server-
     );
     expect(errors).toEqual([]);
   });
+
+  it('admin-data не сміє value-імпортувати server-only impl', async () => {
+    const errors = await ruleErrors(
+      "import { orderStatusesOps } from 'simplycms/admin-server/impl';\n",
+      'packages/simplycms/src/admin-data/__boundary-fixture.ts',
+    );
+    expect(errors).toHaveLength(1);
+  });
+
+  it('admin-data СМІЄ import type із server-only impl (К3-9′ п.3)', async () => {
+    const errors = await ruleErrors(
+      "import type { SubsetInput } from 'simplycms/admin-server/impl';\n",
+      'packages/simplycms/src/admin-data/__boundary-fixture.ts',
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it('admin-data СМІЄ value-імпортувати стаб simplycms/admin-server', async () => {
+    const errors = await ruleErrors(
+      "import { listOrderStatuses } from 'simplycms/admin-server';\n",
+      'packages/simplycms/src/admin-data/__boundary-fixture.ts',
+    );
+    expect(errors).toEqual([]);
+  });
 });
