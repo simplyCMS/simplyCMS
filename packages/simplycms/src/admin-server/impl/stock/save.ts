@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNull, sum } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  pickupPoints,
   productModifications,
   products,
   stockByPickupPoint,
 } from 'simplycms/schema';
-import { syncStatusWithQuantity, type StockTarget } from 'simplycms/inventory';
+import {
+  lockTargetStock,
+  servingQuantity,
+  syncStatusWithQuantity,
+  type StockTarget,
+} from 'simplycms/inventory';
 import type {
   Product,
   ProductModification,
@@ -34,6 +40,9 @@ export const saveStockInput = z
           quantity: z.number().int().min(0).max(1_000_000),
         }),
       )
+      // М2: порожній набір — 400 на межі, а не мовчазний no-op (нічого не
+      // писати й нічого не перерахувати не є валідним викликом «Зберегти»).
+      .min(1)
       .max(200),
   })
   // Рівно одна ціль — дзеркало check-обмеження stock_product_or_modification.
@@ -51,9 +60,17 @@ const scopeOf = (t: StockTarget) =>
 
 /**
  * Ручний облік (Е3-3): upsert кількостей по точках і в ТІЙ САМІЙ
- * транзакції — гвардований перехід stock_status за фактичною сумою (одна
- * копія правила з вітриною — simplycms/inventory). Повертає рядки залишку
- * і оновлену ціль — клієнт робить write-back в обидві колекції.
+ * транзакції — гвардований перехід stock_status за фактичною сумою
+ * ОБСЛУГОВУЮЧИХ точок (одна копія правила з вітриною — `simplycms/inventory`).
+ * Повертає рядки залишку і оновлену ціль — клієнт робить write-back в обидві
+ * колекції.
+ *
+ * 🔴 М2 (рев'ю хвилі B): порядок локів = порядок вітрини (`sort_order, id`,
+ * `simplycms/inventory`'s `lockTargetStock`) — advisory-lock лише
+ * серіалізує адмін-проти-адмін (перша вставка пари ще не має рядка під
+ * `FOR UPDATE`), а рядковий порядок нижче — той самий, що бере
+ * `reserveStock`/`releaseStock` при оформленні/скасуванні замовлення.
+ * Зворотного порядку немає — дедлоку 40P01 між адмінкою і вітриною немає.
  */
 export const saveStockOp = async ({
   data,
@@ -65,18 +82,28 @@ export const saveStockOp = async ({
       productId: data.productId,
       modificationId: data.modificationId,
     };
-    // Порядок локів той самий, що у вітрини (залишок → ціль): advisory не
-    // рахується, далі рядки залишку, останнім — рядок товару в
-    // syncStatusWithQuantity. Зворотного порядку немає — дедлоку немає.
     await lockCatalogTarget(
       db,
       `stock:${target.productId ?? '-'}:${target.modificationId ?? '-'}`,
     );
+    // 🔴 М2: блокуються ВСІ наявні рядки цілі, не лише обслуговуючі — адмін
+    // пише кількість і в НЕактивну точку (вручну). Join і порядок
+    // (`pickup_points.sort_order, stock.id`) — той самий, що в
+    // `lockTargetStock`, тому конкурентний запис вітрини (списання/повернення)
+    // бере рядки в тій самій послідовності — дедлоку немає.
     const existing = await db
-      .select()
+      .select({
+        id: stockByPickupPoint.id,
+        pickupPointId: stockByPickupPoint.pickupPointId,
+      })
       .from(stockByPickupPoint)
+      .innerJoin(
+        pickupPoints,
+        eq(pickupPoints.id, stockByPickupPoint.pickupPointId),
+      )
       .where(scopeOf(target))
-      .for('update');
+      .orderBy(asc(pickupPoints.sortOrder), asc(stockByPickupPoint.id))
+      .for('update', { of: stockByPickupPoint });
     const byPoint = new Map(existing.map((r) => [r.pickupPointId, r]));
     const now = new Date();
     // Явний тип: пакетний tsconfig (noImplicitAny: false) виводить `[]` як never[].
@@ -100,11 +127,16 @@ export const saveStockOp = async ({
             .returning();
       rows.push(saved!);
     }
-    const [{ total }] = await db
-      .select({ total: sum(stockByPickupPoint.quantity) })
-      .from(stockByPickupPoint)
-      .where(scopeOf(target));
-    await syncStatusWithQuantity(db, target, Number(total ?? 0));
+    // 🔴 М2: перерахунок статусу — ЛИШЕ по ОБСЛУГОВУЮЧИХ точках
+    // (`lockTargetStock`/`servingQuantity`, те саме правило, що у вітрини).
+    // Стара версія сумувала `sum(quantity)` по ВСІХ рядках цілі — залишок на
+    // деактивованій точці міг підняти статус у `in_stock`, хоча жодна
+    // обслуговуюча точка товар не пропонує. Якщо обслуговуючих рядків
+    // немає взагалі — статус НЕ чіпається (адмін пише лише в неактивну
+    // точку, робити висновок про доступність нема з чого).
+    const servingRows = await lockTargetStock(db, target);
+    if (servingRows.length > 0)
+      await syncStatusWithQuantity(db, target, servingQuantity(servingRows));
     const updated: ModificationRow | ProductRow | undefined =
       target.modificationId
         ? (

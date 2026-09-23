@@ -107,6 +107,20 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
       }[]
     )[0]!.id;
 
+  // М2 (рев'ю хвилі B): точка для фікстур saveStock — `system`/`active`
+  // прапорці явні, бо саме вони визначають «обслуговуючу» точку
+  // (`simplycms/inventory`'s `lockTargetStock`).
+  const point = async (opts: { isActive: boolean; isSystem: boolean }) => {
+    const id = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, city, address, is_active, is_system)
+       values ($1,$2,'Точка Е3-М2','Київ','вул. М2, 1',$3,$4)`,
+      [id, METHOD, opts.isActive, opts.isSystem],
+    );
+    return id;
+  };
+
   const mod = async (slug: string, sortOrder?: number) => {
     const [m] = await productModificationsOps.insert({
       data: [
@@ -267,6 +281,69 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
         quantities: [],
       }).success,
     ).toBe(false);
+  });
+
+  it("М2 (рев'ю хвилі B): quantities: [] — ZodError, а не мовчазний no-op", () => {
+    expect(
+      saveStockInput.safeParse({
+        productId: PRODUCT,
+        modificationId: null,
+        quantities: [],
+      }).success,
+    ).toBe(false);
+  });
+
+  // 🔴 М2: дефект, який лагодить це рев'ю — saveStock рахував статус по
+  // СУМІ ВСІХ рядків цілі (і по деактивованих точках теж), а вітрина
+  // (`lockTargetStock`/`servingQuantity`) — лише по обслуговуючих
+  // (`is_system OR is_active`). Системна точка з нулем і деактивована з
+  // залишком інакше підняли б статус у `in_stock`, хоча жодна обслуговуюча
+  // точка товар не пропонує.
+  it('М2, Review Focus: системна точка 0 + деактивована з залишком — статус лишається out_of_stock', async () => {
+    const fresh = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name, stock_status) values ($1,'ops-m2-a','M2A','out_of_stock')`,
+      [fresh],
+    );
+    const sys = await point({ isActive: true, isSystem: true });
+    const inactive = await point({ isActive: false, isSystem: false });
+    // Наявний залишок на ДЕАКТИВОВАНІЙ точці ДО виклику — адмін міг записати
+    // його раніше, коли точка ще була активною.
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, quantity) values ($1,$2,$3,5)`,
+      [crypto.randomUUID(), inactive, fresh],
+    );
+    const { target } = await saveStockOp({
+      data: {
+        productId: fresh,
+        modificationId: null,
+        quantities: [
+          { pickupPointId: sys, quantity: 0 },
+          { pickupPointId: inactive, quantity: 5 },
+        ],
+      },
+    });
+    expect(target.stockStatus).toBe('out_of_stock');
+  });
+
+  it('М2: ціль лише з рядком на неактивній точці — статус не змінено', async () => {
+    const fresh = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name, stock_status) values ($1,'ops-m2-b','M2B','in_stock')`,
+      [fresh],
+    );
+    const inactive = await point({ isActive: false, isSystem: false });
+    const { target } = await saveStockOp({
+      data: {
+        productId: fresh,
+        modificationId: null,
+        quantities: [{ pickupPointId: inactive, quantity: 5 }],
+      },
+    });
+    expect(target.stockStatus).toBe('in_stock');
   });
 
   // 🔴 Конкурентність (знахідка аудиту Codex 2026-09-23): дві вкладки / подвійний
