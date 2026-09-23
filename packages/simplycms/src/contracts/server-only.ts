@@ -56,6 +56,9 @@ export const SERVER_ONLY = [
   // Порт сховища: `node:fs`, корінь із env і драйвер. Клієнт бере лише
   // `domain/media` (чистий резолв URL) — сюди йому не треба нічого.
   'storage',
+  // Облік залишків (Е3-5): гвард stock_status пише в products /
+  // product_modifications через ActorDb — сервер і тільки сервер.
+  'inventory',
 ] as const;
 
 /**

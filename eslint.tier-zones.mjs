@@ -67,19 +67,29 @@ const TIER_ZONES = [
   // до Postgres. Класифікація дерева, а не послаблення межі. Зона ширша за
   // намір (тір-зони не вміють вужче за теку), тож факт «порт імпортує рівно
   // `avatar.ts`» пінує ратчет `tests/storage-port-consumers.test.ts`.
-  ['src/storefront', 2, 'storefront', ['db', 'auth', 'storage']],
+  // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
+  ['src/storefront', 2, 'storefront', ['db', 'auth', 'storage', 'inventory']],
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
   // requireGrant (auth). Ширшого не давати.
   // `storage` (Е2) у винятку з тієї ж причини, що `db` і `auth`: канал до
   // файлів один — порт, і заборона власного тіру виштовхнула б адмінку на
   // прямий `node:fs`, тобто рівно туди, куди не можна.
-  ['src/admin-server', 2, 'admin-server', ['db', 'auth', 'storage']],
+  // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
+  [
+    'src/admin-server',
+    2,
+    'admin-server',
+    ['db', 'auth', 'storage', 'inventory'],
+  ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
   // до Postgres немає. `auth` НЕ у винятку — грант перевіряє викликач
   // (serverFn), а не сам порт.
   ['src/storage', 2, 'storage', ['db']],
+  // Облік залишків (Е3-5) — T2. Upward `db`: гвард пише через ActorDb
+  // (withActor — єдиний канал до Postgres), як у `storage`.
+  ['src/inventory', 2, 'inventory', ['db']],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.

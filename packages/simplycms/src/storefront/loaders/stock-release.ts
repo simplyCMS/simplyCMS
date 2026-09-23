@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
+import { setTargetStatus } from 'simplycms/inventory';
 import type { ActorDb } from './db';
-import { setTargetStatus } from './stock-status';
 import {
   lockTargetStock,
   servingQuantity,

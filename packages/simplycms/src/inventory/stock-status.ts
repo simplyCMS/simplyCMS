@@ -1,8 +1,20 @@
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { productModifications, products } from 'simplycms/schema';
 import type { StockStatus } from 'simplycms/contracts';
-import type { ActorDb } from './db';
-import type { StockTarget } from './stock-write';
+import type { ActorDb } from 'simplycms/db';
+
+/**
+ * Ціль обліку: модифікація має пріоритет над простим товаром.
+ *
+ * 🔴 Перенесено сюди зі `storefront/loaders/stock-write.ts` (Е3-5): межа
+ * `simplycms/inventory` — спільний домен для вітрини (резерв/повернення
+ * замовлення) і адмінки (ручний облік), `stock-write.ts` реекспортує тип
+ * назад для своїх споживачів (`order-stock.ts`).
+ */
+export interface StockTarget {
+  productId: string | null;
+  modificationId: string | null;
+}
 
 /**
  * Поточний статус цілі.

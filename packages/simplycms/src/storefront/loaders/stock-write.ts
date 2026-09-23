@@ -1,19 +1,19 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { pickupPoints, stockByPickupPoint } from 'simplycms/schema';
+import type { StockTarget } from 'simplycms/inventory';
 import type { ActorDb } from './db';
 
 /**
  * Адресація обліку залишків (К2-Е0, Е0-3): яка точка обслуговує замовлення
  * і як заблокувати рядки цілі в цій транзакції. Переворот статусу —
- * `./stock-status`; правило списання — `./stock-reservation`, повернення —
- * `./stock-release` (розкладені по файлах заради канону 150 рядків).
+ * `simplycms/inventory` (спільне server-only дерево, Е3-5); правило
+ * списання — `./stock-reservation`, повернення — `./stock-release`
+ * (розкладені по файлах заради канону 150 рядків).
  */
 
-/** Ціль обліку: модифікація має пріоритет над простим товаром. */
-export interface StockTarget {
-  productId: string | null;
-  modificationId: string | null;
-}
+// `StockTarget` живе в `simplycms/inventory` (Е3-5) — реекспорт тут заради
+// сумісності: `order-stock.ts` бере тип саме звідси.
+export type { StockTarget };
 
 /** Позиція замовлення в тому вигляді, який потрібен обліку. */
 export interface StockLine extends StockTarget {

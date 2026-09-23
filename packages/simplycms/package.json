@@ -34,6 +34,7 @@
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./inventory": "./src/inventory/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -210,6 +211,10 @@
       "./storage": {
         "types": "./dist/storage/index.d.ts",
         "import": "./dist/storage/index.js"
+      },
+      "./inventory": {
+        "types": "./dist/inventory/index.d.ts",
+        "import": "./dist/inventory/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
