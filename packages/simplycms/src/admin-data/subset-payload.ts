@@ -34,8 +34,9 @@ type ServerFilter = NonNullable<SubsetInput['filters']>[number];
  * `parseLoadSubsetOptions` повертає лише `{ filters, sorts, limit }` —
  * `offset` береться з opts напряму, інакше «Показати ще» вічно вантажить
  * першу сторінку; `or`/`like`/`ilike` бібліотека не парсить (throw) —
- * їх тут і немає. `not_*`/`isNull` вона парсить, але сервер їх не має —
- * відмова тут, до мережі, з назвою оператора.
+ * їх тут і немає. `not_*`/`isUndefined` вона парсить, а сервер їх не має —
+ * відмова тут, до мережі, з назвою оператора; `isNull` — у контракті з
+ * Е3-14 (ціни й залишки РІВНЯ ТОВАРУ, `modification_id IS NULL`).
  */
 export function toSubsetPayload(
   opts: LoadSubsetOptions | undefined,

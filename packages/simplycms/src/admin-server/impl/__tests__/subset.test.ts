@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { orderStatuses } from 'simplycms/schema';
 import {
   subsetInputSchema,
@@ -11,6 +12,8 @@ const ALLOW = {
   sortable: ['sortOrder'],
 } as const;
 
+const dialect = new PgDialect();
+
 describe('subset: isNull (Е3-14 — ціни/залишки рівня товару)', () => {
   it('isNull: колонка з allowlist → IS NULL без параметра', () => {
     const s = toDrizzleSubset(
@@ -19,6 +22,12 @@ describe('subset: isNull (Е3-14 — ціни/залишки рівня това
       { filters: [{ field: ['color'], operator: 'isNull', value: null }] },
     );
     expect(s.where).toBeDefined();
+    // 🔴 Не лише «where визначений» — САМ SQL: isNull мусить дати `is null`
+    // без параметра (мутація OPERATORS.isNull → eq дала б `= $1`, мутація
+    // → isNotNull дала б `is not null` — обидві ловить це асертами нижче).
+    const compiled = dialect.sqlToQuery(s.where!);
+    expect(compiled.sql.toLowerCase()).toContain('is null');
+    expect(compiled.params).toEqual([]);
   });
 
   it('isNull з непорожнім value — 400 на межі (схема)', () => {

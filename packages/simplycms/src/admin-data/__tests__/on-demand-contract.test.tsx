@@ -170,7 +170,7 @@ describe('on-demand контракт Е3', () => {
   });
 
   it('(4) leftJoin on-demand × eager дає назву секції', async () => {
-    const { products, sections, wrapper } = setup();
+    const { products, sections, calls, wrapper } = setup();
     const { result } = renderHook(
       () =>
         useLiveQuery((q) =>
@@ -185,6 +185,17 @@ describe('on-demand контракт Е3', () => {
     await waitFor(() => expect(result.current.data).toHaveLength(3));
     expect(result.current.data.every((r) => r.section === 'Секція 2')).toBe(
       true,
+    );
+    // 🔴 Не лише результат join: push-down фільтра по on-demand-стороні мусить
+    // ДІЙТИ до серверного subset-payload, а не осісти в JS поверх ширшого
+    // зрізу — інакше leftJoin «випадково» дав би правильні дані на всіх
+    // рядках і тест не ловив би регрес toSubsetPayload.
+    expect(calls).toContainEqual(
+      expect.objectContaining({
+        subset: expect.objectContaining({
+          filters: [{ field: ['sectionId'], operator: 'eq', value: 's2' }],
+        }),
+      }),
     );
   });
 });

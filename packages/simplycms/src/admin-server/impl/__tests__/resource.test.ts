@@ -1,5 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
+import type { SQL } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { orderStatuses, products } from 'simplycms/schema';
 
 // Операції торкаються auth/db лише в рантаймі хендлера — мокаємо обидва
@@ -221,17 +223,24 @@ describe('defineAdminResource (К3-4′)', () => {
     await ops.list({
       data: { subset: { sorts: [{ field: ['name'], direction: 'desc' }] } },
     });
-    for (const call of orderBy.mock.calls) {
-      const last = call.at(-1) as unknown as { queryChunks?: unknown[] };
-      // asc(col) — SQL із чанком колонки id; звіряємо через рендер у рядок.
-      // 🔴 Колонка Drizzle тримає посилання на власну таблицю — циклічна
-      // структура; replacer вирізає ключ 'table', щоб JSON.stringify не впав.
-      expect(
-        JSON.stringify(last, (key, value) =>
-          key === 'table' ? undefined : value,
-        ),
-      ).toContain('"name":"id"');
-    }
     expect(orderBy).toHaveBeenCalledTimes(2); // один виклик на запит — масив, не ланцюг
+
+    // 🔴 ПОВНИЙ масив, не лише останній ключ: мутація, що відкидає клієнтські
+    // `sorts` і завжди йде дефолтом, лишила б `id` останнім і в обох
+    // викликах — тест на "останній ключ = id" її не ловить.
+    const dialect = new PgDialect();
+    const render = (key: unknown) => dialect.sqlToQuery(key as SQL).sql;
+
+    // Виклик 1: порожній subset → defaultOrder (sort_order asc), потім id.
+    const call1 = orderBy.mock.calls[0];
+    expect(call1).toHaveLength(2);
+    expect(render(call1[0])).toContain('"sort_order" asc');
+    expect(render(call1[1])).toContain('"id" asc');
+
+    // Виклик 2: sorts = [name desc] → ЛИШЕ клієнтський ключ, потім id.
+    const call2 = orderBy.mock.calls[1];
+    expect(call2).toHaveLength(2);
+    expect(render(call2[0])).toContain('"name" desc');
+    expect(render(call2[1])).toContain('"id" asc');
   });
 });

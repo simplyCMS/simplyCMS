@@ -35,11 +35,19 @@ describe('runAdmin', () => {
     status.set.mockClear();
   });
 
-  it('scope own — fail-loud (адмін-поверхня обслуговує лише any)', async () => {
+  it('scope own — fail-loud ДО withActor, БД і колбек не торкаються', async () => {
     grant.value = { ...grant.value, scope: 'own' };
-    await expect(runAdmin('catalog.write', async () => 1)).rejects.toThrow(
-      /scope 'own'/,
-    );
+    const { withActor } = await import('simplycms/db');
+    vi.mocked(withActor).mockClear();
+    const fn = vi.fn(async () => 1);
+    await expect(runAdmin('catalog.write', fn)).rejects.toThrow(/scope 'own'/);
+    // 🔴 Не лише повідомлення помилки: перевірка scope мусить стояти ДО
+    // withActor, інакше 'own' встиг би відкрити транзакцію під app_admin і
+    // виконати колбек ресурсу з чужим scope — мутація, що переносить
+    // перевірку scope ПІСЛЯ withActor, дає той самий throw, але вже
+    // ПІСЛЯ побічного ефекту.
+    expect(withActor).not.toHaveBeenCalled();
+    expect(fn).not.toHaveBeenCalled();
   });
 
   it('23505 → AdminConflictError unique + 409 ДО throw', async () => {
