@@ -32,6 +32,8 @@
 | Е3-12 | *(архітектор)* **Борги Е1а:** №4 (`detail()` slug vs uuid) — адмінка `detail()` НЕ вживає взагалі (колекції ключуються `list()` + demand-суфікс бібліотеки), борг документується як належний К2; №6 — `entityKey` отримує окремий `variant()` для не-FK кваліфікаторів; №8 — зона `query-key-from-entity` поширюється на референс-тему й референс-плагін | №4 проявляється лише при детальному ключі, якого адмінка не заводить; №6 і №8 — дешеві точкові фікси, які план Е1б прямо відклав «у каталог» |
 | Е3-13 | 🔴 **(власник, 2026-09-22) Multiselect — рядок на опцію.** Правка baseline (рамка B13, як К3-14): унікальність значень стає `(власник, property_id, option_id) NULLS NOT DISTINCT` в обох таблицях значень; скалярна властивість — рівно один рядок (`option_id` NULL), multiselect — рядок на кожну обрану опцію. Картка вітрини зливає рядки однієї властивості в один запис view-моделі | Виміряно: `option_id` — `uuid` FK (`schema.ts:274,305`), а легасі писав туди CSV id — на чистому Postgres `22P02`, і `unique(product_id, property_id)` забороняв кілька рядків. Тобто multiselect був зламаний схемою, а не лише кодом. Рядок на опцію — реляційно чесно (FK на опцію живий), фільтри вітрини читають рядки списком і працюють без змін; контракт тем v3 (один елемент на властивість) не міняється |
 | Е3-14 | *(архітектор)* **`isNull` входить у контракт subset** на обох боках (`toSubsetPayload` + `impl/subset.ts`) | Ціни й залишки РІВНЯ ТОВАРУ — рядки з `modification_id IS NULL`. `isNull` є у словнику push-down самої бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути ширший зріз і дофільтровувати в JS — тобто push-down на половину |
+| Е3-15 | 🔴 *(архітектор, аудит 2026-09-23)* **Голий `entityKey(e).list()` — ЛИШЕ для колекцій `admin-data`** (спека К3-3: `[entity, 'list']` — колекція). Вітринні запити, що сьогодні кешуються під голим `.list()` (`sections`, `propertyOptions`, `sectionProperties`, `orderStatuses`), переходять на `variant(...)`; гейт забороняє голий `.list()` поза `admin-data` | Виміряно аудитом: вітрина й адмінка ділять ОДИН `QueryClient` (`src/router.tsx`), а eager-колекція без demand-суфікса пише рівно в `[entity,'list']`. Вітринний `useSectionsQuery` кешує там лише активні розділи в snake_case, адмін-колекція — усі розділи в camelCase: після адмінки покупець бачив би чернетки або зламаний рендер до спливання `staleTime` 5 хв. Для `order_statuses` це ЖИВИЙ дефект уже в `main` (колекція Е1б × `ProfileOrders.tsx:36`). Канон спеки не міняється — порушник вітрина |
+| Е3-16 | 🔴 *(архітектор, виміряно спайком 2026-09-23)* **On-demand колекція, яку гортає `useLiveInfiniteQuery`, мусить мати індекс сортування:** `autoIndex: 'eager'` + `defaultIndexType: BTreeIndex` (з `@tanstack/react-db`) | Без індексу `fetchNextPage` НЕ робить другого `loadSubset` — видно лише рядки першої сторінки + peek, `hasNextPage` падає в `false`. З індексом друга сторінка йде окремим запитом `{ limit: 2, offset: 3, cursor }` і дає рівно 4 рядки (ізольований прогін на `@tanstack/db@0.8.6`). Offset-пагінація Е3-2 реалізовна без fallback |
 
 **Поза Е3 (план це каже вголос):** текстовий пошук в адмінці (П6); CRUD розділів, типів цін, властивостей і опцій (Е4); `AddProductToOrder` і замовлення (Е5); видалення файлів зображень при видаленні товару та sweep орфанів (К4 — рядки `media` лишаються, обʼєкти прибирає sweep); інвалідація кешу вітрини в ІНШІЙ вкладці браузера (SSR свіжий на кожен запит; клієнтський кеш вітрини — `staleTime` 5 хв, карта інвалідації між вкладками — К2); віртуалізація таблиць.
 
@@ -78,7 +80,7 @@ Task 9 Step 3 (фільтри вітрини на рядку-на-опцію б�
 - 🔴 **К3-13:** кожна операція — `requireGrant(op)` → `withActor({ role: dbRoleForSubject(subject), userId })`; з Task 1 — лише через `runAdmin`. 403/409 — `setResponseStatus` ДО `throw`; `Response` не кидати.
 - 🔴 **Write-back замість self-invalidation:** persistence-хендлер пише серверний рядок `writeUpsert`/`writeDelete` у `writeBatch` і повертає `{ refetch: false }`; хендлери обробляють УСІ `transaction.mutations`. Fail-loud на `serverRow.id !== optimisticId` ДО write-back.
 - 🔴 **Контракт id:** INSERT у таблицю Категорії A передає `id` — клієнт `crypto.randomUUID()`, сервер `randomUUID()` з `node:crypto`.
-- 🔴 `queryKey` колекції = `entityKey(ENTITY.x).list()`; demand-суфікс on-demand дописує бібліотека (`getLoadSubsetDemandKey`) — префікс зберігається.
+- 🔴 `queryKey` колекції = `entityKey(ENTITY.x).list()`; demand-суфікс on-demand дописує бібліотека (`getLoadSubsetDemandKey`) — префікс зберігається. 🔴 Голий `.list()` належить ЛИШЕ колекціям `admin-data` (Е3-15); вітрина — `variant()`/`scoped()` або `.list()` з суфіксом.
 - 🔴 **Сторінка таблиці з single-default індексом переписується лише разом зі своєю named setDefault-операцією** (контракт хвиль Е1б) — тут це `product_modifications`.
 - 🔴 **Інваріант `template:sync`:** задача, що чіпає `SYNCED_DIRS`/`SYNCED_FILES`, — `pnpm template:sync` і коміт копій у ТІЙ САМІЙ задачі. За планом це рівно Task 9 (`migrations/0001_init.sql`); якщо інша задача зачепить `migrations/`, `themes/default/`, `plugins/hello-world/` чи host-файл — те саме правило.
 - Тіри: `admin-server` = T2 (upward `db/auth/storage` + з Task 2 `inventory`), `admin-data` = T4, `admin` = T5, нове `inventory` = T2 (upward `db`).
@@ -137,7 +139,7 @@ Task 13 (live:smoke крок адміна + DoD + доки) ← Task 12
 | `tests/mutation-cache-sync-coverage.test.ts` | Гейт повноти ратчету `MUTATION_CACHE_SYNC_RATCHET` |
 | `scripts/live-smoke/owner-invite.mts` | Випуск запрошення власника (tsx, імпорт `packages/simplycms/src/auth`) |
 | `scripts/live-smoke/admin-catalog.mjs` | Крок живого прогону: адмін створює товар → вітрина |
-| `packages/simplycms/src/domain/money.ts` (+ тест) | `MONEY_RE`, `isMoney`, `normalizeMoneyInput` — одна копія правила грошового рядка для форми й серверної схеми |
+| `packages/simplycms/src/domain/__tests__/money-input.test.ts` | Юніт трьох нових експортів `domain/money.ts` (сам файл — ЗМІНЮЄТЬСЯ, не створюється: у ньому вже `formatPrice`) |
 | `packages/simplycms/src/admin/lib/admin-error.ts` (+ тест) | `adminErrorKey` — конфлікт БД → i18n-ключ (Е3-7), один на всі хвилі |
 | `packages/simplycms/test-harness/pg/__tests__/property-values-multiselect.test.ts` | Інваріант «рядок на опцію» (Е3-13) проти живого Postgres |
 | `packages/simplycms/src/storefront-routes/pages/product-detail/merge-property-values.ts` (+ тест) | Злиття рядків однієї властивості в один запис view-моделі |
@@ -374,6 +376,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  BTreeIndex,
   createCollection,
   eq,
   useLiveInfiniteQuery,
@@ -393,7 +396,7 @@ const rows: Row[] = Array.from({ length: 5 }, (_, i) => ({
   name: `P${i}`,
 }));
 
-function setup() {
+function setup({ indexed = true }: { indexed?: boolean } = {}) {
   const queryClient = new QueryClient();
   const calls: unknown[] = [];
   const products = createCollection(
@@ -402,6 +405,8 @@ function setup() {
       queryClient,
       queryKey: ['contract-products', 'list'],
       syncMode: 'on-demand',
+      // Е3-16: без індексу сортування useLiveInfiniteQuery не довантажує сторінки.
+      ...(indexed && { autoIndex: 'eager' as const, defaultIndexType: BTreeIndex }),
       getKey: (r) => r.id,
       queryFn: async (ctx) => {
         const payload = toSubsetPayload(
@@ -455,8 +460,8 @@ describe('on-demand контракт Е3', () => {
     );
   });
 
-  it('(2) друга сторінка useLiveInfiniteQuery несе offset', async () => {
-    const { products, calls, wrapper } = setup();
+  it('(2) друга сторінка useLiveInfiniteQuery несе offset (з індексом сортування — Е3-16)', async () => {
+    const { products, calls, wrapper } = setup({ indexed: true });
     const { result } = renderHook(
       () =>
         useLiveInfiniteQuery(
@@ -474,7 +479,28 @@ describe('on-demand контракт Е3', () => {
     const offsets = calls.map(
       (c) => (c as { subset?: { offset?: number } }).subset?.offset,
     );
-    expect(offsets.some((o) => typeof o === 'number' && o > 0)).toBe(true);
+    // Виміряно: перша сторінка — limit 3 (peek), друга — { limit: 2, offset: 3 }.
+    expect(offsets).toContain(3);
+  });
+
+  it('(2б) БЕЗ індексу друга сторінка не вантажиться — фіксуємо, чому індекс обовʼязковий', async () => {
+    const { products, calls, wrapper } = setup({ indexed: false });
+    const { result } = renderHook(
+      () =>
+        useLiveInfiniteQuery(
+          (q) => q.from({ p: products }).orderBy(({ p }) => p.createdAt, 'desc'),
+          { pageSize: 2 },
+        ),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.data).toHaveLength(2));
+    await act(async () => {
+      result.current.fetchNextPage();
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    // Якщо колись бібліотека почне вантажити й без індексу — тест червоніє і
+    // Е3-16 можна переглянути; до того індекс — обовʼязкова частина колекції.
+    expect(calls).toHaveLength(1);
   });
 
   it('(3) findOne по id штовхає eq(id)', async () => {
@@ -513,7 +539,7 @@ describe('on-demand контракт Е3', () => {
 ```
 
 Run: `pnpm test -- packages/simplycms/src/admin-data/__tests__/on-demand-contract.test.tsx`
-Expected: PASS усі 4.
+Expected: PASS усі 5 (відтворено в ізоляції 2026-09-23 на `@tanstack/db@0.8.6`: (1),(3),(4) зелені; (2) зелений лише з індексом, (2б) фіксує поведінку без нього).
 
 🔴 Кейс (5) «join on-demand × on-demand» НЕ пишеться: Task 10 будує схему
 властивостей ДВОМА запитами (призначення розділу → властивості `where id
@@ -528,12 +554,17 @@ in`), саме тому, що звіт по бібліотеці підтвер�
 колонкою (у каталозі вкладених полів немає — `subset.ts` джойнить `.`).
 Додати юніт-кейс під цю форму. Решта кейсів має лишитись зеленою.
 
-- [ ] **Step 6: Якщо (2) червоне (offset не приходить)**
+- [ ] **Step 6: Якщо (2) червоне попри індекс**
 
-Перевірити в `subscription.ts:978-985` (`node_modules/.pnpm/@tanstack+db@0.8.6*/…/src/collection/subscription.ts`),
-чи offset передається лише при `limit`+`orderBy` (кейс саме так і написано). Якщо
-бібліотека віддає лише `cursor` — це розвилка власника (К3-5-fallback:
-`eager` + серверна пагінація), не локальне рішення.
+Не гадати причину — залогувати ПОВНИЙ `ctx.meta?.loadSubsetOptions` кожного
+виклику `queryFn` (`limit`, `offset`, `cursor`, `where`) і фактичні id у
+`result.current.data` після `fetchNextPage`. Відомий факт (аудит 2026-09-23):
+offset бібліотека передає завжди (`subscription.ts`: `offset: offset ?? currentOffset`),
+а причиною «3 рядки замість 4» був відсутній індекс сортування (Е3-16) — друга
+сторінка тоді взагалі не запитується. Якщо з індексом (2) червоне — це нова
+поведінка бібліотеки, і розвилка власника (К3-5-fallback: список на
+`useLiveQuery` зі зростаючим `.limit(n)` — перевірено, працює, але перечитує
+вже завантажені рядки), не локальне рішення.
 
 - [ ] **Step 7: Точка зупинки**
 
@@ -838,8 +869,36 @@ it('touch: update дописує updatedAt = Date', async () => {
 ```
 
 (Список `writable` для `products` — з Task 3 Step 2; exhaustiveness не
-дасть скомпілювати тест з неповним списком. Тест про тай-брейкер — у
-харнесі Task 3, бо порядок видно лише в справжньому SQL.)
+дасть скомпілювати тест з неповним списком.)
+
+🔴 Доказ тай-брейкера (Е3-8) — ЮНІТОМ, не харнесом (аудит 2026-09-23):
+Postgres на малій незмінній таблиці часто повертає той самий порядок і без
+`id`, тож харнес-тест пагінації (Task 3) лишився б зеленим і без фіксу.
+
+```ts
+it('list: id asc — ОСТАННІЙ ключ сортування, і після defaultOrder, і після sorts', async () => {
+  const orderBy = vi.fn(function (this: unknown) { return this; });
+  const q = { where: () => q, orderBy, limit: () => q, offset: () => q, then: (r: (v: unknown[]) => unknown) => r([]) };
+  const { withActor } = await import('simplycms/db');
+  vi.mocked(withActor).mockImplementation(async (_a, fn) =>
+    fn({ select: () => ({ from: () => ({ $dynamic: () => q }) }) } as never, {} as never),
+  );
+  await orderStatusesOps.list({ data: {} });
+  await orderStatusesOps.list({ data: { subset: { sorts: [{ field: ['name'], direction: 'desc' }] } } });
+  for (const call of orderBy.mock.calls) {
+    const last = call.at(-1) as { queryChunks?: unknown[] };
+    // asc(col) — SQL із чанком колонки id; звіряємо через рендер у рядок.
+    expect(JSON.stringify(last)).toContain('"name":"id"');
+  }
+  expect(orderBy).toHaveBeenCalledTimes(2); // один виклик на запит — масив, не ланцюг
+});
+```
+
+Негативний контроль: прибрати `order.push(asc(idCol))` → тест червоний.
+(Форма перевірки `JSON.stringify(...).toContain('"name":"id"')` — орієнтир:
+якщо серіалізація SQL-чанка Drizzle інша, звірити через
+`db.select().from(t).orderBy(...).toSQL()` на справжній таблиці без БД —
+`toSQL()` не ходить у мережу.)
 
 Зміни в `resource.ts`:
 
@@ -1206,6 +1265,8 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     expect(listed.every((r) => r.sectionId === SECTION)).toBe(true);
   });
 
+  // Регресійний смок, НЕ доказ інваріанта (доказ — юніт Task 1 Step 5): без
+  // тай-брейкера Postgres на малій таблиці може дати той самий порядок.
   it('Review Focus 3: однакові created_at — три сторінки по 3 дають 7 різних id', async () => {
     const batch = Array.from({ length: 7 }, (_, i) => product(100 + i));
     await productsOps.insert({ data: batch });
@@ -1262,6 +1323,17 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     const err = await productsOps.remove({ data: [{ id: p!.id }] }).catch((e: unknown) => e);
     expect(err).toMatchObject({ name: 'AdminConflictError', kind: 'reference' });
     expect(await queryRows(dbUrl, `select 1 from public.products where id = $1`, [p!.id])).toHaveLength(1);
+  });
+
+  it('Review Focus 1 для модифікації: дубль slug у товарі → конфлікт на product_modifications_product_slug_unique', async () => {
+    const [p] = await productsOps.insert({ data: [product(7)] });
+    const mod = (id: string) => ({ id, productId: p!.id, slug: 'same', name: 'M' });
+    await productModificationsOps.insert({ data: [mod(crypto.randomUUID())] });
+    const err = await productModificationsOps
+      .insert({ data: [mod(crypto.randomUUID())] })
+      .catch((e: unknown) => e);
+    // 🔴 Імʼя НЕ за конвенцією *_slug_key — задане руками (schema.ts:445).
+    expect(err).toMatchObject({ kind: 'unique', constraint: 'product_modifications_product_slug_unique' });
   });
 
   it('фільтр по недозволеній колонці відбито (allowlist ресурсу)', async () => {
@@ -1611,7 +1683,7 @@ git commit -m "feat(k3-e3): ресурси каталогу on-demand і serverF
 - Create: `packages/simplycms/src/admin-server/impl/catalog-lock.ts` (`lockCatalogTarget`, Step 1а)
 - Create: `packages/simplycms/src/admin-server/impl/product-prices/save.ts`
 - Create: `packages/simplycms/src/admin-server/impl/stock/save.ts`
-- Create: `packages/simplycms/src/domain/money.ts` (якщо в `domain/pricing.ts` немає парсера — див. Step 3)
+- Modify: `packages/simplycms/src/domain/money.ts` (ДОПИСАТИ `MONEY_RE`/`isMoney`/`normalizeMoneyInput`; наявні `formatPrice` і сусіди не чіпати — Step 3)
 - Modify: `packages/simplycms/src/admin-server/impl/index.ts`, `packages/simplycms/src/admin-server/index.ts`
 - Create: `packages/simplycms/test-harness/pg/__tests__/admin-catalog-ops.test.ts`
 
@@ -1934,11 +2006,14 @@ export const setDefaultModificationOp = async ({
 
 - [ ] **Step 3: Набір цін**
 
-Спершу: `rg -n "export" packages/simplycms/src/domain/pricing.ts` — якщо
-парсера грошового рядка немає, створити `domain/money.ts` (T1, чистий):
+🔴 `packages/simplycms/src/domain/money.ts` УЖЕ ІСНУЄ (`formatPrice`,
+`FormatPriceOptions`, `CURRENCY_SYMBOLS` — ~17 споживачів у вітрині, кошику,
+чекауті й адмінці). Файл НЕ створюється і НЕ перезаписується: три нові
+експорти ДОПИСУЮТЬСЯ в кінець наявного файла (T1, чистий), нічого не
+видаляючи:
 
 ```ts
-// packages/simplycms/src/domain/money.ts
+// packages/simplycms/src/domain/money.ts — ДОПИСАТИ в кінець
 /** Грошова сума як рядок numeric: невідʼємна, до двох знаків після крапки.
  *  Кома як роздільник НЕ приймається тут — її нормалізує форма (Task 8);
  *  на межі сервера формат один. */
@@ -2153,10 +2228,45 @@ git commit -m "feat(k3-e3): іменовані операції каталогу
 - Modify: `packages/simplycms/src/admin-data/index.ts`
 - Create: `packages/simplycms/src/admin-data/__tests__/handlers.test.ts`
 - Create: `packages/simplycms/src/admin-data/__tests__/catalog-collections.test.ts`
+- Modify: `packages/simplycms/src/contracts/entities.ts` (`variant()`, Step 0) + тест
+- Modify: `packages/simplycms/src/storefront-routes/pages/{catalog/useCatalogQueries.ts,Properties.tsx,ProfileOrders.tsx}` (Step 0)
+- Create: `tests/bare-list-key.test.ts` (Step 0)
 
 **Interfaces:**
 - Consumes: serverFn з Tasks 3–4; `toSubsetPayload` (Task 0); типи рядків `Product`, `ProductModification`, `ProductPrice`, `StockByPickupPoint`, `ProductPropertyValue`, `ModificationPropertyValue`, `Section`, `PriceType`, `SectionPropertyAssignment`, `SectionProperty`, `PropertyOption` (`import type` з `simplycms/schema/types`)
 - Produces (з `simplycms/admin-data`): `productsCollection`, `productModificationsCollection`, `productPricesCollection`, `stockCollection`, `productPropertyValuesCollection`, `modificationPropertyValuesCollection`, `sectionsCollection`, `priceTypesCollection`, `sectionPropertyAssignmentsCollection`, `sectionPropertiesCollection`, `propertyOptionsCollection` — кожна `CollectionDef<…>` для `useCollection`/`getCollection`; плюс `persistenceHandlers`
+
+- [ ] **Step 0: Розвести ключі вітрини й колекцій (Е3-15) — ДО першої нової колекції**
+
+1. `entityKey` отримує `variant()` (перенесено сюди з Task 11 — він потрібен
+   раніше):
+
+```ts
+    /** Варіант форми/скоупу тієї самої сутності (не FK-зріз): окремий
+     *  сегмент 'variant' — не зіткнеться ні з колекцією (list), ні з
+     *  FK-relation тієї самої назви (борг Е1а №6). */
+    variant: (qualifier: string, id?: string) =>
+      (id === undefined ? [entity, 'variant', qualifier] : [entity, 'variant', qualifier, id]) as readonly string[],
+```
+
+   (+ тест у тесті `contracts/entities`: `variant('storefront')` ≠ `list()`,
+   `variant('numeric','s1')` ≠ `scoped('numeric','s1')`, перший сегмент = `all()[0]`.)
+2. Чотири вітринні запити з голим `.list()` → `variant('storefront')`:
+   `useCatalogQueries.ts` (`sections.list()`, `propertyOptions.list()`),
+   `Properties.tsx` (`sectionProperties.list()`), `ProfileOrders.tsx`
+   (`orderStatuses.list()` — живий дефект Е1б). Разом — їхні
+   `invalidateQueries`/`setQueryData`, якщо є (`git grep -n "<entity>.list()"`).
+   `[...X.list(), 'featured']` (з суфіксом) НЕ чіпати — точного збігу немає.
+3. Гейт `tests/bare-list-key.test.ts`: AST/regex-скан `packages/simplycms/src/**`
+   (крім `admin-data/**` і `__tests__`) на `queryKey: <ідентифікатор>.list()` як
+   ЦІЛИЙ ключ (не в spread) → офендерів 0. Негативний контроль: повернути
+   `sections.list()` у `useCatalogQueries.ts` → тест червоний.
+4. Негативний тест колізії (той, що зловив би дефект): в одному `QueryClient`
+   `getCollection(qc, orderStatusesCollection).preload()` і
+   `qc.getQueryData(entityKey(ENTITY.orderStatuses).variant('storefront'))`
+   → `undefined` (колекція не пише у вітринний ключ).
+
+Run: `pnpm lint && pnpm test` → зелені.
 
 - [ ] **Step 1: Тест спільних хендлерів (червоний)**
 
@@ -2316,7 +2426,7 @@ Run: `pnpm test -- packages/simplycms/src/admin-data tests/handler-canon.test.ts
 
 ```ts
 // packages/simplycms/src/admin-data/collections/products.ts
-import { createCollection } from '@tanstack/react-db';
+import { BTreeIndex, createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -2345,6 +2455,10 @@ function create(queryClient: QueryClient) {
       queryClient,
       queryKey: entityKey(ENTITY.products).list(),
       syncMode: 'on-demand',
+      // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу сортування
+      // друга сторінка не запитується (виміряно спайком).
+      autoIndex: 'eager',
+      defaultIndexType: BTreeIndex,
       getKey: (row) => row.id,
       queryFn: async (ctx) =>
         listProducts({
@@ -2515,7 +2629,8 @@ const conflict = (kind: string, constraint: string | null) =>
 describe('adminErrorKey', () => {
   it('slug — окремий ключ, бо власник виправляє саме поле URL', () => {
     expect(adminErrorKey(conflict('unique', 'products_slug_key'))).toBe('admin.errors.slugTaken');
-    expect(adminErrorKey(conflict('unique', 'product_modifications_product_id_slug_key'))).toBe(
+    // 🔴 Реальні імена (schema.ts:423,445): друге — НЕ за конвенцією *_slug_key.
+    expect(adminErrorKey(conflict('unique', 'product_modifications_product_slug_unique'))).toBe(
       'admin.errors.slugTaken',
     );
   });
@@ -2548,7 +2663,9 @@ export function adminErrorKey(error: unknown): MessageKey | null {
   const e = error as { name?: unknown; kind?: unknown; constraint?: unknown } | null;
   if (e?.name !== 'AdminConflictError') return null;
   if (e.kind === 'reference') return 'admin.errors.conflictReference';
-  return typeof e.constraint === 'string' && e.constraint.endsWith('slug_key')
+  // Входження, не суфікс: product_modifications_product_slug_unique названо
+  // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
+  return typeof e.constraint === 'string' && e.constraint.includes('slug')
     ? 'admin.errors.slugTaken'
     : 'admin.errors.conflictUnique';
 }
@@ -2842,7 +2959,7 @@ Run: `pnpm test -- packages/simplycms/src/admin/features/products/edit/__tests__
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
-import { adminPath } from 'simplycms/admin/lib/admin-path';
+import { adminPath } from 'simplycms/admin/lib/adminLinks';
 import { adminErrorKey } from 'simplycms/admin/lib/admin-error';
 import { useT } from 'simplycms/i18n';
 import { toProductDraft, toProductPatch, type ProductFormValues } from './product-form-schema';
@@ -2894,8 +3011,9 @@ export function useProductSave() {
 }
 ```
 
-(`adminPath` — звідти, звідки його імпортує легасі `ProductEdit.tsx`;
-знайти `rg -n "adminPath" packages/simplycms/src/admin/pages/ProductEdit.tsx`.)
+(`adminPath` живе в `packages/simplycms/src/admin/lib/adminLinks.ts` — легасі
+`ProductEdit.tsx` імпортує його відносно, `../lib/adminLinks`; з фічі —
+відносним шляхом у межах `src/admin` або субшляхом, як вирішено в Task 6 Step 5.)
 
 Тест `useProductSave.test.tsx` (мок `simplycms/admin-server`, мок `sonner`,
 мок `useNavigate`): (а) create кличе `insertProducts` з рядком, де `id` —
@@ -3298,11 +3416,16 @@ describe('mergePropertyValues', () => {
   it('рядки однієї властивості зливаються: value через кому, option — перша', () => {
     const out = mergePropertyValues([row('color', 'Чорний', 'o1'), row('color', 'Білий', 'o2')], []);
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ value: 'Чорний, Білий', option_id: 'o1' });
+    expect(out[0]).toMatchObject({ value: 'Чорний, Білий', option_id: null });
   });
   it('модифікація ПЕРЕКРИВАЄ властивість товару цілком (правило легасі)', () => {
     const out = mergePropertyValues([row('color', 'Чорний', 'o1')], [row('color', 'Білий', 'o2')]);
     expect(out).toEqual([expect.objectContaining({ value: 'Білий' })]);
+  });
+  it('кілька опцій із has_page: option обнулено — посилання на одну опцію не рендериться', () => {
+    const withPage = (id: string, v: string) => ({ ...row('color', v, id), property: { ...row('color', v, id).property, has_page: true } });
+    const [merged] = mergePropertyValues([withPage('o1', 'Чорний'), withPage('o2', 'Білий')], []);
+    expect(merged).toMatchObject({ value: 'Чорний, Білий', option: null, option_id: null });
   });
   it('скалярні властивості — без змін', () => {
     expect(mergePropertyValues([row('power', '100')], [])[0]).toMatchObject({ value: '100' });
@@ -3335,7 +3458,15 @@ export function mergePropertyValues(
   return [...merged.values()].map((rows) =>
     rows.length === 1
       ? rows[0]!
-      : { ...rows[0]!, value: rows.map((r) => r.value).filter(Boolean).join(', ') },
+      : {
+          ...rows[0]!,
+          value: rows.map((r) => r.value).filter(Boolean).join(', '),
+          // 🔴 Кілька опцій — жодна не «головна»: ProductCharacteristics
+          // малює <Link> на сторінку ОДНІЄЇ опції, коли has_page && option —
+          // текст «Чорний, Білий» вів би лише на «Чорний» (аудит 2026-09-23).
+          option: null,
+          option_id: null,
+        },
   );
 }
 ```
@@ -3500,9 +3631,12 @@ git commit -m "feat(k3-e3): значення властивостей на ко�
 - Modify: `packages/simplycms-theme-solarstore/src/components/Header.tsx` (+ будь-які офендери, які покаже лінт у темі/плагіні)
 
 **Interfaces:**
-- Produces: `entityKey(e).variant(qualifier: string, id: string) → readonly [e, 'variant', qualifier, id]`
+- Consumes: `entityKey(e).variant(qualifier: string, id?: string)` — створено в Task 5 Step 0 (Е3-15)
 
-- [ ] **Step 1: `variant()` (тест спершу)**
+- [ ] **Step 1: Мігрувати не-FK кваліфікатори на `variant()` (сам `variant()` уже додав Task 5 Step 0)**
+
+Тест нижче — уже в Task 5 Step 0; тут лише перевірити, що він є, і мігрувати
+вживання. Форма `variant` — з Task 5 Step 0 (id опційний), не з сніпета нижче.
 
 ```ts
 it('variant не перетинається з FK-зрізом тієї самої назви (борг Е1а №6)', () => {
@@ -3822,7 +3956,9 @@ export async function runAdminCatalogStep({ browser, base, dbUrl, storeEnv, chec
     await page.goto(`${base}/admin/products`, { waitUntil: 'networkidle' });
     await page.getByRole('row', { name: /Живий товар Е3/ }).getByRole('button').last().click();
     await page.getByRole('alertdialog').getByRole('button', { name: /Видалити/ }).click();
-    await page.waitForTimeout(1_000);
+    // Детерміновано: рядок зник із таблиці = оптимістичне видалення
+    // підтверджене сервером (rollback повернув би його назад).
+    await page.getByRole('row', { name: /Живий товар Е3/ }).waitFor({ state: 'detached', timeout: 10_000 });
     const gone = await page.goto(`${base}/catalog/${section.slug}/${slug}`);
     const [left] = await sql(dbUrl, `select count(*)::int as n from public.products where slug = $1`, [slug]);
     check('адмін: видалення → вітрина 404, рядка немає', gone?.status() === 404 && left?.n === 0, `${gone?.status()} / ${left?.n}`);
