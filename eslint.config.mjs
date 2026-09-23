@@ -322,6 +322,13 @@ const eslintConfig = [
   // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
   // означало б робити роботу двічі. Додати теку — крок завершення
   // переписування адмінки (DoD К3-3).
+  //
+  // 🔴 Референс-тема й референс-плагін — теж у зоні (борг Е1а №8, Е3-12):
+  // `simplycms/contracts/entities` — публічний T0-субшлях, межа довіри тем
+  // (`docs/architecture/themes.md`) її не забороняє; рішення архітектора
+  // зняло точку зупинки плану. Плагін лишається в зоні на випадок власних
+  // ключів по `ENTITY` — таблиці плагіна (`plg_*`) там немає, тож зона
+  // сьогодні лише фіксує стан.
   {
     files: [
       'packages/simplycms/src/core/**/*.{ts,tsx}',
@@ -329,6 +336,8 @@ const eslintConfig = [
       'packages/simplycms/src/react-query/**/*.{ts,tsx}',
       'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/src/**/*.{ts,tsx}',
     ],
     ignores: ['**/__tests__/**'],
     plugins: {

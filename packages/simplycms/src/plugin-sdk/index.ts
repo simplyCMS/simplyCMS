@@ -12,7 +12,11 @@ export { definePlugin } from './definePlugin';
 // коду в бандлі SDK нічого не коштує.
 export { validatePluginModule } from '../plugins/validatePluginModule';
 export { usePluginT } from './usePluginT';
-export { usePluginTable, type PluginTablePort } from './usePluginTable';
+export {
+  usePluginTable,
+  pluginTableKey,
+  type PluginTablePort,
+} from './usePluginTable';
 export { usePluginConfig, type PluginConfigResult } from './usePluginConfig';
 export type {
   PluginDefinition,

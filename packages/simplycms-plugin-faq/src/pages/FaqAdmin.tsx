@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usePluginT, usePluginTable } from 'simplycms/plugin-sdk';
+import {
+  pluginTableKey,
+  usePluginT,
+  usePluginTable,
+} from 'simplycms/plugin-sdk';
 import { Button } from 'simplycms/ui/button';
 import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
@@ -11,7 +15,10 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { messages, type FaqKey } from '../messages';
 import type { FaqItem } from '../types';
 
-const QUERY_KEY = ['plg_faq_items'] as const;
+// 🔴 pluginTableKey(), не літерал (борг Е1а №8, Е3-12): зона правила
+// query-key-from-entity накриває референс-плагін, а `plg_faq_items` — не
+// сутність ядра з ENTITY.
+const QUERY_KEY = pluginTableKey('faq', 'plg_faq_items');
 
 /**
  * Адмін-сторінка референс-плагіна: CRUD по власній таблиці через

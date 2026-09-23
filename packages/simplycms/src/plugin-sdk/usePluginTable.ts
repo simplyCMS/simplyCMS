@@ -51,6 +51,21 @@ function toCells(row: Record<string, unknown>): Record<string, Cell> {
   );
 }
 
+/**
+ * Ключ кешу для власної таблиці плагіна — префіксується імʼям плагіна
+ * (борг Е1а №8, Е3-12): таблиця плагіна (`plg_*`) не входить у `ENTITY`
+ * (реєстр — лише таблиці ядра, `contracts/entities.ts`), а зона правила
+ * `query-key-from-entity` накриває й референс-плагін. Функція, а не літерал
+ * у місці вжитку — той самий патерн, що `entityKey`: рядок живе ОДИН раз
+ * тут, а не копіюється по кожному запиту плагіна.
+ */
+export function pluginTableKey(
+  pluginName: string,
+  table: string,
+): readonly [string, string] {
+  return [`plugin.${pluginName}`, table] as const;
+}
+
 /** CRUD-порт до однієї таблиці плагіна. */
 export function usePluginTable<Row extends Record<string, unknown>>(
   pluginName: string,

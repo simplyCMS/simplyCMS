@@ -36,7 +36,9 @@ export default function ProfilePage() {
    * `readSessionSubject`, і підставити чужий id нема куди: параметра немає.
    */
   const { data, isLoading } = useQuery({
-    queryKey: profiles.scoped('overview', user?.id ?? ''),
+    // 🔴 variant('overview', …), не scoped() (борг Е1а №6, Е3-12): це форма
+    // (профіль + останні замовлення), а не FK-зріз.
+    queryKey: profiles.variant('overview', user?.id ?? ''),
     queryFn: () => getProfileOverview(),
     enabled: !!user,
   });

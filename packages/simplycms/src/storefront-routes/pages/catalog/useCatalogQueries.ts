@@ -51,7 +51,9 @@ export function useSectionQuery(
 /** Числові характеристики розділу, за якими можна фільтрувати. */
 export function useNumericPropertiesQuery(sectionId: string | null) {
   return useQuery({
-    queryKey: sectionProperties.scoped('numeric', sectionId ?? ''),
+    // 🔴 variant('numeric', …), не scoped() (борг Е1а №6, Е3-12): це форма
+    // (лише числові властивості), а не FK-зріз за розділом.
+    queryKey: sectionProperties.variant('numeric', sectionId ?? ''),
     queryFn: () =>
       getSectionNumericProperties({
         data: { sectionId: sectionId as string },
