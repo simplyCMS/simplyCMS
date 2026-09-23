@@ -12,6 +12,7 @@ import { messages as discounts } from './discounts';
 import { messages as nav } from './nav';
 import { messages as dashboard } from './dashboard';
 import { messages as errors } from './errors';
+import { messages as legacy } from './legacy';
 import { messages as orders } from './orders';
 import { messages as plugins } from './plugins';
 import { messages as prices } from './prices';
@@ -32,6 +33,7 @@ export const messages = {
   ...nav,
   ...dashboard,
   ...errors,
+  ...legacy,
   ...orders,
   ...plugins,
   ...prices,

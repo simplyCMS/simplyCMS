@@ -22,7 +22,11 @@ export interface SupabaseKeys {
 /**
  * Резолвить URL і публічний ключ Supabase з переданого env.
  *
- * @throws Error якщо немає URL або жодного з ключів.
+ * @throws Error з `.name === 'SupabaseEnvMissingError'` якщо немає URL або
+ *   жодного з ключів. Іменована помилка — контракт для
+ *   `admin/layouts/LegacySupabaseBoundary` (К3-Е3 Step 0): легасі-сторінки
+ *   адмінки ловлять саме це ім'я й рендерять заглушку замість падіння
+ *   всієї адмінки.
  */
 export function resolveSupabaseKeys(env: SupabaseEnv): SupabaseKeys {
   const url = env.VITE_SUPABASE_URL;
@@ -31,11 +35,13 @@ export function resolveSupabaseKeys(env: SupabaseEnv): SupabaseKeys {
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    throw new Error(
+    const error = new Error(
       '[simplycms/supabase] Відсутні змінні оточення: VITE_SUPABASE_URL та ' +
         'VITE_SUPABASE_PUBLISHABLE_KEY (legacy fallback — VITE_SUPABASE_ANON_KEY) ' +
         'обовʼязкові.',
     );
+    error.name = 'SupabaseEnvMissingError';
+    throw error;
   }
 
   return { url, key };

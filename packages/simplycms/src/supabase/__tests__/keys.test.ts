@@ -47,4 +47,16 @@ describe('resolveSupabaseKeys', () => {
       resolveSupabaseKeys({ VITE_SUPABASE_URL: 'https://example.supabase.co' }),
     ).toThrow(/SUPABASE.*KEY/);
   });
+
+  // К3-Е3 Step 0: `LegacySupabaseBoundary` розрізняє помилку саме за `.name`
+  // (контракт К3-13/AdminError) — розбіжність тут тихо ламає заглушку,
+  // не гейт цього тесту.
+  it('помилка про відсутність env названа SupabaseEnvMissingError', () => {
+    try {
+      resolveSupabaseKeys({});
+      throw new Error('очікувався throw');
+    } catch (error) {
+      expect((error as Error).name).toBe('SupabaseEnvMissingError');
+    }
+  });
 });
