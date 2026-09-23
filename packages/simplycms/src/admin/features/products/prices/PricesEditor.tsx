@@ -80,7 +80,12 @@ export function PricesEditor({ productId, modificationId }: Props) {
           <CardTitle className="text-lg">
             {t('admin.products.mods.prices')}
           </CardTitle>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
             {isSaving ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (

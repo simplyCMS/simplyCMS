@@ -71,7 +71,7 @@ export function StockEditor({
   };
 
   const saveButton = hasChanges && (
-    <Button size="sm" onClick={handleSave} disabled={isSaving}>
+    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving}>
       {isSaving ? (
         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
       ) : (

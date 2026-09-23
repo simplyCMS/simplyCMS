@@ -28,14 +28,16 @@ export function useProductSave() {
   };
 
   const create = async (values: ProductFormValues) => {
-    // 🔴 On-demand колекція без активного useLiveQuery (сторінка «новий
-    // товар» жодного не монтує) лишається в стані sync-not-started —
-    // `collection.insert()` кидає «must be in ready state» (виміряно).
-    // `preload()` на on-demand — no-op щодо даних (Б-1), але СТАРТУЄ sync.
-    await products.preload();
-    const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт (К3-6)
-    const tx = products.insert(toProductDraft(values, id, new Date()));
     try {
+      // 🔴 On-demand колекція без активного useLiveQuery (сторінка «новий
+      // товар» жодного не монтує) лишається в стані sync-not-started —
+      // `collection.insert()` кидає «must be in ready state» (виміряно).
+      // `preload()` на on-demand — no-op щодо даних (Б-1), але СТАРТУЄ
+      // sync. Дрібне рев'ю: усередині try — відмова preload теж іде тостом,
+      // не unhandled rejection.
+      await products.preload();
+      const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт (К3-6)
+      const tx = products.insert(toProductDraft(values, id, new Date()));
       await tx.isPersisted.promise;
       toast.success(t('admin.products.created'));
       await navigate({

@@ -51,6 +51,24 @@ describe('productFormSchema', () => {
     });
   });
 
+  it('МAJOR: простий товар — stockStatus ВІДСУТНІЙ у patch (миттєвий контроль, не форма)', () => {
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        toProductPatch({ ...base, hasModifications: false }),
+        'stockStatus',
+      ),
+    ).toBe(false);
+  });
+
+  it('розділ необовʼязковий (легасі дозволяв товар без розділу, FK nullable)', () => {
+    expect(
+      productFormSchema.safeParse({ ...base, sectionId: '' }).success,
+    ).toBe(true);
+    expect(toProductPatch({ ...base, sectionId: '' })).toMatchObject({
+      sectionId: null,
+    });
+  });
+
   it('draft несе клієнтський id і повний рядок (оптимістична вставка)', () => {
     const now = new Date('2026-09-23T00:00:00Z');
     const d = toProductDraft(base, 'id-1', now);

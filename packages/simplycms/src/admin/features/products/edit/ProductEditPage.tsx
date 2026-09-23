@@ -6,7 +6,10 @@ import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useT } from 'simplycms/i18n';
 import type { Product } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
+import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { adminPath } from '../../../lib/adminLinks';
+import { ModificationsPanel } from '../modifications/ModificationsPanel';
+import { SimpleProductPanel } from '../simple/SimpleProductPanel';
 import { ProductForm } from './ProductForm';
 import { useProductSave } from './useProductSave';
 import type { ProductFormValues } from './product-form-schema';
@@ -38,11 +41,11 @@ function toFormValues(row: Product): ProductFormValues {
  * Картка існуючого товару (Task 7): рядок — жива колекція (`findOne`).
  * 🔴 `productId`, що не є uuid (стара закладка), інакше дав би 400 зі
  * схеми `list`-serverFn (`id` — uuid-фільтр) — перевіряємо ДО запиту.
- * Панелі модифікацій/цін/залишків (Task 8) і властивостей (Task 10) —
- * усередині `ProductForm` (не тут): `sku`/`stockStatus` простого товару —
- * поля ЦІЄЇ форми (Task 7), панель поза `<Form>` писала б їх окремим
- * шляхом і гнала стейл `defaultValues` наступним Save — див. коментар
- * `ProductForm.tsx`.
+ * Панелі модифікацій/цін/залишків (Task 8) — СИБЛІНГИ `ProductForm`, не
+ * нащадки її `<form>` (рев'ю хвилі C, BLOCKER — див. коментар
+ * `ProductForm.tsx`). Перемикач панелі — за `data.hasModifications`
+ * ЖИВОГО рядка колекції (Task 7 Step 3), не за незбереженим станом
+ * форми: зміна перемикача типу товару без Save панель НЕ підмінює.
  */
 export function ProductEditPage({ productId }: Props) {
   const t = useT();
@@ -104,7 +107,24 @@ export function ProductEditPage({ productId }: Props) {
         onSubmit={(values) => update(productId, values)}
         submitLabel={t('common.save')}
         meta={{ createdAt: data.createdAt, updatedAt: data.updatedAt }}
-      />
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {data.hasModifications ? (
+              <ModificationsPanel
+                productId={productId}
+                sectionId={data.sectionId}
+              />
+            ) : (
+              <SimpleProductPanel productId={productId} />
+            )}
+            <PluginSlot
+              name="admin.product.form.after"
+              context={{ productId }}
+            />
+          </div>
+        </div>
+      </ProductForm>
     </div>
   );
 }

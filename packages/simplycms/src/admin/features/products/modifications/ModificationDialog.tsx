@@ -20,31 +20,17 @@ import {
 } from './modification-form-schema';
 import { ModificationFormFields } from './ModificationFormFields';
 import { ModificationDialogSections } from './ModificationDialogSections';
+import { ModificationStatusControl } from './ModificationStatusControl';
+import { resolveModFormValues } from './modification-form-values';
 
-const EMPTY: ModificationFormValues = {
-  name: '',
-  slug: '',
-  sku: '',
-  stockStatus: 'in_stock',
-  isDefault: false,
-  images: [],
-};
-
-function toFormValues(mod: ProductModification): ModificationFormValues {
-  return {
-    name: mod.name,
-    slug: mod.slug,
-    sku: mod.sku ?? '',
-    stockStatus: mod.stockStatus ?? 'in_stock',
-    isDefault: mod.isDefault,
-    images: mod.images ?? [],
-  };
-}
+const DIALOG_FORM_ID = 'modification-dialog-form';
 
 interface Props {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly productId: string;
+  /** Розділ товару — для секції властивостей (Task 10, поки без вжитку). */
+  readonly sectionId: string | null;
   /** `null` — нова модифікація (ціни/залишки/властивості — недоступні). */
   readonly mod: ProductModification | null;
   readonly onCreate: (values: ModificationFormValues) => Promise<string>;
@@ -59,11 +45,25 @@ interface Props {
  * `ProductModifications.tsx` (діалог), react-hook-form + Zod. Конфлікт
  * slug (`product_modifications_product_slug_unique`) — тост
  * `adminErrorKey`, форма лишається відкритою з введеним (Review Focus 1).
+ *
+ * 🔴 Рев'ю хвилі C (BLOCKER, структурний фікс): `<form>` несе ЛИШЕ поля
+ * модифікації (`ModificationFormFields`) — Collapsible-и цін/залишків
+ * (`ModificationDialogSections`) ПОЗА нею, у тому ж `DialogContent`, щоб
+ * їхні кнопки не сабмітили діалог. Кнопки внизу — теж поза `<form>`, але
+ * сабмітять її через HTML5 `form={DIALOG_FORM_ID}` (не DOM-нащадок,
+ * триггер по id — так само зберігається візуальний порядок «поля →
+ * секції → кнопки»).
+ *
+ * 🔴 МAJOR: статус наявності — у ФОРМІ лише при СТВОРЕННІ (нема живого
+ * рядка, куди писати миттєво); при РЕДАГУВАННІ — окремий
+ * `StockStatusSelect` над живим рядком (`mods.update` напряму), той самий
+ * принцип, що й `SimpleProductPanel`.
  */
 export function ModificationDialog({
   open,
   onOpenChange,
   productId,
+  sectionId,
   mod,
   onCreate,
   onUpdate,
@@ -71,13 +71,13 @@ export function ModificationDialog({
   const t = useT();
   const form = useForm<ModificationFormValues>({
     resolver: zodResolver(modificationFormSchema),
-    defaultValues: mod ? toFormValues(mod) : EMPTY,
+    defaultValues: resolveModFormValues(mod),
   });
 
   // Ре-ініціалізація полів при відкритті на ІНШУ модифікацію/створення —
   // `useForm` бере `defaultValues` лише при монтуванні діалогу.
   useEffect(() => {
-    if (open) form.reset(mod ? toFormValues(mod) : EMPTY);
+    if (open) form.reset(resolveModFormValues(mod));
   }, [open, mod, form]);
 
   const submit = async (values: ModificationFormValues) => {
@@ -102,30 +102,43 @@ export function ModificationDialog({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(submit)} className="space-y-4">
+          <form
+            id={DIALOG_FORM_ID}
+            onSubmit={form.handleSubmit(submit)}
+            className="space-y-4"
+          >
             <ModificationFormFields modId={mod?.id ?? null} />
-            {mod && (
-              <ModificationDialogSections
-                productId={productId}
-                modificationId={mod.id}
-              />
-            )}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
-                {mod ? t('common.save') : t('common.create')}
-              </Button>
-            </div>
           </form>
+
+          <ModificationStatusControl mod={mod} form={form} />
+
+          {mod && (
+            <ModificationDialogSections
+              productId={productId}
+              modificationId={mod.id}
+              sectionId={sectionId}
+            />
+          )}
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              form={DIALOG_FORM_ID}
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {mod ? t('common.save') : t('common.create')}
+            </Button>
+          </div>
         </Form>
       </DialogContent>
     </Dialog>

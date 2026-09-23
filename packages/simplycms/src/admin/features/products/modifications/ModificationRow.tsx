@@ -37,6 +37,7 @@ export function ModificationRow({
       <TableCell>
         <div className="flex items-center gap-1">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-6 w-6"
@@ -49,6 +50,7 @@ export function ModificationRow({
             <ArrowUp className="h-3 w-3" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-6 w-6"
@@ -114,6 +116,7 @@ export function ModificationRow({
       </TableCell>
       <TableCell>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           onClick={(e) => {

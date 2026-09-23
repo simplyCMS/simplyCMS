@@ -12,6 +12,8 @@ import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
   readonly productId: string;
+  /** Розділ товару — для секції властивостей діалогу (Task 10, поки проп без вжитку). */
+  readonly sectionId: string | null;
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * `ProductModifications.tsx`: таблиця + діалог створення/редагування.
  * Дефолт і порядок — іменовані операції `useModifications`.
  */
-export function ModificationsPanel({ productId }: Props) {
+export function ModificationsPanel({ productId, sectionId }: Props) {
   const t = useT();
   const data = useModifications(productId);
   const [editing, setEditing] = useState<ProductModification | null>(null);
@@ -54,7 +56,7 @@ export function ModificationsPanel({ productId }: Props) {
           <CardTitle className="text-lg">
             {t('admin.products.mods.title')}
           </CardTitle>
-          <Button size="sm" onClick={openCreate}>
+          <Button type="button" size="sm" onClick={openCreate}>
             <Plus className="h-4 w-4 mr-1" />
             {t('common.add')}
           </Button>
@@ -71,6 +73,7 @@ export function ModificationsPanel({ productId }: Props) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         productId={productId}
+        sectionId={sectionId}
         mod={editing}
         onCreate={handleCreate}
         onUpdate={handleUpdate}

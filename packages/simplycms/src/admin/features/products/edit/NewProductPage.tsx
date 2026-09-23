@@ -1,4 +1,5 @@
 import { useT } from 'simplycms/i18n';
+import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { ProductForm } from './ProductForm';
 import { useProductSave } from './useProductSave';
 import type { ProductFormValues } from './product-form-schema';
@@ -41,7 +42,12 @@ export function NewProductPage() {
         defaultValues={DEFAULT_VALUES}
         onSubmit={create}
         submitLabel={t('common.create')}
-      />
+      >
+        <PluginSlot
+          name="admin.product.form.after"
+          context={{ productId: null }}
+        />
+      </ProductForm>
     </div>
   );
 }

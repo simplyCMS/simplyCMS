@@ -13,6 +13,8 @@ import { StockEditor } from '../stock/StockEditor';
 interface Props {
   readonly productId: string;
   readonly modificationId: string;
+  /** Розділ товару — секція властивостей (Task 10, поки проп без вжитку). */
+  readonly sectionId: string | null;
 }
 
 /**

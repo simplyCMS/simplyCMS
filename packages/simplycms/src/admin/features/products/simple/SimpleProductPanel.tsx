@@ -1,4 +1,6 @@
+import { eq, useLiveQuery } from '@tanstack/react-db';
 import { useFormContext } from 'react-hook-form';
+import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Input } from 'simplycms/ui/input';
@@ -14,17 +16,26 @@ interface Props {
 
 /**
  * Ціни/SKU/наявність ПРОСТОГО товару (Task 8, Step 4) — композиція легасі
- * `SimpleProductFields.tsx`. 🔴 На відміну від плану (там — контрольовані
- * пропси `sku`/`onSkuChange`), тут — `useFormContext` (як `ProductMainFields`/
- * `ProductSidebar`, Task 7): поля `sku`/`stockStatus` УЖЕ в
- * `productFormSchema`/`toProductPatch` (Task 7, `useProductSave.test.tsx`
- * кейс (в)) і йдуть в БД ОДНИМ `updateProducts` разом з рештою картки —
- * контрольовані пропси зовні RHF дали б ДВА джерела правди для тих самих
- * полів і гонку зі стейл `defaultValues` на наступному Save.
+ * `SimpleProductFields.tsx`. 🔴 МAJOR (рев'ю хвилі C): `stockStatus` —
+ * ОКРЕМИЙ контрол із МИТТЄВИМ збереженням (`products.update` напряму над
+ * живим рядком), а НЕ поле форми картки — інакше стейл `defaultValues`
+ * RHF (без `reset`) переписав би статус, щойно виставлений `saveStock`
+ * (Е3-3) або цим самим контролом, наступним Save картки.
+ * `sku` лишається полем форми (Task 7, `productFormSchema`/`toProductPatch`)
+ * — конфлікту стейлості нема, бо sku не змінюється поза формою.
  */
 export function SimpleProductPanel({ productId }: Props) {
   const t = useT();
-  const { register, watch, setValue } = useFormContext<ProductFormValues>();
+  const { register } = useFormContext<ProductFormValues>();
+  const products = useCollection(productsCollection);
+  const { data: row } = useLiveQuery(
+    (q) =>
+      q
+        .from({ p: products })
+        .where(({ p }) => eq(p.id, productId))
+        .findOne(),
+    [productId],
+  );
 
   return (
     <>
@@ -46,12 +57,16 @@ export function SimpleProductPanel({ productId }: Props) {
                 placeholder="INV-001"
               />
             </div>
-            <StockStatusSelect
-              value={watch('stockStatus')}
-              onChange={(v) =>
-                setValue('stockStatus', v, { shouldDirty: true })
-              }
-            />
+            {row && (
+              <StockStatusSelect
+                value={row.stockStatus ?? 'in_stock'}
+                onChange={(v) =>
+                  products.update(productId, (d) => {
+                    d.stockStatus = v;
+                  })
+                }
+              />
+            )}
           </div>
 
           <StockEditor

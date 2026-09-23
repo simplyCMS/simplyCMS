@@ -1,11 +1,10 @@
+import type { ReactNode } from 'react';
 import { Loader2, Save } from 'lucide-react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
-import { ModificationsPanel } from '../modifications/ModificationsPanel';
-import { SimpleProductPanel } from '../simple/SimpleProductPanel';
 import { ProductMainFields } from './ProductMainFields';
 import { ProductMetaCard } from './ProductMetaCard';
 import { ProductSeoFields } from './ProductSeoFields';
@@ -23,6 +22,15 @@ interface Props {
   readonly submitLabel: string;
   /** Дати для `ProductMetaCard` — лише для ІСНУЮЧОГО товару. */
   readonly meta?: { createdAt: Date; updatedAt: Date };
+  /**
+   * Панелі-сателіти (`ProductEditPage`) — рендеряться ПІСЛЯ `</form>`, але
+   * всередині ТОГО САМОГО `FormProvider` (`<Form {...form}>`), тож
+   * `SimpleProductPanel`'s `useFormContext()` (поле `sku`) і далі бачить
+   * форму картки. `FormProvider` — чистий React-контекст, без власного DOM-
+   * вузла: «всередині Form» ≠ «нащадок `<form>`» (структурний фікс лишається
+   * чинним — жодна панель не є нащадком літерального `<form>`).
+   */
+  readonly children?: ReactNode;
 }
 
 /**
@@ -30,17 +38,16 @@ interface Props {
  * легасі `ProductEdit.tsx` БЕЗ дизайнерських змін, шар даних —
  * react-hook-form + Zod (`FormProvider`, підполя читають контекст).
  *
- * 🔴 Task 8 (відхилення від файлового списку плану — там панелі-сателіти
- * малює `ProductEditPage.tsx` «рядком нижче форми»): `sku`/`stockStatus`
- * простого товару вже живуть у ЦІЙ формі (`product-form-schema.ts`,
- * `useProductSave.test.tsx` кейс (в) — Task 7), а не в окремому стані.
- * Панель, змонтована ПОЗА `<Form>`, писала б ті самі поля ДРУГИМ шляхом —
- * наступний клік «Зберегти» переніс би в БД стейл `defaultValues` з
- * моменту відкриття картки (RHF не стежить за зовнішніми пропсами). Тож
- * `SimpleProductPanel` читає/пише `sku`/`stockStatus` через
- * `useFormContext` — ОДНЕ джерело правди, один Save. Модифікації —
- * окрема таблиця, тож `ModificationsPanel` пише свою колекцію напряму,
- * без звʼязку з цим `<form>`.
+ * 🔴 Рев'ю хвилі C (BLOCKER, структурний фікс): панелі-сателіти
+ * (модифікації/ціни/залишки, Task 8) — НЕ тут. `Button` ядра не задає
+ * `type` ⇒ усередині `<form>` це `submit`; панель, змонтована як нащадок
+ * цього `<form>`, сабмітила б картку кожним своїм кліком («Зберегти
+ * залишки», ↑/↓ модифікації тощо). Тож `<form>` тут несе ЛИШЕ поля картки
+ * (`ProductMainFields`/`ProductSeoFields`/сайдбар) — панелі рендерить
+ * `ProductEditPage` СИБЛІНГОМ цього компонента, за ЖИВИМ рядком колекції
+ * (Task 7 Step 3 — не за `useWatch` незбереженої форми: інакше перемикач
+ * типу товару підміняв би панель ДО Save, а панель писала б у таблицю, де
+ * БД ще каже `has_modifications` протилежне).
  */
 export function ProductForm({
   productId,
@@ -48,17 +55,11 @@ export function ProductForm({
   onSubmit,
   submitLabel,
   meta,
+  children,
 }: Props) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
-  });
-  // 🔴 Task 8: панелі-сателіти (модифікації/ціни/залишки) потребують
-  // hasModifications ЖИВИМ, не одноразовим defaultValues — перемикач типу
-  // товару в `ProductSidebar` мусить одразу підмінити панель без Save.
-  const hasModifications = useWatch({
-    control: form.control,
-    name: 'hasModifications',
   });
 
   return (
@@ -88,18 +89,6 @@ export function ProductForm({
               name="admin.product.form.fields"
               context={{ productId }}
             />
-            {/* Task 8: панелі-сателіти — лише для ІСНУЮЧОГО товару (як
-                легасі `!isNew && …`), товару без id писати нема куди. */}
-            {productId &&
-              (hasModifications ? (
-                <ModificationsPanel productId={productId} />
-              ) : (
-                <SimpleProductPanel productId={productId} />
-              ))}
-            <PluginSlot
-              name="admin.product.form.after"
-              context={{ productId }}
-            />
           </div>
 
           <div className="space-y-6">
@@ -118,6 +107,7 @@ export function ProductForm({
           </div>
         </div>
       </form>
+      {children}
     </Form>
   );
 }

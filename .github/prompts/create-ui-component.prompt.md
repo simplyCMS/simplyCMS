@@ -16,7 +16,7 @@ description: "Створити UI компонент для дизайн-сис�
 
 - **`simplycms/ui`** (T3) — базові UI компоненти (shadcn/ui based): Button, Input, Dialog, etc.
 - **`simplycms/{cart,catalog,checkout,profile,reviews}-ui`** (T4) — бізнес-компоненти: ProductCard, CartItem, CheckoutForm, etc.
-- **`simplycms/admin`** (T5) — адмін-компоненти: ImageUpload, ProductPricesEditor, etc.
+- **`simplycms/admin`** (T5) — адмін-компоненти: ImageUpload, StockStatusSelect, etc.
 - **themes/default** — theme-specific компоненти: Header, Footer, HeroBanner, etc.
 
 ## Вимоги:

@@ -4,7 +4,6 @@ import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
 import { ImageUpload } from '../../../components/ImageUpload';
-import { StockStatusSelect } from '../stock/StockStatusSelect';
 import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
@@ -12,7 +11,13 @@ interface Props {
   readonly modId: string | null;
 }
 
-/** Основні поля форми модифікації — виніс із `ModificationDialog.tsx` (канон 150 рядків). */
+/**
+ * Основні поля форми модифікації — виніс із `ModificationDialog.tsx`
+ * (канон 150 рядків). 🔴 Статус наявності тут НЕ рендериться (рев'ю хвилі
+ * C, МAJOR) — при редагуванні це окремий миттєвий контрол над живим
+ * рядком, при створенні — `ModificationStatusControl` над цією ж формою;
+ * обидва малює `ModificationDialog`, не ці «сирі» поля.
+ */
 export function ModificationFormFields({ modId }: Props) {
   const t = useT();
   const { register, watch, setValue } =
@@ -45,11 +50,6 @@ export function ModificationFormFields({ modId }: Props) {
         <Label htmlFor="mod-sku">{t('admin.products.mods.sku')}</Label>
         <Input id="mod-sku" {...register('sku')} placeholder="SP-100W-BLK" />
       </div>
-
-      <StockStatusSelect
-        value={watch('stockStatus')}
-        onChange={(v) => setValue('stockStatus', v, { shouldDirty: true })}
-      />
 
       <div className="flex items-center gap-2">
         <Switch
