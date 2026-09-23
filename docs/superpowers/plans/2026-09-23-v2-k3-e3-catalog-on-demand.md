@@ -36,6 +36,7 @@
 | Е3-16 | 🔴 *(архітектор, виміряно спайком 2026-09-23)* **On-demand колекція, яку гортає `useLiveInfiniteQuery`, мусить мати індекс сортування:** `autoIndex: 'eager'` + `defaultIndexType: BTreeIndex` (з `@tanstack/react-db`) | Без індексу `fetchNextPage` НЕ робить другого `loadSubset` — видно лише рядки першої сторінки + peek, `hasNextPage` падає в `false`. З індексом друга сторінка йде окремим запитом `{ limit: 2, offset: 3, cursor }` і дає рівно 4 рядки (ізольований прогін на `@tanstack/db@0.8.6`). Offset-пагінація Е3-2 реалізовна без fallback |
 | Е3-17 | 🔴 *(архітектор; блокер власника на демо, 2026-09-23)* **Усі on-demand колекції — ЛИШЕ через фабрику `onDemandCollectionOptions` (`admin-data`): `syncMode: 'on-demand'` + `gcTime: 0` + індекс сортування (Е3-16).** `syncMode: 'on-demand'` поза фабрикою забороняє `admin-data/__tests__/on-demand-factory-only.test.ts` | Власник: перейменував товар → повернувся в список → у списку лише цей товар (F5 — усі). Write-back записує synced-набір колекції в УСІ ключі під префіксом, включно з неактивними (реєстр `docs/architecture/upstream-workarounds.md`, **TSDB-1**); для on-demand synced = лише активні зрізи. `gcTime: 0` прибирає неактивні зрізи; виміряно: infinite-список сторінок не губить, надмножина в активних ключах у живих запитах не видна. Канон write-back К3-7 для on-demand без цього — хибний (помилка плану) |
 | Е3-18 | *(архітектор; рев'ю хвилі C)* **Форми адмінки: (1) панелі, що зберігають окремо (ціни, залишки, модифікації, властивості), — НІКОЛИ не нащадки `<form>` сутності** (сиблінги в межах `FormProvider`; у діалозі `<form>` обгортає лише поля, сабміт — `form={id}`), `type="button"` на кнопках панелей — другий рубіж; **(2) поле, яке змінює сервер поза формою (`stockStatus` за Е3-3), у patch форми не входить** — окремий миттєвий контрол над ЖИВИМ рядком колекції (`ModificationStatusControl` / контрол у `SimpleProductPanel`); **(3) невалідна форма не мовчить** — інлайн-помилки `role=alert` + тост `admin.products.fixFields` | (1) Вкладені форми: «Зберегти ціни/залишки», ↑/↓, «Видалити» сабмітили картку, а синтетичний submit спливав через портал діалогу (blocker рев'ю, доведено). (2) Знімок `defaultValues` перезаписував статус, перерахований `saveStock`, і обходив гвард Е3-3 звичайним сабмітом (major). (3) Порожній розділ / slug «Panel-1» → «Створити» без жодної реакції |
+| Е3-19 | *(архітектор; рев'ю Task 10)* **Автозбереження значень властивостей (Е3-11) — без гонок:** (а) текст і число зберігаються на blur/Enter і при розмонтуванні поля (flush чернетки), НЕ на кожну клавішу; поле з фокусом тримає локальну чернетку, write-back колекції в нього не пишеться; «чи змінилось» — числове для чисел (`Number(a) === Number(b)`), trim для тексту; (б) черга на ключ (власник, `property_id`): наступна операція стартує після завершення попередньої і рахує дельту від ЖИВОГО стану колекції (`toArray`) на момент старту; відхилення не блокує чергу | Виміряно на `@tanstack/db` 0.8.6: кожен `collection.insert/update/delete` — окрема паралельна транзакція; збереження на кожну клавішу давало «a» замість «ab» (update обганяв незакомічений insert → «рядка не існує» → rollback), галочка поверталась, toggle опції тричі → 23505. `numeric(15,4)` повертав "1.0000" і перезаписував поле під час набору — «15» не набиралось. Дефект плану Task 10 Step 2 (зберігав на кожне натискання) |
 
 **Обходи дефектів бібліотек** (TSDB-1…5, DZOD-1, DRZ-1, START-1) — у ЄДИНОМУ реєстрі
 `docs/architecture/upstream-workarounds.md`; у коді — маркери `UPSTREAM:<ID>`.
@@ -3407,7 +3408,7 @@ git commit -m "feat(k3-e3): модифікації, ціни й залишки �
 **Files:**
 - Modify: `packages/simplycms/migrations/0001_init.sql`
 - Modify: `packages/simplycms/src/schema/schema.ts`
-- Modify: `packages/simplycms/drizzle/0000_init.sql`, `packages/simplycms/drizzle/meta/0000_snapshot.json` (4 джерела правди — як Task 0 плану Е1б)
+- Modify: `packages/simplycms/drizzle/0000_init.sql`, `packages/simplycms/drizzle/meta/0000_snapshot.json` (4 джерела правди — як Task 0 плану Е1б; 🔴 П'ЯТЕ — `migrations/demo/demo-seed.sql`: будь-який `ON CONFLICT`/посилання на старий ключ (факт F1 виконання: три `ON CONFLICT (product_id, property_id)` дали 42P10 і червоний `test:schema` на 8 файлах) + копії `pnpm template:sync`)
 - Create: `packages/simplycms/test-harness/pg/__tests__/property-values-multiselect.test.ts`
 - Modify: `packages/simplycms/src/storefront-routes/pages/product-detail/useProductContent.ts` + новий `merge-property-values.ts` поруч і тест
 - Run: `pnpm template:sync` (міграції — `SYNCED_DIRS`) і коміт копій
@@ -3880,6 +3881,21 @@ create, ProductModifications, ProductPricesEditor, ProductPropertyValues,
 AllProductProperties, StockByPointManager). Зменшити `KNOWN_WITHOUT_ID` до
 ФАКТИЧНОГО числа, яке тест друкує (не вгадувати), з коментарем «Е3: −N
 (каталог)».
+
+- [ ] **Step 4а: Гейт парності джерел схеми (факт F2 виконання Task 9)**
+
+Автоматичної звірки `schema.ts` ↔ `drizzle/meta/0000_snapshot.json` ↔ `drizzle/0000_init.sql`
+↔ `migrations/0001_init.sql` НЕМАЄ: `baseline.test.ts` накочує канон і перевіряє інваріанти БД,
+`rls-parity` звіряє лише політики — зміна лише `schema.ts` або лише канону проходить усі гейти
+(правки baseline К3-14/Е3-13 трималися на пильності). Новий `tests/schema-sources-parity.test.ts`:
+1. копія `packages/simplycms/drizzle/` у тимчасову теку → `drizzle-kit generate` з out на копію
+   (тимчасовий конфіг або прапорець встановленої версії — звірити) → НОВОГО файла міграції немає
+   (= «No schema changes»); реальна `drizzle/` не змінюється ніколи;
+2. `migrations/0001_init.sql` ≡ `drizzle/0000_init.sql` після нормалізації (SQL-коментарі, порожні
+   рядки); свідомі відмінності — явним allowlist із причинами, не «ігнорувати все»;
+3. негативні контролі: правка лише `schema.ts` → червоне; правка лише канону → червоне.
+Якщо `drizzle-kit generate` у тесті потребує мережі/БД або > ~15 с — у `pnpm test:schema`, не в
+дефолтний `pnpm test` (виміряти й записати).
 
 - [ ] **Step 5: Gate C і пакування**
 

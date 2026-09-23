@@ -306,6 +306,7 @@ readonly-колонки виглядали писаними. Аналогічн�
 |---|---|---|---|---|---|
 | DRZ-1 | `drizzle-orm` 0.45.2 + `pg` | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `admin-server/impl/errors.ts` (`toAdminConflict`) | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст | `impl/__tests__/run.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) |
 | START-1 | `@tanstack/start-server-core` 1.167 | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (`dist/esm/server-functions-handler.js:33`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | — (перевіряти рев'ю при апгрейді Start) |
+| TSDB-B1 | `@tanstack/db` 0.8.6 | Прямий `collection.insert/update/delete` застосовує оптимізм і write-back синхронно в `commit()` ЛИШЕ коли колекція вже `ready`; до старту sync — поведінка як `SyncNotInitializedError` | `admin/features/products/**` (`useProductSave`, `useStock` роблять `preload()` перед записом); тести черги Е3-19 явно чекають `ready` | Запис одразу після монтування сторінки впав би або «загубився» без оптимізму | тести `usePropertyValues` / `order-statuses-collection` (`await c.preload()` перед мутаціями) |
 
 ---
 
