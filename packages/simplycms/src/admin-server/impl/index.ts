@@ -8,25 +8,22 @@
  * має (DCE). Однаковий префікс id стаба й нутрощів такої здатності не дає —
  * це знахідка рев'ю ред.2.
  */
-export { orderStatusesOps } from './resources/order-statuses';
+export { orderStatusesOps } from './order-statuses/resource';
 export {
   setDefaultInput,
   setDefaultOrderStatusOp,
-} from './operations/order-status-default';
-export {
-  reorderInput,
-  reorderOrderStatusOp,
-} from './operations/order-status-reorder';
+} from './order-statuses/set-default';
+export { reorderInput, reorderOrderStatusOp } from './order-statuses/reorder';
 export {
   removeStatusInput,
   removeManyInput,
   removeManyOrderStatusesOp,
-} from './operations/order-status-remove';
+} from './order-statuses/remove';
 export {
   deleteMediaInput,
   deleteMediaOp,
   parseUploadForm,
   uploadMediaOp,
-} from './operations/media';
-export type { ParsedUpload } from './operations/media';
+} from './media/operations';
+export type { ParsedUpload } from './media/operations';
 export type { SubsetInput, SubsetPayload } from './subset';
