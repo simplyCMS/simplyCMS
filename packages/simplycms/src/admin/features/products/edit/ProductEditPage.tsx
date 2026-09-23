@@ -38,8 +38,11 @@ function toFormValues(row: Product): ProductFormValues {
  * Картка існуючого товару (Task 7): рядок — жива колекція (`findOne`).
  * 🔴 `productId`, що не є uuid (стара закладка), інакше дав би 400 зі
  * схеми `list`-serverFn (`id` — uuid-фільтр) — перевіряємо ДО запиту.
- * Панелі модифікацій/цін/залишків/властивостей (Tasks 8–10) сюди додає
- * наступна задача рядком нижче форми — тут їх свідомо немає.
+ * Панелі модифікацій/цін/залишків (Task 8) і властивостей (Task 10) —
+ * усередині `ProductForm` (не тут): `sku`/`stockStatus` простого товару —
+ * поля ЦІЄЇ форми (Task 7), панель поза `<Form>` писала б їх окремим
+ * шляхом і гнала стейл `defaultValues` наступним Save — див. коментар
+ * `ProductForm.tsx`.
  */
 export function ProductEditPage({ productId }: Props) {
   const t = useT();

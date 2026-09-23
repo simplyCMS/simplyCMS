@@ -1,9 +1,11 @@
 import { Loader2, Save } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
+import { ModificationsPanel } from '../modifications/ModificationsPanel';
+import { SimpleProductPanel } from '../simple/SimpleProductPanel';
 import { ProductMainFields } from './ProductMainFields';
 import { ProductMetaCard } from './ProductMetaCard';
 import { ProductSeoFields } from './ProductSeoFields';
@@ -27,6 +29,18 @@ interface Props {
  * Композиція форми картки товару (Task 7): розмітка й `PluginSlot`-и — з
  * легасі `ProductEdit.tsx` БЕЗ дизайнерських змін, шар даних —
  * react-hook-form + Zod (`FormProvider`, підполя читають контекст).
+ *
+ * 🔴 Task 8 (відхилення від файлового списку плану — там панелі-сателіти
+ * малює `ProductEditPage.tsx` «рядком нижче форми»): `sku`/`stockStatus`
+ * простого товару вже живуть у ЦІЙ формі (`product-form-schema.ts`,
+ * `useProductSave.test.tsx` кейс (в) — Task 7), а не в окремому стані.
+ * Панель, змонтована ПОЗА `<Form>`, писала б ті самі поля ДРУГИМ шляхом —
+ * наступний клік «Зберегти» переніс би в БД стейл `defaultValues` з
+ * моменту відкриття картки (RHF не стежить за зовнішніми пропсами). Тож
+ * `SimpleProductPanel` читає/пише `sku`/`stockStatus` через
+ * `useFormContext` — ОДНЕ джерело правди, один Save. Модифікації —
+ * окрема таблиця, тож `ModificationsPanel` пише свою колекцію напряму,
+ * без звʼязку з цим `<form>`.
  */
 export function ProductForm({
   productId,
@@ -38,6 +52,13 @@ export function ProductForm({
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
+  });
+  // 🔴 Task 8: панелі-сателіти (модифікації/ціни/залишки) потребують
+  // hasModifications ЖИВИМ, не одноразовим defaultValues — перемикач типу
+  // товару в `ProductSidebar` мусить одразу підмінити панель без Save.
+  const hasModifications = useWatch({
+    control: form.control,
+    name: 'hasModifications',
   });
 
   return (
@@ -67,6 +88,14 @@ export function ProductForm({
               name="admin.product.form.fields"
               context={{ productId }}
             />
+            {/* Task 8: панелі-сателіти — лише для ІСНУЮЧОГО товару (як
+                легасі `!isNew && …`), товару без id писати нема куди. */}
+            {productId &&
+              (hasModifications ? (
+                <ModificationsPanel productId={productId} />
+              ) : (
+                <SimpleProductPanel productId={productId} />
+              ))}
             <PluginSlot
               name="admin.product.form.after"
               context={{ productId }}

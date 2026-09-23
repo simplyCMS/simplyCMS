@@ -40,7 +40,8 @@ const CURRENCY_SYMBOLS: Readonly<Record<string, string>> = {
  *                                     неправильна сума, а не косметика).
  * Перевірено прогоном на 4200 / 4200.5 / 4200.55 / 4200.555 / 0 / 99.9.
  * Єдиний кол-сайт, що покладався на валютний дефолт 2/2
- * (`admin/components/ProductModifications.tsx`), передає `2` явно.
+ * (`admin/features/products/modifications/ModificationRow.tsx`), передає
+ * `2` явно.
  */
 export interface FormatPriceOptions {
   minimumFractionDigits?: number;

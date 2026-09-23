@@ -58,6 +58,7 @@ export const messages = {
   'admin.products.mods.properties': 'Властивості модифікації',
   'admin.products.mods.empty':
     'Модифікацій ще немає. Додайте першу модифікацію товару.',
+  'admin.products.mods.confirmDelete': 'Видалити цю модифікацію?',
 
   // Наявність
   'admin.products.stock.inStock': 'В наявності',
@@ -78,6 +79,7 @@ export const messages = {
   'admin.products.prices.saved': 'Ціни збережено',
   'admin.products.prices.save': 'Зберегти ціни',
   'admin.products.prices.oldPrice': 'Стара ціна',
+  'admin.products.prices.invalid': 'Некоректна ціна',
 
   // Завантаження зображень
   'admin.products.upload.badFormat': 'Непідтримуваний формат',

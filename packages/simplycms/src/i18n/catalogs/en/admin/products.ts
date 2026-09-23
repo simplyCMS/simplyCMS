@@ -58,6 +58,7 @@ export const messages: Catalog = {
   'admin.products.mods.properties': 'Modification properties',
   'admin.products.mods.empty':
     'No modifications yet. Add the first one for this product.',
+  'admin.products.mods.confirmDelete': 'Delete this modification?',
 
   'admin.products.stock.inStock': 'In stock',
   'admin.products.stock.none': 'None',
@@ -76,6 +77,7 @@ export const messages: Catalog = {
   'admin.products.prices.saved': 'Prices saved',
   'admin.products.prices.save': 'Save prices',
   'admin.products.prices.oldPrice': 'Old price',
+  'admin.products.prices.invalid': 'Invalid price',
 
   'admin.products.upload.badFormat': 'Unsupported format',
   'admin.products.upload.allowedFormats':
