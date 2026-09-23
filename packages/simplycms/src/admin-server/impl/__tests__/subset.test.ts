@@ -11,6 +11,27 @@ const ALLOW = {
   sortable: ['sortOrder'],
 } as const;
 
+describe('subset: isNull (Е3-14 — ціни/залишки рівня товару)', () => {
+  it('isNull: колонка з allowlist → IS NULL без параметра', () => {
+    const s = toDrizzleSubset(
+      orderStatuses,
+      { filterable: ['color'], sortable: [] },
+      { filters: [{ field: ['color'], operator: 'isNull', value: null }] },
+    );
+    expect(s.where).toBeDefined();
+  });
+
+  it('isNull з непорожнім value — 400 на межі (схема)', () => {
+    expect(
+      subsetInputSchema.safeParse({
+        subset: {
+          filters: [{ field: ['color'], operator: 'isNull', value: 1 }],
+        },
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe('subset: трансляція предикатів колекції у Drizzle', () => {
   it('колонка поза allowlist — кидає', () => {
     expect(() =>

@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
-import { orderStatuses } from 'simplycms/schema';
+import { orderStatuses, products } from 'simplycms/schema';
 
 // Операції торкаються auth/db лише в рантаймі хендлера — мокаємо обидва
 // канали, форму схем перевіряємо без БД.
@@ -149,5 +149,89 @@ describe('defineAdminResource (К3-4′)', () => {
     expectTypeOf<PatchItem>().not.toHaveProperty('isDefault');
     expectTypeOf<PatchItem>().not.toHaveProperty('createdAt');
     expectTypeOf<PatchItem>().toHaveProperty('name');
+  });
+
+  // ID — будь-який uuid-літерал.
+  const ID = '0e300000-0000-4000-8000-0000000000aa';
+
+  it('touch: update дописує updatedAt = Date (Е3-9)', async () => {
+    const set = vi.fn(() => ({
+      where: () => ({ returning: async () => [{ id: ID }] }),
+    }));
+    const { withActor } = await import('simplycms/db');
+    vi.mocked(withActor).mockImplementationOnce(async (_a, fn) =>
+      fn({ update: () => ({ set }) } as never, {} as never),
+    );
+    const productOps = defineAdminResource({
+      entity: 'products',
+      table: products,
+      operation: 'catalog.write',
+      mode: 'on-demand',
+      filterable: [],
+      sortable: [],
+      touch: 'updatedAt',
+      writable: [
+        'sectionId',
+        'slug',
+        'name',
+        'shortDescription',
+        'description',
+        'isActive',
+        'isFeatured',
+        'metaTitle',
+        'metaDescription',
+        'images',
+        'hasModifications',
+        'sku',
+        'stockStatus',
+        'returnPolicy',
+        'shippingDetails',
+      ],
+      readonly: ['id', 'createdAt', 'updatedAt'],
+    });
+    await productOps.update({ data: [{ id: ID, patch: { name: 'X' } }] });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'X', updatedAt: expect.any(Date) }),
+    );
+  });
+
+  // 🔴 Доказ тай-брейкера (Е3-8) — ЮНІТОМ, не харнесом (аудит 2026-09-23):
+  // Postgres на малій незмінній таблиці часто повертає той самий порядок і
+  // без `id`, тож харнес-тест пагінації (Task 3) лишився б зеленим і без
+  // фіксу.
+  it('list: id asc — ОСТАННІЙ ключ сортування, і після defaultOrder, і після sorts', async () => {
+    const orderBy = vi.fn(function (this: unknown) {
+      return this;
+    });
+    const q = {
+      where: () => q,
+      orderBy,
+      limit: () => q,
+      offset: () => q,
+      then: (r: (v: unknown[]) => unknown) => r([]),
+    };
+    const { withActor } = await import('simplycms/db');
+    vi.mocked(withActor).mockImplementation(async (_a, fn) =>
+      fn(
+        { select: () => ({ from: () => ({ $dynamic: () => q }) }) } as never,
+        {} as never,
+      ),
+    );
+    await ops.list({ data: {} });
+    await ops.list({
+      data: { subset: { sorts: [{ field: ['name'], direction: 'desc' }] } },
+    });
+    for (const call of orderBy.mock.calls) {
+      const last = call.at(-1) as unknown as { queryChunks?: unknown[] };
+      // asc(col) — SQL із чанком колонки id; звіряємо через рендер у рядок.
+      // 🔴 Колонка Drizzle тримає посилання на власну таблицю — циклічна
+      // структура; replacer вирізає ключ 'table', щоб JSON.stringify не впав.
+      expect(
+        JSON.stringify(last, (key, value) =>
+          key === 'table' ? undefined : value,
+        ),
+      ).toContain('"name":"id"');
+    }
+    expect(orderBy).toHaveBeenCalledTimes(2); // один виклик на запит — масив, не ланцюг
   });
 });

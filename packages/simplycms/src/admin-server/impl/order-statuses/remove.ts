@@ -1,8 +1,7 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderStatuses } from 'simplycms/schema';
-import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
-import { withActor } from 'simplycms/db';
+import { runAdmin } from '../run';
 
 export const removeStatusInput = z.object({ id: z.uuid() });
 export const removeManyInput = z.array(removeStatusInput).min(1).max(100);
@@ -23,33 +22,29 @@ export const removeManyOrderStatusesOp = async ({
 }: {
   data: z.infer<typeof removeManyInput>;
 }) => {
-  const { subject } = await requireGrant('catalog.write');
-  return withActor(
-    { role: dbRoleForSubject(subject), userId: subject.userId ?? undefined },
-    async (db) => {
-      const ids = data.map((d) => d.id);
-      const rows = await db
-        .select()
-        .from(orderStatuses)
-        .where(inArray(orderStatuses.id, ids))
-        .for('update');
-      if (rows.length !== ids.length) {
-        const found = new Set(rows.map((r) => r.id));
-        const missing = ids.filter((id) => !found.has(id));
-        throw new Error(
-          `[admin-server] статусів не існує: ${missing.join(', ')}`,
-        );
-      }
-      const def = rows.find((r) => r.isDefault);
-      if (def)
-        throw new Error(
-          '[admin-server] дефолтний статус видалити не можна — призначте інший дефолт',
-        );
-      const deleted = await db
-        .delete(orderStatuses)
-        .where(inArray(orderStatuses.id, ids))
-        .returning();
-      return { count: deleted.length };
-    },
-  );
+  return runAdmin('catalog.write', async (db) => {
+    const ids = data.map((d) => d.id);
+    const rows = await db
+      .select()
+      .from(orderStatuses)
+      .where(inArray(orderStatuses.id, ids))
+      .for('update');
+    if (rows.length !== ids.length) {
+      const found = new Set(rows.map((r) => r.id));
+      const missing = ids.filter((id) => !found.has(id));
+      throw new Error(
+        `[admin-server] статусів не існує: ${missing.join(', ')}`,
+      );
+    }
+    const def = rows.find((r) => r.isDefault);
+    if (def)
+      throw new Error(
+        '[admin-server] дефолтний статус видалити не можна — призначте інший дефолт',
+      );
+    const deleted = await db
+      .delete(orderStatuses)
+      .where(inArray(orderStatuses.id, ids))
+      .returning();
+    return { count: deleted.length };
+  });
 };

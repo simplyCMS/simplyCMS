@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { dbRoleForSubject, requireGrant } from 'simplycms/auth';
-import { withActor } from 'simplycms/db';
+import { runAdmin } from '../run';
 import {
   MAX_UPLOAD_BYTES,
   MEDIA_ENTITY_TYPES,
@@ -69,42 +68,45 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   return { bytes: checked.bytes, mime: checked.mime, entityType, entityId };
 }
 
-/** Завантажити файл від імені адміна. */
+/**
+ * Завантажити файл від імені адміна.
+ *
+ * 🔴 Склейка ІНША за прості order-statuses-операції (Task 1 Step 6): парсинг
+ * форми (`parseUploadForm`) навмисно всередині колбека `runAdmin`, а не до
+ * нього — перший рубіж (`requireGrant` усередині `runAdmin`) мусить лишитись
+ * ЗАВЖДИ до розбору недовіреного вмісту форми, інакше анонім змусив би
+ * сервер сніфати байти файлу ще до відмови 403.
+ *
+ * 🔴 `written` живе ПОЗА транзакцією — той самий клас відмови, що в
+ * `uploadMyAvatar`: якщо COMMIT упаде вже після публікації файлу, rollback
+ * прибере рядок, а диск про транзакції не знає, і обʼєкт лишився б орфаном.
+ * Тому зовнішній try/catch навколо `runAdmin` лишається — цього не дає
+ * склейка `run()` фабрики (Task 1 Step 5), бо там нема потреби в
+ * best-effort прибиранні файлу з диска.
+ */
 export async function uploadMediaOp({
   data,
 }: {
   data: FormData;
 }): Promise<{ ref: string; url: string }> {
-  // 🔴 Перший рубіж — ЗАВЖДИ до withActor (К3-13): `app_admin` вмикається
-  // лише після типізованого «так». Кликати `requireGrant` зсередини
-  // відкритої транзакції не можна — `readSessionSubject` бере власне
-  // зʼєднання, і на вичерпаному пулі це self-deadlock.
-  const { subject } = await requireGrant('media.write');
-  const parsed = await parseUploadForm(data);
-
-  // 🔴 `written` живе ПОЗА транзакцією — той самий клас відмови, що в
-  // `uploadMyAvatar`: якщо COMMIT упаде вже після публікації файлу, rollback
-  // прибере рядок, а диск про транзакції не знає, і обʼєкт лишився б орфаном.
   let written: string | null = null;
   try {
-    return await withActor(
-      { role: dbRoleForSubject(subject), userId: subject.userId ?? undefined },
-      async (db) => {
-        const record = await writeMedia(db, {
-          bytes: parsed.bytes,
-          mime: parsed.mime,
-          entityType: parsed.entityType,
-          entityId: parsed.entityId,
-          uploadedBy: subject.userId,
-        });
-        written = record.ref;
-        const url = resolveMediaUrl(record.ref, MEDIA_URL_BASE);
-        // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок
-        // замість `!` тримає межу чесною — тип звужується доказом.
-        if (url === null) throw new Error('media/bad-format');
-        return { ref: record.ref, url };
-      },
-    );
+    return await runAdmin('media.write', async (db, grant) => {
+      const parsed = await parseUploadForm(data);
+      const record = await writeMedia(db, {
+        bytes: parsed.bytes,
+        mime: parsed.mime,
+        entityType: parsed.entityType,
+        entityId: parsed.entityId,
+        uploadedBy: grant.subject.userId,
+      });
+      written = record.ref;
+      const url = resolveMediaUrl(record.ref, MEDIA_URL_BASE);
+      // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок
+      // замість `!` тримає межу чесною — тип звужується доказом.
+      if (url === null) throw new Error('media/bad-format');
+      return { ref: record.ref, url };
+    });
   } catch (error) {
     // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
     if (written !== null) await discardMedia(written);
@@ -120,9 +122,7 @@ export async function deleteMediaOp({
 }: {
   data: z.infer<typeof deleteMediaInput>;
 }): Promise<{ removed: boolean }> {
-  const { subject } = await requireGrant('media.write');
-  return withActor(
-    { role: dbRoleForSubject(subject), userId: subject.userId ?? undefined },
-    async (db) => ({ removed: await eraseMedia(db, data.ref) }),
-  );
+  return runAdmin('media.write', async (db) => ({
+    removed: await eraseMedia(db, data.ref),
+  }));
 }

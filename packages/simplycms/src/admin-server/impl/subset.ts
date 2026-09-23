@@ -7,6 +7,7 @@ import {
   gt,
   gte,
   inArray,
+  isNull,
   lt,
   lte,
   type SQL,
@@ -19,8 +20,13 @@ import { z } from 'zod';
  * allowlist РЕСУРСУ (не зі схемою: фільтр по всіх колонках = повний
  * контроль форми запиту клієнтом); значення завжди йде параметром.
  * Оператори — рівно ті, що вміє push-down query-collection
- * (parseLoadSubsetOptions): eq, gt, gte, lt, lte, in. Невідомий — КИДАЄ.
- * `or` свідомо відкладений до Е3 (каталог) — тут його не вмикати.
+ * (parseLoadSubsetOptions): eq, gt, gte, lt, lte, in, isNull. Невідомий —
+ * КИДАЄ. `or` свідомо відкладений до Е3 (каталог) — тут його не вмикати.
+ *
+ * 🔴 isNull додано в Е3-14: ціни й залишки РІВНЯ ТОВАРУ — рядки з
+ * `modification_id IS NULL`. isNull є у словнику push-down самої
+ * бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути
+ * ширший зріз і дофільтровувати в JS — push-down на половину.
  */
 // 🔴 Типізовано ЯВНИМ спільним сигнатурним типом (не `as const`): eq/gt/gte/lt/lte —
 // це `BinaryOperator` (три перевантаження-в-інтерфейсі), inArray — окрема
@@ -33,9 +39,17 @@ import { z } from 'zod';
 // allowlist-ом ДО того, як дійде до SQL-функції.
 type SubsetOperatorFn = (column: never, value: never) => SQL;
 const OPERATORS: Record<
-  'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in',
+  'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'isNull',
   SubsetOperatorFn
-> = { eq, gt, gte, lt, lte, in: inArray };
+> = {
+  eq,
+  gt,
+  gte,
+  lt,
+  lte,
+  in: inArray,
+  isNull: ((column: never) => isNull(column)) as SubsetOperatorFn,
+};
 
 export interface SubsetAllow {
   readonly filterable: readonly string[];
@@ -46,12 +60,14 @@ const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const filterSchema = z
   .object({
     field: z.array(z.string().min(1)).min(1),
-    operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in']),
+    operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in', 'isNull']),
     value: z.unknown(),
   })
   // 🔴 R9 (рев'ю Task 6): форма value привʼязана до оператора ТУТ, на
   // межі, — інакше `in` зі скаляром чи `eq` з масивом доїжджають до
   // bindIfParam і повертаються 500 з БД замість 400 від валідатора.
+  // isNull (Е3-14) — той самий принцип: value мусить бути РІВНО null,
+  // інакше клієнт міг би прислати сміття, яке SQL-білдер просто ігнорує.
   .superRefine((f, ctx) => {
     if (f.operator === 'in') {
       const r = z.array(scalar).min(1).safeParse(f.value);
@@ -60,6 +76,13 @@ const filterSchema = z
           code: 'custom',
           path: ['value'],
           message: "operator 'in' вимагає непорожній масив скалярів",
+        });
+    } else if (f.operator === 'isNull') {
+      if (f.value !== null)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['value'],
+          message: "operator 'isNull' вимагає value: null",
         });
     } else if (!scalar.safeParse(f.value).success) {
       ctx.addIssue({

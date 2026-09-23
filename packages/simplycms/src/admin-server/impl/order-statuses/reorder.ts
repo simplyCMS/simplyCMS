@@ -1,8 +1,7 @@
 import { asc, desc, eq, gt, inArray, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderStatuses } from 'simplycms/schema';
-import { requireGrant, dbRoleForSubject } from 'simplycms/auth';
-import { withActor } from 'simplycms/db';
+import { runAdmin } from '../run';
 
 export const reorderInput = z.object({
   id: z.uuid(),
@@ -32,61 +31,57 @@ export const reorderOrderStatusOp = async ({
 }: {
   data: z.infer<typeof reorderInput>;
 }) => {
-  const { subject } = await requireGrant('catalog.write');
-  return withActor(
-    { role: dbRoleForSubject(subject), userId: subject.userId ?? undefined },
-    async (db) => {
-      const [seen] = await db
-        .select()
-        .from(orderStatuses)
-        .where(eq(orderStatuses.id, data.id));
-      if (!seen) throw new Error(`[admin-server] статусу ${data.id} не існує`);
-      const [next] = await db
-        .select({ id: orderStatuses.id })
-        .from(orderStatuses)
-        .where(
-          data.direction === 'up'
-            ? lt(orderStatuses.sortOrder, seen.sortOrder)
-            : gt(orderStatuses.sortOrder, seen.sortOrder),
-        )
-        .orderBy(
-          data.direction === 'up'
-            ? desc(orderStatuses.sortOrder)
-            : asc(orderStatuses.sortOrder),
-        )
-        .limit(1);
-      if (!next) return { swapped: [] as (typeof seen)[] };
-      // Один запит, обидва рядки, порядок за id — незалежно від того, хто
-      // тут "current" і хто "neighbor" (рев'ю р2: FOR UPDATE лишається
-      // потрібним — без нього overlapping-swap лишав би дубльовані
-      // sort_order).
-      const locked = await db
-        .select()
-        .from(orderStatuses)
-        .where(inArray(orderStatuses.id, [data.id, next.id]))
-        .orderBy(asc(orderStatuses.id))
-        .for('update');
-      const current = locked.find((r) => r.id === data.id);
-      const neighbor = locked.find((r) => r.id === next.id);
-      if (!current || !neighbor)
-        throw new Error('[admin-server] рядок зник між вибіркою і локом');
-      const swapped = [
-        (
-          await db
-            .update(orderStatuses)
-            .set({ sortOrder: neighbor.sortOrder })
-            .where(eq(orderStatuses.id, current.id))
-            .returning()
-        )[0],
-        (
-          await db
-            .update(orderStatuses)
-            .set({ sortOrder: current.sortOrder })
-            .where(eq(orderStatuses.id, neighbor.id))
-            .returning()
-        )[0],
-      ];
-      return { swapped };
-    },
-  );
+  return runAdmin('catalog.write', async (db) => {
+    const [seen] = await db
+      .select()
+      .from(orderStatuses)
+      .where(eq(orderStatuses.id, data.id));
+    if (!seen) throw new Error(`[admin-server] статусу ${data.id} не існує`);
+    const [next] = await db
+      .select({ id: orderStatuses.id })
+      .from(orderStatuses)
+      .where(
+        data.direction === 'up'
+          ? lt(orderStatuses.sortOrder, seen.sortOrder)
+          : gt(orderStatuses.sortOrder, seen.sortOrder),
+      )
+      .orderBy(
+        data.direction === 'up'
+          ? desc(orderStatuses.sortOrder)
+          : asc(orderStatuses.sortOrder),
+      )
+      .limit(1);
+    if (!next) return { swapped: [] as (typeof seen)[] };
+    // Один запит, обидва рядки, порядок за id — незалежно від того, хто
+    // тут "current" і хто "neighbor" (рев'ю р2: FOR UPDATE лишається
+    // потрібним — без нього overlapping-swap лишав би дубльовані
+    // sort_order).
+    const locked = await db
+      .select()
+      .from(orderStatuses)
+      .where(inArray(orderStatuses.id, [data.id, next.id]))
+      .orderBy(asc(orderStatuses.id))
+      .for('update');
+    const current = locked.find((r) => r.id === data.id);
+    const neighbor = locked.find((r) => r.id === next.id);
+    if (!current || !neighbor)
+      throw new Error('[admin-server] рядок зник між вибіркою і локом');
+    const swapped = [
+      (
+        await db
+          .update(orderStatuses)
+          .set({ sortOrder: neighbor.sortOrder })
+          .where(eq(orderStatuses.id, current.id))
+          .returning()
+      )[0],
+      (
+        await db
+          .update(orderStatuses)
+          .set({ sortOrder: current.sortOrder })
+          .where(eq(orderStatuses.id, neighbor.id))
+          .returning()
+      )[0],
+    ];
+    return { swapped };
+  });
 };

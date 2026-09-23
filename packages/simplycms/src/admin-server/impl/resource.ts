@@ -1,21 +1,15 @@
-import { eq, inArray, asc, desc, type Table } from 'drizzle-orm';
-import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
-} from 'drizzle-zod';
-import { z } from 'zod';
-import { requireGrant, dbRoleForSubject, type Operation } from 'simplycms/auth';
-import { withActor, type ActorDb } from 'simplycms/db';
+import { eq, inArray, asc, desc, type SQL, type Table } from 'drizzle-orm';
+import type { z } from 'zod';
+import type { Operation, RequestGrant } from 'simplycms/auth';
+import type { ActorDb } from 'simplycms/db';
 import {
   subsetInputSchema,
   toDrizzleSubset,
   type SubsetAllow,
   type SubsetPayload,
 } from './subset';
-
-/** Імена колонок Drizzle-таблиці (TS-ключі, camelCase). */
-type ColumnName<T extends Table> = Extract<keyof T['_']['columns'], string>;
+import { buildResourceSchemas, type ColumnName } from './resource-schemas';
+import { runAdmin } from './run';
 
 /**
  * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
@@ -46,6 +40,9 @@ export function defineAdminResource<
     defaultOrder?: { column: ColumnName<T>; direction: 'asc' | 'desc' };
     writable: readonly W[];
     readonly: readonly R[];
+    /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
+     *  тригера updated_at у каноні немає). */
+    touch?: ColumnName<T>;
   } & ([Exclude<ColumnName<T>, W | R>] extends [never]
     ? unknown
     : { __missingColumns: Exclude<ColumnName<T>, W | R> }) &
@@ -60,128 +57,20 @@ export function defineAdminResource<
     sortable: config.sortable,
   };
   const columns = config.table as unknown as Record<string, never>;
-  const pickWritable = Object.fromEntries(
-    config.writable.map((c) => [c, true]),
-  ) as {
-    [K in W]: true;
-  };
-
-  const rowSchema = createSelectSchema(config.table);
-
-  // 🔴 Відхилення від брифа (typecheck), ХВІСТ РЕВʼЮ Task 7 (round 1):
-  // `.pick()` drizzle-zod типізований `M extends Mask<keyof Shape>`, де
-  // `Shape` — мапований тип, виведений із ГЕНЕРИЧНОГО `T['_']['columns']`.
-  // TS не вміє звести `keyof Shape` до конкретних імен колонок, поки `T`
-  // не інстанційовано (TS2345: «W could be instantiated with a different
-  // subtype…»), тож `{[K in W]: true}` не проходить структурну перевірку
-  // АРГУМЕНТУ.
-  //
-  // 🔴 Перша редакція касту (`pick(pickWritable as never)`) компілювалась,
-  // але БУЛА ПОМИЛКОВОЮ: аргумент типу `never` не дає TS сайту інференсу
-  // для `M`, тож `M` падає до свого констрейнта `Mask<keyof Shape>` —
-  // звідси `Extract<keyof Shape, keyof M> = keyof Shape` і `pick` СТАТИЧНО
-  // повертає Shape НЕЗМІНЕНИМ (рантайм не постраждав — `.pick()` усередині
-  // самого zod працює з реальним обʼєктом `pickWritable`, це суто питання
-  // СТАТИЧНОГО типу виклику). Наслідок: `insertSchema`/`updateSchema`
-  // статично приймали ВСІ колонки, включно з `readonly` (isDefault,
-  // createdAt) — рівно те, від чого існує exhaustiveness. Емпірично
-  // перевірено `expectTypeOf` у тесті ДО і ПІСЛЯ цього фіксу.
-  //
-  // Правильний фікс: каст на РЕЗУЛЬТАТ `.pick()`, не на аргумент. Явно
-  // виводимо Shape повної insert/update-схеми (`InsertShape`/`UpdateShape`
-  // через `infer` по `{ shape: infer S }` — так само, як сам zod типізує
-  // `.shape` на ZodObject), звужуємо його TS-ом (`Pick<Shape, W>` —
-  // справжній структурний Pick, обчислюваний компілятором, а не залежний
-  // від інференсу `M`) і кажемо компілятору, що саме такий тип повертає
-  // рантайм-виклик `.pick(pickWritable)`. Це ТОЧНО те, що робить рантайм:
-  // `pickWritable` містить рівно ключі `W`.
-  const insertSchemaFull = createInsertSchema(config.table);
-  const updateSchemaFull = createUpdateSchema(config.table);
-  type InsertShape = typeof insertSchemaFull extends { shape: infer S }
-    ? S
-    : never;
-  type UpdateShape = typeof updateSchemaFull extends { shape: infer S }
-    ? S
-    : never;
-  // 🔴 `Pick<Shape, W>` напряму не типізується: вбудований `Pick` вимагає
-  // `W extends keyof Shape`, а TS не може це довести генерично — insert-
-  // shape виключає «завжди згенеровані» колонки (ColumnIsGeneratedAlwaysAs),
-  // тож `keyof InsertShape` формально ВУЖЧИЙ за `ColumnName<T>`, з якого
-  // виведено `W`. Перетин `W & keyof Shape` знімає обмеження БЕЗ втрати
-  // точності: якщо `writable`-колонка колись виявиться «завжди
-  // згенерованою», вона так само відсутня в РАНТАЙМ-схемі insert (сам
-  // drizzle-zod її не кладе) — тип і рантайм лишаються синхронними.
-  //
-  // 🔴 Ціна перетину `K & keyof S`: якщо колонка зі списку `writable`
-  // колись стане `generatedAlwaysAs`/`generatedAlwaysAsIdentity`, вона
-  // МОВЧКИ випаде зі статичної форми `SafePick` — компілятор про це не
-  // попередить (перетин просто звужується, `__missingColumns` тут не
-  // спрацьовує, бо колонка й далі є валідним членом `W`). Перевірено в
-  // рантаймі drizzle-zod: такі колонки `continue`-яться повз
-  // `columnSchemas` — і для insert, і для update, — тож `.pick()` однаково
-  // не знайшов би їх у Shape. Сьогодні це недосяжно (у schema.ts таких
-  // колонок немає), а якби колись спрацювало — тип і рантайм лишились би
-  // в згоді: мовчазний no-op запису конкретного поля, а НЕ розбіжність
-  // безпеки (readonly/writable розріз не порушується).
-  type SafePick<S, K> = Pick<S, K & keyof S>;
-
-  const insertRowSchema = (
-    insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
-      SafePick<InsertShape, W>
-    >
-  ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = (
-    updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
-      SafePick<UpdateShape, W>
-    >
-  ).refine((p) => Object.keys(p).length > 0, {
-    // 🔴 Порожній patch — 400 на межі, не «No values to set» синхронно з
-    // drizzle (фінальне рев'ю Е1б, знахідка 2 — той самий клас, що вже
-    // сформульовано в 7a4baa9f: межа admin-server відбиває невалідний
-    // вхід чітко, а не через SQL-білдер). `createUpdateSchema` робить усі
-    // писані поля optional, тож `{ id, patch: {} }` без цього refine
-    // проходив би схему і падав на `db.update().set({})`.
-    message: 'patch не може бути порожнім',
-  });
-
-  const insertSchema = z.array(insertRowSchema).min(1).max(100);
-  const updateSchema = z
-    .array(z.object({ id: z.uuid(), patch: patchSchema }))
-    .min(1)
-    .max(100);
-  const removeSchema = z
-    .array(z.object({ id: z.uuid() }))
-    .min(1)
-    .max(100);
+  const { rowSchema, insertSchema, updateSchema, removeSchema } =
+    buildResourceSchemas(config.table, config.writable);
 
   /**
-   * Спільна склейка К3-13: перший рубіж → роль від субʼєкта → транзакція.
+   * Спільна склейка К3-13 — тепер `runAdmin` (Task 1): перший рубіж →
+   * роль від субʼєкта → транзакція → мапінг конфліктів БД у 409.
    *
-   * 🔴 Grant НЕ відкидається (рев'ю р2: `const { subject } = …` зʼїдав
-   * scope, який Task 5 спеціально повертає). Фабрика обслуговує ЛИШЕ
-   * admin-поверхню: scope 'own' тут структурно непідтримуваний (немає
-   * owner-колонки), тож fail-loud — 'own'-ресурси (orders/profiles у
-   * Е4+) пишуться іменованими операціями, які scope ЧЕСНО звужують.
+   * 🔴 Фабрика обслуговує ЛИШЕ admin-поверхню: scope 'own' тут
+   * структурно непідтримуваний (немає owner-колонки) — `runAdmin` сам
+   * кидає fail-loud, 'own'-ресурси (orders/profiles у Е4+) пишуться
+   * іменованими операціями, які scope ЧЕСНО звужують.
    */
-  const run = async <Out>(
-    fn: (
-      db: ActorDb,
-      grant: Awaited<ReturnType<typeof requireGrant>>,
-    ) => Promise<Out>,
-  ): Promise<Out> => {
-    const grant = await requireGrant(config.operation);
-    if (grant.scope !== 'any')
-      throw new Error(
-        `[admin-server] ${config.entity}: операція ${config.operation} дала scope '${grant.scope}' — фабрика обслуговує лише admin-scope 'any'; own-звуження пишеться іменованою операцією`,
-      );
-    return withActor(
-      {
-        role: dbRoleForSubject(grant.subject),
-        userId: grant.subject.userId ?? undefined,
-      },
-      (db) => fn(db, grant),
-    );
-  };
+  const run = <Out>(fn: (db: ActorDb, grant: RequestGrant) => Promise<Out>) =>
+    runAdmin(config.operation, fn);
 
   return {
     entity: config.entity,
@@ -193,14 +82,20 @@ export function defineAdminResource<
     subsetSchema: subsetInputSchema,
 
     list: async ({ data }: { data: SubsetPayload }) =>
-      run(async (db, _grant) => {
+      run(async (db) => {
         const s = toDrizzleSubset(config.table, allow, data.subset ?? {});
         let q = db
           .select()
           .from(config.table as never)
           .$dynamic();
         if (s.where) q = q.where(s.where);
-        if (s.orderBy) q = q.orderBy(...s.orderBy);
+        // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не
+        // унікальний (сід/масовий імпорт дають однакові мітки) — без
+        // тай-брейкера `id` сторінки дублюють або гублять рядки. Один
+        // виклик `.orderBy()` на масив: повторний виклик у Drizzle ЗАМІНЯЄ
+        // порядок, а не дописує до нього.
+        const order: SQL[] = [];
+        if (s.orderBy) order.push(...s.orderBy);
         else if (config.defaultOrder) {
           // 🔴 defaultOrder ЗАСТОСОВУЄТЬСЯ (мертвий параметр старої редакції).
           const col = columns[config.defaultOrder.column];
@@ -208,10 +103,13 @@ export function defineAdminResource<
             throw new Error(
               `[admin-server] ${config.entity}: defaultOrder.column "${config.defaultOrder.column}" немає в таблиці`,
             );
-          q = q.orderBy(
+          order.push(
             config.defaultOrder.direction === 'desc' ? desc(col) : asc(col),
           );
         }
+        const idCol = columns['id'];
+        if (idCol !== undefined) order.push(asc(idCol));
+        if (order.length > 0) q = q.orderBy(...order);
         if (s.limit !== undefined) q = q.limit(s.limit);
         if (s.offset !== undefined) q = q.offset(s.offset);
         // 🔴 Відхилення від брифа (typecheck), знахідка Task 8: `.from(config.table
@@ -259,7 +157,11 @@ export function defineAdminResource<
           // з `UPDATE … RETURNING`, лише названий конкретним типом.
           const rows = (await db
             .update(config.table)
-            .set(patch as never)
+            .set(
+              (config.touch
+                ? { ...patch, [config.touch]: new Date() }
+                : patch) as never,
+            )
             .where(eq(columns['id'], id as never))
             .returning()) as T['$inferSelect'][];
           const row = rows[0];
