@@ -1,5 +1,4 @@
 import { useT } from 'simplycms/i18n';
-import { Input } from 'simplycms/ui/input';
 import { Switch } from 'simplycms/ui/switch';
 import {
   Select,
@@ -12,6 +11,7 @@ import type { PropertyOption, SectionProperty } from 'simplycms/schema/types';
 import { ColorPropertyInput } from './ColorPropertyInput';
 import { MultiselectPropertyInput } from './MultiselectPropertyInput';
 import { NumberPropertyInput } from './NumberPropertyInput';
+import { TextPropertyInput } from './TextPropertyInput';
 import type { PropertyValueDraft } from './usePropertyValues';
 
 interface ValueRowLike {
@@ -127,16 +127,10 @@ export function PropertyInput({
     case 'text':
     default:
       return (
-        <Input
+        <TextPropertyInput
           id={id}
-          value={current?.value ?? ''}
-          onChange={(e) =>
-            onChange({
-              value: e.target.value || null,
-              numericValue: null,
-              optionId: null,
-            })
-          }
+          value={current?.value ?? null}
+          onChange={onChange}
           placeholder={t('admin.properties.values.inputPlaceholder', {
             name: property.name.toLowerCase(),
           })}

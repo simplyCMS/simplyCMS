@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Input } from 'simplycms/ui/input';
 import type { PropertyValueDraft } from './usePropertyValues';
+import { useDraftField } from './useDraftField';
 
 interface Props {
   readonly id: string;
@@ -9,49 +9,47 @@ interface Props {
 }
 
 /**
- * Числове поле властивості (`number`/`range`) — винесене з `PropertyInput`
- * (канон 150 рядків): локальний invalid-стан ДО збереження (Task 10, Step
- * 2). Нескінченне/`NaN` — НЕ зберігається, лише підсвічується бордюром;
- * порожнє поле зберігається як `null` (видаляє рядок у `saveScalar`).
+ * Числове поле властивості (`number`/`range`) — Е3-19а: збереження на
+ * blur/Enter, НЕ на кожну клавішу (write-back "1.0000" посеред набору
+ * "15" переписував би чернетку). Чернетка — `useDraftField`; «чи
+ * змінилось» — числове порівняння, порожнє ↔ null. Невалідне/нескінченне
+ * — НЕ зберігається, лише підсвічується бордюром.
  */
 export function NumberPropertyInput({ id, value, onChange }: Props) {
-  // Синхронізація з асинхронним `value` (on-demand колекція) — оновлення
-  // стану ПІД ЧАС рендеру (React-легальний патерн, той самий, що легасі
-  // сторінки адмінки), не `useEffect`: каскадний рендер без мережевого
-  // ефекту не потрібен, а `react-hooks/set-state-in-effect` це й ловить.
-  const [prevValue, setPrevValue] = useState(value);
-  const [raw, setRaw] = useState(value ?? '');
-  const [invalid, setInvalid] = useState(false);
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setRaw(value ?? '');
-    setInvalid(false);
-  }
+  const { draft, setDraft, onFocus, onBlur, onEnter } = useDraftField({
+    value,
+    isChanged: numChanged,
+    onSave: (raw) => {
+      if (raw === '') {
+        onChange({ value: null, numericValue: null, optionId: null });
+        return;
+      }
+      const s = String(Number(raw));
+      onChange({ value: s, numericValue: s, optionId: null });
+    },
+  });
+  const invalid = draft !== '' && !Number.isFinite(Number(draft));
 
   return (
     <Input
       id={id}
       type="number"
-      value={raw}
-      onChange={(e) => {
-        const v = e.target.value;
-        setRaw(v);
-        if (v === '') {
-          setInvalid(false);
-          onChange({ value: null, numericValue: null, optionId: null });
-          return;
-        }
-        const num = Number(v);
-        if (!Number.isFinite(num)) {
-          setInvalid(true);
-          return;
-        }
-        setInvalid(false);
-        const s = String(num);
-        onChange({ value: s, numericValue: s, optionId: null });
+      value={draft}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onEnter();
       }}
+      onChange={(e) => setDraft(e.target.value)}
       className={invalid ? 'border-destructive' : undefined}
       placeholder="0"
     />
   );
+}
+
+function numChanged(draft: string, value: string | null): boolean {
+  const num = draft === '' ? null : Number(draft);
+  if (num !== null && !Number.isFinite(num)) return false; // невалідне — не зберігати
+  const cur = value === null || value === '' ? null : Number(value);
+  return num !== cur;
 }
