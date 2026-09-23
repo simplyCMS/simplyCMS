@@ -29,28 +29,13 @@ export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
  * читання, insert/update/remove для запису, звужені до `writable`.
  *
  * 🔴 `refine` (m3) передається БУКВАЛЬНО другим аргументом
- * `createInsertSchema`/`createUpdateSchema` — nullable/optional (і
- * `generatedAlwaysAs*` → `never`) рахує сам рушій drizzle-zod
- * (`insertConditions`/`updateConditions`, `handleColumns` у `index.mjs`),
- * а не ручне відтворення цієї формули збоку. Пряма передача впирається у
- * СТАТИЧНИЙ інференс, не в рантайм: генеричний `TRefine`, виведений із
- * loosely-типізованого `ResourceRefine`, ламає інстанціацію типу для ВСІХ
- * колонок одразу (TS2589 «excessively deep»), а `refine as any` на
- * аргументі розвалює `.pick()` нижче на несумісний union перевантажень
- * (TS2349) — той самий клас нерозвʼязного інференсу, що вже задокументований
- * нижче для `.pick()`. Обхід — каст самої ФУНКЦІЇ `createInsertSchema`/
- * `createUpdateSchema`, не аргументу: `plainInsert`/`plainUpdate` фіксують
- * СТАТИЧНИЙ тип повернення (той самий `BuildSchema<…, undefined, …>`, що й
- * без refine — генерик бібліотеки за параметром `T` тут НЕ виводиться,
- * тому й береться прямо з реального виклику без refine), після чого сама
- * функція кастується до сигнатури з цим фіксованим поверненням і
- * `ResourceRefine` другим аргументом. РАНТАЙМ викликає справжній
- * `createInsertSchema(table, refine)` — рефайнмент і nullable/optional
- * рахує сам рушій; СТАТИЧНИЙ тип лишається тим самим, що й без refine
- * (ціна — тип рефайненої колонки лишається дефолтним `jsonSchema`, а не
- * звуженим до, наприклад, `z.array(z.string())` — рантайм-валідації це не
- * стосується). `createSelectSchema` рефайнмент НЕ отримує — читання рядків
- * (`rowSchema`) лишається дефолтним виведенням drizzle-zod.
+ * `createInsertSchema`/`createUpdateSchema` — nullable/optional рахує сам
+ * рушій drizzle-zod, не ручне відтворення формули збоку. Пряма передача
+ * впирається у СТАТИЧНИЙ інференс (TS2589/TS2349 на generic-таблиці, не в
+ * рантайм) — обхід каструє саму ФУНКЦІЮ (не аргумент): фіксує тип
+ * повернення БЕЗ refine, кастує сигнатуру до виклику З refine; РАНТАЙМ
+ * викликає справжній `createInsertSchema(table, refine)` незмінно.
+ * UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md
  */
 export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
   table: T,
@@ -142,6 +127,7 @@ export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
   // безпеки (readonly/writable розріз не порушується).
   type SafePick<S, K> = Pick<S, K & keyof S>;
 
+  // UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md (обидва касти нижче)
   const insertRowSchema = (
     insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
       SafePick<InsertShape, W>

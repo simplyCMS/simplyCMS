@@ -19,13 +19,11 @@ type OnDemandConfig<T extends object> = Omit<
  * фабрику — `syncMode`/`gcTime` руками в окремому файлі більше не пишуться
  * (структурний гейт — `__tests__/on-demand-factory-only.test.ts`).
  *
- * 🔴 Чому `gcTime: 0` (виміряно на @tanstack/query-db-collection 1.2.11,
- * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md): будь-який
- * write (`writeUpsert`/`writeDelete`) перезаписує кеш КОЖНОГО ключа з тим
- * самим префіксом, і активного, і вже неактивного «примарного» (ghost) —
- * без `gcTime: 0` неактивний зріз лишається в кеші React Query до 5 хв і на
- * ремаунті підхоплює цей зіпсований кеш замість свіжого фетчу. `gcTime: 0`
- * прибирає ghost-запис одразу після розмонтування.
+ * 🔴 `gcTime: 0` прибирає ghost-запис неактивного зрізу з кешу React Query
+ * одразу після розмонтування — без нього write перезаписує й ghost-кеш
+ * теж, і ремаунт підхоплює зіпсовані дані (виміряно на
+ * @tanstack/query-db-collection 1.2.11).
+ * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
  */
 export function onDemandCollectionOptions<T extends object>(
   config: OnDemandConfig<T>,

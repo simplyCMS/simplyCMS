@@ -90,6 +90,7 @@ export function entityKey(entity: EntityName) {
  * щоб імпорт можна було заборонити зоні поза `admin-data` одним
  * `importNames` (`eslint-rules/no-collection-key-outside-admin-data.mjs`):
  * метод на обʼєкті такої точки контролю не дає.
+ * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
  */
 export function collectionKey(
   entity: EntityName,

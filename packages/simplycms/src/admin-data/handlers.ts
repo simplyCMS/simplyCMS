@@ -19,11 +19,10 @@ import { normalizeThrown } from './normalize-thrown';
  * повернення `create()`).
  *
  * 🔴 Кожен хендлер ловить УСЕ, що кинув serverFn, і пропускає через
- * `normalizeThrown` ПЕРЕД повторним throw — `@tanstack/db`'s
- * `Transaction.commit()` нищить властивості плоского (не-Error) кинутого
- * значення (UPSTREAM:TSDB-5, `normalize-thrown.ts`); без цього кроку
- * `adminErrorKey` бачив би `name/kind/constraint` лише коли серверна
- * помилка випадково вже була `instanceof Error`.
+ * `normalizeThrown` (`normalize-thrown.ts`) ПЕРЕД повторним throw —
+ * без цього кроку `adminErrorKey` бачив би `name/kind/constraint` лише
+ * коли серверна помилка випадково вже була `instanceof Error`.
+ * UPSTREAM:TSDB-5 — docs/architecture/upstream-workarounds.md
  */
 export interface WriteBack<Row> {
   utils: {

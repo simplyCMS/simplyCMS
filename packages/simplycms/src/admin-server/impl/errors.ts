@@ -28,6 +28,7 @@ const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {
  * `.cause`. Повертає конфлікт або null (тоді помилка летить як є, 500).
  * 🔴 Статус ставиться ДО throw — сервер бере його з getResponse().status
  * у момент catch, не з полів Error (К3-13).
+ * UPSTREAM:DRZ-1 — docs/architecture/upstream-workarounds.md
  */
 export function toAdminConflict(error: unknown): AdminConflictError | null {
   const cause = (error as { cause?: unknown })?.cause ?? error;

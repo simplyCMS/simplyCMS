@@ -46,7 +46,8 @@ const startsWithLiteral = (node) =>
 
 /** `[ENTITY.x, 'list', …]` — `collectionKey` ВРУЧНУ, без імпорту (обхід
  *  гейта імпорту, Е3-15′). Саме `ENTITY.x` елементом 0, не спред: ключі
- *  `AGGREGATE.*.key` НІКОЛИ не збігаються з жодним `collectionKey`. */
+ *  `AGGREGATE.*.key` НІКОЛИ не збігаються з жодним `collectionKey`.
+ *  UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md */
 const isRawEntityListLiteral = (node) =>
   node?.type === 'ArrayExpression' &&
   node.elements[0]?.type === 'MemberExpression' &&

@@ -5,15 +5,12 @@ import { dirname, resolve } from 'node:path';
  * архітектора: власне правило, не тір-зона й не `query-key-from-entity` —
  * та ловить ЛІТЕРАЛИ в `queryKey`, а не сам факт імпорту функції).
  *
- * 🔴 Рантайм-доказ, чому це не стилістика: `@tanstack/query-db-collection`
- * 1.2.11 після write-back робить `findAll({ queryKey: baseKey })` —
- * ПРЕФІКСНИЙ пошук — і `setQueryData` усього synced-набору в КОЖЕН
- * знайдений ключ (`query.js:1099`, `updateCacheData`). Вітрина й
- * `admin-data` ділять ОДИН `QueryClient` (`src/router.tsx`): будь-який
- * вітринний ключ, що фізично розширює `collectionKey(entity)` як префікс,
- * дістав би чужі рядки. Поза `admin-data` — `entityKey(x).variant()`/
- * `.scoped()` (доказ механіки — `admin-data/__tests__/
+ * 🔴 Не стилістика: write-back перезаписує ПРЕФІКСНО всі ключі, що
+ * розширюють `collectionKey(entity)` — вітрина й `admin-data` ділять ОДИН
+ * `QueryClient`. Поза `admin-data` — `entityKey(x).variant()`/`.scoped()`
+ * (доказ механіки — `admin-data/__tests__/
  * collection-key-storefront-isolation.test.ts`).
+ * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
  *
  * Зона (файли, де правило АКТИВНЕ) — блок у `eslint.config.mjs`: увесь
  * `packages/simplycms/src/**` (+ референс-тема/плагін) КРІМ `admin-data/**`

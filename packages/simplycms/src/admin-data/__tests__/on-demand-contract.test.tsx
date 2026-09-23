@@ -150,6 +150,7 @@ describe('on-demand контракт Е3', () => {
     await new Promise((r) => setTimeout(r, 200));
     // Якщо колись бібліотека почне вантажити й без індексу — тест червоніє і
     // Е3-16 можна переглянути; до того індекс — обовʼязкова частина колекції.
+    // UPSTREAM:TSDB-2 — docs/architecture/upstream-workarounds.md
     expect(calls).toHaveLength(1);
   });
 

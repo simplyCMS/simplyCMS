@@ -1,5 +1,5 @@
 /**
- * UPSTREAM:TSDB-5 — docs/architecture/upstream-workarounds.md.
+ * UPSTREAM:TSDB-5 — docs/architecture/upstream-workarounds.md
  *
  * `@tanstack/db` `Transaction.commit()` (transactions.ts) на catch робить
  * `error instanceof Error ? error : new Error(String(error))` — для

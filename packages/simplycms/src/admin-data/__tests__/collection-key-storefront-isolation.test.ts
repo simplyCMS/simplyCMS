@@ -10,15 +10,11 @@ import { persistenceHandlers, type WriteBack } from '../handlers';
  * — той статично сканував КОД; цей запускає РАНТАЙМ-механізм бібліотеки,
  * через який літеральний другий сегмент `'list'` поза `admin-data` шкодить).
  *
- * `@tanstack/query-db-collection` 1.2.11 (`manual-sync.js` →
- * `performWriteOperations`) після кожного write-back кличе
- * `ctx.updateCacheData(усі синхронізовані рядки)`, а та (`query.js:1099`)
- * робить `queryClient.getQueryCache().findAll({ queryKey: baseKey })` —
- * ПРЕФІКСНИЙ пошук (TanStack Query за замовчуванням НЕ `exact`) — і
- * `setQueryData` цим ПОВНИМ набором У КОЖЕН знайдений ключ. Вітрина й
- * `admin-data` ділять ОДИН `QueryClient` (`src/router.tsx`): вітринний
- * ключ, що фізично розширює `collectionKey(entity)` як префікс, дістає
- * чужі (адмінські) рядки.
+ * Write-back перезаписує ПРЕФІКСНО всі ключі, що розширюють
+ * `collectionKey(entity)` — вітрина й `admin-data` ділять ОДИН
+ * `QueryClient` (`src/router.tsx`), тож вітринний ключ дістав би чужі
+ * (адмінські) рядки.
+ * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
  */
 
 interface FakeRow {

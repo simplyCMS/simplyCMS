@@ -18,10 +18,11 @@ const MAX_CAUSE_DEPTH = 5;
 
 /**
  * Знаходить перший рівень (сам обʼєкт або якийсь `.cause` під ним), що несе
- * `name === 'AdminConflictError'`. UPSTREAM:TSDB-5 — через TanStack DB
- * транзакцію помилка теоретично може дійти обгорнутою в `.cause`; основний
- * захист — `normalizeThrown` (handlers.ts), тримає genuine Error ДО
- * @tanstack/db, це друга лінія.
+ * `name === 'AdminConflictError'`: через TanStack DB транзакцію помилка
+ * теоретично може дійти обгорнутою в `.cause`; основний захист —
+ * `normalizeThrown` (handlers.ts), тримає genuine Error ДО @tanstack/db,
+ * це друга лінія.
+ * UPSTREAM:TSDB-5 — docs/architecture/upstream-workarounds.md
  */
 function unwrapConflict(error: unknown): ConflictShape | null {
   let current: unknown = error;

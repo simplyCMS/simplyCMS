@@ -81,6 +81,7 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
  * лише сніфить магічні байти вже отриманого буфера в памʼяті. Одна склейка
  * (розбір + запис однією транзакцією актора) важить більше, ніж один зайвий
  * BEGIN на відхилене завантаження.
+ * UPSTREAM:START-1 — docs/architecture/upstream-workarounds.md
  *
  * 🔴 `written` живе ПОЗА транзакцією — той самий клас відмови, що в
  * `uploadMyAvatar`: якщо COMMIT упаде вже після публікації файлу, rollback

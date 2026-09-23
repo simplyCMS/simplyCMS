@@ -1,11 +1,10 @@
 import { parseLoadSubsetOptions } from '@tanstack/query-db-collection';
 // 🔴 Відхилення від плану (Task 0, Step 3): `LoadSubsetOptions` НЕ
-// реекспортується з `@tanstack/query-db-collection` (його index.d.ts
-// реекспортує лише іменовані хелпери й типи з `@tanstack/db`, окремо не
-// `types.js`) — звірено читанням .d.ts 2026-09-23. Тип бере той самий
-// пакет, що й `useLiveInfiniteQuery`/`useLiveQuery`, — `@tanstack/react-db`
-// (він `export * from '@tanstack/db'`), тож нової peer-залежності це не
-// додає (К3-10′: дві peer-залежності лишаються двома).
+// реекспортується з `@tanstack/query-db-collection` — тип бере той самий
+// пакет, що й `useLiveInfiniteQuery`/`useLiveQuery`, `@tanstack/react-db`
+// (`export * from '@tanstack/db'`), нової peer-залежності це не додає
+// (К3-10′: дві peer-залежності лишаються двома).
+// UPSTREAM:TSDB-4 — docs/architecture/upstream-workarounds.md
 import type { LoadSubsetOptions } from '@tanstack/react-db';
 // 🔴 type-only: імпорт стирається, серверне дерево в бандл не їде (К3-9′ п.3;
 // правило no-server-only-in-client пропускає саме `import type`).
@@ -32,11 +31,12 @@ type ServerFilter = NonNullable<SubsetInput['filters']>[number];
  *
  * 🔴 Дві розбіжності бібліотеки з її ж доками (звірено з src 0.8.6):
  * `parseLoadSubsetOptions` повертає лише `{ filters, sorts, limit }` —
- * `offset` береться з opts напряму, інакше «Показати ще» вічно вантажить
- * першу сторінку; `or`/`like`/`ilike` бібліотека не парсить (throw) —
- * їх тут і немає. `not_*`/`isUndefined` вона парсить, а сервер їх не має —
- * відмова тут, до мережі, з назвою оператора; `isNull` — у контракті з
- * Е3-14 (ціни й залишки РІВНЯ ТОВАРУ, `modification_id IS NULL`).
+ * `offset` береться з opts напряму (нижче), інакше «Показати ще» вічно
+ * вантажить першу сторінку; `or`/`like`/`ilike` бібліотека не парсить
+ * (throw) — їх тут і немає. `not_*`/`isUndefined` вона парсить, а сервер
+ * їх не має — відмова тут, до мережі, з назвою оператора; `isNull` — у
+ * контракті з Е3-14 (ціни й залишки РІВНЯ ТОВАРУ, `modification_id IS
+ * NULL`).
  */
 export function toSubsetPayload(
   opts: LoadSubsetOptions | undefined,
@@ -64,6 +64,7 @@ export function toSubsetPayload(
         direction: s.direction,
       })),
       ...(limit !== undefined && { limit }),
+      // UPSTREAM:TSDB-3 — docs/architecture/upstream-workarounds.md
       ...(opts.offset !== undefined &&
         opts.offset > 0 && { offset: opts.offset }),
     },
