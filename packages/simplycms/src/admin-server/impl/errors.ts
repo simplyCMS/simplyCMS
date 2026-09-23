@@ -1,13 +1,17 @@
 import { setResponseStatus } from '@tanstack/react-start/server';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 
 /**
  * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль
  * унікального значення або посилання, що тримає рядок. Окремий клас — щоб
- * клієнт показав зрозумілий тост за `error.name` (seroval не зберігає
- * instanceof, як і в AuthzError — К3-13).
+ * клієнт показав зрозумілий тост за `error.name`. `name` і поля
+ * (`kind`/`constraint`) — за T0-переліком `contracts/domain-errors`: його
+ * читає й клієнтський `domainErrorAdapter` (Е3-20), що зберігає instanceof
+ * і поля через межу serverFn (раніше seroval губив усе, крім `.message`,
+ * як і в `AuthzError` — К3-13).
  */
 export class AdminConflictError extends Error {
-  override readonly name = 'AdminConflictError';
+  override readonly name = DOMAIN_ERROR_NAME.adminConflict;
   constructor(
     readonly kind: 'unique' | 'reference',
     readonly constraint: string | null,
