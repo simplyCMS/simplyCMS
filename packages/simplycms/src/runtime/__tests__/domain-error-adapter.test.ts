@@ -4,8 +4,12 @@ import {
   makeSerovalPlugin,
 } from '@tanstack/router-core';
 import { fromCrossJSON, toCrossJSONAsync } from 'seroval';
-import type { Plugin } from 'seroval';
 import { domainErrorAdapter } from '../domain-error-adapter';
+
+// Тип масиву плагінів — рівно той, що приймає seroval (без `any`).
+type SerovalPlugins = NonNullable<
+  NonNullable<Parameters<typeof toCrossJSONAsync>[1]>['plugins']
+>;
 
 /**
  * Е3-20: перетинає РЕАЛЬНУ межу serverFn — той самий механізм, яким Start
@@ -22,12 +26,12 @@ import { domainErrorAdapter } from '../domain-error-adapter';
  * `undefined`. Масив плагінів будуємо тим самим виразом руками — це не
  * копія логіки, а той самий вираз, підставлений напряму.
  */
-const withAdapter: Plugin<any, any>[] = [
+const withAdapter = [
   makeSerovalPlugin(domainErrorAdapter),
   ...defaultSerovalPlugins,
-];
+] as unknown as SerovalPlugins;
 
-async function roundTrip(error: Error, plugins: Plugin<any, any>[]) {
+async function roundTrip(error: Error, plugins: SerovalPlugins) {
   const node = await toCrossJSONAsync(error, { plugins });
   return fromCrossJSON<Error>(node, { plugins, refs: new Map() });
 }
@@ -82,7 +86,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
     const out = await roundTrip(
       src,
-      defaultSerovalPlugins as Plugin<any, any>[],
+      defaultSerovalPlugins as unknown as SerovalPlugins,
     );
     expect(out).toBeInstanceOf(Error);
     expect(out.name).toBe('Error');
