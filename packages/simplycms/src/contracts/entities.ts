@@ -56,15 +56,46 @@ export type EntityName = (typeof ENTITY)[keyof typeof ENTITY];
  * Ключі кешу однієї сутності. Сегмент 0 завжди `entity`, тож будь-який
  * похідний ключ розширює базовий як префікс — цього вимагає
  * query-collection, інакше оновлення кешу проминає записи.
+ *
+ * 🔴 Сегмента `'list'` тут НЕМАЄ (Е3-15′): він належить ВИКЛЮЧНО колекціям
+ * `admin-data` — див. `collectionKey` нижче. Поза `admin-data` — `variant()`
+ * (скоуп/форма тієї самої сутності) або `scoped()` (FK-зріз).
  */
 export function entityKey(entity: EntityName) {
   return {
     all: () => [entity] as const,
-    list: () => [entity, 'list'] as const,
     detail: (id: string) => [entity, 'detail', id] as const,
     scoped: (relation: string, parentId: string) =>
       [entity, relation, parentId] as const,
+    /** Варіант форми/скоупу тієї самої сутності (не FK-зріз): окремий
+     *  сегмент 'variant' — не зіткнеться ні з колекцією (`collectionKey`),
+     *  ні з FK-relation тієї самої назви (борг Е1а №6, розвʼязаний Е3-15).
+     *  Вітрина й `admin-data` ділять ОДИН QueryClient (`src/router.tsx`),
+     *  і eager-колекція без demand-суфікса пише РІВНО в `[entity,'list']`
+     *  — вітринний запит під тим самим голим ключем читав би чужу форму
+     *  рядка (camelCase проти snake_case, усі розділи проти активних). */
+    variant: (qualifier: string, id?: string) =>
+      (id === undefined
+        ? [entity, 'variant', qualifier]
+        : [entity, 'variant', qualifier, id]) as readonly string[],
   };
+}
+
+/**
+ * Ключ колекції `admin-data` — `[entity, 'list']`.
+ *
+ * 🔴 ЄДИНИЙ легальний ужиток сегмента `'list'` (Е3-15′): eager/on-demand
+ * колекція TanStack DB (демонд-суфікс дописує бібліотека, префікс лишається
+ * спільним для всіх зрізів). Окрема функція, а не метод `entityKey(...)`, —
+ * щоб імпорт можна було заборонити зоні поза `admin-data` одним
+ * `importNames` (`eslint-rules/no-collection-key-outside-admin-data.mjs`):
+ * метод на обʼєкті такої точки контролю не дає.
+ * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
+ */
+export function collectionKey(
+  entity: EntityName,
+): readonly [EntityName, 'list'] {
+  return [entity, 'list'] as const;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatPrice } from '../money';
+import { formatPrice, isMoney, normalizeMoneyInput } from '../money';
 
 const UA = { locale: 'uk-UA', currency: 'UAH' };
 
@@ -73,5 +73,42 @@ describe('formatPrice', () => {
     expect(formatPrice(4200, { locale: 'en-US', currency: 'USD' })).toBe(
       '4,200 $',
     );
+  });
+});
+
+describe('normalizeMoneyInput (Task 4, Review Focus 4)', () => {
+  it.each([
+    ['12,50', '12.50'],
+    ['1 200,5', '1200.5'],
+    ['100', '100'],
+    ['  12.50  ', '12.50'],
+  ])('%p → %p', (raw, expected) => {
+    expect(normalizeMoneyInput(raw)).toBe(expected);
+  });
+});
+
+describe('isMoney (Task 4, Review Focus 4)', () => {
+  it.each([
+    ['0', true],
+    ['12.50', true],
+    ['1234567890.12', true],
+    ['-1', false],
+    ['1.234', false],
+    ['abc', false],
+    ['', false],
+  ])('isMoney(%p) === %p', (value, expected) => {
+    expect(isMoney(value)).toBe(expected);
+  });
+
+  // m5 (рев'ю хвилі B): межа numeric(12,2) — orders.subtotal/total і
+  // order_items.price/total (schema.ts:232,234 і сусідні). 10 цілих цифр —
+  // рівно межа (12 прецизії - 2 дробові); 11 — БД відкинула б 22003
+  // (numeric field overflow), а валідація мусить впіймати це раніше.
+  it.each([
+    ['12345678901', false], // 11 цілих цифр — понад numeric(12,2)
+    ['1234567890', true], // 10 цілих цифр — рівно межа
+    ['12345678901.23', false], // 11 цілих + дробові — так само понад межу
+  ])('isMoney(%p) === %p (межа numeric(12,2))', (value, expected) => {
+    expect(isMoney(value)).toBe(expected);
   });
 });

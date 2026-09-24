@@ -12,6 +12,9 @@ export { definePlugin } from './definePlugin';
 // коду в бандлі SDK нічого не коштує.
 export { validatePluginModule } from '../plugins/validatePluginModule';
 export { usePluginT } from './usePluginT';
+// 🔴 pluginTableKey НЕ реекспортується (П.1): друга правда про формат
+// ключа поза `queryKey`, який порт уже несе сам. Автор плагіна бере ключ
+// із `usePluginTable(...).queryKey`, а не будує його вручну.
 export { usePluginTable, type PluginTablePort } from './usePluginTable';
 export { usePluginConfig, type PluginConfigResult } from './usePluginConfig';
 export type {

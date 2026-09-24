@@ -131,6 +131,15 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 | `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn |
 | `usePluginT(messages)` | транслятор каталогу плагіна (див. §7) |
 
+🔴 **Ключ кешу таблиці плагіна — з порту, не літерал** (виправлено К3-Е3,
+`fbd666c9`). `usePluginTable(...)` повертає `readonly queryKey`, стабільний
+між рендерами (`useMemo` з тих самих аргументів, що й самі запити); плагін
+бере його звідти (`faq.queryKey`), а не пише власний масив чи константу.
+Окремого експорту `pluginTableKey` у `plugin-sdk` **немає** — перша версія
+цього рішення дублювала «другу правду» про `(pluginName, table)» поруч із
+`queryKey`, її прибрано. Зона правила `eslint-rules/query-key-from-entity.mjs`
+(літеральний сегмент 0 заборонено) покриває й референс-плагін (Е3-12).
+
 🔴 **BREAKING (0.4.1, трек V2-К3 Е0): `insert` вимагає `id` від викликача.**
 Сигнатура — `insert(row: Partial<Row> & { id: string })`. Таблиці `plg_*`
 створюються **без** `DEFAULT gen_random_uuid()`, ключ генерує клієнт:

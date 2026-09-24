@@ -52,6 +52,14 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/supabase',
     'simplycms/domain/media',
   ],
+  // Облік залишків (Е3-5) — T2 з upward-винятком лише на `db`; імпорт назад
+  // у вітрину (звідки модуль перенесено) — рівно та заборона, яку рішення
+  // Е3-5 мало закрити.
+  [
+    'packages/simplycms/src/inventory',
+    'simplycms/storefront/loaders',
+    'simplycms/db',
+  ],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

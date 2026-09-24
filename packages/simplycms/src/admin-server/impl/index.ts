@@ -8,24 +8,51 @@
  * має (DCE). Однаковий префікс id стаба й нутрощів такої здатності не дає —
  * це знахідка рев'ю ред.2.
  */
-export { orderStatusesOps } from './resources/order-statuses';
+export { orderStatusesOps } from './order-statuses/resource';
 export {
   setDefaultInput,
   setDefaultOrderStatusOp,
-} from './operations/order-status-default';
-export {
-  reorderInput,
-  reorderOrderStatusOp,
-} from './operations/order-status-reorder';
+} from './order-statuses/set-default';
+export { reorderInput, reorderOrderStatusOp } from './order-statuses/reorder';
 export {
   removeStatusInput,
   removeManyInput,
   removeManyOrderStatusesOp,
-} from './operations/order-status-remove';
+} from './order-statuses/remove';
 export {
   deleteMediaInput,
   deleteMediaOp,
   parseUploadForm,
   uploadMediaOp,
-} from './operations/media';
-export type { ParsedUpload } from './operations/media';
+} from './media/operations';
+export type { ParsedUpload } from './media/operations';
+export type { SubsetInput, SubsetPayload } from './subset';
+export { productsOps } from './products/resource';
+export { productModificationsOps } from './product-modifications/resource';
+export {
+  setDefaultModificationInput,
+  setDefaultModificationOp,
+} from './product-modifications/set-default';
+export {
+  reorderModificationInput,
+  reorderModificationOp,
+} from './product-modifications/reorder';
+export { productPricesOps } from './product-prices/resource';
+export {
+  saveProductPricesInput,
+  saveProductPricesOp,
+} from './product-prices/save';
+export { stockOps } from './stock/resource';
+export { saveStockInput, saveStockOp } from './stock/save';
+export {
+  productPropertyValuesOps,
+  modificationPropertyValuesOps,
+} from './property-values/resources';
+export {
+  sectionsReadOps,
+  priceTypesReadOps,
+  sectionPropertyAssignmentsReadOps,
+  sectionPropertiesReadOps,
+  propertyOptionsReadOps,
+} from './catalog-read/resources';
+export { AdminConflictError } from './errors';

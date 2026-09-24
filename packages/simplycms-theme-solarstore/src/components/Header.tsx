@@ -26,6 +26,7 @@ import { useToast } from 'simplycms/core/hooks/use-toast';
 import { CartDrawer } from 'simplycms/core/components/cart/CartDrawer';
 import { getRootSections } from 'simplycms/storefront-routes/server/home';
 import { useQuery } from '@tanstack/react-query';
+import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
 import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { SolarstoreThemeKey } from '../messages';
@@ -40,6 +41,14 @@ const categoryIcons = [
   icon: typeof Battery;
   labelKey: SolarstoreThemeKey;
 }>;
+
+/**
+ * 🔴 Той самий ключ, яким ядро кешує `getRootSections()`
+ * (`storefront-routes/pages/home/queries.ts`), а не окремий літерал (борг
+ * Е1а №8, Е3-12): вітрина й тема ділять ОДИН QueryClient, і два ключі на
+ * один запит дублювали фетч і розходились у кеші при інвалідації.
+ */
+const sections = entityKey(ENTITY.sections);
 
 export function Header() {
   const t = useT();
@@ -58,8 +67,8 @@ export function Header() {
    * самий лоадер живить добірки головної, тож меню й сторінка не розходяться
    * у видимості розділів.
    */
-  const { data: sections } = useQuery({
-    queryKey: ['sections-nav'],
+  const { data: rootSections } = useQuery({
+    queryKey: sections.variant('root'),
     queryFn: () => getRootSections(),
   });
 
@@ -111,7 +120,7 @@ export function Header() {
             >
               {t('catalog.title')}
             </Link>
-            {sections?.map((s) => (
+            {rootSections?.map((s) => (
               <Link
                 key={s.id}
                 to="/catalog/$sectionSlug"
@@ -221,7 +230,7 @@ export function Header() {
         {/* Панель категорій з іконками — десктоп */}
         <div className="hidden md:block border-t border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/30">
           <div className="container mx-auto px-4 flex items-center justify-center gap-8 h-12">
-            {sections?.slice(0, 4).map((s, idx) => {
+            {rootSections?.slice(0, 4).map((s, idx) => {
               const Icon = getSectionIcon(idx);
               return (
                 <Link
@@ -249,7 +258,7 @@ export function Header() {
               >
                 {t('catalog.title')}
               </Link>
-              {sections?.map((s, idx) => {
+              {rootSections?.map((s, idx) => {
                 const Icon = getSectionIcon(idx);
                 return (
                   <Link

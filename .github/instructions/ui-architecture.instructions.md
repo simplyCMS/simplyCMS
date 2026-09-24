@@ -149,7 +149,7 @@ Button, Input, Dialog, Table, Card, Select, Tabs, Form, etc.
 - **`simplycms/profile-ui`:** AddressesList, AvatarUpload, RecipientsList
 
 ### `simplycms/admin` (адмін-компоненти)
-AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, ProductPricesEditor, etc.
+AdminLayout, AdminSidebar, ImageUpload, RichTextEditor, StockStatusSelect, etc.
 
 ### themes/* (theme-specific)
 Header, Footer, HeroBanner, HomeSections + опційні `views` (v3): власна

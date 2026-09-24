@@ -24,7 +24,7 @@ const sections = entityKey(ENTITY.sections);
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
   return useQuery({
-    queryKey: [...products.list(), 'featured'],
+    queryKey: products.variant('featured'),
     queryFn: (): Promise<HomeProduct[]> => getFeaturedProducts(),
     initialData,
   });
@@ -33,7 +33,7 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
   return useQuery({
-    queryKey: [...products.list(), 'new'],
+    queryKey: products.variant('new'),
     queryFn: (): Promise<HomeProduct[]> => getNewProducts(),
     initialData,
   });
@@ -42,7 +42,7 @@ export function useNewProducts(initialData?: HomeProduct[]) {
 /** Кореневі категорії каталогу */
 export function useRootSections(initialData?: HomeSection[]) {
   return useQuery({
-    queryKey: [...sections.list(), 'root'],
+    queryKey: sections.variant('root'),
     queryFn: (): Promise<HomeSection[]> => getRootSections(),
     initialData,
   });

@@ -47,13 +47,33 @@ const SCHEMA = resolve(SRC, 'schema');
 const ID_FROM_DB = new Set(['users', 'sessions', 'accounts', 'verifications']);
 
 /**
- * Єдина виїмка за ТЕКОЮ: застарілий шар адмінки на `supabase-js`. Він не
- * виконується на чистому Postgres і повністю переписується в Е1–Е6 (рішення
- * власника 2026-08-29). Його НЕ залишено без нагляду: кількість вставок без
- * `id` там зафіксована окремим ратчетом `tests/admin-inserts-need-id.test.ts`
- * і може лише зменшуватись.
+ * Виїмка за ТЕКАМИ: застарілий шар адмінки на `supabase-js` — рівно ДВІ
+ * теки (`pages/`, `components/`), де живуть усі відомі вставки без `id`.
+ * Він не виконується на чистому Postgres і повністю переписується в
+ * Е1–Е6 (рішення власника 2026-08-29). Його НЕ залишено без нагляду:
+ * кількість вставок без `id` там зафіксована окремим ратчетом
+ * `tests/admin-inserts-need-id.test.ts` і може лише зменшуватись.
+ *
+ * 🔴 Звужено з `['admin/']` (Е3, рев'ю): `admin/features/**` і `admin/
+ * lib/**` несуть НОВУ архітектуру треку К3-Е3 (`collection.insert()`
+ * TanStack DB через `admin-data`, id завжди явний — доводять
+ * `product-form-schema.test.ts`, `useProductSave.test.tsx`), тож голе
+ * `'admin/'` ховало б їх від ЦЬОГО гейту теж без потреби. 🔴 Емпірично
+ * (прогін після звуження) ЦЕЙ гейт їх і так не ловить — але з причини, за
+ * яку не варто ховатись: `discoverInsertsInSource`'s drizzle-регекс матчить
+ * ЛИШЕ `.insert(bareIdentifier)`, а обидва виклики TanStack DB у
+ * `admin/features/**` — `products.insert(toProductDraft(...))`
+ * (виклик функції) і `mods.insert({...})` (обʼєктний літерал) — жоден не
+ * bare identifier, тож регекс НЕ матчить ні один із них узагалі. Локальна
+ * змінна `products`/`mods` МОГЛА Б колізувати з іменем Drizzle-таблиці за
+ * `drizzleTables()`, якби форма виклику була `.insert(payload)` з bare-
+ * ідентифікатором (як у легасі `admin/pages/**`) — сьогодні такої форми в
+ * `features/**` немає, але якщо зʼявиться, гейт її МАТИМЕ ловити як
+ * offender (payload без `.values(` після), і тоді доведеться явно
+ * відрізняти TanStack DB від Drizzle за походженням ідентифікатора, а не
+ * за формою виклику.
  */
-const EXEMPT_DIRS = ['admin/'];
+const EXEMPT_DIRS = ['admin/pages/', 'admin/components/'];
 
 /** Мапа «експорт Drizzle-таблиці → імʼя таблиці в SQL». */
 function drizzleTables(): Map<string, string> {
@@ -237,7 +257,7 @@ describe('Е0: інваріант явного id у вставках ядра',
       'users',
       'verifications',
     ]);
-    expect(EXEMPT_DIRS).toEqual(['admin/']);
+    expect(EXEMPT_DIRS).toEqual(['admin/pages/', 'admin/components/']);
   });
 });
 

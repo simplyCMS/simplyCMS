@@ -119,4 +119,16 @@ describe('usePluginTable', () => {
 
     await expect(result.current.list()).rejects.toThrow(/не володіє таблицею/);
   });
+
+  it('queryKey має префікс плагіна й стабільний між рендерами (П.1)', () => {
+    const { result, rerender } = renderHook(() =>
+      usePluginTable('faq', 'plg_faq_items'),
+    );
+
+    expect(result.current.queryKey).toEqual(['plugin.faq', 'plg_faq_items']);
+
+    const first = result.current.queryKey;
+    rerender();
+    expect(result.current.queryKey).toBe(first);
+  });
 });

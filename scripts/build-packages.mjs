@@ -1,4 +1,5 @@
 // Збірка публікованих пакетів ПІД КЕПОМ памʼяті — запобіжник, а не декор.
+// UPSTREAM:TSDOWN-1 — docs/architecture/upstream-workarounds.md (декларації — tsc, не dts-плагін).
 //
 // 🔴 Навіщо кеп. 2026-08-24 збірка декларацій вичерпувала 9 ГБ heap: dts-плагін
 // бандлера (rollup-plugin-dts у tsup, rolldown-plugin-dts у tsdown) тримає

@@ -1,12 +1,13 @@
 import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
-import type { ActorDb } from './db';
-import { loadTargetStatus, setTargetStatus } from './stock-status';
 import {
   lockTargetStock,
+  loadTargetStatus,
   servingQuantity,
-  type StockLine,
-} from './stock-write';
+  setTargetStatus,
+} from 'simplycms/inventory';
+import type { ActorDb } from './db';
+import type { StockLine } from './stock-write';
 
 /** Нестача залишку: транзакція відкочується, замовлення не створюється. */
 export class InsufficientStockError extends Error {

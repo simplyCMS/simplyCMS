@@ -17,7 +17,7 @@ const banners = entityKey(ENTITY.banners);
  */
 export function useBanners(placement: string, sectionId?: string) {
   const query = useQuery({
-    queryKey: [...banners.list(), placement, sectionId ?? null],
+    queryKey: banners.variant(placement, sectionId ?? undefined),
     queryFn: () =>
       getBanners({ data: { placement, sectionId: sectionId ?? null } }),
     staleTime: 60 * 1000,

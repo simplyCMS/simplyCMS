@@ -4,17 +4,17 @@ export { AdminSidebar } from './layouts/AdminSidebar';
 
 // Components
 export { AddProductToOrder } from './components/AddProductToOrder';
-export { AllProductProperties } from './components/AllProductProperties';
 export { ImageUpload } from './components/ImageUpload';
-export { ProductModifications } from './components/ProductModifications';
-export { ProductPricesEditor } from './components/ProductPricesEditor';
-export { ProductPropertyValues } from './components/ProductPropertyValues';
 export { RichTextEditor } from './components/RichTextEditor';
 export { SectionPropertiesManager } from './components/SectionPropertiesManager';
 export { SectionPropertiesTable } from './components/SectionPropertiesTable';
-export { SimpleProductFields } from './components/SimpleProductFields';
-export { StockByPointManager } from './components/StockByPointManager';
-export { StockStatusSelect } from './components/StockStatusSelect';
+// 🔴 Task 8: ProductModifications/ProductPricesEditor/SimpleProductFields/
+// StockByPointManager видалені — заміщені features/products/{modifications,
+// prices,stock,simple}/*. StockStatusSelect — той самий компонент, `git mv`
+// у features/products/stock/ (виніс, не заміна).
+// 🔴 Task 10: AllProductProperties/ProductPropertyValues видалені —
+// заміщені features/products/properties/PropertyValuesPanel.
+export { StockStatusSelect } from './features/products/stock/StockStatusSelect';
 
 // Pages
 export { default as Dashboard } from './pages/Dashboard';

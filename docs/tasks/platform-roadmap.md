@@ -24,7 +24,15 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-08-29)
+## 📍 Поточний стан (оновлено 2026-09-24)
+
+🔴 **2026-09-24 — К3-Е3 (каталог адмінки on-demand) завершено.** Версія в коді
+(`packages/simplycms/package.json`) — `0.6.0` (реліз-коміт `chore(release): v0.6.0`
+на гілці `claude/k3-e3-catalog-plan`, PR #50 у `main`; у реєстрі npm до мержу —
+`0.5.0`, мерж публікує всі пʼять пакетів — рішення власника). Живі сторінки адмінки — `/admin/products`,
+`/admin/products/new`, `/admin/products/$productId` (картка з модифікаціями,
+цінами, залишками, властивостями й зображеннями) поверх `/admin/order-statuses`
+(Е1б). Деталі — розділ «К3 Адмінка» нижче.
 
 🔴 **2026-08-29 — контур `0.4.1`: Supabase зійшов зі ШЛЯХУ ВІТРИНИ повністю.**
 Гілка `claude/full-contour-audit`,
@@ -111,7 +119,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 | Редизайн за референсом | скіл `redesign-from-reference` (дискавері → інспекція → мапінг → side-by-side → шліфування); доставка в магазини — симлінки на `node_modules/simplycms/skills/` |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`) |
 | ✅ **Магазин на чистому Postgres** | `pnpm db:demo` (покупний демо: доставка, СИСТЕМНА точка видачі, залишки, `decrease_on_order = true`) → `.env.local` (`DATABASE_URL`, `BETTER_AUTH_SECRET`) → `pnpm build && pnpm start`. Вітрина, вхід, кабінет, чекаут — працюють: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`. Покроково — [`v2-state-map.md`](./v2-state-map.md) §5 |
-| Адмінка | 🔴 **Оживає посторінково (трек К3).** Жива одна сторінка — `/admin/order-statuses` (Е1б, серверний шар + колекція); решта 52 файли `src/admin/**` — на `supabase-js`, тобто не працюють |
+| Адмінка | 🔴 **Оживає посторінково (трек К3).** Живі сторінки — `/admin/order-statuses` (Е1б) і каталог (Е3): `/admin/products` (список on-demand, фільтри, «Показати ще»), `/admin/products/new`, `/admin/products/$productId` (картка, модифікації, ціни, залишки, властивості, зображення через порт сховища); решта 43 файли `src/admin/**` — на `supabase-js`, тобто не працюють |
 | CI на PR | `typecheck` · `test` · `packaging` · `schema` · `www` |
 
 Реліз-процес — [`release-process.md`](../architecture/release-process.md);
@@ -379,18 +387,47 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            лишаються на `supabase-js` до Е3–Е6 — DoD К3 п.6 (зображення товару)
            закриває хвиля каталогу, не Е2. План —
            [`2026-09-13-v2-k3-e2-storage-minimum.md`](../superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md)
-     - [ ] **Е3** (каталог on-demand — перший
-           push-down, єдина частина треку без зовнішнього зразка) →
-           **Е4–Е6** (хвилі сутностей) → **Е7–Е8** (знос `supabase-js`,
-           живий прогін). 🔴 Залишок — **52 з 67** файлів `src/admin/**`
-           досі на `supabase-js` (див. [`v2-state-map.md`](./v2-state-map.md) §3.1).
-           Беклог, який мусить увійти в план Е3: `index`/`impl` по сутностях
-           (розкладка `admin-server/impl/<entity>`, амендмент К3-9′ від треку T),
-           гейт повноти ратчету `mutation-cache-sync`, `scope` в іменованих
-           операціях, дедуплікація persistence-хендлерів, розвантаження
-           `resource.ts`; борги Е1а №4 (`detail()` slug vs uuid), №6
-           (`scoped` у двох значеннях), №8 (зона правила ключів не дістає
-           тем і плагінів)
+     - [x] ✅ **Е3 — каталог адмінки on-demand, перший push-down.** Перша
+           `on-demand`-колекція TanStack DB (`syncMode: 'on-demand'` +
+           `gcTime: 0` + `autoIndex` — Е3-16/Е3-17) із серверним push-down у
+           Drizzle: `/admin/products` (список, фільтри розділ/активність/
+           наявність, «Показати ще»), `/admin/products/new` і
+           `/admin/products/$productId` (картка з Zod-формою, розділ,
+           зображення через порт сховища, SEO, модифікації з дефолтом й
+           порядком, атомарний набір цін, залишки по точках з гвардованим
+           переходом `stock_status` (`simplycms/inventory`, спільний з
+           вітриною — Е3-5), значення властивостей scalar/multiselect з
+           автозбереженням blur/Enter і чергою на `propertyId` (Е3-19).
+           Схема multiselect правлена на «рядок на опцію» (Е3-13,
+           `NULLS NOT DISTINCT`). Конфлікти БД (23505/23503) —
+           `AdminConflictError` → 409 → `adminErrorKey` (Е3-7).
+           🔴 **Доведено живим прогоном** (`pnpm live:smoke`, крок
+           `runAdminCatalogStep`): запрошення власника → пароль → вхід →
+           товар створено в адмінці (ціна «1234,50» → `1234.50`, залишок 3
+           `in_stock`, зображення) → вітрина показує (бейдж «В наявності:
+           3 шт», ціна, картинка) → дубль slug — тост i18n → видалення
+           прибирає з вітрини (404) і з БД. Плюс ручний прогін 14 пунктів
+           (модифікації, reorder, multiselect, відкат при недоступному
+           сервері). Деталі — DoD плану Е3, розділ «Факти виконання».
+           Борги Е1а №6 (`scoped` у двох значеннях) і №8 (зона правила
+           ключів не дістає тем і плагінів) закрито (Task 11, Е3-12):
+           `entityKey(x).variant(qualifier, id?)` — окремий сегмент для
+           не-FK кваліфікаторів, зона `query-key-from-entity` розширена на
+           референс-тему й референс-плагін. Борг №4 (`detail()` slug vs
+           uuid) задокументовано як такий, що на Е3 не проявився (адмінка
+           `detail()` не вживає) — належить К2. Новий гейт: `eslint-rules/
+           no-collection-key-outside-admin-data.mjs` (Е3-15′, сегмент
+           `'list'` — виключно колекціям `admin-data`). Ключ кешу плагіна —
+           `usePluginTable(...).queryKey`, не окремий `pluginTableKey`
+           (виправлено в хвилі гейтів). План —
+           [`2026-09-23-v2-k3-e3-catalog-on-demand.md`](../superpowers/plans/2026-09-23-v2-k3-e3-catalog-on-demand.md).
+           🔴 Залишок — **43** файли `src/admin/**` досі на `supabase-js`
+           (`rg -l useSupabaseClient packages/simplycms/src/admin | wc -l`,
+           виміряно 2026-09-24; див. [`v2-state-map.md`](./v2-state-map.md) §3.1).
+           Наступні — **Е4** (довідники каталогу: розділи, типи цін,
+           властивості й опції — CRUD-сторінки, заведені в Е3 лише на
+           читання) → **Е5–Е6** (замовлення, решта сутностей) → **Е7–Е8**
+           (знос `supabase-js`, живий прогін).
    - [ ] К4 Storage — **залишок після К3-Е2**: драйвер `s3`,
          `transform`/srcset, presigned direct-upload, облік невдалих
          видалень і sweep орфанів (обʼєкт без рядка після обриву між `put`

@@ -118,7 +118,9 @@ CREATE TABLE "modification_property_values" (
 	"numeric_value" numeric,
 	"option_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "modification_property_values_modification_id_property_id_key" UNIQUE("modification_id","property_id")
+	-- Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
+	-- скалярну властивість в одному рядку (option_id NULL)
+	CONSTRAINT "modification_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("modification_id","property_id","option_id")
 );
 --> statement-breakpoint
 CREATE TABLE "order_items" (
@@ -274,7 +276,9 @@ CREATE TABLE "product_property_values" (
 	"numeric_value" numeric(15, 4),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"option_id" uuid,
-	CONSTRAINT "product_property_values_product_id_property_id_key" UNIQUE("product_id","property_id")
+	-- Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
+	-- скалярну властивість в одному рядку (option_id NULL)
+	CONSTRAINT "product_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("product_id","property_id","option_id")
 );
 --> statement-breakpoint
 CREATE TABLE "product_reviews" (

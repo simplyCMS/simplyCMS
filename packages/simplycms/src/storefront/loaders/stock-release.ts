@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
-import type { ActorDb } from './db';
-import { setTargetStatus } from './stock-status';
 import {
   lockTargetStock,
   servingQuantity,
-  type StockLine,
-} from './stock-write';
+  setTargetStatus,
+} from 'simplycms/inventory';
+import type { ActorDb } from './db';
+import type { StockLine } from './stock-write';
 
 /**
  * Повертає позицію В ТУ САМУ точку — дзеркало `reserveStock`

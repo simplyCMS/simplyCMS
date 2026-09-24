@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUTHZ_MATRIX, can } from 'simplycms/auth';
-import { parseUploadForm } from '../operations/media';
+import { parseUploadForm } from '../media/operations';
 
 describe('media.write у матриці authz', () => {
   it('дозволена лише адміну', () => {

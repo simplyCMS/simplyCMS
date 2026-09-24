@@ -44,12 +44,29 @@ const startsWithLiteral = (node) =>
   node.elements[0]?.type === 'Literal' &&
   typeof node.elements[0].value === 'string';
 
+/** `[ENTITY.x, 'list', …]` — `collectionKey` ВРУЧНУ, без імпорту (обхід
+ *  гейта імпорту, Е3-15′). Саме `ENTITY.x` елементом 0, не спред: ключі
+ *  `AGGREGATE.*.key` НІКОЛИ не збігаються з жодним `collectionKey`.
+ *  UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md */
+const isRawEntityListLiteral = (node) =>
+  node?.type === 'ArrayExpression' &&
+  node.elements[0]?.type === 'MemberExpression' &&
+  node.elements[0].object?.type === 'Identifier' &&
+  node.elements[0].object.name === 'ENTITY' &&
+  node.elements[1]?.type === 'Literal' &&
+  node.elements[1].value === 'list';
+
+const BARE_LIST_MESSAGE =
+  "Буквальний сегмент 'list' у queryKey — форма collectionKey (лише " +
+  'admin-data). Поза admin-data: entityKey(x).variant()/.scoped().';
+
+/** @type {import('eslint').Rule.RuleModule} */
 export default {
   meta: {
     type: 'problem',
     docs: { description: 'queryKey з реєстру ENTITY' },
     schema: [],
-    messages: { literalKey: MESSAGE },
+    messages: { literalKey: MESSAGE, bareListSegment: BARE_LIST_MESSAGE },
   },
   create(context) {
     // Константи-масиви модуля: `const ADDRESS_BOOK_KEY = ['address-book']`.
@@ -76,6 +93,10 @@ export default {
 
         for (const candidate of branches(node.value)) {
           const value = unwrap(candidate);
+          if (isRawEntityListLiteral(value)) {
+            context.report({ node: candidate, messageId: 'bareListSegment' });
+            return;
+          }
           const offends =
             startsWithLiteral(value) ||
             (value?.type === 'Identifier' && literalConsts.has(value.name));

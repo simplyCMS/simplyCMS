@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -11,6 +11,7 @@
     ".": "./src/index.ts",
     "./contracts": "./src/contracts/index.ts",
     "./contracts/entities": "./src/contracts/entities.ts",
+    "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
@@ -34,6 +35,7 @@
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./inventory": "./src/inventory/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -43,6 +45,7 @@
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
+    "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
@@ -118,6 +121,10 @@
       "./contracts/entities": {
         "types": "./dist/contracts/entities.d.ts",
         "import": "./dist/contracts/entities.js"
+      },
+      "./contracts/domain-errors": {
+        "types": "./dist/contracts/domain-errors.d.ts",
+        "import": "./dist/contracts/domain-errors.js"
       },
       "./contracts/server-only": {
         "types": "./dist/contracts/server-only.d.ts",
@@ -211,6 +218,10 @@
         "types": "./dist/storage/index.d.ts",
         "import": "./dist/storage/index.js"
       },
+      "./inventory": {
+        "types": "./dist/inventory/index.d.ts",
+        "import": "./dist/inventory/index.js"
+      },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
         "import": "./dist/supabase/index.js"
@@ -246,6 +257,10 @@
       "./runtime": {
         "types": "./dist/runtime/index.d.ts",
         "import": "./dist/runtime/index.js"
+      },
+      "./runtime/domain-error-adapter": {
+        "types": "./dist/runtime/domain-error-adapter.d.ts",
+        "import": "./dist/runtime/domain-error-adapter.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
@@ -552,8 +567,10 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@tanstack/router-core": "1.168.15",
     "@types/pg": "^8.15.6",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "seroval": "^1.6.0"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.29.2",

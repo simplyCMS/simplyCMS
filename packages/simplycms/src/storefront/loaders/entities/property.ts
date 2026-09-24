@@ -1,17 +1,19 @@
 import { propertyOptions, sectionProperties } from 'simplycms/schema';
-import type { PropertyOption, SectionProperty } from 'simplycms/schema/types';
+import type {
+  JsonValue,
+  PropertyOption,
+  SectionProperty,
+} from 'simplycms/schema/types';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 
-/**
- * Значення довільного jsonb.
- *
- * 🔴 Оголошено локально, а не взято з генерату PostgREST: нового серверного
- * коду той генерат більше не стосується, а форма JSON від джерела типів не
- * залежить. Тип структурний, тож рядок лишається сумісним зі сторінками,
- * які ще типізовані старим `Tables<…>`.
- */
-export type JsonValue =
-  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+// m4 (рев'ю хвилі B): ОДНЕ визначення `JsonValue` — `simplycms/schema/json`
+// (джерело для `sectionProperties.options.$type<JsonValue>()` у самій схемі,
+// `schema.ts:57,121`). Локальна копія тут розійшлася б з тим, що бачить
+// Drizzle-колонка (той самий клас дефекту, що вже закрито для `images`
+// у m3) — реекспорт (не власне визначення), споживачі барелю (`checkout-items`,
+// `entities/order.ts`, `entities/new-order.ts`, `shipping.ts`,
+// `theme-record.ts`) імпортують звідси, як і раніше.
+export type { JsonValue };
 
 /** Мапа select-а характеристики. */
 export const propertyColumns = {
@@ -43,16 +45,14 @@ export type PropertyRow = {
 };
 
 /**
- * Єдиний каст `unknown → JsonValue` у шарі.
- *
- * Колонка `options` — вільний jsonb адмінки; вітрина її не читає, але тип
- * сторінки вимагає поля, тож рядок проходить через одну явну точку, а не
- * через каст на кожному місці використання.
+ * Нормалізація рядка властивості. 🔴 m4: каст `unknown → JsonValue` тут
+ * більше НЕ потрібен — `options` типізовано в ДЖЕРЕЛІ
+ * (`sectionProperties.options.$type<JsonValue>()`, `schema.ts:121`), тож
+ * `db.select(propertyColumns)` вже дає `JsonValue | null`. Функція лишається
+ * — `??  null` замість недосяжного (за типом) `undefined` із самого select-а.
  */
-export function toPropertyRow(
-  row: Omit<PropertyRow, 'options'> & { options: unknown },
-): PropertyRow {
-  return { ...row, options: (row.options ?? null) as JsonValue | null };
+export function toPropertyRow(row: PropertyRow): PropertyRow {
+  return { ...row, options: row.options ?? null };
 }
 
 /** Мапа select-а опції характеристики. */

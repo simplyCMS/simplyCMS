@@ -1,4 +1,5 @@
 import type { ActorRole } from 'simplycms/db';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 
 /**
  * Перший рубіж моделі безпеки B5″ — типізований authz у TS (Task 7, В2-К1а).
@@ -74,11 +75,17 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   'admin.access': { admin: 'any' },
 };
 
-/** Відмова authz. Окремий клас — щоб хендлер мапив її в 403, а не в 500. */
+/**
+ * Відмова authz. Окремий клас — щоб хендлер мапив її в 403, а не в 500.
+ * `name` — за T0-переліком `contracts/domain-errors` (Е3-20): його читає й
+ * клієнтський `domainErrorAdapter`, що зберігає instanceof і поле
+ * `operation` через межу serverFn (раніше seroval губив усе, крім
+ * `.message` — К3-13).
+ */
 export class AuthzError extends Error {
   constructor(readonly operation: Operation | AppRole) {
     super(`[simplycms/auth] Операція заборонена: ${operation}.`);
-    this.name = 'AuthzError';
+    this.name = DOMAIN_ERROR_NAME.authz;
   }
 }
 

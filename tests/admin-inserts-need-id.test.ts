@@ -9,6 +9,18 @@ import {
 } from '../packages/simplycms/test-harness/pg/insert-scan';
 
 const ADMIN = resolve(import.meta.dirname, '../packages/simplycms/src/admin');
+// 🔴 Task 7 (V2-К3-Е3): скан звужено до ДВОХ легасі-тек — `pages/` і
+// `components/` — саме тих, де живуть усі 27 відомих supabase-js вставок
+// (жодна не лежить деінде під `src/admin`). Причина: `admin/features/**`
+// із Е3 несе НОВУ архітектуру (`collection.insert()` TanStack DB з
+// `admin-data`, id завжди явний — доводить `product-form-schema.test.ts`),
+// а наївний текстовий скан бачить лише підрядок `.insert(` і не розрізняє
+// supabase-js від TanStack DB. Без звуження кожен НОВИЙ `.insert(` у
+// `features/**`/`lib/**` (де id гарантовано код-рев'ю й типами) мовчки
+// зжирав би бюджет цього легасі-ратчету — саме так провалився перший
+// прогін цієї задачі (2 хибних офендери з `useProductSave.ts`, один із
+// них — узагалі з КОМЕНТАРЯ, що згадує `.insert()` в прозі).
+const ADMIN_SCAN_DIRS = ['components', 'pages'];
 
 /**
  * Ратчет застарілого шару. Адмінка на supabase-js не виконується на
@@ -76,7 +88,10 @@ describe('застарілий шар адмінки: ратчет вставо�
   it(`вставок без id не більше ніж ${KNOWN_WITHOUT_ID}`, () => {
     const offenders: string[] = [];
     let total = 0;
-    for (const file of sourceFiles(ADMIN)) {
+    const files = ADMIN_SCAN_DIRS.flatMap((dir) =>
+      sourceFiles(resolve(ADMIN, dir)),
+    );
+    for (const file of files) {
       const src = readFileSync(file, 'utf8');
       const re = /\.insert\(/g;
       let m: RegExpExecArray | null;

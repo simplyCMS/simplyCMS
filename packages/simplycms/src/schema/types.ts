@@ -59,6 +59,11 @@ import type {
   wishlists,
 } from './schema';
 
+// 🔴 Реекспорт, не власне визначення: `JsonValue` — тип jsonb-колонок БЕЗ
+// власної форми (returnPolicy/shippingDetails/options), джерело —
+// `schema/json.ts` (T1, той самий, що й ця схема).
+export type { JsonValue } from './json';
+
 // ── Auth (Better Auth, канонічні таблиці в `public` — рішення B3′) ─────────
 
 export type User = InferSelectModel<typeof users>;

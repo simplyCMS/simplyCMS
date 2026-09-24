@@ -25,7 +25,10 @@ const propertyOptions = entityKey(ENTITY.propertyOptions);
 /** Усі активні розділи — чипси над списком товарів. */
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
   return useQuery({
-    queryKey: sections.list(),
+    // 🔴 variant('storefront'), не list() (Е3-15): admin-data заводить
+    // eager-колекцію sections під голим list() — там усі розділи в
+    // camelCase, тут лише активні у формі SectionRow.
+    queryKey: sections.variant('storefront'),
     queryFn: (): Promise<CatalogSectionRow[]> => getCatalogSections(),
     initialData: initialSections,
   });
@@ -48,7 +51,9 @@ export function useSectionQuery(
 /** Числові характеристики розділу, за якими можна фільтрувати. */
 export function useNumericPropertiesQuery(sectionId: string | null) {
   return useQuery({
-    queryKey: sectionProperties.scoped('numeric', sectionId ?? ''),
+    // 🔴 variant('numeric', …), не scoped() (борг Е1а №6, Е3-12): це форма
+    // (лише числові властивості), а не FK-зріз за розділом.
+    queryKey: sectionProperties.variant('numeric', sectionId ?? ''),
     queryFn: () =>
       getSectionNumericProperties({
         data: { sectionId: sectionId as string },
@@ -66,7 +71,9 @@ export function useNumericPropertiesQuery(sectionId: string | null) {
  */
 export function usePropertyOptionsQuery() {
   return useQuery({
-    queryKey: propertyOptions.list(),
+    // 🔴 variant('storefront'), не list() (Е3-15) — той самий префікс, що
+    // й on-demand колекція propertyOptions в admin-data.
+    queryKey: propertyOptions.variant('storefront'),
     queryFn: () => getFilterOptions(),
   });
 }

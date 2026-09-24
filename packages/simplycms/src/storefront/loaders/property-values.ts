@@ -17,7 +17,7 @@ export interface ProductPropertyValueRow {
   value: string | null;
   numeric_value: number | null;
   option_id: string | null;
-  property_options: { id: string; slug: string } | null;
+  property_options: { id: string; slug: string; name: string } | null;
   section_properties: {
     id: string;
     name: string;
@@ -33,7 +33,11 @@ export const propertyValueColumns = {
   value: productPropertyValues.value,
   numeric_value: productPropertyValues.numericValue,
   option_id: productPropertyValues.optionId,
-  option: { id: propertyOptions.id, slug: propertyOptions.slug },
+  option: {
+    id: propertyOptions.id,
+    slug: propertyOptions.slug,
+    name: propertyOptions.name,
+  },
   property: {
     id: sectionProperties.id,
     name: sectionProperties.name,
@@ -49,7 +53,7 @@ export interface RawPropertyValueRow {
   value: string | null;
   numeric_value: string | null;
   option_id: string | null;
-  option: { id: string; slug: string } | null;
+  option: { id: string; slug: string; name: string } | null;
   property: {
     id: string;
     name: string;

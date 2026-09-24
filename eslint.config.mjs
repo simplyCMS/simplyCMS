@@ -12,6 +12,7 @@ import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
+import noCollectionKeyOutsideAdminData from './eslint-rules/no-collection-key-outside-admin-data.mjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
@@ -141,7 +142,13 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 // `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
 // зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
 // PENDING_FILES) — стартово одна сторінка з Task 10.
-const MUTATION_CACHE_SYNC_RATCHET = [
+//
+// 🔴 `packages/simplycms/src/admin/features/**` (уся хвиля К3-Е3, Tasks
+// 6–10) у цей список НЕ входить — вона в зоні правила за побудовою
+// (глоб нижче), окремий список лише для файлів ПОЗА `features/`. Export
+// — щоб `tests/mutation-cache-sync-coverage.test.ts` (Task 12) звіряв
+// повноту зони проти того самого джерела, а не другою копією.
+export const MUTATION_CACHE_SYNC_RATCHET = [
   'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
 ];
 
@@ -321,6 +328,13 @@ const eslintConfig = [
   // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
   // означало б робити роботу двічі. Додати теку — крок завершення
   // переписування адмінки (DoD К3-3).
+  //
+  // 🔴 Референс-тема й референс-плагін — теж у зоні (борг Е1а №8, Е3-12):
+  // `simplycms/contracts/entities` — публічний T0-субшлях, межа довіри тем
+  // (`docs/architecture/themes.md`) її не забороняє; рішення архітектора
+  // зняло точку зупинки плану. Плагін лишається в зоні на випадок власних
+  // ключів по `ENTITY` — таблиці плагіна (`plg_*`) там немає, тож зона
+  // сьогодні лише фіксує стан.
   {
     files: [
       'packages/simplycms/src/core/**/*.{ts,tsx}',
@@ -328,6 +342,8 @@ const eslintConfig = [
       'packages/simplycms/src/react-query/**/*.{ts,tsx}',
       'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/src/**/*.{ts,tsx}',
     ],
     ignores: ['**/__tests__/**'],
     plugins: {
@@ -349,6 +365,9 @@ const eslintConfig = [
   {
     files: [
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      // Уся хвиля К3-Е3 (Tasks 6–10) — у зоні за побудовою: кожна фіча,
+      // що пише через serverFn/колекції, зобовʼязана мати write-back.
+      'packages/simplycms/src/admin/features/**/*.{ts,tsx}',
       ...MUTATION_CACHE_SYNC_RATCHET,
     ],
     ignores: ['**/__tests__/**'],
@@ -392,6 +411,36 @@ const eslintConfig = [
     },
     rules: { 'simplycms-storage/no-direct-storage': 'error' },
   },
+  // Ключ колекції admin-data — лише для колекцій admin-data (Е3-15′,
+  // рішення архітектора). Власне правило (не тір-зона, не
+  // query-key-from-entity — та ловить літерали в queryKey, а не сам факт
+  // імпорту функції); власне імʼя плагіна — з тієї ж причини, що в сусідніх
+  // `simplycms-storage`/`simplycms-client-boundary`: flat config замінює
+  // опції правила цілком, а ESLint 10 падає на редефініції плагіна з іншим
+  // rules-обʼєктом на тих самих файлах.
+  // 🔴 `admin-data/**` і `__tests__/**` — НЕ виїмка-послаблення, а межа зони:
+  // усередині admin-data collectionKey — канон, а __tests__ (зокрема
+  // `contracts/__tests__/entity-key.test.ts`) юніт-тестує саму функцію
+  // напряму відносним імпортом — без ignores це хибне спрацювання.
+  {
+    files: [
+      'packages/simplycms/src/**/*.{ts,tsx}',
+      'packages/simplycms-theme-solarstore/**/*.{ts,tsx}',
+      'packages/simplycms-plugin-faq/**/*.{ts,tsx}',
+    ],
+    ignores: ['packages/simplycms/src/admin-data/**', '**/__tests__/**'],
+    plugins: {
+      'simplycms-collection-key': {
+        rules: {
+          'no-collection-key-outside-admin-data':
+            noCollectionKeyOutsideAdminData,
+        },
+      },
+    },
+    rules: {
+      'simplycms-collection-key/no-collection-key-outside-admin-data': 'error',
+    },
+  },
   // Сьомий читач межі довіри клієнт/сервер (contracts/server-only): клієнтська
   // тека не імпортує server-only субшлях чи серверну залежність. Власне
   // правило, бо базовий `no-restricted-imports` не розрізняє `import` і
@@ -399,6 +448,10 @@ const eslintConfig = [
   // потрапляє, тож заборона на нього зламала б канон `OrderStatuses.tsx`
   // (Е1а). `core` тут навмисно немає: `core/lib/**` — serverFn-модулі, які
   // легально імпортують `simplycms/storefront/loaders`.
+  // 🔴 `admin-data` — у зоні поруч з `admin`: колекції TanStack DB
+  // виконуються в браузері за побудовою (К3-9′ п.3), тож типи рядків беруть
+  // лише `import type` з `simplycms/schema/types`/`simplycms/admin-server/impl`
+  // — саме це стереже `tests/tier-boundary-client-boundary.test.ts`.
   // 🔴 Плагін НЕ `simplycms-boundary` (як у сусіднього `server-only-relative`,
   // хоч план це й пропонував): flat config забороняє редефініцію плагіна під
   // тим самим імʼям, якщо два конфіги з різними rules-обʼєктами покривають
@@ -409,6 +462,7 @@ const eslintConfig = [
     files: [
       'packages/simplycms/src/admin/**/*.{ts,tsx}',
       'packages/simplycms/src/{cart,catalog,checkout,profile,reviews}-ui/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
     ],
     plugins: {
       'simplycms-client-boundary': {

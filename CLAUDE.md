@@ -86,7 +86,7 @@ Supabase-механік нижче читати саме в цих межах.
 
 ✅ **Трек К0 (консолідація пакетів) — ЗАВЕРШЕНО; код і реєстр зведені 2026-08-24.** 26 npm-пакетів зведено в 5: unscoped фреймворк-пакет `simplycms` (усе ядро T0–T5 теками `packages/simplycms/src/*`) + сателіти `@simplycms/{cli,theme-solarstore,plugin-faq}` + `create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`; фасад `@simplycms/core` розчинено; дисципліну шарів тримають eslint-тір-зони; агентні скіли доставляються магазинам симлінками на `node_modules/simplycms/skills/`. Спека — [`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md). ✅ У реєстрі npm — **5 пакетів**, а всі 22 злитих імені `@simplycms/*` (версії 0.1.0–0.3.0) позначені `npm deprecate` з вказівником на `simplycms` (перевірено читанням реєстру 2026-08-29). 🔴 **Версія в коді й у реєстрі — `0.4.1`** (опубліковано мержем PR #45, перевірено `npm view simplycms version` 2026-09-02): публікує мерж PR у `main`, і це рішення власника. Опис нижче в цьому файлі — стан коду ПІСЛЯ К0.
 
-🔴 **Стратегічний напрям 2026-08-19 затверджено власником; бекенд-контракт v2 — ЧАСТКОВО в коді.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; трек К1а закритий, вітрина переведена — плани в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md` і `docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. 🔴 Стан на `0.4.1`: вітрина, вхід, воронка й `/api/health` живуть на чистому Postgres + Better Auth; **адмінка оживає посторінково треком К3** — з 2026-09-02 (Е0+Е1а+Е1б, PR #46) жива одна сторінка `/admin/order-statuses` на серверному шарі `simplycms/admin-server` + колекції `simplycms/admin-data`, решта 52 файли `src/admin/**` лишаються на `supabase-js` і не працюють; порт сховища `simplycms/storage` із драйвером `local-fs` приземлено етапом Е2 (2026-09-13), живий споживач — аватар покупця; `s3`, `transform` і sweep орфанів лишаються К4. Що саме доведено живим прогоном — [`v2-state-map.md`](docs/tasks/v2-state-map.md). Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
+🔴 **Стратегічний напрям 2026-08-19 затверджено власником; бекенд-контракт v2 — ЧАСТКОВО в коді.** Три звʼязані спеки: **бекенд-контракт v2** (ревізія D7 → D7′: сервер-first дані — браузер не звертається до БД, PostgREST/GoTrue/supabase-js зникають; Better Auth; storage-порт; чистий Postgres як контракт, Supabase — один із провайдерів; 🔴 читати З АМЕНДМЕНТОМ 2026-08-23 — B3′/B5″/B13: ролі+гранти як код + RLS-ядро замість «RLS як є», Better Auth канонічними таблицями в `public`, чистий baseline замість 33 старих міграцій; трек К1а закритий, вітрина переведена — плани в `docs/superpowers/plans/2026-08-23-v2-k1a-data-security-foundation.md` і `docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`) — [`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md); **маркетплейс** (модель поставки П1–П5 ухвалена) — [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md); **хмара** (`simplycms/platform`, Dokploy, тенант = застосунок + Postgres) — [`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md). Клієнтів і реальних магазинів немає — реструктуризація БЕЗ зворотної сумісності. Черга виконання — роадмап. 🔴 Стан на `0.5.0`: вітрина, вхід, воронка й `/api/health` живуть на чистому Postgres + Better Auth; **адмінка оживає посторінково треком К3** — з 2026-09-02 (Е0+Е1а+Е1б, PR #46) жива `/admin/order-statuses`, з 2026-09-24 (Е3) живі сторінки каталогу — `/admin/products`, `/admin/products/new`, `/admin/products/$productId` (список on-demand, картка з модифікаціями/цінами/залишками/властивостями/зображеннями) — усі на серверному шарі `simplycms/admin-server` + колекції `simplycms/admin-data`, решта 43 файли `src/admin/**` лишаються на `supabase-js` і не працюють; порт сховища `simplycms/storage` із драйвером `local-fs` приземлено етапом Е2 (2026-09-13), живі споживачі — аватар покупця й зображення товару (Е3); `s3`, `transform` і sweep орфанів лишаються К4. Що саме доведено живим прогоном — [`v2-state-map.md`](docs/tasks/v2-state-map.md). Четверта спека — консолідація пакетів (трек К0) — йшла ПЕРШОЮ і **вже виконана** (блок вище); `theme-sdk` V2-К5 приземлиться субшляхом того самого пакета.
 
 ## Mandatory Instructions
 
@@ -111,6 +111,7 @@ Also see:
 - [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — Full project overview, MCP servers, agents
 - [`AGENTS.md`](AGENTS.md) — Agent-specific instructions
 - [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md) — 🔴 **межі тестування**: чому зелений `pnpm test` нічого не каже про опублікований пакет, що доводить кожен гейт пілота (A/B/C/D/CLI/TOOL — Gate E знято в 0.4.1 разом зі стеком Supabase), які зони не покриті й що змінить `apps/dev-store`
+- 🔴 [`docs/architecture/upstream-workarounds.md`](docs/architecture/upstream-workarounds.md) — **ЄДИНИЙ реєстр обходів дефектів залежностей** (TanStack DB, drizzle-zod, typescript-eslint, tsdown…): симптом, корінь у коді бібліотеки, наш обхід, як перевірити виправлення на новій версії і що тоді прибрати. У коді — маркери `UPSTREAM:<ID>` (`git grep`). При БУДЬ-ЯКОМУ бампі залежності — перевірити її записи; новий обхід — новий запис, не лише коментар
 - [`docs/architecture/cli.md`](docs/architecture/cli.md) — механізм `simplycms` CLI (doctor/add/create (plugin|theme)/update/db:diff/theme:conformance): команди, канон host-файлів і міграцій, контракт серверного env, звʼязок із реліз-потягом
 - [`docs/architecture/plugins.md`](docs/architecture/plugins.md) — механізм плагінів (Фаза 3): контракт `definePlugin`, рантайм-контур, межа довіри, конвеєр міграцій `plg_*`, i18n плагінів, adminRoutes, інваріант імені, межі v1
 - [`docs/architecture/themes.md`](docs/architecture/themes.md) — механізм тем (Фаза 4): контракт `ThemeModule`, пакування npm vs copy-in, `bootstrapThemes` і БД, conformance-kit, межі v1
@@ -194,10 +195,14 @@ packaging-suite іде **після** `pnpm test`, бо `tests/published-exports
 артефакти збірки і **всі `*.md`** (доки вичитує людина — prettier ламає ручне
 вирівнювання таблиць і списків без користі для коду).
 
-🔴 **`pnpm lint` = 0 errors / 10 warnings — це НОРМА** (станом на 2026-09-13).
-Було 12 до К3-Е2: переписаний під порт сховища `ImageUpload` прибрав два
-`react-hooks/exhaustive-deps`. Це покращення, а не регресія — «лагодити» назад
-до 12 не треба. Ворнінги, що лишились, — `react-hooks/*` і `no-unused-vars`. Два `no-restricted-syntax`-селектори (i18n) переведено
+🔴 **`pnpm lint` = 0 errors / 8 warnings — це НОРМА** (виміряно 2026-09-24, К3-Е3 закрито).
+Було 10 до К3-Е3 Task 10: видалення легасі `AllProductProperties`/
+`ProductPropertyValues` (переписані на `PropertyValuesPanel` фічою
+`admin/features/products/properties`) прибрало ще два ворнінги разом із
+самими файлами. До того було 12 до К3-Е2: переписаний під порт сховища
+`ImageUpload` прибрав два `react-hooks/exhaustive-deps`. Це покращення, а
+не регресія — «лагодити» назад до попередніх чисел не треба. Ворнінги, що
+лишились, — `react-hooks/*` і `no-unused-vars`. Два `no-restricted-syntax`-селектори (i18n) переведено
 з warn на **error** і діють на host `src/`, ОБИДВІ роут-теки ядра
 (`routes/storefront` і `routes/admin`), `src/storefront-routes`, `src/admin`
 і пʼять `src/*-ui` пакета ядра плюс компоненти тем — новий кириличний рядок
@@ -249,6 +254,17 @@ i18n-селектори адмінки й воронки. Негативні к�
 `tests/eslint-rules/no-server-only-in-client.test.ts` і
 `tests/tier-boundary-client-boundary.test.ts`; файловий двійник лінту —
 ратчет `tests/storage-direct-calls.test.ts`.
+Девʼята (2026-09-24, трек V2-К3-Е3) — **сегмент `'list'` лише колекціям
+адмінки**: `simplycms-collection-key/no-collection-key-outside-admin-data`
+(зона — увесь пакет ядра КРІМ `admin-data`, плюс референс-тема й
+референс-плагін) забороняє будь-яку форму `entityKey(x).list()`; сам метод
+`list()` в `entityKey` відсутній за побудовою (Е3-15′) — ключ колекції дає
+окрема функція `collectionKey(entity)`. Причина — write-back `query-db-collection`
+робить ПРЕФІКСНИЙ пошук ключа (`findAll({ queryKey: baseKey })`), тож
+вітринний і адмінський запит під тим самим префіксом ділили б чужі рядки.
+Негативний контроль — `tests/eslint-rules/no-collection-key-outside-admin-data.test.ts`;
+поведінковий доказ на реальному write-back —
+`admin-data/__tests__/collection-key-storefront-isolation.test.ts`.
 
 🔴 Зелений лінт завершеності i18n **не доводить**: він бачить лише `JSXText` і
 три атрибути (~64 % рядків). Доводять пʼять committed-тестів —
@@ -302,7 +318,7 @@ i18n-селектори адмінки й воронки. Негативні к�
 - **Testing:** Vitest 4 + Testing Library + jsdom 30
 - **Formatting:** Prettier 3
 
-🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція):
+🔴 **Чому TypeScript лишається на 5.9** (перевірено 2026-08-04, не інерція; реєстр — `UPSTREAM:TSESL-1`):
 TS 7 — нативний Go-компілятор без стабільного програмного API до 7.1, тож
 `typescript-eslint` закрив запит підтримки як **not planned** (його peer —
 `typescript <6.1.0`). Це наш гейт `pnpm lint` — і блокер тут ОДИН.
@@ -386,12 +402,18 @@ simplyCMS/
 │   │   │                         #    іммутабельні ключі, MIME за байтами, запис
 │   │   │                         #    файлу й рядка `media` однією транзакцією актора.
 │   │   │                         #    server-only за contracts/server-only
+│   │   ├── src/inventory/        # T2 🔴 Е3-5: спільний облік залишків — гвардований
+│   │   │                         #    перехід stock_status (одна копія для вітрини й
+│   │   │                         #    адмінки), lockTargetStock/servingQuantity. server-only
 │   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
 │   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів).
 │   │   │                         #    🔴 ЖИВИЙ ЛИШЕ під адмінкою — зноситься треком К3;
 │   │   │                         #    вітрина його не імпортує, провайдер ніде не монтується
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
-│   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig
+│   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
+│   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
+│   │   │                         #    клієнтський seroval-адаптер межі serverFn (К3-Е3,
+│   │   │                         #    зареєстрований у src/start.ts serializationAdapters)
 │   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
@@ -409,7 +431,10 @@ simplyCMS/
 │   │   ├── src/core/             # T5 Власні провайдери/хуки/компоненти (CMSProvider,
 │   │   │                         #    useAuth, useCart, useBanners…). Фасадна роль
 │   │   │                         #    розчинена К0; розселення по тірах — поза К0
-│   │   ├── src/admin/            # T5 Сторінки/компоненти адмінки
+│   │   ├── src/admin/            # T5 Сторінки/компоненти адмінки; ./features/products/** —
+│   │   │                         #    К3-Е3: каталог on-demand (список, картка, модифікації,
+│   │   │                         #    ціни, залишки, властивості) на admin-server/admin-data;
+│   │   │                         #    решта — легасі на supabase-js (перелічує v2-state-map §3.1)
 │   │   ├── src/storefront-routes/# T5 pages/ (container-и) + views/ (канонічні view +
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
@@ -480,7 +505,7 @@ simplyCMS/
 ├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра (ПК3);
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
-├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються), СІМ.
+├── eslint-rules/                     # Кастомні flat-config ESLint-плагіни (не публікуються), ВІСІМ.
 │                                     # 🔴 Кожне правило — ВЛАСНЕ імʼя плагіна: ESLint 10 падає з
 │                                     # «Cannot redefine plugin», якщо два блоки на тих самих файлах
 │                                     # оголошують один ключ (спіймано в К3-Е2). Перелік:
@@ -493,7 +518,9 @@ simplyCMS/
 │                                     # side-effect-імпорт у пакетах із sideEffects:false (трек T);
 │                                     # no-direct-storage.mjs — файли лише через simplycms/storage,
 │                                     # no-server-only-in-client.mjs — клієнтська тека ядра не тягне
-│                                     # server-only субшлях статичним import (обидва — К3-Е2)
+│                                     # server-only субшлях статичним import (обидва — К3-Е2);
+│                                     # no-collection-key-outside-admin-data.mjs — сегмент 'list' у
+│                                     # queryKey лише колекціям admin-data (Е3-15′, К3-Е3)
 ├── vite.config.ts                    # tanstackStart({ router.virtualRouteConfig, server.entry })
 ├── vitest.config.ts                  # Дефолтний прогін (packaging-suite — у test.exclude)
 ├── vitest.packaging.config.ts        # Tarball-parity suite (`pnpm test:packaging`)

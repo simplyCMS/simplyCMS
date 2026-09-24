@@ -18,6 +18,122 @@
 
 ---
 
+## [0.6.0] — не опубліковано (публікує мерж PR #50)
+
+Етап **V2-К3-Е3 — каталог адмінки on-demand.** План, рішення Е3-1…Е3-20 і
+факти виконання:
+[`docs/superpowers/plans/2026-09-23-v2-k3-e3-catalog-on-demand.md`](docs/superpowers/plans/2026-09-23-v2-k3-e3-catalog-on-demand.md).
+🔴 **Breaking для магазинів на `0.5.0`** (0.x, D5 — без шимів): змінюються
+ключі кешу (`entityKey().list()`), host-файл `src/start.ts` і baseline
+міграцій. Нових пакетів немає — мерж публікує ті самі пʼять.
+
+### Додано
+
+- **Живі сторінки адмінки каталогу** на чистому Postgres: `/admin/products`
+  (перша on-demand колекція TanStack DB із push-down фільтрів розділ /
+  активність / наявність у Drizzle, «Показати ще» через
+  `useLiveInfiniteQuery`), `/admin/products/new` і `/admin/products/$productId`
+  (розділ, зображення через порт сховища, SEO, модифікації з дефолтом і
+  порядком, ціни товару й модифікацій, залишки по точках видачі, значення
+  властивостей scalar і multiselect).
+- **`simplycms/inventory`** (T2, server-only) — ОДНЕ правило залишку й
+  `stock_status` для вітрини й адмінки: обслуговуючі точки
+  (`is_system OR is_active`), порядок локів, гвард `on_order`.
+- **Серверний шар каталогу:** `runAdmin` (grant → scope → `withActor`),
+  ресурси товару й сателітів, іменовані операції `setDefaultProductModification`,
+  `reorderProductModification`, `saveProductPrices` (атомарний набір),
+  `saveStock` (кількості + статус в одній транзакції), advisory-lock цілі.
+- **Контракт помилок через межу serverFn:** `simplycms/contracts/domain-errors`
+  (T0, закритий перелік) + `simplycms/runtime/domain-error-adapter`
+  (`serializationAdapters` у `createStart`) — `AdminConflictError`
+  (`kind`/`constraint`) і `AuthzError` (`operation`) доходять до клієнта
+  цілими; конфлікти `23505`/`23503` → 409 → локалізований тост.
+- **`PluginTablePort.queryKey`** у `plugin-sdk` — ключ кешу таблиці плагіна
+  народжується в порту, поруч із даними.
+- Легасі-сторінки адмінки, що ще на `supabase-js`, без Supabase env
+  показують заглушку «Розділ ще не перенесено на V2» (`admin.legacy.notMigrated`)
+  замість падіння.
+- Реєстр обходів дефектів бібліотек —
+  [`docs/architecture/upstream-workarounds.md`](docs/architecture/upstream-workarounds.md),
+  місця в коді позначено `UPSTREAM:<ID>`.
+- Нові гейти: ESLint-правило `no-collection-key-outside-admin-data`, кейс
+  `bareListSegment` у `query-key-from-entity` (зона — і тема, і плагін),
+  `on-demand-factory-only`, `mutation-cache-sync-coverage`,
+  `schema-sources-parity` (`schema.ts` ≡ drizzle snapshot ≡ канон
+  міграцій), `explicit-ids` на `admin/features/**`, окремий лічильник
+  `pageerror` адмінки в `live:smoke`, крок адміна в `live:smoke`.
+
+### Змінено
+
+- 🔴 **`entityKey(x).list()` прибрано.** Ключ колекції — `collectionKey(entity)`
+  (лише `admin-data`, під лінт-правилом); поза адмінкою — `entityKey(x).variant(…)`.
+  Причина — write-back `@tanstack/query-db-collection` пише в УСІ ключі під
+  префіксом `[entity, 'list']` (TSDB-1).
+- 🔴 **Host `src/start.ts`** реєструє `domainErrorAdapter` — наявним
+  магазинам `pnpm simplycms update`.
+- 🔴 **Baseline міграцій (рамка B13):** унікальність значень властивостей —
+  `(власник, property_id, option_id) NULLS NOT DISTINCT`; multiselect —
+  рядок на опцію (раніше CSV у uuid-колонці не працював).
+- **Контракт тем v3 (адитивно):** `ProductPropertyValueViewModel.option`
+  отримав обовʼязкове `name`; назва опції на вітрині — з `property_options`,
+  а не з денормалізованого `value`.
+- On-demand колекції — лише через `onDemandCollectionOptions` (`gcTime: 0`,
+  TSDB-1): інакше повернення на список показувало обрізаний набір.
+- Лінт-норма — **0 errors / 8 warnings** (було 10: видалено легасі-компоненти
+  властивостей).
+
+### Виправлено
+
+- Після збереження товару список показував лише цей товар до F5.
+- Конфлікти (дубль slug, товар у замовленнях) показували технічний рядок
+  замість локалізованого тосту.
+- Автозбереження значень властивостей губило символи й повертало зняті
+  опції (паралельні транзакції) — тепер blur/Enter і черга на властивість.
+- Мережевий фейл показував «Failed to fetch» — тепер `admin.errors.network`.
+
+### Відомо, не виправлено
+
+`saveProductPrices` не звіряє `modificationId` ↔ `productId`; дубль
+`pickupPointId` у `saveStock` → 409 замість 400; можливий дедлок
+`setDefault` ↔ `reorder`; ручне `in_stock` при нульовому залишку —
+продуктове питання Е4.
+
+## [0.5.0] — 2026-09-16
+
+Етап **V2-К3-Е2 — порт сховища файлів** (PR #49). План:
+[`docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md`](docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md).
+Нових пакетів немає.
+
+### Додано
+
+- **Порт `simplycms/storage`** (T2, server-only): драйвер `local-fs`
+  (іммутабельні ключі `ab/<uuid>.<ext>`, атомарна публікація через `link`,
+  ідемпотентне видалення); `inspectUpload` — MIME за магічними байтами, SVG
+  заборонено, ліміт розміру; `writeMedia`/`eraseMedia` — файл і рядок `media`
+  в одній транзакції актора; `serveMedia` + роут `/media/$` з `nosniff` і
+  `Cache-Control: immutable`, явні `GET` і `HEAD`.
+- `simplycms/domain/media` — `resolveMediaUrl` (у БД лежить референс, не
+  URL; зовнішні `https?:`, `data:` і `/…` проходять як є).
+- Операція authz `media.write`; опційний серверний ключ env `MEDIA_ROOT`
+  (контракт магазину лишається трьома ключами — у `.env.example` він
+  закоментований).
+- Живий споживач — **аватар покупця** (крок `pnpm live:smoke`).
+- ESLint-правила `simplycms-storage/no-direct-storage` і
+  `simplycms-client-boundary/no-server-only-in-client`.
+
+### Змінено
+
+- `MediaProvider` (T0) звужено: `upload()` прибрано, `url()` повертає
+  `string | null`.
+- `ImageUpload` адмінки переведено на порт; лінт-норма 12 → 10 warnings.
+
+### Виправлено
+
+- HEAD на `/media/$` віддавав HTML замість заголовків файлу (Start не
+  виводить HEAD із GET).
+- Аватар автора відгуку їхав на вітрину сирим ключем; прибирання файла-сироти
+  не спрацьовувало.
+
 ## [0.4.1] — 2026-08-29
 
 Контур **0.4.1 — «Supabase зі шляху вітрини»** (трек V2, після К1′б). План і

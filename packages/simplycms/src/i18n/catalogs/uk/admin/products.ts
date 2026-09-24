@@ -25,6 +25,24 @@ export const messages = {
   'admin.products.featured': 'Рекомендований',
   'admin.products.createdAt': 'Створено:',
   'admin.products.updatedAt': 'Оновлено:',
+  'admin.products.notFound': 'Товар не знайдено',
+  'admin.products.slugLabel': 'URL (slug) *',
+  'admin.products.slugHint':
+    'Латиниця, цифри й дефіс — наприклад, wireless-mouse-100w',
+  'admin.products.nameError': 'Введіть назву товару',
+  'admin.products.fixFields': 'Перевірте виділені поля',
+  'admin.products.seoTitle': 'SEO',
+  'admin.products.metaTitle': 'Meta Title',
+  'admin.products.metaDescription': 'Meta Description',
+
+  // Список товарів (Е3-2): фільтри + «Показати ще», без текстового пошуку.
+  'admin.products.loadMore': 'Показати ще',
+  'admin.products.filters.section': 'Розділ',
+  'admin.products.filters.active': 'Активність',
+  'admin.products.filters.stock': 'Наявність',
+  'admin.products.filters.all': 'Усі',
+  'admin.products.filters.activeOnly': 'Активні',
+  'admin.products.filters.inactiveOnly': 'Неактивні',
 
   // Модифікації
   'admin.products.mods.title': 'Модифікації товару',
@@ -42,6 +60,7 @@ export const messages = {
   'admin.products.mods.properties': 'Властивості модифікації',
   'admin.products.mods.empty':
     'Модифікацій ще немає. Додайте першу модифікацію товару.',
+  'admin.products.mods.confirmDelete': 'Видалити цю модифікацію?',
 
   // Наявність
   'admin.products.stock.inStock': 'В наявності',
@@ -62,6 +81,7 @@ export const messages = {
   'admin.products.prices.saved': 'Ціни збережено',
   'admin.products.prices.save': 'Зберегти ціни',
   'admin.products.prices.oldPrice': 'Стара ціна',
+  'admin.products.prices.invalid': 'Некоректна ціна',
 
   // Завантаження зображень
   'admin.products.upload.badFormat': 'Непідтримуваний формат',

@@ -40,7 +40,8 @@ const CURRENCY_SYMBOLS: Readonly<Record<string, string>> = {
  *                                     неправильна сума, а не косметика).
  * Перевірено прогоном на 4200 / 4200.5 / 4200.55 / 4200.555 / 0 / 99.9.
  * Єдиний кол-сайт, що покладався на валютний дефолт 2/2
- * (`admin/components/ProductModifications.tsx`), передає `2` явно.
+ * (`admin/features/products/modifications/ModificationRow.tsx`), передає
+ * `2` явно.
  */
 export interface FormatPriceOptions {
   minimumFractionDigits?: number;
@@ -78,3 +79,22 @@ export function formatPrice(
   // сирий символ, -- щоб NBSP не загубився під час майбутнього редагування.
   return `${number}\u00a0${symbol}`;
 }
+
+/**
+ * Грошова сума як рядок numeric: невідʼємна, до двох знаків після крапки.
+ * Кома як роздільник НЕ приймається тут — її нормалізує форма (Task 8);
+ * на межі сервера формат один.
+ *
+ * 🔴 m5 (рев'ю хвилі B): до 10 цілих цифр, не 12 — `orders.subtotal/total` і
+ * `order_items.price/total` це `numeric(12,2)` (`schema.ts:232,234` і
+ * сусідні): 12 знаків ПРЕЦИЗІЇ ЦІЛОМУ, 2 з них — дробові, тож ціле лишає
+ * рівно 10. Старий `\d{1,12}` пропускав значення з 12 цілими цифрами (14
+ * знаків прецизії разом із дробовою частиною) — БД відкидала б їх `22003`
+ * numeric field overflow ПІСЛЯ валідації, замість того, щоб сама валідація
+ * відхилила ціну, яку не можна оформити.
+ */
+export const MONEY_RE = /^\d{1,10}(\.\d{1,2})?$/;
+export const isMoney = (value: string): boolean => MONEY_RE.test(value);
+/** «12,50» → «12.50»; пробіли всередині (розділювач тисяч) прибираються. */
+export const normalizeMoneyInput = (raw: string): string =>
+  raw.replace(/\s+/g, '').replace(',', '.');

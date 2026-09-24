@@ -49,7 +49,7 @@ export function useStock(
 /** Скільки точок видачі активні — заміна `rpc('get_active_pickup_points_count')`. */
 export function usePickupPointsCount() {
   return useQuery({
-    queryKey: [...pickupPoints.list(), 'count'],
+    queryKey: pickupPoints.variant('count'),
     queryFn: () => getPickupPointsCount(),
     staleTime: 60 * 1000,
   });
@@ -58,7 +58,7 @@ export function usePickupPointsCount() {
 /** Активні точки видачі — довідник самовивозу. */
 export function usePickupPoints() {
   return useQuery({
-    queryKey: [...pickupPoints.list(), 'active'],
+    queryKey: pickupPoints.variant('active'),
     queryFn: () => getActivePickupPoints(),
     staleTime: 60 * 1000,
   });

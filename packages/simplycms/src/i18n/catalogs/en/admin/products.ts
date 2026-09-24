@@ -27,6 +27,23 @@ export const messages: Catalog = {
   'admin.products.featured': 'Featured',
   'admin.products.createdAt': 'Created:',
   'admin.products.updatedAt': 'Updated:',
+  'admin.products.notFound': 'Product not found',
+  'admin.products.slugLabel': 'URL (slug) *',
+  'admin.products.slugHint':
+    'Latin letters, digits and hyphens — e.g. wireless-mouse-100w',
+  'admin.products.nameError': 'Enter the product name',
+  'admin.products.fixFields': 'Check the highlighted fields',
+  'admin.products.seoTitle': 'SEO',
+  'admin.products.metaTitle': 'Meta Title',
+  'admin.products.metaDescription': 'Meta Description',
+
+  'admin.products.loadMore': 'Show more',
+  'admin.products.filters.section': 'Section',
+  'admin.products.filters.active': 'Status',
+  'admin.products.filters.stock': 'Availability',
+  'admin.products.filters.all': 'All',
+  'admin.products.filters.activeOnly': 'Active',
+  'admin.products.filters.inactiveOnly': 'Inactive',
 
   'admin.products.mods.title': 'Product modifications',
   'admin.products.mods.created': 'Modification created',
@@ -43,6 +60,7 @@ export const messages: Catalog = {
   'admin.products.mods.properties': 'Modification properties',
   'admin.products.mods.empty':
     'No modifications yet. Add the first one for this product.',
+  'admin.products.mods.confirmDelete': 'Delete this modification?',
 
   'admin.products.stock.inStock': 'In stock',
   'admin.products.stock.none': 'None',
@@ -61,6 +79,7 @@ export const messages: Catalog = {
   'admin.products.prices.saved': 'Prices saved',
   'admin.products.prices.save': 'Save prices',
   'admin.products.prices.oldPrice': 'Old price',
+  'admin.products.prices.invalid': 'Invalid price',
 
   'admin.products.upload.badFormat': 'Unsupported format',
   'admin.products.upload.allowedFormats':
