@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { adminErrorKey } from '../admin-error';
 
 const conflict = (kind: string, constraint: string | null) =>
@@ -33,5 +33,32 @@ describe('adminErrorKey', () => {
   it('не конфлікт — null (викликач показує свій загальний тост)', () => {
     expect(adminErrorKey(new Error('boom'))).toBeNull();
     expect(adminErrorKey(undefined)).toBeNull();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('TypeError фейлу fetch (Chrome/Firefox/Safari) — мережевий ключ', () => {
+    expect(adminErrorKey(new TypeError('Failed to fetch'))).toBe(
+      'admin.errors.network',
+    );
+    expect(
+      adminErrorKey(
+        new TypeError('NetworkError when attempting to fetch resource.'),
+      ),
+    ).toBe('admin.errors.network');
+    expect(adminErrorKey(new TypeError('Load failed'))).toBe(
+      'admin.errors.network',
+    );
+  });
+
+  it('голий TypeError без мережевого повідомлення — НЕ мережа', () => {
+    expect(adminErrorKey(new TypeError('x is not a function'))).toBeNull();
+  });
+
+  it('офлайн (navigator.onLine === false) — мережевий ключ незалежно від тексту', () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(adminErrorKey(new Error('щось зламалось'))).toBe(
+      'admin.errors.network',
+    );
   });
 });

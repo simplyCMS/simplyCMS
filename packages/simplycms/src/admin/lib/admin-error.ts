@@ -24,13 +24,36 @@ type ConflictShape = {
   constraint?: unknown;
 };
 
+/** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */
+const NETWORK_MESSAGE = /failed to fetch|networkerror|load failed/i;
+
+/**
+ * Мережевий фейл `fetch` — голий `TypeError` без спеціалізованого повідомлення
+ * (наприклад «x is not a function») мережею НЕ вважається: він не відрізняє
+ * розрив звʼязку від багу виклику. Офлайн (`navigator.onLine === false`) —
+ * окрема, самодостатня ознака: браузер гарантовано не достукається до
+ * сервера незалежно від тексту помилки.
+ */
+function isNetworkError(error: unknown): boolean {
+  const e = error as { name?: unknown; message?: unknown } | null | undefined;
+  const isTypeError = error instanceof TypeError || e?.name === 'TypeError';
+  const messageMatches =
+    typeof e?.message === 'string' && NETWORK_MESSAGE.test(e.message);
+  const offline =
+    typeof navigator !== 'undefined' && navigator.onLine === false;
+  return (isTypeError && messageMatches) || offline;
+}
+
 export function adminErrorKey(error: unknown): MessageKey | null {
   const e = error as ConflictShape | null | undefined;
-  if (e?.name !== DOMAIN_ERROR_NAME.adminConflict) return null;
-  if (e.kind === 'reference') return 'admin.errors.conflictReference';
-  // Входження, не суфікс: product_modifications_product_slug_unique названо
-  // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
-  return typeof e.constraint === 'string' && e.constraint.includes('slug')
-    ? 'admin.errors.slugTaken'
-    : 'admin.errors.conflictUnique';
+  if (e?.name === DOMAIN_ERROR_NAME.adminConflict) {
+    if (e.kind === 'reference') return 'admin.errors.conflictReference';
+    // Входження, не суфікс: product_modifications_product_slug_unique названо
+    // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
+    return typeof e.constraint === 'string' && e.constraint.includes('slug')
+      ? 'admin.errors.slugTaken'
+      : 'admin.errors.conflictUnique';
+  }
+  if (isNetworkError(error)) return 'admin.errors.network';
+  return null;
 }

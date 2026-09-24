@@ -6,4 +6,6 @@ export const messages: Catalog = {
   'admin.errors.conflictUnique': 'This value already exists',
   'admin.errors.conflictReference':
     'The record is in use (e.g. in orders) — deactivate it instead of deleting',
+  'admin.errors.network':
+    'No connection to the server — changes were not saved',
 };
