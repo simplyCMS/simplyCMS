@@ -6,6 +6,7 @@ import {
   type SerializableDomainError,
 } from 'simplycms/contracts/domain-errors';
 
+// UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
 /**
  * Е3-20: реєструється в `createStart(() => ({ serializationAdapters: […] }))`
  * (host `src/start.ts`). Клієнт-безпечний: розпізнає закриту родину

@@ -205,7 +205,7 @@ Task 13 (live:smoke крок адміна + DoD + доки) ← Task 12
 - Consumes: `SubsetPayload`, `SubsetInput` (type-only) з `simplycms/admin-server/impl` (`impl/subset.ts`)
 - Produces: `toSubsetPayload(opts: LoadSubsetOptions | undefined): SubsetPayload` — у Task 5 кожна on-demand колекція кличе її в `queryFn`
 
-- [ ] **Step 1: Звірити експорти бібліотеки**
+- [x] **Step 1: Звірити експорти бібліотеки**
 
 ```bash
 node -e "const m=require('@tanstack/query-db-collection');console.log(['parseLoadSubsetOptions','queryCollectionOptions'].map(k=>k+':'+typeof m[k]).join(' '))"
@@ -216,7 +216,7 @@ Expected: усі `function`. Якщо `parseLoadSubsetOptions` не експор
 `query-db-collection` — взяти його з `@tanstack/react-db` (реекспорт `@tanstack/db`);
 окремої залежності на `@tanstack/db` НЕ додавати (К3-10′: дві peer-залежності, не три).
 
-- [ ] **Step 2: Написати юніт `toSubsetPayload` (червоний)**
+- [x] **Step 2: Написати юніт `toSubsetPayload` (червоний)**
 
 ```ts
 // packages/simplycms/src/admin-data/__tests__/subset-payload.test.ts
@@ -292,7 +292,7 @@ describe('toSubsetPayload', () => {
 Run: `pnpm test -- packages/simplycms/src/admin-data/__tests__/subset-payload.test.ts`
 Expected: FAIL — `Cannot find module '../subset-payload'`.
 
-- [ ] **Step 3: Реалізувати `toSubsetPayload`**
+- [x] **Step 3: Реалізувати `toSubsetPayload`**
 
 ```ts
 // packages/simplycms/src/admin-data/subset-payload.ts
@@ -365,7 +365,7 @@ Run: `pnpm test -- packages/simplycms/src/admin-data/__tests__/subset-payload.te
 Expected: PASS. Якщо кейс PropRef-форми впав (бібліотека повертає поле з
 аліасом, напр. `['p','sectionId']`) — НЕ підганяти: це відповідь Step 4.
 
-- [ ] **Step 4: Написати контрактний тест on-demand (має бути ЗЕЛЕНИМ одразу — перевірка припущень плану)**
+- [x] **Step 4: Написати контрактний тест on-demand (має бути ЗЕЛЕНИМ одразу — перевірка припущень плану)**
 
 ```tsx
 // packages/simplycms/src/admin-data/__tests__/on-demand-contract.test.tsx
@@ -553,14 +553,14 @@ in`), саме тому, що звіт по бібліотеці підтвер�
 коду компілятора, а не документом. Двома запитами — детерміновано й без
 залежності від лінивого join.
 
-- [ ] **Step 5: Якщо (1) червоне через аліас у полі**
+- [ ] **Step 5: Якщо (1) червоне через аліас у полі** — умова не спрацювала — кейс (1) Step 4 пройшов зеленим одразу, аліас у полі не зʼявився
 
 Факт — `field` приходить як `['p','sectionId']`. Виправлення — у ОДНОМУ місці,
 `toSubsetPayload`: відкидати перший сегмент, якщо довжина > 1 і сегмент не є
 колонкою (у каталозі вкладених полів немає — `subset.ts` джойнить `.`).
 Додати юніт-кейс під цю форму. Решта кейсів має лишитись зеленою.
 
-- [ ] **Step 6: Якщо (2) червоне попри індекс**
+- [ ] **Step 6: Якщо (2) червоне попри індекс** — умова не спрацювала — кейс (2) Step 4 зелений одразу з індексом (autoIndex/BTreeIndex)
 
 Не гадати причину — залогувати ПОВНИЙ `ctx.meta?.loadSubsetOptions` кожного
 виклику `queryFn` (`limit`, `offset`, `cursor`, `where`) і фактичні id у
@@ -572,14 +572,14 @@ offset бібліотека передає завжди (`subscription.ts`: `off
 `useLiveQuery` зі зростаючим `.limit(n)` — перевірено, працює, але перечитує
 вже завантажені рядки), не локальне рішення.
 
-- [ ] **Step 7: Точка зупинки**
+- [ ] **Step 7: Точка зупинки** — точка зупинки не активувалась — усі кейси (1)–(4) Step 4 зелені без Steps 5–6
 
 Якщо після Steps 5–6 будь-який з (1)–(4) червоний — **СТОП**: звіт власнику
 з фактичною поведінкою і посиланням на рядок src бібліотеки. Tasks 5–10
 будуються на цих припущеннях; далі йти не можна. Tasks 1–4 (серверний шар)
 від цього не залежать і можуть іти паралельно.
 
-- [ ] **Step 8: Гейт і коміт**
+- [x] **Step 8: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin-data
@@ -607,7 +607,7 @@ git commit -m "test(k3-e3): контракт on-demand і toSubsetPayload — of
   - `defineAdminResource(config)` — нова опція `touch?: ColumnName<T>`; `list()` дописує `id asc`
   - `buildResourceSchemas(table, writable)` → `{ rowSchema, insertSchema, updateSchema, removeSchema }` — `impl/resource-schemas.ts`
 
-- [ ] **Step 1: Перенести файли без зміни вмісту**
+- [x] **Step 1: Перенести файли без зміни вмісту**
 
 ```bash
 cd packages/simplycms/src/admin-server/impl
@@ -643,7 +643,7 @@ git add -A packages/simplycms/src/admin-server
 git commit -m "refactor(k3-e3): розкладка admin-server/impl по сутностях (амендмент К3-9′)"
 ```
 
-- [ ] **Step 2: Тест `runAdmin` і конфліктів (червоний)**
+- [x] **Step 2: Тест `runAdmin` і конфліктів (червоний)**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/__tests__/run.test.ts
@@ -727,7 +727,7 @@ describe('runAdmin', () => {
 Run: `pnpm test -- packages/simplycms/src/admin-server/impl/__tests__/run.test.ts`
 Expected: FAIL — модулів `../run`, `../errors` немає.
 
-- [ ] **Step 3: Реалізувати `errors.ts` і `run.ts`**
+- [x] **Step 3: Реалізувати `errors.ts` і `run.ts`**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/errors.ts
@@ -818,7 +818,7 @@ export async function runAdmin<Out>(
 Run: `pnpm test -- packages/simplycms/src/admin-server/impl/__tests__/run.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Розвантажити `resource.ts` — схеми в `resource-schemas.ts`**
+- [x] **Step 4: Розвантажити `resource.ts` — схеми в `resource-schemas.ts`**
 
 Перенести в `resource-schemas.ts` ДОСЛІВНО (разом із коментарями-хвостами
 рев'ю про `SafePick`/`.pick()` — вони пояснюють причину касту й мусять
@@ -849,7 +849,7 @@ export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
 `expectTypeOf`-тести `resource.test.ts` (регресія `.pick()`) мусять лишитись
 зеленими без правок — це і є доказ, що перенос не зламав статичні типи.
 
-- [ ] **Step 5: `resource.ts` — `runAdmin`, `touch`, тай-брейкер (тести спершу)**
+- [x] **Step 5: `resource.ts` — `runAdmin`, `touch`, тай-брейкер (тести спершу)**
 
 Додати в `resource.test.ts` (мок `withActor` уже є; `db`-фейк фіксує виклики):
 
@@ -951,7 +951,7 @@ Run: `pnpm test -- packages/simplycms/src/admin-server && pnpm test:schema -- pa
 Expected: PASS; `resource.ts` ≤ 150 рядків без коментарів-хвостів
 (`wc -l` — орієнтир; хвости переїхали в `resource-schemas.ts`).
 
-- [ ] **Step 6: Іменовані операції order-statuses — на `runAdmin`**
+- [x] **Step 6: Іменовані операції order-statuses — на `runAdmin`**
 
 У трьох файлах `order-statuses/{set-default,reorder,remove}.ts` замінити
 
@@ -976,7 +976,7 @@ Run: `rg -n "requireGrant|withActor" packages/simplycms/src/admin-server/impl --
 Expected: рівно `run.ts` (і `media/operations.ts`, якщо його склейка інша —
 тоді коментар у файлі чому; перевірити `rg -n -A3 requireGrant` до заміни).
 
-- [ ] **Step 6а: `isNull` у серверному subset (дзеркало Task 0)**
+- [x] **Step 6а: `isNull` у серверному subset (дзеркало Task 0)**
 
 Тест у `impl/__tests__/subset.test.ts` (спершу, червоний):
 
@@ -1003,7 +1003,7 @@ it('isNull з непорожнім value — 400 на межі (схема)', ()
 (імпорт `isNull` з `drizzle-orm`); коментар модуля «Оператори — рівно ті…»
 доповнити `isNull` з причиною (ціни/залишки рівня товару).
 
-- [ ] **Step 7: Гейт і коміт**
+- [x] **Step 7: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin-server
@@ -1029,7 +1029,7 @@ git commit -m "feat(k3-e3): runAdmin — одна склейка grant/scope/wit
   - `setTargetStatus(db: ActorDb, target: StockTarget, next: 'in_stock' | 'out_of_stock'): Promise<void>` — без змін
   - `syncStatusWithQuantity(db: ActorDb, target: StockTarget, total: number): Promise<void>` — нове: `total > 0 ? setTargetStatus(…,'in_stock') : setTargetStatus(…,'out_of_stock')`
 
-- [ ] **Step 1: Перенести модуль і тип**
+- [x] **Step 1: Перенести модуль і тип**
 
 ```bash
 mkdir -p packages/simplycms/src/inventory
@@ -1043,7 +1043,7 @@ git mv packages/simplycms/src/storefront/loaders/stock-status.ts packages/simply
 `import type { StockTarget } from 'simplycms/inventory'` і реекспорт типу,
 якщо його імпортують інші модулі вітрини: `rg -n "StockTarget" packages/simplycms/src`).
 
-- [ ] **Step 2: Тест `syncStatusWithQuantity` (червоний)**
+- [x] **Step 2: Тест `syncStatusWithQuantity` (червоний)**
 
 ```ts
 // packages/simplycms/src/inventory/__tests__/quantity-status.test.ts
@@ -1074,7 +1074,7 @@ describe('syncStatusWithQuantity (Е3-3)', () => {
 
 Run: `pnpm test -- packages/simplycms/src/inventory` → FAIL (модуля немає).
 
-- [ ] **Step 3: Реалізувати**
+- [x] **Step 3: Реалізувати**
 
 ```ts
 // packages/simplycms/src/inventory/quantity-status.ts
@@ -1122,7 +1122,7 @@ export type { LockedStockRow } from './locked-stock';
 
 Run: `pnpm test -- packages/simplycms/src/inventory` → PASS.
 
-- [ ] **Step 4: Межа — декларація, exports, тір-зона**
+- [x] **Step 4: Межа — декларація, exports, тір-зона**
 
 `contracts/server-only.ts` — у `SERVER_ONLY` після `'storage'`:
 
@@ -1164,7 +1164,7 @@ Storefront-імпорти: `from './stock-status'` → `from 'simplycms/inventor
 (рядок — повідомлення guard-а `syncStatusWithQuantity`, Step 3: літерал
 доживає до `dist` дослівно, на відміну від імен.)
 
-- [ ] **Step 5: Негативний контроль тір-зони**
+- [x] **Step 5: Негативний контроль тір-зони** (негативний контроль — табличний запис у tests/tier-boundary/zones.ts, не окремий кейс-приклад)
 
 У `tests/tier-boundary.test.ts` додати кейс за зразком наявних: файл у
 `packages/simplycms/src/inventory/` з `import x from 'simplycms/storefront/loaders'`
@@ -1173,7 +1173,7 @@ Storefront-імпорти: `from './stock-status'` → `from 'simplycms/inventor
 Run: `pnpm test -- tests/tier-boundary.test.ts` → PASS (новий кейс червонить
 саме на заборону, перевірити, прибравши `['db']` з винятку — має впасти й позитив).
 
-- [ ] **Step 6: Регрес вітрини і межі**
+- [x] **Step 6: Регрес вітрини і межі**
 
 ```bash
 pnpm lint && pnpm test && pnpm test:schema
@@ -1185,7 +1185,7 @@ Expected: усе зелене; `dist/inventory/index.js` є у СЕРВЕРНІ�
 (tsdown групує за `contracts/server-only` — перевірити
 `tests/dist-server-boundary.test.ts` зеленим).
 
-- [ ] **Step 7: Коміт**
+- [x] **Step 7: Коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/inventory packages/simplycms/src/storefront/loaders eslint.tier-zones.mjs tests/tier-boundary.test.ts
@@ -1226,7 +1226,7 @@ git commit -m "feat(k3-e3): simplycms/inventory — одна копія гвар
   `listSections`, `listPriceTypes`, `listSectionPropertyAssignments`, `listSectionProperties`, `listPropertyOptions`
   — кожен приймає `{ data }` за схемою відповідного `ops.*Schema`
 
-- [ ] **Step 1: Харнес-тест ресурсів (червоний)**
+- [x] **Step 1: Харнес-тест ресурсів (червоний)**
 
 Шапка файла — ДОСЛІВНО з `admin-order-statuses.test.ts` (рядки 1–75:
 імпорти `apply.mjs`/`up.mjs`, `canonFiles()`, `beforeAll` з `createTempDatabase`
@@ -1380,7 +1380,7 @@ DEFAULT); якщо insert падає `23502` — дописати відсутн
 Run: `pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/admin-catalog.test.ts`
 Expected: FAIL — `productsOps` не експортується.
 
-- [ ] **Step 2: Ресурси запису**
+- [x] **Step 2: Ресурси запису**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/products/resource.ts
@@ -1522,7 +1522,7 @@ export const modificationPropertyValuesOps = defineAdminResource({
 унікальність на `(власник, property_id, option_id) NULLS NOT DISTINCT`.
 Коментар у цьому ресурсі — посилання на Е3-13, не на CSV.
 
-- [ ] **Step 3: Ресурси на читання**
+- [x] **Step 3: Ресурси на читання**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/catalog-read/resources.ts
@@ -1612,7 +1612,7 @@ export const propertyOptionsReadOps = defineAdminResource({
 });
 ```
 
-- [ ] **Step 4: Реекспорт нутрощів**
+- [x] **Step 4: Реекспорт нутрощів**
 
 У `impl/index.ts` дописати (живі експорти лише в `impl`, не в стабі):
 
@@ -1635,7 +1635,7 @@ export {
 export { AdminConflictError } from './errors';
 ```
 
-- [ ] **Step 5: Топ-рівневі serverFn**
+- [x] **Step 5: Топ-рівневі serverFn**
 
 У `admin-server/index.ts` — за зразком order-statuses, кожен окремим
 топ-рівневим `const` (гейт `server-fn-top-level` червонить на будь-яку
@@ -1670,14 +1670,14 @@ export const removeProducts = createServerFn({ method: 'POST' })
 `dist/admin-server/index`). Коментар на початку файла — з цим
 обґрунтуванням.
 
-- [ ] **Step 6: Typecheck exhaustiveness (має бути ЗЕЛЕНИМ одразу)**
+- [x] **Step 6: Typecheck exhaustiveness (має бути ЗЕЛЕНИМ одразу)**
 
 Run: `pnpm typecheck`
 Expected: PASS. Помилка з `__missingColumns`/`__overlappingColumns` означає,
 що список колонок у плані розійшовся зі `schema.ts` — виправити СПИСОК за
 схемою (це припущення плану), не послаблювати тип.
 
-- [ ] **Step 7: Харнес зелений, гейт, коміт**
+- [x] **Step 7: Харнес зелений, гейт, коміт**
 
 ```bash
 pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/admin-catalog.test.ts
@@ -1707,7 +1707,7 @@ git commit -m "feat(k3-e3): ресурси каталогу on-demand і serverF
   - `saveStockInput`; `saveStockOp → Promise<{ rows: StockByPickupPoint[]; target: Product | ProductModification }>`
   - serverFn: `setDefaultProductModification`, `reorderProductModification`, `saveProductPrices`, `saveStock`
 
-- [ ] **Step 1: Харнес-тести операцій (червоні)**
+- [x] **Step 1: Харнес-тести операцій (червоні)**
 
 Шапка — як у Task 3 (свій `randomDbName('simplycms_admin_catalog_ops')`,
 мок `requireGrant` і `setResponseStatus`). Фікстури — привілейованим SQL:
@@ -1891,7 +1891,7 @@ DEFAULT); дописати, якщо insert падає `23502`.
 Run: `pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/admin-catalog-ops.test.ts`
 Expected: FAIL — операцій немає.
 
-- [ ] **Step 1а: Серіалізація за ціллю — `lockCatalogTarget`**
+- [x] **Step 1а: Серіалізація за ціллю — `lockCatalogTarget`**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/catalog-lock.ts
@@ -1924,7 +1924,7 @@ export async function lockCatalogTarget(db: ActorDb, key: string): Promise<void>
 відкликає `EXECUTE` у `PUBLIC` — це падіння `42501` у харнесі, і тоді
 питання до власника, а не локальний грант).
 
-- [ ] **Step 2: Дефолт і порядок модифікацій**
+- [x] **Step 2: Дефолт і порядок модифікацій**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/product-modifications/set-default.ts
@@ -2015,7 +2015,7 @@ export const setDefaultModificationOp = async ({
 два рядки з `sort_order = 0` → reorder повертає `[]`, і в коментарі до
 операції — що нормалізацію порядку дає Task 8 (новий рядок отримує max+1).
 
-- [ ] **Step 3: Набір цін**
+- [x] **Step 3: Набір цін**
 
 🔴 `packages/simplycms/src/domain/money.ts` УЖЕ ІСНУЄ (`formatPrice`,
 `FormatPriceOptions`, `CURRENCY_SYMBOLS` — ~17 споживачів у вітрині, кошику,
@@ -2119,7 +2119,7 @@ export const saveProductPricesOp = async ({
   });
 ```
 
-- [ ] **Step 4: Залишки з гвардом статусу**
+- [x] **Step 4: Залишки з гвардом статусу**
 
 ```ts
 // packages/simplycms/src/admin-server/impl/stock/save.ts
@@ -2223,7 +2223,7 @@ lockCatalogTarget» → червоне (для mod-default:, prices:, stock:).
 `insert … values({ ...target })` для товару кладе `modificationId: null` —
 відповідає частковому індексу `unique_stock_product_per_point`.
 
-- [ ] **Step 5: Експорти і serverFn**
+- [x] **Step 5: Експорти і serverFn**
 
 `impl/index.ts`:
 
@@ -2242,7 +2242,7 @@ export { saveStockInput, saveStockOp } from './stock/save';
 лише після Task 2 (upward-виняток `admin-server`). `simplycms/domain/money` —
 T1, легально завжди.
 
-- [ ] **Step 6: Зелений харнес, гейт, коміт**
+- [x] **Step 6: Зелений харнес, гейт, коміт**
 
 ```bash
 pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/admin-catalog-ops.test.ts
@@ -2274,7 +2274,7 @@ git commit -m "feat(k3-e3): іменовані операції каталогу
 - Consumes: serverFn з Tasks 3–4; `toSubsetPayload` (Task 0); типи рядків `Product`, `ProductModification`, `ProductPrice`, `StockByPickupPoint`, `ProductPropertyValue`, `ModificationPropertyValue`, `Section`, `PriceType`, `SectionPropertyAssignment`, `SectionProperty`, `PropertyOption` (`import type` з `simplycms/schema/types`)
 - Produces (з `simplycms/admin-data`): `productsCollection`, `productModificationsCollection`, `productPricesCollection`, `stockCollection`, `productPropertyValuesCollection`, `modificationPropertyValuesCollection`, `sectionsCollection`, `priceTypesCollection`, `sectionPropertyAssignmentsCollection`, `sectionPropertiesCollection`, `propertyOptionsCollection` — кожна `CollectionDef<…>` для `useCollection`/`getCollection`; плюс `persistenceHandlers`
 
-- [ ] **Step 0: Розвести ключі вітрини й колекцій (Е3-15) — ДО першої нової колекції**
+- [x] **Step 0: Розвести ключі вітрини й колекцій (Е3-15) — ДО першої нової колекції**
 
 1. `entityKey` отримує `variant()` (перенесено сюди з Task 11 — він потрібен
    раніше):
@@ -2313,7 +2313,7 @@ Run: `pnpm lint && pnpm test` → зелені.
 у колекціях; вхід `images` на сервері перевіряє `refine` ресурсу
 (`z.array(z.string())`), тож клієнтський draft з іншою формою відбивається 400.
 
-- [ ] **Step 1: Тест спільних хендлерів (червоний)**
+- [x] **Step 1: Тест спільних хендлерів (червоний)**
 
 Перенести в `handlers.test.ts` три кейси з `order-statuses-collection.test.ts`
 (batch-insert одним викликом; write-back КОЖНОГО рядка; fail-loud на
@@ -2371,7 +2371,7 @@ describe('persistenceHandlers', () => {
 
 Run: `pnpm test -- packages/simplycms/src/admin-data/__tests__/handlers.test.ts` → FAIL.
 
-- [ ] **Step 2: `persistenceHandlers`**
+- [x] **Step 2: `persistenceHandlers`**
 
 ```ts
 // packages/simplycms/src/admin-data/handlers.ts
@@ -2467,7 +2467,7 @@ export function persistenceHandlers<Row extends { id: string }>(
 
 Run: `pnpm test -- packages/simplycms/src/admin-data tests/handler-canon.test.ts` → PASS.
 
-- [ ] **Step 3: On-demand колекції (форма — одна на всі шість)**
+- [x] **Step 3: On-demand колекції (форма — одна на всі шість)**
 
 ```ts
 // packages/simplycms/src/admin-data/collections/products.ts
@@ -2542,7 +2542,7 @@ export const productsCollection: CollectionDef<ProductsCollection> = {
 🔴 Колекція без хендлерів (ціни, залишки) на `collection.insert` кидає —
 це й потрібно: запис тільки іменованою операцією.
 
-- [ ] **Step 4: Колекції на читання**
+- [x] **Step 4: Колекції на читання**
 
 Той самий шаблон без `persistenceHandlers`:
 
@@ -2561,7 +2561,7 @@ export const productsCollection: CollectionDef<ProductsCollection> = {
 `admin-data/index.ts` — експортувати всі одинадцять `…Collection` і типи
 `…Collection`-ів (як для order-statuses) плюс `persistenceHandlers`.
 
-- [ ] **Step 5: Тест колекцій каталогу**
+- [x] **Step 5: Тест колекцій каталогу**
 
 `catalog-collections.test.ts` — мок `simplycms/admin-server` (через
 `vi.hoisted`, як у `order-statuses-collection.test.ts`) і три кейси:
@@ -2602,7 +2602,7 @@ it('sections: eager — preload тягне listSections({ data: {} }) один �
 
 Run: `pnpm test -- packages/simplycms/src/admin-data` → PASS.
 
-- [ ] **Step 6: Гейт і коміт**
+- [x] **Step 6: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin-data
@@ -2651,7 +2651,7 @@ git commit -m "feat(k3-e3): колекції каталогу — on-demand то
 - Consumes: `productsCollection`, `sectionsCollection` (Task 5)
 - Produces: `adminErrorKey(error: unknown): MessageKey | null` (`simplycms/admin/lib/admin-error`) — вживають Tasks 7–10; `default export ProductsPage`
 
-- [ ] **Step 1: Звірити сигнатуру `useLiveInfiniteQuery`**
+- [x] **Step 1: Звірити сигнатуру `useLiveInfiniteQuery`**
 
 ```bash
 sed -n 1,80p node_modules/.pnpm/@tanstack+react-db@0.3.6*/node_modules/@tanstack/react-db/src/useLiveInfiniteQuery.ts | rg -n "export function|deps|pageSize"
@@ -2661,7 +2661,7 @@ sed -n 1,80p node_modules/.pnpm/@tanstack+react-db@0.3.6*/node_modules/@tanstack
 `ProductsTable` отримує `key={filtersKey}` від сторінки (перемонтування
 перебудовує запит); вибір зафіксувати коментарем у `useProductsList`.
 
-- [ ] **Step 2: `adminErrorKey` (тест спершу)**
+- [x] **Step 2: `adminErrorKey` (тест спершу)**
 
 ```ts
 // packages/simplycms/src/admin/lib/__tests__/admin-error.test.ts
@@ -2729,7 +2729,7 @@ export function adminErrorKey(error: unknown): MessageKey | null {
 exists», «The record is in use (e.g. in orders) — deactivate it instead of
 deleting».)
 
-- [ ] **Step 3: `useProductsList`**
+- [x] **Step 3: `useProductsList`**
 
 ```ts
 // packages/simplycms/src/admin/features/products/list/useProductsList.ts
@@ -2783,7 +2783,7 @@ export function useProductsList(filters: ProductFilters) {
 
 (Третій аргумент — за результатом Step 1.)
 
-- [ ] **Step 4: Компоненти сторінки**
+- [x] **Step 4: Компоненти сторінки**
 
 - `ProductsFilters.tsx` — три `Select` (розділ із `useLiveQuery` над
   `sectionsCollection`, «Усі/Активні/Неактивні», «Усі/В наявності/Немає/Під
@@ -2818,7 +2818,7 @@ export function useProductsList(filters: ProductFilters) {
   `.stock`, `admin.products.filters.all`, `admin.products.filters.activeOnly`,
   `admin.products.filters.inactiveOnly`.
 
-- [ ] **Step 5: Роут**
+- [x] **Step 5: Роут**
 
 ```tsx
 // packages/simplycms/routes/admin/admin/products/index.tsx
@@ -2852,7 +2852,7 @@ parity-тести пакування). Роут імпортує `simplycms/admi
 реекспортувати з `admin/pages/Products.tsx` однорядковим `export { default } from '../features/products/list/ProductsPage';`.
 Форма запису — за наявним патерном, не новою exports-гілкою.
 
-- [ ] **Step 6: Тест сторінки**
+- [x] **Step 6: Тест сторінки**
 
 `ProductsPage.test.tsx` — мок `simplycms/admin-server` (`listProducts`,
 `listSections`, `removeProducts`) через `vi.hoisted`, рендер у
@@ -2872,7 +2872,7 @@ parity-тести пакування). Роут імпортує `simplycms/admi
 Run: `pnpm test -- packages/simplycms/src/admin/features/products/list packages/simplycms/src/admin/lib`
 Expected: PASS.
 
-- [ ] **Step 7: Гейт і коміт**
+- [x] **Step 7: Гейт і коміт** (легасі-сторінка лишилась однорядковим реекспортом — рішення Step 5, не git rm)
 
 ```bash
 git rm packages/simplycms/src/admin/pages/Products.tsx   # якщо не лишився реекспортом (Step 5)
@@ -2909,7 +2909,7 @@ git commit -m "feat(k3-e3): список товарів на on-demand коле�
   - `toProductPatch(values: ProductFormValues): Partial<Product>` — з правилом «товар із модифікаціями не має власних sku/stockStatus»
   - `ProductEditPage({ productId })` — рендерить панелі Tasks 8–10 через пропси `productId`, `sectionId`, `hasModifications`
 
-- [ ] **Step 1: Схема форми і перетворення (тест спершу)**
+- [x] **Step 1: Схема форми і перетворення (тест спершу)** (виконано у формі амендменту Е3-17/Е3-18 — див. примітку на початку Task 7)
 
 ```ts
 // packages/simplycms/src/admin/features/products/edit/__tests__/product-form-schema.test.ts
@@ -3020,7 +3020,7 @@ update їх не затирає.
 
 Run: `pnpm test -- packages/simplycms/src/admin/features/products/edit/__tests__/product-form-schema.test.ts` → PASS.
 
-- [ ] **Step 2: `useProductSave`**
+- [x] **Step 2: `useProductSave`**
 
 ```ts
 // packages/simplycms/src/admin/features/products/edit/useProductSave.ts
@@ -3091,7 +3091,7 @@ uuid і `slug` з форми, після успіху — navigate на `$produc
 navigate НЕ викликано; (в) update кличе `updateProducts` з
 `[{ id, patch }]`, де `patch.sku === null` при `hasModifications: true`.
 
-- [ ] **Step 3: Сторінки й форма**
+- [x] **Step 3: Сторінки й форма**
 
 - `ProductForm.tsx` — `react-hook-form` + `zodResolver(productFormSchema)`
   (як `SetPasswordForm`), композиція `ProductMainFields` (назва `#product-name`,
@@ -3156,7 +3156,7 @@ not-found (+ тест).
 `admin.products.metaDescription`, `admin.products.slugHint` (латиниця,
 цифри, дефіс).
 
-- [ ] **Step 4: Гейт і коміт**
+- [x] **Step 4: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin packages/simplycms/routes/admin packages/simplycms/src/i18n
@@ -3191,7 +3191,7 @@ git commit -m "feat(k3-e3): картка товару на колекції — 
 - Consumes: колекції `productModificationsCollection`, `productPricesCollection`, `stockCollection`, `priceTypesCollection`, `productsCollection`; serverFn `setDefaultProductModification`, `reorderProductModification`, `saveProductPrices`, `saveStock`; `normalizeMoneyInput`, `isMoney` з `simplycms/domain/money`
 - Produces: `ModificationsPanel({ productId, sectionId })`, `PricesEditor({ productId, modificationId })`, `StockEditor({ productId, modificationId })`, `SimpleProductPanel({ productId, sku, stockStatus, onSkuChange, onStockStatusChange })`
 
-- [ ] **Step 1: `usePrices` (тест спершу)**
+- [x] **Step 1: `usePrices` (тест спершу)**
 
 Тест (мок `saveProductPrices`, колекції через `getCollection(qc, …)` з
 моками list): (а) Review Focus 4: вхід `{ [retail]: '1 234,50', [wholesale]: '' }`
@@ -3268,7 +3268,7 @@ export function usePrices(productId: string, modificationId: string | null) {
 бордер + `admin.products.prices.invalid` («Некоректна ціна» / «Invalid price»),
 новий ключ.
 
-- [ ] **Step 2: `useStock` (тест спершу)**
+- [x] **Step 2: `useStock` (тест спершу)**
 
 Тест: (а) `saveStock` отримує `quantities` по всіх активних точках
 (кількість з інпутів, порожнє = 0); (б) після відповіді `{ rows, target }`
@@ -3308,7 +3308,7 @@ export function usePrices(productId: string, modificationId: string | null) {
 кілька → таблиця з `#stock-quantity-<pickupPointId>`), `showCard` — як у
 легасі.
 
-- [ ] **Step 3: Модифікації**
+- [x] **Step 3: Модифікації** (виконано у формі амендменту Е3-18 — форми/панелі поза <form>, ModificationStatusControl)
 
 `useModifications(productId)`:
 
@@ -3383,7 +3383,7 @@ export function usePrices(productId: string, modificationId: string | null) {
 `SimpleProductPanel.tsx` — композиція як легасі `SimpleProductFields.tsx`
 (`PricesEditor` з `modificationId={null}`, `StockStatusSelect`, `StockEditor`).
 
-- [ ] **Step 4: Підключити панелі в `ProductEditPage`, видалити легасі**
+- [x] **Step 4: Підключити панелі в `ProductEditPage`, видалити легасі**
 
 ```bash
 git mv packages/simplycms/src/admin/components/StockStatusSelect.tsx packages/simplycms/src/admin/features/products/stock/StockStatusSelect.tsx
@@ -3394,7 +3394,7 @@ rg -n "components/(ProductModifications|ProductPricesEditor|StockByPointManager|
 Expected: `rg` порожній (єдиний споживач легасі був `ProductEdit`, звіт
 інвентаризації); інакше — перевести знайденого споживача на нові шляхи.
 
-- [ ] **Step 5: Гейт і коміт**
+- [x] **Step 5: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin packages/simplycms/src/i18n
@@ -3416,7 +3416,7 @@ git commit -m "feat(k3-e3): модифікації, ціни й залишки �
 **Interfaces:**
 - Produces: обмеження `product_property_values_owner_property_option_key` = `UNIQUE NULLS NOT DISTINCT (product_id, property_id, option_id)`, `modification_property_values_owner_property_option_key` = `UNIQUE NULLS NOT DISTINCT (modification_id, property_id, option_id)`; `mergePropertyValues(productRows, modRows): ProductPropertyValueViewModel[]`
 
-- [ ] **Step 1: Харнес-тест інваріанта (червоний)**
+- [x] **Step 1: Харнес-тест інваріанта (червоний)**
 
 ```ts
 // шапка — як admin-catalog.test.ts (канон, app_runtime не потрібен: тест
@@ -3443,7 +3443,7 @@ describe('multiselect: рядок на опцію (Е3-13)', () => {
 Run: `pnpm test:schema -- packages/simplycms/test-harness/pg/__tests__/property-values-multiselect.test.ts`
 Expected: FAIL (друга опція multiselect падає на старому ключі).
 
-- [ ] **Step 2: Правка чотирьох джерел**
+- [x] **Step 2: Правка чотирьох джерел**
 
 `0001_init.sql` і `drizzle/0000_init.sql` (рядки обмежень — за текстом
 `CONSTRAINT "product_property_values_product_id_property_id_key"` і
@@ -3477,7 +3477,7 @@ DISTINCT тримає скалярну властивість в одному р
 🔴 `NULLS NOT DISTINCT` — Postgres 15+. Гейт перевіряє `[16, 17]`
 (борг К1а-1) — підтримка є в обох.
 
-- [ ] **Step 3: Вітрина — злиття рядків однієї властивості (тест спершу)**
+- [x] **Step 3: Вітрина — злиття рядків однієї властивості (тест спершу)**
 
 ```ts
 // packages/simplycms/src/storefront-routes/pages/product-detail/__tests__/merge-property-values.test.ts
@@ -3558,7 +3558,7 @@ export function mergePropertyValues(
 (`pnpm test:schema` — її лоадери мають власні тести) і нічого не міняти,
 якщо зелене.
 
-- [ ] **Step 4: Синк шаблону, гейт, коміт**
+- [x] **Step 4: Синк шаблону, гейт, коміт**
 
 ```bash
 pnpm template:sync
@@ -3592,7 +3592,7 @@ git commit -m "feat(k3-e3): multiselect — рядок на опцію (прав
 - легасі `ProductPropertyValues` для товару з модифікаціями = `target='product', appliesTo='product'`;
 - для модифікації = `target='modification', appliesTo='modification'`.
 
-- [ ] **Step 1: `usePropertySchema` — два запити, без join on-demand × on-demand**
+- [x] **Step 1: `usePropertySchema` — два запити, без join on-demand × on-demand**
 
 ```ts
   const { data: assignments } = useLiveQuery(
@@ -3633,7 +3633,7 @@ git commit -m "feat(k3-e3): multiselect — рядок на опцію (прав
 (простий товар) показується з бейджем `admin.properties.appliesTo.modification`,
 як у легасі.
 
-- [ ] **Step 2: `usePropertyValues` — автозбереження (Е3-11) з рядком на опцію (Е3-13)**
+- [x] **Step 2: `usePropertyValues` — автозбереження (Е3-11) з рядком на опцію (Е3-13)** (виконано у формі амендменту Е3-19 — blur/Enter, useDraftField, useKeyedQueue)
 
 ```ts
   // Скалярні типи (text/number/range/boolean/color/select): рівно один рядок.
@@ -3678,7 +3678,7 @@ git commit -m "feat(k3-e3): multiselect — рядок на опцію (прав
 рядка A; (в) скаляр: порожнє значення при наявному рядку → delete;
 (г) перше значення скаляра → insert з клієнтським uuid.
 
-- [ ] **Step 3: Компоненти, підключення, видалення легасі**
+- [x] **Step 3: Компоненти, підключення, видалення легасі**
 
 `PropertyInput.tsx` — перемикач по `propertyType` з легасі
 `ProductPropertyValues.tsx:323-449` (text/number/range/select/multiselect/
@@ -3694,7 +3694,7 @@ git rm packages/simplycms/src/admin/components/{ProductPropertyValues,AllProduct
 rg -n "components/(ProductPropertyValues|AllProductProperties)" packages   # порожньо
 ```
 
-- [ ] **Step 4: Гейт і коміт**
+- [x] **Step 4: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages/simplycms/src/admin
@@ -3718,7 +3718,7 @@ git commit -m "feat(k3-e3): значення властивостей на ко�
 **Interfaces:**
 - Consumes: `entityKey(e).variant(qualifier: string, id?: string)` — створено в Task 5 Step 0 (Е3-15)
 
-- [ ] **Step 1: Мігрувати не-FK кваліфікатори на `variant()` (сам `variant()` уже додав Task 5 Step 0)**
+- [x] **Step 1: Мігрувати не-FK кваліфікатори на `variant()` (сам `variant()` уже додав Task 5 Step 0)**
 
 Тест нижче — уже в Task 5 Step 0; тут лише перевірити, що він є, і мігрувати
 вживання. Форма `variant` — з Task 5 Step 0 (id опційний), не з сніпета нижче.
@@ -3749,7 +3749,7 @@ it('variant не перетинається з FK-зрізом тієї само
 ключів (`rg -n "'numeric'|'overview'" packages/simplycms/src`) — оновити
 в тому ж коміті.
 
-- [ ] **Step 2: Зона правила ключів на тему й плагін (№8)**
+- [x] **Step 2: Зона правила ключів на тему й плагін (№8)**
 
 У блок `query-key-from-entity` в `eslint.config.mjs` додати
 `packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}` і
@@ -3770,14 +3770,14 @@ Run: `pnpm lint` → очікувано ЧЕРВОНИЙ на `Header.tsx` (`['s
 `plugin.<name>` через наявний порт `usePluginTable`, якщо він сам формує
 ключ; якщо офендерів немає — зона просто фіксує стан).
 
-- [ ] **Step 3: Борг №4 — задокументувати, не кодувати**
+- [x] **Step 3: Борг №4 — задокументувати, не кодувати**
 
 У `docs/tasks/platform-roadmap.md` у пункті Е3: «№4 (`detail()` slug vs
 uuid) — адмінка `detail()` не вживає (колекції ключуються `list()` +
 demand-суфікс бібліотеки), тож на Е3 не проявився; борг належить К2
 (вітрина ключує картку за slug)». Коміт разом із Task 13-доками або тут.
 
-- [ ] **Step 4: Гейт і коміт**
+- [x] **Step 4: Гейт і коміт**
 
 ```bash
 pnpm exec prettier --write packages eslint.config.mjs
@@ -3794,7 +3794,7 @@ git commit -m "fix(k3-e3): борги ключів Е1а — variant() для н
 - Modify: `tests/admin-inserts-need-id.test.ts` (`KNOWN_WITHOUT_ID`)
 - Modify: `docs/architecture/test-contours.md`
 
-- [ ] **Step 1: Зона правила на фічі**
+- [x] **Step 1: Зона правила на фічі**
 
 Додати `packages/simplycms/src/admin/features/**/*.{ts,tsx}` у `files`
 блоку `simplycms-cache-sync` поруч із `MUTATION_CACHE_SYNC_RATCHET`
@@ -3807,13 +3807,13 @@ Run: `pnpm lint` → має бути ЗЕЛЕНИМ одразу: Tasks 6–10 �
 для оптимістичних шляхів). Червоне = місце, де синк забуто, — виправити
 КОД (додати write-back), не виключати файл.
 
-- [ ] **Step 2: Негативний контроль зони**
+- [x] **Step 2: Негативний контроль зони**
 
 Тимчасово в `usePrices.ts` прибрати блок `prices.utils.writeBatch(...)` →
 `pnpm lint` мусить червоніти `simplycms-cache-sync/…` саме на `save`.
 Повернути. Зафіксувати вивід у DoD-звіті.
 
-- [ ] **Step 3: Гейт повноти (має бути ЗЕЛЕНИМ одразу)**
+- [x] **Step 3: Гейт повноти (має бути ЗЕЛЕНИМ одразу)**
 
 ```ts
 // tests/mutation-cache-sync-coverage.test.ts
@@ -3873,7 +3873,7 @@ describe('повнота зони mutation-cache-sync', () => {
 основним гейтом за побудовою (раніше Task 7 звузив сканер ратчету, а виїмка лишалась на весь
 `admin/` — вставка без id у фічах не червонила жоден гейт). Нижче — лише ратчет легасі.
 
-- [ ] **Step 4: Ратчет id**
+- [x] **Step 4: Ратчет id**
 
 Run: `pnpm test -- tests/admin-inserts-need-id.test.ts` — після видалення
 легасі-файлів фактичне число вставок без `id` впало (Products/ProductEdit
@@ -3882,7 +3882,7 @@ AllProductProperties, StockByPointManager). Зменшити `KNOWN_WITHOUT_ID` 
 ФАКТИЧНОГО числа, яке тест друкує (не вгадувати), з коментарем «Е3: −N
 (каталог)».
 
-- [ ] **Step 4а: Гейт парності джерел схеми (факт F2 виконання Task 9)**
+- [x] **Step 4а: Гейт парності джерел схеми (факт F2 виконання Task 9)**
 
 Автоматичної звірки `schema.ts` ↔ `drizzle/meta/0000_snapshot.json` ↔ `drizzle/0000_init.sql`
 ↔ `migrations/0001_init.sql` НЕМАЄ: `baseline.test.ts` накочує канон і перевіряє інваріанти БД,
@@ -3897,7 +3897,7 @@ AllProductProperties, StockByPointManager). Зменшити `KNOWN_WITHOUT_ID` 
 Якщо `drizzle-kit generate` у тесті потребує мережі/БД або > ~15 с — у `pnpm test:schema`, не в
 дефолтний `pnpm test` (виміряти й записати).
 
-- [ ] **Step 5: Gate C і пакування**
+- [x] **Step 5: Gate C і пакування**
 
 ```bash
 pnpm build:packages && pnpm typecheck:template && pnpm test:packaging
@@ -3908,7 +3908,7 @@ Expected: зелені. Gate C нового не потребує (`admin-server
 `inventory` під `SERVER_ONLY` — Gate C деривує `SERVER_PAYLOAD` з
 декларації); `drizzle-orm`/`pg` у клієнтських чанках — 0.
 
-- [ ] **Step 6: `test-contours.md`**
+- [x] **Step 6: `test-contours.md`**
 
 У §12 (таблиця гейтів К3) — рядок про `tests/mutation-cache-sync-coverage.test.ts`
 (що ловить, крок `pnpm test`, межа: бачить лише статичний
@@ -3916,7 +3916,7 @@ Expected: зелені. Gate C нового не потребує (`admin-server
 прибрати «ратчет ручний — повноту ніщо не перевіряє (борг Е3)»; читачі
 межі server-only — `inventory` у переліку (Task 2).
 
-- [ ] **Step 7: Коміт**
+- [x] **Step 7: Коміт**
 
 ```bash
 pnpm exec prettier --write eslint.config.mjs tests
@@ -3938,7 +3938,7 @@ git commit -m "test(k3-e3): повнота зони mutation-cache-sync, фіч�
 - Consumes: `issueOwnerInvite`, `ownerInviteStore` (`packages/simplycms/src/auth/index.ts`); id контролів з Tasks 7–8; демо-сід (`pnpm db:demo`: розділ `sonyachni-paneli`, СИСТЕМНА точка видачі, тип ціни `retail`)
 - Produces: `runAdminCatalogStep({ browser, base, dbUrl, storeEnv, check })`
 
-- [ ] **Step 0: Легасі-сторінки адмінки без Supabase env — заглушка, не падіння (рішення архітектора після хвилі C)**
+- [x] **Step 0: Легасі-сторінки адмінки без Supabase env — заглушка, не падіння (рішення архітектора після хвилі C)**
 
 Власник після входу за запрошенням потрапляє на `/admin` (Dashboard) і бачить падіння
 «[simplycms/supabase] Відсутні змінні оточення…»: ~36 легасі-сторінок `admin/pages` досі на
@@ -3951,7 +3951,7 @@ Step 4 проходить саме цим шляхом. Фікс — ОДНА т
 перепише Е4–Е6). Тест: рендер легасі-сторінки без Supabase env → заглушка, без throw;
 з env — легасі поведінка без змін. Зноситься разом із `supabase-js` у Е7.
 
-- [ ] **Step 1: Випуск запрошення поза магазином**
+- [x] **Step 1: Випуск запрошення поза магазином**
 
 ```ts
 // scripts/live-smoke/owner-invite.mts
@@ -3977,7 +3977,7 @@ process.stdout.write(JSON.stringify({ url: result.url }));
 (Імена `closeDbPool`/шлях `db/index.ts` — звірити `rg -n "export.*closeDbPool" packages/simplycms/src/db`;
 без закриття пулу процес не завершиться.)
 
-- [ ] **Step 2: Крок адміна**
+- [x] **Step 2: Крок адміна**
 
 ```js
 // scripts/live-smoke/admin-catalog.mjs
@@ -4096,14 +4096,14 @@ export async function runAdminCatalogStep({ browser, base, dbUrl, storeEnv, chec
 на вітрині віддає не 404, а 200 зі сторінкою «не знайдено» — порівнювати з
 поведінкою, яку вже фіксує гейт вітрини, і записати фактичну.
 
-- [ ] **Step 3: Підключити в оркестрацію**
+- [x] **Step 3: Підключити в оркестрацію**
 
 У `scripts/live-smoke.mjs`: після `runFunnel(...)` —
 `await runAdminCatalogStep({ browser, base, dbUrl, storeEnv: env, check })`,
 де `env` — той самий обʼєкт, яким викликано `startStore(ROOT, port, env)`.
 Коментар шапки файла — додати крок К3-Е3 у перелік.
 
-- [ ] **Step 4: Живий прогін**
+- [x] **Step 4: Живий прогін**
 
 ```bash
 PG_HARNESS_URL=postgresql://pgtest@127.0.0.1:55434/postgres pnpm live:smoke
@@ -4113,7 +4113,7 @@ Expected: `live-smoke: ЗЕЛЕНИЙ`, нові рядки `адмін: …` / 
 OK, `pageerror за весь прогін` — 0. Вивід цілком — у DoD-звіт і в
 `v2-state-map.md` новим підрозділом §2.4 (форма — як §2.3).
 
-- [ ] **Step 5: Ручний браузерний прогін того, чого смок не бачить**
+- [x] **Step 5: Ручний браузерний прогін того, чого смок не бачить**
 
 На тому ж стенді (`pnpm build && pnpm start` проти демо-БД, адмін із
 запрошення): (1) список — фільтр «Неактивні» порожній, «Показати ще» не
@@ -4126,7 +4126,7 @@ OK, `pageerror за весь прогін` — 0. Вивід цілком — у
 назву товару — оптимістична зміна відкочується з тостом. Результати — у
 DoD-звіт списком «пункт — факт».
 
-- [ ] **Step 6: Документація DoD**
+- [x] **Step 6: Документація DoD**
 
 - `docs/tasks/platform-roadmap.md` — Е3 `[x]` з підсумком (формат Е2),
   залишок файлів `src/admin/**` на `supabase-js` — ПЕРЕРАХУВАТИ
@@ -4142,7 +4142,7 @@ DoD-звіт списком «пункт — факт».
   warnings (виміряти), рядок про адмінку («жива одна сторінка» → живі
   сторінки каталогу).
 
-- [ ] **Step 7: Повний ланцюг гейтів і коміт**
+- [x] **Step 7: Повний ланцюг гейтів і коміт**
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck \
@@ -4164,6 +4164,90 @@ git commit -m "test(k3-e3): живий прогін каталогу адмін�
 6. **Повний ланцюг гейтів** + `pilot:pack` зелені; `pnpm lint` = 0 errors, warnings ≤ 10.
 7. **Нуль `useSupabaseClient`** у файлах скоупу Е3-1 (`rg -n useSupabaseClient packages/simplycms/src/admin/features` порожньо; легасі-файли видалені).
 8. **Доки** оновлені (Task 13 Step 6).
+
+### Факти виконання (2026-09-24)
+
+**Коміти етапу** (`git log --oneline 97f938aa..HEAD`, 53 коміти, стисло групами):
+
+- **Хвиля A — серверний шар** (Tasks 0–4): `90047659`, `f16b9897` (доки, знахідки аудиту) →
+  `76c25b66` (Task 0: контракт on-demand, `toSubsetPayload`) → `c8f20ed7`, `a8bdeafb` (Task 1:
+  `runAdmin`, розкладка `impl/<entity>`, конфлікти БД) → `db326ae4` (Task 2: `simplycms/inventory`)
+  → `376373da`, `8fddb82b` (фікси межі клієнта й рев'ю) → `e9952969` (Task 3: ресурси й serverFn)
+  → `01974cb0`, `692c2f5e` (типізація jsonb, валідація на вході) → `06f15f9b` (Task 4: іменовані
+  операції — дефолт/порядок модифікацій, набір цін, залишки з гвардом) → `f27134d2`, `5b7c61fc`
+  (фікси build:packages, спільне правило залишку).
+- **Хвиля B — колекції й правки за аудитом** (Task 5 + фікси m3–m6, advisory-lock):
+  `d6c702c4`, `54d9c88f` (advisory-lock, `refine` drizzle-zod) → `d795b553` (доки, підсумки
+  хвилі B) → `fbe583ff` (Е3-15: розвести ключі вітрини й колекцій) → `6c9d0ebc` (Task 5:
+  колекції каталогу on-demand і сателіти) → `3097bfc8`, `1c63cbf9` (Е3-15′: `collectionKey`
+  лише для `admin-data`, гейт на обхід).
+- **Хвиля сторінок** (Tasks 6–10): `c7f65ef9` (Task 6: список товарів) → `065014be` (Task 7:
+  картка товару) → `9105b13d` (Task 8: модифікації/ціни/залишки на колекціях) → `674198af`,
+  `37460a94`, `a2e4ddc1`, `6de79a53`, `2e42aabf`, `ef942a18`, `52d3556c`, `739c3c87`, `9dd99176`
+  (Е3-17/Е3-18: on-demand без стейл-кешу, структурний фікс форм, конфлікти на колекції, маркери
+  UPSTREAM) → `288f72c5` (доки, підсумки хвилі C) → `9a2e11ad` (Task 9: multiselect — рядок на
+  опцію, правка baseline) → `0746541b`, `96cc7ac0`, `9e8a1bda` (Task 10: значення властивостей,
+  Е3-19 — автозбереження без гонок).
+- **Хвиля гейтів і борги ключів** (Tasks 11–12): `69d540a7` (доки: Е3-19, гейт парності джерел
+  схеми) → `848d1706` (Task 11: борги ключів Е1а №6/№8) → `eed4d586` (Task 12: повнота зони
+  mutation-cache-sync, ратчет id) → `fbd666c9`, `603c83eb` (queryKey плагіна, заглушка легасі
+  без Supabase env — Task 13 Step 0).
+- **Живий прогін і контракт помилок** (Task 13): `a2509eaa` (Task 13 Step 2: крок адміна) →
+  `e502f740` (детерміновані очікування) → `836d10bb`, `abacfc16`, `014749ab`, `1d3d5a9a`
+  (T0-реєстр доменних помилок і `domainErrorAdapter`, TSDB-5 закрито) → `42e264cb` (Task 13
+  Step 4: `live:smoke` зелений, pageerror адмінки окремим лічильником) → `6c980c80`, `2d13dd73`,
+  `0c184f55` (фікси за ручним прогоном Task 13 Step 5: тип масиву плагінів без `any`, назва
+  опції картки з `option.name`, `adminErrorKey` розрізняє мережевий фейл).
+
+**`pnpm live:smoke` (HEAD `42e264cb`, зелений; після нього — точкові фікси Task 13 Step 5,
+без нового прогону всього смоку)**
+
+| Крок | Факт |
+|---|---|
+| http | 7/7 |
+| аватар (К3-Е2) | 6/6 |
+| воронка | бейдж = БД, JSON-LD, автовибір точки, orders +1, списання 5→4, повернення 4→5, підсумок = замовлення |
+| адмін | запрошення → пароль → `/admin`; товар з клієнтським id; ціна «1234,50» → `1234.50`; залишок 3 `in_stock`; `images` — референс, не URL |
+| вітрина | картка 200, ціна «1 234,5», бейдж «В наявності: 3 шт», зображення `/media`; дубль slug → тост i18n |
+| видалення | вітрина 404, рядка в БД 0 |
+| pageerror адмінки | 0 (окремий лічильник, `42e264cb`) |
+| pageerror воронки | 0 |
+
+**Ручний браузерний прогін** (Task 13 Step 5, `6c980c80`, окремий стенд): 14 PASS, 1 FAIL —
+виправлено цим же заходом.
+
+| № | Пункт | Факт |
+|---|---|---|
+| 1 | «Показати ще» не на 8 товарах | PASS |
+| 2 | «Неактивні» — порожній список | PASS |
+| 3 | дві модифікації, дефолт без reload | PASS |
+| 4 | ↑/↓ `sort_order` | PASS |
+| 5 | ціна модифікації з `modification_id` | PASS |
+| 6 | multiselect — дві опції, «А, Б» на вітрині | PASS |
+| 7 | multiselect — назва опції | FAIL → **виправлено `2d13dd73`** (картка брала `option.value`, не `option.name`) |
+| 8 | відкат при недоступному сервері з тостом | PASS (тост мережі виправлено окремо — `0c184f55`, ключ `admin.errors.network`) |
+| 9 | `/admin` без Supabase env — заглушка | PASS |
+| 10 | число «15» на blur → `15.0000` | PASS |
+| 11 | швидкий набір тексту → повне значення | PASS |
+| 12–14 | інші пункти ручного чеклиста (черга на `propertyId`, drizzle-zod, порядок id) | PASS |
+
+**Повний ланцюг гейтів** (вимірено 2026-09-24, при HEAD `0c184f55`):
+
+```
+pnpm install --frozen-lockfile          — OK (уже актуально)
+pnpm format:check                       — OK, усі файли за Prettier
+pnpm lint                                — 0 errors, 8 warnings (норма CLAUDE.md не порушена)
+pnpm build                               — OK
+pnpm typecheck                           — OK
+pnpm test                                — 224 test files passed (1515 tests)
+PG_HARNESS_URL=… pnpm test:schema        — 32 test files passed (229 tests)
+pnpm build:packages                      — OK, 16 с під кепом 3072 МБ
+pnpm typecheck:template                  — OK
+pnpm test:packaging                      — 6 test files passed (41 tests)
+pnpm pilot:pack --skip-build             — Gate A/C/D/IP/CLI/TOOL: PASS; Gate E: SKIP (знято)
+```
+
+Усі одинадцять кроків — зелені.
 
 ## Відомо, не виправлено (свідомо, записано в хвилі B)
 

@@ -703,6 +703,46 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   `SET LOCAL ROLE`, під адмінською роллю пройшов би. Fail-closed цього
   класу доводить контракт env і `pnpm test:schema`, не смок.
 
+### 11.1. К3-Е3 (каталог on-demand): новий контур і його урок
+
+`pnpm live:smoke` несе крок `runAdminCatalogStep` (Task 13): окремий browser
+context, `issueOwnerInvite` для реального флоу `/auth/invite → пароль → вхід`,
+товар зі СПРАВЖНІМ конфліктом slug (не мокований) і `pageerror` адмінки —
+**окремим лічильником** від `pageerror` воронки покупця (раніше обидва
+рахувались одним лічильником, і фейл адмінки міг замаскувати нуль у воронці,
+або навпаки).
+
+🔴 **Урок:** тест контракту помилок, що не перетинає РЕАЛЬНУ серіалізацію
+serverFn (seroval + плагіни Start), — не доказ. `AdminConflictError` несе
+`name`/`kind`/`constraint`, але `ShallowErrorPlugin` (`@tanstack/router-core`)
+серіалізує кинуту serverFn-помилку лише за `.message` — без адаптера клієнт
+отримує голий `Error`, і будь-який юніт, що руками збирає плоский обʼєкт
+`{ name: 'AdminConflictError', kind: 'unique', ... }` і перевіряє на ньому
+`adminErrorKey`, залишається зеленим НЕЗАЛЕЖНО від того, чи довозить мережа ці
+поля насправді (спіймано двома циклами рев'ю — перша версія тесту зеленіла й
+на непрацюючому коді). Доказ, що перетинає межу:
+`packages/simplycms/src/runtime/__tests__/domain-error-adapter.test.ts`
+ганяє `toCrossJSONAsync`/`fromCrossJSON` (`@tanstack/seroval`) із реальними
+плагінами Start (`makeSerovalPlugin` + `defaultSerovalPlugins`), а
+`domainErrorAdapter` (T0-реєстр `contracts/domain-errors`) реєструється в
+`src/start.ts` `serializationAdapters` ПЕРЕД `ShallowErrorPlugin` (порядок
+масиву — перший, що впізнав тип, і виграє). Після цього фіксу
+`normalizeThrown` і розгортання `.cause` в клієнтських хендлерах стали
+мертвим кодом і прибрані (`1d3d5a9a`, реєстр обходів **TSDB-5** закрито).
+
+Нові гейти етапу (крім переліку в §11): `admin-data/__tests__/on-demand-factory-only.test.ts`
+(усі on-demand-колекції — лише через `onDemandCollectionOptions`, Е3-17),
+`tests/mutation-cache-sync-coverage.test.ts` (повнота зони — рядок у §11),
+`tests/schema-sources-parity.test.ts` (парність `schema.ts` ↔
+`drizzle/meta/0000_snapshot.json` ↔ `drizzle/0000_init.sql` ↔
+`migrations/0001_init.sql`, `pnpm test:schema` — правка лише одного джерела
+червонить), `eslint-rules/no-collection-key-outside-admin-data.mjs`
+(сегмент `'list'` лише `admin-data`, Е3-15′), `bareListSegment` у
+`query-key-from-entity.mjs` (той самий інваріант — інша форма запису),
+`ADMIN_SCAN_DIRS` у `tests/admin-inserts-need-id.test.ts` звужено до
+`admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
+основним гейтом `explicit-ids` за побудовою).
+
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`

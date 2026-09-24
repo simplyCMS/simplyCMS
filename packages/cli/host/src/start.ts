@@ -47,6 +47,7 @@ const adminRequestGuard = createMiddleware().server(
   },
 );
 
+// UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
 /**
  * `serializationAdapters` (Е3-20): без нього `@tanstack/router-core`'s
  * `ShallowErrorPlugin` серіалізує доменні помилки (`AdminConflictError`,
