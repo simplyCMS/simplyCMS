@@ -93,14 +93,7 @@ export function PropertyValuesPanel({
               options={options}
               rows={rowsOf(property.id)}
               onChange={(v) => saveScalar(property.id, v)}
-              onMultiChange={(ids) =>
-                saveMulti(
-                  property.id,
-                  ids,
-                  (optionId) =>
-                    options.find((o) => o.id === optionId)?.name ?? '',
-                )
-              }
+              onMultiChange={(ids) => saveMulti(property.id, ids)}
             />
           </div>
         ))}

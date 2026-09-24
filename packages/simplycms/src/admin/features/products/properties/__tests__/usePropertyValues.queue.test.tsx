@@ -165,9 +165,9 @@ describe('usePropertyValues: серіалізація черги на propertyId
     });
     await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(0));
 
-    result.current.saveMulti('propB', ['A'], () => 'A');
-    result.current.saveMulti('propB', [], () => 'A');
-    result.current.saveMulti('propB', ['A'], () => 'A');
+    result.current.saveMulti('propB', ['A']);
+    result.current.saveMulti('propB', []);
+    result.current.saveMulti('propB', ['A']);
 
     await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(1));
     expect(insertProductPropertyValues).toHaveBeenCalledTimes(2);

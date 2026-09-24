@@ -31,8 +31,11 @@ export function mergePropertyValues(
       ? rows[0]!
       : {
           ...rows[0]!,
+          // 🔴 Назва опції — з `option.name` (живий join `property_options`),
+          // НЕ з `r.value`: останнє — застарілий кеш, а не джерело правди
+          // (Е3-13, ревізія «назва опції — одне джерело»).
           value: rows
-            .map((r) => r.value)
+            .map((r) => r.option?.name)
             .filter((v): v is string => Boolean(v))
             .join(', '),
           // 🔴 Кілька опцій — жодна не «головна»: ProductCharacteristics

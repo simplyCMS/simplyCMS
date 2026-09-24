@@ -33,7 +33,13 @@ export interface ProductPropertyValueViewModel {
   value: string | null;
   numeric_value: number | null;
   option_id: string | null;
-  option: { id: string; slug: string } | null;
+  /**
+   * Назва опції — джерело правди для відображення (Е3-13, ревізія):
+   * `product_property_values.value` для рядків з `option_id` — застарілий
+   * кеш, який розʼїжджається при перейменуванні опції, звідси й читається
+   * ЛИШЕ `option.name`, ніколи `value`.
+   */
+  option: { id: string; slug: string; name: string } | null;
   property: {
     id: string;
     name: string;

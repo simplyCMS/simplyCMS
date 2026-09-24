@@ -52,7 +52,7 @@ export function useProductContent({
         value: string | null;
         numeric_value: number | null;
         option_id: string | null;
-        property_options: { id: string; slug: string } | null;
+        property_options: { id: string; slug: string; name: string } | null;
         section_properties: {
           id: string;
           name: string;

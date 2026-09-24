@@ -143,16 +143,19 @@ describe('usePropertyValues', () => {
     });
     await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(1));
 
-    result.current.saveMulti('propB', ['A', 'B'], (id) => id);
+    result.current.saveMulti('propB', ['A', 'B']);
 
     await waitFor(() =>
       expect(insertProductPropertyValues).toHaveBeenCalledTimes(1),
     );
     const [{ data }] = insertProductPropertyValues.mock.calls[0] as [
-      { data: Array<{ optionId: string | null }> },
+      { data: Array<{ optionId: string | null; value: string | null }> },
     ];
     expect(data).toHaveLength(1);
     expect(data[0]?.optionId).toBe('B');
+    // Е3-13, ревізія: назву опції несе join `property_options`, а не
+    // `product_property_values.value` — адмінка більше не пише кеш.
+    expect(data[0]?.value).toBeNull();
     expect(removeProductPropertyValues).not.toHaveBeenCalled();
   });
 
@@ -166,7 +169,7 @@ describe('usePropertyValues', () => {
     });
     await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(2));
 
-    result.current.saveMulti('propB', ['B'], (id) => id);
+    result.current.saveMulti('propB', ['B']);
 
     await waitFor(() =>
       expect(removeProductPropertyValues).toHaveBeenCalledWith({

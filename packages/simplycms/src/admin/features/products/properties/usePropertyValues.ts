@@ -33,11 +33,17 @@ export function usePropertyValues(
     usePropertyValueTx(target, ownerId);
   const enqueue = useKeyedQueue((e) => reportTxError(t, e));
 
-  /** Скалярні типи (text/number/range/boolean/color/select): один рядок. */
+  /**
+   * Скалярні типи (text/number/range/boolean/color) і `select` (один
+   * option-рядок): один рядок. 🔴 «Порожньо» — і `value`, і `optionId`
+   * відсутні: `select` пише `value: null` завжди (Е3-13, ревізія «назва
+   * опції — одне джерело»), тож голого `v.value === null` досить було б,
+   * щоб трактувати щойно вибрану опцію як видалення рядка.
+   */
   const saveScalar = (propertyId: string, v: PropertyValueDraft) => {
     enqueue(propertyId, async () => {
       const existing = liveRowsOf(propertyId)[0];
-      const empty = v.value === null || v.value === '';
+      const empty = (v.value === null || v.value === '') && v.optionId === null;
       const tx =
         existing && empty
           ? deleteTx([existing.id])
@@ -50,12 +56,12 @@ export function usePropertyValues(
     });
   };
 
-  /** Multiselect: бажаний набір опцій → вставити відсутні, видалити зайві. */
-  const saveMulti = (
-    propertyId: string,
-    optionIds: readonly string[],
-    nameOf: (optionId: string) => string,
-  ) => {
+  /**
+   * Multiselect: бажаний набір опцій → вставити відсутні, видалити зайві.
+   * 🔴 `value` рядка не пишемо (Е3-13, ревізія): назву для відображення
+   * бере join `property_options` (`option.name`), а не кеш у `value`.
+   */
+  const saveMulti = (propertyId: string, optionIds: readonly string[]) => {
     enqueue(propertyId, async () => {
       const current = liveRowsOf(propertyId);
       const have = new Set(current.map((r) => r.optionId));
@@ -69,7 +75,7 @@ export function usePropertyValues(
       for (const optionId of toInsert)
         txs.push(
           insertTx(propertyId, {
-            value: nameOf(optionId),
+            value: null,
             numericValue: null,
             optionId,
           }),

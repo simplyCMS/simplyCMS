@@ -131,4 +131,29 @@ describe('usePropertyValues.saveScalar', () => {
     expect(updateProductPropertyValues).not.toHaveBeenCalled();
     expect(removeProductPropertyValues).not.toHaveBeenCalled();
   });
+
+  it('select: вибір опції (value NULL, optionId заданий) — insert, НЕ трактується як порожньо', async () => {
+    // Е3-13, ревізія: 'select' більше не пише назву опції в `value` —
+    // «порожньо» тепер значить «немає ні value, ні optionId», інакше щойно
+    // обрана опція виглядала б як видалення рядка.
+    const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
+      wrapper,
+    });
+    await waitFor(() => expect(result.current.rowsOf('propA')).toHaveLength(0));
+
+    result.current.saveScalar('propA', {
+      value: null,
+      numericValue: null,
+      optionId: 'o1',
+    });
+
+    await waitFor(() =>
+      expect(insertProductPropertyValues).toHaveBeenCalledTimes(1),
+    );
+    const [{ data }] = insertProductPropertyValues.mock.calls[0] as [
+      { data: Array<{ optionId: string | null }> },
+    ];
+    expect(data[0]?.optionId).toBe('o1');
+    expect(removeProductPropertyValues).not.toHaveBeenCalled();
+  });
 });

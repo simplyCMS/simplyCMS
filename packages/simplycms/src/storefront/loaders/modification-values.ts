@@ -62,7 +62,11 @@ export async function loadProductModificationValues(
       value: modificationPropertyValues.value,
       numeric_value: modificationPropertyValues.numericValue,
       option_id: modificationPropertyValues.optionId,
-      option: { id: propertyOptions.id, slug: propertyOptions.slug },
+      option: {
+        id: propertyOptions.id,
+        slug: propertyOptions.slug,
+        name: propertyOptions.name,
+      },
       property: {
         id: sectionProperties.id,
         name: sectionProperties.name,
