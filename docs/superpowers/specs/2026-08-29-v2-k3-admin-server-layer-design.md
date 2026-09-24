@@ -314,9 +314,19 @@ Gate C (`/drizzle-orm/` у `SERVER_PAYLOAD`).
 (`server-functions-handler.js:191-199`), не з полів Error; (2) кидати
 `Response` ЗАБОРОНЕНО — клієнтський fetcher резолвить json-тіло такої
 відповіді як УСПІХ (`serverFnFetcher.js:128-190`); (3) клієнт розрізняє
-відмову за `error.name === 'AuthzError'` і `error.operation` — seroval
-не зберігає `instanceof` (десеріалізує в голий `Error` з накладеними
-властивостями). Перший рубіж — наявні `readSessionSubject` →
+відмову за `error.name === 'AuthzError'` і `error.operation` — 🔴
+**ВИПРАВЛЕНО 2026-09-24 (К3-Е3, рішення Е3-20):** первісне обґрунтування
+(«seroval десеріалізує в голий `Error` з накладеними властивостями») було
+ХИБНИМ — Start серіалізує будь-який `Error` плагіном `ShallowErrorPlugin`
+(`@tanstack/router-core` `src/ssr/serializer/ShallowErrorPlugin.ts`) лише
+як `message` і на клієнті створює `new Error(message)`: `name` і поля
+зникають. Доведено живим прогоном (дубль slug в адмінці давав технічний
+текст). Розрізнення на клієнті тримає `domainErrorAdapter`
+(`simplycms/runtime`, реєстрація `serializationAdapters` у host
+`src/start.ts`): закритий перелік імен доменних помилок
+(`simplycms/contracts` — `AuthzError`, `AdminConflictError`) і їхніх полів
+переживає межу; реєстр обходів — `UPSTREAM:START-2`. Новий доменний тип
+помилки = рядок у переліку, не новий адаптер. Перший рубіж — наявні `readSessionSubject` →
 `requireOperation` (повертає scope; void-дублікати на кшталт
 `assertAllowed` заборонені) через склейку `resolveRequestGrant`, і лише
 ПОТІМ `withActor({ role: dbRoleForSubject(subject) })` — вкладених

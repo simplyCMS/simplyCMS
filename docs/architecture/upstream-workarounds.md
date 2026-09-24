@@ -96,38 +96,39 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 
 ---
 
-### TSDB-5 · невдала транзакція губить помилку serverFn: `Error("[object Object]")`
+### START-2 · Start серіалізує будь-який `Error` лише як `message`
 
 | Поле | Значення |
 |---|---|
-| Бібліотека | `@tanstack/db` (транзакції колекцій) |
-| Знайдено на | 0.8.6 (2026-09-23, К3-Е3 фікс-захід хвилі C) |
-| Перевірено на версії | 0.8.6 — 2026-09-23 |
-| Статус апстріму | не повідомлено |
+| Бібліотека | `@tanstack/router-core` (серіалізатор SSR/RPC TanStack Start) |
+| Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, live:smoke К3-Е3) |
+| Перевірено на версії | ті самі — 2026-09-24 |
+| Статус апстріму | не повідомлено; ймовірно, свідомий дизайн (не протікати серверні поля), а не дефект |
 
-**Симптом.** Конфлікт на сервері (дубль slug, товар у замовленнях) мав
-показати власнику зрозумілий тост; натомість `tx.isPersisted.promise`
-відхиляється `Error` з `message: "[object Object]"`, `name: 'Error'`, без
-полів `kind`/`constraint` і без `cause` — `adminErrorKey` нічого не впізнає.
+**Симптом.** Помилка serverFn доходить у браузер як `new Error(message)`:
+`name` і власні поля (`kind`, `constraint`, `operation`) зникають. Конфлікт
+«такий slug уже зайнятий» показувався технічним текстом; відмову authz на
+клієнті неможливо відрізнити від будь-якої іншої помилки.
 
-**Корінь.** Помилка serverFn доходить у клієнт ПЛОСКИМ обʼєктом (seroval
-не відновлює клас — К3-13), а `src/transactions.ts` у `commit()` робить
-`error instanceof Error ? error : new Error(String(error))` — поля плаского
-обʼєкта втрачаються.
+**Корінь.** `src/ssr/serializer/ShallowErrorPlugin.ts` (тег `$TSR/Error`):
+`test: value instanceof Error`, parse — лише `{ message }`, deserialize —
+`new Error(message)`.
 
-**Наш обхід.** `packages/simplycms/src/admin-data/normalize-thrown.ts`
-(`normalizeThrown`) — у кожному `onInsert`/`onUpdate`/`onDelete`
-спільних `handlers.ts` помилка serverFn перетворюється на справжній `Error`
-із тими самими полями ДО того, як потрапить у транзакцію; `adminErrorKey`
-додатково розгортає `.cause` (друга лінія, сама дефект не лікує).
-Маркери — `git grep -n "UPSTREAM:TSDB-5"`.
+**Наш обхід.** `domainErrorAdapter` (`packages/simplycms/src/runtime/domain-error-adapter.ts`,
+client-safe) — `createSerializationAdapter` для закритого переліку імен
+доменних помилок (`packages/simplycms/src/contracts/domain-errors.ts`) із
+whitelist полів; реєстрація `serializationAdapters: [domainErrorAdapter]` у
+host `src/start.ts` (+ канон `packages/cli/host/`, шаблон магазину).
+Адаптери Start ідуть ПЕРЕД дефолтними плагінами (`getDefaultSerovalPlugins`),
+seroval бере перший плагін, чий `test()` збігся. Маркери — `git grep -n "UPSTREAM:START-2"`.
 
-**Перевірка виправлення.** Прибрати `normalizeThrown` з хендлерів (мутація
-«throw e») → тест конфлікту в admin-data мусить лишитися ЗЕЛЕНИМ на новій
-версії (сьогодні червоніє).
+**Перевірка виправлення.** `packages/simplycms/src/runtime/__tests__/domain-error-adapter.test.ts`
+— контрольний кейс «без адаптера → голий `Error(message)`»: коли Start почне
+зберігати `name`/поля сам, кейс червоніє.
 
-**Коли виправлять.** Прибрати `normalizeThrown` з хендлерів; розгортання
-`.cause` в `adminErrorKey` можна лишити як захист.
+**Коли виправлять.** Адаптер можна прибрати, лише якщо Start зберігатиме і
+`name`, і довільні поля; інакше лишити — він же й фільтр того, які поля
+взагалі дозволено передати клієнту (whitelist).
 
 ---
 
@@ -365,10 +366,54 @@ readonly-колонки виглядали писаними. Аналогічн�
 |---|---|---|---|---|---|
 | DRZ-1 | `drizzle-orm` 0.45.2 + `pg` | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `admin-server/impl/errors.ts` (`toAdminConflict`) | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст | `impl/__tests__/run.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) |
 | START-1 | `@tanstack/start-server-core` 1.167 | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (`dist/esm/server-functions-handler.js:33`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | — (перевіряти рев'ю при апгрейді Start) |
-| TSDB-B1 | `@tanstack/db` 0.8.6 | Прямий `collection.insert/update/delete` застосовує оптимізм і write-back синхронно в `commit()` ЛИШЕ коли колекція вже `ready`; до старту sync — поведінка як `SyncNotInitializedError` | `admin/features/products/**` (`useProductSave`, `useStock` роблять `preload()` перед записом); тести черги Е3-19 явно чекають `ready` | Запис одразу після монтування сторінки впав би або «загубився» без оптимізму | тести `usePropertyValues` / `order-statuses-collection` (`await c.preload()` перед мутаціями) |
 
 ---
 
 ## Закриті
 
-_(порожньо)_
+### TSDB-5 · (ЗАКРИТО 2026-09-24) «транзакція губить помилку serverFn» — НЕ дефект бібліотеки
+
+**Висновок.** Хибна модель межі: `commit()` `@tanstack/db` 0.8.6 ЗБЕРІГАЄ `Error` з полями
+(`error instanceof Error ? error : …`). «Плаский обʼєкт», з якого робився `Error("[object Object]")`,
+існував лише в синтетичному тесті; справжня втрата полів відбувалася раніше — на RPC-межі Start
+(**START-2**). Обхід `normalizeThrown` і розгортання `.cause` прибрано (коміт `1d3d5a9a`), маркери
+прибрано. Мутація «serverFn кидає плаский обʼєкт» → `'[object Object]'` лишилась у тесті як пояснення,
+чому гіпотеза виглядала правдоподібно. Урок — `docs/architecture/test-contours.md` §11.1.
+
+<details><summary>Первісний запис (для історії)</summary>
+
+### TSDB-5 · невдала транзакція губить помилку serverFn: `Error("[object Object]")`
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/db` (транзакції колекцій) |
+| Знайдено на | 0.8.6 (2026-09-23, К3-Е3 фікс-захід хвилі C) |
+| Перевірено на версії | 0.8.6 — 2026-09-23 |
+| Статус апстріму | не повідомлено |
+
+**Симптом.** Конфлікт на сервері (дубль slug, товар у замовленнях) мав
+показати власнику зрозумілий тост; натомість `tx.isPersisted.promise`
+відхиляється `Error` з `message: "[object Object]"`, `name: 'Error'`, без
+полів `kind`/`constraint` і без `cause` — `adminErrorKey` нічого не впізнає.
+
+**Корінь.** Помилка serverFn доходить у клієнт ПЛОСКИМ обʼєктом (seroval
+не відновлює клас — К3-13), а `src/transactions.ts` у `commit()` робить
+`error instanceof Error ? error : new Error(String(error))` — поля плаского
+обʼєкта втрачаються.
+
+**Наш обхід.** `packages/simplycms/src/admin-data/normalize-thrown.ts`
+(`normalizeThrown`) — у кожному `onInsert`/`onUpdate`/`onDelete`
+спільних `handlers.ts` помилка serverFn перетворюється на справжній `Error`
+із тими самими полями ДО того, як потрапить у транзакцію; `adminErrorKey`
+додатково розгортає `.cause` (друга лінія, сама дефект не лікує).
+Маркери — `git grep -n "UPSTREAM:TSDB-5"`.
+
+**Перевірка виправлення.** Прибрати `normalizeThrown` з хендлерів (мутація
+«throw e») → тест конфлікту в admin-data мусить лишитися ЗЕЛЕНИМ на новій
+версії (сьогодні червоніє).
+
+**Коли виправлять.** Прибрати `normalizeThrown` з хендлерів; розгортання
+`.cause` в `adminErrorKey` можна лишити як захист.
+
+</details>
+
