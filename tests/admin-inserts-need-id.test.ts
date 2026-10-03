@@ -43,7 +43,12 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
  * вважати вставку безпечною. Тому тут — ширший скан (нижче) і КОНСТАНТА
  * дорівнює тому, що він виміряв.
  */
-const KNOWN_WITHOUT_ID = 27;
+// Е4: −6 (довідники каталогу: SectionEdit, PriceTypeEdit, Properties,
+// PropertyOptionEdit, SectionPropertiesManager, SectionPropertiesTable).
+// 🔴 Число — виміряне (14), а не 27−6: на main фактичний скан уже давав 20
+// (константа 27 відстала після видалень Е3), тож стеля була завищена на 7 і
+// дозволяла б сім нових вставок без id.
+const KNOWN_WITHOUT_ID = 14;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

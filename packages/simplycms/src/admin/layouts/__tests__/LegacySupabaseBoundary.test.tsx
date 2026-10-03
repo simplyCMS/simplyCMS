@@ -13,7 +13,9 @@ import { render, screen, cleanup } from '@testing-library/react';
  * побачити стан першого (env нема) чи навпаки.
  */
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children }: { children: ReactNode }) => <a href="#">{children}</a>,
+  Link: ({ children, to }: { children: ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 
 afterEach(() => {
@@ -67,6 +69,21 @@ describe('LegacySupabaseBoundary', () => {
       }),
     ).toBeTruthy();
     expect(screen.queryByText('legacy stub')).toBeNull();
+
+    // П'ять живих розділів К3: href — через adminPath.
+    const { adminPath } = await import('../../lib/adminLinks');
+    const hrefs = screen
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(
+      [
+        'products',
+        'sections',
+        'price-types',
+        'properties',
+        'order-statuses',
+      ].map((p) => adminPath(p)),
+    );
   });
 
   it('з Supabase env: легасі-поведінка без змін (клієнт створюється, заглушки немає)', async () => {
