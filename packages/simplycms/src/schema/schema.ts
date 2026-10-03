@@ -126,7 +126,8 @@ export const sectionProperties = pgTable("section_properties", {
 			foreignColumns: [sections.id],
 			name: "section_properties_section_id_fkey"
 		}).onDelete("cascade"),
-	unique("section_properties_section_id_code_key").on(table.sectionId, table.slug),
+	// Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
+	unique("section_properties_slug_key").on(table.slug),
 ]);
 
 export const userCategories = pgTable("user_categories", {
@@ -906,7 +907,8 @@ export const productPrices = pgTable("product_prices", {
 			columns: [table.priceTypeId],
 			foreignColumns: [priceTypes.id],
 			name: "product_prices_price_type_id_fkey"
-		}).onDelete("cascade"),
+		// Е4-1: тип ціни з цінами не видаляється мовчки разом із цінами
+		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.productId],
 			foreignColumns: [products.id],

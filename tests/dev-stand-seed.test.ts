@@ -104,7 +104,7 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   });
 
   it('рядок із section_id = null теж ідемпотентний', () => {
-    // Глобальна властивість адмінки: за природним ключем `(section_id, slug)`
+    // Глобальна властивість адмінки: за природним ключем (slug разом із section_id)
     // upsert її не знайшов би — unique-констрейнт NULLS DISTINCT на NULL не
     // арбітр, і повторний накат падав би на section_properties_pkey.
     expect(sql).toContain(`('${SAMPLE_IDS.GLOBAL_PROPERTY_ID}', null, `);
@@ -154,13 +154,14 @@ function blockOf(sql: string, table: string): string {
 describe('dev-stand: дедуп — за id, а не за природним ключем', () => {
   const sql = generateSeedSql(SAMPLE_DATASET);
 
-  it('дві глобальні властивості з одним слагом — обидві у виводі', () => {
-    // Схема це ДОЗВОЛЯЄ: unique (section_id, slug) під NULLS DISTINCT два
-    // NULL-и різними не вважає, а адмінка унікальність не перевіряє взагалі.
+  it('дві глобальні властивості (section_id null) — обидві у виводі', () => {
+    // Е4-6: slug глобально унікальний, тож близнюки різняться slug; NULL у
+    // section_id і далі не арбітр on conflict — дедуп за id.
     const parents = blockOf(sql, 'section_properties');
     expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_ID);
     expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_TWIN_ID);
-    expect(parents.match(/'warranty'/g)?.length).toBe(2);
+    expect(parents).toContain("'warranty'");
+    expect(parents).toContain("'warranty-extended'");
   });
 
   it('дочірній рядок не осиротів — його property_id є серед батьків', () => {

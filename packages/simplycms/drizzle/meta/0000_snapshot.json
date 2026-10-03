@@ -2595,7 +2595,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "product_prices_product_id_fkey": {
@@ -3562,11 +3562,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "section_properties_section_id_code_key": {
-          "name": "section_properties_section_id_code_key",
+        "section_properties_slug_key": {
+          "name": "section_properties_slug_key",
           "nullsNotDistinct": false,
           "columns": [
-            "section_id",
             "slug"
           ]
         }

@@ -18,11 +18,11 @@
  * властивість, яку створює адмінка. Саме на ньому ламався `on conflict` за
  * природним ключем: unique-констрейнт NULLS DISTINCT на NULL не арбітр.
  *
- * 🔴 Глобальних властивостей ДВІ, і слаг у них ОДИН (`warranty`): схема це
- * дозволяє (NULLS DISTINCT два NULL-и різними не вважає), адмінка теж —
- * `Properties.tsx` вставляє голим `.insert([data])` без перевірки. Близнюк
- * стоїть ПЕРЕД оригіналом навмисно: під дедупом за природним ключем last-wins
- * викинув би саме його, а на нього посилається дочірній
+ * 🔴 Глобальних властивостей ДВІ — з `section_id: null` і РІЗНИМИ slug
+ * (`warranty` і `warranty-extended`): Е4-6 забороняє однаковий slug. NULL у
+ * `section_id` і далі не арбітр `on conflict`, тому генератор бере `id`.
+ * Близнюк стоїть ПЕРЕД оригіналом навмисно: під дедупом за природним ключем
+ * last-wins викинув би саме його, а на нього посилається дочірній
  * `product_property_values` — осиротіння видно тестом, а не лише зникнення.
  */
 
@@ -78,11 +78,11 @@ export const SAMPLE_DATASET = {
       created_at: new Date('2024-01-01T00:00:00.000Z'),
     },
     {
-      // Близнюк: той самий слаг і той самий (NULL) section_id, інший рядок.
+      // Близнюк: той самий (NULL) section_id, але власний slug (Е4-6).
       id: GLOBAL_PROPERTY_TWIN_ID,
       section_id: null,
       name: 'Гарантія (розширена)',
-      slug: 'warranty',
+      slug: 'warranty-extended',
       property_type: 'text',
       is_required: false,
       is_filterable: false,

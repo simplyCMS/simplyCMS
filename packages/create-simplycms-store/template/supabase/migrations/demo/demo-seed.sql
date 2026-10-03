@@ -180,7 +180,7 @@ from (
     ('10000005-0000-4000-8000-000000000003'::uuid, 'invertory', 'Тип інвертора', 'tip-invertora', 'select', 0)
 ) as v(id, section_slug, name, slug, property_type, sort_order)
 join public.sections s on s.slug = v.section_slug
-on conflict (section_id, slug) do nothing;
+on conflict (slug) do nothing;
 
 insert into public.section_property_assignments (id, section_id, property_id, applies_to)
 select
