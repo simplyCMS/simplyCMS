@@ -18,4 +18,10 @@ export const messages: Catalog = {
   'admin.sections.propertiesHint':
     'Choose which properties are available for products and modifications in this section',
   'admin.sections.inactive': 'Inactive',
+  'admin.sections.deleteTitle': 'Delete this section?',
+  'admin.sections.deleteWarning':
+    'Products in this section will be left without a section',
+  'admin.sections.notFound': 'Section not found',
+  'admin.sections.slugHint':
+    'Latin letters, digits and hyphens — for example, laptops-gaming',
 };
