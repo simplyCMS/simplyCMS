@@ -11,6 +11,9 @@ import { defineAdminResource } from '../resource';
  * `setDefaultPriceTypeOp`, видалення — іменована `removeManyPriceTypesOp`
  * (обидві під одним advisory-локом), тому фабричний `remove` для цієї
  * сутності serverFn-ом НЕ виставляється.
+ * 🔴 Фабричний `priceTypesOps.remove` НЕ використовувати: він обходить і
+ * advisory-лок, і заборону видалити дефолтний. Видалення типу ціни — лише
+ * `removeManyPriceTypesOp` (guarded, Е4-2).
  * 🔴 Е4-7: формат коду перевіряє і сервер (`PRICE_TYPE_CODE_RE`).
  */
 export const priceTypesOps = defineAdminResource({

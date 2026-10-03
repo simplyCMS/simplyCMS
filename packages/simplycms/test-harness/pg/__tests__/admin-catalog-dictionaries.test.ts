@@ -28,6 +28,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -142,7 +143,9 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
 
   it('розділ: кириличний slug відбивається схемою до транзакції', async () => {
     const s = section({ slug: 'розділ' });
-    await expect(sectionsOps.insert({ data: [s] })).rejects.toThrow();
+    await expect(sectionsOps.insert({ data: [s] })).rejects.toMatchObject({
+      name: 'ZodError',
+    });
     expect(
       await queryRows(dbUrl, `select 1 from public.sections where id = $1`, [
         s.id,
@@ -203,7 +206,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
   it('властивість: кириличний slug відбивається схемою', async () => {
     await expect(
       sectionPropertiesOps.insert({ data: [prop({ slug: 'колір' })] }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ name: 'ZodError' });
   });
 
   it('властивість: видалення каскадно зносить опції і значення в товарах', async () => {
@@ -273,7 +276,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     await sectionPropertiesOps.insert({ data: [p] });
     await expect(
       propertyOptionsOps.insert({ data: [option(p.id, { slug: 'червоний' })] }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ name: 'ZodError' });
   });
 
   describe('призначення', () => {
@@ -313,7 +316,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
         sectionPropertyAssignmentsOps.insert({
           data: [assign({ propertyId: p.id, appliesTo: 'variant' })],
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ name: 'ZodError' });
       expect(
         await queryRows(
           dbUrl,
@@ -352,7 +355,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
       priceTypesOps.insert({
         data: [{ id: crypto.randomUUID(), name: 'Опт', code: 'оптова' }],
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ name: 'ZodError' });
     const id = crypto.randomUUID();
     const [row] = await priceTypesOps.insert({
       data: [
@@ -521,6 +524,43 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
         )) as [{ n: number }];
         expect(n, `ітерація ${i}`).toBe(1);
       }
+    });
+
+    // Е4-12: детермінований доказ advisory-локу `price-type-default` для
+    // ОБОХ операцій — стрес-тести вище перемогу гонки лише ймовірно
+    // розрізняють (Е4-11: 2 червоні з 55 прогонів без локу в setDefault).
+    describe('advisory-lock: доказ серіалізації (price-type-default)', () => {
+      const holdLock = (key: string) => holdAdvisoryLock(dbUrl, key);
+
+      it('setDefault: конкурент тримає лок → чекає, дефолт не змінено до release', async () => {
+        const X = await freshPriceType();
+        const lock = await holdLock('price-type-default');
+        try {
+          const op = setDefaultPriceTypeOp({ data: { id: X } });
+          expect(await stillPending(op, 300)).toBe(true);
+          expect(await defaults()).toEqual([RETAIL]);
+          await lock.release();
+          await expect(op).resolves.toBeDefined();
+          expect(await defaults()).toEqual([X]);
+        } finally {
+          await lock.cleanup();
+        }
+      });
+
+      it('remove: конкурент тримає лок → чекає, рядок живий до release', async () => {
+        const Y = await freshPriceType();
+        const lock = await holdLock('price-type-default');
+        try {
+          const op = removeManyPriceTypesOp({ data: [{ id: Y }] });
+          expect(await stillPending(op, 300)).toBe(true);
+          expect(await exists(Y)).toBe(true);
+          await lock.release();
+          await expect(op).resolves.toEqual({ count: 1 });
+          expect(await exists(Y)).toBe(false);
+        } finally {
+          await lock.cleanup();
+        }
+      });
     });
 
     it('setDefault неіснуючого id — помилка, старий дефолт лишився', async () => {
