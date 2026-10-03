@@ -743,6 +743,22 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 `admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
 основним гейтом `explicit-ids` за побудовою).
 
+### 11.2. К3-Е4 (довідники каталогу): одна сесія власника на два кроки
+
+Вхід власника винесено з кроку каталогу в `scripts/live-smoke/owner-session.mjs`
+(`openOwnerSession`), оркестрація — `owner-steps.mjs`: ОДИН browser context
+власника на обидва адмінські кроки, `runAdminCatalogStep` (Е3) і
+`runAdminDictionariesStep` (Е4). Кожен крок відкриває власну сторінку з
+власним лічильником `pageerror` і контекст не закриває; `pageerror` сторінки
+входу зараховано в рядок «запрошення → пароль → `/admin`», тож покриття
+кроку каталогу не звузилось (його рядки до й після рефакторингу ідентичні).
+Крок довідників доводить через СПРАВЖНЮ межу serverFn два тости, яких харнес
+не бачить за побудовою: дубль slug розділу (`admin.errors.slugTaken`) і
+видалення типу ціни, яким ціновано товар (`ON DELETE RESTRICT` → 23503 →
+`admin.errors.conflictReference`, ціни в БД цілі). Ціна-фікстура для
+другого ставиться прямим SQL (`admin-dictionaries-sql.mjs::seedPricedType`):
+предмет перевірки — відмова видалення, а не форма цін (її доводить Е3).
+
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`

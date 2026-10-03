@@ -12,8 +12,10 @@
  * (3) крок каталогу адмінки (К3-Е3) — запрошення власника → пароль → вхід →
  * товар зі СВОЄЮ ціною/залишком/зображенням → вітрина його бачить → дубль
  * slug → тост i18n (Е3-20: доменна помилка серіалізації, не сирий SQL) →
- * видалення прибирає з вітрини; ОКРЕМИЙ лічильник `pageerror` адмінського
- * browser context (`live-smoke/admin-catalog.mjs`), у тій самій таблиці.
+ * видалення прибирає з вітрини (`live-smoke/admin-catalog.mjs`); (4) крок
+ * довідників (К3-Е4, `live-smoke/admin-dictionaries.mjs`): розділ, властивість
+ * з опцією, призначення, типи цін — вітрина їх бачить. Обидва — в одній сесії
+ * власника з окремими лічильниками `pageerror` (`live-smoke/owner-steps.mjs`).
  * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
@@ -32,7 +34,7 @@ import { join } from 'node:path';
 import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
-import { runAdminCatalogStep } from './live-smoke/admin-catalog.mjs';
+import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -117,9 +119,9 @@ async function main() {
     page.on('pageerror', (e) => errors.push(String(e)));
     await runFunnel({ page, base, dbUrl, check });
 
-    // 3б. Крок каталогу адмінки (К3-Е3) — ОКРЕМИЙ browser context, та сама
-    // БД: сесія власника не змішується із сесією покупця з `runFunnel`.
-    await runAdminCatalogStep({ browser, base, dbUrl, storeEnv: env, check });
+    // 3б. Кроки адмінки (каталог К3-Е3, довідники К3-Е4) — ОКРЕМИЙ browser
+    // context власника, та сама БД: сесія не змішується з покупцем.
+    await runOwnerSteps({ browser, base, dbUrl, storeEnv: env, check });
 
     // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
     // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на

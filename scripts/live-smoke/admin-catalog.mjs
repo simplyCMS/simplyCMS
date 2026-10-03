@@ -1,15 +1,17 @@
 /**
- * Крок К3-Е3 — ЄДИНИЙ живий доказ каталогу адмінки: запрошення власника →
- * пароль → вхід → товар створено в адмінці (з ціною через кому, залишком і
- * зображенням) → він на вітрині з цією ціною, бейджем і картинкою → дубль
- * slug дає зрозумілий тост → видалення прибирає його з вітрини.
- * Окремий browser context: сесія покупця воронки не змішується з адмінською.
+ * Крок К3-Е3 — ЄДИНИЙ живий доказ каталогу адмінки: товар створено в
+ * адмінці (з ціною через кому, залишком і зображенням) → він на вітрині з
+ * цією ціною, бейджем і картинкою → дубль slug дає зрозумілий тост →
+ * видалення прибирає його з вітрини.
+ *
+ * Вхід власника — `./owner-session.mjs` (винесено в Е4): крок отримує вже
+ * залогінений browser context, відкриває в ньому ВЛАСНУ сторінку з власним
+ * лічильником `pageerror` і контекст НЕ закриває — ним далі користується
+ * крок довідників (`./admin-dictionaries.mjs`).
  *
  * Вітрина/дубль/видалення — `./admin-catalog-verify.mjs` (канон 150 рядків).
  */
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import {
   priceTypeByCode,
   productBySlug,
@@ -24,46 +26,14 @@ import {
 } from './admin-catalog-verify.mjs';
 import { PNG } from './avatar.mjs';
 
-const PASSWORD = 'live-smoke-owner-2026';
-
-export async function runAdminCatalogStep({
-  browser,
-  base,
-  dbUrl,
-  storeEnv,
-  check,
-}) {
-  const email = `owner-${randomUUID().slice(0, 8)}@example.test`;
-  const { url } = JSON.parse(
-    execFileSync(
-      'pnpm',
-      [
-        'exec',
-        'tsx',
-        join(import.meta.dirname, 'owner-invite.mts'),
-        email,
-        base,
-      ],
-      { env: { ...process.env, ...storeEnv }, encoding: 'utf8' },
-    ),
-  );
-
-  const context = await browser.newContext();
+export async function runAdminCatalogStep({ context, base, dbUrl, check }) {
   const page = await context.newPage();
-  // Окремий лічильник від `errors` воронки покупця (`live-smoke.mjs`) —
-  // інший browser context, інша сесія (Е3-20).
+  // Окремий лічильник від `errors` воронки покупця (`live-smoke.mjs`) і від
+  // кроку довідників — своя сторінка, свій підсумок (Е3-20).
   const adminErrors = [];
   page.on('pageerror', (e) => adminErrors.push(String(e)));
   try {
-    // 1. Запрошення → пароль → /admin.
-    await page.goto(url, { waitUntil: 'networkidle' });
-    await page.getByLabel('Пароль', { exact: true }).fill(PASSWORD);
-    await page.getByLabel('Повторіть пароль').fill(PASSWORD);
-    await page.getByRole('button', { name: 'Зберегти і продовжити' }).click();
-    await page.waitForURL(`${base}/admin`, { timeout: 15_000 });
-    check('адмін: запрошення → пароль → /admin', true, email);
-
-    // 2. Новий товар у демо-розділі.
+    // 1. Новий товар у демо-розділі.
     const section = await sectionBySlug(dbUrl, 'sonyachni-paneli');
     const slug = `live-e3-${randomUUID().slice(0, 6)}`;
     await page.goto(`${base}/admin/products/new`, { waitUntil: 'networkidle' });
@@ -92,7 +62,7 @@ export async function runAdminCatalogStep({
       timeout: 15_000,
     });
 
-    // 3. Зображення (DoD К3 п.6), ціна з комою, залишок.
+    // 2. Зображення (DoD К3 п.6), ціна з комою, залишок.
     await page.setInputFiles(
       '[data-testid="product-images"] input[type="file"]',
       { name: 'product.png', mimeType: 'image/png', buffer: PNG },
@@ -132,18 +102,18 @@ export async function runAdminCatalogStep({
       JSON.stringify(stock?.images),
     );
 
-    // 4-6. Вітрина / дубль slug / видалення.
+    // 3-5. Вітрина / дубль slug / видалення.
     await verifyStorefront({ page, base, check, section, slug });
     await verifyDuplicateSlugToast({ page, base, check, section, slug });
     await verifyDelete({ page, base, dbUrl, check, section, slug });
 
-    // 7. Нуль pageerror — підсумок у ту саму таблицю `live-smoke.mjs`.
+    // 6. Нуль pageerror — підсумок у ту саму таблицю `live-smoke.mjs`.
     check(
       'адмін pageerror за весь крок каталогу',
       adminErrors.length === 0,
       adminErrors.length === 0 ? '0' : adminErrors.join(' | '),
     );
   } finally {
-    await context.close();
+    await page.close();
   }
 }
