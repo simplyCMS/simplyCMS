@@ -10,7 +10,7 @@ export const messages = {
   'admin.prices.editTitle': 'Редагування виду ціни',
   'admin.prices.deleteTitle': 'Видалити вид ціни?',
   'admin.prices.deleteWarning':
-    'Ця дія незворотна. Всі ціни цього виду будуть видалені.',
+    'Тип ціни, на який посилаються ціни товарів, видалити не можна: спочатку приберіть ці ціни. Видалення прибирає лише порожній тип.',
   'admin.prices.namePlaceholder': 'Роздрібна',
   'admin.prices.codeHint': 'Унікальний код (латиниця, цифри, _)',
   'admin.prices.defaultHint': 'Цей вид ціни буде використовуватись як фолбек',
@@ -18,4 +18,5 @@ export const messages = {
   'admin.prices.codeFormat': 'Лише латиниця, цифри й _',
   'admin.prices.defaultKeep':
     'Щоб змінити дефолт, призначте дефолтним інший тип',
+  'admin.prices.notFound': 'Вид ціни не знайдено',
 } as const;

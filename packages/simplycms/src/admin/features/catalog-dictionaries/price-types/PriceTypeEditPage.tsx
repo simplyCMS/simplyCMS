@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useLiveQuery } from '@tanstack/react-db';
 import { Controller, useForm } from 'react-hook-form';
@@ -19,6 +19,7 @@ import {
   type PriceTypeFormInput,
   type PriceTypeFormValues,
 } from './price-type-form-schema';
+import { PriceTypeDeleteDialog } from './PriceTypeDeleteDialog';
 import { usePriceTypeDefault } from './usePriceTypeDefault';
 
 const EMPTY: PriceTypeFormInput = {
@@ -70,6 +71,7 @@ export default function PriceTypeEditPage() {
       });
   }, [row?.id, row?.isDefault, reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const goList = () => navigate({ to: adminPath('price-types') });
 
   const onSubmit = async (v: PriceTypeFormValues) => {
@@ -119,6 +121,19 @@ export default function PriceTypeEditPage() {
   if (!isNew && isLoading)
     return <div className="p-8 text-center">{t('common.loading')}</div>;
 
+  // Невідомий id: без форми й без insert (інакше submit створив би новий рядок).
+  if (!isNew && !row)
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link to={adminPath('price-types')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+        <p className="text-muted-foreground">{t('admin.prices.notFound')}</p>
+      </div>
+    );
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
@@ -139,9 +154,7 @@ export default function PriceTypeEditPage() {
             disabled={row.isDefault}
             title={row.isDefault ? t('admin.prices.defaultLocked') : undefined}
             aria-label={t('common.delete')}
-            onClick={() =>
-              confirm(t('admin.prices.deleteTitle')) && handleDelete()
-            }
+            onClick={() => setConfirmOpen(true)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -236,6 +249,14 @@ export default function PriceTypeEditPage() {
           </form>
         </CardContent>
       </Card>
+      <PriceTypeDeleteDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          handleDelete();
+        }}
+      />
     </div>
   );
 }

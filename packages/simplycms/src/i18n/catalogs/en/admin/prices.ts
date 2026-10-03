@@ -12,7 +12,7 @@ export const messages: Catalog = {
   'admin.prices.editTitle': 'Edit price type',
   'admin.prices.deleteTitle': 'Delete this price type?',
   'admin.prices.deleteWarning':
-    'This cannot be undone. All prices of this type will be deleted.',
+    'A price type referenced by product prices cannot be deleted: remove those prices first. Deleting only removes an empty type.',
   'admin.prices.namePlaceholder': 'Retail',
   'admin.prices.codeHint': 'Unique code (Latin letters, digits, _)',
   'admin.prices.defaultHint': 'This price type will be used as the fallback',
@@ -20,4 +20,5 @@ export const messages: Catalog = {
   'admin.prices.codeFormat': 'Latin letters, digits and _ only',
   'admin.prices.defaultKeep':
     'To change the default, make another type the default',
+  'admin.prices.notFound': 'Price type not found',
 };

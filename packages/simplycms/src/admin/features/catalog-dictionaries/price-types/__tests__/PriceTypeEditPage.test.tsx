@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { createTranslator } from 'simplycms/i18n';
 import { ROWS, wrapper } from './render-support';
 
 vi.stubGlobal(
@@ -56,6 +57,8 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PriceTypeEditPage from '../PriceTypeEditPage';
+
+const t = createTranslator('uk');
 
 const fill = (name: string, code: string) => {
   fireEvent.change(screen.getByLabelText('Назва'), { target: { value: name } });
@@ -121,5 +124,60 @@ describe('PriceTypeEditPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Створити' }));
     await screen.findByText('Лише латиниця, цифри й _');
     expect(insertPriceTypes).not.toHaveBeenCalled();
+  });
+
+  it('невідомий id: стан «не знайдено», форми й insert немає', async () => {
+    params.priceTypeId = 'a0000000-0000-4000-8000-0000000000ff';
+    render(<PriceTypeEditPage />, { wrapper });
+    await screen.findByText(t('admin.prices.notFound'));
+    expect(screen.queryByLabelText('Назва')).toBeNull();
+    expect(insertPriceTypes).not.toHaveBeenCalled();
+  });
+
+  it('update наявного рядка: patch без isDefault, setDefault не викликано', async () => {
+    params.priceTypeId = ROWS[1]!.id;
+    updatePriceTypes.mockImplementation(async () => [
+      { ...ROWS[1]!, name: 'Опт 2' },
+    ]);
+    render(<PriceTypeEditPage />, { wrapper });
+    await screen.findByDisplayValue('Опт');
+    fireEvent.change(screen.getByLabelText('Назва'), {
+      target: { value: 'Опт 2' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Зберегти' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    const [{ data }] = updatePriceTypes.mock.calls[0] as [
+      { data: Array<{ id: string; patch: Record<string, unknown> }> },
+    ];
+    expect(data[0]!.id).toBe(ROWS[1]!.id);
+    expect(data[0]!.patch).toEqual({ name: 'Опт 2' });
+    expect(setDefaultPriceType).not.toHaveBeenCalled();
+  });
+
+  it('створення з вимкненим перемикачем: setDefault не викликано', async () => {
+    render(<PriceTypeEditPage />, { wrapper });
+    fill('VIP', 'vip');
+    fireEvent.click(screen.getByRole('button', { name: 'Створити' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    expect(setDefaultPriceType).not.toHaveBeenCalled();
+  });
+
+  it('збереження вже дефолтного рядка: setDefault не викликано, видалення disabled', async () => {
+    params.priceTypeId = ROWS[0]!.id;
+    updatePriceTypes.mockImplementation(async () => [
+      { ...ROWS[0]!, name: 'Роздріб 2' },
+    ]);
+    render(<PriceTypeEditPage />, { wrapper });
+    await screen.findByDisplayValue('Роздріб');
+    expect(
+      (screen.getByRole('button', { name: 'Видалити' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    fireEvent.change(screen.getByLabelText('Назва'), {
+      target: { value: 'Роздріб 2' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Зберегти' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    expect(setDefaultPriceType).not.toHaveBeenCalled();
   });
 });

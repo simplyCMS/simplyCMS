@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useLiveQuery } from '@tanstack/react-db';
 import { priceTypesCollection, useCollection } from 'simplycms/admin-data';
@@ -16,6 +17,7 @@ import { Plus, Trash2, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
+import { PriceTypeDeleteDialog } from './PriceTypeDeleteDialog';
 
 /**
  * Список типів цін (Е4, Task 6): жива eager-колекція, сортування на
@@ -32,8 +34,10 @@ export default function PriceTypesPage() {
       q.from({ p: collection }).orderBy(({ p }) => p.sortOrder, 'asc'),
   });
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const handleDelete = (id: string) => {
-    if (!confirm(t('admin.prices.confirmDelete'))) return;
+    setDeleteId(null);
     collection
       .delete(id)
       .isPersisted.promise.then(() => toast.success(t('admin.prices.deleted')))
@@ -114,7 +118,7 @@ export default function PriceTypesPage() {
                       aria-label={t('common.delete')}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(pt.id);
+                        setDeleteId(pt.id);
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -136,6 +140,11 @@ export default function PriceTypesPage() {
           </Table>
         </CardContent>
       </Card>
+      <PriceTypeDeleteDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+      />
     </div>
   );
 }
