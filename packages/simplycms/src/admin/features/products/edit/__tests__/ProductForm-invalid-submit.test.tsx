@@ -20,9 +20,11 @@ vi.stubGlobal(
   },
 );
 
-vi.mock('simplycms/admin-server', () => ({
-  listSections: vi.fn(async () => []),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({}),
+);
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
 
