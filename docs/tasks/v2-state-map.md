@@ -403,12 +403,11 @@ Drizzle (фільтри/сортування/пагінація йдуть у SQ
 Заміну (старий обʼєкт прибирається ОСТАННІМ, після COMMIT-безпечної точки)
 смок не проходить — її доводить харнес `media-record` у `pnpm test:schema`.
 
-**Не працює:** зображення секцій, банерів і опцій властивостей —
-`admin/components/ImageUpload.tsx` переведено на порт (serverFn
-`uploadMedia`/`deleteMedia` з `simplycms/admin-server`), картка товару вже
-його монтує, а решта сторінок (секції, банери, опції властивостей)
-лишаються на `supabase-js` і на чистому Postgres не працюють — їх дає
-хвиля Е4.
+**Не працює:** зображення банерів — `admin/components/ImageUpload.tsx`
+переведено на порт (serverFn `uploadMedia`/`deleteMedia` з
+`simplycms/admin-server`); його вже монтують картка товару (Е3), картки
+розділу й опції властивості (Е4), а сторінки банерів лишаються на
+`supabase-js` і на чистому Postgres не працюють.
 
 **Не працює й лишається на Supabase:** `admin/pages/ReviewDetail.tsx` —
 єдина виїмка ратчета `tests/storage-direct-calls.test.ts`. Сторінка мертва
