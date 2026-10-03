@@ -37,14 +37,24 @@ export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
  * викликає справжній `createInsertSchema(table, refine)` незмінно.
  * UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md
  */
-export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
+export function buildResourceSchemas<
+  T extends Table,
+  W extends ColumnName<T>,
+  I extends ColumnName<T> = never,
+>(
   table: T,
   writable: readonly W[],
   refine?: ResourceRefine,
+  // 🔴 Е4-5: колонки, які пишуться ЛИШЕ при створенні рядка — входять у
+  //   insert-схему, але НЕ в update-patch (strip у рантаймі, відсутні в типі).
+  insertOnly: readonly I[] = [],
 ) {
   const pickWritable = Object.fromEntries(writable.map((c) => [c, true])) as {
     [K in W]: true;
   };
+  const pickInsert = Object.fromEntries(
+    [...writable, ...insertOnly].map((c) => [c, true]),
+  ) as { [K in W | I]: true };
 
   const rowSchema = createSelectSchema(table);
 
@@ -129,8 +139,8 @@ export function buildResourceSchemas<T extends Table, W extends ColumnName<T>>(
 
   // UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md (обидва касти нижче)
   const insertRowSchema = (
-    insertSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
-      SafePick<InsertShape, W>
+    insertSchemaFull.pick(pickInsert as never) as unknown as z.ZodObject<
+      SafePick<InsertShape, W | I>
     >
   ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
   const patchSchema = (

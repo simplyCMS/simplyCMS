@@ -25,14 +25,16 @@ import { runAdmin } from './run';
  * пишеться руками в impl/<entity>/. DSL запитів немає — складніше за
  * subset = useLiveQuery на клієнті або іменована операція.
  *
- * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути у
- * writable АБО readonly — інакше конфіг не типізується (фантомне поле
- * __missingColumns називає пропущені).
+ * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути рівно в
+ * одному з трьох списків — writable, insertOnly (Е4-5) або readonly —
+ * інакше конфіг не типізується (фантомні поля __missingColumns /
+ * __overlappingColumns називають винні колонки).
  */
 export function defineAdminResource<
   T extends Table,
   const W extends ColumnName<T>,
   const R extends ColumnName<T>,
+  const I extends ColumnName<T> = never,
 >(
   config: {
     entity: string;
@@ -43,6 +45,9 @@ export function defineAdminResource<
     sortable: readonly ColumnName<T>[];
     defaultOrder?: { column: ColumnName<T>; direction: 'asc' | 'desc' };
     writable: readonly W[];
+    /** Е4-5: колонки, що пишуться лише при створенні (insert), а не при
+     *  update — напр. тип властивості, зміна якого зламала б значення. */
+    insertOnly?: readonly I[];
     readonly: readonly R[];
     /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
      *  тригера updated_at у каноні немає). */
@@ -50,14 +55,16 @@ export function defineAdminResource<
     /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
      *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
     refine?: ResourceRefine;
-  } & ([Exclude<ColumnName<T>, W | R>] extends [never]
+  } & ([Exclude<ColumnName<T>, W | R | I>] extends [never]
     ? unknown
-    : { __missingColumns: Exclude<ColumnName<T>, W | R> }) &
+    : { __missingColumns: Exclude<ColumnName<T>, W | R | I> }) &
     // 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable
     //   виграв би мовчки (напр., createdAt став би перезаписуваним).
-    ([Extract<W, R>] extends [never]
+    //   Те саме для insertOnly (Е4-5): з writable колонка стала б
+    //   перезаписуваною в update, з readonly — записуваною в insert.
+    ([Extract<W, R> | Extract<I, W | R>] extends [never]
       ? unknown
-      : { __overlappingColumns: Extract<W, R> }),
+      : { __overlappingColumns: Extract<W, R> | Extract<I, W | R> }),
 ) {
   const allow: SubsetAllow = {
     filterable: config.filterable,
@@ -65,7 +72,12 @@ export function defineAdminResource<
   };
   const columns = config.table as unknown as Record<string, never>;
   const { rowSchema, insertSchema, updateSchema, removeSchema } =
-    buildResourceSchemas(config.table, config.writable, config.refine);
+    buildResourceSchemas(
+      config.table,
+      config.writable,
+      config.refine,
+      config.insertOnly,
+    );
 
   /**
    * Спільна склейка К3-13 — тепер `runAdmin` (Task 1): перший рубіж →
