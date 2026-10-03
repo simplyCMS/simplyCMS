@@ -14,6 +14,7 @@
 
 **Редакції:**
 - ред.1 (2026-10-03) — план за рішеннями власника Е4-1/3/4/5.
+- ред.2.1 (2026-10-03) — протокол виконання (ролі, ескалація, git, стенд); `typecheck` у мінімальному гейті задачі.
 - ред.2 (2026-10-03) — аудит Codex (`gpt-6-sol`, read-only), вердикт REJECT, 2 blocker / 4 major / 2 minor. Кожну знахідку перевірено проти коду, усі вісім прийнято: dev-stand-фікстура з близнюками slug (Task 1); гонка `setDefault × remove` типу ціни (Е4-2, Task 4); контракт сесії власника в `live:smoke` (Task 10); видалення опції (Task 8); двосторонній реєстр легасі й винятків К3-2 (Е4-4, Task 9); тест повного зрізу on-demand колекції і чесне формулювання межі serverFn (Task 5, Review Focus 4); вимір ратчету id (Task 9); обґрунтування Е4-3. Рішення Е4-6 аудит підтвердив по суті.
 
 ## Ухвалені рішення етапу (власник 2026-10-03; архітектор плану — там, де позначено)
@@ -43,13 +44,21 @@
 - 🔴 Крок «має бути ЗЕЛЕНИМ одразу» перевіряє припущення плану. Якщо він червоний, це знахідка: зупинитись і повідомити, а не «полагодити тест».
 - Задачі адресуються заголовками `## Task N:` (рівно два дієзи), напр. `awk '/^## Task 3:/,/^## Task 4:/' <план>`.
 
+## Протокол виконання (ред.2.1)
+
+- **Ролі.** Виконує окрема сесія-оркестратор (subagent-driven). **Архітектор рішення — сесія `simplycms-d3`** (автор плану). Звертатись до неї через `SendMessage({ to: "simplycms-d3", … })`. Власник — людина; його рішення приходять або напряму, або через архітектора.
+- **Коли звертатись до архітектора** (до коду, не після): розбіжність із КАНОНОМ (розділ «Ступінь обовʼязковості»); точка зупинки Task 5 (поведінка повного зрізу on-demand); тест «має бути зеленим одразу» вийшов червоним; потрібне рішення, якого план не містить. Повідомлення: задача/крок, факт із доказом (вивід, `файл:рядок`), варіанти й рекомендація. Архітектор відповідає рішенням з номером `Е4-N`, і оркестратор вписує його в таблицю рішень окремим docs-комітом.
+- **Рев'ю.** Після кожної задачі — рев'ю задачі за SDD. Після Task 10 — ОДНЕ фінальне рев'ю всієї гілки, яке проводить архітектор (`simplycms-d3`). Мерж і пуш — рішення власника.
+- **Гілка і git.** Робота йде в гілці `claude/k3-e4-catalog-dictionaries-plan` (у ній уже лежить план) у ГОЛОВНОМУ робочому дереві. Архітектор у цей час git-операцій запису не робить; правки плану від нього — лише через оркестратора або у вікні між задачами, яке оркестратор явно відкриває.
+- **Стенд.** Postgres 17 з trust-auth: `PG_HARNESS_URL=postgresql://pgtest@127.0.0.1:55434/postgres` (контейнер `simplycms-review-pg`; перевірено 2026-10-03). Його потребують `pnpm test:schema`, `pnpm db:demo`, `pnpm live:smoke`. 🔴 Окремий файл харнеса запускати лише через `pnpm test:schema -- <файл>` (конфіг `vitest.schema.config.ts`). `pnpm vitest run <файл харнеса>` мовчки дає «No test files found», і RED-крок TDD виглядає провалом, хоча тест не запускався.
+
 ## Global Constraints
 
 - TypeScript 5.9 strict, не оновлювати до 6/7 (`UPSTREAM:TSESL-1`). Node `>=22.12`.
 - Коментарі й документація — українською. Рядки інтерфейсу — лише через i18n (`packages/simplycms/src/i18n/catalogs/{uk,en}/admin/*.ts`, обидва каталоги). Кирилиця в JSX `src/admin/**` валить лінт. Англійські хардкоди легасі (`"Slug"`, `"SEO"`, `"Meta Title"`, `"Meta Description"`, `"URL (slug)"`) у нових файлах теж ідуть через ключі.
 - `pnpm lint` = **0 errors / ≤ 8 warnings** (норма на 2026-09-24). Нових ворнінгів не додавати.
 - Повний ланцюг гейтів: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → test → test:schema → build:packages → typecheck:template → test:packaging → pilot:pack --skip-build`.
-- Мінімальний гейт задачі: `pnpm lint && pnpm test`. Якщо задача зачепила `schema/`, `migrations/`, `drizzle/`, `test-harness/` або `admin-server/impl/**`, додається `pnpm test:schema`. Якщо зачепила серверний код пакета або exports, додається `pnpm build:packages`.
+- Мінімальний гейт задачі: `pnpm lint && pnpm typecheck && pnpm test` *(ред.2.1: `typecheck` обовʼязковий — урок К2-Е0, рішення K: задача поїхала з червоним `tsc`, бо vitest типи тестів не перевіряє)*. Якщо задача зачепила `schema/`, `migrations/`, `drizzle/`, `test-harness/` або `admin-server/impl/**`, додається `pnpm test:schema`. Якщо зачепила серверний код пакета або exports, додається `pnpm build:packages`.
 - К3-4′: `createServerFn` — лише топ-рівневий `const` у `admin-server/index.ts` (гейт `server-fn-top-level`).
 - К3-9′: `admin-server/index.ts` експортує ЛИШЕ serverFn. Нутрощі живуть у `admin-server/impl/**` і імпортуються bare-специфікатором `simplycms/admin-server/impl`. Клієнт бере типи рядків лише через `import type` з `simplycms/schema/types`.
 - К3-13: кожна операція йде через `runAdmin(operation, fn)`. Код Postgres 23505/23503 мапиться в `AdminConflictError` з 409 (уже в `runAdmin`). `Response` не кидати.
@@ -284,7 +293,7 @@ Expected: PASS. Наявні тести `resource.test.ts` зелені без �
 
 - [ ] **Step 4: Гейт і коміт**
 
-Run: `pnpm lint && pnpm test && pnpm build:packages`
+Run: `pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages`
 Expected: 0 errors, ≤ 8 warnings; тести зелені; збірка пакетів зелена.
 
 ```bash
@@ -374,7 +383,7 @@ Expected: Gate C і Gate IP зелені. Нові serverFn не тягнуть 
 
 - [ ] **Step 5: Гейт і коміт**
 
-Run: `pnpm lint && pnpm test`
+Run: `pnpm lint && pnpm typecheck && pnpm test`
 Expected: зелено, ≤ 8 warnings.
 
 ```bash
@@ -458,7 +467,7 @@ serverFn — топ-рівневі `const` з коментарем «remove ЦІ
 
 - [ ] **Step 3: Зелене**
 
-Run: `pnpm test:schema && pnpm lint && pnpm test`
+Run: `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test`
 Expected: PASS.
 
 - [ ] **Step 4: Коміт**
@@ -530,7 +539,7 @@ Expected: PASS без правок — має бути ЗЕЛЕНИМ одраз
 
 - [ ] **Step 5: Гейт і коміт**
 
-Run: `pnpm lint && pnpm test`
+Run: `pnpm lint && pnpm typecheck && pnpm test`
 
 ```bash
 git add packages/simplycms/src/admin-data
@@ -579,7 +588,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Зелене + лінт**
 
-Run: `pnpm vitest run packages/simplycms/src/admin/features/catalog-dictionaries && pnpm lint`
+Run: `pnpm vitest run packages/simplycms/src/admin/features/catalog-dictionaries && pnpm lint && pnpm typecheck`
 Expected: PASS; i18n-селектори без помилок; `mutation-cache-sync` без помилок.
 
 - [ ] **Step 4: Коміт**
@@ -624,7 +633,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Зелене + лінт, коміт**
 
-Run: `pnpm vitest run packages/simplycms/src/admin/features/catalog-dictionaries && pnpm lint && pnpm test`
+Run: `pnpm vitest run packages/simplycms/src/admin/features/catalog-dictionaries && pnpm lint && pnpm typecheck && pnpm test`
 
 ```bash
 git add packages/simplycms/src/admin packages/simplycms/src/i18n
@@ -680,7 +689,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Зелене + лінт**
 
-Run: `pnpm vitest run packages/simplycms/src/admin && pnpm lint && pnpm test`
+Run: `pnpm vitest run packages/simplycms/src/admin && pnpm lint && pnpm typecheck && pnpm test`
 Expected: PASS.
 
 - [ ] **Step 4: Коміт**
@@ -745,7 +754,7 @@ Expected: порожньо.
 
 - [ ] **Step 5: Повна перевірка гейтів етапу**
 
-Run: `pnpm lint && pnpm test && pnpm test:schema && pnpm build:packages && pnpm pilot:pack --skip-build`
+Run: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages && pnpm pilot:pack --skip-build`
 Expected: усе зелене; lint 0 errors / ≤ 8 warnings; Gate C зелений.
 
 - [ ] **Step 6: Коміт**
