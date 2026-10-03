@@ -12,14 +12,18 @@
 
 **Обсяг:** 10 легасі-файлів (`Sections`, `SectionEdit`, `PriceTypes`, `PriceTypeEdit`, `Properties`, `PropertyEdit`, `PropertyOptionEdit`, `SectionPropertiesManager`, мертвий `SectionPropertiesTable`, а `PriceValidator` лише реєструється як виняток). Лічильник `rg -l useSupabaseClient packages/simplycms/src/admin | wc -l` має впасти з 43 до **34** (−7 сторінок, −2 компоненти; `PriceValidator` лишається серед легасі).
 
+**Редакції:**
+- ред.1 (2026-10-03) — план за рішеннями власника Е4-1/3/4/5.
+- ред.2 (2026-10-03) — аудит Codex (`gpt-6-sol`, read-only), вердикт REJECT, 2 blocker / 4 major / 2 minor. Кожну знахідку перевірено проти коду, усі вісім прийнято: dev-stand-фікстура з близнюками slug (Task 1); гонка `setDefault × remove` типу ціни (Е4-2, Task 4); контракт сесії власника в `live:smoke` (Task 10); видалення опції (Task 8); двосторонній реєстр легасі й винятків К3-2 (Е4-4, Task 9); тест повного зрізу on-demand колекції і чесне формулювання межі serverFn (Task 5, Review Focus 4); вимір ратчету id (Task 9); обґрунтування Е4-3. Рішення Е4-6 аудит підтвердив по суті.
+
 ## Ухвалені рішення етапу (власник 2026-10-03; архітектор плану — там, де позначено)
 
 | № | Рішення | Причина |
 |---|---|---|
 | Е4-1 | *(власник, 2026-10-03)* **`product_prices.price_type_id` → `ON DELETE RESTRICT`** (правка BASELINE). Видалення типу ціни, на який посилаються ціни, дає 23503 → `AdminConflictError('reference')` → тост `admin.errors.conflictReference`. `discounts.price_type_id` (NO ACTION) поводиться так само; `user_categories.price_type_id` (SET NULL) не змінюється | Сьогодні CASCADE мовчки зносить усі ціни товарів цього типу одним кліком. Клієнтів немає, тож правка baseline безпечна (D5) |
-| Е4-2 | *(архітектор, слідство К3-14 і Global Constraints Е3)* **`price_types.isDefault` — readonly для фабрики.** Дефолт ставить іменована `setDefaultPriceTypeOp` (advisory-lock `price-type-default` → зняти з інших → поставити), видалення — іменована `removeManyPriceTypesOp` (`FOR UPDATE`, дефолтний видалити не можна). Операції «зняти дефолт» немає: щойно дефолт поставлено, він завжди рівно один | Легасі знімав дефолт з інших двома запитами з браузера без транзакції (вікно без дефолту) і дозволяв вимкнути перемикач у самого дефолтного (дефолту не лишалось). Вітрина й `PriceValidator` беруть дефолт як fallback для гостя |
-| Е4-3 | *(власник, 2026-10-03)* **Розділи — плоский список.** `parentId` лишається readonly (новий розділ — `NULL`) | Вітрина показує лише кореневі розділи (`storefront/loaders/sections.ts:47`), легасі-адмінка `parent_id` ніколи не ставила. Дерево — окрема продуктова фіча (вітрина + захист від циклу), не міграція |
-| Е4-4 | *(власник, 2026-10-03)* **`PriceValidator` переїжджає в Е6** разом зі знижками як server-first виняток К3-2. В Е4 заводиться **закомічений реєстр винятків К3-2** (`tests/admin-server-first/registry.ts`) з першим записом `PriceValidator` і тест, що запис не протух | Валідатор читає `profiles`, `user_categories`, `discounts`, `discount_groups` — сутності хвиль Е5/Е6. Спека К3-2: «виняток без запису в реєстрі — дефект» |
+| Е4-2 | *(архітектор, слідство К3-14 і Global Constraints Е3; 🔴 ред.2 — аудит Codex, знахідка 2)* **`price_types.isDefault` — readonly для фабрики.** Дефолт ставить іменована `setDefaultPriceTypeOp`, видалення — іменована `removeManyPriceTypesOp`. 🔴 **ОБИДВІ операції першим кроком транзакції беруть ТОЙ САМИЙ advisory-lock `price-type-default`**, і лише після нього читають і блокують рядки. `setDefault` перевіряє, що `UPDATE` цілі повернув рядок, інакше кидає помилку й відкочує зняття старого дефолту; `remove` блокує batch `FOR UPDATE … ORDER BY id`. Операції «зняти дефолт» немає: щойно дефолт поставлено, він завжди рівно один | Легасі знімав дефолт з інших двома запитами з браузера без транзакції (вікно без дефолту) і дозволяв вимкнути перемикач у самого дефолтного (дефолту не лишалось). Вітрина й `PriceValidator` беруть дефолт як fallback для гостя |
+| Е4-3 | *(власник, 2026-10-03)* **Розділи — плоский список.** `parentId` лишається readonly (новий розділ — `NULL`) | Легасі-адмінка `parent_id` ніколи не ставила, тож у даних, створених адмінкою, ієрархії немає. Вітрина поводиться неоднорідно: навігація й добірки головної беруть лише корені (`loadRootSections`, `storefront/loaders/sections.ts:42-48`), а `/catalog` — усі активні розділи без фільтра батька (`loadSections`, `sections.ts:18-25`, через `storefront-routes/server/catalog.ts:36-41`). Дерево — окрема продуктова фіча (вітрина + захист від циклу), не міграція *(обґрунтування виправлено ред.2 за аудитом Codex, знахідка 8)* |
+| Е4-4 | *(власник, 2026-10-03)* **`PriceValidator` переїжджає в Е6** разом зі знижками як server-first виняток К3-2. В Е4 заводиться **закомічений реєстр легасі-адмінки** (`tests/admin-server-first/registry.ts`) з ДВОМА списками: `SERVER_FIRST_EXCEPTIONS` (свідомі винятки К3-2 — сутності й операції, перший запис `PriceValidator`) і `PENDING_LEGACY` (решта файлів на `supabase-js` із хвилею Е5/Е6/Е7). 🔴 Тест звіряє в ОБИДВА боки: множина файлів `src/admin/**` з `useSupabaseClient` = обʼєднання двох списків. Незареєстрований виняток або забута сторінка червонить гейт *(ред.2 — аудит Codex, знахідка 5)* | Валідатор читає `profiles`, `user_categories`, `discounts`, `discount_groups` — сутності хвиль Е5/Е6. Спека К3-2: «виняток без запису в реєстрі — дефект» |
 | Е4-5 | *(власник, 2026-10-03)* **`section_properties.propertyType` незмінний після створення.** Фабрика отримує третій список колонок `insertOnly`: вони є в insert-схемі й відсутні в update-схемі. Те саме застосовується до `property_options.propertyId` і до `sectionId`/`propertyId`/`appliesTo` призначення | Зміна `multiselect → text` лишала б осиротілі рядки `option_id`. Перенесення опції між властивостями чи призначення між розділами — це видалення плюс створення, не patch |
 | Е4-6 | 🔴 *(архітектор, виміряно кодом 2026-10-03 — власнику на підтвердження в рев'ю плану)* **Унікальність slug властивості — глобальна**: `section_properties_section_id_code_key UNIQUE(section_id, slug)` → `section_properties_slug_key UNIQUE(slug)` (правка BASELINE разом з Е4-1; `ON CONFLICT (section_id, slug)` у `migrations/demo/demo-seed.sql` → `ON CONFLICT (slug)`) | Вітрина знаходить властивість **лише за slug**: `storefront/loaders/properties.ts:47`, `storefront/loaders/property-option.ts:51`, роут `/properties/$propertySlug`. Нові властивості адмінки глобальні (`section_id NULL`), а NULL у старому ключі різний, тож дубль slug проходив і давав неоднозначну сторінку вітрини. Демо-сид має три різні slug — конфлікту немає |
 | Е4-7 | *(архітектор)* **`SLUG_RE` переїжджає в T1** `packages/simplycms/src/domain/slug.ts`, експорт через наявний барель `simplycms/domain` (нового субшляху немає). Поруч `PRICE_TYPE_CODE_RE = /^[a-z0-9_]+$/` (правило легасі `PriceTypeEdit`). Формат перевіряє і форма, і сервер: `refine` ресурсу для `slug`/`code`. Автогенерації slug з назви немає — так само, як у товарі Е3 | Легасі `generateSlug` (`PropertyOptionEdit.tsx:17-24`) лишав кирилицю в URL, а товари Е3 вже на ASCII-kebab. Сервер, що довіряє формі, пропустив би кирилицю прямим викликом serverFn. T1 імпортують і T2 (`admin-server`), і T5 (`admin`) |
@@ -62,9 +66,9 @@
 Вхідні дані й стани, яких спека прямо не називає, але на яких найімовірніше спіткнеться власник магазину. Кожен рядок має тест у задачі-власниці коду.
 
 1. **Видалення типу ціни, яким уже ціновані товари** → тост «використовується», ціни в БД цілі (не зникли мовчки). Тест — Task 1 (DDL: 23503) і Task 4 (операція → `AdminConflictError` `reference`, кількість `product_prices` незмінна).
-2. **Дві вкладки одночасно ставлять дефолтом різні типи цін** → рівно один дефолт, жодного 23505 назовні. Тест — Task 4 (`Promise.all` двох `setDefaultPriceTypeOp`).
+2. **Дві вкладки одночасно ставлять дефолтом різні типи цін** → рівно один дефолт, жодного 23505 назовні. Те саме для `setDefault` паралельно з видаленням цілі. Тест — Task 4 (`Promise.all` двох `setDefaultPriceTypeOp`; 20 ітерацій `setDefault × remove`, ред.2).
 3. **Призначення тієї самої властивості розділу вдруге** (наприклад, «для модифікацій», коли вона вже є «для товарів») → у діалозі її немає серед доступних; прямий insert дає `AdminConflictError` `unique` і тост, а не 500. Тест — Task 3 (харнес: 23505 → `unique`) і Task 8 (UI: список доступних виключає вже призначені в розділі незалежно від `appliesTo`).
-4. **Кириличний або порожній slug / code** → форма показує помилку формату і не надсилає; прямий виклик serverFn з `"Тип-панелі"` відбивається схемою до транзакції. Тест — Task 2 (refine на сервері) і Task 6 (форма).
+4. **Кириличний або порожній slug / code** → форма показує помилку формату і не надсилає; прямий виклик ОПЕРАЦІЇ з `"Тип-панелі"` відбивається схемою до транзакції. Це та сама схема, яку serverFn отримує в `inputValidator(ops.insertSchema)`, але тест межу HTTP/серіалізації Start НЕ перетинає (ред.2, аудит Codex, знахідка 6). Межу serverFn для помилок доводить живий прогін (Task 10, крок 2 — дубль slug через справжню межу; кирилицю відсікає форма раніше). Тест — Task 2 (refine), Task 3 (операція) і Task 6/7/8 (форми).
 5. **Видалення розділу, у якому є товари, або властивості, у якої є значення** → діалог підтвердження прямо каже про наслідки (товари лишаються без розділу; значення властивості в товарах зникнуть). Після видалення розділу товар живий з `section_id NULL`. Тест — Task 3 (харнес: SET NULL) і Task 7/Task 8 (текст попередження в діалозі — ключі `admin.sections.deleteWarning` / `admin.properties.deleteWarning`).
 
 Додатково (нижче п'ятірки, але теж з тестами): дубль slug властивості в різних розділах → 23505 (Task 1, Е4-6); зміна `propertyType` прямим `update` → 400 «patch не може бути порожнім» до транзакції (Task 2, Е4-5).
@@ -138,6 +142,7 @@ Task 1 і Task 2 незалежні між собою. Task 6/7/8 незалеж
 **Files:**
 - Create: `packages/simplycms/test-harness/pg/__tests__/catalog-dictionaries-schema.test.ts`
 - Modify: `packages/simplycms/migrations/0001_init.sql`, `packages/simplycms/src/schema/schema.ts`, `packages/simplycms/drizzle/0000_init.sql`, `packages/simplycms/drizzle/meta/0000_snapshot.json`, `packages/simplycms/migrations/demo/demo-seed.sql`
+- Modify: 🔴 `tests/fixtures/dev-stand/catalog-sample.mjs`, `tests/dev-stand-seed.test.ts` *(ред.2 — аудит Codex, знахідка 1)*: фікстура навмисно моделює двох глобальних «близнюків» зі slug `warranty` (`catalog-sample.mjs:17-26`, `:80-100`), а тест вимагає обидва у виводі (`dev-stand-seed.test.ts:157-168`). Під Е4-6 такий сід не накотиться. Справжній `scripts/dev-stand/seed-demo.sql` дублікатів не має (виміряно 2026-10-03: 10 властивостей, усі slug різні) — правиться лише синтетична фікстура
 - Run: `pnpm template:sync` і коміт копій
 
 **Interfaces:**
@@ -185,13 +190,15 @@ Expected: FAIL. Перший кейс видаляє тип (CASCADE), трет�
 
 `demo-seed.sql`: `on conflict (section_id, slug) do nothing` → `on conflict (slug) do nothing` (розділ 6).
 
+dev-stand: близнюк `GLOBAL_PROPERTY_TWIN_ID` отримує власний slug `warranty-extended`; коментар фікстури (рядки 17-26) переписати: «дві глобальні властивості з `section_id: null` і РІЗНИМИ slug — Е4-6 забороняє однаковий; NULL у `section_id` і далі не арбітр `on conflict`, тому генератор бере `id`». Тест `дві глобальні властивості з одним слагом` перейменувати на `дві глобальні властивості (section_id null) — обидві у виводі`, асерт `match(/'warranty'/g)?.length === 2` замінити на наявність обох id і обох slug; тест «дочірній рядок не осиротів» лишається як є. Перевірка, що синтетика не протухла проти нової схеми: `rg -c "'warranty'" tests/fixtures/dev-stand/catalog-sample.mjs` → 1.
+
 - [ ] **Step 3: Тест зелений + гейт парності джерел схеми**
 
 Run: `pnpm test:schema`
 Expected: PASS увесь контур, зокрема `catalog-dictionaries-schema.test.ts`, `demo-seed.test.ts`, `baseline.test.ts`.
 
-Run: `pnpm vitest run tests/schema-sources-parity.test.ts`
-Expected: PASS. Якщо червоний, джерела розійшлися — звести, а не послаблювати тест.
+Run: `pnpm vitest run tests/schema-sources-parity.test.ts tests/dev-stand-seed.test.ts`
+Expected: PASS. Якщо `schema-sources-parity` червоний, джерела розійшлися — звести, а не послаблювати тест.
 
 - [ ] **Step 4: Синк копій**
 
@@ -201,7 +208,7 @@ Expected: змінені копії міграцій у шаблоні скаф�
 - [ ] **Step 5: Коміт**
 
 ```bash
-git add packages/simplycms/migrations packages/simplycms/src/schema/schema.ts packages/simplycms/drizzle packages/simplycms/test-harness/pg/__tests__/catalog-dictionaries-schema.test.ts packages/create-simplycms-store/template
+git add packages/simplycms/migrations packages/simplycms/src/schema/schema.ts packages/simplycms/drizzle packages/simplycms/test-harness/pg/__tests__/catalog-dictionaries-schema.test.ts packages/create-simplycms-store/template tests/fixtures/dev-stand/catalog-sample.mjs tests/dev-stand-seed.test.ts
 git commit -m "feat(k3-e4): RESTRICT цін за типом і глобальний slug властивості (правка baseline)"
 ```
 
@@ -418,6 +425,19 @@ describe('типи цін: іменовані операції (Е4-2)', () => {
   });
   it('remove типу без посилань — count 1', async () => {});
   it('remove неіснуючого id — помилка, без часткового видалення', async () => {});
+  // 🔴 ред.2 (аудит Codex, знахідка 2): гонка, яку зразки Е1б/Е3 пропускають.
+  it('setDefault(X) паралельно з remove(X) → завжди рівно один дефолт', async () => {
+    for (let i = 0; i < 20; i++) {
+      const X = await freshPriceType();          // не дефолтний, без цін
+      await Promise.allSettled([
+        setDefaultPriceTypeOp({ data: { id: X } }),
+        removeManyPriceTypesOp({ data: [{ id: X }] }),
+      ]);
+      const [{ n }] = await queryRows(dbUrl, 'select count(*)::int n from public.price_types where is_default');
+      expect(n, `ітерація ${i}`).toBe(1);
+    }
+  });
+  it('setDefault неіснуючого id — помилка, старий дефолт лишився', async () => {});
 });
 ```
 
@@ -426,9 +446,13 @@ Expected: FAIL (операцій немає).
 
 - [ ] **Step 2: Реалізація**
 
-`set-default.ts` — дзеркало `product-modifications/set-default.ts` без «товару-власника»: ключ локу `'price-type-default'`; порядок «зняти з інших (`is_default = true and id <> $id`) → поставити»; рядка немає — `Error`.
+🔴 *(ред.2 — аудит Codex, знахідка 2)* Зразки Е1б/Е3 тут НЕ копіюються дослівно: `product-modifications/set-default.ts:29-55` читає ціль ДО локу і не перевіряє результат `UPDATE`, а `order-statuses/remove.ts` локів advisory не бере. Тоді `remove(X)` міг завершитись між читанням `X` і `UPDATE … set is_default = true where id = X`: старий дефолт уже знято, ціль оновлює нуль рядків, дефолту немає. Обидві операції мусять мати однаковий порядок:
 
-`remove.ts` — дзеркало `order-statuses/remove.ts`: одна транзакція, `select … for update` по всіх id, відсутні id → `Error`, серед них дефолтний → `Error('[admin-server] дефолтний тип ціни видалити не можна — призначте інший дефолт')`, далі `delete … returning`. 23503 (RESTRICT, Е4-1) перетворює на `AdminConflictError` сам `runAdmin`; власного мапінгу не писати.
+1. `lockCatalogTarget(db, 'price-type-default')` — ПЕРШИЙ запит транзакції в обох операціях.
+2. `setDefault`: `select … where id = $id for update` → рядка немає, кидаємо `Error`. Якщо ціль уже дефолтна — повернути `{ rows: [ціль] }` (no-op). Далі зняти дефолт з інших (`is_default = true and id <> $id`) → поставити цілі. Якщо `UPDATE` цілі повернув 0 рядків, кидаємо `Error`, і транзакція відкочує зняття.
+3. `remove`: `select … where id in (…) order by id for update` → відсутні id або дефолтний серед них, кидаємо `Error('[admin-server] дефолтний тип ціни видалити не можна — призначте інший дефолт')` → `delete … returning`.
+
+Advisory-lock на рівні довідника, а не рядка, — свідомо: він серіалізує обидві операції незалежно від того, чи рядок-ціль ще існує. Порядок «advisory → рядкові локи» той самий, що в `catalog-lock.ts`, тож циклу очікування з вітриною немає: вітрина рядки `price_types` не блокує. 23503 (RESTRICT, Е4-1) перетворює на `AdminConflictError` сам `runAdmin`; власного мапінгу не писати.
 
 serverFn — топ-рівневі `const` з коментарем «remove ЦІЄЇ сутності — guarded, не фабричний».
 
@@ -450,6 +474,7 @@ git commit -m "feat(k3-e4): setDefault і guarded remove для типів ці�
 
 **Files:**
 - Modify: `packages/simplycms/src/admin-data/collections/{sections,price-types,section-properties,property-options,section-property-assignments}.ts`, `packages/simplycms/src/admin-data/__tests__/catalog-collections.test.tsx`
+- Create: `packages/simplycms/src/admin-data/__tests__/on-demand-full-slice.test.tsx` (ред.2)
 
 **Interfaces:**
 - Consumes: serverFn із Task 3/4.
@@ -472,6 +497,19 @@ it.each([
 it('price_types: delete іде через removePriceTypes (guarded), не фабричний', async () => {});
 it('price_types: відмова сервера відкочує оптимістичне видалення', async () => {});
 ```
+
+🔴 *(ред.2 — аудит Codex, знахідка 6)* Е4-9 спирається на поведінку, якої наявні контрактні тести не покривають: `on-demand-contract.test.tsx:91-201` перевіряє фільтр, пагінацію, `findOne` і join, але не live-запит БЕЗ `where` разом із записом. Новий `admin-data/__tests__/on-demand-full-slice.test.tsx` — на СПРАВЖНІЙ `@tanstack/db` і одному спільному `QueryClient` (шапка й стаб serverFn — як `on-demand-contract.test.tsx`; стаб `listSectionProperties` фільтрує фікстурний масив за переданим subset, а не ігнорує його):
+
+```ts
+it('useLiveQuery без where над on-demand колекцією отримує ВЕСЬ довідник', async () => {
+  // 3 властивості у стабі → у результаті 3, порядок за name
+});
+it('insert через колекцію з’являється у повному зрізі без refetch', async () => {});
+it('після unmount/повторного mount повний зріз включає записаний рядок (write-back живе в кеші)', async () => {});
+it('паралельний зріз where id = X (картка) і повний зріз (список) узгоджені після update', async () => {});
+```
+
+Якщо бібліотека поводиться інакше (наприклад, повний зріз не викликає `loadSubset`), це **точка зупинки**: повідомити замовника, Е4-9 переглядається. Сторінку на здогадку не будувати.
 
 Run: `pnpm vitest run packages/simplycms/src/admin-data`
 Expected: FAIL (`collection.insert` на колекції без хендлерів кидає).
@@ -609,8 +647,8 @@ git commit -m "feat(k3-e4): сторінки розділів на колекц�
   - `optionFormSchema`: `name: min(1)`, `slug: regex(SLUG_RE)`, `sortOrder`, `description`, `metaTitle`, `metaDescription`, `images: string[]` (0..1 ↔ `imageUrl`).
   - `availableProperties(all: SectionProperty[], assigned: SectionPropertyAssignment[]): SectionProperty[]` — виключає БУДЬ-ЯКУ вже призначену цьому розділу властивість, незалежно від `appliesTo` (унікальність `(section_id, property_id)`, Review Focus 3).
   - `SectionPropertyAssignmentsPanel({ sectionId }: { sectionId: string })` — дві таблиці (для товарів / для модифікацій), додавання з `sortOrder = довжина відповідного списку`, видалення.
-- Поведінка картки властивості: у режимі редагування `propertyType` показаний як текст, контролу немає (Е4-5); блок опцій — лише для `select`/`multiselect`; нова опція отримує `sortOrder` = кількість опцій властивості (з колекції, не `count` з БД).
-- i18n: `admin.properties.deleteWarning` («Значення цієї властивості в усіх товарах буде видалено»), `admin.properties.typeImmutable` («Тип не змінюється після створення»).
+- Поведінка картки властивості: у режимі редагування `propertyType` показаний як текст, контролу немає (Е4-5); блок опцій — лише для `select`/`multiselect`; нова опція отримує `sortOrder` = кількість опцій властивості (з колекції, не `count` з БД). 🔴 *(ред.2 — аудит Codex, знахідка 4)* Кожен рядок `PropertyOptionsTable` має видалення опції з підтвердженням (`propertyOptionsCollection.delete(id)`; помилка → `reportTxError`, бібліотека відкочує рядок) — як `deleteOptionMutation` легасі (`PropertyEdit.tsx:150-162`, `:392-408`). Діалог попереджає: значення цієї опції в товарах стануть порожніми (`product_property_values.option_id` / `modification_property_values.option_id` — ON DELETE SET NULL).
+- i18n: `admin.properties.deleteWarning` («Значення цієї властивості в усіх товарах буде видалено»), `admin.properties.typeImmutable` («Тип не змінюється після створення»), `admin.properties.options.deleteWarning` («Значення цієї опції в товарах стануть порожніми»).
 
 - [ ] **Step 1: Тести (червоні)**
 
@@ -625,6 +663,8 @@ it('блок опцій відсутній для text/number/boolean', () => {}
 it('діалог видалення містить admin.properties.deleteWarning', async () => {});
 // PropertyOptionEditPage.test.tsx
 it('нова опція: insert з propertyId з роута і sortOrder = кількість опцій', async () => {});
+// PropertyOptionsTable.test.tsx (ред.2)
+it('видалення опції: підтвердження → collection.delete(id); відмова сервера → тост, рядок повернувся', async () => {});
 it('кириличний slug → помилка біля поля', async () => {});
 // SectionPropertyAssignmentsPanel.test.tsx
 it('додавання: insert з crypto id, appliesTo режиму діалогу', async () => {});
@@ -659,26 +699,37 @@ git commit -m "feat(k3-e4): властивості, опції й признач
 - Modify: `tests/admin-inserts-need-id.test.ts`, `packages/simplycms/src/admin/layouts/LegacySupabaseBoundary.tsx` (+ `__tests__/LegacySupabaseBoundary.test.tsx`), `packages/simplycms/src/i18n/catalogs/{uk,en}/admin/legacy.ts` (якщо підписам посилань потрібні ключі)
 
 **Interfaces:**
-- Produces: `SERVER_FIRST_EXCEPTIONS: ReadonlyArray<{ file: string; reason: string; wave: 'Е5' | 'Е6' | 'Е7' }>` з першим записом `{ file: 'packages/simplycms/src/admin/pages/PriceValidator.tsx', reason: 'обчислення ціни, не сутність; читає profiles/user_categories/discounts/discount_groups', wave: 'Е6' }`.
+- Produces *(ред.2 — аудит Codex, знахідки 5 і 7)*:
+  - `SERVER_FIRST_EXCEPTIONS: ReadonlyArray<{ file: string; entities: readonly EntityName[]; operations: readonly string[]; reason: string; wave: 'Е5' | 'Е6' | 'Е7' }>` — свідомі винятки К3-2 (сутності й операції, а не лише файл). Перший запис: `{ file: 'packages/simplycms/src/admin/pages/PriceValidator.tsx', entities: [ENTITY.profiles, ENTITY.userCategories, ENTITY.priceTypes, ENTITY.products, ENTITY.productModifications, ENTITY.productPrices, ENTITY.discounts, ENTITY.discountGroups], operations: ['explainPrice: читання дефолтного типу ціни, цін товару, знижок і груп знижок для пояснення розрахунку'], reason: 'обчислення ціни, не сутність (К3-2)', wave: 'Е6' }`. Імена ключів ENTITY звірити з `contracts/entities.ts`; якщо якогось немає — записати рядком таблиці й повідомити у звіті.
+  - `PENDING_LEGACY: ReadonlyArray<{ file: string; wave: 'Е5' | 'Е6' | 'Е7' }>` — решта файлів `src/admin/**` з `useSupabaseClient` після Е4. Хвилю брати з `v2-state-map.md` §3.1/§6: замовлення й `AddProductToOrder` — Е5; `LegacySupabaseBoundary` і його тест — Е7; решта — Е6.
 
-- [ ] **Step 1: Ратчет id — до факту**
+- [ ] **Step 1: Ратчет id — до виміряного факту**
 
-Run: `pnpm vitest run tests/admin-inserts-need-id.test.ts`
-Expected: PASS. Тест друкує фактичну кількість; зменшити `KNOWN_WITHOUT_ID` з 27 рівно до неї (очікувано −6: `SectionEdit`, `PriceTypeEdit`, `Properties`, `PropertyOptionEdit`, `SectionPropertiesManager`, `SectionPropertiesTable`) з коментарем «Е4: −N (довідники каталогу)». Не вгадувати — брати вивід.
+`admin-inserts-need-id.test.ts` друкує кількість лише в повідомленні ПРОВАЛЕНОГО асерту (`:122-125`), тож зелений прогін числа не покаже. Вимір: тимчасово поставити `KNOWN_WITHOUT_ID = 0` → `pnpm vitest run tests/admin-inserts-need-id.test.ts` → взяти `вставок без id: N` з виводу FAIL → поставити `KNOWN_WITHOUT_ID = N` з коментарем «Е4: −(27−N) (довідники каталогу)» → прогін PASS. Очікувано `N = 21` (−6: `SectionEdit`, `PriceTypeEdit`, `Properties`, `PropertyOptionEdit`, `SectionPropertiesManager`, `SectionPropertiesTable`). Обидва виводи — у звіт задачі. Якщо `N ≠ 21`, розібратися, який файл не врахований, а не підганяти.
 
-- [ ] **Step 2: Реєстр винятків — тест (червоний) і реалізація**
+- [ ] **Step 2: Реєстр легасі й винятків — тест (червоний) і реалізація**
 
 ```ts
-it('кожен запис реєстру вказує на наявний файл і має причину та хвилю', () => {
+const actual = filesWithUseSupabaseClient('packages/simplycms/src/admin'); // той самий скан, що й rg -l
+const registered = [...SERVER_FIRST_EXCEPTIONS, ...PENDING_LEGACY].map((e) => e.file);
+
+it('кожен легасі-файл адмінки зареєстрований (виняток К3-2 або хвиля)', () => {
+  expect(actual.filter((f) => !registered.includes(f))).toEqual([]);
+});
+it('у реєстрі немає протухлих записів (файл існує і ще легасі)', () => {
+  expect(registered.filter((f) => !actual.includes(f))).toEqual([]);
+});
+it('винятки К3-2 називають сутності, операції й причину', () => {
   for (const e of SERVER_FIRST_EXCEPTIONS) {
-    expect(existsSync(join(ROOT, e.file)), e.file).toBe(true);
+    expect(e.entities.length).toBeGreaterThan(0);
+    expect(e.operations.length).toBeGreaterThan(0);
     expect(e.reason.length).toBeGreaterThan(10);
   }
 });
-it('імена файлів унікальні', () => {});
+it('файл не стоїть в обох списках і не дублюється', () => {});
 ```
 
-Негативний контроль: тимчасово дописати запис із неіснуючим шляхом → тест червоний → прибрати. Вивід обох прогонів — у звіт задачі.
+Негативні контроли (вивід кожного червоного прогону — у звіт): (а) прибрати запис `PriceValidator` → червоніє перший тест («незареєстрований»); (б) дописати запис із файлом, якого немає, → червоніє другий тест; (в) тимчасово додати `useSupabaseClient` у будь-яку сторінку `features/**` → червоніє перший тест. Після кожного контролю повернути як було.
 
 - [ ] **Step 3: Заглушка легасі**
 
@@ -687,7 +738,7 @@ it('імена файлів унікальні', () => {});
 - [ ] **Step 4: Лічильник легасі**
 
 Run: `rg -l useSupabaseClient packages/simplycms/src/admin | wc -l`
-Expected: `34` (було 43: −7 сторінок, −2 видалені компоненти; `PriceValidator` уже був серед 43 і лишається). Якщо число інше — розібратися, який файл не врахований, і записати це у звіт.
+Expected: `34` (було 43: −7 сторінок, −2 видалені компоненти; `PriceValidator` уже був серед 43 і лишається). Це число = `SERVER_FIRST_EXCEPTIONS.length + PENDING_LEGACY.length`, і тест Step 2 стереже його в обидва боки.
 
 Run: `rg -l useSupabaseClient packages/simplycms/src/admin/features`
 Expected: порожньо.
@@ -709,12 +760,25 @@ git commit -m "test(k3-e4): ратчет id, реєстр server-first виня�
 ## Task 10: Живий прогін — власник наповнює довідники, вітрина їх бачить; доки й повний ланцюг
 
 **Files:**
-- Create: `scripts/live-smoke/admin-dictionaries.mjs`
-- Modify: `scripts/live-smoke.mjs`, `scripts/live-smoke/admin-sql.mjs` (SQL-хелпери за потреби), `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `CLAUDE.md`, цей план (розділ «Факти виконання»)
+- Create: `scripts/live-smoke/admin-dictionaries.mjs`, `scripts/live-smoke/owner-session.mjs`
+- Modify: `scripts/live-smoke.mjs`, `scripts/live-smoke/admin-catalog.mjs`, `scripts/live-smoke/admin-sql.mjs` (SQL-хелпери за потреби), `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `CLAUDE.md`, цей план (розділ «Факти виконання»)
 
-**Interfaces:**
-- Consumes: сесія власника з `runAdminCatalogStep` (`scripts/live-smoke/admin-catalog.mjs`) — новий крок отримує вже залогінений `context` (або повторює вхід тим самим `owner-invite.mts`; на вибір виконавця, без дублювання коду входу).
-- Produces: `runAdminDictionariesStep({ context, base, dbUrl, check })`, виклик у `live-smoke.mjs` після `runAdminCatalogStep`.
+**Interfaces** *(ред.2 — аудит Codex, знахідка 3: сьогодні `runAdminCatalogStep` сам створює контекст і закриває його в `finally`, `admin-catalog.mjs:29-52`, `:140-148`, тож наступному кроку залогіненої сесії не дістати)*:
+- Produces:
+  - `openOwnerSession({ browser, base, storeEnv }) → Promise<{ context: BrowserContext }>` (`owner-session.mjs`): випуск запрошення через `owner-invite.mts` → пароль → `waitForURL(${base}/admin)`. Це винесений без змін блок входу з `admin-catalog.mjs:36-~70` разом із константою `PASSWORD`.
+  - `runAdminCatalogStep({ context, base, dbUrl, check })` — сигнатура змінюється: `browser`/`storeEnv` → готовий `context`. Крок відкриває власну сторінку `context.newPage()` з власним лічильником `pageerror` і **не закриває** контекст.
+  - `runAdminDictionariesStep({ context, base, dbUrl, check })` — те саме правило: своя сторінка, свій лічильник, контекст не закриває.
+- Виклик у `live-smoke.mjs` (замість рядка 122):
+  ```js
+  const owner = await openOwnerSession({ browser, base, storeEnv: env });
+  try {
+    await runAdminCatalogStep({ context: owner.context, base, dbUrl, check });
+    await runAdminDictionariesStep({ context: owner.context, base, dbUrl, check });
+  } finally {
+    await owner.context.close();
+  }
+  ```
+- Регрес: крок каталогу Е3 дає ті самі рядки `check`, що й до рефакторингу. Звірити таблицю виводу з «Фактами виконання» плану Е3.
 
 - [ ] **Step 1: Крок живого прогону**
 
