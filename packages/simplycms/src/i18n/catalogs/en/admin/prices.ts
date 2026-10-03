@@ -16,4 +16,8 @@ export const messages: Catalog = {
   'admin.prices.namePlaceholder': 'Retail',
   'admin.prices.codeHint': 'Unique code (Latin letters, digits, _)',
   'admin.prices.defaultHint': 'This price type will be used as the fallback',
+  'admin.prices.defaultLocked': 'The default price type cannot be deleted',
+  'admin.prices.codeFormat': 'Latin letters, digits and _ only',
+  'admin.prices.defaultKeep':
+    'To change the default, make another type the default',
 };

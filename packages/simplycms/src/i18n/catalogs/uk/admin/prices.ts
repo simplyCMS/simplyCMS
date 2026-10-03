@@ -14,4 +14,8 @@ export const messages = {
   'admin.prices.namePlaceholder': 'Роздрібна',
   'admin.prices.codeHint': 'Унікальний код (латиниця, цифри, _)',
   'admin.prices.defaultHint': 'Цей вид ціни буде використовуватись як фолбек',
+  'admin.prices.defaultLocked': 'Дефолтний тип ціни видалити не можна',
+  'admin.prices.codeFormat': 'Лише латиниця, цифри й _',
+  'admin.prices.defaultKeep':
+    'Щоб змінити дефолт, призначте дефолтним інший тип',
 } as const;
