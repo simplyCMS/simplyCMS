@@ -209,4 +209,35 @@ describe('SectionEditPage', () => {
     const panel = await screen.findByTestId('assignments-panel');
     expect(panel.getAttribute('data-section-id')).toBe(ROWS[0]!.id);
   });
+
+  it('відмова видалення: без «не знайдено», несохранене введення лишається', async () => {
+    params.sectionId = ROWS[0]!.id;
+    let reject!: (e: unknown) => void;
+    removeSections.mockReturnValue(
+      new Promise((_, rej) => {
+        reject = rej;
+      }),
+    );
+    render(<SectionEditPage />, { wrapper });
+    await screen.findByDisplayValue('Ноутбуки');
+    fireEvent.change(screen.getByLabelText('Назва'), {
+      target: { value: 'Ноутбуки змінені' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Видалити' }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: t('common.delete') }),
+    );
+    await waitFor(() => expect(removeSections).toHaveBeenCalled());
+    // Оптимістично рядка вже немає, але сторінка НЕ показує «не знайдено».
+    expect(screen.queryByText(t('admin.sections.notFound'))).toBeNull();
+    reject(new Error('boom'));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(`${t('common.error')} boom`),
+    );
+    // Повернений рядок не затирає введене (скидання — лише при першому надходженні).
+    await screen.findByDisplayValue('Ноутбуки змінені');
+    expect(screen.queryByText(t('admin.sections.notFound'))).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });

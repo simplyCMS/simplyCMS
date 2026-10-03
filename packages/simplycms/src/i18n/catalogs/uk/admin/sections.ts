@@ -7,7 +7,6 @@ export const messages = {
   'admin.sections.created': 'Розділ створено',
   'admin.sections.saved': 'Розділ збережено',
   'admin.sections.deleted': 'Розділ видалено',
-  'admin.sections.confirmDelete': 'Видалити цей розділ?',
   'admin.sections.new': 'Новий розділ',
   'admin.sections.editTitle': 'Редагування розділу',
   'admin.sections.newSubtitle': 'Створення нового розділу каталогу',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import { useForm } from 'react-hook-form';
@@ -11,6 +11,7 @@ import { useT } from 'simplycms/i18n';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
+import { useSeedOnce } from '../useSeedOnce';
 import {
   EMPTY_PROPERTY,
   propertyFormSchema,
@@ -39,9 +40,10 @@ export function usePropertyCard(propertyId: string) {
   });
   const { reset } = form;
 
-  // Скидання форми лише при зміні РЯДКА (id), а не на кожен write-back:
-  // інакше відповідь сервера перетерла б незбережене введення.
-  useEffect(() => {
+  // Засів форми лише при ПЕРШОМУ надходженні рядка, а не на кожен
+  // write-back чи повернення після відмови видалення: інакше відповідь
+  // сервера перетерла б незбережене введення.
+  useSeedOnce(row?.id, () => {
     if (row)
       reset({
         name: row.name,
@@ -52,7 +54,7 @@ export function usePropertyCard(propertyId: string) {
         hasPage: row.hasPage,
         sortOrder: row.sortOrder,
       });
-  }, [row?.id, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+  });
 
   // Поки видалення в дорозі, оптимістично рядка вже немає — без прапорця
   // сторінка блимнула б станом «не знайдено» перед переходом на список.

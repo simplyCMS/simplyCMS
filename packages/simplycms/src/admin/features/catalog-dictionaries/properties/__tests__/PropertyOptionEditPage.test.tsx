@@ -201,4 +201,32 @@ describe('PropertyOptionEditPage', () => {
     expect(screen.queryByLabelText(t('common.name'))).toBeNull();
     expect(insertPropertyOptions).not.toHaveBeenCalled();
   });
+
+  it('невідома властивість: стан «не знайдено», без форми й ImageUpload', async () => {
+    params.propertyId = 'c0000000-0000-4000-8000-0000000000ff';
+    render(<PropertyOptionEditPage />, { wrapper });
+    await screen.findByText(t('admin.properties.notFound'));
+    expect(screen.queryByLabelText(t('common.name'))).toBeNull();
+    expect(screen.queryByTestId('image-upload')).toBeNull();
+    expect(insertPropertyOptions).not.toHaveBeenCalled();
+  });
+
+  it('поки властивість вантажиться — не «не знайдено»; після — форма', async () => {
+    let resolve!: (v: unknown) => void;
+    const pending = new Promise((res) => {
+      resolve = res;
+    });
+    listSectionProperties.mockImplementation(async (a: unknown) => {
+      await pending;
+      return serve(PROPS)(a as never);
+    });
+    render(<PropertyOptionEditPage />, { wrapper });
+    await waitFor(() => expect(listPropertyOptions).toHaveBeenCalled());
+    await waitFor(() => expect(listSectionProperties).toHaveBeenCalled());
+    expect(screen.queryByText(t('admin.properties.notFound'))).toBeNull();
+    expect(screen.queryByTestId('image-upload')).toBeNull();
+    resolve(undefined);
+    await screen.findByTestId('image-upload');
+    expect(screen.queryByText(t('admin.properties.notFound'))).toBeNull();
+  });
 });

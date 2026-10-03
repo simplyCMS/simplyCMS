@@ -9,7 +9,6 @@ export const messages: Catalog = {
   'admin.sections.created': 'Section created',
   'admin.sections.saved': 'Section saved',
   'admin.sections.deleted': 'Section deleted',
-  'admin.sections.confirmDelete': 'Delete this section?',
   'admin.sections.new': 'New section',
   'admin.sections.editTitle': 'Edit section',
   'admin.sections.newSubtitle': 'Create a new catalog section',

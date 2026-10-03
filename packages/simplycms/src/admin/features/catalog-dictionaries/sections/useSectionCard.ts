@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useLiveQuery } from '@tanstack/react-db';
 import { useForm } from 'react-hook-form';
@@ -8,6 +8,7 @@ import { useT } from 'simplycms/i18n';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
+import { useSeedOnce } from '../useSeedOnce';
 import {
   sectionFormSchema,
   toSectionDraft,
@@ -50,7 +51,7 @@ export function useSectionCard(sectionId: string | undefined) {
   });
   const { reset } = form;
 
-  useEffect(() => {
+  useSeedOnce(row?.id, () => {
     if (row)
       reset({
         name: row.name,
@@ -62,8 +63,11 @@ export function useSectionCard(sectionId: string | undefined) {
         isActive: row.isActive,
         images: row.imageUrl ? [row.imageUrl] : [],
       });
-  }, [row?.id, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+  });
 
+  // Поки видалення в дорозі, оптимістично рядка вже немає — без прапорця
+  // сторінка блимнула б станом «не знайдено» перед переходом на список.
+  const [deleting, setDeleting] = useState(false);
   const goList = () => navigate({ to: adminPath('sections') });
 
   const onSubmit = async (v: SectionFormValues) => {
@@ -87,14 +91,28 @@ export function useSectionCard(sectionId: string | undefined) {
 
   const handleDelete = () => {
     if (!row) return;
+    setDeleting(true);
     collection
       .delete(row.id)
       .isPersisted.promise.then(() => {
         toast.success(t('admin.sections.deleted'));
         goList();
       })
-      .catch((e: unknown) => reportTxError(t, e));
+      .catch((e: unknown) => {
+        // Бібліотека вже повернула рядок — користувач лишається на картці.
+        setDeleting(false);
+        reportTxError(t, e);
+      });
   };
 
-  return { isNew, isLoading, row, entityId, form, onSubmit, handleDelete };
+  return {
+    isNew,
+    isLoading,
+    deleting,
+    row,
+    entityId,
+    form,
+    onSubmit,
+    handleDelete,
+  };
 }

@@ -21,12 +21,20 @@ import { useSectionCard } from './useSectionCard';
 export default function SectionEditPage() {
   const t = useT();
   const { sectionId } = useParams({ strict: false }) as { sectionId?: string };
-  const { isNew, isLoading, row, entityId, form, onSubmit, handleDelete } =
-    useSectionCard(sectionId);
+  const {
+    isNew,
+    isLoading,
+    deleting,
+    row,
+    entityId,
+    form,
+    onSubmit,
+    handleDelete,
+  } = useSectionCard(sectionId);
   const nameValue = useWatch({ control: form.control, name: 'name' });
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  if (!isNew && isLoading) return <PageSpinner />;
+  if ((!isNew && isLoading) || (deleting && !row)) return <PageSpinner />;
 
   if (!isNew && !row)
     return (

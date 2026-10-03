@@ -20,11 +20,11 @@ export default function PriceTypeEditPage() {
   const { priceTypeId } = useParams({ strict: false }) as {
     priceTypeId?: string;
   };
-  const { isNew, isLoading, row, form, onSubmit, handleDelete } =
+  const { isNew, isLoading, deleting, row, form, onSubmit, handleDelete } =
     usePriceTypeCard(priceTypeId);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  if (!isNew && isLoading)
+  if ((!isNew && isLoading) || (deleting && !row))
     return <div className="p-8 text-center">{t('common.loading')}</div>;
 
   if (!isNew && !row)

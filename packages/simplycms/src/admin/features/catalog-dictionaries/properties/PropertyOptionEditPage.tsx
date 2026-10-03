@@ -29,6 +29,16 @@ export default function PropertyOptionEditPage() {
 
   if (isLoading) return <PageSpinner />;
 
+  // Невідома властивість: без форми й ImageUpload — інакше submit дав би
+  // 23503, а завантаження встигло б створити орфан у сховищі.
+  if (!property)
+    return (
+      <NotFoundState
+        backTo={adminPath('properties')}
+        message={t('admin.properties.notFound')}
+      />
+    );
+
   if (!isNew && !row)
     return (
       <NotFoundState

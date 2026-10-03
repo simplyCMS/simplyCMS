@@ -58,9 +58,6 @@ export const messages: Catalog = {
   'admin.properties.options.descriptionCounter': '/160 characters',
 
   'admin.properties.section.title': 'Section properties',
-  'admin.properties.section.empty':
-    'No properties yet. Add properties to this section.',
-  'admin.properties.section.addToSection': 'Add a property to the section',
   'admin.properties.section.notConfigured':
     'No properties configured for this section yet',
   'admin.properties.section.pickSection':

@@ -5,7 +5,6 @@ export const messages = {
   'admin.prices.empty': 'Видів цін ще немає',
   'admin.prices.created': 'Вид ціни створено',
   'admin.prices.deleted': 'Вид ціни видалено',
-  'admin.prices.confirmDelete': 'Видалити цей вид ціни?',
   'admin.prices.new': 'Новий вид ціни',
   'admin.prices.editTitle': 'Редагування виду ціни',
   'admin.prices.deleteTitle': 'Видалити вид ціни?',

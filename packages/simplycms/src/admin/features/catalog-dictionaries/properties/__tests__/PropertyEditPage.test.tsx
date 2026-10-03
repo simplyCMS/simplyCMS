@@ -216,4 +216,34 @@ describe('PropertyEditPage', () => {
     await screen.findByText(t('admin.properties.notFound'));
     expect(screen.queryByLabelText(t('common.name'))).toBeNull();
   });
+
+  it('відмова видалення: несохранене введення лишається після повернення рядка', async () => {
+    let reject!: (e: unknown) => void;
+    removeSectionProperties.mockReturnValue(
+      new Promise((_, rej) => {
+        reject = rej;
+      }),
+    );
+    render(<PropertyEditPage />, { wrapper });
+    await screen.findByDisplayValue('Бренд');
+    fireEvent.change(screen.getByLabelText(t('common.name')), {
+      target: { value: 'Бренд змінений' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.properties.delete') }),
+    );
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: t('common.delete') }),
+    );
+    await waitFor(() => expect(removeSectionProperties).toHaveBeenCalled());
+    expect(screen.queryByText(t('admin.properties.notFound'))).toBeNull();
+    reject(new Error('boom'));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(`${t('common.error')} boom`),
+    );
+    await screen.findByDisplayValue('Бренд змінений');
+    expect(screen.queryByText(t('admin.properties.notFound'))).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useLiveQuery } from '@tanstack/react-db';
 import { useForm } from 'react-hook-form';
@@ -8,6 +8,7 @@ import { useT } from 'simplycms/i18n';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
+import { useSeedOnce } from '../useSeedOnce';
 import {
   priceTypeFormSchema,
   type PriceTypeFormInput,
@@ -45,7 +46,9 @@ export function usePriceTypeCard(priceTypeId: string | undefined) {
   });
   const { reset } = form;
 
-  useEffect(() => {
+  // Ключ несе й `isDefault`: зміна дефолту на сервері пересіює перемикач
+  // (як і раніше); повернення рядка після відмови видалення — ні.
+  useSeedOnce(row && `${row.id}:${row.isDefault}`, () => {
     if (row)
       reset({
         name: row.name,
@@ -53,7 +56,11 @@ export function usePriceTypeCard(priceTypeId: string | undefined) {
         sortOrder: row.sortOrder,
         isDefault: row.isDefault,
       });
-  }, [row?.id, row?.isDefault, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+  });
+
+  // Поки видалення в дорозі, оптимістично рядка вже немає — без прапорця
+  // сторінка блимнула б станом «не знайдено» перед переходом на список.
+  const [deleting, setDeleting] = useState(false);
 
   const goList = () => navigate({ to: adminPath('price-types') });
 
@@ -92,14 +99,19 @@ export function usePriceTypeCard(priceTypeId: string | undefined) {
 
   const handleDelete = () => {
     if (!row) return;
+    setDeleting(true);
     collection
       .delete(row.id)
       .isPersisted.promise.then(() => {
         toast.success(t('admin.prices.deleted'));
         goList();
       })
-      .catch((e: unknown) => reportTxError(t, e));
+      .catch((e: unknown) => {
+        // Бібліотека вже повернула рядок — користувач лишається на картці.
+        setDeleting(false);
+        reportTxError(t, e);
+      });
   };
 
-  return { isNew, isLoading, row, form, onSubmit, handleDelete };
+  return { isNew, isLoading, deleting, row, form, onSubmit, handleDelete };
 }

@@ -7,7 +7,6 @@ export const messages: Catalog = {
   'admin.prices.empty': 'No price types yet',
   'admin.prices.created': 'Price type created',
   'admin.prices.deleted': 'Price type deleted',
-  'admin.prices.confirmDelete': 'Delete this price type?',
   'admin.prices.new': 'New price type',
   'admin.prices.editTitle': 'Edit price type',
   'admin.prices.deleteTitle': 'Delete this price type?',

@@ -59,9 +59,6 @@ export const messages = {
 
   // Властивості розділу (призначення товарам / модифікаціям)
   'admin.properties.section.title': 'Властивості розділу',
-  'admin.properties.section.empty':
-    'Властивостей ще немає. Додайте властивості до розділу.',
-  'admin.properties.section.addToSection': 'Додати властивість до розділу',
   'admin.properties.section.notConfigured':
     'Для цього розділу ще не налаштовані властивості',
   'admin.properties.section.pickSection':

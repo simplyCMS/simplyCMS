@@ -51,7 +51,9 @@ export function usePropertyOptionCard(
       q.from({ o: optionsCol }).where(({ o }) => eq(o.propertyId, propertyId)),
     [propertyId],
   );
-  const { data: properties } = useLiveQuery(
+  // Окремий isLoading властивості: без нього перша мить зрізу дала б хибне
+  // «не знайдено» (Е4, фінальне рев'ю п.4).
+  const { data: properties, isLoading: loadingProperty } = useLiveQuery(
     (q) => q.from({ p: propertiesCol }).where(({ p }) => eq(p.id, propertyId)),
     [propertyId],
   );
@@ -106,5 +108,13 @@ export function usePropertyOptionCard(
     goBack();
   };
 
-  return { isNew, isLoading, property, row, entityId, form, onSubmit };
+  return {
+    isNew,
+    isLoading: isLoading || loadingProperty,
+    property,
+    row,
+    entityId,
+    form,
+    onSubmit,
+  };
 }

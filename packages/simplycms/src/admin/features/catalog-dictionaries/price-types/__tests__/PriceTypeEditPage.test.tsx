@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { createTranslator } from 'simplycms/i18n';
 import { ROWS, wrapper } from './render-support';
@@ -38,11 +39,13 @@ const {
   listPriceTypes,
   insertPriceTypes,
   updatePriceTypes,
+  removePriceTypes,
   setDefaultPriceType,
 } = vi.hoisted(() => ({
   listPriceTypes: vi.fn(),
   insertPriceTypes: vi.fn(),
   updatePriceTypes: vi.fn(),
+  removePriceTypes: vi.fn(),
   setDefaultPriceType: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
@@ -52,6 +55,7 @@ vi.mock('simplycms/admin-server', async () =>
     listPriceTypes,
     insertPriceTypes,
     updatePriceTypes,
+    removePriceTypes,
     setDefaultPriceType,
   }),
 );
@@ -179,5 +183,34 @@ describe('PriceTypeEditPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Зберегти' }));
     await waitFor(() => expect(navigate).toHaveBeenCalled());
     expect(setDefaultPriceType).not.toHaveBeenCalled();
+  });
+
+  it('відмова видалення: без «не знайдено», несохранене введення лишається', async () => {
+    params.priceTypeId = ROWS[1]!.id;
+    let reject!: (e: unknown) => void;
+    removePriceTypes.mockReturnValue(
+      new Promise((_, rej) => {
+        reject = rej;
+      }),
+    );
+    render(<PriceTypeEditPage />, { wrapper });
+    await screen.findByDisplayValue('Опт');
+    fireEvent.change(screen.getByLabelText('Назва'), {
+      target: { value: 'Опт змінений' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Видалити' }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: t('common.delete') }),
+    );
+    await waitFor(() => expect(removePriceTypes).toHaveBeenCalled());
+    expect(screen.queryByText(t('admin.prices.notFound'))).toBeNull();
+    reject(new Error('boom'));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(`${t('common.error')} boom`),
+    );
+    await screen.findByDisplayValue('Опт змінений');
+    expect(screen.queryByText(t('admin.prices.notFound'))).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
