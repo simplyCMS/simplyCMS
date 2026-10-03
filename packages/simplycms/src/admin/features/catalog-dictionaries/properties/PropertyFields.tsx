@@ -1,6 +1,5 @@
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form';
 import { useT } from 'simplycms/i18n';
-import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
 import {
@@ -16,6 +15,7 @@ import {
   type PropertyFormInput,
   type PropertyFormValues,
 } from './property-form-schema';
+import { SlugField, SortOrderField, TextField } from '../form-fields';
 
 interface Props {
   readonly form: UseFormReturn<PropertyFormInput, unknown, PropertyFormValues>;
@@ -62,40 +62,21 @@ export function PropertyFields({ form, idPrefix, typeEditable }: Props) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor={id('name')}>{t('common.name')}</Label>
-          <Input
-            id={id('name')}
-            placeholder={t('admin.properties.namePlaceholder')}
-            aria-invalid={!!errors.name}
-            {...register('name')}
-          />
-          {errors.name && (
-            <p role="alert" className="text-xs text-destructive">
-              {t('validation.nameRequired')}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={id('slug')}>{t('admin.common.slug')}</Label>
-          <Input
-            id={id('slug')}
-            aria-invalid={!!errors.slug}
-            aria-describedby={id('slug-hint')}
-            {...register('slug')}
-          />
-          <p
-            id={id('slug-hint')}
-            role={errors.slug ? 'alert' : undefined}
-            className={
-              errors.slug
-                ? 'text-xs text-destructive'
-                : 'text-xs text-muted-foreground'
-            }
-          >
-            {t('admin.properties.slugHint')}
-          </p>
-        </div>
+        <TextField
+          id={id('name')}
+          label={t('common.name')}
+          placeholder={t('admin.properties.namePlaceholder')}
+          registration={register('name')}
+          invalid={!!errors.name}
+          errorText={t('validation.nameRequired')}
+        />
+        <SlugField
+          id={id('slug')}
+          label={t('admin.common.slug')}
+          registration={register('slug')}
+          invalid={!!errors.slug}
+          hint={t('admin.properties.slugHint')}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -138,16 +119,12 @@ export function PropertyFields({ form, idPrefix, typeEditable }: Props) {
             </>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor={id('sort')}>{t('common.sortOrder')}</Label>
-          <Input
-            id={id('sort')}
-            type="number"
-            min="0"
-            aria-invalid={!!errors.sortOrder}
-            {...register('sortOrder')}
-          />
-        </div>
+        <SortOrderField
+          id={id('sort')}
+          label={t('common.sortOrder')}
+          registration={register('sortOrder')}
+          invalid={!!errors.sortOrder}
+        />
       </div>
 
       <div className="flex flex-wrap gap-6 pt-2">

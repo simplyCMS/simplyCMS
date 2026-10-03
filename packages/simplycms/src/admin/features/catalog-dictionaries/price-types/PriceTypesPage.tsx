@@ -13,11 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { Plus, Trash2, Star, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
-import { PriceTypeDeleteDialog } from './PriceTypeDeleteDialog';
+import { DeleteConfirmDialog } from '../DeleteConfirmDialog';
+import { PageSpinner } from '../PageStates';
 
 /**
  * Список типів цін (Е4, Task 6): жива eager-колекція, сортування на
@@ -44,13 +45,7 @@ export default function PriceTypesPage() {
       .catch((e: unknown) => reportTxError(t, e));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <PageSpinner />;
 
   return (
     <div className="space-y-6">
@@ -140,7 +135,9 @@ export default function PriceTypesPage() {
           </Table>
         </CardContent>
       </Card>
-      <PriceTypeDeleteDialog
+      <DeleteConfirmDialog
+        title={t('admin.prices.deleteTitle')}
+        warning={t('admin.prices.deleteWarning')}
         open={deleteId !== null}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={() => deleteId && handleDelete(deleteId)}

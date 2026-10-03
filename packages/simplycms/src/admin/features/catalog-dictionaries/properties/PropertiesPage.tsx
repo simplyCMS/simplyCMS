@@ -16,13 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
-import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { DeleteConfirmDialog } from '../DeleteConfirmDialog';
+import { PageSpinner } from '../PageStates';
 import { PropertyCreateDialog } from './PropertyCreateDialog';
-import { PROPERTY_TYPE_LABEL } from './property-form-schema';
+import { PropertyRow } from './PropertyRow';
 
 /**
  * Список властивостей (Е4, Task 8). On-demand колекція БЕЗ `where` —
@@ -49,13 +50,7 @@ export default function PropertiesPage() {
       .catch((e: unknown) => reportTxError(t, e));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <PageSpinner />;
 
   return (
     <div className="space-y-6">
@@ -91,48 +86,14 @@ export default function PropertiesPage() {
             </TableHeader>
             <TableBody>
               {properties.map((property) => (
-                <TableRow
+                <PropertyRow
                   key={property.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() =>
+                  property={property}
+                  onOpen={() =>
                     navigate({ to: adminPath(`properties/${property.id}`) })
                   }
-                >
-                  <TableCell className="font-medium">
-                    {property.name}
-                    {property.isRequired && (
-                      <span className="text-destructive ml-1">*</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-sm">
-                    {property.slug}
-                  </TableCell>
-                  <TableCell>
-                    {t(PROPERTY_TYPE_LABEL[property.propertyType])}
-                  </TableCell>
-                  <TableCell>
-                    {property.isFilterable ? (
-                      <span className="text-green-600">{t('common.yes')}</span>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        {t('common.no')}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('admin.properties.delete')}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(property.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                  onDelete={() => setDeleteId(property.id)}
+                />
               ))}
               {properties.length === 0 && (
                 <TableRow>

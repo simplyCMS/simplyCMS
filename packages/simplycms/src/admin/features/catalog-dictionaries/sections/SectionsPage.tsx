@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useLiveQuery } from '@tanstack/react-db';
 import { sectionsCollection, useCollection } from 'simplycms/admin-data';
-import { resolveMediaUrl } from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
@@ -14,11 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { Plus, Trash2, Loader2, ImageIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
-import { SectionDeleteDialog } from './SectionDeleteDialog';
+import { DeleteConfirmDialog } from '../DeleteConfirmDialog';
+import { PageSpinner } from '../PageStates';
+import { SectionRow } from './SectionRow';
 
 /**
  * Список розділів (Е4, Task 7): жива eager-колекція, сортування за
@@ -49,13 +50,7 @@ export default function SectionsPage() {
       .catch((e: unknown) => reportTxError(t, e));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <PageSpinner />;
 
   return (
     <div className="space-y-6">
@@ -98,73 +93,16 @@ export default function SectionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sections.map((section) => {
-                // 🔴 imageUrl — референс сховища, а не URL (Е2-1).
-                const thumb = resolveMediaUrl(section.imageUrl);
-                return (
-                  <TableRow
-                    key={section.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() =>
-                      navigate({ to: adminPath(`sections/${section.id}`) })
-                    }
-                  >
-                    <TableCell>
-                      {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={section.name}
-                          width={40}
-                          height={40}
-                          className="object-cover rounded"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">
-                          <ImageIcon
-                            className="h-4 w-4 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {section.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {section.slug}
-                    </TableCell>
-                    <TableCell>{section.sortOrder}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          section.isActive
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
-                        }`}
-                      >
-                        {section.isActive
-                          ? t('common.activeM')
-                          : t('admin.sections.inactive')}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={t('common.delete')}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteId(section.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {sections.map((section) => (
+                <SectionRow
+                  key={section.id}
+                  section={section}
+                  onOpen={() =>
+                    navigate({ to: adminPath(`sections/${section.id}`) })
+                  }
+                  onDelete={() => setDeleteId(section.id)}
+                />
+              ))}
               {sections.length === 0 && (
                 <TableRow>
                   <TableCell
@@ -179,7 +117,9 @@ export default function SectionsPage() {
           </Table>
         </CardContent>
       </Card>
-      <SectionDeleteDialog
+      <DeleteConfirmDialog
+        title={t('admin.sections.deleteTitle')}
+        warning={t('admin.sections.deleteWarning')}
         open={deleteId !== null}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={() => deleteId && handleDelete(deleteId)}

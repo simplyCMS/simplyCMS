@@ -14,19 +14,30 @@ interface Props {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onConfirm: () => void;
+  /** Вже перекладені заголовок і попередження про наслідки. */
+  readonly title: string;
+  readonly warning: string;
 }
 
-/** Підтвердження видалення розділу — одна фраза для списку й картки. */
-export function SectionDeleteDialog({ open, onOpenChange, onConfirm }: Props) {
+/**
+ * Спільне підтвердження видалення довідників каталогу (розділи, типи цін,
+ * властивості, опції, призначення): один діалог, різні тексти наслідків —
+ * попередження завжди в описі.
+ */
+export function DeleteConfirmDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  title,
+  warning,
+}: Props) {
   const t = useT();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t('admin.sections.deleteTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t('admin.sections.deleteWarning')}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{warning}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
