@@ -48,11 +48,9 @@ export {
   productPropertyValuesOps,
   modificationPropertyValuesOps,
 } from './property-values/resources';
-export {
-  sectionsReadOps,
-  priceTypesReadOps,
-  sectionPropertyAssignmentsReadOps,
-  sectionPropertiesReadOps,
-  propertyOptionsReadOps,
-} from './catalog-read/resources';
+export { sectionsOps } from './sections/resource';
+export { priceTypesOps } from './price-types/resource';
+export { sectionPropertiesOps } from './section-properties/resource';
+export { propertyOptionsOps } from './property-options/resource';
+export { sectionPropertyAssignmentsOps } from './section-property-assignments/resource';
 export { AdminConflictError } from './errors';

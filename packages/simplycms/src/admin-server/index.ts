@@ -27,11 +27,11 @@ import {
   saveStockOp,
   productPropertyValuesOps,
   modificationPropertyValuesOps,
-  sectionsReadOps,
-  priceTypesReadOps,
-  sectionPropertyAssignmentsReadOps,
-  sectionPropertiesReadOps,
-  propertyOptionsReadOps,
+  sectionsOps,
+  priceTypesOps,
+  sectionPropertyAssignmentsOps,
+  sectionPropertiesOps,
+  propertyOptionsOps,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -190,24 +190,92 @@ export const removeModificationPropertyValues = createServerFn({
   .inputValidator(modificationPropertyValuesOps.removeSchema)
   .handler(modificationPropertyValuesOps.remove);
 
+// 🔴 Task 3 (Е4): довідники каталогу — записувані ресурси замість читальних
+// Е3 (Е3-1 → Е4). Операція всього CRUD — catalog.write (Е3-6). Незмінні
+// після створення колонки — insertOnly фабрики (Е4-5); slug/code перевіряє
+// сервер (Е4-7). remove і setDefault типу ціни — іменовані (Task 4, Е4-2),
+// фабричного removePriceTypes тут немає.
+
 export const listSections = createServerFn({ method: 'GET' })
-  .inputValidator(sectionsReadOps.subsetSchema)
-  .handler(sectionsReadOps.list);
+  .inputValidator(sectionsOps.subsetSchema)
+  .handler(sectionsOps.list);
+
+export const insertSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.insertSchema)
+  .handler(sectionsOps.insert);
+
+export const updateSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.updateSchema)
+  .handler(sectionsOps.update);
+
+export const removeSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.removeSchema)
+  .handler(sectionsOps.remove);
 
 export const listPriceTypes = createServerFn({ method: 'GET' })
-  .inputValidator(priceTypesReadOps.subsetSchema)
-  .handler(priceTypesReadOps.list);
+  .inputValidator(priceTypesOps.subsetSchema)
+  .handler(priceTypesOps.list);
+
+export const insertPriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(priceTypesOps.insertSchema)
+  .handler(priceTypesOps.insert);
+
+export const updatePriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(priceTypesOps.updateSchema)
+  .handler(priceTypesOps.update);
+
+export const listSectionProperties = createServerFn({ method: 'GET' })
+  .inputValidator(sectionPropertiesOps.subsetSchema)
+  .handler(sectionPropertiesOps.list);
+
+export const insertSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.insertSchema)
+  .handler(sectionPropertiesOps.insert);
+
+export const updateSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.updateSchema)
+  .handler(sectionPropertiesOps.update);
+
+export const removeSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.removeSchema)
+  .handler(sectionPropertiesOps.remove);
+
+export const listPropertyOptions = createServerFn({ method: 'GET' })
+  .inputValidator(propertyOptionsOps.subsetSchema)
+  .handler(propertyOptionsOps.list);
+
+export const insertPropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.insertSchema)
+  .handler(propertyOptionsOps.insert);
+
+export const updatePropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.updateSchema)
+  .handler(propertyOptionsOps.update);
+
+export const removePropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.removeSchema)
+  .handler(propertyOptionsOps.remove);
 
 export const listSectionPropertyAssignments = createServerFn({
   method: 'GET',
 })
-  .inputValidator(sectionPropertyAssignmentsReadOps.subsetSchema)
-  .handler(sectionPropertyAssignmentsReadOps.list);
+  .inputValidator(sectionPropertyAssignmentsOps.subsetSchema)
+  .handler(sectionPropertyAssignmentsOps.list);
 
-export const listSectionProperties = createServerFn({ method: 'GET' })
-  .inputValidator(sectionPropertiesReadOps.subsetSchema)
-  .handler(sectionPropertiesReadOps.list);
+export const insertSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.insertSchema)
+  .handler(sectionPropertyAssignmentsOps.insert);
 
-export const listPropertyOptions = createServerFn({ method: 'GET' })
-  .inputValidator(propertyOptionsReadOps.subsetSchema)
-  .handler(propertyOptionsReadOps.list);
+export const updateSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.updateSchema)
+  .handler(sectionPropertyAssignmentsOps.update);
+
+export const removeSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.removeSchema)
+  .handler(sectionPropertyAssignmentsOps.remove);
