@@ -50,6 +50,14 @@ export {
 } from './property-values/resources';
 export { sectionsOps } from './sections/resource';
 export { priceTypesOps } from './price-types/resource';
+export {
+  setDefaultPriceTypeInput,
+  setDefaultPriceTypeOp,
+} from './price-types/set-default';
+export {
+  removePriceTypesInput,
+  removeManyPriceTypesOp,
+} from './price-types/remove';
 export { sectionPropertiesOps } from './section-properties/resource';
 export { propertyOptionsOps } from './property-options/resource';
 export { sectionPropertyAssignmentsOps } from './section-property-assignments/resource';

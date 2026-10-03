@@ -8,7 +8,15 @@
 // (та сама схема, що в inputValidator serverFn), а не межу HTTP Start.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -37,6 +45,8 @@ import {
   sectionPropertiesOps,
   propertyOptionsOps,
   sectionPropertyAssignmentsOps,
+  setDefaultPriceTypeOp,
+  removeManyPriceTypesOp,
 } from 'simplycms/admin-server/impl';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
@@ -356,5 +366,168 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
         `select count(*)::int n from public.price_types where is_default`,
       ),
     ).toEqual([{ n: 1 }]);
+  });
+
+  // ── Task 4 (Е4-1, Е4-2): іменовані операції типу ціни ──────────────────
+  describe('типи цін: іменовані операції (Е4-2)', () => {
+    /** Дефолт канону — 0003_seed.sql. */
+    const RETAIL = '00000003-0000-4000-8000-000000000001';
+
+    /** Новий тип ціни: не дефолтний, без цін. */
+    const freshPriceType = async (): Promise<string> => {
+      const id = crypto.randomUUID();
+      await priceTypesOps.insert({
+        data: [{ id, name: `Тип ${next()}`, code: `e4_pt_${next()}` }],
+      });
+      return id;
+    };
+    const exists = async (id: string) =>
+      (
+        await queryRows(
+          dbUrl,
+          `select 1 from public.price_types where id = $1`,
+          [id],
+        )
+      ).length === 1;
+    const defaults = async () =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select id from public.price_types where is_default order by id`,
+        )) as { id: string }[]
+      ).map((r) => r.id);
+    const priceCount = async (priceTypeId: string) =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select count(*)::int n from public.product_prices where price_type_id = $1`,
+          [priceTypeId],
+        )) as { n: number }[]
+      )[0]!.n;
+
+    // Кожен кейс стартує з канонічного дефолту retail — привілейованим
+    // підключенням, двома кроками (частковий unique-індекс перевіряється
+    // негайно, тож «поставити й зняти» одним UPDATE міг би дати 23505).
+    beforeEach(async () => {
+      await queryRows(
+        dbUrl,
+        `update public.price_types set is_default = false where id <> $1`,
+        [RETAIL],
+      );
+      await queryRows(
+        dbUrl,
+        `update public.price_types set is_default = true where id = $1`,
+        [RETAIL],
+      );
+    });
+
+    it('setDefault знімає дефолт з retail і ставить новому; повертає обидва рядки', async () => {
+      const WHOLESALE = await freshPriceType();
+      const { rows } = await setDefaultPriceTypeOp({ data: { id: WHOLESALE } });
+      expect(rows.map((r) => [r.id, r.isDefault]).sort()).toEqual(
+        [
+          [RETAIL, false],
+          [WHOLESALE, true],
+        ].sort(),
+      );
+      expect(await defaults()).toEqual([WHOLESALE]);
+    });
+
+    it('setDefault на вже дефолтному — no-op без 23505', async () => {
+      const { rows } = await setDefaultPriceTypeOp({ data: { id: RETAIL } });
+      expect(rows.map((r) => [r.id, r.isDefault])).toEqual([[RETAIL, true]]);
+      expect(await defaults()).toEqual([RETAIL]);
+    });
+
+    it('два одночасні setDefault різних типів → рівно один дефолт', async () => {
+      const A = await freshPriceType();
+      const B = await freshPriceType();
+      await Promise.all([
+        setDefaultPriceTypeOp({ data: { id: A } }),
+        setDefaultPriceTypeOp({ data: { id: B } }),
+      ]);
+      const [{ n }] = (await queryRows(
+        dbUrl,
+        'select count(*)::int n from public.price_types where is_default',
+      )) as [{ n: number }];
+      expect(n).toBe(1);
+      expect([A, B]).toContain((await defaults())[0]);
+    });
+
+    it('remove дефолтного — помилка, нічого не видалено (увесь batch)', async () => {
+      const SPARE = await freshPriceType();
+      await expect(
+        removeManyPriceTypesOp({ data: [{ id: RETAIL }, { id: SPARE }] }),
+      ).rejects.toThrow(/дефолт/);
+      expect(await exists(SPARE)).toBe(true);
+      expect(await exists(RETAIL)).toBe(true);
+    });
+
+    it('remove типу з цінами → AdminConflictError reference, ціни цілі (Review Focus 1)', async () => {
+      const WHOLESALE_WITH_PRICES = await freshPriceType();
+      const productId = crypto.randomUUID();
+      await queryRows(
+        dbUrl,
+        `insert into public.products (id, slug, name) values ($1, $2, 'Товар')`,
+        [productId, `e4-product-${next()}`],
+      );
+      await queryRows(
+        dbUrl,
+        `insert into public.product_prices (id, price_type_id, product_id, price)
+         values ($1, $2, $3, '10.00')`,
+        [crypto.randomUUID(), WHOLESALE_WITH_PRICES, productId],
+      );
+      await expect(
+        removeManyPriceTypesOp({ data: [{ id: WHOLESALE_WITH_PRICES }] }),
+      ).rejects.toMatchObject({
+        name: 'AdminConflictError',
+        kind: 'reference',
+      });
+      expect(await priceCount(WHOLESALE_WITH_PRICES)).toBe(1);
+      expect(await exists(WHOLESALE_WITH_PRICES)).toBe(true);
+    });
+
+    it('remove типу без посилань — count 1', async () => {
+      const id = await freshPriceType();
+      await expect(removeManyPriceTypesOp({ data: [{ id }] })).resolves.toEqual(
+        { count: 1 },
+      );
+      expect(await exists(id)).toBe(false);
+    });
+
+    it('remove неіснуючого id — помилка, без часткового видалення', async () => {
+      const SPARE = await freshPriceType();
+      await expect(
+        removeManyPriceTypesOp({
+          data: [{ id: SPARE }, { id: crypto.randomUUID() }],
+        }),
+      ).rejects.toThrow();
+      expect(await exists(SPARE)).toBe(true);
+    });
+
+    // 🔴 ред.2 (аудит Codex, знахідка 2): гонка, яку зразки Е1б/Е3
+    // пропускають — remove(X) між читанням X і UPDATE цілі лишав би нуль
+    // дефолтів.
+    it('setDefault(X) паралельно з remove(X) → завжди рівно один дефолт', async () => {
+      for (let i = 0; i < 20; i++) {
+        const X = await freshPriceType();
+        await Promise.allSettled([
+          setDefaultPriceTypeOp({ data: { id: X } }),
+          removeManyPriceTypesOp({ data: [{ id: X }] }),
+        ]);
+        const [{ n }] = (await queryRows(
+          dbUrl,
+          'select count(*)::int n from public.price_types where is_default',
+        )) as [{ n: number }];
+        expect(n, `ітерація ${i}`).toBe(1);
+      }
+    });
+
+    it('setDefault неіснуючого id — помилка, старий дефолт лишився', async () => {
+      await expect(
+        setDefaultPriceTypeOp({ data: { id: crypto.randomUUID() } }),
+      ).rejects.toThrow();
+      expect(await defaults()).toEqual([RETAIL]);
+    });
   });
 });

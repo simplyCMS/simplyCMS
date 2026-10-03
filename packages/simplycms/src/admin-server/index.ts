@@ -29,6 +29,10 @@ import {
   modificationPropertyValuesOps,
   sectionsOps,
   priceTypesOps,
+  setDefaultPriceTypeInput,
+  setDefaultPriceTypeOp,
+  removePriceTypesInput,
+  removeManyPriceTypesOp,
   sectionPropertyAssignmentsOps,
   sectionPropertiesOps,
   propertyOptionsOps,
@@ -194,7 +198,7 @@ export const removeModificationPropertyValues = createServerFn({
 // Е3 (Е3-1 → Е4). Операція всього CRUD — catalog.write (Е3-6). Незмінні
 // після створення колонки — insertOnly фабрики (Е4-5); slug/code перевіряє
 // сервер (Е4-7). remove і setDefault типу ціни — іменовані (Task 4, Е4-2),
-// фабричного removePriceTypes тут немає.
+// фабричного remove для типів цін немає.
 
 export const listSections = createServerFn({ method: 'GET' })
   .inputValidator(sectionsOps.subsetSchema)
@@ -223,6 +227,17 @@ export const insertPriceTypes = createServerFn({ method: 'POST' })
 export const updatePriceTypes = createServerFn({ method: 'POST' })
   .inputValidator(priceTypesOps.updateSchema)
   .handler(priceTypesOps.update);
+
+// 🔴 Task 4 (Е4-2): remove ЦІЄЇ сутності — guarded, не фабричний: «не
+// видалити дефолтний» — доменний інваріант. Обидві операції серіалізує
+// той самий advisory-lock `price-type-default`.
+export const removePriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(removePriceTypesInput)
+  .handler(removeManyPriceTypesOp);
+
+export const setDefaultPriceType = createServerFn({ method: 'POST' })
+  .inputValidator(setDefaultPriceTypeInput)
+  .handler(setDefaultPriceTypeOp);
 
 export const listSectionProperties = createServerFn({ method: 'GET' })
   .inputValidator(sectionPropertiesOps.subsetSchema)
