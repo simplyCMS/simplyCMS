@@ -15,7 +15,14 @@ export const messages: Catalog = {
   'admin.properties.created': 'Property created',
   'admin.properties.saved': 'Property saved',
   'admin.properties.deleted': 'Property deleted',
-  'admin.properties.confirmDelete': 'Delete this property?',
+  'admin.properties.delete': 'Delete property',
+  'admin.properties.deleteTitle': 'Delete this property?',
+  'admin.properties.deleteWarning':
+    'Values of this property will be removed from all products',
+  'admin.properties.typeImmutable': 'The type cannot be changed after creation',
+  'admin.properties.notFound': 'Property not found',
+  'admin.properties.slugHint':
+    'Latin letters, digits and hyphens — for example, screen-size',
   'admin.properties.editTitle': 'Edit property',
   'admin.properties.fallbackTitle': 'Property',
 
@@ -35,12 +42,17 @@ export const messages: Catalog = {
   'admin.properties.options.created': 'Option created',
   'admin.properties.options.saved': 'Option saved',
   'admin.properties.options.deleted': 'Option deleted',
-  'admin.properties.options.confirmDelete': 'Delete this option?',
+  'admin.properties.options.delete': 'Delete option',
+  'admin.properties.options.deleteTitle': 'Delete this option?',
+  'admin.properties.options.deleteWarning':
+    'Product values that use this option will become empty',
+  'admin.properties.options.notFound': 'Option not found',
   'admin.properties.options.new': 'New option',
   'admin.properties.options.fallbackTitle': 'Option',
   'admin.properties.options.parent': 'Property:',
   'admin.properties.options.pageSection': 'Option page',
-  'admin.properties.options.slugHint': 'Leave empty to generate automatically',
+  'admin.properties.options.slugHint':
+    'Latin letters, digits and hyphens — for example, samsung',
   'admin.properties.options.seoTitlePlaceholder': 'Title for search engines',
   'admin.properties.options.titleCounter': '/60 characters',
   'admin.properties.options.descriptionCounter': '/160 characters',
@@ -63,6 +75,11 @@ export const messages: Catalog = {
   'admin.properties.section.allAdded': 'All properties are already added',
   'admin.properties.section.added': 'Property added',
   'admin.properties.section.removed': 'Property removed from the section',
+  'admin.properties.section.remove': 'Remove property from the section',
+  'admin.properties.section.removeTitle':
+    'Remove this property from the section?',
+  'admin.properties.section.removeWarning':
+    'The property and its options stay — it only disappears from this section',
 
   'admin.properties.appliesTo.product': 'product',
   'admin.properties.appliesTo.modification': 'modification',

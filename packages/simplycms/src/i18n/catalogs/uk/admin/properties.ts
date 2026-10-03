@@ -13,7 +13,14 @@ export const messages = {
   'admin.properties.created': 'Властивість створено',
   'admin.properties.saved': 'Властивість збережено',
   'admin.properties.deleted': 'Властивість видалено',
-  'admin.properties.confirmDelete': 'Видалити цю властивість?',
+  'admin.properties.delete': 'Видалити властивість',
+  'admin.properties.deleteTitle': 'Видалити властивість?',
+  'admin.properties.deleteWarning':
+    'Значення цієї властивості в усіх товарах буде видалено',
+  'admin.properties.typeImmutable': 'Тип не змінюється після створення',
+  'admin.properties.notFound': 'Властивість не знайдено',
+  'admin.properties.slugHint':
+    'Латиниця, цифри й дефіс — наприклад, screen-size',
   'admin.properties.editTitle': 'Редагування властивості',
   'admin.properties.fallbackTitle': 'Властивість',
 
@@ -35,13 +42,17 @@ export const messages = {
   'admin.properties.options.created': 'Опцію створено',
   'admin.properties.options.saved': 'Опцію збережено',
   'admin.properties.options.deleted': 'Опцію видалено',
-  'admin.properties.options.confirmDelete': 'Видалити цю опцію?',
+  'admin.properties.options.delete': 'Видалити опцію',
+  'admin.properties.options.deleteTitle': 'Видалити опцію?',
+  'admin.properties.options.deleteWarning':
+    'Значення цієї опції в товарах стануть порожніми',
+  'admin.properties.options.notFound': 'Опцію не знайдено',
   'admin.properties.options.new': 'Нова опція',
   'admin.properties.options.fallbackTitle': 'Опція',
   'admin.properties.options.parent': 'Властивість:',
   'admin.properties.options.pageSection': 'Сторінка опції',
   'admin.properties.options.slugHint':
-    'Залиште порожнім для автоматичної генерації',
+    'Латиниця, цифри й дефіс — наприклад, samsung',
   'admin.properties.options.seoTitlePlaceholder': 'Назва для пошукових систем',
   'admin.properties.options.titleCounter': '/60 символів',
   'admin.properties.options.descriptionCounter': '/160 символів',
@@ -65,6 +76,10 @@ export const messages = {
   'admin.properties.section.allAdded': 'Всі властивості вже додано',
   'admin.properties.section.added': 'Властивість додано',
   'admin.properties.section.removed': 'Властивість видалено з розділу',
+  'admin.properties.section.remove': 'Прибрати властивість з розділу',
+  'admin.properties.section.removeTitle': 'Прибрати властивість з розділу?',
+  'admin.properties.section.removeWarning':
+    'Сама властивість і її опції лишаються — вона лише зникне з цього розділу',
 
   // Значення властивостей у картці товару
   'admin.properties.appliesTo.product': 'товар',

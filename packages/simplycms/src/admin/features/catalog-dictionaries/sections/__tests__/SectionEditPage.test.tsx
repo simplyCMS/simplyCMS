@@ -65,6 +65,13 @@ vi.mock('../../../../components/ImageUpload', () => ({
   ),
 }));
 
+// Панель призначень має власні тести (assignments/__tests__) — тут лише факт монтування.
+vi.mock('../../assignments/SectionPropertyAssignmentsPanel', () => ({
+  SectionPropertyAssignmentsPanel: (p: { sectionId: string }) => (
+    <div data-testid="assignments-panel" data-section-id={p.sectionId} />
+  ),
+}));
+
 const { listSections, insertSections, updateSections, removeSections } =
   vi.hoisted(() => ({
     listSections: vi.fn(),
@@ -190,5 +197,16 @@ describe('SectionEditPage', () => {
     await screen.findByText(t('admin.sections.notFound'));
     expect(screen.queryByLabelText('Назва')).toBeNull();
     expect(insertSections).not.toHaveBeenCalled();
+  });
+
+  it('панель призначень властивостей — лише для наявного розділу', async () => {
+    render(<SectionEditPage />, { wrapper });
+    await screen.findByLabelText('Назва');
+    expect(screen.queryByTestId('assignments-panel')).toBeNull();
+    cleanup();
+    params.sectionId = ROWS[0]!.id;
+    render(<SectionEditPage />, { wrapper });
+    const panel = await screen.findByTestId('assignments-panel');
+    expect(panel.getAttribute('data-section-id')).toBe(ROWS[0]!.id);
   });
 });

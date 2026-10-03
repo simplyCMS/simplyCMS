@@ -25,6 +25,7 @@ import {
   type SectionFormValues,
 } from './section-form-schema';
 import { SectionDeleteDialog } from './SectionDeleteDialog';
+import { SectionPropertyAssignmentsPanel } from '../assignments/SectionPropertyAssignmentsPanel';
 
 const EMPTY: SectionFormInput = {
   name: '',
@@ -326,6 +327,16 @@ export default function SectionEditPage() {
           </Button>
         </div>
       </form>
+      {row && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('admin.properties.section.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SectionPropertyAssignmentsPanel sectionId={row.id} />
+          </CardContent>
+        </Card>
+      )}
       <SectionDeleteDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
