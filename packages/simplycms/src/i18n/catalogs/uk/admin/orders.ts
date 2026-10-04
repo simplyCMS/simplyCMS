@@ -45,6 +45,7 @@ export const messages = {
   'admin.orders.searchPlaceholder': 'Пошук за назвою або артикулом...',
   'admin.orders.searchHint': 'Введіть мінімум 2 символи для пошуку',
   'admin.orders.searchEmpty': 'Товари не знайдено',
+  'admin.orders.searchFailed': 'Не вдалося виконати пошук. Спробуйте ще раз',
   'admin.orders.sku': 'Арт:',
   'admin.orders.hasModifications': 'Є модифікації',
   'admin.orders.backToSearch': '← Назад до пошуку',

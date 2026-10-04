@@ -29,9 +29,10 @@ export function ProductSearchList({ onSelect }: Props) {
   const [query, setQuery] = useState('');
   // Результат привʼязаний до запиту, на який відповів сервер: під час
   // debounce і польоту нового запиту відповідь попереднього не показується.
+  // `items: null` — запит упав: це стан помилки, а не «нічого не знайдено».
   const [result, setResult] = useState<{
     query: string;
-    items: ProductHit[];
+    items: ProductHit[] | null;
   } | null>(null);
   const trimmed = query.trim();
   const searchable = trimmed.length >= MIN_QUERY;
@@ -46,7 +47,7 @@ export function ProductSearchList({ onSelect }: Props) {
           if (current) setResult({ query: trimmed, items: res.items });
         })
         .catch(() => {
-          if (current) setResult({ query: trimmed, items: [] });
+          if (current) setResult({ query: trimmed, items: null });
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => {
@@ -55,7 +56,8 @@ export function ProductSearchList({ onSelect }: Props) {
     };
   }, [searchable, trimmed]);
 
-  const shown = searchable && result?.query === trimmed ? result.items : null;
+  const answered = searchable && result?.query === trimmed ? result : null;
+  const shown = answered?.items ?? null;
   return (
     <div className="space-y-3">
       <Input
@@ -67,6 +69,11 @@ export function ProductSearchList({ onSelect }: Props) {
       {!searchable && (
         <p className="text-sm text-muted-foreground">
           {t('admin.orders.searchHint')}
+        </p>
+      )}
+      {answered && answered.items === null && (
+        <p role="alert" className="text-sm text-destructive">
+          {t('admin.orders.searchFailed')}
         </p>
       )}
       {shown?.length === 0 && (

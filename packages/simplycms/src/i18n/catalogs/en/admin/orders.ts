@@ -46,6 +46,7 @@ export const messages: Catalog = {
   'admin.orders.searchPlaceholder': 'Search by name or SKU...',
   'admin.orders.searchHint': 'Enter at least 2 characters to search',
   'admin.orders.searchEmpty': 'No products found',
+  'admin.orders.searchFailed': 'Search failed. Please try again',
   'admin.orders.sku': 'SKU:',
   'admin.orders.hasModifications': 'Has modifications',
   'admin.orders.backToSearch': '← Back to search',

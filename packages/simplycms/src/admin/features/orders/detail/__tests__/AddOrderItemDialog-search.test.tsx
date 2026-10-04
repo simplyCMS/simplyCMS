@@ -107,4 +107,14 @@ describe('AddOrderItemDialog: пошук', () => {
     await act(async () => b.resolve({ items: [hit('pb', 'Другий збіг')] }));
     expect(screen.getByText('Другий збіг')).toBeTruthy();
   });
+
+  it('помилка запиту пошуку — окремий стан помилки, а не «нічого не знайдено»', async () => {
+    const input = await openDialog();
+    vi.useFakeTimers();
+    mocks.searchProductsForOrder.mockRejectedValueOnce(new Error('network'));
+    type(input, 'ab');
+    await tick(300);
+    expect(screen.getByText(t('admin.orders.searchFailed'))).toBeTruthy();
+    expect(screen.queryByText(t('admin.orders.searchEmpty'))).toBeNull();
+  });
 });
