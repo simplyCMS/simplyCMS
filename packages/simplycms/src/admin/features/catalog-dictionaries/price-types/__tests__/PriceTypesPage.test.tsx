@@ -41,6 +41,28 @@ afterEach(() => cleanup());
 const t = createTranslator('uk');
 
 describe('PriceTypesPage', () => {
+  it('рядки впорядковані за sortOrder, а не за порядком із сервера', async () => {
+    listPriceTypes.mockResolvedValue([
+      { ...ROWS[1]!, sortOrder: 2 },
+      {
+        ...ROWS[0]!,
+        id: 'a0000000-0000-4000-8000-000000000003',
+        name: 'VIP',
+        code: 'vip',
+        isDefault: false,
+        sortOrder: 1,
+      },
+      ROWS[0]!,
+    ]);
+    render(<PriceTypesPage />, { wrapper });
+    await screen.findByText('VIP');
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => r.querySelector('.font-medium')?.textContent);
+    expect(names).toEqual(['Роздріб', 'VIP', 'Опт']);
+  });
+
   it('кнопка видалення дефолтного типу disabled', async () => {
     render(<PriceTypesPage />, { wrapper });
     await screen.findByText('Роздріб');
