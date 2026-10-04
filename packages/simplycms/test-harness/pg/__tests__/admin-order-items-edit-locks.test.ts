@@ -33,11 +33,16 @@ describe('admin: редагування позицій, покупець і ло
       { userId: ids.user },
     );
     const first = await f.itemOf(o, ids.panel);
-    await f.add(o, ids.panel, 3);
+    expect(await f.stock(ids.panel)).toBe(initial - 2);
+    const added = (await f.add(o, ids.panel, 3)).upserted[0]!;
+    expect(await f.stock(ids.panel)).toBe(initial - 5);
     await f.setQty(o, first, 1);
-    await f.remove(o, await f.itemOf(o, ids.battery));
     expect(await f.stock(ids.panel)).toBe(initial - 4);
-    expect((await f.items(o)).map((i) => i.stockReserved)).toEqual([1, 3]);
+    // Видаляється позиція З обліком (stock_reserved = 3): повернення — рівно 3.
+    await f.remove(o, added.id);
+    expect(await f.stock(ids.panel)).toBe(initial - 1);
+    // Порядок `items`: акумулятор (без обліку), потім панель (1).
+    expect((await f.items(o)).map((i) => i.stockReserved)).toEqual([0, 1]);
 
     const result = await withCustomerDb(ids.user, (db, operator) =>
       cancelOwnOrder(db, operator, o),
@@ -47,26 +52,41 @@ describe('admin: редагування позицій, покупець і ло
     expect((await f.items(o)).map((i) => i.stockReserved)).toEqual([0, 0]);
   });
 
-  it('(лок) поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point (Review Focus 4)', async () => {
-    const o = await f.place([{ productId: ids.panel, quantity: 1 }]);
-    const item = await f.itemOf(o, ids.panel);
-    const initial = await f.stock(ids.panel);
-    const holder = await holdOrderRowLock(f.db.url, o);
-    try {
-      const op = f.setQty(o, item, 3);
-      op.catch(() => {}); // результат побачить await нижче
-      const waiter = await waitForBlockedBy(f.db.url, holder.pid);
-      expect(waiter.query).toMatch(
-        /^select [\s\S]* from "orders" [\s\S]* for update$/i,
-      );
-      expect(await rowLocksOnStock(f.db.url, waiter.pid)).toBe(0);
-      await holder.release();
-      await op;
-      expect(await f.stock(ids.panel)).toBe(initial - 2);
-    } finally {
-      await holder.cleanup();
-    }
-  });
+  it.each([
+    ['add', -2],
+    ['update', -2],
+    ['remove', 1],
+  ] as const)(
+    '(лок) %s: поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point (Review Focus 4)',
+    async (kind, stockDelta) => {
+      const o = await f.place([
+        { productId: ids.panel, quantity: 1 },
+        { productId: ids.battery, quantity: 1 },
+      ]);
+      const item = await f.itemOf(o, ids.panel);
+      const initial = await f.stock(ids.panel);
+      const run = {
+        add: () => f.add(o, ids.panel, 2),
+        update: () => f.setQty(o, item, 3),
+        remove: () => f.remove(o, item),
+      }[kind];
+      const holder = await holdOrderRowLock(f.db.url, o);
+      try {
+        const op = run();
+        op.catch(() => {}); // результат побачить await нижче
+        const waiter = await waitForBlockedBy(f.db.url, holder.pid);
+        expect(waiter.query).toMatch(
+          /^select [\s\S]* from "orders" [\s\S]* for update$/i,
+        );
+        expect(await rowLocksOnStock(f.db.url, waiter.pid)).toBe(0);
+        await holder.release();
+        await op;
+        expect(await f.stock(ids.panel)).toBe(initial + stockDelta);
+      } finally {
+        await holder.cleanup();
+      }
+    },
+  );
 
   it('рядки результату без accessToken (колонкові гранти restrictOrdersSelectForAdmin)', async () => {
     const o = await f.place([{ productId: ids.battery, quantity: 1 }]);
