@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useFormatPrice } from 'simplycms/react-query';
 import { useLocale, useT } from 'simplycms/i18n';
@@ -35,10 +36,15 @@ export default function OrdersTable({
   const t = useT();
   const locale = useLocale();
   const formatPrice = useFormatPrice();
-  const formatDate = new Intl.DateTimeFormat(locale, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  // Форматтер — один на локаль, а не новий на кожен рендер.
+  const formatDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    [locale],
+  );
   // Комірка-посилання: клік і клавіатура працюють як у звичайного <a>.
   const cell = (id: string, className?: string) => ({
     className,

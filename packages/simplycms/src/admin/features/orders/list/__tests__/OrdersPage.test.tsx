@@ -63,6 +63,7 @@ const wrap = (qc: QueryClient) =>
     );
   };
 
+const DATE_STYLE = { dateStyle: 'medium', timeStyle: 'short' } as const;
 const at = (i: number) => new Date(Date.UTC(2026, 9, 1, 10, 0, 0) - i * 1000);
 
 beforeEach(() => {
@@ -83,6 +84,8 @@ describe('OrdersPage', () => {
     ).toBeTruthy();
     expect(screen.getAllByText('Нове')).toHaveLength(2);
     expect(screen.getByText(t('admin.orders.subtitle'))).toBeTruthy();
+    const date = new Intl.DateTimeFormat('uk', DATE_STYLE).format(at(1));
+    expect(screen.getByText(date)).toBeTruthy();
   });
 
   it('statusId = null → власний бейдж «Без статусу», не «Новий»', async () => {
