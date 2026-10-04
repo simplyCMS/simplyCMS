@@ -3,7 +3,6 @@ export { AdminLayout } from './layouts/AdminLayout';
 export { AdminSidebar } from './layouts/AdminSidebar';
 
 // Components
-export { AddProductToOrder } from './components/AddProductToOrder';
 export { ImageUpload } from './components/ImageUpload';
 export { RichTextEditor } from './components/RichTextEditor';
 // 🔴 Е4 Task 8: легасі-менеджер і таблиця властивостей розділу (components/)

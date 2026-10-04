@@ -81,4 +81,13 @@ export const messages = {
   'admin.orders.statuses.deleteTitle': 'Видалити статус?',
   'admin.orders.statuses.deleteText':
     'Ви впевнені, що хочете видалити статус "{name}"? Цю дію не можна скасувати. Замовлення з цим статусом залишаться без статусу.',
+  'admin.orders.emailLabel': 'Email:',
+  'admin.orders.pickupPointLabel': 'Точка видачі:',
+  'admin.orders.cancelledFinal': 'Скасоване замовлення змінити не можна',
+  'admin.orders.cancelTitle': 'Скасувати замовлення?',
+  'admin.orders.cancelWarning':
+    'Залишок товарів повернеться на склад. Цю дію не можна скасувати: зі статусу «Скасоване» замовлення вийти не можна.',
+  'admin.orders.cancelConfirm': 'Скасувати замовлення',
+  'admin.orders.itemsMayBeTruncated':
+    'Показано {count} позицій — можуть бути ще',
 } as const;

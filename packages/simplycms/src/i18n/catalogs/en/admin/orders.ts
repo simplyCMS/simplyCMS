@@ -79,4 +79,13 @@ export const messages: Catalog = {
   'admin.orders.statuses.deleteTitle': 'Delete this status?',
   'admin.orders.statuses.deleteText':
     'Are you sure you want to delete the status "{name}"? This cannot be undone. Orders with this status will be left without one.',
+  'admin.orders.emailLabel': 'Email:',
+  'admin.orders.pickupPointLabel': 'Pickup point:',
+  'admin.orders.cancelledFinal': 'A cancelled order cannot be changed',
+  'admin.orders.cancelTitle': 'Cancel the order?',
+  'admin.orders.cancelWarning':
+    'The stock will be returned to the warehouse. This cannot be undone: an order cannot leave the Cancelled status.',
+  'admin.orders.cancelConfirm': 'Cancel order',
+  'admin.orders.itemsMayBeTruncated':
+    'Showing {count} items — there may be more',
 };
