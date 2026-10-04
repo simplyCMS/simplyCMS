@@ -82,6 +82,7 @@ export async function recomputeOrderTotals(
     stateConflict(ADMIN_STATE_CONSTRAINT.orderShippingUnavailable);
   const shipping = toCents(cost.toFixed(2));
   const total = subtotal + shipping;
+  // Захисна: окремо тестом не пінується — її перекриває assertWithin(total) за побудовою (Е5б-17).
   assertWithin(subtotal, MAX_CENTS_NUMERIC_12_2);
   assertWithin(shipping, MAX_CENTS_NUMERIC_10_2);
   assertWithin(total, MAX_CENTS_NUMERIC_12_2);
