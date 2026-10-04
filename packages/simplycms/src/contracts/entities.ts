@@ -104,7 +104,7 @@ export function collectionKey(
  * 🔴 Не всі кеші однотабличні, і зводити їх силою до `entityKey` було б
  * регресією: `shipping-directory` одним походом читає `shipping_methods`,
  * `shipping_zones`, `shipping_rates` і `pickup_points`
- * (`storefront/loaders/shipping.ts:81,107,136,70`),
+ * (`commerce/shipping-directory.ts:45,71,100,34`),
  * а `stock-info` — `stock_by_pickup_point`, `product_modifications`,
  * `products` і `pickup_points`. Розбити їх на окремі ключі означало б
  * кілька раундтрипів замість одного.
@@ -125,7 +125,7 @@ export function aggregateKey(
 export const AGGREGATE = {
   /**
    * 🔴 `pickup_points` — знахідка рантайм-гейта 2026-08-31: `loadShippingDirectory`
-   * (`storefront/loaders/shipping.ts:70`) через `loadPickupPoints` читає й
+   * (`commerce/shipping-directory.ts:34`) через `loadPickupPoints` читає й
    * точки видачі, а `deps` цього не називав — мутація точки видачі не мала б
    * шляху до інвалідації довідника доставки.
    */

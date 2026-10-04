@@ -29,7 +29,7 @@ export async function placeOrderFor(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PlaceOrderResult> {
-  // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceCheckoutItems
+  // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceItems
   // (гвард живе там, спільний з квотою — рев'ю #9, докладніше в
   // `prepare-checkout.ts`), не тут: другий незалежний гвард на той самий
   // предикат — саме те дублювання, з яким весь розділ M бореться.

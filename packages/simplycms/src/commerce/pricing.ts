@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 import { priceTypes, productPrices } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
-import type { ActorDb } from './db';
+import type { ActorDb } from 'simplycms/db';
 import { groupPricesByProduct, priceColumns } from './entities/price';
 
 /**

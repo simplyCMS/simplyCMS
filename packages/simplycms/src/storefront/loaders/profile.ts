@@ -77,24 +77,3 @@ export async function updateProfile(
     })
     .where(eq(profiles.userId, userId));
 }
-
-/**
- * Тип ціни, призначений категорії покупця, або `null`.
- *
- * 🔴 Раніше це читав браузер запитом `profiles → user_categories`, тобто
- * персональна знижкова категорія була доступна будь-кому, хто підставив
- * чужий `user_id`. Тепер `userId` приходить із серверної сесії.
- */
-export async function loadUserPriceTypeId(
-  db: ActorDb,
-  userId: string,
-): Promise<string | null> {
-  const [row] = await db
-    .select({ price_type_id: userCategories.priceTypeId })
-    .from(profiles)
-    .innerJoin(userCategories, eq(profiles.categoryId, userCategories.id))
-    .where(eq(profiles.userId, userId))
-    .limit(1);
-
-  return row?.price_type_id ?? null;
-}

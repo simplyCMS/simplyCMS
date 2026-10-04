@@ -176,6 +176,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   'admin-server/impl': 'patch не може бути порожнім',
   storage: 'Тимчасовий файл лежить у ТІЙ САМІЙ шард-теці',
   inventory: '[simplycms/inventory] ціль залишку без товару й модифікації',
+  commerce: '[simplycms/commerce] extraCartTotal — невідʼємне число',
 };
 
 const SRC = resolve(CORE, 'src');

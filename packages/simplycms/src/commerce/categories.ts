@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { profiles, userCategories } from 'simplycms/schema';
-import type { ActorDb } from './db';
+import type { ActorDb } from 'simplycms/db';
 
 /**
  * Категорія покупця — джерело умови `user_category` рушія знижок.
@@ -41,4 +41,26 @@ export async function loadDefaultUserCategoryId(
     .limit(1);
 
   return row?.id ?? null;
+}
+
+/**
+ * Тип ціни, призначений категорії покупця, або `null`.
+ *
+ * 🔴 Раніше це читав браузер запитом `profiles → user_categories`, тобто
+ * персональна знижкова категорія була доступна будь-кому, хто підставив
+ * чужий `user_id`. Тепер `userId` приходить із серверної сесії (вітрина) або
+ * з рядка замовлення під грантом адміна (`order.manage`).
+ */
+export async function loadUserPriceTypeId(
+  db: ActorDb,
+  userId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ price_type_id: userCategories.priceTypeId })
+    .from(profiles)
+    .innerJoin(userCategories, eq(profiles.categoryId, userCategories.id))
+    .where(eq(profiles.userId, userId))
+    .limit(1);
+
+  return row?.price_type_id ?? null;
 }

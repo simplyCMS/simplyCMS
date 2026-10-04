@@ -4,9 +4,8 @@ import { readSessionSubject } from 'simplycms/auth';
 import {
   loadDefaultPriceTypeId,
   loadUserPriceTypeId,
-  withCustomerDb,
-  withStorefrontDb,
-} from 'simplycms/storefront/loaders';
+} from 'simplycms/commerce';
+import { withCustomerDb, withStorefrontDb } from 'simplycms/storefront/loaders';
 
 /** Тип ціни за замовчуванням і персональний тип поточного покупця. */
 export interface PriceTypeContext {

@@ -1,16 +1,12 @@
 export * from './db';
 export * from './session';
 export * from './banners';
-export * from './categories';
-export * from './discounts';
 export * from './home';
 export * from './home-sections';
-export * from './pricing';
 export * from './catalog-filters';
 export * from './catalog-products';
 export * from './modification-values';
 export * from './order-create';
-export * from './checkout-items';
 export * from './prepare-checkout';
 export * from './place-order';
 export * from './quote-checkout';
@@ -19,7 +15,6 @@ export * from './orders';
 export * from './order-cancel';
 export * from './addresses';
 export * from './avatar';
-export * from './pickup-points';
 export * from './profile';
 export * from './recipients';
 export * from './reviews';
@@ -32,7 +27,6 @@ export * from './properties';
 export * from './property-option';
 export * from './property-values';
 export * from './sections';
-export * from './shipping';
 export * from './sitemap';
 // 🔴 Мапи колонок (`*Columns`) назовні НЕ виходять — це внутрішні помічники
 // побудови select-ів, а не публічний API. Причина не лише в чистоті межі:
@@ -51,13 +45,6 @@ export {
   toNumericValue,
 } from './entities/catalog-product';
 export type {
-  DiscountGroupRow,
-  DiscountRow,
-  DiscountTargetRow,
-  DiscountConditionRow,
-} from './entities/discount';
-export { toDiscountGroupNode, toDiscount } from './entities/discount';
-export type {
   OrderStatusRow,
   OrderItemRow,
   OrderListRow,
@@ -73,13 +60,11 @@ export type {
 export { toHomeProduct } from './entities/home-product';
 export type { ModificationRow } from './entities/modification';
 export { toModificationRow } from './entities/modification';
-export type { RawPriceRow } from './entities/price';
-export { toPriceEntry, groupPricesByProduct } from './entities/price';
 export type { ProductRow } from './entities/product';
 export { toImageList } from './entities/product';
 export type { JsonValue, PropertyRow, OptionRow } from './entities/property';
 export { toPropertyRow } from './entities/property';
-export type { NewOrderItem, NewOrderInput } from './entities/new-order';
+export type { NewOrderInput } from './entities/new-order';
 export type { SectionRow, SectionRef } from './entities/section';
 // Серверні хелпери, що переїхали зі `storefront-routes/server` (трек T,
 // Крок 1б): вони не serverFn, а звичайні серверні функції — під префіксом

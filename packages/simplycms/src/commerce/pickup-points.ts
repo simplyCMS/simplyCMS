@@ -5,7 +5,7 @@ import type {
   PickupPoint,
   WorkingHours,
 } from 'simplycms/contracts';
-import type { ActorDb } from './db';
+import type { ActorDb } from 'simplycms/db';
 
 /** Точка видачі без опційної вкладеної зони — зона їде окремим списком. */
 export type PickupPointRow = Omit<PickupPoint, 'zone'>;

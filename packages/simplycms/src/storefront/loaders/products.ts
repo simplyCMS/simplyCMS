@@ -9,7 +9,7 @@ import type { PriceEntry } from 'simplycms/contracts';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
 import { listModificationColumns } from './entities/modification';
-import { groupPricesByProduct, priceColumns } from './entities/price';
+import { groupPricesByProduct, priceColumns } from 'simplycms/commerce';
 
 /** Модифікація в рядку списку — рівно те, чим обирається ціна за замовчуванням. */
 export interface ProductListModification {

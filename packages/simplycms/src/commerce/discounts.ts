@@ -6,7 +6,7 @@ import {
   discounts,
 } from 'simplycms/schema';
 import type { DiscountGroup } from 'simplycms/contracts';
-import type { ActorDb } from './db';
+import type { ActorDb } from 'simplycms/db';
 import {
   toDiscount,
   toDiscountGroupNode,

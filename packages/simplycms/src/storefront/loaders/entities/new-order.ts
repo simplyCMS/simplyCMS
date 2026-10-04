@@ -1,15 +1,4 @@
-import type { JsonValue } from './property';
-
-/** Позиція кошика в тому вигляді, в якому вона лягає в замовлення. */
-export interface NewOrderItem {
-  productId: string | null;
-  modificationId: string | null;
-  name: string;
-  price: number;
-  quantity: number;
-  basePrice: number | null;
-  discountData: JsonValue | null;
-}
+import type { NewOrderItem } from 'simplycms/commerce';
 
 /** Контактні й доставкові дані оформлення. */
 export interface NewOrderInput {

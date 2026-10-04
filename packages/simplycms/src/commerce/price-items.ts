@@ -7,16 +7,29 @@ import type {
 import { resolveDiscount } from 'simplycms/domain/discounts';
 import { isPurchasable } from 'simplycms/domain/inventory';
 import { resolvePrice } from 'simplycms/domain/pricing';
-import type { ActorDb } from './db';
-import { loadDefaultUserCategoryId, loadUserCategoryId } from './categories';
+import type { ActorDb } from 'simplycms/db';
+import type { JsonValue } from 'simplycms/schema/types';
+import {
+  loadDefaultUserCategoryId,
+  loadUserCategoryId,
+  loadUserPriceTypeId,
+} from './categories';
 import { loadDiscountGroups } from './discounts';
-import type { NewOrderItem } from './entities/new-order';
-import type { JsonValue } from './entities/property';
 import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
-import { loadUserPriceTypeId } from './profile';
+
+/** Позиція в тому вигляді, в якому вона лягає в замовлення. */
+export interface NewOrderItem {
+  productId: string | null;
+  modificationId: string | null;
+  name: string;
+  price: number;
+  quantity: number;
+  basePrice: number | null;
+  discountData: JsonValue | null;
+}
 
 /**
- * Серверне ціноутворення позицій (К2-Е0, Е0-4).
+ * Серверне ціноутворення позицій (К2-Е0, Е0-4; спільне з адмінкою — К3-Е5б).
  *
  * 🔴 Той самий ланцюг, що на картці товару, і те саме СЕРЕДОВИЩЕ знижок, що
  * будує `core/lib/discounts.ts::getDiscountEnvironment`: тип ціни і категорія
@@ -26,16 +39,22 @@ import { loadUserPriceTypeId } from './profile';
  * чекаут рахував би інші знижки, ніж каталог (B2 аудиту r1). Кошик несе лише
  * id і кількість — назва, ціна і статус беруться з БД у цій же транзакції.
  *
- * 🔴 `cartTotal` тут — реальна сума базових цін усього запиту; картка товару
- * передає `0` (`product-detail/pricing.ts`), бо кошика не знає. Знижки з
- * умовою на суму кошика тому законно зʼявляються лише в чекауті — істина
- * про ціну позиції замовлення саме тут.
+ * 🔴 `cartTotal` — реальна сума базових цін запиту; картка товару передає `0`
+ * (`product-detail/pricing.ts`), бо кошика не знає. Знижки «від суми» тому
+ * законно зʼявляються лише тут — істина про ціну позиції замовлення.
+ *
+ * `opts.extraCartTotal` (Е5б-6) — сума кошика ПОЗА `items` (адмінка додає
+ * позицію до замовлення: знижка «від суми» бачить весь склад). Чекаут — без.
  */
-export async function priceCheckoutItems(
+export async function priceItems(
   db: ActorDb,
   userId: string | null,
   items: CheckoutItemInput[],
+  opts?: { extraCartTotal?: number },
 ): Promise<NewOrderItem[] | Extract<PlaceOrderRejection, 'not_purchasable'>> {
+  const extra = opts?.extraCartTotal ?? 0;
+  if (!Number.isFinite(extra) || extra < 0)
+    throw new Error('[simplycms/commerce] extraCartTotal — невідʼємне число');
   const productIds = [...new Set(items.map((i) => i.productId))];
   const modIds = items
     .map((i) => i.modificationId)
@@ -82,7 +101,7 @@ export async function priceCheckoutItems(
         item.modificationId,
       ).price ?? 0;
     return sum + base * item.quantity;
-  }, 0);
+  }, extra);
 
   const result: NewOrderItem[] = [];
   for (const item of items) {

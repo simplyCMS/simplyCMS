@@ -8,7 +8,10 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
-import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
+import {
+  loadDefaultPriceTypeId,
+  loadPricesByProduct,
+} from 'simplycms/commerce';
 
 /** Скільки товарів показує карусель одного розділу на головній. */
 const PER_SECTION_LIMIT = 8;

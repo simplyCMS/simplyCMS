@@ -244,7 +244,7 @@ export default function Checkout() {
 
     try {
       // 🔴 Кошик несе ЛИШЕ ідентичність і кількість — ціну, назву й знижку
-      // рахує сервер у власній транзакції (`priceCheckoutItems`), тож
+      // рахує сервер у власній транзакції (`priceItems`), тож
       // клієнтські значення тут нізвідки підмінити.
       const result = await placeOrder({
         data: {

@@ -20,7 +20,7 @@ import {
   toModificationRow,
   type ModificationRow,
 } from './entities/modification';
-import { priceColumns, toPriceEntry } from './entities/price';
+import { priceColumns, toPriceEntry } from 'simplycms/commerce';
 import { sectionRefColumns, type SectionRef } from './entities/section';
 import { propertyValueColumns, toPropertyValueRow } from './property-values';
 import type { ProductPropertyValueRow } from './property-values';

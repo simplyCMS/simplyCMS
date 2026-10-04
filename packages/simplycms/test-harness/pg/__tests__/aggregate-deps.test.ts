@@ -124,7 +124,8 @@ describe('Е1б: deps агрегатів повні відносно факти�
   const INVOCATIONS: Record<keyof typeof AGGREGATE, () => Promise<void>> = {
     shippingDirectory: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) => m.loadShippingDirectory(db));
+      const c = await import('simplycms/commerce');
+      await m.withStorefrontDb((db) => c.loadShippingDirectory(db));
     },
     stockInfo: async () => {
       const m = await import('simplycms/storefront/loaders');
@@ -135,19 +136,21 @@ describe('Е1б: deps агрегатів повні відносно факти�
     },
     priceTypeContext: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) => m.loadDefaultPriceTypeId(db));
-      await m.withCustomerDb(userId, (db) => m.loadUserPriceTypeId(db, userId));
+      const c = await import('simplycms/commerce');
+      await m.withStorefrontDb((db) => c.loadDefaultPriceTypeId(db));
+      await m.withCustomerDb(userId, (db) => c.loadUserPriceTypeId(db, userId));
     },
     discountEnvironment: async () => {
       const m = await import('simplycms/storefront/loaders');
+      const c = await import('simplycms/commerce');
       await m.withStorefrontDb(async (db) => {
-        await m.loadDefaultPriceTypeId(db);
-        await m.loadDefaultUserCategoryId(db);
-        await m.loadDiscountGroups(db, RETAIL_PRICE_TYPE_ID);
+        await c.loadDefaultPriceTypeId(db);
+        await c.loadDefaultUserCategoryId(db);
+        await c.loadDiscountGroups(db, RETAIL_PRICE_TYPE_ID);
       });
       await m.withCustomerDb(userId, async (db) => {
-        await m.loadUserPriceTypeId(db, userId);
-        await m.loadUserCategoryId(db, userId);
+        await c.loadUserPriceTypeId(db, userId);
+        await c.loadUserCategoryId(db, userId);
       });
     },
     modificationData: async () => {

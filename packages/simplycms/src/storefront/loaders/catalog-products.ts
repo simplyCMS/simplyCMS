@@ -17,7 +17,7 @@ import {
   type CatalogPropertyValueRow,
 } from './entities/catalog-product';
 import { productColumns, toImageList } from './entities/product';
-import { groupPricesByProduct, priceColumns } from './entities/price';
+import { groupPricesByProduct, priceColumns } from 'simplycms/commerce';
 import { sectionRefColumns } from './entities/section';
 import { loadModificationValues } from './modification-values';
 

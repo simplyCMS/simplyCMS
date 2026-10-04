@@ -37,6 +37,7 @@
     "./auth": "./src/auth/index.ts",
     "./storage": "./src/storage/index.ts",
     "./inventory": "./src/inventory/index.ts",
+    "./commerce": "./src/commerce/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -226,6 +227,10 @@
       "./inventory": {
         "types": "./dist/inventory/index.d.ts",
         "import": "./dist/inventory/index.js"
+      },
+      "./commerce": {
+        "types": "./dist/commerce/index.d.ts",
+        "import": "./dist/commerce/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",

@@ -10,10 +10,8 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
-import {
-  loadShippingDirectory,
-  withStorefrontDb,
-} from 'simplycms/storefront/loaders';
+import { loadShippingDirectory } from 'simplycms/commerce';
+import { withStorefrontDb } from 'simplycms/storefront/loaders';
 import { resolveShippingRate } from 'simplycms/domain/shipping';
 import { resolveHarness } from '../up.mjs';
 import {

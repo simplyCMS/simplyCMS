@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
 import {
   loadShippingDirectory,
-  withStorefrontDb,
   type ShippingDirectory,
-} from 'simplycms/storefront/loaders';
+} from 'simplycms/commerce';
+import { withStorefrontDb } from 'simplycms/storefront/loaders';
 
 export type { ShippingDirectory };
 
