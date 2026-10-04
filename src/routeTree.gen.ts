@@ -9,130 +9,90 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './../packages/simplycms/routes/admin/admin'
-import { Route as StorefrontRouteImport } from './../packages/simplycms/routes/storefront/_storefront'
 import { Route as ProtectedRouteImport } from './../packages/simplycms/routes/storefront/_protected'
-import { Route as AuthIndexRouteImport } from './../packages/simplycms/routes/storefront/auth/index'
-import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
+import { Route as StorefrontRouteImport } from './../packages/simplycms/routes/storefront/_storefront'
+import { Route as AdminRouteImport } from './../packages/simplycms/routes/admin/admin'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
-import { Route as MediaSplatRouteImport } from './../packages/simplycms/routes/storefront/media/$'
-import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/routes/storefront/auth/set-password'
-import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
-import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
-import { Route as ApiHealthRouteImport } from './../packages/simplycms/routes/storefront/api/health'
-import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/routes/storefront/_storefront/checkout'
 import { Route as StorefrontCartRouteImport } from './../packages/simplycms/routes/storefront/_storefront/cart'
-import { Route as AdminUsersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/users/index'
-import { Route as AdminUserCategoriesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/index'
-import { Route as AdminThemesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/themes/index'
-import { Route as AdminShippingIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/index'
-import { Route as AdminSettingsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/settings/index'
-import { Route as AdminServicesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/services/index'
-import { Route as AdminServiceRequestsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/service-requests/index'
-import { Route as AdminSectionsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/sections/index'
-import { Route as AdminReviewsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/reviews/index'
-import { Route as AdminPropertiesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/properties/index'
-import { Route as AdminProductsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/products/index'
-import { Route as AdminPriceValidatorIndexRouteImport } from './../packages/simplycms/routes/admin/admin/price-validator/index'
-import { Route as AdminPriceTypesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/price-types/index'
-import { Route as AdminPluginsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/plugins/index'
-import { Route as AdminOrdersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/orders/index'
-import { Route as AdminOrderStatusesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/order-statuses/index'
-import { Route as AdminLanguagesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/languages/index'
-import { Route as AdminFaqIndexRouteImport } from './../packages/simplycms-plugin-faq/routes/admin/faq/index'
-import { Route as AdminDiscountsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/index'
-import { Route as AdminBannersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/banners/index'
-import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/index'
-import { Route as StorefrontCatalogIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/index'
+import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/routes/storefront/_storefront/checkout'
+import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
+import { Route as ApiHealthRouteImport } from './../packages/simplycms/routes/storefront/api/health'
+import { Route as ApiRevalidateThemeRouteImport } from './../packages/simplycms/routes/storefront/api/revalidate-theme'
+import { Route as AuthIndexRouteImport } from './../packages/simplycms/routes/storefront/auth/index'
+import { Route as AuthInviteRouteImport } from './../packages/simplycms/routes/storefront/auth/invite'
+import { Route as AuthSetPasswordRouteImport } from './../packages/simplycms/routes/storefront/auth/set-password'
+import { Route as MediaSplatRouteImport } from './../packages/simplycms/routes/storefront/media/$'
 import { Route as ProtectedProfileIndexRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/index'
-import { Route as ApiAuthSplatRouteImport } from './../packages/simplycms/routes/storefront/api/auth/$'
-import { Route as AdminUsersUserIdRouteImport } from './../packages/simplycms/routes/admin/admin/users/$userId'
-import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/$categoryId'
-import { Route as AdminSectionsSectionIdRouteImport } from './../packages/simplycms/routes/admin/admin/sections/$sectionId'
-import { Route as AdminReviewsReviewIdRouteImport } from './../packages/simplycms/routes/admin/admin/reviews/$reviewId'
-import { Route as AdminProductsProductIdRouteImport } from './../packages/simplycms/routes/admin/admin/products/$productId'
-import { Route as AdminPriceTypesPriceTypeIdRouteImport } from './../packages/simplycms/routes/admin/admin/price-types/$priceTypeId'
-import { Route as AdminOrdersOrderIdRouteImport } from './../packages/simplycms/routes/admin/admin/orders/$orderId'
-import { Route as AdminDiscountsDiscountIdRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/$discountId'
-import { Route as AdminBannersBannerIdRouteImport } from './../packages/simplycms/routes/admin/admin/banners/$bannerId'
-import { Route as StorefrontOrderSuccessOrderIdRouteImport } from './../packages/simplycms/routes/storefront/_storefront/order-success/$orderId'
 import { Route as ProtectedProfileSettingsRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/settings'
-import { Route as AdminUserCategoriesRulesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/rules/index'
-import { Route as AdminShippingZonesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/zones/index'
-import { Route as AdminShippingPickupPointsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/pickup-points/index'
-import { Route as AdminShippingMethodsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/methods/index'
-import { Route as AdminPropertiesPropertyIdIndexRouteImport } from './../packages/simplycms/routes/admin/admin/properties/$propertyId/index'
-import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/index'
-import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index'
+import { Route as StorefrontCatalogIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/index'
+import { Route as StorefrontOrderSuccessOrderIdRouteImport } from './../packages/simplycms/routes/storefront/_storefront/order-success/$orderId'
+import { Route as StorefrontPropertiesIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/index'
+import { Route as AdminBannersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/banners/index'
+import { Route as AdminBannersBannerIdRouteImport } from './../packages/simplycms/routes/admin/admin/banners/$bannerId'
+import { Route as AdminDiscountsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/index'
+import { Route as AdminDiscountsDiscountIdRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/$discountId'
+import { Route as AdminFaqIndexRouteImport } from './../packages/simplycms-plugin-faq/routes/admin/faq/index'
+import { Route as AdminLanguagesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/languages/index'
+import { Route as AdminOrderStatusesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/order-statuses/index'
+import { Route as AdminOrdersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/orders/index'
+import { Route as AdminOrdersOrderIdRouteImport } from './../packages/simplycms/routes/admin/admin/orders/$orderId'
+import { Route as AdminPluginsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/plugins/index'
+import { Route as AdminPriceTypesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/price-types/index'
+import { Route as AdminPriceTypesPriceTypeIdRouteImport } from './../packages/simplycms/routes/admin/admin/price-types/$priceTypeId'
+import { Route as AdminPriceValidatorIndexRouteImport } from './../packages/simplycms/routes/admin/admin/price-validator/index'
+import { Route as AdminProductsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/products/index'
+import { Route as AdminProductsProductIdRouteImport } from './../packages/simplycms/routes/admin/admin/products/$productId'
+import { Route as AdminPropertiesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/properties/index'
+import { Route as AdminReviewsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/reviews/index'
+import { Route as AdminReviewsReviewIdRouteImport } from './../packages/simplycms/routes/admin/admin/reviews/$reviewId'
+import { Route as AdminSectionsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/sections/index'
+import { Route as AdminSectionsSectionIdRouteImport } from './../packages/simplycms/routes/admin/admin/sections/$sectionId'
+import { Route as AdminServiceRequestsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/service-requests/index'
+import { Route as AdminServicesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/services/index'
+import { Route as AdminSettingsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/settings/index'
+import { Route as AdminShippingIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/index'
+import { Route as AdminThemesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/themes/index'
+import { Route as AdminUserCategoriesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/index'
+import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/$categoryId'
+import { Route as AdminUsersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/users/index'
+import { Route as AdminUsersUserIdRouteImport } from './../packages/simplycms/routes/admin/admin/users/$userId'
+import { Route as ApiAuthSplatRouteImport } from './../packages/simplycms/routes/storefront/api/auth/$'
 import { Route as ProtectedProfileOrdersIndexRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/index'
-import { Route as AdminUserCategoriesRulesRuleIdRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/rules/$ruleId'
-import { Route as AdminThemesThemeIdSettingsRouteImport } from './../packages/simplycms/routes/admin/admin/themes/$themeId/settings'
-import { Route as AdminShippingZonesZoneIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/zones/$zoneId'
-import { Route as AdminShippingPickupPointsPointIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/pickup-points/$pointId'
-import { Route as AdminShippingMethodsMethodIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/methods/$methodId'
-import { Route as AdminPluginsPluginIdSettingsRouteImport } from './../packages/simplycms/routes/admin/admin/plugins/$pluginId/settings'
-import { Route as AdminDiscountsGroupsGroupIdRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/groups/$groupId'
-import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/$optionSlug'
-import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug'
 import { Route as ProtectedProfileOrdersOrderIdRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/$orderId'
+import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index'
+import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug'
+import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/index'
+import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/$optionSlug'
+import { Route as AdminDiscountsGroupsGroupIdRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/groups/$groupId'
+import { Route as AdminPluginsPluginIdSettingsRouteImport } from './../packages/simplycms/routes/admin/admin/plugins/$pluginId/settings'
+import { Route as AdminPropertiesPropertyIdIndexRouteImport } from './../packages/simplycms/routes/admin/admin/properties/$propertyId/index'
+import { Route as AdminShippingMethodsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/methods/index'
+import { Route as AdminShippingMethodsMethodIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/methods/$methodId'
+import { Route as AdminShippingPickupPointsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/pickup-points/index'
+import { Route as AdminShippingPickupPointsPointIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/pickup-points/$pointId'
+import { Route as AdminShippingZonesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/zones/index'
+import { Route as AdminShippingZonesZoneIdRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/zones/$zoneId'
+import { Route as AdminThemesThemeIdSettingsRouteImport } from './../packages/simplycms/routes/admin/admin/themes/$themeId/settings'
+import { Route as AdminUserCategoriesRulesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/rules/index'
+import { Route as AdminUserCategoriesRulesRuleIdRouteImport } from './../packages/simplycms/routes/admin/admin/user-categories/rules/$ruleId'
 import { Route as AdminPropertiesPropertyIdOptionsOptionIdRouteImport } from './../packages/simplycms/routes/admin/admin/properties/$propertyId/options/$optionId'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const ProtectedRoute = ProtectedRouteImport.update({
+  id: '/_protected',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StorefrontRoute = StorefrontRouteImport.update({
   id: '/_storefront',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtectedRoute = ProtectedRouteImport.update({
-  id: '/_protected',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
-  id: '/auth/',
-  path: '/auth/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
 } as any)
 const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => StorefrontRoute,
-} as any)
-const MediaSplatRoute = MediaSplatRouteImport.update({
-  id: '/media/$',
-  path: '/media/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
-  id: '/auth/set-password',
-  path: '/auth/set-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthInviteRoute = AuthInviteRouteImport.update({
-  id: '/auth/invite',
-  path: '/auth/invite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
-  id: '/api/revalidate-theme',
-  path: '/api/revalidate-theme',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StorefrontCheckoutRoute = StorefrontCheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
   getParentRoute: () => StorefrontRoute,
 } as any)
 const StorefrontCartRoute = StorefrontCartRouteImport.update({
@@ -140,165 +100,87 @@ const StorefrontCartRoute = StorefrontCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => StorefrontRoute,
 } as any)
-const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
-  id: '/users/',
-  path: '/users/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUserCategoriesIndexRoute =
-  AdminUserCategoriesIndexRouteImport.update({
-    id: '/user-categories/',
-    path: '/user-categories/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminThemesIndexRoute = AdminThemesIndexRouteImport.update({
-  id: '/themes/',
-  path: '/themes/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminShippingIndexRoute = AdminShippingIndexRouteImport.update({
-  id: '/shipping/',
-  path: '/shipping/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminServicesIndexRoute = AdminServicesIndexRouteImport.update({
-  id: '/services/',
-  path: '/services/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminServiceRequestsIndexRoute =
-  AdminServiceRequestsIndexRouteImport.update({
-    id: '/service-requests/',
-    path: '/service-requests/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminSectionsIndexRoute = AdminSectionsIndexRouteImport.update({
-  id: '/sections/',
-  path: '/sections/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReviewsIndexRoute = AdminReviewsIndexRouteImport.update({
-  id: '/reviews/',
-  path: '/reviews/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
-  id: '/properties/',
-  path: '/properties/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProductsIndexRoute = AdminProductsIndexRouteImport.update({
-  id: '/products/',
-  path: '/products/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPriceValidatorIndexRoute =
-  AdminPriceValidatorIndexRouteImport.update({
-    id: '/price-validator/',
-    path: '/price-validator/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminPriceTypesIndexRoute = AdminPriceTypesIndexRouteImport.update({
-  id: '/price-types/',
-  path: '/price-types/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPluginsIndexRoute = AdminPluginsIndexRouteImport.update({
-  id: '/plugins/',
-  path: '/plugins/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
-  id: '/orders/',
-  path: '/orders/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOrderStatusesIndexRoute = AdminOrderStatusesIndexRouteImport.update({
-  id: '/order-statuses/',
-  path: '/order-statuses/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLanguagesIndexRoute = AdminLanguagesIndexRouteImport.update({
-  id: '/languages/',
-  path: '/languages/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFaqIndexRoute = AdminFaqIndexRouteImport.update({
-  id: '/faq/',
-  path: '/faq/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDiscountsIndexRoute = AdminDiscountsIndexRouteImport.update({
-  id: '/discounts/',
-  path: '/discounts/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBannersIndexRoute = AdminBannersIndexRouteImport.update({
-  id: '/banners/',
-  path: '/banners/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const StorefrontPropertiesIndexRoute =
-  StorefrontPropertiesIndexRouteImport.update({
-    id: '/properties/',
-    path: '/properties/',
-    getParentRoute: () => StorefrontRoute,
-  } as any)
-const StorefrontCatalogIndexRoute = StorefrontCatalogIndexRouteImport.update({
-  id: '/catalog/',
-  path: '/catalog/',
+const StorefrontCheckoutRoute = StorefrontCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => StorefrontRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRevalidateThemeRoute = ApiRevalidateThemeRouteImport.update({
+  id: '/api/revalidate-theme',
+  path: '/api/revalidate-theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthInviteRoute = AuthInviteRouteImport.update({
+  id: '/auth/invite',
+  path: '/auth/invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediaSplatRoute = MediaSplatRouteImport.update({
+  id: '/media/$',
+  path: '/media/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
-  id: '/users/$userId',
-  path: '/users/$userId',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUserCategoriesCategoryIdRoute =
-  AdminUserCategoriesCategoryIdRouteImport.update({
-    id: '/user-categories/$categoryId',
-    path: '/user-categories/$categoryId',
-    getParentRoute: () => AdminRoute,
+const ProtectedProfileSettingsRoute =
+  ProtectedProfileSettingsRouteImport.update({
+    id: '/profile/settings',
+    path: '/profile/settings',
+    getParentRoute: () => ProtectedRoute,
   } as any)
-const AdminSectionsSectionIdRoute = AdminSectionsSectionIdRouteImport.update({
-  id: '/sections/$sectionId',
-  path: '/sections/$sectionId',
-  getParentRoute: () => AdminRoute,
+const StorefrontCatalogIndexRoute = StorefrontCatalogIndexRouteImport.update({
+  id: '/catalog/',
+  path: '/catalog/',
+  getParentRoute: () => StorefrontRoute,
 } as any)
-const AdminReviewsReviewIdRoute = AdminReviewsReviewIdRouteImport.update({
-  id: '/reviews/$reviewId',
-  path: '/reviews/$reviewId',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProductsProductIdRoute = AdminProductsProductIdRouteImport.update({
-  id: '/products/$productId',
-  path: '/products/$productId',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPriceTypesPriceTypeIdRoute =
-  AdminPriceTypesPriceTypeIdRouteImport.update({
-    id: '/price-types/$priceTypeId',
-    path: '/price-types/$priceTypeId',
-    getParentRoute: () => AdminRoute,
+const StorefrontOrderSuccessOrderIdRoute =
+  StorefrontOrderSuccessOrderIdRouteImport.update({
+    id: '/order-success/$orderId',
+    path: '/order-success/$orderId',
+    getParentRoute: () => StorefrontRoute,
   } as any)
-const AdminOrdersOrderIdRoute = AdminOrdersOrderIdRouteImport.update({
-  id: '/orders/$orderId',
-  path: '/orders/$orderId',
+const StorefrontPropertiesIndexRoute =
+  StorefrontPropertiesIndexRouteImport.update({
+    id: '/properties/',
+    path: '/properties/',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const AdminBannersIndexRoute = AdminBannersIndexRouteImport.update({
+  id: '/banners/',
+  path: '/banners/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBannersBannerIdRoute = AdminBannersBannerIdRouteImport.update({
+  id: '/banners/$bannerId',
+  path: '/banners/$bannerId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDiscountsIndexRoute = AdminDiscountsIndexRouteImport.update({
+  id: '/discounts/',
+  path: '/discounts/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDiscountsDiscountIdRoute =
@@ -307,116 +189,157 @@ const AdminDiscountsDiscountIdRoute =
     path: '/discounts/$discountId',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminBannersBannerIdRoute = AdminBannersBannerIdRouteImport.update({
-  id: '/banners/$bannerId',
-  path: '/banners/$bannerId',
+const AdminFaqIndexRoute = AdminFaqIndexRouteImport.update({
+  id: '/faq/',
+  path: '/faq/',
   getParentRoute: () => AdminRoute,
 } as any)
-const StorefrontOrderSuccessOrderIdRoute =
-  StorefrontOrderSuccessOrderIdRouteImport.update({
-    id: '/order-success/$orderId',
-    path: '/order-success/$orderId',
-    getParentRoute: () => StorefrontRoute,
-  } as any)
-const ProtectedProfileSettingsRoute =
-  ProtectedProfileSettingsRouteImport.update({
-    id: '/profile/settings',
-    path: '/profile/settings',
-    getParentRoute: () => ProtectedRoute,
-  } as any)
-const AdminUserCategoriesRulesIndexRoute =
-  AdminUserCategoriesRulesIndexRouteImport.update({
-    id: '/user-categories/rules/',
-    path: '/user-categories/rules/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminShippingZonesIndexRoute = AdminShippingZonesIndexRouteImport.update({
-  id: '/shipping/zones/',
-  path: '/shipping/zones/',
+const AdminLanguagesIndexRoute = AdminLanguagesIndexRouteImport.update({
+  id: '/languages/',
+  path: '/languages/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminShippingPickupPointsIndexRoute =
-  AdminShippingPickupPointsIndexRouteImport.update({
-    id: '/shipping/pickup-points/',
-    path: '/shipping/pickup-points/',
+const AdminOrderStatusesIndexRoute = AdminOrderStatusesIndexRouteImport.update({
+  id: '/order-statuses/',
+  path: '/order-statuses/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersOrderIdRoute = AdminOrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPluginsIndexRoute = AdminPluginsIndexRouteImport.update({
+  id: '/plugins/',
+  path: '/plugins/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPriceTypesIndexRoute = AdminPriceTypesIndexRouteImport.update({
+  id: '/price-types/',
+  path: '/price-types/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPriceTypesPriceTypeIdRoute =
+  AdminPriceTypesPriceTypeIdRouteImport.update({
+    id: '/price-types/$priceTypeId',
+    path: '/price-types/$priceTypeId',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminShippingMethodsIndexRoute =
-  AdminShippingMethodsIndexRouteImport.update({
-    id: '/shipping/methods/',
-    path: '/shipping/methods/',
+const AdminPriceValidatorIndexRoute =
+  AdminPriceValidatorIndexRouteImport.update({
+    id: '/price-validator/',
+    path: '/price-validator/',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminPropertiesPropertyIdIndexRoute =
-  AdminPropertiesPropertyIdIndexRouteImport.update({
-    id: '/properties/$propertyId/',
-    path: '/properties/$propertyId/',
+const AdminProductsIndexRoute = AdminProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsProductIdRoute = AdminProductsProductIdRouteImport.update({
+  id: '/products/$productId',
+  path: '/products/$productId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
+  id: '/properties/',
+  path: '/properties/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReviewsIndexRoute = AdminReviewsIndexRouteImport.update({
+  id: '/reviews/',
+  path: '/reviews/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReviewsReviewIdRoute = AdminReviewsReviewIdRouteImport.update({
+  id: '/reviews/$reviewId',
+  path: '/reviews/$reviewId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSectionsIndexRoute = AdminSectionsIndexRouteImport.update({
+  id: '/sections/',
+  path: '/sections/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSectionsSectionIdRoute = AdminSectionsSectionIdRouteImport.update({
+  id: '/sections/$sectionId',
+  path: '/sections/$sectionId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminServiceRequestsIndexRoute =
+  AdminServiceRequestsIndexRouteImport.update({
+    id: '/service-requests/',
+    path: '/service-requests/',
     getParentRoute: () => AdminRoute,
   } as any)
-const StorefrontPropertiesPropertySlugIndexRoute =
-  StorefrontPropertiesPropertySlugIndexRouteImport.update({
-    id: '/properties/$propertySlug/',
-    path: '/properties/$propertySlug/',
-    getParentRoute: () => StorefrontRoute,
+const AdminServicesIndexRoute = AdminServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminShippingIndexRoute = AdminShippingIndexRouteImport.update({
+  id: '/shipping/',
+  path: '/shipping/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminThemesIndexRoute = AdminThemesIndexRouteImport.update({
+  id: '/themes/',
+  path: '/themes/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUserCategoriesIndexRoute =
+  AdminUserCategoriesIndexRouteImport.update({
+    id: '/user-categories/',
+    path: '/user-categories/',
+    getParentRoute: () => AdminRoute,
   } as any)
-const StorefrontCatalogSectionSlugIndexRoute =
-  StorefrontCatalogSectionSlugIndexRouteImport.update({
-    id: '/catalog/$sectionSlug/',
-    path: '/catalog/$sectionSlug/',
-    getParentRoute: () => StorefrontRoute,
+const AdminUserCategoriesCategoryIdRoute =
+  AdminUserCategoriesCategoryIdRouteImport.update({
+    id: '/user-categories/$categoryId',
+    path: '/user-categories/$categoryId',
+    getParentRoute: () => AdminRoute,
   } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedProfileOrdersIndexRoute =
   ProtectedProfileOrdersIndexRouteImport.update({
     id: '/profile/orders/',
     path: '/profile/orders/',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const AdminUserCategoriesRulesRuleIdRoute =
-  AdminUserCategoriesRulesRuleIdRouteImport.update({
-    id: '/user-categories/rules/$ruleId',
-    path: '/user-categories/rules/$ruleId',
-    getParentRoute: () => AdminRoute,
+const ProtectedProfileOrdersOrderIdRoute =
+  ProtectedProfileOrdersOrderIdRouteImport.update({
+    id: '/profile/orders/$orderId',
+    path: '/profile/orders/$orderId',
+    getParentRoute: () => ProtectedRoute,
   } as any)
-const AdminThemesThemeIdSettingsRoute =
-  AdminThemesThemeIdSettingsRouteImport.update({
-    id: '/themes/$themeId/settings',
-    path: '/themes/$themeId/settings',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminShippingZonesZoneIdRoute =
-  AdminShippingZonesZoneIdRouteImport.update({
-    id: '/shipping/zones/$zoneId',
-    path: '/shipping/zones/$zoneId',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminShippingPickupPointsPointIdRoute =
-  AdminShippingPickupPointsPointIdRouteImport.update({
-    id: '/shipping/pickup-points/$pointId',
-    path: '/shipping/pickup-points/$pointId',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminShippingMethodsMethodIdRoute =
-  AdminShippingMethodsMethodIdRouteImport.update({
-    id: '/shipping/methods/$methodId',
-    path: '/shipping/methods/$methodId',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminPluginsPluginIdSettingsRoute =
-  AdminPluginsPluginIdSettingsRouteImport.update({
-    id: '/plugins/$pluginId/settings',
-    path: '/plugins/$pluginId/settings',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminDiscountsGroupsGroupIdRoute =
-  AdminDiscountsGroupsGroupIdRouteImport.update({
-    id: '/discounts/groups/$groupId',
-    path: '/discounts/groups/$groupId',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const StorefrontPropertiesPropertySlugOptionSlugRoute =
-  StorefrontPropertiesPropertySlugOptionSlugRouteImport.update({
-    id: '/properties/$propertySlug/$optionSlug',
-    path: '/properties/$propertySlug/$optionSlug',
+const StorefrontCatalogSectionSlugIndexRoute =
+  StorefrontCatalogSectionSlugIndexRouteImport.update({
+    id: '/catalog/$sectionSlug/',
+    path: '/catalog/$sectionSlug/',
     getParentRoute: () => StorefrontRoute,
   } as any)
 const StorefrontCatalogSectionSlugProductSlugRoute =
@@ -425,11 +348,88 @@ const StorefrontCatalogSectionSlugProductSlugRoute =
     path: '/catalog/$sectionSlug/$productSlug',
     getParentRoute: () => StorefrontRoute,
   } as any)
-const ProtectedProfileOrdersOrderIdRoute =
-  ProtectedProfileOrdersOrderIdRouteImport.update({
-    id: '/profile/orders/$orderId',
-    path: '/profile/orders/$orderId',
-    getParentRoute: () => ProtectedRoute,
+const StorefrontPropertiesPropertySlugIndexRoute =
+  StorefrontPropertiesPropertySlugIndexRouteImport.update({
+    id: '/properties/$propertySlug/',
+    path: '/properties/$propertySlug/',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const StorefrontPropertiesPropertySlugOptionSlugRoute =
+  StorefrontPropertiesPropertySlugOptionSlugRouteImport.update({
+    id: '/properties/$propertySlug/$optionSlug',
+    path: '/properties/$propertySlug/$optionSlug',
+    getParentRoute: () => StorefrontRoute,
+  } as any)
+const AdminDiscountsGroupsGroupIdRoute =
+  AdminDiscountsGroupsGroupIdRouteImport.update({
+    id: '/discounts/groups/$groupId',
+    path: '/discounts/groups/$groupId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminPluginsPluginIdSettingsRoute =
+  AdminPluginsPluginIdSettingsRouteImport.update({
+    id: '/plugins/$pluginId/settings',
+    path: '/plugins/$pluginId/settings',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminPropertiesPropertyIdIndexRoute =
+  AdminPropertiesPropertyIdIndexRouteImport.update({
+    id: '/properties/$propertyId/',
+    path: '/properties/$propertyId/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminShippingMethodsIndexRoute =
+  AdminShippingMethodsIndexRouteImport.update({
+    id: '/shipping/methods/',
+    path: '/shipping/methods/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminShippingMethodsMethodIdRoute =
+  AdminShippingMethodsMethodIdRouteImport.update({
+    id: '/shipping/methods/$methodId',
+    path: '/shipping/methods/$methodId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminShippingPickupPointsIndexRoute =
+  AdminShippingPickupPointsIndexRouteImport.update({
+    id: '/shipping/pickup-points/',
+    path: '/shipping/pickup-points/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminShippingPickupPointsPointIdRoute =
+  AdminShippingPickupPointsPointIdRouteImport.update({
+    id: '/shipping/pickup-points/$pointId',
+    path: '/shipping/pickup-points/$pointId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminShippingZonesIndexRoute = AdminShippingZonesIndexRouteImport.update({
+  id: '/shipping/zones/',
+  path: '/shipping/zones/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminShippingZonesZoneIdRoute =
+  AdminShippingZonesZoneIdRouteImport.update({
+    id: '/shipping/zones/$zoneId',
+    path: '/shipping/zones/$zoneId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminThemesThemeIdSettingsRoute =
+  AdminThemesThemeIdSettingsRouteImport.update({
+    id: '/themes/$themeId/settings',
+    path: '/themes/$themeId/settings',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminUserCategoriesRulesIndexRoute =
+  AdminUserCategoriesRulesIndexRouteImport.update({
+    id: '/user-categories/rules/',
+    path: '/user-categories/rules/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminUserCategoriesRulesRuleIdRoute =
+  AdminUserCategoriesRulesRuleIdRouteImport.update({
+    id: '/user-categories/rules/$ruleId',
+    path: '/user-categories/rules/$ruleId',
+    getParentRoute: () => AdminRoute,
   } as any)
 const AdminPropertiesPropertyIdOptionsOptionIdRoute =
   AdminPropertiesPropertyIdOptionsOptionIdRouteImport.update({
@@ -861,11 +861,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_storefront': {
@@ -875,74 +875,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorefrontRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected': {
-      id: '/_protected'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof ProtectedRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/auth/': {
-      id: '/auth/'
-      path: '/auth'
-      fullPath: '/auth/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/_storefront/': {
       id: '/_storefront/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof StorefrontIndexRouteImport
-      parentRoute: typeof StorefrontRoute
-    }
-    '/media/$': {
-      id: '/media/$'
-      path: '/media/$'
-      fullPath: '/media/$'
-      preLoaderRoute: typeof MediaSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/set-password': {
-      id: '/auth/set-password'
-      path: '/auth/set-password'
-      fullPath: '/auth/set-password'
-      preLoaderRoute: typeof AuthSetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/invite': {
-      id: '/auth/invite'
-      path: '/auth/invite'
-      fullPath: '/auth/invite'
-      preLoaderRoute: typeof AuthInviteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/revalidate-theme': {
-      id: '/api/revalidate-theme'
-      path: '/api/revalidate-theme'
-      fullPath: '/api/revalidate-theme'
-      preLoaderRoute: typeof ApiRevalidateThemeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_storefront/checkout': {
-      id: '/_storefront/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof StorefrontCheckoutRouteImport
       parentRoute: typeof StorefrontRoute
     }
     '/_storefront/cart': {
@@ -952,159 +896,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorefrontCartRouteImport
       parentRoute: typeof StorefrontRoute
     }
-    '/admin/users/': {
-      id: '/admin/users/'
-      path: '/users'
-      fullPath: '/admin/users/'
-      preLoaderRoute: typeof AdminUsersIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/user-categories/': {
-      id: '/admin/user-categories/'
-      path: '/user-categories'
-      fullPath: '/admin/user-categories/'
-      preLoaderRoute: typeof AdminUserCategoriesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/themes/': {
-      id: '/admin/themes/'
-      path: '/themes'
-      fullPath: '/admin/themes/'
-      preLoaderRoute: typeof AdminThemesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/shipping/': {
-      id: '/admin/shipping/'
-      path: '/shipping'
-      fullPath: '/admin/shipping/'
-      preLoaderRoute: typeof AdminShippingIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/settings/': {
-      id: '/admin/settings/'
-      path: '/settings'
-      fullPath: '/admin/settings/'
-      preLoaderRoute: typeof AdminSettingsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/services/': {
-      id: '/admin/services/'
-      path: '/services'
-      fullPath: '/admin/services/'
-      preLoaderRoute: typeof AdminServicesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/service-requests/': {
-      id: '/admin/service-requests/'
-      path: '/service-requests'
-      fullPath: '/admin/service-requests/'
-      preLoaderRoute: typeof AdminServiceRequestsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/sections/': {
-      id: '/admin/sections/'
-      path: '/sections'
-      fullPath: '/admin/sections/'
-      preLoaderRoute: typeof AdminSectionsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reviews/': {
-      id: '/admin/reviews/'
-      path: '/reviews'
-      fullPath: '/admin/reviews/'
-      preLoaderRoute: typeof AdminReviewsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/properties/': {
-      id: '/admin/properties/'
-      path: '/properties'
-      fullPath: '/admin/properties/'
-      preLoaderRoute: typeof AdminPropertiesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/products/': {
-      id: '/admin/products/'
-      path: '/products'
-      fullPath: '/admin/products/'
-      preLoaderRoute: typeof AdminProductsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/price-validator/': {
-      id: '/admin/price-validator/'
-      path: '/price-validator'
-      fullPath: '/admin/price-validator/'
-      preLoaderRoute: typeof AdminPriceValidatorIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/price-types/': {
-      id: '/admin/price-types/'
-      path: '/price-types'
-      fullPath: '/admin/price-types/'
-      preLoaderRoute: typeof AdminPriceTypesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/plugins/': {
-      id: '/admin/plugins/'
-      path: '/plugins'
-      fullPath: '/admin/plugins/'
-      preLoaderRoute: typeof AdminPluginsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/orders/': {
-      id: '/admin/orders/'
-      path: '/orders'
-      fullPath: '/admin/orders/'
-      preLoaderRoute: typeof AdminOrdersIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/order-statuses/': {
-      id: '/admin/order-statuses/'
-      path: '/order-statuses'
-      fullPath: '/admin/order-statuses/'
-      preLoaderRoute: typeof AdminOrderStatusesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/languages/': {
-      id: '/admin/languages/'
-      path: '/languages'
-      fullPath: '/admin/languages/'
-      preLoaderRoute: typeof AdminLanguagesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/faq/': {
-      id: '/admin/faq/'
-      path: '/faq'
-      fullPath: '/admin/faq/'
-      preLoaderRoute: typeof AdminFaqIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/discounts/': {
-      id: '/admin/discounts/'
-      path: '/discounts'
-      fullPath: '/admin/discounts/'
-      preLoaderRoute: typeof AdminDiscountsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/banners/': {
-      id: '/admin/banners/'
-      path: '/banners'
-      fullPath: '/admin/banners/'
-      preLoaderRoute: typeof AdminBannersIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_storefront/properties/': {
-      id: '/_storefront/properties/'
-      path: '/properties'
-      fullPath: '/properties/'
-      preLoaderRoute: typeof StorefrontPropertiesIndexRouteImport
+    '/_storefront/checkout': {
+      id: '/_storefront/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof StorefrontCheckoutRouteImport
       parentRoute: typeof StorefrontRoute
     }
-    '/_storefront/catalog/': {
-      id: '/_storefront/catalog/'
-      path: '/catalog'
-      fullPath: '/catalog/'
-      preLoaderRoute: typeof StorefrontCatalogIndexRouteImport
-      parentRoute: typeof StorefrontRoute
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/revalidate-theme': {
+      id: '/api/revalidate-theme'
+      path: '/api/revalidate-theme'
+      fullPath: '/api/revalidate-theme'
+      preLoaderRoute: typeof ApiRevalidateThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/auth'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/invite': {
+      id: '/auth/invite'
+      path: '/auth/invite'
+      fullPath: '/auth/invite'
+      preLoaderRoute: typeof AuthInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/media/$': {
+      id: '/media/$'
+      path: '/media/$'
+      fullPath: '/media/$'
+      preLoaderRoute: typeof MediaSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_protected/profile/': {
       id: '/_protected/profile/'
@@ -1113,67 +959,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_protected/profile/settings': {
+      id: '/_protected/profile/settings'
+      path: '/profile/settings'
+      fullPath: '/profile/settings'
+      preLoaderRoute: typeof ProtectedProfileSettingsRouteImport
+      parentRoute: typeof ProtectedRoute
     }
-    '/admin/users/$userId': {
-      id: '/admin/users/$userId'
-      path: '/users/$userId'
-      fullPath: '/admin/users/$userId'
-      preLoaderRoute: typeof AdminUsersUserIdRouteImport
-      parentRoute: typeof AdminRoute
+    '/_storefront/catalog/': {
+      id: '/_storefront/catalog/'
+      path: '/catalog'
+      fullPath: '/catalog/'
+      preLoaderRoute: typeof StorefrontCatalogIndexRouteImport
+      parentRoute: typeof StorefrontRoute
     }
-    '/admin/user-categories/$categoryId': {
-      id: '/admin/user-categories/$categoryId'
-      path: '/user-categories/$categoryId'
-      fullPath: '/admin/user-categories/$categoryId'
-      preLoaderRoute: typeof AdminUserCategoriesCategoryIdRouteImport
-      parentRoute: typeof AdminRoute
+    '/_storefront/order-success/$orderId': {
+      id: '/_storefront/order-success/$orderId'
+      path: '/order-success/$orderId'
+      fullPath: '/order-success/$orderId'
+      preLoaderRoute: typeof StorefrontOrderSuccessOrderIdRouteImport
+      parentRoute: typeof StorefrontRoute
     }
-    '/admin/sections/$sectionId': {
-      id: '/admin/sections/$sectionId'
-      path: '/sections/$sectionId'
-      fullPath: '/admin/sections/$sectionId'
-      preLoaderRoute: typeof AdminSectionsSectionIdRouteImport
-      parentRoute: typeof AdminRoute
+    '/_storefront/properties/': {
+      id: '/_storefront/properties/'
+      path: '/properties'
+      fullPath: '/properties/'
+      preLoaderRoute: typeof StorefrontPropertiesIndexRouteImport
+      parentRoute: typeof StorefrontRoute
     }
-    '/admin/reviews/$reviewId': {
-      id: '/admin/reviews/$reviewId'
-      path: '/reviews/$reviewId'
-      fullPath: '/admin/reviews/$reviewId'
-      preLoaderRoute: typeof AdminReviewsReviewIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/products/$productId': {
-      id: '/admin/products/$productId'
-      path: '/products/$productId'
-      fullPath: '/admin/products/$productId'
-      preLoaderRoute: typeof AdminProductsProductIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/price-types/$priceTypeId': {
-      id: '/admin/price-types/$priceTypeId'
-      path: '/price-types/$priceTypeId'
-      fullPath: '/admin/price-types/$priceTypeId'
-      preLoaderRoute: typeof AdminPriceTypesPriceTypeIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/orders/$orderId': {
-      id: '/admin/orders/$orderId'
-      path: '/orders/$orderId'
-      fullPath: '/admin/orders/$orderId'
-      preLoaderRoute: typeof AdminOrdersOrderIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/discounts/$discountId': {
-      id: '/admin/discounts/$discountId'
-      path: '/discounts/$discountId'
-      fullPath: '/admin/discounts/$discountId'
-      preLoaderRoute: typeof AdminDiscountsDiscountIdRouteImport
+    '/admin/banners/': {
+      id: '/admin/banners/'
+      path: '/banners'
+      fullPath: '/admin/banners/'
+      preLoaderRoute: typeof AdminBannersIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/banners/$bannerId': {
@@ -1183,68 +1001,201 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBannersBannerIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_storefront/order-success/$orderId': {
-      id: '/_storefront/order-success/$orderId'
-      path: '/order-success/$orderId'
-      fullPath: '/order-success/$orderId'
-      preLoaderRoute: typeof StorefrontOrderSuccessOrderIdRouteImport
-      parentRoute: typeof StorefrontRoute
-    }
-    '/_protected/profile/settings': {
-      id: '/_protected/profile/settings'
-      path: '/profile/settings'
-      fullPath: '/profile/settings'
-      preLoaderRoute: typeof ProtectedProfileSettingsRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/admin/user-categories/rules/': {
-      id: '/admin/user-categories/rules/'
-      path: '/user-categories/rules'
-      fullPath: '/admin/user-categories/rules/'
-      preLoaderRoute: typeof AdminUserCategoriesRulesIndexRouteImport
+    '/admin/discounts/': {
+      id: '/admin/discounts/'
+      path: '/discounts'
+      fullPath: '/admin/discounts/'
+      preLoaderRoute: typeof AdminDiscountsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/shipping/zones/': {
-      id: '/admin/shipping/zones/'
-      path: '/shipping/zones'
-      fullPath: '/admin/shipping/zones/'
-      preLoaderRoute: typeof AdminShippingZonesIndexRouteImport
+    '/admin/discounts/$discountId': {
+      id: '/admin/discounts/$discountId'
+      path: '/discounts/$discountId'
+      fullPath: '/admin/discounts/$discountId'
+      preLoaderRoute: typeof AdminDiscountsDiscountIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/shipping/pickup-points/': {
-      id: '/admin/shipping/pickup-points/'
-      path: '/shipping/pickup-points'
-      fullPath: '/admin/shipping/pickup-points/'
-      preLoaderRoute: typeof AdminShippingPickupPointsIndexRouteImport
+    '/admin/faq/': {
+      id: '/admin/faq/'
+      path: '/faq'
+      fullPath: '/admin/faq/'
+      preLoaderRoute: typeof AdminFaqIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/shipping/methods/': {
-      id: '/admin/shipping/methods/'
-      path: '/shipping/methods'
-      fullPath: '/admin/shipping/methods/'
-      preLoaderRoute: typeof AdminShippingMethodsIndexRouteImport
+    '/admin/languages/': {
+      id: '/admin/languages/'
+      path: '/languages'
+      fullPath: '/admin/languages/'
+      preLoaderRoute: typeof AdminLanguagesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/properties/$propertyId/': {
-      id: '/admin/properties/$propertyId/'
-      path: '/properties/$propertyId'
-      fullPath: '/admin/properties/$propertyId/'
-      preLoaderRoute: typeof AdminPropertiesPropertyIdIndexRouteImport
+    '/admin/order-statuses/': {
+      id: '/admin/order-statuses/'
+      path: '/order-statuses'
+      fullPath: '/admin/order-statuses/'
+      preLoaderRoute: typeof AdminOrderStatusesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_storefront/properties/$propertySlug/': {
-      id: '/_storefront/properties/$propertySlug/'
-      path: '/properties/$propertySlug'
-      fullPath: '/properties/$propertySlug/'
-      preLoaderRoute: typeof StorefrontPropertiesPropertySlugIndexRouteImport
-      parentRoute: typeof StorefrontRoute
+    '/admin/orders/': {
+      id: '/admin/orders/'
+      path: '/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/_storefront/catalog/$sectionSlug/': {
-      id: '/_storefront/catalog/$sectionSlug/'
-      path: '/catalog/$sectionSlug'
-      fullPath: '/catalog/$sectionSlug/'
-      preLoaderRoute: typeof StorefrontCatalogSectionSlugIndexRouteImport
-      parentRoute: typeof StorefrontRoute
+    '/admin/orders/$orderId': {
+      id: '/admin/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/admin/orders/$orderId'
+      preLoaderRoute: typeof AdminOrdersOrderIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plugins/': {
+      id: '/admin/plugins/'
+      path: '/plugins'
+      fullPath: '/admin/plugins/'
+      preLoaderRoute: typeof AdminPluginsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/price-types/': {
+      id: '/admin/price-types/'
+      path: '/price-types'
+      fullPath: '/admin/price-types/'
+      preLoaderRoute: typeof AdminPriceTypesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/price-types/$priceTypeId': {
+      id: '/admin/price-types/$priceTypeId'
+      path: '/price-types/$priceTypeId'
+      fullPath: '/admin/price-types/$priceTypeId'
+      preLoaderRoute: typeof AdminPriceTypesPriceTypeIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/price-validator/': {
+      id: '/admin/price-validator/'
+      path: '/price-validator'
+      fullPath: '/admin/price-validator/'
+      preLoaderRoute: typeof AdminPriceValidatorIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products/': {
+      id: '/admin/products/'
+      path: '/products'
+      fullPath: '/admin/products/'
+      preLoaderRoute: typeof AdminProductsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products/$productId': {
+      id: '/admin/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/admin/products/$productId'
+      preLoaderRoute: typeof AdminProductsProductIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/properties/': {
+      id: '/admin/properties/'
+      path: '/properties'
+      fullPath: '/admin/properties/'
+      preLoaderRoute: typeof AdminPropertiesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reviews/': {
+      id: '/admin/reviews/'
+      path: '/reviews'
+      fullPath: '/admin/reviews/'
+      preLoaderRoute: typeof AdminReviewsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reviews/$reviewId': {
+      id: '/admin/reviews/$reviewId'
+      path: '/reviews/$reviewId'
+      fullPath: '/admin/reviews/$reviewId'
+      preLoaderRoute: typeof AdminReviewsReviewIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/sections/': {
+      id: '/admin/sections/'
+      path: '/sections'
+      fullPath: '/admin/sections/'
+      preLoaderRoute: typeof AdminSectionsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/sections/$sectionId': {
+      id: '/admin/sections/$sectionId'
+      path: '/sections/$sectionId'
+      fullPath: '/admin/sections/$sectionId'
+      preLoaderRoute: typeof AdminSectionsSectionIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/service-requests/': {
+      id: '/admin/service-requests/'
+      path: '/service-requests'
+      fullPath: '/admin/service-requests/'
+      preLoaderRoute: typeof AdminServiceRequestsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/services/': {
+      id: '/admin/services/'
+      path: '/services'
+      fullPath: '/admin/services/'
+      preLoaderRoute: typeof AdminServicesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings/': {
+      id: '/admin/settings/'
+      path: '/settings'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AdminSettingsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/': {
+      id: '/admin/shipping/'
+      path: '/shipping'
+      fullPath: '/admin/shipping/'
+      preLoaderRoute: typeof AdminShippingIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/themes/': {
+      id: '/admin/themes/'
+      path: '/themes'
+      fullPath: '/admin/themes/'
+      preLoaderRoute: typeof AdminThemesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/user-categories/': {
+      id: '/admin/user-categories/'
+      path: '/user-categories'
+      fullPath: '/admin/user-categories/'
+      preLoaderRoute: typeof AdminUserCategoriesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/user-categories/$categoryId': {
+      id: '/admin/user-categories/$categoryId'
+      path: '/user-categories/$categoryId'
+      fullPath: '/admin/user-categories/$categoryId'
+      preLoaderRoute: typeof AdminUserCategoriesCategoryIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users/': {
+      id: '/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users/$userId': {
+      id: '/admin/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_protected/profile/orders/': {
       id: '/_protected/profile/orders/'
@@ -1253,60 +1204,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileOrdersIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/admin/user-categories/rules/$ruleId': {
-      id: '/admin/user-categories/rules/$ruleId'
-      path: '/user-categories/rules/$ruleId'
-      fullPath: '/admin/user-categories/rules/$ruleId'
-      preLoaderRoute: typeof AdminUserCategoriesRulesRuleIdRouteImport
-      parentRoute: typeof AdminRoute
+    '/_protected/profile/orders/$orderId': {
+      id: '/_protected/profile/orders/$orderId'
+      path: '/profile/orders/$orderId'
+      fullPath: '/profile/orders/$orderId'
+      preLoaderRoute: typeof ProtectedProfileOrdersOrderIdRouteImport
+      parentRoute: typeof ProtectedRoute
     }
-    '/admin/themes/$themeId/settings': {
-      id: '/admin/themes/$themeId/settings'
-      path: '/themes/$themeId/settings'
-      fullPath: '/admin/themes/$themeId/settings'
-      preLoaderRoute: typeof AdminThemesThemeIdSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/shipping/zones/$zoneId': {
-      id: '/admin/shipping/zones/$zoneId'
-      path: '/shipping/zones/$zoneId'
-      fullPath: '/admin/shipping/zones/$zoneId'
-      preLoaderRoute: typeof AdminShippingZonesZoneIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/shipping/pickup-points/$pointId': {
-      id: '/admin/shipping/pickup-points/$pointId'
-      path: '/shipping/pickup-points/$pointId'
-      fullPath: '/admin/shipping/pickup-points/$pointId'
-      preLoaderRoute: typeof AdminShippingPickupPointsPointIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/shipping/methods/$methodId': {
-      id: '/admin/shipping/methods/$methodId'
-      path: '/shipping/methods/$methodId'
-      fullPath: '/admin/shipping/methods/$methodId'
-      preLoaderRoute: typeof AdminShippingMethodsMethodIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/plugins/$pluginId/settings': {
-      id: '/admin/plugins/$pluginId/settings'
-      path: '/plugins/$pluginId/settings'
-      fullPath: '/admin/plugins/$pluginId/settings'
-      preLoaderRoute: typeof AdminPluginsPluginIdSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/discounts/groups/$groupId': {
-      id: '/admin/discounts/groups/$groupId'
-      path: '/discounts/groups/$groupId'
-      fullPath: '/admin/discounts/groups/$groupId'
-      preLoaderRoute: typeof AdminDiscountsGroupsGroupIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_storefront/properties/$propertySlug/$optionSlug': {
-      id: '/_storefront/properties/$propertySlug/$optionSlug'
-      path: '/properties/$propertySlug/$optionSlug'
-      fullPath: '/properties/$propertySlug/$optionSlug'
-      preLoaderRoute: typeof StorefrontPropertiesPropertySlugOptionSlugRouteImport
+    '/_storefront/catalog/$sectionSlug/': {
+      id: '/_storefront/catalog/$sectionSlug/'
+      path: '/catalog/$sectionSlug'
+      fullPath: '/catalog/$sectionSlug/'
+      preLoaderRoute: typeof StorefrontCatalogSectionSlugIndexRouteImport
       parentRoute: typeof StorefrontRoute
     }
     '/_storefront/catalog/$sectionSlug/$productSlug': {
@@ -1316,12 +1225,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorefrontCatalogSectionSlugProductSlugRouteImport
       parentRoute: typeof StorefrontRoute
     }
-    '/_protected/profile/orders/$orderId': {
-      id: '/_protected/profile/orders/$orderId'
-      path: '/profile/orders/$orderId'
-      fullPath: '/profile/orders/$orderId'
-      preLoaderRoute: typeof ProtectedProfileOrdersOrderIdRouteImport
-      parentRoute: typeof ProtectedRoute
+    '/_storefront/properties/$propertySlug/': {
+      id: '/_storefront/properties/$propertySlug/'
+      path: '/properties/$propertySlug'
+      fullPath: '/properties/$propertySlug/'
+      preLoaderRoute: typeof StorefrontPropertiesPropertySlugIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/properties/$propertySlug/$optionSlug': {
+      id: '/_storefront/properties/$propertySlug/$optionSlug'
+      path: '/properties/$propertySlug/$optionSlug'
+      fullPath: '/properties/$propertySlug/$optionSlug'
+      preLoaderRoute: typeof StorefrontPropertiesPropertySlugOptionSlugRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/admin/discounts/groups/$groupId': {
+      id: '/admin/discounts/groups/$groupId'
+      path: '/discounts/groups/$groupId'
+      fullPath: '/admin/discounts/groups/$groupId'
+      preLoaderRoute: typeof AdminDiscountsGroupsGroupIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plugins/$pluginId/settings': {
+      id: '/admin/plugins/$pluginId/settings'
+      path: '/plugins/$pluginId/settings'
+      fullPath: '/admin/plugins/$pluginId/settings'
+      preLoaderRoute: typeof AdminPluginsPluginIdSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/properties/$propertyId/': {
+      id: '/admin/properties/$propertyId/'
+      path: '/properties/$propertyId'
+      fullPath: '/admin/properties/$propertyId/'
+      preLoaderRoute: typeof AdminPropertiesPropertyIdIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/methods/': {
+      id: '/admin/shipping/methods/'
+      path: '/shipping/methods'
+      fullPath: '/admin/shipping/methods/'
+      preLoaderRoute: typeof AdminShippingMethodsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/methods/$methodId': {
+      id: '/admin/shipping/methods/$methodId'
+      path: '/shipping/methods/$methodId'
+      fullPath: '/admin/shipping/methods/$methodId'
+      preLoaderRoute: typeof AdminShippingMethodsMethodIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/pickup-points/': {
+      id: '/admin/shipping/pickup-points/'
+      path: '/shipping/pickup-points'
+      fullPath: '/admin/shipping/pickup-points/'
+      preLoaderRoute: typeof AdminShippingPickupPointsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/pickup-points/$pointId': {
+      id: '/admin/shipping/pickup-points/$pointId'
+      path: '/shipping/pickup-points/$pointId'
+      fullPath: '/admin/shipping/pickup-points/$pointId'
+      preLoaderRoute: typeof AdminShippingPickupPointsPointIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/zones/': {
+      id: '/admin/shipping/zones/'
+      path: '/shipping/zones'
+      fullPath: '/admin/shipping/zones/'
+      preLoaderRoute: typeof AdminShippingZonesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping/zones/$zoneId': {
+      id: '/admin/shipping/zones/$zoneId'
+      path: '/shipping/zones/$zoneId'
+      fullPath: '/admin/shipping/zones/$zoneId'
+      preLoaderRoute: typeof AdminShippingZonesZoneIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/themes/$themeId/settings': {
+      id: '/admin/themes/$themeId/settings'
+      path: '/themes/$themeId/settings'
+      fullPath: '/admin/themes/$themeId/settings'
+      preLoaderRoute: typeof AdminThemesThemeIdSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/user-categories/rules/': {
+      id: '/admin/user-categories/rules/'
+      path: '/user-categories/rules'
+      fullPath: '/admin/user-categories/rules/'
+      preLoaderRoute: typeof AdminUserCategoriesRulesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/user-categories/rules/$ruleId': {
+      id: '/admin/user-categories/rules/$ruleId'
+      path: '/user-categories/rules/$ruleId'
+      fullPath: '/admin/user-categories/rules/$ruleId'
+      preLoaderRoute: typeof AdminUserCategoriesRulesRuleIdRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/properties/$propertyId/options/$optionId': {
       id: '/admin/properties/$propertyId/options/$optionId'

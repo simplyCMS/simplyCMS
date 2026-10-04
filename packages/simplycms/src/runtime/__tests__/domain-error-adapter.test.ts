@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+// `defaultSerovalPlugins` з router-core 1.171 живе лише в субшляху
+// `./ssr/client` (з кореня пакета прибрано) — звідти ж його бере й сам Start.
 import {
   defaultSerovalPlugins,
   makeSerovalPlugin,
-} from '@tanstack/router-core';
+} from '@tanstack/router-core/ssr/client';
 import { fromCrossJSON, toCrossJSONAsync } from 'seroval';
 import { domainErrorAdapter } from '../domain-error-adapter';
 
@@ -17,7 +19,11 @@ type SerovalPlugins = NonNullable<
  * `toCrossJSONStream`/`toCrossJSONAsync` на сервері; `serverFnFetcher.ts`:
  * `fromCrossJSON` на клієнті) з ТИМ САМИМ порядком плагінів, який будує
  * `getDefaultSerovalPlugins()` (`@tanstack/start-client-core`):
- * `[...serializationAdapters.map(makeSerovalPlugin), ...defaultSerovalPlugins]`.
+ * `[...serializationAdapters.map(makeSerovalPlugin), ...createDefaultSerovalPlugins()]`
+ * (з 1.170 — через `getSerovalPlugins(routerPlugins)`; сервер підставляє
+ * `defaultSerovalDeserializerPlugins` — ті самі плагіни з RawStream-
+ * десеріалізатором попереду, тож для `Error` порядок той самий: адаптери
+ * Start → `ShallowErrorPlugin`).
  *
  * 🔴 Пряме `getDefaultSerovalPlugins()` тут не годиться: воно читає
  * `getStartOptions()`, а той — `createIsomorphicFn()`-заглушку

@@ -577,10 +577,10 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@tanstack/router-core": "1.168.15",
+    "@tanstack/router-core": "1.171.34",
     "@types/pg": "^8.15.6",
     "dotenv": "^17.4.2",
-    "seroval": "^1.6.0"
+    "seroval": "^1.6.7"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.29.2",

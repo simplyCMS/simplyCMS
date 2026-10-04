@@ -5,6 +5,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
@@ -180,12 +181,21 @@ function NotFound() {
 }
 
 /** Глобальний error boundary */
-function ErrorBoundary({ error }: { error: Error }) {
+function ErrorBoundary({ error }: ErrorComponentProps) {
+  // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що, не лише
+  // `Error`. Повідомлення беремо лише рядком; інакше — fallback-ключ.
+  const message =
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+      ? error.message
+      : undefined;
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
       <h1 className="text-4xl font-bold">{t('app.error.title')}</h1>
       <p className="mt-4 text-muted-foreground">
-        {error?.message ?? t('app.error.fallback')}
+        {message ?? t('app.error.fallback')}
       </p>
       <Link to="/" className="mt-8 underline hover:text-foreground">
         {t('app.backHome')}

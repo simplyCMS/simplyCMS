@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
 import { useT } from 'simplycms/i18n';
 import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
@@ -99,12 +100,18 @@ function AdminPending() {
  * дослівно, з тим самим fallback-ключем на випадок порожнього повідомлення.
  * Розрізнення за `error.name`, не `instanceof` — той самий контракт К3-13.
  */
-function AdminError({ error }: { error: Error }) {
+function AdminError({ error }: ErrorComponentProps) {
   const t = useT();
+  // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що. Поля
+  // читаємо структурно, без `instanceof` — той самий контракт К3-13.
+  const fields: { name?: unknown; message?: unknown } =
+    typeof error === 'object' && error !== null ? error : {};
   const message =
-    error.name === 'InsecureContextError'
+    fields.name === 'InsecureContextError'
       ? t('admin.common.insecureContext')
-      : (error.message ?? t('app.error.fallback'));
+      : typeof fields.message === 'string'
+        ? fields.message
+        : t('app.error.fallback');
 
   return (
     <div className="flex min-h-screen items-center justify-center">
