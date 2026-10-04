@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
@@ -22,6 +22,17 @@ interface Props {
 export function RemoveOrderItemDialog({ name, onConfirm }: Props) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  // Поки видалення летить, повторне підтвердження другого запиту не шле.
+  const inFlight = useRef(false);
+  const confirm = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    try {
+      await onConfirm();
+    } finally {
+      inFlight.current = false;
+    }
+  };
   return (
     <>
       <Button
@@ -47,7 +58,7 @@ export function RemoveOrderItemDialog({ name, onConfirm }: Props) {
             <AlertDialogAction
               onClick={() => {
                 setOpen(false);
-                void onConfirm();
+                void confirm();
               }}
             >
               {t('common.delete')}

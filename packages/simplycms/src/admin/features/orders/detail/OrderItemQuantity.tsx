@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useT } from 'simplycms/i18n';
 import { Input } from 'simplycms/ui/input';
 
@@ -23,9 +23,12 @@ export function OrderItemQuantity({ quantity, name, onCommit }: Props) {
   const t = useT();
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Гвард польоту — ref, не стан: Enter і blur можуть прийти в одному
+  // батчі React, до ререндеру з `busy = true`.
+  const inFlight = useRef(false);
 
   const commit = async () => {
-    if (busy || draft === null) return;
+    if (inFlight.current || draft === null) return;
     const n = Number(draft);
     const valid =
       draft.trim() !== '' &&
@@ -33,10 +36,12 @@ export function OrderItemQuantity({ quantity, name, onCommit }: Props) {
       n >= QTY_MIN &&
       n <= QTY_MAX;
     if (!valid || n === quantity) return setDraft(null);
+    inFlight.current = true;
     setBusy(true);
     try {
       await onCommit(n);
     } finally {
+      inFlight.current = false;
       setDraft(null);
       setBusy(false);
     }
