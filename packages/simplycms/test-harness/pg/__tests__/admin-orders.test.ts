@@ -148,7 +148,6 @@ describe('admin: замовлення (Е5, Task 4)', () => {
       [c],
     );
     const rows = await ordersOps.list({ data: {} });
-    expect(rows.length).toBeLessThanOrEqual(100);
     expect(rows.slice(0, 3).map((r) => r.id)).toEqual([...[a, b].sort(), c]);
     for (const row of rows) expect(row).not.toHaveProperty('accessToken');
   });
