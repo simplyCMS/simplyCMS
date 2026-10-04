@@ -33,6 +33,7 @@ import { useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
 
 const orders = entityKey(ENTITY.orders);
@@ -93,7 +94,7 @@ export default function ProfileOrderDetailPage() {
     }).format(date);
   };
 
-  const canCancel = order?.status?.code === 'new';
+  const canCancel = order?.status?.code === ORDER_STATUS_CODE.new;
 
   /**
    * 🔴 Скасування — серверна операція: `0002_grants.sql` навмисно не дає

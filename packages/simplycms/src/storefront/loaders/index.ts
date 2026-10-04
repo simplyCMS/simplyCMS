@@ -16,6 +16,7 @@ export * from './place-order';
 export * from './quote-checkout';
 export * from './order-statuses';
 export * from './orders';
+export * from './order-cancel';
 export * from './addresses';
 export * from './avatar';
 export * from './pickup-points';

@@ -70,6 +70,10 @@ export const messages = {
   'admin.orders.statuses.deleteFailed': 'Помилка видалення статусу:',
   'admin.orders.statuses.reorderFailed': 'Помилка зміни порядку:',
   'admin.orders.statuses.requiredFields': "Заповніть всі обов'язкові поля",
+  'admin.orders.statuses.codeImmutable':
+    'Код статусу не можна змінити після створення',
+  'admin.orders.statuses.systemLocked':
+    'Системний статус (потрібен для скасування замовлень) видалити не можна',
   'admin.orders.statuses.deleteTitle': 'Видалити статус?',
   'admin.orders.statuses.deleteText':
     'Ви впевнені, що хочете видалити статус "{name}"? Цю дію не можна скасувати. Замовлення з цим статусом залишаться без статусу.',

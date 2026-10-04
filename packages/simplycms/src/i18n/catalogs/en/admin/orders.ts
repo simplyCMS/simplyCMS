@@ -68,6 +68,10 @@ export const messages: Catalog = {
   'admin.orders.statuses.deleteFailed': 'Could not delete the status:',
   'admin.orders.statuses.reorderFailed': 'Could not change the order:',
   'admin.orders.statuses.requiredFields': 'Fill in all required fields',
+  'admin.orders.statuses.codeImmutable':
+    'The status code cannot be changed after creation',
+  'admin.orders.statuses.systemLocked':
+    'A system status (required for order cancellation) cannot be deleted',
   'admin.orders.statuses.deleteTitle': 'Delete this status?',
   'admin.orders.statuses.deleteText':
     'Are you sure you want to delete the status "{name}"? This cannot be undone. Orders with this status will be left without one.',
