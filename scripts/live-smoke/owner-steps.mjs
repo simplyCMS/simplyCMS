@@ -1,7 +1,9 @@
 /**
  * Кроки адмінки живого прогону в ОДНІЙ сесії власника: вхід
  * (`./owner-session.mjs`) → каталог К3-Е3 (`./admin-catalog.mjs`) →
- * довідники К3-Е4 (`./admin-dictionaries.mjs`). Окремий browser context —
+ * довідники К3-Е4 (`./admin-dictionaries.mjs`) → замовлення К3-Е5
+ * (`./admin-orders.mjs`, потребує ще й сторінки покупця після воронки:
+ * покупець оформлює, власник обробляє). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
  * закривається тут, у `finally`. Виніс із `live-smoke.mjs` — канон 150 рядків.
@@ -9,8 +11,16 @@
 import { openOwnerSession } from './owner-session.mjs';
 import { runAdminCatalogStep } from './admin-catalog.mjs';
 import { runAdminDictionariesStep } from './admin-dictionaries.mjs';
+import { runAdminOrdersStep } from './admin-orders.mjs';
 
-export async function runOwnerSteps({ browser, base, dbUrl, storeEnv, check }) {
+export async function runOwnerSteps({
+  browser,
+  buyerPage,
+  base,
+  dbUrl,
+  storeEnv,
+  check,
+}) {
   const owner = await openOwnerSession({ browser, base, storeEnv });
   // Рядок входу — той самий, що до Е4 давав крок каталогу; `pageerror`
   // сторінки входу зараховано сюди, щоб покриття не звузилось.
@@ -24,6 +34,14 @@ export async function runOwnerSteps({ browser, base, dbUrl, storeEnv, check }) {
     await runAdminCatalogStep({ context: owner.context, base, dbUrl, check });
     await runAdminDictionariesStep({
       context: owner.context,
+      base,
+      dbUrl,
+      check,
+    });
+    // Усередині того самого `try`: контекст власника ще відкритий.
+    await runAdminOrdersStep({
+      context: owner.context,
+      buyerPage,
       base,
       dbUrl,
       check,

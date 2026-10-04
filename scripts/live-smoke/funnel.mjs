@@ -10,6 +10,7 @@
  */
 import { runAvatarStep } from './avatar.mjs';
 import { register } from './register.mjs';
+import { submitCheckout } from './place-order.mjs';
 import {
   activePickupPoints,
   orderStatusCode,
@@ -75,7 +76,6 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   );
   const firstName = await page.locator(FIELD.firstName).inputValue();
   check('чекаут префілено профілем покупця', firstName === 'Тест', firstName);
-  await page.locator(FIELD.phone).fill('+380501234567');
   // Демо-метод — pickup з однією точкою: метод і точку форма обирає сама
   // (Task 11); smoke це доводить, а не клікає замість покупця.
   const points = await activePickupPoints(dbUrl);
@@ -99,10 +99,8 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   await page.locator(FIELD.total).waitFor();
   const totalText = await page.locator(FIELD.total).textContent();
   const displayedTotal = parseMoney(totalText);
-  await page.getByRole('button', { name: /Підтвердити замовлення/ }).click();
-  await page.waitForURL(/\/order-success\//, { timeout: 15_000 });
-  await page.waitForLoadState('networkidle');
-  const orderId = /order-success\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
+  // Телефон → підтвердити → `order-success`; id — SQL за номером (К3-Е5).
+  const { orderId } = await submitCheckout({ page, base, dbUrl });
   const ordersAfter = await ordersCount(dbUrl);
   const placed = await stockSnapshot(dbUrl, PRODUCT_SLUG);
   check(

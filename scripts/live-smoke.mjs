@@ -14,8 +14,8 @@
  * slug → тост i18n (Е3-20: доменна помилка серіалізації, не сирий SQL) →
  * видалення прибирає з вітрини (`live-smoke/admin-catalog.mjs`); (4) крок
  * довідників (К3-Е4, `live-smoke/admin-dictionaries.mjs`): розділ, властивість
- * з опцією, призначення, типи цін — вітрина їх бачить. Обидва — в одній сесії
- * власника з окремими лічильниками `pageerror` (`live-smoke/owner-steps.mjs`).
+ * з опцією, призначення, типи цін; (5) замовлення К3-Е5 (`admin-orders.mjs`):
+ * два оформлені, одне підтверджене, друге скасоване. Одна сесія власника.
  * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
@@ -119,9 +119,9 @@ async function main() {
     page.on('pageerror', (e) => errors.push(String(e)));
     await runFunnel({ page, base, dbUrl, check });
 
-    // 3б. Кроки адмінки (каталог К3-Е3, довідники К3-Е4) — ОКРЕМИЙ browser
-    // context власника, та сама БД: сесія не змішується з покупцем.
-    await runOwnerSteps({ browser, base, dbUrl, storeEnv: env, check });
+    // 3б. Адмінка (Е3, Е4, Е5) — ОКРЕМИЙ context власника, та сама БД.
+    const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };
+    await runOwnerSteps({ ...owner, check });
 
     // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
     // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на
