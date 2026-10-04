@@ -27,7 +27,12 @@ interface Props {
 export function ProductSearchList({ onSelect }: Props) {
   const t = useT();
   const [query, setQuery] = useState('');
-  const [items, setItems] = useState<ProductHit[] | null>(null);
+  // Результат привʼязаний до запиту, на який відповів сервер: під час
+  // debounce і польоту нового запиту відповідь попереднього не показується.
+  const [result, setResult] = useState<{
+    query: string;
+    items: ProductHit[];
+  } | null>(null);
   const trimmed = query.trim();
   const searchable = trimmed.length >= MIN_QUERY;
 
@@ -38,10 +43,10 @@ export function ProductSearchList({ onSelect }: Props) {
       // cache-sync-ok: GET-пошук, нічого не змінює — кешу синкати нічого
       searchProductsForOrder({ data: { query: trimmed } })
         .then((res) => {
-          if (current) setItems(res.items);
+          if (current) setResult({ query: trimmed, items: res.items });
         })
         .catch(() => {
-          if (current) setItems([]);
+          if (current) setResult({ query: trimmed, items: [] });
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => {
@@ -50,7 +55,7 @@ export function ProductSearchList({ onSelect }: Props) {
     };
   }, [searchable, trimmed]);
 
-  const shown = searchable ? items : null;
+  const shown = searchable && result?.query === trimmed ? result.items : null;
   return (
     <div className="space-y-3">
       <Input

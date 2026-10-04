@@ -86,4 +86,25 @@ describe('AddOrderItemDialog: пошук', () => {
     expect(screen.getByText('Новий збіг')).toBeTruthy();
     expect(screen.queryByText('Застарілий збіг')).toBeNull();
   });
+
+  it('під час debounce і польоту нового запиту результати попереднього не показуються', async () => {
+    const input = await openDialog();
+    vi.useFakeTimers();
+    const b = deferred<{ items: ReturnType<typeof hit>[] }>();
+    mocks.searchProductsForOrder
+      .mockResolvedValueOnce({ items: [hit('pa', 'Перший збіг')] })
+      .mockReturnValueOnce(b.promise);
+    type(input, 'ab');
+    await tick(300);
+    expect(screen.getByText('Перший збіг')).toBeTruthy();
+    type(input, 'abc');
+    await tick(100);
+    expect(screen.queryByText('Перший збіг')).toBeNull();
+    await tick(200);
+    expect(mocks.searchProductsForOrder).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Перший збіг')).toBeNull();
+    expect(screen.queryByText(t('admin.orders.searchEmpty'))).toBeNull();
+    await act(async () => b.resolve({ items: [hit('pb', 'Другий збіг')] }));
+    expect(screen.getByText('Другий збіг')).toBeTruthy();
+  });
 });
