@@ -14,4 +14,9 @@ describe('розмір сторінки списку замовлень (Е5-14)
   it('ORDERS_PAGE_SIZE + 1 <= ordersOps.maxLimit', () => {
     expect(ORDERS_PAGE_SIZE + 1).toBeLessThanOrEqual(ordersOps.maxLimit!);
   });
+  it('maxLimit — readonly у типі', () => {
+    // @ts-expect-error getter-only: присвоєння заборонене типом
+    const assign = () => (ordersOps.maxLimit = 1);
+    expect(assign).toThrow();
+  });
 });
