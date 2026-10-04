@@ -1,12 +1,12 @@
 import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
 import {
-  findShippingZoneIn,
-  resolveShippingRate,
-} from 'simplycms/domain/shipping';
+  priceItems,
+  quoteShippingCost,
+  validateShippingChoice,
+  type NewOrderItem,
+  type ShippingMethodRow,
+} from 'simplycms/commerce';
 import type { ActorDb } from './db';
-import { priceCheckoutItems } from './checkout-items';
-import type { NewOrderItem } from './entities/new-order';
-import { loadShippingDirectory, type ShippingMethodRow } from './shipping';
 
 /**
  * Що рахує підготовка чекауту, коли довідники й ціни узгоджені.
@@ -55,7 +55,7 @@ export async function prepareCheckout(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PrepareCheckoutResult> {
-  // 🔴 Порожній кошик — відмова ДО priceCheckoutItems, а не лише `.min(1)` у
+  // 🔴 Порожній кошик — відмова ДО priceItems, а не лише `.min(1)` у
   // T5-схемі (рев'ю M2): обидва викликачі (`placeOrderFor`, `quoteCheckoutFor`)
   // кличуться напряму (харнес, майбутній не-Zod клієнт) в обхід валідатора
   // однієї RPC. Гвард живе в СПІЛЬНІЙ функції, а не дублюється в кожному
@@ -67,55 +67,32 @@ export async function prepareCheckout(
     return { ok: false, reason: 'not_purchasable' };
   }
 
-  const directory = await loadShippingDirectory(db);
-  const method = directory.methods.find(
-    (m) => m.id === input.shippingMethodId && m.is_active,
-  );
-  if (!method) return { ok: false, reason: 'shipping_unavailable' };
+  // Перевірка доставки — ДО ціноутворення (пріоритет відмов «доставка →
+  // точка → товар» незмінний); тариф — після, бо залежить від `subtotal`.
+  // Обидві функції — `simplycms/commerce`, спільні з адмінкою (К3-Е5б).
+  const choice = await validateShippingChoice(db, {
+    methodId: input.shippingMethodId,
+    deliveryCity: input.deliveryCity,
+    pickupPointId: input.pickupPointId,
+  });
+  if (typeof choice === 'string') return { ok: false, reason: choice };
 
-  // Pickup — за КОДОМ методу, як і UI (`CheckoutDeliveryForm`: `code === 'pickup'`):
-  // pickup вимагає активну точку ЦЬОГО методу; не-pickup точки не приймає.
-  const isPickup = method.code === 'pickup';
-  const point = input.pickupPointId
-    ? (directory.pickupPoints.find(
-        (p) =>
-          p.id === input.pickupPointId &&
-          p.method_id === method.id &&
-          p.is_active,
-      ) ?? null)
-    : null;
-  if (isPickup && !point) return { ok: false, reason: 'pickup_point_invalid' };
-  if (!isPickup && input.pickupPointId)
-    return { ok: false, reason: 'pickup_point_invalid' };
-
-  // 🔴 Місто визначає ЗОНУ, а зона — тариф: це гроші (рев'ю M7). Порожнє
-  // місто для НЕ-pickup методу мовчки падало б на ДЕФОЛТНУ зону
-  // (`findShippingZoneIn(zones, '')` завжди повертає її) — тобто тариф
-  // обирала б відсутність даних, а не покупець. Pickup міста не потребує:
-  // адресу видачі задає точка, а не місто.
-  if (!isPickup && !input.deliveryCity) {
-    return { ok: false, reason: 'shipping_unavailable' };
-  }
-
-  const items = await priceCheckoutItems(db, userId, input.items);
+  const items = await priceItems(db, userId, input.items);
   if (items === 'not_purchasable')
     return { ok: false, reason: 'not_purchasable' };
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
-  const rate = resolveShippingRate(
-    { method, zone, cart: { items: [], subtotal } },
-    directory.rates,
-  );
+  const shippingCost = quoteShippingCost(choice, subtotal);
   // `null` — жодного застосовного тарифу: це НЕ «безкоштовно», а відмова.
-  if (rate === null) return { ok: false, reason: 'shipping_unavailable' };
+  if (shippingCost === null)
+    return { ok: false, reason: 'shipping_unavailable' };
 
   return {
     ok: true,
-    method,
+    method: choice.method,
     items,
     subtotal,
-    shippingCost: rate.cost,
-    total: subtotal + rate.cost,
+    shippingCost,
+    total: subtotal + shippingCost,
   };
 }

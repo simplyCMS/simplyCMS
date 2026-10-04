@@ -51,6 +51,7 @@ const canonFiles = (): string[] =>
 
 interface StatusRow {
   id: string;
+  code: string;
   is_default: boolean;
 }
 interface SortRow {
@@ -148,10 +149,13 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
   it('remove: batch [звичайний, дефолтний] — АТОМАРНА відмова, нічого не видалено', async () => {
     const rows = (await queryRows(
       dbUrl,
-      `select id, is_default from public.order_statuses`,
+      `select id, code, is_default from public.order_statuses`,
     )) as StatusRow[];
     const def = rows.find((r) => r.is_default)!;
-    const plain = rows.find((r) => !r.is_default)!;
+    // Звичайний = не дефолтний і не системний (системні — окремий кейс нижче).
+    const plain = rows.find(
+      (r) => !r.is_default && !['new', 'cancelled'].includes(r.code),
+    )!;
     await expect(
       removeManyOrderStatusesOp({ data: [{ id: plain.id }, { id: def.id }] }),
     ).rejects.toThrow(/дефолтний/);
@@ -198,5 +202,80 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
     const rows = await orderStatusesOps.list({ data: {} });
     const orders = rows.map((r) => r.sortOrder);
     expect([...orders].sort((x, y) => x - y)).toEqual(orders);
+  });
+
+  // Е5-6: code незмінний, системні статуси не видаляються.
+  const readStatus = async (id: string) =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select name, code from public.order_statuses where id = '${id}'`,
+      )) as { name: string; code: string }[]
+    )[0];
+  const idByCode = async (code: string) =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select id from public.order_statuses where code = '${code}'`,
+      )) as { id: string }[]
+    )[0].id;
+
+  it('update не змінює code (insertOnly): patch лише з code → відмова до транзакції', async () => {
+    const id = await idByCode('cancelled');
+    await expect(
+      orderStatusesOps.update({
+        data: [{ id, patch: { code: 'renamed' } as never }],
+      }),
+    ).rejects.toMatchObject({ name: 'ZodError' });
+    expect((await readStatus(id)).code).toBe('cancelled');
+  });
+
+  it('update name+code → name змінено, code лишився', async () => {
+    const id = await idByCode('cancelled');
+    await orderStatusesOps.update({
+      data: [{ id, patch: { name: 'Скасоване', code: 'renamed' } as never }],
+    });
+    expect(await readStatus(id)).toEqual({
+      name: 'Скасоване',
+      code: 'cancelled',
+    });
+  });
+
+  it.each(['new', 'cancelled'])(
+    'remove системного статусу %s → помилка, batch цілий',
+    async (code) => {
+      // Самодостатність (фінальне рев'ю Е5, п.3): дефолт — на несистемному
+      // статусі ДО видалення, інакше на сідовому дефолті 'new' спрацює гвард
+      // «дефолтний», а не «системний», і кейс залежить від порядку тестів.
+      const [{ id: plainId }] = (await queryRows(
+        dbUrl,
+        `select id from public.order_statuses
+          where code not in ('new', 'cancelled') order by sort_order limit 1`,
+      )) as { id: string }[];
+      await setDefaultOrderStatusOp({ data: { id: plainId } });
+      const id = await idByCode(code);
+      const extra = crypto.randomUUID();
+      await orderStatusesOps.insert({
+        data: [{ id: extra, name: 'Тимч', code: `tmp-${code}`, sortOrder: 95 }],
+      });
+      await expect(
+        removeManyOrderStatusesOp({ data: [{ id: extra }, { id }] }),
+      ).rejects.toThrow(/системний/);
+      const left = (await queryRows(
+        dbUrl,
+        `select id from public.order_statuses where id in ('${id}', '${extra}')`,
+      )) as { id: string }[];
+      expect(left).toHaveLength(2);
+    },
+  );
+
+  it('remove звичайного статусу без замовлень — проходить', async () => {
+    const id = crypto.randomUUID();
+    await orderStatusesOps.insert({
+      data: [{ id, name: 'Звичайний', code: 'plain-x', sortOrder: 96 }],
+    });
+    await expect(
+      removeManyOrderStatusesOp({ data: [{ id }] }),
+    ).resolves.toEqual({ count: 1 });
   });
 });

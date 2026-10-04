@@ -48,11 +48,39 @@ export {
   productPropertyValuesOps,
   modificationPropertyValuesOps,
 } from './property-values/resources';
+export { sectionsOps } from './sections/resource';
+export { priceTypesOps } from './price-types/resource';
 export {
-  sectionsReadOps,
-  priceTypesReadOps,
-  sectionPropertyAssignmentsReadOps,
-  sectionPropertiesReadOps,
-  propertyOptionsReadOps,
-} from './catalog-read/resources';
+  setDefaultPriceTypeInput,
+  setDefaultPriceTypeOp,
+} from './price-types/set-default';
+export {
+  removePriceTypesInput,
+  removeManyPriceTypesOp,
+} from './price-types/remove';
+export { sectionPropertiesOps } from './section-properties/resource';
+export { propertyOptionsOps } from './property-options/resource';
+export { sectionPropertyAssignmentsOps } from './section-property-assignments/resource';
+export { ordersOps } from './orders/resource';
+export type { OrderRow } from './orders/resource';
+export { orderItemsOps } from './order-items/resource';
+export {
+  changeOrderStatusInput,
+  changeOrderStatusOp,
+} from './orders/change-status';
+export { addOrderItemInput, addOrderItemOp } from './order-items/add';
+export {
+  updateOrderItemQuantityInput,
+  updateOrderItemQuantityOp,
+} from './order-items/update-quantity';
+export { removeOrderItemInput, removeOrderItemOp } from './order-items/remove';
+export type {
+  OrderItemRow,
+  OrderItemsEditResult,
+} from './order-items/editable';
+export {
+  searchProductsForOrderInput,
+  searchProductsForOrderOp,
+} from './products/search-for-order';
+export type { OrderProductHit } from './products/search-for-order';
 export { AdminConflictError } from './errors';

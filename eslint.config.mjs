@@ -148,9 +148,12 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 // (глоб нижче), окремий список лише для файлів ПОЗА `features/`. Export
 // — щоб `tests/mutation-cache-sync-coverage.test.ts` (Task 12) звіряв
 // повноту зони проти того самого джерела, а не другою копією.
-export const MUTATION_CACHE_SYNC_RATCHET = [
-  'packages/simplycms/src/admin/pages/OrderStatuses.tsx',
-];
+// 🔴 `OrderStatuses.tsx` (К3-Е5 Task 2) зійшов зі списку: мутації переїхали
+// у `admin/features/order-statuses/**`, який уже в зоні за глобом; сама
+// сторінка лише складає частини й `admin-data/server` не імпортує (повнота
+// ратчета перевіряється саме цим — мертвий запис валить гейт).
+/** @type {string[]} */
+export const MUTATION_CACHE_SYNC_RATCHET = [];
 
 // 🔴 Похідне від ЄДИНОЇ декларації межі (`contracts/server-only.ts`): усі
 // server-only субшляхи ядра й серверні залежності — bare і з підшляхами.

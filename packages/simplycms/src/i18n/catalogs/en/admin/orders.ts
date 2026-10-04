@@ -3,6 +3,10 @@ import type { Catalog } from '../../../types';
 /** Замовлення — дзеркало `uk/admin/orders.ts`. */
 export const messages: Catalog = {
   'admin.orders.product': 'Product',
+  'admin.orders.noStatus': 'No status',
+  'admin.orders.loadMore': 'Show more',
+  'admin.orders.filters.status': 'Status',
+  'admin.orders.filters.all': 'All statuses',
   'admin.orders.subtitle': 'Review and process orders',
   'admin.orders.all': 'All orders',
   'admin.orders.number': 'Order no.',
@@ -42,6 +46,7 @@ export const messages: Catalog = {
   'admin.orders.searchPlaceholder': 'Search by name or SKU...',
   'admin.orders.searchHint': 'Enter at least 2 characters to search',
   'admin.orders.searchEmpty': 'No products found',
+  'admin.orders.searchFailed': 'Search failed. Please try again',
   'admin.orders.sku': 'SKU:',
   'admin.orders.hasModifications': 'Has modifications',
   'admin.orders.backToSearch': '← Back to search',
@@ -68,7 +73,20 @@ export const messages: Catalog = {
   'admin.orders.statuses.deleteFailed': 'Could not delete the status:',
   'admin.orders.statuses.reorderFailed': 'Could not change the order:',
   'admin.orders.statuses.requiredFields': 'Fill in all required fields',
+  'admin.orders.statuses.codeImmutable':
+    'The status code cannot be changed after creation',
+  'admin.orders.statuses.systemLocked':
+    'A system status (required for order cancellation) cannot be deleted',
   'admin.orders.statuses.deleteTitle': 'Delete this status?',
   'admin.orders.statuses.deleteText':
     'Are you sure you want to delete the status "{name}"? This cannot be undone. Orders with this status will be left without one.',
+  'admin.orders.emailLabel': 'Email:',
+  'admin.orders.pickupPointLabel': 'Pickup point:',
+  'admin.orders.cancelledFinal': 'A cancelled order cannot be changed',
+  'admin.orders.cancelTitle': 'Cancel the order?',
+  'admin.orders.cancelWarning':
+    'The stock will be returned to the warehouse. This cannot be undone: an order cannot leave the Cancelled status.',
+  'admin.orders.cancelConfirm': 'Cancel order',
+  'admin.orders.itemsMayBeTruncated':
+    'Showing {count} items — there may be more',
 };

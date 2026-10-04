@@ -43,7 +43,15 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
  * вважати вставку безпечною. Тому тут — ширший скан (нижче) і КОНСТАНТА
  * дорівнює тому, що він виміряв.
  */
-const KNOWN_WITHOUT_ID = 27;
+// Е4: −6 (довідники каталогу: SectionEdit, PriceTypeEdit, Properties,
+// PropertyOptionEdit, SectionPropertiesManager, SectionPropertiesTable).
+// 🔴 Число — виміряне (14), а не 27−6: на main фактичний скан уже давав 20
+// (константа 27 відстала після видалень Е3), тож стеля була завищена на 7 і
+// дозволяла б сім нових вставок без id.
+// Е5: виміряно 12. Із замовлень `.insert(` мав лише OrderDetail (−1); запис
+// `OrderStatuses` ішов через collection.insert з id і в лічильник не входив.
+// Е4-константа 14 була стелею з запасом +1 над фактом (13).
+const KNOWN_WITHOUT_ID = 12;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

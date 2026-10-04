@@ -1,6 +1,10 @@
 /** Замовлення та їх статуси в адмінці. */
 export const messages = {
   'admin.orders.product': 'Товар',
+  'admin.orders.noStatus': 'Без статусу',
+  'admin.orders.loadMore': 'Показати ще',
+  'admin.orders.filters.status': 'Статус',
+  'admin.orders.filters.all': 'Усі статуси',
   'admin.orders.subtitle': 'Перегляд та обробка замовлень',
   'admin.orders.all': 'Всі замовлення',
   'admin.orders.number': '№ Замовлення',
@@ -41,6 +45,7 @@ export const messages = {
   'admin.orders.searchPlaceholder': 'Пошук за назвою або артикулом...',
   'admin.orders.searchHint': 'Введіть мінімум 2 символи для пошуку',
   'admin.orders.searchEmpty': 'Товари не знайдено',
+  'admin.orders.searchFailed': 'Не вдалося виконати пошук. Спробуйте ще раз',
   'admin.orders.sku': 'Арт:',
   'admin.orders.hasModifications': 'Є модифікації',
   'admin.orders.backToSearch': '← Назад до пошуку',
@@ -70,7 +75,20 @@ export const messages = {
   'admin.orders.statuses.deleteFailed': 'Помилка видалення статусу:',
   'admin.orders.statuses.reorderFailed': 'Помилка зміни порядку:',
   'admin.orders.statuses.requiredFields': "Заповніть всі обов'язкові поля",
+  'admin.orders.statuses.codeImmutable':
+    'Код статусу не можна змінити після створення',
+  'admin.orders.statuses.systemLocked':
+    'Системний статус (потрібен для скасування замовлень) видалити не можна',
   'admin.orders.statuses.deleteTitle': 'Видалити статус?',
   'admin.orders.statuses.deleteText':
     'Ви впевнені, що хочете видалити статус "{name}"? Цю дію не можна скасувати. Замовлення з цим статусом залишаться без статусу.',
+  'admin.orders.emailLabel': 'Email:',
+  'admin.orders.pickupPointLabel': 'Точка видачі:',
+  'admin.orders.cancelledFinal': 'Скасоване замовлення змінити не можна',
+  'admin.orders.cancelTitle': 'Скасувати замовлення?',
+  'admin.orders.cancelWarning':
+    'Залишок товарів повернеться на склад. Цю дію не можна скасувати: зі статусу «Скасоване» замовлення вийти не можна.',
+  'admin.orders.cancelConfirm': 'Скасувати замовлення',
+  'admin.orders.itemsMayBeTruncated':
+    'Показано {count} позицій — можуть бути ще',
 } as const;

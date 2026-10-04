@@ -7,7 +7,6 @@ export const messages = {
   'admin.sections.created': 'Розділ створено',
   'admin.sections.saved': 'Розділ збережено',
   'admin.sections.deleted': 'Розділ видалено',
-  'admin.sections.confirmDelete': 'Видалити цей розділ?',
   'admin.sections.new': 'Новий розділ',
   'admin.sections.editTitle': 'Редагування розділу',
   'admin.sections.newSubtitle': 'Створення нового розділу каталогу',
@@ -16,4 +15,9 @@ export const messages = {
   'admin.sections.propertiesHint':
     'Налаштуйте які властивості доступні для товарів та модифікацій в цьому розділі',
   'admin.sections.inactive': 'Неактивний',
+  'admin.sections.deleteTitle': 'Видалити розділ?',
+  'admin.sections.deleteWarning': 'Товари цього розділу лишаться без розділу',
+  'admin.sections.notFound': 'Розділ не знайдено',
+  'admin.sections.slugHint':
+    'Латиниця, цифри й дефіс — наприклад, laptops-gaming',
 } as const;

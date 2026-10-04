@@ -1,19 +1,25 @@
-import { eq, inArray, asc, desc, type SQL, type Table } from 'drizzle-orm';
+import type { Table } from 'drizzle-orm';
 import type { z } from 'zod';
-import type { Operation, RequestGrant } from 'simplycms/auth';
+import type { RequestGrant } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
+import { subsetInputSchema, type SubsetPayload } from './subset';
+import { buildResourceSchemas, type ColumnName } from './resource-schemas';
+import type {
+  AdminResourceColumnGuards,
+  AdminResourceConfigBase,
+} from './resource-config';
+import { assertMaxLimit, pickColumns } from './resource-projection';
+import { listResourceRows, type ResourceListContext } from './resource-list';
 import {
-  subsetInputSchema,
-  toDrizzleSubset,
-  type SubsetAllow,
-  type SubsetPayload,
-} from './subset';
-import {
-  buildResourceSchemas,
-  type ColumnName,
-  type ResourceRefine,
-} from './resource-schemas';
+  insertResourceRows,
+  removeResourceRows,
+  updateResourceRows,
+  type ResourceWriteContext,
+} from './resource-write';
 import { runAdmin } from './run';
+
+// Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
+export { pickColumns };
 
 /**
  * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
@@ -25,53 +31,48 @@ import { runAdmin } from './run';
  * пишеться руками в impl/<entity>/. DSL запитів немає — складніше за
  * subset = useLiveQuery на клієнті або іменована операція.
  *
- * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути у
- * writable АБО readonly — інакше конфіг не типізується (фантомне поле
- * __missingColumns називає пропущені).
+ * 🔴 Exhaustiveness і заборона перетину списків колонок — типом
+ * `AdminResourceColumnGuards` (`resource-config.ts`).
  */
 export function defineAdminResource<
   T extends Table,
   const W extends ColumnName<T>,
   const R extends ColumnName<T>,
+  const I extends ColumnName<T> = never,
+  const O extends ColumnName<T> = never,
 >(
-  config: {
-    entity: string;
-    table: T;
-    operation: Operation;
-    mode: 'eager' | 'on-demand';
-    filterable: readonly ColumnName<T>[];
-    sortable: readonly ColumnName<T>[];
-    defaultOrder?: { column: ColumnName<T>; direction: 'asc' | 'desc' };
-    writable: readonly W[];
-    readonly: readonly R[];
-    /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
-     *  тригера updated_at у каноні немає). */
-    touch?: ColumnName<T>;
-    /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
-     *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
-    refine?: ResourceRefine;
-  } & ([Exclude<ColumnName<T>, W | R>] extends [never]
-    ? unknown
-    : { __missingColumns: Exclude<ColumnName<T>, W | R> }) &
-    // 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable
-    //   виграв би мовчки (напр., createdAt став би перезаписуваним).
-    ([Extract<W, R>] extends [never]
-      ? unknown
-      : { __overlappingColumns: Extract<W, R> }),
+  config: AdminResourceConfigBase<T, W, R, I, O> &
+    AdminResourceColumnGuards<T, W, R, I, O>,
 ) {
-  const allow: SubsetAllow = {
-    filterable: config.filterable,
-    sortable: config.sortable,
-  };
-  const columns = config.table as unknown as Record<string, never>;
   const { rowSchema, insertSchema, updateSchema, removeSchema } =
-    buildResourceSchemas(config.table, config.writable, config.refine);
+    buildResourceSchemas(
+      config.table,
+      config.writable,
+      config.refine,
+      config.insertOnly,
+      config.omit,
+    );
+  // Е5-7: явна проєкція для SELECT і RETURNING (без omit — усі колонки,
+  // тобто той самий набір, що `select()`/`returning()` без аргументу).
+  const picked = pickColumns(config.table, config.omit ?? []);
+  /** Тип рядка, що бачить споживач: без прихованих колонок. */
+  type Row = Omit<T['$inferSelect'], O>;
+  const { maxLimit } = config;
+  assertMaxLimit(config.entity, maxLimit);
+  // Спільний контекст читання (`resource-list.ts`) і запису (`resource-write.ts`).
+  const ctx: ResourceListContext & ResourceWriteContext = {
+    entity: config.entity,
+    table: config.table,
+    allow: { filterable: config.filterable, sortable: config.sortable },
+    defaultOrder: config.defaultOrder,
+    maxLimit,
+    picked,
+    touch: config.touch,
+  };
 
   /**
-   * Спільна склейка К3-13 — тепер `runAdmin` (Task 1): перший рубіж →
-   * роль від субʼєкта → транзакція → мапінг конфліктів БД у 409.
-   *
-   * 🔴 Фабрика обслуговує ЛИШЕ admin-поверхню: scope 'own' тут
+   * Спільна склейка К3-13 — `runAdmin`: перший рубіж → роль від субʼєкта
+   * → транзакція → мапінг конфліктів БД у 409. 🔴 Фабрика обслуговує ЛИШЕ admin-поверхню: scope 'own' тут
    * структурно непідтримуваний (немає owner-колонки) — `runAdmin` сам
    * кидає fail-loud, 'own'-ресурси (orders/profiles у Е4+) пишуться
    * іменованими операціями, які scope ЧЕСНО звужують.
@@ -87,141 +88,59 @@ export function defineAdminResource<
     updateSchema,
     removeSchema,
     subsetSchema: subsetInputSchema,
+    /** Серверна межа сторінки (Е5-12); `undefined` — без межі. Публічна для тесту Е5-14. */
+    get maxLimit(): number | undefined {
+      return maxLimit;
+    },
 
     list: async ({ data }: { data: SubsetPayload }) =>
       run(async (db) => {
-        const s = toDrizzleSubset(config.table, allow, data.subset ?? {});
-        let q = db
-          .select()
-          .from(config.table as never)
-          .$dynamic();
-        if (s.where) q = q.where(s.where);
-        // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не
-        // унікальний (сід/масовий імпорт дають однакові мітки) — без
-        // тай-брейкера `id` сторінки дублюють або гублять рядки. Один
-        // виклик `.orderBy()` на масив: повторний виклик у Drizzle ЗАМІНЯЄ
-        // порядок, а не дописує до нього.
-        const order: SQL[] = [];
-        if (s.orderBy) order.push(...s.orderBy);
-        else if (config.defaultOrder) {
-          // 🔴 defaultOrder ЗАСТОСОВУЄТЬСЯ (мертвий параметр старої редакції).
-          const col = columns[config.defaultOrder.column];
-          if (col === undefined)
-            throw new Error(
-              `[admin-server] ${config.entity}: defaultOrder.column "${config.defaultOrder.column}" немає в таблиці`,
-            );
-          order.push(
-            config.defaultOrder.direction === 'desc' ? desc(col) : asc(col),
-          );
-        }
-        const idCol = columns['id'];
-        if (idCol !== undefined) order.push(asc(idCol));
-        if (order.length > 0) q = q.orderBy(...order);
-        if (s.limit !== undefined) q = q.limit(s.limit);
-        if (s.offset !== undefined) q = q.offset(s.offset);
-        // 🔴 `.from(config.table as never)` вище — обхід генеричного `T` у
-        // drizzle-білдері, що й у insert/update/remove нижче — зводить
-        // РЕЗУЛЬТУЮЧИЙ тип рядка `q` до `never` (TS2339 на першому ж
-        // `.field` виклику споживача). Явний каст awaited-результату — той
-        // самий рантайм-масив з SELECT, лише названий конкретним типом.
-        //
-        // 🔴 Ціль касту — `T['$inferSelect'][]` (не `z.infer<typeof
-        // rowSchema>[]`, як робив обхід Task 3): jsonb-колонки БЕЗ
-        // `.$type<>()` у schema.ts давали Drizzle-у `unknown`, а `unknown`
-        // не проходить перевірку серіалізовності createServerFn
-        // (`ValidateSerializable`). Тепер усі jsonb-колонки, потрібні
-        // адмінці, типізовані в джерелі (`schema/json.ts`, `JsonValue`, і
-        // конкретні форми на кшталт `string[]` для `images`) — `$inferSelect`
-        // сам серіалізовний, і додатковий шар через drizzle-zod більше не
-        // потрібен. Рантайм не змінився: каст іде на той самий масив із
-        // SELECT/RETURNING, різниця лише в тому, яким типом його назвати.
-        return (await q) as T['$inferSelect'][];
+        // 🔴 Каст — назва типу для того самого масиву з SELECT: генерична
+        // таблиця в білдері (`resource-list.ts`) зводить тип рядка до
+        // `never`. Ціль — `$inferSelect` без omit (не `z.infer` від
+        // rowSchema): jsonb-колонки, потрібні адмінці, типізовані в
+        // джерелі (`schema/json.ts`), тож рядок серіалізовний для
+        // createServerFn (`ValidateSerializable`).
+        const rows = await listResourceRows(db, ctx, data.subset ?? {});
+        return rows as Row[];
       }),
 
     // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
     // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
-    // `inputValidator` serverFn з admin-server/index.ts (Task 3) робить те
-    // саме на межі HTTP, але інваріант «readonly-поле не пишеться
-    // generic-write» мусить тримати ОПЕРАЦІЯ, а не лише межа —
-    // інакше прямий виклик `ops.insert(...)` повз serverFn (харнес-тести,
-    // майбутні internal-виклики) проносить readonly-поле аж до `.values()`.
-    // Zod-схема БЕЗ `.strict()` (дефолтний режим "strip") сама відкидає
-    // невідомі ключі — саме так `isDefault` у payload insert мовчки зникає,
-    // не падає помилкою.
+    // `inputValidator` serverFn з admin-server/index.ts робить те саме на
+    // межі HTTP, але інваріант «readonly-поле не пишеться generic-write»
+    // мусить тримати ОПЕРАЦІЯ: прямий виклик `ops.insert(...)` повз
+    // serverFn (харнес-тести, internal-виклики) інакше проносить
+    // readonly-поле аж до `.values()`. Zod-схема БЕЗ `.strict()` ("strip")
+    // сама відкидає невідомі ключі — `isDefault` у payload insert мовчки
+    // зникає, не падає помилкою.
     insert: async ({ data }: { data: z.infer<typeof insertSchema> }) => {
       const parsed = insertSchema.parse(data);
-      return run(async (db) => {
-        // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
-        // мутацій «підтвердяться» локально без запису в БД.
-        // 🔴 Подвійний каст через `unknown`: генеричний `T["$inferSelect"]`
-        // insert-білдера і `T['$inferSelect']` самої таблиці — надто різні
-        // форми, щоб TS визнав їх «достатньо перетинними» напряму (TS2352);
-        // той самий приймальний прийом, що вже застосовано в
-        // resource-schemas.ts.
-        const rows = (await db
-          .insert(config.table)
-          .values(parsed as never)
-          .returning()) as unknown as T['$inferSelect'][];
-        return rows;
-      });
+      return run(
+        async (db) => (await insertResourceRows(db, ctx, parsed)) as Row[],
+      );
     },
 
+    // 🔴 `patchSchema` (resource-schemas.ts) пікає лише writable-ключі й
+    // РЕФАЙНИТЬ непорожність ПІСЛЯ strip: patch лише з readonly-полів
+    // (напр. `{ isDefault: true }`) стає `{}` і валить `.parse()` тут ЖЕ,
+    // ДО `run` — readonly-патч ніколи не доходить до транзакції.
     update: async ({ data }: { data: z.infer<typeof updateSchema> }) => {
-      // 🔴 `patchSchema` (resource-schemas.ts) пікає лише writable-ключі й
-      // РЕФАЙНИТЬ непорожність ПІСЛЯ strip: patch, що складається лише з
-      // readonly-полів (напр. `{ isDefault: true }`), стає `{}` і валить
-      // `.parse()` тут ЖЕ, ще ДО `run` — readonly-патч ніколи не доходить
-      // до транзакції.
       const parsed = updateSchema.parse(data);
-      return run(async (db) => {
-        // 🔴 Відхилення від брифа (typecheck), знахідка Task 8 (build:packages,
-        // тобто `tsc -p tsconfig.dts.json`): `const out = []` — «evolving
-        // array» — під ЦИМ прогоном (emitDeclarationOnly) TS звужує елемент
-        // до `never` ще ДО першого `push`, тож `out.push(row)` дає TS2345
-        // (`T['$inferSelect']` не підходить під `never`). Кореневий
-        // `pnpm typecheck` (звичайний `tsc --noEmit`) цю розбіжність не
-        // бачить — той самий код у ньому чистий; мінімальний фікс — явна
-        // анотація типу масиву замість покладання на evolving-inference.
-        const out: T['$inferSelect'][] = [];
-        for (const { id, patch } of parsed) {
-          // 🔴 Відхилення від брифа (typecheck): `db.update(config.table)`
-          // з генеричним `T extends Table` не звужує `.returning()` до
-          // конкретного масиву — TS2488 на деструктуризації, TS7053 на
-          // індексації: обидва боки умовного типу `TReturning extends
-          // undefined ? QueryResult : TReturning[]` лишаються нерозвʼязані,
-          // бо `T` ще не інстанційовано. Явний каст результату до масиву
-          // рядків таблиці (`T['$inferSelect'][]`) — той самий рантайм-масив
-          // з `UPDATE … RETURNING`, лише названий конкретним типом.
-          const rows = (await db
-            .update(config.table)
-            .set(
-              (config.touch
-                ? { ...patch, [config.touch]: new Date() }
-                : patch) as never,
-            )
-            .where(eq(columns['id'], id as never))
-            .returning()) as T['$inferSelect'][];
-          const row = rows[0];
-          if (!row)
-            throw new Error(
-              `[admin-server] ${config.entity}: рядка ${id} не існує`,
-            );
-          out.push(row);
-        }
-        return out;
-      });
+      return run(
+        async (db) => (await updateResourceRows(db, ctx, parsed)) as Row[],
+      );
     },
 
     remove: async ({ data }: { data: z.infer<typeof removeSchema> }) => {
       const parsed = removeSchema.parse(data);
-      return run(async (db) => {
-        const ids = parsed.map((d) => d.id);
-        const rows = await db
-          .delete(config.table)
-          .where(inArray(columns['id'], ids as never))
-          .returning();
-        return { count: rows.length };
-      });
+      return run((db) =>
+        removeResourceRows(
+          db,
+          config.table,
+          parsed.map((d) => d.id),
+        ),
+      );
     },
   };
 }

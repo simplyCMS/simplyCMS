@@ -8,9 +8,8 @@ import {
   loadDiscountGroups,
   loadUserCategoryId,
   loadUserPriceTypeId,
-  withCustomerDb,
-  withStorefrontDb,
-} from 'simplycms/storefront/loaders';
+} from 'simplycms/commerce';
+import { withCustomerDb, withStorefrontDb } from 'simplycms/storefront/loaders';
 
 /** Хто питає ціну — вхід рушія знижок, який не залежить від кошика. */
 export interface DiscountActor {
@@ -35,7 +34,7 @@ export interface DiscountEnvironment {
  *
  * 🔴 Рахує ціну домен, не цей виклик: сервер віддає ПРАВИЛА. Кількість і сума
  * кошика живуть у клієнті, тож обчислення тут дало б знижку від неповного
- * контексту (див. `simplycms/storefront/loaders/discounts`).
+ * контексту (див. `simplycms/commerce/discounts`).
  *
  * 🔴 Модуль містить РІВНО один експорт-serverFn і жодної звичайної функції:
  * трансформація Start вирізає тіло хендлера разом із серверними імпортами, а

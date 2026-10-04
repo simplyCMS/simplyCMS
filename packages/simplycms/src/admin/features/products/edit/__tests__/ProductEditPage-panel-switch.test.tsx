@@ -16,7 +16,7 @@ import { ENGINE, ResizeObserverStub } from './test-engine-stub';
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 
-const { listProducts, updateProducts, noop, noopList } = vi.hoisted(() => ({
+const { listProducts, updateProducts } = vi.hoisted(() => ({
   listProducts: vi.fn(async () => [] as unknown[]),
   // 🔴 Голий vi.fn() (undefined) валить `for (const row of rows)`
   // персист-хендлера й ВІДКОЧУЄ оптимізм (спіймано: write-back не долітав).
@@ -24,42 +24,12 @@ const { listProducts, updateProducts, noop, noopList } = vi.hoisted(() => ({
     async ({ data }: { data: Array<{ id: string; patch: object }> }) =>
       data.map((d) => ({ id: d.id, ...d.patch })),
   ),
-  noop: () => vi.fn(),
-  noopList: () => vi.fn(async () => [] as unknown[]),
 }));
-vi.mock('simplycms/admin-server', () => {
-  return {
-    listOrderStatuses: noopList(),
-    insertOrderStatuses: noop(),
-    updateOrderStatuses: noop(),
-    removeOrderStatuses: noop(),
-    listProducts,
-    insertProducts: noop(),
-    updateProducts,
-    removeProducts: noop(),
-    listProductModifications: noopList(),
-    insertProductModifications: noop(),
-    updateProductModifications: noop(),
-    removeProductModifications: noop(),
-    listProductPrices: noopList(),
-    saveProductPrices: noop(),
-    listStock: noopList(),
-    saveStock: noop(),
-    listProductPropertyValues: noopList(),
-    insertProductPropertyValues: noop(),
-    updateProductPropertyValues: noop(),
-    removeProductPropertyValues: noop(),
-    listModificationPropertyValues: noopList(),
-    insertModificationPropertyValues: noop(),
-    updateModificationPropertyValues: noop(),
-    removeModificationPropertyValues: noop(),
-    listSections: noopList(),
-    listPriceTypes: noopList(),
-    listSectionPropertyAssignments: noopList(),
-    listSectionProperties: noopList(),
-    listPropertyOptions: noopList(),
-  };
-});
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({ listProducts, updateProducts }),
+);
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
 import { ProductEditPage } from '../ProductEditPage';

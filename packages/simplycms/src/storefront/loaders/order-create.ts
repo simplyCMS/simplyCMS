@@ -4,7 +4,7 @@ import type { PlacedOrder } from 'simplycms/contracts';
 import type { ActorDb, OperatorEscalation } from './db';
 import type { NewOrderInput } from './entities/new-order';
 import { loadDefaultStatusId } from './order-statuses';
-import { reserveOrderStock } from './order-stock';
+import { reserveOrderStock } from 'simplycms/inventory';
 
 /**
  * Номер замовлення.
@@ -81,9 +81,17 @@ export async function createOrder(
     savedAddressId: input.savedAddressId,
   });
 
+  // 🔴 Ключі позицій — ОДИН масив і для вставки, і для обліку: лічильник
+  // списаного пишеться в позицію за її `id` (Е5-4′, `StockLine.orderItemId`),
+  // тож друга генерація id усередині вставки розвела б їх.
+  const items = input.items.map((item) => ({
+    ...item,
+    orderItemId: randomUUID(),
+  }));
+
   await db.insert(orderItems).values(
-    input.items.map((item) => ({
-      id: randomUUID(),
+    items.map((item) => ({
+      id: item.orderItemId,
       orderId,
       productId: item.productId,
       modificationId: item.modificationId,
@@ -99,9 +107,8 @@ export async function createOrder(
   // 🔴 Списання — ПІСЛЯ того, як RLS прийняла вставку замовлення й позицій
   // покупцем: право на цю транзакцію вже доведено, а службова дія йде під
   // операторською роллю в ТІЙ САМІЙ транзакції (див. `escalationFor`).
-  // `NewOrderItem` структурно є `StockLine`, тож перекладати нічого.
   await operator((odb) =>
-    reserveOrderStock(odb, orderId, input.items, input.pickupPointId),
+    reserveOrderStock(odb, orderId, items, input.pickupPointId),
   );
 
   return { id: orderId, orderNumber, accessToken };

@@ -52,6 +52,16 @@ export class LegacySupabaseBoundary extends Component<
   }
 }
 
+/** Живі розділи К3 (на колекціях/серверному шарі), на які веде заглушка. */
+const LIVE_LINKS = [
+  { path: 'products', labelKey: 'admin.nav.products' },
+  { path: 'sections', labelKey: 'admin.nav.sections' },
+  { path: 'price-types', labelKey: 'admin.nav.priceTypes' },
+  { path: 'properties', labelKey: 'admin.nav.properties' },
+  { path: 'order-statuses', labelKey: 'admin.nav.orderStatuses' },
+  { path: 'orders', labelKey: 'admin.nav.orders' },
+] as const;
+
 /** Заглушка легасі-розділу: посилання ведуть на живі сторінки К3. */
 function LegacyNotMigratedNotice() {
   const t = useT();
@@ -59,13 +69,12 @@ function LegacyNotMigratedNotice() {
   return (
     <div className="rounded-lg border border-dashed p-6 text-center space-y-4">
       <p className="text-muted-foreground">{t('admin.legacy.notMigrated')}</p>
-      <div className="flex justify-center gap-4 text-sm">
-        <Link to={adminPath('products')} className="underline">
-          {t('admin.nav.products')}
-        </Link>
-        <Link to={adminPath('order-statuses')} className="underline">
-          {t('admin.nav.orderStatuses')}
-        </Link>
+      <div className="flex flex-wrap justify-center gap-4 text-sm">
+        {LIVE_LINKS.map(({ path, labelKey }) => (
+          <Link key={path} to={adminPath(path)} className="underline">
+            {t(labelKey)}
+          </Link>
+        ))}
       </div>
     </div>
   );

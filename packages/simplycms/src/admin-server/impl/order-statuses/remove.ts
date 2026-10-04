@@ -1,6 +1,7 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderStatuses } from 'simplycms/schema';
+import { SYSTEM_ORDER_STATUS_CODES } from 'simplycms/contracts/order-status-codes';
 import { runAdmin } from '../run';
 
 export const removeStatusInput = z.object({ id: z.uuid() });
@@ -40,6 +41,12 @@ export const removeManyOrderStatusesOp = async ({
     if (def)
       throw new Error(
         '[admin-server] дефолтний статус видалити не можна — призначте інший дефолт',
+      );
+    // Системні статуси (Е5-6) тримають скасування замовлення — не видаляються.
+    const system = rows.find((r) => SYSTEM_ORDER_STATUS_CODES.includes(r.code));
+    if (system)
+      throw new Error(
+        `[admin-server] системний статус ${system.code} видалити не можна`,
       );
     const deleted = await db
       .delete(orderStatuses)

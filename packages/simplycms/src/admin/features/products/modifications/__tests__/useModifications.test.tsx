@@ -32,41 +32,18 @@ const {
   setDefaultProductModification: vi.fn(),
   reorderProductModification: vi.fn(),
 }));
-vi.mock('simplycms/admin-server', () => ({
-  listOrderStatuses: vi.fn(async () => []),
-  insertOrderStatuses: vi.fn(),
-  updateOrderStatuses: vi.fn(),
-  removeOrderStatuses: vi.fn(),
-  setDefaultOrderStatus: vi.fn(),
-  reorderOrderStatus: vi.fn(),
-  listProducts: vi.fn(async () => []),
-  insertProducts: vi.fn(),
-  updateProducts: vi.fn(),
-  removeProducts: vi.fn(),
-  listProductModifications,
-  insertProductModifications,
-  updateProductModifications,
-  removeProductModifications,
-  setDefaultProductModification,
-  reorderProductModification,
-  listProductPrices: vi.fn(async () => []),
-  saveProductPrices: vi.fn(),
-  listStock: vi.fn(async () => []),
-  saveStock: vi.fn(),
-  listProductPropertyValues: vi.fn(async () => []),
-  insertProductPropertyValues: vi.fn(),
-  updateProductPropertyValues: vi.fn(),
-  removeProductPropertyValues: vi.fn(),
-  listModificationPropertyValues: vi.fn(async () => []),
-  insertModificationPropertyValues: vi.fn(),
-  updateModificationPropertyValues: vi.fn(),
-  removeModificationPropertyValues: vi.fn(),
-  listSections: vi.fn(async () => []),
-  listPriceTypes: vi.fn(async () => []),
-  listSectionPropertyAssignments: vi.fn(async () => []),
-  listSectionProperties: vi.fn(async () => []),
-  listPropertyOptions: vi.fn(async () => []),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({
+    listProductModifications,
+    insertProductModifications,
+    updateProductModifications,
+    removeProductModifications,
+    setDefaultProductModification,
+    reorderProductModification,
+  }),
+);
 
 import {
   productModificationsCollection,

@@ -60,6 +60,14 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
+  // Ціноутворення й доставка (Е5б-5) — T2 з upward-винятком лише на `db`;
+  // імпорт назад у вітрину (звідки рушій перенесено) — рівно та заборона,
+  // яку рішення Е5б-5 мало закрити.
+  [
+    'packages/simplycms/src/commerce',
+    'simplycms/storefront/loaders',
+    'simplycms/db',
+  ],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

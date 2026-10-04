@@ -126,7 +126,8 @@ export const sectionProperties = pgTable("section_properties", {
 			foreignColumns: [sections.id],
 			name: "section_properties_section_id_fkey"
 		}).onDelete("cascade"),
-	unique("section_properties_section_id_code_key").on(table.sectionId, table.slug),
+	// Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
+	unique("section_properties_slug_key").on(table.slug),
 ]);
 
 export const userCategories = pgTable("user_categories", {
@@ -234,7 +235,9 @@ export const orderItems = pgTable("order_items", {
 	total: numeric({ precision: 12, scale:  2 }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	basePrice: numeric("base_price"),
-	discountData: jsonb("discount_data"),
+	discountData: jsonb("discount_data").$type<JsonValue>(),
+	stockPointId: uuid("stock_point_id"),
+	stockReserved: integer("stock_reserved").default(0).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.modificationId],
@@ -256,11 +259,18 @@ export const orderItems = pgTable("order_items", {
 			foreignColumns: [services.id],
 			name: "order_items_service_id_fkey"
 		}),
+	foreignKey({
+			columns: [table.stockPointId],
+			foreignColumns: [pickupPoints.id],
+			name: "order_items_stock_point_id_fkey"
+		}).onDelete("set null"),
 	check("order_items_positive_quantity", sql`quantity > 0`),
+	check("order_items_stock_reserved_nonneg", sql`stock_reserved >= 0`),
 	index("idx_order_items_order_id").on(table.orderId),
 	index("idx_order_items_product_id").on(table.productId),
 	index("idx_order_items_modification_id").on(table.modificationId),
 	index("idx_order_items_service_id").on(table.serviceId),
+	index("idx_order_items_stock_point_id").on(table.stockPointId),
 	pgPolicy("order_items_select_own_or_token", { as: "permissive", for: "select", to: ["app_user"], using: sql`exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), '')))))` }),
 	pgPolicy("order_items_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null))` }),
 	pgPolicy("order_items_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
@@ -803,7 +813,7 @@ export const orders = pgTable("orders", {
 	shippingRateId: uuid("shipping_rate_id"),
 	shippingCost: numeric("shipping_cost", { precision: 10, scale:  2 }).default('0'),
 	pickupPointId: uuid("pickup_point_id"),
-	shippingData: jsonb("shipping_data").default({}),
+	shippingData: jsonb("shipping_data").$type<JsonValue>().default({}),
 	hasDifferentRecipient: boolean("has_different_recipient").default(false).notNull(),
 	recipientFirstName: text("recipient_first_name"),
 	recipientLastName: text("recipient_last_name"),
@@ -906,7 +916,8 @@ export const productPrices = pgTable("product_prices", {
 			columns: [table.priceTypeId],
 			foreignColumns: [priceTypes.id],
 			name: "product_prices_price_type_id_fkey"
-		}).onDelete("cascade"),
+		// Е4-1: тип ціни з цінами не видаляється мовчки разом із цінами
+		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.productId],
 			foreignColumns: [products.id],

@@ -1,11 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { loadPickupPoints, type PickupPointRow } from 'simplycms/commerce';
 import {
   loadActivePickupPointsCount,
-  loadPickupPoints,
   loadStockInfo,
   withStorefrontDb,
-  type PickupPointRow,
   type StockByPointRow,
   type StockInfoRow,
 } from 'simplycms/storefront/loaders';

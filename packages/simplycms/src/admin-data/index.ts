@@ -38,3 +38,9 @@ export type { SectionPropertiesCollection } from './collections/section-properti
 
 export { propertyOptionsCollection } from './collections/property-options';
 export type { PropertyOptionsCollection } from './collections/property-options';
+
+export { ordersCollection } from './collections/orders';
+export type { OrdersCollection, AdminOrder } from './collections/orders';
+
+export { orderItemsCollection } from './collections/order-items';
+export type { OrderItemsCollection } from './collections/order-items';

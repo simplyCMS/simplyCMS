@@ -136,7 +136,12 @@ CREATE TABLE "order_items" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"base_price" numeric,
 	"discount_data" jsonb,
-	CONSTRAINT "order_items_positive_quantity" CHECK (quantity > 0)
+	-- Е5-4′: облік фактично списаного ПО ПОЗИЦІЇ — точка списання і скільки
+	-- реально знято; скасування повертає рівно stock_reserved і обнуляє його
+	"stock_point_id" uuid,
+	"stock_reserved" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "order_items_positive_quantity" CHECK (quantity > 0),
+	CONSTRAINT "order_items_stock_reserved_nonneg" CHECK (stock_reserved >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "order_items" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -365,7 +370,8 @@ CREATE TABLE "section_properties" (
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"options" jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "section_properties_section_id_code_key" UNIQUE("section_id","slug")
+	-- Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
+	CONSTRAINT "section_properties_slug_key" UNIQUE("slug")
 );
 --> statement-breakpoint
 CREATE TABLE "section_property_assignments" (
@@ -652,6 +658,7 @@ ALTER TABLE "order_items" ADD CONSTRAINT "order_items_modification_id_fkey" FORE
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "order_items" ADD CONSTRAINT "order_items_stock_point_id_fkey" FOREIGN KEY ("stock_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_saved_address_id_fkey" FOREIGN KEY ("saved_address_id") REFERENCES "public"."user_addresses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_saved_recipient_id_fkey" FOREIGN KEY ("saved_recipient_id") REFERENCES "public"."user_recipients"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -664,7 +671,8 @@ ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_method_id_fkey" FOREIG
 ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifications" ADD CONSTRAINT "product_modifications_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+-- Е4-1: тип ціни з цінами не видаляється мовчки разом із цінами (RESTRICT)
+ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."property_options"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -715,6 +723,7 @@ CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id"
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_service_id" ON "order_items" USING btree ("service_id");--> statement-breakpoint
+CREATE INDEX "idx_order_items_stock_point_id" ON "order_items" USING btree ("stock_point_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_shipping_method_id" ON "orders" USING btree ("shipping_method_id" uuid_ops);--> statement-breakpoint

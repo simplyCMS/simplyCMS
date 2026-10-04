@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
+import { InsufficientStockError } from 'simplycms/inventory';
 import {
   withCustomerDb,
   withOrderTokenDb,
@@ -9,7 +10,6 @@ import {
 import { prepareCheckout } from './prepare-checkout';
 import { createOrder } from './order-create';
 import { resolveRecipient, toOrderInput } from './place-order-support';
-import { InsufficientStockError } from './stock-reservation';
 
 /**
  * Логіка оформлення без RPC-обгортки — щоб харнес доводив воронку напряму.
@@ -29,7 +29,7 @@ export async function placeOrderFor(
   input: PlaceOrderInput,
   userId: string | null,
 ): Promise<PlaceOrderResult> {
-  // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceCheckoutItems
+  // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceItems
   // (гвард живе там, спільний з квотою — рев'ю #9, докладніше в
   // `prepare-checkout.ts`), не тут: другий незалежний гвард на той самий
   // предикат — саме те дублювання, з яким весь розділ M бореться.

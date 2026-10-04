@@ -40,35 +40,15 @@ const { listProducts, listSections, removeProducts } = vi.hoisted(() => ({
   listSections: vi.fn(async () => [] as unknown[]),
   removeProducts: vi.fn(async () => ({ count: 1 })),
 }));
-vi.mock('simplycms/admin-server', () => ({
-  listOrderStatuses: vi.fn(async () => []),
-  insertOrderStatuses: vi.fn(),
-  updateOrderStatuses: vi.fn(),
-  removeOrderStatuses: vi.fn(),
-  listProducts,
-  insertProducts: vi.fn(),
-  updateProducts: vi.fn(),
-  removeProducts,
-  listProductModifications: vi.fn(async () => []),
-  insertProductModifications: vi.fn(),
-  updateProductModifications: vi.fn(),
-  removeProductModifications: vi.fn(),
-  listProductPrices: vi.fn(async () => []),
-  listStock: vi.fn(async () => []),
-  listProductPropertyValues: vi.fn(async () => []),
-  insertProductPropertyValues: vi.fn(),
-  updateProductPropertyValues: vi.fn(),
-  removeProductPropertyValues: vi.fn(),
-  listModificationPropertyValues: vi.fn(async () => []),
-  insertModificationPropertyValues: vi.fn(),
-  updateModificationPropertyValues: vi.fn(),
-  removeModificationPropertyValues: vi.fn(),
-  listSections,
-  listPriceTypes: vi.fn(async () => []),
-  listSectionPropertyAssignments: vi.fn(async () => []),
-  listSectionProperties: vi.fn(async () => []),
-  listPropertyOptions: vi.fn(async () => []),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({
+    listProducts,
+    removeProducts,
+    listSections,
+  }),
+);
 
 const navigateMock = vi.fn();
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigateMock }));

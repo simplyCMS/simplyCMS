@@ -98,3 +98,35 @@ export async function activePickupPoints(url) {
       where is_active order by sort_order, id`,
   );
 }
+
+/** id замовлення за номером із `order-success` (К3-Е5, `submitCheckout`). */
+export async function orderIdByNumber(url, orderNumber) {
+  const [row] = await sql(
+    url,
+    'select id from public.orders where order_number = $1',
+    [orderNumber],
+  );
+  return row?.id ?? null;
+}
+
+/** Рядок замовлення для кроку Е5: статус (код і назва) і записана сума. */
+export async function orderState(url, orderId) {
+  const [row] = await sql(
+    url,
+    `select st.code, st.name, o.total from public.orders o
+       left join public.order_statuses st on st.id = o.status_id
+      where o.id = $1`,
+    [orderId],
+  );
+  return row ? { ...row, total: Number(row.total) } : null;
+}
+
+/** Облік по позиціях (Е5-4′): кількість, фактично списане і точка. */
+export async function orderItemsStock(url, orderId) {
+  return sql(
+    url,
+    `select quantity, stock_reserved, stock_point_id from public.order_items
+      where order_id = $1 order by id`,
+    [orderId],
+  );
+}

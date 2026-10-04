@@ -11,7 +11,10 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
-import { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
+import {
+  loadDefaultPriceTypeId,
+  loadPricesByProduct,
+} from 'simplycms/commerce';
 import { loadRootSections } from './sections';
 
 /** Скільки товарів у добірках «популярне» й «новинки». */

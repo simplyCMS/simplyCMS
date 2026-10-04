@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { loadDefaultPriceTypeId } from 'simplycms/commerce';
 import {
   loadCatalogProducts,
-  loadDefaultPriceTypeId,
   loadFilterOptions,
   loadProductList,
   loadSectionBySlug,

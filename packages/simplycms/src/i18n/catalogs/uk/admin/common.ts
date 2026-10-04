@@ -21,4 +21,10 @@ export const messages = {
   // Скидання кешу вітрини після змін теми
   'admin.common.revalidate.serverError': 'Сервер відповів {status}',
   'admin.common.revalidate.delay': 'Зміни зʼявляться протягом 5 хвилин.',
+
+  // Спільні підписи форм адмінки (Е4)
+  'admin.common.slug': 'URL (slug)',
+  'admin.common.seo': 'SEO',
+  'admin.common.metaTitle': 'Meta Title',
+  'admin.common.metaDescription': 'Meta Description',
 } as const;

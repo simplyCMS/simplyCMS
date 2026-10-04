@@ -8,8 +8,8 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
+import { loadDefaultPriceTypeId } from 'simplycms/commerce';
 import {
-  loadDefaultPriceTypeId,
   loadHomePageData,
   loadHomeProducts,
   loadOneSectionProducts,

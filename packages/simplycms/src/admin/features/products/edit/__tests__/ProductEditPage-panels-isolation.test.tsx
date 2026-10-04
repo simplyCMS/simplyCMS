@@ -22,37 +22,15 @@ const { listProducts, listPriceTypes } = vi.hoisted(() => ({
   listProducts: vi.fn(async () => [] as unknown[]),
   listPriceTypes: vi.fn(async () => [] as unknown[]),
 }));
-vi.mock('simplycms/admin-server', () => ({
-  listOrderStatuses: vi.fn(async () => []),
-  insertOrderStatuses: vi.fn(),
-  updateOrderStatuses: vi.fn(),
-  removeOrderStatuses: vi.fn(),
-  listProducts,
-  insertProducts: vi.fn(),
-  updateProducts: vi.fn(),
-  removeProducts: vi.fn(),
-  listProductModifications: vi.fn(async () => []),
-  insertProductModifications: vi.fn(),
-  updateProductModifications: vi.fn(),
-  removeProductModifications: vi.fn(),
-  listProductPrices: vi.fn(async () => []),
-  saveProductPrices: vi.fn(async () => ({ rows: [], removedIds: [] })),
-  listStock: vi.fn(async () => []),
-  saveStock: vi.fn(),
-  listProductPropertyValues: vi.fn(async () => []),
-  insertProductPropertyValues: vi.fn(),
-  updateProductPropertyValues: vi.fn(),
-  removeProductPropertyValues: vi.fn(),
-  listModificationPropertyValues: vi.fn(async () => []),
-  insertModificationPropertyValues: vi.fn(),
-  updateModificationPropertyValues: vi.fn(),
-  removeModificationPropertyValues: vi.fn(),
-  listSections: vi.fn(async () => []),
-  listPriceTypes,
-  listSectionPropertyAssignments: vi.fn(async () => []),
-  listSectionProperties: vi.fn(async () => []),
-  listPropertyOptions: vi.fn(async () => []),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({
+    listProducts,
+    saveProductPrices: vi.fn(async () => ({ rows: [], removedIds: [] })),
+    listPriceTypes,
+  }),
+);
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
 import { ProductEditPage } from '../ProductEditPage';

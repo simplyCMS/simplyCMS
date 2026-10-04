@@ -24,3 +24,18 @@ export const PRODUCT_SLUG = 'sonyachna-panel-450w-mono';
 export function parseMoney(text) {
   return Number((text ?? '').replace(/[^\d,.-]/g, '').replace(',', '.'));
 }
+
+/**
+ * Чекає видимий текст (тост тощо) і повертає `true`/`false`, не кидаючи.
+ * 🔴 `.waitFor({ state: 'visible' })`, НЕ `.isVisible({ timeout })`: там
+ * `timeout` deprecated і ігнорується — DOM читається одразу, гонка проти
+ * асинхронного 409+тосту (спіймано живим прогоном Е3-20).
+ */
+export function waitText(page, text, timeout = 10_000) {
+  return page
+    .getByText(text)
+    .first()
+    .waitFor({ state: 'visible', timeout })
+    .then(() => true)
+    .catch(() => false);
+}

@@ -10,13 +10,13 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
+import { loadUserPriceTypeId } from 'simplycms/commerce';
 import {
   createOrder,
   loadOrderDetail,
   loadProfile,
   loadStatusByCode,
   loadUserOrders,
-  loadUserPriceTypeId,
   setOrderStatus,
   updateProfile,
   withCustomerDb,

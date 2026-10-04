@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import { SLUG_RE } from 'simplycms/domain';
 import type { Product } from 'simplycms/schema/types';
 
 const optionalText = z.string().trim();
-export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Е4-7: формат slug живе в T1 (`simplycms/domain`); реекспорт лишено, щоб
+// не правити наявних споживачів.
+export { SLUG_RE };
 
 /** Значення форми картки товару (Task 7). */
 export const productFormSchema = z.object({

@@ -2,7 +2,8 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { orderStatuses, products } from 'simplycms/schema';
+import { orderStatuses, products, sectionProperties } from 'simplycms/schema';
+import { ENTITY } from 'simplycms/contracts/entities';
 
 // Операції торкаються auth/db лише в рантаймі хендлера — мокаємо обидва
 // канали, форму схем перевіряємо без БД.
@@ -333,5 +334,124 @@ describe('m3: refine ресурсу — images звужено до масиву 
         { id: M_ID, patch: { images: ['a'] } },
       ]).success,
     ).toBe(true);
+  });
+});
+
+// Е4-5: третій список колонок — `insertOnly`. Колонка пишеться ЛИШЕ при
+// створенні рядка (insert-схема), update-схема її не бачить ні статично,
+// ні в рантаймі (strip). Перший споживач — `section_properties.property_type`.
+describe('insertOnly (Е4-5)', () => {
+  const UUID = '0e300000-0000-4000-8000-0000000000e4';
+  const ops = defineAdminResource({
+    entity: ENTITY.sectionProperties,
+    table: sectionProperties,
+    operation: 'catalog.write',
+    mode: 'on-demand',
+    filterable: ['id'],
+    sortable: ['name'],
+    writable: [
+      'name',
+      'slug',
+      'isRequired',
+      'isFilterable',
+      'hasPage',
+      'sortOrder',
+    ],
+    insertOnly: ['propertyType'],
+    readonly: ['id', 'sectionId', 'options', 'createdAt'],
+  });
+
+  it('insert приймає propertyType', () => {
+    expect(
+      ops.insertSchema.parse([
+        { id: UUID, name: 'n', slug: 's', propertyType: 'select' },
+      ])[0],
+    ).toMatchObject({ propertyType: 'select' });
+  });
+
+  it('update відкидає patch лише з propertyType — порожній після strip', () => {
+    expect(() =>
+      ops.updateSchema.parse([{ id: UUID, patch: { propertyType: 'text' } }]),
+    ).toThrow();
+  });
+
+  it('update зберігає writable і мовчки зрізає propertyType', () => {
+    expect(
+      ops.updateSchema.parse([
+        { id: UUID, patch: { name: 'x', propertyType: 'text' } },
+      ])[0].patch,
+    ).toEqual({ name: 'x' });
+  });
+
+  it('статично: propertyType відсутній в update-patch, присутній в insert', () => {
+    type Patch = z.infer<typeof ops.updateSchema>[number]['patch'];
+    type Insert = z.infer<typeof ops.insertSchema>[number];
+    expectTypeOf<Patch>().not.toHaveProperty('propertyType');
+    expectTypeOf<Insert>().toHaveProperty('propertyType');
+    expectTypeOf<Insert>().not.toHaveProperty('options');
+  });
+
+  it('негативні контролі типів: перетини insertOnly і пропуск колонки', () => {
+    // propertyType і в insertOnly, і в writable → __overlappingColumns.
+    // @ts-expect-error — propertyType у insertOnly І writable
+    defineAdminResource({
+      entity: ENTITY.sectionProperties,
+      table: sectionProperties,
+      operation: 'catalog.write',
+      mode: 'on-demand',
+      filterable: [],
+      sortable: [],
+      writable: [
+        'name',
+        'slug',
+        'isRequired',
+        'isFilterable',
+        'hasPage',
+        'sortOrder',
+        'propertyType',
+      ],
+      insertOnly: ['propertyType'],
+      readonly: ['id', 'sectionId', 'options', 'createdAt'],
+    });
+    // sectionId і в insertOnly, і в readonly → __overlappingColumns.
+    // @ts-expect-error — sectionId у insertOnly І readonly
+    defineAdminResource({
+      entity: ENTITY.sectionProperties,
+      table: sectionProperties,
+      operation: 'catalog.write',
+      mode: 'on-demand',
+      filterable: [],
+      sortable: [],
+      writable: [
+        'name',
+        'slug',
+        'isRequired',
+        'isFilterable',
+        'hasPage',
+        'sortOrder',
+      ],
+      insertOnly: ['propertyType', 'sectionId'],
+      readonly: ['id', 'sectionId', 'options', 'createdAt'],
+    });
+    // propertyType не в жодному списку → __missingColumns.
+    // @ts-expect-error — propertyType не покритий
+    defineAdminResource({
+      entity: ENTITY.sectionProperties,
+      table: sectionProperties,
+      operation: 'catalog.write',
+      mode: 'on-demand',
+      filterable: [],
+      sortable: [],
+      writable: [
+        'name',
+        'slug',
+        'isRequired',
+        'isFilterable',
+        'hasPage',
+        'sortOrder',
+      ],
+      readonly: ['id', 'sectionId', 'options', 'createdAt'],
+    });
+    expectTypeOf(ops.insert).toBeFunction();
   });
 });

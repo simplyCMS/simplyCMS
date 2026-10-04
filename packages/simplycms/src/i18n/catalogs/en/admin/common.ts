@@ -20,4 +20,9 @@ export const messages: Catalog = {
 
   'admin.common.revalidate.serverError': 'The server responded {status}',
   'admin.common.revalidate.delay': 'Changes will appear within 5 minutes.',
+
+  'admin.common.slug': 'URL (slug)',
+  'admin.common.seo': 'SEO',
+  'admin.common.metaTitle': 'Meta Title',
+  'admin.common.metaDescription': 'Meta Description',
 };

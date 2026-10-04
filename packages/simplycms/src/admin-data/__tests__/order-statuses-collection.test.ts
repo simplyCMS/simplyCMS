@@ -19,16 +19,17 @@ const { insertMock } = vi.hoisted(() => ({
     })),
   ),
 }));
-vi.mock('simplycms/admin-server', () => ({
-  listOrderStatuses: vi.fn(async () => []),
-  insertOrderStatuses: insertMock,
-  updateOrderStatuses: vi.fn(async ({ data }) =>
-    data.map((d: { id: string }) => ({ id: d.id })),
-  ),
-  removeOrderStatuses: vi.fn(async () => ({ count: 1 })),
-  setDefaultOrderStatus: vi.fn(),
-  reorderOrderStatus: vi.fn(),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({
+    insertOrderStatuses: insertMock,
+    updateOrderStatuses: vi.fn(async ({ data }) =>
+      data.map((d: { id: string }) => ({ id: d.id })),
+    ),
+    removeOrderStatuses: vi.fn(async () => ({ count: 1 })),
+  }),
+);
 
 import { getCollection } from '../registry';
 import { orderStatusesCollection } from '../collections/order-statuses';

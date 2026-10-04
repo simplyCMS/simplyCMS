@@ -1184,6 +1184,19 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "stock_point_id": {
+          "name": "stock_point_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stock_reserved": {
+          "name": "stock_reserved",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         }
       },
       "indexes": {
@@ -1237,6 +1250,21 @@
           "columns": [
             {
               "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_order_items_stock_point_id": {
+          "name": "idx_order_items_stock_point_id",
+          "columns": [
+            {
+              "expression": "stock_point_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1300,6 +1328,19 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "order_items_stock_point_id_fkey": {
+          "name": "order_items_stock_point_id_fkey",
+          "tableFrom": "order_items",
+          "tableTo": "pickup_points",
+          "columnsFrom": [
+            "stock_point_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1338,6 +1379,10 @@
         "order_items_positive_quantity": {
           "name": "order_items_positive_quantity",
           "value": "quantity > 0"
+        },
+        "order_items_stock_reserved_nonneg": {
+          "name": "order_items_stock_reserved_nonneg",
+          "value": "stock_reserved >= 0"
         }
       },
       "isRLSEnabled": false
@@ -2595,7 +2640,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "product_prices_product_id_fkey": {
@@ -3562,11 +3607,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "section_properties_section_id_code_key": {
-          "name": "section_properties_section_id_code_key",
+        "section_properties_slug_key": {
+          "name": "section_properties_slug_key",
           "nullsNotDistinct": false,
           "columns": [
-            "section_id",
             "slug"
           ]
         }

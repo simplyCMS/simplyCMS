@@ -20,41 +20,16 @@ const { saveStock, listStock, listProducts, listProductModifications } =
     listProducts: vi.fn(async () => [] as unknown[]),
     listProductModifications: vi.fn(async () => [] as unknown[]),
   }));
-vi.mock('simplycms/admin-server', () => ({
-  listOrderStatuses: vi.fn(async () => []),
-  insertOrderStatuses: vi.fn(),
-  updateOrderStatuses: vi.fn(),
-  removeOrderStatuses: vi.fn(),
-  setDefaultOrderStatus: vi.fn(),
-  reorderOrderStatus: vi.fn(),
-  listProducts,
-  insertProducts: vi.fn(),
-  updateProducts: vi.fn(),
-  removeProducts: vi.fn(),
-  listProductModifications,
-  insertProductModifications: vi.fn(),
-  updateProductModifications: vi.fn(),
-  removeProductModifications: vi.fn(),
-  setDefaultProductModification: vi.fn(),
-  reorderProductModification: vi.fn(),
-  listProductPrices: vi.fn(async () => []),
-  saveProductPrices: vi.fn(),
-  listStock,
-  saveStock,
-  listProductPropertyValues: vi.fn(async () => []),
-  insertProductPropertyValues: vi.fn(),
-  updateProductPropertyValues: vi.fn(),
-  removeProductPropertyValues: vi.fn(),
-  listModificationPropertyValues: vi.fn(async () => []),
-  insertModificationPropertyValues: vi.fn(),
-  updateModificationPropertyValues: vi.fn(),
-  removeModificationPropertyValues: vi.fn(),
-  listSections: vi.fn(async () => []),
-  listPriceTypes: vi.fn(async () => []),
-  listSectionPropertyAssignments: vi.fn(async () => []),
-  listSectionProperties: vi.fn(async () => []),
-  listPropertyOptions: vi.fn(async () => []),
-}));
+vi.mock('simplycms/admin-server', async () =>
+  (
+    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
+  ).createAdminServerMock({
+    listProducts,
+    listProductModifications,
+    listStock,
+    saveStock,
+  }),
+);
 
 import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useStock } from '../useStock';

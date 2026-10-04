@@ -9,17 +9,19 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
+import {
+  loadDefaultUserCategoryId,
+  loadDiscountGroups,
+  loadUserCategoryId,
+} from 'simplycms/commerce';
 import { resolveDiscount } from 'simplycms/domain/discounts';
 import {
   loadActivePickupPointsCount,
   loadBanners,
-  loadDefaultUserCategoryId,
-  loadDiscountGroups,
   loadProductRatings,
   loadProductReviews,
   loadReviewAuthors,
   loadStockInfo,
-  loadUserCategoryId,
   withCustomerDb,
   withStoreOperatorDb,
   withStorefrontDb,

@@ -30,6 +30,24 @@ describe('adminErrorKey', () => {
       adminErrorKey(conflict('reference', 'order_items_product_id_fkey')),
     ).toBe('admin.errors.conflictReference');
   });
+  it('стан: скасоване замовлення — кінцеве (Е5-9)', () => {
+    expect(adminErrorKey(conflict('state', 'order_cancelled_final'))).toBe(
+      'admin.errors.orderCancelledFinal',
+    );
+  });
+  it.each([
+    ['order_shipping_unavailable', 'admin.errors.orderShippingUnavailable'],
+    ['order_insufficient_stock', 'admin.errors.orderInsufficientStock'],
+    ['order_last_item', 'admin.errors.orderLastItem'],
+    ['order_item_not_purchasable', 'admin.errors.orderItemNotPurchasable'],
+    ['order_amount_out_of_range', 'admin.errors.orderAmountOutOfRange'],
+  ])('стан редагування позицій (Е5б-10): %s → %s', (constraint, key) => {
+    expect(adminErrorKey(conflict('state', constraint))).toBe(key);
+  });
+  it('невідомий код стану — null, а не «дубль»', () => {
+    expect(adminErrorKey(conflict('state', 'order_unknown_rule'))).toBeNull();
+    expect(adminErrorKey(conflict('state', 'toString'))).toBeNull();
+  });
   it('не конфлікт — null (викликач показує свій загальний тост)', () => {
     expect(adminErrorKey(new Error('boom'))).toBeNull();
     expect(adminErrorKey(undefined)).toBeNull();

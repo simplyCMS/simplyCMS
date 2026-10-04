@@ -7,7 +7,6 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import pg from 'pg';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -19,6 +18,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -425,55 +425,8 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   // `impl/catalog-lock.ts`), і тримає його у ВІДКРИТІЙ транзакції — виклик
   // операції не сміє резолвитись, доки конкурент не відпустить лок COMMIT-ом.
   describe('advisory-lock: доказ серіалізації (mod-default/prices/stock)', () => {
-    /** Тримає pg_advisory_xact_lock(hashtextextended(key,0)) у ВІДКРИТІЙ
-     *  транзакції окремого зʼєднання — імітує конкурентну адмін-операцію
-     *  ДО того, як вона встигла зняти лок COMMIT-ом.
-     *
-     * 🔴 `release`/`cleanup` — ІДЕМПОТЕНТНА пара (прапорець `closed`):
-     * `release` — штатний шлях (commit + end), `cleanup` — гард у
-     * `finally` тесту. Якщо проміжний `expect` між `holdLock` і `release`
-     * впаде, `release` НЕ встигне викликатись — без `finally` клієнт
-     * лишився б підключеним із ВІДКРИТОЮ транзакцією і лок висів би аж до
-     * завершення процесу vitest, б'ючи по НАСТУПНИХ тестах (той самий
-     * `key` заблокований). `cleanup` у такому разі відкочує транзакцію
-     * (лок знімається і на ROLLBACK, не лише на COMMIT) і закриває
-     * зʼєднання; якщо `release` уже відпрацював — `cleanup` no-op. */
-    const holdLock = async (key: string) => {
-      const client = new pg.Client({ connectionString: dbUrl });
-      await client.connect();
-      await client.query('begin');
-      await client.query(
-        'select pg_advisory_xact_lock(hashtextextended($1, 0))',
-        [key],
-      );
-      let closed = false;
-      return {
-        release: async () => {
-          if (closed) return;
-          closed = true;
-          await client.query('commit');
-          await client.end();
-        },
-        cleanup: async () => {
-          if (closed) return;
-          closed = true;
-          try {
-            await client.query('rollback');
-          } finally {
-            await client.end();
-          }
-        },
-      };
-    };
-
-    /** true — проміс НЕ зарезолвився за `ms` (лок тримає). */
-    const stillPending = (promise: Promise<unknown>, ms: number) => {
-      const TIMEOUT = Symbol('timeout');
-      return Promise.race([
-        promise.then(() => 'resolved' as const),
-        new Promise((r) => setTimeout(r, ms, TIMEOUT)),
-      ]).then((v) => v === TIMEOUT);
-    };
+    // Хелпери — спільний модуль fixtures/advisory-lock.ts (Е4-12).
+    const holdLock = (key: string) => holdAdvisoryLock(dbUrl, key);
 
     it('mod-default: конкурент тримає лок → setDefault чекає ~300мс, резолвиться лише після release', async () => {
       const fresh = crypto.randomUUID();

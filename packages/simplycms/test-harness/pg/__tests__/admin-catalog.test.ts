@@ -40,7 +40,7 @@ import {
   productsOps,
   productModificationsOps,
   productPricesOps,
-  sectionsReadOps,
+  sectionsOps,
   AdminConflictError,
 } from 'simplycms/admin-server/impl';
 // 🔴 requireGrant тут — вже ЗМОКАНА функція (vi.fn з блоку вище); resolveGrant
@@ -288,7 +288,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       `insert into public.sections (id, slug, name, is_active) values ($1, 'e3-hidden', 'Прихований', false)`,
       [crypto.randomUUID()],
     );
-    const rows = await sectionsReadOps.list({ data: {} });
+    const rows = await sectionsOps.list({ data: {} });
     expect(rows.some((r) => r.slug === 'e3-hidden')).toBe(true);
   });
 
@@ -303,16 +303,14 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // (у матриці 'catalog.write' немає ключа 'user') → AuthzError; якщо
   // мутація підмінить операцію на catalog.read — 'user' у матриці Є
   // ('any') → виклик пройшов би без кидка, і toThrow нижче почервонів би.
-  it('Е3-6: sectionsReadOps вимагає catalog.write — покупець без ролі admin отримує відмову', async () => {
+  it('Е3-6: sectionsOps вимагає catalog.write — покупець без ролі admin отримує відмову', async () => {
     vi.mocked(requireGrant).mockImplementationOnce(async (operation) => {
       const subject = { userId: 'u2', roles: ['user'] as const };
       const scope = resolveGrant(subject, operation);
       if (!scope) throw new AuthzError(operation);
       return { subject, scope };
     });
-    await expect(sectionsReadOps.list({ data: {} })).rejects.toThrow(
-      AuthzError,
-    );
+    await expect(sectionsOps.list({ data: {} })).rejects.toThrow(AuthzError);
   });
 
   // 🔴 Е3-14 (аудит 2026-09-23): у брифі доказ isNull відсилався «до

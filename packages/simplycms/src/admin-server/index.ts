@@ -27,11 +27,27 @@ import {
   saveStockOp,
   productPropertyValuesOps,
   modificationPropertyValuesOps,
-  sectionsReadOps,
-  priceTypesReadOps,
-  sectionPropertyAssignmentsReadOps,
-  sectionPropertiesReadOps,
-  propertyOptionsReadOps,
+  sectionsOps,
+  priceTypesOps,
+  setDefaultPriceTypeInput,
+  setDefaultPriceTypeOp,
+  removePriceTypesInput,
+  removeManyPriceTypesOp,
+  sectionPropertyAssignmentsOps,
+  sectionPropertiesOps,
+  propertyOptionsOps,
+  ordersOps,
+  orderItemsOps,
+  changeOrderStatusInput,
+  changeOrderStatusOp,
+  addOrderItemInput,
+  addOrderItemOp,
+  updateOrderItemQuantityInput,
+  updateOrderItemQuantityOp,
+  removeOrderItemInput,
+  removeOrderItemOp,
+  searchProductsForOrderInput,
+  searchProductsForOrderOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -190,24 +206,138 @@ export const removeModificationPropertyValues = createServerFn({
   .inputValidator(modificationPropertyValuesOps.removeSchema)
   .handler(modificationPropertyValuesOps.remove);
 
+// 🔴 Task 3 (Е4): довідники каталогу — записувані ресурси замість читальних
+// Е3 (Е3-1 → Е4). Операція всього CRUD — catalog.write (Е3-6). Незмінні
+// після створення колонки — insertOnly фабрики (Е4-5); slug/code перевіряє
+// сервер (Е4-7). remove і setDefault типу ціни — іменовані (Task 4, Е4-2),
+// фабричного remove для типів цін немає.
+
 export const listSections = createServerFn({ method: 'GET' })
-  .inputValidator(sectionsReadOps.subsetSchema)
-  .handler(sectionsReadOps.list);
+  .inputValidator(sectionsOps.subsetSchema)
+  .handler(sectionsOps.list);
+
+export const insertSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.insertSchema)
+  .handler(sectionsOps.insert);
+
+export const updateSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.updateSchema)
+  .handler(sectionsOps.update);
+
+export const removeSections = createServerFn({ method: 'POST' })
+  .inputValidator(sectionsOps.removeSchema)
+  .handler(sectionsOps.remove);
 
 export const listPriceTypes = createServerFn({ method: 'GET' })
-  .inputValidator(priceTypesReadOps.subsetSchema)
-  .handler(priceTypesReadOps.list);
+  .inputValidator(priceTypesOps.subsetSchema)
+  .handler(priceTypesOps.list);
+
+export const insertPriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(priceTypesOps.insertSchema)
+  .handler(priceTypesOps.insert);
+
+export const updatePriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(priceTypesOps.updateSchema)
+  .handler(priceTypesOps.update);
+
+// 🔴 Task 4 (Е4-2): remove ЦІЄЇ сутності — guarded, не фабричний: «не
+// видалити дефолтний» — доменний інваріант. Обидві операції серіалізує
+// той самий advisory-lock `price-type-default`.
+export const removePriceTypes = createServerFn({ method: 'POST' })
+  .inputValidator(removePriceTypesInput)
+  .handler(removeManyPriceTypesOp);
+
+export const setDefaultPriceType = createServerFn({ method: 'POST' })
+  .inputValidator(setDefaultPriceTypeInput)
+  .handler(setDefaultPriceTypeOp);
+
+export const listSectionProperties = createServerFn({ method: 'GET' })
+  .inputValidator(sectionPropertiesOps.subsetSchema)
+  .handler(sectionPropertiesOps.list);
+
+export const insertSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.insertSchema)
+  .handler(sectionPropertiesOps.insert);
+
+export const updateSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.updateSchema)
+  .handler(sectionPropertiesOps.update);
+
+export const removeSectionProperties = createServerFn({ method: 'POST' })
+  .inputValidator(sectionPropertiesOps.removeSchema)
+  .handler(sectionPropertiesOps.remove);
+
+export const listPropertyOptions = createServerFn({ method: 'GET' })
+  .inputValidator(propertyOptionsOps.subsetSchema)
+  .handler(propertyOptionsOps.list);
+
+export const insertPropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.insertSchema)
+  .handler(propertyOptionsOps.insert);
+
+export const updatePropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.updateSchema)
+  .handler(propertyOptionsOps.update);
+
+export const removePropertyOptions = createServerFn({ method: 'POST' })
+  .inputValidator(propertyOptionsOps.removeSchema)
+  .handler(propertyOptionsOps.remove);
 
 export const listSectionPropertyAssignments = createServerFn({
   method: 'GET',
 })
-  .inputValidator(sectionPropertyAssignmentsReadOps.subsetSchema)
-  .handler(sectionPropertyAssignmentsReadOps.list);
+  .inputValidator(sectionPropertyAssignmentsOps.subsetSchema)
+  .handler(sectionPropertyAssignmentsOps.list);
 
-export const listSectionProperties = createServerFn({ method: 'GET' })
-  .inputValidator(sectionPropertiesReadOps.subsetSchema)
-  .handler(sectionPropertiesReadOps.list);
+export const insertSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.insertSchema)
+  .handler(sectionPropertyAssignmentsOps.insert);
 
-export const listPropertyOptions = createServerFn({ method: 'GET' })
-  .inputValidator(propertyOptionsReadOps.subsetSchema)
-  .handler(propertyOptionsReadOps.list);
+export const updateSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.updateSchema)
+  .handler(sectionPropertyAssignmentsOps.update);
+
+export const removeSectionPropertyAssignments = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(sectionPropertyAssignmentsOps.removeSchema)
+  .handler(sectionPropertyAssignmentsOps.remove);
+
+// 🔴 Task 4 (Е5): замовлення — лише читання через фабрику; зміна статусу —
+// іменована операція (лок рядка → «скасоване — кінцеве» → no-op →
+// повернення залишку → статус), не фабричний update.
+export const listOrders = createServerFn({ method: 'GET' })
+  .inputValidator(ordersOps.subsetSchema)
+  .handler(ordersOps.list);
+
+export const listOrderItems = createServerFn({ method: 'GET' })
+  .inputValidator(orderItemsOps.subsetSchema)
+  .handler(orderItemsOps.list);
+
+export const changeOrderStatus = createServerFn({ method: 'POST' })
+  .inputValidator(changeOrderStatusInput)
+  .handler(changeOrderStatusOp);
+
+// Е5б-8: редагування позицій оформленого замовлення — іменовані операції
+// (ціна рушієм чекауту, дельта залишку, перерахунок сум і доставки).
+export const addOrderItem = createServerFn({ method: 'POST' })
+  .inputValidator(addOrderItemInput)
+  .handler(addOrderItemOp);
+
+export const updateOrderItemQuantity = createServerFn({ method: 'POST' })
+  .inputValidator(updateOrderItemQuantityInput)
+  .handler(updateOrderItemQuantityOp);
+
+export const removeOrderItem = createServerFn({ method: 'POST' })
+  .inputValidator(removeOrderItemInput)
+  .handler(removeOrderItemOp);
+
+// Е5б-4: вузький пошук товару для діалогу додавання позиції (не загальний
+// пошук адмінки; `like` у subset.ts лишається забороненим).
+export const searchProductsForOrder = createServerFn({ method: 'GET' })
+  .inputValidator(searchProductsForOrderInput)
+  .handler(searchProductsForOrderOp);

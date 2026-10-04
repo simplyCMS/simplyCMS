@@ -60,6 +60,16 @@ describe('authz: матриця «роль × операція»', () => {
   });
 });
 
+describe('authz: order.manage (Е5-8)', () => {
+  it('адмін змінює замовлення з scope any; покупцю й аноніму — AuthzError', () => {
+    expect(requireOperation(ADMIN, 'order.manage')).toBe('any');
+    expect(() => requireOperation(USER, 'order.manage')).toThrow(AuthzError);
+    expect(() => requireOperation(ANON, 'order.manage')).toThrow(AuthzError);
+    // Не каталог: право на замовлення не випливає з catalog.write і навпаки.
+    expect(AUTHZ_MATRIX['order.manage']).toEqual({ admin: 'any' });
+  });
+});
+
 describe('authz: хелпери відмови', () => {
   it('requireOperation повертає scope, а не void', () => {
     expect(requireOperation(USER, 'order.read')).toBe('own');

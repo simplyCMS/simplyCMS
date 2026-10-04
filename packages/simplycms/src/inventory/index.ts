@@ -1,7 +1,8 @@
 /**
  * 🔴 Server-only (contracts/server-only): спільний облік залишків для
- * вітрини (резерв/повернення замовлення) і адмінки (ручний облік). Одна
- * копія гварду stock_status — рішення Е3-5.
+ * вітрини (резерв/повернення замовлення) і адмінки (ручний облік, зміна
+ * статусу замовлення). Одна копія гварду stock_status — рішення Е3-5;
+ * облік замовлення переїхав сюди зі `storefront/loaders` — рішення Е5-3.
  */
 export { loadTargetStatus, setTargetStatus } from './stock-status';
 export type { StockTarget } from './stock-status';
@@ -10,3 +11,17 @@ export { syncStatusWithQuantity } from './quantity-status';
 // предиката «обслуговуюча точка» для вітрини Й адмінки (`admin-server/impl/stock/save.ts`).
 export { lockTargetStock, servingQuantity } from './locked-stock';
 export type { LockedStockRow } from './locked-stock';
+// Е5-3: облік замовлення — оформлення (вітрина), скасування (вітрина й адмінка).
+export {
+  loadStockManagement,
+  releaseOrderStock,
+  reserveOrderStock,
+} from './order-stock';
+// Е5б-7′: дельта залишку по одній позиції — редагування позицій в адмінці.
+export {
+  adjustOrderItemStock,
+  reserveNewOrderItemStock,
+} from './order-item-stock';
+export { releaseOrderItemStock } from './order-item-release';
+export { InsufficientStockError } from './stock-reservation';
+export type { StockLine } from './stock-write';

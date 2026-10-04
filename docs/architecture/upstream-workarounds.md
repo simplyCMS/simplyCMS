@@ -102,7 +102,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 |---|---|
 | Бібліотека | `@tanstack/router-core` (серіалізатор SSR/RPC TanStack Start) |
 | Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, live:smoke К3-Е3) |
-| Перевірено на версії | ті самі — 2026-09-24 |
+| Перевірено на версії | `@tanstack/router-core` 1.171.34 / `@tanstack/start-client-core` 1.170.34 / `@tanstack/start-server-core` 1.169.39 — 2026-10-04 (бамп XSS GHSA-qx66-fv34-fjm8): `ShallowErrorPlugin` без змін (parse — лише `message`), контрольний кейс тесту «без адаптера» зелений; адаптери Start і далі йдуть ПЕРЕД дефолтними плагінами (`getSerovalPlugins` у `start-client-core` і `server-functions-handler`) |
 | Статус апстріму | не повідомлено; ймовірно, свідомий дизайн (не протікати серверні поля), а не дефект |
 
 **Симптом.** Помилка serverFn доходить у браузер як `new Error(message)`:
@@ -113,6 +113,9 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 **Корінь.** `src/ssr/serializer/ShallowErrorPlugin.ts` (тег `$TSR/Error`):
 `test: value instanceof Error`, parse — лише `{ message }`, deserialize —
 `new Error(message)`.
+З router-core 1.171 `defaultSerovalPlugins` експортується лише субшляхом
+`@tanstack/router-core/ssr/client` (з кореня пакета прибрано) — тест-сторож
+імпортує звідти.
 
 **Наш обхід.** `domainErrorAdapter` (`packages/simplycms/src/runtime/domain-error-adapter.ts`,
 client-safe) — `createSerializationAdapter` для закритого переліку імен
@@ -365,7 +368,7 @@ readonly-колонки виглядали писаними. Аналогічн�
 | ID | Бібліотека · версія | На що спираємося | Де в коді | Що зламається, якщо зміниться | Тест-сторож |
 |---|---|---|---|---|---|
 | DRZ-1 | `drizzle-orm` 0.45.2 + `pg` | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `admin-server/impl/errors.ts` (`toAdminConflict`) | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст | `impl/__tests__/run.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) |
-| START-1 | `@tanstack/start-server-core` 1.167 | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (`dist/esm/server-functions-handler.js:33`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | — (перевіряти рев'ю при апгрейді Start) |
+| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | — (перевіряти рев'ю при апгрейді Start) |
 
 ---
 

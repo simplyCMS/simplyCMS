@@ -1,6 +1,7 @@
 import type { PlaceOrderInput } from 'simplycms/contracts';
 import type { ActorDb } from './db';
-import type { NewOrderInput, NewOrderItem } from './entities/new-order';
+import type { NewOrderItem } from 'simplycms/commerce';
+import type { NewOrderInput } from './entities/new-order';
 import { createRecipient } from './recipients';
 
 /**
@@ -42,7 +43,7 @@ export async function resolveRecipient(
  * Форма запиту → форма вставки.
  *
  * 🔴 Ціна позиції, сума й доставка приходять уже РАХОВАНІ сервером
- * (`priceCheckoutItems` + `resolveShippingRate`) — клієнтський запит цих
+ * (`priceItems` + `quoteShippingCost`) — клієнтський запит цих
  * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
  * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
  * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
