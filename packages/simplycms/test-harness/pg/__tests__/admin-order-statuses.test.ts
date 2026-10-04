@@ -244,6 +244,15 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
   it.each(['new', 'cancelled'])(
     'remove системного статусу %s → помилка, batch цілий',
     async (code) => {
+      // Самодостатність (фінальне рев'ю Е5, п.3): дефолт — на несистемному
+      // статусі ДО видалення, інакше на сідовому дефолті 'new' спрацює гвард
+      // «дефолтний», а не «системний», і кейс залежить від порядку тестів.
+      const [{ id: plainId }] = (await queryRows(
+        dbUrl,
+        `select id from public.order_statuses
+          where code not in ('new', 'cancelled') order by sort_order limit 1`,
+      )) as { id: string }[];
+      await setDefaultOrderStatusOp({ data: { id: plainId } });
       const id = await idByCode(code);
       const extra = crypto.randomUUID();
       await orderStatusesOps.insert({

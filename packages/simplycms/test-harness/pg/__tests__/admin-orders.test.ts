@@ -256,10 +256,21 @@ describe('admin: замовлення (Е5, Task 4)', () => {
         cancelOwnOrder(db, operator, o),
       ),
     ]);
+    // Несподіваний виняток будь-якої сторони — провал, а не «програла гонку»:
+    // покупець завжди fulfilled з `{ok:true}` або `{ok:false, not_cancellable}`;
+    // адмін — fulfilled з замовленням або rejected ЛИШЕ з конфліктом стану.
+    expect(buyer.status).toBe('fulfilled');
+    const buyerValue = (buyer as PromiseFulfilledResult<unknown>).value;
+    expect([
+      { ok: true },
+      { ok: false, reason: 'not_cancellable' },
+    ]).toContainEqual(buyerValue);
+    if (admin.status === 'fulfilled')
+      expect(admin.value.order.statusId).toBe(CANCELLED);
+    else expect(admin.reason).toMatchObject(CONFLICT);
     const adminOk = admin.status === 'fulfilled';
-    const buyerOk = buyer.status === 'fulfilled' && buyer.value.ok;
+    const buyerOk = (buyerValue as { ok: boolean }).ok;
     expect([adminOk, buyerOk].filter(Boolean)).toHaveLength(1);
-    if (!adminOk) expect(admin.reason).toMatchObject(CONFLICT);
     expect(await stock()).toBe(initial);
     expect(await orderState(o)).toEqual({ code: 'cancelled', reserved: 0 });
   });
