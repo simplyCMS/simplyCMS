@@ -28,3 +28,16 @@ export function effectiveLimit(
     ? subsetLimit
     : Math.min(subsetLimit ?? maxLimit, maxLimit);
 }
+
+/**
+ * Е5б Task 8: `maxLimit` — лише додатне ціле. Перевіряється на старті
+ * фабрики (fail-loud при імпорті модуля ресурсу), а не на першому запиті:
+ * `LIMIT 0`/дробовий/`NaN` мовчки ламали б сторінку або SQL.
+ */
+export function assertMaxLimit(entity: string, maxLimit: number | undefined) {
+  if (maxLimit === undefined) return;
+  if (!Number.isInteger(maxLimit) || maxLimit <= 0)
+    throw new Error(
+      `[admin-server] ${entity}: maxLimit має бути додатним цілим, отримано ${String(maxLimit)}`,
+    );
+}

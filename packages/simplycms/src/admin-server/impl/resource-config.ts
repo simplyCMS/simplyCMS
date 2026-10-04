@@ -38,8 +38,9 @@ export interface AdminResourceConfigBase<
    *  `min(subset.limit ?? maxLimit, maxLimit)`. Без неї — як раніше. */
   maxLimit?: number;
   /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
-   *  тригера updated_at у каноні немає). */
-  touch?: ColumnName<T>;
+   *  тригера updated_at у каноні немає). Прихована (`omit`) — заборонена
+   *  типом: штамп писав би колонку повз видимий контракт ресурсу. */
+  touch?: Exclude<ColumnName<T>, O>;
   /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
    *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
   refine?: ResourceRefine;

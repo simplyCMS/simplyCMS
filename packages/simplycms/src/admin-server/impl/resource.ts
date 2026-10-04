@@ -8,7 +8,7 @@ import type {
   AdminResourceColumnGuards,
   AdminResourceConfigBase,
 } from './resource-config';
-import { pickColumns } from './resource-projection';
+import { assertMaxLimit, pickColumns } from './resource-projection';
 import { listResourceRows, type ResourceListContext } from './resource-list';
 import {
   insertResourceRows,
@@ -58,6 +58,7 @@ export function defineAdminResource<
   /** Тип рядка, що бачить споживач: без прихованих колонок. */
   type Row = Omit<T['$inferSelect'], O>;
   const { maxLimit } = config;
+  assertMaxLimit(config.entity, maxLimit);
   // Спільний контекст читання (`resource-list.ts`) і запису (`resource-write.ts`).
   const ctx: ResourceListContext & ResourceWriteContext = {
     entity: config.entity,
