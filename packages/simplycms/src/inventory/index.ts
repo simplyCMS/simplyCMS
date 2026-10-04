@@ -17,5 +17,11 @@ export {
   releaseOrderStock,
   reserveOrderStock,
 } from './order-stock';
+// Е5б-7′: дельта залишку по одній позиції — редагування позицій в адмінці.
+export {
+  adjustOrderItemStock,
+  reserveNewOrderItemStock,
+} from './order-item-stock';
+export { releaseOrderItemStock } from './order-item-release';
 export { InsufficientStockError } from './stock-reservation';
 export type { StockLine } from './stock-write';
