@@ -48,6 +48,9 @@ describe('колекції замовлень (Е5-10): лише читання 
     });
     const listCalls = listOrders.mock.calls.length;
     const shown = result.current.list.data[0]!;
+    // Явно: рядок списку — НЕ рядок картки (o0001), тож write-back доводиться
+    // для двох різних зрізів, а не для одного рядка двічі.
+    expect(shown.id).toBe('o0000');
     act(() => {
       orders.utils.writeBatch(() => {
         orders.utils.writeUpsert({ ...shown, statusId: 's-cancelled' });
