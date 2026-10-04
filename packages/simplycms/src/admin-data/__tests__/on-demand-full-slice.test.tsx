@@ -220,6 +220,7 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
     await act(async () => {
       await tx.isPersisted.promise;
     });
+    const listCalls = listSectionProperties.mock.calls.length;
     first.unmount();
     const second = renderHook(useFullSlice, { wrapper });
     await waitFor(() => expect(second.result.current.data).toHaveLength(4));
@@ -230,6 +231,10 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       'Потужність',
     ]);
     expect(props.has(id)).toBe(true);
+    // Рядок узято з кешу колекції, а не повторним запитом: remount не кличе
+    // list (пауза — щоб відкладений refetch після mount встиг би статись).
+    await act(() => new Promise((r) => setTimeout(r, 30)));
+    expect(listSectionProperties).toHaveBeenCalledTimes(listCalls);
   });
 
   it('паралельний зріз where id = X (картка) і повний зріз (список) узгоджені після update', async () => {
