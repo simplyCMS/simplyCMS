@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { adminPath } from '../../../lib/adminLinks';
 import { CardPageHeader } from '../../catalog-dictionaries/CardPageHeader';
 import { NotFoundState } from '../../catalog-dictionaries/PageStates';
+import { AddOrderItemDialog } from './AddOrderItemDialog';
 import { OrderCustomerCard } from './OrderCustomerCard';
 import { OrderDeliveryCard } from './OrderDeliveryCard';
 import { OrderItemsTable } from './OrderItemsTable';
@@ -47,8 +48,9 @@ export default function OrderDetailPage() {
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>{t('admin.orders.items')}</CardTitle>
+            {!locked && <AddOrderItemDialog orderId={order.id} />}
           </CardHeader>
           <CardContent>
             {items.length >= ORDER_ITEMS_MAX && (
