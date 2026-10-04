@@ -70,7 +70,7 @@ describe('LegacySupabaseBoundary', () => {
     ).toBeTruthy();
     expect(screen.queryByText('legacy stub')).toBeNull();
 
-    // П'ять живих розділів К3: href — через adminPath.
+    // Шість живих розділів К3: href — через adminPath.
     const { adminPath } = await import('../../lib/adminLinks');
     const hrefs = screen
       .getAllByRole('link')
@@ -82,6 +82,7 @@ describe('LegacySupabaseBoundary', () => {
         'price-types',
         'properties',
         'order-statuses',
+        'orders',
       ].map((p) => adminPath(p)),
     );
   });

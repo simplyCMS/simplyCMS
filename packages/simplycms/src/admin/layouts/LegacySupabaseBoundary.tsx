@@ -59,6 +59,7 @@ const LIVE_LINKS = [
   { path: 'price-types', labelKey: 'admin.nav.priceTypes' },
   { path: 'properties', labelKey: 'admin.nav.properties' },
   { path: 'order-statuses', labelKey: 'admin.nav.orderStatuses' },
+  { path: 'orders', labelKey: 'admin.nav.orders' },
 ] as const;
 
 /** Заглушка легасі-розділу: посилання ведуть на живі сторінки К3. */
