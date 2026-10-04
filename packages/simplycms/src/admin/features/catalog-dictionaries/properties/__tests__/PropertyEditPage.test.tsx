@@ -81,7 +81,9 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('PropertyEditPage', () => {
-  it('у режимі редагування немає контролу типу; update не несе propertyType', async () => {
+  // Відсутність propertyType у самому patch доводить юніт `toPropertyPatch`
+  // (property-form-schema.test.ts); тут — сторінкова проводка до serverFn.
+  it('у режимі редагування немає контролу типу; save шле лише змінене поле (без propertyType — див. юніт toPropertyPatch)', async () => {
     render(<PropertyEditPage />, { wrapper });
     await screen.findByDisplayValue('Бренд');
     expect(screen.queryByRole('combobox')).toBeNull();
