@@ -53,7 +53,10 @@ export default function OrderSuccess() {
     string,
     string | undefined
   >;
-  const token = search.token ?? null;
+  // Токен захоплюється один раз, бо ефект нижче знімає його з URL; сервер
+  // токен не гасить, тож повторні запити з токеном із памʼяті не послаблюють
+  // правила К2-Е0 «не тримати в URL/історії».
+  const [token] = useState(() => search.token ?? null);
   const { user } = useAuth();
   const navigate = useNavigate({ from: '/order-success/$orderId' });
   const [copied, setCopied] = useState(false);
