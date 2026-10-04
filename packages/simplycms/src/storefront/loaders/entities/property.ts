@@ -10,9 +10,10 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 // (джерело для `sectionProperties.options.$type<JsonValue>()` у самій схемі,
 // `schema.ts:57,121`). Локальна копія тут розійшлася б з тим, що бачить
 // Drizzle-колонка (той самий клас дефекту, що вже закрито для `images`
-// у m3) — реекспорт (не власне визначення), споживачі барелю (`checkout-items`,
-// `entities/order.ts`, `entities/new-order.ts`, `shipping.ts`,
-// `theme-record.ts`) імпортують звідси, як і раніше.
+// у m3) — реекспорт (не власне визначення). Звідси імпортують
+// `entities/order.ts`, `theme-record.ts` і `plugin-sdk` (через барель
+// `simplycms/storefront/loaders`); ціноутворення й доставка переїхали в
+// `simplycms/commerce` (К3-Е5б) і беруть `JsonValue` з `simplycms/schema/types`.
 export type { JsonValue };
 
 /** Мапа select-а характеристики. */
