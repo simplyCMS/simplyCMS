@@ -13,6 +13,20 @@ import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 const unit = (out: Awaited<ReturnType<typeof priceItems>>) =>
   out === 'not_purchasable' ? out : out.map((i) => [i.price, i.basePrice]);
 
+/** Застосована знижка «від суми» на акумулятор (−5 % від 21000). */
+const CART_APPLIED = {
+  applied: [
+    {
+      id: F.CART_DISCOUNT_ID,
+      name: F.CART_DISCOUNT,
+      type: 'percent',
+      value: 5,
+      calculatedAmount: 1050,
+      groupName: F.CART_GROUP,
+    },
+  ],
+};
+
 describe('рушій цін commerce: priceItems', () => {
   const ids = useCommerceDb('simplycms_commerce_pricing');
 
@@ -81,21 +95,24 @@ describe('рушій цін commerce: priceItems', () => {
     expect(unit(await price())).toEqual([[21000, null]]);
     expect(unit(await price(28999))).toEqual([[21000, null]]);
     const crossed = await price(29000);
-    // Рівно та знижка, яку СТАРИЙ рушій дав кошику з трьох акумуляторів (63000).
+    // Рівно та знижка, яку СТАРИЙ рушій дав кошику з трьох акумуляторів (63000) —
+    // той кейс прогнано нижче окремим тестом.
     if (crossed === 'not_purchasable') throw new Error(crossed);
     expect(crossed[0]).toMatchObject({ price: 19950, basePrice: 21000 });
-    expect(crossed[0].discountData).toEqual({
-      applied: [
-        {
-          id: F.CART_DISCOUNT_ID,
-          name: F.CART_DISCOUNT,
-          type: 'percent',
-          value: 5,
-          calculatedAmount: 1050,
-          groupName: F.CART_GROUP,
-        },
-      ],
+    expect(crossed[0].discountData).toEqual(CART_APPLIED);
+  });
+
+  it('cartTotal множить ціну на кількість: 3 акумулятори = 63000 ≥ 50000 → знижка «від суми» без extraCartTotal', async () => {
+    const out = await guest((db) =>
+      priceItems(db, null, [line(F.BATTERY_200AH, 3)]),
+    );
+    if (out === 'not_purchasable') throw new Error(out);
+    expect(out[0]).toMatchObject({
+      price: 19950,
+      basePrice: 21000,
+      quantity: 3,
     });
+    expect(out[0].discountData).toEqual(CART_APPLIED);
   });
 
   it('покупець із категорією отримує свій тип ціни; гість — дефолтний', async () => {

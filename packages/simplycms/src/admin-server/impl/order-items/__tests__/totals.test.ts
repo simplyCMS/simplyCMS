@@ -5,9 +5,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
+import { setResponseStatus } from '@tanstack/react-start/server';
 import {
   MAX_CENTS_NUMERIC_10_2,
   MAX_CENTS_NUMERIC_12_2,
+  assertWithin,
   centsFromNumber,
   fromCents,
   toCents,
@@ -31,6 +33,8 @@ describe('гроші в центах (Е5б-13)', () => {
     expect(centsFromNumber(0.1 + 0.2)).toBe(30);
     expect(centsFromNumber(1234.55)).toBe(123455);
     expect(centsFromNumber(0)).toBe(0);
+    // 1.15 * 100 = 114.99999999999999: округлення, а не відсікання.
+    expect(centsFromNumber(1.15)).toBe(115);
   });
 
   it('fromCents — рядок "x.yy"', () => {
@@ -47,5 +51,22 @@ describe('гроші в центах (Е5б-13)', () => {
     expect(MAX_CENTS_NUMERIC_10_2).toBe(toCents('99999999.99'));
     expect(MAX_CENTS_NUMERIC_12_2).toBe(999_999_999_999);
     expect(MAX_CENTS_NUMERIC_10_2).toBe(9_999_999_999);
+  });
+
+  it('assertWithin: рівно межа — у межах; межа + 1 цент → 409 order_amount_out_of_range', () => {
+    expect(() =>
+      assertWithin(MAX_CENTS_NUMERIC_12_2, MAX_CENTS_NUMERIC_12_2),
+    ).not.toThrow();
+    expect(setResponseStatus).not.toHaveBeenCalled();
+    expect(() =>
+      assertWithin(MAX_CENTS_NUMERIC_12_2 + 1, MAX_CENTS_NUMERIC_12_2),
+    ).toThrow(
+      expect.objectContaining({
+        name: 'AdminConflictError',
+        kind: 'state',
+        constraint: 'order_amount_out_of_range',
+      }),
+    );
+    expect(setResponseStatus).toHaveBeenCalledWith(409);
   });
 });
