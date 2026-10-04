@@ -43,7 +43,7 @@ export async function resolveRecipient(
  * Форма запиту → форма вставки.
  *
  * 🔴 Ціна позиції, сума й доставка приходять уже РАХОВАНІ сервером
- * (`priceItems` + `resolveShippingRate`) — клієнтський запит цих
+ * (`priceItems` + `quoteShippingCost`) — клієнтський запит цих
  * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
  * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
  * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
