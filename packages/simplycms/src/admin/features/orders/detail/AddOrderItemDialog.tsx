@@ -65,7 +65,15 @@ export function AddOrderItemDialog({ orderId }: { readonly orderId: string }) {
       <Button size="sm" onClick={() => setOpen(true)}>
         {t('admin.orders.addItem')}
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      {/* Закриття хрестиком/Escape/кліком поза діалогом — як і успіх —
+          скидає вибір: повторне відкриття починається з пошуку. */}
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) reset();
+          setOpen(next);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('admin.orders.addItemTitle')}</DialogTitle>

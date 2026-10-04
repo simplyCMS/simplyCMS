@@ -119,4 +119,22 @@ describe('AddOrderItemDialog: додавання', () => {
       screen.queryByRole('button', { name: t('admin.orders.addItem') }),
     ).toBeNull();
   });
+
+  it('закриття Escape скидає вибір: повторне відкриття — знову пошук', async () => {
+    mocks.searchProductsForOrder.mockResolvedValue({
+      items: [hit('p1', 'Простий')],
+    });
+    const input = await openDialog();
+    type(input, 'пр');
+    await pick('Простий');
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.orders.addItem') }),
+    );
+    expect(
+      await screen.findByPlaceholderText(t('admin.orders.searchPlaceholder')),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText(t('common.quantity'))).toBeNull();
+  });
 });
