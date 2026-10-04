@@ -3,7 +3,7 @@
 // наявність `stock_point_id`. Кожен кейс асертить і лічильник, і ТОЧНИЙ
 // залишок після зміни кількості та після скасування.
 import { eq } from 'drizzle-orm';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   adjustOrderItemStock,
   InsufficientStockError,
@@ -17,6 +17,9 @@ import { useOrderItemStockDb } from './fixtures/order-item-stock';
 describe('дельта залишку по позиції замовлення (Е5б-7′)', () => {
   const f = useOrderItemStockDb('simplycms_order_item_stock');
   const { ids } = f;
+  // Тумблер — спільний стан БД: кожен кейс стартує з увімкненого, тож
+  // падіння кейсу з вимкненим не тягне сусідів і порядок не важить.
+  beforeEach(() => f.setToggle(true));
 
   /** Зміна кількості так, як її робить операція: облік, потім запис позиції. */
   const adjust = (orderId: string, itemId: string, qty: number) =>
@@ -45,7 +48,6 @@ describe('дельта залишку по позиції замовлення (
   };
 
   it('нова позиція при увімкненому тумблері: точка й stock_reserved записані, залишок списано', async () => {
-    await f.setToggle(true);
     await f.setStock(ids.panel, 10);
     await f.setStock(ids.panel2, 10);
     const orderId = await f.order([{ productId: ids.panel2, quantity: 1 }]);
@@ -71,7 +73,6 @@ describe('дельта залишку по позиції замовлення (
       stockReserved: 0,
     });
     expect(await f.stock(ids.panel)).toBe(10);
-    await f.setToggle(true);
   });
 
   it('нова позиція без рядка order_items → Error, залишок не списано', async () => {
