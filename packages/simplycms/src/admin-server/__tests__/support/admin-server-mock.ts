@@ -89,6 +89,7 @@ export function createAdminServerMock(
     addOrderItem: vi.fn(),
     updateOrderItemQuantity: vi.fn(),
     removeOrderItem: vi.fn(),
+    searchProductsForOrder: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

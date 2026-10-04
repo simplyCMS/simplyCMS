@@ -46,6 +46,8 @@ import {
   updateOrderItemQuantityOp,
   removeOrderItemInput,
   removeOrderItemOp,
+  searchProductsForOrderInput,
+  searchProductsForOrderOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -333,3 +335,9 @@ export const updateOrderItemQuantity = createServerFn({ method: 'POST' })
 export const removeOrderItem = createServerFn({ method: 'POST' })
   .inputValidator(removeOrderItemInput)
   .handler(removeOrderItemOp);
+
+// Е5б-4: вузький пошук товару для діалогу додавання позиції (не загальний
+// пошук адмінки; `like` у subset.ts лишається забороненим).
+export const searchProductsForOrder = createServerFn({ method: 'GET' })
+  .inputValidator(searchProductsForOrderInput)
+  .handler(searchProductsForOrderOp);

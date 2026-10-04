@@ -78,4 +78,9 @@ export type {
   OrderItemRow,
   OrderItemsEditResult,
 } from './order-items/editable';
+export {
+  searchProductsForOrderInput,
+  searchProductsForOrderOp,
+} from './products/search-for-order';
+export type { OrderProductHit } from './products/search-for-order';
 export { AdminConflictError } from './errors';
