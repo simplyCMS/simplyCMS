@@ -36,6 +36,10 @@ import {
   sectionPropertyAssignmentsOps,
   sectionPropertiesOps,
   propertyOptionsOps,
+  ordersOps,
+  orderItemsOps,
+  changeOrderStatusInput,
+  changeOrderStatusOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -294,3 +298,18 @@ export const removeSectionPropertyAssignments = createServerFn({
 })
   .inputValidator(sectionPropertyAssignmentsOps.removeSchema)
   .handler(sectionPropertyAssignmentsOps.remove);
+
+// 🔴 Task 4 (Е5): замовлення — лише читання через фабрику; зміна статусу —
+// іменована операція (лок рядка → «скасоване — кінцеве» → no-op →
+// повернення залишку → статус), не фабричний update.
+export const listOrders = createServerFn({ method: 'GET' })
+  .inputValidator(ordersOps.subsetSchema)
+  .handler(ordersOps.list);
+
+export const listOrderItems = createServerFn({ method: 'GET' })
+  .inputValidator(orderItemsOps.subsetSchema)
+  .handler(orderItemsOps.list);
+
+export const changeOrderStatus = createServerFn({ method: 'POST' })
+  .inputValidator(changeOrderStatusInput)
+  .handler(changeOrderStatusOp);

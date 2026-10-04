@@ -83,6 +83,9 @@ export function createAdminServerMock(
     insertSectionPropertyAssignments: vi.fn(),
     updateSectionPropertyAssignments: vi.fn(),
     removeSectionPropertyAssignments: vi.fn(),
+    listOrders: list(),
+    listOrderItems: list(),
+    changeOrderStatus: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

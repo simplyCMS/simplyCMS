@@ -55,3 +55,46 @@ export const stillPending = (promise: Promise<unknown>, ms: number) => {
     new Promise((r) => setTimeout(r, ms, TIMEOUT)),
   ]).then((v) => v === TIMEOUT);
 };
+
+/** Тримає `select … from orders where id = $1 for update` у ВІДКРИТІЙ
+ *  транзакції окремого зʼєднання (Е5, Task 4) — імітує конкурента, що вже
+ *  заблокував рядок замовлення (кабінет покупця, друга вкладка адмінки).
+ *  `pid` — бекенд цього зʼєднання: тест привʼязує до нього очікувача через
+ *  `pg_blocking_pids`, а не бере «будь-кого, хто чекає».
+ *
+ * 🔴 `release`/`cleanup` — та сама ІДЕМПОТЕНТНА пара, що в
+ * `holdAdvisoryLock` (див. докблок вище): `cleanup` — гард у `finally`. */
+export const holdOrderRowLock = async (dbUrl: string, orderId: string) => {
+  const client = new pg.Client({ connectionString: dbUrl });
+  await client.connect();
+  await client.query('begin');
+  const locked = await client.query(
+    'select id from public.orders where id = $1 for update',
+    [orderId],
+  );
+  if (locked.rowCount !== 1)
+    throw new Error(`[harness] замовлення ${orderId} не знайдено для локу`);
+  const pidRows = await client.query<{ pid: number }>(
+    'select pg_backend_pid() as pid',
+  );
+  const pid = pidRows.rows[0]!.pid;
+  let closed = false;
+  return {
+    pid,
+    release: async () => {
+      if (closed) return;
+      closed = true;
+      await client.query('commit');
+      await client.end();
+    },
+    cleanup: async () => {
+      if (closed) return;
+      closed = true;
+      try {
+        await client.query('rollback');
+      } finally {
+        await client.end();
+      }
+    },
+  };
+};

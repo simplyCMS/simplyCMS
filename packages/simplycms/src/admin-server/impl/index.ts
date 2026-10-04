@@ -61,4 +61,11 @@ export {
 export { sectionPropertiesOps } from './section-properties/resource';
 export { propertyOptionsOps } from './property-options/resource';
 export { sectionPropertyAssignmentsOps } from './section-property-assignments/resource';
+export { ordersOps } from './orders/resource';
+export type { OrderRow } from './orders/resource';
+export { orderItemsOps } from './order-items/resource';
+export {
+  changeOrderStatusInput,
+  changeOrderStatusOp,
+} from './orders/change-status';
 export { AdminConflictError } from './errors';
