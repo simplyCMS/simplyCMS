@@ -10,6 +10,9 @@ import {
   TableRow,
 } from 'simplycms/ui/table';
 import { toAmount } from '../to-amount';
+import { OrderItemQuantity } from './OrderItemQuantity';
+import { RemoveOrderItemDialog } from './RemoveOrderItemDialog';
+import { useOrderItemsEdit } from './useOrderItemsEdit';
 
 /** Знижка позиції з `discountData.applied`; форму читаємо захисно. */
 function appliedDiscounts(data: unknown): { name: string; amount: number }[] {
@@ -21,9 +24,17 @@ function appliedDiscounts(data: unknown): { name: string; amount: number }[] {
   }));
 }
 
-/** Позиції замовлення — лише читання (редагування — Е5б, Е5-1). */
-export function OrderItemsTable({ items }: { readonly items: OrderItem[] }) {
+interface Props {
+  readonly orderId: string;
+  readonly items: OrderItem[];
+  /** `false` для скасованого замовлення (Е5б-3): жодних контролів. */
+  readonly editable: boolean;
+}
+
+/** Позиції замовлення; кількість і видалення — лише якщо `editable` (Е5б-11). */
+export function OrderItemsTable({ orderId, items, editable }: Props) {
   const t = useT();
+  const edit = useOrderItemsEdit(orderId);
   const fmt = useFormatPrice();
   return (
     <Table>
@@ -36,6 +47,7 @@ export function OrderItemsTable({ items }: { readonly items: OrderItem[] }) {
           <TableHead className="text-right">{t('common.price')}</TableHead>
           <TableHead className="text-center">{t('common.quantity')}</TableHead>
           <TableHead className="text-right">{t('common.amount')}</TableHead>
+          {editable && <TableHead className="w-12" />}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -67,10 +79,30 @@ export function OrderItemsTable({ items }: { readonly items: OrderItem[] }) {
               <TableCell className="text-right">
                 {fmt(toAmount(item.price))}
               </TableCell>
-              <TableCell className="text-center">{item.quantity}</TableCell>
+              <TableCell className="text-center">
+                {editable ? (
+                  <OrderItemQuantity
+                    quantity={item.quantity}
+                    name={item.name}
+                    onCommit={(q) => edit.setQuantity(item.id, q)}
+                  />
+                ) : (
+                  item.quantity
+                )}
+              </TableCell>
               <TableCell className="text-right font-medium">
                 {fmt(toAmount(item.total))}
               </TableCell>
+              {editable && (
+                <TableCell>
+                  {items.length > 1 && (
+                    <RemoveOrderItemDialog
+                      name={item.name}
+                      onConfirm={() => edit.remove(item.id)}
+                    />
+                  )}
+                </TableCell>
+              )}
             </TableRow>
           );
         })}

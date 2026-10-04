@@ -10,6 +10,7 @@ import { OrderItemsTable } from './OrderItemsTable';
 import { OrderStatusControl } from './OrderStatusControl';
 import { OrderTotals } from './OrderTotals';
 import { useOrderDetail } from './useOrderDetail';
+import { useOrderLocked } from './useOrderLocked';
 
 /** Серверний `maxLimit` позицій (Е5-12): рівно стільки — можливо, не всі. */
 export const ORDER_ITEMS_MAX = 500;
@@ -20,6 +21,7 @@ export default function OrderDetailPage() {
   const locale = useLocale();
   const { orderId } = useParams({ strict: false }) as { orderId: string };
   const { order, items, isLoading } = useOrderDetail(orderId);
+  const locked = useOrderLocked(order?.statusId ?? null);
 
   if (!order && isLoading)
     return <div className="p-8 text-center">{t('common.loading')}</div>;
@@ -56,7 +58,11 @@ export default function OrderDetailPage() {
                 })}
               </p>
             )}
-            <OrderItemsTable items={items} />
+            <OrderItemsTable
+              orderId={order.id}
+              items={items}
+              editable={!locked}
+            />
             <OrderTotals
               subtotal={order.subtotal}
               shippingCost={order.shippingCost}
