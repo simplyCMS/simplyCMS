@@ -58,10 +58,7 @@ export async function writeMedia(
   const sizeBytes = input.bytes.byteLength;
 
   await db.insert(media).values({
-    // 🔴 `id: id`, не шортхенд: гейт `explicit-ids` (`insert-scan.ts`)
-    // розпізнає поле САМЕ як `id:` — узгоджено з рештою вставок ядра
-    // (`orders.ts`, `addresses.ts`), де той самий запис.
-    id: id,
+    id,
     entityType: input.entityType,
     entityId: input.entityId,
     storageKey: ref,
