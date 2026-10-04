@@ -146,6 +146,8 @@ export function defineAdminResource<
     updateSchema,
     removeSchema,
     subsetSchema: subsetInputSchema,
+    /** Серверна межа сторінки (Е5-12); `undefined` — без межі. Публічна для тесту Е5-14. */
+    maxLimit: maxLimit as number | undefined,
 
     list: async ({ data }: { data: SubsetPayload }) =>
       run(async (db) => {
