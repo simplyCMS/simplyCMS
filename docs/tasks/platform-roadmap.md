@@ -26,6 +26,16 @@
 
 ## 📍 Поточний стан (оновлено 2026-10-04)
 
+🔴 **2026-10-04 — перед Е6а вставлено трек «Оновлення залежностей, безпека,
+тулінг»** (рішення власника): захід оновлень (безпекові бампи, зокрема
+`better-auth` 1.7.7; мінорні; React 19.3; tsdown 0.23; версії шаблону;
+vitest 5) → TanStack DB 0.11.3 (фундамент колекцій адмінки; серверний subset
+приймає запит «рівних значень» із `Date`, знімаються обходи TSDB-B1 і
+`gcTime: 0`) → `inputValidator` → `validator` → CSRF-захист запитів, що
+змінюють стан → **Е6а**. Паралельно — правила за моделлю MetaHub і рушій
+`codebase-research` на codebase-memory-mcp. Дизайн —
+[`2026-10-04-deps-security-tooling-design.md`](../superpowers/specs/2026-10-04-deps-security-tooling-design.md).
+
 🔴 **2026-10-04 — К3-Е5б (редагування позицій замовлення) завершено** на
 гілці `claude/k3-e4-catalog-dictionaries-plan`. У картці
 `/admin/orders/$orderId` власник змінює кількість, додає товар вузьким
@@ -561,6 +571,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-10-04-v2-k3-e5b-order-items-edit.md`](../superpowers/plans/2026-10-04-v2-k3-e5b-order-items-edit.md).
            🔴 Залишок — **31** файл `src/admin/**` на `supabase-js`
            (виміряно 2026-10-04; у `features/` — 0).
+           Перед Е6а — трек оновлень/TanStack DB/CSRF (див. «Поточний стан»).
            Наступні — **Е6а** (доставка й точки видачі: `Shipping*`,
            `PickupPoint*`, 7 файлів) → **Е6** (знижки з `PriceValidator`,
            читачі `orders` у `Dashboard`/`Users`/`UserEdit`, решта
