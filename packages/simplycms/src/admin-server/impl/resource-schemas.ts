@@ -41,6 +41,7 @@ export function buildResourceSchemas<
   T extends Table,
   W extends ColumnName<T>,
   I extends ColumnName<T> = never,
+  O extends ColumnName<T> = never,
 >(
   table: T,
   writable: readonly W[],
@@ -48,6 +49,9 @@ export function buildResourceSchemas<
   // 🔴 Е4-5: колонки, які пишуться ЛИШЕ при створенні рядка — входять у
   //   insert-схему, але НЕ в update-patch (strip у рантаймі, відсутні в типі).
   insertOnly: readonly I[] = [],
+  // 🔴 Е5-7: приховані колонки — їх немає в rowSchema ні статично, ні в
+  //   рантаймі (у insert/update їх і так немає: вони не writable/insertOnly).
+  omit: readonly O[] = [],
 ) {
   const pickWritable = Object.fromEntries(writable.map((c) => [c, true])) as {
     [K in W]: true;
@@ -56,7 +60,14 @@ export function buildResourceSchemas<
     [...writable, ...insertOnly].map((c) => [c, true]),
   ) as { [K in W | I]: true };
 
-  const rowSchema = createSelectSchema(table);
+  const rowSchemaFull = createSelectSchema(table);
+  type RowShape = typeof rowSchemaFull extends { shape: infer S } ? S : never;
+  // UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md: той самий
+  // прийом, що в pick нижче — каст на РЕЗУЛЬТАТ `.omit()`, бо маска на
+  // генеричній таблиці не дає TS вивести звужену форму.
+  const rowSchema = rowSchemaFull.omit(
+    Object.fromEntries(omit.map((c) => [c, true])) as never,
+  ) as unknown as z.ZodObject<Omit<RowShape, O>>;
 
   // 🔴 Відхилення від брифа (typecheck), ХВІСТ РЕВʼЮ Task 7 (round 1):
   // `.pick()` drizzle-zod типізований `M extends Mask<keyof Shape>`, де

@@ -35,6 +35,22 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   [DOMAIN_ERROR_NAME.authz]: ['operation'],
 };
 
+/**
+ * Види `AdminConflictError.kind` (Е3-7, Е5-9). `state` — порушення доменного
+ * стану, якого БД не виражає обмеженням (напр. «скасоване замовлення —
+ * кінцеве»): 409 так само, як `unique`/`reference`, а `constraint` несе
+ * код правила з `ADMIN_STATE_CONSTRAINT`. Адаптер серіалізації вид не
+ * фільтрує — `kind` летить рядком (`DOMAIN_ERROR_FIELD_KEYS`).
+ */
+export const ADMIN_CONFLICT_KINDS = ['unique', 'reference', 'state'] as const;
+
+export type AdminConflictKind = (typeof ADMIN_CONFLICT_KINDS)[number];
+
+/** Коди правил стану (`kind: 'state'`) — один перелік для сервера й `adminErrorKey`. */
+export const ADMIN_STATE_CONSTRAINT = {
+  orderCancelledFinal: 'order_cancelled_final',
+} as const;
+
 /** Форма, що фактично летить через мережу (адаптер бере/віддає її ціле). */
 export interface SerializableDomainError {
   readonly name: DomainErrorName;

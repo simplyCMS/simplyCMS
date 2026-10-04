@@ -1,5 +1,8 @@
 import type { MessageKey } from 'simplycms/i18n';
-import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  DOMAIN_ERROR_NAME,
+} from 'simplycms/contracts/domain-errors';
 
 /**
  * Ключ повідомлення для конфлікту БД (Е3-7). Розрізняємо за полями, а не
@@ -48,6 +51,12 @@ export function adminErrorKey(error: unknown): MessageKey | null {
   const e = error as ConflictShape | null | undefined;
   if (e?.name === DOMAIN_ERROR_NAME.adminConflict) {
     if (e.kind === 'reference') return 'admin.errors.conflictReference';
+    // Е5-9: правило стану. Невідомий код стану — загальний ключ нижче не
+    // годиться (це не дубль), тож лише відомі коди мапляться точно.
+    if (e.kind === 'state')
+      return e.constraint === ADMIN_STATE_CONSTRAINT.orderCancelledFinal
+        ? 'admin.errors.orderCancelledFinal'
+        : null;
     // Входження, не суфікс: product_modifications_product_slug_unique названо
     // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
     return typeof e.constraint === 'string' && e.constraint.includes('slug')

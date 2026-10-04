@@ -4,5 +4,6 @@ export const messages = {
   'admin.errors.conflictUnique': 'Таке значення вже існує',
   'admin.errors.conflictReference':
     'Запис використовується (наприклад, у замовленнях) — деактивуйте його замість видалення',
+  'admin.errors.orderCancelledFinal': 'Скасоване замовлення змінити не можна',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

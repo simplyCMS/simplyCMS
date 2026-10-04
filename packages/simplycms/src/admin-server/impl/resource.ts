@@ -1,4 +1,13 @@
-import { eq, inArray, asc, desc, type SQL, type Table } from 'drizzle-orm';
+import {
+  eq,
+  getTableColumns,
+  inArray,
+  asc,
+  desc,
+  type Column,
+  type SQL,
+  type Table,
+} from 'drizzle-orm';
 import type { z } from 'zod';
 import type { Operation, RequestGrant } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
@@ -14,6 +23,21 @@ import {
   type ResourceRefine,
 } from './resource-schemas';
 import { runAdmin } from './run';
+
+/**
+ * Е5-7: проєкція SELECT/RETURNING — усі колонки таблиці, крім `omit`.
+ * Чиста функція: ключі — TS-імена колонок (як у `db.select()` без
+ * аргументу), тож рядки результату мають ту саму форму, лише без прихованих.
+ */
+export function pickColumns(
+  table: Table,
+  omit: readonly string[],
+): Record<string, Column> {
+  const hidden = new Set(omit);
+  return Object.fromEntries(
+    Object.entries(getTableColumns(table)).filter(([k]) => !hidden.has(k)),
+  );
+}
 
 /**
  * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
@@ -35,36 +59,52 @@ export function defineAdminResource<
   const W extends ColumnName<T>,
   const R extends ColumnName<T>,
   const I extends ColumnName<T> = never,
+  const O extends ColumnName<T> = never,
 >(
   config: {
     entity: string;
     table: T;
     operation: Operation;
     mode: 'eager' | 'on-demand';
-    filterable: readonly ColumnName<T>[];
-    sortable: readonly ColumnName<T>[];
-    defaultOrder?: { column: ColumnName<T>; direction: 'asc' | 'desc' };
+    // 🔴 Е5-7: прихована колонка не фільтрується й не сортується — інакше
+    //   subset став би оракулом її значення (напр. перебір access_token).
+    filterable: readonly Exclude<ColumnName<T>, O>[];
+    sortable: readonly Exclude<ColumnName<T>, O>[];
+    defaultOrder?: {
+      column: Exclude<ColumnName<T>, O>;
+      direction: 'asc' | 'desc';
+    };
     writable: readonly W[];
     /** Е4-5: колонки, що пишуться лише при створенні (insert), а не при
      *  update — напр. тип властивості, зміна якого зламала б значення. */
     insertOnly?: readonly I[];
     readonly: readonly R[];
+    /** Е5-7: колонки, яких немає ні в SELECT/RETURNING, ні в типі рядка, ні
+     *  в схемах — секрети на кшталт `orders.access_token`, браузеру зайві. */
+    omit?: readonly O[];
+    /** Е5-12: серверна межа сторінки `list` — ефективний ліміт
+     *  `min(subset.limit ?? maxLimit, maxLimit)`. Без неї — як раніше. */
+    maxLimit?: number;
     /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
      *  тригера updated_at у каноні немає). */
     touch?: ColumnName<T>;
     /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
      *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
     refine?: ResourceRefine;
-  } & ([Exclude<ColumnName<T>, W | R | I>] extends [never]
+  } & ([Exclude<ColumnName<T>, W | R | I | O>] extends [never]
     ? unknown
-    : { __missingColumns: Exclude<ColumnName<T>, W | R | I> }) &
+    : { __missingColumns: Exclude<ColumnName<T>, W | R | I | O> }) &
     // 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable
     //   виграв би мовчки (напр., createdAt став би перезаписуваним).
     //   Те саме для insertOnly (Е4-5): з writable колонка стала б
     //   перезаписуваною в update, з readonly — записуваною в insert.
-    ([Extract<W, R> | Extract<I, W | R>] extends [never]
+    //   Е5-7: прихована колонка (omit) не може бути ні в жодному списку.
+    ([Extract<W, R> | Extract<I, W | R> | Extract<O, W | R | I>] extends [never]
       ? unknown
-      : { __overlappingColumns: Extract<W, R> | Extract<I, W | R> }),
+      : {
+          __overlappingColumns:
+            Extract<W, R> | Extract<I, W | R> | Extract<O, W | R | I>;
+        }),
 ) {
   const allow: SubsetAllow = {
     filterable: config.filterable,
@@ -77,7 +117,14 @@ export function defineAdminResource<
       config.writable,
       config.refine,
       config.insertOnly,
+      config.omit,
     );
+  // Е5-7: явна проєкція для SELECT і RETURNING (без omit — усі колонки,
+  // тобто той самий набір, що `select()`/`returning()` без аргументу).
+  const picked = pickColumns(config.table, config.omit ?? []);
+  /** Тип рядка, що бачить споживач: без прихованих колонок. */
+  type Row = Omit<T['$inferSelect'], O>;
+  const { maxLimit } = config;
 
   /**
    * Спільна склейка К3-13 — тепер `runAdmin` (Task 1): перший рубіж →
@@ -103,8 +150,11 @@ export function defineAdminResource<
     list: async ({ data }: { data: SubsetPayload }) =>
       run(async (db) => {
         const s = toDrizzleSubset(config.table, allow, data.subset ?? {});
+        // UPSTREAM:DZOD-1 — та сама генерична таблиця, що й `.from` нижче:
+        // проєкція на `T` не типізується без касту (результат кастується
+        // явно в кінці).
         let q = db
-          .select()
+          .select(picked as never)
           .from(config.table as never)
           .$dynamic();
         if (s.where) q = q.where(s.where);
@@ -129,7 +179,12 @@ export function defineAdminResource<
         const idCol = columns['id'];
         if (idCol !== undefined) order.push(asc(idCol));
         if (order.length > 0) q = q.orderBy(...order);
-        if (s.limit !== undefined) q = q.limit(s.limit);
+        // Е5-12: серверна межа сторінки, якщо ресурс її задав.
+        const limit =
+          maxLimit === undefined
+            ? s.limit
+            : Math.min(s.limit ?? maxLimit, maxLimit);
+        if (limit !== undefined) q = q.limit(limit);
         if (s.offset !== undefined) q = q.offset(s.offset);
         // 🔴 `.from(config.table as never)` вище — обхід генеричного `T` у
         // drizzle-білдері, що й у insert/update/remove нижче — зводить
@@ -147,7 +202,7 @@ export function defineAdminResource<
         // сам серіалізовний, і додатковий шар через drizzle-zod більше не
         // потрібен. Рантайм не змінився: каст іде на той самий масив із
         // SELECT/RETURNING, різниця лише в тому, яким типом його назвати.
-        return (await q) as T['$inferSelect'][];
+        return (await q) as Row[];
       }),
 
     // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
@@ -173,7 +228,7 @@ export function defineAdminResource<
         const rows = (await db
           .insert(config.table)
           .values(parsed as never)
-          .returning()) as unknown as T['$inferSelect'][];
+          .returning(picked as never)) as unknown as Row[];
         return rows;
       });
     },
@@ -194,7 +249,7 @@ export function defineAdminResource<
         // `pnpm typecheck` (звичайний `tsc --noEmit`) цю розбіжність не
         // бачить — той самий код у ньому чистий; мінімальний фікс — явна
         // анотація типу масиву замість покладання на evolving-inference.
-        const out: T['$inferSelect'][] = [];
+        const out: Row[] = [];
         for (const { id, patch } of parsed) {
           // 🔴 Відхилення від брифа (typecheck): `db.update(config.table)`
           // з генеричним `T extends Table` не звужує `.returning()` до
@@ -212,7 +267,7 @@ export function defineAdminResource<
                 : patch) as never,
             )
             .where(eq(columns['id'], id as never))
-            .returning()) as T['$inferSelect'][];
+            .returning(picked as never)) as Row[];
           const row = rows[0];
           if (!row)
             throw new Error(
@@ -231,7 +286,8 @@ export function defineAdminResource<
         const rows = await db
           .delete(config.table)
           .where(inArray(columns['id'], ids as never))
-          .returning();
+          // Е5-7: для лічильника досить id — прихована колонка не читається.
+          .returning({ id: columns['id'] });
         return { count: rows.length };
       });
     },

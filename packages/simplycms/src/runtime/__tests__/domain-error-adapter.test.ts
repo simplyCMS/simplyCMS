@@ -66,6 +66,21 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
+  it('AdminConflictError kind state (Е5-9): поля переживають межу', async () => {
+    const src = Object.assign(new Error('конфлікт'), {
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'order_cancelled_final',
+    });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toBeInstanceOf(Error);
+    expect(out).toMatchObject({
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'order_cancelled_final',
+    });
+  });
+
   it('AuthzError: name+operation переживають межу', async () => {
     const src = Object.assign(new Error('заборонено'), {
       name: 'AuthzError',

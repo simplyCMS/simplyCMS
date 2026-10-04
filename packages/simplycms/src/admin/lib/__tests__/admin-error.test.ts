@@ -30,6 +30,11 @@ describe('adminErrorKey', () => {
       adminErrorKey(conflict('reference', 'order_items_product_id_fkey')),
     ).toBe('admin.errors.conflictReference');
   });
+  it('стан: скасоване замовлення — кінцеве (Е5-9)', () => {
+    expect(adminErrorKey(conflict('state', 'order_cancelled_final'))).toBe(
+      'admin.errors.orderCancelledFinal',
+    );
+  });
   it('не конфлікт — null (викликач показує свій загальний тост)', () => {
     expect(adminErrorKey(new Error('boom'))).toBeNull();
     expect(adminErrorKey(undefined)).toBeNull();
