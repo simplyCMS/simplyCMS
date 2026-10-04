@@ -1,27 +1,30 @@
 import { asc, desc, eq, or } from 'drizzle-orm';
 import { pickupPoints } from 'simplycms/schema';
-import type { StockTarget } from 'simplycms/inventory';
-import type { ActorDb } from './db';
+import type { ActorDb } from 'simplycms/db';
+import type { StockTarget } from './stock-status';
 
 /**
  * Адресація обліку залишків (К2-Е0, Е0-3): яка точка обслуговує замовлення.
  *
- * 🔴 М1 (рев'ю хвилі B): `lockTargetStock`/`servingQuantity`/`LockedStockRow`
- * переїхали в `simplycms/inventory` цілком (не лише `StockTarget`) — та сама
- * копія правила «обслуговуюча точка» потрібна й адмінці
- * (`admin-server/impl/stock/save.ts`). Тут лишається лише специфічне для
- * замовлення: резолв точки й переворот статусу — `simplycms/inventory`;
- * правило списання — `./stock-reservation`, повернення — `./stock-release`
- * (розкладені по файлах заради канону 150 рядків).
+ * 🔴 Переїхало сюди зі `storefront/loaders` (Е5-3): облік замовлення —
+ * спільний для вітрини (оформлення/скасування покупцем) і адмінки (зміна
+ * статусу), а `admin-server` за тір-зонами не сміє імпортувати
+ * `storefront/loaders`. Сусіди імпортуються НАПРЯМУ (`./stock-status`,
+ * `./locked-stock`), не через барель `simplycms/inventory` — інакше цикл
+ * барель ↔ модуль.
  */
 
-// `StockTarget` живе в `simplycms/inventory` (Е3-5) — реекспорт тут заради
-// сумісності: `order-stock.ts` бере тип саме звідси.
-export type { StockTarget };
-
-/** Позиція замовлення в тому вигляді, який потрібен обліку. */
-export interface StockLine extends StockTarget {
+/** Рух залишку однієї цілі: скільки списати або повернути. */
+export interface StockMove extends StockTarget {
   quantity: number;
+}
+
+/**
+ * Позиція замовлення в тому вигляді, який потрібен обліку. `orderItemId` —
+ * ключ рядка `order_items`, у який пишеться фактично списане (Е5-4′).
+ */
+export interface StockLine extends StockMove {
+  orderItemId: string;
 }
 
 /**
@@ -33,6 +36,11 @@ export interface StockLine extends StockTarget {
  * тим, чи пропонувати точку покупцеві як самовивіз (`loadPickupPoints`), а
  * не тим, чи існує склад. 🔴 `null` — «точок немає взагалі»: обліку в такому
  * магазині вести нічим, і write-side не вигадує його за магазин.
+ *
+ * 🔴 Лише для СПИСАННЯ (Е5-11): повернення бере точку з
+ * `order_items.stock_point_id`, записану при оформленні, і резолвом не
+ * користується — інакше точка, деактивована між оформленням і скасуванням,
+ * перенаправила б повернення в іншу.
  */
 export async function resolveStockPoint(
   db: ActorDb,

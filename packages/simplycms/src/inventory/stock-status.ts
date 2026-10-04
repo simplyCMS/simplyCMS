@@ -8,8 +8,8 @@ import type { ActorDb } from 'simplycms/db';
  *
  * 🔴 Перенесено сюди зі `storefront/loaders/stock-write.ts` (Е3-5): межа
  * `simplycms/inventory` — спільний домен для вітрини (резерв/повернення
- * замовлення) і адмінки (ручний облік), `stock-write.ts` реекспортує тип
- * назад для своїх споживачів (`order-stock.ts`).
+ * замовлення) і адмінки (ручний облік, зміна статусу замовлення); з Е5-3
+ * облік замовлення (`order-stock.ts` і сусіди) живе в цій самій теці.
  */
 export interface StockTarget {
   productId: string | null;

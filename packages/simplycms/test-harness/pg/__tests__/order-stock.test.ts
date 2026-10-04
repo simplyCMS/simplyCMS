@@ -16,13 +16,12 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
+import { InsufficientStockError, releaseOrderStock } from 'simplycms/inventory';
 import {
-  InsufficientStockError,
   createOrder,
   loadOrderDetail,
   loadStockInfo,
   lockOrderStatus,
-  releaseOrderStock,
   setOrderStatus,
   withOrderTokenDb,
   withStorefrontDb,
@@ -485,8 +484,9 @@ describe('замовлення списує залишок і повертає �
   // фіксу точка резолвилась ОКРЕМО на списанні й на поверненні. Деактивація
   // P1 між оформленням і скасуванням змінювала результат резолву — списане з
   // P1 поверталось у P2: P1 назавжди в мінусі, P2 плюс із повітря.
-  // Фікс: точка списання пишеться в `orders.shipping_data.stock_point_id`
-  // (наявна jsonb-колонка, без DDL) і читається ПЕРШОЮ на поверненні.
+  // Фікс (Е5-4′): точка списання пишеться в `order_items.stock_point_id`
+  // кожної позиції (раніше — `orders.shipping_data.stock_point_id`) і
+  // повернення бере САМЕ її, без повторного резолву.
   it('🔴 A: курʼєрське замовлення — P1 деактивовано між оформленням і скасуванням, повернення йде в P1', async () => {
     const first = crypto.randomUUID();
     const second = crypto.randomUUID();
@@ -523,6 +523,14 @@ describe('замовлення списує залишок і повертає �
       const order = await place(productId, 3, null);
       expect(await stockAt(first, productId)).toBe(7);
       expect(await stockAt(second, productId)).toBe(10);
+      // Носій точки списання — позиція замовлення (Е5-4′), не shipping_data.
+      expect(
+        await queryRows(
+          dbUrl,
+          `select stock_point_id, stock_reserved from public.order_items where order_id = $1`,
+          [order.id],
+        ),
+      ).toEqual([{ stock_point_id: first, stock_reserved: 3 }]);
 
       await queryRows(
         dbUrl,
@@ -812,5 +820,237 @@ describe('замовлення списує залишок і повертає �
         `update public.pickup_points set is_system = true where name = 'Склад у Києві'`,
       );
     }
+  });
+
+  // ─── Е5-4′: облік фактично списаного ПО ПОЗИЦІЇ замовлення ────────────
+  // Кожен кейс заводить ВЛАСНУ точку й товари — стан спільних POINT_A/
+  // POINT_B і сідових товарів не чіпається.
+
+  interface ItemRow {
+    id: string;
+    product_id: string | null;
+    quantity: number;
+    stock_point_id: string | null;
+    stock_reserved: number;
+  }
+  interface Line {
+    productId: string;
+    quantity: number;
+  }
+
+  let pointSeq = 100;
+  const newPoint = async (): Promise<string> => {
+    pointSeq += 1;
+    const id = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
+       values ($1, $2, $3, 'вул. Е5, 1', 'Київ', true, $4)`,
+      [id, methodId, `Тестова точка Е5-${pointSeq}`, pointSeq],
+    );
+    return id;
+  };
+  const newProduct = async (): Promise<string> => {
+    const id = crypto.randomUUID();
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, $2, 'Тест Е5')`,
+      [id, `test-e5-${id}`],
+    );
+    return id;
+  };
+  const createStockRow = async (
+    pointId: string,
+    productId: string,
+    quantity: number,
+  ): Promise<void> => {
+    await queryRows(
+      dbUrl,
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
+       values (gen_random_uuid(), $1, $2, null, $3)`,
+      [pointId, productId, quantity],
+    );
+  };
+  const setDecreaseOnOrder = async (on: boolean): Promise<void> => {
+    await queryRows(
+      dbUrl,
+      `update public.system_settings
+          set value = jsonb_set(value, '{decrease_on_order}', $1::jsonb)
+        where key = 'stock_management'`,
+      [JSON.stringify(on)],
+    );
+  };
+  const placeLines = (lines: Line[], pickupPointId: string) => {
+    const token = crypto.randomUUID();
+    const input: NewOrderInput = {
+      ...baseInput(lines[0].productId, 1, methodId, pickupPointId),
+      items: lines.map((line) => ({
+        productId: line.productId,
+        modificationId: null,
+        name: 'Позиція',
+        price: 100,
+        quantity: line.quantity,
+        basePrice: null,
+        discountData: null,
+      })),
+    };
+    return withOrderTokenDb(token, (db, operator) =>
+      createOrder(db, null, token, input, operator),
+    );
+  };
+  const cancel = (order: { id: string; accessToken: string | null }) =>
+    withOrderTokenDb(order.accessToken as string, (_db, operator) =>
+      operator((odb) => releaseOrderStock(odb, order.id)),
+    );
+  const itemsOf = async (orderId: string): Promise<ItemRow[]> =>
+    (await queryRows(
+      dbUrl,
+      `select id, product_id, quantity, stock_point_id, stock_reserved
+         from public.order_items where order_id = $1 order by id`,
+      [orderId],
+    )) as ItemRow[];
+
+  it('🔴 Е5-4′: товар без рядка залишку при оформленні, рядок завели потім → скасування НЕ додає кількості', async () => {
+    const pointId = await newPoint();
+    const productId = await newProduct();
+    // Обліку цілі немає — `reserveStock` нічого не списує (повертає 0).
+    const order = await placeLines([{ productId, quantity: 2 }], pointId);
+    await createStockRow(pointId, productId, 5);
+
+    await cancel(order);
+
+    // Маркер рівня замовлення повернув би сюди 2 «з повітря» (7).
+    expect(await stockAt(pointId, productId)).toBe(5);
+  });
+
+  it('🔴 Е5-4′: змішане замовлення (обліковий + без обліку) → повертається лише списане', async () => {
+    const pointId = await newPoint();
+    const tracked = await newProduct();
+    const untracked = await newProduct();
+    await createStockRow(pointId, tracked, 5);
+
+    const order = await placeLines(
+      [
+        { productId: tracked, quantity: 3 },
+        { productId: untracked, quantity: 4 },
+      ],
+      pointId,
+    );
+    expect(await stockAt(pointId, tracked)).toBe(2);
+    await createStockRow(pointId, untracked, 1);
+
+    await cancel(order);
+
+    expect(await stockAt(pointId, tracked)).toBe(5);
+    expect(await stockAt(pointId, untracked)).toBe(1);
+  });
+
+  it('🔴 Е5-4′: тумблер ВИМКНУЛИ після оформлення — повертається списане', async () => {
+    const pointId = await newPoint();
+    const productId = await newProduct();
+    await createStockRow(pointId, productId, 5);
+    const order = await placeLines([{ productId, quantity: 3 }], pointId);
+    expect(await stockAt(pointId, productId)).toBe(2);
+
+    await setDecreaseOnOrder(false);
+    try {
+      await cancel(order);
+    } finally {
+      await setDecreaseOnOrder(true);
+    }
+
+    expect(await stockAt(pointId, productId)).toBe(5);
+  });
+
+  it('🔴 Е5-4′: тумблер УВІМКНУЛИ після оформлення — фантомного залишку немає', async () => {
+    const pointId = await newPoint();
+    const productId = await newProduct();
+    await createStockRow(pointId, productId, 5);
+
+    await setDecreaseOnOrder(false);
+    let order: Awaited<ReturnType<typeof placeLines>>;
+    try {
+      order = await placeLines([{ productId, quantity: 3 }], pointId);
+    } finally {
+      await setDecreaseOnOrder(true);
+    }
+    expect(await stockAt(pointId, productId)).toBe(5);
+
+    await cancel(order);
+
+    expect(await stockAt(pointId, productId)).toBe(5);
+  });
+
+  it('🔴 Е5-4′: два послідовні releaseOrderStock (без гварда статусу) → повернення рівно один раз', async () => {
+    // Шар ЛІЧИЛЬНИКА окремо від гварда статусу (Review Focus 1б): тут
+    // `lockOrderStatus` не викликається взагалі — ідемпотентність тримає
+    // сам `stock_reserved`, який перший виклик обнуляє.
+    const pointId = await newPoint();
+    const productId = await newProduct();
+    await createStockRow(pointId, productId, 5);
+    const order = await placeLines([{ productId, quantity: 3 }], pointId);
+
+    expect(await cancel(order)).toEqual({ released: 1 });
+    expect(await cancel(order)).toEqual({ released: 0 });
+
+    expect(await stockAt(pointId, productId)).toBe(5);
+    expect((await itemsOf(order.id)).map((i) => i.stock_reserved)).toEqual([0]);
+  });
+
+  it('🔴 Е5-4′: order_items.stock_reserved/stock_point_id після оформлення = фактично списане', async () => {
+    const pointId = await newPoint();
+    const tracked = await newProduct();
+    const untracked = await newProduct();
+    await createStockRow(pointId, tracked, 5);
+
+    const order = await placeLines(
+      [
+        { productId: tracked, quantity: 3 },
+        { productId: untracked, quantity: 2 },
+      ],
+      pointId,
+    );
+
+    const byProduct = new Map(
+      (await itemsOf(order.id)).map((i) => [i.product_id, i]),
+    );
+    expect(byProduct.get(tracked)).toMatchObject({
+      stock_point_id: pointId,
+      stock_reserved: 3,
+    });
+    expect(byProduct.get(untracked)).toMatchObject({
+      stock_point_id: pointId,
+      stock_reserved: 0,
+    });
+    // `orders.shipping_data` більше не носій точки списання (Е5-4′).
+    const [{ shipping_data }] = (await queryRows(
+      dbUrl,
+      `select shipping_data from public.orders where id = $1`,
+      [order.id],
+    )) as { shipping_data: Record<string, unknown> }[];
+    expect(shipping_data).not.toHaveProperty('stock_point_id');
+  });
+
+  it('🔴 Е5-4′: дві позиції ОДНІЄЇ цілі — лічильники звірено саме за id кожної позиції', async () => {
+    // Той самий товар двома рядками з РІЗНОЮ кількістю: запис лічильника за
+    // ціллю (product_id), а не за `order_items.id`, дав би обом рядкам одне
+    // значення — і повернення 2×2 або 2×1 замість 2+1.
+    const pointId = await newPoint();
+    const productId = await newProduct();
+    await createStockRow(pointId, productId, 5);
+
+    const order = await placeLines(
+      [
+        { productId, quantity: 2 },
+        { productId, quantity: 1 },
+      ],
+      pointId,
+    );
+    expect(await stockAt(pointId, productId)).toBe(2);
+    for (const item of await itemsOf(order.id))
+      expect(item.stock_reserved).toBe(item.quantity);
+
+    expect(await cancel(order)).toEqual({ released: 2 });
+    expect(await stockAt(pointId, productId)).toBe(5);
   });
 });

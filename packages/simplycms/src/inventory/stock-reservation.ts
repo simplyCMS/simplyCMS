@@ -1,13 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
-import {
-  lockTargetStock,
-  loadTargetStatus,
-  servingQuantity,
-  setTargetStatus,
-} from 'simplycms/inventory';
-import type { ActorDb } from './db';
-import type { StockLine } from './stock-write';
+import type { ActorDb } from 'simplycms/db';
+import { lockTargetStock, servingQuantity } from './locked-stock';
+import { loadTargetStatus, setTargetStatus } from './stock-status';
+import type { StockMove } from './stock-write';
 
 /** Нестача залишку: транзакція відкочується, замовлення не створюється. */
 export class InsufficientStockError extends Error {
@@ -60,26 +56,32 @@ export class InsufficientStockError extends Error {
  * правдивим для магазину, що веде облік. Фліп саме за СУМОЮ, а не за нашою
  * точкою: товар із залишком на сусідній точці інакше зникав би з продажу
  * разом із першою спорожнілою.
+ *
+ * 🔴 Повертає ФАКТИЧНО списану кількість (Е5-4′): 0 — нічого не списано
+ * (позиція без цілі, обліку цілі немає, `on_order` без рядка на точці),
+ * `line.quantity` — списано, включно з `on_order` у мінус. Саме це число
+ * `reserveOrderStock` пише в `order_items.stock_reserved`, і саме його
+ * повертає скасування — не `quantity` позиції.
  */
 export async function reserveStock(
   db: ActorDb,
-  line: StockLine,
+  line: StockMove,
   pointId: string,
-): Promise<void> {
+): Promise<number> {
   // Позиція без цілі обліку (ні товару, ні модифікації) — нічого списувати.
-  if (!line.modificationId && !line.productId) return;
+  if (!line.modificationId && !line.productId) return 0;
   const rows = await lockTargetStock(db, line);
-  if (rows.length === 0) return;
+  if (rows.length === 0) return 0;
 
   const row = rows.find((candidate) => candidate.pointId === pointId);
 
   if ((await loadTargetStatus(db, line)) === 'on_order') {
-    if (!row) return;
+    if (!row) return 0;
     await db
       .update(stockByPickupPoint)
       .set({ quantity: row.quantity - line.quantity, updatedAt: new Date() })
       .where(eq(stockByPickupPoint.id, row.id));
-    return;
+    return line.quantity;
   }
 
   if (!row || row.quantity < line.quantity) {
@@ -100,8 +102,9 @@ export async function reserveStock(
   // цього рядка НЕМАЄ, і статус хибно фліпнув би в `out_of_stock`. Дзеркало
   // гварда `row.serving` у `releaseStock`: обидва шляхи фліпають статус лише
   // тоді, коли записаний рядок належить обслуговуючому набору.
-  if (!row.serving) return;
+  if (!row.serving) return line.quantity;
 
   const left = servingQuantity(rows) - line.quantity;
   if (left === 0) await setTargetStatus(db, line, 'out_of_stock');
+  return line.quantity;
 }

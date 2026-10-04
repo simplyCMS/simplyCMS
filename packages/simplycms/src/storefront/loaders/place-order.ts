@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
+import { InsufficientStockError } from 'simplycms/inventory';
 import {
   withCustomerDb,
   withOrderTokenDb,
@@ -9,7 +10,6 @@ import {
 import { prepareCheckout } from './prepare-checkout';
 import { createOrder } from './order-create';
 import { resolveRecipient, toOrderInput } from './place-order-support';
-import { InsufficientStockError } from './stock-reservation';
 
 /**
  * Логіка оформлення без RPC-обгортки — щоб харнес доводив воронку напряму.

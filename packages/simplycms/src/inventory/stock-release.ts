@@ -1,12 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { stockByPickupPoint } from 'simplycms/schema';
-import {
-  lockTargetStock,
-  servingQuantity,
-  setTargetStatus,
-} from 'simplycms/inventory';
-import type { ActorDb } from './db';
-import type { StockLine } from './stock-write';
+import type { ActorDb } from 'simplycms/db';
+import { lockTargetStock, servingQuantity } from './locked-stock';
+import { setTargetStatus } from './stock-status';
+import type { StockMove } from './stock-write';
 
 /**
  * Повертає позицію В ТУ САМУ точку — дзеркало `reserveStock`
@@ -26,10 +23,10 @@ import type { StockLine } from './stock-write';
  * деактивували) і `stock_by_pickup_point_pickup_point_id_fkey`
  * (`ON DELETE cascade`) забрав рядок разом із нею, або сам рядок обліку
  * прибрали вручну. Це право покупця (скасування не сміє впасти через стан
- * складу), і вигадувати рядок замість магазину write-side не буде. Сюди ж
- * потрапляє й перша гілка `reserveStock` («обліку немає взагалі») зі свого
- * боку: `releaseOrderStock` резолвить уже ІНШУ точку для цього ордера, і
- * кількість ляже на неї — названа межа правила Р2 вище.
+ * складу), і вигадувати рядок замість магазину write-side не буде. Першої
+ * гілки `reserveStock` («обліку немає взагалі») тут більше немає зовсім:
+ * з Е5-4′ така позиція має `stock_reserved = 0`, і `releaseOrderStock`
+ * сюди її не передає.
  *
  * 🔴 Дзеркало не абсолютне, і це свідомо: кількість повертається завжди, а
  * статус — лише з нуля (гвард нижче). Для `on_order` це працює саме тому,
@@ -45,7 +42,7 @@ import type { StockLine } from './stock-write';
  */
 export async function releaseStock(
   db: ActorDb,
-  line: StockLine,
+  line: StockMove,
   pointId: string,
 ): Promise<void> {
   if (!line.modificationId && !line.productId) return;

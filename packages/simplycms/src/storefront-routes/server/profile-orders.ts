@@ -1,12 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { releaseOrderStock } from 'simplycms/inventory';
 import {
   lockOrderStatus,
   loadOrderDetail,
   loadOrderStatuses,
   loadStatusByCode,
   loadUserOrders,
-  releaseOrderStock,
   setOrderStatus,
   withStorefrontDb,
   type OrderDetailRow,
