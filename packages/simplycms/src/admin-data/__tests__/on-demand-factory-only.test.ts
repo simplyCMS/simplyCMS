@@ -21,13 +21,13 @@ describe('Е3-17: syncMode лише у фабриці', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('9 on-demand колекцій ідуть через onDemandCollectionOptions', () => {
+  it('11 on-demand колекцій ідуть через onDemandCollectionOptions (Е5: + orders, order_items)', () => {
     let count = 0;
     for (const name of readdirSync(COLLECTIONS_DIR)) {
       if (!name.endsWith('.ts')) continue;
       const src = readFileSync(resolve(COLLECTIONS_DIR, name), 'utf8');
       if (src.includes('onDemandCollectionOptions')) count++;
     }
-    expect(count).toBe(9);
+    expect(count).toBe(11);
   });
 });
