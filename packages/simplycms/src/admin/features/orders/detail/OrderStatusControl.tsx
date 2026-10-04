@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { orderStatusesCollection, useCollection } from 'simplycms/admin-data';
 import { useLiveQuery } from '@tanstack/react-db';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
@@ -40,10 +40,23 @@ export function OrderStatusControl({ orderId, statusId }: Props) {
   )?.id;
   const locked = statusId !== null && statusId === cancelledId;
 
+  // Поки зміна летить, другий запит (повторне підтвердження чи інший вибір)
+  // не шлеться: ref, а не стан — перевірка синхронна, без чекання рендера.
+  const inFlight = useRef(false);
+  const submit = async (id: string) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    try {
+      await change(orderId, id);
+    } finally {
+      inFlight.current = false;
+    }
+  };
+
   const onPick = (id: string) => {
     if (id === statusId) return;
     if (id === cancelledId) setPending(id);
-    else void change(orderId, id);
+    else void submit(id);
   };
 
   return (
@@ -91,7 +104,7 @@ export function OrderStatusControl({ orderId, statusId }: Props) {
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (pending) void change(orderId, pending);
+                if (pending) void submit(pending);
                 setPending(null);
               }}
             >
