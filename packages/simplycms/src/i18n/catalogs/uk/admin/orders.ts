@@ -1,6 +1,10 @@
 /** Замовлення та їх статуси в адмінці. */
 export const messages = {
   'admin.orders.product': 'Товар',
+  'admin.orders.noStatus': 'Без статусу',
+  'admin.orders.loadMore': 'Показати ще',
+  'admin.orders.filters.status': 'Статус',
+  'admin.orders.filters.all': 'Усі статуси',
   'admin.orders.subtitle': 'Перегляд та обробка замовлень',
   'admin.orders.all': 'Всі замовлення',
   'admin.orders.number': '№ Замовлення',

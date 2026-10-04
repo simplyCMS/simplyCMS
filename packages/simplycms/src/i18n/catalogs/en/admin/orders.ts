@@ -3,6 +3,10 @@ import type { Catalog } from '../../../types';
 /** Замовлення — дзеркало `uk/admin/orders.ts`. */
 export const messages: Catalog = {
   'admin.orders.product': 'Product',
+  'admin.orders.noStatus': 'No status',
+  'admin.orders.loadMore': 'Show more',
+  'admin.orders.filters.status': 'Status',
+  'admin.orders.filters.all': 'All statuses',
   'admin.orders.subtitle': 'Review and process orders',
   'admin.orders.all': 'All orders',
   'admin.orders.number': 'Order no.',

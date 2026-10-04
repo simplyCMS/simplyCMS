@@ -73,7 +73,6 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
     },
     { file: 'packages/simplycms/src/admin/pages/Discounts.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/OrderDetail.tsx', wave: 'Е5' },
-    { file: 'packages/simplycms/src/admin/pages/Orders.tsx', wave: 'Е5' },
     {
       file: 'packages/simplycms/src/admin/pages/PickupPointEdit.tsx',
       wave: 'Е6',
