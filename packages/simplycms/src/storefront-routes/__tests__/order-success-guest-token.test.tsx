@@ -130,12 +130,13 @@ describe('OrderSuccess гостя — токен захоплюється оди
     expect(screen.getByText('SC-0001')).toBeTruthy();
   });
 
-  it('navigate, що знімає токен, — рівно один раз', async () => {
+  it('navigate, що знімає токен, — рівно один раз і з replace (токен не лишається в історії)', async () => {
     renderPage();
     await screen.findByText('SC-0001');
     await waitFor(() => expect(h.url.search.token).toBeUndefined());
     await act(async () => {});
     expect(h.navigate).toHaveBeenCalledTimes(1);
+    expect(h.navigate.mock.calls[0]![0].replace).toBe(true);
   });
 
   it('залогінений покупець: без токена, запит із token: null, без navigate', async () => {
