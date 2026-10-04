@@ -2,6 +2,7 @@ import type { MessageKey } from 'simplycms/i18n';
 import {
   ADMIN_STATE_CONSTRAINT,
   DOMAIN_ERROR_NAME,
+  type AdminStateConstraint,
 } from 'simplycms/contracts/domain-errors';
 
 /**
@@ -27,6 +28,25 @@ type ConflictShape = {
   constraint?: unknown;
 };
 
+/**
+ * Код правила стану → ключ `admin.errors.<camelCase>` (Е5-9, Е5б-10). Повноту
+ * тримає тип: новий код у `ADMIN_STATE_CONSTRAINT` без ключа тут —
+ * `pnpm typecheck` червоний.
+ */
+const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
+  [ADMIN_STATE_CONSTRAINT.orderCancelledFinal]:
+    'admin.errors.orderCancelledFinal',
+  [ADMIN_STATE_CONSTRAINT.orderShippingUnavailable]:
+    'admin.errors.orderShippingUnavailable',
+  [ADMIN_STATE_CONSTRAINT.orderInsufficientStock]:
+    'admin.errors.orderInsufficientStock',
+  [ADMIN_STATE_CONSTRAINT.orderLastItem]: 'admin.errors.orderLastItem',
+  [ADMIN_STATE_CONSTRAINT.orderItemNotPurchasable]:
+    'admin.errors.orderItemNotPurchasable',
+  [ADMIN_STATE_CONSTRAINT.orderAmountOutOfRange]:
+    'admin.errors.orderAmountOutOfRange',
+} satisfies Record<AdminStateConstraint, MessageKey>;
+
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */
 const NETWORK_MESSAGE = /failed to fetch|networkerror|load failed/i;
 
@@ -51,11 +71,14 @@ export function adminErrorKey(error: unknown): MessageKey | null {
   const e = error as ConflictShape | null | undefined;
   if (e?.name === DOMAIN_ERROR_NAME.adminConflict) {
     if (e.kind === 'reference') return 'admin.errors.conflictReference';
-    // Е5-9: правило стану. Невідомий код стану — загальний ключ нижче не
-    // годиться (це не дубль), тож лише відомі коди мапляться точно.
+    // Е5-9/Е5б-10: правило стану. Невідомий код стану — загальний ключ
+    // нижче не годиться (це не дубль), тож лише відомі коди мапляться точно.
     if (e.kind === 'state')
-      return e.constraint === ADMIN_STATE_CONSTRAINT.orderCancelledFinal
-        ? 'admin.errors.orderCancelledFinal'
+      // `hasOwn`, а не `?? null`: код із мережі на кшталт `toString`
+      // інакше дістав би метод прототипу замість ключа.
+      return typeof e.constraint === 'string' &&
+        Object.hasOwn(STATE_KEYS, e.constraint)
+        ? STATE_KEYS[e.constraint]!
         : null;
     // Входження, не суфікс: product_modifications_product_slug_unique названо
     // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).

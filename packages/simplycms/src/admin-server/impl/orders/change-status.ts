@@ -19,7 +19,8 @@ export const changeOrderStatusInput = z.object({
 /** Проєкція SELECT/RETURNING — та сама, що в `ordersOps` (без `omit`). */
 const projection = pickColumns(orders, ORDERS_OMIT);
 
-const statusCode = async (db: ActorDb, id: string | null) => {
+/** Код статусу за id (`null` — статусу немає); спільний з `../order-items/editable`. */
+export const statusCode = async (db: ActorDb, id: string | null) => {
   if (id === null) return null;
   const [row] = await db
     .select({ code: orderStatuses.code })

@@ -49,7 +49,17 @@ export type AdminConflictKind = (typeof ADMIN_CONFLICT_KINDS)[number];
 /** Коди правил стану (`kind: 'state'`) — один перелік для сервера й `adminErrorKey`. */
 export const ADMIN_STATE_CONSTRAINT = {
   orderCancelledFinal: 'order_cancelled_final',
+  // Е5б-10: редагування позицій оформленого замовлення.
+  orderShippingUnavailable: 'order_shipping_unavailable',
+  orderInsufficientStock: 'order_insufficient_stock',
+  orderLastItem: 'order_last_item',
+  orderItemNotPurchasable: 'order_item_not_purchasable',
+  orderAmountOutOfRange: 'order_amount_out_of_range',
 } as const;
+
+/** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */
+export type AdminStateConstraint =
+  (typeof ADMIN_STATE_CONSTRAINT)[keyof typeof ADMIN_STATE_CONSTRAINT];
 
 /** Форма, що фактично летить через мережу (адаптер бере/віддає її ціле). */
 export interface SerializableDomainError {

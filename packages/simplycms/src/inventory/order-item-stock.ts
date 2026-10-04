@@ -57,17 +57,13 @@ async function lockItem(db: ActorDb, orderItemId: string): Promise<LockedItem> {
  * `decrease_on_order` читається ЗАРАЗ: увімкнено — точка
  * `resolveStockPoint(orders.pickup_point_id)` і фактично списане пишуться в
  * позицію; вимкнено (або точок немає) — позиція лишається необліковою.
- * Ціль і кількість беруться із заблокованого рядка, а не з аргументу.
+ * Ціль і кількість беруться із заблокованого рядка — тому в аргументі їх
+ * немає (рев'ю Task 2: мертві поля прибрано, щоб викликач не вважав їх
+ * джерелом правди).
  */
 export async function reserveNewOrderItemStock(
   db: ActorDb,
-  item: {
-    orderItemId: string;
-    orderId: string;
-    productId: string | null;
-    modificationId: string | null;
-    quantity: number;
-  },
+  item: { orderItemId: string; orderId: string },
 ): Promise<{ stockPointId: string | null; reserved: number }> {
   const row = await lockItem(db, item.orderItemId);
   if (row.orderId !== item.orderId)

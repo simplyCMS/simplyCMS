@@ -68,4 +68,14 @@ export {
   changeOrderStatusInput,
   changeOrderStatusOp,
 } from './orders/change-status';
+export { addOrderItemInput, addOrderItemOp } from './order-items/add';
+export {
+  updateOrderItemQuantityInput,
+  updateOrderItemQuantityOp,
+} from './order-items/update-quantity';
+export { removeOrderItemInput, removeOrderItemOp } from './order-items/remove';
+export type {
+  OrderItemRow,
+  OrderItemsEditResult,
+} from './order-items/editable';
 export { AdminConflictError } from './errors';

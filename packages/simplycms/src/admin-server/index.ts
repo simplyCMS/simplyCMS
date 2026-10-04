@@ -40,6 +40,12 @@ import {
   orderItemsOps,
   changeOrderStatusInput,
   changeOrderStatusOp,
+  addOrderItemInput,
+  addOrderItemOp,
+  updateOrderItemQuantityInput,
+  updateOrderItemQuantityOp,
+  removeOrderItemInput,
+  removeOrderItemOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -313,3 +319,17 @@ export const listOrderItems = createServerFn({ method: 'GET' })
 export const changeOrderStatus = createServerFn({ method: 'POST' })
   .inputValidator(changeOrderStatusInput)
   .handler(changeOrderStatusOp);
+
+// Е5б-8: редагування позицій оформленого замовлення — іменовані операції
+// (ціна рушієм чекауту, дельта залишку, перерахунок сум і доставки).
+export const addOrderItem = createServerFn({ method: 'POST' })
+  .inputValidator(addOrderItemInput)
+  .handler(addOrderItemOp);
+
+export const updateOrderItemQuantity = createServerFn({ method: 'POST' })
+  .inputValidator(updateOrderItemQuantityInput)
+  .handler(updateOrderItemQuantityOp);
+
+export const removeOrderItem = createServerFn({ method: 'POST' })
+  .inputValidator(removeOrderItemInput)
+  .handler(removeOrderItemOp);

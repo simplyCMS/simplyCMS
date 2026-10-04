@@ -86,6 +86,9 @@ export function createAdminServerMock(
     listOrders: list(),
     listOrderItems: list(),
     changeOrderStatus: vi.fn(),
+    addOrderItem: vi.fn(),
+    updateOrderItemQuantity: vi.fn(),
+    removeOrderItem: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

@@ -39,13 +39,7 @@ describe('дельта залишку по позиції замовлення (
   ) => {
     const orderItemId = await f.insertItem(orderId, productId, quantity);
     const res = await f.admin(orderId, (db) =>
-      reserveNewOrderItemStock(db, {
-        orderItemId,
-        orderId,
-        productId,
-        modificationId: null,
-        quantity,
-      }),
+      reserveNewOrderItemStock(db, { orderItemId, orderId }),
     );
     return { orderItemId, res };
   };
@@ -86,13 +80,7 @@ describe('дельта залишку по позиції замовлення (
     const ghost = crypto.randomUUID();
     await expect(
       f.admin(orderId, (db) =>
-        reserveNewOrderItemStock(db, {
-          orderItemId: ghost,
-          orderId,
-          productId: ids.panel,
-          modificationId: null,
-          quantity: 2,
-        }),
+        reserveNewOrderItemStock(db, { orderItemId: ghost, orderId }),
       ),
     ).rejects.toThrow(/not found/);
     expect(await f.stock(ids.panel)).toBe(10);
