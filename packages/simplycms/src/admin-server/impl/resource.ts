@@ -1,15 +1,6 @@
-import {
-  eq,
-  getTableColumns,
-  inArray,
-  asc,
-  desc,
-  type Column,
-  type SQL,
-  type Table,
-} from 'drizzle-orm';
+import { eq, inArray, asc, desc, type SQL, type Table } from 'drizzle-orm';
 import type { z } from 'zod';
-import type { Operation, RequestGrant } from 'simplycms/auth';
+import type { RequestGrant } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
 import {
   subsetInputSchema,
@@ -17,27 +8,16 @@ import {
   type SubsetAllow,
   type SubsetPayload,
 } from './subset';
-import {
-  buildResourceSchemas,
-  type ColumnName,
-  type ResourceRefine,
-} from './resource-schemas';
+import { buildResourceSchemas, type ColumnName } from './resource-schemas';
+import type {
+  AdminResourceColumnGuards,
+  AdminResourceConfigBase,
+} from './resource-config';
+import { effectiveLimit, pickColumns } from './resource-projection';
 import { runAdmin } from './run';
 
-/**
- * Е5-7: проєкція SELECT/RETURNING — усі колонки таблиці, крім `omit`.
- * Чиста функція: ключі — TS-імена колонок (як у `db.select()` без
- * аргументу), тож рядки результату мають ту саму форму, лише без прихованих.
- */
-export function pickColumns(
-  table: Table,
-  omit: readonly string[],
-): Record<string, Column> {
-  const hidden = new Set(omit);
-  return Object.fromEntries(
-    Object.entries(getTableColumns(table)).filter(([k]) => !hidden.has(k)),
-  );
-}
+// Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
+export { pickColumns };
 
 /**
  * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
@@ -49,10 +29,8 @@ export function pickColumns(
  * пишеться руками в impl/<entity>/. DSL запитів немає — складніше за
  * subset = useLiveQuery на клієнті або іменована операція.
  *
- * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути рівно в
- * одному з трьох списків — writable, insertOnly (Е4-5) або readonly —
- * інакше конфіг не типізується (фантомні поля __missingColumns /
- * __overlappingColumns називають винні колонки).
+ * 🔴 Exhaustiveness і заборона перетину списків колонок — типом
+ * `AdminResourceColumnGuards` (`resource-config.ts`).
  */
 export function defineAdminResource<
   T extends Table,
@@ -61,50 +39,8 @@ export function defineAdminResource<
   const I extends ColumnName<T> = never,
   const O extends ColumnName<T> = never,
 >(
-  config: {
-    entity: string;
-    table: T;
-    operation: Operation;
-    mode: 'eager' | 'on-demand';
-    // 🔴 Е5-7: прихована колонка не фільтрується й не сортується — інакше
-    //   subset став би оракулом її значення (напр. перебір access_token).
-    filterable: readonly Exclude<ColumnName<T>, O>[];
-    sortable: readonly Exclude<ColumnName<T>, O>[];
-    defaultOrder?: {
-      column: Exclude<ColumnName<T>, O>;
-      direction: 'asc' | 'desc';
-    };
-    writable: readonly W[];
-    /** Е4-5: колонки, що пишуться лише при створенні (insert), а не при
-     *  update — напр. тип властивості, зміна якого зламала б значення. */
-    insertOnly?: readonly I[];
-    readonly: readonly R[];
-    /** Е5-7: колонки, яких немає ні в SELECT/RETURNING, ні в типі рядка, ні
-     *  в схемах — секрети на кшталт `orders.access_token`, браузеру зайві. */
-    omit?: readonly O[];
-    /** Е5-12: серверна межа сторінки `list` — ефективний ліміт
-     *  `min(subset.limit ?? maxLimit, maxLimit)`. Без неї — як раніше. */
-    maxLimit?: number;
-    /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
-     *  тригера updated_at у каноні немає). */
-    touch?: ColumnName<T>;
-    /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
-     *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
-    refine?: ResourceRefine;
-  } & ([Exclude<ColumnName<T>, W | R | I | O>] extends [never]
-    ? unknown
-    : { __missingColumns: Exclude<ColumnName<T>, W | R | I | O> }) &
-    // 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable
-    //   виграв би мовчки (напр., createdAt став би перезаписуваним).
-    //   Те саме для insertOnly (Е4-5): з writable колонка стала б
-    //   перезаписуваною в update, з readonly — записуваною в insert.
-    //   Е5-7: прихована колонка (omit) не може бути ні в жодному списку.
-    ([Extract<W, R> | Extract<I, W | R> | Extract<O, W | R | I>] extends [never]
-      ? unknown
-      : {
-          __overlappingColumns:
-            Extract<W, R> | Extract<I, W | R> | Extract<O, W | R | I>;
-        }),
+  config: AdminResourceConfigBase<T, W, R, I, O> &
+    AdminResourceColumnGuards<T, W, R, I, O>,
 ) {
   const allow: SubsetAllow = {
     filterable: config.filterable,
@@ -184,10 +120,7 @@ export function defineAdminResource<
         if (idCol !== undefined) order.push(asc(idCol));
         if (order.length > 0) q = q.orderBy(...order);
         // Е5-12: серверна межа сторінки, якщо ресурс її задав.
-        const limit =
-          maxLimit === undefined
-            ? s.limit
-            : Math.min(s.limit ?? maxLimit, maxLimit);
+        const limit = effectiveLimit(s.limit, maxLimit);
         if (limit !== undefined) q = q.limit(limit);
         if (s.offset !== undefined) q = q.offset(s.offset);
         // 🔴 `.from(config.table as never)` вище — обхід генеричного `T` у
