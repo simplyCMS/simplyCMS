@@ -28,7 +28,8 @@ interface TakenItem {
  * повторний виклик бачить 0. Точку видалено — Е5-11: `console.warn`,
  * повернення немає, лічильник обнуляється. `DELETE` робить викликач.
  *
- * @returns скільки одиниць фактично повернуто на залишок.
+ * @returns скільки одиниць фактично повернуто на залишок (0, якщо рядка
+ *   залишку на точці вже немає — лічильник однаково обнулено).
  */
 export async function releaseOrderItemStock(
   db: ActorDb,
@@ -57,6 +58,5 @@ export async function releaseOrderItemStock(
     warnLost(orderItemId, row.quantity);
     return { released: 0 };
   }
-  await releaseStock(db, row, row.stockPointId);
-  return { released: row.quantity };
+  return { released: await releaseStock(db, row, row.stockPointId) };
 }

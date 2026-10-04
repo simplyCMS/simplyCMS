@@ -39,17 +39,21 @@ import type { StockMove } from './stock-write';
  * повернення на ЄДИНУ деактивовану точку хибно фліпало статус назад у
  * `in_stock` — детальніше й чому саме дві умови, а не одна, — коментар над
  * самим гвардом нижче.
+ *
+ * @returns скільки одиниць фактично повернуто: `line.quantity` або 0, якщо
+ *   рядка залишку на точці немає (Е5б Task 8 — лічильники `released`
+ *   викликачів рахують лише справжні повернення).
  */
 export async function releaseStock(
   db: ActorDb,
   line: StockMove,
   pointId: string,
-): Promise<void> {
-  if (!line.modificationId && !line.productId) return;
+): Promise<number> {
+  if (!line.modificationId && !line.productId) return 0;
   const rows = await lockTargetStock(db, line, pointId);
-  if (rows.length === 0) return;
+  if (rows.length === 0) return 0;
   const row = rows.find((candidate) => candidate.pointId === pointId);
-  if (!row) return;
+  if (!row) return 0;
 
   // Сума ДО повернення — із того самого заблокованого знімка, ЛИШЕ по
   // обслуговуючих точках (див. докблок вище).
@@ -77,4 +81,5 @@ export async function releaseStock(
   if (row.serving && before === 0) {
     await setTargetStatus(db, line, 'in_stock');
   }
+  return line.quantity;
 }

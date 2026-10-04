@@ -94,7 +94,9 @@ interface TakenRow extends StockTarget {
  * повернути нікуди: кількість не повертається, факт логується (межа —
  * `docs/tasks/v2-state-map.md`).
  *
- * @returns кількість позицій, по яких залишок повернуто.
+ * @returns кількість позицій, по яких залишок ФАКТИЧНО повернуто: позиція з
+ *   видаленою точкою або без рядка залишку на ній (лічильник обнулено,
+ *   повертати нікуди) не рахується (Е5б Task 8).
  */
 export async function releaseOrderStock(
   db: ActorDb,
@@ -123,8 +125,7 @@ export async function releaseOrderStock(
       );
       continue;
     }
-    await releaseStock(db, row, row.stockPointId);
-    released += 1;
+    if ((await releaseStock(db, row, row.stockPointId)) > 0) released += 1;
   }
   return { released };
 }
