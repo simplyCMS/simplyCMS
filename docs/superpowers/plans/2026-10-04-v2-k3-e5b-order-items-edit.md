@@ -39,6 +39,7 @@
 | Е5б-12 | *(архітектор)* **Операція authz:** запис — `order.manage`, пошук товарів — теж `order.manage` (він існує лише для діалогу додавання) | Одна операція на поверхню редагування замовлення |
 | Е5б-14 | *(архітектор, 2026-10-04, директива власника «виправити записані, але не виправлені дрібні дефекти»)* **Task 8 «атомарні борги Е4/Е5»** — після Task 6, перед Task 7 (живий прогін і повний ланцюг Task 7 її покривають). Кожен пункт — окремий коміт; фікс поведінки — спершу RED (`Test Files 1`). К3-Е5-3 (розпил `resource.ts` до ≤150) — лише чистий рефакторинг: окремий коміт, тести `resource*.test.ts` і харнес-ресурси зелені без правок асертів, публічні сигнатури `defineAdminResource`/`AdminResourceOps` незмінні, маркери `UPSTREAM:DZOD-1` переїжджають зі своїми кастами; інакше — зупинка. Зміна змісту `released` у `releaseOrderStock` — JSDoc, усі споживачі й рядок у плані. Не беруться: К3-Е5-2 (потрібна колекція точок видачі — Е6а), глибокі відносні шляхи моку (зміна аліасів), ключ засіву типу ціни (прийнятий дизайн) | Борги дрібні й атомарні, а контекст етапу ще свіжий |
 | Е5б-15 | *(архітектор, 2026-10-04)* **К3-Е5-1: токен гостьового замовлення на `order-success` захоплюється ОДИН раз при монтуванні** (`const [token] = useState(() => search.token ?? null)`) і живе лише в памʼяті цього монтування — не в cookie/sessionStorage. Ключ запиту стабільний, повторного запиту без токена немає. Тести: замовлення лишається після зняття токена з URL і `getOrderView` не кличеться з `token: null`; примусовий refetch іде з тим самим токеном; `navigate` зняття — рівно один раз; залогінений — без змін; негативний контроль «`search.token` напряму» → червоний | Корінь: токен у `queryKey` читався з URL на кожному рендері, ефект знімав його з URL → новий ключ → запит без токена → «не знайдено» (`OrderSuccess.tsx:55,66-70,74-86`). Сервер токен не гасить, «одноразовість» — клієнтське правило «не тримати в URL/історії», тож (А) його не послаблює |
+| Е5б-16 | (архітектор, фінальне рев'ю) `pickup_point_invalid` → `order_shipping_unavailable`: замовлення з деактивованою точкою видачі нередаговане, як і з деактивованим методом (наслідок Е5б-2) | Перевірка доставки в адмінці — та сама `validateShippingChoice`, що в чекауті; окремої відмови для точки видачі в редагуванні немає, бо зміни точки в Е5б немає |
 
 **Поза Е5б:** зміна методу/адреси доставки й контактів; ручна ціна позиції; знижка на рівні замовлення; повторне переоцінювання наявних позицій; загальний пошук адмінки (П6); заборона редагування за «кінцевими» статусами, крім `cancelled`.
 
@@ -111,8 +112,8 @@ Task 2 (inventory: дельта по позиції) ─────────
 - Реєстрація теки — усі пʼять місць прецеденту `inventory`: `SERVER_ONLY` у `contracts/server-only.ts`; зона `['src/commerce', 2, 'commerce', ['db']]` в `eslint.tier-zones.mjs` + `'commerce'` у upward-виняток `storefront` і `admin-server`; `exports` `./commerce` (src і dist) у `package.json`; рядок негативного контролю в `tests/tier-boundary/zones.ts` (`commerce` не може `simplycms/storefront/loaders`); маркер у `tests/dist-server-boundary.test.ts`.
 - Внутрішні імпорти `commerce/*` — прямі сусідні (`./pricing`), не через барель (урок Е5, minor 12).
 
-- [ ] **Step 1: Регрес-фіксація (має бути ЗЕЛЕНИМ одразу)** — до переїзду прогнати `pnpm exec vitest run --config vitest.schema.config.ts checkout-flow storefront-loaders` і `pnpm vitest run packages/simplycms/src/core packages/simplycms/src/storefront`; зберегти вивід як еталон. Записати в тест `commerce-pricing` конкретні очікувані `price`/`basePrice`/`discountData` для 2–3 позицій демо-сиду, отримані ще СТАРИМ рушієм (оракул, аудит Codex minor).
-- [ ] **Step 2: Тест (червоний)** — `commerce-pricing.test.ts`:
+- [x] **Step 1: Регрес-фіксація (має бути ЗЕЛЕНИМ одразу)** — до переїзду прогнати `pnpm exec vitest run --config vitest.schema.config.ts checkout-flow storefront-loaders` і `pnpm vitest run packages/simplycms/src/core packages/simplycms/src/storefront`; зберегти вивід як еталон. Записати в тест `commerce-pricing` конкретні очікувані `price`/`basePrice`/`discountData` для 2–3 позицій демо-сиду, отримані ще СТАРИМ рушієм (оракул, аудит Codex minor).
+- [x] **Step 2: Тест (червоний)** — `commerce-pricing.test.ts`:
 ```ts
 it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані в Step 1', async () => {});
 it('extraCartTotal переводить кошик через поріг знижки «від суми» — нова позиція отримує знижку', async () => {});
@@ -122,9 +123,9 @@ it('пріоритет відмов чекауту незмінний: нева�
 it('validateShippingChoice паритет із чекаутом: pickup з deliveryCity null і активною точкою → тариф; pickup з неактивною точкою → pickup_point_invalid; не-pickup без міста → shipping_unavailable; метод деактивовано → shipping_unavailable', async () => {});
 ```
 Run: `pnpm exec vitest run --config vitest.schema.config.ts commerce-pricing` → FAIL (`Test Files 1`).
-- [ ] **Step 3: Переїзд і правки** за Interfaces. Старі шляхи й символи: `rg "loaders/(pricing|categories|discounts|shipping|pickup-points|checkout-items)|entities/(price|discount)'" packages scripts tests` → лише `commerce/` і коментарі; плюс `rg "(loadShippingDirectory|loadPickupPoints|loadPricesByProduct|loadDefaultPriceTypeId|loadUserPriceTypeId|loadUserCategoryId|loadDiscountGroups|priceCheckoutItems|groupPricesByProduct|priceColumns)" packages scripts tests` — кожен імпорт іде з `simplycms/commerce` або сусіднього файлу всередині `commerce/`.
-- [ ] **Step 4: Зелене + регрес** — Step 1 повторно (ті самі числа), `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm pilot:pack --skip-build` (Gate C: `commerce` не в клієнтському бандлі).
-- [ ] **Step 5: Коміт** — `feat(k3-e5b): серверне ціноутворення й доставка в simplycms/commerce`.
+- [x] **Step 3: Переїзд і правки** за Interfaces. Старі шляхи й символи: `rg "loaders/(pricing|categories|discounts|shipping|pickup-points|checkout-items)|entities/(price|discount)'" packages scripts tests` → лише `commerce/` і коментарі; плюс `rg "(loadShippingDirectory|loadPickupPoints|loadPricesByProduct|loadDefaultPriceTypeId|loadUserPriceTypeId|loadUserCategoryId|loadDiscountGroups|priceCheckoutItems|groupPricesByProduct|priceColumns)" packages scripts tests` — кожен імпорт іде з `simplycms/commerce` або сусіднього файлу всередині `commerce/`.
+- [x] **Step 4: Зелене + регрес** — Step 1 повторно (ті самі числа), `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm pilot:pack --skip-build` (Gate C: `commerce` не в клієнтському бандлі).
+- [x] **Step 5: Коміт** — `feat(k3-e5b): серверне ціноутворення й доставка в simplycms/commerce`.
 
 ---
 
@@ -133,11 +134,11 @@ Run: `pnpm exec vitest run --config vitest.schema.config.ts commerce-pricing` �
 **Files:** Create `packages/simplycms/src/inventory/order-item-stock.ts`; Modify `inventory/index.ts`, `test-harness/pg/__tests__/order-stock.test.ts`.
 
 **Interfaces** (усі — під уже взятим викликачем `orders FOR UPDATE`; функція сама бере `order_items … FOR UPDATE` своєї позиції й локи залишку через `lockTargetStock`):
-- `reserveNewOrderItemStock(db, item: { orderItemId: string; orderId: string; productId: string | null; modificationId: string | null; quantity: number }): Promise<{ stockPointId: string | null; reserved: number }>` — 🔴 рядок позиції ВЖЕ вставлено викликачем (`stock_reserved = 0`); тумблер увімкнено → точка `resolveStockPoint(orders.pickup_point_id)`, `reserveStock`, `UPDATE` позиції (точка + фактично списане); вимкнено → `{ null, 0 }`, позицію не чіпає. Тести Task 2 спершу вставляють позицію, потім кличуть хелпер; кейс «рядка позиції немає» → `Error` (не мовчазне списання без лічильника).
+- `reserveNewOrderItemStock(db, { orderItemId, orderId }): Promise<{ stockPointId: string | null; reserved: number }>` *(фактична сигнатура після рев'ю Task 2: ціль і кількість беруться із ЗАБЛОКОВАНОГО рядка позиції, а не з аргументу — мертві поля `productId`/`modificationId`/`quantity` прибрано, щоб викликач не вважав їх джерелом правди)* — 🔴 рядок позиції ВЖЕ вставлено викликачем (`stock_reserved = 0`); тумблер увімкнено → точка `resolveStockPoint(orders.pickup_point_id)`, `reserveStock`, `UPDATE` позиції (точка + фактично списане); вимкнено → `{ null, 0 }`, позицію не чіпає. Тести Task 2 спершу вставляють позицію, потім кличуть хелпер; кейс «рядка позиції немає» → `Error` (не мовчазне списання без лічильника).
 - `adjustOrderItemStock(db, orderItemId: string, newQuantity: number): Promise<{ reserved: number }>` — за Е5б-7′ п.2–3 (зменшення повертає `min(Δ, stock_reserved)`); `InsufficientStockError` пробрасується.
 - `releaseOrderItemStock(db, orderItemId: string): Promise<{ released: number }>` — за Е5б-7′ п.4, обнуляє `stock_reserved` тим самим CTE-прийомом, що `releaseOrderStock`.
 
-- [ ] **Step 1: Тести (червоні)** у `order-stock.test.ts`:
+- [x] **Step 1: Тести (червоні)** у `order-stock.test.ts`:
 ```ts
 it('нова позиція при увімкненому тумблері: точка й stock_reserved записані, залишок списано', async () => {});
 it('нова позиція при вимкненому: необлікова, залишок не чіпали', async () => {});
@@ -151,9 +152,9 @@ it('після adjust + release позиції releaseOrderStock усього з
 it('on_order: збільшення йде в мінус без InsufficientStockError', async () => {});
 ```
 Негативні контроли (вивід у звіт), кожен зі спостереженням: зменшення повертає `|Δ|` замість `min(Δ, stock_reserved)` → червоніє кейс 🔴 «точка задана, stock_reserved = 0» (залишок зростає); `adjust` пише `stock_reserved = newQuantity` → червоніє той самий кейс (лічильник ≠ 0) і кейс «збільшення після появи рядка»; `release` без обнулення → червоніє «повторний виклик». Асертити і лічильник, і точний залишок після зменшення та після скасування.
-- [ ] **Step 2: Реалізація** (поверх `reserveStock`/`releaseStock`/`lockTargetStock`, прямі сусідні імпорти).
-- [ ] **Step 3: Зелене** — `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test`.
-- [ ] **Step 4: Коміт** — `feat(k3-e5b): дельта залишку по позиції замовлення`.
+- [x] **Step 2: Реалізація** (поверх `reserveStock`/`releaseStock`/`lockTargetStock`, прямі сусідні імпорти).
+- [x] **Step 3: Зелене** — `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test`.
+- [x] **Step 4: Коміт** — `feat(k3-e5b): дельта залишку по позиції замовлення`.
 
 ---
 
@@ -171,7 +172,7 @@ it('on_order: збільшення йде в мінус без InsufficientStock
 - Гроші — Е5б-13 (`toCents`/`centsFromNumber`/`fromCents` поруч у `totals.ts`, з юніт-тестом на `"0"`, `"1234.5"`, `"1234.50"`, `"0.01"`, `centsFromNumber(0.1 + 0.2)` = 30 і обидві межі — `numeric(12,2)` і `numeric(10,2)`).
 - serverFn: `addOrderItem`, `updateOrderItemQuantity`, `removeOrderItem`.
 
-- [ ] **Step 1: Харнес-тести (червоні)** — шапка й фікстури як `admin-orders.test.ts` (`placeOrder`, `holdOrderRowLock`, `waitForBlockedBy`, `rowLocksOnStock`, `restrictOrdersSelectForAdmin`):
+- [x] **Step 1: Харнес-тести (червоні)** — шапка й фікстури як `admin-orders.test.ts` (`placeOrder`, `holdOrderRowLock`, `waitForBlockedBy`, `rowLocksOnStock`, `restrictOrdersSelectForAdmin`):
 ```ts
 it('add: ціна для покупця (тип ціни категорії, знижка), stock списано, subtotal/shipping/total перераховано', async () => {});
 it('add гостьовому замовленню: дефолтний тип ціни', async () => {});
@@ -190,9 +191,9 @@ it('рядки результату без accessToken (колонкові гр�
 it('не-адмін → AuthzError', async () => {});
 ```
 Негативні контроли (вивід у звіт, кожен зі спостереженням): прибрати `for update` замовлення → тест «(лок)» червоний (операція стоїть на іншому запиті або тримає локи залишку); пропустити `quoteShippingCost` → червоніє Review Focus 3; гвард `cancelled` після роботи → червоніє «скасованому».
-- [ ] **Step 2: Реалізація** за Interfaces і Е5б-8.
-- [ ] **Step 3: Зелене** — `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm pilot:pack --skip-build`.
-- [ ] **Step 4: Коміт** — `feat(k3-e5b): додавання, зміна кількості й видалення позицій замовлення`.
+- [x] **Step 2: Реалізація** за Interfaces і Е5б-8.
+- [x] **Step 3: Зелене** — `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm pilot:pack --skip-build`.
+- [x] **Step 4: Коміт** — `feat(k3-e5b): додавання, зміна кількості й видалення позицій замовлення`.
 
 ---
 
@@ -202,9 +203,9 @@ it('не-адмін → AuthzError', async () => {});
 
 **Interfaces:** `searchProductsForOrderInput = z.object({ query: z.string().trim().max(100) })`; `searchProductsForOrderOp → { items: Array<{ productId: string; name: string; sku: string | null; hasModifications: boolean }> }` — `query.length < 2` → `{ items: [] }` без запиту; `ilike` з екрануванням `\`, `%`, `_` (функція `escapeLike(s)` поруч + юніт-тест); пошук і за `product_modifications.sku`/`name` (повертається товар); лише `products.is_active`; `order by name, id`; `limit 20`. serverFn `searchProductsForOrder` (GET).
 
-- [ ] **Step 1: Тести (червоні):** буквальні `%`/`_`/`\` (товар «Знижка 50%» знаходиться за «50%», а «5_» не знаходить «50»; товар зі sku `AB\12` знаходиться за `B\1`, а запит, що закінчується на `\`, не екранує наступний символ шаблону); 1 символ → порожньо; неактивний не повертається; модифікація зі збігом sku → її товар; не більше 20; не-адмін → AuthzError (Review Focus 5).
-- [ ] **Step 2–3: Реалізація, зелене** — мінімальний гейт + `test:schema`.
-- [ ] **Step 4: Коміт** — `feat(k3-e5b): вузький пошук товару для додавання в замовлення`.
+- [x] **Step 1: Тести (червоні):** буквальні `%`/`_`/`\` (товар «Знижка 50%» знаходиться за «50%», а «5_» не знаходить «50»; товар зі sku `AB\12` знаходиться за `B\1`, а запит, що закінчується на `\`, не екранує наступний символ шаблону); 1 символ → порожньо; неактивний не повертається; модифікація зі збігом sku → її товар; не більше 20; не-адмін → AuthzError (Review Focus 5).
+- [x] **Step 2–3: Реалізація, зелене** — мінімальний гейт + `test:schema`.
+- [x] **Step 4: Коміт** — `feat(k3-e5b): вузький пошук товару для додавання в замовлення`.
 
 ---
 
@@ -214,9 +215,9 @@ it('не-адмін → AuthzError', async () => {});
 
 **Interfaces:** `useOrderItemsEdit(orderId): { add(input), setQuantity(orderItemId, qty), remove(orderItemId) }` — кожен кличе свій serverFn і робить write-back за Е5б-11; `OrderItemQuantity` — поле з підтвердженням (Enter/blur), межі 1…9999; кнопка видалення прихована для останньої позиції; усе редагування вимкнене для статусу `cancelled`.
 
-- [ ] **Step 1: Тести (червоні):** зміна кількості → `updateOrderItemQuantity` один раз → рядок і підсумки оновлені write-back-ом без `listOrderItems`; 409 `order_insufficient_stock` → тост `admin.errors.orderInsufficientStock`, поле повертається до серверного значення; видалення через діалог; скасоване — контролів немає.
-- [ ] **Step 2–3: Реалізація, зелене** — мінімальний гейт, `wc -l` нових файлів.
-- [ ] **Step 4: Коміт** — `feat(k3-e5b): зміна кількості й видалення позицій у картці замовлення`.
+- [x] **Step 1: Тести (червоні):** зміна кількості → `updateOrderItemQuantity` один раз → рядок і підсумки оновлені write-back-ом без `listOrderItems`; 409 `order_insufficient_stock` → тост `admin.errors.orderInsufficientStock`, поле повертається до серверного значення; видалення через діалог; скасоване — контролів немає.
+- [x] **Step 2–3: Реалізація, зелене** — мінімальний гейт, `wc -l` нових файлів.
+- [x] **Step 4: Коміт** — `feat(k3-e5b): зміна кількості й видалення позицій у картці замовлення`.
 
 ---
 
@@ -226,9 +227,9 @@ it('не-адмін → AuthzError', async () => {});
 
 **Interfaces:** пошук — `searchProductsForOrder` з debounce 300 мс і скасуванням застарілої відповіді (порядок відповідей не має значення — показується відповідь на ОСТАННІЙ запит); модифікації вибраного товару — наявна колекція `productModificationsCollection` (зріз `where productId`); кількість 1…9999; «Додати» → `useOrderItemsEdit().add`; 409 `order_item_not_purchasable`/`order_insufficient_stock`/`order_shipping_unavailable` → тост, діалог лишається відкритим.
 
-- [ ] **Step 1: Тести (червоні):** менше 2 символів — запиту немає; застаріла відповідь не перетирає нову; товар із модифікаціями вимагає вибору модифікації; успіх → діалог закрито, позиція в таблиці з write-back; помилка → тост, діалог відкритий.
-- [ ] **Step 2–3: Реалізація, зелене**.
-- [ ] **Step 4: Коміт** — `feat(k3-e5b): діалог додавання товару в замовлення`.
+- [x] **Step 1: Тести (червоні):** менше 2 символів — запиту немає; застаріла відповідь не перетирає нову; товар із модифікаціями вимагає вибору модифікації; успіх → діалог закрито, позиція в таблиці з write-back; помилка → тост, діалог відкритий.
+- [x] **Step 2–3: Реалізація, зелене**.
+- [x] **Step 4: Коміт** — `feat(k3-e5b): діалог додавання товару в замовлення`.
 
 ---
 
@@ -269,6 +270,39 @@ it('не-адмін → AuthzError', async () => {});
 5. Доки оновлено.
 
 ## Факти виконання
+
+### Tasks 1–6
+
+Коміти — `git log --oneline f9dad58a..a3669c22`; ключовий вимір кожної
+задачі — зі звіту виконавця.
+
+- **Task 1** — `6533b810` `feat(k3-e5b): серверне ціноутворення й доставка в
+  simplycms/commerce`. Регрес-еталон до переїзду: `checkout-flow
+  storefront-loaders` — 2 файли / 27 тестів, `core`+`storefront` — 31 / 148,
+  ті самі числа після; оракул `commerce-pricing` записано СТАРИМ рушієм.
+  Тест розбито на `commerce-pricing` і `commerce-shipping` (ліміт 150).
+- **Task 2** — `d8da817f` `feat(k3-e5b): дельта залишку по позиції
+  замовлення`. 11 харнес-кейсів; RED отримано тимчасовим вилученням
+  реалізації (написаної до тестів — записано чесно); негативні контролі
+  `|Δ|` замість `min(Δ, stock_reserved)` і `stock_reserved = newQuantity` —
+  червоні. Сигнатура `reserveNewOrderItemStock` звужена до
+  `{ orderItemId, orderId }` (Interfaces виправлено).
+- **Task 3** — `63fac6d2` `feat(k3-e5b): додавання, зміна кількості й
+  видалення позицій замовлення` + `b6ea2d06` (Focus 2 видаляє облікову
+  позицію, лок — для трьох операцій). RED — 4 харнес-файли й юніт `totals`;
+  мутації: без `.for('update')`, стара `shipping_cost` замість
+  `quoteShippingCost`, гвард `cancelled` після роботи, `extraCartTotal: 0` —
+  усі червоні.
+- **Task 4** — `a6e1db60` `feat(k3-e5b): вузький пошук товару для додавання
+  в замовлення`. 7/7; мутації: без екранування — червоніють «50%/5_» і «sku
+  з `\`»; `where true` замість `is_active` — червоніє «неактивний».
+- **Task 5** — `e9ac48e8` `feat(k3-e5b): зміна кількості й видалення позицій
+  у картці замовлення`. Тести після коду — замість RED мутаційний доказ:
+  без `writeUpsert(upserted)` і без повернення поля на 409 — червоні; нові
+  файли ≤ 112 рядків.
+- **Task 6** — `7f91bfdc` `feat(k3-e5b): діалог додавання товару в
+  замовлення`. RED до коду — 9 з 10 тестів червоні; GREEN 10/10; мутація
+  без in-flight-гварда червонить «подвійний клік».
 
 ### Task 8
 
