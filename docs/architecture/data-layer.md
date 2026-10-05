@@ -313,14 +313,26 @@ Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущ
 будь-якої Standard-схеми кидає `new Error(JSON.stringify(issues))`, тож до
 middleware доходить лише рядок — відновлення issues з `message` крихке й
 неоднозначне. Повноту застосування `adminInput` стереже
-`admin-server/impl/__tests__/admin-validators-wrapped.test.ts` (голе
-`.validator(schema)` червоне; єдиний виняток — FormData-валідатор завантаження).
+`admin-server/impl/__tests__/admin-validators-wrapped.test.ts`: гард читає ВСІ
+не-тестові файли `admin-server/**` (glob), кожен `.validator(...)` там — `adminInput(...)`
+або імʼя з явного списку не-схемних валідаторів (`uploadFormInput` — FormData
+завантаження; виняток за іменем функції, не регексом по тексту).
+
+**Свідомо НЕ загорнуті валідатори поза `admin-server`** (їхні помилки далі йдуть
+як `Error(JSON)`; перелік у тому ж гарді — новий файл із `.validator(` без запису
+червоний): `themes/server` і `plugins/server` — bootstrap-синхронізація, не
+форми адмінки; `plugin-sdk/server` — зовнішній контракт plugin-sdk (плагін
+отримує звичайний `Error`, форма полів тут не передбачена); вітрина й кабінет
+(`core/lib/*`, `storefront-routes/server/*`) — не адмін-форми.
 
 **`numeric`-колонки.** `columnsToZod` перевіряє десятковий формат за
 precision/scale колонки: `numeric(10,2)` — необовʼязковий знак, ≤ 8 цілих і ≤ 2
-дробових цифр, без експоненти/пробілів/`NaN`; `numeric` без precision — лише
-формат. `'abc'` → `invalid_decimal` (400), а не 22P02/500; зайві дробові цифри
-відхиляються, а не округлюються мовчки. Це НАВМИСНЕ розходження з drizzle-zod:
+значущих дробових цифр, без експоненти/пробілів/`NaN`; `numeric` без precision —
+лише формат. `'abc'` → `invalid_decimal` (400), а не 22P02/500; ненульові
+зайві дробові цифри відхиляються, а не округлюються мовчки, а хвостові нулі
+понад scale без втрат допустимі (`'1.500'` у `numeric(10,2)`). Клієнт числової
+властивості (`numeric(15,4)`) сам шле простий десятковий рядок без експоненти
+і не відправляє більше знаків, ніж колонка (`NumberPropertyInput`). Це НАВМИСНЕ розходження з drizzle-zod:
 гейт паритету не послаблено, виняток задокументований у
 `__tests__/support/parity-diff.ts` (`numericFits` — незалежна реалізація), мутація
 `m5` доводить, що повернення до `z.string()` червоніє.

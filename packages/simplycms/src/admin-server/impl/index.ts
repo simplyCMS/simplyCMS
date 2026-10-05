@@ -24,6 +24,7 @@ export {
   deleteMediaOp,
   parseUploadForm,
   uploadMediaOp,
+  uploadFormInput,
 } from './media/operations';
 export type { ParsedUpload } from './media/operations';
 export type { SubsetInput, SubsetPayload } from './subset';

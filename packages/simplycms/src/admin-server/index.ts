@@ -4,6 +4,7 @@ import { createServerFn } from '@tanstack/react-start';
 // Стереже правило server-only-relative.
 import {
   adminInput,
+  uploadFormInput,
   deleteMediaInput,
   deleteMediaOp,
   uploadMediaOp,
@@ -90,12 +91,7 @@ export const reorderOrderStatus = createServerFn({ method: 'POST' })
 // приймає FormData (Start типізує цю гілку окремо). Вміст форми перевіряє
 // `parseUploadForm` усередині операції.
 export const uploadMedia = createServerFn({ method: 'POST' })
-  .validator((data: unknown): FormData => {
-    if (!(data instanceof FormData)) {
-      throw new Error('[simplycms] uploadMedia expects FormData.');
-    }
-    return data;
-  })
+  .validator(uploadFormInput)
   .handler(uploadMediaOp);
 
 export const deleteMedia = createServerFn({ method: 'POST' })

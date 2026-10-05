@@ -46,6 +46,19 @@ const REASON_CODE = {
  * 🔴 Тексти помилок англійською: це серверна діагностика, яку клієнт мапить
  * у власні рядки каталогу, а не рядок інтерфейсу.
  */
+/**
+ * Валідатор serverFn завантаження: лише тип входу (`FormData`), без Zod — тож
+ * `adminInput` йому не потрібен (явний виняток гарда
+ * `admin-validators-wrapped.test.ts`). Вміст форми перевіряє
+ * `parseUploadForm` усередині операції.
+ */
+export const uploadFormInput = (data: unknown): FormData => {
+  if (!(data instanceof FormData)) {
+    throw new Error('[simplycms] uploadMedia expects FormData.');
+  }
+  return data;
+};
+
 export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const file = data.get('file');
   if (!(file instanceof File)) throw new Error('media/no-file');
