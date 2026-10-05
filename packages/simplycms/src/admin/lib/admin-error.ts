@@ -86,6 +86,11 @@ export function adminErrorKey(error: unknown): MessageKey | null {
       ? 'admin.errors.slugTaken'
       : 'admin.errors.conflictUnique';
   }
+  // Тема 12: помилка валідації без поля форми (або там, де полів немає —
+  // видалення, миттєві контролі) — загальний локалізований тост, не сирий JSON.
+  // Помилки ПОЛІВ розкладає `applyServerValidation`.
+  if (e?.name === DOMAIN_ERROR_NAME.validation)
+    return 'admin.validation.failed';
   if (isNetworkError(error)) return 'admin.errors.network';
   return null;
 }

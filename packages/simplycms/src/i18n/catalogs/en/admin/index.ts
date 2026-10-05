@@ -18,6 +18,7 @@ import { messages as settings } from './settings';
 import { messages as shipping } from './shipping';
 import { messages as themes } from './themes';
 import { messages as users } from './users';
+import { messages as validation } from './validation';
 import { messages as validator } from './validator';
 
 export const messages: Catalog = {
@@ -39,5 +40,6 @@ export const messages: Catalog = {
   ...shipping,
   ...themes,
   ...users,
+  ...validation,
   ...validator,
 };
