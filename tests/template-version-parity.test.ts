@@ -45,17 +45,6 @@ const DIFFERS: Record<
   string,
   Partial<Record<Target, { expected: string; reason: string }>>
 > = {
-  'react-day-picker': {
-    template: {
-      expected: '^9.13.2',
-      reason:
-        'ядро (`ui/calendar.tsx`) написане під API v9 (peer ядра — ^9.0.0; на v10 зникає classNames.caption), а `^10` у корені — залишок, яким ядро не користується (воно бере власний peer-інстанс); магазин мусить отримати те, що справді тестується ядром. Прибрати запис разом із міграцією calendar.tsx на v10',
-    },
-    pilot: {
-      expected: '^9.13.2',
-      reason: 'те саме, що в шаблоні',
-    },
-  },
   'drizzle-orm': {
     template: {
       expected: '^0.45.3',
