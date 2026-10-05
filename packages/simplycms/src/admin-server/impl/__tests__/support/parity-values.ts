@@ -50,5 +50,31 @@ export function valuesFor(column: Column): unknown[] {
   if ('length' in column && typeof column.length === 'number') {
     extra.push('a'.repeat(column.length), 'a'.repeat(column.length + 1));
   }
+  if (column.columnType === 'PgNumeric') {
+    // Тема 12: формат/межі десяткового рядка — на цілі/дробові межі precision/scale.
+    const { precision, scale } = column as unknown as {
+      precision: number | null;
+      scale: number | null;
+    };
+    const frac = scale ?? 0;
+    const int = precision == null ? 5 : precision - frac;
+    extra.push(
+      '12.345',
+      '.5',
+      '5.',
+      '.',
+      '+1',
+      '1e3',
+      ' 1',
+      'NaN',
+      '--1',
+      '1,5',
+      '0'.repeat(int + 3) + '1',
+      '9'.repeat(int),
+      '9'.repeat(int + 1),
+      `1.${'1'.repeat(frac)}`,
+      `1.${'1'.repeat(frac + 1)}`,
+    );
+  }
   return [...BASE_VALUES, ...extra];
 }

@@ -23,8 +23,44 @@ const jsonSchema = z.union([
 ]);
 
 /**
+ * Десяткове число рядком за precision/scale колонки `numeric(p, s)`
+ * (Тема 12). 🔴 НАВМИСНЕ розходження з drizzle-zod (там `z.string()`):
+ * `'abc'` проходив би схему й падав у БД (22P02 → 500), а число з надлишком
+ * цілих цифр — 22003. Правило: необовʼязковий знак, цифри, необовʼязкова
+ * дробова частина (`.5` і `5.` дозволені, експонента/пробіли/`NaN` — ні);
+ * цілих цифр ≤ p − s (без ведучих нулів), дробових ≤ s. Дробових БІЛЬШЕ s
+ * Postgres мовчки ОКРУГЛИВ би — тут це помилка (власник бачить її одразу,
+ * а не неочікуване округлення ціни). `numeric` без precision — лише формат.
+ * Виняток із паритету зафіксовано в `__tests__/support/parity-diff.ts`.
+ */
+function decimalString(column: Column): z.ZodType {
+  const { precision, scale } = column as unknown as {
+    precision?: number | null;
+    scale?: number | null;
+  };
+  const maxFraction = precision == null ? null : (scale ?? 0);
+  const maxInteger = precision == null ? null : precision - (scale ?? 0);
+  const params = precision == null ? {} : { precision, scale: scale ?? 0 };
+  return z.string().superRefine((value, ctx) => {
+    const m = /^[+-]?(?:(\d+)(?:\.(\d*))?|\.(\d+))$/.exec(value);
+    const integer = (m?.[1] ?? '').replace(/^0+/, '');
+    const fraction = m?.[2] ?? m?.[3] ?? '';
+    const fits =
+      m !== null &&
+      (maxInteger === null || integer.length <= maxInteger) &&
+      (maxFraction === null || fraction.length <= maxFraction);
+    if (!fits)
+      ctx.addIssue({
+        code: 'custom',
+        // Код і параметри читає `sanitizeValidationIssues` (білий список).
+        params: { code: 'invalid_decimal', ...params },
+      });
+  });
+}
+
+/**
  * Базова схема однієї колонки за класом Drizzle (`is`, не зіставлення
- * рядків). Дзеркало drizzle-zod 0.8.3 `columnToSchema` (рр. 40-105):
+ * рядків). Дзеркало drizzle-zod 0.8.3 `columnToSchema` (крім numeric — навмисний виняток, Тема 12) (рр. 40-105):
  * enum — першим (р. 44), далі `stringColumnToSchema` (uuid, varchar.max —
  * рр. 197-237), `numberColumnToSchema` (PgInteger int32 — рр. 137-146, 186),
  * boolean/date/json. Режими `string`/`number` timestamp і numeric — окремі
@@ -40,7 +76,8 @@ export function columnSchema(column: Column): z.ZodType {
   if (is(column, PgVarchar)) {
     return column.length ? z.string().max(column.length) : z.string();
   }
-  if (is(column, PgText) || is(column, PgNumeric)) return z.string();
+  if (is(column, PgText)) return z.string();
+  if (is(column, PgNumeric)) return decimalString(column);
   if (is(column, PgBoolean)) return z.boolean();
   if (is(column, PgInteger)) return z.int().gte(-2147483648).lte(2147483647);
   if (is(column, PgTimestamp)) return z.date();
