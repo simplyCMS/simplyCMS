@@ -1,3 +1,4 @@
+import { RichHtml } from 'simplycms/ui/rich-html';
 import { useMemo } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -163,9 +164,9 @@ export default function PropertyPage({
         <h1 className="text-4xl font-bold mb-4">{displayName}</h1>
 
         {description && (
-          <div
+          <RichHtml
             className="prose prose-lg max-w-none text-muted-foreground dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: description }}
+            html={description}
           />
         )}
       </div>

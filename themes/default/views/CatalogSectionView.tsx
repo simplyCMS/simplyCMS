@@ -1,3 +1,4 @@
+import { RichHtml } from 'simplycms/ui/rich-html';
 import type { CatalogSectionViewModel } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
 import { CatalogShell } from './catalog/CatalogShell';
@@ -31,9 +32,9 @@ export function CatalogSectionView({
       {section.description && (
         <ViewPanel className="mt-8">
           <ViewPanelHeading>{section.name}</ViewPanelHeading>
-          <div
+          <RichHtml
             className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: section.description }}
+            html={section.description}
           />
         </ViewPanel>
       )}
