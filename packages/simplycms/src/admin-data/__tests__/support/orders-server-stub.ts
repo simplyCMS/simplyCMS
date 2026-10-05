@@ -29,6 +29,8 @@ function list<R extends { id: string }>(src: R[], data: Payload, max: number) {
  * Застосувати відповідь мутації ({ order, upserted, removedIds }) до стану
  * «сервера»: після запису ревалідація (TSDB-1) віддасть саме його. Мок
  * мутації викликає це ВСЕРЕДИНІ реалізації і повертає той самий об'єкт.
+ * Збережені об'єкти — безпечні для спільних посилань: кожне читання
+ * копіює рядки через `applySubset`.
  */
 export function applyOutcome<
   T extends {
