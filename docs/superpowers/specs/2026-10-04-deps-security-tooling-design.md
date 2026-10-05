@@ -489,8 +489,8 @@ compat-налаштувань. Очікувані зачіпки: моки чи�
   insert/patch будує `InsertPick` (мапінг з `as`): `Pick<M, K & keyof M>` на
   generic-`T` губить необовʼязкові ключі — обмеження TypeScript (відкладене
   обчислення), не бібліотеки. Рантайм — strip `ZodObject`, як у drizzle-zod.
-- `ZodPipe` не має `.shape` → `resource-omit.test.ts` переписати на
-  parse/ключі. Ізольовані касти всередині генератора (`enumValues`, `length`
+- Оголошений тип `ZodType<Row>` не має `.shape` (рантайм — `ZodObject`) →
+  `resource-omit.test.ts` переписати на parse/ключі. Ізольовані касти всередині генератора (`enumValues`, `length`
   varchar, `getTableColumns`) — прибрати через `is(col, PgVarchar)` тощо, де
   можливо.
 - Закрити DZOD-1 (у «Закриті»), прибрати `SafePick` і касти в

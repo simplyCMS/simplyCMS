@@ -18,7 +18,8 @@ export type ColumnName<T extends Table> = Extract<
 export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
 
 /**
- * ЄДИНИЙ каст у шляху схем. Оголошує, що `z.object(shape)` дає значення типу
+ * Єдиний каст ОГОЛОШЕННЯ типу виходу (ще один — типовий, при виклику refine
+ * у `columns-to-zod.ts`). Оголошує, що `z.object(shape)` дає значення типу
  * `Out` (`InferInsertModel`/`InferSelectModel` з Drizzle, звужені до
  * writable/omit). Компілятор цього довести не може: форма будується в
  * рантаймі з generic-таблиці. 🔴 Чому не `.pipe(z.custom<Out>(() => true))`:

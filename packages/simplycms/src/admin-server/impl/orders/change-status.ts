@@ -81,6 +81,7 @@ export const changeOrderStatusOp = async ({
       .update(orders)
       .set({ statusId, updatedAt: new Date() })
       .where(eq(orders.id, orderId))
+      // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md
       .returning(projection as never)) as OrderRow[];
     return { order: order! };
   });
