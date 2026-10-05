@@ -57,7 +57,7 @@ export function StockEditor({
       } else {
         toast.error(
           t('admin.products.stock.saveFailed', {
-            message: t('admin.products.prices.invalid'),
+            message: t('admin.products.stock.invalidQuantity'),
           }),
         );
       }
