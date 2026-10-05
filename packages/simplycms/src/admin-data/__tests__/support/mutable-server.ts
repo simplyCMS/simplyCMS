@@ -7,11 +7,16 @@
  * write-back. Тут стан живе в `rows`: мутації стаба (`upsert`/`remove`/
  * `applyOutcome`) його змінюють, наступний `list` це бачить.
  *
- * `applySubset` — виконання subset за контрактом `admin-server/impl/
- * subset.ts` (eq/in/isNull/gt/gte/lt/lte, Date — діапазонними операторами,
- * сорт + тай-брейкер id, межа limit, offset). Невідомий оператор — гучна
- * відмова. Повертає КОПІЇ рядків: спільні посилання дають
+ * `applySubset` — виконання subset за WIRE-контрактом `admin-server/impl/
+ * subset-schema.ts` (eq/in/isNull/gt/gte/lt/lte, сорт + тай-брейкер id, межа
+ * limit, offset). Значення поза контрактом — гучна відмова (throw): Date лише
+ * для gt/gte/lt/lte і зі скінченним getTime, NaN/±Infinity відхиляються,
+ * `in` — непорожній масив скалярів, `isNull` — value рівно null, невідомий
+ * оператор. Повертає КОПІЇ рядків: спільні посилання дають
  * `TransactionError: … changed in place`.
+ * 🔴 Чого стаб НЕ моделює: allowlist колонок ресурсу (filterable ∪ sortable)
+ * — будь-яке поле читається як є. Серверне правило колонок доводять тести
+ * admin-server (subset) і харнес (admin-subset-cursor/pagination).
  */
 export type Filter = { field: string[]; operator: string; value: unknown };
 export type Sort = { field: string[]; direction: 'asc' | 'desc' };
@@ -33,7 +38,40 @@ export const cmp = (a: unknown, b: unknown) => {
   return av < bv ? -1 : av > bv ? 1 : 0;
 };
 
+const RANGE = new Set(['gt', 'gte', 'lt', 'lte']);
+const isScalar = (x: unknown) =>
+  x === null ||
+  typeof x === 'string' ||
+  typeof x === 'boolean' ||
+  (typeof x === 'number' && Number.isFinite(x));
+
+/** Дзеркало `filterSchema` сервера: форма value привʼязана до оператора. */
+function assertWire(f: Filter): void {
+  const bad = (why: string): never => {
+    throw new Error(`стаб: оператор ${f.operator} поза контрактом — ${why}`);
+  };
+  if (f.operator === 'in') {
+    if (
+      !Array.isArray(f.value) ||
+      f.value.length === 0 ||
+      !f.value.every(isScalar)
+    )
+      bad('потрібен непорожній масив скінченних скалярів');
+  } else if (f.operator === 'isNull') {
+    if (f.value !== null) bad('потрібен value: null');
+  } else if (RANGE.has(f.operator)) {
+    const ok =
+      f.value instanceof Date
+        ? Number.isFinite(f.value.getTime())
+        : isScalar(f.value);
+    if (!ok) bad('потрібен скінченний скаляр або Date зі скінченним часом');
+  } else if (f.operator === 'eq') {
+    if (!isScalar(f.value)) bad('Date/NaN/Infinity лише діапазонним');
+  }
+}
+
 function matches(v: unknown, f: Filter): boolean {
+  assertWire(f);
   switch (f.operator) {
     case 'eq':
       return key(v) === key(f.value);
