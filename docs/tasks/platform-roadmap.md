@@ -31,8 +31,9 @@
 (зокрема `better-auth` 1.7.7, React 19.3, vitest 5, TypeScript 6.0),
 `validator()`, CSRF, агентний тулінг (правила за моделлю MetaHub,
 codebase-memory-mcp), фундамент даних адмінки (TanStack DB 0.11.3, власний
-генератор zod-схем замість drizzle-zod). До Е6а лишаються: санітизація HTML
-(збережений XSS у відгуках) і борг №15 (помилки по полях форми). Паралельно
+генератор zod-схем замість drizzle-zod), санітизація HTML (збережений XSS у
+відгуках) і помилки валідації serverFn по полях форми (тема 12; гілка
+`claude/field-validation-errors`, контракт — `data-layer.md` §10). Паралельно
 брейнштормиться трек «Стандарти індустрії» —
 [`2026-10-05-industry-standards-design.md`](../superpowers/specs/2026-10-05-industry-standards-design.md).
 
@@ -772,22 +773,6 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     Postgres, втягнути у workspace чи прибрати разом із записом). Див.
     К0-9 нижче (там — проблема з окремим `npm install`). Під TS 6 при
     відновленні потрібен `"types": ["node"]` у його tsconfig (TS2591).
-15. **Помилки валідації serverFn адмінки → помилки полів форми.** Zod-відмова
-    на межі serverFn (400) долітає до UI як `Error.message` із сирим JSON
-    списку issues і показується загальним тостом (напр. залишок >1 000 000:
-    `StockEditor.tsx:65-67`, `catch` → `t('…saveFailed', { message: (e as Error).message })`;
-    ті самі `catch` — `PricesEditor.tsx:69`, `ModificationsTable.tsx:75`).
-    Потрібно: розібрати issues → `path` → `setError` поля форми через ту саму
-    межу-адаптер, що `domainErrorAdapter` / `AdminConflictError`
-    (`runtime/domain-error-adapter`), тост лишити для помилок без поля.
-    Той самий клас (помилка валідації замість 500): `numeric`-колонки в
-    `columnsToZod` — лише `z.string()` без формату/scale (як у drizzle-zod),
-    тож writable `numeric` (напр. `shipping_methods.base_cost`,
-    `schema/schema.ts:565`) приймає `'abc'`, і БД дає 500 (`22P02`) замість
-    400. Виправляти тут же: формат десяткового числа з precision/scale колонки
-    + свідоме оновлення гейта паритету (навмисне розходження з оракулом).
-    Пріоритет — ДО Е6а (рішення власника 2026-10-05). *(Джерело: ручний прогін
-    Task 14 і незалежне рев'ю Етапу B плану `2026-10-05-admin-data-foundation`.)*
 16. **CSP (Content-Security-Policy) — окремий трек, разом із механізмом
     інтеграції типових пікселів і аналітики** (рішення власника 2026-10-05).
     Зараз CSP немає зовсім; базові заголовки безпеки — тема 4 треку

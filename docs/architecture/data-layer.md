@@ -283,3 +283,62 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 `sanitize/__tests__/rich-html-vectors.test.ts` (вектори),
 `test-harness/pg/__tests__/html-sanitization.test.ts` (обидва рубежі проти БД) і
 крок `review-xss` у `pnpm live:smoke`.
+
+## 10. Помилки валідації адмін-serverFn (Тема 12)
+
+Відмова Zod на межі адмін-serverFn — НЕ сирий JSON у тості, а типізована доменна
+помилка, яку клієнт розкладає по полях форми.
+
+**Контракт.** `ValidationError` — четверта в закритому реєстрі
+`contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`).
+Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущені крізь
+БІЛИЙ СПИСОК `sanitizeValidationIssues` (T0): коди — `VALIDATION_ISSUE_CODES`
+(коди Zod + `invalid_decimal`, невідомий → `custom`), `params` — лише властивості
+схеми (`expected`, `origin`, `minimum`, `maximum`, `format`, `multipleOf`,
+`precision`, `scale`). Сирі повідомлення Zod, `input`, `pattern` і будь-яке
+відлуння введеного значення за межу не летять. Статус відповіді — 400.
+
+**Межа serverFn.** `domainErrorAdapter` (UPSTREAM:START-2) везе `issues` окремим
+каналом поруч із `fields` і пропускає їх через білий список з обох боків
+(сервер — перед відправкою, клієнт — після прийому). Без адаптера клієнт бачить
+голий `Error(message)` (контроль у `domain-error-adapter.test.ts`); реєстрацію в
+`createStart` стереже `tests/domain-error-adapter-registered.test.ts`.
+
+**Де сервер перетворює.** ОДНЕ місце — `admin-server/impl/validation.ts`:
+`parseAdminInput(schema, data)` (Zod → `ValidationError` + `setResponseStatus(400)`)
+і `adminInput(schema)` — валідатор serverFn: `.validator(adminInput(schema))`
+замість `.validator(schema)` (так у кожному serverFn `admin-server/index.ts`).
+Повторні парси `defineAdminResource` та іменованих операцій викликають
+`parseAdminInput` напряму. 🔴 Чому не middleware: `execValidator` Start для
+будь-якої Standard-схеми кидає `new Error(JSON.stringify(issues))`, тож до
+middleware доходить лише рядок — відновлення issues з `message` крихке й
+неоднозначне. Повноту застосування `adminInput` стереже
+`admin-server/impl/__tests__/admin-validators-wrapped.test.ts` (голе
+`.validator(schema)` червоне; єдиний виняток — FormData-валідатор завантаження).
+
+**`numeric`-колонки.** `columnsToZod` перевіряє десятковий формат за
+precision/scale колонки: `numeric(10,2)` — необовʼязковий знак, ≤ 8 цілих і ≤ 2
+дробових цифр, без експоненти/пробілів/`NaN`; `numeric` без precision — лише
+формат. `'abc'` → `invalid_decimal` (400), а не 22P02/500; зайві дробові цифри
+відхиляються, а не округлюються мовчки. Це НАВМИСНЕ розходження з drizzle-zod:
+гейт паритету не послаблено, виняток задокументований у
+`__tests__/support/parity-diff.ts` (`numericFits` — незалежна реалізація), мутація
+`m5` доводить, що повернення до `z.string()` червоніє.
+
+**Клієнт.** `applyServerValidation(error, setError, { t, fieldFor? })`
+(`admin/lib/apply-server-validation.ts`): `null` — не помилка валідації (звичайний
+шлях `adminErrorKey`); масив — немаплені проблеми (загальний тост
+`admin.validation.failed` — лише для них, порожній масив = усе по полях).
+Повідомлення — ключі `admin.validation.<code>` (+ `_string`/`_array` для меж за
+`origin`) з параметрами схеми. `setError` сумісний із RHF
+(`formErrorBinding(form, fields)` — лише поля, чий UI показує серверне
+повідомлення) і з локальним станом редакторів без RHF
+(`useServerFieldErrors`). Позиційний `path` (`quantities.<i>.quantity`,
+`prices.<i>.price`) редактор мапить назад у склад/вид ціни через `fieldFor`.
+`adminErrorKey(ValidationError)` → `admin.validation.failed` для місць без полів
+(видалення, миттєві контроли, порядок статусів).
+
+**Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
+`useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
+валідатора без `adminInput` не пишемо.
+

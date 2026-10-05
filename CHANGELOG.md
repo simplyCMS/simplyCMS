@@ -24,6 +24,23 @@
 [`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md),
 крок 1). Магазинів на SimplyCMS немає — без зворотної сумісності.
 
+### Додано / змінено
+
+- **Помилки валідації адмін-serverFn → помилки полів** (тема 12 спеки стандартів
+  індустрії, борг №15): Zod-відмова на межі serverFn більше не показується сирим
+  JSON у тості. Нова доменна помилка `ValidationError` (закритий реєстр
+  `contracts/domain-errors`) несе `issues` (`path` + код + параметри схеми) крізь
+  білий список — без сирих повідомлень Zod і відлуння вводу; `domainErrorAdapter`
+  везе її через межу serverFn. Серверне перетворення — в одному місці
+  (`adminInput`/`parseAdminInput`, 400), клієнтський `applyServerValidation`
+  розкладає issues по полях (StockEditor, PricesEditor, форми модифікації й
+  товару; загальний локалізований тост — лише для проблем без поля).
+  Ключі `admin.validation.*` у каталогах uk і en. Контракт — `data-layer.md` §10.
+- `numeric`-колонки в `columnsToZod`: десятковий формат за precision/scale —
+  `'abc'` і надлишок цифр дають 400 замість `22P02`/500 від БД. Навмисний виняток
+  із паритету з drizzle-zod (гейт не послаблено).
+- Нові тести форм — на `@testing-library/user-event` (devDependency).
+
 ### Безпека
 
 - `better-auth` 1.7.1 → **1.7.7** (точний пін): закрито GHSA-965c-763c-88jm
