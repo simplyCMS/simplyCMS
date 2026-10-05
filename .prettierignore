@@ -47,3 +47,8 @@ docs/design-references
 temp
 graphify-out
 pnpm-lock.yaml
+
+# ── Агентні worktree ────────────────────────────────────────────────────────
+# Ізольовані копії репо від агентних сесій (.claude/worktrees/<run>): чужий код,
+# який `format:check` не має ні перевіряти, ні переписувати.
+.claude/worktrees

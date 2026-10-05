@@ -72,3 +72,6 @@ scripts/dev-stand/seed-demo.sql
 
 # Локальне сховище медіа (драйвер local-fs, дефолт MEDIA_ROOT)
 .data/
+
+# Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
+.claude/worktrees/

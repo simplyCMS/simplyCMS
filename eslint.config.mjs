@@ -552,6 +552,10 @@ const eslintConfig = [
       '.nitro/**',
       '.tanstack/**',
       'src/routeTree.gen.ts',
+      // Ізольовані git worktree агентних сесій (.claude/worktrees/<run>) —
+      // чужі копії всього репо всередині дерева: без ігнору лінт сканує їх
+      // удруге й рахує чужі помилки/ворнінги як наші.
+      '.claude/worktrees/**',
       // Лендінг apps/www: власний згенерований роут-трі (той самий автор —
       // генератор TanStack Router, що й у host)
       'apps/www/src/routeTree.gen.ts',
