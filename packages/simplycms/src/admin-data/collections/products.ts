@@ -29,7 +29,7 @@ function create(queryClient: QueryClient) {
       queryClient,
       queryKey: collectionKey(ENTITY.products),
       // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу
-      // сортування друга сторінка не запитується (виміряно спайком).
+      // сторінки йдуть префіксом без offset (TSDB-2, кейс 2б контракту).
       getKey: (row) => row.id,
       queryFn: async (ctx) =>
         listProducts({

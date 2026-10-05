@@ -22,7 +22,8 @@ export type AdminOrder = Omit<Order, 'accessToken'>;
  *
  * 🔴 Індекс сортування (дефолт фабрики, Е3-16) обовʼязковий: список
  * гортає `useLiveInfiniteQuery` «Показати ще», а без індексу друга
- * сторінка мовчки не запитується. Ліміт сторінки сервера — `maxLimit` 100
+ * сторінка довантажується префіксом `{limit: offset+limit}` без `offset`
+ * (читає зайве, TSDB-2). Ліміт сторінки сервера — `maxLimit` 100
  * (Е5-12), стабільний порядок — тай-брейкер `id` фабрики (Е3-8).
  */
 function create(queryClient: QueryClient) {
