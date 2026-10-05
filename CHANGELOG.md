@@ -37,6 +37,15 @@
   `brace-expansion`, `@tiptap/core` — оновлено в `pnpm-lock.yaml`.
 - `pnpm audit`: лишається лише `esbuild` через `drizzle-kit` (dev-only).
 
+- **CSRF-захист** (тема 2 спеки): Start вмикає дефолтний захист лише без
+  `startInstance`, а в нас він є — тож server functions і POST-роути були без
+  перевірки origin. Новий субшлях `simplycms/runtime/csrf`
+  (`csrfMiddleware`, `CSRF_EXEMPT_PREFIXES = ['/api/auth/']`) стоїть першим у
+  `requestMiddleware` усіх трьох `start.ts` (host, канон CLI, шаблон):
+  мутуючий запит без same-origin (`Sec-Fetch-Site` → `Origin` → `Referer`) —
+  403. `live:smoke` доводить 403 на справжній server function і на
+  `/api/revalidate-theme`.
+
 ### Залежності (мінорні)
 
 - До останніх версій у межах поточних мажорних: vite 8.3.2 + `@vitejs/plugin-react`

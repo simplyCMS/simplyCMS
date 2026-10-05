@@ -230,6 +230,18 @@ switch, `number/integer` → числовий input. Непредставна д
 AST-скану (`tests/i18n-coverage`); парність uk↔en, префікси й плейсхолдери —
 `tests/plugin-messages-parity.test.ts` (плагіни дискавляться з диска).
 
+### CSRF і POST-маршрути плагінів
+
+Server routes і server functions плагіна, що змінюють стан (POST/PUT/PATCH/
+DELETE), **захищені від CSRF за замовчуванням**: `csrfMiddleware` ядра
+(`simplycms/runtime/csrf`) стоїть у `requestMiddleware` хоста й діє на будь-який
+шлях, а не лише на маршрути ядра. Браузерні виклики з адмінки/вітрини
+проходять (same-origin), а `curl` чи чужий сайт без свого `Origin` — ні (403).
+Плагін, якому треба приймати зовнішній POST без `Origin` (вебхук платіжної
+системи), сам цього не вирішує: виняток — це рядок у `CSRF_EXEMPT_PREFIXES`
+у ядрі, окреме свідоме рішення з обґрунтуванням і власною перевіркою підпису
+в обробнику.
+
 ## 8. Сторінки адмінки (adminRoutes)
 
 Тека роутів плагіна зветься **`routes/`** (🔴 не `admin-routes/`:
