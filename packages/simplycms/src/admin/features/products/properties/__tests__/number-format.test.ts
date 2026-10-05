@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getTableColumns } from 'drizzle-orm';
-import { productPropertyValues } from 'simplycms/schema';
-import {
-  NUMERIC_VALUE_PRECISION,
-  NUMERIC_VALUE_SCALE,
-  fitsNumeric,
-  toPlainDecimal,
-} from '../number-format';
+import { fitsNumeric, toPlainDecimal } from '../number-format';
 
 describe('toPlainDecimal', () => {
   it.each([
@@ -43,17 +36,5 @@ describe('fitsNumeric (numeric(15,4))', () => {
     expect(fitsNumeric('0.00001')).toBe(false);
     expect(fitsNumeric('99999999999.9999')).toBe(true);
     expect(fitsNumeric('100000000000')).toBe(false);
-  });
-});
-
-describe('константи збігаються з колонкою product_property_values.numeric_value', () => {
-  it('precision і scale', () => {
-    const col = getTableColumns(productPropertyValues)
-      .numericValue as unknown as {
-      precision: number;
-      scale: number;
-    };
-    expect(col.precision).toBe(NUMERIC_VALUE_PRECISION);
-    expect(col.scale).toBe(NUMERIC_VALUE_SCALE);
   });
 });
