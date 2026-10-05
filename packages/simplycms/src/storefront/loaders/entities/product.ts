@@ -1,3 +1,4 @@
+import type { SanitizedHtml } from 'simplycms/contracts';
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
 import { resolveMediaUrls } from 'simplycms/domain/media';
@@ -35,7 +36,12 @@ export type ProductRow = {
   slug: Product['slug'];
   name: Product['name'];
   short_description: Product['shortDescription'];
-  description: Product['description'];
+  /**
+   * 🔴 Тема 9: розмітка опису — ЗАВЖДИ `SanitizedHtml` (рубіж 2). Сирий SELECT
+   * (`productColumns`) дає `string`, тож рядок мапиться лоадером; каталожний
+   * список опису не віддає взагалі (`null`).
+   */
+  description: SanitizedHtml | null;
   is_active: Product['isActive'];
   is_featured: Product['isFeatured'];
   meta_title: Product['metaTitle'];

@@ -1,5 +1,7 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import type { SanitizedHtml } from 'simplycms/contracts';
 import { resolveMediaUrl } from 'simplycms/domain/media';
+import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews, profiles } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
@@ -18,7 +20,8 @@ export interface ProductReviewRow {
   user_id: string;
   rating: number;
   title: string | null;
-  content: string | null;
+  /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */
+  content: SanitizedHtml | null;
   images: string[];
   status: string;
   admin_comment: string | null;
@@ -57,7 +60,8 @@ export async function loadProductReviews(
     user_id: row.userId,
     rating: row.rating,
     title: row.title,
-    content: row.content,
+    // Тема 9, рубіж 2: відгуки, записані до санітизації, чистяться при віддачі.
+    content: sanitizeNullableRichHtml(row.content, 'review'),
     // Через спільну функцію, а не власним кастом: інакше зображення відгуку
     // лишилось би єдиною медіа-колонкою без резолву.
     images: toImageList(row.images),

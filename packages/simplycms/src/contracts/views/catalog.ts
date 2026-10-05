@@ -4,6 +4,7 @@
 // дублюються.
 
 import type { BreadcrumbItem } from './common';
+import type { SanitizedHtml } from '../sanitized-html';
 import type { SlotComponent } from './slots';
 
 export interface CatalogSlots {
@@ -39,7 +40,7 @@ export interface CatalogViewModel {
 export interface CatalogSectionInfo {
   name: string;
   /** HTML-опис розділу під списком товарів; null — блок не рендериться. */
-  description: string | null;
+  description: SanitizedHtml | null;
 }
 
 export interface CatalogSectionViewModel extends CatalogViewModel {

@@ -2,6 +2,7 @@ import { asc, desc, type Column, type SQL, type Table } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { toDrizzleSubset, type SubsetAllow, type SubsetInput } from './subset';
 import { effectiveLimit } from './resource-projection';
+import { sanitizeRichRows, type RichHtmlColumns } from './rich-html';
 
 /**
  * Те, що `list` фабрики (`resource.ts`) бере з конфігу ресурсу. Винесено
@@ -15,6 +16,8 @@ export interface ResourceListContext {
   maxLimit?: number;
   /** Е5-7: явна проєкція (усі колонки, крім `omit`). */
   picked: Record<string, Column>;
+  /** Тема 9: колонки з розміткою → профіль санітизатора (віддача клієнту). */
+  richHtml?: RichHtmlColumns;
 }
 
 /**
@@ -59,5 +62,5 @@ export async function listResourceRows(
   const limit = effectiveLimit(s.limit, ctx.maxLimit);
   if (limit !== undefined) q = q.limit(limit);
   if (s.offset !== undefined) q = q.offset(s.offset);
-  return (await q) as unknown[];
+  return sanitizeRichRows((await q) as Record<string, unknown>[], ctx.richHtml);
 }

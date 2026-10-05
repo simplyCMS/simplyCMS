@@ -9,6 +9,7 @@ import {
   sections,
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
+import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import type { ActorDb } from './db';
 import {
   productColumns,
@@ -79,6 +80,8 @@ export async function loadProduct(
 
   return {
     ...row.product,
+    // Тема 9, рубіж 2: старі рядки, сід і демо-дані чистимо при віддачі.
+    description: sanitizeNullableRichHtml(row.product.description, 'content'),
     images: toImageList(row.product.images),
     // `leftJoin` без збігу дає рядок із порожнім `id` — розділ у товару
     // необовʼязковий (FK `on delete set null`), тож перевіряємо явно.

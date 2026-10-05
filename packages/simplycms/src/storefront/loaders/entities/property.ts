@@ -1,3 +1,5 @@
+import type { SanitizedHtml } from 'simplycms/contracts';
+import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { propertyOptions, sectionProperties } from 'simplycms/schema';
 import type {
   JsonValue,
@@ -70,13 +72,18 @@ export const optionColumns = {
   created_at: propertyOptions.createdAt,
 };
 
+/** Сирий рядок SELECT-а: `description` — розмітка ще не очищена. */
+export type RawOptionRow = Omit<OptionRow, 'description'> & {
+  description: PropertyOption['description'];
+};
+
 export type OptionRow = {
   id: PropertyOption['id'];
   property_id: PropertyOption['propertyId'];
   name: PropertyOption['name'];
   slug: PropertyOption['slug'];
   sort_order: PropertyOption['sortOrder'];
-  description: PropertyOption['description'];
+  description: SanitizedHtml | null;
   image_url: PropertyOption['imageUrl'];
   meta_title: PropertyOption['metaTitle'];
   meta_description: PropertyOption['metaDescription'];
@@ -84,6 +91,11 @@ export type OptionRow = {
 };
 
 /** Те саме для опції характеристики — єдина медіа-колонка `image_url`. */
-export function toOptionRow(row: OptionRow): OptionRow {
-  return { ...row, image_url: resolveMediaUrl(row.image_url) };
+export function toOptionRow(row: RawOptionRow): OptionRow {
+  return {
+    ...row,
+    // Тема 9, рубіж 2: розмітку чистимо при віддачі (старі рядки, сід).
+    description: sanitizeNullableRichHtml(row.description, 'content'),
+    image_url: resolveMediaUrl(row.image_url),
+  };
 }

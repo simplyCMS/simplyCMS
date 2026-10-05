@@ -1,3 +1,5 @@
+import type { SanitizedHtml } from 'simplycms/contracts';
+import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { sections } from 'simplycms/schema';
 import type { Section } from 'simplycms/schema/types';
 import { resolveMediaUrl } from 'simplycms/domain/media';
@@ -26,11 +28,16 @@ export const sectionColumns = {
 };
 
 /** Повний рядок розділу. Типи полів — з Drizzle-схеми, не з генерату PostgREST. */
+/** Сирий рядок SELECT-а: `description` — розмітка ще не очищена. */
+export type RawSectionRow = Omit<SectionRow, 'description'> & {
+  description: Section['description'];
+};
+
 export type SectionRow = {
   id: Section['id'];
   slug: Section['slug'];
   name: Section['name'];
-  description: Section['description'];
+  description: SanitizedHtml | null;
   image_url: Section['imageUrl'];
   parent_id: Section['parentId'];
   sort_order: Section['sortOrder'];
@@ -48,8 +55,13 @@ export type SectionRow = {
  * трьох `.select(sectionColumns)` мусив би памʼятати про резолв сам — саме
  * той клас розсинхрону, який гейт `MEDIA_COLUMNS` і має ловити.
  */
-export function toSectionRow(row: SectionRow): SectionRow {
-  return { ...row, image_url: resolveMediaUrl(row.image_url) };
+export function toSectionRow(row: RawSectionRow): SectionRow {
+  return {
+    ...row,
+    // Тема 9, рубіж 2: розмітку чистимо при віддачі (старі рядки, сід).
+    description: sanitizeNullableRichHtml(row.description, 'content'),
+    image_url: resolveMediaUrl(row.image_url),
+  };
 }
 
 /** Скорочений розділ для навігації й добірок головної. */

@@ -17,6 +17,12 @@ import {
   type CatalogPropertyValueRow,
 } from './entities/catalog-product';
 import { productColumns, toImageList } from './entities/product';
+
+// Тема 9: розмітка опису в список не вибирається — він її не показує, а
+// санітизувати опис кожного товару сторінки каталогу було б марною роботою.
+const catalogProductColumns = Object.fromEntries(
+  Object.entries(productColumns).filter(([key]) => key !== 'description'),
+) as Omit<typeof productColumns, 'description'>;
 import { groupPricesByProduct, priceColumns } from 'simplycms/commerce';
 import { sectionRefColumns } from './entities/section';
 import { loadModificationValues } from './modification-values';
@@ -62,7 +68,7 @@ export async function loadCatalogProductsWhere(
     : eq(products.isActive, true);
 
   const rows = await db
-    .select({ product: productColumns, section: sectionRefColumns })
+    .select({ product: catalogProductColumns, section: sectionRefColumns })
     .from(products)
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
@@ -116,6 +122,8 @@ export async function loadCatalogProductsWhere(
 
     return {
       ...product,
+      // Список каталогу розмітки опису не несе (картка читає лише картку товару).
+      description: null,
       images: toImageList(product.images),
       has_modifications: product.has_modifications ?? true,
       // `leftJoin` без збігу дає рядок із порожнім `id` (див. `./product-detail`).

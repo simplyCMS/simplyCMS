@@ -48,6 +48,8 @@ import {
   removeOrderItemOp,
   searchProductsForOrderInput,
   searchProductsForOrderOp,
+  reviewContentInput,
+  getReviewContentOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -341,3 +343,9 @@ export const removeOrderItem = createServerFn({ method: 'POST' })
 export const searchProductsForOrder = createServerFn({ method: 'GET' })
   .validator(searchProductsForOrderInput)
   .handler(searchProductsForOrderOp);
+
+// Тема 9: розмітка відгуку для модерації — очищена на сервері (див.
+// impl/reviews/content.ts); сам рядок відгуку сторінка читає легасі-шляхом.
+export const getAdminReviewContent = createServerFn({ method: 'GET' })
+  .validator(reviewContentInput)
+  .handler(getReviewContentOp);

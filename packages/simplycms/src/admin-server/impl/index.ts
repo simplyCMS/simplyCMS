@@ -84,3 +84,4 @@ export {
 } from './products/search-for-order';
 export type { OrderProductHit } from './products/search-for-order';
 export { AdminConflictError } from './errors';
+export { reviewContentInput, getReviewContentOp } from './reviews/content';

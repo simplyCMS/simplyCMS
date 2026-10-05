@@ -3,6 +3,10 @@
 import type { CatalogSectionViewModel, CatalogViewModel } from '../catalog';
 import type { ViewModelData } from '../common';
 
+// Фікстури — статичний авторський HTML без користувацького вводу; каст до
+// `SanitizedHtml` тут легальний (єдине місце поза `sanitizeRichHtml`).
+import type { SanitizedHtml } from '../../sanitized-html';
+
 const catalogFull: ViewModelData<CatalogViewModel> = {
   breadcrumbs: [{ label: 'Головна', href: '/' }, { label: 'Каталог' }],
   productCount: 24,
@@ -23,7 +27,7 @@ const sectionFull: ViewModelData<CatalogSectionViewModel> = {
   productCount: 12,
   section: {
     name: 'Панелі',
-    description: '<p>Сонячні панелі для дому й бізнесу.</p>',
+    description: '<p>Сонячні панелі для дому й бізнесу.</p>' as SanitizedHtml,
   },
 };
 

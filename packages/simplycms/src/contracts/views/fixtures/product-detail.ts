@@ -1,6 +1,10 @@
 // Фікстурні view-model-и картки товару (Р6).
 
 import type { ViewModelData } from '../common';
+
+// Фікстури — статичний авторський HTML без користувацького вводу; каст до
+// `SanitizedHtml` тут легальний (єдине місце поза `sanitizeRichHtml`).
+import type { SanitizedHtml } from '../../sanitized-html';
 import type {
   ProductDetailViewModel,
   ProductPropertyValueViewModel,
@@ -35,7 +39,7 @@ const full: ViewModelData<ProductDetailViewModel> = {
     short_description: 'Монокристал, 25 років гарантії',
     discountPercent: 14,
   },
-  description: { html: '<p>Панель для дахових систем.</p>' },
+  description: { html: '<p>Панель для дахових систем.</p>' as SanitizedHtml },
   characteristics: { items: [characteristic] },
 };
 
