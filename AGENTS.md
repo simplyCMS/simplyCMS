@@ -1,141 +1,213 @@
-# SimplyCMS — Agent Instructions
+# SimplyCMS
 
-Open-source e-commerce CMS built with TanStack Start (Vite), Supabase, and a modular theme/plugin system.
+Open-source e-commerce CMS на **TanStack Start (Vite)** і чистому **PostgreSQL**:
+повна вітрина (SSR), адмінка (client-side SPA), профілі, кошик, чекаут, замовлення.
+Ядро живе в цьому монорепо й публікується на npmjs.
 
-## Canonical Instructions
+> **Мова:** відповідай і пиши коментарі в коді **українською**, навіть якщо запит
+> англійською. Коментар пояснює **чому**, а не що.
 
-All coding rules, architecture decisions, and best practices are maintained in `.github/instructions/`:
+Цей файл — спільний для всіх агентів і тримає лише стабільне: межі, інваріанти,
+дисципліну. Поточний стан, прогрес, етапи й черга виконання живуть в
+`docs/tasks/platform-roadmap.md` і `docs/tasks/v2-state-map.md` — **не дублюй їх тут**.
+Карту чинного стану (що працює наживо, що ні, як підняти локально з нуля) читай
+ПЕРШОЮ, якщо береш роботу в цій частині. Агент-специфічне — `CLAUDE.md` (Claude Code).
 
-| File | Scope | Description |
-|------|-------|-------------|
-| [`architecture-core`](.github/instructions/architecture-core.instructions.md) | `**/*` | Architecture, rendering, themes, plugins, auth |
-| [`coding-style`](.github/instructions/coding-style.instructions.md) | `**/*` | Code style, documentation (Ukrainian), file limits |
-| [`data-access`](.github/instructions/data-access.instructions.md) | `src/**`, `packages/**` | Supabase clients, caching, data fetching |
-| [`ui-architecture`](.github/instructions/ui-architecture.instructions.md) | `src/**`, `themes/**`, `ui/**` | UI components, theme structure, shadcn/ui |
-| [`editor`](.github/instructions/editor.instructions.md) | `core/**` | Tiptap editor integration |
-| [`storage`](.github/instructions/storage.instructions.md) | `core/**`, `src/**` | Supabase Storage patterns |
-| [`tooling`](.github/instructions/tooling.instructions.md) | `**/*` | Commands, testing, formatting |
-| [`optimization`](.github/instructions/optimization.instructions.md) | `**/*.ts,tsx` | Performance, bundle, rendering optimization |
+**Ієрархія джерел:** цей файл (межі) → `docs/architecture/*` (канон підсистеми) →
+`.agents/skills/*` (процедура задачі) → код-шар, `orient` і сам код (реальний стан).
+Суперечність між ними — дефект: канон править код або код править канон.
 
-## Agent Tooling
+---
 
-- **Скіли** (`codebase-research` — як шукати в репо; `code-review` — як рев'ювити):
-  джерело правди — `.agents/skills/`, симлінки в `.claude/skills/`.
-  🔴 Скіли, що їдуть у магазини, живуть у пакеті ядра
-  (`packages/simplycms/skills/`), а `.agents/skills/` і `.claude/skills/` —
-  симлінки на них; прав ОРИГІНАЛ у пакеті. Такий —
-  `redesign-from-reference` — редизайн магазину за референс-сайтом (фази 0-6:
-  детерміністична інспекція кольорів/типографіки/motion скриптами всередині
-  скіла, обовʼязковий side-by-side, опційне шліфування).
-- **Субагенти** (`.claude/agents/`): `codebase-research`, `code-review` (одна лінза
-  за виклик), `code-review-verifier` (адверсаріальний скептик).
-- **Команди** (`.claude/commands/`, симлінки в `.github/prompts/` для Copilot):
-  `/виконай-задачу` — головна; далі `/перевір-роботу-агента-кодування`,
-  `/проведи-додаткове-дослідження`, `/поділи-задачу-на-етапи`,
-  `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`,
-  `/редизайн-за-референсом`.
-- **Орієнтація в коді — дві поверхні:** код — `codebase-memory-mcp` (MCP-інструменти
-  або `orient <Символ>`; без нього `orient <Символ>` чесно відмовляє, а не грепає);
-  доки й якорі плану — `.agents/skills/codebase-research/scripts/orient --map "<тема>"` /
-  `--plan <файл>` / `--doctor`. Канон — `docs/development/CODEBASE_MEMORY.md`.
-- **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
-  build → typecheck → test → build:packages → typecheck:template →
-  test:packaging` — `build` перед
-  `typecheck` (генерує `src/routeTree.gen.ts`), гейт саме `format:check`
-  (`pnpm format` — це `--write`, він не червоніє). Обидві команди покривають увесь
-  репозиторій; винятки — у `.prettierignore` (машинний генерат, артефакти збірки,
-  усі `*.md`).
-  🔴 `install --frozen-lockfile` обов'язковий після будь-якої правки `package.json`:
-  інші гейти `pnpm-lock.yaml` не звіряють, а звичайний `pnpm install` мовчки
-  лагодить розсинхрон. У CI frozen — дефолт, тож розсинхрон валить усі job-и
-  до першого кроку.
-  Packaging-suite іде окремо в кінці: `tests/published-exports-parity.test.ts`
-  виведено з `pnpm test` (`test.exclude`) і працює по tarball-ах, тож потребує
-  свіжого `pnpm build:packages`.
+## Принципи
 
-Also see:
-- [`CLAUDE.md`](CLAUDE.md) — full development reference (structure, theme system, env vars)
-- [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — MCP servers, agent registry
-- [`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md) — platform architecture spec (джерело правди напряму)
+- **Клієнтів і реальних магазинів немає** — зміни роби БЕЗ зворотної сумісності.
+- **Архітектурна коректність, не обхідні шляхи.** Пропонуй рішення з довгостроковим
+  обґрунтуванням; явно порівнюй латку й знесення механізму, що породжує клас багів.
+- **Невизначеність — привід запитати**, а не вгадати. Бібліотечні API перевіряй через
+  MCP (context7, shadcn), а не за пам'яттю; shadcn-компонент не додавай без звірки з реєстром.
 
-**These instruction files are mandatory.** All agents MUST follow the rules defined there.
+## Напрям і пакети
 
-## Quick Reference
+OpenCart-подібна платформа: ядро постачає каркас (роути/сторінки) npm-пакетами, магазин —
+тонка збірка, плагіни й теми — встановлювані одиниці. Джерело правди —
+[`2026-07-30-platform-architecture-design.md`](docs/superpowers/specs/2026-07-30-platform-architecture-design.md);
+трекінг — `docs/tasks/platform-roadmap.md`.
+
+У реєстрі npm рівно **5 пакетів**: unscoped фреймворк `simplycms` (усе ядро T0–T5 теками
+`packages/simplycms/src/*`) + `@simplycms/{cli,theme-solarstore,plugin-faq}` +
+`create-simplycms-store`. Специфікатори ядра — субшляхи `simplycms/<тека>`, не відносні
+шляхи й не `simplycms` з кореня зсередини самого пакета (цикл модулів). Тіри й напрям
+імпортів — `packages/README.md`; повний каталог тек — `docs/architecture/repository-layout.md`.
+
+Спеки напрямку (читати перед змінами в їхній зоні): бекенд-контракт v2 —
+[`2026-08-19-backend-contract-v2-design.md`](docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md)
+(з амендментом B3′/B5″/B13); маркетплейс —
+[`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md);
+хмара —
+[`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md);
+консолідація пакетів —
+[`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md).
+
+## Стек
+
+TypeScript (strict) · TanStack Start + Router + Query (+ DB для колекцій адмінки) · Vite ·
+React · pnpm workspaces · **Drizzle поверх чистого PostgreSQL 17** · **Better Auth** ·
+Tailwind v4 + shadcn/ui · react-hook-form + Zod 4 · Tiptap v3 · Vitest + Testing Library.
+Версії — у `package.json`. 🔴 **TypeScript свідомо 5.9, не 6/7** — блокер `typescript-eslint`
+(`docs/development/TOOLING.md` § 1, реєстр `UPSTREAM:TSESL-1`).
+
+---
+
+## Команди
 
 ```bash
-pnpm install           # Install dependencies
-pnpm dev               # Start dev server (Vite + TanStack Start)
-pnpm build             # Production build (vite build)
-pnpm typecheck         # TypeScript type check
-pnpm lint              # ESLint
-pnpm test              # Run tests (vitest run)
-pnpm format:check      # Prettier (check only)
-pnpm db:diff <name>    # schema.ts → SQL migration (review required)
-pnpm test:schema       # Apply migration canon against a clean Postgres
+pnpm dev                 # dev-сервер (Vite + TanStack Start)
+pnpm typecheck && pnpm lint && pnpm format:check   # перед PR
+pnpm test                # юніти (packaging-suite виключено)
+pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (Docker не потрібен)
+pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обовʼязкове)
+pnpm build:packages      # збірка публікованих пакетів
+pnpm template:sync       # синк закомічених копій з монорепо (шаблон, host CLI, міграції)
+pnpm release X.Y.Z       # реліз (гарди + бамп + гейти + коміт); push і PR — вручну
 ```
 
-## Project Structure (Summary)
+**Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
+test → test:schema → build:packages → typecheck:template → test:packaging`.
+Повний каталог команд, причини порядку, лінт-зони й CI — `docs/development/TOOLING.md`;
+змінні оточення й запуск у проді — `docs/development/ENVIRONMENT.md`.
 
-Фаза 0 завершена 2026-07-31: роути й сторінки — у пакетах, host — тонка збірка.
+- 🔴 `install --frozen-lockfile` — після будь-якої правки `package.json`: інші гейти
+  `pnpm-lock.yaml` не звіряють, звичайний `pnpm install` мовчки лагодить розсинхрон.
+- 🔴 Гейт саме `format:check`: `pnpm format` (`--write`) не червоніє. Не форматується
+  (`.prettierignore`): генерат, артефакти збірки і всі `*.md`.
+- 🔴 `build` перед `typecheck` (генерує `src/routeTree.gen.ts`); `typecheck:template` — окремий
+  гейт після `build:packages` (кореневий `tsconfig.json` шаблон не бачить).
+- 🔴 **Норма `pnpm lint` = 0 errors / 8 warnings** (`react-hooks/*`, `no-unused-vars`). Не «лагодь»
+  число без причини; селектори й опції error-зон не послабляй — кожне кастомне правило має
+  негативний контроль тестом і власне імʼя плагіна.
+- 🔴 Зелений `pnpm test` нічого не каже про опублікований пакет: що доводить кожен гейт
+  (пілот A/B/C/D/CLI/TOOL, tarball-parity) і які зони не покриті —
+  `docs/architecture/test-contours.md`.
+- 🔴 **Обходи дефектів залежностей** — один реєстр `docs/architecture/upstream-workarounds.md`
+  (маркери `UPSTREAM:<ID>` у коді). При БУДЬ-ЯКОМУ бампі залежності перевір її записи; новий
+  обхід — новий запис, не лише коментар.
 
-```
-routes.ts                         # virtualRouteConfig: rootRoute + physical() на теки пакетів
-src/                              # Host (тонка збірка магазину)
-├── routes/__root.tsx             # Root route (html, providers, 404/error)
-├── routes/my/                    # ЄДИНА тека роутів магазину (кастомні сторінки)
-├── engine-provider.tsx           # EngineProvider (ізоморфна збірка EngineContext: links+config)
-├── engine.shared.ts              # Shared-частина EngineContext
-├── theme-registry.ts             # Реєстрація тем з config.themes (side-effect)
-├── router.tsx                    # createRouter
-├── start.ts                      # createStart + request middleware (admin guard)
-└── routeTree.gen.ts              # AUTO-GENERATED — do not edit
+---
 
-packages/               # Публіковані пакети — рівно ПʼЯТЬ (трек К0, 2026-08-20)
-├── simplycms/          simplycms                # ФЛАГМАН: усе ядро одним unscoped пакетом.
-│   │                                            # Тіри T0→T5 — ТЕКИ, не пакети; шар імпортується
-│   │                                            # субшляхом `simplycms/<тека>`
-│   ├── src/contracts/       # T0 Contracts + ports (0 deps); ./views — view-model-и вітрини
-│   ├── src/domain/          # T1 Pure logic (pricing/discounts/inventory/shipping)
-│   ├── src/schema/          # T1 Drizzle-схема ядра + RLS у TS
-│   ├── src/supabase/        # T2 browser/server/anon-клієнти, keys, provider, database.ts — лише адмінка (до К3)
-│   ├── src/db/              # T2 pg-пул + withActor (єдиний шлях до Postgres)
-│   ├── src/auth/            # T2 Серверний Better Auth
-│   ├── src/react-query/     # T2 EngineProvider/useEngine, CartProvider/useCart
-│   ├── src/runtime/         # T2 defineRuntime + host-defineConfig
-│   ├── src/i18n/            # T2 createTranslator, I18nProvider, каталоги uk/en
-│   ├── src/storefront/      # T2 SSR loaders + SEO (DI-клієнт)
-│   ├── src/ui/              # T3 shadcn/ui-примітиви
-│   ├── src/themes/          # T4 ThemeRegistry, bootstrapThemes, ./conformance
-│   ├── src/plugins/         # T4 HookRegistry, PluginSlot, bootstrapPlugins
-│   ├── src/plugin-sdk/      # T4 definePlugin + порти плагінів (межа довіри)
-│   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
-│   ├── src/core/            # T5 Власні провайдери/хуки (фасадну роль розчинено К0)
-│   ├── src/admin/           # T5 Адмінка
-│   ├── src/storefront-routes/  # T5 pages/ + views/ + shells/ + server/ + seo/
-│   ├── routes/{storefront,admin}/  # T5 Роут-файли — монтуються physical()
-│   ├── migrations/          # Канон core-міграцій для `simplycms db:diff`
-│   └── skills/              # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
-├── cli/                @simplycms/cli           # CLI магазину (bin `simplycms`), поза тірами
-├── simplycms-theme-solarstore/ @simplycms/theme-solarstore # Референс-тема (npm, Фаза 4)
-├── simplycms-plugin-faq/       @simplycms/plugin-faq       # Референс-плагін (npm, Фаза 3)
-└── create-simplycms-store/     # UNSCOPED скаффолдер + вбудований шаблон магазину
+## Дослідження коду
 
-scripts/                          # db-diff.mjs, db-migrate.mjs
-tests/                            # virtual-routes-escape, published-exports-parity
-themes/default/                   # Локальна тема-еталон; solarstore — npm-пакет (Фаза 4)
-plugins/hello-world/              # Референс-плагін
-supabase/                         # config.toml, migrations/, functions/, types.ts
+Дві поверхні, плутати не можна: код (де символ лежить, хто його справді кличе) —
+`codebase-memory-mcp` (MCP-інструменти або `orient <Символ>`); доки й звірка плану з кодом —
+`orient --map "<тема>"` / `--plan <файл>`. Без код-шару `orient <Символ>` чесно відмовляє, а не
+грепає: греп через барелі бреше на «хто кличе». Процедура й формат звіту — скіл
+`codebase-research`; канон тулінгу — `docs/development/CODEBASE_MEMORY.md`.
+
+```bash
+.agents/skills/codebase-research/scripts/orient --map "<тема>"   # тема людською мовою → канон
+.agents/skills/codebase-research/scripts/orient --plan <файл>    # якорі плану ↔ код
+.agents/skills/codebase-research/scripts/orient <Символ>         # де лежить + хто кличе
+.agents/skills/codebase-research/scripts/orient --doctor         # стан індексу й шару доків
 ```
 
-## Key Conventions (Summary)
+| Роль | Код | Доки й план |
+| --- | --- | --- |
+| Розвідник (незнайома підсистема) | код-шар | `orient --map "<тема>"` |
+| **Виконавець задачі** | вільний пошук і читання | `orient --plan <файл>` **перед стартом свого блоку** |
+| Рев'ювер / верифікатор | код-шар — лише повнота охоплення | вільний пошук і читання |
 
-- **Routes:** дерево збирається `routes.ts` (`virtualRouteConfig`), а не скануванням `src/routes`. Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у route-теці відповідного пакета
-- **Rendering:** SSR for storefront, client-only for admin (`ssr:false` на `admin.tsx`; дочірні роути його **не** повторюють); `ssr:false` routes always define a `pendingComponent`
-- **Themes:** контракт v3 — `{ manifest, tokens, components, settings?, messages?, fonts?, views? }`. Тема **не** постачає сторінок/лейаутів: канонічні сторінки — у `simplycms/storefront-routes/pages/` (container-и), каркаси — `StorefrontShell`/`ProtectedShell`; `views?` лише перевизначає view-шар пʼяти сторінок вітрини (Home/Catalog/CatalogSection/ProductDetail/Cart), `fonts?` — зовнішні stylesheet-и шрифтів. Реєстрація з `config.themes` (локальна тека `themes/*` або npm-пакет), активація через `themes.is_active` + `bootstrapThemes`. Деталі — `docs/architecture/themes.md`
-- **Auth:** Cookie-based sessions via `@supabase/ssr`; server guard in `src/start.ts`
-- **Data:** No global supabase singleton — DI via `SupabaseProvider`/`useSupabaseClient`
-- **DB schema:** джерело правди — `packages/simplycms/src/schema/schema.ts` (Drizzle + RLS у TS). Флоу: `db:pull` → правка `schema.ts` → `db:diff <name>` → ревʼю SQL → `db:migrate`. Міграції **не** через Supabase MCP
-- **i18n:** нові рядки — через `simplycms/i18n` (`useT`/`createTranslator`). Міграцію завершено: i18n-селектори `no-restricted-syntax` — **error**, а не warn, тож новий кириличний рядок інтерфейсу в зоні валить лінт. Норма прогону — `pnpm lint` = 0 errors / 13 warnings (`react-hooks/*` і `no-unused-vars`, до i18n стосунку не мають)
-- **Imports:** ядро — субшляхом `simplycms/<тека>`, не відносними шляхами. 🔴 Аліасів злитих пакетів більше немає: чинні — `simplycms`/`simplycms/*`, три сателіти `@simplycms/*`, `@themes/*`, `@plugins/*`
-- **Language:** Comments and UI text in Ukrainian
-- **Do not:** Put logic in themes, edit `src/routeTree.gen.ts`, bypass tier boundaries (`eslint.tier-zones.mjs` — імпорт угору по тірах усередині ядра заборонений)
+---
+
+## Архітектурні інваріанти
+
+Порушення будь-якого — дефект рівня blocker. Механіка й приклади — у `docs/architecture/`.
+
+**Дані й доступ** (`docs/architecture/data-layer.md`)
+
+- Єдиний канал до Postgres — **`withActor`** (`simplycms/db`: транзакція + GUC актора +
+  `SET LOCAL ROLE`). Браузер до БД не ходить — усе через серверні функції.
+- Лоадери вітрини ходять у БД лише через `withStorefrontDb`/`withCustomerDb`/… ; `userId`
+  береться лише з серверної сесії; видимість каталогу фільтрує КОД (`is_active = true`).
+- 🔴 **Ключ `id` генерує викликач, не БД** — у таблицях «Категорії A» немає
+  `DEFAULT gen_random_uuid()`; не повертай його в схему.
+- `queryKey` не пишеться літералом: сегмент 0 — з реєстру `simplycms/contracts/entities`;
+  `collectionKey` (`[entity,'list']`) — лише для колекцій `admin-data`.
+- Дати в застосунку — `Date`; рядком лише на межі виводу.
+- Серверні функції: `createServerFn` лише топ-рівневою константою; валідатор — `.validator(…)`.
+- Схема БД: правка `schema.ts` → `pnpm db:diff` → ревʼю SQL → `pnpm test:schema`. Міграції
+  **не** через Supabase MCP (він лише для інспекції). Генератора типів БД немає — типи нового
+  коду з `simplycms/schema/types`.
+- Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `supabase-js` — застарілий
+  шар, що переписується; вітрина його не імпортує.
+
+**Роути й рендеринг** (`docs/architecture/rendering-and-routing.md`)
+
+- Дерево роутів збирає `routes.ts` (`virtualRouteConfig`), а не сканування `src/routes`:
+  🔴 монтується лише `src/routes/my/` — файл поруч із `__root.tsx` роутом не стане. Не редагуй
+  `src/routeTree.gen.ts`.
+- SSR для вітрини, client-only (`ssr: false`) для адмінки; route-файли — тонкі обгортки без логіки.
+- Request-guard для `/admin` — у `src/start.ts`; guard-логіку за межі `src/start.ts` і auth-роутів
+  не виносити.
+
+**Теми, плагіни, UI** (`docs/architecture/themes.md`, `plugins.md`, `ui.md`)
+
+- Тема постачає токени, `components` і опційно `views` пʼяти сторінок; **не** дані, роути, SEO,
+  сторінки чи лейаути (`theme.pages`/`MainLayout` видалені свідомо). Логіки в темі немає.
+- Плагін ходить лише через порти `simplycms/plugin-sdk` (межа довіри); Supabase-шар не імпортує.
+- Компоненти `simplycms/ui`, а не дублікати; кольори й шрифти — через CSS-змінні теми.
+
+**Межі клієнт/сервер й env** (`docs/development/ENVIRONMENT.md`)
+
+- Server-only дерево задає `simplycms/contracts/server-only`; статичний імпорт server-only
+  субшляху з клієнтського коду заборонено (лінт + Gate C пілота).
+- Контракт магазину — рівно **три** env-ключі: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `VITE_SITE_URL`. Серверний код читає **лише** `process.env` і лише в рантаймі; `import.meta.env`
+  у серверних модулях заборонено лінтом.
+
+**i18n** (`docs/architecture/i18n.md`)
+
+- Нові рядки інтерфейсу — через `useT`/`createTranslator`; кириличний літерал у зоні валить лінт.
+  Каталогів ТРИ рівні (ядро / тема / плагін) — не змішувати. Зелений лінт повноти i18n не доводить —
+  доводять тести парності.
+
+**Файли й сховище** (`docs/architecture/storage.md`)
+
+- Файли — лише через порт `simplycms/storage`; у БД лежить референс, не URL; прямі виклики
+  `supabase.storage` заборонені.
+
+**Пакети й реліз** (`docs/architecture/release-process.md`, `cli.md`)
+
+- Усі 5 пакетів завжди мають ОДНУ версію; реліз — рішення людини (`pnpm release`, далі PR у
+  `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
+  `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками
+  не правляться.
+- Агентні скіли, що їдуть у магазини, живуть у `packages/simplycms/skills/<name>`; `.agents/skills/`
+  і `.claude/skills/` — прямі симлінки на нього (оригінал — у пакеті).
+
+---
+
+## Конвенції коду
+
+- Іменування: `camelCase` (змінні, функції, хуки `use*`), `PascalCase` (компоненти, типи),
+  `UPPER_SNAKE_CASE` (константи); файли компонентів — `PascalCase.tsx`, утиліт — `camelCase.ts`.
+- Strict TypeScript: без `any` — `unknown` або конкретний тип. Типи експортуй `export type`.
+- Форматування тримає Prettier — не сперечайся з ним руками.
+- Орієнтир — ~150 рядків на модуль (лінтом не стережеться; великий файл — привід поділити).
+- Імпорти: бібліотеки → пакети (`simplycms/<тека>`, `@simplycms/*`, `@themes/*`, `@plugins/*`) →
+  локальні; без `../../..` між пакетами. Тір-зони забороняють імпорт угору по тірах
+  (`eslint.tier-zones.mjs`).
+- Коментарі й документація — українською; JSDoc для публічного API.
+- `console.log` у production-коді не лишай.
+
+---
+
+## Куди дивитись далі
+
+- **`docs/architecture/`** — канон підсистем: `data-layer`, `rendering-and-routing`, `ui`,
+  `themes`, `plugins`, `storage`, `i18n`, `cli`, `release-process`, `test-contours`,
+  `upstream-workarounds`, `repository-layout`.
+- **`docs/development/`** — `TOOLING.md` (команди, гейти, лінт, CI), `ENVIRONMENT.md` (env, запуск),
+  `CODEBASE_MEMORY.md` (код-шар пошуку).
+- **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/redesign-from-reference.md`** — редизайн за референсом.
+- **`docs/tasks/`** — роадмап (`platform-roadmap.md`), карта чинного стану (`v2-state-map.md`).
+- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `redesign-from-reference`.
