@@ -46,5 +46,4 @@ docs/design-references
 
 # ── Локальні артефакти інструментів ─────────────────────────────────────────
 temp
-graphify-out
 pnpm-lock.yaml

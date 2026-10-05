@@ -148,19 +148,20 @@ Claude Code й Copilot читали **одні й ті самі** файли.
 | `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
 | `packages/simplycms/skills/redesign-from-reference/` (лінки — `.agents/skills/` і `.claude/skills/`) | Як робити редизайн магазину за референс-сайтом, фази 0-6: правові межі, дискавері сторінок із обовʼязковим діалогом, детерміністична інспекція (`scripts/` усередині скіла) — кольори, типографіка й **motion** (`inspection.json` `schemaVersion: 3`), мапінг токенів, тема штатним лайфсайклом, спека-файли компонентів із секцією Motion, **обовʼязковий** side-by-side по кожному підтвердженому типу з класифікацією розбіжностей, опційне шліфування. Їде в магазини текою `skills/` пакета `simplycms` (симлінки, не копія); посібник — [`docs/guides/redesign-from-reference.md`](docs/guides/redesign-from-reference.md) |
 | `.claude/agents/` | Субагенти `codebase-research`, `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
-| `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`, `/редизайн-за-референсом` |
+| `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`, `/редизайн-за-референсом` |
 
 ```bash
 ORIENT=.agents/skills/codebase-research/scripts/orient
-$ORIENT ThemeRegistry getActiveTheme   # де лежить + хто споживає (з транзитивними через барелі)
+$ORIENT ThemeRegistry getActiveTheme   # де лежить + хто справді кличе (потребує codebase-memory-mcp)
+$ORIENT --map "як локалізується тема"  # тема людською мовою → BM25 по канону доків
 $ORIENT --plan docs/superpowers/plans/2026-07-31-phase0-foundation.md
-$ORIENT --doctor                       # чи є граф, чи свіжий, чи немає привидів
+$ORIENT --doctor                       # стан індексу cbm, .cbmignore, шару доків
 ```
 
-**Knowledge graph (graphify).** `graphify-out/` — локальний артефакт (gitignored), оновлюється
-post-commit хуком (AST, без LLM). `orient` працює і без графа — тихо падає на `ripgrep`. Семантика
-доків і назви спільнот хуком **не** оновлюються — це `/граф-онови`; 🔴 завжди з явною дешевою
-моделлю (`--model=haiku`), бо `--backend claude-cli` без моделі бере Opus.
+**Код-шар — `codebase-memory-mcp`** (глобальна установка, у репо лише `.cbmignore`). Індекс
+прив'язаний до АБСОЛЮТНОГО шляху: worktree/другий клон індексуються окремо. Без нього
+`orient <Символ>` чесно відмовляє, а не грепає (греп через барелі бреше на «хто кличе»).
+Канон — [`docs/development/CODEBASE_MEMORY.md`](docs/development/CODEBASE_MEMORY.md).
 
 ## Гейти (порядок і причини)
 

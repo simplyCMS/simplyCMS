@@ -31,11 +31,13 @@ All coding rules, architecture decisions, and best practices are maintained in `
   за виклик), `code-review-verifier` (адверсаріальний скептик).
 - **Команди** (`.claude/commands/`, симлінки в `.github/prompts/` для Copilot):
   `/виконай-задачу` — головна; далі `/перевір-роботу-агента-кодування`,
-  `/проведи-додаткове-дослідження`, `/граф-онови`, `/поділи-задачу-на-етапи`,
+  `/проведи-додаткове-дослідження`, `/поділи-задачу-на-етапи`,
   `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`,
   `/редизайн-за-референсом`.
-- **Орієнтація в коді:** `.agents/skills/codebase-research/scripts/orient <Символ>`
-  (або `--plan <файл>`, `--doctor`). Працює з графом graphify і без нього.
+- **Орієнтація в коді — дві поверхні:** код — `codebase-memory-mcp` (MCP-інструменти
+  або `orient <Символ>`; без нього `orient <Символ>` чесно відмовляє, а не грепає);
+  доки й якорі плану — `.agents/skills/codebase-research/scripts/orient --map "<тема>"` /
+  `--plan <файл>` / `--doctor`. Канон — `docs/development/CODEBASE_MEMORY.md`.
 - **🔴 Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint →
   build → typecheck → test → build:packages → typecheck:template →
   test:packaging` — `build` перед
