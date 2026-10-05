@@ -93,7 +93,7 @@ describe('omit (Е5-7)', () => {
       ]),
     );
     expect('accessToken' in full).toBe(true);
-    const out = ops.rowSchema.parse(full) as Record<string, unknown>;
+    const out = ops.rowSchema.parse(full);
     expect('accessToken' in out).toBe(false);
     expect('orderNumber' in out).toBe(true);
   });

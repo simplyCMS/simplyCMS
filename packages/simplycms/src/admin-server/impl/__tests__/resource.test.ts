@@ -147,6 +147,18 @@ describe('defineAdminResource (К3-4′)', () => {
     expectTypeOf<PatchItem>().not.toHaveProperty('isDefault');
     expectTypeOf<PatchItem>().not.toHaveProperty('createdAt');
     expectTypeOf<PatchItem>().toHaveProperty('name');
+
+    // Необовʼязкові ключі зберігаються (InsertPick): `color`/`sortOrder` мають
+    // default, тож insert-рядок без них — валідний тип; patch — усе optional.
+    expectTypeOf<{
+      id: string;
+      name: string;
+      code: string;
+    }>().toExtend<InsertItem>();
+    expectTypeOf<InsertItem>().toHaveProperty('color');
+    expectTypeOf<InsertItem>().toHaveProperty('sortOrder');
+    expectTypeOf<PatchItem>().toHaveProperty('sortOrder');
+    expectTypeOf<{ name: string }>().toExtend<PatchItem>();
   });
 
   // ID — будь-який uuid-літерал.

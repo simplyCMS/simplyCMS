@@ -471,14 +471,24 @@ compat-налаштувань. Очікувані зачіпки: моки чи�
   drizzle-zod (insert: optional за default/nullable; update: усе optional);
   refinements, `.pick`/`.omit`, `.extend({ id })` — на нашому боці.
 - 🔴 **Чесна межа:** статичний тип схеми **оголошується** з
-  `InferInsertModel<T>`/`InferSelectModel<T>` через
-  `z.object(shape).pipe(z.custom<Out>(() => true))`, а не виводиться з форми.
-  Це ОДИН контрольований каст на межі генератора замість розкиданих
-  `SafePick`/`as never`; розбіжність оголошеного типу з рантайм-формою
-  компілятор не бачить — її ловить **постійний гейт** паритету (усі колонки
-  ресурсних таблиць × insert/update/select × граничні значення) з мутаційним
-  контролем. drizzle-zod лишається devDependency лише для цього тесту (або
-  тест порівнює із зафіксованими очікуваннями — вибір у плані).
+  `InferInsertModel<T>`/`InferSelectModel<T>`, а не виводиться з форми — ОДИН
+  контрольований каст у `declareSchema` замість розкиданих `SafePick`/
+  `as never`. Гейт паритету доводить рантайм-еквівалентність columnsToZod ≡
+  drizzle-zod (оракул) для всіх колонок ресурсних таблиць; відповідність
+  ОГОЛОШЕНОГО типу рантайм-формі він доводить лише опосередковано (оракул і
+  тип Drizzle виводять optional/nullable за тими самими правилами колонки).
+  Не покрито: колонки з `$type<>` (jsonb — оголошений тип вужчий за
+  рантайм-валідацію) і результати refine проти типу колонки; їх стережуть
+  expectTypeOf і рев'ю. drizzle-zod лишається devDependency лише для
+  паритет-тесту.
+- **Відхилення при виконанні:** замість `z.object(shape).pipe(z.custom<Out>
+  (() => true))` — `z.object(shape) as unknown as z.ZodType<Out, Out>` в одному
+  хелпері `declareSchema`. Безкастова форма компілюється (за `Out extends
+  Record<string, unknown>`), але вхідний тип стає `{[k: string]: unknown}` і
+  послаблює клієнтську типізацію валідаторів `createServerFn`. Тип рядка
+  insert/patch будує `InsertPick` (мапінг з `as`): `Pick<M, K & keyof M>` на
+  generic-`T` губить необовʼязкові ключі — обмеження TypeScript (відкладене
+  обчислення), не бібліотеки. Рантайм — strip `ZodObject`, як у drizzle-zod.
 - `ZodPipe` не має `.shape` → `resource-omit.test.ts` переписати на
   parse/ключі. Ізольовані касти всередині генератора (`enumValues`, `length`
   varchar, `getTableColumns`) — прибрати через `is(col, PgVarchar)` тощо, де

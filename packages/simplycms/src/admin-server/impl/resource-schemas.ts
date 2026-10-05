@@ -18,24 +18,37 @@ export type ColumnName<T extends Table> = Extract<
 export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
 
 /**
- * Єдина межа між РУНТАЙМ-формою і ОГОЛОШЕНИМ типом: перевіряє `z.object(shape)`
- * (strip: невідомі ключі відкидає), а тип задає `Out`, виведений з Drizzle
- * (`InferInsertModel`/`InferSelectModel`). Каст тут єдиний у шляху схем:
- * `.pipe(z.custom<Out>())` не компілюється (вхід `custom` — `Out`, а
- * `pipe` вимагає вхід = вихід обʼєкта), тож тип оголошується явно.
- * Відповідність типу формі стереже гейт паритету
- * (`columns-to-zod-parity.test.ts`) — компілятор її не бачить.
+ * ЄДИНИЙ каст у шляху схем. Оголошує, що `z.object(shape)` дає значення типу
+ * `Out` (`InferInsertModel`/`InferSelectModel` з Drizzle, звужені до
+ * writable/omit). Компілятор цього довести не може: форма будується в
+ * рантаймі з generic-таблиці. 🔴 Чому не `.pipe(z.custom<Out>(() => true))`:
+ * така форма БЕЗ касту компілюється (за `Out extends Record<string,
+ * unknown>`), але вхідний тип стає `{[k: string]: unknown}` і послаблює
+ * типізацію входу валідаторів `createServerFn` на клієнті; каст
+ * `ZodType<Out, Out>` лишає вхід = `Out`.
+ * Межа доказу: гейт паритету доводить рантайм-еквівалентність
+ * `columnsToZod` ≡ drizzle-zod (оракул) для всіх колонок ресурсних таблиць;
+ * відповідність ОГОЛОШЕНОГО типу (InferInsertModel/InferSelectModel)
+ * рантайм-формі він доводить лише опосередковано — оракул і тип Drizzle
+ * виводять optional/nullable за тими самими правилами колонки. Не покрито:
+ * колонки з `$type<>` (jsonb — оголошений тип вужчий за рантайм-валідацію) і
+ * результати refine проти типу колонки; їх стережуть expectTypeOf і рев'ю.
+ * `ZodObject`: невідомі ключі мовчки відкидаються (так само в drizzle-zod
+ * 0.8.3: `handleColumns` повертає `z.object`, не `strictObject`).
  */
-function declared<Out>(shape: Record<string, z.ZodType>): z.ZodType<Out, Out> {
+function declareSchema<Out>(
+  shape: Record<string, z.ZodType>,
+): z.ZodType<Out, Out> {
   return z.object(shape) as unknown as z.ZodType<Out, Out>;
 }
 
 /**
- * Колонки з `InferInsertModel`, відфільтровані за ключами `K`. 🔴 Саме
- * мапінг з `as`, а не `Pick<M, K & keyof M>`: `keyof InferInsertModel<T>`
- * під generic-`T` губить необовʼязкові ключі (перевірено проби), а `Pick`
+ * Колонки з `InferInsertModel`, відфільтровані за ключами `K`. Мапінг з `as`,
+ * а не `Pick<M, K & keyof M>`: на generic-`T` `keyof InferInsertModel<T>`
+ * губить необовʼязкові ключі (відкладене обчислення умовних типів), а `Pick`
  * вимагає `K ⊆ keyof M`, чого TS генерично не доводить («завжди
- * згенеровані» колонки в insert-моделі відсутні). Опційність зберігається.
+ * згенеровані» колонки в insert-моделі відсутні). Це обмеження TypeScript
+ * на генеричному `Pick`, не бібліотеки. Опційність зберігається.
  */
 type InsertPick<T extends Table, K> = {
   [
@@ -57,7 +70,7 @@ function pickKeys(
  * Zod-схеми ресурсу адмінки, виведені з Drizzle-таблиці через власний
  * генератор `columnsToZod`: rowSchema для читання, insert/update/remove для
  * запису, звужені до `writable`. Pick/omit/extend виконуються над формою ДО
- * `declared`, тож статичні типи — оголошені, а не виведені з generic-таблиці.
+ * `declareSchema`, тож статичні типи — оголошені, а не виведені з generic-таблиці.
  */
 export function buildResourceSchemas<
   T extends Table,
@@ -79,18 +92,18 @@ export function buildResourceSchemas<
   const rowKeys = Object.keys(selectShape).filter(
     (k) => !(omit as readonly string[]).includes(k),
   );
-  const rowSchema = declared<Omit<InferSelectModel<T>, O>>(
+  const rowSchema = declareSchema<Omit<InferSelectModel<T>, O>>(
     pickKeys(selectShape, rowKeys),
   );
 
-  const insertRowSchema = declared<InsertPick<T, W | I> & { id: string }>({
+  const insertRowSchema = declareSchema<InsertPick<T, W | I> & { id: string }>({
     ...pickKeys(columnsToZod(table, 'insert', refine), [
       ...writable,
       ...insertOnly,
     ]),
     id: z.uuid(), // 🔴 Е0: ключ генерує клієнт; z.uuid() — канон Zod 4
   });
-  const patchSchema = declared<Partial<InsertPick<T, W>>>(
+  const patchSchema = declareSchema<Partial<InsertPick<T, W>>>(
     pickKeys(columnsToZod(table, 'update', refine), writable),
   ).refine((p) => Object.keys(p).length > 0, {
     // 🔴 Порожній patch — 400 на межі, не «No values to set» з drizzle:
