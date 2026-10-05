@@ -2,7 +2,27 @@ import { setResponseStatus } from '@tanstack/react-start/server';
 import {
   DOMAIN_ERROR_NAME,
   type AdminConflictKind,
+  type ValidationIssue,
 } from 'simplycms/contracts/domain-errors';
+
+/**
+ * Помилка валідації вводу адмін-операції (Тема 12): Zod-відмова на межі
+ * serverFn → типізована доменна помилка з issues крізь БІЛИЙ СПИСОК
+ * (`sanitizeValidationIssues`: path + код + параметри схеми, без сирих
+ * повідомлень Zod і без відлуння вводу). Клієнт показує її помилками
+ * полів (`applyServerValidation`), а не сирим JSON у тості.
+ *
+ * `message` навмисно загальний: вміст issues — не для користувача, а
+ * `issues` переживає межу `domainErrorAdapter` окремим каналом.
+ */
+export class ValidationError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.validation;
+  readonly issues: readonly ValidationIssue[];
+  constructor(issues: readonly ValidationIssue[]) {
+    super('[admin-server] помилка валідації вводу');
+    this.issues = issues;
+  }
+}
 
 /**
  * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль

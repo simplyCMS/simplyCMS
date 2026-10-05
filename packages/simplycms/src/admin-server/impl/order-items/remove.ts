@@ -4,6 +4,7 @@ import { orderItems } from 'simplycms/schema';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { releaseOrderItemStock } from 'simplycms/inventory';
 import { runAdmin } from '../run';
+import { parseAdminInput } from '../validation';
 import {
   lockEditableOrder,
   lockOrderItem,
@@ -31,7 +32,7 @@ export const removeOrderItemOp = async ({
 }: {
   data: z.infer<typeof removeOrderItemInput>;
 }): Promise<OrderItemsEditResult> => {
-  const { orderId, orderItemId } = removeOrderItemInput.parse(data);
+  const { orderId, orderItemId } = parseAdminInput(removeOrderItemInput, data);
   return runAdmin('order.manage', async (db) => {
     const order = await lockEditableOrder(db, orderId);
     await lockOrderItem(db, orderId, orderItemId);

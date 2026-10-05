@@ -6,6 +6,7 @@ import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { priceItems } from 'simplycms/commerce';
 import { reserveNewOrderItemStock } from 'simplycms/inventory';
 import { runAdmin } from '../run';
+import { parseAdminInput } from '../validation';
 import {
   lockEditableOrder,
   stateConflict,
@@ -48,8 +49,10 @@ export const addOrderItemOp = async ({
 }: {
   data: z.infer<typeof addOrderItemInput>;
 }): Promise<OrderItemsEditResult> => {
-  const { orderId, productId, modificationId, quantity } =
-    addOrderItemInput.parse(data);
+  const { orderId, productId, modificationId, quantity } = parseAdminInput(
+    addOrderItemInput,
+    data,
+  );
   return runAdmin('order.manage', async (db) => {
     const order = await lockEditableOrder(db, orderId);
 

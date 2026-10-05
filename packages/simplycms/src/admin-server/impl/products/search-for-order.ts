@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { runAdmin } from '../run';
+import { parseAdminInput } from '../validation';
 
 /** Мінімум символів запиту: коротший не дає корисного звуження каталогу. */
 export const MIN_SEARCH_LENGTH = 2;
@@ -42,7 +43,7 @@ export const searchProductsForOrderOp = async ({
 }: {
   data: z.infer<typeof searchProductsForOrderInput>;
 }): Promise<{ items: OrderProductHit[] }> => {
-  const { query } = searchProductsForOrderInput.parse(data);
+  const { query } = parseAdminInput(searchProductsForOrderInput, data);
   if (query.length < MIN_SEARCH_LENGTH) return { items: [] };
   const pattern = `%${escapeLike(query)}%`;
   return runAdmin('order.manage', async (db) => {

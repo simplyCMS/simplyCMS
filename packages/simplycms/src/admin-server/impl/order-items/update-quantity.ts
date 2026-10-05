@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { orderItems } from 'simplycms/schema';
 import { adjustOrderItemStock } from 'simplycms/inventory';
 import { runAdmin } from '../run';
+import { parseAdminInput } from '../validation';
 import {
   lockEditableOrder,
   lockOrderItem,
@@ -38,8 +39,10 @@ export const updateOrderItemQuantityOp = async ({
 }: {
   data: z.infer<typeof updateOrderItemQuantityInput>;
 }): Promise<OrderItemsEditResult> => {
-  const { orderId, orderItemId, quantity } =
-    updateOrderItemQuantityInput.parse(data);
+  const { orderId, orderItemId, quantity } = parseAdminInput(
+    updateOrderItemQuantityInput,
+    data,
+  );
   return runAdmin('order.manage', async (db) => {
     const order = await lockEditableOrder(db, orderId);
     const item = await lockOrderItem(db, orderId, orderItemId);

@@ -83,5 +83,6 @@ export {
   searchProductsForOrderOp,
 } from './products/search-for-order';
 export type { OrderProductHit } from './products/search-for-order';
-export { AdminConflictError } from './errors';
+export { AdminConflictError, ValidationError } from './errors';
+export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';
