@@ -10,7 +10,8 @@ import {
 } from '@testing-library/react';
 import { createTranslator } from 'simplycms/i18n';
 import { resolveMediaUrl } from 'simplycms/domain/media';
-import { ID, OPTIONS, serve, wrapper } from './render-support';
+import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
+import { ID, OPTIONS, wrapper } from './render-support';
 
 const { toastError, toastSuccess, navigate } = vi.hoisted(() => ({
   toastError: vi.fn(),
@@ -36,21 +37,23 @@ import { PropertyOptionsTable } from '../PropertyOptionsTable';
 
 const t = createTranslator('uk');
 
+// Сервер зі станом (TSDB-1): після запису зріз ревалідується, і статична
+// відповідь повернула б видалену опцію.
+let srv = createMutableServer<(typeof OPTIONS)[number]>([]);
 beforeEach(() => {
   vi.clearAllMocks();
-  listPropertyOptions.mockImplementation(
-    serve([
-      ...OPTIONS,
-      // Опція ІНШОЇ властивості — зріз `where propertyId` мусить її відсіяти.
-      {
-        ...OPTIONS[1]!,
-        id: crypto.randomUUID(),
-        propertyId: ID.color,
-        name: 'Червоний',
-        slug: 'red',
-      },
-    ]),
-  );
+  srv = createMutableServer([
+    ...OPTIONS,
+    // Опція ІНШОЇ властивості — зріз `where propertyId` мусить її відсіяти.
+    {
+      ...OPTIONS[1]!,
+      id: crypto.randomUUID(),
+      propertyId: ID.color,
+      name: 'Червоний',
+      slug: 'red',
+    },
+  ]);
+  listPropertyOptions.mockImplementation(srv.list);
 });
 afterEach(() => cleanup());
 
@@ -109,7 +112,11 @@ describe('PropertyOptionsTable', () => {
   });
 
   it('видалення успішне → тост admin.properties.options.deleted', async () => {
-    removePropertyOptions.mockResolvedValue(undefined);
+    removePropertyOptions.mockImplementation(
+      async ({ data }: { data: { id: string }[] }) => {
+        for (const d of data) srv.remove(d.id);
+      },
+    );
     render(<PropertyOptionsTable propertyId={ID.brand} />, { wrapper });
     const dialog = await openDelete('Apple');
     fireEvent.click(
@@ -120,6 +127,9 @@ describe('PropertyOptionsTable', () => {
         t('admin.properties.options.deleted'),
       ),
     );
+    expect(screen.queryByText('Apple')).toBeNull();
+    // Ревалідація (TSDB-1) віддає стан сервера — опція не повертається.
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText('Apple')).toBeNull();
   });
 });

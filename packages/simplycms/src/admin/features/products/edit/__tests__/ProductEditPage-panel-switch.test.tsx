@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { EngineProvider } from 'simplycms/react-query';
+import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 import { ENGINE, ResizeObserverStub } from './test-engine-stub';
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
@@ -53,7 +54,9 @@ afterEach(() => cleanup());
 describe('ProductEditPage: панель за живим рядком, не за useWatch', () => {
   it('клік по перемикачу типу БЕЗ Save не підмінює панель; write-back — підмінює', async () => {
     const now = new Date();
-    listProducts.mockResolvedValueOnce([
+    // Сервер зі станом: write-back ревалідує зріз (TSDB-1) — `Once` витрачений
+    // на перше читання, і дефолтний [] прибрав би рядок разом із панеллю.
+    const server = createMutableServer([
       {
         id: PRODUCT_ID,
         name: 'Панель',
@@ -75,11 +78,19 @@ describe('ProductEditPage: панель за живим рядком, не за 
         updatedAt: now,
       },
     ]);
+    listProducts.mockImplementation(server.list as never);
+    updateProducts.mockImplementation((async ({
+      data,
+    }: {
+      data: Array<{ id: string; patch: object }>;
+    }) =>
+      data.map((d) =>
+        server.upsert({ id: d.id, ...d.patch } as never),
+      )) as never);
 
     let writeBack: ((v: boolean) => void) | undefined;
     function WriteBackProbe() {
-      // БЕЗ власного useLiveQuery — інший демо-ключ дав би ще один виклик
-      // listProducts, а mockResolvedValueOnce уже не має рядка. Рядок кладе
+      // БЕЗ власного useLiveQuery — рядок кладе
       // findOne самої ProductEditPage; тут лише беремо той самий інстанс
       // колекції (WeakMap за queryClient), щоб писати в нього.
       const products = useCollection(productsCollection);
@@ -114,5 +125,8 @@ describe('ProductEditPage: панель за живим рядком, не за 
     });
     // findByRole сам кидає, якщо не знайдено — присутність кнопки доведена.
     await screen.findByRole('button', { name: 'Додати' });
+    // Ревалідація віддає збережений сервером рядок — панель не відкочується.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.getByRole('button', { name: 'Додати' })).toBeTruthy();
   });
 });

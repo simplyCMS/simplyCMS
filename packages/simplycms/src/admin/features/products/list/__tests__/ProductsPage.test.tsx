@@ -31,6 +31,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
+import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 
 // 🔴 vi.hoisted, не звичайний const (admin-data барелем тягне ВСІ файли
 // колекцій — кожен імпортує щось із `simplycms/admin-server`; набір імен —
@@ -172,7 +173,11 @@ describe('ProductsPage', () => {
   });
 
   it('(4) Review Focus 2: 23503 на видаленні → rollback, товар знову в списку, тост conflictReference', async () => {
-    listProducts.mockResolvedValueOnce([makeProduct(1)]);
+    // Сервер зі станом: відкат оптимістичного видалення запускає повторний
+    // запит зрізу (db ordered-source-loader, TSDB-1) — `mockResolvedValueOnce`
+    // уже витрачений, і дефолтний [] затер би повернутий рядок.
+    const srv = createMutableServer([makeProduct(1) as { id: string }]);
+    listProducts.mockImplementation(srv.list as never);
     removeProducts.mockRejectedValueOnce(
       Object.assign(new Error('x'), {
         name: 'AdminConflictError',
@@ -198,5 +203,8 @@ describe('ProductsPage', () => {
     expect(toastError).toHaveBeenCalledWith(
       'Запис використовується (наприклад, у замовленнях) — деактивуйте його замість видалення',
     );
+    // Повторний запит (якщо був) теж віддає рядок: сервер його не видалив.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.getByText('Товар 1')).toBeTruthy();
   });
 });

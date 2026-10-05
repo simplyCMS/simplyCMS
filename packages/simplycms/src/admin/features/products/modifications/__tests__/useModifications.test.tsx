@@ -211,7 +211,9 @@ describe('useModifications', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    listProductModifications.mockResolvedValueOnce([row]);
+    // Стан сервера мінливий (update-стаб міняє row): ревалідація після запису
+    // (TSDB-1) читає його, а не витрачений `Once`.
+    listProductModifications.mockImplementation(async () => [{ ...row }]);
     updateProductModifications.mockImplementation(
       async ({
         data,
