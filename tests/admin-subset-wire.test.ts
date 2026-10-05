@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { and, gte, IR, lt } from '@tanstack/react-db';
 import { fromJSON, toJSONAsync } from 'seroval';
-import { toSubsetPayload } from '../subset-payload';
+import { subsetInputSchema } from '../packages/simplycms/src/admin-server/impl/subset';
+import { toSubsetPayload } from '../packages/simplycms/src/admin-data/subset-payload';
 
+// Крос-тірний контракт клієнт→сервер: лежить у tests/, бо клієнтська тека
+// не може статично імпортувати server-only схему (no-server-only-in-client).
 // 🔴 0.11.3: toExpression приймає за IR лише побудовані екземпляри — обʼєктний
 // літерал `{ type: 'ref' }` тепер лічиться значенням користувача.
 const ref = (field: string) =>
@@ -22,10 +25,6 @@ describe('toSubsetPayload: Date через межу serverFn', () => {
         lt(ref('createdAt'), new Date(d.getTime() + 1)),
       ),
     });
-    // Динамічний імпорт: статичний на server-only субшлях у цій теці забороняє
-    // лінт-межа клієнт/сервер, а схему сервера тут перевіряє саме тест.
-    const { subsetInputSchema } =
-      await import('simplycms/admin-server/impl/subset');
     const parsed = subsetInputSchema.parse(await wire(payload));
     const filters = parsed.subset!.filters!;
     expect(filters.map((f) => f.operator)).toEqual(['gte', 'lt']);

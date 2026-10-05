@@ -124,6 +124,7 @@
     "jsdom": "^30.1.2",
     "pg": "8.23.1",
     "prettier": "3.9.9",
+    "seroval": "^1.6.8",
     "tailwindcss": "^4.3.3",
     "tsdown": "0.23.0",
     "typescript": "^5.9.3",
