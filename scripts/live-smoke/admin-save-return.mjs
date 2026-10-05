@@ -83,6 +83,7 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
     await page.goBack();
     await page.waitForURL(`${base}/admin/products`);
     await waitRows(page, PAGE);
+    // Фіксована пауза свідома: чекаємо на ВІДСУТНЄ усічення списку (регресія — рядки зникають після перезавантаження), події для цього немає.
     await page.waitForTimeout(1000);
     const names = await page
       .locator('tbody tr td.font-medium')

@@ -64,6 +64,7 @@ export async function runAdminOrderSaveReturnStep({
     await page.goBack();
     await page.waitForURL(`${base}/admin/orders`);
     await waitRows(page, PAGE);
+    // Фіксована пауза свідома: чекаємо на ВІДСУТНЄ усічення списку (регресія — рядки зникають після перезавантаження), події для цього немає.
     await page.waitForTimeout(1000);
     const ids = await orderIds(page);
     const topIds = (
