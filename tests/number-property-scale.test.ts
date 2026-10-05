@@ -6,7 +6,7 @@ import { productPropertyValues } from 'simplycms/schema';
 import {
   NUMERIC_VALUE_PRECISION,
   NUMERIC_VALUE_SCALE,
-} from 'simplycms/admin/features/products/properties/number-format';
+} from '../packages/simplycms/src/admin/features/products/properties/number-format';
 
 describe('константи збігаються з колонкою product_property_values.numeric_value', () => {
   it('precision і scale', () => {
