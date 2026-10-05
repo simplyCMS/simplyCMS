@@ -18,14 +18,47 @@
 
 ---
 
-## [Unreleased]
+## [0.8.0] — 2026-10-05
 
-Захід оновлень залежностей (спека
-[`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md),
-крок 1). Магазинів на SimplyCMS немає — без зворотної сумісності.
+Захід оновлень залежностей, безпеки й тулінгу (спека
+[`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md))
+плюс трек «Стандарти індустрії» (CSRF, санітизація HTML, помилки валідації).
+Магазинів на SimplyCMS немає — без зворотної сумісності, шимів немає.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline міграцій змінено** (`accounts.issuer` прибрано): базу магазину
+  перестворити (`pnpm db:demo`), окремої міграції немає.
+- **Нові host-файли** (`start.ts`, `routes/__root.tsx`, `tsconfig.json`): у
+  `requestMiddleware` першим стоїть `csrfMiddleware` (`simplycms/runtime/csrf`);
+  `ErrorBoundary` у `__root.tsx` типізований `ErrorComponentProps` (`error` —
+  `unknown`); з `tsconfig.json` прибрано `baseUrl` (TypeScript 6). Магазин
+  має перенести зміни з канону host (`packages/cli/host`).
+- **Прибрано публічний субшлях** `simplycms/schema/relations`. Додано субшляхи
+  `simplycms/sanitize` (server-only) і `simplycms/runtime/csrf`.
+- **Теми рендерять розмітку контенту лише через `RichHtml`** — поля view-model-ів
+  (`CatalogSectionInfo.description`, `ProductDetailDescription.html`) тепер типу
+  `SanitizedHtml`; сирий `dangerouslySetInnerHTML` заборонено лінт-правилом.
+- **Залежності магазину** (шаблон): TypeScript `^6.0.3`, React/ReactDOM
+  `^19.3.0`, `@tanstack/react-db` 0.5.3 (+ `@tanstack/query-db-collection`
+  1.3.4), `better-auth` 1.7.7, `sanitize-html` (залежність ядра), `dotenv` 18.
+  Peer `react` пакетів лишається `^18.0.0 || ^19.0.0` (не змінено).
+- **Серверні функції:** `.inputValidator()` → `.validator()` (див. нижче);
+  помилки валідації адмін-serverFn тепер `ValidationError` (400), а не сирий
+  `ZodError`.
 
 ### Додано / змінено
 
+- **`inputValidator` → `validator`** у всіх серверних функціях і коментарях;
+  ESLint-правило `no-input-validator` забороняє застарілий `.inputValidator()`.
+- **TypeScript 6.0.3** (прибрано `baseUrl`, без `ignoreDeprecations`; TS 7
+  блокує лише peer `typescript-eslint` — реєстр `UPSTREAM:TSESL-1`); `tsx` —
+  у `devDependencies` (`live:smoke` у чистому клоні).
+- **Агентний тулінг і доки:** `AGENTS.md` за моделлю MetaHub, `CLAUDE.md` =
+  `@AGENTS.md` + лише Claude Code; канон підсистем — `docs/architecture/*`,
+  `docs/development/{TOOLING,ENVIRONMENT,CODEBASE_MEMORY}.md`; код-шар —
+  `codebase-memory-mcp` + `orient --map` замість graphify; артефакти Copilot
+  прибрано; дисципліна git (коміти лише від імені власника).
 - **Помилки валідації адмін-serverFn → помилки полів** (тема 12 спеки стандартів
   індустрії, борг №15): Zod-відмова на межі serverFn більше не показується сирим
   JSON у тості. Нова доменна помилка `ValidationError` (закритий реєстр
