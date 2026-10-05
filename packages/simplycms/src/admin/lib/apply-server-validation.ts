@@ -112,3 +112,39 @@ export function applyServerValidation(
   }
   return unmapped;
 }
+
+/** Привʼязка до форми react-hook-form: сеттер + «чи є таке поле у формі». */
+export interface FormErrorBinding {
+  readonly setError: SetFieldError;
+  readonly fieldFor: (path: readonly (string | number)[]) => string | null;
+}
+
+/**
+ * Привʼязка серверної валідації до RHF-форми: `form.setError` + `fieldFor`,
+ * що мапить плоский `path` ТІЛЬКИ на `fields` — поля, чий UI показує
+ * `errors[field].message` серверної помилки. 🔴 Issue на поле без
+ * відображення лишається немапленою і йде в загальний тост: інакше помилка
+ * була б «розкладена», але невидима, і збереження мовчки б не спрацювало.
+ * Поле мусить ще й існувати у формі (`getValues()`).
+ */
+export function formErrorBinding(
+  form: {
+    readonly setError: (
+      name: never,
+      error: { readonly type: string; readonly message: string },
+    ) => void;
+    readonly getValues: () => object;
+  },
+  fields: readonly string[],
+): FormErrorBinding {
+  return {
+    setError: (field, error) => form.setError(field as never, error),
+    fieldFor: (path) =>
+      path.length === 1 &&
+      typeof path[0] === 'string' &&
+      fields.includes(path[0]) &&
+      Object.hasOwn(form.getValues(), path[0])
+        ? path[0]
+        : null,
+  };
+}

@@ -3,8 +3,10 @@ import { VALIDATION_ISSUE_CODES } from 'simplycms/contracts/domain-errors';
 import { createTranslator } from 'simplycms/i18n';
 import {
   applyServerValidation,
+  formErrorBinding,
   validationMessageKey,
 } from '../apply-server-validation';
+import { failureText } from '../report-tx-error';
 import { adminErrorKey } from '../admin-error';
 import {
   serverValidationError,
@@ -172,6 +174,49 @@ describe('adminErrorKey для ValidationError', () => {
   it('загальний ключ (для місць без полів), а не сирий текст', () => {
     expect(adminErrorKey(serverValidationError([]))).toBe(
       'admin.validation.failed',
+    );
+  });
+});
+
+describe('formErrorBinding (RHF)', () => {
+  const form = () => ({
+    setError: vi.fn(),
+    getValues: () => ({ name: '', slug: '', sku: '' }),
+  });
+
+  it('мапить лише поля з білого списку, що існують у формі', () => {
+    const f = form();
+    const b = formErrorBinding(f, ['name', 'slug']);
+    const rest = applyServerValidation(
+      serverValidationError([
+        {
+          path: ['slug'],
+          code: 'too_big',
+          params: { origin: 'string', maximum: 255 },
+        },
+        { path: ['sku'], code: 'too_big' }, // у формі є, але UI не показує
+        { path: ['ghost'], code: 'custom' }, // у формі немає
+        { path: ['name', 0], code: 'custom' }, // вкладений
+      ]),
+      b.setError,
+      { t, fieldFor: b.fieldFor },
+    );
+    expect(f.setError).toHaveBeenCalledTimes(1);
+    expect(f.setError).toHaveBeenCalledWith('slug', {
+      type: 'server',
+      message: 'Занадто довго: не більше 255 символів',
+    });
+    expect(rest).toHaveLength(3);
+  });
+});
+
+describe('failureText', () => {
+  it('ValidationError → локалізований ключ; звичайна помилка → префікс + message', () => {
+    expect(failureText(t, 'Не вдалося:', serverValidationError([]))).toBe(
+      'Дані не пройшли перевірку — виправте поля й спробуйте ще раз',
+    );
+    expect(failureText(t, 'Не вдалося:', new Error('boom'))).toBe(
+      'Не вдалося: boom',
     );
   });
 });

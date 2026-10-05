@@ -11,8 +11,8 @@ import {
   TableRow,
 } from 'simplycms/ui/table';
 import { Loader2, Save } from 'lucide-react';
-import { adminErrorKey } from '../../../lib/admin-error';
-import { usePrices, type PriceDraft } from './usePrices';
+import { useServerFieldErrors } from '../../../lib/useServerFieldErrors';
+import { buildPricesInput, usePrices, type PriceDraft } from './usePrices';
 import { PriceTypeRow } from './PriceTypeRow';
 
 interface Props {
@@ -33,6 +33,7 @@ export function PricesEditor({ productId, modificationId }: Props) {
   const [draft, setDraft] = useState<PriceDraft>({});
   const [invalid, setInvalid] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const fieldErrors = useServerFieldErrors();
 
   const valueFor = (priceTypeId: string) => {
     if (draft[priceTypeId]) return draft[priceTypeId];
@@ -46,17 +47,20 @@ export function PricesEditor({ productId, modificationId }: Props) {
     priceTypeId: string,
     field: 'price' | 'oldPrice',
     value: string,
-  ) =>
+  ) => {
+    fieldErrors.clear(`${priceTypeId}.${field}`);
     setDraft((prev) => ({
       ...prev,
       [priceTypeId]: { ...valueFor(priceTypeId), [field]: value },
     }));
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
+    fieldErrors.reset();
+    const merged: PriceDraft = {};
+    for (const pt of priceTypes) merged[pt.id] = valueFor(pt.id);
     try {
-      const merged: PriceDraft = {};
-      for (const pt of priceTypes) merged[pt.id] = valueFor(pt.id);
       const failedTypeId = await save(merged);
       setInvalid(failedTypeId);
       if (!failedTypeId) {
@@ -64,10 +68,19 @@ export function PricesEditor({ productId, modificationId }: Props) {
         toast.success(t('admin.products.prices.saved'));
       }
     } catch (e) {
-      const key = adminErrorKey(e);
-      toast.error(
-        key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
-      );
+      // Тема 12: `path` сервера позиційний (`prices.<i>.price`) — індекс у
+      // ТОМУ САМОМУ вході, який будує `save` (`buildPricesInput`).
+      const built = buildPricesInput(merged);
+      const order = 'input' in built ? built.input : [];
+      fieldErrors.handle(e, {
+        fieldFor: (path) => {
+          const entry = path[0] === 'prices' ? order[Number(path[1])] : null;
+          const field = path[2];
+          return entry && (field === 'price' || field === 'oldPrice')
+            ? `${entry.priceTypeId}.${field}`
+            : null;
+        },
+      });
     } finally {
       setIsSaving(false);
     }
@@ -113,6 +126,8 @@ export function PricesEditor({ productId, modificationId }: Props) {
                 isDefault={pt.isDefault}
                 value={valueFor(pt.id)}
                 hasError={invalid === pt.id}
+                priceError={fieldErrors.errors[`${pt.id}.price`]}
+                oldPriceError={fieldErrors.errors[`${pt.id}.oldPrice`]}
                 onChange={(field, value) => setField(pt.id, field, value)}
               />
             ))}

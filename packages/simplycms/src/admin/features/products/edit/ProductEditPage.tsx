@@ -108,7 +108,7 @@ export function ProductEditPage({ productId }: Props) {
       <ProductForm
         productId={productId}
         defaultValues={toFormValues(data)}
-        onSubmit={(values) => update(productId, values)}
+        onSubmit={(values, binding) => update(productId, values, binding)}
         submitLabel={t('common.save')}
         meta={{ createdAt: data.createdAt, updatedAt: data.updatedAt }}
       >

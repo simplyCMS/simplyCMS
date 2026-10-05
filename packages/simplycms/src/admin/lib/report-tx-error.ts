@@ -14,3 +14,14 @@ export function reportTxError(t: Translator, e: unknown): void {
   const key = adminErrorKey(e);
   toast.error(key ? t(key) : `${t('common.error')} ${(e as Error).message}`);
 }
+
+/**
+ * Текст тоста «<префікс> <деталі>» для збоїв без форми (порядок статусів,
+ * видалення): відомі доменні помилки (конфлікт, валідація, мережа) — їхній
+ * локалізований ключ замість сирого `message` (Тема 12: інакше
+ * `ValidationError` показувався б голим службовим повідомленням).
+ */
+export function failureText(t: Translator, prefix: string, e: unknown): string {
+  const key = adminErrorKey(e);
+  return key ? t(key) : `${prefix} ${(e as Error).message}`;
+}
