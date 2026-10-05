@@ -83,8 +83,9 @@ ThemeModule = {
 - **`fonts` (v2.2)** — опційний масив зовнішніх stylesheet-ів теми (Google
   Fonts і аналоги). Фільтр — `safeFontStylesheets` (субшлях-експорт
   `simplycms/themes/safeFontStylesheets`, НЕ barrel: barrel тягне
-  `getActiveThemeSSR` → `simplycms/supabase/anon-client`, і з клієнтського
-  компонента це затягнуло б серверний код у бандл): приймаються лише
+  `bootstrapThemes` → `simplycms/themes/server` із serverFn-ами й серверним
+  auth-контуром, і з клієнтського компонента це затягнуло б серверний код у
+  бандл): приймаються лише
   абсолютні `https:`-URL без лапок/кутових дужок/пробілів, невалідний запис
   пропускається з `console.warn`. Рендер — `ThemeFonts` у ОБОХ каркасах
   (`StorefrontShell`, `ProtectedShell`) поруч із `ThemeTokens`; `<link
@@ -342,6 +343,8 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 синхронізує зареєстровані теми в таблицю при завантаженні застосунку —
 клієнтський `useEffect` поруч із `PluginBootstrap` у `__root.tsx` (три
 синхронні копії: host, `packages/cli/host/`, template — `pnpm template:sync`).
+`ThemeContext` на клієнті приймає `initialThemeName` з лоадера каркасного роуту
+(`themeName`) — зайвого клієнтського фетчу активної теми немає.
 
 Порядок кроків мінімізує ціну типового випадку («усі теми вже в БД» → рівно
 один SELECT):
@@ -356,7 +359,8 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
    унікального індексу `themes_active_idx` не порушується).
 
 `name` рядка = ключ реєстрації (ключ конфігу), а не `manifest.name` — саме
-за ключем резолвить `getActiveThemeSSR`; розбіжність — `console.warn`
+за ключем резолвить serverFn `getActiveTheme` (`storefront-routes/server/themes.ts` →
+`loadActiveTheme`); розбіжність — `console.warn`
 (дзеркало плагінного bootstrap), реєстрація не блокується.
 
 ### 🔴 Межі v1 (не баг)
@@ -395,7 +399,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 модуля немає в білді → бейдж «модуль відсутній» (`admin.themes.moduleMissing`)
 + disabled кнопка «Активувати» + пояснювальний текст
 (`admin.themes.moduleMissingHint`). SSR на падіння тут не б'ється:
-`getActiveThemeSSR` резолвить активну тему ДО `ThemeRegistry.load` і має
+`getActiveTheme` резолвить активну тему ДО `ThemeRegistry.load` і має
 трирівневий fallback на `default`, тож вітрина без модуля тихо відрендерить
 дефолтну тему, а не впаде. Бейдж і disabled захищають від іншого —
 розсинхрону «адмінка показує тему активною, а вітрина тихо показує зовсім
@@ -418,8 +422,8 @@ activate.
 
 `assertThemeViewsConformance(theme)` — публічний kit,
 `packages/simplycms/src/themes/conformance/`, експорт **субшляхом**
-`simplycms/themes/conformance` (барель тягне `getActiveThemeSSR` →
-anon-клієнт Supabase — та сама ідіома, що `safeFontStylesheets`).
+`simplycms/themes/conformance` (барель тягне серверний шар
+`themes/server` — та сама ідіома, що `safeFontStylesheets`).
 
 Що робить: `validateThemeModule` → тимчасова реєстрація теми в
 `ThemeRegistry` (без неї `useThemeT` не знайшов би каталог) → рендер

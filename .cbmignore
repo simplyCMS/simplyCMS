@@ -1,0 +1,49 @@
+# Скоуп індексації коду для codebase-memory-mcp (синтаксис .gitignore).
+# Повний канон тулінгу — docs/development/CODEBASE_MEMORY.md.
+#
+# .md/.mdx виключені навмисно: доки — інший шар (`orient --map "<тема>"`), а в
+# графі коду вони лише засмічують пошук символів (заголовок плану замість
+# оголошення).
+*.md
+*.mdx
+
+# білд-артефакти й кеші (.gitignore їх уже виключає — дублюємо для надійності,
+# бо індексатор читає диск, а не git)
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.output/
+**/.nitro/
+**/.tanstack/
+**/build/
+**/coverage/
+**/.cache/
+**/.data/
+**/*.tsbuildinfo
+**/*.min.js
+**/*.tgz
+graphify-out/
+
+# Згенерований код: тисячі шумових вузлів, які ніхто не редагує
+src/routeTree.gen.ts
+**/routeTree.gen.ts
+
+# 🔴 Вкладені git-worktree агентів: лежать ВСЕРЕДИНІ робочої теки репо, тож
+# без цього рядка основний індекс тягнув би повну копію коду на кожен worktree
+# (кожен символ × N) — і «хто кличе» множилось би на кількість копій.
+.claude/worktrees/
+
+# Закомічені КОПІЇ коду монорепо, що синхронізуються `pnpm template:sync` і
+# стереже тест парності (шаблон скаффолдера, канон host-файлів CLI). Кожен
+# символ host-а (adminRequestGuard, EngineProvider, …) мав би тут двійника, і
+# `orient <Символ>` показував би оголошення в копії нарівні зі справжнім.
+# Справжнє джерело — `src/` та пакети; правити копію руками не можна.
+packages/create-simplycms-store/template/
+packages/cli/host/
+
+# заморожені знімки схеми й одноразові міграції-архів (SQL, не код, що викликають)
+packages/simplycms/drizzle/
+packages/simplycms/seed-migrations/
+
+# Тимчасові кеші агентів
+.claude/skills/

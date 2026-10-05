@@ -236,5 +236,5 @@ Faceted-navigation SEO — вирішена індустрією задача з
 ## 13. Пов'язана документація
 - `docs/tasks/simplycms_tanstack_start_migration_task.md` — загальний міграційний документ (Phase 6 винесено сюди).
 - `docs/tasks/migration-phase3-storefront-ssr-routes.md` — базова SSR-модель storefront routes.
-- `.github/instructions/data-access.instructions.md` — патерни data access.
+- `docs/architecture/data-layer.md` — патерни data access.
 - Код: `packages/simplycms/src/storefront-routes/pages/CatalogSection.tsx`, `.../components/catalog/FilterSidebar.tsx`, `packages/simplycms/src/storefront-routes/server/properties.ts`, `packages/simplycms/src/storefront-routes/seo/sitemap.ts`, `packages/simplycms/src/storefront-routes/seo/robots.ts`, `simplycms.config.ts`.
