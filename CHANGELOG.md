@@ -87,8 +87,9 @@
   `@tanstack/query-db-collection` 1.3.4 — точні піни в корені й шаблоні, `~` у
   peers ядра). Знято обходи TSDB-B1 (`preload()` перед записом) і `gcTime: 0`
   у фабриці on-demand-колекцій; TSDB-1/2/3/4 у реєстрі переписано за виміряною
-  поведінкою. 22 файли адмінки на `useLiveQuery({ query })` замість
-  задепрекованої форми `(fn, deps)`; ратчет — `live-query-object-form.test.ts`.
+  поведінкою. 22 файли адмінки (29 викликів: 27 `useLiveQuery` і 2
+  `useLiveInfiniteQuery`) на об'єктну форму `useLiveQuery({ query })` замість
+  задепрекованої `(fn, deps)`; ратчет — `live-query-object-form.test.ts`.
 - 🔴 **Контракт subset серверного шару адмінки:** `eq/gt/gte/lt/lte` приймають
   колонки `filterable` ∪ `sortable`, а діапазонні оператори — ще й `Date`
   (клієнтський курсор пагінації на рівних `created_at` без цього падав з 400).

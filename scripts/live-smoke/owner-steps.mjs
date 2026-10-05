@@ -4,8 +4,10 @@
  * довідники К3-Е4 (`./admin-dictionaries.mjs`) → замовлення К3-Е5
  * (`./admin-orders.mjs`, потребує ще й сторінки покупця після воронки:
  * покупець оформлює, власник обробляє) → редагування позицій К3-Е5б
- * (`./admin-order-edit.mjs`) → пагінація списків товарів і замовлень
- * Етапу A (`./admin-lists-pagination.mjs`, засів прибирає за собою). Окремий browser context —
+ * (`./admin-order-edit.mjs`) → збереження в картках і повернення до списків
+ * (`./admin-save-return.mjs`, `./admin-save-return-orders.mjs`) → пагінація
+ * списків товарів і замовлень Етапу A (`./admin-lists-pagination.mjs`;
+ * ці кроки сіють рядки й прибирають за собою). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
  * закривається тут, у `finally`. Виніс із `live-smoke.mjs` — канон 150 рядків.
@@ -15,6 +17,8 @@ import { runAdminCatalogStep } from './admin-catalog.mjs';
 import { runAdminDictionariesStep } from './admin-dictionaries.mjs';
 import { runAdminOrdersStep } from './admin-orders.mjs';
 import { runAdminOrderEditStep } from './admin-order-edit.mjs';
+import { runAdminSaveReturnStep } from './admin-save-return.mjs';
+import { runAdminOrderSaveReturnStep } from './admin-save-return-orders.mjs';
 import { runAdminListsPaginationStep } from './admin-lists-pagination.mjs';
 
 export async function runOwnerSteps({
@@ -54,6 +58,19 @@ export async function runOwnerSteps({
     await runAdminOrderEditStep({
       context: owner.context,
       buyerPage,
+      base,
+      dbUrl,
+      check,
+    });
+    // Збереження в картках і повернення до списків (TSDB-1) — перед пагінацією.
+    await runAdminSaveReturnStep({
+      context: owner.context,
+      base,
+      dbUrl,
+      check,
+    });
+    await runAdminOrderSaveReturnStep({
+      context: owner.context,
       base,
       dbUrl,
       check,

@@ -133,14 +133,14 @@ export async function runAdminListsPaginationStep({
       errors.join(' | '),
     );
   } finally {
-    await sql(
-      dbUrl,
-      `delete from public.products where slug like 'pg-${tag}-%'`,
-    );
-    await sql(
-      dbUrl,
-      `delete from public.orders where order_number like 'PG-${tag}-%'`,
-    );
-    await page.close();
+    // Кожне прибирання ізольоване: відмова одного не лишає сміття в іншому.
+    await Promise.allSettled([
+      sql(dbUrl, `delete from public.products where slug like 'pg-${tag}-%'`),
+      sql(
+        dbUrl,
+        `delete from public.orders where order_number like 'PG-${tag}-%'`,
+      ),
+    ]);
+    await page.close().catch(() => {});
   }
 }
