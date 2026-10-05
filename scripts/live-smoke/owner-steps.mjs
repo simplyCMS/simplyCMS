@@ -5,7 +5,8 @@
  * (`./admin-orders.mjs`, потребує ще й сторінки покупця після воронки:
  * покупець оформлює, власник обробляє) → редагування позицій К3-Е5б
  * (`./admin-order-edit.mjs`) → збереження в картках і повернення до списків
- * (`./admin-save-return.mjs`, `./admin-save-return-orders.mjs`) → пагінація
+ * (`./admin-save-return.mjs`, `./admin-save-return-orders.mjs`) → помилка
+ * валідації як помилка поля (`./admin-validation-errors.mjs`, Тема 12) → пагінація
  * списків товарів і замовлень Етапу A (`./admin-lists-pagination.mjs`;
  * ці кроки сіють рядки й прибирають за собою). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
@@ -20,6 +21,7 @@ import { runAdminOrderEditStep } from './admin-order-edit.mjs';
 import { runAdminSaveReturnStep } from './admin-save-return.mjs';
 import { runAdminOrderSaveReturnStep } from './admin-save-return-orders.mjs';
 import { runAdminListsPaginationStep } from './admin-lists-pagination.mjs';
+import { runAdminValidationErrorsStep } from './admin-validation-errors.mjs';
 
 export async function runOwnerSteps({
   browser,
@@ -70,6 +72,13 @@ export async function runOwnerSteps({
       check,
     });
     await runAdminOrderSaveReturnStep({
+      context: owner.context,
+      base,
+      dbUrl,
+      check,
+    });
+    // Тема 12: помилка валідації serverFn → помилка поля (сіє й прибирає свій товар).
+    await runAdminValidationErrorsStep({
       context: owner.context,
       base,
       dbUrl,
