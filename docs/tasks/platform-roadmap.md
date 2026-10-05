@@ -747,6 +747,24 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     відсутні** — переглядаються в V2-К5.
 11. **Живий SSR-доказ fonts-контуру** (Р9 етапу А редизайну) — потребує
     `SEED_THEME` у сіді пілота; переглянути після V2-К6 (сід міняється).
+12. **Роути `cart` і `checkout` — `ssr: false` без `pendingComponent`**
+    (`packages/simplycms/routes/storefront/_storefront/cart.tsx`,
+    `checkout.tsx`). Правило «`ssr: false`-роут оголошує `pendingComponent`»
+    у `docs/architecture/rendering-and-routing.md` (§2 «Правила») звужене до
+    `admin.tsx` — зразок `AdminPending`. Наслідок: поки клієнт вантажить
+    сторінку, користувач бачить порожній екран (сервер нічого не віддає
+    замість неї). Лишається додати `pendingComponent` обом роутам (з i18n-ключем
+    за зразком `admin.common.loading`) і зняти позначку «прогалина» в доці.
+13. **`tools/content-loader-mcp` досі на Supabase і поза workspace**; у
+    `.claude/settings.json` лишився запис `mcpServers.content-loader`
+    (`npx tsx …`). Доля тулзи — рішення власника (переписати на Drizzle/чистий
+    Postgres, втягнути у workspace чи прибрати разом із записом). Див.
+    К0-9 нижче (там — проблема з окремим `npm install`).
+14. **`live:smoke`: крок `scripts/live-smoke/owner-invite.mts` викликає
+    `pnpm exec tsx`, але `tsx` не оголошений в жодному `package.json`** — у
+    чистому клонуванні крок падає. Виправлення — додати `tsx` у `devDependencies`
+    кореня; виконати ПІСЛЯ завершення плану admin-data-foundation, щоб не
+    ловити конфлікти `pnpm-lock.yaml`.
 
 - **Відкладене видалення медіа після підтвердженого Save форми** (`ImageUpload`:
   товар, розділ, опція); sweep К4 цей випадок не покриває. *(Записано
