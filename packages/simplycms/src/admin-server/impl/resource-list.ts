@@ -29,12 +29,11 @@ export async function listResourceRows(
 ): Promise<unknown[]> {
   const columns = ctx.table as unknown as Record<string, Column | undefined>;
   const s = toDrizzleSubset(ctx.table, ctx.allow, subset);
-  // UPSTREAM:DZOD-1 — та сама генерична таблиця, що й `.from` нижче:
-  // проєкція на `T` не типізується без касту (результат кастується
-  // явно у фабриці).
+  // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
+  // каст лише проєкції, `.from(ctx.table)` кастів не потребує.
   let q = db
     .select(ctx.picked as never)
-    .from(ctx.table as never)
+    .from(ctx.table)
     .$dynamic();
   if (s.where) q = q.where(s.where);
   // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не

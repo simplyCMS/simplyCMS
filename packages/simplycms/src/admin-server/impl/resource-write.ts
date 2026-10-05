@@ -24,23 +24,22 @@ const idColumn = (table: Table) =>
 export async function insertResourceRows(
   db: ActorDb,
   ctx: ResourceWriteContext,
-  parsed: unknown,
+  parsed: Record<string, unknown>[],
 ): Promise<unknown[]> {
   // 🔴 batch: УСІ рядки транзакції, не [0] — інакше решта оптимістичних
   // мутацій «підтвердяться» локально без запису в БД.
-  // 🔴 Подвійний каст через `unknown`: генеричний `T["$inferSelect"]`
-  // insert-білдера і `T['$inferSelect']` самої таблиці — надто різні
-  // форми, щоб TS визнав їх «достатньо перетинними» напряму (TS2352).
-  return (await db
+  // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `picked`
+  // (`Record<string, Column>`) не є pg `SelectedFields`; `values(parsed)` кастів не потребує.
+  return db
     .insert(ctx.table)
-    .values(parsed as never)
-    .returning(ctx.picked as never)) as unknown as unknown[];
+    .values(parsed)
+    .returning(ctx.picked as never);
 }
 
 export async function updateResourceRows(
   db: ActorDb,
   ctx: ResourceWriteContext,
-  parsed: readonly { id: unknown; patch: unknown }[],
+  parsed: readonly { id: unknown; patch: Record<string, unknown> }[],
 ): Promise<unknown[]> {
   // 🔴 Явна анотація масиву, а не «evolving array» `[]`: під
   // `tsc -p tsconfig.dts.json` (emitDeclarationOnly, build:packages) TS
@@ -52,14 +51,13 @@ export async function updateResourceRows(
     // до конкретного масиву (умовний тип `TReturning extends undefined ?
     // QueryResult : TReturning[]` лишається нерозвʼязаним) — каст
     // результату до масиву; той самий рантайм-масив з `UPDATE … RETURNING`.
-    const set = ctx.touch
-      ? { ...(patch as object), [ctx.touch]: new Date() }
-      : patch;
-    const rows = (await db
+    const set = ctx.touch ? { ...patch, [ctx.touch]: new Date() } : patch;
+    // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: та сама проєкція `picked`.
+    const rows: unknown[] = await db
       .update(ctx.table)
-      .set(set as never)
+      .set(set)
       .where(eq(idColumn(ctx.table), id))
-      .returning(ctx.picked as never)) as unknown[];
+      .returning(ctx.picked as never);
     const row = rows[0];
     if (!row)
       throw new Error(

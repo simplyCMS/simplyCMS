@@ -75,7 +75,6 @@ export const SERVER_ONLY = [
 export const SERVER_ONLY_DEPS = [
   { name: 'pg' },
   { name: 'drizzle-orm' },
-  { name: 'drizzle-zod' },
   // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
   { name: 'better-auth', clientSafe: ['react'] },
 ] as const;

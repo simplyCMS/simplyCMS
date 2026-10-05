@@ -580,6 +580,7 @@
     "@tanstack/router-core": "1.171.34",
     "@types/pg": "^8.15.6",
     "dotenv": "^18.0.5",
+    "drizzle-zod": "0.8.3",
     "seroval": "^1.6.8"
   },
   "dependencies": {
@@ -587,7 +588,6 @@
     "@tiptap/extension-text-align": "^3.31.4",
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
-    "drizzle-zod": "^0.8.3",
     "pg": "8.23.1",
     "tailwind-merge": "^3.7.0"
   },

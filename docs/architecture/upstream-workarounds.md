@@ -265,39 +265,41 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 
 ---
 
-### DZOD-1 · `.pick()` і refinements drizzle-zod не типізуються для генеричної таблиці
+### DRZ-2 · проєкція `Record<string, Column>` не приймається pg-білдером `select`/`returning`
 
 | Поле | Значення |
 |---|---|
-| Бібліотека | `drizzle-zod` |
-| Знайдено на | 0.8.3 (з `drizzle-orm` 0.45.2, `zod` 4.4.3), Е1б 2026-09-01; refinements — К3-Е3 2026-09-23 |
-| Перевірено на версії | `drizzle-zod` 0.8.3 + `drizzle-orm` 0.45.3 + `zod` 4.6.5 — 2026-10-05: відтворено (прибрати `as never` з `.pick(...)` → TS2345 на `Mask<keyof …>`), не виправлено. Спайк Drizzle 1.0 RC (`drizzle-orm/zod` 1.0.0-rc.4, 2026-10-04): не лікує, ті самі TS2345 — 13 помилок без кастів |
+| Бібліотека | `drizzle-orm` |
+| Знайдено на | 0.45.2, Етап B 2026-10-05 (раніше ховалось під DZOD-1) |
+| Перевірено на версії | 0.45.3 — 2026-10-05: відтворено (прибрати `as never` → TS2345 «not assignable to `SelectedFields`»), не виправлено |
 | Статус апстріму | не повідомлено |
 
-**Симптом.** У `defineAdminResource<T extends Table>` виклик
-`.pick({[K in W]: true})` не компілюється (TS2345), а каст аргументу до
-`never` компілюється, але СТАТИЧНО повертає всю форму без звуження —
-readonly-колонки виглядали писаними. Аналогічно refinements другим
-аргументом `createInsertSchema/createUpdateSchema` для генеричного `T`
-потребують касту функції.
+**Симптом.** `db.select(picked)` / `.returning(picked)`, де `picked` — проєкція
+«усі колонки, крім `omit`» (`pickColumns`, `resource-projection.ts`), не
+компілюється: `Record<string, Column>` не присвоюється `SelectedFields`
+(TS2345, «Property 'dialect' is missing»).
 
-**Корінь.** `M extends Mask<keyof Shape>`, де `Shape` виведений з
-генеричного `T['_']['columns']`, — TS не зводить `keyof Shape` до імен
-колонок до інстанціювання `T`.
+**Корінь.** `getTableColumns<T extends Table>(table): T['_']['columns']`
+(`drizzle-orm/utils.d.ts:37`) для діалект-нейтрального `Table` дає базовий
+`Column`, а pg-білдер очікує `SelectedFieldsFlat<PgColumn>`
+(`drizzle-orm/pg-core/query-builders/select.types.d.ts:57`), де `PgColumn`
+несе бренд `dialect: 'pg'`. Навіть якщо типізувати проєкцію як
+`Record<string, PgColumn>`, рядок виходить `{[x: string]: never}` і не
+кастується до `OrderRow[]` без `unknown` — виграшу немає.
 
-**Наш обхід.** `packages/simplycms/src/admin-server/impl/resource-schemas.ts`
-— каст на РЕЗУЛЬТАТ `.pick()` до `SafePick<Shape, W>` (коментар-розбір
-поруч, ≈:71–146); refinements — каст функції (коміт `d6c702c4`).
-Статичні типи стереже `expectTypeOf` у `impl/__tests__/resource.test.ts`.
+**Наш обхід.** `.select(proj as never)` / `.returning(proj as never)` у
+`resource-list.ts`, `resource-write.ts` (insert, update),
+`order-items/editable.ts`, `orders/change-status.ts` (select, returning);
+тип рядка називають споживачі явно (`as OrderRow[]`, `Row[]` у фабриці).
+Маркери `UPSTREAM:DRZ-2` — біля кожного касту. Інші касти цих файлів
+(`values(parsed)`, `set(patch)`, `.from(ctx.table)`, `eq(id)`) знято: вони
+були наслідком наших `unknown`-типів, не бібліотеки.
 
-**Перевірка виправлення.** Прибрати касти → `pnpm typecheck` і
-`build:packages` зелені, `expectTypeOf`-кейси зелені.
+**Перевірка виправлення.** Прибрати `as never` на проєкціях → `pnpm
+typecheck` і `build:packages` зелені.
 
-**Коли виправлять.** Прибрати касти й `SafePick`, лишити `expectTypeOf`.
-
-**План закриття.** Не чекати апстрім: власний генератор `columnsToZod` замість
-drizzle-zod (спека `2026-10-04-deps-security-tooling-design.md`, тема 7б) —
-закриє запис.
+**Коли виправлять.** Прибрати касти й маркери; на Drizzle 1.0 (DRIZ-1) —
+перевірити, чи `PgTable`/`PgColumn` у `getTableColumns` знімають проблему.
 
 ---
 
@@ -465,6 +467,22 @@ RLS менше місяця; Prisma — без RLS.
 ---
 
 ## Закриті
+
+### DZOD-1 · (ЗАКРИТО 2026-10-05) `.pick()` і refinements drizzle-zod не типізуються для генеричної таблиці
+
+**Висновок.** Замінено власним генератором `columnsToZod` (Етап B, спека
+`2026-10-04-deps-security-tooling-design.md`, 7б): `buildResourceSchemas` більше
+не імпортує `drizzle-zod`, `SafePick` і касти `.pick(... as never)`/refine-функції
+прибрано (коміти Етапу B). `drizzle-orm/zod` 1.0.0-rc.4 DZOD-1 не лікував (13
+помилок без кастів), тож чекати апстрім не довелось. Рантайм-еквівалентність
+з drizzle-zod стереже постійний гейт `columns-to-zod-parity.test.ts` з
+мутаційним контролем; `drizzle-zod` лишився **devDependency** лише як еталон
+гейта (каст у `__tests__/support/parity-diff.ts` — той самий тип-обмеження
+drizzle-zod, лише в тесті, тому без маркера). При міграції на Drizzle 1.0
+(DRIZ-1) еталон замінити на `drizzle-orm/zod` або зняти. Маркерів
+`UPSTREAM:DZOD-1` у коді немає.
+
+---
 
 ### TSDB-5 · (ЗАКРИТО 2026-09-24) «транзакція губить помилку serverFn» — НЕ дефект бібліотеки
 

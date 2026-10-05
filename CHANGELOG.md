@@ -71,6 +71,13 @@
 
 ### Видалено
 
+- `drizzle-zod` з `dependencies` ядра (залишився `devDependency` лише як
+  еталон постійного гейта паритету `columnsToZod`): схеми ресурсів адмінки
+  будує власний генератор `columnsToZod` (9 типів колонок, невідомий —
+  throw), `SafePick` і касти drizzle-zod прибрано, DZOD-1 закрито;
+  проєкційні касти Drizzle виділено в `DRZ-2`. Із `SERVER_ONLY_DEPS` знято
+  `drizzle-zod`.
+
 - `simplycms/schema/relations` (`schema/relations.ts`, 39 `relations()`): мертвий
   код — `drizzle(client)` у `withActor` створюється без `schema`, тож `db.query.*`
   неможливий за побудовою. Субшлях прибрано з обох карт `exports`; у Drizzle 1.0
