@@ -49,6 +49,12 @@
   `apps/www`). Нові API (`<ViewTransition />` тощо) не впроваджено.
 - tsdown 0.22.14 → **0.23.0** (JS у `dist` побайтово той самий; перевірено
   `build:packages`, `test:packaging`, `pilot:pack`).
+- Шаблон магазину і пілотний оверлей вирівняно за версіями з коренем (було: lucide
+  0.563, react 19.2.4, zod 4.3.6, tiptap ^3.19…). Новий тест
+  `tests/template-version-parity.test.ts` стереже парність версій корінь ↔
+  шаблон ↔ оверлей; свідомі розбіжності — явним списком із причиною (пара
+  TanStack DB бампається окремим етапом; `react-day-picker` лишається на ^9, бо
+  `ui/calendar.tsx` ядра написаний під API v9).
 - dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
   `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
 
