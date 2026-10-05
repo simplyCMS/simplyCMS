@@ -143,7 +143,7 @@
    типографічні токени + `fonts` + принцип «brand-змінних більше немає».
 2. `docs/architecture/themes.md` §2 (контракт) і `docs/guides/themes.md`
    §3.3 «Токени, а не CSS» — розширити типографікою і `fonts`.
-3. `CLAUDE.md` (розділ Theme System) + `.github/instructions/ui-architecture.instructions.md` —
+3. `docs/architecture/themes.md` + `docs/architecture/ui.md` —
    синхронізувати формулювання контракту.
 4. `packages/cli/template-theme/tokens.ts` — закоментований приклад
    `'font-sans'`; `template-theme/index.ts` — закоментований приклад
