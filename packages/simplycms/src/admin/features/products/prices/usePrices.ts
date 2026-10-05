@@ -9,6 +9,38 @@ import { isMoney, normalizeMoneyInput } from 'simplycms/domain/money';
 
 export type PriceDraft = Record<string, { price: string; oldPrice: string }>;
 
+type PriceInput = {
+  priceTypeId: string;
+  price: string;
+  oldPrice: string | null;
+};
+
+/**
+ * Чернетка → вхід `saveProductPrices` (клієнтська перевірка формату). Окрема
+ * чиста функція, бо редактор мапить позиційний `path` сервера
+ * (`prices.<i>.price`) назад у вид ціни за ТИМ САМИМ порядком (Тема 12).
+ */
+export function buildPricesInput(
+  draft: PriceDraft,
+): { input: PriceInput[] } | { invalidTypeId: string } {
+  const input: PriceInput[] = [];
+  for (const [priceTypeId, v] of Object.entries(draft)) {
+    const price = normalizeMoneyInput(v.price);
+    // Порожнє поле = «ціни цього типу немає» — рядок у вхід не йде,
+    // сервер видалить наявний (Review Focus 4).
+    if (price === '') continue;
+    const oldPrice = normalizeMoneyInput(v.oldPrice);
+    if (!isMoney(price) || (oldPrice !== '' && !isMoney(oldPrice)))
+      return { invalidTypeId: priceTypeId };
+    input.push({
+      priceTypeId,
+      price,
+      oldPrice: oldPrice === '' ? null : oldPrice,
+    });
+  }
+  return { input };
+}
+
 /**
  * Ціни пари товар/модифікація (Task 8, Step 1). Читання — on-demand зріз
  * (`productId eq` + `modificationId eq`/`isNull`, обидва push-down — Е3-14);
@@ -38,25 +70,9 @@ export function usePrices(productId: string, modificationId: string | null) {
 
   /** `null` — валідно й збережено; рядок — id типу ціни з невалідним полем. */
   const save = async (draft: PriceDraft): Promise<string | null> => {
-    const input: Array<{
-      priceTypeId: string;
-      price: string;
-      oldPrice: string | null;
-    }> = [];
-    for (const [priceTypeId, v] of Object.entries(draft)) {
-      const price = normalizeMoneyInput(v.price);
-      // Порожнє поле = «ціни цього типу немає» — рядок у вхід не йде,
-      // сервер видалить наявний (Review Focus 4).
-      if (price === '') continue;
-      const oldPrice = normalizeMoneyInput(v.oldPrice);
-      if (!isMoney(price) || (oldPrice !== '' && !isMoney(oldPrice)))
-        return priceTypeId;
-      input.push({
-        priceTypeId,
-        price,
-        oldPrice: oldPrice === '' ? null : oldPrice,
-      });
-    }
+    const built = buildPricesInput(draft);
+    if ('invalidTypeId' in built) return built.invalidTypeId;
+    const input = built.input;
     const res = await saveProductPrices({
       data: { productId, modificationId, prices: input },
     });

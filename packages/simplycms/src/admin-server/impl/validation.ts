@@ -1,0 +1,43 @@
+import { setResponseStatus } from '@tanstack/react-start/server';
+import type { z } from 'zod';
+import { sanitizeValidationIssues } from 'simplycms/contracts/domain-errors';
+import { ValidationError } from './errors';
+
+/**
+ * Zod-відмова → `ValidationError` (400). 🔴 ЄДИНЕ місце такого перетворення
+ * для адмін-поверхні: і валідатор serverFn (`adminInput`), і повторний
+ * парс у `defineAdminResource` йдуть сюди. Сире повідомлення/вхід Zod
+ * далі за межу не потрапляють — лише білий список
+ * (`sanitizeValidationIssues`). Статус ставиться ДО throw (як у
+ * `toAdminConflict`: сервер бере його з відповіді в момент catch).
+ */
+export function parseAdminInput<S extends z.ZodType>(
+  schema: S,
+  data: unknown,
+): z.output<S> {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data;
+  setResponseStatus(400);
+  throw new ValidationError(sanitizeValidationIssues(result.error.issues));
+}
+
+/**
+ * Валідатор serverFn адмінки: `.validator(adminInput(schema))` замість
+ * `.validator(schema)`.
+ *
+ * 🔴 Чому не middleware. `execValidator` Start (`start-client-core`,
+ * `createServerFn.js`) для будь-якої схеми з `~standard` (Zod 4 її має)
+ * кидає `new Error(JSON.stringify(issues))` — Zod-помилка до middleware
+ * НЕ доходить, лишається рядок; відновлювати issues парсингом
+ * `error.message` крихко й неоднозначно (так виглядає й будь-який
+ * хендлер, що кине JSON у повідомленні). Функція-валідатор виконується
+ * тим самим `execValidator`, але її власний throw (`ValidationError`)
+ * летить як є. Типи вводу/виводу зберігає сигнатура (`z.input`/
+ * `z.output`), тож тип виклику на клієнті не змінюється. Повноту
+ * застосування стереже `__tests__/admin-validators-wrapped.test.ts`.
+ */
+export function adminInput<S extends z.ZodType>(
+  schema: S,
+): (data: z.input<S>) => z.output<S> {
+  return (data) => parseAdminInput(schema, data);
+}

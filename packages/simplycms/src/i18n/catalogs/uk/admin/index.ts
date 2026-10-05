@@ -24,6 +24,7 @@ import { messages as settings } from './settings';
 import { messages as shipping } from './shipping';
 import { messages as themes } from './themes';
 import { messages as users } from './users';
+import { messages as validation } from './validation';
 import { messages as validator } from './validator';
 
 export const messages = {
@@ -45,5 +46,6 @@ export const messages = {
   ...shipping,
   ...themes,
   ...users,
+  ...validation,
   ...validator,
 } satisfies Record<string, string>;

@@ -15,12 +15,23 @@ import {
   productFormSchema,
   type ProductFormValues,
 } from './product-form-schema';
+import {
+  formErrorBinding,
+  type FormErrorBinding,
+} from '../../../lib/apply-server-validation';
+
+/** Поля, чий UI (`ProductMainFields`) показує повідомлення серверної помилки. */
+const SERVER_ERROR_FIELDS = ['name', 'slug'] as const;
 
 interface Props {
   /** `null` — новий товар (не створено, ID немає). */
   readonly productId: string | null;
   readonly defaultValues: ProductFormValues;
-  readonly onSubmit: (values: ProductFormValues) => void | Promise<void>;
+  /** `binding` — привʼязка серверних помилок валідації до полів цієї форми (Тема 12). */
+  readonly onSubmit: (
+    values: ProductFormValues,
+    binding: FormErrorBinding,
+  ) => void | Promise<void>;
   readonly submitLabel: string;
   /** Дати для `ProductMetaCard` — лише для ІСНУЮЧОГО товару. */
   readonly meta?: { createdAt: Date; updatedAt: Date };
@@ -69,7 +80,8 @@ export function ProductForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(
-          (values) => onSubmit(values),
+          (values) =>
+            onSubmit(values, formErrorBinding(form, SERVER_ERROR_FIELDS)),
           () => toast.error(t('admin.products.fixFields')),
         )}
         className="space-y-6"

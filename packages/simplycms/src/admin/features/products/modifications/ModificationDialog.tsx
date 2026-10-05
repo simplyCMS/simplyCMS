@@ -15,6 +15,10 @@ import {
 import { Loader2 } from 'lucide-react';
 import { adminErrorKey } from '../../../lib/admin-error';
 import {
+  applyServerValidation,
+  formErrorBinding,
+} from '../../../lib/apply-server-validation';
+import {
   modificationFormSchema,
   type ModificationFormValues,
 } from './modification-form-schema';
@@ -24,6 +28,8 @@ import { ModificationStatusControl } from './ModificationStatusControl';
 import { resolveModFormValues } from './modification-form-values';
 
 const DIALOG_FORM_ID = 'modification-dialog-form';
+/** Поля, чий UI (`ModificationFormFields`) показує повідомлення серверної помилки. */
+const SERVER_ERROR_FIELDS = ['name', 'slug'] as const;
 
 interface Props {
   readonly open: boolean;
@@ -86,6 +92,17 @@ export function ModificationDialog({
       else await onCreate(values);
       onOpenChange(false);
     } catch (e) {
+      // Тема 12: помилка валідації сервера → помилка поля, тост — лише для
+      // немапленого (див. `applyServerValidation`).
+      const binding = formErrorBinding(form, SERVER_ERROR_FIELDS);
+      const rest = applyServerValidation(e, binding.setError, {
+        t,
+        fieldFor: binding.fieldFor,
+      });
+      if (rest !== null) {
+        if (rest.length > 0) toast.error(t('admin.validation.failed'));
+        return;
+      }
       const key = adminErrorKey(e);
       toast.error(
         key ? t(key) : `${t('common.error')} ${(e as Error).message}`,

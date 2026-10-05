@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { getTableColumns, getTableName } from 'drizzle-orm';
-import type { Table } from 'drizzle-orm';
+import type { Column, Table } from 'drizzle-orm';
 import {
   createInsertSchema,
   createSelectSchema,
@@ -27,6 +27,44 @@ const REFERENCE = {
   update: createUpdateSchema as unknown as RefFactory,
   select: createSelectSchema as unknown as RefFactory,
 } satisfies Record<SchemaMode, RefFactory>;
+
+/**
+ * 🔴 ДОКУМЕНТОВАНИЙ ВИНЯТОК із паритету (Тема 12): `numeric`. Еталон
+ * drizzle-zod дає `z.string()` — приймає `'abc'`, що в БД падає 22P02 (500).
+ * Наш `columnsToZod` свідомо суворіший: десятковий формат за
+ * precision/scale колонки. Гейт НЕ послаблено — для numeric очікування
+ * інше, але вичерпне: `ours = еталон І (не рядок АБО рядок вміщається у
+ * numeric(p, s))`. «Вміщається» тут — НЕЗАЛЕЖНА реалізація (розбір за
+ * крапкою, без того регексу, що в продакшн-коді), тож розбіжність двох
+ * реалізацій теж червоніє. Для всіх інших типів — лише суворий паритет.
+ */
+export function numericFits(column: Column, value: string): boolean {
+  const { precision, scale } = column as unknown as {
+    precision: number | null;
+    scale: number | null;
+  };
+  const unsigned = value.replace(/^[+-]/, '');
+  const [int = '', frac = '', ...rest] = unsigned.split('.');
+  if (rest.length > 0 || (int === '' && frac === '')) return false;
+  if (!/^\d*$/.test(int) || !/^\d*$/.test(frac)) return false;
+  if (precision == null) return true;
+  const s = scale ?? 0;
+  return (
+    int.replace(/^0+/, '').length <= precision - s &&
+    frac.replace(/0+$/, '').length <= s
+  );
+}
+
+function expectedSuccess(
+  column: Column,
+  value: unknown,
+  referenceSuccess: boolean,
+): boolean {
+  if (column.columnType !== 'PgNumeric' || !referenceSuccess) {
+    return referenceSuccess;
+  }
+  return typeof value !== 'string' || numericFits(column, value);
+}
 
 export const MODES: readonly SchemaMode[] = ['insert', 'update', 'select'];
 
@@ -57,9 +95,10 @@ export function diffAgainstReference(
         for (const v of valuesFor(cols[key]!)) {
           const a = ours[key].safeParse(v);
           const b = ref[key].safeParse(v);
-          if (a.success !== b.success) {
+          const expected = expectedSuccess(cols[key]!, v, b.success);
+          if (a.success !== expected) {
             diffs.push(
-              `${at}: ${String(v).slice(0, 20)} -> ${a.success} vs ${b.success}`,
+              `${at}: ${String(v).slice(0, 20)} -> ${a.success} vs ${expected}`,
             );
           } else if (
             a.success &&

@@ -7,6 +7,7 @@ import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { releaseOrderStock } from 'simplycms/inventory';
 import type { ActorDb } from 'simplycms/db';
 import { runAdmin } from '../run';
+import { parseAdminInput } from '../validation';
 import { pickColumns } from '../resource';
 import { AdminConflictError } from '../errors';
 import { ORDERS_OMIT, type OrderRow } from './resource';
@@ -47,7 +48,7 @@ export const changeOrderStatusOp = async ({
 }: {
   data: z.infer<typeof changeOrderStatusInput>;
 }): Promise<{ order: OrderRow }> => {
-  const { orderId, statusId } = changeOrderStatusInput.parse(data);
+  const { orderId, statusId } = parseAdminInput(changeOrderStatusInput, data);
   return runAdmin('order.manage', async (db) => {
     // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
     // та сама проєкція, що й у фабриці.

@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { adminErrorKey } from '../../../lib/admin-error';
+import { reportTxError } from '../../../lib/report-tx-error';
 import { useModifications } from './useModifications';
 import { ModificationRow } from './ModificationRow';
 
@@ -69,12 +69,9 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
       .isPersisted.promise.then(() =>
         toast.success(t('admin.products.mods.deleted')),
       )
-      .catch((e: unknown) => {
-        const key = adminErrorKey(e);
-        toast.error(
-          key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
-        );
-      });
+      // Тема 12: полів тут немає (видалення) — `reportTxError` дає локалізований
+      // тост (у т.ч. для ValidationError), а не сирий JSON.
+      .catch((e: unknown) => reportTxError(t, e));
   };
 
   if (mods.length === 0)

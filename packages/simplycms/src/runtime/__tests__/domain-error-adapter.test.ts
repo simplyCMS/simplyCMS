@@ -123,4 +123,86 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     expect(out.name).toBe('Error');
     expect(out.message).toBe('щось інше');
   });
+
+  // Тема 12: ValidationError — єдина доменна помилка з НЕ-примітивним
+  // payload. issues переживають межу, а нічого іншого (сирі повідомлення,
+  // відлуння вводу) — ні.
+  describe('ValidationError (Тема 12)', () => {
+    const issues = [
+      {
+        path: ['quantities', 0, 'quantity'],
+        code: 'too_big',
+        params: { origin: 'number', maximum: 1_000_000 },
+      },
+      {
+        path: ['prices', 1, 'price'],
+        code: 'invalid_decimal',
+        params: { precision: 12, scale: 2 },
+      },
+    ];
+    const make = (extra: Record<string, unknown> = {}) =>
+      Object.assign(new Error('[admin-server] помилка валідації вводу'), {
+        name: 'ValidationError',
+        issues,
+        ...extra,
+      });
+
+    it('name і issues (path/code/params) переживають межу, без втрат і домішок', async () => {
+      const out = await roundTrip(make(), withAdapter);
+      expect(out).toBeInstanceOf(Error);
+      expect(out.name).toBe('ValidationError');
+      expect((out as unknown as { issues: unknown }).issues).toEqual(issues);
+      // Нічого зайвого на обʼєкті: лише name/message/issues.
+      expect(Object.keys(out).sort()).toEqual(['issues', 'name']);
+    });
+
+    it('білий список: сирі повідомлення, input, pattern і вкладені обʼєкти не летять', async () => {
+      const dirty = make({
+        issues: [
+          {
+            path: ['name'],
+            code: 'too_small',
+            message: 'Too small: expected string to have >=3 characters',
+            input: 'введене-користувачем',
+            pattern: '^secret$',
+            params: {
+              minimum: 3,
+              origin: 'string',
+              leak: 'x',
+              nested: { a: 1 },
+            },
+          },
+        ],
+      });
+      const out = await roundTrip(dirty, withAdapter);
+      expect((out as unknown as { issues: unknown }).issues).toEqual([
+        {
+          path: ['name'],
+          code: 'too_small',
+          params: { minimum: 3, origin: 'string' },
+        },
+      ]);
+      expect(JSON.stringify(out)).not.toContain('введене');
+      expect(JSON.stringify(out)).not.toContain('secret');
+    });
+
+    it('невідомий код зводиться до custom', async () => {
+      const out = await roundTrip(
+        make({ issues: [{ path: [], code: 'attacker_code' }] }),
+        withAdapter,
+      );
+      expect((out as unknown as { issues: unknown }).issues).toEqual([
+        { path: [], code: 'custom' },
+      ]);
+    });
+
+    it('контроль БЕЗ адаптера: ShallowErrorPlugin губить issues і name (сирий JSON знову)', async () => {
+      const out = await roundTrip(
+        make(),
+        defaultSerovalPlugins as unknown as SerovalPlugins,
+      );
+      expect(out.name).toBe('Error');
+      expect((out as unknown as { issues?: unknown }).issues).toBeUndefined();
+    });
+  });
 });

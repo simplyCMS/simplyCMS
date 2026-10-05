@@ -6,6 +6,7 @@ import { Label } from 'simplycms/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, Save } from 'lucide-react';
+import { useServerFieldErrors } from '../../../lib/useServerFieldErrors';
 import {
   usePickupPoints,
   usePickupPointsCount,
@@ -35,18 +36,22 @@ export function StockEditor({
   const { data: pickupPoints = [] } = usePickupPoints();
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const fieldErrors = useServerFieldErrors();
 
   const valueFor = (pointId: string) =>
     draft[pointId] ??
     String(rows.find((r) => r.pickupPointId === pointId)?.quantity ?? 0);
 
-  const setQuantity = (pointId: string, value: string) =>
+  const setQuantity = (pointId: string, value: string) => {
+    fieldErrors.clear(pointId);
     setDraft((prev) => ({ ...prev, [pointId]: value }));
+  };
 
   const hasChanges = Object.keys(draft).length > 0;
 
   const handleSave = async () => {
     setIsSaving(true);
+    fieldErrors.reset();
     try {
       const quantities: Record<string, string> = {};
       for (const p of pickupPoints) quantities[p.id] = valueFor(p.id);
@@ -62,9 +67,18 @@ export function StockEditor({
         );
       }
     } catch (e) {
-      toast.error(
-        t('admin.products.stock.saveFailed', { message: (e as Error).message }),
-      );
+      // Тема 12: `path` сервера позиційний (`quantities.<i>.quantity`), а
+      // `save` шле кількості в порядку `pickupPoints` — індекс → id точки.
+      fieldErrors.handle(e, {
+        fieldFor: (path) =>
+          path[0] === 'quantities' && typeof path[1] === 'number'
+            ? (pickupPoints[path[1]]?.id ?? null)
+            : null,
+        fallback: (err) =>
+          t('admin.products.stock.saveFailed', {
+            message: (err as Error).message,
+          }),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -95,18 +109,30 @@ export function StockEditor({
             value={valueFor(pickupPoints[0].id)}
             onChange={(e) => setQuantity(pickupPoints[0].id, e.target.value)}
             className="w-32"
+            aria-invalid={!!fieldErrors.errors[pickupPoints[0].id]}
+            aria-describedby={
+              fieldErrors.errors[pickupPoints[0].id]
+                ? 'stock-quantity-error'
+                : undefined
+            }
           />
           <span className="text-muted-foreground">
             {t('admin.products.stock.units')}
           </span>
           {saveButton}
         </div>
+        {fieldErrors.errors[pickupPoints[0].id] && (
+          <p id="stock-quantity-error" className="text-xs text-destructive">
+            {fieldErrors.errors[pickupPoints[0].id]}
+          </p>
+        )}
       </div>
     ) : (
       <div className="space-y-4">
         <StockPointsTable
           points={pickupPoints}
           valueFor={valueFor}
+          errors={fieldErrors.errors}
           onChange={setQuantity}
         />
         <div className="flex justify-end">{saveButton}</div>

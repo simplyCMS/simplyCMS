@@ -9,6 +9,9 @@ interface Props {
   readonly isDefault: boolean;
   readonly value: PriceDraft[string];
   readonly hasError: boolean;
+  /** Помилки полів із сервера (Тема 12) — під відповідним інпутом. */
+  readonly priceError?: string;
+  readonly oldPriceError?: string;
   readonly onChange: (field: 'price' | 'oldPrice', value: string) => void;
 }
 
@@ -19,6 +22,8 @@ export function PriceTypeRow({
   isDefault,
   value,
   hasError,
+  priceError,
+  oldPriceError,
   onChange,
 }: Props) {
   const t = useT();
@@ -40,11 +45,23 @@ export function PriceTypeRow({
           value={value.price}
           onChange={(e) => onChange('price', e.target.value)}
           placeholder="0"
-          className={`w-32 ${hasError ? 'border-destructive' : ''}`}
+          className={`w-32 ${hasError || priceError ? 'border-destructive' : ''}`}
+          aria-invalid={hasError || !!priceError}
+          aria-describedby={
+            priceError ? `price-${priceTypeId}-error` : undefined
+          }
         />
         {hasError && (
           <p className="text-xs text-destructive mt-1">
             {t('admin.products.prices.invalid')}
+          </p>
+        )}
+        {priceError && (
+          <p
+            id={`price-${priceTypeId}-error`}
+            className="text-xs text-destructive mt-1"
+          >
+            {priceError}
           </p>
         )}
       </TableCell>
@@ -56,8 +73,20 @@ export function PriceTypeRow({
           value={value.oldPrice}
           onChange={(e) => onChange('oldPrice', e.target.value)}
           placeholder="0"
-          className="w-32"
+          className={`w-32 ${oldPriceError ? 'border-destructive' : ''}`}
+          aria-invalid={!!oldPriceError}
+          aria-describedby={
+            oldPriceError ? `old-price-${priceTypeId}-error` : undefined
+          }
         />
+        {oldPriceError && (
+          <p
+            id={`old-price-${priceTypeId}-error`}
+            className="text-xs text-destructive mt-1"
+          >
+            {oldPriceError}
+          </p>
+        )}
       </TableCell>
     </TableRow>
   );

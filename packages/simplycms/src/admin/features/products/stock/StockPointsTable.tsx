@@ -21,11 +21,18 @@ interface PickupPointLike {
 interface Props {
   readonly points: readonly PickupPointLike[];
   readonly valueFor: (pointId: string) => string;
+  /** Серверні помилки полів за id точки (Тема 12). */
+  readonly errors?: Readonly<Record<string, string>>;
   readonly onChange: (pointId: string, value: string) => void;
 }
 
 /** Таблиця залишків по точках (Task 8, Step 2) — розмітка легасі `StockByPointManager.tsx`. */
-export function StockPointsTable({ points, valueFor, onChange }: Props) {
+export function StockPointsTable({
+  points,
+  valueFor,
+  errors = {},
+  onChange,
+}: Props) {
   const t = useT();
   return (
     <Table>
@@ -63,7 +70,21 @@ export function StockPointsTable({ points, valueFor, onChange }: Props) {
                 value={valueFor(point.id)}
                 onChange={(e) => onChange(point.id, e.target.value)}
                 className="w-24 ml-auto text-right"
+                aria-invalid={!!errors[point.id]}
+                aria-describedby={
+                  errors[point.id]
+                    ? `stock-quantity-${point.id}-error`
+                    : undefined
+                }
               />
+              {errors[point.id] && (
+                <p
+                  id={`stock-quantity-${point.id}-error`}
+                  className="text-xs text-destructive mt-1"
+                >
+                  {errors[point.id]}
+                </p>
+              )}
             </TableCell>
           </TableRow>
         ))}
