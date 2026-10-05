@@ -28,6 +28,9 @@ const SEED: Row[] = Array.from({ length: 6 }, (_, i) => ({
   name: `Рядок ${i}`,
   order: i,
 }));
+/** Сценарій: сторінок списку, переглянутих до розмонтування, і карток. */
+const PAGES_VIEWED = 3;
+const CARDS = 1;
 const BASE = ['inactive-key', 'list'] as const;
 
 function setup() {
@@ -111,9 +114,12 @@ describe('TSDB-1 (а): вміст кеш-ключів неактивного з�
     await awaitRevalidation(list as never, before);
     // Контракт: після запису жоден кешований ключ колекції не містить
     // стейл-рядка — кожен рядок у кеші збігається з поточним станом сервера
-    // (за id), і не вилучений ключ втратив дані. Кількість запитів — не
-    // магічне число: кожен кешований ключ ревалідується рівно раз (M1).
+    // (за id). Нижня межа: жоден ключ неактивного списку не відкинуто —
+    // щонайменше ключ на кожну переглянуту сторінку + на картку. Кількість
+    // запитів — не магічне число: кожен кешований ключ ревалідується рівно
+    // раз (M1).
     const queries = qc.getQueryCache().findAll({ queryKey: BASE });
+    expect(queries.length).toBeGreaterThanOrEqual(PAGES_VIEWED + CARDS);
     const current = new Map(server.rows.map((r) => [r.id, r]));
     for (const q of queries) {
       expect(q.state.data).toBeDefined();
