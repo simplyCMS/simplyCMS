@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 
 // drizzle-kit не читає `.env.local` автоматично (лише `.env`) — вантажимо явно.
-loadEnv({ path: resolve(here, '../../.env.local') });
+// dotenv 18 за замовчуванням друкує «injected env» у stderr — глушимо.
+loadEnv({ path: resolve(here, '../../.env.local'), quiet: true });
 
 // 🔴 `schema`/`out` МУСЯТЬ бути відносними: drizzle-kit 0.31 у `generate` склеює
 // `./${out}` і на абсолютному шляху падає з ENOENT. Отже команди запускаються з

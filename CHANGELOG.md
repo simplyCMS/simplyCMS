@@ -37,6 +37,17 @@
   `brace-expansion`, `@tiptap/core` — оновлено в `pnpm-lock.yaml`.
 - `pnpm audit`: лишається лише `esbuild` через `drizzle-kit` (dev-only).
 
+### Залежності (мінорні)
+
+- До останніх версій у межах поточних мажорних: vite 8.3.2 + `@vitejs/plugin-react`
+  6.1.1, zod 4.6.5, prettier 3.9.9 (форматування репо не змінилось), eslint
+  10.12 + typescript-eslint 8.71, react-hook-form 7.89, `@hookform/resolvers`
+  5.9.1, `@tanstack/react-query` 5.104.1, lucide-react 1.51, pg 8.23.1,
+  drizzle-orm 0.45.3 / drizzle-kit 0.31.11, `@clack/prompts` 1.8.1, UI-патчі,
+  testing-library, `@types/node`, `@supabase/*`.
+- dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
+  `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
+
 ### Змінено
 
 - 🔴 **Baseline міграцій (правка, без нової міграції):** з `accounts` прибрано

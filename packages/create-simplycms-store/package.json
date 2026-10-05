@@ -19,6 +19,6 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@clack/prompts": "^1.7.0"
+    "@clack/prompts": "^1.8.1"
   }
 }
