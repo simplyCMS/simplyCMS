@@ -760,12 +760,8 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     `.claude/settings.json` лишився запис `mcpServers.content-loader`
     (`npx tsx …`). Доля тулзи — рішення власника (переписати на Drizzle/чистий
     Postgres, втягнути у workspace чи прибрати разом із записом). Див.
-    К0-9 нижче (там — проблема з окремим `npm install`).
-14. **`live:smoke`: крок `scripts/live-smoke/owner-invite.mts` викликає
-    `pnpm exec tsx`, але `tsx` не оголошений в жодному `package.json`** — у
-    чистому клонуванні крок падає. Виправлення — додати `tsx` у `devDependencies`
-    кореня; виконати ПІСЛЯ завершення плану admin-data-foundation, щоб не
-    ловити конфлікти `pnpm-lock.yaml`.
+    К0-9 нижче (там — проблема з окремим `npm install`). Під TS 6 при
+    відновленні потрібен `"types": ["node"]` у його tsconfig (TS2591).
 15. **Помилки валідації serverFn адмінки → помилки полів форми.** Zod-відмова
     на межі serverFn (400) долітає до UI як `Error.message` із сирим JSON
     списку issues і показується загальним тостом (напр. залишок >1 000 000:

@@ -16,8 +16,7 @@
     "paths": {
       "@themes/*": ["./themes/*"],
       "@plugins/*": ["./plugins/*"]
-    },
-    "baseUrl": "."
+    }
   },
   "include": ["src", "routes.ts", "simplycms.config.ts", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]

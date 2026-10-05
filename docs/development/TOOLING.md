@@ -17,7 +17,7 @@
 Стек (версії — у `package.json`, тут лише те, що визначає рішення):
 
 - **Каркас:** TanStack Start + Router (Vite, React 19), SSR вітрини, client-only адмінка.
-- **Мова:** TypeScript strict — 🔴 **5.9 свідомо, не 6/7** (причина нижче).
+- **Мова:** TypeScript strict — 🔴 **TS 6.0; TS 7 заблоковано лише `typescript-eslint`** (причина нижче).
 - **Лінт:** ESLint 10 (flat config) + typescript-eslint 8; форматування — Prettier (exact-версія в `devDependencies`).
 - **Дані:** чистий **PostgreSQL 17** (Drizzle + `pg`-пул, `simplycms/db`), auth — **Better Auth**.
   Supabase — лише один із можливих провайдерів Postgres.
@@ -25,15 +25,16 @@
 - **Дані на клієнті:** TanStack React Query (+ TanStack DB колекції адмінки) і route loaders / `createServerFn`.
 - **Тести:** Vitest + Testing Library + jsdom; схемний контур — Postgres-харнес.
 
-🔴 **Чому TypeScript лишається на 5.9** (реєстр — `UPSTREAM:TSESL-1`): TS 7 — нативний Go-компілятор
-без стабільного програмного API до 7.1, тож `typescript-eslint` закрив запит підтримки як
-**not planned** (peer — `typescript <6.1.0`); це наш гейт `pnpm lint`, і блокер тут ОДИН. Декларації
-пакетів емітить `tsc -p tsconfig.dts.json` (CLI, не програмний API). Апстрім пропонує тримати два
-компілятори (`@typescript/typescript6` для тулінгу) — для нас це борг без вигоди. TS 6 вимагає
-прибрати `baseUrl`, після чого бандлер інжектує власний і падає з `TS5101`, а
-`ignoreDeprecations: "6.0"` відкриває `TS2209` (потрібен явний `rootDir` у кожному пакеті) — це
-окремий міграційний проєкт, а не бамп залежності. **Умова перегляду:** `typescript-eslint`
-оголосить підтримку TS 7.
+🔴 **TypeScript 6.0, TS 7 — ще ні** (реєстр — `UPSTREAM:TSESL-1`): міграція 5.9 → 6.0.3 (2026-10-05)
+зводилась до прибирання `"baseUrl": "."` у трьох tsconfig (шляхи `paths` уже `./…`), без
+`ignoreDeprecations` і без змін коду; декларації пакетів побайтово ті самі, що на 5.9. TS 7 —
+нативний Go-компілятор; наш код він типізує без помилок (4,8 с проти 16,5 с на 6.0.3), але
+`typescript-eslint` має peer `typescript <6.1.0` — це наш гейт `pnpm lint`, і блокер ОДИН.
+Декларації пакетів емітить `tsc -p tsconfig.dts.json` (CLI, не програмний API). **Умова перегляду:**
+`typescript-eslint` оголосить підтримку TS 7.
+
+`tools/content-loader-mcp` (поза workspace, борг №13 роадмапа): під TS 6 при відновленні
+потребує `"types": ["node"]` у tsconfig (TS2591); зараз не виправляється.
 
 ## 2. Команди
 

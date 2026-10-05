@@ -21,7 +21,6 @@
   // її стереже `scripts/audit-exports.mjs`, який шаблон уже сканує.
   "extends": "./packages/create-simplycms-store/template/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "simplycms": ["./packages/simplycms/dist/index.d.ts"],
       "simplycms/*": ["./packages/simplycms/dist/*"],

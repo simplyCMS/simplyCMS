@@ -54,8 +54,8 @@ OpenCart-подібна платформа: ядро постачає карка
 TypeScript (strict) · TanStack Start + Router + Query (+ DB для колекцій адмінки) · Vite ·
 React · pnpm workspaces · **Drizzle поверх чистого PostgreSQL 17** · **Better Auth** ·
 Tailwind v4 + shadcn/ui · react-hook-form + Zod 4 · Tiptap v3 · Vitest + Testing Library.
-Версії — у `package.json`. 🔴 **TypeScript свідомо 5.9, не 6/7** — блокер `typescript-eslint`
-(`docs/development/TOOLING.md` § 1, реєстр `UPSTREAM:TSESL-1`).
+Версії — у `package.json`. 🔴 **TypeScript 6.0; TS 7 блокує лише peer `typescript-eslint` (`<6.1.0`)** —
+переглянути, коли він підтримає TS 7 (`docs/development/TOOLING.md` § 1, реєстр `UPSTREAM:TSESL-1`).
 
 ---
 

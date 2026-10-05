@@ -28,8 +28,7 @@
       "simplycms/*": ["./packages/simplycms/src/*"],
       "@themes/*": ["./themes/*"],
       "@plugins/*": ["./plugins/*"]
-    },
-    "baseUrl": "."
+    }
   },
   "include": ["src", "**/*.ts", "**/*.tsx"],
   "exclude": [
