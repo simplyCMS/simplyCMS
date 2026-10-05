@@ -201,6 +201,16 @@ test → test:schema → build:packages → typecheck:template → test:packagin
 
 ---
 
+## Дисципліна git
+
+- Коміти й PR підписані лише іменем власника: жодних трейлерів `Co-Authored-By:` /
+  `Generated with …`. Субагенти й воркфлоу можуть додати їх попри інструкції, тож після
+  будь-якого воркфлоу чи субагента, що комітить, перевір:
+  `git log --format=%B <база>..HEAD | grep -ciE "co-authored|generated with"` — має бути `0`.
+- Комітити й пушити — лише коли власник явно про це попросив.
+
+---
+
 ## Куди дивитись далі
 
 - **`docs/architecture/`** — канон підсистем: `data-layer`, `rendering-and-routing`, `ui`,
