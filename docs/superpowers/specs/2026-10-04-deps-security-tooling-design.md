@@ -26,6 +26,7 @@ TanStack DB і в `admin-server/index.ts`, тож фундамент оновл�
 | 3 | **`validator`** (тема 3) | 58 правок в `admin-server/index.ts` — до того, як Е6а додасть операції |
 | 4 | **Власний генератор zod-схем** (тема 7б) · [план](../plans/2026-10-05-admin-data-foundation.md) | серце `defineAdminResource` — до нових ресурсів Е6а |
 | 5 | **CSRF** (тема 2) | захисний шар до нових сторінок адмінки |
+| 5а | **Санітизація HTML** (тема 9) | збережений XSS у відгуках — захисний шар до нових сторінок адмінки |
 | 6 | → **К3-Е6а** і далі за роадмапом | |
 | ∥ | **8а, 8б** (правила, рушій пошуку) | лише доки й тулінг — паралельно будь-якому кроку, краще раніше |
 
@@ -44,6 +45,7 @@ TanStack DB і в `admin-server/index.ts`, тож фундамент оновл�
 | 7 | Drizzle: `relations.ts`, drizzle-zod, спайк 1.0 RC, умова перегляду | 7а точкова, 7б/7в спайк | ✅ затверджено |
 | 8а | Правила й Copilot-артефакти за моделлю MetaHub | архітектурна (доки) | ✅ затверджено |
 | 8б | Рушій `codebase-research`: graphify → codebase-memory-mcp + `orient --map` | архітектурна (тулінг) | ✅ затверджено |
+| 9 | Санітизація HTML (збережений XSS) | точкова, безпекова | ✅ затверджено (2026-10-05) |
 
 ---
 
@@ -517,3 +519,54 @@ up` + `db-diff.mjs` + `schema-sources-parity` + peer-діапазон ядра +
   місяця; Prisma — без RLS). `schema/relations.ts` (448 рядків) — мертвий код
   (`drizzle(client)` без `schema`, RQB не використовується). Better Auth 1.7.7
   допускає `drizzle-orm >=1.0.0-rc.1`.
+
+---
+
+## Тема 9 · Санітизація HTML ✅ (2026-10-05)
+
+**Факти (перевірено по коду).**
+- Відгук покупця пишеться сервером без жодної очистки
+  (`storefront/loaders/reviews-write.ts`; `core/lib/review-form.ts:17` —
+  лише `z.string().max(5000)`), а виводиться сирим HTML:
+  `reviews-ui/ReviewCard.tsx:121` (вітрина) і `admin/pages/ReviewDetail.tsx:248`
+  (адмінка). Будь-хто, викликавши server function напряму, зберігає довільний
+  HTML/JS — **збережений XSS** у відвідувачів і **у власника в адмінці**
+  (перехоплення сесії адміністратора).
+- Сирий вивід також: `storefront-routes/pages/PropertyPage.tsx:168`,
+  `views/CatalogSectionView.tsx:33`, `views/ProductDetailSections.tsx:69`, тема
+  `default` (`views/CatalogSectionView.tsx:36`, `views/product/ProductPanels.tsx:40`)
+  — контент адміна, ризик нижчий. Санітизатора в репо немає взагалі.
+- Редактори: відгуки (`reviews-ui/ReviewRichTextEditor.tsx`) — StarterKit без
+  heading/codeBlock/blockquote/horizontalRule + Underline + Link; адмінка
+  (`admin/components/RichTextEditor.tsx`) — StarterKit (h1–h3, link) + Image +
+  TextAlign.
+
+**Рішення.**
+1. Server-only модуль `sanitizeRichHtml(html, profile)` на `sanitize-html` (без
+   DOM; у `contracts/server-only`): профілі `review` і `content` — білі списки,
+   ТОЧНО відповідні виводу наших редакторів; посилання лише
+   `http`/`https`/`mailto`, у відгуках примусово `rel="nofollow ugc noopener"`;
+   `style` — лише `text-align`; `img src` — `http(s)` або `/media/`.
+2. **Рубіж 1 — запис:** відправлення відгуку; поля з розміткою в
+   `defineAdminResource` (ресурс оголошує, напр. `richHtml: { description: 'content' }`,
+   генеричний запис очищає).
+3. **Рубіж 2 — віддача з сервера:** лоадери вітрини й операції читання
+   `admin-server` чистять ці поля перед відправкою клієнту (старі дані, сід,
+   легасі-адмінка; без ваги в браузері).
+4. **Гарантія типом:** `sanitizeRichHtml` повертає брендований `SanitizedHtml`;
+   єдине місце `dangerouslySetInnerHTML` для контенту — компонент ядра
+   `<RichHtml html={…}/>`, що приймає лише `SanitizedHtml`; поля view-model у
+   `simplycms/contracts/views` — цього типу (тема не може відрендерити
+   неочищене); тема `default` → `<RichHtml>`. Нове ESLint-правило з власним
+   іменем плагіна забороняє `dangerouslySetInnerHTML` поза `RichHtml` і явним
+   списком винятків із причиною (`<style>` у `ThemeTokens`, `ui/chart.tsx`,
+   скрипт у `__root.tsx`); негативний контроль.
+5. **Тести:** вектори (`<script>`, `onerror`, `javascript:`, `data:`, SVG,
+   `style`-інʼєкція); **зворотний тест** — HTML з усіма можливостями кожного
+   редактора проходить санітизацію без змін; харнес — відгук зі `<script>`
+   зберігається очищеним; мутації: без очистки на записі / на віддачі —
+   відповідні тести червоніють.
+
+**Виконання:** тут (архітектор + субагент), у групі безпеки разом із CSRF,
+після мержу кроку 1, до К3-Е6а.
+
