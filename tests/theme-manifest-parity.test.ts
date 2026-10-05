@@ -48,7 +48,7 @@ describe('референс-пакети тем: manifest ↔ package.json', () =
       expect(manifest.version).toBe(manifestJson.version);
       // Канонічне імʼя = тека без префікса = хвіст імені пакета: на цьому
       // тримаються ключ конфігу (deriveKey), `name` рядка в таблиці `themes`
-      // і резолв активної теми в `getActiveThemeSSR`.
+      // і резолв активної теми в `loadActiveTheme`.
       const canonical = dir.slice('simplycms-theme-'.length);
       expect(manifest.name).toBe(canonical);
       expect(manifestJson.name).toBe(`@simplycms/theme-${canonical}`);
