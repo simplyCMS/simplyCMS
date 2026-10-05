@@ -463,10 +463,48 @@ _(Етап A заповнено 2026-10-05 (Task 9). Етап B — заповн
 
 Після бампа: `admin + admin-data` 31 failed / 287 passed (318) у 21 файлі (спайк очікував 16). Корені (Task 3): M1 — запис в on-demand-колекцію ревалідує кожного активного спостерігача (`query.ts:3168-3300`); M2 — переупорядкування `useLiveInfiniteQuery` після оптимістичного видалення/відкату просить префікс заново (`ordered-source-loader.ts:296-312, 432-446`); M3 — межа сторінки «tie request» шле `and(gte, lt(+1мс))` (`ordered-source-loader.ts:863-905`), стаб його не знав; плюс `ref-proxy.ts:402-405` (літерал `{type:'ref'}` тепер Value).
 
+### Червоні тести попоіменно (Task 1 Step 4; корені — Task 3)
+
+Позначення M1/M2/M3/IR — механізми зі списку вище; шлях відносно `packages/simplycms/src/`, для `admin-data/…` тека `__tests__/`. Нумерація — як у діагностиці Task 3. `*` у рядку 9: тест фіксував заборону сторінок без індексу, яку 0.11.3 зняла (`ordered-source-loader.ts:140,232`).
+
+| # | файл | тест | клас (A/B) | механізм | дія |
+|---|---|---|---|---|---|
+| 1 | `admin-data/catalog-collections.test.tsx` | section_properties: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 2 | `admin-data/catalog-collections.test.tsx` | property_options: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 3 | `admin-data/catalog-collections.test.tsx` | section_property_assignments: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 4 | `admin-data/on-demand-full-slice.test.tsx` | insert через колекцію з’являється у повному зрізі без refetch | A | M1 | Task 4 |
+| 5 | `admin-data/on-demand-full-slice.test.tsx` | паралельний зріз where id = X і повний зріз узгоджені після update | A | M1 | Task 4 |
+| 6 | `admin-data/on-demand-active-slices.test.tsx` | Е3-17 (б): два активні зрізи, writeUpsert | A | M1 | Task 4 |
+| 7 | `admin-data/on-demand-stale-cache.test.tsx` | Е3-17 (а): ремаунт бачить перейменований рядок | A | M1 | Task 4 |
+| 8 | `admin-data/on-demand-stale-cache.test.tsx` | Е3-17 (симптом власника): useLiveInfiniteQuery + findOne | A | M1 | Task 4 |
+| 9 | `admin-data/on-demand-contract.test.tsx` | Е3 (2б): БЕЗ індексу друга сторінка не вантажиться | B | —* | Task 7 (TSDB-2) |
+| 10 | `admin-data/orders-collections-write.test.tsx` | лише читання і write-back writeUpsert statusId | A | M3 (+M1) | Task 4 |
+| 11 | `admin-data/orders-collections.test.tsx` | 3 сторінки по 2 без дублів при однакових createdAt | A | M3 | Task 4 |
+| 12 | `admin-data/orders-collections.test.tsx` | 101 замовлення (maxLimit + 1), hasNextPage | A | M3 | Task 4 |
+| 13 | `admin/features/orders/list/OrdersPage.test.tsx` | рядок — посилання на картку; сума; дата й бейдж | A | M3 | Task 4 |
+| 14 | `admin/features/orders/list/OrdersPage.test.tsx` | statusId = null → бейдж «Без статусу» | A | M3 | Task 4 |
+| 15 | `admin/features/orders/list/OrdersPage.test.tsx` | «Показати ще» довантажує другу сторінку | A | M3 | Task 4 |
+| 16 | `admin/features/orders/list/OrdersPage.test.tsx` | фільтр статусу: eq push-down | A | M3 | Task 4 |
+| 17 | `admin-data/subset-payload.test.ts` | фільтри eq/in під and, сорт, limit, offset | A | IR | Task 4 |
+| 18 | `admin-data/subset-payload.test.ts` | оператор поза контрактом (not_eq) — throw на клієнті | A | IR | Task 4 |
+| 19 | `admin-data/subset-payload.test.ts` | gt проходить як є | A | IR | Task 4 |
+| 20 | `admin/features/catalog-dictionaries/properties/PropertyOptionsTable.test.tsx` | видалення успішне → тост | A | M1 | Task 4 |
+| 21 | `admin/features/orders/detail/OrderDetailPage.test.tsx` | підтвердження → один виклик; write-back оновлює статус | A | M1 | Task 4 |
+| 22 | `admin/features/orders/detail/OrderItemsEdit.test.tsx` | редагування позицій: кількість | A | M1 | Task 4 |
+| 23 | `admin/features/orders/detail/OrderItemsInFlight.test.tsx` | запит у польоті видалення | A | M1 | Task 4 |
+| 24 | `admin/features/orders/detail/OrderItemsOutcome.test.tsx` | видалення → підсумки з відповіді сервера | A | M1 | Task 4 |
+| 25 | `admin/features/orders/detail/OrderItemsRemove.test.tsx` | видалення через діалог: підтвердження — один виклик | A | M1 | Task 4 |
+| 26 | `admin/features/orders/detail/OrderItemsAdd.test.tsx` | useOrderItemsEdit.add: write-back без перечитування | A | M1 | Task 4 |
+| 27 | `admin/features/orders/detail/AddOrderItemDialog.test.tsx` | додавання товар без модифікацій | A | M1 | Task 4 |
+| 28 | `admin/features/orders/detail/OrderStatusControl.test.tsx` | запит у польоті: повторне підтвердження | A | M1 | Task 4 |
+| 29 | `admin/features/products/list/ProductsPage.test.tsx` | (4) Review Focus 2: 23503 → rollback | A | M2 | Task 4 |
+| 30 | `admin/features/products/edit/ProductEditPage-panel-switch.test.tsx` | панель за живим рядком, не за useWatch | A | M1 | Task 4 |
+| 31 | `admin/features/products/modifications/useModifications.test.tsx` | (г) update() не переписує stockStatus | A | M1 | Task 4 |
+
 | Клас | К-сть | Приклади |
 |---|---|---|
-| A: тест/стаб/лічильник | 30 | #1-8, #10-31 (статичні стаби → сервер зі станом; `list.mock.calls` → результат; gte/lt у стабі замовлень; `IR.PropRef`) |
-| B: тест фіксує змінену поведінку | 1 | #9 `on-demand-contract` (2б): без індексу сторінки ТЕПЕР довантажуються |
+| A: тест/стаб/лічильник | 30 | рядки 1-8, 10-31 таблиці вище (статичні стаби → сервер зі станом; `list.mock.calls` → результат; gte/lt у стабі замовлень; `IR.PropRef`) |
+| B: тест фіксує змінену поведінку | 1 | рядок 9 таблиці вище, `on-demand-contract` (2б): без індексу сторінки ТЕПЕР довантажуються |
 | C: дефект нашого коду | 0 | — |
 
 ### Виміри
@@ -866,10 +904,48 @@ _(Етап A заповнено 2026-10-05 (Task 9). Етап B — заповн
 
 Після бампа: `admin + admin-data` 31 failed / 287 passed (318) у 21 файлі (спайк очікував 16). Корені (Task 3): M1 — запис в on-demand-колекцію ревалідує кожного активного спостерігача (`query.ts:3168-3300`); M2 — переупорядкування `useLiveInfiniteQuery` після оптимістичного видалення/відкату просить префікс заново (`ordered-source-loader.ts:296-312, 432-446`); M3 — межа сторінки «tie request» шле `and(gte, lt(+1мс))` (`ordered-source-loader.ts:863-905`), стаб його не знав; плюс `ref-proxy.ts:402-405` (літерал `{type:'ref'}` тепер Value).
 
+### Червоні тести попоіменно (Task 1 Step 4; корені — Task 3)
+
+Позначення M1/M2/M3/IR — механізми зі списку вище; шлях відносно `packages/simplycms/src/`, для `admin-data/…` тека `__tests__/`. Нумерація — як у діагностиці Task 3. `*` у рядку 9: тест фіксував заборону сторінок без індексу, яку 0.11.3 зняла (`ordered-source-loader.ts:140,232`).
+
+| # | файл | тест | клас (A/B) | механізм | дія |
+|---|---|---|---|---|---|
+| 1 | `admin-data/catalog-collections.test.tsx` | section_properties: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 2 | `admin-data/catalog-collections.test.tsx` | property_options: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 3 | `admin-data/catalog-collections.test.tsx` | section_property_assignments: insert — serverFn з усіма рядками | A | M1 | Task 4 |
+| 4 | `admin-data/on-demand-full-slice.test.tsx` | insert через колекцію з’являється у повному зрізі без refetch | A | M1 | Task 4 |
+| 5 | `admin-data/on-demand-full-slice.test.tsx` | паралельний зріз where id = X і повний зріз узгоджені після update | A | M1 | Task 4 |
+| 6 | `admin-data/on-demand-active-slices.test.tsx` | Е3-17 (б): два активні зрізи, writeUpsert | A | M1 | Task 4 |
+| 7 | `admin-data/on-demand-stale-cache.test.tsx` | Е3-17 (а): ремаунт бачить перейменований рядок | A | M1 | Task 4 |
+| 8 | `admin-data/on-demand-stale-cache.test.tsx` | Е3-17 (симптом власника): useLiveInfiniteQuery + findOne | A | M1 | Task 4 |
+| 9 | `admin-data/on-demand-contract.test.tsx` | Е3 (2б): БЕЗ індексу друга сторінка не вантажиться | B | —* | Task 7 (TSDB-2) |
+| 10 | `admin-data/orders-collections-write.test.tsx` | лише читання і write-back writeUpsert statusId | A | M3 (+M1) | Task 4 |
+| 11 | `admin-data/orders-collections.test.tsx` | 3 сторінки по 2 без дублів при однакових createdAt | A | M3 | Task 4 |
+| 12 | `admin-data/orders-collections.test.tsx` | 101 замовлення (maxLimit + 1), hasNextPage | A | M3 | Task 4 |
+| 13 | `admin/features/orders/list/OrdersPage.test.tsx` | рядок — посилання на картку; сума; дата й бейдж | A | M3 | Task 4 |
+| 14 | `admin/features/orders/list/OrdersPage.test.tsx` | statusId = null → бейдж «Без статусу» | A | M3 | Task 4 |
+| 15 | `admin/features/orders/list/OrdersPage.test.tsx` | «Показати ще» довантажує другу сторінку | A | M3 | Task 4 |
+| 16 | `admin/features/orders/list/OrdersPage.test.tsx` | фільтр статусу: eq push-down | A | M3 | Task 4 |
+| 17 | `admin-data/subset-payload.test.ts` | фільтри eq/in під and, сорт, limit, offset | A | IR | Task 4 |
+| 18 | `admin-data/subset-payload.test.ts` | оператор поза контрактом (not_eq) — throw на клієнті | A | IR | Task 4 |
+| 19 | `admin-data/subset-payload.test.ts` | gt проходить як є | A | IR | Task 4 |
+| 20 | `admin/features/catalog-dictionaries/properties/PropertyOptionsTable.test.tsx` | видалення успішне → тост | A | M1 | Task 4 |
+| 21 | `admin/features/orders/detail/OrderDetailPage.test.tsx` | підтвердження → один виклик; write-back оновлює статус | A | M1 | Task 4 |
+| 22 | `admin/features/orders/detail/OrderItemsEdit.test.tsx` | редагування позицій: кількість | A | M1 | Task 4 |
+| 23 | `admin/features/orders/detail/OrderItemsInFlight.test.tsx` | запит у польоті видалення | A | M1 | Task 4 |
+| 24 | `admin/features/orders/detail/OrderItemsOutcome.test.tsx` | видалення → підсумки з відповіді сервера | A | M1 | Task 4 |
+| 25 | `admin/features/orders/detail/OrderItemsRemove.test.tsx` | видалення через діалог: підтвердження — один виклик | A | M1 | Task 4 |
+| 26 | `admin/features/orders/detail/OrderItemsAdd.test.tsx` | useOrderItemsEdit.add: write-back без перечитування | A | M1 | Task 4 |
+| 27 | `admin/features/orders/detail/AddOrderItemDialog.test.tsx` | додавання товар без модифікацій | A | M1 | Task 4 |
+| 28 | `admin/features/orders/detail/OrderStatusControl.test.tsx` | запит у польоті: повторне підтвердження | A | M1 | Task 4 |
+| 29 | `admin/features/products/list/ProductsPage.test.tsx` | (4) Review Focus 2: 23503 → rollback | A | M2 | Task 4 |
+| 30 | `admin/features/products/edit/ProductEditPage-panel-switch.test.tsx` | панель за живим рядком, не за useWatch | A | M1 | Task 4 |
+| 31 | `admin/features/products/modifications/useModifications.test.tsx` | (г) update() не переписує stockStatus | A | M1 | Task 4 |
+
 | Клас | К-сть | Приклади |
 |---|---|---|
-| A: тест/стаб/лічильник | 30 | #1-8, #10-31 (статичні стаби → сервер зі станом; `list.mock.calls` → результат; gte/lt у стабі замовлень; `IR.PropRef`) |
-| B: тест фіксує змінену поведінку | 1 | #9 `on-demand-contract` (2б): без індексу сторінки ТЕПЕР довантажуються |
+| A: тест/стаб/лічильник | 30 | рядки 1-8, 10-31 таблиці вище (статичні стаби → сервер зі станом; `list.mock.calls` → результат; gte/lt у стабі замовлень; `IR.PropRef`) |
+| B: тест фіксує змінену поведінку | 1 | рядок 9 таблиці вище, `on-demand-contract` (2б): без індексу сторінки ТЕПЕР довантажуються |
 | C: дефект нашого коду | 0 | — |
 
 ### Виміри
