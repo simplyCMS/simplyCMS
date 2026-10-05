@@ -177,6 +177,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   storage: 'Тимчасовий файл лежить у ТІЙ САМІЙ шард-теці',
   inventory: '[simplycms/inventory] ціль залишку без товару й модифікації',
   commerce: '[simplycms/commerce] extraCartTotal — невідʼємне число',
+  sanitize: 'nofollow ugc noopener noreferrer',
 };
 
 const SRC = resolve(CORE, 'src');

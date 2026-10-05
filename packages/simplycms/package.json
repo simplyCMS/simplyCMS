@@ -37,6 +37,7 @@
     "./storage": "./src/storage/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
+    "./sanitize": "./src/sanitize/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -227,6 +228,10 @@
       "./commerce": {
         "types": "./dist/commerce/index.d.ts",
         "import": "./dist/commerce/index.js"
+      },
+      "./sanitize": {
+        "types": "./dist/sanitize/index.d.ts",
+        "import": "./dist/sanitize/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
@@ -579,6 +584,7 @@
   "devDependencies": {
     "@tanstack/router-core": "1.171.34",
     "@types/pg": "^8.15.6",
+    "@types/sanitize-html": "^2.16.2",
     "dotenv": "^18.0.5",
     "drizzle-zod": "0.8.3",
     "seroval": "^1.6.8"
@@ -589,6 +595,7 @@
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
     "pg": "8.23.1",
+    "sanitize-html": "^2.18.0",
     "tailwind-merge": "^3.7.0"
   },
   "peerDependenciesMeta": {

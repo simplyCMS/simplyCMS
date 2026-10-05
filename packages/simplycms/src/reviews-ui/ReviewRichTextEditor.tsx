@@ -1,7 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import TiptapLink from '@tiptap/extension-link';
-import TiptapUnderline from '@tiptap/extension-underline';
+import { reviewEditorExtensions } from './review-editor-extensions';
 import {
   Bold,
   Italic,
@@ -58,21 +56,7 @@ export function ReviewRichTextEditor({
 }: ReviewRichTextEditorProps) {
   const t = useT();
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        codeBlock: false,
-        blockquote: false,
-        horizontalRule: false,
-      }),
-      TiptapUnderline,
-      TiptapLink.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-primary underline cursor-pointer',
-        },
-      }),
-    ],
+    extensions: reviewEditorExtensions(),
     content,
     editorProps: {
       attributes: {

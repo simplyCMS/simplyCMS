@@ -10,3 +10,4 @@
 
 export * from './objects/index';
 export * from './ports/index';
+export type { SanitizedHtml } from './sanitized-html';

@@ -73,7 +73,7 @@ const TIER_ZONES = [
     'src/storefront',
     2,
     'storefront',
-    ['db', 'auth', 'storage', 'inventory', 'commerce'],
+    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize'],
   ],
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
@@ -87,7 +87,7 @@ const TIER_ZONES = [
     'src/admin-server',
     2,
     'admin-server',
-    ['db', 'auth', 'storage', 'inventory', 'commerce'],
+    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize'],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
@@ -100,6 +100,9 @@ const TIER_ZONES = [
   // Ціноутворення й доставка (Е5б-5) — T2. Upward лише `db`, як в
   // `inventory`: рушій читає прайси/знижки/тарифи через ActorDb.
   ['src/commerce', 2, 'commerce', ['db']],
+  // Санітизація rich-HTML (Тема 9) — T2. Чиста функція над рядком: upward-
+  // винятків немає; тип `SanitizedHtml` бере з T0 (`contracts`).
+  ['src/sanitize', 2, 'sanitize', []],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.
