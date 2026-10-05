@@ -770,7 +770,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     на межі serverFn (400) долітає до UI як `Error.message` із сирим JSON
     списку issues і показується загальним тостом (напр. залишок >1 000 000:
     `StockEditor.tsx:65-67`, `catch` → `t('…saveFailed', { message: (e as Error).message })`;
-    ті самі `catch` — `PricesEditor.tsx:68`, `ModificationsTable.tsx:74`).
+    ті самі `catch` — `PricesEditor.tsx:69`, `ModificationsTable.tsx:75`).
     Потрібно: розібрати issues → `path` → `setError` поля форми через ту саму
     межу-адаптер, що `domainErrorAdapter` / `AdminConflictError`
     (`runtime/domain-error-adapter`), тост лишити для помилок без поля.
