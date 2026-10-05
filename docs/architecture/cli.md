@@ -248,7 +248,12 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
   `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
   `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
-  `src/styles/globals.css`). 🔴 `src/engine.shared.ts` увійшов у канон у
+  `src/styles/globals.css`). 🔴 `src/start.ts` несе CSRF-захист: першою в
+  `requestMiddleware` стоїть `csrfMiddleware` із `simplycms/runtime/csrf`
+  (перед `adminRequestGuard`). Дефолтний захист Start вмикається лише БЕЗ
+  `startInstance`, тож `simplycms update` не повинен повертати магазину
+  `start.ts` без нього — парність трьох копій стережуть
+  `tests/csrf-middleware.test.ts` і `create-store-template-parity`. 🔴 `src/engine.shared.ts` увійшов у канон у
   0.4.1: після знесення шару репозиторіїв копії стали байт-ідентичними, і
   тримала їх такими лише ручна правка обох — розсинхрону не побачив би
   жоден гейт.

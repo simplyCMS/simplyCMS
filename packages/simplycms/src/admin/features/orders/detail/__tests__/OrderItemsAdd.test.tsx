@@ -11,7 +11,9 @@ import {
   listOrderItems,
   makeOrder,
   reset,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -57,21 +59,24 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('useOrderItemsEdit.add', () => {
-  it('add: write-back додає позицію й оновлює замовлення без перечитування', async () => {
+  it('add: write-back додає позицію й оновлює замовлення, ревалідація її зберігає', async () => {
     const at = new Date(Date.UTC(2026, 9, 1, 10));
     const order = makeOrder(1, at);
     reset([order], [makeItem(1)]);
-    mocks.addOrderItem.mockResolvedValue({
-      order: { ...order, subtotal: '250.00', total: '250.00' },
-      upserted: [makeItem(2, { price: '150.00', total: '150.00' })],
-      removedIds: [],
-    });
+    mocks.addOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order: { ...order, subtotal: '250.00', total: '250.00' },
+        upserted: [makeItem(2, { price: '150.00', total: '150.00' })],
+        removedIds: [],
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     await screen.findByText('Товар 1');
     // Той самий QueryClient → ті самі колекції, що й у сторінки.
     const { result } = renderHook(() => useOrderItemsEdit('o0001'), {
       wrapper: wrap,
     });
+    const before = listOrderItems.mock.calls.length;
     await act(async () => {
       await result.current.add({
         productId: 'p1',
@@ -88,6 +93,8 @@ describe('useOrderItemsEdit.add', () => {
       },
     });
     expect(await screen.findByText('Товар 2')).toBeTruthy();
-    expect(listOrderItems).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    await awaitRevalidation(listOrderItems, before);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
   });
 });

@@ -41,20 +41,18 @@ export function usePropertyValueTx(
   const productCol = useCollection(productPropertyValuesCollection);
   const modCol = useCollection(modificationPropertyValuesCollection);
 
-  const { data: productRows } = useLiveQuery(
-    (q) =>
+  const { data: productRows } = useLiveQuery({
+    query: (q) =>
       target === 'product'
         ? q.from({ v: productCol }).where(({ v }) => eq(v.productId, ownerId))
         : undefined,
-    [target, ownerId],
-  );
-  const { data: modRows } = useLiveQuery(
-    (q) =>
+  });
+  const { data: modRows } = useLiveQuery({
+    query: (q) =>
       target === 'modification'
         ? q.from({ v: modCol }).where(({ v }) => eq(v.modificationId, ownerId))
         : undefined,
-    [target, ownerId],
-  );
+  });
   const rows: readonly ValueRow[] =
     target === 'product' ? (productRows ?? []) : (modRows ?? []);
   const rowsOf = (propertyId: string) =>

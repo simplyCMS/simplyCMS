@@ -53,7 +53,9 @@ export function ProductMainFields({ productId }: Props) {
                   role="alert"
                   className="text-xs text-destructive"
                 >
-                  {t('admin.products.nameError')}
+                  {errors.name.type === 'server'
+                    ? errors.name.message
+                    : t('admin.products.nameError')}
                 </p>
               )}
             </div>
@@ -77,7 +79,9 @@ export function ProductMainFields({ productId }: Props) {
                     : 'text-xs text-muted-foreground'
                 }
               >
-                {t('admin.products.slugHint')}
+                {errors.slug?.type === 'server'
+                  ? errors.slug.message
+                  : t('admin.products.slugHint')}
               </p>
             </div>
           </div>

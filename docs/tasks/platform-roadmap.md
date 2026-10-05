@@ -24,7 +24,30 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-10-04)
+## 📍 Поточний стан (оновлено 2026-10-05)
+
+🔴 **2026-10-05 — трек перед Е6а виконано в гілці
+`claude/deps-security-tooling-2026-10`** (ще не в `main`): захід оновлень
+(зокрема `better-auth` 1.7.7, React 19.3, vitest 5, TypeScript 6.0),
+`validator()`, CSRF, агентний тулінг (правила за моделлю MetaHub,
+codebase-memory-mcp), фундамент даних адмінки (TanStack DB 0.11.3, власний
+генератор zod-схем замість drizzle-zod), санітизація HTML (збережений XSS у
+відгуках) і помилки валідації serverFn по полях форми (тема 12; гілка
+`claude/field-validation-errors`, контракт — `data-layer.md` §10). Паралельно
+брейнштормиться трек «Стандарти індустрії» —
+[`2026-10-05-industry-standards-design.md`](../superpowers/specs/2026-10-05-industry-standards-design.md).
+
+🔴 **2026-10-04 — перед Е6а вставлено трек «Оновлення залежностей, безпека,
+тулінг»** (рішення власника): захід оновлень (безпекові бампи, зокрема
+`better-auth` 1.7.7; мінорні; React 19.3; tsdown 0.23; версії шаблону;
+vitest 5) → TanStack DB 0.11.3 (фундамент колекцій адмінки; серверний subset
+приймає запит «рівних значень» із `Date`, знімаються обходи TSDB-B1 і
+`gcTime: 0`; ✅ крок 2 виконано 2026-10-05, Етап A плану
+[`admin-data-foundation`](../superpowers/plans/2026-10-05-admin-data-foundation.md)) → `inputValidator` → `validator` → власний генератор zod-схем
+`defineAdminResource` (замість drizzle-zod, закриває DZOD-1; ✅ крок 4 виконано 2026-10-05, Етап B плану `admin-data-foundation`) → CSRF-захист
+запитів, що змінюють стан → **Е6а**. Паралельно — правила за моделлю MetaHub і рушій
+`codebase-research` на codebase-memory-mcp. Дизайн —
+[`2026-10-04-deps-security-tooling-design.md`](../superpowers/specs/2026-10-04-deps-security-tooling-design.md).
 
 🔴 **2026-10-04 — К3-Е5б (редагування позицій замовлення) завершено** на
 гілці `claude/k3-e4-catalog-dictionaries-plan`. У картці
@@ -425,7 +448,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-09-13-v2-k3-e2-storage-minimum.md`](../superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md)
      - [x] ✅ **Е3 — каталог адмінки on-demand, перший push-down.** Перша
            `on-demand`-колекція TanStack DB (`syncMode: 'on-demand'` +
-           `gcTime: 0` + `autoIndex` — Е3-16/Е3-17) із серверним push-down у
+           `gcTime: 0` (знято 2026-10-05, TanStack DB 0.11.3) + `autoIndex` — Е3-16/Е3-17) із серверним push-down у
            Drizzle: `/admin/products` (список, фільтри розділ/активність/
            наявність, «Показати ще»), `/admin/products/new` і
            `/admin/products/$productId` (картка з Zod-формою, розділ,
@@ -561,6 +584,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-10-04-v2-k3-e5b-order-items-edit.md`](../superpowers/plans/2026-10-04-v2-k3-e5b-order-items-edit.md).
            🔴 Залишок — **31** файл `src/admin/**` на `supabase-js`
            (виміряно 2026-10-04; у `features/` — 0).
+           Перед Е6а — трек оновлень/TanStack DB/zod-генератор/CSRF (див. «Поточний стан»).
            Наступні — **Е6а** (доставка й точки видачі: `Shipping*`,
            `PickupPoint*`, 7 файлів) → **Е6** (знижки з `PriceValidator`,
            читачі `orders` у `Dashboard`/`Users`/`UserEdit`, решта
@@ -735,6 +759,43 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     відсутні** — переглядаються в V2-К5.
 11. **Живий SSR-доказ fonts-контуру** (Р9 етапу А редизайну) — потребує
     `SEED_THEME` у сіді пілота; переглянути після V2-К6 (сід міняється).
+12. **Роути `cart` і `checkout` — `ssr: false` без `pendingComponent`**
+    (`packages/simplycms/routes/storefront/_storefront/cart.tsx`,
+    `checkout.tsx`). Правило «`ssr: false`-роут оголошує `pendingComponent`»
+    у `docs/architecture/rendering-and-routing.md` (§2 «Правила») звужене до
+    `admin.tsx` — зразок `AdminPending`. Наслідок: поки клієнт вантажить
+    сторінку, користувач бачить порожній екран (сервер нічого не віддає
+    замість неї). Лишається додати `pendingComponent` обом роутам (з i18n-ключем
+    за зразком `admin.common.loading`) і зняти позначку «прогалина» в доці.
+13. **`tools/content-loader-mcp` досі на Supabase і поза workspace**; у
+    `.claude/settings.json` лишився запис `mcpServers.content-loader`
+    (`npx tsx …`). Доля тулзи — рішення власника (переписати на Drizzle/чистий
+    Postgres, втягнути у workspace чи прибрати разом із записом). Див.
+    К0-9 нижче (там — проблема з окремим `npm install`). Під TS 6 при
+    відновленні потрібен `"types": ["node"]` у його tsconfig (TS2591).
+16. **CSP (Content-Security-Policy) — окремий трек, разом із механізмом
+    інтеграції типових пікселів і аналітики** (рішення власника 2026-10-05).
+    Зараз CSP немає зовсім; базові заголовки безпеки — тема 4 треку
+    стандартів індустрії. Передумови: санітизація HTML (тема 9 треку
+    оновлень); прибрати інлайн-скрипт `src/routes/__root.tsx:97`; продуктове
+    рішення про канал для сторонніх скриптів (зараз механізму немає). Нотатки
+    дизайну (nonce через `router ssr.nonce`, Report-Only + `/api/csp-report`,
+    декларації origin-ів у маніфестах тем/плагінів, enforce за вибором
+    магазину) — [`2026-10-05-industry-standards-design.md`](../superpowers/specs/2026-10-05-industry-standards-design.md)
+    § «Тема 4».
+17. **Шум у логах сервера при розриві зʼєднання клієнтом.** `sendWebResponse`
+    (`server-runtime.mjs`, копії в `packages/cli/host` і шаблоні) логує
+    звичайний відхід клієнта (`ERR_STREAM_PREMATURE_CLOSE`) як помилку —
+    не логувати цей код. Окремо: Start/h3 друкує навмисний аборт як
+    `AbortError … status: 500, unhandled: true` (псевдо-500 у метриках) —
+    поведінка апстріму, без обходу. Процес при цьому НЕ падає (перевірено
+    ~1000 обривами, 2026-10-05).
+18. **Кешування анонімних SSR-сторінок (`Cache-Control`)** — лише як опція
+    конфігу, вимкнена за замовчуванням, з трьома умовами безпеки; повернутись
+    із CDN-сценарієм або виміром LCP. `srcSet` — у треку К4 Storage.
+19. **Реалтайм на Centrifugo** — дослідження після Е6а (рішення власника
+    2026-10-05): авторизація каналів проти RLS, публікація після коміту,
+    звʼязка з TanStack DB/Query, ціна для self-hosted.
 
 - **Відкладене видалення медіа після підтвердженого Save форми** (`ImageUpload`:
   товар, розділ, опція); sweep К4 цей випадок не покриває. *(Записано
@@ -743,6 +804,11 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
   Save форми-власника: «Видалити → Скасувати» або «видалити → Save 409»
   лишає в БД референс на знищений файл — на вітрині бите зображення
   (напр. `CatalogSectionChips`). Свідоме рішення Е2; Е4 лише додав споживачів.
+
+- **react-day-picker v10**: `ui/calendar.tsx` написаний під API v9
+  (`classNames.caption` зник у v10); міграція — окремою задачею, тоді підняти
+  peer ядра, корінь, шаблон. *(Записано 2026-10-05: корінь повернуто на
+  `^9.13.2`, як у ядра й шаблону.)*
 
 **Борги треку V2-К1а** (2026-08-23; жоден не блокує К1′б):
 

@@ -11,6 +11,8 @@ import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
+import noDangerouslySetInnerHtml from './eslint-rules/no-dangerously-set-inner-html.mjs';
+import noInputValidator from './eslint-rules/no-input-validator.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
 import noCollectionKeyOutsideAdminData from './eslint-rules/no-collection-key-outside-admin-data.mjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
@@ -260,10 +262,7 @@ const eslintConfig = [
     // Машинно згенеровані drizzle-kit'ом файли: `(table) => [...]` подекуди не
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
-    files: [
-      'packages/simplycms/src/schema/schema.ts',
-      'packages/simplycms/src/schema/relations.ts',
-    ],
+    files: ['packages/simplycms/src/schema/schema.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
     },
@@ -400,6 +399,17 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
+  // `.inputValidator()` — @deprecated-аліас `.validator()` у TanStack Start.
+  // Зона — увесь код репозиторію (ігнори верхнього рівня — шаблон і канон
+  // host-файлів — діють і тут). Власне імʼя плагіна (`simplycms-start`) —
+  // щоб опції не зливались із сусідніми правилами й не замістили i18n.
+  {
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    plugins: {
+      'simplycms-start': { rules: { 'no-input-validator': noInputValidator } },
+    },
+    rules: { 'simplycms-start/no-input-validator': 'error' },
   },
   // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
   // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.
@@ -545,6 +555,40 @@ const eslintConfig = [
       ],
     },
   },
+  // Тема 9 (санітизація HTML): `dangerouslySetInnerHTML` — лише в `<RichHtml>`
+  // (приймає тільки брендований `SanitizedHtml`) і в явному списку винятків
+  // нижче. Власне правило з ВЛАСНИМ імʼям плагіна: `no-restricted-syntax` тут
+  // замістив би i18n-селектори (flat config замінює опції правила цілком).
+  // Кожен виняток — НЕ контент користувача, а код або CSS самого застосунку.
+  {
+    files: ['**/*.{ts,tsx,jsx}'],
+    ignores: [
+      // Сам компонент: єдине місце вставки розмітки контенту.
+      'packages/simplycms/src/ui/rich-html.tsx',
+      // `<style>` із CSS-змінними активної теми (`applyTokens`): значення
+      // токенів — частина маніфесту теми, а не контент покупця/адміна.
+      'packages/simplycms/src/storefront-routes/shells/ThemeTokens.tsx',
+      // shadcn `<style>` кольорів графіка: CSS генерується з конфігу
+      // компонента в коді, користувацького вводу в ньому немає.
+      'packages/simplycms/src/ui/chart.tsx',
+      // Інлайн-скрипт назви активної теми до гідрації — рядок будує
+      // `serializeActiveThemeScript` (JSON-екранування), а не користувач.
+      'src/routes/__root.tsx',
+      'packages/cli/host/src/routes/__root.tsx',
+      // Лендінг: статичний інлайн-скрипт без вхідних даних
+      // (`classList.remove('no-js')`).
+      'apps/www/src/routes/__root.tsx',
+      // Тести перевіряють саме поведінку правила/компонентів.
+      '**/__tests__/**',
+      'tests/**',
+    ],
+    plugins: {
+      'simplycms-rich-html': {
+        rules: { 'no-dangerously-set-inner-html': noDangerouslySetInnerHtml },
+      },
+    },
+    rules: { 'simplycms-rich-html/no-dangerously-set-inner-html': 'error' },
+  },
   {
     ignores: [
       'node_modules/**',
@@ -555,6 +599,10 @@ const eslintConfig = [
       '.nitro/**',
       '.tanstack/**',
       'src/routeTree.gen.ts',
+      // Ізольовані git worktree агентних сесій (.claude/worktrees/<run>) —
+      // чужі копії всього репо всередині дерева: без ігнору лінт сканує їх
+      // удруге й рахує чужі помилки/ворнінги як наші.
+      '.claude/worktrees/**',
       // Лендінг apps/www: власний згенерований роут-трі (той самий автор —
       // генератор TanStack Router, що й у host)
       'apps/www/src/routeTree.gen.ts',

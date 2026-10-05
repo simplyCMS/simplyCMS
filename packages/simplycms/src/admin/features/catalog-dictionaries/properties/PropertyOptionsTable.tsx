@@ -34,14 +34,13 @@ export function PropertyOptionsTable({ propertyId }: Props) {
   const t = useT();
   const navigate = useNavigate();
   const collection = useCollection(propertyOptionsCollection);
-  const { data: options, isLoading } = useLiveQuery(
-    (q) =>
+  const { data: options, isLoading } = useLiveQuery({
+    query: (q) =>
       q
         .from({ o: collection })
         .where(({ o }) => eq(o.propertyId, propertyId))
         .orderBy(({ o }) => o.sortOrder, 'asc'),
-    [propertyId],
-  );
+  });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {

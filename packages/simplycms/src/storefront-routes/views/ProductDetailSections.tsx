@@ -1,3 +1,4 @@
+import { RichHtml } from 'simplycms/ui/rich-html';
 import type {
   ProductDetailCharacteristics,
   ProductDetailDescription,
@@ -64,9 +65,9 @@ export function ProductDetailSections({
           {t('product.description')}
         </h2>
         {description.html ? (
-          <div
+          <RichHtml
             className="prose prose-sm max-w-none dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: description.html }}
+            html={description.html}
           />
         ) : (
           <p className="text-muted-foreground">{t('product.noDescription')}</p>

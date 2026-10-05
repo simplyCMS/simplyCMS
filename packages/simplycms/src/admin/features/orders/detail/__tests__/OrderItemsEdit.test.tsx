@@ -22,7 +22,9 @@ import {
   listOrders,
   makeOrder,
   reset,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -78,16 +80,20 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('OrderDetailPage: редагування позицій', () => {
-  it('кількість: один виклик; рядок і підсумки оновлено без listOrderItems', async () => {
+  it('кількість: один виклик; рядок і підсумки оновлено і після ревалідації', async () => {
     const order = makeOrder(1, at);
     reset([order], [makeItem(1), makeItem(2)]);
-    mocks.updateOrderItemQuantity.mockResolvedValue({
-      order: { ...order, subtotal: '300.00', total: '300.00' },
-      upserted: [makeItem(1, { quantity: 3, total: '300.00' })],
-      removedIds: [],
-    });
+    mocks.updateOrderItemQuantity.mockImplementation(async () =>
+      applyOutcome({
+        order: { ...order, subtotal: '300.00', total: '300.00' },
+        upserted: [makeItem(1, { quantity: 3, total: '300.00' })],
+        removedIds: [],
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     const input = await qty(1);
+    const beforeItems = listOrderItems.mock.calls.length;
+    const beforeOrders = listOrders.mock.calls.length;
     fireEvent.change(input, { target: { value: '3' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() =>
@@ -100,8 +106,16 @@ describe('OrderDetailPage: редагування позицій', () => {
     });
     // рядок позиції + «Товари» + «Разом» = 3 входження суми
     expect((await screen.findAllByText(money(300))).length).toBe(3);
-    expect(listOrderItems).toHaveBeenCalledTimes(1);
-    expect(listOrders).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    await awaitRevalidation(listOrderItems, beforeItems);
+    await awaitRevalidation(listOrders, beforeOrders);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(
+      beforeItems + 1,
+    );
+    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(beforeOrders + 1);
+    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    expect((input as HTMLInputElement).value).toBe('3');
+    expect((await screen.findAllByText(money(300))).length).toBe(3);
   });
 
   it('409 order_insufficient_stock → тост, поле повертається до серверного', async () => {

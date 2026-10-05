@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { QueryClient } from '@tanstack/react-query';
-import { createCollection } from '@tanstack/react-db';
+import { describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryObserver } from '@tanstack/react-query';
+import {
+  createCollection,
+  createLiveQueryCollection,
+} from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import { collectionKey, ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { onDemandCollectionOptions } from '../on-demand-options';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 
 /**
@@ -75,5 +79,71 @@ describe('Е3-15′: ізоляція вітрини від write-back коле�
 
     expect(qc.getQueryData(colliding)).not.toEqual([storefrontRow]);
     expect(qc.getQueryData(colliding)).toEqual([adminRow]);
+  });
+});
+
+/**
+ * Eager-кейс вище на on-demand нічого не доводив (механіка там інша), тож
+ * тут прямий: on-demand колекція з АКТИВНОЮ підпискою (живий запит), write-back
+ * через `insert`. Виміряно на query-db-collection 1.3.4 / db 0.11.3.
+ */
+describe('Е3-15′: ізоляція ключів на on-demand колекції', () => {
+  async function writeBackOnDemand(qc: QueryClient) {
+    const ref: { current?: WriteBack<FakeRow> } = {};
+    const collection = createCollection(
+      onDemandCollectionOptions<FakeRow>({
+        id: 'fake-products-od',
+        queryClient: qc,
+        queryKey: collectionKey(ENTITY.products),
+        getKey: (row) => row.id,
+        queryFn: async () => [],
+        ...persistenceHandlers<FakeRow>(() => ref.current!, {
+          entity: 'fake-products-od',
+          insert: async ({ data }) => data as never as FakeRow[],
+        }),
+      }),
+    );
+    ref.current = collection;
+    const live = createLiveQueryCollection((q) => q.from({ p: collection }));
+    await live.preload();
+    await collection.insert(adminRow as never).isPersisted.promise;
+  }
+
+  // Sanity-перевірка, а не доказ ізоляції: variant-ключ узагалі не під
+  // префіксом [entity,'list'], тож write-back його не торкається за побудовою.
+  it('variant-ключ вітрини лишається ЦІЛИМ після write-back', async () => {
+    const qc = new QueryClient();
+    const storefrontKey = entityKey(ENTITY.products).variant('featured');
+    qc.setQueryData(storefrontKey, [storefrontRow]);
+    await writeBackOnDemand(qc);
+    expect(qc.getQueryData(storefrontKey)).toEqual([storefrontRow]);
+  });
+
+  it('КОНТРОЛЬ: ключ під префіксом [products,"list",суфікс] ВИДАЛЯЄТЬСЯ (не перезаписується, як на 1.2.11)', async () => {
+    const qc = new QueryClient();
+    const colliding = [...collectionKey(ENTITY.products), 'featured'];
+    qc.setQueryData(colliding, [storefrontRow]);
+    await writeBackOnDemand(qc);
+    expect(qc.getQueryData(colliding)).toBeUndefined();
+  });
+
+  it('КОНТРОЛЬ I1: ключ під префіксом із ЧУЖИМ спостерігачем не видаляється, а перезапитується', async () => {
+    const qc = new QueryClient();
+    const colliding = [...collectionKey(ENTITY.products), 'featured'];
+    qc.setQueryData(colliding, [storefrontRow]);
+    let fetched = 0;
+    const observer = new QueryObserver(qc, {
+      queryKey: colliding,
+      queryFn: async () => {
+        fetched++;
+        return [storefrontRow];
+      },
+      staleTime: Infinity,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    await writeBackOnDemand(qc);
+    await vi.waitFor(() => expect(fetched).toBeGreaterThan(0));
+    expect(qc.getQueryData(colliding)).toEqual([storefrontRow]);
+    unsubscribe();
   });
 });

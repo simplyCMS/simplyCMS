@@ -234,7 +234,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
 
   // 🔴 А2 (рішення архітектора): `ops.insert()` ТЕПЕР сам парсить вхід своєю
   // ж `insertSchema` ДО `runAdmin` — інваріант «readonly-поле не пишеться
-  // generic-write» тримає ОПЕРАЦІЯ, а не лише `inputValidator` serverFn з
+  // generic-write» тримає ОПЕРАЦІЯ, а не лише `validator` serverFn з
   // admin-server/index.ts (Task 3). Буквальний виклик (як у плані):
   // `isDefault: true` у payload,
   // `as never` — той самий обхід TS excess-property check, що обходив би
@@ -260,9 +260,9 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // серверну межу (харнес-виклик, як у решті цього файла). `patchSchema`
   // (resource-schemas.ts) пікає ЛИШЕ writable-ключі — `isDefault` strip-иться
   // ще ДО `.refine()`, тож патч стає ПОРОЖНІМ і саме РЕФАЙН валить парсинг
-  // («patch не може бути порожнім»): фактична поведінка — ZodError ДО
+  // («patch не може бути порожнім»): фактична поведінка — ValidationError (Тема 12, раніше ZodError) ДО
   // транзакції, а не мовчазний no-op зі збереженим старим значенням.
-  it('А2: пряме update лише readonly-полем (isDefault) — ZodError від порожнього patch, прапорець не змінився', async () => {
+  it('А2: пряме update лише readonly-полем (isDefault) — ValidationError від порожнього patch, прапорець не змінився', async () => {
     const [p] = await productsOps.insert({ data: [product(9)] });
     const [m] = await productModificationsOps.insert({
       data: [
@@ -272,7 +272,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     const err = await productModificationsOps
       .update({ data: [{ id: m!.id, patch: { isDefault: true } as never }] })
       .catch((e: unknown) => e);
-    expect((err as { name?: string }).name).toBe('ZodError');
+    expect((err as { name?: string }).name).toBe('ValidationError');
     expect(
       await queryRows(
         dbUrl,

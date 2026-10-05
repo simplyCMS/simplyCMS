@@ -25,6 +25,8 @@ interface Props {
   readonly options: readonly PropertyOption[];
   /** Рядок(и) цієї властивості: 0/1 для скаляра, N для multiselect. */
   readonly rows: readonly ValueRowLike[];
+  /** Помилка валідації сервера для цього поля (Тема 12) — поки лише числове. */
+  readonly error?: string;
   readonly onChange: (v: PropertyValueDraft) => void;
   readonly onMultiChange: (optionIds: string[]) => void;
 }
@@ -39,6 +41,7 @@ export function PropertyInput({
   property,
   options,
   rows,
+  error,
   onChange,
   onMultiChange,
 }: Props) {
@@ -53,6 +56,7 @@ export function PropertyInput({
         <NumberPropertyInput
           id={id}
           value={current?.numericValue ?? null}
+          error={error}
           onChange={onChange}
         />
       );

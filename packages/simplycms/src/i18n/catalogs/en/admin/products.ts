@@ -69,6 +69,8 @@ export const messages: Catalog = {
   'admin.products.stock.statusLabel': 'Availability status',
   'admin.products.stock.saved': 'Stock saved',
   'admin.products.stock.saveFailed': 'Could not save: {message}',
+  'admin.products.stock.invalidQuantity':
+    'Quantity must be a whole number, 0 or more',
   'admin.products.stock.quantityAtWarehouse': 'Quantity at the warehouse',
   'admin.products.stock.units': 'pcs',
   'admin.products.stock.title': 'Stock',

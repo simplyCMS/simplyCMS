@@ -14,7 +14,7 @@ export const getProperties = createServerFn({ method: 'GET' }).handler(
 
 /** Отримати характеристику за slug разом з опціями. */
 export const getPropertyBySlug = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ slug: z.string().min(1) }))
+  .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { slug } = input as { slug: string };
     return withStorefrontDb((db) => loadPropertyBySlug(db, slug));
@@ -22,7 +22,7 @@ export const getPropertyBySlug = createServerFn({ method: 'GET' })
 
 /** Отримати опцію характеристики з повʼязаними товарами. */
 export const getPropertyOption = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     z.object({
       propertySlug: z.string().min(1),
       optionSlug: z.string().min(1),

@@ -5,6 +5,10 @@ import { useT } from 'simplycms/i18n';
 import { adminPath } from '../../../lib/adminLinks';
 import { adminErrorKey } from '../../../lib/admin-error';
 import {
+  applyServerValidation,
+  type FormErrorBinding,
+} from '../../../lib/apply-server-validation';
+import {
   toProductDraft,
   toProductPatch,
   type ProductFormValues,
@@ -22,21 +26,28 @@ export function useProductSave() {
   const navigate = useNavigate();
   const t = useT();
 
-  const fail = (e: unknown) => {
+  const fail = (e: unknown, binding?: FormErrorBinding) => {
+    // Тема 12: помилка валідації сервера → помилка ПОЛЯ форми; тост — лише
+    // для того, що до поля не привʼязалось (або якщо форми нема).
+    const rest = binding
+      ? applyServerValidation(e, binding.setError, {
+          t,
+          fieldFor: binding.fieldFor,
+        })
+      : null;
+    if (rest !== null) {
+      if (rest.length > 0) toast.error(t('admin.validation.failed'));
+      return;
+    }
     const key = adminErrorKey(e);
     toast.error(key ? t(key) : `${t('common.error')} ${(e as Error).message}`);
   };
 
-  const create = async (values: ProductFormValues) => {
+  const create = async (
+    values: ProductFormValues,
+    binding?: FormErrorBinding,
+  ) => {
     try {
-      // 🔴 On-demand колекція без активного useLiveQuery (сторінка «новий
-      // товар» жодного не монтує) лишається в стані sync-not-started —
-      // `collection.insert()` кидає «must be in ready state» (виміряно).
-      // `preload()` на on-demand — no-op щодо даних (Б-1), але СТАРТУЄ
-      // sync. Дрібне рев'ю: усередині try — відмова preload теж іде тостом,
-      // не unhandled rejection.
-      // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
-      await products.preload();
       const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт (К3-6)
       const tx = products.insert(toProductDraft(values, id, new Date()));
       await tx.isPersisted.promise;
@@ -46,11 +57,15 @@ export function useProductSave() {
         params: { productId: id },
       });
     } catch (e) {
-      fail(e);
+      fail(e, binding);
     }
   };
 
-  const update = async (id: string, values: ProductFormValues) => {
+  const update = async (
+    id: string,
+    values: ProductFormValues,
+    binding?: FormErrorBinding,
+  ) => {
     const patch = toProductPatch(values);
     // 🔴 Updater мусить лишити слід у draft (А-4: порожній draft — тихий
     // no-op без запиту). Object.assign пише всі поля patch завжди.
@@ -61,7 +76,7 @@ export function useProductSave() {
       await tx.isPersisted.promise;
       toast.success(t('admin.products.updated'));
     } catch (e) {
-      fail(e);
+      fail(e, binding);
     }
   };
 

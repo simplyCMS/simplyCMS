@@ -46,17 +46,16 @@ export function usePropertyOptionCard(
   const optionsCol = useCollection(propertyOptionsCollection);
   const propertiesCol = useCollection(sectionPropertiesCollection);
 
-  const { data: options, isLoading } = useLiveQuery(
-    (q) =>
+  const { data: options, isLoading } = useLiveQuery({
+    query: (q) =>
       q.from({ o: optionsCol }).where(({ o }) => eq(o.propertyId, propertyId)),
-    [propertyId],
-  );
+  });
   // Окремий isLoading властивості: без нього перша мить зрізу дала б хибне
   // «не знайдено» (Е4, фінальне рев'ю п.4).
-  const { data: properties, isLoading: loadingProperty } = useLiveQuery(
-    (q) => q.from({ p: propertiesCol }).where(({ p }) => eq(p.id, propertyId)),
-    [propertyId],
-  );
+  const { data: properties, isLoading: loadingProperty } = useLiveQuery({
+    query: (q) =>
+      q.from({ p: propertiesCol }).where(({ p }) => eq(p.id, propertyId)),
+  });
   const property = properties.find((p) => p.id === propertyId);
   const row = isNew ? undefined : options.find((o) => o.id === optionId);
   const [newId] = useState(() => crypto.randomUUID());

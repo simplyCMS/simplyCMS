@@ -161,6 +161,17 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 npm-пакет (`simplycms`) і кілька його субшляхів — dependency плагіна тепер
 одна, а межу тримає лише eslint-зона вище.
 
+**HTML, який рендерить плагін (Тема 9).** Серверний санітизатор
+`simplycms/sanitize` — у `SERVER_ONLY`, тож плагіну заборонений зоною вище;
+`dangerouslySetInnerHTML` у плагіні забороняє правило
+`simplycms-rich-html/no-dangerously-set-inner-html` (зона — весь репо, винятків
+для плагінів немає). Плагін виводить розмітку контенту лише `RichHtml`
+(`simplycms/ui/rich-html`) зі значенням `SanitizedHtml`, яке йому віддає ядро
+(напр. у контексті слота); власного шляху отримати `SanitizedHtml` у плагіна
+немає за побудовою — розмітку з власних `plg_*`-таблиць плагін виводить як текст
+React або віддає на очищення ядру окремим рішенням (порт у SDK — поза скоупом
+теми 9).
+
 ## 5. Дані: таблиці `plg_*` і конвеєр міграцій
 
 - Таблиці плагіна — `plg_<name>_*` (дефіси імені → підкреслення:
@@ -229,6 +240,18 @@ switch, `number/integer` → числовий input. Непредставна д
 Гарди: тека `plugins/` і пакети `simplycms-plugin-*` — у `SCANNED_ROOTS`
 AST-скану (`tests/i18n-coverage`); парність uk↔en, префікси й плейсхолдери —
 `tests/plugin-messages-parity.test.ts` (плагіни дискавляться з диска).
+
+### CSRF і POST-маршрути плагінів
+
+Server routes і server functions плагіна, що змінюють стан (POST/PUT/PATCH/
+DELETE), **захищені від CSRF за замовчуванням**: `csrfMiddleware` ядра
+(`simplycms/runtime/csrf`) стоїть у `requestMiddleware` хоста й діє на будь-який
+шлях, а не лише на маршрути ядра. Браузерні виклики з адмінки/вітрини
+проходять (same-origin), а `curl` чи чужий сайт без свого `Origin` — ні (403).
+Плагін, якому треба приймати зовнішній POST без `Origin` (вебхук платіжної
+системи), сам цього не вирішує: виняток — це рядок у `CSRF_EXEMPT_PREFIXES`
+у ядрі, окреме свідоме рішення з обґрунтуванням і власною перевіркою підпису
+в обробнику.
 
 ## 8. Сторінки адмінки (adminRoutes)
 

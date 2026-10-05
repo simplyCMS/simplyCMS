@@ -43,7 +43,7 @@ export const listActivePlugins = createServerFn({ method: 'GET' }).handler(
  * плагін — це окреме рішення адміна в адмінці.
  */
 export const registerPlugins = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ rows: z.array(rowSchema).max(100) }))
+  .validator(z.object({ rows: z.array(rowSchema).max(100) }))
   .handler(async ({ data: input }): Promise<number> => {
     const { rows } = input as { rows: z.output<typeof rowSchema>[] };
     return insertMissingPlugins(

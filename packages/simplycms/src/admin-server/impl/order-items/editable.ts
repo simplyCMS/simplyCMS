@@ -46,7 +46,8 @@ export async function lockEditableOrder(
   db: ActorDb,
   orderId: string,
 ): Promise<OrderRow> {
-  // UPSTREAM:DZOD-1 — та сама генерична проєкція, що й у фабриці.
+  // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
+  // та сама проєкція, що й у фабриці.
   const [order] = (await db
     .select(orderProjection as never)
     .from(orders)

@@ -37,6 +37,8 @@ export const saveStockInput = z
       .array(
         z.object({
           pickupPointId: z.uuid(),
+          // Бізнес-ліміт 1 000 000 шт. на точку (не int32-обмеження колонки):
+          // відсікає друкарську помилку (зайвий нуль) вже на межі, 400, не 500.
           quantity: z.number().int().min(0).max(1_000_000),
         }),
       )

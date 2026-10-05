@@ -18,7 +18,165 @@
 
 ---
 
-## [0.7.0] — не опубліковано (публікує мерж PR у `main`)
+## [0.8.0] — 2026-10-05
+
+Захід оновлень залежностей, безпеки й тулінгу (спека
+[`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md))
+плюс трек «Стандарти індустрії» (CSRF, санітизація HTML, помилки валідації).
+Магазинів на SimplyCMS немає — без зворотної сумісності, шимів немає.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline міграцій змінено** (`accounts.issuer` прибрано): базу магазину
+  перестворити (`pnpm db:demo`), окремої міграції немає.
+- **Нові host-файли** (`start.ts`, `routes/__root.tsx`, `tsconfig.json`): у
+  `requestMiddleware` першим стоїть `csrfMiddleware` (`simplycms/runtime/csrf`);
+  `ErrorBoundary` у `__root.tsx` типізований `ErrorComponentProps` (`error` —
+  `unknown`); з `tsconfig.json` прибрано `baseUrl` (TypeScript 6). Магазин
+  має перенести зміни з канону host (`packages/cli/host`).
+- **Прибрано публічний субшлях** `simplycms/schema/relations`. Додано субшляхи
+  `simplycms/sanitize` (server-only) і `simplycms/runtime/csrf`.
+- **Теми рендерять розмітку контенту лише через `RichHtml`** — поля view-model-ів
+  (`CatalogSectionInfo.description`, `ProductDetailDescription.html`) тепер типу
+  `SanitizedHtml`; сирий `dangerouslySetInnerHTML` заборонено лінт-правилом.
+- **Залежності магазину** (шаблон): TypeScript `^6.0.3`, React/ReactDOM
+  `^19.3.0`, `@tanstack/react-db` 0.5.3 (+ `@tanstack/query-db-collection`
+  1.3.4), `better-auth` 1.7.7, `sanitize-html` (залежність ядра), `dotenv` 18.
+  Peer `react` пакетів лишається `^18.0.0 || ^19.0.0` (не змінено).
+- **Серверні функції:** `.inputValidator()` → `.validator()` (див. нижче);
+  помилки валідації адмін-serverFn тепер `ValidationError` (400), а не сирий
+  `ZodError`.
+
+### Додано / змінено
+
+- **`inputValidator` → `validator`** у всіх серверних функціях і коментарях;
+  ESLint-правило `no-input-validator` забороняє застарілий `.inputValidator()`.
+- **TypeScript 6.0.3** (прибрано `baseUrl`, без `ignoreDeprecations`; TS 7
+  блокує лише peer `typescript-eslint` — реєстр `UPSTREAM:TSESL-1`); `tsx` —
+  у `devDependencies` (`live:smoke` у чистому клоні).
+- **Агентний тулінг і доки:** `AGENTS.md` за моделлю MetaHub, `CLAUDE.md` =
+  `@AGENTS.md` + лише Claude Code; канон підсистем — `docs/architecture/*`,
+  `docs/development/{TOOLING,ENVIRONMENT,CODEBASE_MEMORY}.md`; код-шар —
+  `codebase-memory-mcp` + `orient --map` замість graphify; артефакти Copilot
+  прибрано; дисципліна git (коміти лише від імені власника).
+- **Помилки валідації адмін-serverFn → помилки полів** (тема 12 спеки стандартів
+  індустрії, борг №15): Zod-відмова на межі serverFn більше не показується сирим
+  JSON у тості. Нова доменна помилка `ValidationError` (закритий реєстр
+  `contracts/domain-errors`) несе `issues` (`path` + код + параметри схеми) крізь
+  білий список — без сирих повідомлень Zod і відлуння вводу; `domainErrorAdapter`
+  везе її через межу serverFn. Серверне перетворення — в одному місці
+  (`adminInput`/`parseAdminInput`, 400), клієнтський `applyServerValidation`
+  розкладає issues по полях (StockEditor, PricesEditor, форми модифікації й
+  товару; загальний локалізований тост — лише для проблем без поля).
+  Ключі `admin.validation.*` у каталогах uk і en. Контракт — `data-layer.md` §10.
+- `numeric`-колонки в `columnsToZod`: десятковий формат за precision/scale —
+  `'abc'` і надлишок цифр дають 400 замість `22P02`/500 від БД. Навмисний виняток
+  із паритету з drizzle-zod (гейт не послаблено).
+- Нові тести форм — на `@testing-library/user-event` (devDependency).
+
+### Безпека
+
+- `better-auth` 1.7.1 → **1.7.7** (точний пін): закрито GHSA-965c-763c-88jm
+  (critical, OAuth state як Magic Link), GHSA-r4xp-prcw-77qf (high, OAuth
+  Proxy), GHSA-44jh-23m7-hpcf (low, rate-limit на PG у drizzle-адаптері). Наша
+  конфігурація не вмикає `magicLink`/`oauthProxy`, але пакет — у `dependencies`
+  опублікованого `simplycms`.
+- tiptap → `^3.31.4` (7 пакетів у корені + `extension-image` і
+  `extension-text-align` у `dependencies` ядра); `jsdom` → `^30.1.2`; `vitest`
+  → `^4.1.11` (піднято нижню межу); транзитиви `js-yaml`, `nanoid`,
+  `brace-expansion`, `@tiptap/core` — оновлено в `pnpm-lock.yaml`.
+- `pnpm audit`: лишається лише `esbuild` через `drizzle-kit` (dev-only).
+
+- **CSRF-захист** (тема 2 спеки): Start вмикає дефолтний захист лише без
+  `startInstance`, а в нас він є — тож server functions і POST-роути були без
+  перевірки origin. Новий субшлях `simplycms/runtime/csrf`
+  (`csrfMiddleware`, `CSRF_EXEMPT_PREFIXES = ['/api/auth/']`) стоїть першим у
+  `requestMiddleware` усіх трьох `start.ts` (host, канон CLI, шаблон):
+  мутуючий запит без same-origin (`Sec-Fetch-Site` → `Origin` → `Referer`) —
+  403. `live:smoke` доводить 403 на справжній server function і на
+  `/api/revalidate-theme`.
+
+- **Збережений XSS у відгуках і описах** (тема 9 спеки): розмітка відгуку
+  покупця писалася сервером без очищення й виводилась через
+  `dangerouslySetInnerHTML` у вітрині (`ReviewCard`) і в адмінці
+  (`ReviewDetail` — перехоплення сесії власника); так само сирими виводились
+  описи розділів, опцій характеристик і товарів. Тепер:
+  - новий server-only модуль `simplycms/sanitize` (`sanitizeRichHtml(html,
+    'review' | 'content')` на `sanitize-html`; залежність ядра) з білими
+    списками, що збігаються з виводом редакторів; брендований тип
+    `SanitizedHtml` у `simplycms/contracts`;
+  - рубіж 1 (запис): відгук і generic-write адмін-ресурсів (`richHtml` у
+    `defineAdminResource`; товари, розділи, опції характеристик);
+  - рубіж 2 (віддача): лоадери вітрини й читання адмінки очищують розмітку
+    (старі рядки, сід, демо); нова серверна операція `getAdminReviewContent`
+    для сторінки модерації;
+  - компонент `simplycms/ui/rich-html` (`<RichHtml html={SanitizedHtml}/>`) —
+    єдине місце `dangerouslySetInnerHTML` для контенту; поля view-model-ів
+    (`CatalogSectionInfo.description`, `ProductDetailDescription.html`) мають
+    тип `SanitizedHtml`: **теми рендерять розмітку лише через `RichHtml`**;
+  - ESLint-правило `simplycms-rich-html/no-dangerously-set-inner-html`
+    (винятки — `<style>` токенів теми, `ui/chart`, інлайн-скрипти `__root.tsx`);
+  - тести: вектори атак, round-trip зі справжніми Tiptap-редакторами, харнес
+    проти БД, крок `review-xss` у `live:smoke`.
+
+### Залежності (мінорні)
+
+- До останніх версій у межах поточних мажорних: vite 8.3.2 + `@vitejs/plugin-react`
+  6.1.1, zod 4.6.5, prettier 3.9.9 (форматування репо не змінилось), eslint
+  10.12 + typescript-eslint 8.71, react-hook-form 7.89, `@hookform/resolvers`
+  5.9.1, `@tanstack/react-query` 5.104.1, lucide-react 1.51, pg 8.23.1,
+  drizzle-orm 0.45.3 / drizzle-kit 0.31.11, `@clack/prompts` 1.8.1, UI-патчі,
+  testing-library, `@types/node`, `@supabase/*`.
+- React 19.2.8 → **19.3.0** (`react`, `react-dom`, `@types/react*`; корінь і
+  `apps/www`). Нові API (`<ViewTransition />` тощо) не впроваджено.
+- tsdown 0.22.14 → **0.23.0** (JS у `dist` побайтово той самий; перевірено
+  `build:packages`, `test:packaging`, `pilot:pack`).
+- Шаблон магазину і пілотний оверлей вирівняно за версіями з коренем (було: lucide
+  0.563, react 19.2.4, zod 4.3.6, tiptap ^3.19…). Новий тест
+  `tests/template-version-parity.test.ts` стереже парність версій корінь ↔
+  шаблон ↔ оверлей; свідомі розбіжності — явним списком із причиною (пара
+  TanStack DB бампається окремим етапом; `react-day-picker` лишається на ^9, бо
+  `ui/calendar.tsx` ядра написаний під API v9).
+- vitest 4.1.11 → **5.0.3** (поломок тестів немає: 1867/1867 і 352/352 без правок
+  тестів і без compat-налаштувань).
+- dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
+  `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
+
+### Видалено
+
+- `simplycms/schema/relations` (`schema/relations.ts`, 39 `relations()`): мертвий
+  код — `drizzle(client)` у `withActor` створюється без `schema`, тож `db.query.*`
+  неможливий за побудовою. Субшлях прибрано з обох карт `exports`; у Drizzle 1.0
+  реляційні запити — інший API (`defineRelations`).
+
+### Змінено
+
+- 🔴 **Власний генератор zod-схем `columnsToZod`** (крок 4 треку оновлень, Етап B):
+  схеми ресурсів адмінки будує власний генератор (9 типів колонок, невідомий —
+  throw) і більше не залежать від `drizzle-zod`; `SafePick` і касти прибрано,
+  `resource-schemas.ts` 182 → ~125 рядків, DZOD-1 закрито, проєкційні касти
+  Drizzle виділено в `DRZ-2`. `drizzle-zod` знято з `dependencies` ядра (і з
+  `SERVER_ONLY_DEPS`): лишився `devDependency` лише як еталон постійного гейта
+  паритету з мутаційним контролем — `test-contours.md` §11.3.
+- 🔴 **Baseline міграцій (правка, без нової міграції):** з `accounts` прибрано
+  колонку `issuer` і унікальний індекс `(issuer, account_id)`. Їх мала схема
+  better-auth 1.7.0–1.7.2; з 1.7.3 їх немає, і drizzle-адаптер 1.7.7 на старті
+  падає з `Drizzle schema mismatch` (обовʼязкова колонка, яку BA не пише). Базу
+  магазину перестворити (`pnpm db:demo`).
+- 🔴 **TanStack DB 0.11.3** (крок 2 треку оновлень; `@tanstack/react-db` 0.5.3 і
+  `@tanstack/query-db-collection` 1.3.4 — точні піни в корені й шаблоні, `~` у
+  peers ядра). Знято обходи TSDB-B1 (`preload()` перед записом) і `gcTime: 0`
+  у фабриці on-demand-колекцій; TSDB-1/2/3/4 у реєстрі переписано за виміряною
+  поведінкою. 22 файли адмінки (29 викликів: 27 `useLiveQuery` і 2
+  `useLiveInfiniteQuery`) на об'єктну форму `useLiveQuery({ query })` замість
+  задепрекованої `(fn, deps)`; ратчет — `live-query-object-form.test.ts`.
+- 🔴 **Контракт subset серверного шару адмінки:** `eq/gt/gte/lt/lte` приймають
+  колонки `filterable` ∪ `sortable`, а діапазонні оператори — ще й `Date`
+  (клієнтський курсор пагінації на рівних `created_at` без цього падав з 400).
+  `in`/`isNull` — лише `filterable`. `live:smoke` доводить «Показати ще» для
+  `/admin/products` і `/admin/orders` на рівних мітках часу без втрат і дублів.
+
+## [0.7.0] — 2026-10-04
 
 Три етапи треку **V2-К3** одним релізом: **Е4 — довідники каталогу**, **Е5 —
 замовлення**, **Е5б — редагування позицій замовлення**. Плани, рішення й

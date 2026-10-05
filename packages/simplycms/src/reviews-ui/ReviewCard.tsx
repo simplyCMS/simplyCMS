@@ -1,3 +1,4 @@
+import { RichHtml } from 'simplycms/ui/rich-html';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
@@ -116,9 +117,9 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
         {review.title && <h4 className="font-semibold">{review.title}</h4>}
 
         {review.content && review.content !== '<p></p>' && (
-          <div
+          <RichHtml
             className="prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: review.content }}
+            html={review.content}
           />
         )}
 

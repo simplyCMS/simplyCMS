@@ -24,9 +24,9 @@ interface Props {
 export default function ProductsFilters({ filters, onChange }: Props) {
   const t = useT();
   const sections = useCollection(sectionsCollection);
-  const { data: sectionRows } = useLiveQuery((q) =>
-    q.from({ s: sections }).orderBy(({ s }) => s.name, 'asc'),
-  );
+  const { data: sectionRows } = useLiveQuery({
+    query: (q) => q.from({ s: sections }).orderBy(({ s }) => s.name, 'asc'),
+  });
 
   return (
     <div className="flex flex-wrap gap-4">

@@ -22,9 +22,10 @@ interface Props {
 export default function OrdersStatusFilter({ statusId, onChange }: Props) {
   const t = useT();
   const statuses = useCollection(orderStatusesCollection);
-  const { data: rows } = useLiveQuery((q) =>
-    q.from({ s: statuses }).orderBy(({ s }) => s.sortOrder, 'asc'),
-  );
+  const { data: rows } = useLiveQuery({
+    query: (q) =>
+      q.from({ s: statuses }).orderBy(({ s }) => s.sortOrder, 'asc'),
+  });
   return (
     <div className="space-y-1.5">
       <Label htmlFor="orders-filter-status">

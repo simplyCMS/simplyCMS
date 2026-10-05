@@ -37,7 +37,7 @@ export const listThemeNames = createServerFn({ method: 'GET' }).handler(
  * мовчки перемкнути вітрину на чужу тему.
  */
 export const registerThemes = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ rows: z.array(rowSchema).max(50) }))
+  .validator(z.object({ rows: z.array(rowSchema).max(50) }))
   .handler(async ({ data: input }): Promise<number> => {
     const { rows } = input as { rows: z.output<typeof rowSchema>[] };
     return insertMissingThemes(

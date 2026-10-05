@@ -28,7 +28,7 @@ export type { ProductRating, ProductReviewRow };
  * так і чим обмежено, описано в `loadReviewAuthors`.
  */
 export const getProductReviews = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ productId: z.string().uuid() }))
+  .validator(z.object({ productId: z.string().uuid() }))
   .handler(async ({ data }): Promise<ProductReviewRow[]> => {
     const { productId } = data as { productId: string };
     const subject = await readSessionSubject(getRequest().headers);
@@ -57,7 +57,7 @@ export const getProductReviews = createServerFn({ method: 'GET' })
  * кешується React Query одним ключем.
  */
 export const getProductRatings = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ productIds: z.array(z.string().uuid()).max(200) }))
+  .validator(z.object({ productIds: z.array(z.string().uuid()).max(200) }))
   .handler(async ({ data }): Promise<Record<string, ProductRating>> => {
     const { productIds } = data as { productIds: string[] };
     return withStorefrontDb((db) => loadProductRatings(db, productIds));

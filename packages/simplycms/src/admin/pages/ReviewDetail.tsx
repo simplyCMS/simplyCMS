@@ -1,3 +1,5 @@
+import { getAdminReviewContent } from 'simplycms/admin-server';
+import { RichHtml } from 'simplycms/ui/rich-html';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminPath } from '../lib/adminLinks';
@@ -60,8 +62,15 @@ export default function AdminReviewDetail() {
         .eq('user_id', data.user_id)
         .single();
 
+      // 🔴 Тема 9: розмітку відгуку для показу беремо з сервера ОЧИЩЕНОЮ —
+      // сирий `data.content` покупця (недовірений вхід) не рендериться.
+      const { content: contentHtml } = await getAdminReviewContent({
+        data: { reviewId },
+      });
+
       return {
         ...data,
+        contentHtml,
         images: Array.isArray(data.images) ? data.images : [],
         product,
         profile,
@@ -242,10 +251,10 @@ export default function AdminReviewDetail() {
             <h3 className="text-lg font-semibold">{review.title}</h3>
           )}
 
-          {review.content && review.content !== '<p></p>' && (
-            <div
+          {review.contentHtml && review.contentHtml !== '<p></p>' && (
+            <RichHtml
               className="prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: review.content }}
+              html={review.contentHtml}
             />
           )}
 

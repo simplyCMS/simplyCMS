@@ -2,6 +2,7 @@ import { asc, desc, type Column, type SQL, type Table } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { toDrizzleSubset, type SubsetAllow, type SubsetInput } from './subset';
 import { effectiveLimit } from './resource-projection';
+import { sanitizeRichRows, type RichHtmlColumns } from './rich-html';
 
 /**
  * Те, що `list` фабрики (`resource.ts`) бере з конфігу ресурсу. Винесено
@@ -15,6 +16,8 @@ export interface ResourceListContext {
   maxLimit?: number;
   /** Е5-7: явна проєкція (усі колонки, крім `omit`). */
   picked: Record<string, Column>;
+  /** Тема 9: колонки з розміткою → профіль санітизатора (віддача клієнту). */
+  richHtml?: RichHtmlColumns;
 }
 
 /**
@@ -29,12 +32,11 @@ export async function listResourceRows(
 ): Promise<unknown[]> {
   const columns = ctx.table as unknown as Record<string, Column | undefined>;
   const s = toDrizzleSubset(ctx.table, ctx.allow, subset);
-  // UPSTREAM:DZOD-1 — та сама генерична таблиця, що й `.from` нижче:
-  // проєкція на `T` не типізується без касту (результат кастується
-  // явно у фабриці).
+  // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
+  // каст лише проєкції, `.from(ctx.table)` кастів не потребує.
   let q = db
     .select(ctx.picked as never)
-    .from(ctx.table as never)
+    .from(ctx.table)
     .$dynamic();
   if (s.where) q = q.where(s.where);
   // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не
@@ -60,5 +62,5 @@ export async function listResourceRows(
   const limit = effectiveLimit(s.limit, ctx.maxLimit);
   if (limit !== undefined) q = q.limit(limit);
   if (s.offset !== undefined) q = q.offset(s.offset);
-  return (await q) as unknown[];
+  return sanitizeRichRows((await q) as Record<string, unknown>[], ctx.richHtml);
 }

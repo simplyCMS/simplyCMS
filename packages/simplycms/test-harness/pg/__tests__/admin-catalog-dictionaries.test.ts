@@ -5,7 +5,7 @@
 // 🔴 serverFn тут НЕ викликаються (getRequest() без ALS-контексту падає) —
 // requireGrant мокається модульно, а операції беруться напряму зі службового
 // server-only субшляху `simplycms/admin-server/impl`. Тест доводить ОПЕРАЦІЮ
-// (та сама схема, що в inputValidator serverFn), а не межу HTTP Start.
+// (та сама схема, що в validator serverFn), а не межу HTTP Start.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -144,7 +144,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
   it('розділ: кириличний slug відбивається схемою до транзакції', async () => {
     const s = section({ slug: 'розділ' });
     await expect(sectionsOps.insert({ data: [s] })).rejects.toMatchObject({
-      name: 'ZodError',
+      name: 'ValidationError',
     });
     expect(
       await queryRows(dbUrl, `select 1 from public.sections where id = $1`, [
@@ -206,7 +206,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
   it('властивість: кириличний slug відбивається схемою', async () => {
     await expect(
       sectionPropertiesOps.insert({ data: [prop({ slug: 'колір' })] }),
-    ).rejects.toMatchObject({ name: 'ZodError' });
+    ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
   it('властивість: видалення каскадно зносить опції і значення в товарах', async () => {
@@ -276,7 +276,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     await sectionPropertiesOps.insert({ data: [p] });
     await expect(
       propertyOptionsOps.insert({ data: [option(p.id, { slug: 'червоний' })] }),
-    ).rejects.toMatchObject({ name: 'ZodError' });
+    ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
   describe('призначення', () => {
@@ -316,7 +316,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
         sectionPropertyAssignmentsOps.insert({
           data: [assign({ propertyId: p.id, appliesTo: 'variant' })],
         }),
-      ).rejects.toMatchObject({ name: 'ZodError' });
+      ).rejects.toMatchObject({ name: 'ValidationError' });
       expect(
         await queryRows(
           dbUrl,
@@ -355,7 +355,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
       priceTypesOps.insert({
         data: [{ id: crypto.randomUUID(), name: 'Опт', code: 'оптова' }],
       }),
-    ).rejects.toMatchObject({ name: 'ZodError' });
+    ).rejects.toMatchObject({ name: 'ValidationError' });
     const id = crypto.randomUUID();
     const [row] = await priceTypesOps.insert({
       data: [

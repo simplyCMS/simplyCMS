@@ -131,17 +131,10 @@ describe('defineAdminResource (К3-4′)', () => {
   });
 
   it("тип-регресія (хвіст рев'ю р1): readonly-колонки не зʼявляються у СТАТИЧНІЙ формі insert/update", () => {
-    // `.pick(mask as never)` компілювався, але був type-level no-op: аргумент
-    // типу `never` не дає TS сайту інференсу для `M` у
-    // `pick<M extends Mask<keyof Shape>>`, тож `M` падає до констрейнта
-    // `Mask<keyof Shape>` цілком → `Pick<Shape, keyof Shape>` = Shape
-    // НЕЗМІНЕНИЙ. Рантайм не постраждав (сам zod ходить по реальному
-    // обʼєкту `pickWritable`), але СТАТИЧНО `insertSchema`/`updateSchema`
-    // приймали всі сім колонок order_statuses, включно з readonly
-    // (isDefault, createdAt) — рівно те, від чого існує exhaustiveness.
-    // Ці асерції ловлять регрес КОМПІЛЯТОРОМ: toHaveProperty на присутній
-    // ключ — не помилка типу; not.toHaveProperty на ключ, який
-    // насправді є в типі, — помилка типу (перевірено вручну на старій формі).
+    // Типи insert/update оголошені в `resource-schemas.ts` (`declared<Out>`
+    // з InferInsertModel), не виведені з generic-таблиці: статично
+    // `insertSchema`/`updateSchema` приймають лише writable (+insertOnly).
+    // not.toHaveProperty на ключ, який насправді є в типі, — помилка типу.
     type InsertItem = z.infer<typeof ops.insertSchema>[number];
     type PatchItem = z.infer<typeof ops.updateSchema>[number]['patch'];
 
@@ -154,6 +147,18 @@ describe('defineAdminResource (К3-4′)', () => {
     expectTypeOf<PatchItem>().not.toHaveProperty('isDefault');
     expectTypeOf<PatchItem>().not.toHaveProperty('createdAt');
     expectTypeOf<PatchItem>().toHaveProperty('name');
+
+    // Необовʼязкові ключі зберігаються (InsertPick): `color`/`sortOrder` мають
+    // default, тож insert-рядок без них — валідний тип; patch — усе optional.
+    expectTypeOf<{
+      id: string;
+      name: string;
+      code: string;
+    }>().toExtend<InsertItem>();
+    expectTypeOf<InsertItem>().toHaveProperty('color');
+    expectTypeOf<InsertItem>().toHaveProperty('sortOrder');
+    expectTypeOf<PatchItem>().toHaveProperty('sortOrder');
+    expectTypeOf<{ name: string }>().toExtend<PatchItem>();
   });
 
   // ID — будь-який uuid-літерал.

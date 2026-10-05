@@ -20,7 +20,7 @@ export type { StockInfoRow, StockByPointRow, PickupPointRow };
  * актором `app_user`, а не від імені покупця.
  */
 export const getStockInfo = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     z.object({
       productId: z.string().uuid().nullable().optional(),
       modificationId: z.string().uuid().nullable().optional(),

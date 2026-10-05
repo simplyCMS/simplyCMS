@@ -31,9 +31,9 @@ export function OrderStatusControl({ orderId, statusId }: Props) {
   const t = useT();
   const change = useChangeOrderStatus();
   const col = useCollection(orderStatusesCollection);
-  const { data: statuses } = useLiveQuery((q) =>
-    q.from({ s: col }).orderBy(({ s }) => s.sortOrder, 'asc'),
-  );
+  const { data: statuses } = useLiveQuery({
+    query: (q) => q.from({ s: col }).orderBy(({ s }) => s.sortOrder, 'asc'),
+  });
   const [pending, setPending] = useState<string | null>(null);
   const cancelledId = statuses.find(
     (s) => s.code === ORDER_STATUS_CODE.cancelled,

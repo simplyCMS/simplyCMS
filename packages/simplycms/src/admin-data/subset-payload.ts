@@ -22,6 +22,9 @@ const SERVER_OPERATORS = new Set([
   'in',
   'isNull',
 ]);
+// Date у `value` (курсор: `and(gte(col, d), lt(col, d+1ms))`) проходить як є:
+// seroval нативно везе Date через межу serverFn (tests/admin-subset-wire.test.ts),
+// сервер приймає його лише для gt/gte/lt/lte.
 type ServerFilter = NonNullable<SubsetInput['filters']>[number];
 
 /**
@@ -29,7 +32,7 @@ type ServerFilter = NonNullable<SubsetInput['filters']>[number];
  * кожна on-demand колекція кличе саме його, тож контракт «що клієнт уміє
  * попросити» і «що сервер уміє виконати» (`impl/subset.ts`) звіряється тут.
  *
- * 🔴 Дві розбіжності бібліотеки з її ж доками (звірено з src 0.8.6):
+ * 🔴 Дві розбіжності бібліотеки з її ж доками (перевірено на 0.11.3, див. TSDB-3):
  * `parseLoadSubsetOptions` повертає лише `{ filters, sorts, limit }` —
  * `offset` береться з opts напряму (нижче), інакше «Показати ще» вічно
  * вантажить першу сторінку; `or`/`like`/`ilike` бібліотека не парсить

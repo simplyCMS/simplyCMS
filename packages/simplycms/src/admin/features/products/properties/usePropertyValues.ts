@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
+import { applyServerValidation } from '../../../lib/apply-server-validation';
 import { reportTxError } from '../../../lib/report-tx-error';
 import { useKeyedQueue } from './useKeyedQueue';
 import {
@@ -31,7 +34,24 @@ export function usePropertyValues(
   const t = useT();
   const { rowsOf, liveRowsOf, insertTx, updateTx, deleteTx } =
     usePropertyValueTx(target, ownerId);
-  const enqueue = useKeyedQueue((e) => reportTxError(t, e));
+  // Тема 12: помилка валідації сервера — біля поля властивості (ключ —
+  // `propertyId`), а не загальним тостом; усе інше — як раніше.
+  const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
+  const enqueue = useKeyedQueue((e, propertyId) => {
+    const rest = applyServerValidation(
+      e,
+      (_field, err) => setErrors((p) => ({ ...p, [propertyId]: err.message })),
+      {
+        t,
+        fieldFor: (path) =>
+          path.at(-1) === 'numericValue' || path.at(-1) === 'value'
+            ? propertyId
+            : null,
+      },
+    );
+    if (rest === null) reportTxError(t, e);
+    else if (rest.length > 0) toast.error(t('admin.validation.failed'));
+  });
 
   /**
    * Скалярні типи (text/number/range/boolean/color) і `select` (один
@@ -41,6 +61,12 @@ export function usePropertyValues(
    * щоб трактувати щойно вибрану опцію як видалення рядка.
    */
   const saveScalar = (propertyId: string, v: PropertyValueDraft) => {
+    setErrors((p) => {
+      if (!(propertyId in p)) return p;
+      const next = { ...p };
+      delete next[propertyId];
+      return next;
+    });
     enqueue(propertyId, async () => {
       const existing = liveRowsOf(propertyId)[0];
       const empty = (v.value === null || v.value === '') && v.optionId === null;
@@ -90,5 +116,5 @@ export function usePropertyValues(
     });
   };
 
-  return { rowsOf, saveScalar, saveMulti };
+  return { rowsOf, saveScalar, saveMulti, errors };
 }

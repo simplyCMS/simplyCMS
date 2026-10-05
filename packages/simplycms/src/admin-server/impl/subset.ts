@@ -13,7 +13,15 @@ import {
   type SQL,
 } from 'drizzle-orm';
 import type { Table } from 'drizzle-orm';
-import { z } from 'zod';
+import { CURSOR_OPERATORS } from './subset-schema';
+import type { SubsetInput } from './subset-schema';
+
+export {
+  subsetInputSchema,
+  subsetShapeSchema,
+  type SubsetInput,
+  type SubsetPayload,
+} from './subset-schema';
 
 /**
  * Єдине місце, де рядок із клієнта стає частиною SQL. field звіряється з
@@ -27,6 +35,16 @@ import { z } from 'zod';
  * `modification_id IS NULL`. isNull є у словнику push-down самої
  * бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути
  * ширший зріз і дофільтровувати в JS — push-down на половину.
+ *
+ * 🔴 Курсор «Показати ще» (@tanstack/db 0.11.3, `CursorExpressions`) шле
+ * по ПЕРШІЙ колонці orderBy: `gt/lt(col, v)` та «межу рівних» — `eq(col, v)`,
+ * а для Date — `and(gte(col, d), lt(col, d+1ms))`. Тому `eq/gt/gte/lt/lte`
+ * дозволені по `filterable ∪ sortable`: значення відсортованої колонки
+ * клієнт і так бачить у видачі, безпеки це не знижує (прихована `omit`-ом
+ * колонка не потрапляє ні в filterable, ні в sortable — типи ресурсу).
+ * `in/isNull` лишаються під `filterable`: курсор їх не шле. `Date` (з
+ * скінченним часом) приймається ЛИШЕ діапазонними операторами — для дат
+ * бібліотека `eq` не генерує; через межу serverFn Date їде нативно (seroval).
  */
 // 🔴 Типізовано ЯВНИМ спільним сигнатурним типом (не `as const`): eq/gt/gte/lt/lte —
 // це `BinaryOperator` (три перевантаження-в-інтерфейсі), inArray — окрема
@@ -56,64 +74,6 @@ export interface SubsetAllow {
   readonly sortable: readonly string[];
 }
 
-const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-const filterSchema = z
-  .object({
-    field: z.array(z.string().min(1)).min(1),
-    operator: z.enum(['eq', 'gt', 'gte', 'lt', 'lte', 'in', 'isNull']),
-    value: z.unknown(),
-  })
-  // 🔴 R9 (рев'ю Task 6): форма value привʼязана до оператора ТУТ, на
-  // межі, — інакше `in` зі скаляром чи `eq` з масивом доїжджають до
-  // bindIfParam і повертаються 500 з БД замість 400 від валідатора.
-  // isNull (Е3-14) — той самий принцип: value мусить бути РІВНО null,
-  // інакше клієнт міг би прислати сміття, яке SQL-білдер просто ігнорує.
-  .superRefine((f, ctx) => {
-    if (f.operator === 'in') {
-      const r = z.array(scalar).min(1).safeParse(f.value);
-      if (!r.success)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['value'],
-          message: "operator 'in' вимагає непорожній масив скалярів",
-        });
-    } else if (f.operator === 'isNull') {
-      if (f.value !== null)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['value'],
-          message: "operator 'isNull' вимагає value: null",
-        });
-    } else if (!scalar.safeParse(f.value).success) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['value'],
-        message: `operator '${f.operator}' вимагає скаляр`,
-      });
-    }
-  });
-const sortSchema = z.object({
-  field: z.array(z.string().min(1)).min(1),
-  direction: z.enum(['asc', 'desc']),
-});
-
-/** Форма subset одного list-запиту. */
-export const subsetShapeSchema = z.object({
-  filters: z.array(filterSchema).max(20).optional(),
-  sorts: z.array(sortSchema).max(5).optional(),
-  // 🔴 limit обмежений: відкритий endpoint під адмін-роллю не сміє
-  // приймати «віддай мільйон» (закриває дірку z.unknown() старої редакції).
-  limit: z.number().int().positive().max(500).optional(),
-  offset: z.number().int().nonnegative().optional(),
-});
-export type SubsetInput = z.infer<typeof subsetShapeSchema>;
-
-/** Вхід list-serverFn: { subset? } — саме це йде в inputValidator. */
-export const subsetInputSchema = z.object({
-  subset: subsetShapeSchema.optional(),
-});
-export type SubsetPayload = z.infer<typeof subsetInputSchema>;
-
 export function toDrizzleSubset(
   table: Table,
   allow: SubsetAllow,
@@ -134,11 +94,17 @@ export function toDrizzleSubset(
 
   const conditions: SQL[] = (input.filters ?? []).map((f) => {
     const name = f.field.join('.');
-    if (!allow.filterable.includes(name))
-      throw new Error(`[admin-server] фільтр по недозволеній колонці: ${name}`);
     const op = OPERATORS[f.operator as keyof typeof OPERATORS];
     if (!op)
       throw new Error(`[admin-server] невідомий оператор: ${f.operator}`);
+    // Курсорні оператори читають і sortable-колонки; in/isNull — лише filterable.
+    const allowed = CURSOR_OPERATORS.has(f.operator)
+      ? [...allow.filterable, ...allow.sortable]
+      : allow.filterable;
+    if (!allowed.includes(name))
+      throw new Error(
+        `[admin-server] фільтр по недозволеній колонці: ${name} (оператор ${f.operator})`,
+      );
     return op(column(name), f.value as never);
   });
 

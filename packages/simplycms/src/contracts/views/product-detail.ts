@@ -3,6 +3,7 @@
 // description / characteristics.
 
 import type { BreadcrumbItem } from './common';
+import type { SanitizedHtml } from '../sanitized-html';
 import type { SlotComponent } from './slots';
 
 /** Галерея: зображення обраної модифікації або самого товару. */
@@ -21,7 +22,7 @@ export interface ProductDetailSummary {
 
 /** Повний опис товару (HTML з редактора). */
 export interface ProductDetailDescription {
-  html: string | null;
+  html: SanitizedHtml | null;
 }
 
 /**

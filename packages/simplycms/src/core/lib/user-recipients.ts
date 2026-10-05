@@ -45,7 +45,7 @@ export const getMyRecipients = createServerFn({ method: 'GET' }).handler(
  * Повертає `null`, якщо рядок із таким `id` актору не належить.
  */
 export const saveMyRecipient = createServerFn({ method: 'POST' })
-  .inputValidator(recipientInput)
+  .validator(recipientInput)
   .handler(async ({ data }): Promise<string | null> => {
     const input = data as z.infer<typeof recipientInput>;
 
@@ -60,7 +60,7 @@ export const saveMyRecipient = createServerFn({ method: 'POST' })
 
 /** Видалити власного отримувача; `false` — рядка немає або він чужий. */
 export const deleteMyRecipient = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ id: z.string().uuid() }))
+  .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ data }): Promise<boolean> => {
     const { id } = data as { id: string };
     return withSessionDb((db, userId) => deleteRecipient(db, userId, id));

@@ -13,49 +13,41 @@
 import { vi } from 'vitest';
 import type { AdminOrder } from '../../collections/orders';
 import type { OrderItem } from 'simplycms/schema/types';
-
-type Filter = { field: string[]; operator: string; value: unknown };
-type Sort = { field: string[]; direction: 'asc' | 'desc' };
-type Payload = {
-  subset?: {
-    filters?: Filter[];
-    sorts?: Sort[];
-    limit?: number;
-    offset?: number;
-  };
-};
+import { applySubset, type Payload } from './mutable-server';
 
 export const server = { orders: [] as AdminOrder[], items: [] as OrderItem[] };
 let calls = 0;
 
-const val = (r: object, f: string[]) =>
-  (r as Record<string, unknown>)[f.join('.')];
-const cmp = (a: unknown, b: unknown) => {
-  const av = a instanceof Date ? a.getTime() : (a as string | number);
-  const bv = b instanceof Date ? b.getTime() : (b as string | number);
-  return av < bv ? -1 : av > bv ? 1 : 0;
-};
-
+/** За контрактом сервера (мутабельний `applySubset`, копії, gt/gte/lt/lte). */
 function list<R extends { id: string }>(src: R[], data: Payload, max: number) {
-  let out = calls++ % 2 ? [...src].reverse() : [...src];
-  for (const f of data.subset?.filters ?? [])
-    out = out.filter((r) => {
-      const v = val(r, f.field);
-      if (f.operator === 'eq') return v === f.value;
-      if (f.operator === 'in') return (f.value as unknown[]).includes(v);
-      throw new Error(`стаб: оператор ${f.operator} поза контрактом`);
-    });
-  const sorts = data.subset?.sorts ?? [];
-  out.sort((a, b) => {
-    for (const s of sorts) {
-      const c = cmp(val(a, s.field), val(b, s.field));
-      if (c !== 0) return s.direction === 'desc' ? -c : c;
-    }
-    return cmp(a.id, b.id); // тай-брейкер сервера (Е3-8)
-  });
-  const off = data.subset?.offset ?? 0;
-  const lim = Math.min(data.subset?.limit ?? max, max);
-  return out.slice(off, off + lim);
+  // Порядок рівних ключів без тай-брейкера недетермінований — розвертаємо.
+  const input = calls++ % 2 ? [...src].reverse() : src;
+  return applySubset(input, data, max);
+}
+
+/**
+ * Застосувати відповідь мутації ({ order, upserted, removedIds }) до стану
+ * «сервера»: після запису ревалідація (TSDB-1) віддасть саме його. Мок
+ * мутації викликає це ВСЕРЕДИНІ реалізації і повертає той самий об'єкт.
+ * Збережені об'єкти — безпечні для спільних посилань: кожне читання
+ * копіює рядки через `applySubset`.
+ */
+export function applyOutcome<
+  T extends {
+    order?: AdminOrder;
+    upserted?: OrderItem[];
+    removedIds?: string[];
+  },
+>(out: T): T {
+  const order = out.order;
+  if (order)
+    server.orders = server.orders.map((r) => (r.id === order.id ? order : r));
+  for (const u of out.upserted ?? [])
+    server.items = [...server.items.filter((i) => i.id !== u.id), u];
+  server.items = server.items.filter(
+    (i) => !(out.removedIds ?? []).includes(i.id),
+  );
+  return out;
 }
 
 export const listOrders = vi.fn(async ({ data }: { data: Payload }) =>

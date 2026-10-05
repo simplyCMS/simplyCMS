@@ -21,7 +21,9 @@ import {
   listOrderItems,
   makeOrder,
   reset,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -79,11 +81,13 @@ describe('OrderDetailPage: редагування позицій', () => {
   it('видалення через діалог: «Скасувати» — без виклику; підтвердження — один виклик і write-back', async () => {
     const order = makeOrder(1, at);
     reset([order], [makeItem(1), makeItem(2)]);
-    mocks.removeOrderItem.mockResolvedValue({
-      order,
-      upserted: [],
-      removedIds: ['i0002'],
-    });
+    mocks.removeOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order,
+        upserted: [],
+        removedIds: ['i0002'],
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     const open = () =>
       screen.findByRole('button', { name: `${t('common.delete')}: Товар 2` });
@@ -101,6 +105,7 @@ describe('OrderDetailPage: редагування позицій', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     fireEvent.click(await open());
     dialog = await screen.findByRole('alertdialog');
+    const before = listOrderItems.mock.calls.length;
     fireEvent.click(
       within(dialog).getByRole('button', { name: t('common.delete') }),
     );
@@ -110,7 +115,12 @@ describe('OrderDetailPage: редагування позицій', () => {
     });
     await waitFor(() => expect(screen.queryByText('Товар 2')).toBeNull());
     expect(screen.queryByText('Товар 1')).toBeTruthy();
-    expect(listOrderItems).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    await awaitRevalidation(listOrderItems, before);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
+    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    expect(screen.queryByText('Товар 2')).toBeNull();
+    expect(screen.queryByText('Товар 1')).toBeTruthy();
   });
 
   it('остання позиція: кнопки видалення немає', async () => {

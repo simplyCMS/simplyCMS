@@ -33,7 +33,7 @@ export interface EscalationState {
  * рівно на час `fn`, з негайним і гарантованим поверненням до ролі актора.
  *
  * Правило використання — в докблоках `withCustomerDb`/`withOrderTokenDb`
- * (`db.ts`) і в `data-access.instructions.md`, «Ескалація ролі покупцем»:
+ * (`db.ts`) і в `docs/architecture/data-layer.md`, «Ескалація ролі покупцем»:
  * викликати ПІСЛЯ того, як RLS уже прийняла читання чи запис покупця в цій
  * транзакції, і лише для обліку магазину.
  */

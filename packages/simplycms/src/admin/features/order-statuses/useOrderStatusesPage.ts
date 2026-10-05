@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import { toast } from 'sonner';
+import { failureText } from '../../lib/report-tx-error';
 import { useCollection, orderStatusesCollection } from 'simplycms/admin-data';
 import { reorderOrderStatus } from 'simplycms/admin-server';
 import type { OrderStatus } from 'simplycms/schema/types';
@@ -16,7 +17,7 @@ import { EMPTY_STATUS_FORM, type StatusFormData } from './form-data';
 export function useOrderStatusesPage() {
   const t = useT();
   const collection = useCollection(orderStatusesCollection);
-  // 🔴 Форма 0.3.6 — обʼєкт { query }; dependency-масиви legacy.
+  // 🔴 Форма react-db 0.5.3 — обʼєкт { query }; dependency-масиви задепрековані.
   const { data: statuses, isLoading } = useLiveQuery({
     query: (q) =>
       q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
@@ -82,8 +83,8 @@ export function useOrderStatusesPage() {
       .isPersisted.promise.then(() =>
         toast.success(t('admin.orders.statuses.deleted')),
       )
-      .catch((e: Error) =>
-        toast.error(t('admin.orders.statuses.deleteFailed') + ' ' + e.message),
+      .catch((e: unknown) =>
+        toast.error(failureText(t, t('admin.orders.statuses.deleteFailed'), e)),
       );
     setDeleting(null);
   };
@@ -93,9 +94,7 @@ export function useOrderStatusesPage() {
       await reorderOrderStatus({ data: { id, direction } });
       await collection.utils.refetch();
     } catch (e) {
-      toast.error(
-        t('admin.orders.statuses.reorderFailed') + ' ' + (e as Error).message,
-      );
+      toast.error(failureText(t, t('admin.orders.statuses.reorderFailed'), e));
     }
   };
 

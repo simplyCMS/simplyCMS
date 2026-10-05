@@ -76,10 +76,8 @@ afterEach(() => cleanup());
 describe('useModifications', () => {
   it('(а) create з isDefault: true — insert, ПОТІМ setDefault (у цьому порядку)', async () => {
     const { result } = renderHook(() => useModifications('p1'), { wrapper });
-    // Колекція мусить бути в ready-стані ДО insert (виміряно —
-    // `useProductSave.create`, той самий клас, що спричинив `preload()` у
-    // `useStock.save`): useLiveQuery цього хука стартує sync асинхронно.
-    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
+    // Дати колекції стати ready ДО insert, щоб старт синку не мішався з
+    // порядком викликів самого тесту (серіалізація черги — Е3-19).
     await waitFor(() => expect(result.current.modifications).toEqual([]));
 
     const callOrder: string[] = [];
@@ -211,7 +209,9 @@ describe('useModifications', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    listProductModifications.mockResolvedValueOnce([row]);
+    // Стан сервера мінливий (update-стаб міняє row): ревалідація після запису
+    // (TSDB-1) читає його, а не витрачений `Once`.
+    listProductModifications.mockImplementation(async () => [{ ...row }]);
     updateProductModifications.mockImplementation(
       async ({
         data,

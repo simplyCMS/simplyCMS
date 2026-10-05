@@ -17,6 +17,7 @@ import {
   type ResourceWriteContext,
 } from './resource-write';
 import { runAdmin } from './run';
+import { parseAdminInput } from './validation';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
 export { pickColumns };
@@ -68,6 +69,7 @@ export function defineAdminResource<
     maxLimit,
     picked,
     touch: config.touch,
+    richHtml: config.richHtml,
   };
 
   /**
@@ -107,7 +109,7 @@ export function defineAdminResource<
 
     // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
     // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
-    // `inputValidator` serverFn з admin-server/index.ts робить те саме на
+    // `validator` serverFn з admin-server/index.ts робить те саме на
     // межі HTTP, але інваріант «readonly-поле не пишеться generic-write»
     // мусить тримати ОПЕРАЦІЯ: прямий виклик `ops.insert(...)` повз
     // serverFn (харнес-тести, internal-виклики) інакше проносить
@@ -115,7 +117,7 @@ export function defineAdminResource<
     // сама відкидає невідомі ключі — `isDefault` у payload insert мовчки
     // зникає, не падає помилкою.
     insert: async ({ data }: { data: z.infer<typeof insertSchema> }) => {
-      const parsed = insertSchema.parse(data);
+      const parsed = parseAdminInput(insertSchema, data);
       return run(
         async (db) => (await insertResourceRows(db, ctx, parsed)) as Row[],
       );
@@ -126,14 +128,14 @@ export function defineAdminResource<
     // (напр. `{ isDefault: true }`) стає `{}` і валить `.parse()` тут ЖЕ,
     // ДО `run` — readonly-патч ніколи не доходить до транзакції.
     update: async ({ data }: { data: z.infer<typeof updateSchema> }) => {
-      const parsed = updateSchema.parse(data);
+      const parsed = parseAdminInput(updateSchema, data);
       return run(
         async (db) => (await updateResourceRows(db, ctx, parsed)) as Row[],
       );
     },
 
     remove: async ({ data }: { data: z.infer<typeof removeSchema> }) => {
-      const parsed = removeSchema.parse(data);
+      const parsed = parseAdminInput(removeSchema, data);
       return run((db) =>
         removeResourceRows(
           db,

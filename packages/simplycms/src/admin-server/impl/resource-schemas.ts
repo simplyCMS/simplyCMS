@@ -1,10 +1,6 @@
-import type { Table } from 'drizzle-orm';
-import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
-} from 'drizzle-zod';
+import type { InferInsertModel, InferSelectModel, Table } from 'drizzle-orm';
 import { z } from 'zod';
+import { columnsToZod } from './columns-to-zod';
 
 /** Імена колонок Drizzle-таблиці (TS-ключі, camelCase). */
 export type ColumnName<T extends Table> = Extract<
@@ -13,29 +9,69 @@ export type ColumnName<T extends Table> = Extract<
 >;
 
 /**
- * Форма `refine` ресурсу (m3, рев'ю хвилі B): ключ — імʼя колонки, значення —
- * ФУНКЦІЯ `(defaultSchema) => ZodType`. 🔴 Саме функція, не голий `ZodType`:
- * рантайм drizzle-zod (`handleColumns`, `index.mjs`) для голого `ZodType`
- * робить `continue` ДО блоку `.nullable()/.optional()` — колонка без
- * `.notNull()` стала б обовʼязковою в patch-і (кожен `update` мусив би нести
- * поле, якого не чіпає). Функція той блок не пропускає: nullable/optional
- * лишаються тими, що дає сама колонка (`insertConditions`/`updateConditions`).
+ * Форма `refine` ресурсу: ключ — імʼя колонки, значення — ФУНКЦІЯ
+ * `(defaultSchema) => ZodType`. 🔴 Саме функція, не голий `ZodType`:
+ * `columnsToZod` навішує `.nullable()/.optional()` ПОВЕРХ результату
+ * функції, тож колонка без `.notNull()` лишається необовʼязковою в patch-і
+ * (кожен `update` інакше мусив би нести поле, якого не чіпає).
  */
 export type ResourceRefine = Record<string, (schema: never) => z.ZodType>;
 
 /**
- * Zod-схеми ресурсу адмінки, виведені з Drizzle-таблиці (винесено з
- * `defineAdminResource` — Task 1, амендмент К3-9′): rowSchema для
- * читання, insert/update/remove для запису, звужені до `writable`.
- *
- * 🔴 `refine` (m3) передається БУКВАЛЬНО другим аргументом
- * `createInsertSchema`/`createUpdateSchema` — nullable/optional рахує сам
- * рушій drizzle-zod, не ручне відтворення формули збоку. Пряма передача
- * впирається у СТАТИЧНИЙ інференс (TS2589/TS2349 на generic-таблиці, не в
- * рантайм) — обхід каструє саму ФУНКЦІЮ (не аргумент): фіксує тип
- * повернення БЕЗ refine, кастує сигнатуру до виклику З refine; РАНТАЙМ
- * викликає справжній `createInsertSchema(table, refine)` незмінно.
- * UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md
+ * Єдиний каст ОГОЛОШЕННЯ типу виходу (ще один — типовий, при виклику refine
+ * у `columns-to-zod.ts`). Оголошує, що `z.object(shape)` дає значення типу
+ * `Out` (`InferInsertModel`/`InferSelectModel` з Drizzle, звужені до
+ * writable/omit). Компілятор цього довести не може: форма будується в
+ * рантаймі з generic-таблиці. 🔴 Чому не `.pipe(z.custom<Out>(() => true))`:
+ * така форма БЕЗ касту компілюється (за `Out extends Record<string,
+ * unknown>`), але вхідний тип стає `{[k: string]: unknown}` і послаблює
+ * типізацію входу валідаторів `createServerFn` на клієнті; каст
+ * `ZodType<Out, Out>` лишає вхід = `Out`.
+ * Межа доказу: гейт паритету доводить рантайм-еквівалентність
+ * `columnsToZod` ≡ drizzle-zod (оракул) для всіх колонок ресурсних таблиць;
+ * відповідність ОГОЛОШЕНОГО типу (InferInsertModel/InferSelectModel)
+ * рантайм-формі він доводить лише опосередковано — оракул і тип Drizzle
+ * виводять optional/nullable за тими самими правилами колонки. Не покрито:
+ * колонки з `$type<>` (jsonb — оголошений тип вужчий за рантайм-валідацію) і
+ * результати refine проти типу колонки; їх стережуть expectTypeOf і рев'ю.
+ * `ZodObject`: невідомі ключі мовчки відкидаються (так само в drizzle-zod
+ * 0.8.3: `handleColumns` повертає `z.object`, не `strictObject`).
+ */
+function declareSchema<Out>(
+  shape: Record<string, z.ZodType>,
+): z.ZodType<Out, Out> {
+  return z.object(shape) as unknown as z.ZodType<Out, Out>;
+}
+
+/**
+ * Колонки з `InferInsertModel`, відфільтровані за ключами `K`. Мапінг з `as`,
+ * а не `Pick<M, K & keyof M>`: на generic-`T` `keyof InferInsertModel<T>`
+ * губить необовʼязкові ключі (відкладене обчислення умовних типів), а `Pick`
+ * вимагає `K ⊆ keyof M`, чого TS генерично не доводить («завжди
+ * згенеровані» колонки в insert-моделі відсутні). Це обмеження TypeScript
+ * на генеричному `Pick`, не бібліотеки. Опційність зберігається.
+ */
+type InsertPick<T extends Table, K> = {
+  [
+    P in keyof InferInsertModel<T> as P extends K ? P : never
+  ]: InferInsertModel<T>[P];
+};
+
+/** Підмножина форми за ключами (звичайний `Pick` над обʼєктом схем). */
+function pickKeys(
+  shape: Record<string, z.ZodType>,
+  keys: readonly string[],
+): Record<string, z.ZodType> {
+  return Object.fromEntries(
+    keys.flatMap((k) => (shape[k] ? [[k, shape[k]]] : [])),
+  );
+}
+
+/**
+ * Zod-схеми ресурсу адмінки, виведені з Drizzle-таблиці через власний
+ * генератор `columnsToZod`: rowSchema для читання, insert/update/remove для
+ * запису, звужені до `writable`. Pick/omit/extend виконуються над формою ДО
+ * `declareSchema`, тож статичні типи — оголошені, а не виведені з generic-таблиці.
  */
 export function buildResourceSchemas<
   T extends Table,
@@ -47,123 +83,32 @@ export function buildResourceSchemas<
   writable: readonly W[],
   refine?: ResourceRefine,
   // 🔴 Е4-5: колонки, які пишуться ЛИШЕ при створенні рядка — входять у
-  //   insert-схему, але НЕ в update-patch (strip у рантаймі, відсутні в типі).
+  //   insert-схему, але НЕ в update-patch.
   insertOnly: readonly I[] = [],
-  // 🔴 Е5-7: приховані колонки — їх немає в rowSchema ні статично, ні в
-  //   рантаймі (у insert/update їх і так немає: вони не writable/insertOnly).
+  // 🔴 Е5-7: приховані колонки — їх немає в rowSchema (у insert/update їх і
+  //   так немає: вони не writable/insertOnly).
   omit: readonly O[] = [],
 ) {
-  const pickWritable = Object.fromEntries(writable.map((c) => [c, true])) as {
-    [K in W]: true;
-  };
-  const pickInsert = Object.fromEntries(
-    [...writable, ...insertOnly].map((c) => [c, true]),
-  ) as { [K in W | I]: true };
+  const selectShape = columnsToZod(table, 'select');
+  const rowKeys = Object.keys(selectShape).filter(
+    (k) => !(omit as readonly string[]).includes(k),
+  );
+  const rowSchema = declareSchema<Omit<InferSelectModel<T>, O>>(
+    pickKeys(selectShape, rowKeys),
+  );
 
-  const rowSchemaFull = createSelectSchema(table);
-  type RowShape = typeof rowSchemaFull extends { shape: infer S } ? S : never;
-  // UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md: той самий
-  // прийом, що в pick нижче — каст на РЕЗУЛЬТАТ `.omit()`, бо маска на
-  // генеричній таблиці не дає TS вивести звужену форму.
-  const rowSchema = rowSchemaFull.omit(
-    Object.fromEntries(omit.map((c) => [c, true])) as never,
-  ) as unknown as z.ZodObject<Omit<RowShape, O>>;
-
-  // 🔴 Відхилення від брифа (typecheck), ХВІСТ РЕВʼЮ Task 7 (round 1):
-  // `.pick()` drizzle-zod типізований `M extends Mask<keyof Shape>`, де
-  // `Shape` — мапований тип, виведений із ГЕНЕРИЧНОГО `T['_']['columns']`.
-  // TS не вміє звести `keyof Shape` до конкретних імен колонок, поки `T`
-  // не інстанційовано (TS2345: «W could be instantiated with a different
-  // subtype…»), тож `{[K in W]: true}` не проходить структурну перевірку
-  // АРГУМЕНТУ.
-  //
-  // 🔴 Перша редакція касту (`pick(pickWritable as never)`) компілювалась,
-  // але БУЛА ПОМИЛКОВОЮ: аргумент типу `never` не дає TS сайту інференсу
-  // для `M`, тож `M` падає до свого констрейнта `Mask<keyof Shape>` —
-  // звідси `Extract<keyof Shape, keyof M> = keyof Shape` і `pick` СТАТИЧНО
-  // повертає Shape НЕЗМІНЕНИМ (рантайм не постраждав — `.pick()` усередині
-  // самого zod працює з реальним обʼєктом `pickWritable`, це суто питання
-  // СТАТИЧНОГО типу виклику). Наслідок: `insertSchema`/`updateSchema`
-  // статично приймали ВСІ колонки, включно з `readonly` (isDefault,
-  // createdAt) — рівно те, від чого існує exhaustiveness. Емпірично
-  // перевірено `expectTypeOf` у тесті ДО і ПІСЛЯ цього фіксу.
-  //
-  // Правильний фікс: каст на РЕЗУЛЬТАТ `.pick()`, не на аргумент. Явно
-  // виводимо Shape повної insert/update-схеми (`InsertShape`/`UpdateShape`
-  // через `infer` по `{ shape: infer S }` — так само, як сам zod типізує
-  // `.shape` на ZodObject), звужуємо його TS-ом (`Pick<Shape, W>` —
-  // справжній структурний Pick, обчислюваний компілятором, а не залежний
-  // від інференсу `M`) і кажемо компілятору, що саме такий тип повертає
-  // рантайм-виклик `.pick(pickWritable)`. Це ТОЧНО те, що робить рантайм:
-  // `pickWritable` містить рівно ключі `W`.
-  // 🔴 Каст ФУНКЦІЇ (не аргументу) — див. докстрінг вище. `plainInsert`/
-  // `plainUpdate` фіксують тип `ReturnType` (схема БЕЗ refine), до якого
-  // кастується сигнатура реального виклику з `refine`; БЕЗ `refine` каст
-  // узагалі не потрібен — ГІЛКА `else` викликає `plainInsert`/`plainUpdate`
-  // напряму (той самий виклик, що йде під капотом типу), тож обидві функції
-  // лишаються СПРАВЖНІМ значенням для лінту, а не лише джерелом типу.
-  const plainInsert = () => createInsertSchema(table);
-  const insertSchemaFull = refine
-    ? (
-        createInsertSchema as unknown as (
-          t: T,
-          r: ResourceRefine,
-        ) => ReturnType<typeof plainInsert>
-      )(table, refine)
-    : plainInsert();
-  const plainUpdate = () => createUpdateSchema(table);
-  const updateSchemaFull = refine
-    ? (
-        createUpdateSchema as unknown as (
-          t: T,
-          r: ResourceRefine,
-        ) => ReturnType<typeof plainUpdate>
-      )(table, refine)
-    : plainUpdate();
-  type InsertShape = typeof insertSchemaFull extends { shape: infer S }
-    ? S
-    : never;
-  type UpdateShape = typeof updateSchemaFull extends { shape: infer S }
-    ? S
-    : never;
-  // 🔴 `Pick<Shape, W>` напряму не типізується: вбудований `Pick` вимагає
-  // `W extends keyof Shape`, а TS не може це довести генерично — insert-
-  // shape виключає «завжди згенеровані» колонки (ColumnIsGeneratedAlwaysAs),
-  // тож `keyof InsertShape` формально ВУЖЧИЙ за `ColumnName<T>`, з якого
-  // виведено `W`. Перетин `W & keyof Shape` знімає обмеження БЕЗ втрати
-  // точності: якщо `writable`-колонка колись виявиться «завжди
-  // згенерованою», вона так само відсутня в РАНТАЙМ-схемі insert (сам
-  // drizzle-zod її не кладе) — тип і рантайм лишаються синхронними.
-  //
-  // 🔴 Ціна перетину `K & keyof S`: якщо колонка зі списку `writable`
-  // колись стане `generatedAlwaysAs`/`generatedAlwaysAsIdentity`, вона
-  // МОВЧКИ випаде зі статичної форми `SafePick` — компілятор про це не
-  // попередить (перетин просто звужується, `__missingColumns` тут не
-  // спрацьовує, бо колонка й далі є валідним членом `W`). Перевірено в
-  // рантаймі drizzle-zod: такі колонки `continue`-яться повз
-  // `columnSchemas` — і для insert, і для update, — тож `.pick()` однаково
-  // не знайшов би їх у Shape. Сьогодні це недосяжно (у schema.ts таких
-  // колонок немає), а якби колись спрацювало — тип і рантайм лишились би
-  // в згоді: мовчазний no-op запису конкретного поля, а НЕ розбіжність
-  // безпеки (readonly/writable розріз не порушується).
-  type SafePick<S, K> = Pick<S, K & keyof S>;
-
-  // UPSTREAM:DZOD-1 — docs/architecture/upstream-workarounds.md (обидва касти нижче)
-  const insertRowSchema = (
-    insertSchemaFull.pick(pickInsert as never) as unknown as z.ZodObject<
-      SafePick<InsertShape, W | I>
-    >
-  ).extend({ id: z.uuid() }); // 🔴 Е0: ключ генерує клієнт. z.uuid() — єдина форма в плані (канон Zod 4)
-  const patchSchema = (
-    updateSchemaFull.pick(pickWritable as never) as unknown as z.ZodObject<
-      SafePick<UpdateShape, W>
-    >
+  const insertRowSchema = declareSchema<InsertPick<T, W | I> & { id: string }>({
+    ...pickKeys(columnsToZod(table, 'insert', refine), [
+      ...writable,
+      ...insertOnly,
+    ]),
+    id: z.uuid(), // 🔴 Е0: ключ генерує клієнт; z.uuid() — канон Zod 4
+  });
+  const patchSchema = declareSchema<Partial<InsertPick<T, W>>>(
+    pickKeys(columnsToZod(table, 'update', refine), writable),
   ).refine((p) => Object.keys(p).length > 0, {
-    // 🔴 Порожній patch — 400 на межі, не «No values to set» синхронно з
-    // drizzle (фінальне рев'ю Е1б, знахідка 2 — той самий клас, що вже
-    // сформульовано в 7a4baa9f: межа admin-server відбиває невалідний
-    // вхід чітко, а не через SQL-білдер). `createUpdateSchema` робить усі
-    // писані поля optional, тож `{ id, patch: {} }` без цього refine
+    // 🔴 Порожній patch — 400 на межі, не «No values to set» з drizzle:
+    // усі писані поля optional, тож `{ id, patch: {} }` без цього refine
     // проходив би схему і падав на `db.update().set({})`.
     message: 'patch не може бути порожнім',
   });

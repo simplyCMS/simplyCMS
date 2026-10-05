@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { getTableColumns } from 'drizzle-orm';
+import type { Column } from 'drizzle-orm';
 import { orders } from 'simplycms/schema';
 
 // Е5-7 / Е5-12: `omit` і `maxLimit` фабрики ресурсу. Окремий файл, бо
@@ -23,6 +24,21 @@ import {
 } from './orders-config';
 
 const ops = defineAdminResource({ ...ordersConfig, omit: ['accessToken'] });
+
+/** Валідне значення колонки за типом — фікстура повного рядка orders. */
+function validValue(c: Column): unknown {
+  if (!c.notNull) return null;
+  if ('enumValues' in c && Array.isArray(c.enumValues)) return c.enumValues[0];
+  const byType: Record<string, unknown> = {
+    PgUUID: '3f6c2d1e-9b7a-4c5d-8e2f-1a2b3c4d5e6f',
+    PgBoolean: true,
+    PgInteger: 1,
+    PgTimestamp: new Date(),
+    PgNumeric: '1',
+    PgJsonb: {},
+  };
+  return byType[c.columnType] ?? 'x';
+}
 
 /** Ланцюг `select → from → $dynamic → …` зі шпигуном на `limit` і `select`. */
 async function captureList(
@@ -68,8 +84,18 @@ describe('omit (Е5-7)', () => {
   });
 
   it('rowSchema не має accessToken', () => {
-    expect('accessToken' in ops.rowSchema.shape).toBe(false);
-    expect('orderNumber' in ops.rowSchema.shape).toBe(true);
+    // `rowSchema` — ZodType<Row> (оголошений тип, без `.shape`): strip-режим викидає
+    // невідомі ключі, тож відсутність accessToken у ВИВОДІ parse її доводить.
+    const full = Object.fromEntries(
+      Object.entries(getTableColumns(orders)).map(([k, c]) => [
+        k,
+        validValue(c),
+      ]),
+    );
+    expect('accessToken' in full).toBe(true);
+    const out = ops.rowSchema.parse(full);
+    expect('accessToken' in out).toBe(false);
+    expect('orderNumber' in out).toBe(true);
   });
 
   it('list: SELECT іде явною проєкцією без accessToken', async () => {

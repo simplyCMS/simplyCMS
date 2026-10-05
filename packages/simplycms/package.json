@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -28,7 +28,6 @@
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
-    "./schema/relations": "./src/schema/relations.ts",
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
     "./admin-server/impl": "./src/admin-server/impl/index.ts",
@@ -38,6 +37,7 @@
     "./storage": "./src/storage/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
+    "./sanitize": "./src/sanitize/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
     "./supabase/browser-client": "./src/supabase/browser-client.ts",
@@ -48,6 +48,7 @@
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
+    "./runtime/csrf": "./src/runtime/csrf.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
@@ -192,10 +193,6 @@
         "types": "./dist/schema/schema.d.ts",
         "import": "./dist/schema/schema.js"
       },
-      "./schema/relations": {
-        "types": "./dist/schema/relations.d.ts",
-        "import": "./dist/schema/relations.js"
-      },
       "./schema/types": {
         "types": "./dist/schema/types.d.ts",
         "import": "./dist/schema/types.js"
@@ -231,6 +228,10 @@
       "./commerce": {
         "types": "./dist/commerce/index.d.ts",
         "import": "./dist/commerce/index.js"
+      },
+      "./sanitize": {
+        "types": "./dist/sanitize/index.d.ts",
+        "import": "./dist/sanitize/index.js"
       },
       "./supabase": {
         "types": "./dist/supabase/index.d.ts",
@@ -271,6 +272,10 @@
       "./runtime/domain-error-adapter": {
         "types": "./dist/runtime/domain-error-adapter.d.ts",
         "import": "./dist/runtime/domain-error-adapter.js"
+      },
+      "./runtime/csrf": {
+        "types": "./dist/runtime/csrf.d.ts",
+        "import": "./dist/runtime/csrf.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
@@ -549,8 +554,8 @@
     "@radix-ui/react-tooltip": "^1.0.0",
     "@supabase/ssr": ">=0.5.0 <1.0.0",
     "@supabase/supabase-js": "^2.0.0",
-    "@tanstack/query-db-collection": "~1.2.11",
-    "@tanstack/react-db": "~0.3.6",
+    "@tanstack/query-db-collection": "~1.3.4",
+    "@tanstack/react-db": "~0.5.3",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-start": "^1.0.0",
@@ -579,17 +584,19 @@
   "devDependencies": {
     "@tanstack/router-core": "1.171.34",
     "@types/pg": "^8.15.6",
-    "dotenv": "^17.4.2",
-    "seroval": "^1.6.7"
+    "@types/sanitize-html": "^2.16.2",
+    "dotenv": "^18.0.5",
+    "drizzle-zod": "0.8.3",
+    "seroval": "^1.6.8"
   },
   "dependencies": {
-    "@tiptap/extension-image": "^3.29.2",
-    "@tiptap/extension-text-align": "^3.29.2",
-    "better-auth": "1.7.1",
+    "@tiptap/extension-image": "^3.31.4",
+    "@tiptap/extension-text-align": "^3.31.4",
+    "better-auth": "1.7.7",
     "clsx": "^2.1.1",
-    "drizzle-zod": "^0.8.3",
-    "pg": "8.22.0",
-    "tailwind-merge": "^3.6.0"
+    "pg": "8.23.1",
+    "sanitize-html": "^2.18.0",
+    "tailwind-merge": "^3.7.0"
   },
   "peerDependenciesMeta": {
     "@radix-ui/react-accordion": {

@@ -1,6 +1,6 @@
 {
   "name": "@simplycms/cli",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": false,
   "description": "CLI магазину SimplyCMS (бінарник simplycms): doctor, add, create, update, db:diff",
   "type": "module",
@@ -35,6 +35,6 @@
     "directory": "packages/cli"
   },
   "dependencies": {
-    "@clack/prompts": "^1.7.0"
+    "@clack/prompts": "^1.8.1"
   }
 }

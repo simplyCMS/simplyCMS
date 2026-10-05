@@ -43,7 +43,7 @@ export interface CheckoutQuoteState {
   blocked: boolean;
   /**
    * 🔴 Рев'ю I-2: відмова САМОГО ПРОМІСА (мережа, 500, кидок
-   * `inputValidator`) — НЕ те саме, що `blocked` (детерміновано, без
+   * `validator`) — НЕ те саме, що `blocked` (детерміновано, без
    * мережі) і НЕ те саме, що серверна бізнес-відмова `quote.ok === false`
    * (та має `reason` і показується `REJECTION_KEY`). Причина тут клієнту
    * невідома, тому текст нейтральний. Без цього прапорця purposeful

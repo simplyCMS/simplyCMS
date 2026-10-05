@@ -63,6 +63,10 @@ export const SERVER_ONLY = [
   // читають прайси, знижки й тарифи через ActorDb — спільні для чекауту й
   // адмінки, сервер і тільки сервер.
   'commerce',
+  // Санітизація rich-HTML (Тема 9): тягне `sanitize-html` (серверна залежність,
+  // нижче). Клієнт бере лише тип `SanitizedHtml` із T0 — цей субшлях йому не
+  // потрібен і в клієнтський бандл потрапити не повинен.
+  'sanitize',
 ] as const;
 
 /**
@@ -75,9 +79,11 @@ export const SERVER_ONLY = [
 export const SERVER_ONLY_DEPS = [
   { name: 'pg' },
   { name: 'drizzle-orm' },
-  { name: 'drizzle-zod' },
   // Корінь better-auth — сервер; `better-auth/react` — клієнтський SDK.
   { name: 'better-auth', clientSafe: ['react'] },
+  // Санітизатор HTML: htmlparser2 + postcss — десятки КБ, потрібні лише там,
+  // де розмітку пишуть чи віддають із сервера.
+  { name: 'sanitize-html' },
 ] as const;
 
 /**

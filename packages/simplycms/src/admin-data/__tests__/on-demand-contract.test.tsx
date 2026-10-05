@@ -7,12 +7,12 @@
  * Контракт on-demand, на якому стоїть Е3 (спайк, що лишається тестом).
  * Доводить без БД: (1) предикат useLiveQuery доходить до queryFn як
  * subset-payload з полями БЕЗ аліасу; (2) друга сторінка
- * useLiveInfiniteQuery несе offset; (3) findOne по id штовхає eq(id);
+ * useLiveInfiniteQuery з індексом несе offset (без індексу — префікс, кейс 2б); (3) findOne по id штовхає eq(id);
  * (4) leftJoin on-demand × eager резолвиться. Join on-demand × on-demand
  * свідомо НЕ вживається (схема властивостей — двома запитами, Task 10).
  * Червоне тут = бібліотека поводиться не так, як припускає план.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -45,7 +45,7 @@ function setup({ indexed = true }: { indexed?: boolean } = {}) {
       queryClient,
       queryKey: ['contract-products', 'list'],
       syncMode: 'on-demand',
-      // Е3-16: без індексу сортування useLiveInfiniteQuery не довантажує сторінки.
+      // Е3-16: індекс сортування — сторінки йдуть {limit, offset}, без попередження.
       ...(indexed && {
         autoIndex: 'eager' as const,
         defaultIndexType: BTreeIndex,
@@ -132,26 +132,50 @@ describe('on-demand контракт Е3', () => {
     expect(offsets).toContain(3);
   });
 
-  it('(2б) БЕЗ індексу друга сторінка не вантажиться — фіксуємо, чому індекс обовʼязковий', async () => {
-    const { products, calls, wrapper } = setup({ indexed: false });
-    const { result } = renderHook(
-      () =>
-        useLiveInfiniteQuery(
-          (q) =>
-            q.from({ p: products }).orderBy(({ p }) => p.createdAt, 'desc'),
-          { pageSize: 2 },
-        ),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.data).toHaveLength(2));
-    await act(async () => {
-      result.current.fetchNextPage();
-    });
-    await new Promise((r) => setTimeout(r, 200));
-    // Якщо колись бібліотека почне вантажити й без індексу — тест червоніє і
-    // Е3-16 можна переглянути; до того індекс — обовʼязкова частина колекції.
+  it('(2б) БЕЗ індексу — друга сторінка довантажується префіксом (limit росте, offset відсутній) з попередженням; З індексом — limit+offset', async () => {
+    const page2 = async (indexed: boolean) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { products, calls, wrapper } = setup({ indexed });
+      const { result } = renderHook(
+        () =>
+          useLiveInfiniteQuery(
+            (q) =>
+              q.from({ p: products }).orderBy(({ p }) => p.createdAt, 'desc'),
+            { pageSize: 2 },
+          ),
+        { wrapper },
+      );
+      await waitFor(() => expect(result.current.data).toHaveLength(2));
+      await act(async () => {
+        result.current.fetchNextPage();
+      });
+      await waitFor(() => expect(result.current.data).toHaveLength(4));
+      // Лише сторінкові payload-и (з sorts); eq-догрузки курсора відсіяні.
+      const paged = calls
+        .map(
+          (c) => (c as { subset: { sorts: unknown[]; limit?: number } }).subset,
+        )
+        .filter((s) => s.sorts.length > 0);
+      const warnings = warn.mock.calls.map(String);
+      warn.mockRestore();
+      return { paged, warnings };
+    };
+    const off = await page2(false);
     // UPSTREAM:TSDB-2 — docs/architecture/upstream-workarounds.md
-    expect(calls).toHaveLength(1);
+    // Виміряно на db 0.11.3: префікс {limit: offset+limit} БЕЗ offset +
+    // попередження про відсутній індекс. Червоніє, якщо бібліотека змінить
+    // стратегію довантаження.
+    expect(off.paged).toEqual([
+      expect.objectContaining({ limit: 3 }),
+      expect.objectContaining({ limit: 5 }),
+    ]);
+    expect(off.paged.every((s) => !('offset' in s))).toBe(true);
+    expect(off.warnings.join()).toContain('requires an index on "createdAt"');
+    const on = await page2(true);
+    expect(on.paged[1]).toEqual(
+      expect.objectContaining({ limit: 2, offset: 3 }),
+    );
+    expect(on.warnings).toEqual([]);
   });
 
   it('(3) findOne по id штовхає eq(id)', async () => {

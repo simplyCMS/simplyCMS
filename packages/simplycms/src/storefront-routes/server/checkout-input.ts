@@ -5,12 +5,12 @@ import type { PlaceOrderInput } from 'simplycms/contracts';
  * Схема оформлення — ЄДИНЕ джерело валідації запиту НА СЕРВЕРІ.
  *
  * 🔴 Живе окремим модулем без жодного серверного імпорту, але читає її ЛИШЕ
- * `inputValidator` серверної функції (`storefront-routes/server/checkout.ts`)
+ * `validator` серверної функції (`storefront-routes/server/checkout.ts`)
  * — рев'ю M1 звірило факт: сторінка (`Checkout.tsx`) цю схему НЕ імпортує,
  * вона валідує форму власною `buildCheckoutSchema` із менш строгими
  * правилами (напр. `savedAddressId` там `z.string().optional()`, тут
  * `.uuid().nullable()`). Розходження двох схем не спливе помилкою поля у
- * формі — воно впаде сирим текстом винятку `inputValidator` в тості
+ * формі — воно впаде сирим текстом винятку `validator` в тості
  * `checkout.failed`/`checkout.retry` (борг, не ця задача).
  *
  * Форма — контракт T0 `PlaceOrderInput`; `satisfies` гарантує, що в об'єкті

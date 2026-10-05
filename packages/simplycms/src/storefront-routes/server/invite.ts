@@ -29,7 +29,7 @@ export interface AcceptInviteReply {
 }
 
 export const acceptOwnerInvite = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     z.object({
       email: z.string().min(1),
       token: z.string().min(1),

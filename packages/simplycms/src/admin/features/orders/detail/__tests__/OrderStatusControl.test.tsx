@@ -17,6 +17,7 @@ import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
+  applyOutcome,
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
@@ -92,11 +93,11 @@ describe('OrderStatusControl — запит у польоті', () => {
 
     // Сервер відмовив у скасуванні й лишив «Виконано» — запит завершено.
     await act(async () => {
-      resolve({ order: { ...order, statusId: DONE.id } });
+      resolve(applyOutcome({ order: { ...order, statusId: DONE.id } }));
     });
-    changeOrderStatus.mockResolvedValueOnce({
-      order: { ...order, statusId: NEW.id },
-    });
+    changeOrderStatus.mockImplementationOnce(async () =>
+      applyOutcome({ order: { ...order, statusId: NEW.id } }),
+    );
     fireEvent.change(await select(), { target: { value: NEW.id } });
     expect(changeOrderStatus).toHaveBeenCalledTimes(2);
   });

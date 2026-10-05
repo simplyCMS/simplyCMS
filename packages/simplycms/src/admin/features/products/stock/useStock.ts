@@ -19,8 +19,8 @@ export function useStock(productId: string, modificationId: string | null) {
   const stock = useCollection(stockCollection);
   const products = useCollection(productsCollection);
   const mods = useCollection(productModificationsCollection);
-  const { data: rows } = useLiveQuery(
-    (q) =>
+  const { data: rows } = useLiveQuery({
+    query: (q) =>
       q
         .from({ s: stock })
         .where(({ s }) =>
@@ -28,8 +28,7 @@ export function useStock(productId: string, modificationId: string | null) {
             ? eq(s.modificationId, modificationId)
             : and(eq(s.productId, productId), isNull(s.modificationId)),
         ),
-    [productId, modificationId],
-  );
+  });
 
   const save = async (quantities: Record<string, string>): Promise<boolean> => {
     const parsed = Object.entries(quantities).map(([pickupPointId, raw]) => ({
@@ -50,16 +49,12 @@ export function useStock(productId: string, modificationId: string | null) {
     });
     // 🔴 Статус цілі змінився гвардом на сервері (Е3-3) — пишемо рядок цілі
     // туди, звідки його читає картка, інакше бейдж показав би старий статус.
-    // `preload()` СТАРТУЄ sync (як у `useProductSave.create`) — на відміну
-    // від `stock` (синк уже стартував власним `useLiveQuery` цього хука),
-    // цільова колекція тут лише отримана через `useCollection`, без гарантії
-    // підписки.
-    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
+    // Цільова колекція тут лише отримана через `useCollection`, без власної
+    // підписки; окремий `preload()` не потрібен — write-утиліти
+    // `query-db-collection` самі стартують sync, якщо він ще не йшов.
     if (modificationId) {
-      await mods.preload();
       mods.utils.writeUpsert(res.target as ProductModification);
     } else {
-      await products.preload();
       products.utils.writeUpsert(res.target as Product);
     }
     return true;

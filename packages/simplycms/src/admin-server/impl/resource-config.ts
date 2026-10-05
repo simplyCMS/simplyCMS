@@ -1,5 +1,6 @@
 import type { Table } from 'drizzle-orm';
 import type { Operation } from 'simplycms/auth';
+import type { RichHtmlProfile } from 'simplycms/sanitize';
 import type { ColumnName, ResourceRefine } from './resource-schemas';
 
 /**
@@ -20,6 +21,9 @@ export interface AdminResourceConfigBase<
   mode: 'eager' | 'on-demand';
   // 🔴 Е5-7: прихована колонка не фільтрується й не сортується — інакше
   //   subset став би оракулом її значення (напр. перебір access_token).
+  // filterable — eq/gt/gte/lt/lte/in/isNull; sortable — сортування і, крім того,
+  //   eq/gt/gte/lt/lte (курсор «Показати ще», див. `subset.ts`); in/isNull по
+  //   sortable заборонені.
   filterable: readonly Exclude<ColumnName<T>, O>[];
   sortable: readonly Exclude<ColumnName<T>, O>[];
   defaultOrder?: {
@@ -41,9 +45,16 @@ export interface AdminResourceConfigBase<
    *  тригера updated_at у каноні немає). Прихована (`omit`) — заборонена
    *  типом: штамп писав би колонку повз видимий контракт ресурсу. */
   touch?: Exclude<ColumnName<T>, O>;
-  /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
+  /** m3 (рев'ю хвилі B): рефайнменти генератора схем для колонок без власної
    *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
   refine?: ResourceRefine;
+  /** Тема 9: колонки з розміткою rich-text редактора → профіль санітизатора
+   *  (`simplycms/sanitize`). Санітизація — пост-парс трансформація значення в
+   *  generic-write (insert/update) і при віддачі рядків клієнту (list/RETURNING:
+   *  старі рядки, сід, демо-дані). Схеми (`columnsToZod`) НЕ змінюються. Лише
+   *  записувані колонки: розмітка в readonly/omit-колонці не має власника. */
+  // `NoInfer`: ключі лише ЗВІРЯЮТЬСЯ з writable/insertOnly, а не виводять W.
+  richHtml?: { readonly [K in NoInfer<W | I>]?: RichHtmlProfile };
 }
 
 /**

@@ -70,6 +70,8 @@ export const messages = {
   'admin.products.stock.statusLabel': 'Статус наявності',
   'admin.products.stock.saved': 'Залишки збережено',
   'admin.products.stock.saveFailed': 'Помилка збереження: {message}',
+  'admin.products.stock.invalidQuantity':
+    'Кількість має бути цілим числом не менше 0',
   'admin.products.stock.quantityAtWarehouse': 'Кількість на складі',
   'admin.products.stock.units': 'шт.',
   'admin.products.stock.title': 'Залишки',

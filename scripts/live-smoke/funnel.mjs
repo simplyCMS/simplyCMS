@@ -9,6 +9,7 @@
  * життям від кроків сценарію.
  */
 import { runAvatarStep } from './avatar.mjs';
+import { runReviewXssStep } from './review-xss.mjs';
 import { register } from './register.mjs';
 import { submitCheckout } from './place-order.mjs';
 import {
@@ -31,6 +32,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
     page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
   await register(page, base);
   await runAvatarStep({ page, base, dbUrl, check });
+  await runReviewXssStep({ page, base, dbUrl, check });
   const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
 
   // 1. Картка: бейдж і JSON-LD проти БД (те, чого curl не бачить).

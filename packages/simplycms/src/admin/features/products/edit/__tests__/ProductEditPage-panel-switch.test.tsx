@@ -12,6 +12,8 @@ import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { EngineProvider } from 'simplycms/react-query';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 import { ENGINE, ResizeObserverStub } from './test-engine-stub';
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
@@ -48,12 +50,21 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 beforeEach(() => vi.clearAllMocks());
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  // Стейтфул-стаби тесту не течуть в інші: повертаємо дефолти.
+  listProducts.mockImplementation(async () => []);
+  updateProducts.mockImplementation(async ({ data }) =>
+    data.map((d) => ({ id: d.id, ...d.patch })),
+  );
+});
 
 describe('ProductEditPage: панель за живим рядком, не за useWatch', () => {
   it('клік по перемикачу типу БЕЗ Save не підмінює панель; write-back — підмінює', async () => {
     const now = new Date();
-    listProducts.mockResolvedValueOnce([
+    // Сервер зі станом: write-back ревалідує зріз (TSDB-1) — `Once` витрачений
+    // на перше читання, і дефолтний [] прибрав би рядок разом із панеллю.
+    const server = createMutableServer([
       {
         id: PRODUCT_ID,
         name: 'Панель',
@@ -75,11 +86,19 @@ describe('ProductEditPage: панель за живим рядком, не за 
         updatedAt: now,
       },
     ]);
+    listProducts.mockImplementation(server.list as never);
+    updateProducts.mockImplementation((async ({
+      data,
+    }: {
+      data: Array<{ id: string; patch: object }>;
+    }) =>
+      data.map((d) =>
+        server.upsert({ id: d.id, ...d.patch } as never),
+      )) as never);
 
     let writeBack: ((v: boolean) => void) | undefined;
     function WriteBackProbe() {
-      // БЕЗ власного useLiveQuery — інший демо-ключ дав би ще один виклик
-      // listProducts, а mockResolvedValueOnce уже не має рядка. Рядок кладе
+      // БЕЗ власного useLiveQuery — рядок кладе
       // findOne самої ProductEditPage; тут лише беремо той самий інстанс
       // колекції (WeakMap за queryClient), щоб писати в нього.
       const products = useCollection(productsCollection);
@@ -108,11 +127,15 @@ describe('ProductEditPage: панель за живим рядком, не за 
     expect(screen.queryByRole('button', { name: 'Додати' })).toBeNull();
 
     // Write-back (те, що робить РЕАЛЬНИЙ Save) — ось тепер панель підмінюється.
+    const before = listProducts.mock.calls.length;
     await act(async () => {
       writeBack?.(true);
       await new Promise((r) => setTimeout(r, 0));
     });
     // findByRole сам кидає, якщо не знайдено — присутність кнопки доведена.
     await screen.findByRole('button', { name: 'Додати' });
+    // Ревалідація віддає збережений сервером рядок — панель не відкочується.
+    await awaitRevalidation(listProducts, before);
+    expect(screen.getByRole('button', { name: 'Додати' })).toBeTruthy();
   });
 });

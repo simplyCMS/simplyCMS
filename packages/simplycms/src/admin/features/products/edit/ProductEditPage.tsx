@@ -59,16 +59,15 @@ export function ProductEditPage({ productId }: Props) {
   const products = useCollection(productsCollection);
   const isValidId = z.uuid().safeParse(productId).success;
 
-  const { data, isLoading, isReady } = useLiveQuery(
-    (q) =>
+  const { data, isLoading, isReady } = useLiveQuery({
+    query: (q) =>
       isValidId
         ? q
             .from({ p: products })
             .where(({ p }) => eq(p.id, productId))
             .findOne()
         : undefined,
-    [productId, isValidId],
-  );
+  });
 
   const goBack = () => navigate({ to: adminPath('products') });
 
@@ -109,7 +108,7 @@ export function ProductEditPage({ productId }: Props) {
       <ProductForm
         productId={productId}
         defaultValues={toFormValues(data)}
-        onSubmit={(values) => update(productId, values)}
+        onSubmit={(values, binding) => update(productId, values, binding)}
         submitLabel={t('common.save')}
         meta={{ createdAt: data.createdAt, updatedAt: data.updatedAt }}
       >

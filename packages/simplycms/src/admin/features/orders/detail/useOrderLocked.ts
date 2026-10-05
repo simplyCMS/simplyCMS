@@ -9,7 +9,9 @@ import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
  */
 export function useOrderLocked(statusId: string | null): boolean {
   const col = useCollection(orderStatusesCollection);
-  const { data: statuses, isLoading } = useLiveQuery((q) => q.from({ s: col }));
+  const { data: statuses, isLoading } = useLiveQuery({
+    query: (q) => q.from({ s: col }),
+  });
   if (isLoading) return true;
   const cancelledId = statuses.find(
     (s) => s.code === ORDER_STATUS_CODE.cancelled,

@@ -23,7 +23,8 @@ import { TABLE_SPECS } from './table-specs.mjs';
 const here = resolve(fileURLToPath(import.meta.url), '..');
 const OUT_PATH = join(here, 'seed-demo.sql');
 
-loadEnv({ path: resolve(here, '../../.env.local') });
+// dotenv 18 за замовчуванням друкує «injected env» у stderr — глушимо.
+loadEnv({ path: resolve(here, '../../.env.local'), quiet: true });
 
 const MISSING_URL_HELP = `[dev-stand] DATABASE_URL не заданий — дамп неможливий.
 

@@ -80,10 +80,8 @@ describe('usePropertyValues: серіалізація черги на propertyId
     const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
       wrapper,
     });
-    // Дати on-demand колекції стати ready ДО гонки — інакше перший
-    // insert() ще не встигає піти в 'ready'-стан і сама черга (не
-    // серіалізація) стає джерелом шуму в тесті.
-    // UPSTREAM:TSDB-B1 — docs/architecture/upstream-workarounds.md
+    // Дати on-demand колекції стати ready ДО гонки — інакше старт синку
+    // мішається з серіалізацією самої черги (Е3-19).
     await waitFor(() => expect(result.current.rowsOf('propA')).toHaveLength(0));
 
     result.current.saveScalar('propA', {

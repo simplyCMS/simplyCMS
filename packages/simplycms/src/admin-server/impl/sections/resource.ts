@@ -34,5 +34,7 @@ export const sectionsOps = defineAdminResource({
     'metaTitle',
     'metaDescription',
   ],
+  // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
+  richHtml: { description: 'content' },
   readonly: ['id', 'parentId', 'createdAt', 'updatedAt'],
 });

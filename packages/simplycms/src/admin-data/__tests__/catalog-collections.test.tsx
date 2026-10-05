@@ -7,7 +7,7 @@
  * (ціни) — `insert` кидає, запис лише іменованою операцією; (3) eager
  * довідник (розділи) — preload тягне `listSections({ data: {} })` один раз.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
@@ -63,6 +63,8 @@ vi.mock('simplycms/admin-server', async () =>
   }),
 );
 
+import { createMutableServer } from './support/mutable-server';
+import { awaitRevalidation } from './support/revalidation';
 import { getCollection } from '../registry';
 import { productsCollection } from '../collections/products';
 import { productPricesCollection } from '../collections/product-prices';
@@ -85,6 +87,18 @@ const writable = (def: AnyDef) =>
   getCollection(new QueryClient(), def) as unknown as WritableCollection;
 
 describe('колекції каталогу', () => {
+  // list-стаби, перепризначені тестом запису, не мають текти в наступні.
+  afterEach(() => {
+    for (const l of [
+      listSections,
+      dict.listPriceTypes,
+      dict.listSectionProperties,
+      dict.listPropertyOptions,
+      dict.listSectionPropertyAssignments,
+    ])
+      l.mockImplementation((async () => []) as never);
+  });
+
   it('products: queryFn несе фільтр sectionId у subset-payload list-серверFn', async () => {
     const qc = new QueryClient();
     const products = getCollection(qc, productsCollection);
@@ -122,36 +136,48 @@ describe('колекції каталогу', () => {
   });
 
   it.each([
-    ['sections', sectionsCollection, 'insertSections', listSections],
+    ['sections', sectionsCollection, 'insertSections', listSections, false],
     [
       'price_types',
       priceTypesCollection,
       'insertPriceTypes',
       dict.listPriceTypes,
+      false,
     ],
     [
       'section_properties',
       sectionPropertiesCollection,
       'insertSectionProperties',
       dict.listSectionProperties,
+      true,
     ],
     [
       'property_options',
       propertyOptionsCollection,
       'insertPropertyOptions',
       dict.listPropertyOptions,
+      true,
     ],
     [
       'section_property_assignments',
       sectionPropertyAssignmentsCollection,
       'insertSectionPropertyAssignments',
       dict.listSectionPropertyAssignments,
+      true,
     ],
   ] as const)(
     '%s: insert викликає serverFn з УСІМА рядками транзакції і пише серверний рядок',
-    async (_e, def, fn, list) => {
+    async (_e, def, fn, list, onDemand) => {
       const insert = dict[fn];
       insert.mockClear();
+      // Сервер зі станом (TSDB-1): запис ревалідує зріз, тож list мусить
+      // бачити те, що зберіг insert, інакше ревалідація затре write-back.
+      const srv = createMutableServer<{ id: string }>([]);
+      list.mockImplementation(srv.list as never);
+      insert.mockImplementation((async ({ data }: { data: { id: string }[] }) =>
+        data.map((r) =>
+          srv.upsert({ ...r, createdAt: SERVER_CREATED_AT } as never),
+        )) as never);
       const qc = new QueryClient();
       const c = getCollection(qc, def as AnyDef) as WritableCollection;
       // 🔴 Е4-13: без живого спостерігача драфт on-demand колекції лишається
@@ -182,8 +208,14 @@ describe('колекції каталогу', () => {
           'write-back не доніс серверний рядок',
         ).toEqual(SERVER_CREATED_AT);
       }
-      // Write-back замість refetch (К3-7).
-      expect(list.mock.calls.length).toBe(listCalls);
+      if (onDemand) {
+        // ціна TSDB-1: +N запитів після запису (по одному на живий зріз).
+        await awaitRevalidation(list, listCalls);
+        expect(list.mock.calls.length).toBeLessThanOrEqual(listCalls + 1);
+      } else {
+        // Eager-довідник: один патч кешу, жодного перезапиту (К3-7).
+        expect(list.mock.calls.length).toBe(listCalls);
+      }
     },
   );
 

@@ -29,7 +29,7 @@ const target = z.object({
 
 /** Читання власної таблиці плагіна. Публічне: слоти вітрини бачить і гість. */
 export const pluginTableList = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     target.extend({
       eq: z.record(z.string(), cell).optional(),
       orderBy: z.string().max(63).optional(),
@@ -47,7 +47,7 @@ export const pluginTableList = createServerFn({ method: 'GET' })
 
 /** Вставка рядка — лише адмін. */
 export const pluginTableInsert = createServerFn({ method: 'POST' })
-  .inputValidator(target.extend({ row: z.record(z.string(), cell) }))
+  .validator(target.extend({ row: z.record(z.string(), cell) }))
   .handler(async ({ data }): Promise<PluginRow> => {
     const input = data as z.output<typeof target> & {
       row: Record<string, z.output<typeof cell>>;
@@ -58,7 +58,7 @@ export const pluginTableInsert = createServerFn({ method: 'POST' })
 
 /** Оновлення рядка за `id` — лише адмін. */
 export const pluginTableUpdate = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     target.extend({
       id: z.string().min(1).max(64),
       patch: z.record(z.string(), cell),
@@ -75,7 +75,7 @@ export const pluginTableUpdate = createServerFn({ method: 'POST' })
 
 /** Видалення рядка за `id` — лише адмін. */
 export const pluginTableRemove = createServerFn({ method: 'POST' })
-  .inputValidator(target.extend({ id: z.string().min(1).max(64) }))
+  .validator(target.extend({ id: z.string().min(1).max(64) }))
   .handler(async ({ data }): Promise<void> => {
     const input = data as z.output<typeof target> & { id: string };
     await requireAdmin();
@@ -84,14 +84,14 @@ export const pluginTableRemove = createServerFn({ method: 'POST' })
 
 /** Конфіг плагіна: `found: false` — рядка з таким `name` у БД немає. */
 export const pluginConfigRead = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ plugin: z.string().min(1).max(100) }))
+  .validator(z.object({ plugin: z.string().min(1).max(100) }))
   .handler(async ({ data }): Promise<{ found: boolean; config: JsonValue }> =>
     selectPluginConfig((data as { plugin: string }).plugin),
   );
 
 /** Запис конфіга плагіна — лише адмін; `false` означає відмову доступу. */
 export const pluginConfigWrite = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     z.object({
       plugin: z.string().min(1).max(100),
       config: z.record(z.string(), z.json()),

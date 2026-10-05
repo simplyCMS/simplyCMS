@@ -50,8 +50,8 @@ temp/.env.local
 *.tgz
 packages/*/package/
 
-# Knowledge graph (graphify) — локальний артефакт, росте снапшотами по датах
-graphify-out/
+# Python-кеш скриптів скіла codebase-research (orient --map)
+__pycache__/
 
 # Playwright (pnpm test:e2e) — звіти й трейси прогону
 test-results/
@@ -72,3 +72,6 @@ scripts/dev-stand/seed-demo.sql
 
 # Локальне сховище медіа (драйвер local-fs, дефолт MEDIA_ROOT)
 .data/
+
+# Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
+.claude/worktrees/

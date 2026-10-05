@@ -1,7 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import TextAlign from '@tiptap/extension-text-align';
+import { contentEditorExtensions } from './rich-text-extensions';
 import { Button } from 'simplycms/ui/button';
 import { Toggle } from 'simplycms/ui/toggle';
 import { Separator } from 'simplycms/ui/separator';
@@ -46,29 +44,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const t = useT();
   const editor = useEditor({
-    extensions: [
-      // StarterKit v3 уже містить link + underline — налаштовуємо link тут,
-      // щоб не дублювати розширення (underline лишаємо з типовою конфігурацією).
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-        link: {
-          openOnClick: false,
-          HTMLAttributes: {
-            class: 'text-primary underline cursor-pointer',
-          },
-        },
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
-        },
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-    ],
+    extensions: contentEditorExtensions(),
     content,
     editorProps: {
       attributes: {

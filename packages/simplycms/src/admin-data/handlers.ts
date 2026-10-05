@@ -1,7 +1,13 @@
 /**
  * Спільні persistence-хендлери колекцій адмінки (дедуплікація Е3): канон
  * write-back замість self-invalidation (К3-7) один раз, а не в кожній
- * колекції. Гейт `tests/handler-canon.test.ts` сканує УСЮ теку
+ * колекції. Для eager це справді запис у кеш без мережі; на on-demand
+ * (query-db-collection 1.3.x) write-back САМ ревалідує активних власників
+ * ключів (M1) — це поведінка бібліотеки, ціна описана в TSDB-1.
+ *
+ * `{ refetch: false }` — опт-аут із задепрекованого авто-рефетчу хендлера
+ * (зникне разом із return-значеннями в TanStack DB 1.0 — тоді прибрати);
+ * від ревалідації M1 він не рятує. Гейт `tests/handler-canon.test.ts` сканує УСЮ теку
  * `admin-data` — onInsert/onUpdate/onDelete тут, і кожен
  * `return { refetch: false }` має write-back перед собою.
  *

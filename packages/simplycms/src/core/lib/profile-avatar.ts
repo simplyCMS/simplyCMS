@@ -34,11 +34,11 @@ const REASON_CODE = {
  * послідовність — у `replaceAvatar` (`storefront/loaders`), щоб харнес ганяв
  * справжній код, а не копію.
  *
- * 🔴 Валідатор — функція, а не Zod-схема: `inputValidator` зі схемою не
+ * 🔴 Валідатор — функція, а не Zod-схема: `validator` зі схемою не
  * приймає `FormData` (Start типізує цю гілку окремо).
  */
 export const uploadMyAvatar = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): FormData => {
+  .validator((data: unknown): FormData => {
     if (!(data instanceof FormData)) {
       throw new Error('[simplycms] uploadMyAvatar expects FormData.');
     }

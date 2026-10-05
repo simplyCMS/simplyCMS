@@ -172,7 +172,7 @@ describe('межа довіри плагінів (no-restricted-imports)', () =>
     for (const bad of [
       "import { pool } from 'simplycms/db';",
       "import { ops } from 'simplycms/admin-server/impl';",
-      "import { createSelectSchema } from 'drizzle-zod';",
+      "import { drizzle } from 'drizzle-orm/node-postgres';",
     ]) {
       const errors = await boundaryErrors(
         bad,

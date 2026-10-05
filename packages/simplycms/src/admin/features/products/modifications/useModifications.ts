@@ -17,14 +17,13 @@ import type { ModificationFormValues } from './modification-form-schema';
  */
 export function useModifications(productId: string) {
   const mods = useCollection(productModificationsCollection);
-  const { data: modifications } = useLiveQuery(
-    (q) =>
+  const { data: modifications } = useLiveQuery({
+    query: (q) =>
       q
         .from({ m: mods })
         .where(({ m }) => eq(m.productId, productId))
         .orderBy(({ m }) => m.sortOrder, 'asc'),
-    [productId],
-  );
+  });
 
   const applyDefault = async (id: string) => {
     const { rows } = await setDefaultProductModification({ data: { id } });

@@ -22,14 +22,13 @@ export function OrderModificationPicker({
 }: Props) {
   const t = useT();
   const mods = useCollection(productModificationsCollection);
-  const { data, isLoading } = useLiveQuery(
-    (q) =>
+  const { data, isLoading } = useLiveQuery({
+    query: (q) =>
       q
         .from({ m: mods })
         .where(({ m }) => eq(m.productId, productId))
         .orderBy(({ m }) => m.sortOrder, 'asc'),
-    [productId],
-  );
+  });
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">

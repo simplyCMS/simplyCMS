@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { failureText } from '../../lib/report-tx-error';
 import { setDefaultOrderStatus } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 
@@ -31,9 +32,7 @@ export function useStatusPersist(
     try {
       await applyDefault(id);
     } catch (e) {
-      toast.error(
-        t('admin.orders.statuses.updateFailed') + ' ' + (e as Error).message,
-      );
+      toast.error(failureText(t, t('admin.orders.statuses.updateFailed'), e));
     }
   };
 
@@ -50,7 +49,7 @@ export function useStatusPersist(
         toast.success(t(okKey));
         await afterPersist(id, isDefault);
       })
-      .catch((e: Error) => toast.error(t(failKey) + ' ' + e.message))
+      .catch((e: unknown) => toast.error(failureText(t, t(failKey), e)))
       .finally(() => setIsSubmitting(false));
   };
 
