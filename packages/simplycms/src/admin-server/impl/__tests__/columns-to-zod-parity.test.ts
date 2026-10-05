@@ -5,7 +5,7 @@
 // прогін значень. Таблиці беруться з реальних конфігів ресурсів (збирач
 // нижче підміняє `defineAdminResource`), тож нова таблиця автоматично в гейті.
 import { describe, expect, it, vi } from 'vitest';
-import { getTableColumns } from 'drizzle-orm';
+import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { Column } from 'drizzle-orm';
 import { z } from 'zod';
 import { columnSchema, columnsToZod } from '../columns-to-zod';
@@ -50,6 +50,21 @@ describe('паритет columnsToZod з drizzle-zod', () => {
     expect(resources.length).toBeGreaterThan(0);
   });
 
+  it('усі виклики defineAdminResource у admin-server потрапили в гейт', () => {
+    // Сирі джерела всіх не-тестових .ts: ресурс поза `impl/*/resource{,s}.ts`
+    // інакше мовчки ухилився б від гейта.
+    const sources = import.meta.glob(
+      ['../../**/*.ts', '!../../**/__tests__/**'],
+      { query: '?raw', import: 'default', eager: true },
+    ) as Record<string, string>;
+    const calls = Object.values(sources)
+      .flatMap((src) => src.split('\n'))
+      .filter(
+        (l) => /defineAdminResource\(/.test(l) && !/^\s*(\/\/|\*)/.test(l),
+      );
+    expect(captured.length).toBe(calls.length);
+  });
+
   it('columnsToZod збігається з drizzle-zod: усі колонки × insert/update/select × VALUES', () => {
     expect(diffAgainstReference(resources, columnsToZod)).toEqual([]);
   });
@@ -89,10 +104,32 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       'm3 varchar: без max': mutate('PgVarchar', () => z.string()),
       'm4 timestamp: date -> any': mutate('PgTimestamp', () => z.any()),
     };
+    const byName = new Map<string, Column>(
+      resources.flatMap((r) =>
+        Object.entries(getTableColumns(r.table)).map(
+          ([k, c]) => [`${getTableName(r.table)}.${k}`, c] as const,
+        ),
+      ),
+    );
+    /** Предикат: до яких колонок мутація має право чіпатись. */
+    const scope: Record<string, (c: Column) => boolean> = {
+      'm1 integer: int -> number': (c) => c.columnType === 'PgInteger',
+      'm2 select: без nullable': (c) => !c.notNull,
+      'm3 varchar: без max': (c) => c.columnType === 'PgVarchar',
+      'm4 timestamp: date -> any': (c) => c.columnType === 'PgTimestamp',
+    };
+    it('контроль ідентичності: незмінений генератор — порожній diff', () => {
+      const identity: Gen = (t, m, r) => ({ ...columnsToZod(t, m, r) });
+      expect(diffAgainstReference(resources, identity)).toEqual([]);
+    });
     for (const [name, gen] of Object.entries(mutations)) {
-      it(`${name}: непорожній diff`, () => {
-        const n = diffAgainstReference(resources, gen).length;
-        expect(n).toBeGreaterThan(0);
+      it(`${name}: непорожній diff лише по колонках мутованого типу`, () => {
+        const diff = diffAgainstReference(resources, gen);
+        expect(diff.length).toBeGreaterThan(0);
+        for (const line of diff) {
+          const col = byName.get(line.split(' [')[0]!);
+          expect(col && scope[name]!(col), line).toBe(true);
+        }
       });
     }
   });

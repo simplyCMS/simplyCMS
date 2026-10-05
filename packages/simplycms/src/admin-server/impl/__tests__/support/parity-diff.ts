@@ -17,8 +17,10 @@ export interface ParityResource {
 
 type Shaped = { shape: Record<string, z.ZodType> };
 type RefFactory = (t: Table, r?: ParityResource['refine']) => Shaped;
-// UPSTREAM:DZOD-1 — статичний інференс drizzle-zod на generic-таблиці
-// (TS2589); рантайм викликається незмінно, тут лише тип виклику.
+// UPSTREAM:DZOD-1 — каст існує через типізацію ЕТАЛОНА drizzle-zod:
+// його `createXSchema` виводить форму зі generic-таблиці (TS2589/TS2349),
+// тож `Table` + refine-функції статично не проходять. Рантайм-виклик
+// незмінний, каст лише звужує тип виклику до `RefFactory`.
 const REFERENCE = {
   insert: createInsertSchema as unknown as RefFactory,
   update: createUpdateSchema as unknown as RefFactory,
