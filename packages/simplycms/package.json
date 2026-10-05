@@ -583,9 +583,9 @@
     "seroval": "^1.6.7"
   },
   "dependencies": {
-    "@tiptap/extension-image": "^3.29.2",
-    "@tiptap/extension-text-align": "^3.29.2",
-    "better-auth": "1.7.1",
+    "@tiptap/extension-image": "^3.31.4",
+    "@tiptap/extension-text-align": "^3.31.4",
+    "better-auth": "1.7.7",
     "clsx": "^2.1.1",
     "drizzle-zod": "^0.8.3",
     "pg": "8.22.0",
