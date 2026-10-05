@@ -45,6 +45,8 @@
   5.9.1, `@tanstack/react-query` 5.104.1, lucide-react 1.51, pg 8.23.1,
   drizzle-orm 0.45.3 / drizzle-kit 0.31.11, `@clack/prompts` 1.8.1, UI-патчі,
   testing-library, `@types/node`, `@supabase/*`.
+- React 19.2.8 → **19.3.0** (`react`, `react-dom`, `@types/react*`; корінь і
+  `apps/www`). Нові API (`<ViewTransition />` тощо) не впроваджено.
 - dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
   `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
 
