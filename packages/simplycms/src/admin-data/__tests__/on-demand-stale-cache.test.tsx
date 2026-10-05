@@ -27,6 +27,7 @@ import {
 import type { LoadSubsetOptions } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
+import { createMutableServer } from './support/mutable-server';
 
 type Row = { id: string; name: string };
 const SEED: Row[] = [
@@ -36,13 +37,15 @@ const SEED: Row[] = [
 ];
 
 function makeCollection(mode: 'on-demand' | 'eager') {
+  // Сервер зі станом (TSDB-1): запис ревалідує зрізи, відповідь авторитетна.
+  const server = createMutableServer(SEED);
   const queryClient = new QueryClient();
   const base = {
     id: 'stale',
     queryClient,
     queryKey: ['stale', 'list'] as const,
     getKey: (r: Row) => r.id,
-    queryFn: async () => SEED,
+    queryFn: async () => (await server.list()).slice(),
   };
   const collection =
     mode === 'on-demand'
@@ -51,13 +54,13 @@ function makeCollection(mode: 'on-demand' | 'eager') {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  return { collection, wrapper };
+  return { collection, wrapper, server };
 }
 
 /** Спільний сценарій (а): зріз A монтується/розмонтовується, зріз B пише
  * рядок write-back-ом, зріз A монтується заново. */
 async function remountAfterWriteBack(mode: 'on-demand' | 'eager') {
-  const { collection, wrapper } = makeCollection(mode);
+  const { collection, wrapper, server } = makeCollection(mode);
 
   const all = renderHook(() => useLiveQuery((q) => q.from({ p: collection })), {
     wrapper,
@@ -76,6 +79,7 @@ async function remountAfterWriteBack(mode: 'on-demand' | 'eager') {
     { wrapper },
   );
   await waitFor(() => expect(one.result.current.data?.name).toBe('B'));
+  server.upsert({ id: 'p2', name: 'B-renamed' });
   collection.utils.writeUpsert({ id: 'p2', name: 'B-renamed' });
   await waitFor(() => expect(one.result.current.data?.name).toBe('B-renamed'));
   one.unmount();
@@ -103,7 +107,7 @@ describe('Е3-17: on-demand без стейл-кешу підзапитів', ()
 });
 
 type PagedRow = { id: string; name: string; order: number };
-const PAGED_SEED: PagedRow[] = Array.from({ length: 6 }, (_, i) => ({
+const PAGED_SEED: readonly PagedRow[] = Array.from({ length: 6 }, (_, i) => ({
   id: `r${i}`,
   name: `Рядок ${i}`,
   order: i,
@@ -117,6 +121,7 @@ const PAGED_SEED: PagedRow[] = Array.from({ length: 6 }, (_, i) => ({
  * вище) тут не годиться — findOne за id мусить отримати САМЕ той рядок.
  */
 async function pagedQueryFn(
+  rows: readonly PagedRow[],
   calls: unknown[],
   ctx: { meta?: { loadSubsetOptions?: LoadSubsetOptions } },
 ) {
@@ -126,11 +131,11 @@ async function pagedQueryFn(
   const idFilter = filters.find(
     (f) => f.field.join('.') === 'id' && f.operator === 'eq',
   );
-  if (idFilter) return PAGED_SEED.filter((r) => r.id === idFilter.value);
+  if (idFilter) return rows.filter((r) => r.id === idFilter.value);
   const offset = opts?.offset ?? 0;
   return limit === undefined
-    ? PAGED_SEED.slice(offset)
-    : PAGED_SEED.slice(offset, offset + limit);
+    ? rows.slice(offset)
+    : rows.slice(offset, offset + limit);
 }
 
 /**
@@ -153,13 +158,19 @@ describe('Е3-17 (симптом власника): список useLiveInfinite
   it('ремаунт списку після write-back у findOne-зрізі бачить УСІ 6 рядків, не лише перейменований', async () => {
     const queryClient = new QueryClient();
     const calls: unknown[] = [];
+    const server = createMutableServer(PAGED_SEED);
     const collection = createCollection(
       onDemandCollectionOptions<PagedRow>({
         id: 'paged',
         queryClient,
         queryKey: ['paged', 'list'],
         getKey: (r) => r.id,
-        queryFn: (ctx) => pagedQueryFn(calls, ctx),
+        queryFn: (ctx) =>
+          pagedQueryFn(
+            server.rows.map((r) => ({ ...r })),
+            calls,
+            ctx,
+          ),
       }),
     );
     const wrapper = ({ children }: { children: ReactNode }) => (
@@ -196,11 +207,9 @@ describe('Е3-17 (симптом власника): список useLiveInfinite
       { wrapper },
     );
     await waitFor(() => expect(card.result.current.data?.name).toBe('Рядок 2'));
-    collection.utils.writeUpsert({
-      id: 'r2',
-      name: 'Рядок 2 (перейменовано)',
-      order: 2,
-    });
+    const renamed = { id: 'r2', name: 'Рядок 2 (перейменовано)', order: 2 };
+    server.upsert(renamed);
+    collection.utils.writeUpsert(renamed);
     await waitFor(() =>
       expect(card.result.current.data?.name).toBe('Рядок 2 (перейменовано)'),
     );

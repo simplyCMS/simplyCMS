@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createCollection, eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
+import { createMutableServer } from './support/mutable-server';
 
 type Row = { id: string; name: string; modificationId: string | null };
 const SEED: Row[] = [
@@ -24,6 +25,9 @@ const SEED: Row[] = [
 
 describe('Е3-17 (б): два активні зрізи, writeUpsert', () => {
   it('кожен живий запит бачить ЛИШЕ свої рядки після writeUpsert', async () => {
+    // Сервер зі станом: writeUpsert ревалідує зріз (TSDB-1), відповідь
+    // авторитетна — статичний SEED затер би запис.
+    const server = createMutableServer(SEED);
     const queryClient = new QueryClient();
     const collection = createCollection(
       onDemandCollectionOptions<Row>({
@@ -31,7 +35,7 @@ describe('Е3-17 (б): два активні зрізи, writeUpsert', () => {
         queryClient,
         queryKey: ['active-slices', 'list'],
         getKey: (r) => r.id,
-        queryFn: async () => SEED,
+        queryFn: async () => (await server.list()).slice(),
       }),
     );
     const wrapper = ({ children }: { children: ReactNode }) => (
@@ -58,17 +62,18 @@ describe('Е3-17 (б): два активні зрізи, writeUpsert', () => {
     );
     await waitFor(() => expect(zero.result.current.data).toHaveLength(1));
 
-    collection.utils.writeUpsert({
-      id: 'r2',
-      name: 'B-renamed',
-      modificationId: 'm1',
-    });
+    const renamed = { id: 'r2', name: 'B-renamed', modificationId: 'm1' };
+    server.upsert(renamed);
+    collection.utils.writeUpsert(renamed);
 
     await waitFor(() =>
       expect(mod.result.current.data.find((r) => r.id === 'r2')?.name).toBe(
         'B-renamed',
       ),
     );
+    // Після ревалідації (стан сервера) — те саме.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mod.result.current.data[0]?.name).toBe('B-renamed');
     // Обидва живі запити — досі ЛИШЕ свій предикат, надмножина в кеші невидна.
     expect(zero.result.current.data).toHaveLength(1);
     expect(zero.result.current.data[0]?.id).toBe('r1');

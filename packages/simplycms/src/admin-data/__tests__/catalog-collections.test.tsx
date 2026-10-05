@@ -63,6 +63,7 @@ vi.mock('simplycms/admin-server', async () =>
   }),
 );
 
+import { createMutableServer } from './support/mutable-server';
 import { getCollection } from '../registry';
 import { productsCollection } from '../collections/products';
 import { productPricesCollection } from '../collections/product-prices';
@@ -152,6 +153,14 @@ describe('колекції каталогу', () => {
     async (_e, def, fn, list) => {
       const insert = dict[fn];
       insert.mockClear();
+      // Сервер зі станом (TSDB-1): запис ревалідує зріз, тож list мусить
+      // бачити те, що зберіг insert, інакше ревалідація затре write-back.
+      const srv = createMutableServer<{ id: string }>([]);
+      list.mockImplementation(srv.list as never);
+      insert.mockImplementation((async ({ data }: { data: { id: string }[] }) =>
+        data.map((r) =>
+          srv.upsert({ ...r, createdAt: SERVER_CREATED_AT } as never),
+        )) as never);
       const qc = new QueryClient();
       const c = getCollection(qc, def as AnyDef) as WritableCollection;
       // 🔴 Е4-13: без живого спостерігача драфт on-demand колекції лишається
@@ -182,8 +191,16 @@ describe('колекції каталогу', () => {
           'write-back не доніс серверний рядок',
         ).toEqual(SERVER_CREATED_AT);
       }
-      // Write-back замість refetch (К3-7).
-      expect(list.mock.calls.length).toBe(listCalls);
+      // ціна TSDB-1: +N запитів після запису (по одному на живий зріз;
+      // eager-довідники — 0). Верхня межа, не рівність.
+      expect(list.mock.calls.length).toBeLessThanOrEqual(listCalls + 1);
+      // Результат: ревалідація віддала стан сервера, рядки на місці.
+      await new Promise((r) => setTimeout(r, 50));
+      for (const id of ids) {
+        expect(c.has(id), `рядок ${id} зник після ревалідації`).toBe(true);
+        expect(c.get(id)?.createdAt).toEqual(SERVER_CREATED_AT);
+      }
+      list.mockImplementation((async () => []) as never);
     },
   );
 

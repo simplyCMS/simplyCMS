@@ -200,9 +200,14 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       'Потужність',
     ]);
     expect(insertSectionProperties).toHaveBeenCalledTimes(1);
-    // Write-back (К3-7), не refetch: list не викликався вдруге.
-    expect(listSectionProperties).toHaveBeenCalledTimes(listCalls);
-    // Серверні поля доїхали write-back-ом.
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
+      listCalls + 1,
+    );
+    // Ревалідація віддає стан сервера (insert-стаб його змінив): після неї
+    // рядок і серверні поля (createdAt) на місці.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(names(result.current.data)).toContain('Габарити');
     expect(result.current.data.find((r) => r.id === id)?.createdAt).toEqual(
       new Date('2026-10-03'),
     );
@@ -279,6 +284,17 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       ]);
     });
     expect(updateSectionProperties).toHaveBeenCalledTimes(1);
-    expect(listSectionProperties).toHaveBeenCalledTimes(listCalls);
+    // ціна TSDB-1: +N запитів після запису (2 живі зрізи -> не більше +2).
+    expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
+      listCalls + 2,
+    );
+    // Після ревалідації обидва зрізи лишаються узгодженими зі станом сервера.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(result.current.card.data?.name).toBe('Маса');
+    expect(names(result.current.list.data)).toEqual([
+      'Колір',
+      'Маса',
+      'Потужність',
+    ]);
   });
 });
