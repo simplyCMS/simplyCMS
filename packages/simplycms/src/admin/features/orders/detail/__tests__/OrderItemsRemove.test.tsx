@@ -21,6 +21,7 @@ import {
   listOrderItems,
   makeOrder,
   reset,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { CANCELLED, makeItem, NEW } from './support';
 
@@ -79,11 +80,13 @@ describe('OrderDetailPage: редагування позицій', () => {
   it('видалення через діалог: «Скасувати» — без виклику; підтвердження — один виклик і write-back', async () => {
     const order = makeOrder(1, at);
     reset([order], [makeItem(1), makeItem(2)]);
-    mocks.removeOrderItem.mockResolvedValue({
-      order,
-      upserted: [],
-      removedIds: ['i0002'],
-    });
+    mocks.removeOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order,
+        upserted: [],
+        removedIds: ['i0002'],
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     const open = () =>
       screen.findByRole('button', { name: `${t('common.delete')}: Товар 2` });
@@ -110,7 +113,12 @@ describe('OrderDetailPage: редагування позицій', () => {
     });
     await waitFor(() => expect(screen.queryByText('Товар 2')).toBeNull());
     expect(screen.queryByText('Товар 1')).toBeTruthy();
-    expect(listOrderItems).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
+    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText('Товар 2')).toBeNull();
+    expect(screen.queryByText('Товар 1')).toBeTruthy();
   });
 
   it('остання позиція: кнопки видалення немає', async () => {

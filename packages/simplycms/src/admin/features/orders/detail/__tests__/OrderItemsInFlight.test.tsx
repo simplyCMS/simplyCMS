@@ -17,6 +17,7 @@ import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
+  applyOutcome,
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
@@ -88,11 +89,13 @@ describe('позиції замовлення: запит у польоті', ()
     });
     expect(mocks.updateOrderItemQuantity).toHaveBeenCalledTimes(1);
     await act(async () => {
-      h.release({
-        order,
-        upserted: [makeItem(1, { quantity: 3, total: '300.00' })],
-        removedIds: [],
-      });
+      h.release(
+        applyOutcome({
+          order,
+          upserted: [makeItem(1, { quantity: 3, total: '300.00' })],
+          removedIds: [],
+        }),
+      );
     });
     expect(mocks.updateOrderItemQuantity).toHaveBeenCalledTimes(1);
   });
@@ -116,8 +119,11 @@ describe('позиції замовлення: запит у польоті', ()
     await confirm();
     expect(mocks.removeOrderItem).toHaveBeenCalledTimes(1);
     await act(async () => {
-      h.release({ order, upserted: [], removedIds: ['i0002'] });
+      h.release(applyOutcome({ order, upserted: [], removedIds: ['i0002'] }));
     });
+    expect(screen.queryByText('Товар 2')).toBeNull();
+    // Ревалідація (TSDB-1) віддає стан сервера — позиція не повертається.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
     expect(screen.queryByText('Товар 2')).toBeNull();
   });
 });

@@ -22,6 +22,7 @@ import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
+  applyOutcome,
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
@@ -126,17 +127,23 @@ describe('позиції замовлення: наслідки операцій
   });
 
   it('видалення → підсумки з відповіді сервера (товари, доставка, разом)', async () => {
-    server.removeOrderItem.mockResolvedValue({
-      order: { ...order, subtotal: '100.00', total: '150.00' },
-      upserted: [],
-      removedIds: ['i0002'],
-    });
+    server.removeOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order: { ...order, subtotal: '100.00', total: '150.00' },
+        upserted: [],
+        removedIds: ['i0002'],
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     await screen.findByText(money(250));
     await removeItem2();
     await screen.findByText(money(150));
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(50))).toBeTruthy();
+    // Ревалідація (TSDB-1) віддає стан сервера — підсумки не відкотились.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(money(250))).toBeNull();
+    expect(screen.getByText(money(150))).toBeTruthy();
   });
 
   it('неціле 1.5 → виклику немає, поле повертається', async () => {

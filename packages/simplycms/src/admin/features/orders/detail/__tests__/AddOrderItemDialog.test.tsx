@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import {
   listOrderItems,
   makeOrder,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { makeItem } from './support';
 import {
@@ -59,11 +60,13 @@ describe('AddOrderItemDialog: додавання', () => {
     mocks.searchProductsForOrder.mockResolvedValue({
       items: [hit('p1', 'Простий')],
     });
-    mocks.addOrderItem.mockResolvedValue({
-      order: makeOrder(1, at),
-      upserted: [makeItem(2)],
-      removedIds: [],
-    });
+    mocks.addOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order: makeOrder(1, at),
+        upserted: [makeItem(2)],
+        removedIds: [],
+      }),
+    );
     const input = await openDialog();
     type(input, 'пр');
     await pick('Простий');
@@ -83,18 +86,24 @@ describe('AddOrderItemDialog: додавання', () => {
     // Успіх: діалог закрито, позиція — write-back без listOrderItems.
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await screen.findByText('Товар 2')).toBeTruthy();
-    expect(listOrderItems).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
+    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByText('Товар 2')).toBeTruthy();
   });
 
   it('товар із модифікаціями: «Додати» вимкнена до вибору модифікації', async () => {
     mocks.searchProductsForOrder.mockResolvedValue({
       items: [hit('p2', 'Із варіантами', true)],
     });
-    mocks.addOrderItem.mockResolvedValue({
-      order: makeOrder(1, at),
-      upserted: [makeItem(2)],
-      removedIds: [],
-    });
+    mocks.addOrderItem.mockImplementation(async () =>
+      applyOutcome({
+        order: makeOrder(1, at),
+        upserted: [makeItem(2)],
+        removedIds: [],
+      }),
+    );
     const input = await openDialog();
     type(input, 'із');
     await pick('Із варіантами');

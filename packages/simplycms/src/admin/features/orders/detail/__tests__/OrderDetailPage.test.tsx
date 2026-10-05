@@ -21,6 +21,7 @@ import {
   listOrders,
   makeOrder,
   reset,
+  applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { NEW, CANCELLED, DONE } from './support';
 
@@ -93,12 +94,14 @@ describe('OrderDetailPage', () => {
     expect(changeOrderStatus).not.toHaveBeenCalled();
   });
 
-  it('підтвердження → один виклик; write-back оновлює статус без refetch', async () => {
+  it('підтвердження → один виклик; write-back оновлює статус, ревалідація його зберігає', async () => {
     const order = makeOrder(1, at);
     reset([order]);
-    changeOrderStatus.mockResolvedValue({
-      order: { ...order, statusId: CANCELLED.id },
-    });
+    changeOrderStatus.mockImplementation(async () =>
+      applyOutcome({
+        order: { ...order, statusId: CANCELLED.id },
+      }),
+    );
     render(<OrderDetailPage />, { wrapper: wrap });
     fireEvent.change(await select(), { target: { value: CANCELLED.id } });
     const dialog = await screen.findByRole('alertdialog');
@@ -114,7 +117,11 @@ describe('OrderDetailPage', () => {
     await waitFor(async () =>
       expect((await select()).hasAttribute('disabled')).toBe(true),
     );
-    expect(listOrders).toHaveBeenCalledTimes(1);
+    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(2);
+    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    await new Promise((r) => setTimeout(r, 50));
+    expect((await select()).hasAttribute('disabled')).toBe(true);
   });
 
   it('409 state → тост orderCancelledFinal, стан колекції незмінний', async () => {
