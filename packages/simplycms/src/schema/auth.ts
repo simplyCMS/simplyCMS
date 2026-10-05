@@ -6,7 +6,6 @@ import {
   text,
   timestamp,
   unique,
-  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -24,9 +23,11 @@ import {
 // замовчуванням очікує однину; тому адаптер у Task 7 зобовʼязаний піти з
 // `usePlural: true`.
 //
-// 🔴 Склад полів звірено з better-auth@1.7.1 (`@better-auth/core`,
-// `getAuthTables`) станом на 2026-08-23 — звідси `accounts.issuer` і
-// унікальність `(issuer, account_id)`, яких немає в старіших описах BA.
+// 🔴 Склад полів звірено з better-auth@1.7.7 (`@better-auth/core`,
+// `getAuthTables`). Колонки `accounts.issuer` і унікальності
+// `(issuer, account_id)` тут НЕМАЄ: вони зʼявились у 1.7.0–1.7.2, а з 1.7.3
+// BA їх прибрав, і drizzle-адаптер на старті відхиляє схему з обовʼязковою
+// колонкою, яку BA не пише (`Drizzle schema mismatch`).
 // Звірка з РАНТАЙМОМ (інстанс BA проти цієї схеми) — Task 7: там версія
 // стає залежністю пакета, і розбіжність падає тестом, а не в проді.
 //
@@ -89,7 +90,6 @@ export const accounts = pgTable(
   'accounts',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    issuer: text().notNull(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
     userId: uuid('user_id').notNull(),
@@ -119,10 +119,6 @@ export const accounts = pgTable(
       foreignColumns: [users.id],
       name: 'accounts_user_id_fkey',
     }).onDelete('cascade'),
-    uniqueIndex('accounts_issuer_account_id_key').on(
-      table.issuer,
-      table.accountId,
-    ),
     index('idx_accounts_user_id').on(table.userId),
   ],
 );

@@ -581,7 +581,6 @@ CREATE TABLE "wishlists" (
 ALTER TABLE "wishlists" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"issuer" text NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -775,7 +774,6 @@ CREATE INDEX "idx_user_category_history_rule_id" ON "user_category_history" USIN
 CREATE INDEX "idx_user_recipients_user_id" ON "user_recipients" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_user_recipients_single_default" ON "user_recipients" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_wishlists_product_id" ON "wishlists" USING btree ("product_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "accounts_issuer_account_id_key" ON "accounts" USING btree ("issuer","account_id");--> statement-breakpoint
 CREATE INDEX "idx_accounts_user_id" ON "accounts" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_verifications_identifier" ON "verifications" USING btree ("identifier");--> statement-breakpoint

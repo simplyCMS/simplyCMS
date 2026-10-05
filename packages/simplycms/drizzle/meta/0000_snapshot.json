@@ -5566,12 +5566,6 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "issuer": {
-          "name": "issuer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "account_id": {
           "name": "account_id",
           "type": "text",
@@ -5648,27 +5642,6 @@
         }
       },
       "indexes": {
-        "accounts_issuer_account_id_key": {
-          "name": "accounts_issuer_account_id_key",
-          "columns": [
-            {
-              "expression": "issuer",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "account_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_accounts_user_id": {
           "name": "idx_accounts_user_id",
           "columns": [

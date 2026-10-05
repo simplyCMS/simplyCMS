@@ -18,7 +18,34 @@
 
 ---
 
-## [0.7.0] — не опубліковано (публікує мерж PR у `main`)
+## [Unreleased]
+
+Захід оновлень залежностей (спека
+[`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md),
+крок 1). Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### Безпека
+
+- `better-auth` 1.7.1 → **1.7.7** (точний пін): закрито GHSA-965c-763c-88jm
+  (critical, OAuth state як Magic Link), GHSA-r4xp-prcw-77qf (high, OAuth
+  Proxy), GHSA-44jh-23m7-hpcf (low, rate-limit на PG у drizzle-адаптері). Наша
+  конфігурація не вмикає `magicLink`/`oauthProxy`, але пакет — у `dependencies`
+  опублікованого `simplycms`.
+- tiptap → `^3.31.4` (7 пакетів у корені + `extension-image` і
+  `extension-text-align` у `dependencies` ядра); `jsdom` → `^30.1.2`; `vitest`
+  → `^4.1.11` (піднято нижню межу); транзитиви `js-yaml`, `nanoid`,
+  `brace-expansion`, `@tiptap/core` — оновлено в `pnpm-lock.yaml`.
+- `pnpm audit`: лишається лише `esbuild` через `drizzle-kit` (dev-only).
+
+### Змінено
+
+- 🔴 **Baseline міграцій (правка, без нової міграції):** з `accounts` прибрано
+  колонку `issuer` і унікальний індекс `(issuer, account_id)`. Їх мала схема
+  better-auth 1.7.0–1.7.2; з 1.7.3 їх немає, і drizzle-адаптер 1.7.7 на старті
+  падає з `Drizzle schema mismatch` (обовʼязкова колонка, яку BA не пише). Базу
+  магазину перестворити (`pnpm db:demo`).
+
+## [0.7.0] — 2026-10-04
 
 Три етапи треку **V2-К3** одним релізом: **Е4 — довідники каталогу**, **Е5 —
 замовлення**, **Е5б — редагування позицій замовлення**. Плани, рішення й
