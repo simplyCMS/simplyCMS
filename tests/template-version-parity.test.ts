@@ -58,13 +58,8 @@ const DIFFERS: Record<
   },
 };
 
-/** Пари, версії яких бампаються окремим етапом (порівняння пропущено). */
-const DEFERRED: Record<string, string> = {
-  '@tanstack/react-db':
-    'бампається етапом TanStack DB (спека 2026-10-04, тема 4) разом із коренем і peer-діапазонами ядра; після етапу запис прибрати',
-  '@tanstack/query-db-collection':
-    'те саме: пара пов’язана точними версіями з @tanstack/react-db',
-};
+/** Пари, версії яких бампаються окремим етапом (порівняння пропущено). Зараз порожньо. */
+const DEFERRED: Record<string, string> = {};
 
 const rootDeps = readDeps('package.json');
 
