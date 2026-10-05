@@ -223,6 +223,8 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 - Не використовуй `DEFAULT gen_random_uuid()` як страховку (§5).
 - Не імпортуй гола фабрику пулу `simplycms/db/client` — лише `withActor`.
 - Не роби DB-виклики в серверних функціях без обробки помилок.
+- Не вставляй розмітку контенту в DOM інакше, ніж `<RichHtml>`, і не пиши
+  `as SanitizedHtml` поза фікстурами: тип — доказ серверної санітизації (§9).
 - Не виконуй зміну стану в GET-обробнику й не додавай префікс у
   `CSRF_EXEMPT_PREFIXES` «щоб працювало»: мутації (POST/PUT/PATCH/DELETE) вже
   під `csrfMiddleware` (див. `rendering-and-routing.md` §2); виняток — лише
@@ -231,3 +233,53 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
   поза `admin-data` (§4).
 - Не читай секрети й `MEDIA_ROOT` на модуль-рівні — лише в рантаймі (контракт
   серверного env, `docs/development/ENVIRONMENT.md`).
+
+## 9. Rich HTML: санітизація (Тема 9)
+
+Колонки з розміткою rich-text редакторів — `product_reviews.content` (редактор
+відгуків, профіль `review`) і `description` у `products`, `sections`,
+`property_options` (редактор адмінки, профіль `content`). Редактор — НЕ межа
+довіри: server function можна викликати напряму, а форма відгуку без
+`renderEditor` — звичайний `<textarea>`. Тому розмітка очищується **на сервері
+двічі**:
+
+1. **Рубіж 1 — запис.** Відгук: `insertProductReview` санітизує перед INSERT.
+   Адмін-ресурси: у `defineAdminResource` колонки оголошуються як
+   `richHtml: { description: 'content' }`, generic-write (`resource-write.ts`)
+   санітизує значення ПІСЛЯ парсингу схеми (insert і update-патч). Схеми
+   `columnsToZod` не змінюються — санітизація не частина схеми (парність схем з
+   Drizzle-таблицею лишається). Ключі `richHtml` типізовано лише записуваними
+   колонками.
+2. **Рубіж 2 — віддача.** Лоадери вітрини (`loadProduct`, `toSectionRow`,
+   `toOptionRow`, `loadProductReviews`) і операції читання адмінки (`list` та
+   RETURNING фабрики ресурсу, `getAdminReviewContent`) санітизують те, що
+   віддають клієнту, — це закриває старі рядки, сід і демо-дані. Список
+   каталогу опису товару не віддає (`description: null`). Сторінка модерації
+   відгуку читає рядок легасі-шляхом `supabase-js` з браузера, тож розмітку для
+   показу бере із серверної операції `getAdminReviewContent` (грант
+   `review.moderate`).
+
+**Тип.** `sanitizeRichHtml(html, profile): SanitizedHtml` (`simplycms/sanitize`,
+server-only: модуль і `sanitize-html` — у `contracts/server-only`) — ЄДИНИЙ
+виробник брендованого `SanitizedHtml` (T0, `simplycms/contracts`). Поля rows
+лоадерів і view-model-ів (`simplycms/contracts/views`) мають цей тип, а в DOM
+його виводить лише `<RichHtml>` (`ui.md` §3, `themes.md` §2.1). Приведення
+`as SanitizedHtml` допустиме тільки у фікстурах.
+
+**Профілі.** Білі списки збігаються з виводом редакторів. `review`: `p br strong
+em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img`,
+`style` лише `text-align: left|center|right|justify` на `p`/`h1-h3`, класи лише
+ті, що кладуть самі розширення (`text-primary underline cursor-pointer` на `a`,
+`max-w-full h-auto rounded-lg` на `img`, `language-*` на `code`). Посилання —
+`http`, `https`, `mailto` (у `content` ще внутрішні шляхи `/…`, не `//…`); у
+`review` примусово `target="_blank" rel="nofollow ugc noopener noreferrer"`;
+`img src` — `http(s)` або `/media/…`. Усе інше (`script`, `style`, `svg`,
+`iframe`, обробники подій, `javascript:`/`data:`, сторонні класи й `style`)
+відкидається.
+
+**Нова колонка з розміткою** = (а) `richHtml` у ресурсі, (б) санітизація в
+лоадері/операції читання, (в) поле типу `SanitizedHtml` у row/vm, (г) вивід лише
+`<RichHtml>`. Докази — `tests/rich-html-roundtrip.test.ts` (редактори без втрат),
+`sanitize/__tests__/rich-html-vectors.test.ts` (вектори),
+`test-harness/pg/__tests__/html-sanitization.test.ts` (обидва рубежі проти БД) і
+крок `review-xss` у `pnpm live:smoke`.

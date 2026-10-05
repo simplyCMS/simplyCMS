@@ -206,6 +206,24 @@ conformance: рендер на фікстурах без БД (§7.1). Кано�
 категорій). Живуть поруч із типами — тип і фікстура міняються одним PR, дрейф
 структурно неможливий.
 
+**Розмітка контенту — лише через `<RichHtml>`.** Поля view-model-ів, що несуть
+HTML редактора (`CatalogSectionInfo.description`,
+`ProductDetailDescription.html`), мають тип `SanitizedHtml`
+(`simplycms/contracts`): ядро очищує розмітку на сервері (`data-layer.md` §9), а
+тема виводить її тільки компонентом `RichHtml` із `simplycms/ui/rich-html`:
+
+```tsx
+import { RichHtml } from 'simplycms/ui/rich-html';
+{section.description && (
+  <RichHtml className="prose prose-sm max-w-none" html={section.description} />
+)}
+```
+
+Свій `dangerouslySetInnerHTML` у темі заборонений лінтом (правило
+`simplycms-rich-html/no-dangerously-set-inner-html`), а сирий `string` у `html`
+не компілюється. Фікстури (`simplycms/contracts/views/fixtures`) — єдине місце,
+де `SanitizedHtml` отримують приведенням типу: це статичний авторський HTML.
+
 ## 3. Пакування: npm vs copy-in
 
 Обидва шляхи зі спеки §17.4 підтримуються (Р0):

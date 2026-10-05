@@ -42,9 +42,22 @@
   після звірки API (context7).
 - Набір розширень у `RichTextEditor`: StarterKit + Image + TextAlign.
 - 🔴 **Контент зберігається як HTML-рядок** (`editor.getHTML()` → колонка), не як
-  Tiptap JSON, і виводиться через `dangerouslySetInnerHTML`
-  (`ProductDetailSections`, `ReviewCard`). Санітизації на виводі **немає** — вміст
-  відгуків (автор — покупець) рендериться без очищення. Це відомий ризик (stored
-  XSS), а не норма: перш ніж розширювати вживання HTML-контенту, потрібне рішення
-  власника (санітизація на запису чи на виводі).
+  Tiptap JSON. Санітизація — на сервері двома рубежами (запис і віддача), контракт —
+  `data-layer.md` §9; тут — що це означає для UI:
+  - у DOM розмітку контенту вставляє **лише** `<RichHtml html={…}/>`
+    (`simplycms/ui/rich-html`) — єдине місце з `dangerouslySetInnerHTML` для контенту;
+    проп `html` типу `SanitizedHtml` (брендований `string`, T0 `simplycms/contracts`),
+    сирий `string` компілятор відхилить; опційні `className` і `as`
+    (`div | section | article | span`);
+  - `dangerouslySetInnerHTML` деінде забороняє правило
+    `simplycms-rich-html/no-dangerously-set-inner-html` (виняток — явний список із
+    причинами в `eslint.config.mjs`: `ThemeTokens`, `ui/chart`, інлайн-скрипти
+    `__root.tsx`);
+  - білі списки санітизатора **збігаються з виводом редакторів**: набори розширень
+    винесено в `admin/components/rich-text-extensions.ts` і
+    `reviews-ui/review-editor-extensions.ts`, а `tests/rich-html-roundtrip.test.ts`
+    генерує HTML справжніми редакторами й вимагає, щоб він пройшов санітизацію без
+    змін. 🔴 Нова можливість редактора (тег, атрибут, клас) = правка набору
+    розширень **і** профілю в `simplycms/sanitize`; без другого форматування
+    мовчки зникне на вітрині, а тест червоніє.
 - Редактор рендериться лише на клієнті (`useEditor` — браузерний API).

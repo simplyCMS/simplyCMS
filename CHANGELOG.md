@@ -46,6 +46,29 @@
   403. `live:smoke` доводить 403 на справжній server function і на
   `/api/revalidate-theme`.
 
+- **Збережений XSS у відгуках і описах** (тема 9 спеки): розмітка відгуку
+  покупця писалася сервером без очищення й виводилась через
+  `dangerouslySetInnerHTML` у вітрині (`ReviewCard`) і в адмінці
+  (`ReviewDetail` — перехоплення сесії власника); так само сирими виводились
+  описи розділів, опцій характеристик і товарів. Тепер:
+  - новий server-only модуль `simplycms/sanitize` (`sanitizeRichHtml(html,
+    'review' | 'content')` на `sanitize-html`; залежність ядра) з білими
+    списками, що збігаються з виводом редакторів; брендований тип
+    `SanitizedHtml` у `simplycms/contracts`;
+  - рубіж 1 (запис): відгук і generic-write адмін-ресурсів (`richHtml` у
+    `defineAdminResource`; товари, розділи, опції характеристик);
+  - рубіж 2 (віддача): лоадери вітрини й читання адмінки очищують розмітку
+    (старі рядки, сід, демо); нова серверна операція `getAdminReviewContent`
+    для сторінки модерації;
+  - компонент `simplycms/ui/rich-html` (`<RichHtml html={SanitizedHtml}/>`) —
+    єдине місце `dangerouslySetInnerHTML` для контенту; поля view-model-ів
+    (`CatalogSectionInfo.description`, `ProductDetailDescription.html`) мають
+    тип `SanitizedHtml`: **теми рендерять розмітку лише через `RichHtml`**;
+  - ESLint-правило `simplycms-rich-html/no-dangerously-set-inner-html`
+    (винятки — `<style>` токенів теми, `ui/chart`, інлайн-скрипти `__root.tsx`);
+  - тести: вектори атак, round-trip зі справжніми Tiptap-редакторами, харнес
+    проти БД, крок `review-xss` у `live:smoke`.
+
 ### Залежності (мінорні)
 
 - До останніх версій у межах поточних мажорних: vite 8.3.2 + `@vitejs/plugin-react`
