@@ -101,6 +101,12 @@
   пишуться на колекціях `admin-data`/операціях `admin-server`, а не на
   `supabase-js`. Реєстр переписаного — `tests/admin-server-first/registry.ts`,
   поточний перелік — `docs/tasks/v2-state-map.md`. Вітрина `supabase-js` не імпортує.
+- Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
+  `eq/gt/gte/lt/lte` — колонки `filterable` ∪ `sortable` (курсор пагінації
+  відсортованої колонки; безпеки не знижує — значення клієнт і так бачить),
+  `in/isNull` — лише `filterable`; значення діапазонних операторів — скаляр або
+  `Date` (переживає межу serverFn як `Date`, доводить `tests/admin-subset-wire.test.ts`).
+  Пагінація на рівних мітках часу — `live:smoke`, `admin-lists-pagination.mjs`.
 - Після мутації адмінки — інвалідація відповідних ключів (§4); `setQueryData` для
   складних випадків не використовується — `invalidate` замість нього.
 

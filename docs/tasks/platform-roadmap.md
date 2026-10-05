@@ -31,7 +31,8 @@
 `better-auth` 1.7.7; мінорні; React 19.3; tsdown 0.23; версії шаблону;
 vitest 5) → TanStack DB 0.11.3 (фундамент колекцій адмінки; серверний subset
 приймає запит «рівних значень» із `Date`, знімаються обходи TSDB-B1 і
-`gcTime: 0`) → `inputValidator` → `validator` → власний генератор zod-схем
+`gcTime: 0`; ✅ крок 2 виконано 2026-10-05, Етап A плану
+[`admin-data-foundation`](../superpowers/plans/2026-10-05-admin-data-foundation.md)) → `inputValidator` → `validator` → власний генератор zod-схем
 `defineAdminResource` (замість drizzle-zod, закриває DZOD-1) → CSRF-захист
 запитів, що змінюють стан → **Е6а**. Паралельно — правила за моделлю MetaHub і рушій
 `codebase-research` на codebase-memory-mcp. Дизайн —

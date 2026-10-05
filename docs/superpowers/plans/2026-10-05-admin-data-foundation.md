@@ -444,4 +444,125 @@ export function columnSchema(column: Column): z.ZodType;
 
 ## Факти виконання
 
-_(заповнює виконавець: коміти `git log --oneline <база>..HEAD`; вивід гейтів; таблиця червоних тестів (Task 1/3); виміри (Task 2 Step 1, Task 6 Step 1, Task 7 Step 1); RED-докази мутацій; відхилення від плану з обґрунтуванням; `wc -l` нових файлів.)_
+_(Етап A заповнено 2026-10-05 (Task 9). Етап B — заповнює виконавець Етапу B: коміти, гейти, паритет, відхилення, `wc -l`.)_
+
+### Етап A: коміти (`git log --oneline 492f35fd..HEAD`, без злиттів)
+
+| Task | Коміт | Тема |
+|---|---|---|
+| 1 | 7ec4aaa1 | chore(deps): TanStack DB 0.11.3 (react-db 0.5.3, query-db-collection 1.3.4) |
+| 2 | 10c5feb6, 31775284, ad1789a6 | feat(admin-server): subset приймає `Date` і `sortable` для курсора; розбиття на схему й виконання; wire-тест |
+| 3-4 | bc1e5697, 95375537, 76076a13, 473e68bd, ba8e5a42, 7ceb2034 | ремонт тестів: ref через `IR.PropRef`, сервер зі станом (`mutable-server`, `applyOutcome`), лічильники запитів → результат |
+| 5 | 98d211ff | прибрано `preload()`-обхід TSDB-B1, запис закрито |
+| 6 | 9de9a80d, b0acfe51, e6ee523d | знято `gcTime: 0`, TSDB-1 переписано (виміряна ціна за K) |
+| 7 | 3fe24499 | TSDB-2 (префікс без індексу, offset з індексом), реєстр TSDB-2/3/4 |
+| 8 | 2545a1c2 | `useLiveQuery({ query })` замість `(fn, deps)` |
+| 9 | цей коміт | живий прогін пагінації, доки |
+
+### Червона таблиця (Task 1/3)
+
+Після бампа: `admin + admin-data` 31 failed / 287 passed (318) у 21 файлі (спайк очікував 16). Корені (Task 3): M1 — запис в on-demand-колекцію ревалідує кожного активного спостерігача (`query.ts:3168-3300`); M2 — переупорядкування `useLiveInfiniteQuery` після оптимістичного видалення/відкату просить префікс заново (`ordered-source-loader.ts:296-312, 432-446`); M3 — межа сторінки «tie request» шле `and(gte, lt(+1мс))` (`ordered-source-loader.ts:863-905`), стаб його не знав; плюс `ref-proxy.ts:402-405` (літерал `{type:'ref'}` тепер Value).
+
+| Клас | К-сть | Приклади |
+|---|---|---|
+| A: тест/стаб/лічильник | 30 | #1-8, #10-31 (статичні стаби → сервер зі станом; `list.mock.calls` → результат; gte/lt у стабі замовлень; `IR.PropRef`) |
+| B: тест фіксує змінену поведінку | 1 | #9 `on-demand-contract` (2б): без індексу сторінки ТЕПЕР довантажуються |
+| C: дефект нашого коду | 0 | — |
+
+### Виміри
+
+| Що | Результат |
+|---|---|
+| Task 2 Step 1: `Date` через seroval (клієнт `toJSONAsync` → JSON → `fromJSON` → `subsetInputSchema`) | переживає як `Date`, `getTime()` збережено; фолбек (ISO-рядок) не потрібен. RED до правки: «operator 'lt' вимагає скаляр» |
+| Task 6 A3 (prod `defaultOptions`: staleTime 5 хв, retry 1), запитів до list після одного запису в картці | K=1: 3 (з `gcTime:0`) / 3 (без); K=5: 8 / 8. Другий запис підряд: 1 / 1. Повернення до списку: 2 (K=1) / 10 (K=5) в обох |
+| Task 6: кешовані ключі після запису | з `gcTime:0` лишається 1-2, без — 3 / 8 (прибирання ПІСЛЯ ревалідації) |
+| Task 6: проба `refetch:false` | без нього `expected 16 to be 8` (+8) і DEPRECATED у консолі; з ним 8 |
+| Task 7 (page 2, pageSize 2) | без індексу: `limit 3 → limit 5`, без offset, warn «Falling back to loading all data»; з індексом: `limit 3 → {limit 2, offset 3}`, без warn |
+| TSDB-3 / TSDB-4 на 1.3.4 | не виправлені (`parseLoadSubsetOptions` без offset; `LoadSubsetOptions` не реекспортується) — записи лишені, оновлено «Перевірено на версії» |
+
+### RED-докази
+
+| Перевірка | Мутація / старий стек | Червоне |
+|---|---|---|
+| subset (Task 2) | діапазонні лише `filterable` / `eq` не по `sortable` / `in` по `sortable` | (а),(б),(е) FAIL / (б) FAIL / (б) FAIL |
+| TSDB-B1 (Task 5), стек 492f35fd | без `preload()` | `SyncNotInitializedError…`; `useProductSave (а)`: insert відкотився |
+| TSDB-1 (Task 6), стек 492f35fd | контрактна частина | `expected +0 to be 4` (без gcTime) / `+0 to be 1` (з gcTime:0); симптом власника з авторитетним сервером на старому стеку НЕ відтворюється — тест доводить механіку кешу |
+| нижня межа ключів (Task 6) | `gcTime:0` повернуто у фабрику | `expected 1 to be greater than or equal to 4` |
+| TSDB-2 (Task 7) | `page2(true)` → `page2(false)` | `expected {...} to deeply equal ObjectContaining … "offset": 3` |
+| ратчет форми (Task 8) | HEAD до міграції | `expected [ …(29) ] to deeply equal []` |
+| живий прогін пагінації (Task 9) | з `ProductsTable` вилучено рядок #51 | `пагінація товари … FAIL — UI 62, SQL 63`; `live-smoke: 1 FAIL`; відновлено, ЗЕЛЕНИЙ |
+
+### Task 7 payload-и
+
+Див. таблицю вимірів (Task 7). Wire-тест: `tests/admin-subset-wire.test.ts` (плагіни Start-seroval з `runtime/__tests__/support/start-seroval-plugins.ts`).
+
+### Task 9: живий прогін
+
+Крок `scripts/live-smoke/admin-lists-pagination.mjs` (138 рядків), викликається з `owner-steps.mjs`. Засів: 55 товарів і 55 замовлень (клон мінімальних NOT NULL-полів), позиції 46-55 мають ОДНАКОВИЙ `created_at` (межа 50/51); засів прибирається у `finally`. Рядки таблиці `live:smoke`:
+
+| Перевірка | Результат | Факт |
+|---|---|---|
+| пагінація товари: перша сторінка рівно 50 | OK | 50 |
+| пагінація товари: після «Показати ще» > 50, id унікальні, множина = SQL | OK | UI 63 (унікальних 63), SQL 63 |
+| пагінація замовлення: перша сторінка рівно 50 | OK | 50 |
+| пагінація замовлення: після «Показати ще» > 50, id унікальні, множина = SQL | OK | UI 59 (унікальних 59), SQL 59 |
+| пагінація: жодної відповіді `_serverFn` ≥ 400 | OK | — |
+| пагінація: адмін pageerror = 0 | OK | — |
+
+Підсумок: `live-smoke: ЗЕЛЕНИЙ`, 85 рядків OK / 0 FAIL.
+
+**Step 2 (збереження).** Покрито наявними кроками: `admin-catalog.mjs` — «адмін: товар у БД з клієнтським id» (створення без `preload()`), «ціна з комою збережена як 1234.50», «залишок 3, статус in_stock» (`useStock.save`, гілка товару), «у images референс»; `admin-order-edit.mjs` — кроки кількості/додавання/видалення позиції. Гілка модифікації `useStock.save` живим прогоном НЕ покрита (лише юніт-тест). Автоматичної перевірки «повернутись до списку після збереження» у smoke немає — зроблено вручну (Step 3), борг.
+
+**Step 3 (ручний прогін, Playwright-скрипт, 120 товарів і 120 замовлень; скрипт видалено).**
+
+| Пункт | Факт |
+|---|---|
+| `/admin/products`: початково | 50 рядків даних |
+| «Показати ще» ×1, ×2 | 100, потім 128 (усі 128 назв унікальні); кнопка зникає |
+| картка, зміна назви, «Зберегти», тост «Товар оновлено» | SQL: нова назва |
+| повернення до списку | список перезавантажено з першої сторінки (50 рядків, унікальні), нова назва є, старої немає |
+| `/admin/orders`: початково / ×1 / ×2 | 50 → 100 → 120, id унікальні 120/120 |
+| відкрити картку замовлення і повернутись | список знову 50 рядків |
+| фільтр статусу (одного з двох) | UI 50 (сторінка, «Показати ще» є), SQL 60; усі id з множини SQL; скидання фільтра — 50 |
+| `_serverFn` ≥ 400, `pageerror` | 0, 0 |
+
+### Гейти Етапу A (цей коміт, канонічний порядок)
+
+| Команда | Результат |
+|---|---|
+| `pnpm install --frozen-lockfile` | Already up to date |
+| `pnpm format:check` | All matched files use Prettier code style |
+| `pnpm lint` | 0 errors / 8 warnings |
+| `pnpm build` | built |
+| `pnpm typecheck` | exit 0 |
+| `pnpm test` | Test Files 274 passed, Tests 1916 passed |
+| `pnpm test:schema` | Test Files 51 passed, Tests 358 passed (спайк 352) |
+| `pnpm build:packages` | ok за 18 с під кепом 3072 МБ |
+| `pnpm typecheck:template` | exit 0 |
+| `pnpm test:packaging` | Test Files 6 passed, Tests 43 passed |
+| `pnpm pilot:pack --skip-build` | «Пілот пройдено: гейти A/C/D/IP + CLI/TOOL зелені» |
+| `pnpm live:smoke` | `live-smoke: ЗЕЛЕНИЙ` (85 OK / 0 FAIL) |
+
+Усі команди — з `pnpm_config_minimum_release_age=0` (вікно до 2026-10-06 ~04:51 UTC).
+
+### DoD Етапу A
+
+(1) гейти — таблиця вище. (2) `live:smoke` містить пагінацію обох списків і збереження (див. Step 2 щодо меж). (3) `git grep -n "UPSTREAM:TSDB-B1"` — лише згадки в `docs/` (реєстр, план); у коді порожньо; `gcTime` у фабриці немає (лишається в `Omit` типу); TSDB-1/2/3/4 мають актуальні записи. (4) `useLiveQuery(fn, deps)` поза тестами — 0 (ратчет `live-query-object-form.test.ts`). (5) версійний паритет без винятків (`DEFERRED = {}`). (6) нові файли ≤150: `admin-lists-pagination.mjs` 138. Файли, що перевищують 150 і були такими до Етапу A: `on-demand-contract.test.tsx` (226).
+
+### Відхилення від плану (Етап A)
+
+| Відхилення | Обґрунтування |
+|---|---|
+| root `devDependency` `seroval ^1.6.8` | wire-тест `Date` — крос-тірний контракт клієнт→сервер; `admin-data` не може імпортувати server-only схему, `admin-server/__tests__` — T4; кореневий `tests/` — стандартне місце. Схвалено архітектором, діапазон ідентичний ядру, одна копія в lock |
+| `gcTime: 0` НЕ повернуто | A3: вартість росте з K однаково з ним і без нього; правило «відновити» спиралось на хибну передумову. TSDB-1 доповнено числами |
+| Правила шару даних — у `docs/architecture/data-layer.md`, а не CLAUDE.md | рішення контролера (CLAUDE.md — лише правила) |
+| `useLiveInfiniteQuery` 3-й аргумент `deps` теж мігровано | теж deprecated (`legacyDeps`); спека згадувала лише `useLiveQuery` |
+| 29 застарілих викликів, а не 36 | реально 34 `useLiveQuery(` поза тестами, з них 7 уже в об'єктній формі: 27 + 2 `useLiveInfiniteQuery` = 29 |
+| базова лінія 318/322, а не 330 | виміряно в Task 1 до бампа (318); після злиття PR #55 — 322 |
+| крок пагінації стоїть ОСТАННІМ у `owner-steps.mjs`, а не одразу після каталогу | засів 55+55 рядків міг би зачепити перші сторінки списків у кроках замовлень Е5/Е5б; засів прибирається в `finally` |
+| `wire`-тест у `tests/admin-subset-wire.test.ts` | `simplycms/admin-*/subset*` немає в exports (`audit-exports`) |
+
+### Борги / застереження
+
+- Автоматичної перевірки «повернутись до списку після збереження» і гілки модифікації `useStock.save` у `live:smoke` немає.
+- `OrderDetailItems.test.tsx` «рівно 500 позицій» був нестабільним під навантаженням у Task 7 (2 з 4 прогонів); у повному `pnpm test` цього гейта — зелений.

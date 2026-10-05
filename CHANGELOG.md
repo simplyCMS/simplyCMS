@@ -83,6 +83,17 @@
   better-auth 1.7.0–1.7.2; з 1.7.3 їх немає, і drizzle-адаптер 1.7.7 на старті
   падає з `Drizzle schema mismatch` (обовʼязкова колонка, яку BA не пише). Базу
   магазину перестворити (`pnpm db:demo`).
+- 🔴 **TanStack DB 0.11.3** (крок 2 треку оновлень; `@tanstack/react-db` 0.5.3 і
+  `@tanstack/query-db-collection` 1.3.4 — точні піни в корені й шаблоні, `~` у
+  peers ядра). Знято обходи TSDB-B1 (`preload()` перед записом) і `gcTime: 0`
+  у фабриці on-demand-колекцій; TSDB-1/2/3/4 у реєстрі переписано за виміряною
+  поведінкою. 22 файли адмінки на `useLiveQuery({ query })` замість
+  задепрекованої форми `(fn, deps)`; ратчет — `live-query-object-form.test.ts`.
+- 🔴 **Контракт subset серверного шару адмінки:** `eq/gt/gte/lt/lte` приймають
+  колонки `filterable` ∪ `sortable`, а діапазонні оператори — ще й `Date`
+  (клієнтський курсор пагінації на рівних `created_at` без цього падав з 400).
+  `in`/`isNull` — лише `filterable`. `live:smoke` доводить «Показати ще» для
+  `/admin/products` і `/admin/orders` на рівних мітках часу без втрат і дублів.
 
 ## [0.7.0] — 2026-10-04
 
