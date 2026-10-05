@@ -13,17 +13,15 @@ import {
 export function useOrderDetail(orderId: string) {
   const orders = useCollection(ordersCollection);
   const itemsCol = useCollection(orderItemsCollection);
-  const { data: rows, isLoading } = useLiveQuery(
-    (q) => q.from({ o: orders }).where(({ o }) => eq(o.id, orderId)),
-    [orderId],
-  );
-  const { data: items } = useLiveQuery(
-    (q) =>
+  const { data: rows, isLoading } = useLiveQuery({
+    query: (q) => q.from({ o: orders }).where(({ o }) => eq(o.id, orderId)),
+  });
+  const { data: items } = useLiveQuery({
+    query: (q) =>
       q
         .from({ i: itemsCol })
         .where(({ i }) => eq(i.orderId, orderId))
         .orderBy(({ i }) => i.createdAt, 'asc'),
-    [orderId],
-  );
+  });
   return { order: rows[0], items, isLoading };
 }

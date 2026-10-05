@@ -29,14 +29,13 @@ export function SectionPropertyAssignmentsPanel({
   const t = useT();
   const assignmentsCol = useCollection(sectionPropertyAssignmentsCollection);
   const propertiesCol = useCollection(sectionPropertiesCollection);
-  const { data: assignments, isLoading: loadingAssignments } = useLiveQuery(
-    (q) =>
+  const { data: assignments, isLoading: loadingAssignments } = useLiveQuery({
+    query: (q) =>
       q
         .from({ a: assignmentsCol })
         .where(({ a }) => eq(a.sectionId, sectionId))
         .orderBy(({ a }) => a.sortOrder, 'asc'),
-    [sectionId],
-  );
+  });
   const { data: properties, isLoading: loadingProperties } = useLiveQuery({
     query: (q) =>
       q.from({ p: propertiesCol }).orderBy(({ p }) => p.name, 'asc'),

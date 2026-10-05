@@ -19,11 +19,11 @@ export type PriceDraft = Record<string, { price: string; oldPrice: string }>;
 export function usePrices(productId: string, modificationId: string | null) {
   const prices = useCollection(productPricesCollection);
   const types = useCollection(priceTypesCollection);
-  const { data: priceTypes } = useLiveQuery((q) =>
-    q.from({ t: types }).orderBy(({ t }) => t.sortOrder, 'asc'),
-  );
-  const { data: rows } = useLiveQuery(
-    (q) =>
+  const { data: priceTypes } = useLiveQuery({
+    query: (q) => q.from({ t: types }).orderBy(({ t }) => t.sortOrder, 'asc'),
+  });
+  const { data: rows } = useLiveQuery({
+    query: (q) =>
       q
         .from({ p: prices })
         .where(({ p }) =>
@@ -34,8 +34,7 @@ export function usePrices(productId: string, modificationId: string | null) {
               : isNull(p.modificationId),
           ),
         ),
-    [productId, modificationId],
-  );
+  });
 
   /** `null` — валідно й збережено; рядок — id типу ціни з невалідним полем. */
   const save = async (draft: PriceDraft): Promise<string | null> => {

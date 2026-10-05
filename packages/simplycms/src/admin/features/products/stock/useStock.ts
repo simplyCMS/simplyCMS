@@ -19,8 +19,8 @@ export function useStock(productId: string, modificationId: string | null) {
   const stock = useCollection(stockCollection);
   const products = useCollection(productsCollection);
   const mods = useCollection(productModificationsCollection);
-  const { data: rows } = useLiveQuery(
-    (q) =>
+  const { data: rows } = useLiveQuery({
+    query: (q) =>
       q
         .from({ s: stock })
         .where(({ s }) =>
@@ -28,8 +28,7 @@ export function useStock(productId: string, modificationId: string | null) {
             ? eq(s.modificationId, modificationId)
             : and(eq(s.productId, productId), isNull(s.modificationId)),
         ),
-    [productId, modificationId],
-  );
+  });
 
   const save = async (quantities: Record<string, string>): Promise<boolean> => {
     const parsed = Object.entries(quantities).map(([pickupPointId, raw]) => ({

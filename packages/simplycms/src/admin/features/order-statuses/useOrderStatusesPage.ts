@@ -16,7 +16,7 @@ import { EMPTY_STATUS_FORM, type StatusFormData } from './form-data';
 export function useOrderStatusesPage() {
   const t = useT();
   const collection = useCollection(orderStatusesCollection);
-  // 🔴 Форма 0.3.6 — обʼєкт { query }; dependency-масиви legacy.
+  // 🔴 Форма react-db 0.5.3 — обʼєкт { query }; dependency-масиви задепрековані.
   const { data: statuses, isLoading } = useLiveQuery({
     query: (q) =>
       q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),

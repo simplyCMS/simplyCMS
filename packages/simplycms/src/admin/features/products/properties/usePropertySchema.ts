@@ -40,8 +40,8 @@ export function usePropertySchema(
   const propertiesCol = useCollection(sectionPropertiesCollection);
   const optionsCol = useCollection(propertyOptionsCollection);
 
-  const { data: assignments, isLoading: loadingAssignments } = useLiveQuery(
-    (q) => {
+  const { data: assignments, isLoading: loadingAssignments } = useLiveQuery({
+    query: (q) => {
       if (!sectionId) return undefined;
       const base = q
         .from({ a: assignmentsCol })
@@ -52,20 +52,18 @@ export function usePropertySchema(
           : base.where(({ a }) => eq(a.appliesTo, appliesTo))
       ).orderBy(({ a }) => a.sortOrder, 'asc');
     },
-    [sectionId, appliesTo],
-  );
+  });
   const assignmentRows = assignments ?? [];
   const propertyIds = assignmentRows.map((a) => a.propertyId);
 
-  const { data: properties, isLoading: loadingProperties } = useLiveQuery(
-    (q) =>
+  const { data: properties, isLoading: loadingProperties } = useLiveQuery({
+    query: (q) =>
       propertyIds.length === 0
         ? undefined
         : q
             .from({ p: propertiesCol })
             .where(({ p }) => inArray(p.id, propertyIds)),
-    [propertyIds.join(',')],
-  );
+  });
   const propsById = new Map((properties ?? []).map((p) => [p.id, p]));
   const choiceIds = (properties ?? [])
     .filter(
@@ -73,16 +71,15 @@ export function usePropertySchema(
     )
     .map((p) => p.id);
 
-  const { data: options, isLoading: loadingOptions } = useLiveQuery(
-    (q) =>
+  const { data: options, isLoading: loadingOptions } = useLiveQuery({
+    query: (q) =>
       choiceIds.length === 0
         ? undefined
         : q
             .from({ o: optionsCol })
             .where(({ o }) => inArray(o.propertyId, choiceIds))
             .orderBy(({ o }) => o.sortOrder, 'asc'),
-    [choiceIds.join(',')],
-  );
+  });
   const optionsByProperty = new Map<string, PropertyOption[]>();
   for (const opt of options ?? []) {
     const list = optionsByProperty.get(opt.propertyId) ?? [];

@@ -46,11 +46,13 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
   // Дефолтна ціна рядка — ОДНИМ запитом на всю таблицю (eq productId), не N.
   const prices = useCollection(productPricesCollection);
   const types = useCollection(priceTypesCollection);
-  const { data: priceRows } = useLiveQuery(
-    (q) => q.from({ p: prices }).where(({ p }) => eq(p.productId, productId)),
-    [productId],
-  );
-  const { data: typeRows } = useLiveQuery((q) => q.from({ t: types }));
+  const { data: priceRows } = useLiveQuery({
+    query: (q) =>
+      q.from({ p: prices }).where(({ p }) => eq(p.productId, productId)),
+  });
+  const { data: typeRows } = useLiveQuery({
+    query: (q) => q.from({ t: types }),
+  });
   const defaultTypeId = typeRows.find((tp) => tp.isDefault)?.id;
   const priceOf = (modId: string) =>
     priceRows.find(

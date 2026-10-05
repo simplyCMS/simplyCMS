@@ -47,6 +47,5 @@ export function useOrdersList(filters: OrdersFilters) {
         }));
     },
     { pageSize: ORDERS_PAGE_SIZE },
-    [filters.statusId],
   );
 }

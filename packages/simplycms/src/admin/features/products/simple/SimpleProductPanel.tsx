@@ -29,14 +29,13 @@ export function SimpleProductPanel({ productId }: Props) {
   const t = useT();
   const { register } = useFormContext<ProductFormValues>();
   const products = useCollection(productsCollection);
-  const { data: row } = useLiveQuery(
-    (q) =>
+  const { data: row } = useLiveQuery({
+    query: (q) =>
       q
         .from({ p: products })
         .where(({ p }) => eq(p.id, productId))
         .findOne(),
-    [productId],
-  );
+  });
 
   return (
     <>

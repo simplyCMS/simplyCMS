@@ -28,16 +28,15 @@ interface Props {
 export function ModificationStatusControl({ mod, form }: Props) {
   const t = useT();
   const mods = useCollection(productModificationsCollection);
-  const { data: liveMod } = useLiveQuery(
-    (q) =>
+  const { data: liveMod } = useLiveQuery({
+    query: (q) =>
       mod
         ? q
             .from({ m: mods })
             .where(({ m }) => eq(m.id, mod.id))
             .findOne()
         : undefined,
-    [mod?.id],
-  );
+  });
 
   if (mod) {
     if (!liveMod) return null;

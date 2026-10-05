@@ -153,7 +153,7 @@ describe('ProductsPage', () => {
   });
 
   // 🔴 Відхилення від тексту плану («offset: 50»): виміряно бібліотекою
-  // (`@tanstack/react-db@0.3.6`, той самий факт, що в
+  // (`@tanstack/react-db@0.5.3`, той самий факт, що в
   // `on-demand-contract.test.tsx` (2)) — перша сторінка йде peek-ahead
   // лімітом `pageSize + 1` (51) БЕЗ offset, друга продовжує з
   // `offset: pageSize + 1` (51), `limit: pageSize` (50). «50» плану

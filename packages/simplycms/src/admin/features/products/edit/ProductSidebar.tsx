@@ -26,9 +26,9 @@ export function ProductSidebar() {
   const t = useT();
   const { control } = useFormContext<ProductFormValues>();
   const sections = useCollection(sectionsCollection);
-  const { data: sectionRows } = useLiveQuery((q) =>
-    q.from({ s: sections }).orderBy(({ s }) => s.name, 'asc'),
-  );
+  const { data: sectionRows } = useLiveQuery({
+    query: (q) => q.from({ s: sections }).orderBy(({ s }) => s.name, 'asc'),
+  });
 
   return (
     <Card>

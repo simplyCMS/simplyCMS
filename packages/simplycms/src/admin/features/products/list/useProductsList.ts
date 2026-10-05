@@ -30,10 +30,9 @@ export interface ProductListRow {
  * offset + peek-ahead бібліотеки (Е3-2); загальної кількості свідомо немає.
  * 🔴 Жодного like/ilike/or: push-down їх не несе (Task 0), пошук — П6.
  *
- * 🔴 Step 1: третій аргумент `deps` у `useLiveInfiniteQuery@0.3.6` є (хоч і
- * позначений deprecated на користь виведеної ідентичності запиту) — фільтри
- * йдуть саме ним, а не `key`-перемонтуванням: живий `warnDeprecatedDepsArray`
- * — лише console.warn, поведінка (перезапит при зміні фільтра) робоча.
+ * 🔴 Фільтри — змінні замикання запиту: вони потрапляють в IR, і ідентичність
+ * запиту виводиться з нього (react-db 0.5.3), тож масив `deps` (задепрекований)
+ * не потрібен — зміна фільтра перезапитує зріз.
  */
 export function useProductsList(filters: ProductFilters) {
   const products = useCollection(productsCollection);
@@ -66,6 +65,5 @@ export function useProductsList(filters: ProductFilters) {
         }));
     },
     { pageSize: PRODUCTS_PAGE_SIZE },
-    [filters.sectionId, filters.isActive, filters.stockStatus],
   );
 }

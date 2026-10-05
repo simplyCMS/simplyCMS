@@ -28,10 +28,10 @@ export function usePropertyCard(propertyId: string) {
   const t = useT();
   const navigate = useNavigate();
   const collection = useCollection(sectionPropertiesCollection);
-  const { data: rows, isLoading } = useLiveQuery(
-    (q) => q.from({ p: collection }).where(({ p }) => eq(p.id, propertyId)),
-    [propertyId],
-  );
+  const { data: rows, isLoading } = useLiveQuery({
+    query: (q) =>
+      q.from({ p: collection }).where(({ p }) => eq(p.id, propertyId)),
+  });
   const row = rows.find((p) => p.id === propertyId);
 
   const form = useForm<PropertyFormInput, unknown, PropertyFormValues>({
