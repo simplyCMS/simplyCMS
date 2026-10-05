@@ -120,8 +120,7 @@ description: Use when you need to locate code in the simplyCMS repo, find out wh
    явним рядком у звіті — рішення, що робити зі скоупом, ухвалює власник
    задачі, а не дослідник. Типова причина «символа немає» — стара назва: scope
    `@simplysoftua/*` став `@simplycms/*`, а трек К0 звів 22 пакети `@simplycms/*`
-   в теки одного пакета `simplycms` (мапа старих імен — розділ «Package Aliases»
-   в `AGENTS.md`).
+   в теки одного пакета `simplycms` (мапа старих імен — `docs/development/TOOLING.md` § 5).
 4. **Звіт.** Формат — §3.
 
 Ознака, що ти робиш зайве: читаєш файл, щоб **знайти**, де щось лежить. Знаходить
