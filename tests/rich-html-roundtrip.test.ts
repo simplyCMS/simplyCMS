@@ -36,10 +36,7 @@ function canonical(html: string): string {
   return [...root.childNodes].map(walk).join('');
 }
 
-function render(
-  extensions: Extensions,
-  content: string,
-) {
+function render(extensions: Extensions, content: string) {
   const editor = new Editor({ extensions, content });
   const html = editor.getHTML();
   editor.destroy();
@@ -47,10 +44,7 @@ function render(
 }
 
 /** Документ Tiptap (JSON) → HTML: так надійніше, ніж парсити власну розмітку. */
-function renderDoc(
-  extensions: Extensions,
-  doc: Record<string, unknown>,
-) {
+function renderDoc(extensions: Extensions, doc: Record<string, unknown>) {
   const editor = new Editor({ extensions, content: doc });
   const html = editor.getHTML();
   editor.destroy();
