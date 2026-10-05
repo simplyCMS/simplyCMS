@@ -68,6 +68,7 @@ export function defineAdminResource<
     maxLimit,
     picked,
     touch: config.touch,
+    richHtml: config.richHtml,
   };
 
   /**

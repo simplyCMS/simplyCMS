@@ -1,5 +1,10 @@
 import { eq, inArray, type Column, type Table } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
+import {
+  sanitizeRichColumns,
+  sanitizeRichRows,
+  type RichHtmlColumns,
+} from './rich-html';
 
 /**
  * Запис фабрики ресурсу (`resource.ts`): insert/update/remove над уже
@@ -15,6 +20,8 @@ export interface ResourceWriteContext {
   picked: Record<string, Column>;
   /** Колонка, яку update ставить у `new Date()` (Е3-9). */
   touch?: string;
+  /** Тема 9: колонки з розміткою → профіль санітизатора. */
+  richHtml?: RichHtmlColumns;
 }
 
 // `never` — як і до розпилу: колонка генеричної таблиці під SQL-білдером.
@@ -30,10 +37,14 @@ export async function insertResourceRows(
   // мутацій «підтвердяться» локально без запису в БД.
   // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `picked`
   // (`Record<string, Column>`) не є pg `SelectedFields`; `values(parsed)` кастів не потребує.
-  return db
+  // 🔴 Тема 9, рубіж 1: розмітку чистимо ПІСЛЯ парсингу й ДО SQL, а RETURNING
+  // віддаємо через ту саму очистку (рубіж 2) — клієнт ніколи не бачить сирого.
+  const clean = parsed.map((row) => sanitizeRichColumns(row, ctx.richHtml));
+  const rows: unknown[] = await db
     .insert(ctx.table)
-    .values(parsed)
+    .values(clean)
     .returning(ctx.picked as never);
+  return sanitizeRichRows(rows as Record<string, unknown>[], ctx.richHtml);
 }
 
 export async function updateResourceRows(
@@ -51,7 +62,10 @@ export async function updateResourceRows(
     // до конкретного масиву (умовний тип `TReturning extends undefined ?
     // QueryResult : TReturning[]` лишається нерозвʼязаним) — каст
     // результату до масиву; той самий рантайм-масив з `UPDATE … RETURNING`.
-    const set = ctx.touch ? { ...patch, [ctx.touch]: new Date() } : patch;
+    const cleanPatch = sanitizeRichColumns(patch, ctx.richHtml);
+    const set = ctx.touch
+      ? { ...cleanPatch, [ctx.touch]: new Date() }
+      : cleanPatch;
     // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: та сама проєкція `picked`.
     const rows: unknown[] = await db
       .update(ctx.table)
@@ -63,7 +77,7 @@ export async function updateResourceRows(
       throw new Error(
         `[admin-server] ${ctx.entity}: рядка ${String(id)} не існує`,
       );
-    out.push(row);
+    out.push(sanitizeRichColumns(row as Record<string, unknown>, ctx.richHtml));
   }
   return out;
 }

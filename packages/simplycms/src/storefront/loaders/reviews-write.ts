@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
+import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews } from 'simplycms/schema';
 import type { ActorDb } from './db';
 
@@ -31,7 +32,9 @@ export async function insertProductReview(
     userId,
     rating: input.rating,
     title: input.title,
-    content: input.content,
+    // 🔴 Тема 9, рубіж 1: відгук пише недовірений автор (server function можна
+    // викликати напряму, повз редактор) — розмітку чистимо ДО запису.
+    content: sanitizeNullableRichHtml(input.content, 'review'),
     images: input.images,
     status: 'pending',
   });

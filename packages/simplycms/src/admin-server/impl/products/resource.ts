@@ -38,5 +38,7 @@ export const productsOps = defineAdminResource({
     'returnPolicy',
     'shippingDetails',
   ],
+  // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
+  richHtml: { description: 'content' },
   readonly: ['id', 'createdAt', 'updatedAt'],
 });

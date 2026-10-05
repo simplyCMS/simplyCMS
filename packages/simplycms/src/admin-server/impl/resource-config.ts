@@ -1,5 +1,6 @@
 import type { Table } from 'drizzle-orm';
 import type { Operation } from 'simplycms/auth';
+import type { RichHtmlProfile } from 'simplycms/sanitize';
 import type { ColumnName, ResourceRefine } from './resource-schemas';
 
 /**
@@ -47,6 +48,13 @@ export interface AdminResourceConfigBase<
   /** m3 (рев'ю хвилі B): рефайнменти генератора схем для колонок без власної
    *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
   refine?: ResourceRefine;
+  /** Тема 9: колонки з розміткою rich-text редактора → профіль санітизатора
+   *  (`simplycms/sanitize`). Санітизація — пост-парс трансформація значення в
+   *  generic-write (insert/update) і при віддачі рядків клієнту (list/RETURNING:
+   *  старі рядки, сід, демо-дані). Схеми (`columnsToZod`) НЕ змінюються. Лише
+   *  записувані колонки: розмітка в readonly/omit-колонці не має власника. */
+  // `NoInfer`: ключі лише ЗВІРЯЮТЬСЯ з writable/insertOnly, а не виводять W.
+  richHtml?: { readonly [K in NoInfer<W | I>]?: RichHtmlProfile };
 }
 
 /**
