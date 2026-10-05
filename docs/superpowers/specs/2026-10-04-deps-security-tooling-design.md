@@ -455,7 +455,7 @@ compat-налаштувань. Очікувані зачіпки: моки чи�
   `.pick(mask)` і refinements; без кастів 13 помилок (3 у
   `resource-schemas.ts` + 10 у `expectTypeOf`).
 - **Власний генератор `columnsToZod` — прототип працює:** у 14 таблицях
-  ресурсів 9 типів колонок (166 колонок: uuid 46, text 37, timestamp(date) 20,
+  ресурсів 9 типів колонок (166 колонок [виправлено при виконанні Етапу B: фактично 155 — власний розклад за типами сумується в 155, «166» був арифметичною помилкою спайку]: uuid 46, text 37, timestamp(date) 20,
   varchar 11, boolean 11, integer 10, numeric(string) 10, jsonb 7, enum 3);
   прототип 128 рядків; `resource-schemas.ts` 182 → 72 рядки, 0 `as` у
   генеричному шляху; усі 14 `expectTypeOf` без кастів на виклику;
@@ -463,7 +463,7 @@ compat-налаштувань. Очікувані зачіпки: моки чи�
   insert/update/select × 30 граничних значень; мутація `z.int()`→`z.number()`
   валить 9 тестів.
 
-### 7б · Власний генератор zod-схем ✅ (крок 4)
+### 7б · Власний генератор zod-схем ✅ (крок 4, виконано 2026-10-05)
 
 - `columnsToZod` замість drizzle-zod у `buildResourceSchemas`
   (`admin-server/impl/resource-schemas.ts`): switch по `columnType` на 9

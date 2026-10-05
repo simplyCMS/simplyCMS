@@ -282,7 +282,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 **Корінь.** `getTableColumns<T extends Table>(table): T['_']['columns']`
 (`drizzle-orm/utils.d.ts:37`) для діалект-нейтрального `Table` дає базовий
 `Column`, а pg-білдер очікує `SelectedFieldsFlat<PgColumn>`
-(`drizzle-orm/pg-core/query-builders/select.types.d.ts:57`), де `PgColumn`
+(`drizzle-orm/pg-core/query-builders/select.types.d.ts:57`: `SelectedFieldsFlat = SelectedFieldsFlatBase<PgColumn>`; `SelectedFields` — :58), де `PgColumn`
 несе бренд `dialect: 'pg'`. Навіть якщо типізувати проєкцію як
 `Record<string, PgColumn>`, рядок виходить `{[x: string]: never}` і не
 кастується до `OrderRow[]` без `unknown` — виграшу немає.
@@ -292,8 +292,10 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 `order-items/editable.ts`, `orders/change-status.ts` (select, returning);
 тип рядка називають споживачі явно (`as OrderRow[]`, `Row[]` у фабриці).
 Маркери `UPSTREAM:DRZ-2` — біля кожного касту. Інші касти цих файлів
-(`values(parsed)`, `set(patch)`, `.from(ctx.table)`, `eq(id)`) знято: вони
-були наслідком наших `unknown`-типів, не бібліотеки.
+(`values(parsed)`, `set(patch)`, `.from(ctx.table)`) знято: вони були наслідком
+наших `unknown`-типів, не бібліотеки. `idColumn` (`resource-write.ts`) і далі
+повертає `never` — каст `as unknown as Record<string, never>` у ньому лишився,
+а `eq(id)`/`inArray(ids)` кастів не мають лише тому, що `never` присвоюється всюди.
 
 **Перевірка виправлення.** Прибрати `as never` на проєкціях → `pnpm
 typecheck` і `build:packages` зелені.

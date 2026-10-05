@@ -33,7 +33,7 @@ vitest 5) → TanStack DB 0.11.3 (фундамент колекцій адмін
 приймає запит «рівних значень» із `Date`, знімаються обходи TSDB-B1 і
 `gcTime: 0`; ✅ крок 2 виконано 2026-10-05, Етап A плану
 [`admin-data-foundation`](../superpowers/plans/2026-10-05-admin-data-foundation.md)) → `inputValidator` → `validator` → власний генератор zod-схем
-`defineAdminResource` (замість drizzle-zod, закриває DZOD-1) → CSRF-захист
+`defineAdminResource` (замість drizzle-zod, закриває DZOD-1; ✅ крок 4 виконано 2026-10-05, Етап B плану `admin-data-foundation`) → CSRF-захист
 запитів, що змінюють стан → **Е6а**. Паралельно — правила за моделлю MetaHub і рушій
 `codebase-research` на codebase-memory-mcp. Дизайн —
 [`2026-10-04-deps-security-tooling-design.md`](../superpowers/specs/2026-10-04-deps-security-tooling-design.md).

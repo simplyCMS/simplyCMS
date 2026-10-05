@@ -95,6 +95,15 @@ upstream-workarounds.md`, TSDB-1). Живий прогін доводить «П
 списків на рівних `created_at` без втрат/дублів (`live-smoke/
 admin-lists-pagination.mjs`).
 
+🔴 **Фундамент даних адмінки, Етап B (2026-10-05):** схеми ресурсів адмінки
+(`defineAdminResource`) будує власний генератор `columnsToZod` (9 типів колонок,
+невідомий тип — гучний throw) замість `drizzle-zod`; той лишився лише
+devDependency як еталон постійного гейта паритету
+(`admin-server/impl/__tests__/columns-to-zod-parity.test.ts`, межі —
+`docs/architecture/test-contours.md` §11.3). Статичні типи схем оголошує один
+хелпер `declareSchema` (`resource-schemas.ts`). DZOD-1 закрито; касти проєкції
+Drizzle винесено в реєстр як DRZ-2.
+
 Браузер більше не ходить у базу. Раніше сторінка сама зверталась до БД через
 HTTP-посередника Supabase (PostgREST); тепер із базою говорить **тільки
 сервер**, а браузер отримує готові дані. Це і є суть рішення B1.

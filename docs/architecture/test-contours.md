@@ -64,7 +64,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 |---|---|---|
 | **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/simplycms/routes/{storefront,admin}` (з К0 — підтеки одного флагмана) плюс роут-теку плагіна `node_modules/@simplycms/plugin-faq/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
 | **B** | `createServerFn` працює в PRODUCTION-манифесті, а не лише в dev-режимі монорепо; SSR-рендер, guard `/admin`, sitemap/robots/health. 🔴 З 0.4.1 очікувані назви товарів беруться **прямим SQL за `DATABASE_URL`** — HTTP-API до БД у контракті v2 немає взагалі | `gate-b.mjs` |
-| **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 З треку T `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі СІМ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`, `storage` — сьоме додав К3-Е2) плюс серверні залежності `pg`, `drizzle-orm`, `drizzle-zod` (`better-auth` — свідомо без id-перевірки, див. §12). Літералами лишились два Supabase-файли адмінки, яких у декларації немає. До 0.4.1 список був ручний і бачив лише Supabase-фабрики й лоадери — серверний граф v2 витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
+| **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 З треку T `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі СІМ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`, `storage` — сьоме додав К3-Е2) плюс серверні залежності `pg`, `drizzle-orm` (`drizzle-zod` з Етапу B — лише devDependency, у декларації його немає; `better-auth` — свідомо без id-перевірки, див. §12). Літералами лишились два Supabase-файли адмінки, яких у декларації немає. До 0.4.1 список був ручний і бачив лише Supabase-фабрики й лоадери — серверний граф v2 витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `simplycms/dist/**` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | ~~**E**~~ | 🔴 **ЗНЯТО в 0.4.1** разом зі стеком Supabase: гейт бутстрапив власника service_role-ключем GoTrue, якого в контракті v2 немає. Що він доводив (перший signup НЕ отримує `admin`; `owner:invite` ідемпотентний; перехід за посиланням ставить cookies) — тепер обовʼязок контуру К6 на Better Auth. У звіті пілота лишається **видимий рядок-skip із причиною**, а не тиша | ~~`gate-e.mjs`~~ |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; з К0 — ще й інваріанти топології 5 і доставки скілів: у tarball немає `template/.claude/**`, deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/` | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs` |
@@ -758,6 +758,35 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 `admin.errors.conflictReference`, ціни в БД цілі). Ціна-фікстура для
 другого ставиться прямим SQL (`admin-dictionaries-sql.mjs::seedPricedType`):
 предмет перевірки — відмова видалення, а не форма цін (її доводить Е3).
+
+### 11.3. Фундамент даних адмінки, Етап B: гейт паритету генератора схем (2026-10-05)
+
+`columnsToZod` (`admin-server/impl/columns-to-zod.ts`) замінив `drizzle-zod` у
+`buildResourceSchemas`. Постійний гейт —
+`impl/__tests__/columns-to-zod-parity.test.ts` (+ `support/parity-diff.ts`,
+`parity-values.ts`): таблиці знаходить САМ (збирач підміняє
+`defineAdminResource` і імпортує всі `impl/*/resource{,s}.ts`; крос-перевірка
+рахує виклики `defineAdminResource(` у сирих джерелах і падає, якщо ресурс
+лежить поза глобом), далі кожна колонка × insert/update/select × ~35 значень
+порівнюється з `drizzle-zod` 0.8.3 (успіх `safeParse` і результат `data`).
+
+**Що доводить і яка межа.** Гейт паритету доводить рантайм-еквівалентність
+`columnsToZod` ≡ drizzle-zod (оракул) для всіх колонок ресурсних таблиць;
+відповідність ОГОЛОШЕНОГО типу (InferInsertModel/InferSelectModel)
+рантайм-формі він доводить лише опосередковано — через те, що оракул і тип
+Drizzle виводять optional/nullable за тими самими правилами колонки. Не
+покрито: колонки з `$type<>` (jsonb — оголошений тип вужчий за
+рантайм-валідацію) і результати refine проти типу колонки; їх стережуть
+expectTypeOf і рев'ю.
+
+**Негативні контролі (мета-тести, постійні).** Контроль ідентичності (незмінений
+генератор → порожній diff) і чотири мутації обгорткою над генератором
+(integer `int→number`, select без `nullable`, varchar без `max`, timestamp
+`date→any`): кожна дає непорожній diff, і всі рядки diff стосуються лише
+колонок мутованого типу. Окремо `columns-to-zod-frozen.test.ts` тримає
+ключові твердження на реальних таблицях БЕЗ еталона — вони переживуть зняття
+`drizzle-zod` (при міграції на Drizzle 1.0 еталон замінити на `drizzle-orm/zod`
+або зняти — DRIZ-1).
 
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 

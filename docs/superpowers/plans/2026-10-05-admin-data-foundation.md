@@ -444,7 +444,7 @@ export function columnSchema(column: Column): z.ZodType;
 
 ## Факти виконання
 
-_(Етап A заповнено 2026-10-05 (Task 9). Етап B — заповнює виконавець Етапу B: коміти, гейти, паритет, відхилення, `wc -l`.)_
+_(Етап A заповнено 2026-10-05 (Task 9). Етап B заповнено 2026-10-05 (Task 14) — нижче, після розділу «Борги / застереження».)_
 
 ### Етап A: коміти (`git log --oneline 492f35fd..HEAD`, без злиттів)
 
@@ -612,3 +612,73 @@ RED (тимчасово: `ProductsTable` не рендерить рядок #50)
 ### Борги / застереження
 
 - `OrderDetailItems.test.tsx` «рівно 500 позицій» був нестабільним під навантаженням у Task 7 (2 з 4 прогонів); у повному `pnpm test` цього гейта — зелений.
+
+### Етап B: коміти (`git log --oneline 1b1d4a38..HEAD`)
+
+| Task | Коміт | Тема |
+|---|---|---|
+| 10 | d985fc1a | feat(admin-server): `columnsToZod` — власний генератор (9 типів, невідомий — throw) |
+| 11 | a061cd7f, 9815c36a, 13512fde | межі генератора (varchar без length, text enum, `$defaultFn`/`$onUpdate`, PgTimestampString/PgNumericNumber → throw); постійний гейт паритету + мутаційний контроль; крос-перевірка викликів `defineAdminResource`, контроль ідентичності, область мутацій |
+| 12 | 67184ae8, 67c097ee | `buildResourceSchemas` на `columnsToZod`; `declareSchema` (чесна межа касту), optional-ключі в `expectTypeOf`, нота 7б у спеці |
+| 13 | 3d4c0033 | `drizzle-zod` лише devDependency (точний пін 0.8.3); DZOD-1 закрито, проєкційні касти — DRZ-2 |
+| 14 | цей коміт | доки, гейти, `live:smoke`, ручний прогін |
+
+Доопрацювання Етапу A (окремо, не Етап B): c6c385c4 (стаб сервера тримає wire-контракт subset), b9375bc4 (поіменна таблиця 31 червоного), 524ca43b (прибрано дубль розділів плану).
+
+### Етап B: інвентар і паритет
+
+- Інвентар (знаходить сам гейт, збирач підміняє `defineAdminResource` + `import.meta.glob('../*/resource{,s}.ts')`): **14 таблиць, 155 колонок, рівно 9 типів**. За типами: PgUUID 46, PgText 37, PgVarchar 11, PgBoolean 11, PgInteger 10, PgTimestamp 20, PgNumeric 10, PgJsonb 7, PgEnumColumn 3. За таблицями: order_items 14, product_prices 8, products 18, order_statuses 7, orders 31, product_property_values 7, modification_property_values 7, stock_by_pickup_point 7, section_property_assignments 6, product_modifications 11, price_types 6, section_properties 11, sections 12, property_options 10.
+- 🔴 **Виправлення спайку:** «166 колонок» у спеці/спайку — арифметична помилка: його ж розклад за типами (46+37+20+11+11+10+10+7+3) дає 155. У спеці біля «166» поставлено примітку; числа в тілі плану лишаються як були (канон), правильне — тут.
+- Паритет: diff з drizzle-zod 0.8.3 порожній по всіх колонках × insert/update/select × ~35 значень (+ члени enum, `n`/`n+1` для varchar); refine ресурсів передається в обидві сторони.
+- Мутаційні мета-тести (постійні): контроль ідентичності → порожній diff; m1 integer `int→number` **120**; m2 select без `nullable` **112**; m3 varchar без `max` **186**; m4 timestamp `date→any` **2054**; кожен diff стосується лише колонок мутованого типу. (Спайк: m1 валив 9 тестів — інша одиниця виміру: тут розбіжностей по колонка×режим×значення.)
+- Ручна мутація реалізації (`z.int()` → `z.number()` у `columns-to-zod.ts`), паритет RED: `order_items.quantity [insert]: 1.5 -> true vs false`, `order_items.stockReserved [insert]: 1.5 -> true vs false`, `order_statuses.sortOrder [insert]: 1.5 -> true vs false` (і update/select). Повернено.
+- Крос-перевірка викликів `defineAdminResource(` (сирі джерела `admin-server`, без тестів): RED з фіктивним викликом у `impl/zz-dummy.ts` → `AssertionError: expected 14 to be 15`. Повернено.
+- `expectTypeOf`: `resource.test.ts` — 13 викликів + рядок імпорту = 14 за `grep` (звідси «14» у спеці); `resource-omit.test.ts` — 2 + імпорт; плюс нові кейси optional-ключів (`color`/`sortOrder` у insert, `sortOrder` у patch, `{id,name,code}` extends insert) — у `resource.test.ts` тепер 19 рядків за `grep`. Усі компілюються без кастів на місці виклику.
+- RED типів: заміна `InsertPick` на `Pick<M, K & keyof M>` → `TS2345: Argument of type '"color"' is not assignable to parameter of type '"name" | "id" | "code"'` (+ `sortOrder`, `propertyType`). RED omit: прибрати фільтр omit у `buildResourceSchemas` → «rowSchema не має accessToken»: `AssertionError: expected true to be false`.
+- `@ts-expect-error`-контролі `AdminResourceColumnGuards`: видалення однієї директиви → `TS2345` на виклику `defineAdminResource` (контроль живий).
+- Рядки: `columns-to-zod.ts` 92; `resource-schemas.ts` 126 (було 182); тести: parity 139, frozen 96, edge 102, columns-to-zod 115, `support/parity-diff.ts` 76, `parity-values.ts` 54.
+
+### Етап B: відхилення від плану
+
+| Відхилення | Обґрунтування |
+|---|---|
+| `declareSchema<Out>` = `z.object(shape) as unknown as z.ZodType<Out, Out>`, а не `.pipe(z.custom<Out>(() => true))` | Безкастова форма КОМПІЛЮЄТЬСЯ (за `Out extends Record<string, unknown>`), але її вхідний тип стає `{[k: string]: unknown}` і послаблює клієнтську типізацію валідаторів `createServerFn`; каст лишає вхід = `Out`. Один каст в одному іменованому хелпері. Рантайм — strip `ZodObject` (так само, як у drizzle-zod 0.8.3, `index.mjs:274`) |
+| `InsertPick<T, K>` (мапінг з `as P extends K`) замість «0 `SafePick`» | `Pick<M, K & keyof M>` на generic-`T` губить необовʼязкові ключі (відкладене обчислення; проби), а `Pick` вимагає `K ⊆ keyof M`. Обмеження TypeScript, не бібліотеки — без маркера |
+| Гейт паритету **вужчий**, ніж у Acceptance Task 11 («єдиний механізм…») | Тіло плану не переписано (канон). Фактична межа: гейт доводить рантайм-еквівалентність `columnsToZod ≡ drizzle-zod` для всіх колонок ресурсних таблиць; відповідність ОГОЛОШЕНОГО типу рантайм-формі — лише опосередковано (оракул і тип Drizzle виводять optional/nullable за тими самими правилами колонки). Не покрито: колонки з `$type<>` (jsonb — оголошений тип вужчий за валідацію) і результати refine проти типу колонки; їх стережуть `expectTypeOf` і рев'ю. Окремий тест «кожна `$type<>`-колонка має refine» **пропущено**: `$type<>` — суто типове, на колонці немає рантайм-сигналу |
+| `drizzle-zod` НЕ додано в devDependencies у Task 11 | рішення архітектора: перенос `dependencies → devDependencies` одним кроком у Task 13 (точний пін `0.8.3`), щоб не було обох записів |
+| Невідомий тип колонки → throw (drizzle-zod дає `z.any()`) | гейт це допускає: інвентар-тест гарантує, що в ресурсних таблицях невідомих типів немає; `PgTimestampString`/`PgNumericNumber` теж throw (окремі класи Drizzle) |
+| DZOD-1 закрито, а не «порожній `git grep`» як єдина умова | `drizzle-zod` лишився devDependency як еталон; каст у `__tests__/support/parity-diff.ts` (типізація еталона) — звичайний коментар без маркера, закритий запис це фіксує. `git grep UPSTREAM:DZOD-1` поза `docs/` порожній |
+| Новий запис реєстру `DRZ-2` | каст проєкції `Record<string, Column>` → pg `SelectedFields` (`getTableColumns` → `Column`, pg-білдер чекає `PgColumn`; `drizzle-orm/utils.d.ts:37`, `pg-core/query-builders/select.types.d.ts:57-58`). Маркери — на `select`/`returning` у `resource-list.ts`, `resource-write.ts`, `order-items/editable.ts`, `orders/change-status.ts`. Касти `values(parsed)`, `set(patch)`, `.from(ctx.table)` були наслідком наших `unknown`-типів і зняті. `idColumn` усе ще повертає `never` (його каст лишився) |
+| Task 12 Step 3 `resource-write.ts`: рішення по кожному касту | знято: `values(parsed as never)`, `set(set as never)`, `.from(ctx.table as never)`, `id as never`, `ids as never`, `as unknown[]`-результат; лишено (DRZ-2): `.returning(ctx.picked as never)` ×2 |
+
+### Етап B: ручний прогін форми товару (Task 14 Step 2)
+
+Одноразовий Playwright-скрипт проти зібраного сервера на `db:demo` (сесія власника; скрипт видалено). Факти:
+
+1. Порожня обовʼязкова назва, «Створити»: URL лишається `/admin/products/new`, **жодного запиту на сервер** (лише 2 POST від завантаження сторінки), тост не зʼявився, `aria-invalid` = 0 — блокує нативна валідація браузера (`required`); 500 немає.
+2. Slug довжиною 300 (`varchar(255)`): запит доходить до сервера, відповідь **HTTP 200** (Start віддає доменну помилку тілом), URL лишається `/new`, **тост**: `Помилка [ { "origin": "string", "code": "too_big", "maximum": 255, ..., "path": [0, "slug"], "message": "Too big: expected string to have <=255 characters" } ]`. Тобто 400-валідація працює, але UI показує СИРИЙ масив issue-ів Zod загальним тостом, а не повідомлення біля поля — **UX-борг** (не регресія Етапу B: `ZodError` так само виходив і з drizzle-zod).
+3. Нормальне створення (після виправлення slug): перехід на `/admin/products/<uuid>`, 1 POST 200.
+4. Залишок `2147483648`: POST 200, тост `Помилка збереження: [ { "origin": "number", "code": "too_big", "maximum": 1000000, "path": ["quantities", 0, "quantity"], ... } ]` (верхня межа 1 000 000 — зі схеми операції залишків, не `int32`); залишок `-5`: запиту немає, тост `Помилка збереження: Некоректна ціна` (клієнтська перевірка форми — текст про «ціну» для залишку збігається з сусідньою формою цін; потенційна неточність підпису, не чіпав); залишок `7`: `Залишки збережено`.
+5. Збереження форми товару без змін: 0 запитів (форма не брудна), тост `Товар оновлено`.
+Висновок: невалідні значення дають помилку валідації (не 500, не мовчазний запис), нормальне збереження працює; видимий UX-борг — сирий JSON Zod у тості.
+
+### Етап B: гейти (цей коміт, канонічний порядок; `PG_HARNESS_URL=postgresql://pgtest@127.0.0.1:55450/postgres`)
+
+| Крок | Результат |
+|---|---|
+| `pnpm install --frozen-lockfile` | exit 0, `Already up to date` |
+| `pnpm format:check` | `All matched files use Prettier code style!` |
+| `pnpm lint` | `✖ 8 problems (0 errors, 8 warnings)` |
+| `pnpm build` | exit 0, `✓ built in 1.38s` |
+| `pnpm typecheck` | exit 0 (`tsc --noEmit`) |
+| `pnpm test` | `Test Files 279 passed (279)`, `Tests 1964 passed (1964)` |
+| `pnpm test:schema` | `Test Files 51 passed (51)`, `Tests 358 passed (358)` |
+| `pnpm build:packages` | `ok за 18 с під кепом 3072 МБ` (без TS2742/TS2589) |
+| `pnpm typecheck:template` | exit 0 |
+| `pnpm test:packaging` | `Test Files 6 passed (6)`, `Tests 43 passed (43)` (`drizzle-zod` поза `dependencies` опублікованого `simplycms`) |
+| `pnpm pilot:pack --skip-build` | `Пілот пройдено: гейти A/C/D/IP + CLI/TOOL зелені.` |
+| `pnpm live:smoke` | `live-smoke: ЗЕЛЕНИЙ`, 89 OK / 0 FAIL (каталог, довідники, замовлення, пагінація, CSRF — через нові схеми на реальному сервері) |
+
+### DoD Етапу B
+
+(1) гейт паритету зелений, RED на мутаціях доведено (m1–m4 = 120/112/186/2054, ручна мутація, крос-перевірка) — так. (2) усі `expectTypeOf` без кастів на виклику — так. (3) `resource-schemas.ts` 126 ≤ 150 — так. (4) `drizzle-zod` — лише devDependency (точний пін 0.8.3), DZOD-1 закрито, DRZ-2 заведено — так. (5) повний ланцюг + `live:smoke` зелені, lint 0/8 — так (таблиця вище). (6) доки: `test-contours.md` §11.3, `v2-state-map.md`, `platform-roadmap.md`, спека 7б (примітка про 166→155), `CHANGELOG.md`, реєстр обходів; `CLAUDE.md` не чіпано; жодне правило `AGENTS.md` не стало хибним (рядок про реєстр обходів лишається правдивим; правил про `drizzle-zod` там немає).
