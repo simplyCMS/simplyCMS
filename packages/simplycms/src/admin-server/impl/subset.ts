@@ -108,7 +108,7 @@ export const subsetShapeSchema = z.object({
 });
 export type SubsetInput = z.infer<typeof subsetShapeSchema>;
 
-/** Вхід list-serverFn: { subset? } — саме це йде в inputValidator. */
+/** Вхід list-serverFn: { subset? } — саме це йде в validator. */
 export const subsetInputSchema = z.object({
   subset: subsetShapeSchema.optional(),
 });

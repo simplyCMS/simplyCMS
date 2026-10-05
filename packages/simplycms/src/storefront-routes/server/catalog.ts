@@ -50,7 +50,7 @@ export const getCatalogPageData = createServerFn({ method: 'GET' }).handler(
  * замість одного.
  */
 export const getSectionPageData = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ slug: z.string().min(1) }))
+  .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }): Promise<SectionPageData | null> => {
     const { slug } = input as { slug: string };
 
@@ -85,7 +85,7 @@ export const getCatalogSections = createServerFn({ method: 'GET' }).handler(
 
 /** Розділ поточної сторінки за slug; `null` — немає або неактивний. */
 export const getCatalogSection = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ slug: z.string().min(1) }))
+  .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }): Promise<SectionRow | null> => {
     const { slug } = input as { slug: string };
     return withStorefrontDb((db) => loadSectionBySlug(db, slug));
@@ -98,7 +98,7 @@ export const getCatalogSection = createServerFn({ method: 'GET' })
  * клієнті); заданий — сторінка розділу, вибірка звужена запитом.
  */
 export const getCatalogProducts = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ sectionId: z.string().min(1).optional() }))
+  .validator(z.object({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }) => {
     const { sectionId } = input as { sectionId?: string };
     return withStorefrontDb((db) => loadCatalogProducts(db, sectionId));
@@ -106,7 +106,7 @@ export const getCatalogProducts = createServerFn({ method: 'GET' })
 
 /** Числові характеристики розділу, за якими можна фільтрувати. */
 export const getSectionNumericProperties = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ sectionId: z.string().min(1) }))
+  .validator(z.object({ sectionId: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { sectionId } = input as { sectionId: string };
     return withStorefrontDb((db) =>

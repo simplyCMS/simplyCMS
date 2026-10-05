@@ -53,41 +53,41 @@ import {
 /**
  * 🔴 Публічна поверхня admin-server: ЛИШЕ serverFn (К3-9′ п.1). Жодного
  * живого не-serverFn експорту: клієнтська трансформація Start вирізає
- * inputValidator і handler та чистить осиротілі імпорти DCE-проходом —
+ * validator і handler та чистить осиротілі імпорти DCE-проходом —
  * але лише доки їх не тримає інший живий експорт. Схеми/операції назовні
  * НЕ реекспортуються.
  */
 export const listOrderStatuses = createServerFn({ method: 'GET' })
-  .inputValidator(orderStatusesOps.subsetSchema)
+  .validator(orderStatusesOps.subsetSchema)
   .handler(orderStatusesOps.list);
 
 export const insertOrderStatuses = createServerFn({ method: 'POST' })
-  .inputValidator(orderStatusesOps.insertSchema)
+  .validator(orderStatusesOps.insertSchema)
   .handler(orderStatusesOps.insert);
 
 export const updateOrderStatuses = createServerFn({ method: 'POST' })
-  .inputValidator(orderStatusesOps.updateSchema)
+  .validator(orderStatusesOps.updateSchema)
   .handler(orderStatusesOps.update);
 
 // 🔴 remove ЦІЄЇ сутності — guarded-операція, не фабричний ops.remove:
 // «не видалити дефолтний» — доменний інваріант (критерій К3-4′).
 export const removeOrderStatuses = createServerFn({ method: 'POST' })
-  .inputValidator(removeManyInput)
+  .validator(removeManyInput)
   .handler(removeManyOrderStatusesOp);
 
 export const setDefaultOrderStatus = createServerFn({ method: 'POST' })
-  .inputValidator(setDefaultInput)
+  .validator(setDefaultInput)
   .handler(setDefaultOrderStatusOp);
 
 export const reorderOrderStatus = createServerFn({ method: 'POST' })
-  .inputValidator(reorderInput)
+  .validator(reorderInput)
   .handler(reorderOrderStatusOp);
 
-// 🔴 Валідатор — функція, а не Zod-схема: `inputValidator` зі схемою не
+// 🔴 Валідатор — функція, а не Zod-схема: `validator` зі схемою не
 // приймає FormData (Start типізує цю гілку окремо). Вміст форми перевіряє
 // `parseUploadForm` усередині операції.
 export const uploadMedia = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): FormData => {
+  .validator((data: unknown): FormData => {
     if (!(data instanceof FormData)) {
       throw new Error('[simplycms] uploadMedia expects FormData.');
     }
@@ -96,7 +96,7 @@ export const uploadMedia = createServerFn({ method: 'POST' })
   .handler(uploadMediaOp);
 
 export const deleteMedia = createServerFn({ method: 'POST' })
-  .inputValidator(deleteMediaInput)
+  .validator(deleteMediaInput)
   .handler(deleteMediaOp);
 
 // 🔴 Task 3 (Е3): файл переростає канон 150 рядків СВІДОМО — К3-9′ вимагає
@@ -105,35 +105,35 @@ export const deleteMedia = createServerFn({ method: 'POST' })
 // топ-рівневий const (гейт server-fn-top-level).
 
 export const listProducts = createServerFn({ method: 'GET' })
-  .inputValidator(productsOps.subsetSchema)
+  .validator(productsOps.subsetSchema)
   .handler(productsOps.list);
 
 export const insertProducts = createServerFn({ method: 'POST' })
-  .inputValidator(productsOps.insertSchema)
+  .validator(productsOps.insertSchema)
   .handler(productsOps.insert);
 
 export const updateProducts = createServerFn({ method: 'POST' })
-  .inputValidator(productsOps.updateSchema)
+  .validator(productsOps.updateSchema)
   .handler(productsOps.update);
 
 export const removeProducts = createServerFn({ method: 'POST' })
-  .inputValidator(productsOps.removeSchema)
+  .validator(productsOps.removeSchema)
   .handler(productsOps.remove);
 
 export const listProductModifications = createServerFn({ method: 'GET' })
-  .inputValidator(productModificationsOps.subsetSchema)
+  .validator(productModificationsOps.subsetSchema)
   .handler(productModificationsOps.list);
 
 export const insertProductModifications = createServerFn({ method: 'POST' })
-  .inputValidator(productModificationsOps.insertSchema)
+  .validator(productModificationsOps.insertSchema)
   .handler(productModificationsOps.insert);
 
 export const updateProductModifications = createServerFn({ method: 'POST' })
-  .inputValidator(productModificationsOps.updateSchema)
+  .validator(productModificationsOps.updateSchema)
   .handler(productModificationsOps.update);
 
 export const removeProductModifications = createServerFn({ method: 'POST' })
-  .inputValidator(productModificationsOps.removeSchema)
+  .validator(productModificationsOps.removeSchema)
   .handler(productModificationsOps.remove);
 
 // 🔴 Task 4 (Е3): дефолт і порядок модифікацій — iменовані операції, не
@@ -141,69 +141,69 @@ export const removeProductModifications = createServerFn({ method: 'POST' })
 export const setDefaultProductModification = createServerFn({
   method: 'POST',
 })
-  .inputValidator(setDefaultModificationInput)
+  .validator(setDefaultModificationInput)
   .handler(setDefaultModificationOp);
 
 export const reorderProductModification = createServerFn({ method: 'POST' })
-  .inputValidator(reorderModificationInput)
+  .validator(reorderModificationInput)
   .handler(reorderModificationOp);
 
 export const listProductPrices = createServerFn({ method: 'GET' })
-  .inputValidator(productPricesOps.subsetSchema)
+  .validator(productPricesOps.subsetSchema)
   .handler(productPricesOps.list);
 
 // 🔴 Атомарна заміна набору цін пари товар/модифікація (Е3-10) — не
 // фабричні insert/update/remove: одна кнопка «Зберегти ціни», один акт.
 export const saveProductPrices = createServerFn({ method: 'POST' })
-  .inputValidator(saveProductPricesInput)
+  .validator(saveProductPricesInput)
   .handler(saveProductPricesOp);
 
 export const listStock = createServerFn({ method: 'GET' })
-  .inputValidator(stockOps.subsetSchema)
+  .validator(stockOps.subsetSchema)
   .handler(stockOps.list);
 
 // 🔴 Ручний облік залишків з гвардованим переходом stock_status в ОДНІЙ
 // транзакції (Е3-3) — не фабричний ops.update.
 export const saveStock = createServerFn({ method: 'POST' })
-  .inputValidator(saveStockInput)
+  .validator(saveStockInput)
   .handler(saveStockOp);
 
 export const listProductPropertyValues = createServerFn({ method: 'GET' })
-  .inputValidator(productPropertyValuesOps.subsetSchema)
+  .validator(productPropertyValuesOps.subsetSchema)
   .handler(productPropertyValuesOps.list);
 
 export const insertProductPropertyValues = createServerFn({ method: 'POST' })
-  .inputValidator(productPropertyValuesOps.insertSchema)
+  .validator(productPropertyValuesOps.insertSchema)
   .handler(productPropertyValuesOps.insert);
 
 export const updateProductPropertyValues = createServerFn({ method: 'POST' })
-  .inputValidator(productPropertyValuesOps.updateSchema)
+  .validator(productPropertyValuesOps.updateSchema)
   .handler(productPropertyValuesOps.update);
 
 export const removeProductPropertyValues = createServerFn({ method: 'POST' })
-  .inputValidator(productPropertyValuesOps.removeSchema)
+  .validator(productPropertyValuesOps.removeSchema)
   .handler(productPropertyValuesOps.remove);
 
 export const listModificationPropertyValues = createServerFn({ method: 'GET' })
-  .inputValidator(modificationPropertyValuesOps.subsetSchema)
+  .validator(modificationPropertyValuesOps.subsetSchema)
   .handler(modificationPropertyValuesOps.list);
 
 export const insertModificationPropertyValues = createServerFn({
   method: 'POST',
 })
-  .inputValidator(modificationPropertyValuesOps.insertSchema)
+  .validator(modificationPropertyValuesOps.insertSchema)
   .handler(modificationPropertyValuesOps.insert);
 
 export const updateModificationPropertyValues = createServerFn({
   method: 'POST',
 })
-  .inputValidator(modificationPropertyValuesOps.updateSchema)
+  .validator(modificationPropertyValuesOps.updateSchema)
   .handler(modificationPropertyValuesOps.update);
 
 export const removeModificationPropertyValues = createServerFn({
   method: 'POST',
 })
-  .inputValidator(modificationPropertyValuesOps.removeSchema)
+  .validator(modificationPropertyValuesOps.removeSchema)
   .handler(modificationPropertyValuesOps.remove);
 
 // 🔴 Task 3 (Е4): довідники каталогу — записувані ресурси замість читальних
@@ -213,131 +213,131 @@ export const removeModificationPropertyValues = createServerFn({
 // фабричного remove для типів цін немає.
 
 export const listSections = createServerFn({ method: 'GET' })
-  .inputValidator(sectionsOps.subsetSchema)
+  .validator(sectionsOps.subsetSchema)
   .handler(sectionsOps.list);
 
 export const insertSections = createServerFn({ method: 'POST' })
-  .inputValidator(sectionsOps.insertSchema)
+  .validator(sectionsOps.insertSchema)
   .handler(sectionsOps.insert);
 
 export const updateSections = createServerFn({ method: 'POST' })
-  .inputValidator(sectionsOps.updateSchema)
+  .validator(sectionsOps.updateSchema)
   .handler(sectionsOps.update);
 
 export const removeSections = createServerFn({ method: 'POST' })
-  .inputValidator(sectionsOps.removeSchema)
+  .validator(sectionsOps.removeSchema)
   .handler(sectionsOps.remove);
 
 export const listPriceTypes = createServerFn({ method: 'GET' })
-  .inputValidator(priceTypesOps.subsetSchema)
+  .validator(priceTypesOps.subsetSchema)
   .handler(priceTypesOps.list);
 
 export const insertPriceTypes = createServerFn({ method: 'POST' })
-  .inputValidator(priceTypesOps.insertSchema)
+  .validator(priceTypesOps.insertSchema)
   .handler(priceTypesOps.insert);
 
 export const updatePriceTypes = createServerFn({ method: 'POST' })
-  .inputValidator(priceTypesOps.updateSchema)
+  .validator(priceTypesOps.updateSchema)
   .handler(priceTypesOps.update);
 
 // 🔴 Task 4 (Е4-2): remove ЦІЄЇ сутності — guarded, не фабричний: «не
 // видалити дефолтний» — доменний інваріант. Обидві операції серіалізує
 // той самий advisory-lock `price-type-default`.
 export const removePriceTypes = createServerFn({ method: 'POST' })
-  .inputValidator(removePriceTypesInput)
+  .validator(removePriceTypesInput)
   .handler(removeManyPriceTypesOp);
 
 export const setDefaultPriceType = createServerFn({ method: 'POST' })
-  .inputValidator(setDefaultPriceTypeInput)
+  .validator(setDefaultPriceTypeInput)
   .handler(setDefaultPriceTypeOp);
 
 export const listSectionProperties = createServerFn({ method: 'GET' })
-  .inputValidator(sectionPropertiesOps.subsetSchema)
+  .validator(sectionPropertiesOps.subsetSchema)
   .handler(sectionPropertiesOps.list);
 
 export const insertSectionProperties = createServerFn({ method: 'POST' })
-  .inputValidator(sectionPropertiesOps.insertSchema)
+  .validator(sectionPropertiesOps.insertSchema)
   .handler(sectionPropertiesOps.insert);
 
 export const updateSectionProperties = createServerFn({ method: 'POST' })
-  .inputValidator(sectionPropertiesOps.updateSchema)
+  .validator(sectionPropertiesOps.updateSchema)
   .handler(sectionPropertiesOps.update);
 
 export const removeSectionProperties = createServerFn({ method: 'POST' })
-  .inputValidator(sectionPropertiesOps.removeSchema)
+  .validator(sectionPropertiesOps.removeSchema)
   .handler(sectionPropertiesOps.remove);
 
 export const listPropertyOptions = createServerFn({ method: 'GET' })
-  .inputValidator(propertyOptionsOps.subsetSchema)
+  .validator(propertyOptionsOps.subsetSchema)
   .handler(propertyOptionsOps.list);
 
 export const insertPropertyOptions = createServerFn({ method: 'POST' })
-  .inputValidator(propertyOptionsOps.insertSchema)
+  .validator(propertyOptionsOps.insertSchema)
   .handler(propertyOptionsOps.insert);
 
 export const updatePropertyOptions = createServerFn({ method: 'POST' })
-  .inputValidator(propertyOptionsOps.updateSchema)
+  .validator(propertyOptionsOps.updateSchema)
   .handler(propertyOptionsOps.update);
 
 export const removePropertyOptions = createServerFn({ method: 'POST' })
-  .inputValidator(propertyOptionsOps.removeSchema)
+  .validator(propertyOptionsOps.removeSchema)
   .handler(propertyOptionsOps.remove);
 
 export const listSectionPropertyAssignments = createServerFn({
   method: 'GET',
 })
-  .inputValidator(sectionPropertyAssignmentsOps.subsetSchema)
+  .validator(sectionPropertyAssignmentsOps.subsetSchema)
   .handler(sectionPropertyAssignmentsOps.list);
 
 export const insertSectionPropertyAssignments = createServerFn({
   method: 'POST',
 })
-  .inputValidator(sectionPropertyAssignmentsOps.insertSchema)
+  .validator(sectionPropertyAssignmentsOps.insertSchema)
   .handler(sectionPropertyAssignmentsOps.insert);
 
 export const updateSectionPropertyAssignments = createServerFn({
   method: 'POST',
 })
-  .inputValidator(sectionPropertyAssignmentsOps.updateSchema)
+  .validator(sectionPropertyAssignmentsOps.updateSchema)
   .handler(sectionPropertyAssignmentsOps.update);
 
 export const removeSectionPropertyAssignments = createServerFn({
   method: 'POST',
 })
-  .inputValidator(sectionPropertyAssignmentsOps.removeSchema)
+  .validator(sectionPropertyAssignmentsOps.removeSchema)
   .handler(sectionPropertyAssignmentsOps.remove);
 
 // 🔴 Task 4 (Е5): замовлення — лише читання через фабрику; зміна статусу —
 // іменована операція (лок рядка → «скасоване — кінцеве» → no-op →
 // повернення залишку → статус), не фабричний update.
 export const listOrders = createServerFn({ method: 'GET' })
-  .inputValidator(ordersOps.subsetSchema)
+  .validator(ordersOps.subsetSchema)
   .handler(ordersOps.list);
 
 export const listOrderItems = createServerFn({ method: 'GET' })
-  .inputValidator(orderItemsOps.subsetSchema)
+  .validator(orderItemsOps.subsetSchema)
   .handler(orderItemsOps.list);
 
 export const changeOrderStatus = createServerFn({ method: 'POST' })
-  .inputValidator(changeOrderStatusInput)
+  .validator(changeOrderStatusInput)
   .handler(changeOrderStatusOp);
 
 // Е5б-8: редагування позицій оформленого замовлення — іменовані операції
 // (ціна рушієм чекауту, дельта залишку, перерахунок сум і доставки).
 export const addOrderItem = createServerFn({ method: 'POST' })
-  .inputValidator(addOrderItemInput)
+  .validator(addOrderItemInput)
   .handler(addOrderItemOp);
 
 export const updateOrderItemQuantity = createServerFn({ method: 'POST' })
-  .inputValidator(updateOrderItemQuantityInput)
+  .validator(updateOrderItemQuantityInput)
   .handler(updateOrderItemQuantityOp);
 
 export const removeOrderItem = createServerFn({ method: 'POST' })
-  .inputValidator(removeOrderItemInput)
+  .validator(removeOrderItemInput)
   .handler(removeOrderItemOp);
 
 // Е5б-4: вузький пошук товару для діалогу додавання позиції (не загальний
 // пошук адмінки; `like` у subset.ts лишається забороненим).
 export const searchProductsForOrder = createServerFn({ method: 'GET' })
-  .inputValidator(searchProductsForOrderInput)
+  .validator(searchProductsForOrderInput)
   .handler(searchProductsForOrderOp);

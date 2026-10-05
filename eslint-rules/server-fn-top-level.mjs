@@ -24,7 +24,7 @@ export default {
         // Легальна форма: … → VariableDeclarator(id=Identifier) →
         // VariableDeclaration → Program | ExportNamedDeclaration→Program.
         // Виклик — корінь method-chain, тож піднімаємось крізь ланцюг
-        // .inputValidator(...).handler(...) до declarator-а.
+        // .validator(...).handler(...) до declarator-а.
         // 🔴 Піднімаємось ЛИШЕ як `.object` MemberExpression або `.callee`
         // CallExpression, і `CallExpression`-крок дозволений ЛИШЕ одразу
         // після `MemberExpression`-кроку — дзеркалить власний предикат

@@ -234,7 +234,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
 
   // 🔴 А2 (рішення архітектора): `ops.insert()` ТЕПЕР сам парсить вхід своєю
   // ж `insertSchema` ДО `runAdmin` — інваріант «readonly-поле не пишеться
-  // generic-write» тримає ОПЕРАЦІЯ, а не лише `inputValidator` serverFn з
+  // generic-write» тримає ОПЕРАЦІЯ, а не лише `validator` serverFn з
   // admin-server/index.ts (Task 3). Буквальний виклик (як у плані):
   // `isDefault: true` у payload,
   // `as never` — той самий обхід TS excess-property check, що обходив би

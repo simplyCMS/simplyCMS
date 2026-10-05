@@ -21,7 +21,7 @@ import {
  * той випадок, коли «зайва» гілка доступу коштує витоку.
  */
 export const getOrderView = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     z.object({
       orderId: z.string().uuid(),
       token: z.string().min(1).nullable(),

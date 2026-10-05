@@ -18,7 +18,7 @@ export interface ModificationDataPayload {
 
 /** Отримати товар за slug (для сторінки товару). */
 export const getProduct = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ slug: z.string().min(1) }))
+  .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { slug } = input as { slug: string };
     return withStorefrontDb((db) => loadProduct(db, slug));
@@ -33,7 +33,7 @@ export const getProduct = createServerFn({ method: 'GET' })
  * достатньо двох запитів. Самої функції в схемі v2 вже й немає (B13).
  */
 export const getModificationData = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ productId: z.string().min(1) }))
+  .validator(z.object({ productId: z.string().min(1) }))
   .handler(async ({ data: input }): Promise<ModificationDataPayload> => {
     const { productId } = input as { productId: string };
 

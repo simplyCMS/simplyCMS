@@ -23,7 +23,7 @@ describe('server-fn-top-level (К3-4′)', () => {
   it.each([
     [
       'export const chain',
-      `export const list = createServerFn({ method: 'GET' }).inputValidator(s).handler(h);`,
+      `export const list = createServerFn({ method: 'GET' }).validator(s).handler(h);`,
     ],
     [
       'const без export',

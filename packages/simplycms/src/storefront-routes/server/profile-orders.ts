@@ -21,7 +21,7 @@ export const getOrderStatuses = createServerFn({ method: 'GET' }).handler(
 
 /** Замовлення власника сесії, опційно звужені статусом. */
 export const getMyOrders = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ statusId: z.string().min(1).optional() }))
+  .validator(z.object({ statusId: z.string().min(1).optional() }))
   .handler(async ({ data: input }): Promise<OrderListRow[]> => {
     const { statusId } = input as { statusId?: string };
     return withSessionDb((db, userId) => loadUserOrders(db, userId, statusId));
@@ -35,7 +35,7 @@ export const getMyOrders = createServerFn({ method: 'GET' })
  * рядок — сторінка показує «замовлення не знайдено».
  */
 export const getMyOrder = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({ orderId: z.string().uuid() }))
+  .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data: input }): Promise<OrderDetailRow | null> => {
     const { orderId } = input as { orderId: string };
     return withSessionDb((db) => loadOrderDetail(db, orderId));
@@ -47,7 +47,7 @@ export const getMyOrder = createServerFn({ method: 'GET' })
  * серверна обгортка лише відкриває транзакцію сесії й делегує.
  */
 export const cancelMyOrder = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ orderId: z.string().uuid() }))
+  .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data: input }): Promise<OrderCancelResult> => {
     const { orderId } = input as { orderId: string };
     return withSessionDb((db, _userId, operator) =>
