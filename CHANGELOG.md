@@ -55,6 +55,8 @@
   шаблон ↔ оверлей; свідомі розбіжності — явним списком із причиною (пара
   TanStack DB бампається окремим етапом; `react-day-picker` лишається на ^9, бо
   `ui/calendar.tsx` ядра написаний під API v9).
+- vitest 4.1.11 → **5.0.3** (поломок тестів немає: 1867/1867 і 352/352 без правок
+  тестів і без compat-налаштувань).
 - dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
   `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
 
