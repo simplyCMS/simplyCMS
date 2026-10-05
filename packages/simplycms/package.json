@@ -28,7 +28,6 @@
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
-    "./schema/relations": "./src/schema/relations.ts",
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
     "./admin-server/impl": "./src/admin-server/impl/index.ts",
@@ -191,10 +190,6 @@
       "./schema": {
         "types": "./dist/schema/schema.d.ts",
         "import": "./dist/schema/schema.js"
-      },
-      "./schema/relations": {
-        "types": "./dist/schema/relations.d.ts",
-        "import": "./dist/schema/relations.js"
       },
       "./schema/types": {
         "types": "./dist/schema/types.d.ts",

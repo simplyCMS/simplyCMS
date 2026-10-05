@@ -41,10 +41,14 @@ Peer, а не dependency ядра — щоб у дереві магазину б
 
 ## Що всередині
 
-| Subpath                       | Що дає                                                           |
-| ----------------------------- | ---------------------------------------------------------------- |
-| `simplycms/schema`           | `pgTable`-описи таблиць ядра, `pgEnum`-и та `pgPolicy`-описи RLS |
-| `simplycms/schema/relations` | `relations(...)` між таблицями — для реляційних запитів Drizzle  |
+| Subpath            | Що дає                                                           |
+| ------------------ | ---------------------------------------------------------------- |
+| `simplycms/schema` | `pgTable`-описи таблиць ядра, `pgEnum`-и та `pgPolicy`-описи RLS |
+
+Реляційних описів (`relations(...)`) немає: `drizzle(client)` у `withActor`
+створюється без `schema`, тож реляційні запити (`db.query.*`) неможливі за
+побудовою — дані читаються через `select`/`join`. Файл `relations.ts`, який
+вигенерував `db:pull`, був мертвим кодом і прибраний.
 
 Енами: `appRole`, `discountType`, `discountTargetType`, `discountGroupOperator`,
 `propertyType`, `stockStatus`, `shippingMethodType`, `shippingCalculationType`.

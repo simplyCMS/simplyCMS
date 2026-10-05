@@ -23,11 +23,10 @@ apps/www/src/routeTree.gen.ts
 packages/simplycms/src/supabase/database.ts
 
 # ── Згенерована Drizzle-схема та її снапшоти ────────────────────────────────
-# `schema.ts`/`relations.ts` пише `pnpm db:pull`; `drizzle/` — meta+snapshot,
+# `schema.ts` пише `pnpm db:pull`; `drizzle/` — meta+snapshot,
 # які drizzle-kit звіряє побайтово (нуль-diff інваріант Task 12). Будь-яке
 # переформатування тут або відкотиться наступною генерацією, або зламає гейт.
 packages/simplycms/src/schema/schema.ts
-packages/simplycms/src/schema/relations.ts
 packages/simplycms/drizzle
 
 # ── Документація ────────────────────────────────────────────────────────────

@@ -58,6 +58,13 @@
 - dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
   `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
 
+### Видалено
+
+- `simplycms/schema/relations` (`schema/relations.ts`, 39 `relations()`): мертвий
+  код — `drizzle(client)` у `withActor` створюється без `schema`, тож `db.query.*`
+  неможливий за побудовою. Субшлях прибрано з обох карт `exports`; у Drizzle 1.0
+  реляційні запити — інший API (`defineRelations`).
+
 ### Змінено
 
 - 🔴 **Baseline міграцій (правка, без нової міграції):** з `accounts` прибрано

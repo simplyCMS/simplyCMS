@@ -260,10 +260,7 @@ const eslintConfig = [
     // Машинно згенеровані drizzle-kit'ом файли: `(table) => [...]` подекуди не
     // використовує аргумент, а перейменувати його не можна — наступний `pull`
     // все одно перезапише. Решту правил лишаємо ввімкненими.
-    files: [
-      'packages/simplycms/src/schema/schema.ts',
-      'packages/simplycms/src/schema/relations.ts',
-    ],
+    files: ['packages/simplycms/src/schema/schema.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
     },
