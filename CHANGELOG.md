@@ -71,13 +71,6 @@
 
 ### Видалено
 
-- `drizzle-zod` з `dependencies` ядра (залишився `devDependency` лише як
-  еталон постійного гейта паритету `columnsToZod`): схеми ресурсів адмінки
-  будує власний генератор `columnsToZod` (9 типів колонок, невідомий —
-  throw), `SafePick` і касти drizzle-zod прибрано, DZOD-1 закрито;
-  проєкційні касти Drizzle виділено в `DRZ-2`. Із `SERVER_ONLY_DEPS` знято
-  `drizzle-zod`.
-
 - `simplycms/schema/relations` (`schema/relations.ts`, 39 `relations()`): мертвий
   код — `drizzle(client)` у `withActor` створюється без `schema`, тож `db.query.*`
   неможливий за побудовою. Субшлях прибрано з обох карт `exports`; у Drizzle 1.0
@@ -86,9 +79,12 @@
 ### Змінено
 
 - 🔴 **Власний генератор zod-схем `columnsToZod`** (крок 4 треку оновлень, Етап B):
-  схеми ресурсів адмінки більше не залежать від `drizzle-zod`; `SafePick` і
-  касти прибрано, `resource-schemas.ts` 182 → ~125 рядків. Постійний гейт
-  паритету з drizzle-zod (мутаційний контроль) — `test-contours.md` §11.3.
+  схеми ресурсів адмінки будує власний генератор (9 типів колонок, невідомий —
+  throw) і більше не залежать від `drizzle-zod`; `SafePick` і касти прибрано,
+  `resource-schemas.ts` 182 → ~125 рядків, DZOD-1 закрито, проєкційні касти
+  Drizzle виділено в `DRZ-2`. `drizzle-zod` знято з `dependencies` ядра (і з
+  `SERVER_ONLY_DEPS`): лишився `devDependency` лише як еталон постійного гейта
+  паритету з мутаційним контролем — `test-contours.md` §11.3.
 - 🔴 **Baseline міграцій (правка, без нової міграції):** з `accounts` прибрано
   колонку `issuer` і унікальний індекс `(issuer, account_id)`. Їх мала схема
   better-auth 1.7.0–1.7.2; з 1.7.3 їх немає, і drizzle-адаптер 1.7.7 на старті
