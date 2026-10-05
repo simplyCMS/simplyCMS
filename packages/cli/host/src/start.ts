@@ -2,6 +2,7 @@ import { createStart, createMiddleware } from '@tanstack/react-start';
 import { redirect } from '@tanstack/react-router';
 import { readSessionSubject } from 'simplycms/auth';
 import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
+import { csrfMiddleware } from 'simplycms/runtime/csrf';
 
 /**
  * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
@@ -56,7 +57,13 @@ const adminRequestGuard = createMiddleware().server(
  * тосту з i18n-ключем. Адаптер — client-safe (`simplycms/runtime`), не
  * server-only.
  */
+/**
+ * 🔴 CSRF першим (до читання сесії в adminRequestGuard). Дефолтний захист
+ * Start вмикається лише БЕЗ `startInstance`, тож тут він явний: без нього
+ * server functions і POST-роути приймали б міжсайтові запити. Виняток —
+ * `CSRF_EXEMPT_PREFIXES` у `simplycms/runtime/csrf` (Better Auth).
+ */
 export const startInstance = createStart(() => ({
   serializationAdapters: [domainErrorAdapter],
-  requestMiddleware: [adminRequestGuard],
+  requestMiddleware: [csrfMiddleware, adminRequestGuard],
 }));
