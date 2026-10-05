@@ -20,6 +20,9 @@ export interface AdminResourceConfigBase<
   mode: 'eager' | 'on-demand';
   // 🔴 Е5-7: прихована колонка не фільтрується й не сортується — інакше
   //   subset став би оракулом її значення (напр. перебір access_token).
+  // filterable — eq/gt/gte/lt/lte/in/isNull; sortable — сортування і, крім того,
+  //   eq/gt/gte/lt/lte (курсор «Показати ще», див. `subset.ts`); in/isNull по
+  //   sortable заборонені.
   filterable: readonly Exclude<ColumnName<T>, O>[];
   sortable: readonly Exclude<ColumnName<T>, O>[];
   defaultOrder?: {

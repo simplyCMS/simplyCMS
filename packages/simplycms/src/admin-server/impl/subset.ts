@@ -27,6 +27,16 @@ import { z } from 'zod';
  * `modification_id IS NULL`. isNull є у словнику push-down самої
  * бібліотеки (`extractSimpleComparisons`); без нього довелося б тягнути
  * ширший зріз і дофільтровувати в JS — push-down на половину.
+ *
+ * 🔴 Курсор «Показати ще» (@tanstack/db 0.11.3, `CursorExpressions`) шле
+ * по ПЕРШІЙ колонці orderBy: `gt/lt(col, v)` та «межу рівних» — `eq(col, v)`,
+ * а для Date — `and(gte(col, d), lt(col, d+1ms))`. Тому `eq/gt/gte/lt/lte`
+ * дозволені по `filterable ∪ sortable`: значення відсортованої колонки
+ * клієнт і так бачить у видачі, безпеки це не знижує (прихована `omit`-ом
+ * колонка не потрапляє ні в filterable, ні в sortable — типи ресурсу).
+ * `in/isNull` лишаються під `filterable`: курсор їх не шле. `Date` (з
+ * скінченним часом) приймається ЛИШЕ діапазонними операторами — для дат
+ * бібліотека `eq` не генерує; через межу serverFn Date їде нативно (seroval).
  */
 // 🔴 Типізовано ЯВНИМ спільним сигнатурним типом (не `as const`): eq/gt/gte/lt/lte —
 // це `BinaryOperator` (три перевантаження-в-інтерфейсі), inArray — окрема
@@ -57,6 +67,16 @@ export interface SubsetAllow {
 }
 
 const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+/** Значення діапазонного оператора: скаляр, але число — скінченне, або Date зі скінченним часом. */
+const rangeValue = z.union([
+  z.string(),
+  z.number().refine(Number.isFinite),
+  z.boolean(),
+  z.null(),
+  z.date().refine((d) => Number.isFinite(d.getTime())),
+]);
+const RANGE_OPERATORS = new Set(['gt', 'gte', 'lt', 'lte']);
+const CURSOR_OPERATORS = new Set(['eq', ...RANGE_OPERATORS]);
 const filterSchema = z
   .object({
     field: z.array(z.string().min(1)).min(1),
@@ -84,11 +104,17 @@ const filterSchema = z
           path: ['value'],
           message: "operator 'isNull' вимагає value: null",
         });
-    } else if (!scalar.safeParse(f.value).success) {
+    } else if (
+      !(RANGE_OPERATORS.has(f.operator) ? rangeValue : scalar).safeParse(
+        f.value,
+      ).success
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['value'],
-        message: `operator '${f.operator}' вимагає скаляр`,
+        message: RANGE_OPERATORS.has(f.operator)
+          ? `operator '${f.operator}' вимагає скінченний скаляр або Date`
+          : `operator '${f.operator}' вимагає скаляр`,
       });
     }
   });
@@ -134,11 +160,17 @@ export function toDrizzleSubset(
 
   const conditions: SQL[] = (input.filters ?? []).map((f) => {
     const name = f.field.join('.');
-    if (!allow.filterable.includes(name))
-      throw new Error(`[admin-server] фільтр по недозволеній колонці: ${name}`);
     const op = OPERATORS[f.operator as keyof typeof OPERATORS];
     if (!op)
       throw new Error(`[admin-server] невідомий оператор: ${f.operator}`);
+    // Курсорні оператори читають і sortable-колонки; in/isNull — лише filterable.
+    const allowed = CURSOR_OPERATORS.has(f.operator)
+      ? [...allow.filterable, ...allow.sortable]
+      : allow.filterable;
+    if (!allowed.includes(name))
+      throw new Error(
+        `[admin-server] фільтр по недозволеній колонці: ${name} (оператор ${f.operator})`,
+      );
     return op(column(name), f.value as never);
   });
 

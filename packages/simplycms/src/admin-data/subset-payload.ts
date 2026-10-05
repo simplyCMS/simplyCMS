@@ -22,6 +22,9 @@ const SERVER_OPERATORS = new Set([
   'in',
   'isNull',
 ]);
+// Date у `value` (курсор: `and(gte(col, d), lt(col, d+1ms))`) проходить як є:
+// seroval нативно везе Date через межу serverFn (subset-payload-wire.test.ts),
+// сервер приймає його лише для gt/gte/lt/lte.
 type ServerFilter = NonNullable<SubsetInput['filters']>[number];
 
 /**

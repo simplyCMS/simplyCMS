@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { orderStatuses } from 'simplycms/schema';
+import { orderStatuses, orders } from 'simplycms/schema';
 import {
   subsetInputSchema,
   toDrizzleSubset,
@@ -129,5 +129,90 @@ describe('subset: трансляція предикатів колекції у 
         },
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('subset: Date і sortable-колонки (курсор «Показати ще», @tanstack/db 0.11.3)', () => {
+  // createdAt — лише sortable (як у ресурсі замовлень); statusId — filterable.
+  const CURSOR_ALLOW = {
+    filterable: ['statusId'],
+    sortable: ['createdAt', 'total'],
+  } as const;
+  const d = new Date('2026-01-01T00:00:00.123Z');
+  const run = (
+    operator: string,
+    value: unknown,
+    field = 'createdAt',
+    allow: {
+      filterable: readonly string[];
+      sortable: readonly string[];
+    } = CURSOR_ALLOW,
+  ) =>
+    toDrizzleSubset(orders, allow, {
+      filters: [{ field: [field], operator, value }],
+    } as unknown as SubsetInput);
+
+  it('(а) gte/lt з Date по sortable-but-not-filterable колонці проходять; обидва значення — параметри', () => {
+    const s = toDrizzleSubset(orders, CURSOR_ALLOW, {
+      filters: [
+        { field: ['createdAt'], operator: 'gte', value: d },
+        {
+          field: ['createdAt'],
+          operator: 'lt',
+          value: new Date(d.getTime() + 1),
+        },
+      ],
+    });
+    const compiled = dialect.sqlToQuery(s.where!);
+    expect(compiled.sql).toMatch(/>= \$1/);
+    expect(compiled.sql).toMatch(/< \$2/);
+    expect(compiled.params).toHaveLength(2);
+  });
+
+  it('(б) in/isNull по sortable-but-not-filterable — кидає з іменем колонки; eq зі скаляром — проходить', () => {
+    expect(() => run('in', ['a'], 'total')).toThrow(/total.*in|in.*total/);
+    expect(() => run('isNull', null, 'total')).toThrow(
+      /total.*isNull|isNull.*total/,
+    );
+    expect(() => run('eq', 5, 'total')).not.toThrow();
+  });
+
+  it('(в) gt по колонці, що ні sortable, ні filterable — кидає', () => {
+    expect(() => run('gt', 1, 'subtotal')).toThrow(/subtotal/);
+    expect(() => run('eq', 1, 'subtotal')).toThrow(/subtotal/);
+  });
+
+  it('(г) Invalid Date, NaN, Infinity у діапазонних операторах — відхиляє схема', () => {
+    const ok = (operator: string, value: unknown) =>
+      subsetInputSchema.safeParse({
+        subset: { filters: [{ field: ['createdAt'], operator, value }] },
+      }).success;
+    for (const op of ['gt', 'gte', 'lt', 'lte']) {
+      expect(ok(op, new Date(NaN))).toBe(false);
+      expect(ok(op, Number.NaN)).toBe(false);
+      expect(ok(op, Number.POSITIVE_INFINITY)).toBe(false);
+      expect(ok(op, Number.NEGATIVE_INFINITY)).toBe(false);
+      expect(ok(op, d)).toBe(true);
+      expect(ok(op, 5)).toBe(true);
+    }
+  });
+
+  it('(д) Date в eq/in/isNull — відхиляє схема', () => {
+    const ok = (operator: string, value: unknown) =>
+      subsetInputSchema.safeParse({
+        subset: { filters: [{ field: ['createdAt'], operator, value }] },
+      }).success;
+    expect(ok('eq', d)).toBe(false);
+    expect(ok('in', [d])).toBe(false);
+    expect(ok('isNull', d)).toBe(false);
+  });
+
+  it('(е) колонка поза allowlist через omit (accessToken) — gt кидає, навіть якщо є sortable', () => {
+    expect(() => run('gt', 'x', 'accessToken')).toThrow(/accessToken/);
+    expect(() =>
+      toDrizzleSubset(orders, CURSOR_ALLOW, {
+        sorts: [{ field: ['accessToken'], direction: 'asc' }],
+      }),
+    ).toThrow(/accessToken/);
   });
 });
