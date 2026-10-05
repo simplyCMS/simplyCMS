@@ -312,12 +312,52 @@ typecheck` і `build:packages` зелені.
 | Бібліотека | `typescript-eslint` (обмежує `typescript`) |
 | Знайдено на | `typescript-eslint` 8.x (peer `typescript <6.1.0`), 2026-08-04 |
 | Перевірено на версії | 8.71.0 з `typescript` 6.0.3 — 2026-10-05 (peer `typescript >=4.8.4 <6.1.0`, без змін) |
-| Статус апстріму | запит підтримки TS 7 закрито як **not planned** до стабільного програмного API TS 7 (≥7.1) |
+| Статус апстріму | **у роботі**: трекер [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) відкритий (`accepting prs`, `team assigned`), draft PR [#12803](https://github.com/typescript-eslint/typescript-eslint/pull/12803) — чекає програмного API TS 7.1 (стан на 2026-10-05) |
 
 **Симптом / корінь.** Гейт `pnpm lint` — на `typescript-eslint`, чий peer
 не допускає TS ≥ 6.1, тож TS 7 на ньому не підняти. TS 6.0.3 проходить: потрібне
 лише прибрати `baseUrl` (раніше це відкривало `TS5101`/`TS2209` — знято, бо `paths`
 уже відносні, а `ignoreDeprecations` не потрібен).
+
+Корінь — НЕ в `typescript-eslint`: TS 7.0 (GA 2026-07-08) свідомо вийшов **без
+програмного API**; Microsoft обіцяє новий і **інший** API в 7.1, а до того радить
+ставити TS 6 поруч ([реліз 7.0, § «Running side-by-side with TypeScript 6.0»](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)).
+Тому ж чекають `vue-tsc`, шаблони Angular, Svelte, Astro, ts-jest, ts-morph.
+
+**Стан апстріму (дослідження 2026-10-05).**
+- 🔴 Запити [#12518](https://github.com/typescript-eslint/typescript-eslint/issues/12518)
+  і [#12720](https://github.com/typescript-eslint/typescript-eslint/issues/12720) закриті
+  як **дублікати** #10940, а не як відмова — не читати їх як «не планується».
+- #10940: Josh Goldberg (мейнтейнер) веде роботу з 2026-09-11; 2026-09-29 — «WIP
+  TypeScript 7.1 support is looking more and more stable», команда TS допрацьовує під
+  них API. Перша версія — через IPC, і за їхніми словами **не помітно швидша за TS 6**
+  (ESLint не вміє пакетно запитувати типи — [#11677](https://github.com/typescript-eslint/typescript-eslint/issues/11677)).
+- PR #12803 додає опційний `parserOptions.projectService.EXPERIMENTAL_backend: 'native'`
+  (і env `TYPESCRIPT_ESLINT_NATIVE_BACKEND`) — адаптери, що подають нативний API 7.1
+  у формі класичного `ts.Program`/`TypeChecker`. Тобто підтримка спершу прийде **опційною**,
+  можливо — новим major.
+- Графік TS 7.1 ([iteration plan #63703](https://github.com/microsoft/TypeScript/issues/63703)):
+  beta 2026-10-06, RC 2026-11-10, stable 2026-11-24; перший пункт — «Stabilize API».
+
+**Альтернативи, які розглянуто (і чому не взято зараз).**
+- **TS 6 поруч з TS 7** — офіційний обхід Microsoft: `"typescript":
+  "npm:@typescript/typescript6@^6.0.2"` (TS 6 API + бінарник `tsc6`) і
+  `"@typescript/native": "npm:typescript@^7.0.2"`. Для нас технічно дешево (див.
+  нижче), але це два компілятори в репо й підміна пакета в шаблоні магазину — той
+  самий «борг без вигоди», що відхилено в спайку tsgo (TSDOWN-1). Виграш —
+  лише `typecheck` 16,5 → 4,8 с, на 1,5–2 місяці до 7.1.
+- **oxlint + `oxlint-tsgolint`** — type-aware режим стабільний з 2026-07-22, вже на
+  TS 7 (версія = TS + патч, напр. `7.0.2000`), 59 з 61 typed-правила typescript-eslint.
+  Не взято: цінність нашого лінту — власні правила (`eslint-rules/*`, тір-зони,
+  селектори `no-restricted-syntax`) з негативними контролями; перенос — окреме
+  рішення, сумісність JS-плагінів oxlint з ними не перевірялась. Актуально, якщо
+  колись захочемо типізований лінт.
+
+**Наша експозиція.** Typed-правил ми НЕ вмикаємо: лише `tseslint.configs.recommended`
+(`eslint.config.mjs`), без `projectService` — `typescript` потрібен
+`typescript-eslint` тільки для парсингу. Інших блокерів TS 7 у дереві немає:
+`tsdown`/`rolldown-plugin-dts` допускають `~7.0`/`^7.0.0`, `@tanstack/db*` — `>=4.7`
+(перевірено по `peerDependencies` у `node_modules`, 2026-10-05).
 
 **Факти спайку (2026-10-05).** TS 7.0.2 типізує наш код з 0 помилок за 4,8 с проти
 16,5 с на 6.0.3. Декларації з 7.0.2 відрізняються від 6.0.3 лише порядком
@@ -326,10 +366,16 @@ union-ів/ключів; на майбутнє — прапорець `--stableT
 **Наш обхід.** `typescript: ^6.0.3` у кореневому `package.json`, `apps/www`,
 `tests/pilot/store-template` і в шаблоні магазину; без `baseUrl`.
 
-**Перевірка виправлення.** `typescript-eslint` оголосив peer з TS 7 →
-пробний бамп у гілці + повний ланцюг гейтів.
+**Перевірка виправлення.** При бампі `typescript-eslint`: `npm view
+typescript-eslint peerDependencies` і реліз-ноти — чи є підтримка TS 7.1 (peer
+`typescript` ≥ 7.1 АБО опційний `EXPERIMENTAL_backend: 'native'` з PR #12803 у релізі);
+стан #10940/#12803. Якщо є → пробний бамп у гілці одразу на **TS 7.1** (минаючи 7.0)
++ повний ланцюг гейтів, включно з `typecheck:template` і `test:packaging`.
 
-**Коли виправлять.** Бамп на TS 7 одразу після підтримки в `typescript-eslint`;
+**Коли виправлять.** Бамп на TS 7.1 після релізу `typescript-eslint` з його підтримкою
+(хай і опційною — для нас достатньо парсингу, typed-правил немає); `typescript` у
+корені, `apps/www`, `tests/pilot/store-template` і шаблоні магазину — разом.
+Тоді ж перевідкрити спайк tsgo з TSDOWN-1 (умова «tsgo — єдиний компілятор»);
 `--stableTypeOrdering` — якщо порядок у d.ts стане важливим.
 
 ---
