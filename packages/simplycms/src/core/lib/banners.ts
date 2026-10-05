@@ -16,7 +16,7 @@ import { loadBanners, withStorefrontDb } from 'simplycms/storefront/loaders';
  * причина та сама, що в `./price-type`.
  */
 export const getBanners = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     z.object({
       placement: z.string().min(1),
       sectionId: z.string().uuid().nullable().optional(),

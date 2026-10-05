@@ -36,7 +36,7 @@ export const getRootSections = createServerFn({ method: 'GET' }).handler(
  * розділом тут не виникає.
  */
 export const getSectionProducts = createServerFn({ method: 'GET' })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string().min(1),
       name: z.string(),

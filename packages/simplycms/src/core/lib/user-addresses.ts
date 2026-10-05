@@ -45,7 +45,7 @@ export const getMyAddresses = createServerFn({ method: 'GET' }).handler(
  * гіршим за відмову — клієнт вважав би чужу адресу переписаною.
  */
 export const saveMyAddress = createServerFn({ method: 'POST' })
-  .inputValidator(addressInput)
+  .validator(addressInput)
   .handler(async ({ data }): Promise<string | null> => {
     const input = data as z.infer<typeof addressInput>;
 
@@ -63,7 +63,7 @@ export const saveMyAddress = createServerFn({ method: 'POST' })
 
 /** Видалити власну адресу; `false` — рядка немає або він чужий. */
 export const deleteMyAddress = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ id: z.string().uuid() }))
+  .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ data }): Promise<boolean> => {
     const { id } = data as { id: string };
     return withSessionDb((db, userId) => deleteAddress(db, userId, id));

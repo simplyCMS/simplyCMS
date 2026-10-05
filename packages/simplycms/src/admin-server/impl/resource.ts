@@ -107,7 +107,7 @@ export function defineAdminResource<
 
     // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
     // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
-    // `inputValidator` serverFn з admin-server/index.ts робить те саме на
+    // `validator` serverFn з admin-server/index.ts робить те саме на
     // межі HTTP, але інваріант «readonly-поле не пишеться generic-write»
     // мусить тримати ОПЕРАЦІЯ: прямий виклик `ops.insert(...)` повз
     // serverFn (харнес-тести, internal-виклики) інакше проносить

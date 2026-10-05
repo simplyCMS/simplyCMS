@@ -10,7 +10,7 @@ import { checkoutInputSchema } from './checkout-input';
  * (server-only дерево). Ідентичність — лише з серверної сесії.
  */
 export const placeOrder = createServerFn({ method: 'POST' })
-  .inputValidator(checkoutInputSchema)
+  .validator(checkoutInputSchema)
   .handler(async ({ data }) =>
     placeOrderFor(data, await optionalSessionUserId()),
   );

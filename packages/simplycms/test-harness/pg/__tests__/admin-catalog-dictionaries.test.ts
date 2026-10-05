@@ -5,7 +5,7 @@
 // 🔴 serverFn тут НЕ викликаються (getRequest() без ALS-контексту падає) —
 // requireGrant мокається модульно, а операції беруться напряму зі службового
 // server-only субшляху `simplycms/admin-server/impl`. Тест доводить ОПЕРАЦІЮ
-// (та сама схема, що в inputValidator serverFn), а не межу HTTP Start.
+// (та сама схема, що в validator serverFn), а не межу HTTP Start.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {

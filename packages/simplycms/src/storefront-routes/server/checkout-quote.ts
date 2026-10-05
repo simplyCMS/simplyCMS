@@ -12,7 +12,7 @@ import { checkoutInputSchema } from './checkout-input';
  * другою копією того, що вже описує `PlaceOrderInput`.
  */
 export const quoteCheckout = createServerFn({ method: 'POST' })
-  .inputValidator(checkoutInputSchema)
+  .validator(checkoutInputSchema)
   .handler(async ({ data }) =>
     quoteCheckoutFor(data, await optionalSessionUserId()),
   );

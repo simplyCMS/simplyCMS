@@ -11,6 +11,7 @@ import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
+import noInputValidator from './eslint-rules/no-input-validator.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
 import noCollectionKeyOutsideAdminData from './eslint-rules/no-collection-key-outside-admin-data.mjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
@@ -397,6 +398,17 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
+  // `.inputValidator()` — @deprecated-аліас `.validator()` у TanStack Start.
+  // Зона — увесь код репозиторію (ігнори верхнього рівня — шаблон і канон
+  // host-файлів — діють і тут). Власне імʼя плагіна (`simplycms-start`) —
+  // щоб опції не зливались із сусідніми правилами й не замістили i18n.
+  {
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    plugins: {
+      'simplycms-start': { rules: { 'no-input-validator': noInputValidator } },
+    },
+    rules: { 'simplycms-start/no-input-validator': 'error' },
   },
   // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
   // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.

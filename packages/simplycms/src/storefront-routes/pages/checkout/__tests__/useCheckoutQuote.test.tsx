@@ -120,7 +120,7 @@ describe('useCheckoutQuote — blocked не шле запит', () => {
 });
 
 /**
- * Рев'ю I-2: гілка відмови ПРОМІСА (мережа, 500, кидок `inputValidator`) —
+ * Рев'ю I-2: гілка відмови ПРОМІСА (мережа, 500, кидок `validator`) —
  * до фіксу вона робила рівно `setQuoting(false)` без жодного стану помилки,
  * тож `quotedKey` лишався неоновленим, `matchesCurrent` — назавжди `false`,
  * а `CheckoutOrderSummary` малював вічний скелет. Доводимо саме стан

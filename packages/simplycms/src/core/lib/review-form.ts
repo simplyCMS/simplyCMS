@@ -27,7 +27,7 @@ const reviewInput = z.object({
  * не може за побудовою.
  */
 export const submitProductReview = createServerFn({ method: 'POST' })
-  .inputValidator(reviewInput)
+  .validator(reviewInput)
   .handler(async ({ data }): Promise<void> => {
     const input = data as z.infer<typeof reviewInput>;
     await withSessionDb((db, userId) => insertProductReview(db, userId, input));
@@ -35,7 +35,7 @@ export const submitProductReview = createServerFn({ method: 'POST' })
 
 /** Видалити власний відгук; `false` — рядка немає або він чужий. */
 export const deleteMyProductReview = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ reviewId: z.string().uuid() }))
+  .validator(z.object({ reviewId: z.string().uuid() }))
   .handler(async ({ data }): Promise<boolean> => {
     const { reviewId } = data as { reviewId: string };
     return withSessionDb((db, userId) =>
