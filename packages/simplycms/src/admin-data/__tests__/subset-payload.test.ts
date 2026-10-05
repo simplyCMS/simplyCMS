@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { and, eq, gt, inArray } from '@tanstack/react-db';
+import { and, eq, gt, IR, inArray } from '@tanstack/react-db';
 import { toSubsetPayload } from '../subset-payload';
 
-// Вирази будуються тими самими функціями, що й у useLiveQuery. Посилання
-// на поле — PropRef; його форма (з аліасом чи без) і є тим, що доводить
-// контрактний тест Step 4, тут — лише мапінг форми.
+// Вирази будуються тими самі функціями, що й у useLiveQuery. Посилання на
+// поле — сконструйований IR.PropRef: з @tanstack/db 0.11.3 `toExpression`
+// визнає виразами лише екземпляри IR, літерал `{type:'ref'}` — уже значення
+// (db/src/query/builder/ref-proxy.ts). Форма (з аліасом чи без) — предмет
+// контрактного тесту on-demand-contract, тут лише мапінг.
 const ref = (field: string) =>
-  ({ type: 'ref', path: [field] }) as unknown as Parameters<typeof eq>[0];
+  new IR.PropRef([field]) as unknown as Parameters<typeof eq>[0];
 
 describe('toSubsetPayload', () => {
   it('без опцій — порожній payload (eager-сумісність)', () => {
