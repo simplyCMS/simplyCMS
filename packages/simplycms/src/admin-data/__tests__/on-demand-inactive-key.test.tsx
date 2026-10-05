@@ -40,8 +40,9 @@ function setup() {
       ) as Payload,
     }),
   );
+  // Ті самі defaultOptions, що в продакшені: `src/router.tsx:17-19`.
   const qc = new QueryClient({
-    defaultOptions: { queries: { staleTime: 5 * 60_000 } },
+    defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 1 } },
   });
   const ref: { current?: WriteBack<Row> } = {};
   const collection = createCollection(
@@ -69,7 +70,7 @@ function setup() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   );
-  return { collection, qc, wrapper, list };
+  return { collection, qc, wrapper, list, server };
 }
 
 const useListQuery = (c: ReturnType<typeof setup>['collection']) =>
@@ -81,7 +82,7 @@ const names = (rows: readonly Row[]) => rows.map((r) => r.name);
 
 describe('TSDB-1 (а): вміст кеш-ключів неактивного зрізу', () => {
   it('після write-back зі зрізу-картки B ремаунт списку A бачить ПОВНИЙ набір з оновленим X', async () => {
-    const { collection, qc, wrapper, list } = setup();
+    const { collection, qc, wrapper, list, server } = setup();
     const a = renderHook(() => useListQuery(collection), { wrapper });
     await waitFor(() => expect(a.result.current.data).toHaveLength(2));
     for (const n of [4, 6]) {
@@ -108,14 +109,18 @@ describe('TSDB-1 (а): вміст кеш-ключів неактивного з�
       });
     });
     await awaitRevalidation(list as never, before);
-    // Виміряно (query-db-collection 1.3.4 / db 0.11.3): запис ревалідує
-    // КОЖЕН кешований ключ колекції, і неактивні сторінки списку теж
-    // (ціна M1: усі 8 запитів), жоден ключ не видалено й не лишився стейл.
+    // Контракт: після запису жоден кешований ключ колекції не містить
+    // стейл-рядка — кожен рядок у кеші збігається з поточним станом сервера
+    // (за id), і не вилучений ключ втратив дані. Кількість запитів — не
+    // магічне число: кожен кешований ключ ревалідується рівно раз (M1).
     const queries = qc.getQueryCache().findAll({ queryKey: BASE });
-    expect(queries).toHaveLength(8);
-    expect(list.mock.calls.length - before).toBe(8);
-    const cached = queries.flatMap((q) => (q.state.data as Row[]) ?? []);
-    expect(cached.map((r) => r.name)).not.toContain('Рядок 2');
+    const current = new Map(server.rows.map((r) => [r.id, r]));
+    for (const q of queries) {
+      expect(q.state.data).toBeDefined();
+      for (const row of q.state.data as Row[])
+        expect(row).toEqual(current.get(row.id));
+    }
+    expect(list.mock.calls.length - before).toBe(queries.length);
     b.unmount();
 
     const again = renderHook(() => useListQuery(collection), { wrapper });

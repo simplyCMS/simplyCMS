@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { QueryClient } from '@tanstack/react-query';
+import { describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import {
   createCollection,
   createLiveQueryCollection,
@@ -109,6 +109,8 @@ describe('Е3-15′: ізоляція ключів на on-demand колекці
     await collection.insert(adminRow as never).isPersisted.promise;
   }
 
+  // Sanity-перевірка, а не доказ ізоляції: variant-ключ узагалі не під
+  // префіксом [entity,'list'], тож write-back його не торкається за побудовою.
   it('variant-ключ вітрини лишається ЦІЛИМ після write-back', async () => {
     const qc = new QueryClient();
     const storefrontKey = entityKey(ENTITY.products).variant('featured');
@@ -123,5 +125,25 @@ describe('Е3-15′: ізоляція ключів на on-demand колекці
     qc.setQueryData(colliding, [storefrontRow]);
     await writeBackOnDemand(qc);
     expect(qc.getQueryData(colliding)).toBeUndefined();
+  });
+
+  it('КОНТРОЛЬ I1: ключ під префіксом із ЧУЖИМ спостерігачем не видаляється, а перезапитується', async () => {
+    const qc = new QueryClient();
+    const colliding = [...collectionKey(ENTITY.products), 'featured'];
+    qc.setQueryData(colliding, [storefrontRow]);
+    let fetched = 0;
+    const observer = new QueryObserver(qc, {
+      queryKey: colliding,
+      queryFn: async () => {
+        fetched++;
+        return [storefrontRow];
+      },
+      staleTime: Infinity,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    await writeBackOnDemand(qc);
+    await vi.waitFor(() => expect(fetched).toBeGreaterThan(0));
+    expect(qc.getQueryData(colliding)).toEqual([storefrontRow]);
+    unsubscribe();
   });
 });
