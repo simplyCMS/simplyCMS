@@ -1,7 +1,9 @@
 import { createSerializationAdapter } from '@tanstack/react-router';
 import {
   DOMAIN_ERROR_FIELD_KEYS,
+  DOMAIN_ERROR_NAME,
   isDomainErrorName,
+  sanitizeValidationIssues,
   type DomainErrorName,
   type SerializableDomainError,
 } from 'simplycms/contracts/domain-errors';
@@ -10,7 +12,7 @@ import {
 /**
  * Е3-20: реєструється в `createStart(() => ({ serializationAdapters: […] }))`
  * (host `src/start.ts`). Клієнт-безпечний: розпізнає закриту родину
- * (`AdminConflictError`/`AuthzError`) ДУКОМ-ТАЙПІНГОМ за `name` з T0-переліку
+ * (`AdminConflictError`/`AuthzError`/`ValidationError`) ДУКОМ-ТАЙПІНГОМ за `name` з T0-переліку
  * `contracts/domain-errors` — не імпортує серверні класи
  * (`admin-server/impl`, `auth` — обидва в `contracts/server-only`).
  *
@@ -58,11 +60,24 @@ export const domainErrorAdapter = createSerializationAdapter({
       name,
       message: value.message,
       fields: extractFields(name, value),
+      // Тема 12: issues — не примітив, тому їдуть окремим каналом і ЛИШЕ
+      // крізь білий список (жодних сирих повідомлень Zod / відлуння вводу).
+      ...(name === DOMAIN_ERROR_NAME.validation
+        ? {
+            issues: sanitizeValidationIssues(
+              (value as unknown as { issues?: unknown }).issues,
+            ),
+          }
+        : {}),
     };
   },
   fromSerializable: (value: SerializableDomainError): Error =>
     Object.assign(new Error(value.message), {
       name: value.name,
       ...value.fields,
+      // Другий прохід білого списку на клієнті — payload з мережі не довіряємо.
+      ...(value.name === DOMAIN_ERROR_NAME.validation
+        ? { issues: sanitizeValidationIssues(value.issues) }
+        : {}),
     }),
 });
