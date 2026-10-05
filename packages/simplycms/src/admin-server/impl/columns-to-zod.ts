@@ -28,7 +28,8 @@ const jsonSchema = z.union([
  * `'abc'` проходив би схему й падав у БД (22P02 → 500), а число з надлишком
  * цілих цифр — 22003. Правило: необовʼязковий знак, цифри, необовʼязкова
  * дробова частина (`.5` і `5.` дозволені, експонента/пробіли/`NaN` — ні);
- * цілих цифр ≤ p − s (без ведучих нулів), дробових ≤ s. Дробових БІЛЬШЕ s
+ * цілих цифр ≤ p − s (без ведучих нулів), значущих дробових ≤ s: хвостові
+ * нулі понад s ДОПУСТИМІ (`'1.500'` у numeric(p,2) — без втрат), а ненульові
  * Postgres мовчки ОКРУГЛИВ би — тут це помилка (власник бачить її одразу,
  * а не неочікуване округлення ціни). `numeric` без precision — лише формат.
  * Виняток із паритету зафіксовано в `__tests__/support/parity-diff.ts`.
@@ -48,7 +49,8 @@ function decimalString(column: Column): z.ZodType {
     const fits =
       m !== null &&
       (maxInteger === null || integer.length <= maxInteger) &&
-      (maxFraction === null || fraction.length <= maxFraction);
+      (maxFraction === null ||
+        fraction.replace(/0+$/, '').length <= maxFraction);
     if (!fits)
       ctx.addIssue({
         code: 'custom',

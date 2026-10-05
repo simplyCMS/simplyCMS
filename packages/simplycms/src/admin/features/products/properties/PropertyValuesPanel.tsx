@@ -36,7 +36,10 @@ export function PropertyValuesPanel({
 }: Props) {
   const t = useT();
   const { rows: schema, isLoading } = usePropertySchema(sectionId, appliesTo);
-  const { rowsOf, saveScalar, saveMulti } = usePropertyValues(target, ownerId);
+  const { rowsOf, saveScalar, saveMulti, errors } = usePropertyValues(
+    target,
+    ownerId,
+  );
 
   const title = t(
     target === 'modification'
@@ -92,6 +95,7 @@ export function PropertyValuesPanel({
               property={property}
               options={options}
               rows={rowsOf(property.id)}
+              error={errors[property.id]}
               onChange={(v) => saveScalar(property.id, v)}
               onMultiChange={(ids) => saveMulti(property.id, ids)}
             />

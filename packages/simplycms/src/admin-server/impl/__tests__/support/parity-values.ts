@@ -74,6 +74,10 @@ export function valuesFor(column: Column): unknown[] {
       '9'.repeat(int + 1),
       `1.${'1'.repeat(frac)}`,
       `1.${'1'.repeat(frac + 1)}`,
+      // Хвостові нулі понад scale — без втрат, допустимі; ненульова цифра — ні.
+      `1.${'1'.repeat(frac)}000`,
+      `0.${'0'.repeat(frac + 2)}`,
+      `0.${'0'.repeat(frac)}1`,
     );
   }
   return [...BASE_VALUES, ...extra];

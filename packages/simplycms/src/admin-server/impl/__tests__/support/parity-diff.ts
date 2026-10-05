@@ -49,7 +49,10 @@ export function numericFits(column: Column, value: string): boolean {
   if (!/^\d*$/.test(int) || !/^\d*$/.test(frac)) return false;
   if (precision == null) return true;
   const s = scale ?? 0;
-  return int.replace(/^0+/, '').length <= precision - s && frac.length <= s;
+  return (
+    int.replace(/^0+/, '').length <= precision - s &&
+    frac.replace(/0+$/, '').length <= s
+  );
 }
 
 function expectedSuccess(

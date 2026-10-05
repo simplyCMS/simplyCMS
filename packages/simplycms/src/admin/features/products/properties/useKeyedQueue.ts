@@ -13,12 +13,12 @@ import { useRef } from 'react';
  * НІКОЛИ під час самого рендеру (`react-hooks/refs` це й гарантує).
  */
 export function useKeyedQueue(
-  onError: (e: unknown) => void,
+  onError: (e: unknown, key: string) => void,
 ): (key: string, run: () => Promise<void>) => void {
   const tails = useRef(new Map<string, Promise<void>>());
   return (key, run) => {
     const prevTail = tails.current.get(key) ?? Promise.resolve();
-    const runReported = () => run().catch(onError);
+    const runReported = () => run().catch((e: unknown) => onError(e, key));
     tails.current.set(key, prevTail.then(runReported, runReported));
   };
 }

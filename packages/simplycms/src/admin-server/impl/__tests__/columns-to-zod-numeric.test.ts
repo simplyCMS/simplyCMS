@@ -34,6 +34,12 @@ describe('numeric(10,2)', () => {
     expect(ok('money', '1.99')).toBe(true);
     expect(ok('money', '1.999')).toBe(false);
   });
+  it('хвостові нулі понад scale — без втрат, допустимі', () => {
+    expect(ok('money', '1.500')).toBe(true);
+    expect(ok('money', '1.5000000')).toBe(true);
+    expect(ok('money', '0.000')).toBe(true);
+    expect(ok('money', '1.501')).toBe(false);
+  });
   it.each([
     'abc',
     '',
@@ -60,6 +66,8 @@ describe('numeric(4) — scale за замовчуванням 0', () => {
     expect(ok('whole', '10000')).toBe(false);
     expect(ok('whole', '1.5')).toBe(false);
     expect(ok('whole', '5.')).toBe(true);
+    expect(ok('whole', '5.0')).toBe(true);
+    expect(ok('whole', '5.10')).toBe(false);
   });
 });
 
@@ -114,6 +122,10 @@ describe('незалежна реалізація numericFits (оракул ге
       '1e3',
       '00000000001',
       '1.2.3',
+      '1.500',
+      '1.501',
+      '0.000',
+      '99999999.9900',
     ];
     for (const v of grid) {
       expect(ok('money', v), v).toBe(numericFits(col, v));
