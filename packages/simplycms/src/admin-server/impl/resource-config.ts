@@ -44,7 +44,7 @@ export interface AdminResourceConfigBase<
    *  тригера updated_at у каноні немає). Прихована (`omit`) — заборонена
    *  типом: штамп писав би колонку повз видимий контракт ресурсу. */
   touch?: Exclude<ColumnName<T>, O>;
-  /** m3 (рев'ю хвилі B): рефайнменти drizzle-zod для колонок без власної
+  /** m3 (рев'ю хвилі B): рефайнменти генератора схем для колонок без власної
    *  форми (jsonb без `.$type<>()` — `resource-schemas.ts`). */
   refine?: ResourceRefine;
 }

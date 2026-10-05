@@ -18,7 +18,7 @@ export const productsOps = defineAdminResource({
   sortable: ['createdAt', 'updatedAt', 'name'],
   defaultOrder: { column: 'createdAt', direction: 'desc' },
   touch: 'updatedAt',
-  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в drizzle-zod,
+  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в генераторі схем,
   // те саме, що й у product-modifications/resource.ts.
   refine: { images: () => z.array(z.string()) },
   writable: [

@@ -58,7 +58,7 @@ export async function updateResourceRows(
     const rows = (await db
       .update(ctx.table)
       .set(set as never)
-      .where(eq(idColumn(ctx.table), id as never))
+      .where(eq(idColumn(ctx.table), id))
       .returning(ctx.picked as never)) as unknown[];
     const row = rows[0];
     if (!row)
@@ -78,7 +78,7 @@ export async function removeResourceRows(
   const id = idColumn(table);
   const rows = await db
     .delete(table)
-    .where(inArray(id, ids as never))
+    .where(inArray(id, ids))
     // Е5-7: для лічильника досить id — прихована колонка не читається.
     .returning({ id });
   return { count: rows.length };

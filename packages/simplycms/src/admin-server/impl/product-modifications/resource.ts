@@ -18,7 +18,7 @@ export const productModificationsOps = defineAdminResource({
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
   touch: 'updatedAt',
-  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в drizzle-zod
+  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в генераторі схем
   // (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем) —
   // без рефайнменту insert `{}`/update `'str'` проходили б як валідний
   // `any`. Функція, не голий ZodType — `resource-schemas.ts` пояснює чому.
