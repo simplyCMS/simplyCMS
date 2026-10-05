@@ -23,6 +23,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { NEW, CANCELLED, DONE } from './support';
 
 const { listOrderStatuses, changeOrderStatus, toastError, params } = vi.hoisted(
@@ -105,6 +106,7 @@ describe('OrderDetailPage', () => {
     render(<OrderDetailPage />, { wrapper: wrap });
     fireEvent.change(await select(), { target: { value: CANCELLED.id } });
     const dialog = await screen.findByRole('alertdialog');
+    const before = listOrders.mock.calls.length;
     fireEvent.click(
       within(dialog).getByRole('button', {
         name: t('admin.orders.cancelConfirm'),
@@ -118,9 +120,9 @@ describe('OrderDetailPage', () => {
       expect((await select()).hasAttribute('disabled')).toBe(true),
     );
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(2);
+    await awaitRevalidation(listOrders, before);
+    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(before + 1);
     // Ревалідація віддала стан сервера — результат запису не відкотився.
-    await new Promise((r) => setTimeout(r, 50));
     expect((await select()).hasAttribute('disabled')).toBe(true);
   });
 

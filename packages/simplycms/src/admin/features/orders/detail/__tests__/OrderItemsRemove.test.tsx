@@ -23,6 +23,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -104,6 +105,7 @@ describe('OrderDetailPage: редагування позицій', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     fireEvent.click(await open());
     dialog = await screen.findByRole('alertdialog');
+    const before = listOrderItems.mock.calls.length;
     fireEvent.click(
       within(dialog).getByRole('button', { name: t('common.delete') }),
     );
@@ -114,9 +116,9 @@ describe('OrderDetailPage: редагування позицій', () => {
     await waitFor(() => expect(screen.queryByText('Товар 2')).toBeNull());
     expect(screen.queryByText('Товар 1')).toBeTruthy();
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
+    await awaitRevalidation(listOrderItems, before);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
     // Ревалідація віддала стан сервера — результат запису не відкотився.
-    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText('Товар 2')).toBeNull();
     expect(screen.queryByText('Товар 1')).toBeTruthy();
   });

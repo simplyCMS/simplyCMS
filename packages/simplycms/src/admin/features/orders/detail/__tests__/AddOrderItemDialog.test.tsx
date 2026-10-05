@@ -9,6 +9,7 @@ import {
   makeOrder,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { makeItem } from './support';
 import {
   addButton,
@@ -73,6 +74,7 @@ describe('AddOrderItemDialog: додавання', () => {
     fireEvent.change(screen.getByLabelText(t('common.quantity')), {
       target: { value: '3' },
     });
+    const before = listOrderItems.mock.calls.length;
     fireEvent.click(addButton());
     await waitFor(() => expect(mocks.addOrderItem).toHaveBeenCalledTimes(1));
     expect(mocks.addOrderItem).toHaveBeenCalledWith({
@@ -87,10 +89,8 @@ describe('AddOrderItemDialog: додавання', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await screen.findByText('Товар 2')).toBeTruthy();
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
-    // Ревалідація віддала стан сервера — результат запису не відкотився.
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.getByText('Товар 2')).toBeTruthy();
+    await awaitRevalidation(listOrderItems, before);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
   });
 
   it('товар із модифікаціями: «Додати» вимкнена до вибору модифікації', async () => {

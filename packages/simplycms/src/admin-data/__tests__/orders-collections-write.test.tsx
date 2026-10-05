@@ -3,7 +3,8 @@
 /**
  * Колекція замовлень лише на ЧИТАННЯ (Е5-10): `insert` кидає, а повернений
  * `changeOrderStatus` рядок, записаний write-back-ом (К3-7), доходить і до
- * зрізу картки, і до сторінки списку Ревалідація (TSDB-1) віддає стан сервера, який уже несе новий статус.
+ * зрізу картки, і до сторінки списку. Ревалідація (TSDB-1) віддає стан
+ * сервера, який уже несе новий статус.
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -15,6 +16,7 @@ import {
   server,
 } from './support/orders-server-stub';
 import { SAME, setup } from './support/orders-setup';
+import { awaitRevalidation } from './support/revalidation';
 
 vi.mock('simplycms/admin-server', async () => {
   const stub = await import('./support/orders-server-stub');
@@ -78,12 +80,9 @@ describe('колекції замовлень (Е5-10): лише читання 
       expect(row?.statusId).toBe('s-cancelled');
     });
     // ціна TSDB-1: +N запитів після запису (сторінка, tie-запит межі, картка).
-    await waitFor(() =>
-      expect(listOrders.mock.calls.length).toBeGreaterThan(listCalls),
-    );
+    await awaitRevalidation(listOrders, listCalls);
     expect(listOrders.mock.calls.length).toBeLessThanOrEqual(listCalls + 3);
     // Результат: після ревалідації зрізи лишаються з новим статусом.
-    await new Promise((r) => setTimeout(r, 50));
     expect(result.current.card.data?.statusId).toBe('s-cancelled');
     expect(
       result.current.list.data.find((r) => r.id === shown.id)?.statusId,

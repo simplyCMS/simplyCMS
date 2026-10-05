@@ -24,6 +24,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -91,6 +92,8 @@ describe('OrderDetailPage: редагування позицій', () => {
     );
     render(<OrderDetailPage />, { wrapper: wrap });
     const input = await qty(1);
+    const beforeItems = listOrderItems.mock.calls.length;
+    const beforeOrders = listOrders.mock.calls.length;
     fireEvent.change(input, { target: { value: '3' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() =>
@@ -104,11 +107,13 @@ describe('OrderDetailPage: редагування позицій', () => {
     // рядок позиції + «Товари» + «Разом» = 3 входження суми
     expect((await screen.findAllByText(money(300))).length).toBe(3);
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(2);
+    await awaitRevalidation(listOrderItems, beforeItems);
+    await awaitRevalidation(listOrders, beforeOrders);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(
+      beforeItems + 1,
+    );
+    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(beforeOrders + 1);
     // Ревалідація віддала стан сервера — результат запису не відкотився.
-    await new Promise((r) => setTimeout(r, 50));
     expect((input as HTMLInputElement).value).toBe('3');
     expect((await screen.findAllByText(money(300))).length).toBe(3);
   });

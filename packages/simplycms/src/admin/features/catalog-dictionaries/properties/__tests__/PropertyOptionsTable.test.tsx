@@ -11,6 +11,7 @@ import {
 import { createTranslator } from 'simplycms/i18n';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { ID, OPTIONS, wrapper } from './render-support';
 
 const { toastError, toastSuccess, navigate } = vi.hoisted(() => ({
@@ -119,6 +120,7 @@ describe('PropertyOptionsTable', () => {
     );
     render(<PropertyOptionsTable propertyId={ID.brand} />, { wrapper });
     const dialog = await openDelete('Apple');
+    const before = listPropertyOptions.mock.calls.length;
     fireEvent.click(
       within(dialog).getByRole('button', { name: t('common.delete') }),
     );
@@ -129,7 +131,7 @@ describe('PropertyOptionsTable', () => {
     );
     expect(screen.queryByText('Apple')).toBeNull();
     // Ревалідація (TSDB-1) віддає стан сервера — опція не повертається.
-    await new Promise((r) => setTimeout(r, 50));
+    await awaitRevalidation(listPropertyOptions, before);
     expect(screen.queryByText('Apple')).toBeNull();
   });
 });

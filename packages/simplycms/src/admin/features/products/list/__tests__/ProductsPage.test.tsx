@@ -31,6 +31,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 
 // 🔴 vi.hoisted, не звичайний const (admin-data барелем тягне ВСІ файли
@@ -102,6 +103,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  // Стейтфул-стаб тесту (4) не тече в інші: повертаємо дефолт.
+  listProducts.mockImplementation(async () => []);
 });
 
 describe('ProductsPage', () => {
@@ -194,6 +197,7 @@ describe('ProductsPage', () => {
     });
     const dialog = await screen.findByRole('alertdialog');
     const confirm = within(dialog).getByRole('button', { name: 'Видалити' });
+    const before = listProducts.mock.calls.length;
     await act(async () => {
       confirm.click();
     });
@@ -203,8 +207,9 @@ describe('ProductsPage', () => {
     expect(toastError).toHaveBeenCalledWith(
       'Запис використовується (наприклад, у замовленнях) — деактивуйте його замість видалення',
     );
-    // Повторний запит (якщо був) теж віддає рядок: сервер його не видалив.
-    await act(() => new Promise((r) => setTimeout(r, 50)));
+    // Відкат запускає повторний запит зрізу (ordered-source-loader, TSDB-1);
+    // чекаємо його відповіді — сервер рядок не видаляв, тож він лишається.
+    await awaitRevalidation(listProducts, before);
     expect(screen.getByText('Товар 1')).toBeTruthy();
   });
 });

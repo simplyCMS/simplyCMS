@@ -13,6 +13,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -75,6 +76,7 @@ describe('useOrderItemsEdit.add', () => {
     const { result } = renderHook(() => useOrderItemsEdit('o0001'), {
       wrapper: wrap,
     });
+    const before = listOrderItems.mock.calls.length;
     await act(async () => {
       await result.current.add({
         productId: 'p1',
@@ -92,9 +94,7 @@ describe('useOrderItemsEdit.add', () => {
     });
     expect(await screen.findByText('Товар 2')).toBeTruthy();
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(2);
-    // Ревалідація віддала стан сервера — результат запису не відкотився.
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.getByText('Товар 2')).toBeTruthy();
+    await awaitRevalidation(listOrderItems, before);
+    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
   });
 });

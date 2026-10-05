@@ -23,10 +23,12 @@ import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
   applyOutcome,
+  listOrderItems,
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { AdminConflictError } from '../../../../../admin-server/impl/errors';
+import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const { server, toastError } = vi.hoisted(() => ({
@@ -136,12 +138,13 @@ describe('позиції замовлення: наслідки операцій
     );
     render(<OrderDetailPage />, { wrapper: wrap });
     await screen.findByText(money(250));
+    const before = listOrderItems.mock.calls.length;
     await removeItem2();
     await screen.findByText(money(150));
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(50))).toBeTruthy();
     // Ревалідація (TSDB-1) віддає стан сервера — підсумки не відкотились.
-    await new Promise((r) => setTimeout(r, 50));
+    await awaitRevalidation(listOrderItems, before);
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(150))).toBeTruthy();
   });

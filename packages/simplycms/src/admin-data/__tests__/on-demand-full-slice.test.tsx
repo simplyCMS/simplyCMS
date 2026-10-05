@@ -27,6 +27,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
+import { awaitRevalidation } from './support/revalidation';
 
 type Prop = {
   id: string;
@@ -201,13 +202,11 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
     ]);
     expect(insertSectionProperties).toHaveBeenCalledTimes(1);
     // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
+    await awaitRevalidation(listSectionProperties, listCalls);
     expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
       listCalls + 1,
     );
-    // Ревалідація віддає стан сервера (insert-стаб його змінив): після неї
-    // рядок і серверні поля (createdAt) на місці.
-    await act(() => new Promise((r) => setTimeout(r, 50)));
-    expect(names(result.current.data)).toContain('Габарити');
+    // Серверні поля доїхали write-back-ом.
     expect(result.current.data.find((r) => r.id === id)?.createdAt).toEqual(
       new Date('2026-10-03'),
     );
@@ -237,7 +236,8 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
     ]);
     expect(props.has(id)).toBe(true);
     // Рядок узято з кешу колекції, а не повторним запитом: remount не кличе
-    // list (пауза — щоб відкладений refetch після mount встиг би статись).
+    // list. Пауза тут свідома: це перевірка ВІДСУТНОСТІ виклику, події, на
+    // яку чекати, немає; якщо відкладений refetch зʼявиться — він у межах 30 мс.
     await act(() => new Promise((r) => setTimeout(r, 30)));
     expect(listSectionProperties).toHaveBeenCalledTimes(listCalls);
   });
@@ -275,21 +275,13 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
     await act(async () => {
       await tx.isPersisted.promise;
     });
-    await waitFor(() => {
-      expect(result.current.card.data?.name).toBe('Маса');
-      expect(names(result.current.list.data)).toEqual([
-        'Колір',
-        'Маса',
-        'Потужність',
-      ]);
-    });
     expect(updateSectionProperties).toHaveBeenCalledTimes(1);
     // ціна TSDB-1: +N запитів після запису (2 живі зрізи -> не більше +2).
+    await awaitRevalidation(listSectionProperties, listCalls);
     expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
       listCalls + 2,
     );
-    // Після ревалідації обидва зрізи лишаються узгодженими зі станом сервера.
-    await act(() => new Promise((r) => setTimeout(r, 50)));
+    // Після ревалідації обидва зрізи узгоджені зі станом сервера.
     expect(result.current.card.data?.name).toBe('Маса');
     expect(names(result.current.list.data)).toEqual([
       'Колір',
