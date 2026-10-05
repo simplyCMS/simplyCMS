@@ -25,6 +25,9 @@ import {
 // 🔴 Мок ОГОЛОШУЄТЬСЯ до імпортів операцій — vitest hoist-ить `vi.mock` над
 // усіма імпортами модуля, тож порядок рядків тут не грає ролі, але порядок
 // СЕКЦІЙ («мок» → «операції») лишається явним для читача.
+// Тема 12: відмова валідації ставить статус 400 (`setResponseStatus`), якому
+// без запиту Start нема де жити — як в усіх сусідніх тестах операцій.
+vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
   ...(await orig()),
   requireGrant: vi.fn(async () => ({
@@ -226,7 +229,7 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
       orderStatusesOps.update({
         data: [{ id, patch: { code: 'renamed' } as never }],
       }),
-    ).rejects.toMatchObject({ name: 'ZodError' });
+    ).rejects.toMatchObject({ name: 'ValidationError' });
     expect((await readStatus(id)).code).toBe('cancelled');
   });
 

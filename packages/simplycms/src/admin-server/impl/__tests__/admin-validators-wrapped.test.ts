@@ -16,8 +16,7 @@ const source = Object.values(
 function validatorArgs(src: string): string[] {
   const out: string[] = [];
   const re = /\.validator\(/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src))) {
+  while (re.exec(src)) {
     let depth = 1;
     let i = re.lastIndex;
     while (depth > 0 && i < src.length) {
