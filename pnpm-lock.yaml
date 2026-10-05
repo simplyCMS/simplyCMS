@@ -531,7 +531,7 @@ importers:
         specifier: ^18.0.5
         version: 18.0.5
       seroval:
-        specifier: ^1.6.7
+        specifier: ^1.6.8
         version: 1.6.8
 
   packages/simplycms-plugin-faq:

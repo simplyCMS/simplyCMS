@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { and, gte, IR, lt } from '@tanstack/react-db';
+import { startSerovalPlugins as plugins } from '../packages/simplycms/src/runtime/__tests__/support/start-seroval-plugins';
 import { fromJSON, toJSONAsync } from 'seroval';
 import { subsetInputSchema } from '../packages/simplycms/src/admin-server/impl/subset';
 import { toSubsetPayload } from '../packages/simplycms/src/admin-data/subset-payload';
@@ -11,10 +12,17 @@ import { toSubsetPayload } from '../packages/simplycms/src/admin-data/subset-pay
 const ref = (field: string) =>
   new IR.PropRef([field]) as unknown as Parameters<typeof gte>[0];
 
-/** Той самий цикл, що й у GET-виклику serverFn: клієнт кодує seroval-ом у
- *  JSON-рядок, сервер розбирає назад (serverFnFetcher → server-functions-handler). */
+// Плагіни Start: клієнт кодує payload GET з ними (serverFnFetcher), сервер
+// розбирає тими самими.
+/** Той самий цикл, що й у GET-виклику serverFn: seroval у JSON-рядок і назад
+ *  (serverFnFetcher → server-functions-handler), з плагінами Start. */
 const wire = async <T>(payload: T): Promise<unknown> =>
-  fromJSON(JSON.parse(JSON.stringify(await toJSONAsync(payload))));
+  fromJSON(
+    JSON.parse(JSON.stringify(await toJSONAsync(payload, { plugins }))),
+    {
+      plugins,
+    },
+  );
 
 describe('toSubsetPayload: Date через межу serverFn', () => {
   it('Date у value переживає seroval-цикл і проходить subsetInputSchema', async () => {
