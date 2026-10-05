@@ -26,6 +26,7 @@ pnpm add simplycms
 | `defineConfig(config)` | Typed identity для `simplycms.config.ts`; дженерик `<T extends SimplyCmsConfig>` зберігає точні типи лоадерів тем і плагінів. **Активно споживається** — і кореневим `simplycms.config.ts`, і шаблоном скаффолдера |
 | `defineRuntime(input)` | Збирає `SimplyCmsRuntime = { engine, modules, theme, plugins }` з `adapters: { links, config }`. 🔴 Без споживачів (див. «Відкрите питання») |
 | `bootstrapRuntime(rt)` | Послідовно виконує `setup()` усіх `EngineModule` під час старту застосунку. 🔴 Без споживачів |
+| `csrfMiddleware` (`simplycms/runtime/csrf`) | Request-міддлвара CSRF для `requestMiddleware` у `start.ts`: перевіряє origin мутуючих запитів (server functions і server routes), виняток — `CSRF_EXEMPT_PREFIXES` (`/api/auth/`). Client-safe |
 | Типи | `DefineRuntimeInput`, `SimplyCmsRuntime`, `EngineModule`, `SimplyCmsConfig`, `SimplyCmsSeoConfig`, `PluginRegistration`, `ThemeLoader` |
 
 ## Як магазин ФАКТИЧНО збирає `EngineContext`

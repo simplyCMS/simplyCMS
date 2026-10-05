@@ -47,6 +47,7 @@
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
+    "./runtime/csrf": "./src/runtime/csrf.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
@@ -266,6 +267,10 @@
       "./runtime/domain-error-adapter": {
         "types": "./dist/runtime/domain-error-adapter.d.ts",
         "import": "./dist/runtime/domain-error-adapter.js"
+      },
+      "./runtime/csrf": {
+        "types": "./dist/runtime/csrf.d.ts",
+        "import": "./dist/runtime/csrf.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",

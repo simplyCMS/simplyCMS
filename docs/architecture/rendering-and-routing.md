@@ -44,6 +44,17 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - Route-файли — **тонкі обгортки**: `createFileRoute` + компонент із пакета, без
   бізнес-логіки. Нова сторінка магазину — у `src/routes/my/`; сторінка ядра — у
   route-теці відповідного пакета.
+- 🔴 **Мутуючий запит захищений від CSRF за замовчуванням.** `csrfMiddleware`
+  (`simplycms/runtime/csrf`, першою в `requestMiddleware` у `src/start.ts`)
+  перевіряє КОЖЕН запит із методом поза GET/HEAD/OPTIONS — і server function, і
+  server route (`server.handlers.POST/PUT/PATCH/DELETE`): `Sec-Fetch-Site:
+  same-origin` → інакше `Origin` проти origin запиту (за проксі — з
+  `x-forwarded-proto/host`) → інакше `Referer`; жодного заголовка — 403.
+  Новий мутуючий роут нічого додатково не робить. Не вішай зміну стану на GET
+  (GET не перевіряється). Виняток — зовнішній виклик без `Origin` (вебхук
+  платіжної системи): його префікс додається в `CSRF_EXEMPT_PREFIXES` ядра
+  СВІДОМО, з причиною в коментарі і з власною автентифікацією виклику
+  (підпис). Зараз виняток один — `/api/auth/` (Better Auth перевіряє origin сам).
 - Дані на сервері — через `createServerFn` (`simplycms/storefront-routes/server/*`) чи
   route `loader`.
 - Списки товарів повні в SSR-HTML: DTO `ProductListItem` (`storefront-routes/server`) +
