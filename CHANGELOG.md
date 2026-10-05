@@ -47,6 +47,8 @@
   testing-library, `@types/node`, `@supabase/*`.
 - React 19.2.8 → **19.3.0** (`react`, `react-dom`, `@types/react*`; корінь і
   `apps/www`). Нові API (`<ViewTransition />` тощо) не впроваджено.
+- tsdown 0.22.14 → **0.23.0** (JS у `dist` побайтово той самий; перевірено
+  `build:packages`, `test:packaging`, `pilot:pack`).
 - dotenv 17 → 18: `config({ quiet: true })` у `drizzle.config.ts` і
   `dump-demo-data.mjs` (18 друкує «injected env» у stderr).
 
