@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Е3-17: ghost-кеш неактивного зрізу on-demand колекції. Механіка — див.
- * `onDemandCollectionOptions` (`on-demand-options.ts`). (а) — ремаунт
+ * Е3-17: ghost-кеш неактивного зрізу on-demand колекції. 🔴 РЕГРЕС, не
+ * доказ: на query-db-collection 1.3.4 обхід `gcTime: 0` знято, а цей тест
+ * зеленіє і без нього (сервер тут зі станом) — вміст ключів неактивного
+ * зрізу доводить `on-demand-inactive-key.test.tsx`. (а) — ремаунт
  * зрізу «всі рядки» після write-back в іншому зрізі; (в) — той самий
  * сценарій на eager-колекції лишається зеленим БЕЗ фабрики (контроль).
  *
@@ -9,7 +11,7 @@
  * item 4): список гортає `useLiveInfiniteQuery` (як `productsCollection`/
  * `useProductsList`, не голий `useLiveQuery`) з `queryFn`, що поважає
  * РЕАЛЬНІ `limit`/`offset` (не «всі рядки на будь-який запит», інакше
- * тест нічого не доводить — `on-demand-infinite-gc.test.tsx`, item 4).
+ * тест нічого не доводить — `on-demand-infinite-paging.test.tsx`, item 4).
  */
 import { describe, expect, it } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -139,7 +141,7 @@ async function pagedQueryFn(
 }
 
 /**
- * 🔴 Виміряно вручну (item 4): тимчасове закоментування `gcTime: 0` у
+ * (Історична довідка, 1.2.11) Виміряно вручну (item 4): тимчасове закоментування `gcTime: 0` у
  * `onDemandCollectionOptions` (`on-demand-options.ts`) робить ЦЕЙ тест
  * червоним, але маніфестація ІНША за очікувану в описі задачі («лише
  * перейменований рядок»): ремаунт списку бачить УСІ 6 рядків

@@ -436,7 +436,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-09-13-v2-k3-e2-storage-minimum.md`](../superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md)
      - [x] ✅ **Е3 — каталог адмінки on-demand, перший push-down.** Перша
            `on-demand`-колекція TanStack DB (`syncMode: 'on-demand'` +
-           `gcTime: 0` + `autoIndex` — Е3-16/Е3-17) із серверним push-down у
+           `gcTime: 0` (знято 2026-10-05, TanStack DB 0.11.3) + `autoIndex` — Е3-16/Е3-17) із серверним push-down у
            Drizzle: `/admin/products` (список, фільтри розділ/активність/
            наявність, «Показати ще»), `/admin/products/new` і
            `/admin/products/$productId` (картка з Zod-формою, розділ,

@@ -4,9 +4,9 @@ import { resolve } from 'node:path';
 
 /**
  * Е3-17: структурний гейт фабрики. Жоден файл `admin-data/collections/**`
- * не ставить `syncMode`/`gcTime` НАПРЯМУ (рядок лишається лише у самій
- * фабриці, `on-demand-options.ts`) — інакше нова on-demand колекція могла
- * б знову забути `gcTime: 0` і відкрити вікно стейл-кешу (Е3-17).
+ * не ставить `syncMode` НАПРЯМУ (рядок лишається лише у самій фабриці,
+ * `on-demand-options.ts`) — інакше нова on-demand колекція могла б забути
+ * індекс сортування (TSDB-2) та інші інваріанти фабрики.
  */
 const COLLECTIONS_DIR = resolve(import.meta.dirname, '../collections');
 

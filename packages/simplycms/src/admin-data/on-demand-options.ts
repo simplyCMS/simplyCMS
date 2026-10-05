@@ -14,16 +14,17 @@ type OnDemandConfig<T extends object> = Omit<
 };
 
 /**
- * ЄДИНА точка, де on-demand колекція отримує `syncMode` і `gcTime` (Е3-17).
- * УСІ on-demand колекції `admin-data/collections/*` заводяться через цю
- * фабрику — `syncMode`/`gcTime` руками в окремому файлі більше не пишуться
+ * ЄДИНА точка, де on-demand колекція отримує `syncMode` та індекс сортування
+ * (TSDB-2). УСІ on-demand колекції `admin-data/collections/*` заводяться
+ * через цю фабрику — `syncMode` руками в окремому файлі не пишеться
  * (структурний гейт — `__tests__/on-demand-factory-only.test.ts`).
  *
- * 🔴 `gcTime: 0` прибирає ghost-запис неактивного зрізу з кешу React Query
- * одразу після розмонтування — без нього write перезаписує й ghost-кеш
- * теж, і ремаунт підхоплює зіпсовані дані (виміряно на
- * @tanstack/query-db-collection 1.2.11).
- * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
+ * `gcTime` фабрика НЕ ставить (обхід `gcTime: 0` знято 2026-10-05): на
+ * query-db-collection 1.3.4 запис ревалідує кожен кешований ключ колекції,
+ * тож ghost-запис неактивного зрізу не лишається стейл. `gcTime` лишається
+ * в `Omit` — колекція не перевизначає його поза фабрикою.
+ * Доказ — `__tests__/on-demand-inactive-key.test.tsx`; ціна й ізоляція
+ * ключів — TSDB-1 у docs/architecture/upstream-workarounds.md.
  */
 export function onDemandCollectionOptions<T extends object>(
   config: OnDemandConfig<T>,
@@ -32,7 +33,6 @@ export function onDemandCollectionOptions<T extends object>(
   return queryCollectionOptions<T>({
     ...rest,
     syncMode: 'on-demand',
-    gcTime: 0,
     // UPSTREAM:TSDB-2 — docs/architecture/upstream-workarounds.md
     ...(sortIndex && {
       autoIndex: 'eager' as const,
