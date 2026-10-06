@@ -8,11 +8,12 @@
  * `curl`) на справжню server function і на server route `/api/health` мусить
  * дістати 403 ВІД МІДДЛВАРИ, тобто текст `Forbidden`.
  *
- * 🔴 Межа доказу для server route (Е6б-18, ред.3): перевірка доводить, що
- * міддлвара CSRF стоїть перед УСІМА шляхами поза serverFn, а не що виконується
- * хендлер server route. Інших не-serverFn POST-роутів поза `/api/auth/`
- * (виняток CSRF) у ядрі немає, а тестовий POST-роут у продакшн-дерево заради
- * гейта не додаємо.
+ * 🔴 Межа доказу для server route (Е6б-18, ред.3; Е6б-28): перевірка доводить,
+ * що міддлвара CSRF стоїть перед УСІМА шляхами поза serverFn, а свій Origin
+ * доходить до роуту (його `ANY` відмовляє 405). Що виконується POST-хендлер,
+ * що змінює стан, вона не доводить: інших не-serverFn POST-роутів поза
+ * `/api/auth/` (виняток CSRF) у ядрі немає, а тестовий POST-роут у
+ * продакшн-дерево заради гейта не додаємо.
  *
  * Шлях server function береться з трафіку воронки (`/_serverFn/<id>` із POST):
  * ідентифікатори хешовані збіркою, вгадувати їх не можна.
@@ -84,18 +85,16 @@ export async function runCsrfChecks({ base, serverFnPaths, check }) {
     `${route.status} ${JSON.stringify(routeBody.slice(0, 40))}`,
   );
 
-  // Контроль: свій Origin міддлвару ПРОХОДИТЬ — доводить, що відмова вище
-  // саме CSRF, а не загальна заборона шляху. Статус — точний, виміряний
-  // кроком «зелений одразу» Task 7 (Е6б-18): 200, а не очікувані планом 405.
-  // У `/api/health` немає POST-хендлера, і Start не відповідає 405 — запит
-  // проходить далі в рендер роутера (SSR-сторінка, `text/html`). Тому
-  // статус залежить від здоровʼя рендера: на зламаній БД стенда той самий
-  // запит дав 500. Асерт — точне число, а не «будь-що, крім Forbidden».
-  const same = await post('/api/health', { origin: base });
-  const sameBody = await same.text();
+  // Контроль: свій Origin міддлвару ПРОХОДИТЬ і доходить до роуту — доводить,
+  // що відмова вище саме CSRF, а не загальна заборона шляху. Роут відповідає
+  // на не-GET рівно 405 з `Allow: GET` (`ANY` у `health.tsx`, Е6б-28): статус
+  // не залежить від БД і SSR. Асерт — точне число, а не «будь-що, крім
+  // Forbidden».
+  const routeSame = await post('/api/health', { origin: base });
+  const allow = routeSame.headers.get('allow');
   check(
-    'csrf: міддлвара перед server route, свій Origin → пропускає (200)',
-    same.status === 200 && sameBody !== 'Forbidden',
-    `${same.status} ${JSON.stringify(sameBody.slice(0, 40))}`,
+    'csrf: міддлвара перед server route, свій Origin → 405 Allow: GET',
+    routeSame.status === 405 && allow === 'GET',
+    `${routeSame.status} allow=${allow ?? '—'}`,
   );
 }

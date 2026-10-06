@@ -68,6 +68,33 @@ describe('PluginsPage', () => {
     expect(screen.queryByText(t('common.delete'))).toBeNull();
   });
 
+  it('збій listPlugins → повідомлення про помилку завантаження, а не «плагінів немає»', async () => {
+    mocks.listPlugins.mockRejectedValue(new TypeError('Failed to fetch'));
+    render(<PluginsPage />, { wrapper: makeWrapper(client) });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      t('admin.plugins.loadError'),
+    );
+    expect(screen.queryByText(t('admin.plugins.empty'))).toBeNull();
+  });
+
+  it('плагін без модуля: активний можна вимкнути, неактивний — не ввімкнути', async () => {
+    mocks.listPlugins.mockResolvedValue([
+      pluginRow('orphan', true),
+      pluginRow('ghost', false),
+    ]);
+    render(<PluginsPage />, { wrapper: makeWrapper(client) });
+    const orphan = await screen.findByRole('group', { name: 'ORPHAN' });
+    const ghost = screen.getByRole('group', { name: 'GHOST' });
+
+    expect(within(orphan).getByRole('switch').hasAttribute('disabled')).toBe(
+      false,
+    );
+    expect(within(ghost).getByRole('switch').hasAttribute('disabled')).toBe(
+      true,
+    );
+  });
+
   it('перемикач шле setPluginActive і пише відповідь у кеш без refetch', async () => {
     render(<PluginsPage />, { wrapper: makeWrapper(client) });
     const card = await screen.findByRole('group', { name: 'HELLO' });

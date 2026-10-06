@@ -17,4 +17,5 @@ export const messages = {
   'admin.themes.back': 'Повернутись',
   'admin.themes.settingsSubtitle': 'Налаштуйте зовнішній вигляд теми',
   'admin.themes.noSettings': 'Ця тема не має налаштувань',
+  'admin.themes.loadError': 'Не вдалося завантажити список тем',
 } as const;

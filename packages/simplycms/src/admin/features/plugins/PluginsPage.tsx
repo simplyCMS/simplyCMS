@@ -80,6 +80,12 @@ export default function PluginsPage() {
             </Card>
           ))}
         </div>
+      ) : query.isError ? (
+        // Збій запиту — не «плагінів немає»: інакше власник шукав би проблему
+        // в конфігу магазину, а не в мережі чи праві доступу.
+        <p role="alert" className="py-12 text-center text-destructive">
+          {t('admin.plugins.loadError')}
+        </p>
       ) : plugins.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

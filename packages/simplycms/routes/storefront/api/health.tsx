@@ -46,6 +46,13 @@ export const Route = createFileRoute('/api/health')({
           { status: ok ? 200 : 503 },
         );
       },
+      // 🔴 Будь-який інший метод — 405 без БД і без SSR (Е6б-28). Start шукає
+      // `handlers[method] ?? handlers.ANY` (`createStartHandler.js:374`): без
+      // `ANY` POST падав у рендер роутера і віддавав сторінку 200 або 500
+      // залежно від БД. Правило «реєструй методи поіменно, не `ANY`» стосується
+      // РОЗДАЧІ (публічний роут почав би відповідати на POST/DELETE); тут `ANY`
+      // лише ВІДМОВЛЯЄ, а `GET` за іменем має пріоритет над ним.
+      ANY: () => new Response(null, { status: 405, headers: { Allow: 'GET' } }),
     },
   },
 });

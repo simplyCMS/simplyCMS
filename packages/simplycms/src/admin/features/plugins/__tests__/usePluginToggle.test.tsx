@@ -22,7 +22,10 @@ vi.mock('simplycms/plugins', async (importOriginal) => ({
   syncPluginHooks: sync,
 }));
 
-const mocks = vi.hoisted(() => ({ setPluginActive: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  setPluginActive: vi.fn(),
+  listPlugins: vi.fn(),
+}));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../admin-server/__tests__/support/admin-server-mock')
@@ -86,5 +89,33 @@ describe('usePluginToggle', () => {
     // Кеш — стан після відкату, а не «увімкнено».
     expect(cached()).toBe(false);
     expect(toastSuccess).not.toHaveBeenCalled();
+    expect(mocks.listPlugins).not.toHaveBeenCalled();
+  });
+
+  it('впали і реєстрація, і відкат → тост «вимкніть вручну», кеш перечитано з listPlugins', async () => {
+    sync.mockRejectedValue(new Error('register boom'));
+    mocks.setPluginActive
+      .mockResolvedValueOnce(pluginRow('hello', true))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    // Стан БД після невдалого відкату — плагін увімкнено.
+    const dbRows = [pluginRow('hello', true, { fromDb: 'yes' })];
+    mocks.listPlugins.mockResolvedValue(dbRows);
+    const { result } = renderHook(() => usePluginToggle(), {
+      wrapper: makeWrapper(client),
+    });
+
+    result.current.toggle({ name: 'hello', isActive: true });
+
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        t('admin.plugins.registerFailedStuck', { name: 'hello' }),
+      ),
+    );
+    expect(mocks.setPluginActive).toHaveBeenCalledTimes(2);
+    expect(mocks.listPlugins).toHaveBeenCalledTimes(1);
+    // У кеші — саме перечитаний список (стан БД), а не відповідь першого виклику.
+    expect(client.getQueryData(KEY)).toEqual(dbRows);
+    expect(cached()).toBe(true);
+    expect(toastError).toHaveBeenCalledTimes(1);
   });
 });

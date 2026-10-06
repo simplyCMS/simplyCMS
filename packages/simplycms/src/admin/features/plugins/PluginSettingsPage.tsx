@@ -1,11 +1,10 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeft, Loader2, Plug, Power, PowerOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ZodObject, ZodRawShape } from 'zod';
 import type { PluginRow } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { getRegisteredPluginModules } from 'simplycms/plugins';
-import { Badge } from 'simplycms/ui/badge';
 import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { adminPath } from '../../lib/adminLinks';
@@ -13,6 +12,7 @@ import { settingsFields } from '../../lib/pluginSettingsFields';
 import { reportTxError } from '../../lib/report-tx-error';
 import { PluginConfigForm } from './PluginConfigForm';
 import { PluginInfoCard } from './PluginInfoCard';
+import { PluginSettingsHeader } from './PluginSettingsHeader';
 import { usePluginToggle } from './usePluginToggle';
 import { usePlugins } from './usePlugins';
 
@@ -45,18 +45,23 @@ export default function PluginSettingsPage() {
       </div>
     );
 
+  // Збій запиту — не «плагін не знайдено» (той самий клас, що в PluginsPage).
   if (!plugin)
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">{t('admin.plugins.notFound')}</p>
+        <p role={query.isError ? 'alert' : undefined}>
+          {t(
+            query.isError
+              ? 'admin.plugins.loadError'
+              : 'admin.plugins.notFound',
+          )}
+        </p>
         <Button variant="link" asChild>
           <Link to={adminPath('plugins')}>{t('admin.plugins.backToList')}</Link>
         </Button>
       </div>
     );
 
-  const isToggling = togglingPlugin === plugin.name;
-  const hasModule = getRegisteredPluginModules().has(plugin.name);
   const save = (config: Record<string, unknown>) =>
     saveConfig.mutate(
       // Значення вже пройшло схему плагіна — далі його форму описує JSON.
@@ -69,45 +74,14 @@ export default function PluginSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to={adminPath('plugins')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Plug className="h-6 w-6 text-primary" />
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold">{plugin.displayName}</h1>
-              <Badge variant={plugin.isActive ? 'default' : 'secondary'}>
-                {plugin.isActive
-                  ? t('common.activeN')
-                  : t('admin.sections.inactive')}
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">v{plugin.version}</p>
-          </div>
-        </div>
-        <Button
-          variant={plugin.isActive ? 'outline' : 'default'}
-          disabled={isToggling || (!plugin.isActive && !hasModule)}
-          onClick={() =>
-            toggle({ name: plugin.name, isActive: !plugin.isActive })
-          }
-        >
-          {isToggling ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : plugin.isActive ? (
-            <PowerOff className="h-4 w-4 mr-2" />
-          ) : (
-            <Power className="h-4 w-4 mr-2" />
-          )}
-          {plugin.isActive
-            ? t('admin.plugins.deactivate')
-            : t('common.activate')}
-        </Button>
-      </div>
+      <PluginSettingsHeader
+        plugin={plugin}
+        hasModule={getRegisteredPluginModules().has(plugin.name)}
+        isToggling={togglingPlugin === plugin.name}
+        onToggle={() =>
+          toggle({ name: plugin.name, isActive: !plugin.isActive })
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

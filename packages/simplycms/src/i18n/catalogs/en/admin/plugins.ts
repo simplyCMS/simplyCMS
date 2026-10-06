@@ -4,6 +4,9 @@ import type { Catalog } from '../../../types';
 export const messages: Catalog = {
   'admin.plugins.registerFailed':
     'Plugin "{name}" failed to register its hooks and was disabled.',
+  'admin.plugins.registerFailedStuck':
+    'Plugin "{name}" is enabled in the database, but its hooks were not registered — disable the plugin manually.',
+  'admin.plugins.loadError': 'Could not load the plugin list',
   'admin.plugins.activated': 'Plugin activated',
   'admin.plugins.deactivated': 'Plugin deactivated',
   'admin.plugins.activatedHint': 'Plugin "{name}" was activated.',

@@ -69,6 +69,11 @@ export default function ThemesPage() {
 
       {query.isLoading ? (
         <ThemesSkeleton />
+      ) : query.isError ? (
+        // Збій запиту — не «тем немає»: порожній стан тут збрехав би.
+        <p role="alert" className="py-12 text-center text-destructive">
+          {t('admin.themes.loadError')}
+        </p>
       ) : themes.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">

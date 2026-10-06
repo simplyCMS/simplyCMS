@@ -54,6 +54,14 @@ export default function ThemeSettingsPage() {
       </div>
     );
 
+  // Збій запиту — не «тему не знайдено»: тема може існувати, а лягла мережа.
+  if (query.isError)
+    return (
+      <p role="alert" className="py-12 text-center text-destructive">
+        {t('admin.themes.loadError')}
+      </p>
+    );
+
   if (!theme || !schema)
     return (
       <div className="text-center py-12">

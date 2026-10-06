@@ -44,7 +44,7 @@ const NOT_MEDIA: readonly string[] = [
   // `themes.preview_image` — прев'ю теми, а не завантажений обʼєкт: порт
   // сховища його не створює, `bootstrapThemes` колонку не пише взагалі
   // (`themes/types.ts`), а єдиний читач — адмінка, що ставить значення прямо
-  // в `<img src>` (`admin/components/ThemeCard.tsx`). Це URL із метаданих
+  // в `<img src>` (`admin/features/themes/ThemeCard.tsx`). Це URL із метаданих
   // теми, тож резолверу медіа-референсів тут нема чого резолвити.
   'themes.preview_image',
 ];

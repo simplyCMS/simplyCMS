@@ -20,4 +20,5 @@ export const messages: Catalog = {
   'admin.themes.back': 'Go back',
   'admin.themes.settingsSubtitle': 'Configure the look of the theme',
   'admin.themes.noSettings': 'This theme has no settings',
+  'admin.themes.loadError': 'Could not load the theme list',
 };

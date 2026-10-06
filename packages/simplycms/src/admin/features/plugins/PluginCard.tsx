@@ -53,7 +53,9 @@ export function PluginCard({
           </div>
           <Switch
             checked={plugin.isActive}
-            disabled={isToggling || !hasModule}
+            // Без модуля вмикати не можна (реєстрації нема чим), а вимкнути
+            // активний «осиротілий» рядок — можна й треба.
+            disabled={isToggling || (!plugin.isActive && !hasModule)}
             onCheckedChange={onToggle}
           />
         </div>

@@ -2,6 +2,9 @@
 export const messages = {
   'admin.plugins.registerFailed':
     'Плагін "{name}" не зареєстрував хуки — його вимкнено.',
+  'admin.plugins.registerFailedStuck':
+    'Плагін "{name}" увімкнено в БД, але його хуки не зареєстровано — вимкніть плагін вручну.',
+  'admin.plugins.loadError': 'Не вдалося завантажити список плагінів',
   'admin.plugins.activated': 'Плагін активовано',
   'admin.plugins.deactivated': 'Плагін деактивовано',
   'admin.plugins.activatedHint': 'Плагін "{name}" активовано успішно.',
