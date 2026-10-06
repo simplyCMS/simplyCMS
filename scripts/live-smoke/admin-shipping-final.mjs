@@ -46,36 +46,45 @@ async function demoShippingShape(url) {
 
 /**
  * Дефолт — «Україні», тестової зони немає. Кожна дія — лише якщо потрібна
- * (SQL перед UI), тож на зеленому прогоні це no-op.
+ * (SQL перед UI), тож на зеленому прогоні це no-op. Дві дії — у двох
+ * окремих try: збій зміни дефолту не має лишати тестову зону в демо-базі.
  */
 export async function restoreZones({ page, base, dbUrl, check, fx }) {
   const label = 'прибирання: дефолт зони — «Україна», тестової зони немає';
   const facts = [];
+  const read = () =>
+    sql(dbUrl, 'select name, is_default from public.shipping_zones');
+  const attempt = async (fact, action) => {
+    facts.push(fact);
+    try {
+      await action();
+    } catch (e) {
+      facts.push(`виняток: ${e.message}`);
+    }
+  };
   try {
-    const read = () =>
-      sql(dbUrl, 'select name, is_default from public.shipping_zones');
-    let zones = await read();
+    const zones = await read();
     const def = zones.find((z) => z.is_default)?.name;
     const hasTest = zones.some((z) => z.name === fx.zone);
     if (def !== fx.rate.zone || hasTest)
       await page.goto(`${base}/admin/shipping/zones`, {
         waitUntil: 'networkidle',
       });
-    if (def !== fx.rate.zone) {
-      facts.push(`дефолт «${def}» → «${fx.rate.zone}»`);
-      await makeDefault(page, fx.rate.zone);
-    }
-    if (hasTest) {
-      facts.push(`видаляю «${fx.zone}»`);
-      await deleteRow(page, fx.zone);
-      await rowOf(page, fx.zone).waitFor({ state: 'detached' });
-    }
-    zones = await read();
+    if (def !== fx.rate.zone)
+      await attempt(`дефолт «${def}» → «${fx.rate.zone}»`, () =>
+        makeDefault(page, fx.rate.zone),
+      );
+    if (hasTest)
+      await attempt(`видаляю «${fx.zone}»`, async () => {
+        await deleteRow(page, fx.zone);
+        await rowOf(page, fx.zone).waitFor({ state: 'detached' });
+      });
+    const after = await read();
     const ok =
-      zones
+      after
         .filter((z) => z.is_default)
         .map((z) => z.name)
-        .join() === fx.rate.zone && !zones.some((z) => z.name === fx.zone);
+        .join() === fx.rate.zone && !after.some((z) => z.name === fx.zone);
     check(label, ok, facts.length ? facts.join('; ') : 'нічого не треба');
   } catch (e) {
     check(label, false, `${facts.join('; ')}; виняток: ${e.message}`);

@@ -40,6 +40,9 @@ export const removePickupPointsOp = async ({
   runAdmin('shipping.manage', async (db) => {
     await lockCatalogTarget(db, SHIPPING_CONFIG_LOCK);
     const ids = data.map((d) => d.id);
+    // Без FOR UPDATE навмисно: точку з рядком залишку база не видалить (FK
+    // RESTRICT), а самі рядки залишку локуються кроком 1 — лок точки тут
+    // лише додав би зворотний порядок локів відносно оформлення.
     const points = await db
       .select({ id: pickupPoints.id, isSystem: pickupPoints.isSystem })
       .from(pickupPoints)

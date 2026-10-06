@@ -314,10 +314,11 @@ on conflict (is_default) where (is_default = true) do nothing;
 -- (`order_items.stock_point_id`/`stock_reserved`), і скасування повертає рівно
 -- їх. Демо має рівно одну точку, тож усі три гілки правила приземляються в
 -- один рядок, і залишки нижче лежать саме на ньому. Побічний наслідок, свідомо прийнятий: адмінка не
--- дасть її видалити (`PickupPoints.tsx:178` — кнопки видалення для
--- системної точки в списку просто немає; `PickupPointEdit.tsx:202` пояснює
--- це підписом `admin.shipping.points.systemLocked` — «Системна точка — не
--- може бути видалена»), і це правильно.
+-- дасть її видалити (`admin/features/shipping/pickup-points/PickupPointRow.tsx` —
+-- кнопки видалення для системної точки в списку просто немає;
+-- `PickupPointEditPage.tsx` пояснює це підписом
+-- `admin.shipping.points.systemLocked` — «Системна точка — не може бути
+-- видалена»; сервер відмовляє `pickup_point_system`), і це правильно.
 insert into public.pickup_points (id, method_id, name, address, city, is_active, is_system, sort_order)
 select '1000000b-0000-4000-8000-000000000001'::uuid, m.id,
        'Склад у Києві', 'вул. Сонячна, 1', 'Київ', true, true, 0

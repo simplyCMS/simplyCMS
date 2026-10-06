@@ -56,4 +56,15 @@ describe('parseShippingSnapshot', () => {
       parseShippingSnapshot({ ...pickup, destination: { kind: 'locker' } }),
     ).toBeNull();
   });
+
+  // Сміття в jsonb (ручні правки, старі рядки) — читач отримує null, не падає.
+  it.each([
+    ['address — число', { kind: 'address', city: 'Львів', address: 5 }],
+    ['destination — null', null],
+    // Масив із полями точки: без `Array.isArray` у guard-і пройшов би.
+    ['destination — масив', Object.assign([], pickup.destination)],
+    ['pointId — не рядок', { ...pickup.destination, pointId: 42 }],
+  ])('%s дає null', (_case, destination) => {
+    expect(parseShippingSnapshot({ ...pickup, destination })).toBeNull();
+  });
 });

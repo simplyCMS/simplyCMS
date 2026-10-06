@@ -7,7 +7,12 @@
  */
 export const SHIPPING_CONFIG_LOCK = 'shipping-config';
 
-/** Batch видалення доставки: 1–100 id, як `removeSchema` фабрики. */
+/**
+ * Guarded remove доставки: кожен запитаний id має знайтись (`found` —
+ * рядки, прочитані під локом). Дублікати id рахуються один раз; відсутній
+ * id — помилка зі списком відсутніх, яка відкочує ВЕСЬ batch (жодного
+ * часткового видалення).
+ */
 export function assertAllFound(
   entity: string,
   ids: readonly string[],
