@@ -27,6 +27,7 @@ export const ENTITY = {
   orderStatuses: 'order_statuses',
   orders: 'orders',
   pickupPoints: 'pickup_points',
+  plugins: 'plugins',
   priceTypes: 'price_types',
   productModifications: 'product_modifications',
   productPrices: 'product_prices',

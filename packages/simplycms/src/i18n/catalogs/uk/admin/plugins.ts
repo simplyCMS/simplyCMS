@@ -1,7 +1,7 @@
 /** Розширення (плагіни) в адмінці. */
 export const messages = {
-  'admin.plugins.toggleFailed': 'Не вдалося змінити статус плагіна "{name}"',
-  'admin.plugins.toggleFailedShort': 'Не вдалося змінити статус плагіна.',
+  'admin.plugins.registerFailed':
+    'Плагін "{name}" не зареєстрував хуки — його вимкнено.',
   'admin.plugins.activated': 'Плагін активовано',
   'admin.plugins.deactivated': 'Плагін деактивовано',
   'admin.plugins.activatedHint': 'Плагін "{name}" активовано успішно.',
@@ -14,13 +14,6 @@ export const messages = {
     'Плагіни дозволяють розширювати функціональність системи. Встановіть плагін, щоб додати нові можливості.',
   'admin.plugins.noDescription': 'Без опису',
   'admin.plugins.moduleMissing': 'Модуль не знайдено',
-  'admin.plugins.hooks': 'Хуки:',
-  'admin.plugins.deleteTitle': 'Видалити плагін?',
-  'admin.plugins.deleteText':
-    'Плагін "{name}" буде видалено. Цю дію неможливо скасувати.',
-  'admin.plugins.deleted': 'Плагін видалено',
-  'admin.plugins.deletedHint': 'Плагін "{name}" успішно видалено.',
-  'admin.plugins.deleteFailed': 'Не вдалося видалити плагін.',
   'admin.plugins.modules': 'Доступні модулі',
   'admin.plugins.modulesHint': 'Зареєстровані модулі плагінів у системі',
   'admin.plugins.modulesEmpty':
@@ -34,12 +27,7 @@ export const messages = {
   'admin.plugins.deactivate': 'Деактивувати',
   'admin.plugins.settingsHint': 'Налаштуйте параметри роботи розширення',
   'admin.plugins.noSettings': 'Це розширення не має налаштувань',
-  'admin.plugins.registeredHooks': 'Зареєстровані хуки',
-  'admin.plugins.registeredHooksHint':
-    'Точки розширення, які використовує плагін',
-  'admin.plugins.noHooks': 'Немає зареєстрованих хуків',
   'admin.plugins.version': 'Версія',
-  'admin.plugins.installedAt': 'Встановлено',
   'admin.plugins.updatedAt': 'Оновлено',
 
   // Встановлення плагіна

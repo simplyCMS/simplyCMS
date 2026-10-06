@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Патерн мока Start-server — як у storefront-routes/__tests__/revalidate-theme.test.ts
+// Патерн мока Start-server — як у admin-server/impl/__tests__/run.test.ts
 const setResponseStatus = vi.fn();
 vi.mock('@tanstack/react-start/server', () => ({
   getRequest: () => ({ headers: new Headers() }),

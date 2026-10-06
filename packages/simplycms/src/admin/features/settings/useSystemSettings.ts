@@ -32,10 +32,12 @@ export function useSystemSettings() {
       );
       return profile;
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       // Е6б-22: лоадер `_storefront` має staleTime 5 хв — без скидання
-      // вітрина в цій вкладці покаже старий профіль.
-      await router.invalidate();
+      // вітрина в цій вкладці покаже старий профіль. Fire-and-forget: збій
+      // скидання кешу роутера не робить успішне збереження помилкою
+      // `mutateAsync` (форма показала б тост помилки після запису).
+      void router.invalidate();
     },
   });
 

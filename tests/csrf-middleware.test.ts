@@ -78,7 +78,7 @@ describe('csrfMiddleware — поведінка', () => {
   it('server route (не server function) теж під захистом', async () => {
     const r = await run(
       csrfMiddleware,
-      post('/api/revalidate-theme', { origin: 'https://evil.example' }),
+      post('/api/health', { origin: 'https://evil.example' }),
     );
     expect((r as Response).status).toBe(403);
   });

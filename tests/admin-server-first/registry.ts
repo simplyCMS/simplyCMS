@@ -44,14 +44,6 @@ export const SERVER_FIRST_EXCEPTIONS: ReadonlyArray<{
 export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
   [
     {
-      file: 'packages/simplycms/src/admin/hooks/usePluginToggle.ts',
-      wave: 'Е6',
-    },
-    {
-      file: 'packages/simplycms/src/admin/hooks/useThemeActivate.ts',
-      wave: 'Е6',
-    },
-    {
       file: 'packages/simplycms/src/admin/layouts/LegacySupabaseBoundary.tsx',
       wave: 'Е7',
     },
@@ -68,18 +60,8 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
       wave: 'Е6',
     },
     { file: 'packages/simplycms/src/admin/pages/Discounts.tsx', wave: 'Е6' },
-    {
-      file: 'packages/simplycms/src/admin/pages/PluginSettings.tsx',
-      wave: 'Е6',
-    },
-    { file: 'packages/simplycms/src/admin/pages/Plugins.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/ReviewDetail.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/Reviews.tsx', wave: 'Е6' },
-    {
-      file: 'packages/simplycms/src/admin/pages/ThemeSettings.tsx',
-      wave: 'Е6',
-    },
-    { file: 'packages/simplycms/src/admin/pages/Themes.tsx', wave: 'Е6' },
     {
       file: 'packages/simplycms/src/admin/pages/UserCategories.tsx',
       wave: 'Е6',

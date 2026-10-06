@@ -5,10 +5,14 @@
  * Що доводить: Start вмикає дефолтний CSRF-захист лише БЕЗ `startInstance`, а
  * в магазині він є — тож захист має бути явним (`simplycms/runtime/csrf` у
  * `src/start.ts`). Тут POST із чужим `Origin` (без браузера, як це зробив би
- * `curl`) на справжню server function і на `/api/revalidate-theme` мусить
- * дістати 403 ВІД МІДДЛВАРИ, тобто текст `Forbidden` (хендлер revalidate-theme
- * відповідає JSON `{"error":"forbidden"}` — по тілу відрізняємо відмову
- * міддлвари від відмови хендлера).
+ * `curl`) на справжню server function і на server route `/api/health` мусить
+ * дістати 403 ВІД МІДДЛВАРИ, тобто текст `Forbidden`.
+ *
+ * 🔴 Межа доказу для server route (Е6б-18, ред.3): перевірка доводить, що
+ * міддлвара CSRF стоїть перед УСІМА шляхами поза serverFn, а не що виконується
+ * хендлер server route. Інших не-serverFn POST-роутів поза `/api/auth/`
+ * (виняток CSRF) у ядрі немає, а тестовий POST-роут у продакшн-дерево заради
+ * гейта не додаємо.
  *
  * Шлях server function береться з трафіку воронки (`/_serverFn/<id>` із POST):
  * ідентифікатори хешовані збіркою, вгадувати їх не можна.
@@ -71,23 +75,27 @@ export async function runCsrfChecks({ base, serverFnPaths, check }) {
     );
   }
 
-  // 2. Server route поза server functions.
-  const route = await post('/api/revalidate-theme', evil);
+  // 2. Server route поза server functions: `/api/health` (лише GET).
+  const route = await post('/api/health', evil);
   const routeBody = await route.text();
   check(
-    '/api/revalidate-theme, чужий Origin → 403 від міддлвари',
+    'csrf: міддлвара перед server route, чужий Origin → 403',
     route.status === 403 && routeBody === 'Forbidden',
     `${route.status} ${JSON.stringify(routeBody.slice(0, 40))}`,
   );
 
-  // Контроль: свій Origin доходить до хендлера (той без admin-сесії — свій
-  // 403 із JSON, а не `Forbidden` міддлвари): доводить, що відмова вище —
-  // саме CSRF, а не загальна заборона маршруту.
-  const handler = await post('/api/revalidate-theme', { origin: base });
-  const handlerBody = await handler.text();
+  // Контроль: свій Origin міддлвару ПРОХОДИТЬ — доводить, що відмова вище
+  // саме CSRF, а не загальна заборона шляху. Статус — точний, виміряний
+  // кроком «зелений одразу» Task 7 (Е6б-18): 200, а не очікувані планом 405.
+  // У `/api/health` немає POST-хендлера, і Start не відповідає 405 — запит
+  // проходить далі в рендер роутера (SSR-сторінка, `text/html`). Тому
+  // статус залежить від здоровʼя рендера: на зламаній БД стенда той самий
+  // запит дав 500. Асерт — точне число, а не «будь-що, крім Forbidden».
+  const same = await post('/api/health', { origin: base });
+  const sameBody = await same.text();
   check(
-    '/api/revalidate-theme, свій Origin → відповідає хендлер',
-    handler.status === 403 && handlerBody.includes('"forbidden"'),
-    `${handler.status} ${JSON.stringify(handlerBody.slice(0, 40))}`,
+    'csrf: міддлвара перед server route, свій Origin → пропускає (200)',
+    same.status === 200 && sameBody !== 'Forbidden',
+    `${same.status} ${JSON.stringify(sameBody.slice(0, 40))}`,
   );
 }

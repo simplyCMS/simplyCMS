@@ -13,7 +13,7 @@ describe('shouldValidateCsrf — які запити перевіряються'
     'змінюючий метод %s перевіряється',
     (method) => {
       expect(shouldValidateCsrf(method, '/_serverFn/abc')).toBe(true);
-      expect(shouldValidateCsrf(method, '/api/revalidate-theme')).toBe(true);
+      expect(shouldValidateCsrf(method, '/api/health')).toBe(true);
     },
   );
 

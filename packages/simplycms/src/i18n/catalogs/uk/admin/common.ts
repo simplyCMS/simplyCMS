@@ -18,10 +18,6 @@ export const messages = {
   'admin.common.placeholder.orderStatuses': 'Статуси замовлень',
   'admin.common.placeholder.serviceRequests': 'Заявки на послуги',
 
-  // Скидання кешу вітрини після змін теми
-  'admin.common.revalidate.serverError': 'Сервер відповів {status}',
-  'admin.common.revalidate.delay': 'Зміни зʼявляться протягом 5 хвилин.',
-
   // Спільні підписи форм адмінки (Е4)
   'admin.common.slug': 'URL (slug)',
   'admin.common.seo': 'SEO',

@@ -72,4 +72,3 @@ export type { SectionRow, SectionRef } from './entities/section';
 export * from './is-admin';
 export * from './theme-record';
 export * from './store-profile';
-export * from './revalidate-theme';
