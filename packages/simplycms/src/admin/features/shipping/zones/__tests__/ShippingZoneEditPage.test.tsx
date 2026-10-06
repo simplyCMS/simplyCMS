@@ -92,21 +92,28 @@ describe('ShippingZoneEditPage', () => {
     expect(data[0]!.patch).toEqual({ name: 'Львів+' });
   });
 
-  it('дефолтна зона: видалення вимкнене; 409 при вимкненні — тост, лишаємось на картці', async () => {
+  it('дефолтна зона: видалення й перемикач активності вимкнені з озвученою причиною; 409 при збереженні — тост, лишаємось на картці', async () => {
     params.zoneId = ZONES[0]!.id;
     m.updateShippingZones.mockRejectedValue(
       stateConflict('shipping_zone_default'),
     );
     render(<ShippingZoneEditPage />, { wrapper });
     await screen.findByDisplayValue('Київ');
-    expect(
-      (
-        screen.getByRole('button', {
-          name: t('common.delete'),
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
-    fireEvent.click(screen.getByRole('switch'));
+    const del = screen.getByRole('button', { name: t('common.delete') });
+    const toggle = screen.getByRole('switch');
+    for (const el of [del, toggle]) {
+      expect((el as HTMLButtonElement).disabled).toBe(true);
+      const hint = el.getAttribute('aria-describedby');
+      expect(hint && document.getElementById(hint)?.textContent).toBe(
+        t('admin.shipping.zones.defaultLocked'),
+      );
+    }
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    // Відмова guard-а (зону змінили в іншій вкладці) — тост, без навігації.
+    fireEvent.change(screen.getByLabelText('Назва'), {
+      target: { value: 'Київ+' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Зберегти' }));
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(

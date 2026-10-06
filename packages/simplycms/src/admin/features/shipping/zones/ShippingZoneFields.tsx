@@ -22,6 +22,11 @@ interface Props {
   readonly lockedActive: boolean;
 }
 
+/** id підпису «дефолтну не можна вимкнути чи видалити» — на нього посилаються
+ *  `aria-describedby` вимкнених перемикача й кнопки видалення: `title`
+ *  вимкненої кнопки екранні читачі не озвучують. */
+export const ZONE_DEFAULT_LOCKED_HINT_ID = 'sz-default-locked';
+
 /** Поля картки зони доставки. */
 export function ShippingZoneFields({ form, lockedActive }: Props) {
   const t = useT();
@@ -73,7 +78,10 @@ export function ShippingZoneFields({ form, lockedActive }: Props) {
             {t('common.activeF')}
           </Label>
           {lockedActive && (
-            <p className="text-xs text-muted-foreground">
+            <p
+              id={ZONE_DEFAULT_LOCKED_HINT_ID}
+              className="text-xs text-muted-foreground"
+            >
               {t('admin.shipping.zones.defaultLocked')}
             </p>
           )}
@@ -86,6 +94,11 @@ export function ShippingZoneFields({ form, lockedActive }: Props) {
               id="sz-active"
               checked={field.value}
               onCheckedChange={field.onChange}
+              // Е6а-20: сервер відмовить деактивувати дефолтну — не даємо й спробувати.
+              disabled={lockedActive}
+              aria-describedby={
+                lockedActive ? ZONE_DEFAULT_LOCKED_HINT_ID : undefined
+              }
             />
           )}
         />

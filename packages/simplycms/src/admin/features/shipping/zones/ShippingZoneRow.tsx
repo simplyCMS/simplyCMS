@@ -31,6 +31,7 @@ export function ShippingZoneRow({
   const t = useT();
   const navigate = useNavigate();
   const cities = zone.cities ?? [];
+  const lockedHintId = `sz-locked-${zone.id}`;
   const stop = (fn: () => void) => (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     fn();
@@ -88,10 +89,17 @@ export function ShippingZoneRow({
             zone.isDefault ? t('admin.shipping.zones.defaultLocked') : undefined
           }
           aria-label={t('common.delete')}
+          aria-describedby={zone.isDefault ? lockedHintId : undefined}
           onClick={stop(onDelete)}
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
+        {zone.isDefault && (
+          // `title` вимкненої кнопки екранні читачі не озвучують — причину дає опис.
+          <span id={lockedHintId} className="sr-only">
+            {t('admin.shipping.zones.defaultLocked')}
+          </span>
+        )}
       </TableCell>
     </TableRow>
   );

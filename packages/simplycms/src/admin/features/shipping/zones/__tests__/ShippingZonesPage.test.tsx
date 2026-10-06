@@ -87,6 +87,12 @@ describe('ShippingZonesPage', () => {
       }) as HTMLButtonElement;
     expect(del('Київ').disabled).toBe(true);
     expect(del('Львів').disabled).toBe(false);
+    // Причину вимкнення озвучує опис, а не `title` (його читачі пропускають).
+    const hint = del('Київ').getAttribute('aria-describedby');
+    expect(hint && document.getElementById(hint)?.textContent).toBe(
+      t('admin.shipping.zones.defaultLocked'),
+    );
+    expect(del('Львів').getAttribute('aria-describedby')).toBeNull();
   });
 
   it('вимкнення дефолтної: 409 shipping_zone_default → точний тост, рядок повертається', async () => {

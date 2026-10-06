@@ -12,7 +12,10 @@ import {
 } from '../../catalog-dictionaries/CardPageHeader';
 import { DeleteConfirmDialog } from '../../catalog-dictionaries/DeleteConfirmDialog';
 import { NotFoundState } from '../../catalog-dictionaries/PageStates';
-import { ShippingZoneFields } from './ShippingZoneFields';
+import {
+  ShippingZoneFields,
+  ZONE_DEFAULT_LOCKED_HINT_ID,
+} from './ShippingZoneFields';
 import { useShippingZoneCard } from './useShippingZoneCard';
 
 /**
@@ -67,6 +70,9 @@ export default function ShippingZoneEditPage() {
                   : undefined
               }
               aria-label={t('common.delete')}
+              aria-describedby={
+                row.isDefault ? ZONE_DEFAULT_LOCKED_HINT_ID : undefined
+              }
               onClick={() => setConfirmOpen(true)}
             >
               <Trash2 className="h-4 w-4" />
