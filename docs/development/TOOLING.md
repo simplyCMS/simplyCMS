@@ -126,8 +126,7 @@ test:schema → build:packages → typecheck:template → test:packaging`.
 
 ## 4. Лінт
 
-🔴 **Норма: `pnpm lint` = 0 errors / 7 warnings.** Ворнінги — `react-hooks/*` і `no-unused-vars`
-(з 8 до 7 — Е6б-30: `set-state-in-effect` пішов разом із переписаним `PluginSettings.tsx`).
+🔴 **Норма: `pnpm lint` = 0 errors / 7 warnings.** Ворнінги — `react-hooks/*` і `no-unused-vars`.
 Не «лагодити» число вгору чи вниз без причини.
 
 Error-зони й кастомні правила (селектори й опції не послабляти; кожне має негативний контроль

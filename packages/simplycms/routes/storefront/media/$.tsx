@@ -21,11 +21,13 @@ export const Route = createFileRoute('/media/$')({
   server: {
     handlers: {
       GET: ({ request }: { request: Request }) => serveMedia({ request }),
-      // 🔴 HEAD реєструється ЯВНО: Start робить lookup `handlers[METHOD]`
-      // (`createStartHandler.js:374`) і з GET його не виводить, тож без цього
-      // рядка HEAD падає в SSR і віддає HTML замість заголовків файлу — те,
-      // що CDN закешує НАЗАВЖДИ через `immutable`. `ANY` замість двох рядків
-      // не брати: роздача публічна, і роут почав би відповідати на запис.
+      // 🔴 HEAD реєструється ЯВНО. Start 1.169.x сам падає з HEAD на GET
+      // (`createStartHandler`: `HEAD ?? GET ?? ANY`), але 1.167.x робив
+      // простий lookup `handlers[METHOD] ?? ANY` — і HEAD ішов у SSR, віддаючи
+      // HTML замість заголовків файлу, що CDN закешує НАЗАВЖДИ через
+      // `immutable`. Явний рядок тримає роздачу коректною незалежно від
+      // версії Start у магазині (peer `^1`). `ANY` замість двох рядків не
+      // брати: роздача публічна, і роут почав би відповідати на запис.
       HEAD: ({ request }: { request: Request }) => serveMedia({ request }),
     },
   },

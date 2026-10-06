@@ -47,11 +47,13 @@ export async function serveMedia(
   const { pathname } = new URL(ctx.request.url);
   // 🔴 HEAD обслуговується ЦИМ САМИМ хендлером, але без тіла.
   //
-  // Механізм, дослівно (`createStartHandler.js:374`):
-  //   handlers[request.method.toUpperCase()] ?? handlers['ANY']
-  // Простий lookup по імені методу — виведення HEAD із GET там відсутнє за
-  // побудовою. Незареєстрований HEAD дає `undefined`, запит іде далі по
-  // ланцюгу й потрапляє в SSR, тобто віддає `text/html` на URL картинки.
+  // Механізм (`createStartHandler`): Start 1.169.x робить
+  //   HEAD ? handlers.HEAD ?? handlers.GET ?? handlers.ANY
+  //        : handlers[METHOD] ?? handlers.ANY
+  // тобто сам падає з HEAD на GET. Але 1.167.x мав простий lookup
+  // `handlers[METHOD] ?? handlers.ANY` без виведення HEAD: незареєстрований
+  // HEAD ішов у SSR і віддавав `text/html` на URL картинки. Магазин тягне
+  // Start за peer `^1`, тож явний HEAD — захист від версії, а не надмірність.
   //
   // 🔴 Чому це фікс, а не документована межа: на цих URL стоїть
   // `Cache-Control: …, immutable`, а `immutable` означає, що клієнт НЕ
