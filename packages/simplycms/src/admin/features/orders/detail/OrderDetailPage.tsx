@@ -69,6 +69,7 @@ export default function OrderDetailPage() {
               subtotal={order.subtotal}
               shippingCost={order.shippingCost}
               total={order.total}
+              shippingData={order.shippingData}
             />
           </CardContent>
         </Card>
