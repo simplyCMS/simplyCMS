@@ -43,7 +43,6 @@ export { default as DiscountGroupEdit } from './pages/DiscountGroupEdit';
 export { default as PriceTypes } from './pages/PriceTypes';
 export { default as PriceTypeEdit } from './pages/PriceTypeEdit';
 export { default as PriceValidator } from './pages/PriceValidator';
-export { default as Shipping } from './pages/Shipping';
 export { default as ShippingMethods } from './pages/ShippingMethods';
 export { default as ShippingMethodEdit } from './pages/ShippingMethodEdit';
 export { default as ShippingZones } from './pages/ShippingZones';

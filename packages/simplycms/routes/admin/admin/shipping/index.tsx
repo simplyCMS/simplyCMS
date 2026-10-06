@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import Shipping from 'simplycms/admin/pages/Shipping';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
+// Огляд доставки знесено (Е6а-2): розділ відкривається зі способів.
 export const Route = createFileRoute('/admin/shipping/')({
-  component: Shipping,
+  beforeLoad: () => {
+    throw redirect({ to: '/admin/shipping/methods' });
+  },
 });

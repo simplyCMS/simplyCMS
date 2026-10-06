@@ -51,7 +51,10 @@ export function SelectField<T extends FieldValues>({
         render={({ field }) => (
           <Select
             value={String(field.value ?? '')}
-            onValueChange={field.onChange}
+            // Radix відправляє '' зі службового native-select, коли набір
+            // опцій змінюється під час роботи (опції вантажаться з колекції):
+            // справжні значення тут не порожні, тож ігноруємо.
+            onValueChange={(v) => v !== '' && field.onChange(v)}
             disabled={disabled}
           >
             <SelectTrigger id={id}>

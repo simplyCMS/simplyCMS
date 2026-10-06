@@ -69,11 +69,6 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
     },
     { file: 'packages/simplycms/src/admin/pages/Discounts.tsx', wave: 'Е6' },
     {
-      file: 'packages/simplycms/src/admin/pages/PickupPointEdit.tsx',
-      wave: 'Е6',
-    },
-    { file: 'packages/simplycms/src/admin/pages/PickupPoints.tsx', wave: 'Е6' },
-    {
       file: 'packages/simplycms/src/admin/pages/PluginSettings.tsx',
       wave: 'Е6',
     },
@@ -81,15 +76,6 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
     { file: 'packages/simplycms/src/admin/pages/ReviewDetail.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/Reviews.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/Settings.tsx', wave: 'Е6' },
-    { file: 'packages/simplycms/src/admin/pages/Shipping.tsx', wave: 'Е6' },
-    {
-      file: 'packages/simplycms/src/admin/pages/ShippingZoneEdit.tsx',
-      wave: 'Е6',
-    },
-    {
-      file: 'packages/simplycms/src/admin/pages/ShippingZones.tsx',
-      wave: 'Е6',
-    },
     {
       file: 'packages/simplycms/src/admin/pages/ThemeSettings.tsx',
       wave: 'Е6',
