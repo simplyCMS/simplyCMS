@@ -25,7 +25,11 @@ export interface PluginConfigResult<S extends ZodObject<ZodRawShape>> {
   /** Розпарсений конфіг із матеріалізованими дефолтами; `null` — ще вантажиться. */
   config: z.output<S> | null;
   loading: boolean;
-  /** Зберегти конфіг (лише адмін). `false` — сервер відмовив у праві. */
+  /**
+   * Зберегти конфіг (право `settings.manage`): `false` означає лише «нема
+   * права» (authz) або відмову схеми плагіна, а відмова 400 (наприклад,
+   * конфіг понад 64 КБ) летить винятком — це помилка самого плагіна.
+   */
   save: (next: z.input<S>) => Promise<boolean>;
 }
 

@@ -41,8 +41,12 @@ export const storeProfileInput = z.object({
   description: optionalText(LIMITS.description),
   contacts: z.object({
     phone: optionalText(LIMITS.phone),
+    // `.trim()` ДО формату: пробіл, скопійований разом з адресою, — не
+    // помилка власника, а `z.email()` без обрізання відбив би його 400-ю.
     email: z
-      .union([z.literal(''), z.email().max(LIMITS.email)])
+      .string()
+      .trim()
+      .pipe(z.union([z.literal(''), z.email().max(LIMITS.email)]))
       .nullable()
       .transform((v) => (v === '' ? null : v)),
     address: optionalText(LIMITS.address),

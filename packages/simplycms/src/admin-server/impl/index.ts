@@ -112,16 +112,21 @@ export {
   saveStockManagementInput,
   saveStockManagementOp,
 } from './settings/save-stock';
-export { listThemesOp } from './themes/list';
-export type { ThemeRow } from './themes/list';
-export { activateThemeInput, activateThemeOp } from './themes/activate';
+// 🔴 Теки `site-*`, а не `themes`/`plugins` (Е6б-26): відносний `../themes`
+// тір-зона читає як теку тем T4 — збіг імен змусив би обходити правило барелем.
+export { listThemesOp } from './site-themes/list';
+export type { ThemeRow } from './site-themes/list';
+export { activateThemeInput, activateThemeOp } from './site-themes/activate';
 export {
   saveThemeSettingsInput,
   saveThemeSettingsOp,
-} from './themes/save-settings';
-export { listPluginsOp } from './plugins/list';
-export type { PluginRow } from './plugins/list';
-export { setPluginActiveInput, setPluginActiveOp } from './plugins/set-active';
+} from './site-themes/save-settings';
+export { listPluginsOp } from './site-plugins/list';
+export type { PluginRow } from './site-plugins/list';
+export {
+  setPluginActiveInput,
+  setPluginActiveOp,
+} from './site-plugins/set-active';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';

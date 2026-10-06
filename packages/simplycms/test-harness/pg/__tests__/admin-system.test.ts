@@ -35,6 +35,28 @@ describe('admin: профіль магазину й логотип (Е6б, Task 
     expect(settings.profile).toEqual(input);
   });
 
+  it('storeProfileInput відкидає невідомі ключі — у jsonb лише контракт', async () => {
+    const input = F.profile();
+    const extra = {
+      ...input,
+      admin: true,
+      contacts: { ...input.contacts, fax: '1' },
+    };
+    await expect(saveStoreProfileOp({ data: extra as never })).resolves.toEqual(
+      input,
+    );
+    expect(await F.profileValue(url())).toEqual(input);
+  });
+
+  it('contacts.email обрізається ДО перевірки формату', async () => {
+    const input = F.profile();
+    const padded = { ...input.contacts, email: '  shop@example.com ' };
+    await saveStoreProfileOp({ data: { ...input, contacts: padded } });
+    expect(await F.profileValue(url())).toMatchObject({
+      contacts: { email: 'shop@example.com' },
+    });
+  });
+
   it('заміна логотипа: старий рядок media і файл стерто, новий на місці (одна транзакція)', async () => {
     const first = await logo();
     await saveStoreProfileOp({ data: F.profile({ logo: first }) });

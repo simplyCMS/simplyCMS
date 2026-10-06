@@ -5,7 +5,7 @@ import { readdirSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, vi } from 'vitest';
+import { afterAll, beforeAll, expect, vi } from 'vitest';
 import { AuthzError, requireGrant, resolveGrant } from 'simplycms/auth';
 import type { StoreProfile } from 'simplycms/contracts/store-profile';
 import { closeDbPool } from 'simplycms/db';
@@ -112,6 +112,27 @@ export async function profileValue(url: string): Promise<unknown> {
     `select value from public.system_settings where key = 'store_profile'`,
   );
   return row ? row.value : null;
+}
+
+/**
+ * Чекає, доки в черзі advisory-локів поточної БД стоїть рівно `n` транзакцій.
+ * Черга Postgres — FIFO: так тест задає порядок, у якому операції отримають лок.
+ */
+export async function untilAdvisoryWaiters(url: string, n: number) {
+  const waiting = async () =>
+    Number(
+      (
+        await rows(
+          url,
+          `select count(*)::int as c from pg_locks
+            where locktype = 'advisory' and not granted
+              and database = (select oid from pg_database where datname = current_database())`,
+        )
+      )[0]!.c,
+    );
+  for (let i = 0; i < 200 && (await waiting()) < n; i++)
+    await new Promise((r) => setTimeout(r, 25));
+  expect(await waiting()).toBe(n);
 }
 
 /** Наступний `requireGrant` — покупець: реальна матриця вирішує відмову. */

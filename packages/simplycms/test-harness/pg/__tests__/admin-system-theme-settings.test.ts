@@ -43,6 +43,19 @@ describe('admin: налаштування теми (Е6б, Task 3)', () => {
     expect(await settingsOf('default')).toEqual(before);
   });
 
+  it('saveThemeSettings: масив, понад 64 ключі, ключ понад 64 символи → 400; рядок незмінний', async () => {
+    const before = await settingsOf('default');
+    const many = Object.fromEntries(
+      Array.from({ length: 65 }, (_, i) => [`k${i}`, i]),
+    );
+    const cases = [{ list: [1, 2] }, [1, 2], many, { ['k'.repeat(65)]: 'x' }];
+    for (const settings of cases)
+      await expect(
+        saveThemeSettingsOp({ data: { name: 'default', settings } as never }),
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+    expect(await settingsOf('default')).toEqual(before);
+  });
+
   it('saveThemeSettings { radius: 8, title: "x" } → number лишився number у jsonb', async () => {
     const row = await saveThemeSettingsOp({
       data: { name: 'default', settings: { radius: 8, title: 'x' } },

@@ -30,23 +30,7 @@ describe('admin: теми (Е6б, Task 3)', () => {
         'select name from public.themes where is_active order by name',
       )
     ).map((r) => r.name);
-  /** Скільки транзакцій стоїть у черзі advisory-локів (не отримали лок). */
-  const waiting = async () =>
-    Number(
-      (
-        await F.rows(
-          url(),
-          `select count(*)::int as c from pg_locks
-            where locktype = 'advisory' and not granted
-              and database = (select oid from pg_database where datname = current_database())`,
-        )
-      )[0]!.c,
-    );
-  const untilWaiting = async (n: number) => {
-    for (let i = 0; i < 200 && (await waiting()) < n; i++)
-      await new Promise((r) => setTimeout(r, 25));
-    expect(await waiting()).toBe(n);
-  };
+  const untilWaiting = (n: number) => F.untilAdvisoryWaiters(url(), n);
 
   beforeAll(async () => {
     declareBuiltThemes(BUILT);

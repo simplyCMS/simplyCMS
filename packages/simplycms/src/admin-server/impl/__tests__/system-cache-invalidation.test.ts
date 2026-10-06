@@ -31,13 +31,9 @@ vi.mock('../run', () => ({
   ),
 }));
 
-// Через барель, а не `../themes/*`: відносний `../themes` тір-зона читає як
-// теку тем T4 (правило матчить рядок специфікатора, а не резолвлений модуль).
-import {
-  activateThemeOp,
-  saveStoreProfileOp,
-  saveThemeSettingsOp,
-} from 'simplycms/admin-server/impl';
+import { saveStoreProfileOp } from '../settings/save-profile';
+import { activateThemeOp } from '../site-themes/activate';
+import { saveThemeSettingsOp } from '../site-themes/save-settings';
 
 const profile = {
   name: 'Крамниця',

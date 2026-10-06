@@ -2,7 +2,7 @@
 // (Е6б-13, Е6б-17, Е6б-21; «Додатково» Review Focus: не-адмін → AuthzError, БД незмінна).
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { setResponseStatus } from '@tanstack/react-start/server';
-import { AuthzError } from 'simplycms/auth';
+import { AuthzError, requireGrant } from 'simplycms/auth';
 import { withActor } from 'simplycms/db';
 import { loadStockManagement } from 'simplycms/inventory';
 import { savePluginConfig } from '../../../src/plugin-sdk/server/config-db';
@@ -86,8 +86,15 @@ describe('admin: склад, плагіни, право settings.manage (Е6б, 
     ).rejects.toMatchObject(F.stateConflict('plugin_unknown'));
   });
 
-  it('pluginConfigWrite: config > 64 КБ → 400, конфіг незмінний', async () => {
+  it('pluginConfigWrite: config > 64 КБ → 400, конфіг незмінний; не-адміну — AuthzError ДО розміру', async () => {
     const before = await snapshot();
+    // Е6б-25: право — ПЕРШИМ; чужому запиту розмір конфігу не розкривається.
+    vi.mocked(setResponseStatus).mockClear();
+    F.asCustomer();
+    await expect(
+      savePluginConfig('faq', { blob: 'x'.repeat(70 * 1024) }),
+    ).rejects.toThrow(AuthzError);
+    expect(setResponseStatus).not.toHaveBeenCalledWith(400);
     const big = { blob: 'x'.repeat(64 * 1024) };
     await expect(savePluginConfig('faq', big)).rejects.toThrow(/64/);
     expect(setResponseStatus).toHaveBeenCalledWith(400);
@@ -128,6 +135,9 @@ describe('admin: склад, плагіни, право settings.manage (Е6б, 
     for (const [name, run] of ops) {
       F.asCustomer();
       await expect(run(), name).rejects.toThrow(AuthzError);
+      expect(vi.mocked(requireGrant), name).toHaveBeenLastCalledWith(
+        'settings.manage',
+      );
     }
     expect(await snapshot()).toEqual(before);
   });

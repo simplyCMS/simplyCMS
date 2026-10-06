@@ -5,6 +5,7 @@ import {
   type StoreProfile,
 } from 'simplycms/contracts/store-profile';
 import type { ActorDb } from 'simplycms/db';
+import type { MediaEntityType } from 'simplycms/domain/media';
 import { media, systemSettings } from 'simplycms/schema';
 import { readStoreProfile, storeProfileCache } from 'simplycms/site';
 import { eraseMedia } from 'simplycms/storage';
@@ -14,8 +15,11 @@ import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { storeProfileInput, type StoreProfileInput } from './profile-schema';
 
-/** Тип рядка `media`, яким може бути логотип (Е6б-14). */
-const STORE_LOGO = 'store_logo';
+/**
+ * Тип рядка `media`, яким може бути логотип (Е6б-14). `satisfies` привʼязує
+ * літерал до allowlist T1: перейменування там зламає typecheck тут.
+ */
+const STORE_LOGO = 'store_logo' satisfies MediaEntityType;
 
 /**
  * Advisory-ключ запису профілю: дві вкладки, що міняють логотип одночасно,
