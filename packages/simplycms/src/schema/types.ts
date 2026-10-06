@@ -30,7 +30,6 @@ import type {
   orderStatuses,
   orders,
   pickupPoints,
-  pluginEvents,
   plugins,
   priceTypes,
   productModifications,
@@ -159,7 +158,6 @@ export type NewMedia = InferInsertModel<typeof media>;
 export type Theme = InferSelectModel<typeof themes>;
 export type NewTheme = InferInsertModel<typeof themes>;
 export type Plugin = InferSelectModel<typeof plugins>;
-export type PluginEvent = InferSelectModel<typeof pluginEvents>;
 export type SystemSetting = InferSelectModel<typeof systemSettings>;
 export type Language = InferSelectModel<typeof languages>;
 export type Banner = InferSelectModel<typeof banners>;

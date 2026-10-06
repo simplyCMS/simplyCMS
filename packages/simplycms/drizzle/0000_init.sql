@@ -210,16 +210,6 @@ CREATE TABLE "pickup_points" (
 	"is_system" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "plugin_events" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"plugin_name" varchar NOT NULL,
-	"hook_name" varchar NOT NULL,
-	"payload" jsonb,
-	"result" jsonb,
-	"error" text,
-	"executed_at" timestamp with time zone DEFAULT now()
-);
---> statement-breakpoint
 CREATE TABLE "plugins" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" varchar NOT NULL,
@@ -230,7 +220,6 @@ CREATE TABLE "plugins" (
 	"is_active" boolean DEFAULT false,
 	"config" jsonb DEFAULT '{}'::jsonb,
 	"hooks" jsonb DEFAULT '[]'::jsonb,
-	"migrations_applied" jsonb DEFAULT '[]'::jsonb,
 	"installed_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "plugins_name_key" UNIQUE("name")

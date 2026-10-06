@@ -135,7 +135,6 @@ grant select, insert, update, delete on table
   public.order_statuses,
   public.orders,
   public.pickup_points,
-  public.plugin_events,
   public.plugins,
   public.price_types,
   public.product_modifications,

@@ -26,7 +26,6 @@ const pluginColumns = {
   is_active: plugins.isActive,
   config: plugins.config,
   hooks: plugins.hooks,
-  migrations_applied: plugins.migrationsApplied,
   installed_at: plugins.installedAt,
   updated_at: plugins.updatedAt,
 };
@@ -68,7 +67,6 @@ export async function selectActivePlugins(): Promise<PluginRecord[]> {
     updated_at: row.updated_at,
     config: (row.config ?? {}) as PluginJson,
     hooks: (row.hooks ?? []) as PluginJson,
-    migrations_applied: (row.migrations_applied ?? []) as PluginJson,
   }));
 }
 

@@ -14,6 +14,7 @@
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
+    "./contracts/store-profile": "./src/contracts/store-profile.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
@@ -26,6 +27,7 @@
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
     "./domain/media": "./src/domain/media.ts",
+    "./domain/store-profile": "./src/domain/store-profile.ts",
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
@@ -138,6 +140,10 @@
         "types": "./dist/contracts/shipping-providers.d.ts",
         "import": "./dist/contracts/shipping-providers.js"
       },
+      "./contracts/store-profile": {
+        "types": "./dist/contracts/store-profile.d.ts",
+        "import": "./dist/contracts/store-profile.js"
+      },
       "./contracts/server-only": {
         "types": "./dist/contracts/server-only.d.ts",
         "import": "./dist/contracts/server-only.js"
@@ -185,6 +191,10 @@
       "./domain/media": {
         "types": "./dist/domain/media.d.ts",
         "import": "./dist/domain/media.js"
+      },
+      "./domain/store-profile": {
+        "types": "./dist/domain/store-profile.d.ts",
+        "import": "./dist/domain/store-profile.js"
       },
       "./domain/money": {
         "types": "./dist/domain/money.d.ts",

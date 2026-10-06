@@ -39,8 +39,8 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
   виконуються на SSR. Для сторінок адмінки це невідчутно (`/admin` —
   `ssr:false`), для слотів вітрини означає «підвантажиться після гідрації».
 - `events`/`storage`-порти SDK, `plugin:dev`, `plugin:purge`, автоматичний
-  монтаж adminRoutes через `add`, облік `plugins.migrations_applied` —
-  відкладені борги (роадмап, розділ «Борги Фази 3»).
+  монтаж adminRoutes через `add` — відкладені борги (колонку
+  `plugins.migrations_applied` прибрано в Е6б) (роадмап, розділ «Борги Фази 3»).
 
 ## 2. Контракт: `definePlugin` (`simplycms/plugin-sdk`)
 
