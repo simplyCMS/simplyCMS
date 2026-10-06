@@ -37,6 +37,7 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 - `packages/simplycms/src/storefront-routes/seo/sitemap.ts` (`buildSitemapXml`): `/`, `/catalog`, `/properties`, `/catalog/$sectionSlug`, `/catalog/$sectionSlug/$productSlug`. **Не включає** жодних property/option лендингів і жодних filter-URL.
 - `packages/simplycms/src/storefront-routes/seo/robots.txt` (`buildRobotsTxt`): Allow `/`, Disallow `/admin/`, `/api/`, `/auth/callback`. **Не керує** параметрами фільтрів/сортування/пагінації.
 - `simplycms.config.ts` `seo`: лише `siteName`, `defaultTitle`, `titleTemplate`. **Немає** `defaultDescription`, `baseUrl`, `ogImage` — потрібно для fallback-ланцюжка resolver-а.
+  > **Примітка (з К3-Е6б):** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
 
 ### 1.4 Модель даних (з `supabase/types.ts`)
 - `sections`: `id, slug, name, description, parent_id, image_url, meta_title, meta_description, ...` — є `meta_*`; **немає** `is_filterable/has_page/property_type`.
@@ -130,7 +131,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - [ ] Fallback-ланцюжок (приклад для product): `title`: meta_title→name→site_title; `description`: meta_description→short_description→description→site_description; `og:image`: og_image→images[0]→site_og_image; `robots`: robots→`index, follow`; `twitter:card`: `summary_large_image`; `canonical`: canonical_url→computed-URL.
 - [ ] Підтримати entity-типи: `product | section | property | property_option | filter_landing`.
 - [ ] JSON-LD: Product (з offers) для товару; CollectionPage для секції/лендингів; override через `schema_json`.
-- [ ] Розширити `simplycms.config.ts.seo`: додати `defaultDescription`, `baseUrl`, `defaultOgImage` (потрібні як корінь fallback).
+- [ ] Корінь fallback брати з профілю магазину й кореня вітрини, а не з конфігу: `site_title` — `store_profile.homeTitle`/`name`, `site_description` — `store_profile.description`, `baseUrl` — `siteUrl` з `getStorefrontRoot` (`VITE_SITE_URL`), `site_og_image` — `store_profile.logo` (через `resolveMediaUrl`) або нове поле профілю, якщо логотип як og-картинка не годиться.
 
 ### Блок C — Faceted filtering → URL + SSR (ядро)
 - [ ] Додати `validateSearch` (Zod) до `/catalog/$sectionSlug` — схема фільтрів **на слагах**: мультиселект-властивості як `?<propertySlug>=<optionSlug>[,<optionSlug>]`, `priceMin/priceMax`, `inStockOnly`. Сталий порядок ключів.
@@ -215,7 +216,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 
 ## 11. Definition of Done
 - [ ] SEO-поля додані в `products/sections/section_properties/property_options`; типи перегенеровані.
-- [ ] `seoResolver` створено в `simplycms/core/lib/` з повним fallback-ланцюжком і JSON-LD; `simplycms.config.ts.seo` розширено (`defaultDescription/baseUrl/defaultOgImage`).
+- [ ] `seoResolver` створено в `simplycms/core/lib/` з повним fallback-ланцюжком і JSON-LD; корінь fallback — профіль магазину (`store_profile`) і `siteUrl` кореня вітрини, а не `config.seo`.
 - [ ] Фільтри секції живуть в URL (слаги) і застосовуються **на сервері**; клієнтський `useMemo`-фільтр прибрано.
 - [ ] Multi-facet/query-стан: `noindex,follow` + canonical→секція; порожня комбінація → 404.
 - [ ] Single-facet лендинг (за обраною формою §8): SSR, self-canonical, унікальні title/H1/description, JSON-LD; генерується лише за `is_filterable` + поріг.

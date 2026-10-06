@@ -35,9 +35,13 @@ const SOCIAL_ICONS: Record<SocialNetwork, LucideIcon> = {
   viber: MessageCircle,
 };
 
-/** Для `tel:` лишаються лише `+` і цифри: пробіли, дужки й дефіси не потрібні. */
-function telHref(phone: string): string {
-  return `tel:${phone.replace(/[^+\d]/g, '')}`;
+/**
+ * Для `tel:` лишаються лише `+` і цифри: пробіли, дужки й дефіси не потрібні.
+ * Без жодної цифри (`«за запитом»`) — `null`: порожній `tel:` — мертве
+ * посилання, тож номер показується текстом як є.
+ */
+function telHref(phone: string): string | null {
+  return /\d/.test(phone) ? `tel:${phone.replace(/[^+\d]/g, '')}` : null;
 }
 
 /** Соцмережі профілю; порожній список не лишає й порожнього контейнера. */
@@ -73,6 +77,7 @@ export function FooterContacts() {
   const tt = useThemeT<SolarstoreThemeKey>();
   const { phone, email, address, hours } = contacts;
   if (!phone && !email && !address && !hours) return null;
+  const tel = phone ? telHref(phone) : null;
 
   return (
     <div>
@@ -80,12 +85,18 @@ export function FooterContacts() {
         {tt('theme.nav.contacts')}
       </h4>
       <div className="space-y-3">
-        {phone && (
-          <a href={telHref(phone)} className={ROW_LINK}>
-            <Phone className="h-4 w-4 shrink-0" />
-            <span>{phone}</span>
-          </a>
-        )}
+        {phone &&
+          (tel ? (
+            <a href={tel} className={ROW_LINK}>
+              <Phone className="h-4 w-4 shrink-0" />
+              <span>{phone}</span>
+            </a>
+          ) : (
+            <div className={ROW}>
+              <Phone className="h-4 w-4 shrink-0" />
+              <span>{phone}</span>
+            </div>
+          ))}
         {email && (
           <a href={`mailto:${email}`} className={ROW_LINK}>
             <Mail className="h-4 w-4 shrink-0" />

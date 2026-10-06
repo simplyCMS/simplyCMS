@@ -87,14 +87,14 @@ export async function runCsrfChecks({ base, serverFnPaths, check }) {
 
   // Контроль: свій Origin міддлвару ПРОХОДИТЬ і доходить до роуту — доводить,
   // що відмова вище саме CSRF, а не загальна заборона шляху. Роут відповідає
-  // на не-GET рівно 405 з `Allow: GET` (`ANY` у `health.tsx`, Е6б-28): статус
+  // на не-GET/HEAD рівно 405 з `Allow: GET, HEAD` (`ANY` у `health.tsx`, Е6б-28): статус
   // не залежить від БД і SSR. Асерт — точне число, а не «будь-що, крім
   // Forbidden».
   const routeSame = await post('/api/health', { origin: base });
   const allow = routeSame.headers.get('allow');
   check(
-    'csrf: міддлвара перед server route, свій Origin → 405 Allow: GET',
-    routeSame.status === 405 && allow === 'GET',
+    'csrf: міддлвара перед server route, свій Origin → 405 Allow: GET, HEAD',
+    routeSame.status === 405 && allow === 'GET, HEAD',
     `${routeSame.status} allow=${allow ?? '—'}`,
   );
 }

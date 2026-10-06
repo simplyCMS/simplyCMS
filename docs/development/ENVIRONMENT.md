@@ -15,7 +15,9 @@
   нього базовий URL береться із самого запиту — у dev це очікуваний WARN; у проді рекомендований: з
   рядковим baseURL Better Auth довіряє рівно цьому origin і відкидає інші з 403 `INVALID_ORIGIN`).
   Контракт стереже `tests/env-contract.test.ts`
-- `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt); запікається при `vite build`,
+- `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt, `getStorefrontRoot` → `siteUrl`
+  для canonical і JSON-LD вітрини; невалідна адреса там стає порожньою з одним `console.warn`);
+  запікається при `vite build`,
   тож зміна вимагає перезбірки
 
 - 🔴 `MEDIA_ROOT` — опційний серверний ключ, а не четвертий у контракті: корінь драйвера
@@ -36,7 +38,7 @@
 запікаються при `vite build`. Серверний код (SSR, server fns, middleware, SEO) читає **лише**
 `process.env` і лише в рантаймі; `.env`/`.env.local` — не джерело, а спосіб його наповнення (див.
 § «Запуск у проді»). `VITE_`-префікс означає «видно клієнту», а не «лише клієнт»: той самий
-`VITE_SITE_URL` сервер бере з `process.env` (`seo/robots`, `seo/sitemap`). Дуального резолву немає —
+`VITE_SITE_URL` сервер бере з `process.env` (`seo/robots`, `seo/sitemap`, `getStorefrontRoot`). Дуального резолву немає —
 відсутній ключ гучно падає. Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
 `import.meta.env` — Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести джерело env не здатен.
 Доводять: eslint `no-restricted-syntax` на `import.meta.env` у шести серверних модулях (див. `docs/development/TOOLING.md` § «Лінт»)

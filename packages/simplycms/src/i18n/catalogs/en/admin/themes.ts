@@ -21,4 +21,6 @@ export const messages: Catalog = {
   'admin.themes.settingsSubtitle': 'Configure the look of the theme',
   'admin.themes.noSettings': 'This theme has no settings',
   'admin.themes.loadError': 'Could not load the theme list',
+  'admin.themes.settingMin': 'Value must be at least {min}',
+  'admin.themes.settingMax': 'Value must be at most {max}',
 };

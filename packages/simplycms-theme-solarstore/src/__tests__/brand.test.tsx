@@ -105,6 +105,13 @@ describe('Footer solarstore: контакти й соцмережі з проф�
     expect(container.textContent).not.toContain('SolarStore');
   });
 
+  it('телефон без цифр → текст як є, без порожнього tel:', async () => {
+    const contacts = { ...STORE_PROFILE_FIXTURE.contacts, phone: 'за запитом' };
+    const view = renderWith(<Footer />, { ...STORE_PROFILE_FIXTURE, contacts });
+    expect((await screen.findByText('за запитом')).closest('a')).toBeNull();
+    expect(view.container.querySelector('a[href^="tel:"]')).toBeNull();
+  });
+
   it('порожня адреса не рендериться (і «Україна» теж)', async () => {
     const { container } = renderWith(<Footer />, {
       ...STORE_PROFILE_FIXTURE,

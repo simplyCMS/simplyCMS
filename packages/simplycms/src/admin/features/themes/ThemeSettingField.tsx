@@ -16,6 +16,8 @@ interface ThemeSettingFieldProps {
   setting: ThemeSettingDefinition;
   value: string | number | boolean;
   onChange: (value: string | number | boolean) => void;
+  /** Перекладений текст помилки поля (межі `min`/`max` — `themeSettingErrors`). */
+  error?: string;
 }
 
 /**
@@ -23,7 +25,13 @@ interface ThemeSettingFieldProps {
  * рядок у число не приводить. Сирий текст живе локально, щоб поле можна було
  * очистити й набрати заново; у форму йде лише валідне число.
  */
-function NumberField({ id, setting, value, onChange }: ThemeSettingFieldProps) {
+function NumberField({
+  id,
+  setting,
+  value,
+  onChange,
+  error,
+}: ThemeSettingFieldProps) {
   const [raw, setRaw] = useState(String(value));
   return (
     <Input
@@ -31,6 +39,8 @@ function NumberField({ id, setting, value, onChange }: ThemeSettingFieldProps) {
       type="number"
       min={setting.min}
       max={setting.max}
+      aria-invalid={!!error}
+      aria-describedby={error ? `${id}-error` : undefined}
       value={raw}
       onChange={(e) => {
         const next = e.target.value;
@@ -88,6 +98,11 @@ export function ThemeSettingField(props: ThemeSettingFieldProps) {
         />
       )}
       {setting.type === 'number' && <NumberField {...props} />}
+      {props.error && (
+        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
+          {props.error}
+        </p>
+      )}
       {setting.description && (
         <p className="text-sm text-muted-foreground">{setting.description}</p>
       )}

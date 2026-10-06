@@ -18,8 +18,8 @@ import type { ThemeKey } from '../messages';
 const SOCIAL_BUTTON =
   'flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
-const LINK =
-  'text-sm text-muted-foreground transition-colors hover:text-foreground';
+const TEXT = 'text-sm text-muted-foreground';
+const LINK = `${TEXT} transition-colors hover:text-foreground`;
 
 /**
  * 🔴 Іконки НЕЙТРАЛЬНІ, не бренд-логотипи: чужі логотипи заборонені
@@ -36,9 +36,13 @@ const SOCIAL_ICONS: Record<SocialNetwork, LucideIcon> = {
   viber: MessageCircle,
 };
 
-/** Для `tel:` лишаються лише `+` і цифри: пробіли, дужки й дефіси не потрібні. */
-function telHref(phone: string): string {
-  return `tel:${phone.replace(/[^+\d]/g, '')}`;
+/**
+ * Для `tel:` лишаються лише `+` і цифри: пробіли, дужки й дефіси не потрібні.
+ * Без жодної цифри (`«за запитом»`) — `null`: порожній `tel:` — мертве
+ * посилання, тож номер показується текстом як є.
+ */
+function telHref(phone: string): string | null {
+  return /\d/.test(phone) ? `tel:${phone.replace(/[^+\d]/g, '')}` : null;
 }
 
 /** Соцмережі профілю; порожній список не лишає й порожнього контейнера. */
@@ -74,6 +78,7 @@ export function FooterContacts() {
   const tt = useThemeT<ThemeKey>();
   const { phone, email, address, hours } = contacts;
   if (!phone && !email && !address && !hours) return null;
+  const tel = phone ? telHref(phone) : null;
 
   return (
     <div>
@@ -86,9 +91,13 @@ export function FooterContacts() {
       <ul className="mt-4 space-y-2">
         {phone && (
           <li>
-            <a href={telHref(phone)} className={LINK}>
-              {phone}
-            </a>
+            {tel ? (
+              <a href={tel} className={LINK}>
+                {phone}
+              </a>
+            ) : (
+              <span className={TEXT}>{phone}</span>
+            )}
           </li>
         )}
         {email && (

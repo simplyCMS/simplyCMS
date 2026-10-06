@@ -133,4 +133,18 @@ describe('ThemeSettingsPage', () => {
     expect(toastSuccess).toHaveBeenCalledWith(t('common.settingsSaved'));
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it('number поза min/max → помилка поля, запиту немає', async () => {
+    const perPage = await open();
+    const saveWith = async (value: string) => {
+      fireEvent.change(perPage, { target: { value } });
+      fireEvent.click(screen.getByRole('button', { name: t('common.save') }));
+      return (await screen.findByRole('alert')).textContent;
+    };
+    const max = t('admin.themes.settingMax', { max: 48 });
+    expect(await saveWith('100')).toBe(max);
+    expect(perPage.getAttribute('aria-invalid')).toBe('true');
+    expect(await saveWith('2')).toBe(t('admin.themes.settingMin', { min: 4 }));
+    expect(mocks.saveThemeSettings).not.toHaveBeenCalled();
+  });
 });

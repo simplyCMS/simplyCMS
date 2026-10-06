@@ -116,8 +116,10 @@ describe('канон міграцій: накат на чисту БД', () => {
         where table_schema = 'public' and table_type = 'BASE TABLE'`,
     );
     const tables = rows.map((r: { table_name: string }) => r.table_name);
+    // Точне число, а не нижня межа: `>=` пропустив би і зайву таблицю, і
+    // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
-    expect(tables.length).toBeGreaterThanOrEqual(44);
+    expect(tables.length).toBe(44);
     for (const expected of [
       'users',
       'sessions',

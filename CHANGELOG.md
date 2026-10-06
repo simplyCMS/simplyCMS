@@ -44,8 +44,9 @@
   — `useStoreProfile()` (`simplycms/themes/store-profile`). Так само шаблон
   теми `simplycms create theme`.
 - **`/api/revalidate-theme` знесено** разом із `useRevalidateStorefront`;
-  кеш вітрини скидає сама операція адмінки. `/api/health` на будь-який метод,
-  крім `GET`, відповідає 405 з `Allow: GET`.
+  кеш вітрини скидає сама операція адмінки. `/api/health` реєструє `HEAD`
+  явно (той самий статус і заголовки, що `GET`, без тіла — незалежно від
+  версії Start), а на будь-який інший метод відповідає 405 з `Allow: GET, HEAD`.
 - **Плагіни:** з `simplycms/plugins` прибрано `adminLifecycle` і
   `pluginRepository`; запис конфігу (`pluginConfigWrite`) вимагає права
   `settings.manage` і має стелю 64 КБ (400); `usePluginConfig.save` повертає

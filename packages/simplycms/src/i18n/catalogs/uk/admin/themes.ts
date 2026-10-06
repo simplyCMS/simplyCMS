@@ -18,4 +18,6 @@ export const messages = {
   'admin.themes.settingsSubtitle': 'Налаштуйте зовнішній вигляд теми',
   'admin.themes.noSettings': 'Ця тема не має налаштувань',
   'admin.themes.loadError': 'Не вдалося завантажити список тем',
+  'admin.themes.settingMin': 'Значення має бути не менше {min}',
+  'admin.themes.settingMax': 'Значення має бути не більше {max}',
 } as const;

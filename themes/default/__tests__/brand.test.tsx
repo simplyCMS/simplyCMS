@@ -79,6 +79,16 @@ describe('Footer default-теми: контакти й соцмережі з п�
     ).toBeTruthy();
   });
 
+  it('телефон без цифр → текст як є, без порожнього tel:', async () => {
+    const { container } = renderWith(<Footer />, {
+      ...STORE_PROFILE_FIXTURE,
+      contacts: { ...STORE_PROFILE_FIXTURE.contacts, phone: 'за запитом' },
+    });
+    const phone = await screen.findByText('за запитом');
+    expect(phone.closest('a')).toBeNull();
+    expect(container.querySelector('a[href^="tel:"]')).toBeNull();
+  });
+
   it('порожня адреса не рендериться', async () => {
     renderWith(<Footer />, {
       ...STORE_PROFILE_FIXTURE,

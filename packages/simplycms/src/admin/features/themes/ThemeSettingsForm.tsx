@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from 'simplycms/ui/card';
 import { ThemeSettingField } from './ThemeSettingField';
+import { themeSettingErrors } from './themeSettingErrors';
 import type { ThemeSettingsValues } from './useThemes';
 
 type Schema = Record<string, ThemeSettingDefinition>;
@@ -59,7 +60,17 @@ export function ThemeSettingsForm({
   const [values, setValues] = useState(() =>
     initialValues(schema, theme.settings),
   );
+  // Помилки показуються після спроби зберегти, а не під час набору.
+  const [errors, setErrors] = useState<ReturnType<typeof themeSettingErrors>>(
+    {},
+  );
   const entries = Object.entries(schema);
+
+  const save = () => {
+    const found = themeSettingErrors(schema, values);
+    setErrors(found);
+    if (Object.keys(found).length === 0) onSave(values);
+  };
 
   return (
     <Card>
@@ -71,7 +82,7 @@ export function ThemeSettingsForm({
           </CardDescription>
         </div>
         {entries.length > 0 && (
-          <Button onClick={() => onSave(values)} disabled={saving}>
+          <Button onClick={save} disabled={saving}>
             {saving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -87,17 +98,31 @@ export function ThemeSettingsForm({
             {t('admin.themes.noSettings')}
           </p>
         ) : (
-          entries.map(([key, setting]) => (
-            <ThemeSettingField
-              key={key}
-              id={`theme-setting-${key}`}
-              setting={setting}
-              value={values[key]!}
-              onChange={(value) =>
-                setValues((prev) => ({ ...prev, [key]: value }))
-              }
-            />
-          ))
+          entries.map(([key, setting]) => {
+            const error = errors[key];
+            return (
+              <ThemeSettingField
+                key={key}
+                id={`theme-setting-${key}`}
+                setting={setting}
+                value={values[key]!}
+                error={
+                  error &&
+                  (error.kind === 'min'
+                    ? t('admin.themes.settingMin', { min: error.bound })
+                    : t('admin.themes.settingMax', { max: error.bound }))
+                }
+                onChange={(value) => {
+                  setValues((prev) => ({ ...prev, [key]: value }));
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[key];
+                    return next;
+                  });
+                }}
+              />
+            );
+          })
         )}
       </CardContent>
     </Card>
