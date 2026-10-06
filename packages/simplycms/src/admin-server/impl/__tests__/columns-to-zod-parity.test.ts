@@ -111,6 +111,8 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       // Тема 12: виняток numeric не послаблює гейт — повернення до
       // drizzle-zod-поведінки (`z.string()`) тепер ЧЕРВОНІЄ.
       'm5 numeric: без формату': mutate('PgNumeric', () => z.string()),
+      // Е6а: схема елемента масиву — не декорація (`[1]`, `['a', 1]` у VALUES).
+      'm6 PgArray: items any': mutate('PgArray', () => z.array(z.any())),
     };
     const byName = new Map<string, Column>(
       resources.flatMap((r) =>
@@ -126,6 +128,7 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       'm3 varchar: без max': (c) => c.columnType === 'PgVarchar',
       'm4 timestamp: date -> any': (c) => c.columnType === 'PgTimestamp',
       'm5 numeric: без формату': (c) => c.columnType === 'PgNumeric',
+      'm6 PgArray: items any': (c) => c.columnType === 'PgArray',
     };
     it('контроль ідентичності: незмінений генератор — порожній diff', () => {
       const identity: Gen = (t, m, r) => ({ ...columnsToZod(t, m, r) });
