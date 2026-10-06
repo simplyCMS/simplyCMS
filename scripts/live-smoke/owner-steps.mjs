@@ -8,7 +8,8 @@
  * (`./admin-save-return.mjs`, `./admin-save-return-orders.mjs`) → помилка
  * валідації як помилка поля (`./admin-validation-errors.mjs`, Тема 12) → пагінація
  * списків товарів і замовлень Етапу A (`./admin-lists-pagination.mjs`;
- * ці кроки сіють рядки й прибирають за собою). Окремий browser context —
+ * ці кроки сіють рядки й прибирають за собою) → доставка К3-Е6а
+ * (`./admin-shipping.mjs`, потребує й сторінки покупця; прибирає за собою). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
  * закривається тут, у `finally`. Виніс із `live-smoke.mjs` — канон 150 рядків.
@@ -22,6 +23,7 @@ import { runAdminSaveReturnStep } from './admin-save-return.mjs';
 import { runAdminOrderSaveReturnStep } from './admin-save-return-orders.mjs';
 import { runAdminListsPaginationStep } from './admin-lists-pagination.mjs';
 import { runAdminValidationErrorsStep } from './admin-validation-errors.mjs';
+import { runAdminShippingStep } from './admin-shipping.mjs';
 
 export async function runOwnerSteps({
   browser,
@@ -87,6 +89,16 @@ export async function runOwnerSteps({
     // Пагінація списків — ОСТАННІМ: засів на 55+55 рядків не зачіпає кроки вище.
     await runAdminListsPaginationStep({
       context: owner.context,
+      base,
+      dbUrl,
+      check,
+    });
+    // Доставка К3-Е6а — ПІСЛЯ пагінації: крок тимчасово додає другу точку й
+    // способи, а воронка й `resolveStockPoint` стоять на одній точці демо;
+    // прибирає за собою сам.
+    await runAdminShippingStep({
+      context: owner.context,
+      buyerPage,
       base,
       dbUrl,
       check,
