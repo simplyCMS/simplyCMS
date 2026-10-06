@@ -292,9 +292,9 @@ where s.slug = 'sonyachni-paneli'
   );
 
 -- ── 10. Доставка й залишки (К2-Е0): магазин, у якому можна купити ─────────
-insert into public.shipping_methods (id, code, name, description, type, is_active, sort_order)
+insert into public.shipping_methods (id, code, name, description, provider, pricing, is_active, sort_order)
 values ('1000000a-0000-4000-8000-000000000001'::uuid, 'pickup', 'Самовивіз',
-        'Забрати зі складу у Києві', 'system', true, 0)
+        'Забрати зі складу у Києві', 'core:pickup', 'rates', true, 0)
 on conflict (code) do nothing;
 
 -- 🔴 `shipping_rates.zone_id` — NOT NULL: одна дефолтна зона на всю країну;

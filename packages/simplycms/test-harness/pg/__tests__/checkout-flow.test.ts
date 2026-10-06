@@ -132,8 +132,8 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     // метод без жодного тарифу.
     await queryRows(
       dbUrl,
-      `insert into public.shipping_methods (id, code, name, is_active)
-      values (gen_random_uuid(), 'courier', 'Курʼєр', true), (gen_random_uuid(), 'norate', 'Без тарифу', true)`,
+      `insert into public.shipping_methods (id, code, name, is_active, provider)
+      values (gen_random_uuid(), 'courier', 'Курʼєр', true, 'core:address'), (gen_random_uuid(), 'norate', 'Без тарифу', true, 'core:address')`,
     );
     await queryRows(
       dbUrl,

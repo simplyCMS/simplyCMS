@@ -85,8 +85,8 @@ export const COMMERCE_FIXTURE_STATEMENTS: string[] = [
    select gen_random_uuid(), u.id, u.email, 'Гуртовик', 'c0000002-0000-4000-8000-000000000002'
      from public.users u where u.email = '${WHOLESALE_EMAIL}'`,
 
-  `insert into public.shipping_methods (id, code, name, is_active)
-   values (gen_random_uuid(), '${COURIER_CODE}', 'Курʼєр контуру', true)`,
+  `insert into public.shipping_methods (id, code, name, is_active, provider)
+   values (gen_random_uuid(), '${COURIER_CODE}', 'Курʼєр контуру', true, 'core:address')`,
   `insert into public.shipping_rates
      (id, method_id, zone_id, name, calculation_type, base_cost, free_from_amount, min_order_amount, is_active, sort_order)
    select gen_random_uuid(), m.id, z.id, 'Тариф курʼєра контуру', 'free_from',

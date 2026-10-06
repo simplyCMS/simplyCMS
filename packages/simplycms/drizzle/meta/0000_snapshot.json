@@ -1536,12 +1536,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "delivery_method": {
-          "name": "delivery_method",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "payment_method": {
           "name": "payment_method",
           "type": "text",
@@ -2119,7 +2113,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "pickup_points_zone_id_fkey": {
@@ -4144,19 +4138,19 @@
           "primaryKey": false,
           "notNull": false
         },
-        "type": {
-          "name": "type",
-          "type": "shipping_method_type",
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pricing": {
+          "name": "pricing",
+          "type": "shipping_pricing",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'manual'"
-        },
-        "plugin_name": {
-          "name": "plugin_name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
+          "default": "'rates'"
         },
         "is_active": {
           "name": "is_active",
@@ -4637,7 +4631,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "stock_by_pickup_point_product_id_fkey": {
@@ -6102,17 +6096,16 @@
         "flat",
         "weight",
         "order_total",
-        "free_from",
-        "plugin"
+        "free_from"
       ]
     },
-    "public.shipping_method_type": {
-      "name": "shipping_method_type",
+    "public.shipping_pricing": {
+      "name": "shipping_pricing",
       "schema": "public",
       "values": [
-        "system",
-        "manual",
-        "plugin"
+        "rates",
+        "provider",
+        "carrier"
       ]
     },
     "public.stock_status": {

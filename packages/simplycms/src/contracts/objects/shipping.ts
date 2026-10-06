@@ -1,16 +1,20 @@
 // Доменні типи доставки. Винесено з core/lib/shipping/types.
 
-export type ShippingMethodType = 'system' | 'manual' | 'plugin';
+import type {
+  ShippingPricing,
+  ShippingProviderId,
+} from '../shipping-providers';
+
 export type ShippingCalculationType =
-  'flat' | 'weight' | 'order_total' | 'free_from' | 'plugin';
+  'flat' | 'weight' | 'order_total' | 'free_from';
 
 export interface ShippingMethod {
   id: string;
   code: string;
   name: string;
   description: string | null;
-  type: ShippingMethodType;
-  plugin_name: string | null;
+  provider: ShippingProviderId;
+  pricing: ShippingPricing;
   is_active: boolean;
   sort_order: number;
   config: Record<string, unknown>;
@@ -88,7 +92,7 @@ export interface Coordinates {
   lng: number;
 }
 
-/** Контекст для розрахунку доставки (передається в plugin-hooks). */
+/** Контекст для розрахунку доставки. */
 export interface ShippingCalculationContext {
   method: ShippingMethod;
   zone: ShippingZone | null;
@@ -114,7 +118,7 @@ export interface ShippingCalculationResult {
   rateId: string | null;
   cost: number;
   estimatedDays: string | null;
-  pluginData?: Record<string, unknown>;
+  pricing: ShippingPricing;
 }
 
 export interface ShippingFormData {
@@ -123,5 +127,4 @@ export interface ShippingFormData {
   pickupPointId?: string;
   city?: string;
   address?: string;
-  pluginData?: Record<string, unknown>;
 }

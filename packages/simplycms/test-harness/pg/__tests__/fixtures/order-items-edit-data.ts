@@ -17,8 +17,8 @@ export const INVERTER_PRICE = '1234.55';
 export const BIFACIAL_PRICE = 500;
 
 const courier = (code: string, type: string, cost: string): string[] => [
-  `insert into public.shipping_methods (id, code, name, is_active)
-   values (gen_random_uuid(), '${code}', '${code}', true)`,
+  `insert into public.shipping_methods (id, code, name, is_active, provider)
+   values (gen_random_uuid(), '${code}', '${code}', true, 'core:address')`,
   `insert into public.shipping_rates
      (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
    select gen_random_uuid(), m.id, z.id, '${code}', '${type}', ${cost}, true, 0

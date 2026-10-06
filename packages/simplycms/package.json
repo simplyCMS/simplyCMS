@@ -13,6 +13,7 @@
     "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
+    "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
@@ -132,6 +133,10 @@
       "./contracts/order-status-codes": {
         "types": "./dist/contracts/order-status-codes.d.ts",
         "import": "./dist/contracts/order-status-codes.js"
+      },
+      "./contracts/shipping-providers": {
+        "types": "./dist/contracts/shipping-providers.d.ts",
+        "import": "./dist/contracts/shipping-providers.js"
       },
       "./contracts/server-only": {
         "types": "./dist/contracts/server-only.d.ts",

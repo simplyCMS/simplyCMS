@@ -68,7 +68,6 @@ const calculationTypeLabels: Record<ShippingCalculationType, MessageKey> = {
   weight: 'admin.shipping.rates.calc.weight',
   order_total: 'admin.shipping.rates.calc.percent',
   free_from: 'admin.shipping.rates.calc.freeFrom',
-  plugin: 'admin.shipping.rates.calc.plugin',
 };
 
 // Parse comma/newline separated string into array

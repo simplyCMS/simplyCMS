@@ -64,8 +64,8 @@ export const discountGroupOperator = pgEnum("discount_group_operator", ['and', '
 export const discountTargetType = pgEnum("discount_target_type", ['product', 'modification', 'section', 'all'])
 export const discountType = pgEnum("discount_type", ['percent', 'fixed_amount', 'fixed_price'])
 export const propertyType = pgEnum("property_type", ['text', 'number', 'select', 'multiselect', 'range', 'color', 'boolean'])
-export const shippingCalculationType = pgEnum("shipping_calculation_type", ['flat', 'weight', 'order_total', 'free_from', 'plugin'])
-export const shippingMethodType = pgEnum("shipping_method_type", ['system', 'manual', 'plugin'])
+export const shippingCalculationType = pgEnum("shipping_calculation_type", ['flat', 'weight', 'order_total', 'free_from'])
+export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 'carrier'])
 export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', 'on_order'])
 
 
@@ -528,8 +528,10 @@ export const shippingMethods = pgTable("shipping_methods", {
 	code: varchar({ length: 50 }).notNull(),
 	name: text().notNull(),
 	description: text(),
-	type: shippingMethodType().default('manual').notNull(),
-	pluginName: varchar("plugin_name", { length: 100 }),
+	// Без default навмисно (Е6а-6): спосіб без провайдера — дефект, і кожна вставка
+	// (фікстура, сід, адмінка) мусить назвати його явно. Значення — `ShippingProviderId`.
+	provider: text().notNull(),
+	pricing: shippingPricing().default('rates').notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	config: jsonb().default({}),
@@ -621,7 +623,7 @@ export const pickupPoints = pgTable("pickup_points", {
 			columns: [table.methodId],
 			foreignColumns: [shippingMethods.id],
 			name: "pickup_points_method_id_fkey"
-		}).onDelete("cascade"),
+		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.zoneId],
 			foreignColumns: [shippingZones.id],
@@ -649,7 +651,7 @@ export const stockByPickupPoint = pgTable("stock_by_pickup_point", {
 			columns: [table.pickupPointId],
 			foreignColumns: [pickupPoints.id],
 			name: "stock_by_pickup_point_pickup_point_id_fkey"
-		}).onDelete("cascade"),
+		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.productId],
 			foreignColumns: [products.id],
@@ -800,7 +802,6 @@ export const orders = pgTable("orders", {
 	phone: text().notNull(),
 	deliveryAddress: text("delivery_address"),
 	deliveryCity: text("delivery_city"),
-	deliveryMethod: text("delivery_method"),
 	paymentMethod: text("payment_method").notNull(),
 	subtotal: numeric({ precision: 12, scale:  2 }).notNull(),
 	total: numeric({ precision: 12, scale:  2 }).notNull(),

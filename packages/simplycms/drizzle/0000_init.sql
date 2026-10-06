@@ -3,8 +3,8 @@ CREATE TYPE "public"."discount_group_operator" AS ENUM('and', 'or', 'not', 'min'
 CREATE TYPE "public"."discount_target_type" AS ENUM('product', 'modification', 'section', 'all');--> statement-breakpoint
 CREATE TYPE "public"."discount_type" AS ENUM('percent', 'fixed_amount', 'fixed_price');--> statement-breakpoint
 CREATE TYPE "public"."property_type" AS ENUM('text', 'number', 'select', 'multiselect', 'range', 'color', 'boolean');--> statement-breakpoint
-CREATE TYPE "public"."shipping_calculation_type" AS ENUM('flat', 'weight', 'order_total', 'free_from', 'plugin');--> statement-breakpoint
-CREATE TYPE "public"."shipping_method_type" AS ENUM('system', 'manual', 'plugin');--> statement-breakpoint
+CREATE TYPE "public"."shipping_calculation_type" AS ENUM('flat', 'weight', 'order_total', 'free_from');--> statement-breakpoint
+CREATE TYPE "public"."shipping_pricing" AS ENUM('rates', 'provider', 'carrier');--> statement-breakpoint
 CREATE TYPE "public"."stock_status" AS ENUM('in_stock', 'out_of_stock', 'on_order');--> statement-breakpoint
 CREATE TABLE "banners" (
 	"id" uuid PRIMARY KEY NOT NULL,
@@ -167,7 +167,6 @@ CREATE TABLE "orders" (
 	"phone" text NOT NULL,
 	"delivery_address" text,
 	"delivery_city" text,
-	"delivery_method" text,
 	"payment_method" text NOT NULL,
 	"subtotal" numeric(12, 2) NOT NULL,
 	"total" numeric(12, 2) NOT NULL,
@@ -434,8 +433,8 @@ CREATE TABLE "shipping_methods" (
 	"code" varchar(50) NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
-	"type" "shipping_method_type" DEFAULT 'manual' NOT NULL,
-	"plugin_name" varchar(100),
+	"provider" text NOT NULL,
+	"pricing" "shipping_pricing" DEFAULT 'rates' NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"config" jsonb DEFAULT '{}'::jsonb,
@@ -666,7 +665,7 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_shipping_rate_id_fkey" FOREIGN KEY (
 ALTER TABLE "orders" ADD CONSTRAINT "orders_shipping_zone_id_fkey" FOREIGN KEY ("shipping_zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_status_id_fkey" FOREIGN KEY ("status_id") REFERENCES "public"."order_statuses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifications" ADD CONSTRAINT "product_modifications_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -692,7 +691,7 @@ ALTER TABLE "service_requests" ADD CONSTRAINT "service_requests_user_id_fkey" FO
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_categories" ADD CONSTRAINT "user_categories_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

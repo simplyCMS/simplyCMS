@@ -10,9 +10,11 @@ import type {
 import { formatPrice } from './money';
 import { roundMoney } from './pricing';
 
+// Е6а-21: читачі знімка беруть парсер із наявного субшляху `simplycms/domain/shipping`.
+export { parseShippingSnapshot } from './shipping-snapshot';
+
 export type {
   ShippingMethod,
-  ShippingMethodType,
   ShippingCalculationType,
   ShippingZone,
   ShippingRate,
