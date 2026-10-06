@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  * 405 з `Allow: GET` через `ANY`, без БД і без SSR.
  *
  * Диспетчер нижче — модель пошуку Start
- * (`handlers[method] ?? handlers.ANY`, `createStartHandler.js:374`): саме
- * через неї `GET` за іменем має пріоритет над `ANY`. Живий доказ на зібраному
+ * (`handleServerRoutes` у `@tanstack/start-server-core`
+ * `createStartHandler.js`: `handlers[method] ?? handlers.ANY`, для HEAD —
+ * `HEAD ?? GET ?? ANY`): саме через неї `GET` за іменем має пріоритет над `ANY`. Живий доказ на зібраному
  * сервері — рядок `GET /api/health` у `gateHttp` (`scripts/pilot-pack/gate-b.mjs`),
  * який `pnpm live:smoke` проганяє першим.
  */

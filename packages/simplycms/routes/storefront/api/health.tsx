@@ -47,7 +47,9 @@ export const Route = createFileRoute('/api/health')({
         );
       },
       // 🔴 Будь-який інший метод — 405 без БД і без SSR (Е6б-28). Start шукає
-      // `handlers[method] ?? handlers.ANY` (`createStartHandler.js:374`): без
+      // хендлер у `handleServerRoutes` (`@tanstack/start-server-core`,
+      // `createStartHandler.js`): `handlers[method] ?? handlers.ANY`, а для
+      // HEAD — `HEAD ?? GET ?? ANY` (тож HEAD іде в `GET`, не в 405). Без
       // `ANY` POST падав у рендер роутера і віддавав сторінку 200 або 500
       // залежно від БД. Правило «реєструй методи поіменно, не `ANY`» стосується
       // РОЗДАЧІ (публічний роут почав би відповідати на POST/DELETE); тут `ANY`

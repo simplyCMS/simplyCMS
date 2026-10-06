@@ -26,7 +26,7 @@
 | `_storefront/` | `routes/storefront/` | SSR | публічні сторінки, SEO; loader надає `themeName` |
 | `_protected/` | `routes/storefront/` | SSR guard + client | `beforeLoad` перевіряє сесію, редіректить на `/auth` |
 | `auth/` | `routes/storefront/` | client-only + server route | форми входу; `callback` — server handler |
-| `api/` | `routes/storefront/` | server routes | `server.handlers` (health, revalidate-theme, `auth/*` — монтування Better Auth) |
+| `api/` | `routes/storefront/` | server routes | `server.handlers` (health — `GET`, решта методів 405 через `ANY`; `auth/*` — монтування Better Auth) |
 | `media/` | `routes/storefront/` | server route | роздача файлів `/media/*` з порту сховища |
 | `admin/` | `routes/admin/` | client-only (`ssr: false`) | `ssr: false` стоїть на `admin.tsx`; дочірні роути його **не** повторюють |
 | `my/` | `src/routes/my/` | за потребою магазину | кастомні сторінки |
