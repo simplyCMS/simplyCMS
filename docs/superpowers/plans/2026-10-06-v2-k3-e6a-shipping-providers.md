@@ -17,6 +17,7 @@
 **Редакції:**
 - ред.1 (2026-10-06) — рішення власника Е6а-1…Е6а-4, рішення архітектора Е6а-5…Е6а-15.
 - ред.2 (2026-10-06) — аудит Codex (`gpt-6-sol`, read-only), REJECT: 5 blocker / 6 major. Кожну знахідку перевірено кодом, усі прийнято. Додано Е6а-16 (guard-хук фабрики), Е6а-17 (FK точок `RESTRICT`, захист залишків), Е6а-18 (режим ціни в квоті чекауту), Е6а-19 (розбір знімка без Zod у T1). Е6а-8, Е6а-12, Е6а-14 переглянуто; реєстр легасі й ратчет id — у задачах, що переписують сторінки; дані кроку `live:smoke` визначено.
+- ред.3 (2026-10-06) — друге коло аудиту Codex, REJECT: 4 з 11 знахідок ред.1 закрито, 6 частково; нові — 2 blocker / 6 major / 1 minor, усі перевірено кодом і прийнято. Е6а-16 — пакетна сигнатура над `ActorDb`; Е6а-17 — FK залишку теж `RESTRICT` і порядок локів (гонка з `saveStockOp`); Е6а-20 (активна дефолтна зона); Е6а-21 (публічні шляхи нових модулів); гейт Task 1 звужено; `quote-checkout.ts` у Task 2; крок `live:smoke` створює окремий спосіб самовивозу; порожні тіла тестів заборонено.
 
 ## Ухвалені рішення етапу
 
@@ -36,10 +37,12 @@
 | Е6а-12 | *(архітектор; ред.2 — Е6а-16/17)* **Інваріанти — під advisory-lock `'shipping-config'`** (`lockCatalogTarget`, як Е4): `setDefaultShippingZone`; `removeShippingZones` відмовляє для дефолтної; спосіб із точками не видаляється (FK `RESTRICT`, Е6а-17); `removePickupPoints` відмовляє для `is_system` і для точки із залишком (Е6а-17); insert точки перевіряє, що `method_id` — спосіб із `destination === 'pickup-point'`; insert способу перевіряє `isShippingProviderId(provider)`; insert/update способу з `pricing = 'provider'` при `supportsQuote = false` — відмова. Перевірки insert/update — guard-хуком фабрики (Е6а-16), не лише UI. Відмови — `AdminConflictError('state', <constraint>)` з 409 і людським тостом. `pickup_points.is_system` — `readonly` | Легасі тримав ці інваріанти лише прихованою кнопкою. Generic `remove` без guard видалив би склад разом із залишками |
 | Е6а-13 | *(архітектор)* **Публічний рядок способу (довідник вітрини) — без `config`** | Довідник читає аноном; у К5 `config` може містити секрети провайдера. Вбудовані провайдери `config` не використовують |
 | Е6а-14 | *(архітектор; ред.2)* **Кеш поза колекціями.** Після кожної мутації доставки й точок інвалідуються `AGGREGATE.shippingDirectory.key` (чекаут), `AGGREGATE.stockInfo.key` (`useStock`, `core/hooks/useStock.ts:32`) і ключі `ENTITY.pickupPoints` (`usePickupPoints`/`usePickupPointsCount`), разом із write-back колекції | Правило `mutation-cache-sync` бачить лише колекцію; без цього власник додав точку, а картка товару й чекаут бачать стару до 1–5 хв |
-| Е6а-16 | *(архітектор; ред.2 — аудит blocker 1)* **Guard-хук фабрики `defineAdminResource`:** опційні `lock?: string` і `guard?: (db, write: { kind: 'insert'; rows } \| { kind: 'update'; id; patch }) => Promise<void>`. Порядок у транзакції операції `insert`/`update`: `lockCatalogTarget(db, lock)` ПЕРШИМ запитом → `guard` → запис. Guard відмовляє `throw` (`AdminConflictError('state', …)` із 409). Без `lock`/`guard` поведінка фабрики незмінна | `insert`/`update` фабрики кличуть `insertResourceRows`/`updateResourceRows` напряму (`resource.ts:119,130`), тож інваріанти запису ніде не перевіряються. Хук — загальний механізм; хвилі Е6 (знижки) потребуватимуть того самого |
-| Е6а-17 | *(архітектор; ред.2 — аудит blocker 2)* **Залишки не губляться видаленням.** FK `pickup_points.method_id` → `ON DELETE RESTRICT` (правка baseline): спосіб із точками не видаляється, наявний мапінг `23503` дає `AdminConflictError('reference')` і тост «використовується». `removePickupPointsOp` відмовляє (`'pickup_point_has_stock'`), якщо в точки є рядок `stock_by_pickup_point` з `quantity <> 0` або позиція з `stock_point_id = точка and stock_reserved > 0`. Шлях для власника — деактивація | Каскад точка → залишки знищує склад мовчки, а позиції незавершених замовлень втрачають точку повернення (`order-stock.ts:92`). Нульові рядки залишку каскадом прибирати безпечно |
+| Е6а-16 | *(архітектор; ред.2 — аудит blocker 1)* **Guard-хук фабрики `defineAdminResource`:** опційні `lock?: string` і `guard?: (db: ActorDb, write: { kind: 'insert'; rows: Insert[] } \| { kind: 'update'; updates: { id: string; patch: Patch }[] }) => Promise<void>` — над ВСІМ пакетом (insert і update фабрики — масиви до 100, `resource-schemas.ts:117`). Порядок у транзакції операції: `lockCatalogTarget(db, lock)` ПЕРШИМ запитом → `guard` для всього пакета → запис. Невалідний будь-який елемент відкочує весь пакет. Guard відмовляє `throw` (`AdminConflictError('state', …)` із 409). Без `lock`/`guard` поведінка фабрики незмінна | `insert`/`update` фабрики кличуть `insertResourceRows`/`updateResourceRows` напряму (`resource.ts:119,130`), тож інваріанти запису ніде не перевіряються. Хук — загальний механізм; хвилі Е6 (знижки) потребуватимуть того самого |
+| Е6а-17 | *(архітектор; ред.2 — аудит blocker 2; ред.3 — гонка з `saveStockOp`)* **Залишки не губляться видаленням — гарантує БД.** FK `pickup_points.method_id` і FK `stock_by_pickup_point.pickup_point_id` → `ON DELETE RESTRICT` (правка baseline): спосіб із точками й точку з будь-яким рядком залишку база не видаляє, мапінг `23503` дає `AdminConflictError('reference')` і тост «використовується». `removePickupPointsOp` під `SHIPPING_CONFIG_LOCK`: (1) `select … from stock_by_pickup_point where pickup_point_id = any($ids) order by id for update` — той самий рядковий лок, що бере резерв замовлення (`lockTargetStock`), тож оформлення в польоті дочекається або буде дочекане; (2) рядок із `quantity <> 0` або позиція з `stock_point_id ∈ ids and stock_reserved > 0` → `'pickup_point_has_stock'`; (3) видалити нульові рядки залишку; (4) видалити точки. Рядок залишку, вставлений `saveStockOp` після кроку (1) (інший advisory-key), тримає `FOR KEY SHARE` на точці — видалення дочекається його COMMIT і впаде на FK → `reference`. Шлях для власника — деактивація | Каскад точка → залишки знищує склад мовчки, позиції незавершених замовлень втрачають точку повернення (`order-stock.ts:92`), а перевірка в коді без FK не атомарна відносно `saveStockOp` (`stock/save.ts:87`, інший лок) |
 | Е6а-18 | *(архітектор; ред.2 — аудит blocker 5)* **Режим ціни в квоті чекауту.** `CheckoutQuote` (`contracts/objects/order.ts:124`) отримує `shippingPricing: ShippingPricing`; `prepareCheckout` бере його з результату `quoteShippingCost`; `CheckoutQuoteDetails` при `carrier` показує «За тарифами перевізника» замість «Безкоштовно» | Інакше підсумок форматує 0 як «Безкоштовно» (`domain/shipping.ts:185`) |
-| Е6а-19 | *(архітектор; ред.2 — аудит major 8)* **T0 лишається type-only.** `contracts/shipping-snapshot.ts` — лише тип; `contracts/shipping-providers.ts` — тип і прості константи. `parseShippingSnapshot` — ручний type-guard без Zod у `domain/shipping-snapshot.ts` (T1, без IO, доступний вітрині й адмінці). Запис знімка будує код (`resolveDestination`), тож Zod на записі не потрібен | `contracts` — «0 runtime-залежностей», type-only (`packages/README.md:29`, `contracts/index.ts:2`); Zod у `contracts` і `domain` не імпортується |
+| Е6а-19 | *(архітектор; ред.2 — аудит major 8)* **T0 лишається type-only.** `contracts/shipping-providers.ts` — типи (зокрема `ShippingSnapshot`) і прості константи (ред.3: окремого `shipping-snapshot.ts` у T0 немає, Е6а-21). `parseShippingSnapshot` — ручний type-guard без Zod у `domain/shipping-snapshot.ts` (T1, без IO, доступний вітрині й адмінці). Запис знімка будує код (`resolveDestination`), тож Zod на записі не потрібен | `contracts` — «0 runtime-залежностей», type-only (`packages/README.md:29`, `contracts/index.ts:2`); Zod у `contracts` і `domain` не імпортується |
+| Е6а-20 | *(архітектор; ред.3 — аудит major 5)* **Дефолтна зона завжди активна.** Guard зон відмовляє деактивувати дефолтну (`'shipping_zone_default'`); `setDefaultShippingZoneOp` приймає лише активну ціль (`'shipping_zone_inactive'`) | Довідник бере лише активні зони (`shipping-directory.ts:72`), а fallback шукає дефолт серед них (`domain/shipping.ts:217`): вимкнена дефолтна мовчки лишає без доставки всі міста поза зонами |
+| Е6а-21 | *(архітектор; ред.3 — аудит major 6)* **Публічні шляхи нових модулів.** Новий субшлях `simplycms/contracts/shipping-providers` (тип `ShippingSnapshot` теж тут; `contracts/shipping-snapshot.ts` НЕ створюється) — у `exports` і `publishConfig.exports` (прецедент `./contracts/order-status-codes`); `parseShippingSnapshot` — реекспорт із `domain/shipping.ts` (доступний через наявний `simplycms/domain` і його субшлях `shipping`) | T5-читачі імпортують лише пакетними субшляхами; барель `contracts` type-only |
 | Е6а-15 | *(архітектор)* **Слот `admin.shipping.method.settings` видаляється** (тип у `plugins/types.ts`, документація в `plugins/hooks.ts`, рендер у легасі). Налаштування провайдерів плагінів К5 будує ядро з `configSchema`. Форма `configSchema` в Е6а не потрібна: у вбудованих провайдерів `config` немає | Споживачів у репо немає; тригер `type === 'plugin'` зникає разом із колонкою |
 
 **Поза Е6а (план каже це вголос):**
@@ -103,7 +106,7 @@ Task 6, 7 ─► Task 8 (гейти легасі) ─► Task 9 (live:smoke, д�
 ## File Structure
 
 **Створюються:**
-- `packages/simplycms/src/contracts/{shipping-providers,shipping-snapshot}.ts`;
+- `packages/simplycms/src/contracts/shipping-providers.ts`; `packages/simplycms/src/domain/shipping-snapshot.ts`; `test-harness/pg/__tests__/shipping-fk.test.ts`;
 - `packages/simplycms/src/commerce/shipping-providers.ts`;
 - `packages/simplycms/src/admin-server/impl/{shipping-methods,shipping-zones,shipping-rates,pickup-points}/**` (`resource.ts`, `remove.ts`, `set-default.ts` для зон, `guards.ts`);
 - `packages/simplycms/src/admin-data/collections/{shipping-methods,shipping-zones,shipping-rates,pickup-points}.ts` + `admin-data/shipping-cache.ts`;
@@ -131,9 +134,9 @@ Task 6, 7 ─► Task 8 (гейти легасі) ─► Task 9 (live:smoke, д�
 ## Task 1: Схема доставки й контракти T0 (Е6а-5…Е6а-8)
 
 **Files:**
-- Create: `packages/simplycms/src/contracts/shipping-providers.ts`, `packages/simplycms/src/contracts/shipping-snapshot.ts` (лише тип), `packages/simplycms/src/domain/shipping-snapshot.ts` (+ `domain/__tests__/shipping-snapshot.test.ts`)
+- Create: `packages/simplycms/src/contracts/shipping-providers.ts` (константи + типи, зокрема `ShippingSnapshot`; субшлях Е6а-21 у `package.json` `exports` і `publishConfig.exports`), `packages/simplycms/src/domain/shipping-snapshot.ts` (реекспорт із `domain/shipping.ts`; + `domain/__tests__/shipping-snapshot.test.ts`)
 - Modify (мінімально, щоб `typecheck` закрився в Task 3): легасі-споживачі контрактних типів, що ламаються, — відомий `admin/pages/ShippingZoneEdit.tsx:66-72` (ключ `plugin` у `calculationTypeLabels`); решту знаходить `pnpm typecheck` і правиться тут же
-- Modify: `packages/simplycms/src/schema/schema.ts:67-68,526-541,620,803` (FK `pickup_points.method_id` → `restrict`, Е6а-17), `packages/simplycms/src/schema/README.md:53` (назва enum), `packages/simplycms/migrations/0001_init.sql`, `packages/simplycms/drizzle/{0000_init.sql,meta/0000_snapshot.json}`, `packages/simplycms/migrations/demo/demo-seed.sql:295-330`, `packages/simplycms/src/contracts/objects/shipping.ts`, фікстури харнеса (8 вставок `shipping_methods`: `fixtures/{shipping,commerce,order-items-edit-data}.ts`, `checkout-flow.test.ts`, `storefront-personal-data.test.ts`, `admin-catalog-ops.test.ts`), копії `template:sync`
+- Modify: `packages/simplycms/src/schema/schema.ts:67-68,526-541,620,649,803` (FK `pickup_points.method_id` і `stock_by_pickup_point.pickup_point_id` → `restrict`, Е6а-17), `packages/simplycms/src/schema/README.md:53` (назва enum), `packages/simplycms/migrations/0001_init.sql`, `packages/simplycms/drizzle/{0000_init.sql,meta/0000_snapshot.json}`, `packages/simplycms/migrations/demo/demo-seed.sql:295-330`, `packages/simplycms/src/contracts/objects/shipping.ts`, фікстури харнеса (8 вставок `shipping_methods`: `fixtures/{shipping,commerce,order-items-edit-data}.ts`, `checkout-flow.test.ts`, `storefront-personal-data.test.ts`, `admin-catalog-ops.test.ts`), копії `template:sync`
 
 **Interfaces:**
 - Produces: `SHIPPING_PROVIDER`, `ShippingProviderId = 'core:address' | 'core:pickup'`, `ShippingPricing = 'rates' | 'provider' | 'carrier'`, `SHIPPING_PRICINGS` (кортеж), `SHIPPING_PROVIDERS` (Е6а-7), `isShippingProviderId(x: string): x is ShippingProviderId`; тип `ShippingSnapshot` (T0); `parseShippingSnapshot(json: unknown): ShippingSnapshot | null` у `domain/shipping-snapshot.ts` — ручний type-guard без Zod (Е6а-19), невалідне або `{}` → `null`, без throw.
@@ -146,7 +149,7 @@ Task 6, 7 ─► Task 8 (гейти легасі) ─► Task 9 (live:smoke, д�
 - [ ] **Step 4: Перевірка канону**
 
 Run: `pnpm exec drizzle-kit generate` (конфіг пакета) → `No schema changes`; `pnpm test:schema` → PASS; `pnpm db:demo` → без помилок.
-Expected: компілятор ламає споживачів `type`/`plugin_name`/`delivery_method` — це очікувано; `pnpm typecheck` у цій задачі НЕ гейт (його закриває Task 2/3). Гейт задачі: `pnpm test:schema && pnpm vitest run packages/simplycms/src/domain`. У `test:schema` — кейс: `delete from shipping_methods` способу з точкою → `23503` (Е6а-17).
+Expected: компілятор ламає споживачів `type`/`plugin_name`/`delivery_method` — це очікувано; `pnpm typecheck` у цій задачі НЕ гейт (його закриває Task 3). 🔴 Повний `pnpm test:schema` теж НЕ гейт Task 1: `checkout-flow.test.ts` кличе `placeOrderFor`, а `order-create.ts:64` ще пише `deliveryMethod` до Task 2. Гейт задачі — канон без оформлення: `pnpm exec vitest run --config vitest.schema.config.ts baseline grants-parity id-defaults explicit-ids single-default demo-seed seed-determinism shipping-fk && pnpm vitest run packages/simplycms/src/domain`. Новий `shipping-fk.test.ts`: `delete` способу з точкою → `23503`; `delete` точки з рядком залишку (і з нульовим) → `23503`.
 
 - [ ] **Step 5: Коміт** — `feat(k3-e6a): схема доставки provider+pricing і контракти знімка`.
 
@@ -156,7 +159,7 @@ Expected: компілятор ламає споживачів `type`/`plugin_na
 
 **Files:**
 - Create: `packages/simplycms/src/commerce/shipping-providers.ts`
-- Modify: `packages/simplycms/src/contracts/objects/order.ts:124` (`CheckoutQuote.shippingPricing`), `storefront/loaders/prepare-checkout.ts`, `packages/simplycms/src/domain/shipping.ts:28-135`, `domain/__tests__/shipping.test.ts`, `commerce/{shipping-choice,shipping-directory,shipping-types,index}.ts`, `storefront/loaders/{order-create,place-order,place-order-support,entities/new-order,entities/order}.ts`, `admin-server/impl/order-items/totals.ts`, `test-harness/pg/__tests__/{commerce-shipping,checkout-flow,shipping-directory}.test.ts`
+- Modify: `packages/simplycms/src/contracts/objects/order.ts:124` (`CheckoutQuote.shippingPricing`), `storefront/loaders/{prepare-checkout,quote-checkout}.ts` (`quote-checkout.ts:52` будує `CheckoutQuote`; `pricing` іде через `PreparedCheckout`), `packages/simplycms/src/domain/shipping.ts:28-135`, `domain/__tests__/shipping.test.ts`, `commerce/{shipping-choice,shipping-directory,shipping-types,index}.ts`, `storefront/loaders/{order-create,place-order,place-order-support,entities/new-order,entities/order}.ts`, `admin-server/impl/order-items/totals.ts`, `test-harness/pg/__tests__/{commerce-shipping,checkout-flow,shipping-directory}.test.ts`
 
 **Interfaces:**
 - Consumes: Task 1.
@@ -178,9 +181,9 @@ it('pricing rates → перший застосовний тариф, pricing ra
 it('pricing provider → null (вбудовані провайдери не рахують)', () => {});
 ```
 
-- [ ] **Step 2: Харнес (червоний)** — `commerce-shipping.test.ts` / `checkout-flow.test.ts`: (а) `placeOrderFor` самовивозом → `shipping_data` дорівнює знімку з назвою й адресою точки, `delivery_method` колонки немає; (б) адресний спосіб `carrier` → `shipping_cost = 0`, `total = subtotal`, знімок `kind: 'address'`; (в) `pickupPointId` точки ІНШОГО способу самовивозу → `pickup_point_invalid`; (г) `recomputeOrderTotals` для замовлення способу `carrier` після зміни кількості → `shipping_cost = 0` (Review Focus 2); (д) після `update pickup_points set name = 'Інша'` рядок `orders.shipping_data` незмінний (Review Focus 4); (е) квота чекауту способу `carrier` → `shippingPricing = 'carrier'`.
+- [ ] **Step 2: Харнес (червоний)** — `commerce-shipping.test.ts` / `checkout-flow.test.ts`: (а) `placeOrderFor` самовивозом → `shipping_data` дорівнює знімку з назвою й адресою точки, `delivery_method` колонки немає; (б) адресний спосіб `carrier` → `shipping_cost = 0`, `total = subtotal`, знімок `kind: 'address'`; (в) `pickupPointId` точки ІНШОГО способу самовивозу → `pickup_point_invalid`; (г) `recomputeOrderTotals` для замовлення способу `carrier` після зміни кількості → `shipping_cost = 0` (Review Focus 2); (д) після `update pickup_points set name = 'Інша'` рядок `orders.shipping_data` незмінний (Review Focus 4); (е) `quoteCheckoutFor` для способу `carrier` → `quote.shippingPricing === 'carrier'`, `shippingCost === 0`.
 - [ ] **Step 3: Реалізація** за Interfaces; `code === 'pickup'` у `shipping-choice.ts` зникає (Е6а-9).
-- [ ] **Step 4: Зелене** — Run: `pnpm test:schema && pnpm vitest run packages/simplycms/src/domain packages/simplycms/src/commerce` → PASS.
+- [ ] **Step 4: Зелене** — Run: `pnpm test:schema && pnpm vitest run packages/simplycms/src/domain packages/simplycms/src/commerce` → PASS (тут повний `test:schema` уже гейт).
 - [ ] **Step 5: Коміт** — `feat(k3-e6a): режим ціни в рушії, провайдери і знімок доставки в замовленні`.
 
 ---
@@ -188,7 +191,7 @@ it('pricing provider → null (вбудовані провайдери не ра
 ## Task 3: Чекаут, оплата, показ знімка (Е6а-3, Е6а-4, Е6а-8, Е6а-9)
 
 **Files:**
-- Modify: `checkout-ui/{CheckoutDeliveryForm,CheckoutPaymentForm,CheckoutQuoteDetails}.tsx` (+ тести), `admin-server/impl/orders/resource.ts:48`, `admin-server/impl/__tests__/orders-config.ts:21`, `admin-data/__tests__/support/orders-server-stub.ts:76` (без `deliveryMethod`), `storefront-routes/pages/{Checkout,OrderSuccess,ProfileOrderDetail}.tsx`, `storefront-routes/pages/checkout/{useCheckoutQuote,quote-state,build-quote-input}.ts`, `storefront-routes/server/checkout-input.ts`, `contracts/objects/order.ts:73`, `core/hooks/useShippingDirectory.ts`, `admin/features/orders/detail/{OrderDeliveryCard,OrderCustomerCard}.tsx`, i18n `checkout.ts`, `orders`, `admin/orders.ts`; тести `CheckoutDeliveryForm.test.tsx`, `order-success-guest-token.test.tsx`, `profile-order-cancel-button.test.tsx`
+- Modify: `checkout-ui/{CheckoutDeliveryForm,CheckoutPaymentForm,CheckoutQuoteDetails}.tsx` (+ тести), `admin-server/impl/orders/resource.ts:48`, `admin-server/impl/__tests__/orders-config.ts:21`, `admin-data/__tests__/support/orders-server-stub.ts:76` (без `deliveryMethod`), `storefront-routes/__tests__/order-success-token.test.tsx:47` (фікстура `delivery_method`), `storefront-routes/pages/{Checkout,OrderSuccess,ProfileOrderDetail}.tsx`, `storefront-routes/pages/checkout/{useCheckoutQuote,quote-state,build-quote-input}.ts`, `storefront-routes/server/checkout-input.ts`, `contracts/objects/order.ts:73`, `core/hooks/useShippingDirectory.ts`, `admin/features/orders/detail/{OrderDeliveryCard,OrderCustomerCard}.tsx`, i18n `checkout.ts`, `orders`, `admin/orders.ts`; тести `CheckoutDeliveryForm.test.tsx`, `order-success-guest-token.test.tsx`, `profile-order-cancel-button.test.tsx`
 
 **Interfaces:**
 - Consumes: `SHIPPING_PROVIDERS`, `parseShippingSnapshot`, `ShippingCalculationResult.pricing`.
@@ -216,11 +219,11 @@ it('pricing provider → null (вбудовані провайдери не ра
 
 **Interfaces:**
 - `SHIPPING_CONFIG_LOCK = 'shipping-config'` (усі операції нижче беруть його ПЕРШИМ запитом транзакції через `lockCatalogTarget`).
-- Фабрика (Е6а-16): `lock?: string`, `guard?: (db: AdminDb, write: { kind: 'insert'; rows: Insert[] } | { kind: 'update'; id: string; patch: Patch }) => Promise<void>`; порядок «lock → guard → запис» в одній транзакції `run`.
+- Фабрика (Е6а-16): `lock?: string`, `guard?: (db: ActorDb, write: { kind: 'insert'; rows: Insert[] } | { kind: 'update'; updates: { id: string; patch: Patch }[] }) => Promise<void>`; порядок «lock → guard усього пакета → запис» в одній транзакції `run`.
 - `shippingMethodsOps`: `lock: SHIPPING_CONFIG_LOCK`, `guard` (provider з реєстру, `pricing provider` лише з `supportsQuote`), `operation: 'shipping.manage'`, `mode: 'eager'`, `insertOnly: ['provider']`, `writable`: `code, name, description, pricing, isActive, sortOrder, icon, config`, `touch: 'updatedAt'`; `refine.code` — regex як у типів цін. Insert/update з `pricing: 'provider'` при `!SHIPPING_PROVIDERS[provider].supportsQuote` → `AdminConflictError('state', 'shipping_pricing_unsupported')` — через `guards.ts`, а не лише UI.
-- `shippingZonesOps`: eager; `isDefault` — `readonly`. `setDefaultShippingZoneOp({ data: { id } }) → { rows }` — дослівно патерн `price-types/set-default.ts`. `removeShippingZonesOp` — відмова для дефолтної (`'shipping_zone_default'`).
+- `shippingZonesOps`: eager; `lock` + `guard` (Е6а-20: не деактивувати дефолтну); `isDefault` — `readonly`. `setDefaultShippingZoneOp({ data: { id } }) → { rows }` — патерн `price-types/set-default.ts` + відмова для неактивної цілі (`'shipping_zone_inactive'`). `removeShippingZonesOp` — відмова для дефолтної (`'shipping_zone_default'`).
 - `shippingRatesOps`: `mode: 'on-demand'`, `filterable: ['methodId', 'zoneId']`, `sortable: ['sortOrder']`, усі поля тарифу `writable`, `methodId`/`zoneId` — `insertOnly`.
-- `pickupPointsOps`: eager; `lock` + `guard`; `isSystem` — `readonly`; `methodId` — `insertOnly` і перевіряється guard-ом: спосіб із `destination === 'pickup-point'`, інакше `'pickup_point_method_invalid'`. `removePickupPointsOp` — відмова для `is_system` (`'pickup_point_system'`) і для точки із залишком (`'pickup_point_has_stock'`, Е6а-17).
+- `pickupPointsOps`: eager; `lock` + `guard`; `isSystem` — `readonly`; `methodId` — `insertOnly` і перевіряється guard-ом: спосіб із `destination === 'pickup-point'`, інакше `'pickup_point_method_invalid'`. `removePickupPointsOp` — відмова для `is_system` (`'pickup_point_system'`) і для точки із залишком (`'pickup_point_has_stock'`); порядок кроків — Е6а-17 дослівно.
 - `removeShippingMethodsOp` — guarded batch під локом; спосіб із точками відмовляє через FK `RESTRICT` → `AdminConflictError('reference')` (Review Focus 1).
 - serverFn: `list/insert/update/remove` для чотирьох сутностей (remove — лише іменовані guarded-операції), `setDefaultShippingZone`.
 
@@ -237,6 +240,9 @@ describe('admin: доставка (Е6а, Task 4)', () => {
   it('remove точки з quantity <> 0 → pickup_point_has_stock; рядки залишку незмінні', async () => {});
   it('remove точки, на яку посилається позиція зі stock_reserved > 0 → pickup_point_has_stock', async () => {});
   it('remove точки лише з нульовими рядками залишку → видалено разом із рядками', async () => {});
+  it('гонка: незакомічений insert рядка залишку на точку (окреме зʼєднання) → remove стоїть (stillPending); COMMIT → AdminConflictError reference; рядок і точка на місці', async () => {});
+  it('змішаний batch insertPickupPoints [валідна, з адресним methodId] → відмова; ЖОДНОГО рядка не вставлено', async () => {});
+  it('update зони { isActive: false } для дефолтної → shipping_zone_default; setDefault неактивної → shipping_zone_inactive', async () => {});
   it('remove системної точки → pickup_point_system; точка на місці', async () => {});
   it('прямий insertPickupPoints з methodId адресного способу → pickup_point_method_invalid; рядка немає', async () => {});
   it('прямий insertShippingMethods з provider "nova-poshta:x" → відмова; рядка немає', async () => {});
@@ -250,11 +256,11 @@ describe('admin: доставка (Е6а, Task 4)', () => {
 });
 ```
 
-Кожен кейс відмови має SQL-асерт стану ПІСЛЯ відмови (Review Focus 1), а не лише `rejects`. `snapshotShipping` — хелпер у файлі тесту (ОРІЄНТИР).
+Кожен кейс відмови має SQL-асерт стану ПІСЛЯ відмови (Review Focus 1), а не лише `rejects`. `snapshotShipping` — хелпер у файлі тесту (ОРІЄНТИР). 🔴 Порожні тіла вище — лише перелік кейсів: до запуску RED кожен `it` написаний повністю (виклик операції, точний `kind`/`constraint`, SQL-стан після), і звіт показує, що кожен падає з ОЧІКУВАНОЇ причини (немає операції/guard), а не проходить порожнім.
 
 Негативний контроль (вивід у звіт): прибрати `lockCatalogTarget` із `setDefaultShippingZoneOp` → тест локу червоніє; повернути FK на `cascade` → червоніє перший кейс; прибрати виклик `guard` у фабриці → червоніють кейси прямого insert.
 
-- [ ] **Step 2: Реалізація** за Interfaces; тости для шести нових `constraint` (`shipping_pricing_unsupported`, `shipping_provider_unknown`, `shipping_zone_default`, `pickup_point_method_invalid`, `pickup_point_system`, `pickup_point_has_stock`) — у `adminErrorKey` + i18n.
+- [ ] **Step 2: Реалізація** за Interfaces; тости для семи нових `constraint` (`shipping_pricing_unsupported`, `shipping_provider_unknown`, `shipping_zone_default`, `shipping_zone_inactive`, `pickup_point_method_invalid`, `pickup_point_system`, `pickup_point_has_stock`) — у `adminErrorKey` + i18n.
 - [ ] **Step 3: Зелене** — Run: `pnpm test:schema && pnpm lint && pnpm typecheck && pnpm test && pnpm build:packages && pnpm pilot:pack --skip-build` → PASS; Gate C зелений.
 - [ ] **Step 4: Коміт** — `feat(k3-e6a): ресурси доставки з інваріантами під shipping-config lock`.
 
@@ -327,18 +333,18 @@ describe('admin: доставка (Е6а, Task 4)', () => {
 ## Task 9: Живий прогін і доки
 
 **Files:**
-- Create: `scripts/live-smoke/admin-shipping.mjs` (`runAdminShippingStep({ context, base, dbUrl, check })`), `scripts/live-smoke/admin-shipping-sql.mjs`
+- Create: `scripts/live-smoke/admin-shipping.mjs` (`runAdminShippingStep({ context, buyerPage, base, dbUrl, check })`), `scripts/live-smoke/admin-shipping-sql.mjs`
 - Modify: `scripts/live-smoke/owner-steps.mjs`; доки: `docs/tasks/v2-state-map.md` (§1, нове §2.8, §3.1, §3.7 — К3-Е5-2 закрито, §6), `docs/tasks/platform-roadmap.md`, `docs/architecture/{plugins,data-layer}.md` (слот видалено; знімок доставки), `CHANGELOG.md`
 
 **Interfaces:**
 - Крок іде ПІСЛЯ наявних кроків власника і прибирає за собою створене. Воронка покупця й `resolveStockPoint` покладаються на рівно одну активну точку демо-сіду.
 - Дані кроку (ред.2, аудит major 7) — створюються кроком і прибираються в `finally`:
   - товар для самовивозу — демо-товар з обліком залишку (SQL `admin-shipping-sql.mjs`); після створення нової точки власником крок кладе SQL-ом рядок `stock_by_pickup_point` цього товару на нову точку (кількість 5), бо `reserveStock` на точці без залишку відмовляє (`stock-reservation.ts:87`), а обрана точка не має fallback (`stock-write.ts:49`);
-  - тариф самовивозу вже є в дефолтній зоні демо-сіду, тож нова точка без нової зони обслуговується наявним тарифом;
+  - власник створює ОКРЕМИЙ спосіб «Самовивіз Е6а» (`core:pickup`, `rates`) з тарифом `flat` у зоні «Україна» і точку цього способу (спека, частина 1: «створює спосіб «Самовивіз» і спосіб «Кур'єр»»);
   - доказ setDefault: власник створює зону «Е6а-тест», робить її дефолтною (бейдж переходить), потім повертає дефолт «Україні» і видаляє тестову — ДО оформлення замовлень покупцем, бо тариф самовивозу живе в зоні «Україна».
-- Власник у браузері: створює спосіб «Кур'єр» (`core:address`, `carrier`) і другу точку видачі способу «Самовивіз»; пробує видалити «Самовивіз» → тост «використовується», спосіб на місці; пробує видалити нову точку, коли на ній лежить товар → тост, точка на місці.
+- Власник у браузері: створює «Самовивіз Е6а» з точкою і тарифом та спосіб «Кур'єр» (`core:address`, `carrier`); пробує видалити «Самовивіз Е6а» → тост «використовується», спосіб на місці; пробує видалити нову точку, коли на ній лежить товар → тост, точка на місці.
 - Покупець (окрема сторінка, як `admin-orders-buyer.mjs`): оформлює «Кур'єр» → SQL: `shipping_cost = 0`, `total = subtotal`, `shipping_data.pricing = 'carrier'`; оформлює самовивіз на нову точку → `shipping_data.destination.name` = назва точки; власник перейменовує точку → картка замовлення показує стару назву.
-- Прибирання: залишок нової точки обнуляється SQL-ом; замовлення на ній скасовуються (повернення залишку); точка й «Кур'єр» деактивуються й видаляються. Тестові замовлення лишаються — `pickup_point_id` → NULL, знімок живий. Після кроку демо знову має рівно одну активну точку.
+- Прибирання (`finally`, САМЕ в цьому порядку): (1) скасувати тестові замовлення й перевірити `stock_reserved = 0` їхніх позицій; (2) видалити SQL-ом тестовий рядок залишку; (3) деактивувати й видалити точку, тариф, «Самовивіз Е6а» і «Кур'єр». Тестові замовлення лишаються — `pickup_point_id`/`shipping_method_id` → NULL, знімок живий. Після кроку демо знову має рівно одну активну точку й один спосіб самовивозу.
 
 - [ ] **Step 1: Крок `live:smoke`** — Run: `pnpm live:smoke` → 0 FAIL; вивід цілком — у «Факти виконання».
 - [ ] **Step 2: Негативний контроль** — у `createOrder` тимчасово писати `shippingData: {}` → крок червоніє на знімку; вивід у звіт; відкотити.
