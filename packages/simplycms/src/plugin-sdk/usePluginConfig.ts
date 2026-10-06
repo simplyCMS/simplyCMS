@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { z, ZodObject, ZodRawShape } from 'zod';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 import type { JsonValue } from 'simplycms/storefront/loaders';
 import {
   pluginConfigRead,
@@ -16,8 +17,8 @@ import {
  * матеріалізовані. Битий config → дефолти + console.warn, не падіння.
  *
  * 🔴 Транспорт — serverFn (рішення B9): браузер до БД не звертається. Запис
- * дозволений лише адміну, і перевіряє це СЕРВЕР — `save` віддає `false`,
- * коли права немає.
+ * дозволений лише з правом `settings.manage`, і перевіряє це СЕРВЕР
+ * (`AuthzError`) — `save` віддає `false`, коли права немає.
  */
 
 export interface PluginConfigResult<S extends ZodObject<ZodRawShape>> {
@@ -87,16 +88,28 @@ export function usePluginConfig<S extends ZodObject<ZodRawShape>>(
         return false;
       }
 
-      const written = await pluginConfigWrite({
-        data: {
-          plugin: pluginName,
-          // Значення вже пройшло схему плагіна — далі його форму описує
-          // тільки JSON, бо саме ним воно їде на сервер.
-          config: parsed.data as Record<string, JsonValue>,
-        },
-      });
-      if (written) setRaw(parsed.data);
-      return written;
+      try {
+        await pluginConfigWrite({
+          data: {
+            plugin: pluginName,
+            // Значення вже пройшло схему плагіна — далі його форму описує
+            // тільки JSON, бо саме ним воно їде на сервер.
+            config: parsed.data as Record<string, JsonValue>,
+          },
+        });
+      } catch (error) {
+        // 🔴 За `name`, а не `instanceof`: адаптер START-2
+        // (`runtime/domain-error-adapter`) відновлює на клієнті звичайний
+        // `Error` з `name`, а не екземпляр `AuthzError` (Е6б-13, ред.3).
+        // Відмова в праві — штатна відповідь `false`; решта летить далі.
+        if (
+          (error as { name?: unknown } | null)?.name === DOMAIN_ERROR_NAME.authz
+        )
+          return false;
+        throw error;
+      }
+      setRaw(parsed.data);
+      return true;
     },
     [pluginName, schema],
   );

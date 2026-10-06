@@ -64,6 +64,27 @@ import {
   pickupPointsOps,
   removePickupPointsInput,
   removePickupPointsOp,
+  getSystemSettingsOp,
+  storeProfileInput,
+  saveStoreProfileOp,
+  saveStockManagementInput,
+  saveStockManagementOp,
+  listThemesOp,
+  activateThemeInput,
+  activateThemeOp,
+  saveThemeSettingsInput,
+  saveThemeSettingsOp,
+  listPluginsOp,
+  setPluginActiveInput,
+  setPluginActiveOp,
+} from 'simplycms/admin-server/impl';
+
+// Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
+// живим не-serverFn експортом не є і клієнтську трансформацію не ламає.
+export type {
+  PluginRow,
+  SystemSettings,
+  ThemeRow,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -430,3 +451,39 @@ export const updatePickupPoints = createServerFn({ method: 'POST' })
 export const removePickupPoints = createServerFn({ method: 'POST' })
   .validator(adminInput(removePickupPointsInput))
   .handler(removePickupPointsOp);
+
+// К3-Е6б, Task 3: системні налаштування (`settings.manage`, Е6б-13). Профіль
+// і облік — окремі операції (Е6б-21); активація теми — під локом `site-theme`
+// (Е6б-15); кеш вітрини скидають самі операції після COMMIT (Е6б-9).
+// Читання без вводу — без валідатора: перевіряти нічого.
+export const getSystemSettings = createServerFn({ method: 'GET' }).handler(
+  getSystemSettingsOp,
+);
+
+export const saveStoreProfile = createServerFn({ method: 'POST' })
+  .validator(adminInput(storeProfileInput))
+  .handler(saveStoreProfileOp);
+
+export const saveStockManagement = createServerFn({ method: 'POST' })
+  .validator(adminInput(saveStockManagementInput))
+  .handler(saveStockManagementOp);
+
+export const listThemes = createServerFn({ method: 'GET' }).handler(
+  listThemesOp,
+);
+
+export const activateTheme = createServerFn({ method: 'POST' })
+  .validator(adminInput(activateThemeInput))
+  .handler(activateThemeOp);
+
+export const saveThemeSettings = createServerFn({ method: 'POST' })
+  .validator(adminInput(saveThemeSettingsInput))
+  .handler(saveThemeSettingsOp);
+
+export const listPlugins = createServerFn({ method: 'GET' }).handler(
+  listPluginsOp,
+);
+
+export const setPluginActive = createServerFn({ method: 'POST' })
+  .validator(adminInput(setPluginActiveInput))
+  .handler(setPluginActiveOp);

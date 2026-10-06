@@ -89,7 +89,11 @@ export const pluginConfigRead = createServerFn({ method: 'GET' })
     selectPluginConfig((data as { plugin: string }).plugin),
   );
 
-/** Запис конфіга плагіна — лише адмін; `false` означає відмову доступу. */
+/**
+ * Запис конфіга плагіна — право `settings.manage` (Е6б-13). Відмова — кидок
+ * `AuthzError` (403), а не `false`: `usePluginConfig.save` сам зводить її до
+ * `false` для плагіна; конфіг понад 64 КБ — 400.
+ */
 export const pluginConfigWrite = createServerFn({ method: 'POST' })
   .validator(
     z.object({
@@ -97,13 +101,9 @@ export const pluginConfigWrite = createServerFn({ method: 'POST' })
       config: z.record(z.string(), z.json()),
     }),
   )
-  .handler(async ({ data }): Promise<boolean> => {
+  .handler(async ({ data }): Promise<void> => {
     const input = data as { plugin: string; config: Record<string, JsonValue> };
-    return savePluginConfig(
-      input.plugin,
-      input.config,
-      await isAdminRequest(getRequest().headers),
-    );
+    await savePluginConfig(input.plugin, input.config);
   });
 
 /**

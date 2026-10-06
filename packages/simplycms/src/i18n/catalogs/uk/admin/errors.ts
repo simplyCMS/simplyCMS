@@ -27,5 +27,11 @@ export const messages = {
   'admin.errors.pickupPointSystem': 'Системну точку (склад) видалити не можна',
   'admin.errors.pickupPointHasStock':
     'На точці є залишок товару або резерв замовлень — деактивуйте її замість видалення',
+  'admin.errors.storeLogoInvalid':
+    'Логотип має бути завантажений через форму профілю — оберіть файл ще раз',
+  'admin.errors.themeNotBuilt':
+    'Цієї теми немає у збірці магазину — додайте її пакет і перезберіть магазин',
+  'admin.errors.themeUnknown': 'Тему не знайдено — оновіть сторінку',
+  'admin.errors.pluginUnknown': 'Плагін не знайдено — оновіть сторінку',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

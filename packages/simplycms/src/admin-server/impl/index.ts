@@ -104,6 +104,24 @@ export {
   removePickupPointsInput,
   removePickupPointsOp,
 } from './pickup-points/remove';
+export { getSystemSettingsOp } from './settings/get';
+export type { SystemSettings } from './settings/get';
+export { storeProfileInput } from './settings/profile-schema';
+export { saveStoreProfileOp } from './settings/save-profile';
+export {
+  saveStockManagementInput,
+  saveStockManagementOp,
+} from './settings/save-stock';
+export { listThemesOp } from './themes/list';
+export type { ThemeRow } from './themes/list';
+export { activateThemeInput, activateThemeOp } from './themes/activate';
+export {
+  saveThemeSettingsInput,
+  saveThemeSettingsOp,
+} from './themes/save-settings';
+export { listPluginsOp } from './plugins/list';
+export type { PluginRow } from './plugins/list';
+export { setPluginActiveInput, setPluginActiveOp } from './plugins/set-active';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';

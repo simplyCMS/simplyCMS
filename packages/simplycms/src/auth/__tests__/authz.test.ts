@@ -79,6 +79,15 @@ describe('authz: shipping.manage (Е6а-11)', () => {
   });
 });
 
+describe('authz: settings.manage (Е6б-13)', () => {
+  it('адмін керує профілем, складом, темами й плагінами з scope any; покупцю й аноніму — AuthzError', () => {
+    expect(requireOperation(ADMIN, 'settings.manage')).toBe('any');
+    expect(() => requireOperation(USER, 'settings.manage')).toThrow(AuthzError);
+    expect(() => requireOperation(ANON, 'settings.manage')).toThrow(AuthzError);
+    expect(AUTHZ_MATRIX['settings.manage']).toEqual({ admin: 'any' });
+  });
+});
+
 describe('authz: хелпери відмови', () => {
   it('requireOperation повертає scope, а не void', () => {
     expect(requireOperation(USER, 'order.read')).toBe('own');
