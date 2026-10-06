@@ -18,7 +18,7 @@
 
 ---
 
-## [0.8.1] — 2026-10-06
+## [0.9.0] — 2026-10-06
 
 К3-Е6а: доставка «провайдер + режим ціни» на серверному шарі адмінки (спека
 [`2026-10-06-commerce-providers-design.md`](docs/superpowers/specs/2026-10-06-commerce-providers-design.md),
