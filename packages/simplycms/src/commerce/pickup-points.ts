@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { pickupPoints } from 'simplycms/schema';
 import type {
   Coordinates,
@@ -18,7 +18,36 @@ export async function loadPickupPoints(db: ActorDb): Promise<PickupPointRow[]> {
     .where(eq(pickupPoints.isActive, true))
     .orderBy(asc(pickupPoints.sortOrder));
 
-  return rows.map((row) => ({
+  return rows.map(toPickupPointRow);
+}
+
+/**
+ * Активна точка видачі за id, що належить САМЕ цьому способу самовивозу
+ * (точка іншого способу — `null`, а не чужа адреса в замовленні).
+ */
+export async function loadPickupPoint(
+  db: ActorDb,
+  pointId: string,
+  methodId: string,
+): Promise<PickupPointRow | null> {
+  const [row] = await db
+    .select()
+    .from(pickupPoints)
+    .where(
+      and(
+        eq(pickupPoints.id, pointId),
+        eq(pickupPoints.methodId, methodId),
+        eq(pickupPoints.isActive, true),
+      ),
+    )
+    .limit(1);
+  return row ? toPickupPointRow(row) : null;
+}
+
+function toPickupPointRow(
+  row: typeof pickupPoints.$inferSelect,
+): PickupPointRow {
+  return {
     id: row.id,
     method_id: row.methodId,
     name: row.name,
@@ -32,5 +61,5 @@ export async function loadPickupPoints(db: ActorDb): Promise<PickupPointRow[]> {
     sort_order: row.sortOrder,
     coordinates: (row.coordinates ?? null) as Coordinates | null,
     created_at: row.createdAt,
-  }));
+  };
 }

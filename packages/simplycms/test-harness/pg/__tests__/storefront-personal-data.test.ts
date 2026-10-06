@@ -23,6 +23,7 @@ import {
   withOrderTokenDb,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
+import type { NewOrderInput } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -42,13 +43,18 @@ interface IdRow {
   id: string;
 }
 
-const orderInput = (name: string) => ({
+const orderInput = (name: string): NewOrderInput => ({
   firstName: name,
   lastName: 'Тестовий',
   email: `${name}@example.test`,
   phone: '+380000000000',
   shippingMethodId: SHIPPING_METHOD_ID,
-  shippingMethodCode: null,
+  shippingSnapshot: {
+    methodName: 'Тест',
+    provider: 'core:address',
+    pricing: 'rates',
+    destination: { kind: 'address', city: 'Київ', address: null },
+  },
   deliveryCity: 'Київ',
   deliveryAddress: 'вул. Тестова, 1',
   pickupPointId: null,
@@ -114,8 +120,8 @@ describe('персональні дані вітрини під актором',
     );
     await queryRows(
       dbUrl,
-      `insert into public.shipping_methods (id, code, name)
-       values (gen_random_uuid(), 'pickup', 'Самовивіз')`,
+      `insert into public.shipping_methods (id, code, name, provider)
+       values (gen_random_uuid(), 'pickup', 'Самовивіз', 'core:pickup')`,
     );
     [{ id: SHIPPING_METHOD_ID }] = (await queryRows(
       dbUrl,

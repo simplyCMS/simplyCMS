@@ -53,6 +53,7 @@ export async function quoteCheckoutFor(
     items,
     subtotal: prepared.subtotal,
     shippingCost: prepared.shippingCost,
+    shippingPricing: prepared.shippingPricing,
     total: prepared.total,
   };
   return { ok: true, quote };

@@ -73,7 +73,6 @@ export function makeOrder(
     phone: '+380000000000',
     deliveryAddress: null,
     deliveryCity: null,
-    deliveryMethod: null,
     paymentMethod: 'cash',
     subtotal: '100.00',
     total: '100.00',

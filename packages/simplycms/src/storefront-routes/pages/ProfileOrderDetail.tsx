@@ -34,20 +34,14 @@ import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
+import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
 import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
 
 const orders = entityKey(ENTITY.orders);
 
-// Мапи ключів, а не текстів: код способу приходить із БД (див. OrderSuccess).
-const deliveryLabels: Record<string, MessageKey> = {
-  pickup: 'checkout.shipping.pickup',
-  nova_poshta: 'checkout.shipping.novaPoshta',
-  courier: 'checkout.shipping.courier',
-};
-
+// Мапа ключів, а не текстів: код оплати приходить із БД (див. OrderSuccess).
 const paymentLabels: Record<string, MessageKey> = {
   cash: 'checkout.payment.cash',
-  online: 'checkout.payment.online',
 };
 
 /** Причина відмови від скасування → ключ каталогу повідомлень. */
@@ -299,28 +293,8 @@ export default function ProfileOrderDetailPage() {
               <p className="text-sm text-muted-foreground">
                 {t('profile.order.shippingMethod')}
               </p>
-              <p className="font-medium">
-                {deliveryLabels[order.delivery_method || '']
-                  ? t(deliveryLabels[order.delivery_method || ''])
-                  : order.delivery_method || t('common.notSet')}
-              </p>
+              <ShippingSnapshotLines shippingData={order.shipping_data} />
             </div>
-            {order.delivery_city && (
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {t('common.city')}
-                </p>
-                <p className="font-medium">{order.delivery_city}</p>
-              </div>
-            )}
-            {order.delivery_address && (
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {t('common.address')}
-                </p>
-                <p className="font-medium">{order.delivery_address}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 

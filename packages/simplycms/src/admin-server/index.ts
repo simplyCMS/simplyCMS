@@ -52,6 +52,18 @@ import {
   searchProductsForOrderOp,
   reviewContentInput,
   getReviewContentOp,
+  shippingMethodsOps,
+  removeShippingMethodsInput,
+  removeShippingMethodsOp,
+  shippingZonesOps,
+  setDefaultShippingZoneInput,
+  setDefaultShippingZoneOp,
+  removeShippingZonesInput,
+  removeShippingZonesOp,
+  shippingRatesOps,
+  pickupPointsOps,
+  removePickupPointsInput,
+  removePickupPointsOp,
 } from 'simplycms/admin-server/impl';
 
 /**
@@ -346,3 +358,75 @@ export const searchProductsForOrder = createServerFn({ method: 'GET' })
 export const getAdminReviewContent = createServerFn({ method: 'GET' })
   .validator(adminInput(reviewContentInput))
   .handler(getReviewContentOp);
+
+// Е6а, Task 4: доставка (`shipping.manage`, Е6а-11). Insert/update способів,
+// зон і точок — фабрика з guard-хуком під `shipping-config` (Е6а-16); remove
+// для них — лише іменовані guarded-операції (Е6а-12, Е6а-17). Тарифи
+// видаляє generic remove фабрики без локу (Е6а-22).
+export const listShippingMethods = createServerFn({ method: 'GET' })
+  .validator(adminInput(shippingMethodsOps.subsetSchema))
+  .handler(shippingMethodsOps.list);
+
+export const insertShippingMethods = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingMethodsOps.insertSchema))
+  .handler(shippingMethodsOps.insert);
+
+export const updateShippingMethods = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingMethodsOps.updateSchema))
+  .handler(shippingMethodsOps.update);
+
+export const removeShippingMethods = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeShippingMethodsInput))
+  .handler(removeShippingMethodsOp);
+
+export const listShippingZones = createServerFn({ method: 'GET' })
+  .validator(adminInput(shippingZonesOps.subsetSchema))
+  .handler(shippingZonesOps.list);
+
+export const insertShippingZones = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingZonesOps.insertSchema))
+  .handler(shippingZonesOps.insert);
+
+export const updateShippingZones = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingZonesOps.updateSchema))
+  .handler(shippingZonesOps.update);
+
+export const removeShippingZones = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeShippingZonesInput))
+  .handler(removeShippingZonesOp);
+
+export const setDefaultShippingZone = createServerFn({ method: 'POST' })
+  .validator(adminInput(setDefaultShippingZoneInput))
+  .handler(setDefaultShippingZoneOp);
+
+export const listShippingRates = createServerFn({ method: 'GET' })
+  .validator(adminInput(shippingRatesOps.subsetSchema))
+  .handler(shippingRatesOps.list);
+
+export const insertShippingRates = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingRatesOps.insertSchema))
+  .handler(shippingRatesOps.insert);
+
+export const updateShippingRates = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingRatesOps.updateSchema))
+  .handler(shippingRatesOps.update);
+
+export const removeShippingRates = createServerFn({ method: 'POST' })
+  .validator(adminInput(shippingRatesOps.removeSchema))
+  .handler(shippingRatesOps.remove);
+
+export const listPickupPoints = createServerFn({ method: 'GET' })
+  .validator(adminInput(pickupPointsOps.subsetSchema))
+  .handler(pickupPointsOps.list);
+
+export const insertPickupPoints = createServerFn({ method: 'POST' })
+  .validator(adminInput(pickupPointsOps.insertSchema))
+  .handler(pickupPointsOps.insert);
+
+export const updatePickupPoints = createServerFn({ method: 'POST' })
+  .validator(adminInput(pickupPointsOps.updateSchema))
+  .handler(pickupPointsOps.update);
+
+export const removePickupPoints = createServerFn({ method: 'POST' })
+  .validator(adminInput(removePickupPointsInput))
+  .handler(removePickupPointsOp);

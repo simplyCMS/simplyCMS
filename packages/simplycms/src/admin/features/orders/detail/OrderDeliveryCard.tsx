@@ -1,26 +1,34 @@
-import type { MessageKey } from 'simplycms/i18n';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import type { AdminOrder } from 'simplycms/admin-data';
+import { parseShippingSnapshot } from 'simplycms/domain/shipping';
 
-const METHOD_KEYS: Record<string, MessageKey> = {
-  pickup: 'checkout.shipping.pickup',
-  nova_poshta: 'checkout.shipping.novaPoshta',
-  courier: 'checkout.shipping.courier',
-};
-
-/** Доставка: метод за кодом, місто, адреса, точка видачі. */
+/**
+ * Доставка зі знімка `shipping_data` (Е6а-8): назва способу й пункт такі, як
+ * на момент оформлення, а не uuid точки, якої вже може не бути. Рядок
+ * власний, а не `ShippingSnapshotLines` вітрини: адмінка показує підписані
+ * поля, вітрина — вільний текст.
+ */
 export function OrderDeliveryCard({ order }: { readonly order: AdminOrder }) {
   const t = useT();
-  const key = order.deliveryMethod ? METHOD_KEYS[order.deliveryMethod] : null;
+  const snapshot = parseShippingSnapshot(order.shippingData);
+  const dest = snapshot?.destination;
   const rows: [string, string | null][] = [
+    [t('admin.orders.methodLabel'), snapshot?.methodName ?? null],
+    [t('admin.orders.cityLabel'), dest?.city ?? order.deliveryCity],
     [
-      t('admin.orders.methodLabel'),
-      key ? t(key) : (order.deliveryMethod ?? null),
+      t('admin.orders.addressLabel'),
+      (dest?.kind === 'address' ? dest.address : null) ??
+        (dest ? null : order.deliveryAddress),
     ],
-    [t('admin.orders.cityLabel'), order.deliveryCity],
-    [t('admin.orders.addressLabel'), order.deliveryAddress],
-    [t('admin.orders.pickupPointLabel'), order.pickupPointId],
+    [
+      t('admin.orders.pickupPointLabel'),
+      dest?.kind === 'pickup-point' ? `${dest.name}, ${dest.address}` : null,
+    ],
+    [
+      t('cart.summary.shipping'),
+      snapshot?.pricing === 'carrier' ? t('orders.shipping.carrierNote') : null,
+    ],
   ];
   return (
     <Card>

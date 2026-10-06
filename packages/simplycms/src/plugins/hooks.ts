@@ -31,10 +31,6 @@ export const HOOK_ADMIN_PRODUCT_FORM_AFTER =
 export const HOOK_ADMIN_PRODUCT_FORM_SIDEBAR =
   'admin.product.form.sidebar' as const;
 
-/** Inject settings UI for shipping methods in admin. */
-export const HOOK_ADMIN_SHIPPING_METHOD_SETTINGS =
-  'admin.shipping.method.settings' as const;
-
 /** Inject additional fields into the admin discount form. */
 export const HOOK_ADMIN_DISCOUNT_FORM_FIELDS =
   'admin.discount.form.fields' as const;
@@ -125,7 +121,6 @@ export const ALL_HOOKS = [
   HOOK_ADMIN_PRODUCT_FORM_FIELDS,
   HOOK_ADMIN_PRODUCT_FORM_AFTER,
   HOOK_ADMIN_PRODUCT_FORM_SIDEBAR,
-  HOOK_ADMIN_SHIPPING_METHOD_SETTINGS,
   HOOK_ADMIN_DISCOUNT_FORM_FIELDS,
   // Public product
   HOOK_PRODUCT_DETAIL_BEFORE,

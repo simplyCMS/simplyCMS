@@ -51,7 +51,7 @@ function declareSchema<Out>(
  * згенеровані» колонки в insert-моделі відсутні). Це обмеження TypeScript
  * на генеричному `Pick`, не бібліотеки. Опційність зберігається.
  */
-type InsertPick<T extends Table, K> = {
+export type InsertPick<T extends Table, K> = {
   [
     P in keyof InferInsertModel<T> as P extends K ? P : never
   ]: InferInsertModel<T>[P];

@@ -15,5 +15,17 @@ export const messages = {
     'Цей товар зараз недоступний для замовлення',
   'admin.errors.orderAmountOutOfRange':
     'Сума замовлення перевищує допустиму межу — зміну не збережено',
+  'admin.errors.shippingPricingUnsupported':
+    'Цей провайдер не рахує вартість доставки сам — оберіть інший режим ціни',
+  'admin.errors.shippingProviderUnknown': 'Невідомий провайдер доставки',
+  'admin.errors.shippingZoneDefault':
+    'Зону за замовчуванням не можна вимкнути чи видалити — спершу призначте іншу',
+  'admin.errors.shippingZoneInactive':
+    'Зоною за замовчуванням може бути лише активна зона',
+  'admin.errors.pickupPointMethodInvalid':
+    'Точку видачі можна привʼязати лише до способу самовивозу',
+  'admin.errors.pickupPointSystem': 'Системну точку (склад) видалити не можна',
+  'admin.errors.pickupPointHasStock':
+    'На точці є залишок товару або резерв замовлень — деактивуйте її замість видалення',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

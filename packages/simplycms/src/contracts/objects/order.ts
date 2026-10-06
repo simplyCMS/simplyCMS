@@ -1,5 +1,6 @@
 // Доменні об'єкти замовлень.
 
+import type { ShippingPricing } from '../shipping-providers';
 import type { PageQuery } from './common';
 
 export interface OrderItem {
@@ -70,7 +71,7 @@ export interface PlaceOrderInput {
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;
-  paymentMethod: 'cash' | 'online';
+  paymentMethod: 'cash';
   notes: string | null;
   hasDifferentRecipient: boolean;
   recipientFirstName: string | null;
@@ -125,6 +126,8 @@ export interface CheckoutQuote {
   items: QuotedItem[];
   subtotal: number;
   shippingCost: number;
+  /** Режим ціни способу (Е6а-18): `carrier` показується не як «Безкоштовно». */
+  shippingPricing: ShippingPricing;
   total: number;
 }
 

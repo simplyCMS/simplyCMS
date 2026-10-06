@@ -54,7 +54,6 @@ const order = {
   last_name: 'Іваненко',
   email: 'guest@example.com',
   phone: '+380000000000',
-  delivery_method: 'pickup',
   payment_method: 'cash',
   total: 100,
   created_at: new Date('2026-10-04T10:00:00Z'),

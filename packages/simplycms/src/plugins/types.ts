@@ -171,7 +171,6 @@ export type HookName =
   | 'admin.product.form.fields'
   | 'admin.product.form.after'
   | 'admin.product.form.sidebar'
-  | 'admin.shipping.method.settings'
   | 'admin.discount.form.fields'
   // Public product hooks
   | 'product.detail.before'

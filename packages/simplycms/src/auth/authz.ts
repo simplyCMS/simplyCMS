@@ -33,6 +33,7 @@ export type Operation =
   | 'order.read'
   | 'order.create'
   | 'order.manage'
+  | 'shipping.manage'
   | 'profile.read'
   | 'profile.update'
   | 'review.create'
@@ -66,6 +67,9 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // замовлення не каталог; окрема операція — точка для майбутньої ролі
   // «менеджер замовлень» без переписування операцій.
   'order.manage': { admin: 'any' },
+  // Е6а-11: записи й читання доставки адмінкою (способи, зони, тарифи,
+  // точки). Не `catalog.write` — доставка не каталог; прецедент `order.manage`.
+  'shipping.manage': { admin: 'any' },
   'profile.read': { user: 'own', admin: 'any' },
   'profile.update': { user: 'own', admin: 'any' },
   'review.create': { user: 'own', admin: 'any' },

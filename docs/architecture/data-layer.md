@@ -354,3 +354,33 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
 валідатора без `adminInput` не пишемо.
 
+## 11. Знімок доставки в замовленні (К3-Е6а)
+
+- Спосіб доставки — **провайдер + режим ціни**. Провайдер (`shipping_methods.provider`,
+  `core:address` | `core:pickup`) каже, куди везти, і незмінний після створення
+  (`insertOnly`). Режим (`shipping_methods.pricing`: `rates` | `provider` | `carrier`)
+  обирає власник. Опис провайдерів для клієнта — T0 `simplycms/contracts/shipping-providers`
+  (лише типи й константи). Серверна поведінка — `simplycms/commerce`
+  (`resolveDestination`). Розгалуження за режимом живе в одному рушії
+  `resolveShippingRate`: його ділять показ (`useShippingDirectory.rateFor`) і запис
+  (`quoteShippingCost`, `recomputeOrderTotals`). `carrier` — `shipping_cost = 0`,
+  `total = subtotal`, підпис «За тарифами перевізника».
+- 🔴 **Замовлення зберігає знімок, а не посилання.** `createOrder` пише в
+  `orders.shipping_data` тип `ShippingSnapshot` (`simplycms/contracts/shipping-providers`):
+  `methodName`, `provider`, `pricing` і `destination`. `destination` — або адреса
+  (`city`, `address`), або точка (`pointId`, `name`, `address`, `city`). Знімок будує
+  `prepareCheckout` через провайдера. Читачі — картка адмінки (`OrderDeliveryCard`),
+  `OrderSuccess`, `ProfileOrderDetail`. Вони розбирають знімок
+  `parseShippingSnapshot` (`simplycms/domain/shipping`, ручний type-guard без Zod) і
+  живу точку чи спосіб не читають: після перейменування або видалення замовлення
+  лишається тим самим. Знімок, що не розібрався (`{}`), вітрина показує як «Не вказано».
+- `orders.pickup_point_id` і `orders.shipping_method_id` — `ON DELETE SET NULL`:
+  видалення способу чи точки знімка не зачіпає. `orders.delivery_method` видалено
+  (дублював код способу). Залишки від видалення стереже БД:
+  `pickup_points.method_id` і `stock_by_pickup_point.pickup_point_id` — `ON DELETE
+  RESTRICT`. Точку із залишком чи резервом `removePickupPointsOp` відхиляє 409
+  `pickup_point_has_stock`.
+- Гейти: харнес `pnpm test:schema` (знімок у БД незмінний після `update pickup_points
+  set name`), рендер-тести трьох читачів зі знімка, де жива точка інша, і `live:smoke`
+  (крок `admin-shipping.mjs`). Негативний контроль `shippingData: {}` у `createOrder`
+  валить крок прогону.

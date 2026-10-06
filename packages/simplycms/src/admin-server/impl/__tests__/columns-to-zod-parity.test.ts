@@ -33,7 +33,9 @@ const resources = [
 const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),
 );
-const NINE = [
+// Е6а: + `PgArray` (`shipping_zones.cities/regions`, text[]) — десятий тип.
+const TYPES = [
+  'PgArray',
   'PgUUID',
   'PgText',
   'PgVarchar',
@@ -46,9 +48,9 @@ const NINE = [
 ];
 
 describe('паритет columnsToZod з drizzle-zod', () => {
-  it('9 типів колонок у ресурсних таблицях і жодного невідомого', () => {
+  it('10 типів колонок у ресурсних таблицях і жодного невідомого', () => {
     const types = [...new Set(columns.map((c) => c.columnType))].sort();
-    expect(types).toEqual([...NINE].sort());
+    expect(types).toEqual([...TYPES].sort());
     expect(() => columns.forEach((c) => columnSchema(c))).not.toThrow();
     expect(resources.length).toBeGreaterThan(0);
   });
@@ -109,6 +111,8 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       // Тема 12: виняток numeric не послаблює гейт — повернення до
       // drizzle-zod-поведінки (`z.string()`) тепер ЧЕРВОНІЄ.
       'm5 numeric: без формату': mutate('PgNumeric', () => z.string()),
+      // Е6а: схема елемента масиву — не декорація (`[1]`, `['a', 1]` у VALUES).
+      'm6 PgArray: items any': mutate('PgArray', () => z.array(z.any())),
     };
     const byName = new Map<string, Column>(
       resources.flatMap((r) =>
@@ -124,6 +128,7 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       'm3 varchar: без max': (c) => c.columnType === 'PgVarchar',
       'm4 timestamp: date -> any': (c) => c.columnType === 'PgTimestamp',
       'm5 numeric: без формату': (c) => c.columnType === 'PgNumeric',
+      'm6 PgArray: items any': (c) => c.columnType === 'PgArray',
     };
     it('контроль ідентичності: незмінений генератор — порожній diff', () => {
       const identity: Gen = (t, m, r) => ({ ...columnsToZod(t, m, r) });

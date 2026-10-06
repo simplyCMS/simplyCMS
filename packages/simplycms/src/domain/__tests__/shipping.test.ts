@@ -38,11 +38,11 @@ function makeCtx(
       code: 'm',
       name: 'M',
       description: null,
-      type: 'system',
-      plugin_name: null,
+      provider: 'core:address',
+      pricing: 'rates',
       is_active: true,
       sort_order: 0,
-      config: {},
+
       icon: null,
       created_at: new Date('2026-01-01T00:00:00Z'),
       updated_at: new Date('2026-01-01T00:00:00Z'),
@@ -94,15 +94,39 @@ describe('calculateShippingCost', () => {
 });
 
 describe('calculateShipping', () => {
-  it('returns null for plugin methods', async () => {
-    const ctx = makeCtx({ method: { ...makeCtx().method, type: 'plugin' } });
-    expect(await calculateShipping(ctx, [makeRate({})])).toBeNull();
+  const withPricing = (pricing: 'rates' | 'provider' | 'carrier') =>
+    makeCtx({ method: { ...makeCtx().method, pricing } });
+
+  it('pricing carrier → cost 0 і pricing carrier, тарифи ігноруються', async () => {
+    expect(
+      await calculateShipping(withPricing('carrier'), [
+        makeRate({ base_cost: 150 }),
+      ]),
+    ).toMatchObject({ cost: 0, pricing: 'carrier', rateId: null });
   });
 
-  it('picks first applicable active rate', async () => {
-    const res = await calculateShipping(makeCtx(), [makeRate({ id: 'r1' })]);
-    expect(res?.rateId).toBe('r1');
-    expect(res?.cost).toBe(50);
+  it('pricing carrier не потребує жодного тарифу', async () => {
+    expect(await calculateShipping(withPricing('carrier'), [])).toMatchObject({
+      cost: 0,
+      pricing: 'carrier',
+    });
+  });
+
+  it('pricing rates → перший застосовний тариф, pricing rates', async () => {
+    const res = await calculateShipping(withPricing('rates'), [
+      makeRate({ id: 'r1' }),
+    ]);
+    expect(res).toMatchObject({ rateId: 'r1', cost: 50, pricing: 'rates' });
+  });
+
+  it('pricing rates без застосовного тарифу → null', async () => {
+    expect(await calculateShipping(withPricing('rates'), [])).toBeNull();
+  });
+
+  it('pricing provider → null (вбудовані провайдери не рахують)', async () => {
+    expect(
+      await calculateShipping(withPricing('provider'), [makeRate({})]),
+    ).toBeNull();
   });
 });
 

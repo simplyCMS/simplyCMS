@@ -91,6 +91,23 @@ export function createAdminServerMock(
     removeOrderItem: vi.fn(),
     searchProductsForOrder: vi.fn(),
     getAdminReviewContent: vi.fn(),
+    listShippingMethods: list(),
+    insertShippingMethods: vi.fn(),
+    updateShippingMethods: vi.fn(),
+    removeShippingMethods: vi.fn(),
+    listShippingZones: list(),
+    insertShippingZones: vi.fn(),
+    updateShippingZones: vi.fn(),
+    removeShippingZones: vi.fn(),
+    setDefaultShippingZone: vi.fn(),
+    listShippingRates: list(),
+    insertShippingRates: vi.fn(),
+    updateShippingRates: vi.fn(),
+    removeShippingRates: vi.fn(),
+    listPickupPoints: list(),
+    insertPickupPoints: vi.fn(),
+    updatePickupPoints: vi.fn(),
+    removePickupPoints: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

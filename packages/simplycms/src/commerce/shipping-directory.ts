@@ -4,6 +4,7 @@ import {
   shippingRates,
   shippingZones,
 } from 'simplycms/schema';
+import { isShippingProviderId } from 'simplycms/contracts/shipping-providers';
 import type { ActorDb } from 'simplycms/db';
 import type { JsonValue } from 'simplycms/schema/types';
 import { loadPickupPoints } from './pickup-points';
@@ -40,26 +41,46 @@ export async function loadShippingDirectory(
 export async function loadShippingMethods(
   db: ActorDb,
 ): Promise<ShippingMethodRow[]> {
+  // 🔴 Колонки перелічено явно: `config` у публічний довідник не потрапляє (Е6а-13).
   const rows = await db
-    .select()
+    .select({
+      id: shippingMethods.id,
+      code: shippingMethods.code,
+      name: shippingMethods.name,
+      description: shippingMethods.description,
+      provider: shippingMethods.provider,
+      pricing: shippingMethods.pricing,
+      isActive: shippingMethods.isActive,
+      sortOrder: shippingMethods.sortOrder,
+      icon: shippingMethods.icon,
+      createdAt: shippingMethods.createdAt,
+      updatedAt: shippingMethods.updatedAt,
+    })
     .from(shippingMethods)
     .where(eq(shippingMethods.isActive, true))
     .orderBy(asc(shippingMethods.sortOrder));
 
-  return rows.map((row) => ({
-    id: row.id,
-    code: row.code,
-    name: row.name,
-    description: row.description,
-    type: row.type,
-    plugin_name: row.pluginName,
-    is_active: row.isActive,
-    sort_order: row.sortOrder,
-    config: (row.config ?? {}) as Record<string, JsonValue>,
-    icon: row.icon,
-    created_at: row.createdAt,
-    updated_at: row.updatedAt,
-  }));
+  // Колонка `provider` — `text`: спосіб із невідомим провайдером чекаут не
+  // вміє обслужити (куди везти?), тож його не показують.
+  return rows.flatMap((row) =>
+    isShippingProviderId(row.provider)
+      ? [
+          {
+            id: row.id,
+            code: row.code,
+            name: row.name,
+            description: row.description,
+            provider: row.provider,
+            pricing: row.pricing,
+            is_active: row.isActive,
+            sort_order: row.sortOrder,
+            icon: row.icon,
+            created_at: row.createdAt,
+            updated_at: row.updatedAt,
+          },
+        ]
+      : [],
+  );
 }
 
 /** Активні зони доставки — за ними домен резолвить місто покупця. */

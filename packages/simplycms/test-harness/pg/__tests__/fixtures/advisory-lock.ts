@@ -1,4 +1,4 @@
-// Хелпери детермінованого доказу advisory-локу адмін-операцій (винесено з
+// Хелпери детермінованого доказу локів адмін-операцій (винесено з
 // admin-catalog-ops.test.ts, Е3; спільні з admin-catalog-dictionaries.test.ts,
 // Е4-12). Доказ не покладається на випадкову перемогу гонки: окремий
 // pg-клієнт бере ТОЙ САМИЙ advisory-lock, що й операція
@@ -56,45 +56,80 @@ export const stillPending = (promise: Promise<unknown>, ms: number) => {
   ]).then((v) => v === TIMEOUT);
 };
 
-/** Тримає `select … from orders where id = $1 for update` у ВІДКРИТІЙ
- *  транзакції окремого зʼєднання (Е5, Task 4) — імітує конкурента, що вже
- *  заблокував рядок замовлення (кабінет покупця, друга вкладка адмінки).
+/** Тримає рядковий лок запитом `sql` (`… for update`) у ВІДКРИТІЙ транзакції
+ *  окремого зʼєднання — імітує конкурента, що вже заблокував рядки.
  *  `pid` — бекенд цього зʼєднання: тест привʼязує до нього очікувача через
- *  `pg_blocking_pids`, а не бере «будь-кого, хто чекає».
+ *  `pg_blocking_pids`, а не бере «будь-кого, хто чекає». `query` — подальші
+ *  запити В ТІЙ САМІЙ транзакції (конкурент змінює заблокований рядок).
  *
  * 🔴 `release`/`cleanup` — та сама ІДЕМПОТЕНТНА пара, що в
  * `holdAdvisoryLock` (див. докблок вище): `cleanup` — гард у `finally`. */
-export const holdOrderRowLock = async (dbUrl: string, orderId: string) => {
+export const holdRowLock = async (
+  dbUrl: string,
+  sql: string,
+  params: unknown[],
+) => {
   const client = new pg.Client({ connectionString: dbUrl });
   await client.connect();
   await client.query('begin');
-  const locked = await client.query(
-    'select id from public.orders where id = $1 for update',
-    [orderId],
-  );
-  if (locked.rowCount !== 1)
-    throw new Error(`[harness] замовлення ${orderId} не знайдено для локу`);
+  const locked = await client.query(sql, params);
+  if (!locked.rowCount)
+    throw new Error(`[harness] рядків для локу не знайдено: ${sql}`);
   const pidRows = await client.query<{ pid: number }>(
     'select pg_backend_pid() as pid',
   );
-  const pid = pidRows.rows[0]!.pid;
   let closed = false;
-  return {
-    pid,
-    release: async () => {
-      if (closed) return;
-      closed = true;
-      await client.query('commit');
+  const close = async (end: 'commit' | 'rollback') => {
+    if (closed) return;
+    closed = true;
+    try {
+      await client.query(end);
+    } finally {
       await client.end();
-    },
-    cleanup: async () => {
-      if (closed) return;
-      closed = true;
-      try {
-        await client.query('rollback');
-      } finally {
-        await client.end();
-      }
-    },
+    }
   };
+  return {
+    pid: pidRows.rows[0]!.pid,
+    query: (q: string, p: unknown[] = []) => client.query(q, p),
+    release: () => close('commit'),
+    cleanup: () => close('rollback'),
+  };
+};
+
+/** Рядок замовлення `for update` (Е5, Task 4): кабінет покупця, друга вкладка. */
+export const holdOrderRowLock = (dbUrl: string, orderId: string) =>
+  holdRowLock(dbUrl, 'select id from public.orders where id = $1 for update', [
+    orderId,
+  ]);
+
+/**
+ * Незакомічений insert рядка залишку на точку з ОКРЕМОГО зʼєднання (Е6а-17):
+ * імітує `saveStockOp`, що встиг вставити рядок після кроку (1)
+ * `removePickupPointsOp` — FK тримає `FOR KEY SHARE` на рядку точки.
+ * `release`/`cleanup` — ідемпотентна пара, як у `holdAdvisoryLock`.
+ */
+export const holdUncommittedStock = async (
+  url: string,
+  pointId: string,
+  productId: string,
+) => {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  await client.query('begin');
+  await client.query(
+    `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, quantity)
+     values ($1, $2, $3, 0)`,
+    [crypto.randomUUID(), pointId, productId],
+  );
+  let closed = false;
+  const close = async (sql: 'commit' | 'rollback') => {
+    if (closed) return;
+    closed = true;
+    try {
+      await client.query(sql);
+    } finally {
+      await client.end();
+    }
+  };
+  return { release: () => close('commit'), cleanup: () => close('rollback') };
 };

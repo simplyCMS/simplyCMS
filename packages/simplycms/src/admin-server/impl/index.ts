@@ -84,6 +84,26 @@ export {
   searchProductsForOrderOp,
 } from './products/search-for-order';
 export type { OrderProductHit } from './products/search-for-order';
+export { shippingMethodsOps } from './shipping-methods/resource';
+export {
+  removeShippingMethodsInput,
+  removeShippingMethodsOp,
+} from './shipping-methods/remove';
+export { shippingZonesOps } from './shipping-zones/resource';
+export {
+  setDefaultShippingZoneInput,
+  setDefaultShippingZoneOp,
+} from './shipping-zones/set-default';
+export {
+  removeShippingZonesInput,
+  removeShippingZonesOp,
+} from './shipping-zones/remove';
+export { shippingRatesOps } from './shipping-rates/resource';
+export { pickupPointsOps } from './pickup-points/resource';
+export {
+  removePickupPointsInput,
+  removePickupPointsOp,
+} from './pickup-points/remove';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';

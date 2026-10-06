@@ -80,7 +80,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     // видачі належить способу доставки, фікстура заводить обидва рядки.
     await queryRows(
       dbUrl,
-      `insert into public.shipping_methods (id, code, name) values ($1,'ops-pickup','Самовивіз')`,
+      `insert into public.shipping_methods (id, code, name, provider) values ($1,'ops-pickup','Самовивіз','core:pickup')`,
       [METHOD],
     );
     await queryRows(

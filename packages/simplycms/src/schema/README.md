@@ -50,7 +50,7 @@ Peer, а не dependency ядра — щоб у дереві магазину б
 вигенерував `db:pull`, був мертвим кодом і прибраний.
 
 Енами: `appRole`, `discountType`, `discountTargetType`, `discountGroupOperator`,
-`propertyType`, `stockStatus`, `shippingMethodType`, `shippingCalculationType`.
+`propertyType`, `stockStatus`, `shippingPricing`, `shippingCalculationType`.
 
 Ідентичність — таблиці Better Auth (`users`/`sessions`/`accounts`/`verifications`,
 `src/schema/auth.ts`) у схемі `public` з uuid-PK; метадані медіа — `src/schema/media.ts`.

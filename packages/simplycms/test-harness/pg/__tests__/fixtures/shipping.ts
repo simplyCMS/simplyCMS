@@ -34,8 +34,8 @@ export const BASE_COST = 120;
  * читання рядків з однаковим sort_order.
  */
 export const ACTIVE_SHIPPING_FIXTURES: string[] = [
-  `insert into public.shipping_methods (id, code, name, is_active, sort_order)
-     values (gen_random_uuid(), '${ACTIVE_METHOD_CODE}', 'Самовивіз', true, 1)
+  `insert into public.shipping_methods (id, code, name, is_active, sort_order, provider)
+     values (gen_random_uuid(), '${ACTIVE_METHOD_CODE}', 'Самовивіз', true, 1, 'core:pickup')
    on conflict (code) do nothing`,
 
   `insert into public.shipping_zones (id, name, is_active, is_default, cities)
@@ -62,8 +62,8 @@ export const ACTIVE_SHIPPING_FIXTURES: string[] = [
 ];
 
 export const HIDDEN_SHIPPING_FIXTURES: string[] = [
-  `insert into public.shipping_methods (id, code, name, is_active, sort_order)
-     values (gen_random_uuid(), '${HIDDEN_METHOD_CODE}', 'Вимкнений курʼєр', false, 2)
+  `insert into public.shipping_methods (id, code, name, is_active, sort_order, provider)
+     values (gen_random_uuid(), '${HIDDEN_METHOD_CODE}', 'Вимкнений курʼєр', false, 2, 'core:address')
    on conflict (code) do nothing`,
 
   `insert into public.shipping_zones (id, name, is_active, is_default, cities)

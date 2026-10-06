@@ -24,22 +24,15 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
 import { getOrderView } from '../server/order-view';
 
 const orders = entityKey(ENTITY.orders);
 
-// Мапи ключів, а не текстів: код способу приходить із БД, тож розкладка
-// «код → ключ каталогу» лишається на рівні модуля, а текст резолвиться під час
-// рендера. Новий код доставки без ключа стане помилкою типізації.
-const deliveryLabels: Record<string, MessageKey> = {
-  pickup: 'checkout.shipping.pickup',
-  nova_poshta: 'checkout.shipping.novaPoshta',
-  courier: 'checkout.shipping.courier',
-};
-
+// Мапа ключів, а не текстів: код оплати приходить із БД, текст резолвиться
+// під час рендера. Спосіб доставки сюди не входить — його назва в знімку.
 const paymentLabels: Record<string, MessageKey> = {
   cash: 'checkout.payment.cash',
-  online: 'checkout.payment.online',
 };
 
 export default function OrderSuccess() {
@@ -249,17 +242,7 @@ export default function OrderSuccess() {
                 <p className="text-sm text-muted-foreground mb-1">
                   {t('cart.summary.shipping')}
                 </p>
-                <p className="font-medium">
-                  {deliveryLabels[order.delivery_method ?? '']
-                    ? t(deliveryLabels[order.delivery_method ?? ''])
-                    : (order.delivery_method ?? t('common.notSet'))}
-                </p>
-                {order.delivery_city && (
-                  <p className="text-sm text-muted-foreground">
-                    {order.delivery_city}
-                    {order.delivery_address && `, ${order.delivery_address}`}
-                  </p>
-                )}
+                <ShippingSnapshotLines shippingData={order.shipping_data} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">

@@ -29,6 +29,12 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
 - Ядро **не емить бізнес-подій**. `hookRegistry.execute` викликається рівно з
   одного місця — `PluginSlot`. Хук `order.created` можна задекларувати, але
   його ніхто не покличе; робочі точки розширення сьогодні — слоти.
+- **Слоту налаштувань способу доставки немає.** `admin.shipping.method.settings`
+  видалено в К3-Е6а (рішення Е6а-15) разом із `shipping_methods.type`: спосіб
+  доставки — вбудований провайдер ядра (`core:address`, `core:pickup`) плюс режим
+  ціни (`rates | provider | carrier`). Провайдери плагінів і форму їхніх
+  налаштувань із `configSchema` будує ядро в К5 —
+  [спека](../superpowers/specs/2026-10-06-commerce-providers-design.md), частина 2.
 - **Bootstrap — client-only** (`useEffect` у `__root`): хуки/слоти не
   виконуються на SSR. Для сторінок адмінки це невідчутно (`/admin` —
   `ssr:false`), для слотів вітрини означає «підвантажиться після гідрації».

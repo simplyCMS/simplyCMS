@@ -17,7 +17,9 @@
  * з опцією, призначення, типи цін; (5) замовлення К3-Е5 (`admin-orders.mjs`):
  * два оформлені, одне підтверджене, друге скасоване. Одна сесія власника;
  * (6) CSRF (`live-smoke/csrf.mjs`): POST із чужим Origin на справжню server
- * function і `/api/revalidate-theme` → 403 від міддлвари.
+ * function і `/api/revalidate-theme` → 403 від міддлвари; (7) доставка К3-Е6а
+ * (`live-smoke/admin-shipping.mjs`): способи «Самовивіз Е6а» і «Кур'єр», точка,
+ * замовлення обома способами, знімок доставки після перейменування точки.
  * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
@@ -132,7 +134,7 @@ async function main() {
     // 3a. CSRF: POST із чужим Origin на server function і server route → 403.
     await runCsrfChecks({ base, serverFnPaths, check });
 
-    // 3б. Адмінка (Е3, Е4, Е5) — ОКРЕМИЙ context власника, та сама БД.
+    // 3б. Адмінка (Е3, Е4, Е5, Е5б, Е6а) — ОКРЕМИЙ context власника, та сама БД.
     const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };
     await runOwnerSteps({ ...owner, check });
 

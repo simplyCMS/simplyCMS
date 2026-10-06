@@ -45,7 +45,6 @@ export const ordersOps = defineAdminResource({
     'phone',
     'deliveryAddress',
     'deliveryCity',
-    'deliveryMethod',
     'paymentMethod',
     'subtotal',
     'total',

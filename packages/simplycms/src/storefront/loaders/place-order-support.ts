@@ -1,4 +1,5 @@
 import type { PlaceOrderInput } from 'simplycms/contracts';
+import type { ShippingSnapshot } from 'simplycms/contracts/shipping-providers';
 import type { ActorDb } from './db';
 import type { NewOrderItem } from 'simplycms/commerce';
 import type { NewOrderInput } from './entities/new-order';
@@ -47,9 +48,9 @@ export async function resolveRecipient(
  * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
  * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
  * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
- * `methodCode` — з `PreparedCheckout.method.code` (рев'ю M-2): той самий
- * рядок, який `prepareCheckout` уже знайшов і провалідував на `is_active`,
- * тож `createOrder` більше не запитує його вдруге.
+ * `shippingSnapshot` — з `PreparedCheckout` (Е6а-8): знімок будує той самий
+ * `validateShippingChoice`, що перевірив спосіб і пункт, тож `createOrder`
+ * нічого не перечитує.
  */
 export function toOrderInput(
   input: PlaceOrderInput,
@@ -59,7 +60,7 @@ export function toOrderInput(
     subtotal: number;
     shippingCost: number;
     total: number;
-    methodCode: string;
+    shippingSnapshot: ShippingSnapshot;
   },
 ): NewOrderInput {
   return {
@@ -68,7 +69,7 @@ export function toOrderInput(
     email: input.email,
     phone: input.phone,
     shippingMethodId: input.shippingMethodId,
-    shippingMethodCode: prepared.methodCode,
+    shippingSnapshot: prepared.shippingSnapshot,
     deliveryCity: input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,

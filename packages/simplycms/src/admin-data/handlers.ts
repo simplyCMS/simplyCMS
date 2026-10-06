@@ -50,6 +50,12 @@ interface ServerOps<Row> {
   readonly insert?: (args: { data: never }) => Promise<Row[]>;
   readonly update?: (args: { data: never }) => Promise<Row[]>;
   readonly remove?: (args: { data: never }) => Promise<unknown>;
+  /**
+   * Кеш поза колекцією (агрегати вітрини), що читає ті самі таблиці: кличеться
+   * ПІСЛЯ write-back і ДО повернення з хендлера — інакше збій інвалідації
+   * лишив би транзакцію «успішною» з тихо застарілою вітриною.
+   */
+  readonly afterWrite?: () => Promise<unknown>;
 }
 
 interface MutationLike {
@@ -89,6 +95,7 @@ export function persistenceHandlers<Row extends { id: string }>(
         target().utils.writeBatch(() => {
           for (const row of rows) target().utils.writeUpsert(row);
         });
+        await ops.afterWrite?.();
         return { refetch: false };
       },
     }),
@@ -102,6 +109,7 @@ export function persistenceHandlers<Row extends { id: string }>(
         target().utils.writeBatch(() => {
           for (const row of rows) target().utils.writeUpsert(row);
         });
+        await ops.afterWrite?.();
         return { refetch: false };
       },
     }),
@@ -114,6 +122,7 @@ export function persistenceHandlers<Row extends { id: string }>(
         target().utils.writeBatch(() => {
           for (const { id } of ids) target().utils.writeDelete(id);
         });
+        await ops.afterWrite?.();
         return { refetch: false };
       },
     }),

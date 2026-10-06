@@ -70,6 +70,15 @@ describe('authz: order.manage (Е5-8)', () => {
   });
 });
 
+describe('authz: shipping.manage (Е6а-11)', () => {
+  it('адмін керує доставкою з scope any; покупцю й аноніму — AuthzError', () => {
+    expect(requireOperation(ADMIN, 'shipping.manage')).toBe('any');
+    expect(() => requireOperation(USER, 'shipping.manage')).toThrow(AuthzError);
+    expect(() => requireOperation(ANON, 'shipping.manage')).toThrow(AuthzError);
+    expect(AUTHZ_MATRIX['shipping.manage']).toEqual({ admin: 'any' });
+  });
+});
+
 describe('authz: хелпери відмови', () => {
   it('requireOperation повертає scope, а не void', () => {
     expect(requireOperation(USER, 'order.read')).toBe('own');

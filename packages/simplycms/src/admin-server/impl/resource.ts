@@ -10,14 +10,9 @@ import type {
 } from './resource-config';
 import { assertMaxLimit, pickColumns } from './resource-projection';
 import { listResourceRows, type ResourceListContext } from './resource-list';
-import {
-  insertResourceRows,
-  removeResourceRows,
-  updateResourceRows,
-  type ResourceWriteContext,
-} from './resource-write';
+import type { ResourceWriteContext } from './resource-write';
+import { defineWriteOps } from './resource-write-ops';
 import { runAdmin } from './run';
-import { parseAdminInput } from './validation';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
 export { pickColumns };
@@ -82,6 +77,20 @@ export function defineAdminResource<
   const run = <Out>(fn: (db: ActorDb, grant: RequestGrant) => Promise<Out>) =>
     runAdmin(config.operation, fn);
 
+  const write = defineWriteOps<
+    Row,
+    z.infer<typeof insertSchema>[number],
+    z.infer<typeof updateSchema>[number]['patch']
+  >({
+    ctx,
+    run,
+    insertSchema,
+    updateSchema,
+    removeSchema,
+    lock: config.lock,
+    guard: config.guard,
+  });
+
   return {
     entity: config.entity,
     mode: config.mode,
@@ -107,43 +116,11 @@ export function defineAdminResource<
         return rows as Row[];
       }),
 
-    // 🔴 А2 (фікс архітектора після Task 4): фабрика сама парсить вхід
-    // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
-    // `validator` serverFn з admin-server/index.ts робить те саме на
-    // межі HTTP, але інваріант «readonly-поле не пишеться generic-write»
-    // мусить тримати ОПЕРАЦІЯ: прямий виклик `ops.insert(...)` повз
-    // serverFn (харнес-тести, internal-виклики) інакше проносить
-    // readonly-поле аж до `.values()`. Zod-схема БЕЗ `.strict()` ("strip")
-    // сама відкидає невідомі ключі — `isDefault` у payload insert мовчки
-    // зникає, не падає помилкою.
-    insert: async ({ data }: { data: z.infer<typeof insertSchema> }) => {
-      const parsed = parseAdminInput(insertSchema, data);
-      return run(
-        async (db) => (await insertResourceRows(db, ctx, parsed)) as Row[],
-      );
-    },
-
-    // 🔴 `patchSchema` (resource-schemas.ts) пікає лише writable-ключі й
-    // РЕФАЙНИТЬ непорожність ПІСЛЯ strip: patch лише з readonly-полів
-    // (напр. `{ isDefault: true }`) стає `{}` і валить `.parse()` тут ЖЕ,
-    // ДО `run` — readonly-патч ніколи не доходить до транзакції.
-    update: async ({ data }: { data: z.infer<typeof updateSchema> }) => {
-      const parsed = parseAdminInput(updateSchema, data);
-      return run(
-        async (db) => (await updateResourceRows(db, ctx, parsed)) as Row[],
-      );
-    },
-
-    remove: async ({ data }: { data: z.infer<typeof removeSchema> }) => {
-      const parsed = parseAdminInput(removeSchema, data);
-      return run((db) =>
-        removeResourceRows(
-          db,
-          config.table,
-          parsed.map((d) => d.id),
-        ),
-      );
-    },
+    // Е6а-16: lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а
+    // не spread: spread знімає readonly з getter-а `maxLimit` у типі.
+    insert: write.insert,
+    update: write.update,
+    remove: write.remove,
   };
 }
 

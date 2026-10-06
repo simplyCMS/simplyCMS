@@ -60,6 +60,14 @@ export const ADMIN_STATE_CONSTRAINT = {
   orderLastItem: 'order_last_item',
   orderItemNotPurchasable: 'order_item_not_purchasable',
   orderAmountOutOfRange: 'order_amount_out_of_range',
+  // Е6а-12/17/20: інваріанти доставки під `shipping-config`.
+  shippingPricingUnsupported: 'shipping_pricing_unsupported',
+  shippingProviderUnknown: 'shipping_provider_unknown',
+  shippingZoneDefault: 'shipping_zone_default',
+  shippingZoneInactive: 'shipping_zone_inactive',
+  pickupPointMethodInvalid: 'pickup_point_method_invalid',
+  pickupPointSystem: 'pickup_point_system',
+  pickupPointHasStock: 'pickup_point_has_stock',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

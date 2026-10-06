@@ -19,13 +19,9 @@ export const messages = {
     'Частина товарів у кошику зараз недоступна — перевірте кошик',
 
   // Способи доставки й оплати
-  'checkout.shipping.pickup': 'Самовивіз',
-  'checkout.shipping.novaPoshta': 'Нова Пошта',
-  'checkout.shipping.courier': "Кур'єр",
+  'checkout.shipping.carrier': 'За тарифами перевізника',
   'checkout.payment.cash': 'Оплата при отриманні',
   'checkout.payment.cashDescription': 'Готівкою або карткою при отриманні',
-  'checkout.payment.online': 'Онлайн оплата',
-  'checkout.payment.onlineDescription': 'Банківська картка (скоро)',
 
   // Сторінка успіху
   'checkout.success.title': 'Замовлення оформлено',

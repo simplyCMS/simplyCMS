@@ -86,7 +86,12 @@ const baseInput = (
   email: 'buyer@example.test',
   phone: '+380000000000',
   shippingMethodId: methodId,
-  shippingMethodCode: null,
+  shippingSnapshot: {
+    methodName: 'Тест',
+    provider: 'core:address',
+    pricing: 'rates',
+    destination: { kind: 'address', city: 'Київ', address: null },
+  },
   deliveryCity: null,
   deliveryAddress: null,
   pickupPointId,

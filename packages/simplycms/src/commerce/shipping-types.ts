@@ -7,17 +7,13 @@ import type { JsonValue } from 'simplycms/schema/types';
 import type { PickupPointRow } from './pickup-points';
 
 /**
- * Довідникові рядки доставки у формі, яку МОЖНА віддати serverFn-ом.
+ * Публічний рядок способу доставки (довідник вітрини).
  *
- * 🔴 Різниця з контрактом рівно одна: `config` звужений із
- * `Record<string, unknown>` до JSON. Валідатор серіалізації TanStack Start
- * відкидає `unknown` — і правильно робить: «щось, що не вміє їхати по
- * дроту» в payload-і вітрини не має бути. Обидва рядки лишаються
- * присвоюваними доменним типам, тож `resolveShippingRate` бере їх як є.
+ * 🔴 БЕЗ `config` (Е6а-13): довідник читає аноном, а `config` у К5 може нести
+ * секрети провайдера. Вбудовані провайдери його не використовують; рушій
+ * тарифів його теж не читає (`ShippingCalculationContext.method`).
  */
-export type ShippingMethodRow = Omit<ShippingMethod, 'config'> & {
-  config: Record<string, JsonValue>;
-};
+export type ShippingMethodRow = Omit<ShippingMethod, 'config'>;
 
 /** Зона без опційного `rates`: тарифи їдуть окремим списком, не вкладеними. */
 export type ShippingZoneRow = Omit<ShippingZone, 'rates'>;

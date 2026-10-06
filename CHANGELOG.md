@@ -18,6 +18,59 @@
 
 ---
 
+## [0.9.0] — 2026-10-06
+
+К3-Е6а: доставка «провайдер + режим ціни» на серверному шарі адмінки (спека
+[`2026-10-06-commerce-providers-design.md`](docs/superpowers/specs/2026-10-06-commerce-providers-design.md),
+частина 1; план
+[`2026-10-06-v2-k3-e6a-shipping-providers.md`](docs/superpowers/plans/2026-10-06-v2-k3-e6a-shipping-providers.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline міграцій змінено**: базу магазину перестворити (`pnpm db:demo`),
+  окремої міграції немає. `shipping_methods` втратив `type` і `plugin_name` і
+  отримав `provider text NOT NULL` (`core:address` | `core:pickup`) та
+  `pricing shipping_pricing NOT NULL DEFAULT 'rates'`. Enum
+  `shipping_method_type` видалено, з `shipping_calculation_type` прибрано
+  `'plugin'`. `orders.delivery_method` видалено: доставку описує знімок в
+  `orders.shipping_data`. FK `pickup_points.method_id` і
+  `stock_by_pickup_point.pickup_point_id` тепер `ON DELETE RESTRICT`.
+- **Оплата `online` прибрана**: чекаут приймає лише `paymentMethod: 'cash'`,
+  `online` відхиляє валідатор serverFn.
+- **Слот плагінів `admin.shipping.method.settings` видалено.** Налаштування
+  провайдерів плагінів будує ядро в К5.
+
+### Додано / змінено
+
+- Новий публічний субшлях `simplycms/contracts/shipping-providers` (T0, лише
+  типи й константи): `SHIPPING_PROVIDER`, `SHIPPING_PROVIDERS`,
+  `ShippingPricing`, `ShippingSnapshot`. `parseShippingSnapshot` — у
+  `simplycms/domain/shipping`.
+- Режим ціни в рушії `resolveShippingRate`: `rates` — тариф зони, `carrier` —
+  `shipping_cost = 0`, `total = subtotal`, підпис «За тарифами перевізника» в
+  чекауті (список способів і підсумок квоти) і в замовленні.
+- Замовлення зберігає знімок доставки (`methodName`, `provider`, `pricing`,
+  адреса або точка). Картка адмінки, `order-success` і кабінет показують назву
+  точки на момент оформлення, а не uuid.
+- Адмінка доставки на `simplycms/admin-server` + `simplycms/admin-data`:
+  `/admin/shipping/methods*` (тарифи за зонами в картці способу),
+  `/admin/shipping/zones*` (дефолт — `setDefaultShippingZone` під
+  advisory-lock; дефолтну зону не вимкнути й не видалити),
+  `/admin/shipping/pickup-points*`. `/admin/shipping` перенаправляє на
+  способи. Права — нова authz-операція `shipping.manage`.
+- `defineAdminResource` отримав опційні `lock` і `guard`: інваріанти запису
+  перевіряються над усім пакетом insert/update під advisory-lock. Відмова —
+  409 `state` з тостом.
+- Після мутацій доставки інвалідуються довідник чекауту, склади (`useStock`)
+  і ключі точок видачі.
+- `pnpm live:smoke` отримав крок доставки (`scripts/live-smoke/admin-shipping.mjs`).
+
+### Прибрано
+
+- Сім легасі-сторінок доставки на `supabase-js` (`Shipping*`,
+  `PickupPoint*`). Лічильник `useSupabaseClient` у `src/admin/**` — 31 → 24.
+
 ## [0.8.0] — 2026-10-05
 
 Захід оновлень залежностей, безпеки й тулінгу (спека

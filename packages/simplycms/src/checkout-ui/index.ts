@@ -12,4 +12,5 @@ export * from './CheckoutRecipientForm';
 export * from './RecipientCard';
 export * from './RecipientSaveDialog';
 export * from './RecipientSelectorPopup';
+export * from './ShippingSnapshotLines';
 export * from './rejection-key';

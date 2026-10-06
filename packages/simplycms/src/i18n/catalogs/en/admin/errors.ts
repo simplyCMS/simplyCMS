@@ -16,6 +16,18 @@ export const messages: Catalog = {
     'This product cannot be ordered right now',
   'admin.errors.orderAmountOutOfRange':
     'The order amount exceeds the allowed limit — change not saved',
+  'admin.errors.shippingPricingUnsupported':
+    'This provider cannot quote shipping itself — choose another pricing mode',
+  'admin.errors.shippingProviderUnknown': 'Unknown shipping provider',
+  'admin.errors.shippingZoneDefault':
+    'The default zone cannot be disabled or deleted — make another zone the default first',
+  'admin.errors.shippingZoneInactive': 'Only an active zone can be the default',
+  'admin.errors.pickupPointMethodInvalid':
+    'A pickup point can only belong to a pickup shipping method',
+  'admin.errors.pickupPointSystem':
+    'The system pickup point (warehouse) cannot be deleted',
+  'admin.errors.pickupPointHasStock':
+    'The point holds stock or order reservations — deactivate it instead of deleting',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

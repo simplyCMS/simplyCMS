@@ -1,15 +1,11 @@
 import { and, eq } from 'drizzle-orm';
-import { setResponseStatus } from '@tanstack/react-start/server';
 import { orderItems, orders } from 'simplycms/schema';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
-import {
-  ADMIN_STATE_CONSTRAINT,
-  type AdminStateConstraint,
-} from 'simplycms/contracts/domain-errors';
+import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { InsufficientStockError } from 'simplycms/inventory';
 import type { ActorDb } from 'simplycms/db';
 import { pickColumns } from '../resource';
-import { AdminConflictError } from '../errors';
+import { stateConflict } from '../errors';
 import { ORDERS_OMIT, type OrderRow } from '../orders/resource';
 import { statusCode } from '../orders/change-status';
 
@@ -29,12 +25,6 @@ export interface OrderItemsEditResult {
 
 /** Проєкція замовлення — та сама, що в `ordersOps` і `changeOrderStatusOp` (без `accessToken`). */
 export const orderProjection = pickColumns(orders, ORDERS_OMIT);
-
-/** 409 правила стану (Е5б-10): статус — ДО throw (К3-13). */
-export function stateConflict(constraint: AdminStateConstraint): never {
-  setResponseStatus(409);
-  throw new AdminConflictError('state', constraint);
-}
 
 /**
  * Кроки (1)–(2) КАНОНУ Е5б-8: `select … from orders where id = $1 for update`
