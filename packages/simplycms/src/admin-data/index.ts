@@ -44,3 +44,17 @@ export type { OrdersCollection, AdminOrder } from './collections/orders';
 
 export { orderItemsCollection } from './collections/order-items';
 export type { OrderItemsCollection } from './collections/order-items';
+
+export { shippingMethodsCollection } from './collections/shipping-methods';
+export type { ShippingMethodsCollection } from './collections/shipping-methods';
+
+export { shippingZonesCollection } from './collections/shipping-zones';
+export type { ShippingZonesCollection } from './collections/shipping-zones';
+
+export { shippingRatesCollection } from './collections/shipping-rates';
+export type { ShippingRatesCollection } from './collections/shipping-rates';
+
+export { pickupPointsCollection } from './collections/pickup-points';
+export type { PickupPointsCollection } from './collections/pickup-points';
+
+export { invalidateShippingConsumers } from './shipping-cache';
