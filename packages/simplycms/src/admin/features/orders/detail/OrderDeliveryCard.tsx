@@ -27,9 +27,7 @@ export function OrderDeliveryCard({ order }: { readonly order: AdminOrder }) {
     ],
     [
       t('cart.summary.shipping'),
-      snapshot?.pricing === 'carrier'
-        ? t('admin.orders.shippingCarrierNote')
-        : null,
+      snapshot?.pricing === 'carrier' ? t('orders.shipping.carrierNote') : null,
     ],
   ];
   return (

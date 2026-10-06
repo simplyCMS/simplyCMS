@@ -7,13 +7,18 @@ import { OrderDeliveryCard } from '../OrderDeliveryCard';
 
 afterEach(cleanup);
 
-const renderCard = (shippingData: unknown) =>
+const UUID = '3f1c9a52-7d4e-4b8a-9c11-0a5e6d2b7f10';
+
+const renderCard = (
+  shippingData: unknown,
+  pickupPointId: string | null = null,
+) =>
   render(
     <I18nProvider locale="uk">
       <OrderDeliveryCard
         order={{
           ...makeOrder(1, new Date()),
-          pickupPointId: null,
+          pickupPointId,
           shippingData: shippingData as never,
         }}
       />
@@ -39,6 +44,7 @@ describe('OrderDeliveryCard — знімок доставки (Е6а-8)', () => 
     expect(screen.getByText('Самовивіз')).toBeTruthy();
     expect(screen.getByText(/Склад у Києві/)).toBeTruthy();
     expect(screen.getByText(/вул\. Складська, 1/)).toBeTruthy();
+    expect(screen.queryByText(/Інша/)).toBeNull();
   });
 
   it('carrier: примітка про оплату перевізнику', () => {
@@ -54,7 +60,8 @@ describe('OrderDeliveryCard — знімок доставки (Е6а-8)', () => 
   });
 
   it('без знімка не падає й не показує uuid-сміття', () => {
-    renderCard({});
+    const { container } = renderCard({}, UUID);
     expect(screen.getByText('Доставка')).toBeTruthy();
+    expect(container.textContent).not.toContain(UUID);
   });
 });

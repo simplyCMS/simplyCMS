@@ -63,6 +63,9 @@ const order = (shipping_data: unknown) => ({
   delivery_city: null,
   delivery_address: null,
   shipping_data,
+  pickup_point_id: null,
+  // Жива точка після перейменування: читач не має її показувати.
+  pickup_point: { id: 'p-1', name: 'Інша', address: 'вул. Нова, 9' },
   payment_method: 'cash',
   notes: null,
   subtotal: 100,
@@ -109,6 +112,8 @@ describe.each(readers)('%s — знімок доставки', (_name, page, moc
     expect(await screen.findByText(/Склад у Києві/)).toBeTruthy();
     expect(screen.getByText(/вул\. Складська, 1/)).toBeTruthy();
     expect(screen.getByText(/Самовивіз зі складу/)).toBeTruthy();
+    expect(screen.queryByText(/Інша/)).toBeNull();
+    expect(screen.queryByText(/вул\. Нова/)).toBeNull();
   });
 
   it('carrier: примітка про тарифи перевізника', async () => {

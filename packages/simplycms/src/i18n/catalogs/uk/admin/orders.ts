@@ -23,8 +23,6 @@ export const messages = {
   'admin.orders.nameLabel': "Ім'я:",
   'admin.orders.phoneLabel': 'Телефон:',
   'admin.orders.methodLabel': 'Спосіб:',
-  'admin.orders.shippingCarrierNote':
-    'за тарифами перевізника (оплата при отриманні)',
   'admin.orders.cityLabel': 'Місто:',
   'admin.orders.addressLabel': 'Адреса:',
   'admin.orders.comment': 'Коментар',
