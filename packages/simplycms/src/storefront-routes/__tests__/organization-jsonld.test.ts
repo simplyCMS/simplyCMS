@@ -63,6 +63,23 @@ describe('buildOrganizationJsonLd', () => {
     expect(data.name).toBe('Крамниця');
   });
 
+  it('siteUrl із кінцевим / → logo без подвійного слеша', () => {
+    const data = parse(
+      buildOrganizationJsonLd(PROFILE, 'https://shop.example/').children,
+    );
+    expect(data.logo).toBe('https://shop.example/media/logo.png');
+  });
+
+  it('абсолютний logoUrl лишається як є, не склеюється з siteUrl', () => {
+    const data = parse(
+      buildOrganizationJsonLd(
+        { ...PROFILE, logoUrl: 'https://cdn.example/logo.png' },
+        'https://shop.example',
+      ).children,
+    );
+    expect(data.logo).toBe('https://cdn.example/logo.png');
+  });
+
   it('порожні поля профілю не серіалізуються', () => {
     const data = parse(
       buildOrganizationJsonLd(

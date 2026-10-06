@@ -16,11 +16,28 @@ export function serializeJsonLd(data: Record<string, unknown>): JsonLdScript {
 }
 
 /**
+ * Абсолютний URL відносно сайту. Невалідний `siteUrl` (без схеми — помилка
+ * env власника) дає `null`, а не виняток: зламаний `head()` прибрав би з
+ * головної ще й title.
+ */
+function absoluteUrl(path: string, siteUrl: string): string | null {
+  try {
+    return new URL(path, siteUrl).href;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * schema.org `Organization` головної з профілю магазину (Е6б-10).
  *
  * `null`/порожні поля не серіалізуються: порожній рядок у JSON-LD — шум для
  * пошуковика. Без `siteUrl` (порожній `VITE_SITE_URL`) немає ні `url`, ні
  * `logo`: відносна адреса в structured data невалідна.
+ *
+ * `logo` резолвиться через `URL`, а не конкатенацією: `logoUrl` буває й
+ * абсолютним (`resolveMediaUrl` лишає `https:`-референс як є), і склейка дала
+ * б `https://shop.examplehttps://…`.
  */
 export function buildOrganizationJsonLd(
   profile: StorefrontProfile,
@@ -29,7 +46,8 @@ export function buildOrganizationJsonLd(
   const { phone, email, address } = profile.contacts;
   const optional: Record<string, unknown> = {
     url: siteUrl || null,
-    logo: siteUrl && profile.logoUrl ? siteUrl + profile.logoUrl : null,
+    logo:
+      siteUrl && profile.logoUrl ? absoluteUrl(profile.logoUrl, siteUrl) : null,
     telephone: phone,
     email,
     address,

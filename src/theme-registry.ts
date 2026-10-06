@@ -3,7 +3,8 @@
  *
  * Тонкий споживач `simplycms.config.ts`: набір тем оголошено в конфізі магазину,
  * тут — лише перенесення його в реєстр. Імпортується як side-effect із
- * __root.tsx (клієнт) та storefront-routes/server/themes.ts (сервер).
+ * `routes/__root.tsx` (ізоморфно: SSR і клієнт) та `client.tsx`. Сервер про
+ * вшиті теми дізнається окремо — `declareBuiltThemes` у `server.ts` (Е6б-8).
  */
 import { ThemeRegistry } from 'simplycms/themes/ThemeRegistry';
 import config from '../simplycms.config';

@@ -162,7 +162,7 @@ simplyCMS/
 ├── playwright.config.ts              # Конфіг браузерних тестів `tests/e2e/` (admin-smoke, layout-overflow)
 ├── tsconfig.template.json            # tsconfig гейта `pnpm typecheck:template`
 ├── vitest.schema.config.ts           # Схемний контур (`pnpm test:schema`)
-├── simplycms.config.ts               # defineConfig: themes, plugins, siteUrl, …
+├── simplycms.config.ts               # defineConfig: locale, currency, themes, plugins
 ├── eslint.db-client-zone.mjs         # Зона: гола фабрика пулу `db/client` закрита, лише `withActor`
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра;
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора

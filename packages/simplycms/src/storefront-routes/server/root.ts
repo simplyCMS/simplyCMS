@@ -15,8 +15,10 @@ import {
  * лоадери разом із пулом Postgres.
  *
  * `siteUrl` — з `process.env` у рантаймі (контракт серверного env): модульна
- * константа запеклася б у білд. Порожній рядок — «адреса не задана»; хто
- * будує абсолютні URL, сам вирішує, що тоді опустити.
+ * константа запеклася б у білд. Кінцевий `/` обрізається ТУТ, один раз
+ * (прецедент `auth/invite.ts`): споживачі клеять `${siteUrl}/шлях` і інакше
+ * дали б `//`. Порожній рядок — «адреса не задана»; хто будує абсолютні URL,
+ * сам вирішує, що тоді опустити.
  */
 export const getStorefrontRoot = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -27,7 +29,7 @@ export const getStorefrontRoot = createServerFn({ method: 'GET' }).handler(
     return {
       activeThemeName: record?.name ?? 'default',
       storeProfile,
-      siteUrl: process.env.VITE_SITE_URL ?? '',
+      siteUrl: (process.env.VITE_SITE_URL ?? '').replace(/\/+$/, ''),
     };
   },
 );

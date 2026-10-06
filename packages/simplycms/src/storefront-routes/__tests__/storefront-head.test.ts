@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import {
+  homeHead,
   readStorefrontRoot,
   storefrontHead,
   type StorefrontRootData,
@@ -92,6 +93,18 @@ describe('storefrontHead', () => {
       () => ({}),
     );
     expect(descriptionOf(head)).toBeUndefined();
+  });
+});
+
+describe('homeHead', () => {
+  it('homeTitle віддається як є, без суфікса назви магазину', () => {
+    const head = homeHead({ ...PROFILE, homeTitle: 'Сонячні панелі в Києві' });
+    expect(titleOf(head)).toBe('Сонячні панелі в Києві');
+    expect(descriptionOf(head)).toBe('Опис магазину');
+  });
+
+  it('без homeTitle → назва магазину', () => {
+    expect(titleOf(homeHead(PROFILE))).toBe('Крамниця');
   });
 });
 
