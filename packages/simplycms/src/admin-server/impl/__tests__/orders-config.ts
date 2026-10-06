@@ -18,7 +18,6 @@ export const ORDERS_READONLY = [
   'phone',
   'deliveryAddress',
   'deliveryCity',
-  'deliveryMethod',
   'paymentMethod',
   'subtotal',
   'total',

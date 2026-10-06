@@ -17,15 +17,23 @@ describe('доставка commerce', () => {
     pickupPointId: string | null,
   ) =>
     guest((db) =>
-      validateShippingChoice(db, { methodId, deliveryCity, pickupPointId }),
+      validateShippingChoice(db, {
+        methodId,
+        deliveryCity,
+        deliveryAddress: null,
+        pickupPointId,
+      }),
     );
 
   it('quoteShippingCost: free_from від subtotal → 0; нижче min_order_amount → null; validateShippingChoice з methodId null → shipping_unavailable', async () => {
     const choice = await check(ids.courier, 'Одеса', null);
     if (typeof choice === 'string') throw new Error(choice);
     expect(choice.method.code).toBe(F.COURIER_CODE);
-    expect(quoteShippingCost(choice, F.COURIER_FREE_FROM)).toBe(0);
-    expect(quoteShippingCost(choice, 5000)).toBe(F.COURIER_BASE);
+    expect(quoteShippingCost(choice, F.COURIER_FREE_FROM)).toEqual({
+      cost: 0,
+      pricing: 'rates',
+    });
+    expect(quoteShippingCost(choice, 5000)?.cost).toBe(F.COURIER_BASE);
     expect(quoteShippingCost(choice, F.COURIER_MIN_ORDER - 1)).toBeNull();
     expect(await check(null, 'Одеса', null)).toBe('shipping_unavailable');
   });
@@ -72,7 +80,7 @@ describe('доставка commerce', () => {
     const pickup = await check(ids.pickup, null, ids.point);
     if (typeof pickup === 'string') throw new Error(pickup);
     expect(pickup.zone?.is_default).toBe(true);
-    expect(quoteShippingCost(pickup, 1)).toBe(0);
+    expect(quoteShippingCost(pickup, 1)?.cost).toBe(0);
     expect(await check(ids.pickup, null, ids.closed)).toBe(
       'pickup_point_invalid',
     );

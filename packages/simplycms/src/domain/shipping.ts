@@ -72,10 +72,6 @@ export function calculateShippingCost(
       return rate.base_cost;
     }
 
-    case 'plugin':
-      // Plugin rates are calculated via hooks
-      return -1;
-
     default:
       return rate.base_cost;
   }
@@ -109,13 +105,23 @@ export function resolveShippingRate(
 ): ShippingCalculationResult | null {
   const { method, zone } = context;
 
-  // For plugin methods, skip hook-based calculation in this package
-  // (host app can integrate with its own plugin system)
-  if (method.type === 'plugin') {
-    return null;
+  // 🔴 Режим ціни (Е6а-10) — ЄДИНЕ місце розгалуження: показ (чекаут), запис
+  // (`quoteShippingCost`) і перерахунок позицій ділять це правило.
+  // `provider` недосяжний: адмінка не дає його обрати без `supportsQuote`,
+  // сервер теж відмовляє — тож тут це відмова, а не «безкоштовно».
+  if (method.pricing === 'provider') return null;
+  if (method.pricing === 'carrier') {
+    return {
+      methodId: method.id,
+      zoneId: zone?.id || null,
+      rateId: null,
+      cost: 0,
+      estimatedDays: null,
+      pricing: 'carrier',
+    };
   }
 
-  // For system/manual methods, find applicable rate
+  // `rates`: перший застосовний тариф способу
   const applicableRates = rates
     .filter((r) => r.method_id === method.id && r.is_active)
     .filter((r) => !zone || r.zone_id === zone.id)
@@ -135,6 +141,7 @@ export function resolveShippingRate(
         rateId: rate.id,
         cost,
         estimatedDays: rate.estimated_days,
+        pricing: 'rates',
       };
     }
   }

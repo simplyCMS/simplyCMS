@@ -37,7 +37,8 @@ export interface OrderDetailRow extends OrderListRow {
   last_name: string;
   email: string;
   phone: string;
-  delivery_method: string | null;
+  /** Знімок доставки (Е6а-8); розбирає `parseShippingSnapshot`. */
+  shipping_data: JsonValue | null;
   delivery_city: string | null;
   delivery_address: string | null;
   payment_method: string;
@@ -79,7 +80,7 @@ export const orderColumns = {
   last_name: orders.lastName,
   email: orders.email,
   phone: orders.phone,
-  delivery_method: orders.deliveryMethod,
+  shipping_data: orders.shippingData,
   delivery_city: orders.deliveryCity,
   delivery_address: orders.deliveryAddress,
   payment_method: orders.paymentMethod,

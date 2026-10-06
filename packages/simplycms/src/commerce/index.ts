@@ -35,7 +35,13 @@ export type {
   ShippingRateRow,
   ShippingZoneRow,
 } from './shipping-types';
-export { loadPickupPoints } from './pickup-points';
+export { resolveDestination } from './shipping-providers';
+export type {
+  DestinationInput,
+  DestinationRejection,
+  ResolvedDestination,
+} from './shipping-providers';
+export { loadPickupPoint, loadPickupPoints } from './pickup-points';
 export type { PickupPointRow } from './pickup-points';
 // Мапа колонок ціни — виняток із правила «`*Columns` назовні не виходять»
 // (`storefront/loaders/index.ts`): три лоадери вітрини (каталог, список,

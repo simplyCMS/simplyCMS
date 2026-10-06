@@ -30,6 +30,7 @@ const QUOTE: QuoteCheckoutResult = {
       },
     ],
     subtotal: 200,
+    shippingPricing: 'rates',
     shippingCost: 50,
     total: 250,
   },

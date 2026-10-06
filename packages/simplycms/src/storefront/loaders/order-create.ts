@@ -58,10 +58,6 @@ export async function createOrder(
     lastName: input.lastName,
     email: input.email,
     phone: input.phone,
-    // Рев'ю M-2: код методу — з `PreparedCheckout.method.code`, а не з
-    // повторного `select` по `shipping_methods`: `prepareCheckout` уже
-    // знайшов і провалідував цей рядок на `is_active`.
-    deliveryMethod: input.shippingMethodCode ?? null,
     deliveryCity: input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     paymentMethod: input.paymentMethod,
@@ -71,7 +67,9 @@ export async function createOrder(
     shippingMethodId: input.shippingMethodId,
     shippingCost: input.shippingCost.toFixed(2),
     pickupPointId: input.pickupPointId,
-    shippingData: {},
+    // Знімок, а не посилання: замовлення читається після перейменування чи
+    // видалення точки або способу (Е6а-8). Spread — щоб interface став JSON.
+    shippingData: { ...input.shippingSnapshot },
     hasDifferentRecipient: input.hasDifferentRecipient,
     recipientFirstName: input.recipientFirstName,
     recipientLastName: input.recipientLastName,

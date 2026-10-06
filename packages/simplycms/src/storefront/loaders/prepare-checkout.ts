@@ -1,4 +1,8 @@
 import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
+import type {
+  ShippingPricing,
+  ShippingSnapshot,
+} from 'simplycms/contracts/shipping-providers';
 import {
   priceItems,
   quoteShippingCost,
@@ -24,6 +28,10 @@ export interface PreparedCheckout {
   items: NewOrderItem[];
   subtotal: number;
   shippingCost: number;
+  /** Режим ціни способу — їде в квоту, щоб підсумок не показав `carrier` як «Безкоштовно» (Е6а-18). */
+  shippingPricing: ShippingPricing;
+  /** Знімок доставки для `orders.shipping_data` (Е6а-8). */
+  shippingSnapshot: ShippingSnapshot;
   /**
    * 🔴 Рахується ТУТ, а не в обох викликачах (рев'ю I1): `total` — число під
    * `id="checkout-total"`, яке звірятиме live-smoke, і саме сюди адитивно
@@ -73,6 +81,7 @@ export async function prepareCheckout(
   const choice = await validateShippingChoice(db, {
     methodId: input.shippingMethodId,
     deliveryCity: input.deliveryCity,
+    deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,
   });
   if (typeof choice === 'string') return { ok: false, reason: choice };
@@ -82,10 +91,10 @@ export async function prepareCheckout(
     return { ok: false, reason: 'not_purchasable' };
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shippingCost = quoteShippingCost(choice, subtotal);
+  const shipping = quoteShippingCost(choice, subtotal);
   // `null` — жодного застосовного тарифу: це НЕ «безкоштовно», а відмова.
-  if (shippingCost === null)
-    return { ok: false, reason: 'shipping_unavailable' };
+  if (shipping === null) return { ok: false, reason: 'shipping_unavailable' };
+  const shippingCost = shipping.cost;
 
   return {
     ok: true,
@@ -93,6 +102,8 @@ export async function prepareCheckout(
     items,
     subtotal,
     shippingCost,
+    shippingPricing: shipping.pricing,
+    shippingSnapshot: choice.snapshot,
     total: subtotal + shippingCost,
   };
 }

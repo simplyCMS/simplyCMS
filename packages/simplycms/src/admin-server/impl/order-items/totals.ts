@@ -73,14 +73,16 @@ export async function recomputeOrderTotals(
     methodId: order.shippingMethodId,
     deliveryCity: order.deliveryCity,
     pickupPointId: order.pickupPointId,
+    deliveryAddress: order.deliveryAddress,
   });
-  const cost =
+  // Той самий рушій, що в чекауті: `carrier` дає 0, `rates` — тариф (Е6а-10).
+  const quote =
     typeof choice === 'string'
       ? null
       : quoteShippingCost(choice, subtotal / 100);
-  if (cost === null)
+  if (quote === null)
     stateConflict(ADMIN_STATE_CONSTRAINT.orderShippingUnavailable);
-  const shipping = toCents(cost.toFixed(2));
+  const shipping = toCents(quote.cost.toFixed(2));
   const total = subtotal + shipping;
   // Захисна: окремо тестом не пінується — її перекриває assertWithin(total) за побудовою (Е5б-17).
   assertWithin(subtotal, MAX_CENTS_NUMERIC_12_2);

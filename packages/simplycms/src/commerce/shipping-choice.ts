@@ -4,7 +4,15 @@ import {
   findShippingZoneIn,
   resolveShippingRate,
 } from 'simplycms/domain/shipping';
+import type {
+  ShippingPricing,
+  ShippingSnapshot,
+} from 'simplycms/contracts/shipping-providers';
 import { loadShippingDirectory } from './shipping-directory';
+import {
+  resolveDestination,
+  type DestinationInput,
+} from './shipping-providers';
 import type {
   ShippingDirectory,
   ShippingMethodRow,
@@ -12,10 +20,8 @@ import type {
 } from './shipping-types';
 
 /** Вибір доставки, який покупець (чекаут) або замовлення (адмінка) зробили. */
-export interface ShippingChoiceInput {
+export interface ShippingChoiceInput extends DestinationInput {
   methodId: string | null;
-  deliveryCity: string | null;
-  pickupPointId: string | null;
 }
 
 /** Провалідований вибір: метод, зона за містом і довідник, із якого брати тариф. */
@@ -23,6 +29,8 @@ export interface ShippingChoice {
   method: ShippingMethodRow;
   zone: ShippingZoneRow | null;
   directory: ShippingDirectory;
+  /** Знімок для `orders.shipping_data` (Е6а-8): назва способу й пункт НА МОМЕНТ вибору. */
+  snapshot: ShippingSnapshot;
 }
 
 export type ShippingChoiceRejection = Extract<
@@ -49,29 +57,20 @@ export async function validateShippingChoice(
   );
   if (!method) return 'shipping_unavailable';
 
-  // Pickup — за КОДОМ методу, як і UI (`CheckoutDeliveryForm`: `code === 'pickup'`):
-  // pickup вимагає активну точку ЦЬОГО методу; не-pickup точки не приймає.
-  const isPickup = method.code === 'pickup';
-  const point = input.pickupPointId
-    ? (directory.pickupPoints.find(
-        (p) =>
-          p.id === input.pickupPointId &&
-          p.method_id === method.id &&
-          p.is_active,
-      ) ?? null)
-    : null;
-  if (isPickup && !point) return 'pickup_point_invalid';
-  if (!isPickup && input.pickupPointId) return 'pickup_point_invalid';
-
-  // 🔴 Місто визначає ЗОНУ, а зона — тариф: це гроші (рев'ю M7). Порожнє
-  // місто для НЕ-pickup методу мовчки падало б на ДЕФОЛТНУ зону
-  // (`findShippingZoneIn(zones, '')` завжди повертає її) — тобто тариф
-  // обирала б відсутність даних, а не покупець. Pickup міста не потребує:
-  // адресу видачі задає точка, а не місто.
-  if (!isPickup && !input.deliveryCity) return 'shipping_unavailable';
+  // Куди везти — вирішує ПРОВАЙДЕР способу, не `code` (Е6а-9): правила
+  // самовивозу й адресної доставки (точка цього способу, обов'язкове місто)
+  // живуть у `resolveDestination`, тож чекаут, адмінка й UI не розходяться.
+  const destination = await resolveDestination(db, method, input);
+  if (typeof destination === 'string') return destination;
 
   const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
-  return { method, zone, directory };
+  const snapshot: ShippingSnapshot = {
+    methodName: method.name,
+    provider: method.provider,
+    pricing: method.pricing,
+    destination: destination.snapshot,
+  };
+  return { method, zone, directory, snapshot };
 }
 
 /**
@@ -85,10 +84,10 @@ export async function validateShippingChoice(
 export function quoteShippingCost(
   choice: ShippingChoice,
   subtotal: number,
-): number | null {
+): { cost: number; pricing: ShippingPricing } | null {
   const rate = resolveShippingRate(
     { method: choice.method, zone: choice.zone, cart: { items: [], subtotal } },
     choice.directory.rates,
   );
-  return rate === null ? null : rate.cost;
+  return rate === null ? null : { cost: rate.cost, pricing: rate.pricing };
 }

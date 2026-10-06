@@ -1,4 +1,5 @@
 import type { NewOrderItem } from 'simplycms/commerce';
+import type { ShippingSnapshot } from 'simplycms/contracts/shipping-providers';
 
 /** Контактні й доставкові дані оформлення. */
 export interface NewOrderInput {
@@ -7,12 +8,8 @@ export interface NewOrderInput {
   email: string;
   phone: string;
   shippingMethodId: string;
-  /**
-   * Рев'ю M-2: код методу з `prepareCheckout` (уже провалідований на
-   * `is_active`) — `createOrder` більше не робить власний `select` по
-   * `shipping_methods` заради того самого фільтра.
-   */
-  shippingMethodCode: string | null;
+  /** Знімок доставки з `prepareCheckout` (Е6а-8) — пишеться в `orders.shipping_data`. */
+  shippingSnapshot: ShippingSnapshot;
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;
