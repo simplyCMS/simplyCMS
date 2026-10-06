@@ -75,7 +75,6 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
     { file: 'packages/simplycms/src/admin/pages/Plugins.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/ReviewDetail.tsx', wave: 'Е6' },
     { file: 'packages/simplycms/src/admin/pages/Reviews.tsx', wave: 'Е6' },
-    { file: 'packages/simplycms/src/admin/pages/Settings.tsx', wave: 'Е6' },
     {
       file: 'packages/simplycms/src/admin/pages/ThemeSettings.tsx',
       wave: 'Е6',
