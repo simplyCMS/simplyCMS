@@ -1,7 +1,23 @@
 import type { Table } from 'drizzle-orm';
 import type { Operation } from 'simplycms/auth';
+import type { ActorDb } from 'simplycms/db';
 import type { RichHtmlProfile } from 'simplycms/sanitize';
-import type { ColumnName, ResourceRefine } from './resource-schemas';
+import type {
+  ColumnName,
+  InsertPick,
+  ResourceRefine,
+} from './resource-schemas';
+
+/** Пакет запису, який бачить guard-хук (Е6а-16): УВЕСЬ batch, не рядок. */
+export type ResourceGuardWrite<Insert, Patch> =
+  | { kind: 'insert'; rows: readonly Insert[] }
+  | { kind: 'update'; updates: readonly { id: string; patch: Patch }[] };
+
+/** Guard-хук (Е6а-16): відмова — `throw` (`stateConflict`), увесь пакет відкочується. */
+export type ResourceGuard<Insert, Patch> = (
+  db: ActorDb,
+  write: ResourceGuardWrite<Insert, Patch>,
+) => Promise<void>;
 
 /**
  * Конфіг фабрики `defineAdminResource` (винесено з `resource.ts` без зміни
@@ -55,6 +71,15 @@ export interface AdminResourceConfigBase<
    *  записувані колонки: розмітка в readonly/omit-колонці не має власника. */
   // `NoInfer`: ключі лише ЗВІРЯЮТЬСЯ з writable/insertOnly, а не виводять W.
   richHtml?: { readonly [K in NoInfer<W | I>]?: RichHtmlProfile };
+  /** Е6а-16: advisory-ключ (`lockCatalogTarget`) — ПЕРШИЙ запит транзакції
+   *  insert/update. Без нього поведінка фабрики незмінна. */
+  lock?: string;
+  /** Е6а-16: інваріант запису над УСІМ пакетом insert/update — після `lock`,
+   *  до запису, у тій самій транзакції. */
+  guard?: ResourceGuard<
+    NoInfer<InsertPick<T, W | I> & { id: string }>,
+    NoInfer<Partial<InsertPick<T, W>>>
+  >;
 }
 
 /**

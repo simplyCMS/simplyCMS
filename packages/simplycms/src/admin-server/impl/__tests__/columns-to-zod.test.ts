@@ -105,6 +105,23 @@ describe('columnsToZod: nullable/optional за режимами', () => {
   });
 });
 
+describe('columnsToZod: масив (Е6а, text[])', () => {
+  it('масив схеми базової колонки; size — точна довжина; nullable без notNull', () => {
+    const arr = pgTable('arr_t', {
+      tags: text('tags').array(),
+      pair: varchar('pair', { length: 2 }).array(2).notNull(),
+    });
+    const s = columnsToZod(arr, 'insert');
+    const ok = (k: string, v: unknown) => s[k]!.safeParse(v).success;
+    expect(ok('tags', ['a', 'b'])).toBe(true);
+    expect(ok('tags', null)).toBe(true);
+    expect(ok('tags', [1])).toBe(false);
+    expect(ok('pair', ['ab', 'cd'])).toBe(true);
+    expect(ok('pair', ['ab'])).toBe(false);
+    expect(ok('pair', ['abc', 'cd'])).toBe(false);
+  });
+});
+
 describe('columnsToZod: невідомий тип', () => {
   it('throw з імʼям таблиці, колонки й типом', () => {
     const bad = pgTable('bad_t', { iv: interval('iv') });

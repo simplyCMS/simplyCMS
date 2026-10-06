@@ -2,6 +2,7 @@ import { setResponseStatus } from '@tanstack/react-start/server';
 import {
   DOMAIN_ERROR_NAME,
   type AdminConflictKind,
+  type AdminStateConstraint,
   type ValidationIssue,
 } from 'simplycms/contracts/domain-errors';
 
@@ -45,6 +46,15 @@ export class AdminConflictError extends Error {
       `[admin-server] конфлікт ${kind}: ${constraint ?? 'невідоме обмеження'}`,
     );
   }
+}
+
+/**
+ * 409 правила стану (Е5б-10, Е6а-12): статус — ДО throw (К3-13). Спільний
+ * для іменованих операцій і guard-хуків фабрики (Е6а-16).
+ */
+export function stateConflict(constraint: AdminStateConstraint): never {
+  setResponseStatus(409);
+  throw new AdminConflictError('state', constraint);
 }
 
 const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {

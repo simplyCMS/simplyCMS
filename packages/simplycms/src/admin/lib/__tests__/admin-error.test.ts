@@ -44,6 +44,17 @@ describe('adminErrorKey', () => {
   ])('стан редагування позицій (Е5б-10): %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
+  it.each([
+    ['shipping_pricing_unsupported', 'admin.errors.shippingPricingUnsupported'],
+    ['shipping_provider_unknown', 'admin.errors.shippingProviderUnknown'],
+    ['shipping_zone_default', 'admin.errors.shippingZoneDefault'],
+    ['shipping_zone_inactive', 'admin.errors.shippingZoneInactive'],
+    ['pickup_point_method_invalid', 'admin.errors.pickupPointMethodInvalid'],
+    ['pickup_point_system', 'admin.errors.pickupPointSystem'],
+    ['pickup_point_has_stock', 'admin.errors.pickupPointHasStock'],
+  ])('стан доставки (Е6а-12): %s → %s', (constraint, key) => {
+    expect(adminErrorKey(conflict('state', constraint))).toBe(key);
+  });
   it('невідомий код стану — null, а не «дубль»', () => {
     expect(adminErrorKey(conflict('state', 'order_unknown_rule'))).toBeNull();
     expect(adminErrorKey(conflict('state', 'toString'))).toBeNull();

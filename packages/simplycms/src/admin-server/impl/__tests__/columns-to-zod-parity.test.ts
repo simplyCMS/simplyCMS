@@ -33,7 +33,9 @@ const resources = [
 const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),
 );
-const NINE = [
+// Е6а: + `PgArray` (`shipping_zones.cities/regions`, text[]) — десятий тип.
+const TYPES = [
+  'PgArray',
   'PgUUID',
   'PgText',
   'PgVarchar',
@@ -46,9 +48,9 @@ const NINE = [
 ];
 
 describe('паритет columnsToZod з drizzle-zod', () => {
-  it('9 типів колонок у ресурсних таблицях і жодного невідомого', () => {
+  it('10 типів колонок у ресурсних таблицях і жодного невідомого', () => {
     const types = [...new Set(columns.map((c) => c.columnType))].sort();
-    expect(types).toEqual([...NINE].sort());
+    expect(types).toEqual([...TYPES].sort());
     expect(() => columns.forEach((c) => columnSchema(c))).not.toThrow();
     expect(resources.length).toBeGreaterThan(0);
   });

@@ -4,7 +4,8 @@ import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { quoteShippingCost, validateShippingChoice } from 'simplycms/commerce';
 import type { ActorDb } from 'simplycms/db';
 import type { OrderRow } from '../orders/resource';
-import { orderProjection, stateConflict } from './editable';
+import { stateConflict } from '../errors';
+import { orderProjection } from './editable';
 
 /**
  * Грошова арифметика редагування позицій — у ЦІЛИХ центах (Е5б-13): ні

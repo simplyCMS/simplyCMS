@@ -45,6 +45,20 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
     'admin.errors.orderItemNotPurchasable',
   [ADMIN_STATE_CONSTRAINT.orderAmountOutOfRange]:
     'admin.errors.orderAmountOutOfRange',
+  // Е6а-12/17/20: інваріанти доставки.
+  [ADMIN_STATE_CONSTRAINT.shippingPricingUnsupported]:
+    'admin.errors.shippingPricingUnsupported',
+  [ADMIN_STATE_CONSTRAINT.shippingProviderUnknown]:
+    'admin.errors.shippingProviderUnknown',
+  [ADMIN_STATE_CONSTRAINT.shippingZoneDefault]:
+    'admin.errors.shippingZoneDefault',
+  [ADMIN_STATE_CONSTRAINT.shippingZoneInactive]:
+    'admin.errors.shippingZoneInactive',
+  [ADMIN_STATE_CONSTRAINT.pickupPointMethodInvalid]:
+    'admin.errors.pickupPointMethodInvalid',
+  [ADMIN_STATE_CONSTRAINT.pickupPointSystem]: 'admin.errors.pickupPointSystem',
+  [ADMIN_STATE_CONSTRAINT.pickupPointHasStock]:
+    'admin.errors.pickupPointHasStock',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

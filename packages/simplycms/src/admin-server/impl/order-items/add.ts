@@ -5,11 +5,11 @@ import { orderItems } from 'simplycms/schema';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { priceItems } from 'simplycms/commerce';
 import { reserveNewOrderItemStock } from 'simplycms/inventory';
+import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import {
   lockEditableOrder,
-  stateConflict,
   stockConflictAs409,
   type OrderItemsEditResult,
 } from './editable';

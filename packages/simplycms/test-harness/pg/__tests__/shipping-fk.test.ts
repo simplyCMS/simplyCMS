@@ -33,6 +33,9 @@ const POINT_ZERO = 'e6a10000-0000-4000-8000-000000000003';
 const POINT_FREE = 'e6a10000-0000-4000-8000-000000000004';
 const SECTION = 'e6a10000-0000-4000-8000-000000000005';
 const PRODUCT = 'e6a10000-0000-4000-8000-000000000006';
+// Точки БЕЗ залишку: інакше RESTRICT залишку маскує cascade FK способу (мутація Task 4).
+const METHOD_BARE = 'e6a10000-0000-4000-8000-000000000007';
+const POINT_BARE = 'e6a10000-0000-4000-8000-000000000008';
 
 describe('доставка: FK RESTRICT (Е6а-17)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -53,16 +56,18 @@ describe('доставка: FK RESTRICT (Е6а-17)', () => {
     await queryRows(
       dbUrl,
       `insert into public.shipping_methods (id, code, name, provider)
-       values ($1, 'e6a-pickup', 'Самовивіз Е6а', 'core:pickup')`,
-      [METHOD],
+       values ($1, 'e6a-pickup', 'Самовивіз Е6а', 'core:pickup'),
+              ($2, 'e6a-pickup-bare', 'Самовивіз без залишків', 'core:pickup')`,
+      [METHOD, METHOD_BARE],
     );
     await queryRows(
       dbUrl,
       `insert into public.pickup_points (id, method_id, name, address, city) values
          ($1, $4, 'З залишком', 'вул. А, 1', 'Київ'),
          ($2, $4, 'З нульовим', 'вул. Б, 2', 'Київ'),
-         ($3, $4, 'Порожня', 'вул. В, 3', 'Київ')`,
-      [POINT_STOCK, POINT_ZERO, POINT_FREE, METHOD],
+         ($3, $4, 'Порожня', 'вул. В, 3', 'Київ'),
+         ($5, $6, 'Без залишку', 'вул. Г, 4', 'Київ')`,
+      [POINT_STOCK, POINT_ZERO, POINT_FREE, METHOD, POINT_BARE, METHOD_BARE],
     );
     await queryRows(
       dbUrl,
@@ -88,19 +93,25 @@ describe('доставка: FK RESTRICT (Е6а-17)', () => {
     await harness?.teardown();
   });
 
-  it('спосіб із точками не видаляється — 23503, точки цілі', async () => {
-    await expect(
-      queryRows(dbUrl, 'delete from public.shipping_methods where id = $1', [
-        METHOD,
-      ]),
-    ).rejects.toMatchObject({ code: '23503' });
-    expect(
-      await count(
-        'select count(*)::int n from public.pickup_points where method_id = $1',
-        METHOD,
-      ),
-    ).toBe(3);
-  });
+  it.each([
+    ['із залишками на точках', METHOD, 3],
+    ['з точкою без рядків залишку', METHOD_BARE, 1],
+  ])(
+    'спосіб %s не видаляється — 23503, точки цілі',
+    async (_label, methodId, points) => {
+      await expect(
+        queryRows(dbUrl, 'delete from public.shipping_methods where id = $1', [
+          methodId,
+        ]),
+      ).rejects.toMatchObject({ code: '23503' });
+      expect(
+        await count(
+          'select count(*)::int n from public.pickup_points where method_id = $1',
+          methodId,
+        ),
+      ).toBe(points);
+    },
+  );
 
   it.each([
     ['з залишком', POINT_STOCK, 5],

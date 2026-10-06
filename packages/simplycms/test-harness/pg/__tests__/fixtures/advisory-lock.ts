@@ -1,4 +1,4 @@
-// Хелпери детермінованого доказу advisory-локу адмін-операцій (винесено з
+// Хелпери детермінованого доказу локів адмін-операцій (винесено з
 // admin-catalog-ops.test.ts, Е3; спільні з admin-catalog-dictionaries.test.ts,
 // Е4-12). Доказ не покладається на випадкову перемогу гонки: окремий
 // pg-клієнт бере ТОЙ САМИЙ advisory-lock, що й операція
@@ -97,4 +97,36 @@ export const holdOrderRowLock = async (dbUrl: string, orderId: string) => {
       }
     },
   };
+};
+
+/**
+ * Незакомічений insert рядка залишку на точку з ОКРЕМОГО зʼєднання (Е6а-17):
+ * імітує `saveStockOp`, що встиг вставити рядок після кроку (1)
+ * `removePickupPointsOp` — FK тримає `FOR KEY SHARE` на рядку точки.
+ * `release`/`cleanup` — ідемпотентна пара, як у `holdAdvisoryLock`.
+ */
+export const holdUncommittedStock = async (
+  url: string,
+  pointId: string,
+  productId: string,
+) => {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  await client.query('begin');
+  await client.query(
+    `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, quantity)
+     values ($1, $2, $3, 0)`,
+    [crypto.randomUUID(), pointId, productId],
+  );
+  let closed = false;
+  const close = async (sql: 'commit' | 'rollback') => {
+    if (closed) return;
+    closed = true;
+    try {
+      await client.query(sql);
+    } finally {
+      await client.end();
+    }
+  };
+  return { release: () => close('commit'), cleanup: () => close('rollback') };
 };

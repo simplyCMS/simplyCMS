@@ -1,6 +1,7 @@
 import { getTableColumns, getTableName, is } from 'drizzle-orm';
 import type { Column, Table } from 'drizzle-orm';
 import {
+  PgArray,
   PgBoolean,
   PgInteger,
   PgJsonb,
@@ -84,6 +85,12 @@ export function columnSchema(column: Column): z.ZodType {
   if (is(column, PgInteger)) return z.int().gte(-2147483648).lte(2147483647);
   if (is(column, PgTimestamp)) return z.date();
   if (is(column, PgJsonb)) return jsonSchema;
+  // Е6а: `shipping_zones.cities/regions` (text[]). Дзеркало drizzle-zod
+  // (`PgArray` → масив схеми базової колонки, `size` → точна довжина).
+  if (is(column, PgArray)) {
+    const items = z.array(columnSchema(column.baseColumn));
+    return column.size ? items.length(column.size) : items;
+  }
   throw new Error(
     `[admin-server] columnsToZod: тип колонки ${column.columnType} ` +
       `("${getTableName(column.table)}.${column.name}") не підтримано`,
