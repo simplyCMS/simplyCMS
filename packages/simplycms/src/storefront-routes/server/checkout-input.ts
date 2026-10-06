@@ -38,7 +38,8 @@ export const checkoutInputSchema = z.object({
   deliveryCity: z.string().nullable(),
   deliveryAddress: z.string().nullable(),
   pickupPointId: z.string().uuid().nullable(),
-  paymentMethod: z.enum(['cash', 'online']),
+  // Е6а-3: до К5 онлайн-оплати немає — прямий POST не кладе її в замовлення.
+  paymentMethod: z.enum(['cash']),
   notes: z.string().max(5000).nullable(),
   hasDifferentRecipient: z.boolean(),
   recipientFirstName: z.string().nullable(),

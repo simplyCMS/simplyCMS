@@ -25,6 +25,7 @@ export const messages: Catalog = {
   'admin.orders.nameLabel': 'Name:',
   'admin.orders.phoneLabel': 'Phone:',
   'admin.orders.methodLabel': 'Method:',
+  'admin.orders.shippingCarrierNote': 'at carrier rates (pay on delivery)',
   'admin.orders.cityLabel': 'City:',
   'admin.orders.addressLabel': 'Address:',
   'admin.orders.comment': 'Comment',

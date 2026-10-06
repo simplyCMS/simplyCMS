@@ -191,12 +191,7 @@ export default function ShippingMethods() {
                         </code>
                       </TableCell>
                       <TableCell>
-                        {methodTypeBadge(t, method.type)}
-                        {method.plugin_name && (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({method.plugin_name})
-                          </span>
-                        )}
+                        {methodTypeBadge(t, method.provider)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Switch
@@ -211,7 +206,7 @@ export default function ShippingMethods() {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {method.type !== 'system' && (
+                        {method.provider !== 'core:pickup' && (
                           <Button
                             variant="ghost"
                             size="icon"

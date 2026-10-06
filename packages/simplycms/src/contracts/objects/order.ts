@@ -71,7 +71,7 @@ export interface PlaceOrderInput {
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;
-  paymentMethod: 'cash' | 'online';
+  paymentMethod: 'cash';
   notes: string | null;
   hasDifferentRecipient: boolean;
   recipientFirstName: string | null;

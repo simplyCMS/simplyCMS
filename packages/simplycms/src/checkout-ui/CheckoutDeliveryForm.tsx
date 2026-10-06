@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Truck, ChevronRight, Save, icons } from 'lucide-react';
 import { formatShippingCost } from 'simplycms/domain/shipping';
+import { SHIPPING_PROVIDERS } from 'simplycms/contracts/shipping-providers';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import {
   useAddressBook,
@@ -84,7 +85,10 @@ export function CheckoutDeliveryForm({
   const showMoreButton =
     savedAddresses && savedAddresses.length > MAX_VISIBLE_CARDS;
   const selectedMethod = methods.find((m) => m.id === selectedMethodId);
-  const isPickup = selectedMethod?.code === 'pickup';
+  // Е6а-9: самовивіз визначає провайдер способу, а не його `code`.
+  const isPickup =
+    !!selectedMethod &&
+    SHIPPING_PROVIDERS[selectedMethod.provider].destination === 'pickup-point';
   const showAddressFields = selectedMethod && !isPickup;
 
   // hasChanges — виведений стан, не потребує окремого useState
@@ -315,12 +319,14 @@ export function CheckoutDeliveryForm({
                     )}
                   </div>
                   <div className="font-medium text-right">
-                    {rateInfo
-                      ? formatShippingCost(rateInfo.cost, config, {
-                          byTariff: t('common.shipping.byTariff'),
-                          free: t('common.shipping.free'),
-                        })
-                      : '—'}
+                    {!rateInfo
+                      ? '—'
+                      : rateInfo.pricing === 'carrier'
+                        ? t('checkout.shipping.carrier')
+                        : formatShippingCost(rateInfo.cost, config, {
+                            byTariff: t('common.shipping.byTariff'),
+                            free: t('common.shipping.free'),
+                          })}
                   </div>
                 </label>
               );

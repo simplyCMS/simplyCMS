@@ -90,8 +90,10 @@ export default function ShippingMethodEdit() {
           code: method.code,
           name: method.name,
           description: method.description || '',
-          type: method.type,
-          plugin_name: method.plugin_name || '',
+          // Легасі-форма: колонок type/plugin_name більше немає (Е6а-6),
+          // сторінку переписує Task 6.
+          type: 'manual' as const,
+          plugin_name: '',
           is_active: method.is_active,
           sort_order: method.sort_order,
           icon: method.icon || '',
@@ -139,7 +141,7 @@ export default function ShippingMethodEdit() {
   });
 
   const methodType = useWatch({ control: form.control, name: 'type' });
-  const isSystem = method?.type === 'system';
+  const isSystem = method?.provider === 'core:pickup';
 
   if (!isNew && isLoading) {
     return (

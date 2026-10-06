@@ -2,33 +2,20 @@ import { useT } from 'simplycms/i18n';
 import { CreditCard, Banknote } from 'lucide-react';
 
 interface CheckoutPaymentFormProps {
-  selectedMethod: string;
-  onMethodChange: (method: string) => void;
+  selectedMethod: 'cash';
+  onMethodChange: (method: 'cash') => void;
 }
 
+/**
+ * Єдиний спосіб оплати — накладений платіж (Е6а-3): до К5 «онлайн» нічого не
+ * робить, тож і опції немає. Список лишився радіо-групою, щоб К5 додала
+ * провайдерів оплати без зміни розмітки.
+ */
 export function CheckoutPaymentForm({
   selectedMethod,
   onMethodChange,
 }: CheckoutPaymentFormProps) {
   const t = useT();
-
-  // Дані способів оплати залежать від локалі — тож масив будується в
-  // компоненті, а не на рівні модуля.
-  const paymentMethods = [
-    {
-      id: 'cash',
-      name: t('checkout.payment.cash'),
-      description: t('checkout.payment.cashDescription'),
-      icon: Banknote,
-    },
-    {
-      id: 'online',
-      name: t('checkout.payment.online'),
-      description: t('checkout.payment.onlineDescription'),
-      icon: CreditCard,
-      disabled: true,
-    },
-  ];
 
   return (
     <div className="border rounded-lg">
@@ -40,37 +27,31 @@ export function CheckoutPaymentForm({
       </div>
       <div className="p-4">
         <div className="grid gap-3">
-          {paymentMethods.map((method) => (
-            <label
-              key={method.id}
-              htmlFor={`checkout-payment-${method.id}`}
-              className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
-                method.disabled ? 'opacity-50 cursor-not-allowed' : ''
-              } ${
-                selectedMethod === method.id
-                  ? 'border-primary'
-                  : 'border-muted hover:bg-accent'
-              }`}
-            >
-              <input
-                type="radio"
-                id={`checkout-payment-${method.id}`}
-                name="paymentMethod"
-                value={method.id}
-                checked={selectedMethod === method.id}
-                onChange={() => !method.disabled && onMethodChange(method.id)}
-                disabled={method.disabled}
-                className="sr-only"
-              />
-              <method.icon className="h-5 w-5 text-muted-foreground" />
-              <div className="flex-1">
-                <div className="font-medium">{method.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {method.description}
-                </div>
+          <label
+            htmlFor="checkout-payment-cash"
+            className={`flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+              selectedMethod === 'cash'
+                ? 'border-primary'
+                : 'border-muted hover:bg-accent'
+            }`}
+          >
+            <input
+              type="radio"
+              id="checkout-payment-cash"
+              name="paymentMethod"
+              value="cash"
+              checked={selectedMethod === 'cash'}
+              onChange={() => onMethodChange('cash')}
+              className="sr-only"
+            />
+            <Banknote className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <div className="font-medium">{t('checkout.payment.cash')}</div>
+              <div className="text-sm text-muted-foreground">
+                {t('checkout.payment.cashDescription')}
               </div>
-            </label>
-          ))}
+            </div>
+          </label>
         </div>
       </div>
     </div>

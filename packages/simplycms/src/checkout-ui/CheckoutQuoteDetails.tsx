@@ -56,10 +56,13 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
             {t('cart.summary.shipping')}
           </span>
           <span>
-            {formatShippingCost(quote.shippingCost, config, {
-              byTariff: t('common.shipping.byTariff'),
-              free: t('common.shipping.free'),
-            })}
+            {/* Е6а-18: нуль у режимі carrier — не «Безкоштовно». */}
+            {quote.shippingPricing === 'carrier'
+              ? t('checkout.shipping.carrier')
+              : formatShippingCost(quote.shippingCost, config, {
+                  byTariff: t('common.shipping.byTariff'),
+                  free: t('common.shipping.free'),
+                })}
           </span>
         </div>
       </div>

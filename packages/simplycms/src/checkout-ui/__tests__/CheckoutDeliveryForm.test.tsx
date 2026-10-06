@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Довідник — керований з тесту: порожній (стан демо-магазину без доставки до
 // К2-Е0: форма мовчала, submit лишався активним) або один pickup з однією
@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 const directory = vi.hoisted(() => ({
   methods: [] as unknown[],
   pickupPoints: [] as unknown[],
+  rate: { cost: 0, pricing: 'rates' } as { cost: number; pricing: string },
 }));
 vi.mock('simplycms/core/hooks/useShippingDirectory', () => ({
   useShippingDirectory: () => ({
@@ -16,7 +17,7 @@ vi.mock('simplycms/core/hooks/useShippingDirectory', () => ({
     zones: [],
     rates: [],
     isLoading: false,
-    rateFor: () => ({ cost: 0 }),
+    rateFor: () => directory.rate,
   }),
 }));
 vi.mock('simplycms/core/hooks/useAuth', () => ({
@@ -40,7 +41,8 @@ const PICKUP = {
   name: 'Самовивіз',
   description: null,
   icon: null,
-  type: 'system',
+  provider: 'core:pickup',
+  pricing: 'rates',
   is_active: true,
   sort_order: 0,
 };
@@ -74,10 +76,13 @@ const renderForm = (
   return { onChange, onAvailabilityChange };
 };
 
+afterEach(cleanup);
+
 describe('CheckoutDeliveryForm', () => {
   it('без способів доставки — empty-state, submit неможливий, жодного radio', () => {
     directory.methods = [];
     directory.pickupPoints = [];
+    directory.rate = { cost: 0, pricing: 'rates' };
     const { onAvailabilityChange } = renderForm({});
     expect(screen.getByText('Доставка не налаштована')).toBeTruthy();
     expect(onAvailabilityChange).toHaveBeenLastCalledWith(false);
@@ -105,7 +110,13 @@ describe('CheckoutDeliveryForm', () => {
   it('точка ЧУЖОГО методу скидається при переході на курʼєра', () => {
     directory.methods = [
       PICKUP,
-      { ...PICKUP, id: 'm2', code: 'courier', name: 'Курʼєр' },
+      {
+        ...PICKUP,
+        id: 'm2',
+        code: 'courier',
+        name: 'Курʼєр',
+        provider: 'core:address',
+      },
     ];
     directory.pickupPoints = [POINT];
     const { onChange } = renderForm({
@@ -113,5 +124,31 @@ describe('CheckoutDeliveryForm', () => {
       pickupPointId: 'p1',
     });
     expect(onChange).toHaveBeenCalledWith('pickupPointId', '');
+  });
+
+  // Е6а-9: самовивіз визначає провайдер, а не `code` — довільний код способу
+  // з провайдером `core:pickup` усе одно показує вибір точки.
+  it('спосіб core:pickup з довільним code показує вибір точки', () => {
+    directory.methods = [{ ...PICKUP, code: 'my-warehouse' }];
+    directory.pickupPoints = [POINT, { ...POINT, id: 'p2', name: 'Магазин' }];
+    renderForm({ shippingMethodId: 'm1' });
+    expect(screen.getByLabelText(/Оберіть пункт самовивозу/)).toBeTruthy();
+  });
+
+  it('code «pickup» в адресного провайдера не дає вибору точки', () => {
+    directory.methods = [{ ...PICKUP, provider: 'core:address' }];
+    directory.pickupPoints = [POINT];
+    renderForm({ shippingMethodId: 'm1' });
+    expect(screen.queryByLabelText(/Оберіть пункт самовивозу/)).toBeNull();
+  });
+
+  // Е6а-4: carrier не «Безкоштовно» — вартість визначить перевізник.
+  it('режим carrier показує «За тарифами перевізника» замість суми', () => {
+    directory.methods = [{ ...PICKUP, provider: 'core:address' }];
+    directory.pickupPoints = [];
+    directory.rate = { cost: 0, pricing: 'carrier' };
+    renderForm({ shippingMethodId: 'm1' });
+    expect(screen.getByText('За тарифами перевізника')).toBeTruthy();
+    expect(screen.queryByText('Безкоштовно')).toBeNull();
   });
 });

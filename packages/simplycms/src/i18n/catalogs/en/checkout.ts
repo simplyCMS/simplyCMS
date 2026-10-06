@@ -19,13 +19,9 @@ export const messages: Catalog = {
   'checkout.rejected.not_purchasable':
     'Some items in your cart are unavailable — review the cart',
 
-  'checkout.shipping.pickup': 'Pickup',
-  'checkout.shipping.novaPoshta': 'Nova Poshta',
-  'checkout.shipping.courier': 'Courier',
+  'checkout.shipping.carrier': 'At carrier rates',
   'checkout.payment.cash': 'Cash on delivery',
   'checkout.payment.cashDescription': 'Cash or card on delivery',
-  'checkout.payment.online': 'Online payment',
-  'checkout.payment.onlineDescription': 'Card payment (coming soon)',
 
   'checkout.success.title': 'Order placed',
   'checkout.success.thanks': 'Thank you for your order!',

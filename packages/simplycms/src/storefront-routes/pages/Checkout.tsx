@@ -51,7 +51,7 @@ const buildCheckoutSchema = (t: Translator) =>
       deliveryCity: z.string().optional(),
       deliveryAddress: z.string().optional(),
       pickupPointId: z.string().optional(),
-      paymentMethod: z.enum(['cash', 'online'], {
+      paymentMethod: z.enum(['cash'], {
         message: t('validation.paymentRequired'),
       }),
       notes: z.string().optional(),
@@ -406,7 +406,7 @@ export default function Checkout() {
               <CheckoutPaymentForm
                 selectedMethod={form.watch('paymentMethod')}
                 onMethodChange={(method) =>
-                  form.setValue('paymentMethod', method as 'cash' | 'online')
+                  form.setValue('paymentMethod', method)
                 }
               />
 
