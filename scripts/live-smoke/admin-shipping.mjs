@@ -23,7 +23,12 @@ import {
   refusalPart,
   zoneDefaultPart,
 } from './admin-shipping-setup.mjs';
-import { cleanupShippingStep } from './admin-shipping-cleanup.mjs';
+import {
+  cancelOrders,
+  dropShippingConfig,
+  dropStockRow,
+} from './admin-shipping-cleanup.mjs';
+import { assertDemoShape, restoreZones } from './admin-shipping-final.mjs';
 
 const FX = {
   slug: sqlx.SHIPPING_PRODUCT_SLUG,
@@ -50,6 +55,22 @@ const FX = {
     address: 'вул. Тестова, 6',
   },
 };
+
+/**
+ * Прибирання в каноні (1) замовлення → (2) рядок залишку → (3) точка, тариф,
+ * способи; далі зони (ідемпотентно) і фінальні асерти стану демо.
+ */
+async function cleanupShippingStep(args) {
+  await cancelOrders(args);
+  await dropStockRow(args);
+  await dropShippingConfig(args);
+  await restoreZones(args);
+  try {
+    await assertDemoShape(args);
+  } catch (e) {
+    args.check('прибирання: стан демо', false, `виняток: ${e.message}`);
+  }
+}
 
 export async function runAdminShippingStep({
   context,

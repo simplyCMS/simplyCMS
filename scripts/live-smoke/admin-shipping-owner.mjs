@@ -112,11 +112,17 @@ export async function tryDelete(page, base, list, rowText, toast) {
   return waitText(page, toast);
 }
 
-/** Деактивувати (перемикач у рядку) і видалити зі списку `list`. */
+/**
+ * Деактивувати (перемикач у рядку) і видалити зі списку `list`. Ідемпотентно
+ * щодо активності: вже вимкнений рядок перемикач не вмикає назад.
+ */
 export async function deactivateAndDelete(page, base, list, rowText, done) {
   await go(page, base, list);
-  await rowOf(page, rowText).getByRole('switch', { name: 'Активна' }).click();
-  await waitText(page, 'Статус оновлено');
+  const sw = rowOf(page, rowText).getByRole('switch', { name: 'Активна' });
+  if ((await sw.getAttribute('aria-checked')) === 'true') {
+    await sw.click();
+    await waitText(page, 'Статус оновлено');
+  }
   await deleteRow(page, rowText);
   await rowOf(page, rowText).waitFor({ state: 'detached', timeout: 10_000 });
   return waitText(page, done);

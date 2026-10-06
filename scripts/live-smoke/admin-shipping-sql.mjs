@@ -105,38 +105,6 @@ export async function orderShipping(url, orderId) {
   return row ?? null;
 }
 
-/**
- * Стан демо після кроку: активні точки (воронка й `resolveStockPoint`
- * покладаються на рівно одну, системну) і способи самовивозу.
- */
-export async function demoShippingShape(url) {
-  const points = await sql(
-    url,
-    'select is_system from public.pickup_points where is_active',
-  );
-  const [{ c }] = await sql(
-    url,
-    `select count(*)::int as c from public.shipping_methods
-      where provider = 'core:pickup'`,
-  );
-  return { points, pickupMethods: c };
-}
-
-/** Чи лишились тестові записи кроку (способи за кодами, точка за назвою). */
-export async function leftovers(url, codes, pointNames) {
-  const [{ m }] = await sql(
-    url,
-    'select count(*)::int as m from public.shipping_methods where code = any($1)',
-    [codes],
-  );
-  const [{ p }] = await sql(
-    url,
-    'select count(*)::int as p from public.pickup_points where name = any($1)',
-    [pointNames],
-  );
-  return { methods: m, points: p };
-}
-
 /** Чекає, доки `read()` дасть значення, що задовольняє `pred` (write-back). */
 export async function pollUntil(read, pred, timeout = 10_000) {
   const until = Date.now() + timeout;
