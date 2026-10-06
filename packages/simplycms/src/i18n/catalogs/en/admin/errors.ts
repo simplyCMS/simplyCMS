@@ -28,6 +28,12 @@ export const messages: Catalog = {
     'The system pickup point (warehouse) cannot be deleted',
   'admin.errors.pickupPointHasStock':
     'The point holds stock or order reservations — deactivate it instead of deleting',
+  'admin.errors.storeLogoInvalid':
+    'The logo must be uploaded through the profile form — choose the file again',
+  'admin.errors.themeNotBuilt':
+    'This theme is not in the store build — add its package and rebuild the store',
+  'admin.errors.themeUnknown': 'Theme not found — reload the page',
+  'admin.errors.pluginUnknown': 'Plugin not found — reload the page',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

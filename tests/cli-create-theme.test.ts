@@ -85,6 +85,20 @@ describe('cli create theme: скаффолд', () => {
       }
     }
 
+    // Е6б-20: бренд магазину — з профілю, а не з каталогу теми. Інакше кожна
+    // згенерована тема показувала б власну назву як назву магазину.
+    const read = (rel: string) => readFileSync(join(target, rel), 'utf8');
+    for (const rel of ['components/Header.tsx', 'components/Footer.tsx']) {
+      expect(read(rel), `${rel}: бренд не з профілю`).toContain(
+        'useStoreProfile',
+      );
+      expect(read(rel), `${rel}: лишився theme.brand`).not.toContain(
+        'theme.brand',
+      );
+    }
+    expect(read('messages.ts')).not.toContain('theme.brand');
+    expect(read('messages.ts')).not.toContain('Solar Store');
+
     const manifest = JSON.parse(
       readFileSync(join(target, 'package.json'), 'utf8'),
     ) as { name: string; private: boolean };

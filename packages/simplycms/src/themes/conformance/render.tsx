@@ -2,9 +2,11 @@ import { Suspense, act, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nProvider, type Locale } from 'simplycms/i18n';
 import { REQUISITE_ATTRIBUTE } from 'simplycms/contracts/views';
+import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import { ThemeContext } from '../theme-context';
 import { resolveDefaultThemeSettings } from '../theme-settings';
 import type { ThemeContextType, ThemeModule } from '../types';
+import { StoreProfileProvider } from '../store-profile';
 import { ConformanceBoundary } from './boundary';
 
 export interface ThemeViewRenderResult {
@@ -66,15 +68,21 @@ export async function renderThemeView(
       root.render(
         <I18nProvider locale={locale}>
           <ThemeContext.Provider value={contextValue(theme)}>
-            <ConformanceBoundary
-              onError={(caught) => {
-                error = caught;
-              }}
-            >
-              {/* Тема може читати каталог через `useThemeT` — той suspend-иться
-                  на промісі реєстру, тож межа Suspense обовʼязкова. */}
-              <Suspense fallback={null}>{element}</Suspense>
-            </ConformanceBoundary>
+            {/* Профіль — дані ядра, які host монтує над `Outlet`; тема читає
+                з нього бренд і контакти (`useStoreProfile` без провайдера
+                кидає), тож kit дає йому фікстуру, а не порожній профіль. */}
+            <StoreProfileProvider profile={STORE_PROFILE_FIXTURE}>
+              <ConformanceBoundary
+                onError={(caught) => {
+                  error = caught;
+                }}
+              >
+                {/* Тема може читати каталог через `useThemeT` — той
+                    suspend-иться на промісі реєстру, тож межа Suspense
+                    обовʼязкова. */}
+                <Suspense fallback={null}>{element}</Suspense>
+              </ConformanceBoundary>
+            </StoreProfileProvider>
           </ThemeContext.Provider>
         </I18nProvider>,
       );

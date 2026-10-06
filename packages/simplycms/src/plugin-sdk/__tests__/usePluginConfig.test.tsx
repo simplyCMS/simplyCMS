@@ -16,8 +16,16 @@ const schema = z.object({
 
 let stored: { found: boolean; config: unknown } = { found: true, config: {} };
 let readError: Error | null = null;
-let writeAllowed = true;
+/** Помилка запису; `null` — запис проходить. */
+let writeError: Error | null = null;
 const written: Record<string, unknown>[] = [];
+
+/**
+ * Форма відмови ПІСЛЯ адаптера START-2 (`runtime/domain-error-adapter`): на
+ * клієнті це звичайний `Error` з `name`, а НЕ екземпляр `AuthzError` — тож
+ * `instanceof` у хуку був би хибним (Е6б-13, ред.3).
+ */
+const authzDenied = () => Object.assign(new Error('x'), { name: 'AuthzError' });
 
 vi.mock('simplycms/plugin-sdk/server', () => ({
   pluginConfigRead: async () => {
@@ -29,16 +37,15 @@ vi.mock('simplycms/plugin-sdk/server', () => ({
   }: {
     data: { config: Record<string, unknown> };
   }) => {
-    if (!writeAllowed) return false;
+    if (writeError) throw writeError;
     written.push(data.config);
-    return true;
   },
 }));
 
 beforeEach(() => {
   stored = { found: true, config: {} };
   readError = null;
-  writeAllowed = true;
+  writeError = null;
   written.length = 0;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
@@ -107,13 +114,25 @@ describe('usePluginConfig', () => {
     );
   });
 
-  it('сервер відмовив у праві → save віддає false, значення не змінюється', async () => {
+  it('сервер відмовив у праві (AuthzError) → save віддає false, значення не змінюється', async () => {
     stored = { found: true, config: { maxVisible: 12 } };
-    writeAllowed = false;
+    writeError = authzDenied();
     const { result } = renderHook(() => usePluginConfig('faq', schema));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await expect(result.current.save({ maxVisible: 1 })).resolves.toBe(false);
+    expect(result.current.config).toEqual({ maxVisible: 12, badge: 'new' });
+  });
+
+  it('інша помилка запису → save відхиляється нею ж, значення не змінюється', async () => {
+    stored = { found: true, config: { maxVisible: 12 } };
+    writeError = new Error('database is down');
+    const { result } = renderHook(() => usePluginConfig('faq', schema));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await expect(result.current.save({ maxVisible: 1 })).rejects.toThrow(
+      'database is down',
+    );
     expect(result.current.config).toEqual({ maxVisible: 12, badge: 'new' });
   });
 });

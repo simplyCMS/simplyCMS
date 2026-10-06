@@ -49,7 +49,7 @@ const CATALOG = [
 ];
 
 /** Доменні таблиці, які покупцю не видно взагалі. */
-const ADMIN_ONLY = ['category_rules', 'plugin_events'];
+const ADMIN_ONLY = ['category_rules'];
 
 /**
  * Таблиці Better Auth: лише серверний auth-контур (Task 7). Покупець не сміє

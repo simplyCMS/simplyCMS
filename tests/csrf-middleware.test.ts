@@ -1,9 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { csrfMiddleware } from 'simplycms/runtime/csrf';
+import { Route as HealthRoute } from '../packages/simplycms/routes/storefront/api/health';
 import { startInstance } from '../src/start';
 import { toRequestUrl } from '../server-runtime.mjs';
+
+// Роут health тягне `simplycms/db`; БД тут не потрібна — `ANY` до неї не ходить.
+vi.mock('simplycms/db', () => ({ withActor: async () => {} }));
+
+type RouteHandler = (ctx: { request: Request }) => Response | Promise<Response>;
+const healthHandlers = HealthRoute.options.server
+  ?.handlers as unknown as Record<string, RouteHandler | undefined>;
 
 /**
  * CSRF-міддлвара Start (тема 2 спеки deps-security-tooling).
@@ -78,9 +86,20 @@ describe('csrfMiddleware — поведінка', () => {
   it('server route (не server function) теж під захистом', async () => {
     const r = await run(
       csrfMiddleware,
-      post('/api/revalidate-theme', { origin: 'https://evil.example' }),
+      post('/api/health', { origin: 'https://evil.example' }),
     );
     expect((r as Response).status).toBe(403);
+    expect(await (r as Response).text()).toBe('Forbidden');
+  });
+
+  it('server route, свій Origin: міддлвара пропускає, роут відповідає РІВНО 405 Allow: GET, HEAD', async () => {
+    const request = post('/api/health', { origin: BASE });
+    expect(await run(csrfMiddleware, request)).toBe('next');
+    // Далі — пошук Start `handlers[method] ?? handlers.ANY` (Е6б-28).
+    const handler = healthHandlers.POST ?? healthHandlers.ANY;
+    const res = await handler!({ request });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('GET, HEAD');
   });
 
   it('за проксі: origin із x-forwarded-* збігається з Origin публічного домену', async () => {

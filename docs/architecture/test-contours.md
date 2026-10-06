@@ -201,6 +201,10 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    самим `lib/browser-reveal.mjs`. Тобто в CI вона більше НЕ сліпа: браузерний
    `motion-root` лишається доказом того, що корінь працює з живим
    `getComputedStyle`, а сам вибір кореня червоніє й без Chromium.
+8. **Спільний стан `simplycms/site` у `pnpm dev` і `vite preview`** (К3-Е6б,
+   Е6б-23). Що адмінка й вітрина ділять один екземпляр кешу профілю й теми,
+   доводить лише `pnpm live:smoke` на production-збірці (§11.4); dev і preview
+   жоден гейт не ганяє.
 
 ## 5. Роль `src/` і план `apps/dev-store`
 
@@ -435,9 +439,15 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 (`POST /api/revalidate-theme`), але не клієнтський: `_storefront` має
 `staleTime: 5 * 60_000`, тож перехід на вітрину в межах застосунку до п'яти
 хвилин показував стару тему, а тост стверджував «Зміни застосовані на сайті».
-Ловилось лише hard-refresh-ем. Фікс — `useRevalidateStorefront()`
-(`packages/simplycms/src/admin/lib/revalidateTheme.ts`), яка робить обидва кроки;
-гард — `packages/simplycms/src/admin/__tests__/revalidate-storefront.test.tsx`.
+Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()`
+(`admin/lib/revalidateTheme.ts`), що робив обидва кроки. 🔴 Е6б знесла і його, і
+`/api/revalidate-theme`: серверний кеш тепер скидає сама операція після COMMIT
+(`activeThemeCache.invalidate()` в `admin-server/impl/site-themes/activate.ts`,
+`storeProfileCache.invalidate()` у `impl/settings/save-profile.ts`), а клієнтський —
+`router.invalidate()` в `admin/features/themes/useThemes.ts` і
+`admin/features/settings/useSystemSettings.ts` (Е6б-22). Гард — юніти
+`admin/features/{themes,settings}/__tests__` і живий підкрок 4б кроку «система»
+`pnpm live:smoke` (та сама вкладка, кнопка «На сайт», §11.4).
 
 Це і є аргумент за ручний смок: механіка була зелена в усіх гейтах, а
 користувач бачив стару тему.
@@ -787,6 +797,33 @@ expectTypeOf і рев'ю.
 ключові твердження на реальних таблицях БЕЗ еталона — вони переживуть зняття
 `drizzle-zod` (при міграції на Drizzle 1.0 еталон замінити на `drizzle-orm/zod`
 або зняти — DRIZ-1).
+
+### 11.4. К3-Е6б (система): спільний екземпляр `simplycms/site` — лише `live:smoke`
+
+Кеш профілю й активної теми (`storeProfileCache`, `activeThemeCache`) і реєстр
+вшитих тем (`declareBuiltThemes`) — модульний стан `simplycms/site`. Скидає його
+адмін-serverFn, читає — вітринний serverFn. 🔴 Що це ОДИН екземпляр модуля, а
+декларація host-а (`src/server.ts`) виконана до першої активації, доводить
+**лише** `pnpm live:smoke` (крок `scripts/live-smoke/admin-system.mjs`): він
+працює на зібраному `server.mjs`. Юніт і харнес імпортують модуль один раз за
+побудовою, тож двох екземплярів не побачать (Е6б-23).
+
+Крок іде ОСТАННІМ у прогоні. Перед кожною мутацією покупець прогріває кеш
+запитом вітрини, тож «новий запит бачить нове» доводить скидання кешу
+операцією, а не холодний кеш. Підкрок 4б — та сама вкладка власника, кнопка
+«На сайт» (клієнтська навігація) і маркер `window.__e6bNoReload`: він доводить
+`router.invalidate()` після активації, а не повне перезавантаження. `finally`
+відновлює знімок SQL-ом, а SQL оминає кеш процесу (Е6б-9), тому після кроку в
+тому самому сервері нічого не ганяється. Негативні контролі (2026-10-06): без
+`storeProfileCache.invalidate()` у `saveStoreProfileOp` червоніє підкрок 1, без
+`router.invalidate()` в активації теми — підкрок 4б.
+
+🔴 **Непокрита зона — `pnpm dev` і `vite preview`.** У dev Vite SSR може
+завантажити модуль `site` окремо для різних графів (адмінка й вітрина), і тоді
+скидання кешу з адмінки вітрину не зачепить. Жоден гейт цього не перевіряє:
+`live:smoke` ганяється лише на production-збірці. Симптом у dev — «зберіг, а
+вітрина до 5 хв показує старе». Перевірка руками — зберегти профіль і
+перезавантажити головну.
 
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 

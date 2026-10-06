@@ -1,52 +1,15 @@
 import { eq } from 'drizzle-orm';
 import { themes } from 'simplycms/schema';
-import type { Theme } from 'simplycms/schema/types';
+import type { JsonValue } from 'simplycms/schema/types';
+import { activeThemeCache, type ThemeRecord } from 'simplycms/site';
 import { withStorefrontDb } from './db';
-// 🔴 Type-only self-import барелю стирається при збірці — рантайм-циклу немає.
-import type { JsonValue } from 'simplycms/storefront/loaders';
 
-/** Запис активної теми у формі, яку читають каркасні роути. */
-export interface ThemeRecord {
-  id: Theme['id'];
-  name: Theme['name'];
-  display_name: Theme['displayName'];
-  version: Theme['version'];
-  description: Theme['description'];
-  author: Theme['author'];
-  preview_image: Theme['previewImage'];
-  is_active: Theme['isActive'];
-  settings: Record<string, JsonValue>;
-  created_at: Date;
-  updated_at: Date;
-}
+// Тип переїхав у `simplycms/site` (Е6б-7), щоб адмінка й вітрина ділили його
+// без імпорту `storefront`; тут лишається реекспорт для наявних споживачів.
+export type { ThemeRecord };
 
-interface CacheEntry {
-  data: ThemeRecord | null;
-  timestamp: number;
-}
-
-const CACHE_TTL = 5 * 60 * 1000; // 5 хвилин
-let themeCache: CacheEntry | null = null;
-
-/**
- * Прочитати запис активної теми крізь TTL-кеш — ЗВИЧАЙНА функція.
- *
- * Доступна server-route handler-ам і тестам, де контексту `createServerFn`
- * немає. Живе окремо від `./themes` навмисно — з тієї самої причини, що й
- * `checkIsAdmin` (див. докблок у `./is-admin`): живий не-serverFn експорт
- * тримає серверний імпорт живим і затягнув би пул Postgres у клієнтський
- * бандл через сусідній `getActiveTheme`, який імпортує `__root.tsx`.
- *
- * 🔴 Помилка запиту НЕ ковтається. Раніше вона логувалась і кешувала `null`
- * на пʼять хвилин — тобто збій БД на секунду знімав тему з магазину на
- * пʼять і виглядав як «тема злетіла», а не як збій.
- */
-export async function loadActiveTheme(): Promise<ThemeRecord | null> {
-  const now = Date.now();
-  if (themeCache && now - themeCache.timestamp < CACHE_TTL) {
-    return themeCache.data;
-  }
-
+/** Один запит активної теми без кешу. */
+async function readActiveTheme(): Promise<ThemeRecord | null> {
   const record = await withStorefrontDb(async (db) => {
     const [row] = await db
       .select({
@@ -71,21 +34,31 @@ export async function loadActiveTheme(): Promise<ThemeRecord | null> {
     return row ?? null;
   });
 
-  const data: ThemeRecord | null =
-    record === null
-      ? null
-      : {
-          ...record,
-          settings: (record.settings ?? {}) as Record<string, JsonValue>,
-          created_at: record.created_at ?? new Date(),
-          updated_at: record.updated_at ?? new Date(),
-        };
-
-  themeCache = { data, timestamp: now };
-  return data;
+  return record === null
+    ? null
+    : {
+        ...record,
+        settings: (record.settings ?? {}) as Record<string, JsonValue>,
+        created_at: record.created_at ?? new Date(),
+        updated_at: record.updated_at ?? new Date(),
+      };
 }
 
-/** Скинути кеш активної теми (перемикання теми чи зміна її налаштувань). */
-export function invalidateThemeCache(): void {
-  themeCache = null;
+/**
+ * Прочитати запис активної теми крізь спільний кеш (`activeThemeCache`:
+ * TTL 5 хв + покоління) — ЗВИЧАЙНА функція.
+ *
+ * Доступна server-route handler-ам і тестам, де контексту `createServerFn`
+ * немає. Живе окремо від `./themes` навмисно — з тієї самої причини, що й
+ * `checkIsAdmin` (див. докблок у `./is-admin`): живий не-serverFn експорт
+ * тримає серверний імпорт живим і затягнув би пул Postgres у клієнтський
+ * бандл через сусідні serverFn (`getActiveTheme` у каркасних роутах,
+ * `getStorefrontRoot` у корені host-а).
+ *
+ * 🔴 Помилка запиту НЕ ковтається й не кешується. Раніше вона логувалась і
+ * кешувала `null` на пʼять хвилин — тобто збій БД на секунду знімав тему з
+ * магазину на пʼять і виглядав як «тема злетіла», а не як збій.
+ */
+export function loadActiveTheme(): Promise<ThemeRecord | null> {
+  return activeThemeCache.get(readActiveTheme);
 }

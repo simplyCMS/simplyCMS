@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -14,6 +14,7 @@
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
+    "./contracts/store-profile": "./src/contracts/store-profile.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
@@ -26,6 +27,7 @@
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
     "./domain/media": "./src/domain/media.ts",
+    "./domain/store-profile": "./src/domain/store-profile.ts",
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
     "./schema": "./src/schema/schema.ts",
@@ -38,6 +40,7 @@
     "./storage": "./src/storage/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
+    "./site": "./src/site/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
@@ -67,6 +70,7 @@
     "./themes/validateThemeModule": "./src/themes/validateThemeModule.ts",
     "./themes/useThemeT": "./src/themes/useThemeT.ts",
     "./themes/types": "./src/themes/types.ts",
+    "./themes/store-profile": "./src/themes/store-profile.tsx",
     "./themes/conformance": "./src/themes/conformance/index.ts",
     "./themes/server": "./src/themes/server/index.ts",
     "./plugins": "./src/plugins/index.ts",
@@ -101,6 +105,7 @@
     "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
     "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
     "./storefront-routes/seo/*": "./src/storefront-routes/seo/*.ts",
+    "./storefront-routes/head/*": "./src/storefront-routes/head/*.ts",
     "./storefront-routes/pages/*": "./src/storefront-routes/pages/*.tsx",
     "./storefront-routes/components/*": "./src/storefront-routes/components/*.tsx",
     "./storefront-routes/shells/*": "./src/storefront-routes/shells/*",
@@ -137,6 +142,10 @@
       "./contracts/shipping-providers": {
         "types": "./dist/contracts/shipping-providers.d.ts",
         "import": "./dist/contracts/shipping-providers.js"
+      },
+      "./contracts/store-profile": {
+        "types": "./dist/contracts/store-profile.d.ts",
+        "import": "./dist/contracts/store-profile.js"
       },
       "./contracts/server-only": {
         "types": "./dist/contracts/server-only.d.ts",
@@ -186,6 +195,10 @@
         "types": "./dist/domain/media.d.ts",
         "import": "./dist/domain/media.js"
       },
+      "./domain/store-profile": {
+        "types": "./dist/domain/store-profile.d.ts",
+        "import": "./dist/domain/store-profile.js"
+      },
       "./domain/money": {
         "types": "./dist/domain/money.d.ts",
         "import": "./dist/domain/money.js"
@@ -233,6 +246,10 @@
       "./commerce": {
         "types": "./dist/commerce/index.d.ts",
         "import": "./dist/commerce/index.js"
+      },
+      "./site": {
+        "types": "./dist/site/index.d.ts",
+        "import": "./dist/site/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",
@@ -349,6 +366,10 @@
       "./themes/types": {
         "types": "./dist/themes/types.d.ts",
         "import": "./dist/themes/types.js"
+      },
+      "./themes/store-profile": {
+        "types": "./dist/themes/store-profile.d.ts",
+        "import": "./dist/themes/store-profile.js"
       },
       "./themes/conformance": {
         "types": "./dist/themes/conformance/index.d.ts",
@@ -485,6 +506,10 @@
       "./storefront-routes/seo/*": {
         "types": "./dist/storefront-routes/seo/*.d.ts",
         "import": "./dist/storefront-routes/seo/*.js"
+      },
+      "./storefront-routes/head/*": {
+        "types": "./dist/storefront-routes/head/*.d.ts",
+        "import": "./dist/storefront-routes/head/*.js"
       },
       "./storefront-routes/pages/*": {
         "types": "./dist/storefront-routes/pages/*.d.ts",

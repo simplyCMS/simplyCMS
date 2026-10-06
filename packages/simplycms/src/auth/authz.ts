@@ -34,6 +34,7 @@ export type Operation =
   | 'order.create'
   | 'order.manage'
   | 'shipping.manage'
+  | 'settings.manage'
   | 'profile.read'
   | 'profile.update'
   | 'review.create'
@@ -70,6 +71,11 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // Е6а-11: записи й читання доставки адмінкою (способи, зони, тарифи,
   // точки). Не `catalog.write` — доставка не каталог; прецедент `order.manage`.
   'shipping.manage': { admin: 'any' },
+  // Е6б-13: системні налаштування — профіль магазину, облік залишків, теми,
+  // плагіни і запис конфігу плагіна (`pluginConfigWrite`). Одна операція: це
+  // одна ділянка адмінки, а не окремі ролі; прецедент `shipping.manage`.
+  // Завантаження логотипа лишається під `media.write`.
+  'settings.manage': { admin: 'any' },
   'profile.read': { user: 'own', admin: 'any' },
   'profile.update': { user: 'own', admin: 'any' },
   'review.create': { user: 'own', admin: 'any' },

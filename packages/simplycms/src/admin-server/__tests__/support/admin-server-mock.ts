@@ -108,6 +108,14 @@ export function createAdminServerMock(
     insertPickupPoints: vi.fn(),
     updatePickupPoints: vi.fn(),
     removePickupPoints: vi.fn(),
+    getSystemSettings: vi.fn(),
+    saveStoreProfile: vi.fn(),
+    saveStockManagement: vi.fn(),
+    listThemes: list(),
+    activateTheme: vi.fn(),
+    saveThemeSettings: vi.fn(),
+    listPlugins: list(),
+    setPluginActive: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

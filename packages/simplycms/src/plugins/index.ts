@@ -6,19 +6,9 @@ export {
   registerPluginModule,
   getRegisteredPluginModules,
 } from './PluginLoader';
-// 🔴 Lifecycle адмінки — окремим модулем: він єдиний тут ще ходить у БД
-// через supabase-js, і склеєний із `PluginLoader` тягнув би PostgREST у
-// кожен чанк вітрини (bootstrap кореня імпортує цей барель).
-export {
-  activatePlugin,
-  deactivatePlugin,
-  uninstallPlugin,
-} from './adminLifecycle';
-export {
-  getAllPlugins,
-  updatePluginConfig,
-  installPlugin,
-} from './pluginRepository';
+// Синхронізація хуків вкладки після serverFn `setPluginActive` (Е6б-17):
+// запис у БД — справа сервера, реєстр браузера — клієнта.
+export { syncPluginHooks } from './sync-hooks';
 
 // Bootstrap (конфіг магазину → реєстр → БД)
 export { bootstrapPlugins } from './bootstrap';

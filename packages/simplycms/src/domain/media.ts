@@ -51,6 +51,7 @@ export const MEDIA_ENTITY_TYPES = [
   'section',
   'banner',
   'property_option',
+  'store_logo',
 ] as const;
 
 export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];

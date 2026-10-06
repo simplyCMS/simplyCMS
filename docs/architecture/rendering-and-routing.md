@@ -26,7 +26,7 @@
 | `_storefront/` | `routes/storefront/` | SSR | публічні сторінки, SEO; loader надає `themeName` |
 | `_protected/` | `routes/storefront/` | SSR guard + client | `beforeLoad` перевіряє сесію, редіректить на `/auth` |
 | `auth/` | `routes/storefront/` | client-only + server route | форми входу; `callback` — server handler |
-| `api/` | `routes/storefront/` | server routes | `server.handlers` (health, revalidate-theme, `auth/*` — монтування Better Auth) |
+| `api/` | `routes/storefront/` | server routes | `server.handlers` (health — `GET` і явний `HEAD` (Start 1.167 HEAD на GET не виводить), решта методів 405 з `Allow: GET, HEAD` через `ANY`; `auth/*` — монтування Better Auth) |
 | `media/` | `routes/storefront/` | server route | роздача файлів `/media/*` з порту сховища |
 | `admin/` | `routes/admin/` | client-only (`ssr: false`) | `ssr: false` стоїть на `admin.tsx`; дочірні роути його **не** повторюють |
 | `my/` | `src/routes/my/` | за потребою магазину | кастомні сторінки |
@@ -66,8 +66,11 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   бо `beforeLoad` client-only адмінки виконується лише після гідрації); для кабінету —
   серверний `beforeLoad` роуту `_protected`. Guard-логіку за межі `src/start.ts` і
   auth-роутів не виносити.
-- Конфігурація CMS — `simplycms.config.ts` (`defineConfig`: теми, плагіни, `siteUrl`,
-  SEO) — одне джерело істини для `theme-registry.ts` і `bootstrapPlugins`.
+- Конфігурація CMS — `simplycms.config.ts` (`defineConfig`: локаль, валюта, теми, плагіни) — одне
+  джерело істини для `theme-registry.ts`, `bootstrapPlugins` і вшитих тем (`declareBuiltThemes`
+  у `src/server.ts`). `seo` і `siteUrl` там немає (Е6б-11). Назва, заголовок головної й опис —
+  профіль магазину в БД. URL сайту — серверний env `VITE_SITE_URL`. До `head()` роутів обидва
+  доходять кореневим лоадером host-а (`getStorefrontRoot` → `StorefrontRootData`).
 - 🔴 `src/routeTree.gen.ts` автогенерований — не редагувати.
 
 ## 3. Гідрація й клієнтський стан

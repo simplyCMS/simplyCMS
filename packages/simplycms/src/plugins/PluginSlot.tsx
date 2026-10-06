@@ -81,8 +81,8 @@ function useSlotResults<TContext, TResult>(
 }
 
 /**
- * Слот розширення. Реактивний до `HookRegistry`: `activatePlugin`/
- * `deactivatePlugin` викликають `register`/`unregister`, реєстр нотифікує
+ * Слот розширення. Реактивний до `HookRegistry`: `syncPluginHooks`
+ * викликає `register`/`unregister`, реєстр нотифікує
  * підписників — і віджет зʼявляється/зникає живцем, без перезавантаження
  * сторінки.
  */

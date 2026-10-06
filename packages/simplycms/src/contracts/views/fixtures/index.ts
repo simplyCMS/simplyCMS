@@ -17,6 +17,7 @@ export {
 } from './catalog';
 export { productDetailViewModelFixtures } from './product-detail';
 export { cartViewModelFixtures } from './cart';
+export { STORE_PROFILE_FIXTURE } from './store-profile';
 
 import { homeViewModelFixtures } from './home';
 import {

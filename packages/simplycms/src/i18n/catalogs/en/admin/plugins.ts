@@ -2,8 +2,11 @@ import type { Catalog } from '../../../types';
 
 /** Розширення (плагіни) — дзеркало `uk/admin/plugins.ts`. */
 export const messages: Catalog = {
-  'admin.plugins.toggleFailed': 'Could not change the status of "{name}"',
-  'admin.plugins.toggleFailedShort': 'Could not change the plugin status.',
+  'admin.plugins.registerFailed':
+    'Plugin "{name}" failed to register its hooks and was disabled.',
+  'admin.plugins.registerFailedStuck':
+    'Plugin "{name}" is enabled in the database, but its hooks were not registered — disable the plugin manually.',
+  'admin.plugins.loadError': 'Could not load the plugin list',
   'admin.plugins.activated': 'Plugin activated',
   'admin.plugins.deactivated': 'Plugin deactivated',
   'admin.plugins.activatedHint': 'Plugin "{name}" was activated.',
@@ -15,13 +18,6 @@ export const messages: Catalog = {
     'Plugins extend what the system can do. Install one to add new capabilities.',
   'admin.plugins.noDescription': 'No description',
   'admin.plugins.moduleMissing': 'Module not found',
-  'admin.plugins.hooks': 'Hooks:',
-  'admin.plugins.deleteTitle': 'Delete this plugin?',
-  'admin.plugins.deleteText':
-    'Plugin "{name}" will be deleted. This cannot be undone.',
-  'admin.plugins.deleted': 'Plugin deleted',
-  'admin.plugins.deletedHint': 'Plugin "{name}" was deleted.',
-  'admin.plugins.deleteFailed': 'Could not delete the plugin.',
   'admin.plugins.modules': 'Available modules',
   'admin.plugins.modulesHint': 'Plugin modules registered in the system',
   'admin.plugins.modulesEmpty':
@@ -34,11 +30,7 @@ export const messages: Catalog = {
   'admin.plugins.deactivate': 'Deactivate',
   'admin.plugins.settingsHint': 'Configure how the plugin behaves',
   'admin.plugins.noSettings': 'This plugin has no settings',
-  'admin.plugins.registeredHooks': 'Registered hooks',
-  'admin.plugins.registeredHooksHint': 'Extension points the plugin uses',
-  'admin.plugins.noHooks': 'No hooks registered',
   'admin.plugins.version': 'Version',
-  'admin.plugins.installedAt': 'Installed',
   'admin.plugins.updatedAt': 'Updated',
 
   'admin.plugins.install': 'Install a plugin',

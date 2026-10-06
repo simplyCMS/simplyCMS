@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import CatalogSectionPage from 'simplycms/storefront-routes/pages/CatalogSection';
 import { getSectionPageData } from 'simplycms/storefront-routes/server/catalog';
+import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
   staleTime: 60_000,
@@ -21,17 +22,11 @@ export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
       priceContext: data.products.priceContext,
     };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: `${loaderData?.initialSection?.name ?? 'Секція'} — SimplyCMS Store`,
-      },
-      {
-        name: 'description',
-        content: loaderData?.initialSection?.description ?? '',
-      },
-    ],
-  }),
+  head: ({ loaderData, matches }) =>
+    storefrontHead(matches, (t) => ({
+      title: loaderData?.initialSection?.name ?? t('catalog.title'),
+      description: loaderData?.initialSection?.description,
+    })),
   component: CatalogSection,
 });
 

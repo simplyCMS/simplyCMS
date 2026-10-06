@@ -1,12 +1,5 @@
-// Конфіг-типи рушія (SEO, медіа-опції).
-
-export interface SeoConfig {
-  defaultTitle: string;
-  titleTemplate: string;
-  defaultDescription: string;
-  ogImage?: string;
-  twitterHandle?: string;
-}
+// Конфіг-типи рушія (медіа-опції). `SeoConfig` прибрано разом із
+// `ConfigProvider.seo` (Е6б-11): SEO-дані магазину — профіль у БД.
 
 export interface ImageOpts {
   width?: number;

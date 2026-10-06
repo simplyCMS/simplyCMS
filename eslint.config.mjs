@@ -123,6 +123,8 @@ const SERVER_ENV_FILES = [
   'packages/simplycms/src/supabase/anon-client.ts',
   'packages/simplycms/src/storefront-routes/seo/robots.ts',
   'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
+  // `siteUrl` кореня вітрини (Е6б-10/11): єдине джерело URL сайту для head().
+  'packages/simplycms/src/storefront-routes/server/root.ts',
   'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
 ];

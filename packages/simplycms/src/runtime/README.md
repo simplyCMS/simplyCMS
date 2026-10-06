@@ -1,6 +1,6 @@
 # simplycms/runtime
 
-`defineConfig` типізує `simplycms.config.ts` (SEO, локаль, валюта, набір тем
+`defineConfig` типізує `simplycms.config.ts` (локаль, валюта, набір тем
 і плагінів лінивими лоадерами) — це і є чинний спосіб конфігурації магазину.
 Шар несе також `defineRuntime`/`bootstrapRuntime` — заявлений, але **без
 жодного споживача в коді** (див. нижче). Залежить лише від контрактів
@@ -27,7 +27,7 @@ pnpm add simplycms
 | `defineRuntime(input)` | Збирає `SimplyCmsRuntime = { engine, modules, theme, plugins }` з `adapters: { links, config }`. 🔴 Без споживачів (див. «Відкрите питання») |
 | `bootstrapRuntime(rt)` | Послідовно виконує `setup()` усіх `EngineModule` під час старту застосунку. 🔴 Без споживачів |
 | `csrfMiddleware` (`simplycms/runtime/csrf`) | Request-міддлвара CSRF для `requestMiddleware` у `start.ts`: перевіряє origin мутуючих запитів (server functions і server routes), виняток — `CSRF_EXEMPT_PREFIXES` (`/api/auth/`). Client-safe |
-| Типи | `DefineRuntimeInput`, `SimplyCmsRuntime`, `EngineModule`, `SimplyCmsConfig`, `SimplyCmsSeoConfig`, `PluginRegistration`, `ThemeLoader` |
+| Типи | `DefineRuntimeInput`, `SimplyCmsRuntime`, `EngineModule`, `SimplyCmsConfig` (без `seo`: назва й описи — профіль магазину в БД, URL сайту — серверний env `VITE_SITE_URL`, Е6б-11), `PluginRegistration`, `ThemeLoader` |
 
 ## Як магазин ФАКТИЧНО збирає `EngineContext`
 

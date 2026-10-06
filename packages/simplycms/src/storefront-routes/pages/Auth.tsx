@@ -17,6 +17,7 @@ import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from 'lucide-react';
 import { z } from 'zod';
 import { useT, type Translator } from 'simplycms/i18n';
+import { useStoreProfile } from 'simplycms/themes/store-profile';
 
 // Фабрики схем: повідомлення беруть з каталогу, тому потребують транслятора.
 const buildLoginSchema = (t: Translator) =>
@@ -41,6 +42,9 @@ const buildRegisterSchema = (t: Translator) =>
 
 export default function Auth() {
   const t = useT();
+  // Назва магазину — з профілю, а не з каталогу ядра: ключ `auth.brand`
+  // показував би всім магазинам один рядок (Е6б-20).
+  const { name: storeName } = useStoreProfile();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<
     string,
@@ -230,7 +234,7 @@ export default function Auth() {
               <Zap className="h-8 w-8 text-primary-foreground" />
             </div>
             <span className="text-2xl font-bold text-foreground">
-              {t('auth.brand')}
+              {storeName}
             </span>
           </div>
           <p className="text-muted-foreground">{t('auth.tagline')}</p>

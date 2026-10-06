@@ -18,6 +18,66 @@
 
 ---
 
+## [0.10.0] — 2026-10-06
+
+К3-Е6б: профіль магазину й система (налаштування, теми, плагіни) на серверному
+шарі (спека
+[`2026-10-06-store-profile-system-design.md`](docs/superpowers/specs/2026-10-06-store-profile-system-design.md);
+план
+[`2026-10-06-v2-k3-e6b-store-profile-system.md`](docs/superpowers/plans/2026-10-06-v2-k3-e6b-store-profile-system.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline міграцій змінено**: базу магазину перестворити (`pnpm db:demo`).
+  Таблицю `plugin_events` і колонку `plugins.migrations_applied` видалено; рядок
+  сіду `system_settings['active_theme']` замінено рядком `store_profile`.
+- **`seo` і `siteUrl` прибрано з `defineConfig` і `ConfigProvider`.** Назва
+  магазину, заголовок головної й опис — профіль у БД (адмінка), URL сайту —
+  env `VITE_SITE_URL` на сервері.
+- **Host `src/routes/__root.tsx` і `src/server.ts` змінено** (синхронізуються
+  `simplycms update`): кореневий лоадер повертає
+  `{ ...(await getStorefrontRoot()), locale }` і монтує `StoreProfileProvider`;
+  `src/server.ts` кличе `declareBuiltThemes(...)` — без нього активація теми
+  відмовляє `theme_not_built`.
+- **Теми беруть бренд із профілю**: ключ `theme.brand` видалено, назва й логотип
+  — `useStoreProfile()` (`simplycms/themes/store-profile`). Так само шаблон
+  теми `simplycms create theme`.
+- **`/api/revalidate-theme` знесено** разом із `useRevalidateStorefront`;
+  кеш вітрини скидає сама операція адмінки. `/api/health` реєструє `HEAD`
+  явно (той самий статус і заголовки, що `GET`, без тіла — незалежно від
+  версії Start), а на будь-який інший метод відповідає 405 з `Allow: GET, HEAD`.
+- **Плагіни:** з `simplycms/plugins` прибрано `adminLifecycle` і
+  `pluginRepository`; запис конфігу (`pluginConfigWrite`) вимагає права
+  `settings.manage` і має стелю 64 КБ (400); `usePluginConfig.save` повертає
+  `false` лише на відмову права. Кнопки «Видалити плагін» в адмінці немає.
+
+### Додано / змінено
+
+- Профіль магазину — `system_settings['store_profile']`: назва, заголовок
+  головної, опис, контакти, логотип (референс порту сховища, `store_logo`),
+  до 10 соцмереж (`https:`). Нові субшляхи `simplycms/contracts/store-profile`
+  (T0), `simplycms/domain/store-profile` (поблажливий `parseStoreProfile`),
+  `simplycms/themes/store-profile`, `simplycms/storefront-routes/head/*`.
+- Новий server-only модуль `simplycms/site`: процесний кеш профілю й активної
+  теми (TTL 5 хв + покоління, скидання після COMMIT), реєстр вшитих тем.
+- Вітрина: `<title>` «Сторінка — Назва» через i18n локалі магазину, опис за
+  замовчуванням із профілю, Organization JSON-LD на головній; теми `default` і
+  `solarstore` показують логотип, контакти й соцмережі профілю.
+- Адмінка на `simplycms/admin-server` під authz-операцією `settings.manage`:
+  `/admin/settings` (профіль, логотип, соцмережі, склад), `/admin/themes*`
+  (активація лише вшитої теми під локом, налаштування ≤ 16 КБ),
+  `/admin/plugins*` (вмикання, конфіг). Після збережень — `router.invalidate()`.
+- `pnpm live:smoke` отримав крок «система» (`scripts/live-smoke/admin-system.mjs`,
+  ОСТАННІЙ у прогоні).
+- Норма `pnpm lint` — 0 errors / 7 warnings.
+
+### Прибрано
+
+- Легасі-сторінки й хуки системи на `supabase-js` (`Settings`, `Themes*`,
+  `Plugin*`, `useThemeActivate`, `usePluginToggle`). Лічильник
+  `useSupabaseClient` у `src/admin/**` — 24 → 17.
+
 ## [0.9.0] — 2026-10-06
 
 К3-Е6а: доставка «провайдер + режим ціни» на серверному шарі адмінки (спека

@@ -153,4 +153,16 @@ describe('демо-сід: накат поверх канону', () => {
     await applySqlFiles(dbUrl, [DEMO_FILE]);
     expect(await read()).toBe('true');
   }, 60_000);
+
+  // Е6б-5: демо переписує профіль UPDATE-ом канонічного рядка (INSERT дав би
+  // конфлікт ключа або зайвий INSERT у seed-determinism).
+  it('переписує store_profile демо-значеннями, один рядок', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      "select value->>'name' as name, jsonb_array_length(value->'socials') as socials from public.system_settings where key = 'store_profile'",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.name).toBe('SolarStore');
+    expect(Number(rows[0]?.socials)).toBe(2);
+  }, 60_000);
 });

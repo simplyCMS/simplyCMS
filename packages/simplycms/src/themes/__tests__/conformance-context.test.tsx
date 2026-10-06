@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import type { CartViewModel } from 'simplycms/contracts/views';
+import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import { assertThemeViewsConformance } from '../conformance';
+import { useStoreProfile } from '../store-profile';
 import { useThemeSettings } from '../theme-context';
 import { useThemeT } from '../useThemeT';
 import { makeTheme } from './conformance-themes';
@@ -64,7 +66,28 @@ function MissingSettingCart({ slots }: CartViewModel) {
   );
 }
 
+function ProfileAwareCart({ slots }: CartViewModel) {
+  const profile = useStoreProfile();
+  if (profile !== STORE_PROFILE_FIXTURE) {
+    throw new Error(`fixture profile not provided: ${profile.name}`);
+  }
+
+  return (
+    <div>
+      <slots.Items />
+      <slots.Summary />
+      <slots.Checkout />
+    </div>
+  );
+}
+
 describe('assertThemeViewsConformance — render-контекст', () => {
+  it('view бачить профіль магазину з фікстури (Е6б-20)', async () => {
+    const theme = makeTheme({ Cart: ProfileAwareCart });
+
+    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+  });
+
   it('view бачить default-и зі схеми settings — без БД', async () => {
     const theme = makeTheme(
       { Cart: SettingsAwareCart },

@@ -1,4 +1,4 @@
-// Канонічний конфіг магазину: єдине джерело істини для SEO/локалі/валюти,
+// Канонічний конфіг магазину: єдине джерело істини для локалі/валюти,
 // набору плагінів і набору тем. Без залежностей на theme-system/plugin-system —
 // модулі приходять лінивими лоадерами й валідуються у відповідних реєстрах.
 
@@ -14,20 +14,14 @@ export interface PluginRegistration {
   module: () => Promise<{ default: unknown }>;
 }
 
-export interface SimplyCmsSeoConfig {
-  siteName: string;
-  defaultTitle: string;
-  titleTemplate: string;
-  /** Публічна база URL — використовується в canonical/sitemap/robots. */
-  siteUrl: string;
-  defaultDescription: string;
-}
-
 export interface SimplyCmsConfig {
   // 🔴 Поля `supabase` тут більше немає: магазин ходить у БД лише сервером
   // (`simplycms/db`), а браузер до неї не звертається взагалі. Ключі клієнта
   // до бази — це і був той контракт, який 0.4.1 знімає.
-  seo: SimplyCmsSeoConfig;
+  //
+  // 🔴 Поля `seo` теж немає (Е6б-11): назва, заголовок головної й опис —
+  // профіль магазину в БД (адмінка, без перезбірки), а URL сайту — серверний
+  // env `VITE_SITE_URL` у рантаймі. Друга копія в конфігу розходилась би з ними.
   locale: string;
   currency: string;
   plugins?: PluginRegistration[];

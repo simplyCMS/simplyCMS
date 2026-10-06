@@ -9,6 +9,14 @@ import {
 } from 'simplycms/storefront-routes/seo/interceptor';
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
+import { declareBuiltThemes } from 'simplycms/site';
+import config from '../simplycms.config';
+
+// Вшиті теми — ті, що зібрані з `config.themes` (Е6б-8). Сервер інакше про них
+// не знає: `ThemeRegistry` живе в браузерному контурі, а рядок `themes` у БД
+// лишається й після видалення пакета. Без декларації активація теми
+// відмовляє (fail-closed). Модульний рівень: вхід один для dev, preview і prod.
+declareBuiltThemes(Object.keys(config.themes ?? {}));
 
 /**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).

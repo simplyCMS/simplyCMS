@@ -495,17 +495,6 @@ export const serviceRequests = pgTable("service_requests", {
 	pgPolicy("service_requests_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
-export const pluginEvents = pgTable("plugin_events", {
-	id: uuid().primaryKey().notNull(),
-	pluginName: varchar("plugin_name").notNull(),
-	hookName: varchar("hook_name").notNull(),
-	payload: jsonb(),
-	result: jsonb(),
-	error: text(),
-	executedAt: timestamp("executed_at", { withTimezone: true, mode: 'date' }).defaultNow(),
-}, (table) => [
-]);
-
 export const plugins = pgTable("plugins", {
 	id: uuid().primaryKey().notNull(),
 	name: varchar().notNull(),
@@ -516,7 +505,6 @@ export const plugins = pgTable("plugins", {
 	isActive: boolean("is_active").default(false),
 	config: jsonb().default({}),
 	hooks: jsonb().default([]),
-	migrationsApplied: jsonb("migrations_applied").default([]),
 	installedAt: timestamp("installed_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow(),
 }, (table) => [

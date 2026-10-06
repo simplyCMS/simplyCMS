@@ -68,6 +68,11 @@ export const ADMIN_STATE_CONSTRAINT = {
   pickupPointMethodInvalid: 'pickup_point_method_invalid',
   pickupPointSystem: 'pickup_point_system',
   pickupPointHasStock: 'pickup_point_has_stock',
+  // Е6б-14/15/17: системні налаштування (`settings.manage`).
+  storeLogoInvalid: 'store_logo_invalid',
+  themeNotBuilt: 'theme_not_built',
+  themeUnknown: 'theme_unknown',
+  pluginUnknown: 'plugin_unknown',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

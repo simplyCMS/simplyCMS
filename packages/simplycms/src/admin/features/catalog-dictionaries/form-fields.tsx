@@ -10,6 +10,7 @@ interface TextFieldProps {
   readonly placeholder?: string;
   /** Текст помилки — рендериться як `role="alert"`, лише коли `invalid`. */
   readonly errorText?: string;
+  readonly maxLength?: number;
 }
 
 /** Текстове поле форми довідника з лейблом і (опційно) помилкою. */
@@ -20,6 +21,7 @@ export function TextField({
   invalid = false,
   placeholder,
   errorText,
+  maxLength,
 }: TextFieldProps) {
   return (
     <div className="space-y-2">
@@ -27,6 +29,7 @@ export function TextField({
       <Input
         id={id}
         placeholder={placeholder}
+        maxLength={maxLength}
         aria-invalid={invalid}
         {...registration}
       />

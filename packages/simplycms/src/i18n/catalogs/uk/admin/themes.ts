@@ -12,13 +12,12 @@ export const messages = {
   'admin.themes.activateText':
     'Тема "{name}" буде активована. Зміни буде застосовано на сайті одразу.',
   'admin.themes.activated': 'Тему активовано',
-  'admin.themes.activatedStale': 'Тему активовано, але кеш вітрини не скинуто',
   'admin.themes.appliedOnSite': 'Зміни застосовані на сайті',
-  'admin.themes.activateFailed': 'Не вдалося активувати тему',
-  'admin.themes.settingsSavedStale':
-    'Налаштування збережено, але кеш вітрини не скинуто',
   'admin.themes.notFound': 'Тему не знайдено',
   'admin.themes.back': 'Повернутись',
   'admin.themes.settingsSubtitle': 'Налаштуйте зовнішній вигляд теми',
   'admin.themes.noSettings': 'Ця тема не має налаштувань',
+  'admin.themes.loadError': 'Не вдалося завантажити список тем',
+  'admin.themes.settingMin': 'Значення має бути не менше {min}',
+  'admin.themes.settingMax': 'Значення має бути не більше {max}',
 } as const;

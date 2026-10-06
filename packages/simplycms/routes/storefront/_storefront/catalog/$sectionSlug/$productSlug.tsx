@@ -1,9 +1,7 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import ProductDetailPage from 'simplycms/storefront-routes/pages/ProductDetail';
 import { getProduct } from 'simplycms/storefront-routes/server/products';
-import { schemaOrgAvailability } from 'simplycms/domain/inventory';
-
-const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
+import { productHead } from 'simplycms/storefront-routes/head/product';
 
 export const Route = createFileRoute(
   '/_storefront/catalog/$sectionSlug/$productSlug',
@@ -32,54 +30,11 @@ export const Route = createFileRoute(
 
     return { product, sectionSlug };
   },
-  head: ({ loaderData }) => {
-    if (!loaderData) return {};
-
-    const { product, sectionSlug } = loaderData;
-    const images = Array.isArray(product.images) ? product.images : [];
-    const description =
-      product.description || `Купити ${product.name} в SimplyCMS Store`;
-    const canonicalUrl = `${BASE_URL}/catalog/${sectionSlug}/${product.slug}`;
-
-    /** Базова ціна для JSON-LD (перша ціна без модифікації) */
-    const basePrice = product.product_prices.find(
-      (price) => price.modification_id === null,
-    )?.price;
-
-    const jsonLd: Record<string, unknown> = {
-      '@context': 'https://schema.org',
-      '@type': 'Product',
-      name: product.name,
-      description: product.description,
-      image: images,
-      url: canonicalUrl,
-      offers: {
-        '@type': 'Offer',
-        priceCurrency: 'UAH',
-        ...(basePrice != null ? { price: basePrice } : {}),
-        availability: schemaOrgAvailability(product.stock_status),
-      },
-    };
-
-    return {
-      meta: [
-        { title: `${product.name} — SimplyCMS Store` },
-        { name: 'description', content: description },
-        { property: 'og:title', content: product.name },
-        { property: 'og:description', content: description },
-        ...(images.length > 0
-          ? [{ property: 'og:image', content: images[0] as string }]
-          : []),
-      ],
-      links: [{ rel: 'canonical', href: canonicalUrl }],
-      scripts: [
-        {
-          type: 'application/ld+json',
-          children: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
-        },
-      ],
-    };
-  },
+  // Логіка head() — у `storefront-routes/head/product` (тестується без роуту).
+  head: ({ loaderData, matches }) =>
+    loaderData
+      ? productHead(matches, loaderData.product, loaderData.sectionSlug)
+      : {},
   component: ProductDetail,
 });
 

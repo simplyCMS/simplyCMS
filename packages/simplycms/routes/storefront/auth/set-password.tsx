@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import AuthSetPassword from 'simplycms/storefront-routes/pages/AuthSetPassword';
+import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 /**
  * Встановлення нового пароля за одноразовим токеном (К1′б).
@@ -9,8 +10,7 @@ import AuthSetPassword from 'simplycms/storefront-routes/pages/AuthSetPassword';
  * право змінити пароль — гард зробив би цей випадок недосяжним.
  */
 export const Route = createFileRoute('/auth/set-password')({
-  head: () => ({
-    meta: [{ title: 'Встановлення пароля' }],
-  }),
+  head: ({ matches }) =>
+    storefrontHead(matches, (t) => ({ title: t('auth.setPassword.title') })),
   component: AuthSetPassword,
 });

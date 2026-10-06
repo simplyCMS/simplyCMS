@@ -363,3 +363,11 @@ update public.system_settings
    set value = jsonb_set(value, '{decrease_on_order}', 'true'::jsonb)
  where key = 'stock_management'
    and value->>'decrease_on_order' = 'false';
+
+-- Демо-профіль магазину: UPDATE наявного рядка канону, не INSERT (рядок
+-- `store_profile` уже є з 0003_seed.sql; зайвий INSERT зламав би лічильник
+-- INSERT-ів у seed-determinism). Логотипа немає — референс порту сховища
+-- без файлу вказував би в нікуди.
+update public.system_settings
+   set value = '{"name": "SolarStore", "homeTitle": "SolarStore — сонячні панелі та інвертори", "description": "Демо-магазин сонячної енергетики", "contacts": {"phone": "+380441234567", "email": "info@solarstore.example", "address": "м. Київ, вул. Хрещатик, 1", "hours": "Пн–Пт 9–18"}, "logo": null, "socials": [{"network": "instagram", "url": "https://instagram.com/solarstore.demo"}, {"network": "telegram", "url": "https://t.me/solarstore_demo"}]}'::jsonb
+ where key = 'store_profile';

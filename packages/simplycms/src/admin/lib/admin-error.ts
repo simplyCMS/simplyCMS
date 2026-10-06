@@ -59,6 +59,11 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.pickupPointSystem]: 'admin.errors.pickupPointSystem',
   [ADMIN_STATE_CONSTRAINT.pickupPointHasStock]:
     'admin.errors.pickupPointHasStock',
+  // Е6б-14/15/17: системні налаштування.
+  [ADMIN_STATE_CONSTRAINT.storeLogoInvalid]: 'admin.errors.storeLogoInvalid',
+  [ADMIN_STATE_CONSTRAINT.themeNotBuilt]: 'admin.errors.themeNotBuilt',
+  [ADMIN_STATE_CONSTRAINT.themeUnknown]: 'admin.errors.themeUnknown',
+  [ADMIN_STATE_CONSTRAINT.pluginUnknown]: 'admin.errors.pluginUnknown',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

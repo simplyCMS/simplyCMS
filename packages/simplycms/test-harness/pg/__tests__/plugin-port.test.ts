@@ -10,8 +10,20 @@
 // міграція плагіна (таблиця + гранти ролям, модель B5″).
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
+import { AuthzError, requireGrant, resolveGrant } from 'simplycms/auth';
+
+// serverFn тут не викликається (getRequest() без ALS падає): право запису
+// конфігу (`requireGrant`) мокається — адмін за замовчуванням.
+vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
+vi.mock('simplycms/auth', async (orig) => ({
+  ...(await orig()),
+  requireGrant: vi.fn(async () => ({
+    subject: { userId: null, roles: ['admin'] },
+    scope: 'any',
+  })),
+}));
 import {
   deletePluginRow,
   insertPluginRow,
@@ -136,15 +148,22 @@ describe('порт даних плагіна проти живого Postgres', 
       config: {},
     });
 
-    expect(await savePluginConfig(PLUGIN, { maxVisible: 7 }, false)).toBe(
-      false,
-    );
+    // Е6б-13: право дає матриця (`settings.manage`) — покупцю `AuthzError`.
+    vi.mocked(requireGrant).mockImplementationOnce(async (operation) => {
+      const subject = { userId: null, roles: ['user'] as const };
+      const scope = resolveGrant(subject, operation);
+      if (!scope) throw new AuthzError(operation);
+      return { subject, scope };
+    });
+    await expect(
+      savePluginConfig(PLUGIN, { maxVisible: 7 }),
+    ).rejects.toBeInstanceOf(AuthzError);
     expect(await selectPluginConfig(PLUGIN)).toEqual({
       found: true,
       config: {},
     });
 
-    expect(await savePluginConfig(PLUGIN, { maxVisible: 7 }, true)).toBe(true);
+    await savePluginConfig(PLUGIN, { maxVisible: 7 });
     expect(await selectPluginConfig(PLUGIN)).toEqual({
       found: true,
       config: { maxVisible: 7 },

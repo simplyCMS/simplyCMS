@@ -20,8 +20,6 @@ const mockEngine: EngineContext = {
   config: {
     locale: 'uk-UA',
     currency: 'UAH',
-    siteUrl: '',
-    seo: { defaultTitle: '', titleTemplate: '%s', defaultDescription: '' },
   },
 };
 

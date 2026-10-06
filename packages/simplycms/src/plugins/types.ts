@@ -38,7 +38,6 @@ export interface Plugin {
   is_active: boolean;
   config: unknown;
   hooks: unknown;
-  migrations_applied: unknown;
   installed_at: string;
   updated_at: string;
 }
@@ -69,11 +68,10 @@ export interface PluginBootstrapRow {
  */
 export interface PluginRecord extends Omit<
   Plugin,
-  'config' | 'hooks' | 'migrations_applied' | 'installed_at' | 'updated_at'
+  'config' | 'hooks' | 'installed_at' | 'updated_at'
 > {
   config: PluginJson;
   hooks: PluginJson;
-  migrations_applied: PluginJson;
   installed_at: Date | null;
   updated_at: Date | null;
 }
@@ -88,13 +86,9 @@ export type PluginJson =
   | { [key: string]: PluginJson };
 
 // Parsed plugin with typed fields
-export interface ParsedPlugin extends Omit<
-  Plugin,
-  'config' | 'hooks' | 'migrations_applied'
-> {
+export interface ParsedPlugin extends Omit<Plugin, 'config' | 'hooks'> {
   config: Record<string, unknown>;
   hooks: PluginHookDefinition[];
-  migrations_applied: string[];
 }
 
 // Helper to parse plugin from database
@@ -103,7 +97,6 @@ export function parsePlugin(plugin: Plugin): ParsedPlugin {
     ...plugin,
     config: (plugin.config as Record<string, unknown>) || {},
     hooks: (plugin.hooks as PluginHookDefinition[]) || [],
-    migrations_applied: (plugin.migrations_applied as string[]) || [],
   };
 }
 

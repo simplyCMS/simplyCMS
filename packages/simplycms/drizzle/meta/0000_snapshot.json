@@ -2136,62 +2136,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.plugin_events": {
-      "name": "plugin_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "plugin_name": {
-          "name": "plugin_name",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "hook_name": {
-          "name": "hook_name",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "payload": {
-          "name": "payload",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "result": {
-          "name": "result",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "error": {
-          "name": "error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "executed_at": {
-          "name": "executed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.plugins": {
       "name": "plugins",
       "schema": "",
@@ -2249,13 +2193,6 @@
         },
         "hooks": {
           "name": "hooks",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
-        },
-        "migrations_applied": {
-          "name": "migrations_applied",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false,

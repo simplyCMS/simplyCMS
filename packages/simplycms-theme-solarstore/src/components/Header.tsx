@@ -29,6 +29,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
 import { useThemeT } from 'simplycms/themes/useThemeT';
+import { BrandMark } from './BrandMark';
 import type { SolarstoreThemeKey } from '../messages';
 
 /** Категорії з іконками для навігації — підпис іде окремим ключем теми */
@@ -104,12 +105,7 @@ export function Header() {
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           {/* Логотип */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--primary))]">
-              <Sun className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-[hsl(var(--foreground))]">
-              SolarStore
-            </span>
+            <BrandMark size="header" />
           </Link>
 
           {/* Десктопна навігація */}
@@ -130,18 +126,6 @@ export function Header() {
                 {s.name}
               </Link>
             ))}
-            <a
-              href="#"
-              className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-            >
-              {tt('theme.nav.about')}
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-            >
-              {tt('theme.nav.contacts')}
-            </a>
           </nav>
 
           {/* Дії */}
@@ -273,18 +257,6 @@ export function Header() {
                   </Link>
                 );
               })}
-              <a
-                href="#"
-                className="block py-2 text-sm text-[hsl(var(--muted-foreground))]"
-              >
-                {tt('theme.nav.about')}
-              </a>
-              <a
-                href="#"
-                className="block py-2 text-sm text-[hsl(var(--muted-foreground))]"
-              >
-                {tt('theme.nav.contacts')}
-              </a>
             </div>
           </div>
         )}

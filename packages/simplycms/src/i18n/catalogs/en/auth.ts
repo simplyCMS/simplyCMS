@@ -31,7 +31,6 @@ export const messages: Catalog = {
     'The password was saved, but the automatic sign-in failed. Please sign in manually.',
   'auth.invite.backToAuth': 'Go to sign in',
 
-  'auth.brand': 'SimplyCMS Store',
   'auth.tagline': 'Renewable energy for your home',
   'auth.login.title': 'Sign in',
   'auth.login.subtitle': 'Sign in to access your account',

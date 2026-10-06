@@ -19,8 +19,6 @@ export const ENGINE: EngineContext = {
   config: {
     locale: 'uk-UA',
     currency: 'UAH',
-    siteUrl: 'https://example.test',
-    seo: { defaultTitle: 'Test', titleTemplate: '%s', defaultDescription: '' },
   },
 };
 

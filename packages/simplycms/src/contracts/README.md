@@ -23,7 +23,7 @@ pnpm add simplycms
 | Subpath | Що експортує |
 |---------|--------------|
 | `simplycms/contracts` | Усе разом — реекспорт `./objects` і `./ports` |
-| `simplycms/contracts/objects` | Об'єкти домену: `Product`, `ProductModification`, `Section`, `Property`, `Order`, `CreateOrderInput`, `PriceEntry`, `PriceType`, `Discount`, `DiscountGroup`, `StockInfo`, `ShippingZone`, `ShippingRate`, `PickupPoint`, `Banner`, `Identity`, `SeoConfig`, `Paged<T>` |
+| `simplycms/contracts/objects` | Об'єкти домену: `Product`, `ProductModification`, `Section`, `Property`, `Order`, `CreateOrderInput`, `PriceEntry`, `PriceType`, `Discount`, `DiscountGroup`, `StockInfo`, `ShippingZone`, `ShippingRate`, `PickupPoint`, `Banner`, `Identity`, `Paged<T>` |
 | `simplycms/contracts/ports` | Порти: `CatalogRepository`, `OrderRepository`, `IdentityProvider`, `LinkResolver`, `MediaProvider`, `ConfigProvider`, `ScopeResolver` — і контейнер `EngineContext`, який їх зводить докупи |
 | `simplycms/contracts/views` | View-model-и пʼятьох сторінок вітрини (`HomeViewModel`, `CatalogViewModel`, `CatalogSectionViewModel`, `ProductDetailViewModel`, `CartViewModel`) + рантайм-константи реквізитів (`REQUISITE_ATTRIBUTE`, `HOME_REQUISITES`, `CATALOG_REQUISITES`, `PRODUCT_DETAIL_REQUISITES`, `CART_REQUISITES`, `REQUIRED_REQUISITES`) |
 | `simplycms/contracts/views/fixtures` | Фікстури view-model-ів для conformance-kit-а тем — рантайм-обʼєкти, не типи |

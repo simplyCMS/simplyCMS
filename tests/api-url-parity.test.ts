@@ -27,20 +27,36 @@ function mountedRouteDirs(): string[] {
     .map((child) => resolve(ROUTES_DIRECTORY, child.directory));
 }
 
-/** Усі `fetch('/api/…')` у коді репозиторію (включно з untracked-файлами). */
-function collectFetchedApiPaths(): string[] {
+/** Код репозиторію, у якому шукаємо `fetch('/api/…')`. */
+const CODE_PATHSPECS = ['*.ts', '*.tsx', ':!**/routeTree.gen.ts', ':!tests/**'];
+
+/**
+ * Самоперевірка механіки grep: цей файл свідомо містить зразок нижче, і
+ * пошук по ньому мусить його знайти. Зразок резолвиться у справжній роут.
+ *   fetch('/api/health')
+ */
+const SELF_CHECK_PATHSPECS = ['tests/api-url-parity.test.ts'];
+
+/** Усі `fetch('/api/…')` у pathspec-ах (включно з untracked-файлами). */
+function collectFetchedApiPaths(pathspecs: string[]): string[] {
   const args = [
     'grep',
     '--untracked',
     '-ohE',
     String.raw`fetch\(\s*['"\`]/api/[a-zA-Z0-9/_-]+`,
     '--',
-    '*.ts',
-    '*.tsx',
-    ':!**/routeTree.gen.ts',
-    ':!tests/**',
+    ...pathspecs,
   ];
-  const raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+  let raw = '';
+  try {
+    raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+  } catch (error) {
+    // `git grep` без збігів виходить з кодом 1 — це порожній результат, а не
+    // збій. З К3-Е6б (знесено `/api/revalidate-theme`) код ядра не робить
+    // жодного `fetch('/api/…')`: адмінка ходить serverFn-ами. Будь-який інший
+    // код виходу — справжня поломка, її не ковтаємо.
+    if ((error as { status?: number }).status !== 1) throw error;
+  }
   const paths = new Set<string>();
   for (const line of raw.split('\n')) {
     const match = line.match(/\/api\/[a-zA-Z0-9/_-]+/);
@@ -68,16 +84,20 @@ function routeFileFor(urlPath: string, dirs: string[]): string | null {
 
 describe('паритет URL: fetch(/api/…) ↔ файли роутів', () => {
   const dirs = mountedRouteDirs();
-  const apiPaths = collectFetchedApiPaths();
+  const apiPaths = collectFetchedApiPaths(CODE_PATHSPECS);
 
   it('теки роутів із routes.ts існують', () => {
     expect(dirs.length).toBeGreaterThan(0);
     for (const dir of dirs) expect(existsSync(dir)).toBe(true);
   });
 
-  it('гард не порожній — принаймні один /api-виклик у коді знайдено', () => {
-    // Інакше зламаний grep мовчки перетворив би цей файл на no-op.
-    expect(apiPaths.length).toBeGreaterThan(0);
+  it('гард не порожній — той самий grep знаходить зразок і резолвить його', () => {
+    // Інакше зламаний grep мовчки перетворив би цей файл на no-op. Раніше це
+    // доводив живий `fetch` адмінки; з К3-Е6б його немає, тож механіку
+    // перевіряє зразок у цьому файлі (SELF_CHECK_PATHSPECS).
+    const sample = collectFetchedApiPaths(SELF_CHECK_PATHSPECS);
+    expect(sample).toEqual(['/api/health']);
+    expect(routeFileFor(sample[0]!, dirs)).not.toBeNull();
   });
 
   it('кожен /api-URL із коду резолвиться у файл роуту', () => {

@@ -3,6 +3,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { ShoppingBag } from 'lucide-react';
 import { CartDrawer } from 'simplycms/core/components/cart/CartDrawer';
 import { useT } from 'simplycms/i18n';
+import { useStoreProfile } from 'simplycms/themes/store-profile';
 import { useThemeT } from 'simplycms/themes/useThemeT';
 import { HeaderActions } from './HeaderActions';
 import type { ThemeKey } from '../messages';
@@ -48,6 +49,7 @@ function navItem(isActive: boolean) {
 export function Header() {
   const t = useT();
   const tt = useThemeT<ThemeKey>();
+  const { name, logoUrl } = useStoreProfile();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -68,12 +70,19 @@ export function Header() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:h-20">
           <div className="flex min-w-0 items-center gap-3 md:gap-5">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <ShoppingBag className="h-4 w-4" />
-              </span>
-              <span className="truncate text-lg font-bold text-foreground">
-                {tt('theme.brand')}
-              </span>
+              {logoUrl ? (
+                // Логотип ЗАМІНЯЄ текстовий бренд: `alt` вже називає магазин.
+                <img src={logoUrl} alt={name} className="h-8 w-auto max-w-40" />
+              ) : (
+                <>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <ShoppingBag className="h-4 w-4" />
+                  </span>
+                  <span className="truncate text-lg font-bold text-foreground">
+                    {name}
+                  </span>
+                </>
+              )}
             </Link>
 
             <nav className="hidden items-center rounded-full bg-card px-2 py-1.5 md:flex">

@@ -83,10 +83,10 @@
 - Типи рядків для нового серверного коду — з `simplycms/schema/types` (виведені з
   Drizzle). `packages/simplycms/src/supabase/database.ts` — **заморожений**
   baseline типів легасі-адмінки: не оновлювати і не «прибирати дублювання».
-- Cross-request кеш серверних даних — in-memory TTL у модулі лоадера (еталон —
-  `storefront/loaders/theme-record.ts`, 5 хв для активної теми). ISR і
-  `revalidatePath` не існують; інвалідація — `staleTime` + `router.invalidate()` +
-  скидання TTL-кешу відповідною мутацією.
+- Cross-request кеш серверних даних — `createReadCache` модуля **`simplycms/site`**
+  (§12): TTL 5 хв + лічильник поколінь. ISR і `revalidatePath` не існують;
+  інвалідація — скидання кешу САМОЮ операцією адмінки після COMMIT +
+  `router.invalidate()` у клієнті + `staleTime` лоадера.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
 
 ## 3. Адмінка
@@ -107,8 +107,12 @@
   `in/isNull` — лише `filterable`; значення діапазонних операторів — скаляр або
   `Date` (переживає межу serverFn як `Date`, доводить `tests/admin-subset-wire.test.ts`).
   Пагінація на рівних мітках часу — `live:smoke`, `admin-lists-pagination.mjs`.
-- Після мутації адмінки — інвалідація відповідних ключів (§4); `setQueryData` для
-  складних випадків не використовується — `invalidate` замість нього.
+- Після мутації адмінки — два шляхи за типом сторінки. Сторінки на `useQuery` +
+  serverFn (одиничний рядок чи короткий список: налаштування, теми, плагіни —
+  К3-Е6б, Е6б-19) пишуть відповідь сервера в кеш через `setQueryData` (write-back,
+  К3-7): операція вже повернула актуальний стан, і повторний запит його лише
+  продублював би. `invalidate` відповідних ключів (§4) — для колекцій `admin-data`
+  і для споживачів вітрини, чиї дані мутація зачепила.
 
 ## 4. Контракт ключів кешу (React Query)
 
@@ -384,3 +388,37 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
   set name`), рендер-тести трьох читачів зі знімка, де жива точка інша, і `live:smoke`
   (крок `admin-shipping.mjs`). Негативний контроль `shippingData: {}` у `createOrder`
   валить крок прогону.
+
+## 12. Профіль магазину й кеш процесу `simplycms/site` (К3-Е6б)
+
+- Профіль — рядок `system_settings['store_profile']` (jsonb `StoreProfile`,
+  `simplycms/contracts/store-profile`). Розбір **поблажливий** —
+  `parseStoreProfile` (`simplycms/domain/store-profile`) ніколи не кидає:
+  зіпсоване поле стає дефолтом, щоб ручний SQL чи старий дамп не клав вітрину
+  500-ю. Суворість — лише на записі (`saveStoreProfileOp`, межі
+  `STORE_PROFILE_LIMITS`, соцмережі лише `https:`).
+- **`simplycms/site`** — server-only модуль T2 (upward-виняток лише `db`) з ОДНИМ
+  модульним станом для вітрини (читає) і адмінки (скидає): `storeProfileCache`,
+  `activeThemeCache` (`createReadCache`, TTL 5 хв + лічильник поколінь),
+  `readStoreProfile(db)`, `toStorefrontProfile`, `declareBuiltThemes`/`isBuiltTheme`.
+  Власного каналу до БД модуль не відкриває — кожна функція приймає `ActorDb`.
+  Вітрина ходить у нього лише через `storefront/loaders` (`loadStoreProfile`,
+  `loadActiveTheme`); `admin-server` імпортує його напряму (тір-зони не дають
+  адмінці імпортувати лоадери вітрини).
+- 🔴 **Скидання — ПІСЛЯ COMMIT, а не в транзакції.** Операції адмінки
+  (`saveStoreProfileOp`, `activateThemeOp`, `saveThemeSettingsOp`) кличуть
+  `invalidate()` після повернення `runAdmin`. Покоління не дає читанню, що
+  стартувало до COMMIT і завершилось після скидання, покласти старе значення в
+  кеш ще на 5 хв (Е6б-9). Клієнт адмінки додатково кличе `router.invalidate()`:
+  лоадер `_storefront` має `staleTime` 5 хв (Е6б-22).
+- 🔴 **SQL оминає кеш.** Прямий `update system_settings`/`themes` (ручний фікс,
+  відновлення знімка в `live:smoke`) вітрина того самого процесу побачить лише
+  після TTL. Багатоінстансної інвалідації немає: кожен процес тримає свій кеш.
+- Вшиті теми знає СЕРВЕР: host `src/server.ts` кличе
+  `declareBuiltThemes(Object.keys(config.themes))` на рівні модуля; без декларації
+  активація відмовляє `theme_not_built` (fail-closed, Е6б-8).
+- Гейти: юніт `createReadCache` (детермінована гонка «читання в польоті +
+  скидання»), харнес `readStoreProfile` на відсутньому й зіпсованому рядку і
+  операцій під локами `store-profile`/`site-theme`, `live:smoke` (крок
+  `admin-system.mjs` на прогрітому кеші) — єдиний доказ, що адмін-serverFn і
+  вітринний serverFn ділять один екземпляр модуля (Е6б-23).

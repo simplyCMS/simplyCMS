@@ -15,14 +15,12 @@ export const messages: Catalog = {
   'admin.themes.activateText':
     'Theme "{name}" will be activated. Changes apply to the site immediately.',
   'admin.themes.activated': 'Theme activated',
-  'admin.themes.activatedStale':
-    'Theme activated, but the storefront cache was not cleared',
   'admin.themes.appliedOnSite': 'Changes applied on the site',
-  'admin.themes.activateFailed': 'Could not activate the theme',
-  'admin.themes.settingsSavedStale':
-    'Settings saved, but the storefront cache was not cleared',
   'admin.themes.notFound': 'Theme not found',
   'admin.themes.back': 'Go back',
   'admin.themes.settingsSubtitle': 'Configure the look of the theme',
   'admin.themes.noSettings': 'This theme has no settings',
+  'admin.themes.loadError': 'Could not load the theme list',
+  'admin.themes.settingMin': 'Value must be at least {min}',
+  'admin.themes.settingMax': 'Value must be at most {max}',
 };

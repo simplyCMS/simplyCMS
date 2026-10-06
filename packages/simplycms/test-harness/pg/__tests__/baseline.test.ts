@@ -116,7 +116,10 @@ describe('канон міграцій: накат на чисту БД', () => {
         where table_schema = 'public' and table_type = 'BASE TABLE'`,
     );
     const tables = rows.map((r: { table_name: string }) => r.table_name);
-    expect(tables.length).toBeGreaterThanOrEqual(45);
+    // Точне число, а не нижня межа: `>=` пропустив би і зайву таблицю, і
+    // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
+    // 45 → 44: Е6б прибрала мертву `plugin_events`.
+    expect(tables.length).toBe(44);
     for (const expected of [
       'users',
       'sessions',
@@ -198,5 +201,36 @@ describe('канон міграцій: накат на чисту БД', () => {
       canonFiles().filter((p) => /000[03]_/.test(p)),
     );
     expect(await counts()).toEqual({ statuses: 6, themes: 1, settings: 2 });
+  }, 120_000);
+
+  // Е6б-5: профіль магазину замість мертвого `active_theme`; `plugin_events`
+  // і `plugins.migrations_applied` ніхто не писав — прибрано з baseline.
+  it('сід профілю на місці, мертве зі схеми прибрано', async () => {
+    const profile = await queryRows(
+      dbUrl,
+      "select value from public.system_settings where key = 'store_profile'",
+    );
+    expect(profile[0]?.value).toEqual({
+      name: 'Мій магазин',
+      homeTitle: null,
+      description: null,
+      contacts: { phone: null, email: null, address: null, hours: null },
+      logo: null,
+      socials: [],
+    });
+    expect(
+      await queryRows(
+        dbUrl,
+        "select key from public.system_settings where key = 'active_theme'",
+      ),
+    ).toHaveLength(0);
+    const gone = await queryRows(
+      dbUrl,
+      `select to_regclass('public.plugin_events') as t,
+        (select count(*) from information_schema.columns
+          where table_name = 'plugins' and column_name = 'migrations_applied')::int as c`,
+    );
+    expect(gone[0]?.t).toBeNull();
+    expect(Number(gone[0]?.c)).toBe(0);
   }, 120_000);
 });

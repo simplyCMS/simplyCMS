@@ -39,8 +39,8 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
   виконуються на SSR. Для сторінок адмінки це невідчутно (`/admin` —
   `ssr:false`), для слотів вітрини означає «підвантажиться після гідрації».
 - `events`/`storage`-порти SDK, `plugin:dev`, `plugin:purge`, автоматичний
-  монтаж adminRoutes через `add`, облік `plugins.migrations_applied` —
-  відкладені борги (роадмап, розділ «Борги Фази 3»).
+  монтаж adminRoutes через `add` — відкладені борги (колонку
+  `plugins.migrations_applied` прибрано в Е6б) (роадмап, розділ «Борги Фази 3»).
 
 ## 2. Контракт: `definePlugin` (`simplycms/plugin-sdk`)
 
@@ -92,10 +92,18 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
   немає в білді) — error-лог + пропуск, без падінь (спека §8).
 - `PluginSlot` реактивний (`useSyncExternalStore` по версії реєстру):
   вмикання/вимикання плагіна з адмінки міняє сторінку **без reload**.
-  Активація атомарна: спершу БД, потім реєстр (`PluginLoader`).
-- Єдиний шлях мутації стану — lifecycle-функції (`activatePlugin`/
-  `deactivatePlugin`/`uninstallPlugin`); адмінка ними й користується
-  (runtime-встановлення руками знято у Фазі 3 — lifecycle build-time, §7).
+- Перемикання з адмінки (К3-Е6б, Е6б-17) — два кроки в
+  `admin/features/plugins/usePluginToggle`: serverFn `setPluginActive`
+  (`simplycms/admin-server`, право `settings.manage`) пише `plugins.is_active`,
+  і ЛИШЕ після відповіді `syncPluginHooks(name, isActive)`
+  (`simplycms/plugins`, без БД) мутує `HookRegistry` вкладки. Серверна
+  операція реєстр браузера змінити не може — тому синхронізація клієнтська.
+  Якщо `register` модуля впав, `syncPluginHooks` знімає часткові хуки й кидає,
+  а хук повертає `is_active = false` другим викликом `setPluginActive` і
+  показує тост: БД і вкладка не розходяться.
+- Видалення плагіна з адмінки немає (С-3): встановлення й видалення —
+  build-time (`simplycms add` + конфіг магазину, §9); supabase-шар життєвого
+  циклу (`adminLifecycle`, `pluginRepository`) знесено.
 
 ## 4. Межа довіри (спека §7)
 
@@ -134,8 +142,15 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 | Порт | Що дає |
 |---|---|
 | `usePluginTable<Row>('plg_…')` | CRUD по ВЛАСНІЙ таблиці: `list({eq, orderBy})` / `insert` / `update` / `remove`; типи рядків — generic автора (плагінні таблиці свідомо поза core-baseline типів БД). 🔴 **`insert` вимагає `id`** — див. нижче |
-| `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn |
+| `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn. `save()` — запис через `pluginConfigWrite` (§6) |
 | `usePluginT(messages)` | транслятор каталогу плагіна (див. §7) |
+
+🔴 **`plugins.config` публічний — це контракт v1.** `pluginConfigRead` віддає
+конфіг будь-кому, зокрема гостю вітрини: слоти плагіна читають його на
+публічних сторінках. Тому в конфіг не кладуть секретів (ключі API платіжних
+систем, токени перевізників). Окремого сховища секретів плагіна в v1 немає;
+воно зʼявиться після К5 (ключі в адмінці). До того секрет — це env магазину
+й серверний код плагіна, а не `plugins.config`.
 
 🔴 **Ключ кешу таблиці плагіна — з порту, не літерал** (виправлено К3-Е3,
 `fbd666c9`). `usePluginTable(...)` повертає `readonly queryKey`, стабільний
@@ -226,6 +241,15 @@ switch, `number/integer` → числовий input. Непредставна д
 схема (`z.date`, `.transform`) — warn + порожня форма, не падіння сторінки.
 
 🔴 Схема живе в `definition.settings` модуля і НЕ їде в БД чи manifest-JSON.
+
+🔴 **Запис — один шлях: serverFn `pluginConfigWrite`** (`simplycms/plugin-sdk/server`)
+під правом `settings.manage` (Е6б-13). Ним пише і сторінка налаштувань адмінки
+(`admin/features/plugins/usePlugins`), і `usePluginConfig.save` плагіна —
+другого каналу запису в `plugins.config` немає. Право перевіряється ДО розміру:
+не-адмін → `AuthzError` (`save()` повертає `false`), конфіг понад 64 КБ
+серіалізованого JSON → 400 (летить винятком). Сервер схеми плагіна не знає
+(модуль живе в браузері), тож валідація за Zod-схемою — у браузері перед
+записом; серверна перевірка за схемою — поза Е6б.
 
 ## 7. i18n плагіна
 

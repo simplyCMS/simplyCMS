@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import Auth from 'simplycms/storefront-routes/pages/Auth';
 import { getUser } from 'simplycms/storefront-routes/server/auth';
+import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 /**
  * Сторінка авторизації (логін / реєстрація).
@@ -17,14 +18,7 @@ export const Route = createFileRoute('/auth/')({
       throw redirect({ to: '/' });
     }
   },
-  head: () => ({
-    meta: [
-      { title: 'Авторизація — SimplyCMS Store' },
-      {
-        name: 'description',
-        content: 'Вхід або реєстрація в інтернет-магазині SimplyCMS Store',
-      },
-    ],
-  }),
+  head: ({ matches }) =>
+    storefrontHead(matches, (t) => ({ title: t('auth.login.title') })),
   component: Auth,
 });

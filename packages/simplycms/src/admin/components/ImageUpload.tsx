@@ -16,6 +16,14 @@ interface ImageUploadProps {
   entityId?: string | null;
   maxImages?: number;
   disabled?: boolean;
+  /**
+   * Стирати файл одразу при прибиранні з форми. За замовчуванням `true` —
+   * поведінка сутностей, чия колонка пишеться разом із формою. `false` —
+   * коли файл стирає серверна операція збереження ПІСЛЯ успішного запису
+   * (логотип магазину, Е6б-14): скасована форма чи відмова сервера не мусить
+   * лишити профіль із посиланням на вже стертий файл.
+   */
+  eraseOnRemove?: boolean;
 }
 
 export function ImageUpload({
@@ -25,6 +33,7 @@ export function ImageUpload({
   entityId = null,
   maxImages = 10,
   disabled = false,
+  eraseOnRemove = true,
 }: ImageUploadProps) {
   const t = useT();
   const [isUploading, setIsUploading] = useState(false);
@@ -111,6 +120,7 @@ export function ImageUpload({
   const removeImage = async (index: number) => {
     const ref = images[index];
     onImagesChange(images.filter((_, i) => i !== index));
+    if (!eraseOnRemove) return;
     // Зовнішній URL рядка `media` не має — порт чесно поверне `removed: false`,
     // а не впаде; тому окремої гілки на `https:` тут не треба.
     try {

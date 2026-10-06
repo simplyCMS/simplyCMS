@@ -9,7 +9,9 @@
  * валідації як помилка поля (`./admin-validation-errors.mjs`, Тема 12) → пагінація
  * списків товарів і замовлень Етапу A (`./admin-lists-pagination.mjs`;
  * ці кроки сіють рядки й прибирають за собою) → доставка К3-Е6а
- * (`./admin-shipping.mjs`, потребує й сторінки покупця; прибирає за собою). Окремий browser context —
+ * (`./admin-shipping.mjs`, потребує й сторінки покупця; прибирає за собою) →
+ * система К3-Е6б (`./admin-system.mjs`: профіль, логотип, склад, теми, плагіни;
+ * ОСТАННІМ — відновлює стан SQL-ом повз кеш процесу). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
  * закривається тут, у `finally`. Виніс із `live-smoke.mjs` — канон 150 рядків.
@@ -24,6 +26,7 @@ import { runAdminOrderSaveReturnStep } from './admin-save-return-orders.mjs';
 import { runAdminListsPaginationStep } from './admin-lists-pagination.mjs';
 import { runAdminValidationErrorsStep } from './admin-validation-errors.mjs';
 import { runAdminShippingStep } from './admin-shipping.mjs';
+import { runAdminSystemStep } from './admin-system.mjs';
 
 export async function runOwnerSteps({
   browser,
@@ -97,6 +100,15 @@ export async function runOwnerSteps({
     // способи, а воронка й `resolveStockPoint` стоять на одній точці демо;
     // прибирає за собою сам.
     await runAdminShippingStep({
+      context: owner.context,
+      buyerPage,
+      base,
+      dbUrl,
+      check,
+    });
+    // Система К3-Е6б — ОСТАННІМ у всьому прогоні: `finally` кроку відновлює
+    // стан SQL-ом, що оминає кеш процесу `simplycms/site` (Е6б-9).
+    await runAdminSystemStep({
       context: owner.context,
       buyerPage,
       base,

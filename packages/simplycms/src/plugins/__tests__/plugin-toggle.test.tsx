@@ -3,12 +3,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { hookRegistry } from '../HookRegistry';
 import { PluginSlot } from '../PluginSlot';
-import { activatePlugin, deactivatePlugin } from '../adminLifecycle';
+import { registerPluginModule } from '../PluginLoader';
+import { syncPluginHooks } from '../sync-hooks';
 import {
   HOOK,
   Marker,
   PLUGIN,
-  makeSupabase,
   markerMountCount,
   registerDemoPlugin,
   resetMarkerMounts,
@@ -17,7 +17,13 @@ import {
 
 registerDemoPlugin();
 
-describe('toggle плагіна: атомарний порядок БД → registry', () => {
+/**
+ * Перемикання плагіна з адмінки міняє сторінку БЕЗ reload: `syncPluginHooks`
+ * мутує `HookRegistry`, а `PluginSlot` підписаний на його версію. Запис у БД
+ * тут не перевіряється — його робить serverFn `setPluginActive` до виклику
+ * (`admin/features/plugins/usePluginToggle`).
+ */
+describe('toggle плагіна: syncPluginHooks → PluginSlot', () => {
   beforeEach(() => {
     hookRegistry.clear();
     resetMarkerMounts();
@@ -30,8 +36,7 @@ describe('toggle плагіна: атомарний порядок БД → regi
     hookRegistry.clear();
   });
 
-  it('activatePlugin оновлює слот без ремаунта і пише в БД ДО реєстру', async () => {
-    const db = makeSupabase(false);
+  it('вмикання показує віджет у слоті без ремаунта сусідів', async () => {
     render(
       <div>
         <Marker />
@@ -43,7 +48,7 @@ describe('toggle плагіна: атомарний порядок БД → regi
     const markerBefore = screen.getByTestId('marker');
 
     await act(async () => {
-      expect(await activatePlugin(db.client, PLUGIN)).toBe(true);
+      await syncPluginHooks(PLUGIN, true);
     });
     await settle();
 
@@ -51,15 +56,10 @@ describe('toggle плагіна: атомарний порядок БД → regi
     // Ремаунта піддерева не було — оновилася лише підписка слота.
     expect(screen.getByTestId('marker')).toBe(markerBefore);
     expect(markerMountCount()).toBe(1);
-    // На момент запису в БД реєстр ще порожній — саме цей порядок і потрібен.
-    expect(db.writes).toEqual([true]);
-    expect(db.registryAtWrite).toEqual([0]);
   });
 
-  it('deactivatePlugin прибирає віджет без ремаунта', async () => {
-    const db = makeSupabase(false);
-    await activatePlugin(db.client, PLUGIN);
-
+  it('вимикання прибирає віджет без ремаунта', async () => {
+    await syncPluginHooks(PLUGIN, true);
     render(
       <div>
         <Marker />
@@ -71,45 +71,31 @@ describe('toggle плагіна: атомарний порядок БД → regi
     const markerBefore = screen.getByTestId('marker');
 
     await act(async () => {
-      expect(await deactivatePlugin(db.client, PLUGIN)).toBe(true);
+      await syncPluginHooks(PLUGIN, false);
     });
     await settle();
 
     expect(screen.queryByText('W')).toBeNull();
     expect(screen.getByTestId('marker')).toBe(markerBefore);
     expect(markerMountCount()).toBe(1);
-    expect(db.writes).toEqual([true, false]);
-    // Хуки ще на місці, коли БД приймає запис: спершу БД, потім реєстр.
-    expect(db.registryAtWrite).toEqual([0, 1]);
   });
 
-  it('збій БД при activate: реєстр без змін, слот порожній', async () => {
-    const db = makeSupabase(true);
+  it('register впав: слот лишається порожнім, реєстр — без хуків плагіна', async () => {
+    registerPluginModule('broken', {
+      register: (registry) => {
+        registry.register(HOOK, 'broken', () => <b>X</b>);
+        throw new Error('boom');
+      },
+    });
     render(<PluginSlot name={HOOK} />);
     await settle();
 
     await act(async () => {
-      expect(await activatePlugin(db.client, PLUGIN)).toBe(false);
+      await expect(syncPluginHooks('broken', true)).rejects.toThrow('boom');
     });
     await settle();
 
     expect(hookRegistry.getPluginsForHook(HOOK)).toEqual([]);
-    expect(screen.queryByText('W')).toBeNull();
-  });
-
-  it('збій БД при deactivate: хуки лишаються, віджет на місці', async () => {
-    await activatePlugin(makeSupabase(false).client, PLUGIN);
-    render(<PluginSlot name={HOOK} />);
-    await settle();
-    expect(screen.getByText('W')).toBeTruthy();
-
-    const failing = makeSupabase(true);
-    await act(async () => {
-      expect(await deactivatePlugin(failing.client, PLUGIN)).toBe(false);
-    });
-    await settle();
-
-    expect(hookRegistry.getPluginsForHook(HOOK)).toEqual([PLUGIN]);
-    expect(screen.getByText('W')).toBeTruthy();
+    expect(screen.queryByText('X')).toBeNull();
   });
 });

@@ -104,6 +104,29 @@ export {
   removePickupPointsInput,
   removePickupPointsOp,
 } from './pickup-points/remove';
+export { getSystemSettingsOp } from './settings/get';
+export type { SystemSettings } from './settings/get';
+export { storeProfileInput } from './settings/profile-schema';
+export { saveStoreProfileOp } from './settings/save-profile';
+export {
+  saveStockManagementInput,
+  saveStockManagementOp,
+} from './settings/save-stock';
+// 🔴 Теки `site-*`, а не `themes`/`plugins` (Е6б-26): відносний `../themes`
+// тір-зона читає як теку тем T4 — збіг імен змусив би обходити правило барелем.
+export { listThemesOp } from './site-themes/list';
+export type { ThemeRow } from './site-themes/list';
+export { activateThemeInput, activateThemeOp } from './site-themes/activate';
+export {
+  saveThemeSettingsInput,
+  saveThemeSettingsOp,
+} from './site-themes/save-settings';
+export { listPluginsOp } from './site-plugins/list';
+export type { PluginRow } from './site-plugins/list';
+export {
+  setPluginActiveInput,
+  setPluginActiveOp,
+} from './site-plugins/set-active';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';

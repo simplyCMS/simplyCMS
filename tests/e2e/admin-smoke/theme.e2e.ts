@@ -8,7 +8,9 @@ import { t } from '../support/i18n';
  * застосунку (не F5) має одразу змінити палітру. Тест існує саме тому, що
  * це один раз уже ламалося мовчки: клієнтський кеш (`staleTime: 5 * 60_000`)
  * лишав стару тему до пʼяти хвилин, а тост стверджував протилежне
- * (`docs/architecture/test-contours.md` §8.5, фікс — `useRevalidateStorefront`).
+ * (`docs/architecture/test-contours.md` §8.5). Фікс з К3-Е6б: серверний кеш
+ * скидає сама операція `activateTheme` (Е6б-15), кеш роутера —
+ * `router.invalidate()` у `admin/features/themes/useThemes.ts` (Е6б-22).
  */
 
 async function readPrimaryToken(page: Page): Promise<string> {
@@ -31,11 +33,11 @@ async function activateOtherTheme(page: Page): Promise<void> {
     .getByRole('button', { name: t('common.activate'), exact: true })
     .click();
 
-  // Дочекатись завершення useRevalidateStorefront (сервер + router.invalidate),
-  // а не лише закриття діалогу — інакше тест не ловить саме той дефект, заради
-  // якого написаний. `.first()`: той самий текст дублюється в
-  // `aria-live`-регіоні для скрінрідерів (title+description одним рядком) —
-  // без нього Playwright падає у strict mode на двох збігах.
+  // Дочекатись тосту успіху (відповідь `activateTheme` уже в кеші, скидання
+  // кешу роутера запущено), а не лише закриття діалогу — інакше тест не ловить
+  // саме той дефект, заради якого написаний. `.first()`: тост може
+  // дублюватись у `aria-live`-регіоні для скрінрідерів — без нього Playwright
+  // падає у strict mode на двох збігах.
   await expect(
     page.getByText(t('admin.themes.activated')).first(),
   ).toBeVisible();

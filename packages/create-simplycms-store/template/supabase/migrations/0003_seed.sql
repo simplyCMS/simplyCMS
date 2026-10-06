@@ -58,8 +58,10 @@ on conflict (code) do nothing;
 insert into public.system_settings (id, key, value, description)
 values
   (
-    '00000005-0000-4000-8000-000000000001',
-    'active_theme', '"default"'::jsonb, 'Активна тема сайту'
+    '00000005-0000-4000-8000-000000000003',
+    'store_profile',
+    '{"name": "Мій магазин", "homeTitle": null, "description": null, "contacts": {"phone": null, "email": null, "address": null, "hours": null}, "logo": null, "socials": []}'::jsonb,
+    'Профіль магазину: назва, SEO, контакти, логотип, соцмережі'
   ),
   (
     '00000005-0000-4000-8000-000000000002',

@@ -1,19 +1,14 @@
 import { defineConfig } from 'simplycms/runtime';
 
 /**
- * Конфіг магазину — єдине джерело істини.
+ * Конфіг магазину — єдине джерело істини для збірки.
  *
- * Звідси беруться SEO/локаль/валюта (`src/engine.shared.ts`), набір тем
- * (`src/theme-registry.ts`) і набір плагінів (`bootstrapPlugins` у `__root`).
+ * Звідси беруться локаль/валюта (`src/engine.shared.ts`), набір тем
+ * (`src/theme-registry.ts`, `src/server.ts`) і набір плагінів
+ * (`bootstrapPlugins` у `__root`). Назва магазину, заголовок головної й опис —
+ * профіль магазину в адмінці (БД); URL сайту — env `VITE_SITE_URL`.
  */
 export default defineConfig({
-  seo: {
-    siteName: 'SimplyCMS Store',
-    defaultTitle: 'SimplyCMS Store — Best Products',
-    titleTemplate: '%s | SimplyCMS Store',
-    siteUrl: import.meta.env.VITE_SITE_URL ?? '',
-    defaultDescription: 'SimplyCMS Store',
-  },
   // 🔴 ЛИШЕ `import.meta.env` — цей файл імпортується виключно через Vite
   // (`src/engine.shared.ts`, `src/theme-registry.ts`), ніколи з Node; `process.env`
   // тут зламав би клієнтський бандл. `VITE_LOCALE` — локальний перемикач

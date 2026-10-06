@@ -83,8 +83,9 @@ export const SCANNED_ROOTS = [
   // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
   // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
   // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
-  // Самі рядки поки в `PENDING_FILES`: перекласти їх нічим — `head()` це
-  // звичайна функція поза React-контекстом, а локаль магазину ядру недоступна.
+  // Відтоді (Е6б-10) рядки `head()` перекладаються через `storefrontHead`/
+  // `homeHead` (`simplycms/storefront-routes/head/head`): локаль магазину
+  // приходить кореневим лоадером host-а в `matches`.
   'packages/simplycms/routes',
   ...pluginPackageRoots(),
   ...themeRoots(),
