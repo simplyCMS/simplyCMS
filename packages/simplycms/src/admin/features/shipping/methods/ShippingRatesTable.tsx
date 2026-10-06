@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useT } from 'simplycms/i18n';
+import { useFormatPrice } from 'simplycms/react-query';
 import type { ShippingRate } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
@@ -24,6 +25,7 @@ export function ShippingRatesTable({
   readonly methodId: string;
 }) {
   const t = useT();
+  const formatPrice = useFormatPrice();
   const { rows, zones, save, remove } = useShippingRates(methodId);
   // `undefined` — діалог закритий, `null` — новий тариф, рядок — правка.
   const [editing, setEditing] = useState<ShippingRate | null | undefined>();
@@ -57,8 +59,12 @@ export function ShippingRatesTable({
                 <TableCell>{zoneName(r.zoneId)}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell>{t(RATE_CALC_LABEL[r.calculationType])}</TableCell>
-                <TableCell>{r.baseCost}</TableCell>
-                <TableCell>{r.freeFromAmount ?? '—'}</TableCell>
+                <TableCell>{formatPrice(Number(r.baseCost))}</TableCell>
+                <TableCell>
+                  {r.freeFromAmount === null
+                    ? '—'
+                    : formatPrice(Number(r.freeFromAmount))}
+                </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"

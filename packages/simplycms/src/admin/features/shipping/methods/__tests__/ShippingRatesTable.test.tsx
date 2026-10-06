@@ -50,6 +50,9 @@ describe('ShippingRatesTable', () => {
     render(<ShippingRatesTable methodId={methodId} />, { wrapper });
     await screen.findByText('Стандарт');
     expect(screen.getByText('Київ')).toBeTruthy();
+    // Гроші — через useFormatPrice, не сирий numeric-рядок '50.00'.
+    expect(screen.getByText(/^50(,00)?\s*₴$/)).toBeTruthy();
+    expect(screen.queryByText('50.00')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: t('common.edit') }));
     const dialog = await screen.findByRole('dialog');
     expect(
