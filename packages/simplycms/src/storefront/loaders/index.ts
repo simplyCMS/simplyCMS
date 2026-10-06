@@ -71,4 +71,5 @@ export type { SectionRow, SectionRef } from './entities/section';
 // декларації межі їх збирає серверна група, а не спільний клієнтський чанк.
 export * from './is-admin';
 export * from './theme-record';
+export * from './store-profile';
 export * from './revalidate-theme';

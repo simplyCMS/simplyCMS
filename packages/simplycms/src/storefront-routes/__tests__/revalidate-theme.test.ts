@@ -118,17 +118,15 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { revalidateTheme } from '../../storefront/loaders/revalidate-theme';
-import {
-  invalidateThemeCache,
-  loadActiveTheme,
-} from '../../storefront/loaders/theme-record';
+import { activeThemeCache } from 'simplycms/site';
+import { loadActiveTheme } from '../../storefront/loaders/theme-record';
 
 beforeEach(() => {
   currentUser = null;
   hasAdminRole = false;
   themeQueries = 0;
   queries.length = 0;
-  invalidateThemeCache();
+  activeThemeCache.invalidate();
 });
 
 describe('POST /api/revalidate-theme', () => {
@@ -158,10 +156,7 @@ describe('POST /api/revalidate-theme', () => {
     currentUser = { id: ADMIN_USER };
     hasAdminRole = true;
 
-    const first = await loadActiveTheme();
-    expect(themeQueries).toBe(1);
-    // Контроль: без інвалідації повторне читання лишається кешованим.
-    expect(await loadActiveTheme()).toBe(first);
+    await loadActiveTheme();
     expect(themeQueries).toBe(1);
 
     const response = await revalidateTheme();

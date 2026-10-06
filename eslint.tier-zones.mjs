@@ -69,11 +69,12 @@ const TIER_ZONES = [
   // `avatar.ts`» пінує ратчет `tests/storage-port-consumers.test.ts`.
   // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з адмінкою.
+  // `site` (Е6б-7) — спільний кеш профілю/теми: вітрина читає, адмінка скидає.
   [
     'src/storefront',
     2,
     'storefront',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize'],
+    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
   ],
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
@@ -83,11 +84,13 @@ const TIER_ZONES = [
   // прямий `node:fs`, тобто рівно туди, куди не можна.
   // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з вітриною.
+  // `site` (Е6б-7) — спільний кеш профілю/теми: адмінка скидає після COMMIT,
+  // а `storefront` їй імпортувати не можна (той самий тір).
   [
     'src/admin-server',
     2,
     'admin-server',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize'],
+    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
@@ -100,6 +103,9 @@ const TIER_ZONES = [
   // Ціноутворення й доставка (Е5б-5) — T2. Upward лише `db`, як в
   // `inventory`: рушій читає прайси/знижки/тарифи через ActorDb.
   ['src/commerce', 2, 'commerce', ['db']],
+  // Кеш профілю магазину й теми, вшиті теми (Е6б-7) — T2. Upward лише `db`
+  // (тип `ActorDb`): власного каналу до Postgres модуль не відкриває.
+  ['src/site', 2, 'site', ['db']],
   // Санітизація rich-HTML (Тема 9) — T2. Чиста функція над рядком: upward-
   // винятків немає; тип `SanitizedHtml` бере з T0 (`contracts`).
   ['src/sanitize', 2, 'sanitize', []],

@@ -19,7 +19,8 @@ interface ThemeProviderProps {
    *
    * 🔴 Обовʼязкова. До В2 провайдер умів дочитати тему сам — запитом
    * `themes` з браузера через PostgREST. Тепер джерело одне: лоадер
-   * каркасного роуту (`getActiveTheme` → `loadActiveTheme` → `withStorefrontDb`).
+   * каркасного роуту (`getActiveTheme` → `loadActiveTheme` → `withStorefrontDb`
+   * крізь спільний кеш `activeThemeCache` з `simplycms/site`).
    * Другий шлях не «резервний», а розбіжний: він давав інший знімок БД, ніж
    * SSR, і показував би тему, якої сервер не рендерив.
    */

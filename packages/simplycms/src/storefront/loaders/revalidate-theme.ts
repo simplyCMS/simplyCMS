@@ -1,5 +1,5 @@
 import { checkIsAdmin } from './is-admin';
-import { invalidateThemeCache } from './theme-record';
+import { activeThemeCache } from 'simplycms/site';
 
 /**
  * Скидання серверного кешу активної теми (TTL 5 хв) після перемикання теми
@@ -22,6 +22,6 @@ export async function revalidateTheme(): Promise<Response> {
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  invalidateThemeCache();
+  activeThemeCache.invalidate();
   return Response.json({ revalidated: true }, { status: 200 });
 }

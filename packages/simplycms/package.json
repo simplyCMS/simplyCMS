@@ -40,6 +40,7 @@
     "./storage": "./src/storage/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
+    "./site": "./src/site/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./supabase": "./src/supabase/index.ts",
     "./supabase/keys": "./src/supabase/keys.ts",
@@ -243,6 +244,10 @@
       "./commerce": {
         "types": "./dist/commerce/index.d.ts",
         "import": "./dist/commerce/index.js"
+      },
+      "./site": {
+        "types": "./dist/site/index.d.ts",
+        "import": "./dist/site/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",

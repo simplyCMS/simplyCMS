@@ -16,8 +16,8 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../../storefront/loaders/is-admin', () => ({
   checkIsAdmin: async () => false,
 }));
-vi.mock('../../storefront/loaders/theme-record', () => ({
-  invalidateThemeCache: () => {},
+vi.mock('simplycms/site', () => ({
+  activeThemeCache: { invalidate: () => {} },
 }));
 
 import * as routeModule from '../../../routes/storefront/api/revalidate-theme';
