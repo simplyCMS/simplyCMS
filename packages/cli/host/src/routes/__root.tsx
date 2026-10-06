@@ -25,7 +25,12 @@ import {
 } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import config from '../../simplycms.config';
-import { getActiveTheme } from 'simplycms/storefront-routes/server/themes';
+import { getStorefrontRoot } from 'simplycms/storefront-routes/server/root';
+import {
+  homeHead,
+  type StorefrontRootData,
+} from 'simplycms/storefront-routes/head/head';
+import { StoreProfileProvider } from 'simplycms/themes/store-profile';
 import { serializeActiveThemeScript } from 'simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
 
@@ -56,23 +61,20 @@ const t = createTranslator(locale);
 export type { RouterContext };
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // Резолвимо активну тему один раз на рівні root — її назву інлайн-скриптом
-  // прокидаємо клієнту, щоб той прогрів саме цю тему ДО гідрації (без suspend).
-  loader: async () => {
-    const record = await getActiveTheme();
-    return { activeThemeName: record?.name ?? 'default' };
-  },
+  // Корінь вітрини одним викликом (Е6б-10): назву активної теми інлайн-скриптом
+  // прокидаємо клієнту, щоб той прогрів саме цю тему ДО гідрації (без suspend);
+  // профіль магазину, URL сайту й локаль читає `head()` кожного роуту ядра
+  // через `matches` — іншого каналу від host-а до ядра немає.
+  loader: async () =>
+    ({ ...(await getStorefrontRoot()), locale }) satisfies StorefrontRootData,
   notFoundComponent: NotFound,
   errorComponent: ErrorBoundary,
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'SimplyCMS Store' },
-      {
-        name: 'description',
-        content: 'SimplyCMS — open-source e-commerce CMS platform',
-      },
+      // Дефолт для роутів без власного head(): заголовок головної або назва.
+      ...(loaderData ? homeHead(loaderData.storeProfile).meta : []),
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
@@ -86,7 +88,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
-  const { activeThemeName } = Route.useLoaderData();
+  const { activeThemeName, storeProfile } = Route.useLoaderData();
   const { queryClient } = Route.useRouteContext();
 
   return (
@@ -113,7 +115,9 @@ function RootComponent() {
               <PluginBootstrap />
               <ThemeBootstrap />
               <ClientEngineProvider>
-                <Outlet />
+                <StoreProfileProvider profile={storeProfile}>
+                  <Outlet />
+                </StoreProfileProvider>
                 <Toaster />
                 <SonnerToaster richColors position="top-right" />
               </ClientEngineProvider>

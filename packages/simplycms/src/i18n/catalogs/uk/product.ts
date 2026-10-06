@@ -3,6 +3,8 @@ export const messages = {
   'product.notFound': 'Товар не знайдено',
   'product.goBack': 'Повернутись назад',
   'product.sku': 'Артикул: {sku}',
+  // Meta description картки без власного опису товару (`head()` роуту).
+  'product.metaDescription': 'Купити {name}',
 
   // Наявність
   'product.inStock': 'В наявності',

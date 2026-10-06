@@ -66,6 +66,13 @@ export const ALLOWLIST: Record<string, string> = {
     'throw new Error — відмова в записі не-адміну',
   'packages/simplycms/src/admin/lib/pluginSettingsFields.ts':
     'console.warn — діагностика непредставної settings-схеми плагіна',
+  // Кореневі дані вітрини (Е6б-10/12): обидва кидають, коли host не віддає
+  // профіль магазину. Читає розробник магазину, що зібрав `__root.tsx`, — не
+  // покупець: на зібраному магазині ці гілки недосяжні.
+  'packages/simplycms/src/storefront-routes/head/head.ts':
+    'throw new Error — діагностика host-а (кореневий лоадер)',
+  'packages/simplycms/src/themes/store-profile.tsx':
+    'throw new Error — діагностика host-а (провайдер профілю)',
 };
 
 /**
@@ -83,30 +90,10 @@ export const PENDING_FILES: readonly string[] = [
   // `tests/plugin-messages-parity.test.ts`. Будь-який новий кириличний рядок
   // інтерфейсу в цих зонах валить тест, а не додається сюди.
   //
-  // 🔴 Єдиний незакритий борг — `<title>`/`<meta description>` роутів вітрини
-  // (`head()`), внесені сюди 2026-08-21 разом із додаванням
-  // `packages/simplycms/routes` у `SCANNED_ROOTS`. До того їх не бачив ЖОДЕН
-  // гейт: у скані теки не було, а eslint-селектори бачать лише `JSXText` і три
-  // атрибути — властивість обʼєкта `meta: [{ title }]` для них невидима.
-  // Причина, чому це облік, а не переклад: `head()` — звичайна функція поза
-  // React-контекстом, тож `useT()` там непридатний, а `createTranslator(locale)`
-  // потребує локалі з `simplycms.config.ts` МАГАЗИНУ, до якої ядро доступу не
-  // має (`defineConfig` — типізована тотожність, глобального акцесора немає).
-  // Закриття боргу = рішення про спосіб доставки локалі в ядро, не механічна
-  // правка. Список лише скорочується.
-  'packages/simplycms/routes/storefront/_protected/profile/index.tsx',
-  'packages/simplycms/routes/storefront/_protected/profile/orders/$orderId.tsx',
-  'packages/simplycms/routes/storefront/_protected/profile/orders/index.tsx',
-  'packages/simplycms/routes/storefront/_protected/profile/settings.tsx',
-  'packages/simplycms/routes/storefront/_storefront/cart.tsx',
-  'packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx',
-  'packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index.tsx',
-  'packages/simplycms/routes/storefront/_storefront/catalog/index.tsx',
-  'packages/simplycms/routes/storefront/_storefront/checkout.tsx',
-  'packages/simplycms/routes/storefront/_storefront/index.tsx',
-  'packages/simplycms/routes/storefront/_storefront/order-success/$orderId.tsx',
-  'packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/index.tsx',
-  'packages/simplycms/routes/storefront/_storefront/properties/index.tsx',
-  'packages/simplycms/routes/storefront/auth/index.tsx',
-  'packages/simplycms/routes/storefront/auth/set-password.tsx',
+  // Останній борг — `<title>`/`<meta description>` роутів вітрини (`head()`,
+  // внесені сюди 2026-08-21 разом із `packages/simplycms/routes` у
+  // `SCANNED_ROOTS`) — закрито рішенням Е6б-10 (К3-Е6б): локаль і назва
+  // магазину приходять у `head()` з кореневого лоадера host-а через
+  // `matches`, а заголовки будує `storefrontHead`
+  // (`simplycms/storefront-routes/head/head`) транслятором тієї локалі.
 ];

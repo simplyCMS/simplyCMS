@@ -70,6 +70,7 @@
     "./themes/validateThemeModule": "./src/themes/validateThemeModule.ts",
     "./themes/useThemeT": "./src/themes/useThemeT.ts",
     "./themes/types": "./src/themes/types.ts",
+    "./themes/store-profile": "./src/themes/store-profile.tsx",
     "./themes/conformance": "./src/themes/conformance/index.ts",
     "./themes/server": "./src/themes/server/index.ts",
     "./plugins": "./src/plugins/index.ts",
@@ -104,6 +105,7 @@
     "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
     "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
     "./storefront-routes/seo/*": "./src/storefront-routes/seo/*.ts",
+    "./storefront-routes/head/*": "./src/storefront-routes/head/*.ts",
     "./storefront-routes/pages/*": "./src/storefront-routes/pages/*.tsx",
     "./storefront-routes/components/*": "./src/storefront-routes/components/*.tsx",
     "./storefront-routes/shells/*": "./src/storefront-routes/shells/*",
@@ -365,6 +367,10 @@
         "types": "./dist/themes/types.d.ts",
         "import": "./dist/themes/types.js"
       },
+      "./themes/store-profile": {
+        "types": "./dist/themes/store-profile.d.ts",
+        "import": "./dist/themes/store-profile.js"
+      },
       "./themes/conformance": {
         "types": "./dist/themes/conformance/index.d.ts",
         "import": "./dist/themes/conformance/index.js"
@@ -500,6 +506,10 @@
       "./storefront-routes/seo/*": {
         "types": "./dist/storefront-routes/seo/*.d.ts",
         "import": "./dist/storefront-routes/seo/*.js"
+      },
+      "./storefront-routes/head/*": {
+        "types": "./dist/storefront-routes/head/*.d.ts",
+        "import": "./dist/storefront-routes/head/*.js"
       },
       "./storefront-routes/pages/*": {
         "types": "./dist/storefront-routes/pages/*.d.ts",

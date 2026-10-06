@@ -12,7 +12,6 @@ import type {
 export { defineConfig } from './config';
 export type {
   SimplyCmsConfig,
-  SimplyCmsSeoConfig,
   PluginRegistration,
   ThemeLoader,
 } from './config';

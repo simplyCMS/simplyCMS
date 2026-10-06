@@ -18,7 +18,7 @@ import type { DiscountGroup, DiscountScope } from '../objects/discount';
 import type { ShippingZone } from '../objects/shipping';
 import type { Order, OrderQuery, CreateOrderInput } from '../objects/order';
 import type { Identity } from '../objects/identity';
-import type { SeoConfig, ImageOpts } from '../objects/config';
+import type { ImageOpts } from '../objects/config';
 
 /** Розв'язувач скоупу: undefined = single-tenant, hubId = multi-tenant (MetaHub). */
 export interface ScopeResolver {
@@ -92,11 +92,14 @@ export interface MediaProvider {
   url(ref: string, opts?: ImageOpts): string | null;
 }
 
+/**
+ * Конфіг магазину в React-контексті. `siteUrl` і `seo` прибрано (Е6б-11): їх
+ * не читав жоден продакшн-код, а назва/описи живуть у профілі магазину (БД),
+ * URL сайту — у серверному env.
+ */
 export interface ConfigProvider {
   locale: string;
   currency: string;
-  siteUrl: string;
-  seo: SeoConfig;
 }
 
 /**

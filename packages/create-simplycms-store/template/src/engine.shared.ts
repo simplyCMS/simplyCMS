@@ -21,14 +21,11 @@ export const appLinks: LinkResolver = {
   admin: (sub) => (sub ? `/admin/${sub}` : '/admin'),
 };
 
-/** Конфіг вітрини — проєкція `simplycms.config.ts` на контракт ConfigProvider. */
+/**
+ * Конфіг вітрини — проєкція `simplycms.config.ts` на контракт ConfigProvider.
+ * Назва магазину й описи — профіль у БД, URL сайту — серверний env (Е6б-11).
+ */
 export const appConfig: ConfigProvider = {
   locale: config.locale,
   currency: config.currency,
-  siteUrl: config.seo.siteUrl,
-  seo: {
-    defaultTitle: config.seo.defaultTitle,
-    titleTemplate: config.seo.titleTemplate,
-    defaultDescription: config.seo.defaultDescription,
-  },
 };

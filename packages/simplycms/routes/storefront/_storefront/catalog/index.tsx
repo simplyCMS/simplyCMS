@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import CatalogPage from 'simplycms/storefront-routes/pages/Catalog';
 import { getCatalogPageData } from 'simplycms/storefront-routes/server/catalog';
+import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute('/_storefront/catalog/')({
   staleTime: 60_000,
@@ -12,15 +13,8 @@ export const Route = createFileRoute('/_storefront/catalog/')({
       priceContext: data.products.priceContext,
     };
   },
-  head: () => ({
-    meta: [
-      { title: 'Каталог — SimplyCMS Store' },
-      {
-        name: 'description',
-        content: 'Каталог товарів інтернет-магазину SimplyCMS Store',
-      },
-    ],
-  }),
+  head: ({ matches }) =>
+    storefrontHead(matches, (t) => ({ title: t('catalog.title') })),
   component: Catalog,
 });
 

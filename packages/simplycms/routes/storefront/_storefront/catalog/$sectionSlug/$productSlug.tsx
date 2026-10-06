@@ -2,8 +2,11 @@ import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import ProductDetailPage from 'simplycms/storefront-routes/pages/ProductDetail';
 import { getProduct } from 'simplycms/storefront-routes/server/products';
 import { schemaOrgAvailability } from 'simplycms/domain/inventory';
-
-const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://example.com';
+import {
+  readStorefrontRoot,
+  storefrontHead,
+} from 'simplycms/storefront-routes/head/head';
+import { serializeJsonLd } from 'simplycms/storefront-routes/head/organization';
 
 export const Route = createFileRoute(
   '/_storefront/catalog/$sectionSlug/$productSlug',
@@ -32,14 +35,29 @@ export const Route = createFileRoute(
 
     return { product, sectionSlug };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, matches }) => {
     if (!loaderData) return {};
 
     const { product, sectionSlug } = loaderData;
     const images = Array.isArray(product.images) ? product.images : [];
+    const { meta } = storefrontHead(matches, (t) => ({
+      title: product.name,
+      description:
+        product.description ||
+        t('product.metaDescription', { name: product.name }),
+    }));
+    // og:description — той самий текст, що й meta description сторінки.
     const description =
-      product.description || `Купити ${product.name} в SimplyCMS Store`;
-    const canonicalUrl = `${BASE_URL}/catalog/${sectionSlug}/${product.slug}`;
+      meta.find(
+        (m): m is { name: string; content: string } =>
+          'name' in m && m.name === 'description',
+      )?.content ?? '';
+    // URL сайту — з кореня (серверний env у рантаймі, Е6б-11). Без нього
+    // canonical не виводиться: відносний чи вигаданий хост гірший за жоден.
+    const { siteUrl } = readStorefrontRoot(matches);
+    const canonicalUrl = siteUrl
+      ? `${siteUrl}/catalog/${sectionSlug}/${product.slug}`
+      : null;
 
     /** Базова ціна для JSON-LD (перша ціна без модифікації) */
     const basePrice = product.product_prices.find(
@@ -52,7 +70,7 @@ export const Route = createFileRoute(
       name: product.name,
       description: product.description,
       image: images,
-      url: canonicalUrl,
+      ...(canonicalUrl ? { url: canonicalUrl } : {}),
       offers: {
         '@type': 'Offer',
         priceCurrency: 'UAH',
@@ -63,21 +81,15 @@ export const Route = createFileRoute(
 
     return {
       meta: [
-        { title: `${product.name} — SimplyCMS Store` },
-        { name: 'description', content: description },
+        ...meta,
         { property: 'og:title', content: product.name },
         { property: 'og:description', content: description },
         ...(images.length > 0
           ? [{ property: 'og:image', content: images[0] as string }]
           : []),
       ],
-      links: [{ rel: 'canonical', href: canonicalUrl }],
-      scripts: [
-        {
-          type: 'application/ld+json',
-          children: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
-        },
-      ],
+      links: canonicalUrl ? [{ rel: 'canonical', href: canonicalUrl }] : [],
+      scripts: [serializeJsonLd(jsonLd)],
     };
   },
   component: ProductDetail,

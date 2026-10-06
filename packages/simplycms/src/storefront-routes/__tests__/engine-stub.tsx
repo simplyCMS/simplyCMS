@@ -29,12 +29,6 @@ const engine: EngineContext = {
   config: {
     locale: 'uk-UA',
     currency: 'UAH',
-    siteUrl: 'https://example.test',
-    seo: {
-      defaultTitle: 'Test store',
-      titleTemplate: '%s',
-      defaultDescription: '',
-    },
   },
 };
 
