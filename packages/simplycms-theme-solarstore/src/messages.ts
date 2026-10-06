@@ -1,5 +1,8 @@
 /**
- * Каталог перекладів теми SolarStore (`ThemeModule.messages`, контракт v2).
+ * Каталог перекладів теми `solarstore` (`ThemeModule.messages`, контракт v2).
+ *
+ * 🔴 Назви магазину тут немає: бренд, логотип, контакти й соцмережі дає
+ * профіль (`useStoreProfile()`, Е6б-20). Копірайт бере `{name}` з нього.
  *
  * Сюди йде ЛИШЕ текст, унікальний для цієї теми (маркетинг, копірайт,
  * розділи підвалу, hero): рядки, що збігаються з core-ключами
@@ -15,8 +18,14 @@ export const messages = {
     'theme.footer.warranty': 'Гарантія',
     'theme.footer.returns': 'Повернення',
     'theme.nav.contacts': 'Контакти',
-    'theme.footer.country': 'Україна',
-    'theme.footer.copyright': '© {year} SolarStore. Всі права захищено.',
+    'theme.footer.copyright': '© {year} {name}. Всі права захищено.',
+    'theme.social.instagram': 'Instagram',
+    'theme.social.facebook': 'Facebook',
+    'theme.social.telegram': 'Telegram',
+    'theme.social.tiktok': 'TikTok',
+    'theme.social.youtube': 'YouTube',
+    'theme.social.x': 'X',
+    'theme.social.viber': 'Viber',
 
     'theme.header.categoryBatteries': 'Акумулятори',
     'theme.header.categoryInverters': 'Інвертори',
@@ -27,7 +36,6 @@ export const messages = {
     'theme.header.seeYouSoon': 'До зустрічі!',
     'theme.header.myAccount': 'Мій кабінет',
     'theme.header.adminPanel': 'Адмін-панель',
-    'theme.nav.about': 'Про нас',
 
     'theme.hero.titlePrefix': 'Енергетична',
     'theme.hero.titleHighlight': 'незалежність',
@@ -55,8 +63,14 @@ export const messages = {
     'theme.footer.warranty': 'Warranty',
     'theme.footer.returns': 'Returns',
     'theme.nav.contacts': 'Contact',
-    'theme.footer.country': 'Ukraine',
-    'theme.footer.copyright': '© {year} SolarStore. All rights reserved.',
+    'theme.footer.copyright': '© {year} {name}. All rights reserved.',
+    'theme.social.instagram': 'Instagram',
+    'theme.social.facebook': 'Facebook',
+    'theme.social.telegram': 'Telegram',
+    'theme.social.tiktok': 'TikTok',
+    'theme.social.youtube': 'YouTube',
+    'theme.social.x': 'X',
+    'theme.social.viber': 'Viber',
 
     'theme.header.categoryBatteries': 'Batteries',
     'theme.header.categoryInverters': 'Inverters',
@@ -67,7 +81,6 @@ export const messages = {
     'theme.header.seeYouSoon': 'See you soon!',
     'theme.header.myAccount': 'My account',
     'theme.header.adminPanel': 'Admin panel',
-    'theme.nav.about': 'About us',
 
     'theme.hero.titlePrefix': 'Energy',
     'theme.hero.titleHighlight': 'independence',

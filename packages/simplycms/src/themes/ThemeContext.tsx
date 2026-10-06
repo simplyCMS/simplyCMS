@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ThemeRegistry } from './ThemeRegistry';
 import { ThemeContext } from './theme-context';
 import { resolveDefaultThemeSettings } from './theme-settings';
@@ -42,7 +42,6 @@ export function ThemeProvider({
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const didInit = useRef(false);
 
   const loadTheme = useCallback(
     async (name: string, settings?: Record<string, unknown>) => {
@@ -86,14 +85,21 @@ export function ThemeProvider({
     setIsLoading(false);
   }, [loadTheme, themeName, themeSettings]);
 
-  useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
+  // Ключ за ЗМІСТОМ, а не за посиланням: лоадер віддає новий обʼєкт на кожне
+  // оновлення, і залежність від посилання перезавантажувала б тему щоразу
+  // (а прибраний `didInit` зробив би це циклом).
+  const settingsKey = JSON.stringify(initialThemeSettings ?? {});
 
+  // Нові `initialThemeName`/налаштування (власник зберіг у адмінці, лоадер
+  // інвалідовано) застосовуються без перезавантаження сторінки (Е6б-16).
+  // `initialThemeSettings` навмисно читається із замикання, а не з масиву
+  // залежностей: його вміст уже представлено `settingsKey`.
+  useEffect(() => {
     void loadTheme(initialThemeName, initialThemeSettings).then(() =>
       setIsLoading(false),
     );
-  }, [initialThemeName, initialThemeSettings, loadTheme]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialThemeName, settingsKey, loadTheme]);
 
   const value: ThemeContextType = {
     activeTheme,

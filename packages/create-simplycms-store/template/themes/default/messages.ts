@@ -8,14 +8,15 @@ import type { ThemeMessages } from 'simplycms/themes/types';
  * `nav.settings`, `nav.signOut`, `auth.login.submit`, `common.error`),
  * компоненти беруть через `useT()` — дублювати їх сюди не можна.
  *
- * 🔴 `theme.brand` — назва НАШОГО магазину, а не бренд референс-сайту,
- * з якого знято дизайн: бренд на вітрині бачить покупець, і чужий бренд
- * там — це імперсонація (правові межі фази 0 скіла redesign-from-reference).
- * Власник магазину міняє рядок тут, не чіпаючи компонентів.
+ * 🔴 Ключа бренду тут НЕМАЄ: назву, логотип, контакти й соцмережі магазину
+ * дає профіль (`useStoreProfile()`, Е6б-20), який власник правит в адмінці.
+ * Бренд літералом у каталозі теми показував би всім магазинам одну назву
+ * (і, гірше, назву референс-сайту — це імперсонація, правові межі фази 0
+ * скіла redesign-from-reference). Назви соцмереж — власні імена, але
+ * `aria-label` мусить існувати в обох мовах каталогу.
  */
 export const messages = {
   uk: {
-    'theme.brand': 'SimplyCMS Store',
     'theme.nav.home': 'Головна',
     'theme.header.search': 'Пошук у каталозі',
     'theme.header.account': 'Мій акаунт',
@@ -40,15 +41,20 @@ export const messages = {
     'theme.hero.trustShippingNote': 'З відстеженням',
 
     'theme.footer.tagline': 'Магазин на SimplyCMS для тих, хто цінує деталі.',
-    'theme.footer.copyright': '© {year} SimplyCMS Store',
+    'theme.footer.copyright': '© {year} {name}',
     'theme.footer.colShop': 'Магазин',
     'theme.footer.colAccount': 'Акаунт',
     'theme.footer.colStore': 'Сервіс',
+    'theme.footer.colContacts': 'Контакти',
     'theme.footer.linkHome': 'Головна',
     'theme.footer.linkCheckout': 'Оформлення',
-    'theme.footer.socialFeed': 'Стрічка новин',
-    'theme.footer.socialCommunity': 'Спільнота',
-    'theme.footer.socialContact': 'Звʼязатися з нами',
+    'theme.social.instagram': 'Instagram',
+    'theme.social.facebook': 'Facebook',
+    'theme.social.telegram': 'Telegram',
+    'theme.social.tiktok': 'TikTok',
+    'theme.social.youtube': 'YouTube',
+    'theme.social.x': 'X',
+    'theme.social.viber': 'Viber',
 
     'theme.newsletter.label': 'Будьте в курсі',
     'theme.newsletter.heading': 'Приєднуйтесь до розсилки',
@@ -75,7 +81,6 @@ export const messages = {
     'theme.product.trustReturnsNote': '14 днів без пояснень',
   },
   en: {
-    'theme.brand': 'SimplyCMS Store',
     'theme.nav.home': 'Home',
     'theme.header.search': 'Search the catalog',
     'theme.header.account': 'My account',
@@ -101,15 +106,20 @@ export const messages = {
 
     'theme.footer.tagline':
       'A SimplyCMS storefront for people who like details.',
-    'theme.footer.copyright': '© {year} SimplyCMS Store',
+    'theme.footer.copyright': '© {year} {name}',
     'theme.footer.colShop': 'Shop',
     'theme.footer.colAccount': 'Account',
     'theme.footer.colStore': 'Service',
+    'theme.footer.colContacts': 'Contacts',
     'theme.footer.linkHome': 'Home',
     'theme.footer.linkCheckout': 'Checkout',
-    'theme.footer.socialFeed': 'News feed',
-    'theme.footer.socialCommunity': 'Community',
-    'theme.footer.socialContact': 'Contact us',
+    'theme.social.instagram': 'Instagram',
+    'theme.social.facebook': 'Facebook',
+    'theme.social.telegram': 'Telegram',
+    'theme.social.tiktok': 'TikTok',
+    'theme.social.youtube': 'YouTube',
+    'theme.social.x': 'X',
+    'theme.social.viber': 'Viber',
 
     'theme.newsletter.label': 'Stay updated',
     'theme.newsletter.heading': 'Join the mailing list',

@@ -113,3 +113,38 @@ describe('ThemeProvider — злиття default-ів зі збереженим�
     expect(result.current.error).toBeNull();
   });
 });
+
+describe('ThemeProvider — нові initialThemeSettings без перезавантаження (Е6б-16)', () => {
+  it('rerender із новими налаштуваннями оновлює useThemeSettings без remount', async () => {
+    ThemeRegistry.register(THEME_NAME, () =>
+      Promise.resolve({ default: makeTheme() }),
+    );
+
+    // Власник зберіг налаштування в адмінці → лоадер віддав нові
+    // `initialThemeSettings`; провайдер мусить їх підхопити сам.
+    // `wrapper` renderHook не отримує props хука — значення беремо із замикання.
+    let accent = '#ff0000';
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ThemeProvider
+        initialThemeName={THEME_NAME}
+        initialThemeSettings={{ accent }}
+      >
+        {children}
+      </ThemeProvider>
+    );
+    const { result, rerender } = renderHook(() => useTheme(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.themeSettings.accent).toBe('#ff0000'),
+    );
+
+    accent = '#00ff00';
+    rerender();
+
+    await waitFor(() =>
+      expect(result.current.themeSettings.accent).toBe('#00ff00'),
+    );
+    // Default зі схеми лишається для відсутнього ключа.
+    expect(result.current.themeSettings.title).toBe('#222222');
+  });
+});
