@@ -3,6 +3,7 @@ import { orderItems, orders } from 'simplycms/schema';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { quoteShippingCost, validateShippingChoice } from 'simplycms/commerce';
 import type { ActorDb } from 'simplycms/db';
+import { parseShippingSnapshot } from 'simplycms/domain';
 import type { OrderRow } from '../orders/resource';
 import { stateConflict } from '../errors';
 import { orderProjection } from './editable';
@@ -59,6 +60,11 @@ export function assertWithin(cents: number, max: number): void {
  *    тарифу немає, мінімум/максимум суми) → 409 `order_shipping_unavailable`.
  * 8. Межі всіх трьох колонок — ДО `update orders set subtotal,
  *    shipping_cost, total = subtotal + shipping_cost, updated_at`.
+ *
+ * Знімок доставки (Е6а-23): разом із сумами оновлюється ЛИШЕ
+ * `shipping_data.pricing` — інакше примітка `carrier` суперечила б новому
+ * `shipping_cost`. Назва способу, адреса й точка лишаються на момент
+ * оформлення; невалідний знімок (старі рядки, `{}`) не чіпаємо.
  */
 export async function recomputeOrderTotals(
   db: ActorDb,
@@ -89,6 +95,7 @@ export async function recomputeOrderTotals(
   assertWithin(subtotal, MAX_CENTS_NUMERIC_12_2);
   assertWithin(shipping, MAX_CENTS_NUMERIC_10_2);
   assertWithin(total, MAX_CENTS_NUMERIC_12_2);
+  const snapshot = parseShippingSnapshot(order.shippingData);
 
   const [updated] = (await db
     .update(orders)
@@ -96,6 +103,9 @@ export async function recomputeOrderTotals(
       subtotal: fromCents(subtotal),
       shippingCost: fromCents(shipping),
       total: fromCents(total),
+      ...(snapshot && {
+        shippingData: { ...snapshot, pricing: quote.pricing },
+      }),
       updatedAt: new Date(),
     })
     .where(eq(orders.id, order.id))

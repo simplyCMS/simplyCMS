@@ -1,11 +1,11 @@
 // К3-Е6а, Task 2: режим ціни, провайдери й знімок доставки в замовленні.
 // Оформлення — воронкою вітрини (`placeOrderFor`/`quoteCheckoutFor`), редагування
-// позицій — іменованою операцією адмінки; усе на одній БД контуру Е5б.
+// позицій — у shipping-snapshot-recompute.test.ts; БД контуру Е5б.
 import { describe, expect, it, vi } from 'vitest';
-import type { PlaceOrderInput } from 'simplycms/contracts';
 import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { orderInput } from './fixtures/orders';
 import { useOrderItemsEditDb } from './fixtures/order-items-edit';
+import { carrierMethod, courierInput } from './fixtures/shipping-snapshot';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -20,29 +20,8 @@ describe('доставка: режим ціни й знімок у замовл�
   const f = useOrderItemsEditDb('simplycms_e6a_snapshot');
   const { ids } = f;
 
-  /** Адресний спосіб «за тарифами перевізника» — І з тарифом, який не має діяти. */
-  const carrier = async (): Promise<string> => {
-    const [row] = await f.rows<{ id: string }>(
-      `insert into public.shipping_methods (id, code, name, is_active, provider, pricing)
-       values (gen_random_uuid(), 'e6a-carrier', 'Перевізник', true, 'core:address', 'carrier')
-       on conflict (code) do update set name = excluded.name returning id`,
-    );
-    await f.rows(
-      `insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
-       select gen_random_uuid(), $1, z.id, 'Ігнорований тариф', 'flat', 999, true, 0
-         from public.shipping_zones z
-        where z.is_default = true
-          and not exists (select 1 from public.shipping_rates where method_id = $1)`,
-      [row!.id],
-    );
-    return row!.id;
-  };
-  const courierInput = (methodId: string): PlaceOrderInput => ({
-    ...orderInput(methodId, '', [{ productId: ids.panel, quantity: 1 }]),
-    pickupPointId: null,
-    deliveryCity: 'Київ',
-    deliveryAddress: 'вул. Тестова, 1',
-  });
+  const carrier = () => carrierMethod(f);
+  const courier = (methodId: string) => courierInput(f, methodId);
   const dataOf = async (orderId: string) =>
     (
       await f.rows<{ shippingData: unknown; cols: string[] }>(
@@ -80,20 +59,24 @@ describe('доставка: режим ціни й знімок у замовл�
     expect(row.shippingData).toEqual(expected);
     expect(row.cols).toBeNull();
 
-    await f.rows(
-      `update public.pickup_points set name = 'Інша' where id = $1`,
-      [ids.point],
-    );
-    expect((await dataOf(orderId)).shippingData).toEqual(expected);
-    await f.rows(`update public.pickup_points set name = $2 where id = $1`, [
-      ids.point,
-      point!.name,
-    ]);
+    // Назву точки ділять інші кейси БД — відновлюється навіть при падінні асерту.
+    try {
+      await f.rows(
+        `update public.pickup_points set name = 'Інша' where id = $1`,
+        [ids.point],
+      );
+      expect((await dataOf(orderId)).shippingData).toEqual(expected);
+    } finally {
+      await f.rows(`update public.pickup_points set name = $2 where id = $1`, [
+        ids.point,
+        point!.name,
+      ]);
+    }
   });
 
   it('(б) адресний carrier: shipping_cost 0, total = subtotal, знімок kind address', async () => {
     const method = await carrier();
-    const result = await placeOrderFor(courierInput(method), null);
+    const result = await placeOrderFor(courier(method), null);
     if (!result.ok) throw new Error(result.reason);
     const [row] = await f.rows<{
       subtotal: string;
@@ -131,26 +114,13 @@ describe('доставка: режим ціни й знімок у замовл�
     });
   });
 
-  it('(г) recomputeOrderTotals для carrier після зміни кількості → shipping_cost 0', async () => {
-    const method = await carrier();
-    const result = await placeOrderFor(courierInput(method), null);
-    if (!result.ok) throw new Error(result.reason);
-    const orderId = result.order.id;
-    const item = await f.itemOf(orderId, ids.panel);
-    const { order } = await f.setQty(orderId, item, 3);
-    expect(order).toMatchObject({ shippingCost: '0.00' });
-    const sums = await f.sums(orderId);
-    expect(sums.shippingCost).toBe('0.00');
-    expect(sums.total).toBe(sums.subtotal);
-  });
-
   it('(е) quoteCheckoutFor для carrier: shippingPricing carrier, shippingCost 0; для тарифного способу — rates', async () => {
     const method = await carrier();
-    const quoted = await quoteCheckoutFor(courierInput(method), null);
+    const quoted = await quoteCheckoutFor(courier(method), null);
     if (!quoted.ok) throw new Error(quoted.reason);
     expect(quoted.quote.shippingPricing).toBe('carrier');
     expect(quoted.quote.shippingCost).toBe(0);
-    const rated = await quoteCheckoutFor(courierInput(ids.fixed), null);
+    const rated = await quoteCheckoutFor(courier(ids.fixed), null);
     if (!rated.ok) throw new Error(rated.reason);
     expect(rated.quote.shippingPricing).toBe('rates');
     expect(rated.quote.shippingCost).toBe(70.1);
