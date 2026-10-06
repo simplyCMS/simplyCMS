@@ -51,7 +51,8 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
 // Е5: виміряно 12. Із замовлень `.insert(` мав лише OrderDetail (−1); запис
 // `OrderStatuses` ішов через collection.insert з id і в лічильник не входив.
 // Е4-константа 14 була стелею з запасом +1 над фактом (13).
-const KNOWN_WITHOUT_ID = 12;
+// Е6а Task 6: виміряно 11 (ShippingMethodEdit пішов на колекцію: −1).
+const KNOWN_WITHOUT_ID = 11;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

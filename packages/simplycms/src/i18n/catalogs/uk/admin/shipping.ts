@@ -13,31 +13,29 @@ export const messages = {
   'admin.shipping.locations': 'Локації',
   'admin.shipping.locationsHint':
     'Довідник країн, областей та міст для зон доставки',
-  'admin.shipping.source.manual': 'Ручний',
-  'admin.shipping.source.plugin': 'Плагін',
 
   // Служби доставки
   'admin.shipping.methods.subtitle': 'Управління способами доставки замовлень',
   'admin.shipping.methods.add': 'Додати службу',
-  'admin.shipping.methods.all': 'Всі служби доставки',
   'admin.shipping.methods.empty': 'Служби доставки не знайдено',
-  'admin.shipping.methods.confirmDelete': 'Видалити цю службу доставки?',
   'admin.shipping.methods.deleted': 'Службу видалено',
-  'admin.shipping.methods.deleteFailed': 'Помилка видалення служби',
   'admin.shipping.methods.created': 'Службу створено',
+  'admin.shipping.methods.provider': 'Провайдер',
+  'admin.shipping.methods.providerLocked':
+    'Провайдер не змінюється після створення',
+  'admin.shipping.methods.pricing': 'Режим ціни',
+  'admin.shipping.methods.codeFormat': 'Лише малі латинські літери, цифри й _',
+  'admin.shipping.methods.notFound': 'Спосіб доставки не знайдено',
+  'admin.shipping.methods.deleteTitle': 'Видалити спосіб доставки?',
+  'admin.shipping.methods.deleteWarning':
+    'Разом зі способом буде видалено всі його тарифи. Спосіб із точками самовивозу видалити не можна.',
+  'admin.shipping.providers.address': 'Доставка за адресою',
+  'admin.shipping.providers.pickup': 'Самовивіз',
+  'admin.shipping.pricing.rates': 'За тарифами зон',
+  'admin.shipping.pricing.provider': 'Розрахунок провайдером',
   'admin.shipping.methods.new': 'Нова служба доставки',
-  'admin.shipping.methods.newSubtitle': 'Створіть новий спосіб доставки',
-  'admin.shipping.methods.editSubtitle':
-    'Редагування параметрів служби доставки',
   'admin.shipping.methods.namePlaceholder': "Кур'єрська доставка",
-  'admin.shipping.methods.codeHint': 'Унікальний ідентифікатор для системи',
-  'admin.shipping.methods.descriptionPlaceholder':
-    "Доставка кур'єром за вашою адресою",
-  'admin.shipping.methods.pluginName': 'Назва плагіна',
   'admin.shipping.methods.icon': 'Іконка (Lucide)',
-  'admin.shipping.methods.iconHint': 'Назва іконки з бібліотеки Lucide',
-  'admin.shipping.methods.showAtCheckout':
-    'Відображати на сторінці оформлення замовлення',
 
   // Зони доставки
   'admin.shipping.zones.subtitle':
@@ -83,11 +81,24 @@ export const messages = {
   'admin.shipping.rates.added': 'Тариф додано',
   'admin.shipping.rates.addFailed': 'Помилка додавання тарифу',
   'admin.shipping.rates.newName': 'Новий тариф',
+  'admin.shipping.rates.editTitle': 'Редагування тарифу',
+  'admin.shipping.rates.emptyMethod':
+    'Тарифів ще немає. Додайте тариф для зони.',
+  'admin.shipping.rates.deleteWarning': 'Тариф буде видалено безповоротно.',
+  'admin.shipping.rates.zoneRequired': 'Оберіть зону',
+  'admin.shipping.rates.decimalFormat':
+    'Число з не більше ніж двома знаками після крапки',
+  'admin.shipping.rates.baseCost': 'Базова вартість',
+  'admin.shipping.rates.perKgCost': 'Вартість за кг',
+  'admin.shipping.rates.minWeight': 'Мінімальна вага',
+  'admin.shipping.rates.freeFrom': 'Безкоштовно від суми',
+  'admin.shipping.rates.minOrder': 'Мінімальна сума замовлення',
+  'admin.shipping.rates.maxOrder': 'Максимальна сума замовлення',
+  'admin.shipping.rates.estimatedDays': 'Орієнтовний строк',
   'admin.shipping.rates.calc.flat': 'Фіксована ціна',
   'admin.shipping.rates.calc.weight': 'За вагою',
   'admin.shipping.rates.calc.percent': 'Відсоток від суми',
   'admin.shipping.rates.calc.freeFrom': 'Безкоштовно від суми',
-  'admin.shipping.rates.calc.plugin': 'Розрахунок плагіном',
 
   // Точки самовивозу
   'admin.shipping.points.subtitle':
