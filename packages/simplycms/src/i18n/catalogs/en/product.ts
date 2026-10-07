@@ -18,6 +18,11 @@ export const messages: Catalog = {
   'product.addToCart': 'Add to cart',
   'product.addedToCart': 'Added to cart',
 
+  // Порогові підказки знижок (Е6в-12) — дзеркало `uk/product.ts`.
+  'product.discountHint.quantity': 'from {threshold} pcs — {price}/pc',
+  'product.discountHint.cartTotal': 'from {amount} in cart — {price}/pc',
+  'product.discountHint.percent': ' (−{percent}%)',
+
   'product.description': 'Description',
   'product.noDescription': 'No description available',
   'product.characteristics': 'Specifications',

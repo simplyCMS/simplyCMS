@@ -6,6 +6,7 @@ import { useT } from 'simplycms/i18n';
 // Канонічна картка товару з пакета: та сама, що на сторінках каталогу —
 // секції головної в ядрі не мають власного варіанта картки.
 import { ProductCard } from 'simplycms/catalog-ui/ProductCard';
+import type { ThresholdHint } from 'simplycms/contracts';
 
 interface Product {
   id: string;
@@ -17,6 +18,7 @@ interface Product {
   price?: number | null;
   old_price?: number | null;
   stock_status?: string | null;
+  discount_hints?: readonly ThresholdHint[];
 }
 
 interface ProductCarouselProps {

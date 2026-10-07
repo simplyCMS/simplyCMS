@@ -1,11 +1,7 @@
-// Ціни картки товару: рушій знижок + тип ціни покупця.
+// Ціни картки товару: середовище цін вітрини (Е6в-10) + `priceForCard`.
 
 import { useMemo } from 'react';
-import { usePriceType } from 'simplycms/core/hooks/usePriceType';
-import {
-  useDiscountGroups,
-  useDiscountContext,
-} from 'simplycms/core/hooks/useDiscountedPrice';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { buildModificationPrices, resolveCurrentPricing } from './pricing';
 import type {
   CurrentPricing,
@@ -36,9 +32,7 @@ export function useProductPricing({
   modifications,
   selectedMod,
 }: ProductPricingInput): ProductPricing {
-  const { priceTypeId, defaultPriceTypeId } = usePriceType();
-  const { data: discountGroups = [] } = useDiscountGroups();
-  const discountCtx = useDiscountContext();
+  const { data: env } = useDiscountEnvironment();
 
   const modificationPrices = useMemo(() => {
     if (!product) return {};
@@ -46,20 +40,9 @@ export function useProductPricing({
       product,
       section,
       modifications,
-      priceTypeId,
-      defaultPriceTypeId,
-      discountGroups,
-      discountCtx,
+      env,
     });
-  }, [
-    product,
-    section,
-    modifications,
-    priceTypeId,
-    defaultPriceTypeId,
-    discountGroups,
-    discountCtx,
-  ]);
+  }, [product, section, modifications, env]);
 
   const current = useMemo(() => {
     if (!product) return null;
@@ -68,21 +51,9 @@ export function useProductPricing({
       section,
       hasModifications,
       selectedMod,
-      priceTypeId,
-      defaultPriceTypeId,
-      discountGroups,
-      discountCtx,
+      env,
     });
-  }, [
-    product,
-    section,
-    hasModifications,
-    selectedMod,
-    priceTypeId,
-    defaultPriceTypeId,
-    discountGroups,
-    discountCtx,
-  ]);
+  }, [product, section, hasModifications, selectedMod, env]);
 
   return { modificationPrices, current };
 }

@@ -1,7 +1,6 @@
 // Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
 
-import type { StockStatus } from 'simplycms/contracts';
-import type { DiscountResult } from 'simplycms/domain/discounts';
+import type { StockStatus, ThresholdHint } from 'simplycms/contracts';
 import type { ProductDetailRow } from 'simplycms/storefront/loaders';
 
 /**
@@ -33,13 +32,6 @@ export interface ProductSectionRef {
   name: string;
 }
 
-/** Контекст покупця для рушія знижок — те, що віддає `useDiscountContext`. */
-export interface DiscountUserContext {
-  userId: string | null;
-  userCategoryId: string | null;
-  isLoggedIn: boolean;
-}
-
 /** Ціна однієї модифікації після застосування знижок. */
 export interface ModificationPrice {
   price: number;
@@ -52,9 +44,8 @@ export interface CurrentPricing {
   price: number | undefined;
   oldPrice: number | null | undefined;
   sku: string | null | undefined;
-  /** Ціна до знижки — потрапляє в позицію кошика разом із `discountData`. */
-  basePrice: number | undefined;
-  discountResult: DiscountResult | null;
+  /** Порогові підказки знижок (Е6в-12) для блоку ціни. */
+  hints: ThresholdHint[];
   isInStock: boolean;
   discountPercent: number | null;
 }

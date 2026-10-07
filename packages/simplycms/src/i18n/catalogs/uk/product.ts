@@ -21,6 +21,12 @@ export const messages = {
   'product.addToCart': 'Додати в кошик',
   'product.addedToCart': 'Додано в кошик',
 
+  // Порогові підказки знижок (Е6в-12): головне — ціна на порозі; відсоток —
+  // вторинно й лише для однієї знижки `percent`.
+  'product.discountHint.quantity': 'від {threshold} шт — {price}/шт',
+  'product.discountHint.cartTotal': 'від {amount} у кошику — {price}/шт',
+  'product.discountHint.percent': ' (−{percent}%)',
+
   // Секції сторінки
   'product.description': 'Опис',
   'product.noDescription': 'Опис товару відсутній',

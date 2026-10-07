@@ -48,6 +48,9 @@ const product: ProductCardViewModel = {
   stock_status: 'in_stock',
   price: 4200,
   old_price: 4900,
+  discount_hints: [
+    { kind: 'quantity', threshold: 3, finalPrice: 3990, percentOff: 5 },
+  ],
 };
 
 /** Товар без фото й без ціни — крайній стан картки. */
@@ -61,6 +64,7 @@ const bareProduct: ProductCardViewModel = {
   stock_status: 'out_of_stock',
   price: null,
   old_price: null,
+  discount_hints: [],
 };
 
 const full: ViewModelData<HomeViewModel> = {

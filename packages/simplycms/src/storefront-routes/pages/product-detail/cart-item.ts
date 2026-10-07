@@ -1,4 +1,4 @@
-// Складання позиції кошика (перенесено з контейнера без зміни логіки).
+// Складання позиції кошика (перенесено з контейнера).
 
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type {
@@ -31,26 +31,18 @@ export function buildCartItem({
   current,
   image,
 }: CartItemInput): AddToCartItem | null {
-  const { price, basePrice, discountResult } = current;
+  const { price, oldPrice } = current;
   if (price === undefined) return null;
 
+  // 🔴 Ціна в позиції — лише показ: суму замовлення рахує сервер. Розклад
+  // знижок картки в кошик не їде — закреслена ціна та сама, що на картці.
   return {
     productId: product.id,
     modificationId: hasModifications ? selectedModId : null,
     name: product.name,
     modificationName: hasModifications ? selectedMod?.name : undefined,
     price: price,
-    basePrice: basePrice || null,
-    discountData:
-      discountResult && discountResult.totalDiscount > 0
-        ? JSON.parse(
-            JSON.stringify({
-              appliedDiscounts: discountResult.appliedDiscounts,
-              totalDiscount: discountResult.totalDiscount,
-              basePrice: basePrice,
-            }),
-          )
-        : null,
+    basePrice: oldPrice && oldPrice > price ? oldPrice : null,
     image: image,
     sku: current.sku || undefined,
   };

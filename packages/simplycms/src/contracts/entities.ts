@@ -148,22 +148,18 @@ export const AGGREGATE = {
     ENTITY.pickupPoints,
   ]),
   /**
-   * Контекст цін покупця (`core/lib/price-type.ts`): дефолтний тип ціни з
-   * `price_types` + персональний тип, який `profiles` резолвить у
-   * `user_categories`. Віддає обчислені id, а не рядки однієї таблиці —
-   * без домінантної сутності, тож `entityKey` тут регресія (Task 6, fix-раунд 1).
-   */
-  priceTypeContext: aggregateKey('price-type-context', [
-    ENTITY.priceTypes,
-    ENTITY.profiles,
-    ENTITY.userCategories,
-  ]),
-  /**
-   * Довідник знижок (`core/lib/discounts.ts`): дефолтний і персональний тип
-   * ціни/категорія (`price_types`, `profiles`, `user_categories`) плюс
-   * дерево правил (`discounts`, `discount_targets`, `discount_conditions`,
-   * `discount_groups`) — до семи таблиць, структурно те саме, що
-   * `shippingDirectory` (Task 6, fix-раунд 1).
+   * Середовище цін вітрини (`core/lib/discounts.ts` →
+   * `storefront/loaders/discount-environment.ts`, Е6в-10): дефолтний і
+   * персональний тип ціни/категорія (`price_types`, `profiles`,
+   * `user_categories`) плюс дерево правил (`discounts`, `discount_targets`,
+   * `discount_conditions`, `discount_groups`) — сім таблиць однією
+   * транзакцією, структурно те саме, що `shippingDirectory`.
+   *
+   * 🔴 Клієнтський ключ — `[...key, userId]`, але `userId` тут лише сегмент
+   * клієнтського кешу: актора сервер бере ТІЛЬКИ з сесії. Скидання цього
+   * ключа з адмінки — превʼю для самого адміна (його вкладка); покупцям
+   * свіжість дає `staleTime: 0`, а не інвалідація, якої в іншому браузері
+   * не буде. Серверного кешу немає.
    */
   discountEnvironment: aggregateKey('discount-environment', [
     ENTITY.priceTypes,

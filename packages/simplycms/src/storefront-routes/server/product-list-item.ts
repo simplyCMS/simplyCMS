@@ -9,7 +9,8 @@ export type { ProductListRow };
 /**
  * Контекст цін для серверного резолву. SSR рендериться анонімно, тож ціни
  * рахуються за типом ціни «за замовчуванням»; персональний тип користувача
- * доклеює клієнт (usePriceType) під час збагачення списку.
+ * доклеює клієнт середовищем цін (`useDiscountEnvironment`) під час
+ * збагачення списку.
  */
 export interface PriceContext {
   defaultPriceTypeId: string | null;

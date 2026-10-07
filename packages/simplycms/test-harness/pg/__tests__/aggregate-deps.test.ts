@@ -135,25 +135,11 @@ describe('Е1б: deps агрегатів повні відносно факти�
         await m.loadStockInfo(db, { productId: PRODUCT_NO_MODS }); // гілка product
       });
     },
-    priceTypeContext: async () => {
-      const m = await import('simplycms/storefront/loaders');
-      const c = await import('simplycms/commerce');
-      await m.withStorefrontDb((db) => c.loadDefaultPriceTypeId(db));
-      await m.withCustomerDb(userId, (db) => c.loadUserPriceTypeId(db, userId));
-    },
     discountEnvironment: async () => {
+      // Справжній лоадер serverFn — обидві гілки: гість і покупець.
       const m = await import('simplycms/storefront/loaders');
-      const c = await import('simplycms/commerce');
-      await m.withStorefrontDb(async (db) => {
-        await c.loadDefaultPriceTypeId(db);
-        await c.loadDefaultUserCategoryId(db);
-        // Ліс будує домен (`buildDiscountForest`) без БД — deps дає лише читання.
-        await c.loadDiscountRules(db);
-      });
-      await m.withCustomerDb(userId, async (db) => {
-        await c.loadUserPriceTypeId(db, userId);
-        await c.loadUserCategoryId(db, userId);
-      });
+      await m.discountEnvironmentFor(null);
+      await m.discountEnvironmentFor(userId);
     },
     modificationData: async () => {
       const m = await import('simplycms/storefront/loaders');

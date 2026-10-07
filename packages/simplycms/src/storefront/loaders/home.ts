@@ -1,7 +1,6 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { banners, products, sections } from 'simplycms/schema';
 import type { Banner } from 'simplycms/contracts';
-import { resolvePrice } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
 import { bannerColumns, toBanner } from './entities/banner';
 import {
@@ -85,17 +84,17 @@ export async function loadHomeProducts(
     .orderBy(desc(products.createdAt), asc(products.id))
     .limit(FEATURED_LIMIT);
 
-  // Ціна — ТИМ САМИМ доменним резолвом, що в каталозі (`product-list-item`):
-  // окремий MIN(price)-агрегат був би другим способом рахувати ціну.
   const prices = await loadPricesByProduct(
     db,
     rows.map((row) => row.id),
   );
   const defaultPriceType = await loadDefaultPriceTypeId(db);
-  const priceOf = (id: string) =>
-    resolvePrice(prices[id] ?? [], defaultPriceType, defaultPriceType, null);
-
   return rows.map((row) =>
-    toHomeProduct(row, row.section_slug, priceOf(row.id)),
+    toHomeProduct(
+      row,
+      row.section_slug,
+      prices[row.id] ?? [],
+      defaultPriceType,
+    ),
   );
 }

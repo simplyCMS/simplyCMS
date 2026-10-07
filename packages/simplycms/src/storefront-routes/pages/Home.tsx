@@ -1,4 +1,5 @@
 import type { Banner } from 'simplycms/contracts/objects';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { HomeView } from '../views/HomeView';
 import { useStorefrontViews } from '../views/useStorefrontViews';
 import {
@@ -34,6 +35,7 @@ export default function HomePage({
   const { data: featuredProducts } = useFeaturedProducts(initialFeatured);
   const { data: newProducts } = useNewProducts(initialNew);
   const { data: rootSections } = useRootSections(initialSections);
+  const { data: env } = useDiscountEnvironment();
   const views = useStorefrontViews({ Home: HomeView });
 
   const sections = rootSections ?? [];
@@ -51,8 +53,8 @@ export default function HomePage({
     >
       <views.Home
         hero={{ banners: banners ?? [] }}
-        featured={{ products: toCardViewModel(featuredProducts ?? []) }}
-        newArrivals={{ products: toCardViewModel(newProducts ?? []) }}
+        featured={{ products: toCardViewModel(featuredProducts ?? [], env) }}
+        newArrivals={{ products: toCardViewModel(newProducts ?? [], env) }}
         sections={{ items: sections }}
         slots={homeSlots}
       />

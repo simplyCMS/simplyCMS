@@ -96,6 +96,7 @@ export default function ProductDetailPage({
     stockStatus: current.stockStatus,
     price: current.price,
     oldPrice: current.oldPrice,
+    priceHints: current.hints,
     modifications: hasModifications ? modifications : [],
     selectedModId,
     onSelectModification: onSelect,

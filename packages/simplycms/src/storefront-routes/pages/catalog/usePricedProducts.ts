@@ -1,93 +1,34 @@
-// Резолв цін вибірки каталогу під тип ціни покупця й знижки (Фаза 4).
+// Резолв цін вибірки каталогу середовищем вітрини (Е6в-10, Е6в-11).
 
 import { useMemo } from 'react';
-import { usePriceType } from 'simplycms/core/hooks/usePriceType';
-import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
-import {
-  useDiscountGroups,
-  useDiscountContext,
-  applyDiscount,
-} from 'simplycms/core/hooks/useDiscountedPrice';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
+import { priceCatalogRow } from '../pricing/priceCatalogRow';
 import type { RawCatalogProduct } from './useCatalogProductsQuery';
 
 /**
- * Ціна за замовчуванням береться з модифікації-дефолту (товар із
- * модифікаціями) або з самого товару. Знижка, якщо спрацювала, стає
- * поточною ціною, а вихідна показується як «стара».
+ * Тип ціни, ліс знижок і `now` — з ОДНОГО середовища; ціну рахує
+ * `priceForCard`.
  *
- * 🔴 Три хуки цінового контуру викликаються безумовно — інакше їхні запити
- * серіалізувалися б після вибірки товарів замість того, щоб іти паралельно.
+ * 🔴 Поки середовища немає, `products` — `undefined`: сітка лишається на
+ * серверному списку з базовими цінами (SSR), а не показує картки без ціни
+ * чи з базою, яка за мить зміниться на персональну.
+ *
+ * 🔴 Обидва запити (вибірка й середовище) стартують безумовно й паралельно.
  */
 export function usePricedProducts(
   rawProducts: RawCatalogProduct[] | undefined,
 ) {
-  const { priceTypeId, defaultPriceTypeId } = usePriceType();
-  const { data: discountGroups = [] } = useDiscountGroups();
-  const discountCtx = useDiscountContext();
+  const { data: env, isLoading } = useDiscountEnvironment();
 
-  return useMemo(() => {
-    if (!rawProducts) return undefined;
+  const products = useMemo(() => {
+    if (!rawProducts || !env) return undefined;
+    return rawProducts.map((p) => priceCatalogRow(p, env));
+  }, [rawProducts, env]);
 
-    return rawProducts.map((p) => {
-      const prices = (p.product_prices ?? []) as PriceEntry[];
-      const defaultMod =
-        p.has_modifications && p.modifications?.[0] ? p.modifications[0] : null;
-      const resolved = resolvePrice(
-        prices,
-        priceTypeId,
-        defaultPriceTypeId,
-        defaultMod?.id ?? null,
-      );
-
-      let finalPrice = resolved.price;
-      let oldPrice = resolved.oldPrice;
-
-      if (finalPrice !== null && discountGroups.length > 0) {
-        const result = applyDiscount(finalPrice, discountGroups, {
-          customer: {
-            categoryId: discountCtx.userCategoryId,
-            isLoggedIn: discountCtx.isLoggedIn,
-          },
-          item: {
-            productId: p.id,
-            modificationId: defaultMod?.id || null,
-            // Розділ беремо з приєднаної гілки, а за її відсутності — з поля
-            // рядка: обидві сторінки до спліту читали розділ по-своєму,
-            // значення збігаються (гілка `sections` приєднана тим самим
-            // запитом).
-            sectionId: p.section?.id ?? p.section_id ?? null,
-            quantity: 1,
-          },
-          // Вибірка каталогу рендериться поза кошиком — сума кошика нульова.
-          cart: { total: 0 },
-        });
-        if (result.totalDiscount > 0) {
-          oldPrice = finalPrice;
-          finalPrice = result.finalPrice;
-        }
-      }
-
-      const stockStatus = p.has_modifications
-        ? (defaultMod?.stock_status ?? 'in_stock')
-        : (p.stock_status ?? 'in_stock');
-
-      return {
-        ...p,
-        price: finalPrice,
-        old_price: oldPrice,
-        stock_status: stockStatus,
-      };
-    });
-  }, [
-    rawProducts,
-    priceTypeId,
-    defaultPriceTypeId,
-    discountGroups,
-    discountCtx,
-  ]);
+  return { products, isLoading };
 }
 
 /** Товар вибірки з резолвленою ціною — саме він їде у фільтри й у сітку. */
 export type PricedProduct = NonNullable<
-  ReturnType<typeof usePricedProducts>
+  ReturnType<typeof usePricedProducts>['products']
 >[number];

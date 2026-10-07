@@ -6,8 +6,7 @@ import { useT } from 'simplycms/i18n';
 import { ProductCard } from 'simplycms/core/components/catalog/ProductCard';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
-import { usePriceType } from 'simplycms/core/hooks/usePriceType';
-import { resolvePrice } from 'simplycms/domain/pricing';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import type {
   CatalogProductRow,
@@ -16,6 +15,7 @@ import type {
   PropertyRow,
 } from 'simplycms/storefront/loaders';
 import { getPropertyOption } from '../server/properties';
+import { priceCatalogRow } from './pricing/priceCatalogRow';
 
 export interface PropertyOptionPageProps {
   property?: PropertyRow;
@@ -36,7 +36,7 @@ export default function PropertyPage({
   const propertySlug = params?.propertySlug as string | undefined;
   const optionSlug = params?.optionSlug as string | undefined;
 
-  const { priceTypeId, defaultPriceTypeId } = usePriceType();
+  const { data: env } = useDiscountEnvironment();
 
   /**
    * 🔴 Один серверний виклик замість чотирьох клієнтських запитів
@@ -71,29 +71,13 @@ export default function PropertyPage({
   const optionLoading = isLoading;
   const productsLoading = isLoading;
 
-  // Резолв цін під тип ціни покупця — форма картки лишилась незмінною.
+  // Ціни — тим самим `priceForCard`, що каталог і головна (Е6в-11). До
+  // середовища картки лишаються без ціни, як і в серверному HTML.
   const products = useMemo(() => {
     if (!data) return undefined;
-    return data.products.map((p) => {
-      const hasModifications = p.has_modifications ?? true;
-      const defaultMod = hasModifications ? (p.modifications[0] ?? null) : null;
-      const resolved = resolvePrice(
-        p.product_prices,
-        priceTypeId,
-        defaultPriceTypeId,
-        defaultMod?.id ?? null,
-      );
-
-      return {
-        ...p,
-        price: resolved.price,
-        old_price: resolved.oldPrice,
-        stock_status: defaultMod
-          ? (defaultMod.stock_status ?? 'in_stock')
-          : (p.stock_status ?? 'in_stock'),
-      };
-    });
-  }, [data, priceTypeId, defaultPriceTypeId]);
+    if (!env) return data.products;
+    return data.products.map((p) => priceCatalogRow(p, env));
+  }, [data, env]);
 
   if (optionLoading) {
     return (

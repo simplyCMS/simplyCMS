@@ -4,6 +4,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { loadDiscountRules, priceItems } from 'simplycms/commerce';
+import { discountEnvironmentFor } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 import {
@@ -62,6 +63,32 @@ describe('ліс знижок зі сховища → priceItems', () => {
     const item = only(await priceGuest());
     expect(item).toMatchObject({ price: 1000, basePrice: null });
     expect(item.discountData).toBeNull();
+  });
+
+  it('🔴 середовище вітрини: вимкнена група з активною дитиною не йде в браузер', async () => {
+    await seed([
+      discountGroupStatement({ name: 'Вимкнена акція', isActive: false }),
+      ...discount({
+        group: 'Активна дитина',
+        parentGroup: 'Вимкнена акція',
+        name: 'Таємна −10%',
+        percent: 10,
+      }),
+      // Позитивний контроль: порожній ліс не має пройти «за будь-якого коду».
+      ...discount({
+        group: 'Відкрита акція',
+        name: 'Усім −5%',
+        percent: 5,
+        priceTypeCode: null,
+      }),
+    ]);
+    for (const userId of [null, db.wholesale]) {
+      const env = await discountEnvironmentFor(userId);
+      expect(env.forest.map((g) => g.name)).toEqual(['Відкрита акція']);
+      const wire = JSON.stringify(env);
+      for (const name of ['Вимкнена акція', 'Активна дитина', 'Таємна −10%'])
+        expect(wire).not.toContain(name);
+    }
   });
 
   it('знижка з price_type_id NULL діє і для «опту», і для гостя з «роздробом»', async () => {
