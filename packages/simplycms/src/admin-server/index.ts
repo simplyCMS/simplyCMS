@@ -80,6 +80,8 @@ import {
   discountGroupsOps,
   removeDiscountGroupsInput,
   removeDiscountGroupsOp,
+  removeDiscountsInput,
+  removeDiscountsOp,
   discountsOps,
   getDiscountInput,
   getDiscountOp,
@@ -516,8 +518,9 @@ export const setPluginActive = createServerFn({ method: 'POST' })
 // К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14). Insert/update груп —
 // фабрика з guard-ом циклу й пари дат під `discount-config` (Е6в-17);
 // видалення груп — лише іменована операція з піддеревом. Знижка пишеться
-// ЛИШЕ атомарним `saveDiscount` (Е6в-16); фабрика знижок дає список і
-// generic remove (цілі й умови — каскадом).
+// ЛИШЕ атомарним `saveDiscount` (Е6в-16); фабрика знижок дає список, а
+// видалення — іменована `removeDiscountsOp` під тим самим `discount-config`
+// (цілі й умови — каскадом).
 export const listDiscountGroups = createServerFn({ method: 'GET' })
   .validator(adminInput(discountGroupsOps.subsetSchema))
   .handler(discountGroupsOps.list);
@@ -547,8 +550,8 @@ export const saveDiscount = createServerFn({ method: 'POST' })
   .handler(saveDiscountOp);
 
 export const removeDiscounts = createServerFn({ method: 'POST' })
-  .validator(adminInput(discountsOps.removeSchema))
-  .handler(discountsOps.remove);
+  .validator(adminInput(removeDiscountsInput))
+  .handler(removeDiscountsOp);
 
 // К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
 // Е6в-14). Insert/update — фабрика під `customer-config` (Е6в-15);

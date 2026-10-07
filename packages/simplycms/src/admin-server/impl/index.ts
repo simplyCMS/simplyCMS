@@ -134,6 +134,7 @@ export {
   removeDiscountGroupsOp,
 } from './discount-groups/remove';
 export { discountsOps } from './discounts/resource';
+export { removeDiscountsInput, removeDiscountsOp } from './discounts/remove';
 export { getDiscountInput, getDiscountOp } from './discounts/get';
 export { saveDiscountInput } from './discounts/save-input';
 export type { SaveDiscountInput } from './discounts/save-input';

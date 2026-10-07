@@ -19,6 +19,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 import {
   discountGroupsOps,
   removeDiscountGroupsOp,
+  removeDiscountsOp,
   saveDiscountOp,
 } from 'simplycms/admin-server/impl';
 
@@ -133,6 +134,31 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
       await lock.release();
       await expect(op).resolves.toMatchObject({ discount: { id: input.id } });
       expect(await lockIsFree(url(), CUSTOMER_LOCK)).toBe(true);
+    } finally {
+      await lock.cleanup();
+    }
+  });
+
+  it('F6: removeDiscounts стоїть під DISCOUNT_CONFIG_LOCK; після release — видалено', async () => {
+    // Без локу паралельний saveDiscount з тим самим id upsert-ом «воскрешав»
+    // щойно видалену знижку.
+    const input = F.discountInput(await F.seedGroup(url()));
+    await saveDiscountOp({ data: input as never });
+    const exists = async () =>
+      (
+        await F.rows(url(), `select id from public.discounts where id = $1`, [
+          input.id,
+        ])
+      ).length;
+    const lock = await holdAdvisoryLock(url(), DISCOUNT_LOCK);
+    try {
+      const op = removeDiscountsOp({ data: [{ id: input.id }] });
+      op.catch(() => {});
+      expect(await stillPending(op, 300)).toBe(true);
+      expect(await exists()).toBe(1);
+      await lock.release();
+      await expect(op).resolves.toEqual({ count: 1 });
+      expect(await exists()).toBe(0);
     } finally {
       await lock.cleanup();
     }
