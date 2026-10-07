@@ -5,9 +5,9 @@ import {
   type InvalidDiscountRow,
 } from 'simplycms/domain/discounts';
 import {
+  loadCategoryPriceTypeId,
   loadDefaultUserCategoryId,
   loadUserCategoryId,
-  loadUserPriceTypeId,
 } from './categories';
 import { loadDiscountRules } from './discount-rules';
 import { loadDefaultPriceTypeId } from './pricing';
@@ -15,7 +15,7 @@ import { loadDefaultPriceTypeId } from './pricing';
 /** Усе, від чого залежить ціна позиції, крім самої позиції й кошика (Е6в-9). */
 export interface PricingContext {
   userId: string | null;
-  /** Ефективний тип ціни: персональний або дефолтний. */
+  /** Ефективний тип ціни: тип ефективної категорії або глобальний дефолтний. */
   priceTypeId: string | null;
   defaultPriceTypeId: string | null;
   /** Ефективна категорія: персональна або дефолтна. */
@@ -30,10 +30,12 @@ export interface PricingContext {
 /**
  * ОДИН контекст ціноутворення для картки, кошика, чекауту й адмінки.
  *
- * 🔴 Тип ціни й категорія — персональні з відкатом на ДЕФОЛТНІ: гість і
- * покупець без категорії дістають категорію за замовчуванням, а не `null`,
- * інакше профіль без категорії випав би з роздрібної акції, у яку гість
- * потрапляє. Ліс — за ЕФЕКТИВНИМ типом ціни (B2 аудиту r1).
+ * 🔴 Категорія — персональна з відкатом на ДЕФОЛТНУ: гість і покупець без
+ * категорії дістають категорію за замовчуванням, а не `null`, інакше профіль
+ * без категорії випав би з роздрібної акції, у яку гість потрапляє (Е6в-19).
+ * Тип ціни — тип ЦІЄЇ ефективної категорії; лише коли в ній типу немає —
+ * глобальний дефолтний (F5 фінального рев'ю: одне правило для картки,
+ * кошика, чеку й діагностики). Ліс — за ЕФЕКТИВНИМ типом ціни (B2 аудиту r1).
  *
  * 🔴 `now` береться ОДИН раз на весь розрахунок: межа акції в секунду
  * оформлення не має дати різні ціни двом позиціям одного кошика.
@@ -46,17 +48,19 @@ export async function loadPricingContext(
   opts?: { includeInactive?: boolean },
 ): Promise<PricingContext> {
   const defaultPriceTypeId = await loadDefaultPriceTypeId(db);
-  const defaultCategoryId = await loadDefaultUserCategoryId(db);
-  const userPriceTypeId = userId ? await loadUserPriceTypeId(db, userId) : null;
   const userCategoryId = userId ? await loadUserCategoryId(db, userId) : null;
-  const priceTypeId = userPriceTypeId ?? defaultPriceTypeId;
+  const categoryId = userCategoryId ?? (await loadDefaultUserCategoryId(db));
+  const categoryPriceTypeId = categoryId
+    ? await loadCategoryPriceTypeId(db, categoryId)
+    : null;
+  const priceTypeId = categoryPriceTypeId ?? defaultPriceTypeId;
   const rules = await loadDiscountRules(db);
 
   return {
     userId,
     priceTypeId,
     defaultPriceTypeId,
-    categoryId: userCategoryId ?? defaultCategoryId,
+    categoryId,
     isLoggedIn: userId !== null,
     forest: buildDiscountForest(rules, priceTypeId, {
       includeInactive: opts?.includeInactive ?? false,

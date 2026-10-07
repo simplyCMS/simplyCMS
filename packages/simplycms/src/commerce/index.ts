@@ -23,9 +23,9 @@ export type {
 } from './shipping-choice';
 export { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
 export {
+  loadCategoryPriceTypeId,
   loadDefaultUserCategoryId,
   loadUserCategoryId,
-  loadUserPriceTypeId,
 } from './categories';
 // Категорії покупців і автоправила (Е6в-15, Е6в-19, Е6в-20): спільні для
 // вітрини (після COMMIT замовлення) і адмінки (кнопка, ручне призначення).
