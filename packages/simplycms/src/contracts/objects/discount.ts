@@ -93,6 +93,7 @@ export type DiscountRejectionReason =
   | 'condition_failed'
   | 'condition_unknown'
   | 'condition_invalid'
+  | 'discount_invalid'
   | 'lost_to_operator'
   | 'exceeds_price';
 

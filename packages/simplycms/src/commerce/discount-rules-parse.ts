@@ -1,106 +1,83 @@
-import type {
-  Discount,
-  DiscountCondition,
-  DiscountTarget,
-  DiscountType,
-  GroupOperator,
-  Json,
-  TargetType,
-} from 'simplycms/contracts';
-import type {
-  DiscountGroupRow,
-  DiscountRules,
-} from 'simplycms/domain/discounts';
-import { fields, list, obj } from './json-fields';
+import type { DiscountRules } from 'simplycms/domain/discounts';
+import { parseDiscount, parseGroup } from './discount-row-parsers';
+import type { Obj } from './json-fields';
 
-const OPERATORS: readonly GroupOperator[] = ['and', 'or', 'not', 'min', 'max'];
-const TYPES: readonly DiscountType[] = [
-  'percent',
-  'fixed_amount',
-  'fixed_price',
-];
-const TARGETS: readonly TargetType[] = [
-  'product',
-  'modification',
-  'section',
-  'all',
-];
+/** Рядок для діагностики: назва ЛИШЕ з сирого JSON, без жодної валідації. */
+const rawStr = (v: unknown): string | null =>
+  typeof v === 'string' ? v : null;
 
-function parseGroup(v: unknown, path: string): DiscountGroupRow {
-  const f = fields(obj(v, path), path);
-  return {
-    id: f.str('id'),
-    name: f.str('name'),
-    description: f.strOrNull('description'),
-    operator: f.oneOf('operator', OPERATORS),
-    is_active: f.bool('is_active'),
-    priority: f.int('priority'),
-    starts_at: f.date('starts_at'),
-    ends_at: f.date('ends_at'),
-    parent_group_id: f.strOrNull('parent_group_id'),
-  };
-}
-
-function parseTarget(v: unknown, path: string): DiscountTarget {
-  const f = fields(obj(v, path), path);
-  return {
-    id: f.str('id'),
-    target_type: f.oneOf('target_type', TARGETS),
-    target_id: f.strOrNull('target_id'),
-  };
-}
-
-function parseCondition(v: unknown, path: string): DiscountCondition {
-  const o = obj(v, path);
-  const f = fields(o, path);
-  return {
-    id: f.str('id'),
-    condition_type: f.str('condition_type'),
-    operator: f.str('operator'),
-    // jsonb з `JSON.parse` драйвера — валідний JSON за побудовою; ЗМІСТ умови
-    // перевіряє реєстр умов рушія (fail-closed), не ця межа.
-    value: o.value as Json,
-  };
-}
-
-function parseDiscount(v: unknown, path: string): Discount {
-  const o = obj(v, path);
-  const f = fields(o, path);
-  return {
-    id: f.str('id'),
-    group_id: f.str('group_id'),
-    name: f.str('name'),
-    description: f.strOrNull('description'),
-    discount_type: f.oneOf('discount_type', TYPES),
-    discount_value: f.decimal('discount_value'),
-    priority: f.int('priority'),
-    is_active: f.bool('is_active'),
-    starts_at: f.date('starts_at'),
-    ends_at: f.date('ends_at'),
-    price_type_id: f.strOrNull('price_type_id'),
-    targets: list(o.targets, `${path}.targets`).map((t, i) =>
-      parseTarget(t, `${path}.targets[${i}]`),
-    ),
-    conditions: list(o.conditions, `${path}.conditions`).map((c, i) =>
-      parseCondition(c, `${path}.conditions[${i}]`),
-    ),
-  };
+/** Масив рядків верхнього рівня; не масив — порожньо + журнал, не виняток. */
+function rows(v: unknown, path: string): unknown[] {
+  if (Array.isArray(v)) return v;
+  console.error(`[simplycms/commerce] правила знижок: ${path} не масив`, v);
+  return [];
 }
 
 /**
  * ЄДИНА межа «БД → домен» правил знижок (Е6в-8): дати стають `Date`,
- * `numeric` — числом явним розбором. Невалідне значення — виняток (дефект
- * даних), а не тиха знижка: `Number('abc')` дав би `NaN`, і рушій мовчки
- * порахував би ціну з ним.
+ * `numeric` — числом явним розбором.
+ *
+ * 🔴 Розбір ПОРЯДКОВИЙ і fail-closed НА РЯДКУ (Е6в-25), сам він не кидає:
+ * один пошкоджений рядок (рік 10000, `'NaN'`, невідомий enum), що обійшов
+ * перевірку запису, інакше валив би ціни всього магазину. Невалідна група
+ * зникає з піддеревом (ліс будується від коренів, тож діти недосяжні й
+ * їхні знижки не застосуються), невалідна знижка — сама. Виключені рядки
+ * лежать в `invalid` для діагностики ціни; у вітринний ліс вони не йдуть.
+ * Умова відомого типу з поганим config сюди не належить: це
+ * `condition_invalid` рушія (Е6в-23).
  */
 export function parseDiscountRules(json: unknown): DiscountRules {
-  const root = obj(json, 'rules');
-  return {
-    groups: list(root.groups, 'groups').map((g, i) =>
-      parseGroup(g, `groups[${i}]`),
-    ),
-    discounts: list(root.discounts, 'discounts').map((d, i) =>
-      parseDiscount(d, `discounts[${i}]`),
-    ),
-  };
+  const out: DiscountRules = { groups: [], discounts: [], invalid: [] };
+  if (typeof json !== 'object' || json === null || Array.isArray(json)) {
+    console.error(
+      '[simplycms/commerce] правила знижок: корінь не обʼєкт',
+      json,
+    );
+    return out;
+  }
+  const root = json as Obj;
+  const groupNames = new Map<string, string>();
+  const rawGroups = rows(root.groups, 'groups');
+  for (const g of rawGroups) {
+    const o = typeof g === 'object' && g !== null ? (g as Obj) : {};
+    const id = rawStr(o.id);
+    const name = rawStr(o.name);
+    if (id !== null && name !== null) groupNames.set(id, name);
+  }
+
+  rawGroups.forEach((g, i) => {
+    try {
+      out.groups.push(parseGroup(g, `groups[${i}]`));
+    } catch (e) {
+      const o = typeof g === 'object' && g !== null ? (g as Obj) : {};
+      console.error(
+        `[simplycms/commerce] групу знижок виключено (id=${String(o.id)}):`,
+        e,
+      );
+      out.invalid.push({
+        id: rawStr(o.id) ?? '',
+        name: rawStr(o.name) ?? '',
+        groupName: null,
+        kind: 'group',
+      });
+    }
+  });
+  rows(root.discounts, 'discounts').forEach((d, i) => {
+    try {
+      out.discounts.push(parseDiscount(d, `discounts[${i}]`));
+    } catch (e) {
+      const o = typeof d === 'object' && d !== null ? (d as Obj) : {};
+      console.error(
+        `[simplycms/commerce] знижку виключено (id=${String(o.id)}):`,
+        e,
+      );
+      out.invalid.push({
+        id: rawStr(o.id) ?? '',
+        name: rawStr(o.name) ?? '',
+        groupName: groupNames.get(rawStr(o.group_id) ?? '') ?? null,
+        kind: 'discount',
+      });
+    }
+  });
+  return out;
 }

@@ -34,4 +34,17 @@ export type DiscountGroupRow = Omit<DiscountGroup, 'discounts' | 'children'> & {
 export type DiscountRules = {
   groups: DiscountGroupRow[];
   discounts: Discount[];
+  /** Рядки, виключені fail-closed на межі розбору (Е6в-25). */
+  invalid: InvalidDiscountRow[];
+};
+
+/**
+ * Пошкоджений рядок правил: у ліс не потрапляє, лише у діагностику ціни
+ * (`discount_invalid`). Назви — сирі, бо рядок не пройшов валідацію.
+ */
+export type InvalidDiscountRow = {
+  id: string;
+  name: string;
+  groupName: string | null;
+  kind: 'group' | 'discount';
 };

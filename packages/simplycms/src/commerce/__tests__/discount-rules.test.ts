@@ -51,27 +51,95 @@ describe('parseDiscountRules', () => {
     expect(parseDiscountRules(json()).discounts[0].discount_value).toBe(12.5);
   });
 
-  it('невалідне число — виняток, а не тиха знижка', () => {
-    expect(() =>
-      parseDiscountRules(json({ ...DISCOUNT, discount_value: 'abc' })),
-    ).toThrow(/discount_value/);
-  });
+  describe('🔴 порядковий fail-closed (Е6в-25): розбір ніколи не кидає', () => {
+    const spy = () => vi.spyOn(console, 'error').mockImplementation(() => {});
 
-  it('невалідна дата чи невідомий оператор групи — виняток', () => {
-    expect(() =>
-      parseDiscountRules(json({ ...DISCOUNT, starts_at: 'вчора' })),
-    ).toThrow(/starts_at/);
-    expect(() =>
-      parseDiscountRules({
-        groups: [{ ...GROUP, operator: 'xor' }],
-        discounts: [],
-      }),
-    ).toThrow(/operator/);
+    it.each(['abc', 'NaN'])(
+      'discount_value %s → знижку виключено, решта на місці, invalid каже хто',
+      (bad) => {
+        const log = spy();
+        const rules = parseDiscountRules({
+          groups: [GROUP],
+          discounts: [
+            { ...DISCOUNT, id: 'bad', name: 'Погана', discount_value: bad },
+            DISCOUNT,
+          ],
+        });
+        expect(rules.discounts.map((d) => d.id)).toEqual(['d1']);
+        expect(rules.invalid).toEqual([
+          { id: 'bad', name: 'Погана', groupName: 'Група', kind: 'discount' },
+        ]);
+        expect(log).toHaveBeenCalledTimes(1);
+        expect(String(log.mock.calls[0][0])).toContain('[simplycms/commerce]');
+        expect(String(log.mock.calls[0][0])).toContain('bad');
+        log.mockRestore();
+      },
+    );
+
+    it('група з роком 10000 (форма Postgres) виключена, її знижки недосяжні', () => {
+      const log = spy();
+      const rules = parseDiscountRules({
+        groups: [
+          {
+            ...GROUP,
+            id: 'g2',
+            name: 'Погана',
+            starts_at: '10000-01-01T00:00:00+00:00',
+          },
+        ],
+        discounts: [{ ...DISCOUNT, group_id: 'g2' }],
+      });
+      expect(rules.groups).toEqual([]);
+      expect(rules.invalid).toMatchObject([{ id: 'g2', kind: 'group' }]);
+      expect(log).toHaveBeenCalled();
+      log.mockRestore();
+    });
+
+    it('невідомі тип знижки, оператор групи, ціль — виключено', () => {
+      const log = spy();
+      const rules = parseDiscountRules({
+        groups: [GROUP, { ...GROUP, id: 'g3', operator: 'xor' }],
+        discounts: [
+          { ...DISCOUNT, id: 'a', discount_type: 'bogus' },
+          {
+            ...DISCOUNT,
+            id: 'b',
+            targets: [{ id: 't', target_type: 'x', target_id: null }],
+          },
+          { ...DISCOUNT, id: 'c', starts_at: 'вчора' },
+        ],
+      });
+      expect(rules.groups.map((g) => g.id)).toEqual(['g1']);
+      expect(rules.discounts).toEqual([]);
+      expect(rules.invalid.map((r) => r.id).sort()).toEqual([
+        'a',
+        'b',
+        'c',
+        'g3',
+      ]);
+      expect(log).toHaveBeenCalledTimes(4);
+      log.mockRestore();
+    });
+
+    it.each([null, {}, []])(
+      '%j → порожні правила й журнал, без винятку',
+      (v) => {
+        const log = spy();
+        expect(parseDiscountRules(v)).toEqual({
+          groups: [],
+          discounts: [],
+          invalid: [],
+        });
+        expect(log).toHaveBeenCalled();
+        log.mockRestore();
+      },
+    );
   });
 
   it('цілі й умови переходять як є; група — рядок із parent_group_id', () => {
     const rules = parseDiscountRules(json());
     expect(rules.groups).toEqual([GROUP]);
+    expect(rules.invalid).toEqual([]);
     expect(rules.discounts[0].targets).toEqual(DISCOUNT.targets);
     expect(rules.discounts[0].conditions).toEqual(DISCOUNT.conditions);
   });

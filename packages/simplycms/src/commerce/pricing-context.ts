@@ -1,6 +1,9 @@
 import type { DiscountGroup } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
-import { buildDiscountForest } from 'simplycms/domain/discounts';
+import {
+  buildDiscountForest,
+  type InvalidDiscountRow,
+} from 'simplycms/domain/discounts';
 import {
   loadDefaultUserCategoryId,
   loadUserCategoryId,
@@ -19,6 +22,8 @@ export interface PricingContext {
   categoryId: string | null;
   isLoggedIn: boolean;
   forest: DiscountGroup[];
+  /** Виключені пошкоджені рядки (Е6в-25): лише для діагностики, не для браузера. */
+  invalidDiscounts: InvalidDiscountRow[];
   now: Date;
 }
 
@@ -56,6 +61,7 @@ export async function loadPricingContext(
     forest: buildDiscountForest(rules, priceTypeId, {
       includeInactive: opts?.includeInactive ?? false,
     }),
+    invalidDiscounts: rules.invalid,
     now: new Date(),
   };
 }

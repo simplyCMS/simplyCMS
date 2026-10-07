@@ -23,6 +23,7 @@ const ACTIVE = { includeInactive: false };
 describe('buildDiscountForest', () => {
   it('будує дерево за parent_group_id', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [row('root', null), row('child', 'root')],
       discounts: [disc({ id: 'a', group_id: 'child' })],
     };
@@ -34,6 +35,7 @@ describe('buildDiscountForest', () => {
 
   it('неактивний батько → дитина НЕ в корені і ніде', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [
         row('off', null, { is_active: false }),
         row('child', 'off'),
@@ -51,6 +53,7 @@ describe('buildDiscountForest', () => {
 
   it('includeInactive: true → неактивна група на своєму місці', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [row('root', null), row('off', 'root', { is_active: false })],
       discounts: [disc({ id: 'a', group_id: 'off', is_active: false })],
     };
@@ -63,6 +66,7 @@ describe('buildDiscountForest', () => {
 
   it('без includeInactive неактивна знижка відкидається', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [row('root', null)],
       discounts: [disc({ id: 'a', group_id: 'root', is_active: false })],
     };
@@ -71,6 +75,7 @@ describe('buildDiscountForest', () => {
 
   it('знижка з price_type_id NULL є для типу T, знижка типу U — немає', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [row('root', null)],
       discounts: [
         disc({ id: 'any', group_id: 'root', price_type_id: null }),
@@ -86,6 +91,7 @@ describe('buildDiscountForest', () => {
 
   it('цикл A→B→A → обидві відсутні, решта лісу ціла', () => {
     const rules: DiscountRules = {
+      invalid: [],
       groups: [
         row('A', 'B'),
         row('B', 'A'),

@@ -13,6 +13,7 @@ export type {
   DiscountConditionDefinition,
   DiscountGroupRow,
   DiscountRules,
+  InvalidDiscountRow,
 } from './types';
 
 export type {
