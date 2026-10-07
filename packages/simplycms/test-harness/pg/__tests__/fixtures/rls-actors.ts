@@ -31,6 +31,7 @@ export const SERVICE = '88888888-8888-4888-8888-888888888888';
  * колись перестав засівати `retail`.
  */
 const SEED_CATEGORY = `(select id from public.user_categories where code = 'retail')`;
+const SEED_CATEGORY_NAME = `(select name from public.user_categories where code = 'retail')`;
 
 /** Токен гостьового замовлення — заміна edge-функції `get-guest-order`. */
 export const GUEST_TOKEN = 'guest-token-9f3c4a';
@@ -90,10 +91,11 @@ export const SEED_STATEMENTS: string[] = [
      (gen_random_uuid(), '${SERVICE}', '${USER_B}', 'Заявка B', 'b@example.test')`,
   // `::uuid` обовʼязковий: у формі `select … union all select …` Postgres
   // виводить тип із літерала (text), а не з цільової колонки, як у `values`.
-  `insert into public.user_category_history (id, user_id, to_category_id)
-     select gen_random_uuid(), '${USER_A}'::uuid, ${SEED_CATEGORY}
+  // `to_category_name` — знімок назви (Е6в-2): вставка пише його сама.
+  `insert into public.user_category_history (id, user_id, to_category_id, to_category_name)
+     select gen_random_uuid(), '${USER_A}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}
      union all
-     select gen_random_uuid(), '${USER_B}'::uuid, ${SEED_CATEGORY}`,
+     select gen_random_uuid(), '${USER_B}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}`,
   // Ролі: A і B — звичайні користувачі, ADMIN — адмін. Саме цей рядок робить
   // видимою суть `user_roles`: побачити чужу роль означає дізнатись, хто адмін.
   `insert into public.user_roles (id, user_id, role) values

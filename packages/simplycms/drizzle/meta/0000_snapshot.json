@@ -251,8 +251,7 @@
           "name": "conditions",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'{\"type\":\"all\",\"rules\":[]}'::jsonb"
+          "notNull": true
         },
         "is_active": {
           "name": "is_active",
@@ -319,7 +318,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "category_rules_to_category_id_fkey": {
@@ -332,7 +331,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -805,7 +804,7 @@
           "name": "price_type_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         }
       },
       "indexes": {
@@ -3115,6 +3114,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "category_locked": {
+          "name": "category_locked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3144,12 +3150,6 @@
         "default_pickup_point_id": {
           "name": "default_pickup_point_id",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "auth_provider": {
-          "name": "auth_provider",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -5013,6 +5013,18 @@
           "name": "to_category_id",
           "type": "uuid",
           "primaryKey": false,
+          "notNull": false
+        },
+        "from_category_name": {
+          "name": "from_category_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_category_name": {
+          "name": "to_category_name",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true
         },
         "reason": {
@@ -5140,7 +5152,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

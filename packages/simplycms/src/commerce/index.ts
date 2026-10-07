@@ -10,6 +10,11 @@
  */
 export { priceItems } from './price-items';
 export type { NewOrderItem } from './price-items';
+export { priceCart } from './price-cart';
+export type { PricedLine, UnavailableLine } from './price-cart';
+export { loadPricingContext } from './pricing-context';
+export type { PricingContext } from './pricing-context';
+export { loadDiscountRules, parseDiscountRules } from './discount-rules';
 export { quoteShippingCost, validateShippingChoice } from './shipping-choice';
 export type {
   ShippingChoice,
@@ -22,7 +27,6 @@ export {
   loadUserCategoryId,
   loadUserPriceTypeId,
 } from './categories';
-export { loadDiscountGroups } from './discounts';
 export {
   loadShippingDirectory,
   loadShippingMethods,
@@ -53,10 +57,3 @@ export {
   toPriceEntry,
 } from './entities/price';
 export type { RawPriceRow } from './entities/price';
-export { toDiscount, toDiscountGroupNode } from './entities/discount';
-export type {
-  DiscountConditionRow,
-  DiscountGroupRow,
-  DiscountRow,
-  DiscountTargetRow,
-} from './entities/discount';

@@ -11,10 +11,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import {
   loadDefaultUserCategoryId,
-  loadDiscountGroups,
+  loadDiscountRules,
   loadUserCategoryId,
 } from 'simplycms/commerce';
-import { resolveDiscount } from 'simplycms/domain/discounts';
+import type { ActorDb } from 'simplycms/db';
+import {
+  buildDiscountForest,
+  resolveDiscount,
+} from 'simplycms/domain/discounts';
 import {
   loadActivePickupPointsCount,
   loadBanners,
@@ -62,6 +66,12 @@ import {
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 /** Базова ціна, на якій міряється відсоток знижки. */
 const BASE_PRICE = 1000;
+
+/** Ліс знижок вітрини: правила зі сховища → дерево без неактивних (Е6в-8). */
+const loadForest = async (db: ActorDb, priceTypeId: string) =>
+  buildDiscountForest(await loadDiscountRules(db), priceTypeId, {
+    includeInactive: false,
+  });
 
 /** Помічники харнеса — `.mjs`, тож форму рядка описуємо на місці. */
 interface IdRow {
@@ -152,7 +162,7 @@ describe('вітрина: знижки, банери, залишки, відгу
 
   it('🔴 знижка категорії застосовується власнику й не тече на чужу', async () => {
     const groups = await withStorefrontDb((db) =>
-      loadDiscountGroups(db, ids.retailPriceType),
+      loadForest(db, ids.retailPriceType),
     );
 
     const priceFor = (userCategoryId: string) =>
@@ -178,7 +188,7 @@ describe('вітрина: знижки, банери, залишки, відгу
 
   it('вимкнена акція не потрапляє в дерево правил', async () => {
     const groups = await withStorefrontDb((db) =>
-      loadDiscountGroups(db, ids.retailPriceType),
+      loadForest(db, ids.retailPriceType),
     );
     const names = groups.flatMap((group) =>
       group.discounts.map((discount) => discount.name),

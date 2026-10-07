@@ -663,12 +663,14 @@ export const profiles = pgTable("profiles", {
 	lastName: text("last_name"),
 	phone: text(),
 	categoryId: uuid("category_id"),
+	// Ручне призначення категорії блокує автоправила (Е6в-20): інакше
+	// вручну переведений VIP ставав би знову «Роздрібом» після покупки.
+	categoryLocked: boolean("category_locked").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	avatarUrl: text("avatar_url"),
 	defaultShippingMethodId: uuid("default_shipping_method_id"),
 	defaultPickupPointId: uuid("default_pickup_point_id"),
-	authProvider: text("auth_provider"),
 	registrationUtm: jsonb("registration_utm").default({}),
 }, (table) => [
 	foreignKey({
@@ -701,11 +703,18 @@ export const profiles = pgTable("profiles", {
 	pgPolicy("profiles_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
+// Історія переведень — АУДИТ (Е6в-2): факт «з VIP у Гурт» мусить пережити
+// видалення категорії і не блокувати його назавжди. Тому обидва FK — SET NULL
+// (каскад стирав би факт, RESTRICT — забороняв би видалення категорії, в якій
+// колись хтось побував), а назви лежать знімком у `*_category_name`, який
+// пише вставка: після видалення категорії рядок усе ще каже, куди перевели.
 export const userCategoryHistory = pgTable("user_category_history", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	fromCategoryId: uuid("from_category_id"),
-	toCategoryId: uuid("to_category_id").notNull(),
+	toCategoryId: uuid("to_category_id"),
+	fromCategoryName: text("from_category_name"),
+	toCategoryName: text("to_category_name").notNull(),
 	reason: text(),
 	ruleId: uuid("rule_id"),
 	changedBy: uuid("changed_by"),
@@ -725,7 +734,7 @@ export const userCategoryHistory = pgTable("user_category_history", {
 			columns: [table.toCategoryId],
 			foreignColumns: [userCategories.id],
 			name: "user_category_history_to_category_id_fkey"
-		}).onDelete("cascade"),
+		}).onDelete("set null"),
 	index("idx_user_category_history_user_id").on(table.userId),
 	index("idx_user_category_history_from_category_id").on(table.fromCategoryId),
 	index("idx_user_category_history_to_category_id").on(table.toCategoryId),
@@ -734,13 +743,18 @@ export const userCategoryHistory = pgTable("user_category_history", {
 	pgPolicy("user_category_history_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
+// FK правил — RESTRICT (Е6в-2): SET NULL мовчки робив правило «з VIP»
+// правилом «з будь-якої», а каскад стирав правила разом із категорією.
+// Видалення категорії з правилами відмовляє явним кодом (Е6в-18), FK — страховка.
 export const categoryRules = pgTable("category_rules", {
 	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	fromCategoryId: uuid("from_category_id"),
 	toCategoryId: uuid("to_category_id").notNull(),
-	conditions: jsonb().default({"type":"all","rules":[]}).notNull(),
+	// Без DEFAULT (Е6в-2 ред.2): `{"type":"all","rules":[]}` — порожнє правило,
+	// яке Е6в-19 робить невалідним (fail-closed); форма завжди пише умови явно.
+	conditions: jsonb().notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
 	priority: integer().default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -749,12 +763,12 @@ export const categoryRules = pgTable("category_rules", {
 			columns: [table.fromCategoryId],
 			foreignColumns: [userCategories.id],
 			name: "category_rules_from_category_id_fkey"
-		}).onDelete("set null"),
+		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.toCategoryId],
 			foreignColumns: [userCategories.id],
 			name: "category_rules_to_category_id_fkey"
-		}).onDelete("cascade"),
+		}).onDelete("restrict"),
 	index("idx_category_rules_from_category_id").on(table.fromCategoryId),
 	index("idx_category_rules_to_category_id").on(table.toCategoryId),
 ]);
@@ -1010,7 +1024,8 @@ export const discounts = pgTable("discounts", {
 	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'date' }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	priceTypeId: uuid("price_type_id").notNull(),
+	// `NULL` — знижка для ВСІХ типів цін (Е6в-2).
+	priceTypeId: uuid("price_type_id"),
 }, (table) => [
 	index("idx_discounts_group").using("btree", table.groupId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({

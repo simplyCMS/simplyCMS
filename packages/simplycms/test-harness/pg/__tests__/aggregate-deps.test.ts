@@ -53,8 +53,9 @@ const FIXTURES = [
    select gen_random_uuid(), u.id, u.email, 'Гейт', c.id
      from public.users u cross join public.user_categories c
     where u.email = 'deps-gate@example.test' and c.code = 'retail'`,
-  // Активна знижка — без неї loadDiscountGroups виходить після першого
-  // запиту і 3 таблиці лишаються темними (discounts.ts:41).
+  // Активна знижка з умовою й ціллю: `loadDiscountRules` читає всі чотири
+  // таблиці одним виразом і без неї, але з рядками union SQL показує реальні
+  // джойни, а не порожні агрегати.
   `insert into public.discount_groups (id, name, operator, is_active)
    values (gen_random_uuid(), 'Гейт deps: група', 'and', true)`,
   // 🔴 `RETAIL_PRICE_TYPE_ID` — КОНКАТЕНАЦІЄЮ, не template-інтерполяцією:
@@ -146,7 +147,8 @@ describe('Е1б: deps агрегатів повні відносно факти�
       await m.withStorefrontDb(async (db) => {
         await c.loadDefaultPriceTypeId(db);
         await c.loadDefaultUserCategoryId(db);
-        await c.loadDiscountGroups(db, RETAIL_PRICE_TYPE_ID);
+        // Ліс будує домен (`buildDiscountForest`) без БД — deps дає лише читання.
+        await c.loadDiscountRules(db);
       });
       await m.withCustomerDb(userId, async (db) => {
         await c.loadUserPriceTypeId(db, userId);

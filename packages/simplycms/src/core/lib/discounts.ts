@@ -5,10 +5,11 @@ import type { DiscountGroup } from 'simplycms/contracts';
 import {
   loadDefaultPriceTypeId,
   loadDefaultUserCategoryId,
-  loadDiscountGroups,
+  loadDiscountRules,
   loadUserCategoryId,
   loadUserPriceTypeId,
 } from 'simplycms/commerce';
+import { buildDiscountForest } from 'simplycms/domain/discounts';
 import { withCustomerDb, withStorefrontDb } from 'simplycms/storefront/loaders';
 
 /** Хто питає ціну — вхід рушія знижок, який не залежить від кошика. */
@@ -34,7 +35,7 @@ export interface DiscountEnvironment {
  *
  * 🔴 Рахує ціну домен, не цей виклик: сервер віддає ПРАВИЛА. Кількість і сума
  * кошика живуть у клієнті, тож обчислення тут дало б знижку від неповного
- * контексту (див. `simplycms/commerce/discounts`).
+ * контексту (див. `simplycms/commerce/discount-rules`).
  *
  * 🔴 Модуль містить РІВНО один експорт-serverFn і жодної звичайної функції:
  * трансформація Start вирізає тіло хендлера разом із серверними імпортами, а
@@ -58,9 +59,13 @@ export const getDiscountEnvironment = createServerFn({ method: 'GET' }).handler(
       : null;
 
     const priceTypeId = personal?.priceTypeId ?? fallback.priceTypeId;
-    const groups = priceTypeId
-      ? await withStorefrontDb((db) => loadDiscountGroups(db, priceTypeId))
-      : [];
+    // Знижки з `price_type_id = NULL` діють і без типу ціни — ліс будується
+    // завжди. Одна транзакція й `now` у відповіді — Е6в-10, наступний крок.
+    const groups = buildDiscountForest(
+      await withStorefrontDb(loadDiscountRules),
+      priceTypeId,
+      { includeInactive: false },
+    );
 
     return {
       groups,
