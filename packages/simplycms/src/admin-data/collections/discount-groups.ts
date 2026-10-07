@@ -42,7 +42,11 @@ function create(queryClient: QueryClient) {
           data: transaction.mutations.map((m) => ({ id: m.key as string })),
         });
         ref.current!.utils.writeBatch(() => {
-          for (const id of removed) ref.current!.utils.writeDelete(id);
+          // Лише відомі локально: нащадок, створений іншою сесією після
+          // останнього завантаження, дав би throw при вже закомічному
+          // серверному видаленні.
+          for (const id of removed)
+            if (ref.current!.has(id)) ref.current!.utils.writeDelete(id);
         });
         dropCascadedDiscounts(queryClient, new Set(removed));
         await invalidateDiscountConsumers(queryClient);
@@ -61,6 +65,8 @@ function create(queryClient: QueryClient) {
  * рядків у ній немає; точковий refetch лише скасовує запит, що летить.
  */
 function dropCascadedDiscounts(queryClient: QueryClient, groups: Set<string>) {
+  // getCollection створює eager-колекцію, якщо її ще немає: це дешево (sync
+  // стартує лише з підпискою) і дає одну точку правди про стан завантаження.
   const discounts = getCollection(queryClient, discountsCollection);
   if (discounts.status !== 'ready') {
     void queryClient.invalidateQueries({

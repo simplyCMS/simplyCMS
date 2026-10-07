@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { AGGREGATE } from 'simplycms/contracts/entities';
+import { AGGREGATE, collectionKey, ENTITY } from 'simplycms/contracts/entities';
 
 // Колекції знижок і категорій (Е6в-10): write-back без refetch колекції +
 // скидання середовища цін і квоти в кеші адміна.
@@ -195,7 +195,22 @@ describe('видалення групи з піддеревом', () => {
     m.listGroups.mockResolvedValue([{ id: 'g1', parentGroupId: null }]);
     const groups = getCollection(qc, discountGroupsCollection);
     await groups.preload();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
     m.removeGroups.mockResolvedValue({ removed: ['g1'] });
+    await groups.delete('g1').isPersisted.promise;
+    expect(groups.get('g1')).toBeUndefined();
+    // Без гілки `status !== 'ready'` цей виклик зникає — тест червоніє.
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: collectionKey(ENTITY.discounts),
+    });
+  });
+
+  it('removed містить невідомий локально id — мутація не падає', async () => {
+    const qc = new QueryClient();
+    m.listGroups.mockResolvedValue([{ id: 'g1', parentGroupId: null }]);
+    const groups = getCollection(qc, discountGroupsCollection);
+    await groups.preload();
+    m.removeGroups.mockResolvedValue({ removed: ['g1', 'gX'] });
     await groups.delete('g1').isPersisted.promise;
     expect(groups.get('g1')).toBeUndefined();
   });
