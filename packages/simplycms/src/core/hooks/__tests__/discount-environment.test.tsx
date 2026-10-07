@@ -81,6 +81,21 @@ describe('useDiscountEnvironment', () => {
   it('до відповіді — data undefined і isLoading', () => {
     server.getDiscountEnvironment.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useDiscountEnvironment(), { wrapper });
-    expect(result.current).toEqual({ data: undefined, isLoading: true });
+    expect(result.current).toEqual({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      refetch: expect.any(Function),
+    });
+  });
+
+  it('F1: збій — isError без data; refetch повертає середовище', async () => {
+    server.getDiscountEnvironment.mockRejectedValueOnce(new Error('500'));
+    const { result } = renderHook(() => useDiscountEnvironment(), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
+    result.current.refetch();
+    await waitFor(() => expect(result.current.data).toEqual(ENV));
+    expect(result.current.isError).toBe(false);
   });
 });
