@@ -3,7 +3,10 @@
 // а діагностика бачить виключений рядок в `invalid`.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { loadPricingContext, priceItems } from 'simplycms/commerce';
-import { quoteCartFor } from 'simplycms/storefront/loaders';
+import {
+  discountEnvironmentFor,
+  quoteCartFor,
+} from 'simplycms/storefront/loaders';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 import { percentDiscountStatements } from './fixtures/discounts';
@@ -62,5 +65,12 @@ describe('пошкоджений рядок правил знижок не ла�
     ]);
     const names = ctx.forest.flatMap((g) => g.discounts.map((d) => d.name));
     expect(names).toEqual(['Валідна −10%']);
+  });
+
+  it('середовище вітрини не віддає в браузер ні назви невалідних, ні їх самих', async () => {
+    const env = await discountEnvironmentFor(null);
+    const json = JSON.stringify(env);
+    expect(json).toContain('Валідна −10%');
+    expect(json).not.toContain('Зіпсована −50%');
   });
 });

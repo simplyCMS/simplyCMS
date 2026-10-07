@@ -45,39 +45,78 @@ export function parseDiscountRules(json: unknown): DiscountRules {
     if (id !== null && name !== null) groupNames.set(id, name);
   }
 
+  const bad = (v: unknown): Obj =>
+    typeof v === 'object' && v !== null ? (v as Obj) : {};
   rawGroups.forEach((g, i) => {
     try {
       out.groups.push(parseGroup(g, `groups[${i}]`));
     } catch (e) {
-      const o = typeof g === 'object' && g !== null ? (g as Obj) : {};
-      console.error(
-        `[simplycms/commerce] групу знижок виключено (id=${String(o.id)}):`,
-        e,
-      );
+      const id = rawStr(bad(g).id) ?? `groups[${i}]`;
+      console.error(`[simplycms/commerce] групу знижок виключено (${id}):`, e);
       out.invalid.push({
-        id: rawStr(o.id) ?? '',
-        name: rawStr(o.name) ?? '',
+        id,
+        name: rawStr(bad(g).name) ?? '',
         groupName: null,
         kind: 'group',
       });
     }
   });
-  rows(root.discounts, 'discounts').forEach((d, i) => {
+  const rawDiscounts = rows(root.discounts, 'discounts');
+  rawDiscounts.forEach((d, i) => {
     try {
       out.discounts.push(parseDiscount(d, `discounts[${i}]`));
     } catch (e) {
-      const o = typeof d === 'object' && d !== null ? (d as Obj) : {};
-      console.error(
-        `[simplycms/commerce] знижку виключено (id=${String(o.id)}):`,
-        e,
-      );
+      const id = rawStr(bad(d).id) ?? `discounts[${i}]`;
+      console.error(`[simplycms/commerce] знижку виключено (${id}):`, e);
       out.invalid.push({
-        id: rawStr(o.id) ?? '',
-        name: rawStr(o.name) ?? '',
-        groupName: groupNames.get(rawStr(o.group_id) ?? '') ?? null,
+        id,
+        name: rawStr(bad(d).name) ?? '',
+        groupName: groupNames.get(rawStr(bad(d).group_id) ?? '') ?? null,
         kind: 'discount',
       });
     }
   });
+  dropUnreachable(out, groupNames);
   return out;
+}
+
+/**
+ * Піддерево невалідної групи (або група з неіснуючим батьком) недосяжне від
+ * коренів: ліс його й так не збудує, але діагностика ціни має ПОБАЧИТИ, які
+ * валідні рядки через це не діють, — тож переносимо їх в `invalid`.
+ */
+function dropUnreachable(
+  out: DiscountRules,
+  groupNames: Map<string, string>,
+): void {
+  const reachable = new Set<string>();
+  const queue = out.groups.filter((g) => g.parent_group_id === null);
+  while (queue.length > 0) {
+    const g = queue.pop() as DiscountRules['groups'][number];
+    if (reachable.has(g.id)) continue;
+    reachable.add(g.id);
+    queue.push(...out.groups.filter((c) => c.parent_group_id === g.id));
+  }
+  for (const g of out.groups) {
+    if (reachable.has(g.id)) continue;
+    console.error(`[simplycms/commerce] групу недосяжно (${g.id})`);
+    out.invalid.push({
+      id: g.id,
+      name: g.name,
+      groupName: null,
+      kind: 'group',
+    });
+  }
+  for (const d of out.discounts) {
+    if (reachable.has(d.group_id)) continue;
+    console.error(`[simplycms/commerce] знижка в недосяжній групі (${d.id})`);
+    out.invalid.push({
+      id: d.id,
+      name: d.name,
+      groupName: groupNames.get(d.group_id) ?? null,
+      kind: 'discount',
+    });
+  }
+  out.groups = out.groups.filter((g) => reachable.has(g.id));
+  out.discounts = out.discounts.filter((d) => reachable.has(d.group_id));
 }

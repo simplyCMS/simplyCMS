@@ -44,7 +44,10 @@ export function fields(o: Obj, path: string) {
       return Number.isNaN(date.getTime()) ? fail(at(k), raw) : date;
     },
     /** `numeric` їде рядком і розбирається ЯВНО: сміття — виняток. */
-    decimal: (k: string) =>
-      DECIMAL.test(str(k)) ? Number(o[k]) : fail(at(k), o[k]),
+    decimal: (k: string) => {
+      const n = DECIMAL.test(str(k)) ? Number(o[k]) : NaN;
+      // 400 цифр проходить regex, але `Number` дає Infinity.
+      return Number.isFinite(n) ? n : fail(at(k), o[k]);
+    },
   };
 }

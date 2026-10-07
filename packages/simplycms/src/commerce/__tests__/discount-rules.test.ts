@@ -2,6 +2,7 @@
 // розбору. Живий накат — харнес `discount-forest`/`price-cart`.
 import { describe, expect, it, vi } from 'vitest';
 import type { ActorDb } from 'simplycms/db';
+import { buildDiscountForest } from 'simplycms/domain/discounts';
 import { loadDiscountRules, parseDiscountRules } from '../discount-rules';
 
 const GROUP = {
@@ -90,7 +91,10 @@ describe('parseDiscountRules', () => {
         discounts: [{ ...DISCOUNT, group_id: 'g2' }],
       });
       expect(rules.groups).toEqual([]);
-      expect(rules.invalid).toMatchObject([{ id: 'g2', kind: 'group' }]);
+      expect(rules.invalid).toMatchObject([
+        { id: 'g2', kind: 'group' },
+        { id: 'd1', kind: 'discount', groupName: 'Погана' },
+      ]);
       expect(log).toHaveBeenCalled();
       log.mockRestore();
     });
@@ -118,6 +122,67 @@ describe('parseDiscountRules', () => {
         'g3',
       ]);
       expect(log).toHaveBeenCalledTimes(4);
+      log.mockRestore();
+    });
+
+    it('numeric із 400 цифр (Infinity) і дата BC → виключено без винятку', () => {
+      const log = spy();
+      const rules = parseDiscountRules(
+        json({ ...DISCOUNT, discount_value: '9'.repeat(400) }),
+      );
+      expect(rules.discounts).toEqual([]);
+      const bc = parseDiscountRules(
+        json({ ...DISCOUNT, ends_at: '0044-03-15T00:00:00+00:00 BC' }),
+      );
+      expect(bc.discounts).toEqual([]);
+      expect(bc.invalid).toHaveLength(1);
+      log.mockRestore();
+    });
+
+    it('рядок без рядкового id → позиційний плейсхолдер, не порожній рядок', () => {
+      const log = spy();
+      const rules = parseDiscountRules({
+        groups: [GROUP, { ...GROUP, id: 5 }],
+        discounts: [{ ...DISCOUNT, id: null, discount_type: 'x' }],
+      });
+      expect(rules.invalid.map((r) => r.id)).toEqual([
+        'groups[1]',
+        'discounts[0]',
+      ]);
+      log.mockRestore();
+    });
+
+    it('🔴 валідні нащадки невалідної групи й група з неіснуючим батьком → в invalid, не в правилах', () => {
+      const log = spy();
+      const rules = parseDiscountRules({
+        groups: [
+          GROUP,
+          { ...GROUP, id: 'bad', name: 'Б', operator: 'xor' },
+          { ...GROUP, id: 'kid', name: 'Дитина', parent_group_id: 'bad' },
+          { ...GROUP, id: 'orph', name: 'Сирота', parent_group_id: 'gone' },
+        ],
+        discounts: [
+          { ...DISCOUNT, id: 'dk', name: 'У дитині', group_id: 'kid' },
+          { ...DISCOUNT, id: 'do', name: 'У сироті', group_id: 'orph' },
+          DISCOUNT,
+        ],
+      });
+      expect(rules.groups.map((g) => g.id)).toEqual(['g1']);
+      expect(rules.discounts.map((d) => d.id)).toEqual(['d1']);
+      expect(
+        rules.invalid.map((r) => `${r.kind}:${r.id}:${r.groupName}`).sort(),
+      ).toEqual([
+        'discount:dk:Дитина',
+        'discount:do:Сирота',
+        'group:bad:null',
+        'group:kid:null',
+        'group:orph:null',
+      ]);
+      expect(
+        buildDiscountForest(rules, null, { includeInactive: true }).map(
+          (g) => g.id,
+        ),
+      ).toEqual(['g1']);
       log.mockRestore();
     });
 
