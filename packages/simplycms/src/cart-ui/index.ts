@@ -7,4 +7,6 @@ export { CartItemView } from './CartItemView';
 export type { CartItemViewProps } from './CartItemView';
 export { CartLinePrice, PriceSkeleton } from './CartLinePrice';
 export type { CartLinePriceProps } from './CartLinePrice';
-export { findQuoteLine } from './quote-line';
+export { findQuoteLine, hasUnavailableItem } from './quote-line';
+export { QuoteFailure } from './QuoteFailure';
+export type { QuoteFailureProps } from './QuoteFailure';

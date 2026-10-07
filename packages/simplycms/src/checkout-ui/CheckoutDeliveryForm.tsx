@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, type ReactNode } from 'react';
 import { Truck, ChevronRight, Save, icons } from 'lucide-react';
 import { formatShippingCost } from 'simplycms/domain/shipping';
 import { SHIPPING_PROVIDERS } from 'simplycms/contracts/shipping-providers';
@@ -24,6 +24,11 @@ interface CheckoutDeliveryFormProps {
    * способів показується станом завантаження, а не тарифом від 0.
    */
   subtotal: number | null;
+  /**
+   * Квоту отримати не вдалося (`subtotal === null`): вузол помилки з повтором
+   * від контейнера замість вічного скелета тарифів (Е6в-13).
+   */
+  subtotalFailure?: ReactNode;
   /** Чи є хоч один спосіб доставки — батько блокує submit, поки `false`. */
   onAvailabilityChange?: (hasMethods: boolean) => void;
   /** Обраний метод — pickup чи ні; батько цим гейтить запит квоти (рев'ю I3). */
@@ -52,6 +57,7 @@ export function CheckoutDeliveryForm({
   values,
   onChange,
   subtotal,
+  subtotalFailure,
   onAvailabilityChange,
   onPickupChange,
 }: CheckoutDeliveryFormProps) {
@@ -289,6 +295,7 @@ export function CheckoutDeliveryForm({
           </h3>
         </div>
         <div className="p-4 space-y-4">
+          {subtotal === null && subtotalFailure}
           <div className="grid gap-3">
             {methods.map((method) => {
               const IconComponent = getMethodIcon(method.icon);
@@ -326,7 +333,9 @@ export function CheckoutDeliveryForm({
                     )}
                   </div>
                   <div className="font-medium text-right">
-                    {rateInfo === undefined ? (
+                    {rateInfo === undefined && subtotalFailure ? (
+                      '—'
+                    ) : rateInfo === undefined ? (
                       <span
                         aria-busy="true"
                         className="inline-block h-4 w-14 animate-pulse rounded bg-muted"

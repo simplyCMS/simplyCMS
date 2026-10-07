@@ -21,6 +21,7 @@ import {
   CheckoutRecipientForm,
   REJECTION_KEY,
 } from 'simplycms/checkout-ui';
+import { QuoteFailure } from 'simplycms/cart-ui';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { toCheckoutItems } from './checkout/build-quote-input';
 import { useCheckoutQuote } from './checkout/useCheckoutQuote';
@@ -222,7 +223,8 @@ export default function Checkout() {
   // лише серверна: квота оформлення, до неї — квота кошика, до першої квоти
   // кошика — `null` (стан завантаження тарифу, Е6в-13 ред.5). Те саме число
   // йде слотам плагінів як `cart.subtotal`.
-  const indicativeSubtotal = useIndicativeSubtotal(quote);
+  const indicative = useIndicativeSubtotal(quote);
+  const indicativeSubtotal = indicative.subtotal;
 
   /**
    * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
@@ -388,6 +390,11 @@ export default function Checkout() {
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
                 subtotal={indicativeSubtotal}
+                subtotalFailure={
+                  indicative.failed ? (
+                    <QuoteFailure onRetry={indicative.retry} />
+                  ) : undefined
+                }
                 onAvailabilityChange={setHasShippingMethods}
                 onPickupChange={setIsPickupMethod}
               />

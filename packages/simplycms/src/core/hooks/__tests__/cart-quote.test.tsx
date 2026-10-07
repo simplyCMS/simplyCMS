@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CartQuote } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
@@ -94,17 +94,67 @@ describe('useCartQuote', () => {
   it('до гідратації — жодного запиту, квоти немає, стан завантаження', () => {
     cart.hydrated = false;
     const { result } = renderHook(() => useCartQuote(), { wrapper });
-    expect(result.current).toEqual({ quote: null, isLoading: true });
+    expect(result.current).toMatchObject({ quote: null, isLoading: true });
     expect(server.quoteCart).not.toHaveBeenCalled();
   });
 
   it('порожній кошик — нульова квота без запиту', () => {
     cart.items = [];
     const { result } = renderHook(() => useCartQuote(), { wrapper });
-    expect(result.current).toEqual({
+    expect(result.current).toMatchObject({
       quote: { lines: [], subtotal: 0 },
       isLoading: false,
     });
     expect(server.quoteCart).not.toHaveBeenCalled();
+  });
+
+  // M1: попередня квота як placeholder — лише в межах ТОГО САМОГО актора.
+  // Після входу/виходу числа попереднього актора не мають дійти ні до
+  // `indicativeSubtotal`, ні до `cart.subtotal` слотів.
+  it('зміна userId — квоти немає до нової відповіді, старі числа не показуються', async () => {
+    const { result, rerender } = renderHook(() => useCartQuote(), { wrapper });
+    await waitFor(() => expect(result.current.quote).toEqual(QUOTE));
+    let resolve: (q: CartQuote) => void = () => {};
+    server.quoteCart.mockReturnValue(
+      new Promise<CartQuote>((r) => {
+        resolve = r;
+      }),
+    );
+    auth.user = { id: 'u1' };
+    rerender();
+    await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
+    expect(result.current).toMatchObject({ quote: null, isLoading: true });
+    const fresh: CartQuote = { lines: [], subtotal: 999 };
+    await act(async () => resolve(fresh));
+    await waitFor(() => expect(result.current.quote).toEqual(fresh));
+  });
+
+  it('зміна кількості того самого актора — попередня квота як placeholder', async () => {
+    const { result, rerender } = renderHook(() => useCartQuote(), { wrapper });
+    await waitFor(() => expect(result.current.quote).toEqual(QUOTE));
+    server.quoteCart.mockReturnValue(new Promise(() => {}));
+    cart.items = [{ ...cart.items[0], quantity: 2 }];
+    rerender();
+    await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
+    expect(result.current).toMatchObject({
+      quote: QUOTE,
+      isPlaceholderData: true,
+      isFetching: true,
+    });
+  });
+
+  // R2: збій квоти — стан помилки й повтор, а не вічний скелет.
+  it('збій serverFn — isError, квоти немає; refetch кличе serverFn знову', async () => {
+    server.quoteCart.mockRejectedValue(new Error('500'));
+    const { result } = renderHook(() => useCartQuote(), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current).toMatchObject({ quote: null, isLoading: false });
+    server.quoteCart.mockResolvedValue(QUOTE);
+    await act(async () => {
+      result.current.refetch();
+    });
+    await waitFor(() => expect(result.current.quote).toEqual(QUOTE));
+    expect(server.quoteCart).toHaveBeenCalledTimes(2);
+    expect(result.current.isError).toBe(false);
   });
 });

@@ -111,6 +111,29 @@ describe('cart-store: дії тримають межі', () => {
     expect(result.current.items[0].quantity).toBe(MAX_LINE_QUANTITY);
   });
 
+  it.each([NaN, Infinity])(
+    'updateQuantity(…, %s) — кількість незмінна',
+    (bad) => {
+      store([{ productId: P1, modificationId: null, name: 'A', quantity: 3 }]);
+      const { result } = mount();
+      act(() => result.current.updateQuantity(P1, null, bad));
+      expect(result.current.items[0].quantity).toBe(3);
+    },
+  );
+
+  it('addItem з NaN-кількістю додає одну одиницю', () => {
+    const { result } = mount();
+    act(() => {
+      result.current.addItem({
+        productId: P1,
+        modificationId: null,
+        name: 'A',
+        quantity: NaN,
+      });
+    });
+    expect(result.current.items[0].quantity).toBe(1);
+  });
+
   it('addItem: наявна позиція лише збільшує кількість → added', () => {
     store([{ productId: P1, modificationId: null, name: 'A', quantity: 1 }]);
     const { result } = mount();

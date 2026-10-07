@@ -7,6 +7,8 @@ import { cn } from 'simplycms/ui/utils';
 export interface CartLinePriceProps {
   /** Рядок квоти; `null` — квоти ще немає (скелет, а не 0). */
   line: CartQuoteLine | null;
+  /** Квота впала: замість вічного скелета — прочерк (помилка — у підсумку). */
+  failed?: boolean;
   /** Порогові підказки — рендерить T5-контейнер (`DiscountHints`). */
   hints?: ReactNode;
 }
@@ -32,11 +34,16 @@ export function PriceSkeleton({ className }: { className?: string }) {
  * квота, показується попередня, внутрішньо узгоджена, а не нова кількість
  * на стару ціну.
  */
-export function CartLinePrice({ line, hints }: CartLinePriceProps) {
+export function CartLinePrice({ line, failed, hints }: CartLinePriceProps) {
   const t = useT();
   const formatPrice = useFormatPrice();
 
-  if (line === null) return <PriceSkeleton />;
+  if (line === null)
+    return failed ? (
+      <span className="text-sm text-muted-foreground">—</span>
+    ) : (
+      <PriceSkeleton />
+    );
   if (!line.available) {
     return (
       <div className="text-xs font-medium text-destructive">
@@ -62,8 +69,9 @@ export function CartLinePrice({ line, hints }: CartLinePriceProps) {
       )}
       {line.applied.length > 0 && (
         <ul className="text-xs text-primary">
-          {line.applied.map((discount) => (
-            <li key={discount.name}>{discount.name}</li>
+          {line.applied.map((discount, index) => (
+            // Назви двох знижок можуть збігатися — ключ з індексом.
+            <li key={`${index}:${discount.name}`}>{discount.name}</li>
           ))}
         </ul>
       )}

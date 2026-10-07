@@ -23,11 +23,17 @@ vi.mock('@tanstack/react-router', () => ({
 // Квота кошика — керована з тесту: сума підсумку береться ЛИШЕ з неї.
 const quoteState = vi.hoisted(() => ({
   quote: null as { lines: unknown[]; subtotal: number } | null,
+  isError: false,
+  refetch: vi.fn(),
 }));
 vi.mock('simplycms/core/hooks/useCartQuote', () => ({
   useCartQuote: () => ({
     quote: quoteState.quote,
-    isLoading: quoteState.quote === null,
+    isLoading: quoteState.quote === null && !quoteState.isError,
+    isError: quoteState.isError,
+    isFetching: false,
+    isPlaceholderData: false,
+    refetch: quoteState.refetch,
   }),
 }));
 
@@ -63,6 +69,8 @@ describe('slot-компоненти кошика', () => {
   beforeEach(() => {
     localStorage.setItem('simplycms-cart', JSON.stringify(storedCart));
     quoteState.quote = { lines: [], subtotal: 2300 };
+    quoteState.isError = false;
+    quoteState.refetch.mockClear();
   });
   afterEach(() => {
     cleanup();
@@ -119,6 +127,57 @@ describe('slot-компоненти кошика', () => {
     const root = requisite(container, CART_REQUISITES.Summary);
     expect(root?.textContent).not.toContain('₴');
     expect(root?.querySelector('[aria-busy="true"]')).not.toBeNull();
+  });
+
+  // R2: збій квоти — видимий стан помилки з повтором, а не вічний скелет.
+  it('CartSummary: збій квоти — повідомлення й «Повторити»', () => {
+    quoteState.quote = null;
+    quoteState.isError = true;
+    const { container, getByRole } = render(
+      <SlotHarness>
+        <CartSummary />
+      </SlotHarness>,
+    );
+
+    const root = requisite(container, CART_REQUISITES.Summary);
+    expect(root?.textContent).toContain('Ціну не вдалося отримати');
+    expect(root?.querySelector('[aria-busy="true"]')).toBeNull();
+    fireEvent.click(getByRole('button', { name: 'Повторити' }));
+    expect(quoteState.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  // R3: недоступна позиція блокує перехід до оформлення на сторінці кошика.
+  it('CartCheckoutButton: недоступна позиція блокує; після видалення — лінк', () => {
+    quoteState.quote = {
+      lines: [
+        {
+          available: false,
+          productId: storedCart[1].productId,
+          modificationId: null,
+          quantity: 1,
+        },
+      ],
+      subtotal: 0,
+    };
+    const { container, getAllByLabelText, queryByText } = render(
+      <SlotHarness>
+        <CartItemsList />
+        <CartCheckoutButton />
+      </SlotHarness>,
+    );
+
+    const blocked = requisite(container, CART_REQUISITES.Checkout);
+    expect((blocked as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      queryByText('Приберіть недоступні товари, щоб оформити замовлення'),
+    ).not.toBeNull();
+
+    fireEvent.click(getAllByLabelText('Видалити з кошика')[1]);
+    const link = requisite(container, CART_REQUISITES.Checkout);
+    expect(link?.getAttribute('href')).toBe('/checkout');
+    expect(
+      queryByText('Приберіть недоступні товари, щоб оформити замовлення'),
+    ).toBeNull();
   });
 
   it('CartClearButton: маркер і очищення кошика', () => {

@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { CART_REQUISITES } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
 import { useCart } from 'simplycms/react-query';
-import { findQuoteLine } from 'simplycms/cart-ui';
+import { findQuoteLine, hasUnavailableItem } from 'simplycms/cart-ui';
 import { DiscountHints } from 'simplycms/catalog-ui/DiscountHints';
 import { CartItem } from 'simplycms/core/components/cart/CartItem';
 import { useCartQuote } from 'simplycms/core/hooks/useCartQuote';
@@ -24,7 +24,7 @@ export interface CartSlotProps {
  */
 export function CartItemsList({ className }: CartSlotProps) {
   const { items } = useCart();
-  const { quote } = useCartQuote();
+  const { quote, isError } = useCartQuote();
 
   return (
     <div
@@ -38,6 +38,7 @@ export function CartItemsList({ className }: CartSlotProps) {
             key={`${item.productId}-${item.modificationId}`}
             item={item}
             line={line}
+            failed={isError}
             hints={
               line?.available ? (
                 <DiscountHints hints={line.hints} className="mt-1 text-right" />
@@ -69,9 +70,33 @@ export function CartClearButton({ className }: CartSlotProps) {
   );
 }
 
-/** Реквізит «перехід до оформлення». */
+/**
+ * Реквізит «перехід до оформлення». Недоступна позиція в кошику (Е6в-13) —
+ * кнопка вимкнена з поясненням: сервер однаково відмовив би `not_purchasable`.
+ * Маркер реквізиту — на кнопці в обох станах.
+ */
 export function CartCheckoutButton({ className }: CartSlotProps) {
   const t = useT();
+  const { items } = useCart();
+  const { quote } = useCartQuote();
+
+  if (hasUnavailableItem(quote, items)) {
+    return (
+      <>
+        <Button
+          size="lg"
+          disabled
+          data-simplycms-requisite={CART_REQUISITES.Checkout}
+          className={cn('w-full', className)}
+        >
+          {t('cart.summary.checkout')}
+        </Button>
+        <p className="text-xs text-destructive">
+          {t('cart.removeUnavailable')}
+        </p>
+      </>
+    );
+  }
 
   return (
     <Button

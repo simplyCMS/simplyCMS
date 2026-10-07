@@ -225,4 +225,34 @@ describe('ядро priceCart', () => {
       'Від 3 шт −10%',
     ]);
   });
+
+  // R1 (Е6в-9: суми й пороги — у центах на всьому ядрі): 0.1 + 0.2 у float
+  // дає 0.30000000000000004. Квота кошика й квота оформлення мусять дати ту
+  // саму суму — інакше поріг «безкоштовно від» міг би перекинутись після
+  // вибору способу доставки.
+  it('сума в центах: квота кошика = квота оформлення на хвостах float', async () => {
+    const BAT_100 = '10000002-0000-4000-8000-000000000006';
+    const BLACK = '10000003-0000-4000-8000-000000000003';
+    const GREY = '10000003-0000-4000-8000-000000000004';
+    await db.run(
+      `update public.product_prices set price = 0.10 where modification_id = '${BLACK}'`,
+    );
+    await db.run(
+      `update public.product_prices set price = 0.20 where modification_id = '${GREY}'`,
+    );
+    const items = [line(BAT_100, 1, BLACK), line(BAT_100, 1, GREY)];
+    const cart = await quoteCartFor(items, null);
+    const checkout = await quoteCheckoutFor(
+      { ...orderInput(db.pickup, db.point, []), items },
+      null,
+    );
+    if (!checkout.ok) throw new Error(`квота чекауту: ${checkout.reason}`);
+    expect(cart.subtotal).toBe(0.3);
+    expect(checkout.quote.subtotal).toBe(cart.subtotal);
+    expect(checkout.quote.total).toBe(
+      (Math.round(checkout.quote.subtotal * 100) +
+        Math.round(checkout.quote.shippingCost * 100)) /
+        100,
+    );
+  });
 });

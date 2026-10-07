@@ -15,6 +15,8 @@ export interface CartItemViewProps {
    * немає. Квоту дає T5-контейнер: `cart-ui` serverFn не імпортує.
    */
   line: CartQuoteLine | null;
+  /** Запит квоти впав — без вічного скелета ціни. */
+  failed?: boolean;
   /** Порогові підказки рядка — готовий вузол від T5-контейнера. */
   hints?: ReactNode;
   onChangeQuantity: (quantity: number) => void;
@@ -24,6 +26,7 @@ export interface CartItemViewProps {
 export function CartItemView({
   item,
   line,
+  failed,
   hints,
   onChangeQuantity,
   onRemove,
@@ -69,6 +72,7 @@ export function CartItemView({
           </div>
           <button
             className="h-6 w-6 -mr-2 -mt-1 flex items-center justify-center rounded hover:bg-muted"
+            aria-label={t('cart.removeItem')}
             onClick={onRemove}
           >
             <X className="h-4 w-4" />
@@ -96,7 +100,7 @@ export function CartItemView({
             </button>
           </div>
 
-          <CartLinePrice line={line} hints={hints} />
+          <CartLinePrice line={line} failed={failed} hints={hints} />
         </div>
       </div>
     </div>

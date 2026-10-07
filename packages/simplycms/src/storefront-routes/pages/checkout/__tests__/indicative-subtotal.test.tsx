@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CartQuote, QuoteCheckoutResult } from 'simplycms/contracts';
 import { I18nProvider } from 'simplycms/i18n';
@@ -13,11 +19,19 @@ import { I18nProvider } from 'simplycms/i18n';
  * 🔴 Довідник і `resolveShippingRate` — справжні: тест доводить, що сума з
  * квоти доходить до того самого доменного правила, яке рахує сервер.
  */
-const cartQuote = vi.hoisted(() => ({ quote: null as CartQuote | null }));
+const cartQuote = vi.hoisted(() => ({
+  quote: null as CartQuote | null,
+  isError: false,
+  refetch: vi.fn(),
+}));
 vi.mock('simplycms/core/hooks/useCartQuote', () => ({
   useCartQuote: () => ({
     quote: cartQuote.quote,
-    isLoading: cartQuote.quote === null,
+    isLoading: cartQuote.quote === null && !cartQuote.isError,
+    isError: cartQuote.isError,
+    isFetching: false,
+    isPlaceholderData: false,
+    refetch: cartQuote.refetch,
   }),
 }));
 vi.mock('simplycms/core/lib/shipping-directory', () => ({
@@ -68,14 +82,21 @@ vi.mock('simplycms/core/hooks/useAddressBook', () => ({
   useAddressBook: () => ({ addresses: [], save: vi.fn() }),
 }));
 
+import { QuoteFailure } from 'simplycms/cart-ui';
 import { CheckoutDeliveryForm } from 'simplycms/checkout-ui';
 import { TestEngineProvider } from '../../../__tests__/engine-stub';
 import { useIndicativeSubtotal } from '../useIndicativeSubtotal';
 
 function Probe({ checkout }: { checkout: QuoteCheckoutResult | null }) {
-  const subtotal = useIndicativeSubtotal(checkout);
+  // Та сама зборка, що в `Checkout.tsx`.
+  const { subtotal, failed, retry } = useIndicativeSubtotal(checkout);
   return (
-    <CheckoutDeliveryForm values={{}} onChange={() => {}} subtotal={subtotal} />
+    <CheckoutDeliveryForm
+      values={{}}
+      onChange={() => {}}
+      subtotal={subtotal}
+      subtotalFailure={failed ? <QuoteFailure onRetry={retry} /> : undefined}
+    />
   );
 }
 const renderProbe = (checkout: QuoteCheckoutResult | null = null) =>
@@ -91,6 +112,8 @@ const renderProbe = (checkout: QuoteCheckoutResult | null = null) =>
 
 beforeEach(() => {
   cartQuote.quote = null;
+  cartQuote.isError = false;
+  cartQuote.refetch.mockClear();
 });
 afterEach(cleanup);
 
@@ -126,5 +149,18 @@ describe('сума тарифів до вибору способу достав�
       expect(container.textContent?.replace(/\s/g, '')).toContain('150'),
     );
     expect(screen.queryByText('Безкоштовно')).toBeNull();
+  });
+
+  // R2: збій квоти кошика до вибору способу — той самий видимий стан помилки,
+  // що в кошику, а не вічний скелет тарифу.
+  it('збій квоти кошика — повідомлення й «Повторити» замість скелета', async () => {
+    cartQuote.isError = true;
+    const { container } = renderProbe();
+    await screen.findByText('Курʼєр');
+    expect(screen.getByText('Ціну не вдалося отримати')).toBeTruthy();
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.queryByText('Безкоштовно')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторити' }));
+    expect(cartQuote.refetch).toHaveBeenCalledTimes(1);
   });
 });

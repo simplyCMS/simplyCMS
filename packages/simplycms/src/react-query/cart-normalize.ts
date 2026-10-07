@@ -50,6 +50,14 @@ export const clampQuantity = (quantity: number): number =>
   Math.min(MAX_LINE_QUANTITY, Math.floor(quantity));
 
 /**
+ * Скінченне число? `NaN`/`Infinity` (порожнє поле кількості, `Number('')`
+ * теми) кошик не міняють: `Math.min(999, NaN)` — `NaN`, і рядок став би
+ * невалідним для сервера й для самого сховища.
+ */
+export const isQuantity = (quantity: unknown): quantity is number =>
+  typeof quantity === 'number' && Number.isFinite(quantity);
+
+/**
  * Сховище → кошик: невалідні рядки відкинуто (без винятку), дублі пари
  * зведено в один рядок (кількість ≤ `MAX_LINE_QUANTITY`), довжина — до
  * `MAX_CART_LINES`. Серверні валідатори дублі відкидають, тож кошик їх не
@@ -90,7 +98,9 @@ export function addLine(
   prev: readonly CartItem[],
   item: Omit<CartItem, 'quantity'> & { quantity?: number },
 ): { lines: readonly CartItem[]; result: AddItemResult } {
-  const wanted = Math.max(1, Math.floor(item.quantity ?? 1));
+  const wanted = isQuantity(item.quantity)
+    ? Math.max(1, Math.floor(item.quantity))
+    : 1;
   const index = prev.findIndex((l) => sameLine(l, item));
   if (index < 0 && prev.length >= MAX_CART_LINES)
     return { lines: prev, result: 'limit_reached' };

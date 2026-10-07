@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
 import type { AvailableCartQuoteLine, CartQuote } from 'simplycms/contracts';
-import { useCart, useFormatPrice } from 'simplycms/react-query';
+import { useCart } from 'simplycms/react-query';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { CartItem } from './CartItem';
-import { PriceSkeleton } from './CartLinePrice';
-import { findQuoteLine } from './quote-line';
+import { CartDrawerFooter } from './CartDrawerFooter';
+import { findQuoteLine, hasUnavailableItem } from './quote-line';
 
 export interface CartDrawerProps {
   /**
@@ -15,6 +15,9 @@ export interface CartDrawerProps {
    * (`core/components/cart/CartDrawer`).
    */
   quote: CartQuote | null;
+  /** Запит квоти впав — показати помилку з повтором, а не скелети. */
+  failed?: boolean;
+  onRetry?: () => void;
   /** Порогові підказки доступного рядка — рендерить контейнер. */
   renderHints?: (line: AvailableCartQuoteLine) => ReactNode;
 }
@@ -35,14 +38,16 @@ function pluralItemsKey(count: number): MessageKey {
   return 'cart.itemsMany';
 }
 
-export function CartDrawer({ quote, renderHints }: CartDrawerProps) {
+export function CartDrawer({
+  quote,
+  failed = false,
+  onRetry = () => {},
+  renderHints,
+}: CartDrawerProps) {
   const { items, totalItems, isOpen, setIsOpen } = useCart();
   const t = useT();
-  const formatPrice = useFormatPrice();
 
   if (!isOpen) return null;
-  const subtotal =
-    quote === null ? <PriceSkeleton /> : formatPrice(quote.subtotal);
 
   return (
     <div className="fixed inset-0 z-50">
@@ -93,6 +98,7 @@ export function CartDrawer({ quote, renderHints }: CartDrawerProps) {
                       key={`${item.productId}-${item.modificationId}`}
                       item={item}
                       line={line}
+                      failed={failed}
                       hints={line?.available ? renderHints?.(line) : null}
                     />
                   );
@@ -100,37 +106,13 @@ export function CartDrawer({ quote, renderHints }: CartDrawerProps) {
               </div>
             </div>
 
-            <div className="mt-auto p-6 border-t">
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {t('common.amount')}
-                  </span>
-                  <span>{subtotal}</span>
-                </div>
-                <div className="flex justify-between font-medium text-lg">
-                  <span>{t('cart.summary.total')}</span>
-                  <span className="text-primary">{subtotal}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Link
-                  to="/cart"
-                  onClick={() => setIsOpen(false)}
-                  className="flex-1 text-center px-4 py-2 border rounded-md text-sm"
-                >
-                  {t('cart.viewCart')}
-                </Link>
-                <Link
-                  to="/checkout"
-                  onClick={() => setIsOpen(false)}
-                  className="flex-1 text-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
-                >
-                  {t('cart.summary.checkout')}
-                </Link>
-              </div>
-            </div>
+            <CartDrawerFooter
+              quote={quote}
+              failed={failed}
+              onRetry={onRetry}
+              blocked={hasUnavailableItem(quote, items)}
+              onClose={() => setIsOpen(false)}
+            />
           </>
         )}
       </div>

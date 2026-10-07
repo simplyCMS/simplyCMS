@@ -9,6 +9,7 @@ import React, {
 import {
   addLine,
   clampQuantity,
+  isQuantity,
   sameLine,
   type AddItemResult,
 } from './cart-normalize';
@@ -95,6 +96,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = useCallback(
     (productId: string, modificationId: string | null, quantity: number) => {
+      if (!isQuantity(quantity)) return;
       if (quantity < 1) {
         removeItem(productId, modificationId);
         return;

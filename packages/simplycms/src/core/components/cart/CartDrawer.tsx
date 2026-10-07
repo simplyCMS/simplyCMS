@@ -21,10 +21,12 @@ export function CartDrawer() {
 }
 
 function QuotedCartDrawer() {
-  const { quote } = useCartQuote();
+  const { quote, isError, refetch } = useCartQuote();
   return (
     <CartDrawerView
       quote={quote}
+      failed={isError}
+      onRetry={refetch}
       renderHints={(line) => (
         <DiscountHints hints={line.hints} className="mt-1 text-right" />
       )}
