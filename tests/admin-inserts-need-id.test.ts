@@ -56,7 +56,9 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
 // Е6в Task 8: виміряно 4 (знижки пішли на серверний шар: DiscountEdit ×3,
 // DiscountGroupEdit ×1; лишились BannerEdit, UserCategoryEdit,
 // UserCategoryRuleEdit, UserEdit).
-const KNOWN_WITHOUT_ID = 4;
+// Е6в Task 9: виміряно 2 (категорії й автоправила пішли на колекції:
+// UserCategoryEdit, UserCategoryRuleEdit; лишились BannerEdit, UserEdit).
+const KNOWN_WITHOUT_ID = 2;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

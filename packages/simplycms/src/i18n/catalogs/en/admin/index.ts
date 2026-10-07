@@ -2,6 +2,7 @@
 import type { Catalog } from '../../../types';
 import { messages as banners } from './banners';
 import { messages as common } from './common';
+import { messages as customerCategories } from './customerCategories';
 import { messages as discounts } from './discounts';
 import { messages as nav } from './nav';
 import { messages as dashboard } from './dashboard';
@@ -24,6 +25,7 @@ import { messages as validator } from './validator';
 export const messages: Catalog = {
   ...banners,
   ...common,
+  ...customerCategories,
   ...discounts,
   ...nav,
   ...dashboard,
