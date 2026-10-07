@@ -85,15 +85,21 @@ describe('автоправила: UTM, порожнє правило, примі
   it('ред.2: порожнє правило (rules: []) з to = VIP + runCategoryRules → changed: 0', async () => {
     await F.rows(url(), `update public.category_rules set is_active = false`);
     const vip = await F.seedCategory(url());
-    await F.seedRule(url(), {
+    const empty = await F.seedRule(url(), {
       from: null,
       to: vip,
       conditions: { type: 'any', rules: [] },
     });
     const customer = await F.seedCustomer(url());
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const result = await runCategoryRulesOp();
     expect(result.checked).toBeGreaterThan(0);
-    expect(result.changed).toBe(0);
+    expect(result).toMatchObject({ changed: 0, failed: 0 });
+    // Е6в-25: пропущене правило видно в лозі (з id), а не мовчки.
+    expect(errors.mock.calls.some((c) => String(c[0]).includes(empty))).toBe(
+      true,
+    );
+    errors.mockRestore();
     expect(await F.customerState(url(), customer)).toMatchObject({
       category_id: null,
     });

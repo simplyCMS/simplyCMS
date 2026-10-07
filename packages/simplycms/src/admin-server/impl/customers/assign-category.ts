@@ -2,7 +2,11 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { profiles } from 'simplycms/schema';
 import { advisoryXactLock } from 'simplycms/db';
-import { customerCategoryLock, writeCategoryChange } from 'simplycms/commerce';
+import {
+  customerCategoryLock,
+  loadDefaultUserCategoryId,
+  writeCategoryChange,
+} from 'simplycms/commerce';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 
@@ -20,11 +24,14 @@ export const assignCustomerCategoryInput = z.object({
  *     `applyCategoryRules`, тож правило після замовлення не перезапише
  *     призначення посеред транзакції.
  *  2. Профіль `FOR UPDATE`; немає — помилка.
- *  3. Категорія змінилась → профіль + історія (`changed_by` = адмін,
- *     `rule_id = null`). Не змінилась — історії немає.
- *  4. `category_locked = locked` (за замовчуванням `true`): автоправила
- *     пропускають заблокованих — вручну призначений VIP не стане знову
- *     «Роздрібом» після чергової покупки.
+ *  3. ЕФЕКТИВНА категорія змінилась (профіль `NULL` = дефолтна, Е6в-19) →
+ *     профіль + історія (`changed_by` = адмін, `rule_id = null`, `from` —
+ *     ефективна категорія, як у автоправил). Не змінилась — історії немає.
+ *  4. Профіль завжди отримує явну `category_id` і `category_locked = locked`
+ *     (за замовчуванням `true`): `NULL` + дефолтна нормалізується без
+ *     історії, але ручна дія власника фіксує категорію (рішення архітектора).
+ *     Автоправила пропускають заблокованих — вручну призначений VIP не стане
+ *     знову «Роздрібом» після чергової покупки.
  * Неіснуюча категорія — FK `profiles.category_id` → 409 `reference`.
  */
 export const assignCustomerCategoryOp = async ({
@@ -44,10 +51,12 @@ export const assignCustomerCategoryOp = async ({
       throw new Error(
         `[admin-server] профілю покупця ${input.userId} не існує`,
       );
-    if (profile.categoryId !== input.categoryId)
+    const effective =
+      profile.categoryId ?? (await loadDefaultUserCategoryId(db));
+    if (effective !== input.categoryId)
       await writeCategoryChange(db, {
         userId: input.userId,
-        fromCategoryId: profile.categoryId,
+        fromCategoryId: effective,
         toCategoryId: input.categoryId,
         reason: input.reason,
         ruleId: null,
@@ -55,7 +64,7 @@ export const assignCustomerCategoryOp = async ({
       });
     await db
       .update(profiles)
-      .set({ categoryLocked: input.locked })
+      .set({ categoryId: input.categoryId, categoryLocked: input.locked })
       .where(eq(profiles.userId, input.userId));
     return { categoryId: input.categoryId, locked: input.locked };
   });

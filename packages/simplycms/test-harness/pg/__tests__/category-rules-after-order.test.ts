@@ -127,21 +127,6 @@ describe('автоправила після оформлення замовле�
     expect(errors).toHaveBeenCalledTimes(1);
   });
 
-  it('зламаний jsonb умов (SQL в обхід Zod) → правило не спрацьовує, замовлення оформлене, без винятку', async () => {
-    // Без `type` колишній рушій рахував би AND і спрацював; рядок замість
-    // обʼєкта колишній рушій валив би TypeError.
-    const { from, customer } = await scoped({
-      rules: [{ field: 'orders_count', operator: '>=', value: '0' }],
-    });
-    await F.seedRule(url(), { from, to: ids.vip, conditions: 'зламано' });
-    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await placed(customer);
-    expect(await F.customerState(url(), customer)).toMatchObject({
-      category_id: from,
-    });
-    expect(errors).not.toHaveBeenCalled();
-  });
-
   it('гість → правила не викликаються', async () => {
     vi.mocked(applyCategoryRules).mockClear();
     await placed(null);

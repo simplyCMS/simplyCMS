@@ -43,8 +43,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * 🔴 `Object.hasOwn`, не `in`: `in` бачить і `Object.prototype`, тож поле
+ * `toString`/`constructor`/`__proto__` пройшло б як «відоме», а `.includes`
+ * на функції кинув би TypeError — один такий рядок, вписаний SQL-ем, валив би
+ * правила ВСІХ покупців замість fail-closed (Е6в-19 ред.2).
+ */
 function isField(value: unknown): value is CategoryRuleField {
-  return typeof value === 'string' && value in CATEGORY_RULE_FIELD_OPERATORS;
+  return (
+    typeof value === 'string' &&
+    Object.hasOwn(CATEGORY_RULE_FIELD_OPERATORS, value)
+  );
 }
 
 function parseCondition(json: unknown): CategoryRuleCondition | null {

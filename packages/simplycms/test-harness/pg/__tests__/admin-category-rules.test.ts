@@ -68,6 +68,7 @@ describe('admin: автоправила категорій (Е6в-19)', () => {
     await expect(runCategoryRulesOp()).resolves.toEqual({
       checked: 3,
       changed: 1,
+      failed: 0,
     });
     expect(await F.customerState(url(), match)).toEqual({
       category_id: vip,

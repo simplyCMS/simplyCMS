@@ -64,10 +64,21 @@ export async function writeCategoryChange(
   });
 }
 
+/** Умови правила або `null`; розбір рядка не кидає ніколи (Е6в-25). */
+function safeConditions(raw: unknown) {
+  try {
+    return parseCategoryRuleConditions(raw);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Активні правила з розібраними умовами. 🔴 Правило з невалідним jsonb
- * (вписане SQL-ем в обхід Zod) відкидається, а не валить виклик: fail-closed
- * (Е6в-19 ред.2) — замовлення не страждає від зламаного правила.
+ * Активні правила з розібраними умовами — РЯДОК ЗА РЯДКОМ (Е6в-25: один
+ * пошкоджений рядок правил не ламає розрахунок магазину). Правило з
+ * невалідним jsonb (вписане SQL-ем в обхід Zod: ключ прототипу, порожні
+ * умови, невідоме поле чи оператор) пропускається з `console.error`, решта
+ * оцінюється як звичайно — fail-closed (Е6в-19 ред.2).
  */
 async function loadActiveRules(db: ActorDb): Promise<CategoryRule[]> {
   const rows = await db
@@ -77,9 +88,13 @@ async function loadActiveRules(db: ActorDb): Promise<CategoryRule[]> {
     // Рівний пріоритет рушій лишає у вхідному порядку — порядок детермінований.
     .orderBy(asc(categoryRules.id));
   return rows.flatMap((row) => {
-    const conditions = parseCategoryRuleConditions(row.conditions);
-    if (!conditions) return [];
-    return [{ ...row, conditions }];
+    const conditions = safeConditions(row.conditions);
+    if (conditions) return [{ ...row, conditions }];
+    // Службовий лог (не рядок інтерфейсу), з id — щоб власник знайшов рядок.
+    console.error(
+      `[simplycms/commerce] category rule ${row.id} skipped: conditions do not parse`,
+    );
+    return [];
   });
 }
 

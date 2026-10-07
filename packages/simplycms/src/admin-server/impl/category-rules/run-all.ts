@@ -25,16 +25,22 @@ function profilePage(db: ActorDb, after: string | null): Promise<ProfileRef[]> {
  * першим запитом). Одна довга транзакція тримала б тисячі рядкових локів і
  * блокувала б оформлення замовлень на весь прогін.
  *
- * `checked` — усі переглянуті профілі (заблоковані вручну теж), `changed` —
- * ті, кого правило перевело. Грант перевіряється один раз на запуск.
+ * `checked` — усі переглянуті профілі (заблоковані вручну й збійні теж),
+ * `changed` — ті, кого правило перевело, `failed` — ті, чия транзакція
+ * впала. 🔴 Збій одного покупця ізольовано (рішення контролера): його
+ * транзакція відкочується, помилка йде в `console.error`, обхід триває —
+ * інакше один поганий профіль зупиняв би перерахунок усього магазину.
+ * Грант перевіряється один раз на запуск.
  */
 export const runCategoryRulesOp = async (): Promise<{
   checked: number;
   changed: number;
+  failed: number;
 }> =>
   runAdminTransactions('customer.manage', async (transaction) => {
     let checked = 0;
     let changed = 0;
+    let failed = 0;
     let after: string | null = null;
     for (;;) {
       const cursor: string | null = after;
@@ -42,14 +48,22 @@ export const runCategoryRulesOp = async (): Promise<{
         profilePage(db, cursor),
       );
       for (const profile of page) {
-        const outcome = await transaction((db) =>
-          applyCategoryRules(db, profile.userId),
-        );
         checked += 1;
-        if (outcome === 'changed') changed += 1;
+        try {
+          const outcome = await transaction((db) =>
+            applyCategoryRules(db, profile.userId),
+          );
+          if (outcome === 'changed') changed += 1;
+        } catch (error) {
+          failed += 1;
+          console.error(
+            `[simplycms/admin-server] category rules failed for customer ${profile.userId}:`,
+            error,
+          );
+        }
       }
       if (page.length < CATEGORY_RULES_BATCH) break;
       after = page[page.length - 1]!.id;
     }
-    return { checked, changed };
+    return { checked, changed, failed };
   });

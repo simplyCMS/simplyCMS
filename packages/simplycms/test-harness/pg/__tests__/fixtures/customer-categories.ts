@@ -103,13 +103,19 @@ export async function seedCustomer(
 /** Правило напряму SQL-ем — у т.ч. зі зламаним jsonb (в обхід Zod). */
 export async function seedRule(
   url: string,
-  o: { from: string | null; to: string; conditions: unknown; active?: boolean },
+  o: {
+    from: string | null;
+    to: string;
+    conditions: unknown;
+    active?: boolean;
+    priority?: number;
+  },
 ): Promise<string> {
   const id = crypto.randomUUID();
   await rows(
     url,
-    `insert into public.category_rules (id, name, from_category_id, to_category_id, conditions, is_active)
-     values ($1, $2, $3, $4, $5::jsonb, $6)`,
+    `insert into public.category_rules (id, name, from_category_id, to_category_id, conditions, is_active, priority)
+     values ($1, $2, $3, $4, $5::jsonb, $6, $7)`,
     [
       id,
       `Правило Е6в ${++seq}`,
@@ -117,6 +123,7 @@ export async function seedRule(
       o.to,
       JSON.stringify(o.conditions),
       o.active ?? true,
+      o.priority ?? 0,
     ],
   );
   return id;

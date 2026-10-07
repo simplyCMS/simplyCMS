@@ -1,6 +1,6 @@
 // К3-Е6в, Task 6 (Е6в-15, Е6в-18, Е6в-20): дефолтна категорія під
 // `customer-config` (детерміновано — holdAdvisoryLock/stillPending), ручне
-// призначення з `category_locked`, лічильник покупців і пошук покупця.
+// призначення з `category_locked` (лічильник і пошук — admin-customer-lookup).
 import { describe, expect, it, vi } from 'vitest';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/customer-categories';
@@ -16,12 +16,10 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import {
   assignCustomerCategoryOp,
-  countCustomersByCategoryOp,
-  findCustomersOp,
   setDefaultUserCategoryOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: дефолт, ручне призначення, лічильник (Е6в-18/20)', () => {
+describe('admin: дефолт і ручне призначення (Е6в-18/20)', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_assign');
   const url = () => db.url();
   const defaults = () =>
@@ -72,7 +70,7 @@ describe('admin: дефолт, ручне призначення, лічильн
     const history = await F.historyOf(url(), customer);
     expect(history).toEqual([
       expect.objectContaining({
-        from_category_id: null,
+        from_category_id: F.DEFAULT_CATEGORY, // NULL = дефолтна (Е6в-19)
         to_category_id: vip,
         reason: 'Оптовий клієнт',
         changed_by: F.ADMIN_ID,
@@ -117,32 +115,21 @@ describe('admin: дефолт, ручне призначення, лічильн
     }
   });
 
-  it('countCustomersByCategory: профіль без категорії рахується в дефолтну; порожня категорія — 0', async () => {
-    const empty = await F.seedCategory(url());
-    const before = await countCustomersByCategoryOp();
-    const of = (list: typeof before, id: string) =>
-      list.find((r) => r.categoryId === id)?.customers;
-    await F.seedCustomer(url(), { categoryId: null });
-    const after = await countCustomersByCategoryOp();
-    expect(of(after, F.DEFAULT_CATEGORY)).toBe(
-      of(before, F.DEFAULT_CATEGORY)! + 1,
-    );
-    expect(of(after, empty)).toBe(0);
-  });
-
-  it('findCustomers: за email, з категорією (NULL → дефолтна); wildcard — літерал', async () => {
-    const email = `find_me-${crypto.randomUUID().slice(0, 6)}@shop.test`;
-    const userId = await F.seedCustomer(url(), { email });
+  it('NULL-профіль + дефолтна → нормалізація без історії; locked = true за замовчуванням', async () => {
+    const customer = await F.seedCustomer(url(), { categoryId: null });
     await expect(
-      findCustomersOp({ data: { query: email.slice(0, 12) } }),
-    ).resolves.toEqual([
-      { userId, email, name: null, categoryName: 'Роздріб' },
-    ]);
-    await expect(findCustomersOp({ data: { query: '%%' } })).resolves.toEqual(
-      [],
-    );
-    await expect(
-      findCustomersOp({ data: { query: 'a' } }),
-    ).rejects.toMatchObject(F.invalid);
+      assignCustomerCategoryOp({
+        data: {
+          userId: customer,
+          categoryId: F.DEFAULT_CATEGORY,
+          reason: 'Фіксую',
+        },
+      }),
+    ).resolves.toEqual({ categoryId: F.DEFAULT_CATEGORY, locked: true });
+    expect(await F.customerState(url(), customer)).toEqual({
+      category_id: F.DEFAULT_CATEGORY,
+      category_locked: true,
+    });
+    expect(await F.historyOf(url(), customer)).toEqual([]);
   });
 });

@@ -74,6 +74,24 @@ describe('parseCategoryRuleConditions — ручний guard умов прави
     ['rules не масив', { type: 'all', rules: {} }],
     ['невідоме поле', { type: 'all', rules: [rule('karma', '=')] }],
     [
+      'поле toString (прототип)',
+      { type: 'all', rules: [rule('toString', '=')] },
+    ],
+    [
+      'поле __proto__ (прототип)',
+      { type: 'all', rules: [rule('__proto__', '=')] },
+    ],
+    [
+      'поле constructor (прототип)',
+      { type: 'all', rules: [rule('constructor', '=')] },
+    ],
+    [
+      'поле __proto__ з JSON.parse (власний ключ)',
+      JSON.parse(
+        '{"type":"all","rules":[{"field":"__proto__","operator":"=","value":"1"}]}',
+      ),
+    ],
+    [
       'значення не рядок',
       { type: 'all', rules: [rule('orders_count', '>=', 2)] },
     ],
