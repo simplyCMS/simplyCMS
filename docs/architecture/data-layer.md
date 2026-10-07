@@ -427,8 +427,9 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 
 - 🔴 **Одне ядро ціни.** Картки вітрини, кошик, чекаут, редагування позицій
   замовлення й діагностика ціни в адмінці рахують ОДНИМ ядром `simplycms/commerce`:
-  `loadPricingContext(db, userId, opts?)` будує контекст (ефективний тип ціни й
-  категорія з відкатом на дефолтні, ліс знижок, ОДИН `now` на весь розрахунок),
+  `loadPricingContext(db, userId, opts?)` будує контекст (ефективна категорія з
+  відкатом на дефолтну; тип ціни — тип ЦІЄЇ категорії, лише без нього — глобальний
+  дефолтний; ліс знижок; ОДИН `now` на весь розрахунок),
   `priceCart(db, ctx, items)` рахує рядки з `available`, `priceItems` — обгортка
   оформлення (`'not_purchasable'`, якщо хоч один рядок недоступний). Суми й пороги
   — цілими центами (`toCents`). Другої формули ціни (на клієнті, в адмінці чи в
@@ -444,14 +445,16 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
   віддає `{ forest, actor, priceTypeId, defaultPriceTypeId, now }` однією
   транзакцією; клієнтський ключ `[...AGGREGATE.discountEnvironment.key, userId]`,
   `staleTime: 0` — категорію покупця змінює адмінка в іншому браузері, тож свіжість
-  дає перезапит на кожен mount, а не інвалідація. Кошик — серверна квота
+  дає перезапит на кожен mount, а не інвалідація. Збій середовища — помилка з
+  «Повторити» на картці (`PricesFailure`), а не базова ціна. Кошик — серверна квота
   (`quoteCart` → `quoteCartFor` → `priceCart`); `CartItem` ціни не зберігає. SSR
   показує базову ціну до гідрації.
 - 🔴 **Локи конфігурації — `advisoryXactLock(db, key)`** (`simplycms/db`, ЄДИНА
   реалізація SQL: `pg_advisory_xact_lock(hashtextextended(key, 0))`;
   `lockCatalogTarget` адмінки — її виклик). Лок береться ПЕРШИМ запитом
   транзакції. Ключі: `discount-config` — запис і видалення груп (guard циклу),
-  `saveDiscount`; `customer-config` — запис і видалення категорій, `setDefault`,
+  `saveDiscount`, видалення знижок (`removeDiscountsOp`: фабричний `remove` лок-хука
+  не бере); `customer-config` — запис і видалення категорій, `setDefault`,
   запис правил; `customer-category:<userId>` — будь-яка зміна категорії одного
   покупця (вручну чи автоправилом).
 - 🔴 **Глобальний порядок локів: `customer-config` → `discount-config`.** Жодна
