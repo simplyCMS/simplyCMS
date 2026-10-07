@@ -21,7 +21,12 @@ import {
   toModificationRow,
   type ModificationRow,
 } from './entities/modification';
-import { priceColumns, toPriceEntry } from 'simplycms/commerce';
+import {
+  loadGuestPriceTypes,
+  priceColumns,
+  toPriceEntry,
+  type PriceTypes,
+} from 'simplycms/commerce';
 import { sectionRefColumns, type SectionRef } from './entities/section';
 import { propertyValueColumns, toPropertyValueRow } from './property-values';
 import type { ProductPropertyValueRow } from './property-values';
@@ -32,6 +37,12 @@ export type ProductDetailRow = ProductRow & {
   product_modifications: ModificationRow[];
   product_prices: PriceEntry[];
   product_property_values: ProductPropertyValueRow[];
+  /**
+   * Типи ціни ГОСТЯ (F9): JSON-LD `offers` рахує ними ту саму базу, що SSR-
+   * списки й картка гостя після гідрації. Персональний тип сюди не йде —
+   * сторінка кешується гостьовою (К3-Е6в-1).
+   */
+  guest_price_types: PriceTypes;
 };
 
 /**
@@ -77,6 +88,7 @@ export async function loadProduct(
       eq(productPropertyValues.propertyId, sectionProperties.id),
     )
     .where(eq(productPropertyValues.productId, productId));
+  const guestPriceTypes = await loadGuestPriceTypes(db);
 
   return {
     ...row.product,
@@ -89,5 +101,6 @@ export async function loadProduct(
     product_modifications: modificationRows.map(toModificationRow),
     product_prices: priceRows.map(toPriceEntry),
     product_property_values: propertyValueRows.map(toPropertyValueRow),
+    guest_price_types: guestPriceTypes,
   };
 }

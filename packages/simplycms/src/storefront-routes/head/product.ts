@@ -1,4 +1,3 @@
-import { schemaOrgAvailability } from 'simplycms/domain/inventory';
 import {
   readStorefrontRoot,
   storefrontHead,
@@ -6,21 +5,17 @@ import {
   type HeadMeta,
 } from './head';
 import { serializeJsonLd, type JsonLdScript } from './organization';
+import { productOffers, type ProductOffersInput } from './product-offers';
 
 /**
  * Мінімум товару, потрібний `head()` картки. Структурний тип, а не тип
  * лоадера: тека `head` клієнт-безпечна й не тягне `storefront/loaders`.
  */
-export type ProductHeadInput = {
+export type ProductHeadInput = ProductOffersInput & {
   name: string;
   slug: string;
   description: string | null;
   images: unknown;
-  stock_status: Parameters<typeof schemaOrgAvailability>[0];
-  product_prices: ReadonlyArray<{
-    modification_id: string | null;
-    price: unknown;
-  }>;
 };
 
 type OgMeta = { property: string; content: string };
@@ -58,10 +53,8 @@ export function productHead(
     ? `${siteUrl}/catalog/${sectionSlug}/${product.slug}`
     : null;
 
-  /** Базова ціна для JSON-LD (перша ціна без модифікації) */
-  const basePrice = product.product_prices.find(
-    (price) => price.modification_id === null,
-  )?.price;
+  // Гостьова ціна (F9): без неї `offers` не виводиться зовсім.
+  const offers = productOffers(product);
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -70,12 +63,7 @@ export function productHead(
     description: product.description,
     image: images,
     ...(canonicalUrl ? { url: canonicalUrl } : {}),
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'UAH',
-      ...(basePrice != null ? { price: basePrice } : {}),
-      availability: schemaOrgAvailability(product.stock_status),
-    },
+    ...(offers ? { offers } : {}),
   };
 
   return {
