@@ -73,6 +73,16 @@ export const ADMIN_STATE_CONSTRAINT = {
   themeNotBuilt: 'theme_not_built',
   themeUnknown: 'theme_unknown',
   pluginUnknown: 'plugin_unknown',
+  // Е6в-16/17 (ред.2): інваріанти знижок під `discount-config`.
+  discountGroupCycle: 'discount_group_cycle',
+  discountGroupDatesInvalid: 'discount_group_dates_invalid',
+  discountConditionCategoryMissing: 'discount_condition_category_missing',
+  // Е6в-18/19: категорії покупців і автоправила під `customer-config`.
+  userCategoryDefault: 'user_category_default',
+  userCategoryHasCustomers: 'user_category_has_customers',
+  userCategoryHasRules: 'user_category_has_rules',
+  userCategoryInDiscount: 'user_category_in_discount',
+  categoryRuleSameCategory: 'category_rule_same_category',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

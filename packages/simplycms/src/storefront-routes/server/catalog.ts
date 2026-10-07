@@ -1,21 +1,16 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { loadDefaultPriceTypeId } from 'simplycms/commerce';
 import {
   loadCatalogProducts,
   loadFilterOptions,
-  loadProductList,
   loadSectionBySlug,
   loadSectionNumericProperties,
   loadSections,
   withStorefrontDb,
-  type ActorDb,
   type SectionRow,
 } from 'simplycms/storefront/loaders';
-import {
-  toProductListPayload,
-  type ProductListPayload,
-} from './product-list-item';
+import type { ProductListPayload } from './product-list-item';
+import { loadProductListPayload } from './product-list-payload';
 
 export interface CatalogPageData {
   sections: SectionRow[];
@@ -37,7 +32,7 @@ export const getCatalogPageData = createServerFn({ method: 'GET' }).handler(
   async (): Promise<CatalogPageData> =>
     withStorefrontDb(async (db) => ({
       sections: await loadSections(db),
-      products: await loadProductPayload(db),
+      products: await loadProductListPayload(db),
     })),
 );
 
@@ -61,22 +56,10 @@ export const getSectionPageData = createServerFn({ method: 'GET' })
       return {
         section,
         sections: await loadSections(db),
-        products: await loadProductPayload(db, section.id),
+        products: await loadProductListPayload(db, section.id),
       };
     });
   });
-
-/** Список товарів + контекст цін: тип ціни резолвиться в тій самій транзакції. */
-async function loadProductPayload(
-  db: ActorDb,
-  sectionId?: string,
-): Promise<ProductListPayload> {
-  // Послідовно: транзакція живе на одному зʼєднанні (див. `storefront/loaders`).
-  const rows = await loadProductList(db, sectionId);
-  const defaultPriceTypeId = await loadDefaultPriceTypeId(db);
-
-  return toProductListPayload(rows, defaultPriceTypeId);
-}
 
 /** Активні розділи — чипси над списком товарів. */
 export const getCatalogSections = createServerFn({ method: 'GET' }).handler(

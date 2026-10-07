@@ -31,10 +31,6 @@ export const HOOK_ADMIN_PRODUCT_FORM_AFTER =
 export const HOOK_ADMIN_PRODUCT_FORM_SIDEBAR =
   'admin.product.form.sidebar' as const;
 
-/** Inject additional fields into the admin discount form. */
-export const HOOK_ADMIN_DISCOUNT_FORM_FIELDS =
-  'admin.discount.form.fields' as const;
-
 // ─── Public Product Hooks ───────────────────────────────────────────────────
 
 /** Render content before the product detail view on the storefront. */
@@ -72,21 +68,6 @@ export const HOOK_CHECKOUT_SHIPPING_VALIDATE =
 /** Render content after the shipping selection step. */
 export const HOOK_CHECKOUT_SHIPPING_AFTER = 'checkout.shipping.after' as const;
 
-// ─── Discount Hooks ─────────────────────────────────────────────────────────
-
-/** Evaluate custom discount conditions. */
-export const HOOK_DISCOUNT_CONDITIONS_EVALUATE =
-  'discount.conditions.evaluate' as const;
-
-/** Run logic before a discount is applied. */
-export const HOOK_DISCOUNT_BEFORE_APPLY = 'discount.before_apply' as const;
-
-/** Run logic after a discount is applied. */
-export const HOOK_DISCOUNT_AFTER_APPLY = 'discount.after_apply' as const;
-
-/** Register custom discount types. */
-export const HOOK_DISCOUNT_TYPES = 'discount.types' as const;
-
 // ─── Order Hooks ────────────────────────────────────────────────────────────
 
 /** Inject additional actions into the order detail view. */
@@ -121,7 +102,6 @@ export const ALL_HOOKS = [
   HOOK_ADMIN_PRODUCT_FORM_FIELDS,
   HOOK_ADMIN_PRODUCT_FORM_AFTER,
   HOOK_ADMIN_PRODUCT_FORM_SIDEBAR,
-  HOOK_ADMIN_DISCOUNT_FORM_FIELDS,
   // Public product
   HOOK_PRODUCT_DETAIL_BEFORE,
   HOOK_PRODUCT_DETAIL_AFTER,
@@ -134,11 +114,6 @@ export const ALL_HOOKS = [
   HOOK_CHECKOUT_SHIPPING_FORM,
   HOOK_CHECKOUT_SHIPPING_VALIDATE,
   HOOK_CHECKOUT_SHIPPING_AFTER,
-  // Discount
-  HOOK_DISCOUNT_CONDITIONS_EVALUATE,
-  HOOK_DISCOUNT_BEFORE_APPLY,
-  HOOK_DISCOUNT_AFTER_APPLY,
-  HOOK_DISCOUNT_TYPES,
   // Order
   HOOK_ORDER_ACTIONS,
   HOOK_ORDER_CREATED,

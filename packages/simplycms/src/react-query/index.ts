@@ -4,5 +4,5 @@ export { EngineProvider, useEngine } from './EngineProvider';
 export type { EngineProviderProps } from './EngineProvider';
 export { CartProvider, useCart } from './useCart';
 export { useFormatPrice } from './useFormatPrice';
-export type { CartItem } from './useCart';
+export type { AddItemResult, CartItem } from './useCart';
 export * from './queries';

@@ -104,8 +104,16 @@ to app_user;
 grant select, insert on table public.orders, public.order_items to app_user;
 
 -- Профіль створює хук Better Auth (Task 7) під `app_admin`; покупець його
--- лише читає й редагує.
-grant select, update on table public.profiles to app_user;
+-- читає й редагує ЛИШЕ особисті поля (Е6в-24). Колонковий список — виміряні
+-- записи вітрини під `app_user`: `updateProfile` (імʼя, прізвище, телефон,
+-- `updated_at`) і аватар (`avatar_url`).
+-- 🔴 Табличного UPDATE немає навмисно: воно перекрило б колонковий грант, а
+-- колонковий REVOKE поверх табличного не діє. `category_id` (визначає ціну)
+-- і `category_locked` (вмикає автоправила) змінює лише `app_admin` —
+-- операції `customer.manage` і автоправила після замовлення.
+grant select on table public.profiles to app_user;
+grant update (first_name, last_name, phone, avatar_url, updated_at)
+  on table public.profiles to app_user;
 
 -- Заявку сміє лишити будь-хто (політика INSERT — `true`), бачити — лише свою.
 grant select, insert on table public.service_requests to app_user;

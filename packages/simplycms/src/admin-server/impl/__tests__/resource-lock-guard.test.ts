@@ -13,7 +13,12 @@ vi.mock('simplycms/auth', async (orig) => ({
     scope: 'any',
   })),
 }));
-vi.mock('simplycms/db', () => ({ withActor: vi.fn() }));
+// Е6в-15: SQL локу — справжній `advisoryXactLock` з `simplycms/db`; фейк —
+// лише транзакція (`withActor`).
+vi.mock('simplycms/db', async (orig) => ({
+  ...(await orig()),
+  withActor: vi.fn(),
+}));
 
 import { withActor } from 'simplycms/db';
 import { defineAdminResource } from '../resource';

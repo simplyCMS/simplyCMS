@@ -5,6 +5,7 @@ import { useT } from 'simplycms/i18n';
 import { ProductCard } from 'simplycms/core/components/catalog/ProductCard';
 import { Button } from 'simplycms/ui/button';
 import { cn } from 'simplycms/ui/utils';
+import { PricesFailure } from '../../components/PricesFailure';
 import { SsrProductGrid } from '../../components/SsrProductGrid';
 import type { ProductListItem } from '../../server/product-list-item';
 import type { CatalogViewMode } from './CatalogToolbarSlots';
@@ -19,6 +20,9 @@ export interface CatalogProductGridProps {
   /** Відфільтрована вибірка; `undefined` — клієнтських даних ще немає. */
   products: CardProduct[] | undefined;
   isLoading: boolean;
+  /** Середовище цін не завантажилось: замість сітки — помилка з повтором. */
+  pricesFailed?: boolean;
+  onRetryPrices?: () => void;
   viewMode: CatalogViewMode;
   ratings?: Record<string, CardRating>;
   /** Скидання фільтрів із порожньої вибірки. */
@@ -29,7 +33,7 @@ const GRID_CLASS = 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4';
 
 /**
  * Реквізит «сітка товарів» — разом із усіма своїми станами: серверний
- * список, завантаження, вибірка й порожній результат. Стани належать ядру
+ * список, завантаження, збій цін, вибірка й порожній результат. Стани належать ядру
  * саме тому, що на них тримається перехід SSR → клієнт: тема, яка намалює
  * власну сітку без них, показала б порожню сторінку до першого фетчу.
  */
@@ -38,6 +42,8 @@ export function CatalogProductGrid({
   ssrItems,
   products,
   isLoading,
+  pricesFailed = false,
+  onRetryPrices,
   viewMode,
   ratings,
   onResetFilters,
@@ -49,7 +55,9 @@ export function CatalogProductGrid({
       data-simplycms-requisite={CATALOG_REQUISITES.ProductGrid}
       className={cn('contents', className)}
     >
-      {!products && ssrItems.length > 0 ? (
+      {pricesFailed && onRetryPrices ? (
+        <PricesFailure onRetry={onRetryPrices} className="py-12" />
+      ) : !products && ssrItems.length > 0 ? (
         <SsrProductGrid items={ssrItems} viewMode={viewMode} />
       ) : isLoading ? (
         <div className="flex items-center justify-center py-12">

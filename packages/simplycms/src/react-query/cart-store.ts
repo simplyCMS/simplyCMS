@@ -1,4 +1,4 @@
-import type { Json } from 'simplycms/contracts';
+import { normalizeCart, type CartItem } from './cart-normalize';
 
 /**
  * Зовнішній стор кошика (К2-Е0, Е0-5) — модуль-синглтон за патерном
@@ -20,18 +20,7 @@ import type { Json } from 'simplycms/contracts';
  * перемонтування) і на `storage`-подію (інша вкладка).
  */
 
-export interface CartItem {
-  productId: string;
-  modificationId: string | null;
-  name: string;
-  modificationName?: string;
-  price: number;
-  basePrice?: number | null;
-  discountData?: Json | null;
-  quantity: number;
-  image?: string;
-  sku?: string;
-}
+export type { CartItem };
 
 const CART_STORAGE_KEY = 'simplycms-cart';
 export const EMPTY_CART: readonly CartItem[] = [];
@@ -39,12 +28,17 @@ export const EMPTY_CART: readonly CartItem[] = [];
 let snapshot: readonly CartItem[] = EMPTY_CART;
 const listeners = new Set<() => void>();
 
+/**
+ * 🔴 Сховище — ввід, а не довірені дані (Е6в-13, Review Focus 3): кошик
+ * старого формату (з `price`/`basePrice`/`discountData`) і сміття не валять
+ * сторінку — невалідні рядки відкидаються, межі кошика тримаються вже тут.
+ */
 const read = (): readonly CartItem[] => {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (stored) {
-      const parsed: unknown = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed as CartItem[];
+      const lines = normalizeCart(JSON.parse(stored));
+      if (lines.length > 0) return lines;
     }
   } catch (e) {
     console.error('Failed to load cart from localStorage:', e);

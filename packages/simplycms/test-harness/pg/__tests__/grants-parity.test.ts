@@ -21,12 +21,17 @@ import {
   withUser,
 } from '../apply.mjs';
 import {
+  columnGrants,
   functionGrants,
   policyCommands,
   sequenceNames,
   tableGrants,
 } from '../introspect.mjs';
-import { expectedGrantMatrix, GRANTED_ROLES } from './fixtures/grants';
+import {
+  COLUMN_GRANTS,
+  expectedGrantMatrix,
+  GRANTED_ROLES,
+} from './fixtures/grants';
 
 const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -46,12 +51,14 @@ const RLS_TABLES = [
 ];
 
 type Matrix = Record<string, Record<string, string[]>>;
+type ColumnMatrix = Record<string, Record<string, Record<string, string[]>>>;
 
 describe('парність привілеїв: baseline v2', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_grants');
   let dbUrl: string;
   let actual: Matrix;
+  let actualColumns: ColumnMatrix;
 
   beforeAll(async () => {
     harness = await resolveHarness();
@@ -71,6 +78,11 @@ describe('парність привілеїв: baseline v2', () => {
       'app_runtime',
       'PUBLIC',
     ])) as Matrix;
+    actualColumns = (await columnGrants(dbUrl, [
+      ...GRANTED_ROLES,
+      'app_runtime',
+      'PUBLIC',
+    ])) as ColumnMatrix;
   }, 120_000);
 
   afterAll(async () => {
@@ -82,14 +94,23 @@ describe('парність привілеїв: baseline v2', () => {
     expect(actual).toEqual(expectedGrantMatrix());
   });
 
+  it('Е6в-24: колонкові гранти збігаються з декларацією репо', () => {
+    // Колонкове право — окремий зріз (`pg_attribute.attacl`): табличний гейт
+    // вище його не бачить, тож без цього асерта зайва колонка в гранті
+    // (напр. `category_id`) пройшла б мовчки.
+    expect(actualColumns).toEqual(COLUMN_GRANTS);
+  });
+
   it('жодного гранта ролі PUBLIC і ролі app_runtime', () => {
     // Обидва — режими тихої відмови. PUBLIC роздає права мовчки кожному, а
     // право в `app_runtime` зняло б fail-closed: забутий `SET LOCAL ROLE`
     // почав би тихо працювати повз RLS.
-    const offenders = Object.entries(actual).flatMap(([table, roles]) =>
-      Object.keys(roles)
-        .filter((role) => role === 'PUBLIC' || role === 'app_runtime')
-        .map((role) => `${table}:${role}`),
+    const offenders = [actual, actualColumns].flatMap((matrix) =>
+      Object.entries(matrix).flatMap(([table, roles]) =>
+        Object.keys(roles)
+          .filter((role) => role === 'PUBLIC' || role === 'app_runtime')
+          .map((role) => `${table}:${role}`),
+      ),
     );
     expect(offenders).toEqual([]);
   });
@@ -97,10 +118,19 @@ describe('парність привілеїв: baseline v2', () => {
   it('гранти RLS-таблиць дорівнюють командам політик тієї ж ролі', async () => {
     // Розходження означає або мертвий привілей (право є, політики немає),
     // або мертву політику (політика є, права немає) — обидва стани брехливі.
+    // Команда, видана лише на частину колонок (Е6в-24), — теж команда ролі:
+    // політика UPDATE без колонкового UPDATE (і навпаки) так само брехлива.
     const policies = (await policyCommands(dbUrl)) as Matrix;
+    const cmdsOf = (table: string, role: string) =>
+      [
+        ...new Set([
+          ...(actual[table]?.[role] ?? []),
+          ...Object.keys(actualColumns[table]?.[role] ?? {}),
+        ]),
+      ].sort();
     for (const table of RLS_TABLES)
       for (const role of GRANTED_ROLES)
-        expect({ table, role, cmds: actual[table]?.[role] ?? [] }).toEqual({
+        expect({ table, role, cmds: cmdsOf(table, role) }).toEqual({
           table,
           role,
           cmds: policies[table]?.[role] ?? [],

@@ -38,7 +38,7 @@ CREATE TABLE "category_rules" (
 	"description" text,
 	"from_category_id" uuid,
 	"to_category_id" uuid NOT NULL,
-	"conditions" jsonb DEFAULT '{"type":"all","rules":[]}'::jsonb NOT NULL,
+	"conditions" jsonb NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"priority" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -97,7 +97,7 @@ CREATE TABLE "discounts" (
 	"ends_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"price_type_id" uuid NOT NULL
+	"price_type_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "languages" (
@@ -320,12 +320,12 @@ CREATE TABLE "profiles" (
 	"last_name" text,
 	"phone" text,
 	"category_id" uuid,
+	"category_locked" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"avatar_url" text,
 	"default_shipping_method_id" uuid,
 	"default_pickup_point_id" uuid,
-	"auth_provider" text,
 	"registration_utm" jsonb DEFAULT '{}'::jsonb,
 	CONSTRAINT "profiles_user_id_key" UNIQUE("user_id"),
 	CONSTRAINT "profiles_name_length" CHECK (((char_length(first_name) <= 100) OR (first_name IS NULL)) AND ((char_length(last_name) <= 100) OR (last_name IS NULL)))
@@ -526,7 +526,10 @@ CREATE TABLE "user_category_history" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"from_category_id" uuid,
-	"to_category_id" uuid NOT NULL,
+	"to_category_id" uuid,
+	-- Е6в-2: історія — аудит; FK SET NULL, назви — знімком вставки
+	"from_category_name" text,
+	"to_category_name" text NOT NULL,
 	"reason" text,
 	"rule_id" uuid,
 	"changed_by" uuid,
@@ -629,8 +632,8 @@ CREATE TABLE "media" (
 );
 --> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comparisons" ADD CONSTRAINT "comparisons_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comparisons" ADD CONSTRAINT "comparisons_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "discount_conditions" ADD CONSTRAINT "discount_conditions_discount_id_fkey" FOREIGN KEY ("discount_id") REFERENCES "public"."discounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -685,7 +688,7 @@ ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_produc
 ALTER TABLE "user_categories" ADD CONSTRAINT "user_categories_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "public"."category_rules"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

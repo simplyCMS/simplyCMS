@@ -1,4 +1,4 @@
-// Складання позиції кошика (перенесено з контейнера без зміни логіки).
+// Складання позиції кошика (перенесено з контейнера).
 
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type {
@@ -31,26 +31,17 @@ export function buildCartItem({
   current,
   image,
 }: CartItemInput): AddToCartItem | null {
-  const { price, basePrice, discountResult } = current;
-  if (price === undefined) return null;
+  // Без ціни купувати нічого — кнопка вимкнена.
+  if (current.price === undefined) return null;
 
+  // 🔴 Ціни в позиції НЕМАЄ (Е6в-13): ціну, знижку й суму кошика рахує
+  // серверна квота. Запамʼятована тут ціна не оновлювалась би ні при
+  // повторному додаванні, ні після зміни категорії чи акції.
   return {
     productId: product.id,
     modificationId: hasModifications ? selectedModId : null,
     name: product.name,
     modificationName: hasModifications ? selectedMod?.name : undefined,
-    price: price,
-    basePrice: basePrice || null,
-    discountData:
-      discountResult && discountResult.totalDiscount > 0
-        ? JSON.parse(
-            JSON.stringify({
-              appliedDiscounts: discountResult.appliedDiscounts,
-              totalDiscount: discountResult.totalDiscount,
-              basePrice: basePrice,
-            }),
-          )
-        : null,
     image: image,
     sku: current.sku || undefined,
   };

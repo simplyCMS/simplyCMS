@@ -10,6 +10,11 @@
  */
 export { priceItems } from './price-items';
 export type { NewOrderItem } from './price-items';
+export { priceCart } from './price-cart';
+export type { PricedLine, UnavailableLine } from './price-cart';
+export { loadPricingContext } from './pricing-context';
+export type { PricingContext } from './pricing-context';
+export { loadDiscountRules, parseDiscountRules } from './discount-rules';
 export { quoteShippingCost, validateShippingChoice } from './shipping-choice';
 export type {
   ShippingChoice,
@@ -17,12 +22,25 @@ export type {
   ShippingChoiceRejection,
 } from './shipping-choice';
 export { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
+export { loadGuestPriceTypes, resolvePriceTypes } from './price-types';
+export type { PriceTypes } from './price-types';
 export {
+  loadCategoryPriceTypeId,
   loadDefaultUserCategoryId,
   loadUserCategoryId,
-  loadUserPriceTypeId,
 } from './categories';
-export { loadDiscountGroups } from './discounts';
+// Категорії покупців і автоправила (Е6в-15, Е6в-19, Е6в-20): спільні для
+// вітрини (після COMMIT замовлення) і адмінки (кнопка, ручне призначення).
+export {
+  applyCategoryRules,
+  customerCategoryLock,
+  writeCategoryChange,
+} from './customer-categories';
+export type {
+  CategoryChange,
+  CategoryRulesOutcome,
+} from './customer-categories';
+export { loadCustomerStats } from './customer-stats';
 export {
   loadShippingDirectory,
   loadShippingMethods,
@@ -53,10 +71,3 @@ export {
   toPriceEntry,
 } from './entities/price';
 export type { RawPriceRow } from './entities/price';
-export { toDiscount, toDiscountGroupNode } from './entities/discount';
-export type {
-  DiscountConditionRow,
-  DiscountGroupRow,
-  DiscountRow,
-  DiscountTargetRow,
-} from './entities/discount';

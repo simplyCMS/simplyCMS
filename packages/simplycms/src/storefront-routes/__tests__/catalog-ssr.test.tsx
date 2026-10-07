@@ -59,7 +59,10 @@ import {
   type ProductListRow,
 } from '../server/product-list-item';
 
-const ctx: PriceContext = { defaultPriceTypeId: 'pt-default' };
+const ctx: PriceContext = {
+  priceTypeId: 'pt-default',
+  defaultPriceTypeId: 'pt-default',
+};
 
 /** Рядок у формі реального select-у каталогу */
 const fixtureRow: ProductListRow = {

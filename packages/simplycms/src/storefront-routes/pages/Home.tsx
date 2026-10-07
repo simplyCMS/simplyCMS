@@ -1,4 +1,6 @@
 import type { Banner } from 'simplycms/contracts/objects';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
+import { PricesFailure } from '../components/PricesFailure';
 import { HomeView } from '../views/HomeView';
 import { useStorefrontViews } from '../views/useStorefrontViews';
 import {
@@ -34,6 +36,11 @@ export default function HomePage({
   const { data: featuredProducts } = useFeaturedProducts(initialFeatured);
   const { data: newProducts } = useNewProducts(initialNew);
   const { data: rootSections } = useRootSections(initialSections);
+  const {
+    data: env,
+    isError: pricesFailed,
+    refetch: retryPrices,
+  } = useDiscountEnvironment();
   const views = useStorefrontViews({ Home: HomeView });
 
   const sections = rootSections ?? [];
@@ -49,10 +56,21 @@ export default function HomePage({
         ),
       }}
     >
+      {/* Збій цін — над view будь-якої теми: картки тоді без ціни (F1). */}
+      {pricesFailed && (
+        <PricesFailure
+          onRetry={retryPrices}
+          className="container mx-auto px-4 pt-4"
+        />
+      )}
       <views.Home
         hero={{ banners: banners ?? [] }}
-        featured={{ products: toCardViewModel(featuredProducts ?? []) }}
-        newArrivals={{ products: toCardViewModel(newProducts ?? []) }}
+        featured={{
+          products: toCardViewModel(featuredProducts ?? [], env, pricesFailed),
+        }}
+        newArrivals={{
+          products: toCardViewModel(newProducts ?? [], env, pricesFailed),
+        }}
         sections={{ items: sections }}
         slots={homeSlots}
       />

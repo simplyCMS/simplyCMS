@@ -13,6 +13,10 @@ export const messages: Catalog = {
   'catalog.resetFilters': 'Reset filters',
   'catalog.productsCount': '{count} products',
   'catalog.noResults': 'No products match the selected filters',
+
+  // Price environment failure (catalog, home, property and product cards)
+  'catalog.pricesFailed': 'Could not load prices',
+  'catalog.pricesRetry': 'Retry',
   'catalog.sort.popular': 'Most popular',
   'catalog.sort.newest': 'Newest',
   'catalog.sort.priceAsc': 'Price: low to high',

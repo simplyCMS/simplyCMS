@@ -21,9 +21,11 @@ import {
   CheckoutRecipientForm,
   REJECTION_KEY,
 } from 'simplycms/checkout-ui';
+import { QuoteFailure } from 'simplycms/cart-ui';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { toCheckoutItems } from './checkout/build-quote-input';
 import { useCheckoutQuote } from './checkout/useCheckoutQuote';
+import { useIndicativeSubtotal } from './checkout/useIndicativeSubtotal';
 
 /**
  * Фабрика схеми, а не константа модуля: повідомлення валідації беруться з
@@ -112,7 +114,7 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 export default function Checkout() {
   const t = useT();
   const navigate = useNavigate();
-  const { items, totalPrice, clearCart, hydrated } = useCart();
+  const { items, clearCart, hydrated } = useCart();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasShippingMethods, setHasShippingMethods] = useState(true);
@@ -186,7 +188,7 @@ export default function Checkout() {
 
   // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
   // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
-  // клієнтські `totalPrice`/ціни кошика в підсумку більше не беруть участі.
+  // клієнтських цін у кошику немає взагалі (Е6в-13).
   // 🔴 `useWatch`, а не `form.watch()`: значення тут ідуть далі в
   // залежності ефекту (`useCheckoutQuote`) — `form.watch()` повертає
   // нестабільну функцію, яку React Compiler не вміє безпечно
@@ -217,12 +219,12 @@ export default function Checkout() {
     matchesCurrent &&
     !blocked;
   // 🔴 Рев'ю I4: індикативна ціна в списку методів (CheckoutDeliveryForm)
-  // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер, — розбіжність
-  // лишав лише вхідний `subtotal` (клієнтський `totalPrice` без знижок
-  // проти реального). Коли квота вже є, підставляємо ЇЇ subtotal — ту саму
-  // суму, яку бачить `prepareCheckout`; до першої квоти — клієнтський
-  // знімок кошика (інакше список методів був би порожнім до відповіді).
-  const indicativeSubtotal = quote?.ok ? quote.quote.subtotal : totalPrice;
+  // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер. Вхідна сума —
+  // лише серверна: квота оформлення, до неї — квота кошика, до першої квоти
+  // кошика — `null` (стан завантаження тарифу, Е6в-13 ред.5). Те саме число
+  // йде слотам плагінів як `cart.subtotal`.
+  const indicative = useIndicativeSubtotal(quote);
+  const indicativeSubtotal = indicative.subtotal;
 
   /**
    * 🔴 Оформлення — ОДИН серверний виклик. Раніше браузер сам робив пʼять
@@ -359,7 +361,7 @@ export default function Checkout() {
             <div className="lg:col-span-2 space-y-6">
               <PluginSlot
                 name="checkout.shipping.before"
-                context={{ cart: { items, subtotal: totalPrice } }}
+                context={{ cart: { items, subtotal: indicativeSubtotal } }}
               />
 
               {/* Auth block for non-logged-in users */}
@@ -388,6 +390,11 @@ export default function Checkout() {
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
                 subtotal={indicativeSubtotal}
+                subtotalFailure={
+                  indicative.failed ? (
+                    <QuoteFailure onRetry={indicative.retry} />
+                  ) : undefined
+                }
                 onAvailabilityChange={setHasShippingMethods}
                 onPickupChange={setIsPickupMethod}
               />
@@ -412,7 +419,7 @@ export default function Checkout() {
 
               <PluginSlot
                 name="checkout.shipping.after"
-                context={{ cart: { items, subtotal: totalPrice } }}
+                context={{ cart: { items, subtotal: indicativeSubtotal } }}
               />
             </div>
 

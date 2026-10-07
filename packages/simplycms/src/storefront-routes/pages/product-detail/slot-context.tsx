@@ -1,7 +1,7 @@
 // Прив'язки slot-компонентів картки товару (контракт тем v3, Фаза 3).
 
 import { createContext, useContext, type ReactNode } from 'react';
-import type { StockStatus } from 'simplycms/contracts';
+import type { StockStatus, ThresholdHint } from 'simplycms/contracts';
 import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type { ModificationPrice, ProductModificationRow } from './types';
@@ -15,6 +15,11 @@ export interface ProductDetailBindings {
   stockStatus: StockStatus | null;
   price: number | undefined;
   oldPrice: number | null | undefined;
+  /** Порогові підказки знижок для блоку ціни (Е6в-12). */
+  priceHints: ThresholdHint[];
+  /** Збій середовища цін (F1): блок ціни — помилка з «Повторити». */
+  pricesFailed: boolean;
+  onRetryPrices: () => void;
   modifications: ProductModificationRow[];
   selectedModId: string;
   onSelectModification: (modId: string) => void;

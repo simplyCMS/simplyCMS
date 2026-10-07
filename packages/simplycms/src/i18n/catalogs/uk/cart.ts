@@ -15,6 +15,14 @@ export const messages = {
   'cart.empty.cta': 'Перейти до каталогу',
   'cart.viewCart': 'Переглянути кошик',
   'cart.itemSku': 'Арт: {sku}',
+  'cart.unavailable': 'Товар недоступний',
+  'cart.removeItem': 'Видалити з кошика',
+  'cart.quoteFailed': 'Ціну не вдалося отримати',
+  'cart.quoteRetry': 'Повторити',
+  'cart.removeUnavailable':
+    'Приберіть недоступні товари, щоб оформити замовлення',
+  'cart.limitReached':
+    'Досягнуто межу кошика: до {lines} позицій і до {quantity} шт кожної',
   'cart.summary.title': 'Підсумок замовлення',
   'cart.summary.itemsTotal': 'Товарів на суму',
   'cart.summary.shipping': 'Доставка',

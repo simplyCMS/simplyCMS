@@ -23,7 +23,17 @@ const PRODUCT: ProductHeadInput = {
   description: null,
   images: ['/media/panel.jpg'],
   stock_status: 'in_stock',
-  product_prices: [{ modification_id: null, price: 100 }],
+  has_modifications: false,
+  product_modifications: [],
+  product_prices: [
+    {
+      price_type_id: 'retail',
+      modification_id: null,
+      price: 100,
+      old_price: null,
+    },
+  ],
+  guest_price_types: { priceTypeId: 'retail', defaultPriceTypeId: 'retail' },
 };
 
 function matches(siteUrl: string) {

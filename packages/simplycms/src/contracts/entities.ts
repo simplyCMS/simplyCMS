@@ -148,24 +148,42 @@ export const AGGREGATE = {
     ENTITY.pickupPoints,
   ]),
   /**
-   * Контекст цін покупця (`core/lib/price-type.ts`): дефолтний тип ціни з
-   * `price_types` + персональний тип, який `profiles` резолвить у
-   * `user_categories`. Віддає обчислені id, а не рядки однієї таблиці —
-   * без домінантної сутності, тож `entityKey` тут регресія (Task 6, fix-раунд 1).
+   * Середовище цін вітрини (`core/lib/discounts.ts` →
+   * `storefront/loaders/discount-environment.ts`, Е6в-10): дефолтний і
+   * персональний тип ціни/категорія (`price_types`, `profiles`,
+   * `user_categories`) плюс дерево правил (`discounts`, `discount_targets`,
+   * `discount_conditions`, `discount_groups`) — сім таблиць однією
+   * транзакцією, структурно те саме, що `shippingDirectory`.
+   *
+   * 🔴 Клієнтський ключ — `[...key, userId]`, але `userId` тут лише сегмент
+   * клієнтського кешу: актора сервер бере ТІЛЬКИ з сесії. Скидання цього
+   * ключа з адмінки — превʼю для самого адміна (його вкладка); покупцям
+   * свіжість дає `staleTime: 0`, а не інвалідація, якої в іншому браузері
+   * не буде. Серверного кешу немає.
    */
-  priceTypeContext: aggregateKey('price-type-context', [
+  discountEnvironment: aggregateKey('discount-environment', [
     ENTITY.priceTypes,
     ENTITY.profiles,
     ENTITY.userCategories,
+    ENTITY.discounts,
+    ENTITY.discountTargets,
+    ENTITY.discountConditions,
+    ENTITY.discountGroups,
   ]),
   /**
-   * Довідник знижок (`core/lib/discounts.ts`): дефолтний і персональний тип
-   * ціни/категорія (`price_types`, `profiles`, `user_categories`) плюс
-   * дерево правил (`discounts`, `discount_targets`, `discount_conditions`,
-   * `discount_groups`) — до семи таблиць, структурно те саме, що
-   * `shippingDirectory` (Task 6, fix-раунд 1).
+   * Квота кошика (`core/lib/cart-quote.ts` → `storefront/loaders/quote-cart.ts`
+   * → `loadPricingContext` + `priceCart`, Е6в-13): усе середовище цін (сім
+   * таблиць `discountEnvironment`) плюс каталожні дані позицій — товари,
+   * модифікації й ціни (`commerce/price-cart-catalog.ts`).
+   *
+   * 🔴 Клієнтський ключ — `[...key, userId, трійки позицій]`, `staleTime: 0`:
+   * `userId` — лише сегмент кешу (актора сервер бере з сесії), склад кошика —
+   * бо квота рахує саме його. Серверного кешу немає.
    */
-  discountEnvironment: aggregateKey('discount-environment', [
+  cartQuote: aggregateKey('cart-quote', [
+    ENTITY.products,
+    ENTITY.productModifications,
+    ENTITY.productPrices,
     ENTITY.priceTypes,
     ENTITY.profiles,
     ENTITY.userCategories,

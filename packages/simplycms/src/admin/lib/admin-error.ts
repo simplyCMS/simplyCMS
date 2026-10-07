@@ -64,6 +64,24 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.themeNotBuilt]: 'admin.errors.themeNotBuilt',
   [ADMIN_STATE_CONSTRAINT.themeUnknown]: 'admin.errors.themeUnknown',
   [ADMIN_STATE_CONSTRAINT.pluginUnknown]: 'admin.errors.pluginUnknown',
+  // Е6в-16/17: знижки.
+  [ADMIN_STATE_CONSTRAINT.discountGroupCycle]:
+    'admin.errors.discountGroupCycle',
+  [ADMIN_STATE_CONSTRAINT.discountGroupDatesInvalid]:
+    'admin.errors.discountGroupDatesInvalid',
+  [ADMIN_STATE_CONSTRAINT.discountConditionCategoryMissing]:
+    'admin.errors.discountConditionCategoryMissing',
+  // Е6в-18/19: категорії покупців і автоправила.
+  [ADMIN_STATE_CONSTRAINT.userCategoryDefault]:
+    'admin.errors.userCategoryDefault',
+  [ADMIN_STATE_CONSTRAINT.userCategoryHasCustomers]:
+    'admin.errors.userCategoryHasCustomers',
+  [ADMIN_STATE_CONSTRAINT.userCategoryHasRules]:
+    'admin.errors.userCategoryHasRules',
+  [ADMIN_STATE_CONSTRAINT.userCategoryInDiscount]:
+    'admin.errors.userCategoryInDiscount',
+  [ADMIN_STATE_CONSTRAINT.categoryRuleSameCategory]:
+    'admin.errors.categoryRuleSameCategory',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

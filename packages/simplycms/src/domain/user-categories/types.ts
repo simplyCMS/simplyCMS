@@ -1,25 +1,35 @@
-// Типи категорійних правил — порт `category_rules`/`get_user_stats` з
-// колишньої plpgsql-логіки (`check_category_rules`, git-історія
-// 6ea5b55:supabase/migrations/20260204155230_*.sql). Форми навмисно близькі
-// до жовтня jsonb-стовпців БД: `conditions` — те, що лежить у
-// `category_rules.conditions`, без нормалізації полем-enum-ом, бо оригінал
-// теж приймав довільний текст у `field`/`operator` і мовчки трактував
-// невідоме як хибну умову (CASE … ELSE false).
+// Типи автоправил категорій покупців (Е6в-19). Колишній порт plpgsql
+// `check_category_rules` приймав довільний текст у `field`/`operator` і
+// мовчки трактував невідоме як хибну умову; з Е6в форму умов звужує
+// `parseCategoryRuleConditions` (`parse.ts`) — і при записі (Zod адмінки), і
+// при читанні правила з БД (зламаний jsonb → правило не спрацьовує).
 
-/** Одна умова з `conditions->'rules'[]`. Значення завжди текстові — так їх
- *  віддає `jsonb ->> 'value'` в оригіналі; парсинг у число/дату — на совісті
- *  конкретного поля (`engine.ts`). */
+/** Числові поля статистики (`>=`/`>`/`<=`/`<`/`=`). */
+export type NumericRuleField =
+  'total_purchases' | 'orders_count' | 'registration_days';
+
+/** Текстові поля (`=`/`contains`). */
+export type TextRuleField = 'email_domain' | 'utm_source' | 'utm_campaign';
+
+/** Поле умови; `auth_provider` — лише `=` (ред.5). */
+export type CategoryRuleField =
+  NumericRuleField | TextRuleField | 'auth_provider';
+
+export type CategoryRuleOperator = '>=' | '>' | '<=' | '<' | '=' | 'contains';
+
+/** Одна умова з `conditions.rules[]`. Значення — рядок (так його пише форма). */
 export interface CategoryRuleCondition {
-  readonly field: string;
-  readonly operator: string;
+  readonly field: CategoryRuleField;
+  readonly operator: CategoryRuleOperator;
   readonly value: string;
 }
 
-/** `category_rules.conditions` — jsonb-стовпець. `type` в оригіналі впливав
- *  ЛИШЕ на дострокове переривання циклу умов, не на семантику AND/OR (борг
- *  оригіналу — див. коментар в `engine.ts`, повторюємо як є). */
+/**
+ * `category_rules.conditions`. `any` = АБО, `all` = І (Е6в-19); порожній
+ * `rules` — невалідний (fail-closed на всіх рівнях, ред.2).
+ */
 export interface CategoryRuleConditions {
-  readonly type?: string;
+  readonly type: 'all' | 'any';
   readonly rules: readonly CategoryRuleCondition[];
 }
 
@@ -34,22 +44,24 @@ export interface CategoryRule {
   readonly priority: number;
 }
 
-/** Статистика користувача — те, що повертав `get_user_stats(p_user_id)`.
- *  Обчислення (JOIN по orders/order_statuses, EXTRACT з profiles.created_at)
- *  лишається serverFn-шару К3 — тут лише готові значення. */
+/**
+ * Статистика покупця (Е6в-19). Обчислення — `commerce/customer-stats.ts`;
+ * тут лише готові значення.
+ */
 export interface UserCategoryStats {
+  /** Сума замовлень, крім скасованих. */
   readonly totalPurchases: number;
+  /** Кількість замовлень, крім скасованих. */
   readonly ordersCount: number;
   readonly registrationDays: number;
   readonly emailDomain: string | null;
-  readonly authProvider: string | null;
+  /** Усі `accounts.provider_id` покупця: умова — «будь-який рядок має X». */
+  readonly authProviders: readonly string[];
   readonly utmSource: string | null;
   readonly utmCampaign: string | null;
 }
 
-/** Рішення рушія. Коли `changed: true` — достатньо даних, щоб виклик (К3)
- *  зробив `UPDATE profiles.category_id` + `INSERT user_category_history`
- *  без повторного звернення до правил. */
+/** Рішення рушія. `changed: true` несе все для запису профілю й історії. */
 export type CategoryTransitionResult =
   | {
       readonly changed: false;
@@ -57,8 +69,8 @@ export type CategoryTransitionResult =
   | {
       readonly changed: true;
       readonly ruleId: string;
-      readonly fromCategoryId: string | null;
+      readonly fromCategoryId: string;
       readonly toCategoryId: string;
-      /** Той самий текст, що писав оригінал у `user_category_history.reason`. */
+      /** Текст для `user_category_history.reason`. */
       readonly reason: string;
     };

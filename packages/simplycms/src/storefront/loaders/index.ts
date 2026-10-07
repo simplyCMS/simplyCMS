@@ -10,6 +10,8 @@ export * from './order-create';
 export * from './prepare-checkout';
 export * from './place-order';
 export * from './quote-checkout';
+export * from './quote-cart';
+export * from './discount-environment';
 export * from './order-statuses';
 export * from './orders';
 export * from './order-cancel';

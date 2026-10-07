@@ -61,13 +61,14 @@ export default function ProductDetailPage({
     selectedModId,
     propertyValuesByModification,
   });
-  const { modificationPrices, current } = useProductPricing({
-    product,
-    section,
-    hasModifications,
-    modifications,
-    selectedMod,
-  });
+  const { modificationPrices, current, pricesFailed, retryPrices } =
+    useProductPricing({
+      product,
+      section,
+      hasModifications,
+      modifications,
+      selectedMod,
+    });
   const views = useStorefrontViews({ ProductDetail: ProductDetailView });
 
   if (isLoading) {
@@ -96,6 +97,9 @@ export default function ProductDetailPage({
     stockStatus: current.stockStatus,
     price: current.price,
     oldPrice: current.oldPrice,
+    priceHints: current.hints,
+    pricesFailed,
+    onRetryPrices: retryPrices,
     modifications: hasModifications ? modifications : [],
     selectedModId,
     onSelectModification: onSelect,

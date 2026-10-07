@@ -17,12 +17,7 @@ export type { CartItem as CartItemType } from './hooks/useCart';
 export { useToast, toast } from './hooks/use-toast';
 export { useBanners } from './hooks/useBanners';
 export type { Banner, BannerButton } from './hooks/useBanners';
-export {
-  useDiscountGroups,
-  useDiscountContext,
-  applyDiscount,
-} from './hooks/useDiscountedPrice';
-export { usePriceType } from './hooks/usePriceType';
+export { useDiscountEnvironment } from './hooks/useDiscountEnvironment';
 export {
   useProductReviews,
   useProductRatings,

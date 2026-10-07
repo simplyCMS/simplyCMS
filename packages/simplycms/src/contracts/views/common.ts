@@ -5,6 +5,8 @@
 // snake_case — як решта контрактів `simplycms/contracts`; обчислені
 // презентаційні скаляри (лічильники, відсотки, хлібні крихти) — camelCase.
 
+import type { ThresholdHint } from '../objects/discount';
+
 /** Ланка хлібних крихт. */
 export interface BreadcrumbItem {
   label: string;
@@ -29,6 +31,11 @@ export interface ProductCardViewModel {
   stock_status: string | null;
   price: number | null;
   old_price: number | null;
+  /**
+   * Порогові підказки (Е6в-12): «від 3 шт — 900 ₴/шт». Порожній список —
+   * підказок немає або середовище цін ще не приїхало (SSR).
+   */
+  discount_hints: ThresholdHint[];
 }
 
 /**

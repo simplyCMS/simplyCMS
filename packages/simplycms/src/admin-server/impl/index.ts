@@ -127,6 +127,49 @@ export {
   setPluginActiveInput,
   setPluginActiveOp,
 } from './site-plugins/set-active';
+// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14..17).
+export { discountGroupsOps } from './discount-groups/resource';
+export {
+  removeDiscountGroupsInput,
+  removeDiscountGroupsOp,
+} from './discount-groups/remove';
+export { discountsOps } from './discounts/resource';
+export { removeDiscountsInput, removeDiscountsOp } from './discounts/remove';
+export { getDiscountInput, getDiscountOp } from './discounts/get';
+export { saveDiscountInput } from './discounts/save-input';
+export type { SaveDiscountInput } from './discounts/save-input';
+export { saveDiscountOp } from './discounts/save';
+export { DISCOUNT_CONFIG_LOCK } from './discount-lock';
+export { CUSTOMER_CONFIG_LOCK } from './customer-lock';
+// Харнес доводить, що `lockCatalogTarget` і `advisoryXactLock` — один лок (Е6в-15).
+export { lockCatalogTarget } from './catalog-lock';
+// К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
+// Е6в-15, Е6в-18…Е6в-20).
+export { userCategoriesOps } from './user-categories/resource';
+export {
+  setDefaultUserCategoryInput,
+  setDefaultUserCategoryOp,
+} from './user-categories/set-default';
+export {
+  removeUserCategoriesInput,
+  removeUserCategoriesOp,
+} from './user-categories/remove';
+export { countCustomersByCategoryOp } from './user-categories/counts';
+export type { CategoryCustomerCount } from './user-categories/counts';
+export { categoryRulesOps } from './category-rules/resource';
+export {
+  CATEGORY_RULES_BATCH,
+  runCategoryRulesOp,
+} from './category-rules/run-all';
+export {
+  assignCustomerCategoryInput,
+  assignCustomerCategoryOp,
+} from './customers/assign-category';
+export { findCustomersInput, findCustomersOp } from './customers/find';
+export type { CustomerHit } from './customers/find';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';
+export { diagnosePriceInput } from './price-diagnosis/input';
+export { diagnosePriceOp } from './price-diagnosis/diagnose';
+export type { PriceDiagnosis } from './price-diagnosis/diagnose';

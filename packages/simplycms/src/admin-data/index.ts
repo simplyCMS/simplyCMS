@@ -58,3 +58,17 @@ export { pickupPointsCollection } from './collections/pickup-points';
 export type { PickupPointsCollection } from './collections/pickup-points';
 
 export { invalidateShippingConsumers } from './shipping-cache';
+
+export { discountGroupsCollection } from './collections/discount-groups';
+export type { DiscountGroupsCollection } from './collections/discount-groups';
+
+export { discountsCollection } from './collections/discounts';
+export type { DiscountsCollection } from './collections/discounts';
+
+export { userCategoriesCollection } from './collections/user-categories';
+export type { UserCategoriesCollection } from './collections/user-categories';
+
+export { categoryRulesCollection } from './collections/category-rules';
+export type { CategoryRulesCollection } from './collections/category-rules';
+
+export { invalidateDiscountConsumers } from './discount-cache';

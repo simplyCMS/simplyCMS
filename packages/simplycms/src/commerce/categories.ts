@@ -44,22 +44,23 @@ export async function loadDefaultUserCategoryId(
 }
 
 /**
- * Тип ціни, призначений категорії покупця, або `null`.
+ * Тип ціни категорії або `null`, якщо категорії немає чи тип у ній не задано.
  *
- * 🔴 Раніше це читав браузер запитом `profiles → user_categories`, тобто
- * персональна знижкова категорія була доступна будь-кому, хто підставив
- * чужий `user_id`. Тепер `userId` приходить із серверної сесії (вітрина) або
- * з рядка замовлення під грантом адміна (`order.manage`).
+ * 🔴 Приймає ЕФЕКТИВНУ категорію (`loadPricingContext`: персональна, для
+ * гостя й профілю з `category_id NULL` — дефолтна, Е6в-19), а не `userId`:
+ * колишній `loadUserPriceTypeId` джойнив `profiles`, тож гість і NULL-профіль
+ * діставали глобальний дефолтний тип, хоча належать дефолтній категорії з
+ * ВЛАСНИМ типом (F5 фінального рев'ю). Персональна категорія, як і раніше,
+ * читається лише під актором власника (`loadUserCategoryId`).
  */
-export async function loadUserPriceTypeId(
+export async function loadCategoryPriceTypeId(
   db: ActorDb,
-  userId: string,
+  categoryId: string,
 ): Promise<string | null> {
   const [row] = await db
     .select({ price_type_id: userCategories.priceTypeId })
-    .from(profiles)
-    .innerJoin(userCategories, eq(profiles.categoryId, userCategories.id))
-    .where(eq(profiles.userId, userId))
+    .from(userCategories)
+    .where(eq(userCategories.id, categoryId))
     .limit(1);
 
   return row?.price_type_id ?? null;

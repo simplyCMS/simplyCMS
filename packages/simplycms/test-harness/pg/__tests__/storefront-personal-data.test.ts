@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
-import { loadUserPriceTypeId } from 'simplycms/commerce';
+import { loadUserCategoryId } from 'simplycms/commerce';
 import {
   createOrder,
   loadOrderDetail,
@@ -174,12 +174,15 @@ describe('персональні дані вітрини під актором',
     expect(asA?.first_name).toBe('Аліса');
   });
 
-  it('тип ціни категорії читається лише власником профілю', async () => {
+  // F5: тип ціни тепер читається з ЕФЕКТИВНОЇ категорії
+  // (`loadCategoryPriceTypeId`), тож персональне тут — сама категорія профілю:
+  // від неї залежать і тип ціни, і знижки `user_category`.
+  it('категорія профілю (а з нею тип ціни) читається лише власником', async () => {
     const own = await withCustomerDb(userA, (db) =>
-      loadUserPriceTypeId(db, userA),
+      loadUserCategoryId(db, userA),
     );
     const foreign = await withCustomerDb(userB, (db) =>
-      loadUserPriceTypeId(db, userA),
+      loadUserCategoryId(db, userA),
     );
 
     expect(own).toEqual(expect.any(String));

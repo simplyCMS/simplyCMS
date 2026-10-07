@@ -77,12 +77,39 @@ import {
   listPluginsOp,
   setPluginActiveInput,
   setPluginActiveOp,
+  discountGroupsOps,
+  removeDiscountGroupsInput,
+  removeDiscountGroupsOp,
+  removeDiscountsInput,
+  removeDiscountsOp,
+  discountsOps,
+  getDiscountInput,
+  getDiscountOp,
+  saveDiscountInput,
+  saveDiscountOp,
+  userCategoriesOps,
+  setDefaultUserCategoryInput,
+  setDefaultUserCategoryOp,
+  removeUserCategoriesInput,
+  removeUserCategoriesOp,
+  countCustomersByCategoryOp,
+  categoryRulesOps,
+  runCategoryRulesOp,
+  assignCustomerCategoryInput,
+  assignCustomerCategoryOp,
+  findCustomersInput,
+  findCustomersOp,
+  diagnosePriceInput,
+  diagnosePriceOp,
 } from 'simplycms/admin-server/impl';
 
 // Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
 // живим не-serverFn експортом не є і клієнтську трансформацію не ламає.
 export type {
+  CategoryCustomerCount,
+  CustomerHit,
   PluginRow,
+  PriceDiagnosis,
   SystemSettings,
   ThemeRow,
 } from 'simplycms/admin-server/impl';
@@ -487,3 +514,102 @@ export const listPlugins = createServerFn({ method: 'GET' }).handler(
 export const setPluginActive = createServerFn({ method: 'POST' })
   .validator(adminInput(setPluginActiveInput))
   .handler(setPluginActiveOp);
+
+// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14). Insert/update груп —
+// фабрика з guard-ом циклу й пари дат під `discount-config` (Е6в-17);
+// видалення груп — лише іменована операція з піддеревом. Знижка пишеться
+// ЛИШЕ атомарним `saveDiscount` (Е6в-16); фабрика знижок дає список, а
+// видалення — іменована `removeDiscountsOp` під тим самим `discount-config`
+// (цілі й умови — каскадом).
+export const listDiscountGroups = createServerFn({ method: 'GET' })
+  .validator(adminInput(discountGroupsOps.subsetSchema))
+  .handler(discountGroupsOps.list);
+
+export const insertDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(discountGroupsOps.insertSchema))
+  .handler(discountGroupsOps.insert);
+
+export const updateDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(discountGroupsOps.updateSchema))
+  .handler(discountGroupsOps.update);
+
+export const removeDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeDiscountGroupsInput))
+  .handler(removeDiscountGroupsOp);
+
+export const listDiscounts = createServerFn({ method: 'GET' })
+  .validator(adminInput(discountsOps.subsetSchema))
+  .handler(discountsOps.list);
+
+export const getDiscount = createServerFn({ method: 'GET' })
+  .validator(adminInput(getDiscountInput))
+  .handler(getDiscountOp);
+
+export const saveDiscount = createServerFn({ method: 'POST' })
+  .validator(adminInput(saveDiscountInput))
+  .handler(saveDiscountOp);
+
+export const removeDiscounts = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeDiscountsInput))
+  .handler(removeDiscountsOp);
+
+// К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
+// Е6в-14). Insert/update — фабрика під `customer-config` (Е6в-15);
+// видалення категорій — ЛИШЕ guarded `removeUserCategories` (Е6в-18), дефолт —
+// `setDefaultUserCategory`; видалення правил — фабричне.
+export const listUserCategories = createServerFn({ method: 'GET' })
+  .validator(adminInput(userCategoriesOps.subsetSchema))
+  .handler(userCategoriesOps.list);
+
+export const insertUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(userCategoriesOps.insertSchema))
+  .handler(userCategoriesOps.insert);
+
+export const updateUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(userCategoriesOps.updateSchema))
+  .handler(userCategoriesOps.update);
+
+export const removeUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeUserCategoriesInput))
+  .handler(removeUserCategoriesOp);
+
+export const setDefaultUserCategory = createServerFn({ method: 'POST' })
+  .validator(adminInput(setDefaultUserCategoryInput))
+  .handler(setDefaultUserCategoryOp);
+
+export const countCustomersByCategory = createServerFn({
+  method: 'GET',
+}).handler(countCustomersByCategoryOp);
+
+export const listCategoryRules = createServerFn({ method: 'GET' })
+  .validator(adminInput(categoryRulesOps.subsetSchema))
+  .handler(categoryRulesOps.list);
+
+export const insertCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.insertSchema))
+  .handler(categoryRulesOps.insert);
+
+export const updateCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.updateSchema))
+  .handler(categoryRulesOps.update);
+
+export const removeCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.removeSchema))
+  .handler(categoryRulesOps.remove);
+
+// Запуск без вводу — без валідатора: перевіряти нічого.
+export const runCategoryRules = createServerFn({ method: 'POST' }).handler(
+  runCategoryRulesOp,
+);
+
+export const assignCustomerCategory = createServerFn({ method: 'POST' })
+  .validator(adminInput(assignCustomerCategoryInput))
+  .handler(assignCustomerCategoryOp);
+
+export const findCustomers = createServerFn({ method: 'GET' })
+  .validator(adminInput(findCustomersInput))
+  .handler(findCustomersOp);
+
+export const diagnosePrice = createServerFn({ method: 'POST' })
+  .validator(adminInput(diagnosePriceInput))
+  .handler(diagnosePriceOp);

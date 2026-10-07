@@ -1,7 +1,9 @@
 import { Link } from '@tanstack/react-router';
 import { ImageIcon, Star } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+import type { ThresholdHint } from 'simplycms/contracts';
 import { useFormatPrice } from 'simplycms/react-query';
+import { DiscountHints } from './DiscountHints';
 
 interface ProductCardProps {
   product: {
@@ -15,6 +17,8 @@ interface ProductCardProps {
     price?: number | null;
     old_price?: number | null;
     stock_status?: string | null;
+    /** Порогові підказки знижок (Е6в-12); до середовища цін — немає. */
+    discount_hints?: readonly ThresholdHint[];
   };
   rating?: { avgRating: number; reviewCount: number } | null;
 }
@@ -88,6 +92,9 @@ export function ProductCard({ product, rating }: ProductCardProps) {
               </span>
             )}
           </div>
+          {product.discount_hints && (
+            <DiscountHints hints={product.discount_hints} className="mt-1" />
+          )}
           {rating && rating.reviewCount > 0 && (
             <div className="flex items-center gap-1 mt-1">
               <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />

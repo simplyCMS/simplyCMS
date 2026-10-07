@@ -26,6 +26,8 @@ interface Props<T extends FieldValues> {
   readonly label: string;
   readonly options: readonly SelectOption[];
   readonly disabled?: boolean;
+  /** Текст, поки значення порожнє (немає опції з таким value). */
+  readonly placeholder?: string;
   /** Підказка або текст помилки під полем. */
   readonly note?: string;
   readonly noteIsError?: boolean;
@@ -39,6 +41,7 @@ export function SelectField<T extends FieldValues>({
   label,
   options,
   disabled,
+  placeholder,
   note,
   noteIsError,
 }: Props<T>) {
@@ -58,7 +61,7 @@ export function SelectField<T extends FieldValues>({
             disabled={disabled}
           >
             <SelectTrigger id={id}>
-              <SelectValue />
+              <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
               {options.map((o) => (

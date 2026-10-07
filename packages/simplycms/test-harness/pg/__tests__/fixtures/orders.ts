@@ -35,6 +35,32 @@ export const orderInput = (
   items: items.map((i) => ({ ...i, modificationId: null })),
 });
 
+/**
+ * Вхід оформлення на демо-сіді (Е6в, Task 6): самовивіз зі «Склад у Києві»,
+ * 1 шт товару без обліку залишку — оформлювати можна скільки завгодно разів.
+ */
+export const demoPickupInput = async (
+  dbUrl: string,
+  slug = 'invertor-gibrydnyi-8kw',
+): Promise<PlaceOrderInput> => {
+  const id = async (sql: string, p: unknown[] = []) =>
+    ((await queryRows(dbUrl, sql, p)) as { id: string }[])[0]!.id;
+  return orderInput(
+    await id(`select id from public.shipping_methods where code = 'pickup'`),
+    await id(
+      `select id from public.pickup_points where name = 'Склад у Києві'`,
+    ),
+    [
+      {
+        productId: await id(`select id from public.products where slug = $1`, [
+          slug,
+        ]),
+        quantity: 1,
+      },
+    ],
+  );
+};
+
 /** Оформлення справжньою воронкою вітрини; повертає id замовлення. */
 export const placeOrder = async (
   input: PlaceOrderInput,

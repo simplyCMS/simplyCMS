@@ -1,6 +1,5 @@
 import { and, eq, inArray, lte, sql } from 'drizzle-orm';
 import { products } from 'simplycms/schema';
-import { resolvePrice } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
 import {
   homeProductColumns,
@@ -8,10 +7,7 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
-import {
-  loadDefaultPriceTypeId,
-  loadPricesByProduct,
-} from 'simplycms/commerce';
+import { loadGuestPriceTypes, loadPricesByProduct } from 'simplycms/commerce';
 
 /** Скільки товарів показує карусель одного розділу на головній. */
 const PER_SECTION_LIMIT = 8;
@@ -40,7 +36,6 @@ export async function loadSectionProducts(
   const ranked = db
     .select({
       ...homeProductColumns,
-      section_id: products.sectionId,
       // Другий ключ у вікні — та сама причина, що й у `loadHomeProducts`:
       // усі рядки одного `insert … select` дістають один `created_at`.
       position: sql<number>`
@@ -63,15 +58,11 @@ export async function loadSectionProducts(
     .where(lte(ranked.position, PER_SECTION_LIMIT))
     .orderBy(ranked.section_id, ranked.position);
 
-  // Ціна — ТИМ САМИМ доменним резолвом, що в каталозі (`product-list-item`):
-  // окремий MIN(price)-агрегат був би другим способом рахувати ціну.
   const prices = await loadPricesByProduct(
     db,
     rows.map((row) => row.id),
   );
-  const defaultPriceType = await loadDefaultPriceTypeId(db);
-  const priceOf = (id: string) =>
-    resolvePrice(prices[id] ?? [], defaultPriceType, defaultPriceType, null);
+  const guestPriceTypes = await loadGuestPriceTypes(db);
 
   const slugById = new Map(sections.map((s) => [s.id, s.slug]));
   for (const row of rows) {
@@ -79,7 +70,12 @@ export async function loadSectionProducts(
     const bucket = bySection[row.section_id];
     if (!bucket) continue;
     bucket.push(
-      toHomeProduct(row, slugById.get(row.section_id) ?? null, priceOf(row.id)),
+      toHomeProduct(
+        row,
+        slugById.get(row.section_id) ?? null,
+        prices[row.id] ?? [],
+        guestPriceTypes,
+      ),
     );
   }
 

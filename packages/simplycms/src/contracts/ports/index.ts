@@ -14,7 +14,6 @@ import type {
 import type { Paged } from '../objects/common';
 import type { StockInfo } from '../objects/inventory';
 import type { PriceType } from '../objects/pricing';
-import type { DiscountGroup, DiscountScope } from '../objects/discount';
 import type { ShippingZone } from '../objects/shipping';
 import type { Order, OrderQuery, CreateOrderInput } from '../objects/order';
 import type { Identity } from '../objects/identity';
@@ -37,7 +36,6 @@ export interface CatalogRepository {
   getProperties(q?: PropertyQuery): Promise<Property[]>;
   getStock(ids: string[]): Promise<Record<string, StockInfo>>;
   getPriceTypes(): Promise<PriceType[]>;
-  getDiscounts(ctx: DiscountScope): Promise<DiscountGroup[]>;
   getShippingZones(): Promise<ShippingZone[]>;
   // Write-операції (admin) — опційні для read-only вітрин.
   upsertProduct?(product: Partial<Product> & { id?: string }): Promise<Product>;

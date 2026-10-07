@@ -37,6 +37,7 @@
  * закритий — доказ: `admin/lib/__tests__/conflict-through-transaction.test.ts`.
  */
 export interface WriteBack<Row> {
+  has(key: string): boolean;
   utils: {
     writeBatch(cb: () => void): void;
     writeUpsert(row: Row): void;

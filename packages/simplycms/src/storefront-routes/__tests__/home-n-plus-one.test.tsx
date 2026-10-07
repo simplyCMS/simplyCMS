@@ -89,8 +89,10 @@ const product = (id: string, sectionSlug: string): HomeProduct => ({
   short_description: null,
   stock_status: 'in_stock',
   section: { slug: sectionSlug },
+  section_id: null,
   price: null,
   old_price: null,
+  prices: [],
 });
 
 const SECTION_PRODUCTS: Record<string, HomeProduct[]> = {

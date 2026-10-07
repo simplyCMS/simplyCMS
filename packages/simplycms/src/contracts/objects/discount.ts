@@ -22,6 +22,8 @@ export interface DiscountCondition {
 
 export interface Discount {
   id: string;
+  /** Група-власник: за нею `buildDiscountForest` чіпляє знижку в дерево. */
+  group_id: string;
   name: string;
   description: string | null;
   discount_type: DiscountType;
@@ -30,6 +32,8 @@ export interface Discount {
   is_active: boolean;
   starts_at: Date | null;
   ends_at: Date | null;
+  /** `null` — знижка для всіх типів цін (Е6в-2). */
+  price_type_id: string | null;
   targets: DiscountTarget[];
   conditions: DiscountCondition[];
 }
@@ -47,16 +51,24 @@ export interface DiscountGroup {
   children: DiscountGroup[];
 }
 
+/**
+ * Вхід рушія знижок (Е6в-3) — контракт умов, який у К5 відкриється плагінам.
+ *
+ * 🔴 `now` обовʼязковий і без відкату на `new Date()`: картка, кошик і чек
+ * мусять рахувати на ОДНОМУ серверному часі, інакше межа акції в секунду
+ * оформлення дає різні ціни на екрані й у замовленні.
+ */
 export interface DiscountContext {
-  userId?: string | null;
-  userCategoryId?: string | null;
-  quantity: number;
-  cartTotal: number;
-  productId: string;
-  modificationId?: string | null;
-  sectionId?: string | null;
-  isLoggedIn: boolean;
-  now?: Date;
+  customer: { categoryId: string | null; isLoggedIn: boolean };
+  item: {
+    productId: string;
+    modificationId: string | null;
+    sectionId: string | null;
+    quantity: number;
+  };
+  /** Сума БАЗОВИХ цін кошика (Е6в-9). */
+  cart: { total: number };
+  now: Date;
 }
 
 export interface AppliedDiscount {
@@ -68,11 +80,30 @@ export interface AppliedDiscount {
   groupName: string;
 }
 
+/**
+ * Чому знижка не увійшла в суму (Е6в-6). Код, а не текст: пояснення
+ * перекладає адмінка (i18n), домен мови не знає.
+ */
+export type DiscountRejectionReason =
+  | 'inactive'
+  | 'out_of_dates'
+  | 'group_inactive'
+  | 'group_out_of_dates'
+  | 'target_mismatch'
+  | 'condition_failed'
+  | 'condition_unknown'
+  | 'condition_invalid'
+  | 'discount_invalid'
+  | 'lost_to_operator'
+  | 'exceeds_price';
+
 export interface RejectedDiscount {
   id: string;
   name: string;
-  reason: string;
   groupName: string;
+  reason: DiscountRejectionReason;
+  /** Тип умови для `condition_*`, інакше `null`. */
+  conditionType: string | null;
 }
 
 export interface DiscountResult {
@@ -82,11 +113,14 @@ export interface DiscountResult {
   rejectedDiscounts: RejectedDiscount[];
 }
 
-/** Скоуп для CatalogRepository.getDiscounts — фільтр доступних знижок. */
-export interface DiscountScope {
-  productId?: string;
-  sectionId?: string;
-  userCategoryId?: string | null;
-  /** Тип ціни (price list), за яким відбираються знижки. */
-  priceTypeId?: string | null;
+/**
+ * Порогова підказка (Е6в-12): «від 3 шт — 900 ₴/шт». Головне — ціна;
+ * `percentOff` є лише тоді, коли на порозі застосовано рівно одну знижку
+ * типу `percent`, бо −50 ₴, переведені у відсоток, вводять в оману.
+ */
+export interface ThresholdHint {
+  kind: 'quantity' | 'cart_total';
+  threshold: number;
+  finalPrice: number;
+  percentOff: number | null;
 }

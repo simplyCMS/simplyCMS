@@ -22,6 +22,11 @@ export type CommerceIds = Record<
   string
 >;
 
+/** Id контуру + SQL суперкористувачем у його БД — тест-локальні фікстури. */
+export type CommerceDb = CommerceIds & {
+  run: (statement: string) => Promise<unknown[]>;
+};
+
 /** Транзакція гостя — той самий актор, що в чекауті без сесії. */
 export const guest = <T>(fn: (db: ActorDb) => Promise<T>): Promise<T> =>
   withActor({ role: 'app_user' }, fn);
@@ -33,8 +38,9 @@ export const line = (
   modificationId: string | null = null,
 ): CheckoutItemInput => ({ productId, modificationId, quantity });
 
-export function useCommerceDb(prefix: string): CommerceIds {
-  const ids: CommerceIds = {
+export function useCommerceDb(prefix: string): CommerceDb {
+  const ids: CommerceDb = {
+    run: (statement) => H.queryRows(dbUrl, statement) as Promise<unknown[]>,
     wholesale: '',
     pickup: '',
     point: '',

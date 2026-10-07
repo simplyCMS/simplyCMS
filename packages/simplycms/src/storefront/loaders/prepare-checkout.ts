@@ -10,6 +10,7 @@ import {
   type NewOrderItem,
   type ShippingMethodRow,
 } from 'simplycms/commerce';
+import { toCents } from 'simplycms/domain/pricing';
 import type { ActorDb } from './db';
 
 /**
@@ -90,7 +91,15 @@ export async function prepareCheckout(
   if (items === 'not_purchasable')
     return { ok: false, reason: 'not_purchasable' };
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // 🔴 Суми — цілими центами (Е6в-9), як і квота кошика (`quote-cart.ts`):
+  // float-сума `0.1 + 0.2` дала б 0.30000000000000004, і квота кошика з
+  // квотою оформлення розійшлися б на копійку — а з ними й поріг тарифу
+  // «безкоштовно від» до і після вибору способу доставки.
+  const subtotalCents = items.reduce(
+    (sum, i) => sum + toCents(i.price) * i.quantity,
+    0,
+  );
+  const subtotal = subtotalCents / 100;
   const shipping = quoteShippingCost(choice, subtotal);
   // `null` — жодного застосовного тарифу: це НЕ «безкоштовно», а відмова.
   if (shipping === null) return { ok: false, reason: 'shipping_unavailable' };
@@ -104,6 +113,6 @@ export async function prepareCheckout(
     shippingCost,
     shippingPricing: shipping.pricing,
     shippingSnapshot: choice.snapshot,
-    total: subtotal + shippingCost,
+    total: (subtotalCents + toCents(shippingCost)) / 100,
   };
 }
