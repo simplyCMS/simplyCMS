@@ -448,7 +448,9 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
   дає перезапит на кожен mount, а не інвалідація. Збій середовища — помилка з
   «Повторити» на картці (`PricesFailure`), а не базова ціна. Кошик — серверна квота
   (`quoteCart` → `quoteCartFor` → `priceCart`); `CartItem` ціни не зберігає. SSR
-  показує базову ціну до гідрації.
+  гостьовий: база до гідрації — за типом ціни гостя тим самим `resolvePriceTypes`
+  (`loadGuestPriceTypes`), що й `loadPricingContext`; персональний тип і знижки
+  SSR не рахує (К3-Е6в-1).
 - 🔴 **Локи конфігурації — `advisoryXactLock(db, key)`** (`simplycms/db`, ЄДИНА
   реалізація SQL: `pg_advisory_xact_lock(hashtextextended(key, 0))`;
   `lockCatalogTarget` адмінки — її виклик). Лок береться ПЕРШИМ запитом
