@@ -53,7 +53,10 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
 // Е4-константа 14 була стелею з запасом +1 над фактом (13).
 // Е6а Task 6: виміряно 11 (ShippingMethodEdit пішов на колекцію: −1).
 // Е6а Task 7: виміряно 8 (зони й точки видачі пішли на колекції: −3).
-const KNOWN_WITHOUT_ID = 8;
+// Е6в Task 8: виміряно 4 (знижки пішли на серверний шар: DiscountEdit ×3,
+// DiscountGroupEdit ×1; лишились BannerEdit, UserCategoryEdit,
+// UserCategoryRuleEdit, UserEdit).
+const KNOWN_WITHOUT_ID = 4;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

@@ -10,7 +10,7 @@ export const messages = {
   'admin.discounts.subgroup': 'Підгрупа',
   'admin.discounts.deleteGroupTitle': 'Видалити групу?',
   'admin.discounts.deleteGroupText':
-    'Всі скидки та дочірні групи будуть видалені разом з цією групою.',
+    'Буде видалено груп: {groups}, знижок: {discounts}',
   'admin.discounts.deleteTitle': 'Видалити скидку?',
   'admin.discounts.deleteText': 'Скидку «{name}» буде видалено назавжди.',
   'admin.discounts.groupDeleted': 'Групу видалено',
@@ -38,9 +38,6 @@ export const messages = {
   'admin.discounts.op.maxLong': 'МАКС — найбільша',
 
   // Форма скидки
-  'admin.discounts.tabMain': 'Основні',
-  'admin.discounts.tabTargets': 'Цілі (',
-  'admin.discounts.tabConditions': 'Умови (',
   'admin.discounts.namePlaceholder': 'Знижка 10% для VIP',
   'admin.discounts.group': 'Група',
   'admin.discounts.pick': 'Оберіть',
@@ -49,13 +46,10 @@ export const messages = {
   'admin.discounts.type.fixedAmount': 'Фіксована сума (грн)',
   'admin.discounts.type.fixedPrice': 'Фіксована ціна (= грн)',
   'admin.discounts.targets': 'До чого застосовується',
-  'admin.discounts.addTarget': 'Додати ціль',
-  'admin.discounts.noTargets': 'Без цілей — застосовується до всіх товарів',
+  'admin.discounts.noTargets': 'Цілей не вибрано',
   'admin.discounts.allProducts': 'Всі товари',
   'admin.discounts.modification': 'Модифікація',
   'admin.discounts.pickProduct': 'Оберіть товар',
-  'admin.discounts.pickSection': 'Оберіть розділ',
-  'admin.discounts.modificationUuid': 'UUID модифікації',
   'admin.discounts.conditions': 'Умови застосування',
   'admin.discounts.addCondition': 'Додати умову',
   'admin.discounts.noConditions': 'Без умов — застосовується завжди',
@@ -68,6 +62,37 @@ export const messages = {
   'admin.discounts.parentGroup': "Батьківська група (необов'язково)",
   'admin.discounts.rootLevel': 'Кореневий рівень',
   'admin.discounts.priorityLabel': 'Пріоритет (менше = вище)',
-  'admin.discounts.uah': 'грн',
-  'admin.discounts.uahFixed': '= грн',
+
+  // К3-Е6в: дерево, картки групи й знижки на серверному шарі
+  'admin.discounts.allPriceTypes': 'Усі типи цін',
+  'admin.discounts.priceType': 'Тип ціни',
+  'admin.discounts.deleteGroupLabel': 'Видалити групу «{name}»',
+  'admin.discounts.deleteDiscountLabel': 'Видалити знижку «{name}»',
+  'admin.discounts.editGroupLabel': 'Редагувати групу «{name}»',
+  'admin.discounts.editDiscountLabel': 'Редагувати знижку «{name}»',
+  'admin.discounts.toggleGroupLabel': 'Активність групи «{name}»',
+  'admin.discounts.expandLabel': 'Згорнути або розгорнути «{name}»',
+  'admin.discounts.notFound': 'Знижку не знайдено',
+  'admin.discounts.groupNotFound': 'Групу не знайдено',
+  'admin.discounts.valueInvalid':
+    'Значення має бути більше нуля, відсоток — не більше 100',
+  'admin.discounts.targetsRequired':
+    'Оберіть хоча б одну ціль або «Всі товари»',
+  'admin.discounts.allProductsHint':
+    'Знижка діє на весь каталог — окремі цілі вимкнено',
+  'admin.discounts.targetProduct': 'Товар',
+  'admin.discounts.targetSection': 'Розділ',
+  'admin.discounts.addSection': 'Додати розділ',
+  'admin.discounts.addProduct': 'Додати товар або модифікацію',
+  'admin.discounts.wholeProduct': 'Увесь товар «{name}»',
+  'admin.discounts.removeTarget': 'Прибрати ціль',
+  'admin.discounts.missingTarget': 'не знайдено',
+  'admin.discounts.removeCondition': 'Видалити умову',
+  'admin.discounts.unknownCondition': 'Невідома умова: {type}',
+  'admin.discounts.unknownConditionBlocks':
+    'Цю умову рушій знижок не знає — видаліть її, щоб зберегти',
+  'admin.discounts.conditionInvalid': 'Умову заповнено некоректно',
+  'admin.discounts.conditionOperator': 'Оператор умови',
+  'admin.discounts.condOp.in': 'одна з',
+  'admin.discounts.condOp.notIn': 'жодна з',
 } as const;
