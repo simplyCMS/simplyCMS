@@ -2,7 +2,11 @@
 // логіки — контракт тем v3, Фаза 3).
 
 import { applyDiscount } from 'simplycms/core/hooks/useDiscountedPrice';
-import type { DiscountGroup, DiscountResult } from 'simplycms/domain/discounts';
+import type {
+  DiscountContext,
+  DiscountGroup,
+  DiscountResult,
+} from 'simplycms/domain/discounts';
 import type { StockStatus } from 'simplycms/contracts';
 import { isPurchasable } from 'simplycms/domain/inventory';
 import { resolvePrice, type PriceEntry } from 'simplycms/domain/pricing';
@@ -23,6 +27,16 @@ interface PricingBase {
   discountGroups: DiscountGroup[];
   discountCtx: DiscountUserContext;
 }
+
+/** Картка — одна штука поза кошиком: «від N шт» і «від суми» тут мовчать. */
+const cardContext = (
+  actor: DiscountUserContext,
+  item: Omit<DiscountContext['item'], 'quantity'>,
+): Omit<DiscountContext, 'now'> => ({
+  customer: { categoryId: actor.userCategoryId, isLoggedIn: actor.isLoggedIn },
+  item: { ...item, quantity: 1 },
+  cart: { total: 0 },
+});
 
 /** Ціни всіх модифікацій (зі знижками) — для перемикача модифікацій. */
 export function buildModificationPrices(
@@ -46,14 +60,15 @@ export function buildModificationPrices(
 
     // Знижки рахуються окремо для кожної модифікації
     if (input.discountGroups.length > 0) {
-      const discountResult = applyDiscount(modPrice, input.discountGroups, {
-        ...input.discountCtx,
-        quantity: 1,
-        cartTotal: 0,
-        productId: product.id,
-        modificationId: mod.id,
-        sectionId: section?.id || null,
-      });
+      const discountResult = applyDiscount(
+        modPrice,
+        input.discountGroups,
+        cardContext(input.discountCtx, {
+          productId: product.id,
+          modificationId: mod.id,
+          sectionId: section?.id || null,
+        }),
+      );
       if (discountResult.totalDiscount > 0) {
         modOldPrice = modPrice;
         modPrice = discountResult.finalPrice;
@@ -94,14 +109,15 @@ export function resolveCurrentPricing(
   let discountResult: DiscountResult | null = null;
   let basePrice: number | undefined;
   if (price !== undefined && input.discountGroups.length > 0) {
-    discountResult = applyDiscount(price, input.discountGroups, {
-      ...input.discountCtx,
-      quantity: 1,
-      cartTotal: 0,
-      productId: product.id,
-      modificationId,
-      sectionId: section?.id || null,
-    });
+    discountResult = applyDiscount(
+      price,
+      input.discountGroups,
+      cardContext(input.discountCtx, {
+        productId: product.id,
+        modificationId,
+        sectionId: section?.id || null,
+      }),
+    );
     if (discountResult.totalDiscount > 0) {
       basePrice = price;
       oldPrice = price;

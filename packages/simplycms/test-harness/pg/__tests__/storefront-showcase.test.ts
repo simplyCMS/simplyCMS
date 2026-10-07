@@ -157,11 +157,14 @@ describe('вітрина: знижки, банери, залишки, відгу
 
     const priceFor = (userCategoryId: string) =>
       resolveDiscount(BASE_PRICE, groups, {
-        userCategoryId,
-        quantity: 1,
-        cartTotal: 0,
-        productId: ids.reviewedProduct,
-        isLoggedIn: true,
+        customer: { categoryId: userCategoryId, isLoggedIn: true },
+        item: {
+          productId: ids.reviewedProduct,
+          modificationId: null,
+          sectionId: null,
+          quantity: 1,
+        },
+        cart: { total: 0 },
         now: new Date(),
       }).finalPrice;
 

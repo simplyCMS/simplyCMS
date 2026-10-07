@@ -50,6 +50,7 @@ export function toDiscount(
 ): Discount {
   return {
     id: row.id,
+    group_id: row.groupId,
     name: row.name,
     description: row.description,
     discount_type: row.discountType as DiscountType,
@@ -58,6 +59,7 @@ export function toDiscount(
     is_active: row.isActive,
     starts_at: row.startsAt,
     ends_at: row.endsAt,
+    price_type_id: row.priceTypeId,
     targets: targets
       .filter((target) => target.discountId === row.id)
       .map((target) => ({

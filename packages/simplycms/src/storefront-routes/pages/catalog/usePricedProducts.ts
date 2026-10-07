@@ -44,16 +44,22 @@ export function usePricedProducts(
 
       if (finalPrice !== null && discountGroups.length > 0) {
         const result = applyDiscount(finalPrice, discountGroups, {
-          ...discountCtx,
-          quantity: 1,
+          customer: {
+            categoryId: discountCtx.userCategoryId,
+            isLoggedIn: discountCtx.isLoggedIn,
+          },
+          item: {
+            productId: p.id,
+            modificationId: defaultMod?.id || null,
+            // Розділ беремо з приєднаної гілки, а за її відсутності — з поля
+            // рядка: обидві сторінки до спліту читали розділ по-своєму,
+            // значення збігаються (гілка `sections` приєднана тим самим
+            // запитом).
+            sectionId: p.section?.id ?? p.section_id ?? null,
+            quantity: 1,
+          },
           // Вибірка каталогу рендериться поза кошиком — сума кошика нульова.
-          cartTotal: 0,
-          productId: p.id,
-          modificationId: defaultMod?.id || null,
-          // Розділ беремо з приєднаної гілки, а за її відсутності — з поля
-          // рядка: обидві сторінки до спліту читали розділ по-своєму, значення
-          // збігаються (гілка `sections` приєднана тим самим запитом).
-          sectionId: p.section?.id ?? p.section_id ?? null,
+          cart: { total: 0 },
         });
         if (result.totalDiscount > 0) {
           oldPrice = finalPrice;

@@ -238,6 +238,7 @@ export default function PriceValidator() {
         if (group) {
           group.discounts.push({
             id: d.id,
+            group_id: d.group_id,
             name: d.name,
             description: d.description,
             discount_type: d.discount_type,
@@ -246,6 +247,7 @@ export default function PriceValidator() {
             is_active: d.is_active,
             starts_at: d.starts_at ? new Date(d.starts_at) : null,
             ends_at: d.ends_at ? new Date(d.ends_at) : null,
+            price_type_id: d.price_type_id,
             targets: d.discount_targets || [],
             conditions: d.discount_conditions || [],
           });
@@ -264,14 +266,18 @@ export default function PriceValidator() {
       }
 
       const ctx: DiscountContext = {
-        userId: selectedUserId || null,
-        userCategoryId: user?.category_id || null,
-        quantity,
-        cartTotal: cartTotal || resolved.price * quantity,
-        productId: selectedProductId,
-        modificationId: modId,
-        sectionId: product?.section_id || null,
-        isLoggedIn: !!selectedUserId,
+        customer: {
+          categoryId: user?.category_id || null,
+          isLoggedIn: !!selectedUserId,
+        },
+        item: {
+          productId: selectedProductId,
+          modificationId: modId,
+          sectionId: product?.section_id || null,
+          quantity,
+        },
+        cart: { total: cartTotal || resolved.price * quantity },
+        now: new Date(),
       };
 
       const discountResult = resolveDiscount(resolved.price, roots, ctx);

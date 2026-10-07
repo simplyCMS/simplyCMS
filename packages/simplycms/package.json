@@ -13,6 +13,7 @@
     "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
+    "./contracts/cart-limits": "./src/contracts/cart-limits.ts",
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
     "./contracts/store-profile": "./src/contracts/store-profile.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
@@ -23,7 +24,7 @@
     "./contracts/views/fixtures": "./src/contracts/views/fixtures/index.ts",
     "./domain": "./src/domain/index.ts",
     "./domain/pricing": "./src/domain/pricing.ts",
-    "./domain/discounts": "./src/domain/discounts.ts",
+    "./domain/discounts": "./src/domain/discounts/index.ts",
     "./domain/inventory": "./src/domain/inventory.ts",
     "./domain/shipping": "./src/domain/shipping.ts",
     "./domain/media": "./src/domain/media.ts",
@@ -139,6 +140,10 @@
         "types": "./dist/contracts/order-status-codes.d.ts",
         "import": "./dist/contracts/order-status-codes.js"
       },
+      "./contracts/cart-limits": {
+        "types": "./dist/contracts/cart-limits.d.ts",
+        "import": "./dist/contracts/cart-limits.js"
+      },
       "./contracts/shipping-providers": {
         "types": "./dist/contracts/shipping-providers.d.ts",
         "import": "./dist/contracts/shipping-providers.js"
@@ -180,8 +185,8 @@
         "import": "./dist/domain/pricing.js"
       },
       "./domain/discounts": {
-        "types": "./dist/domain/discounts.d.ts",
-        "import": "./dist/domain/discounts.js"
+        "types": "./dist/domain/discounts/index.d.ts",
+        "import": "./dist/domain/discounts/index.js"
       },
       "./domain/inventory": {
         "types": "./dist/domain/inventory.d.ts",

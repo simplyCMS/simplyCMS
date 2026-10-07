@@ -122,14 +122,14 @@ export async function priceItems(
     if (basePrice === null) return 'not_purchasable';
 
     const discount = resolveDiscount(basePrice, groups, {
-      userId,
-      userCategoryId,
-      quantity: item.quantity,
-      cartTotal,
-      productId: item.productId,
-      modificationId: item.modificationId,
-      sectionId: product.section_id,
-      isLoggedIn: userId !== null,
+      customer: { categoryId: userCategoryId, isLoggedIn: userId !== null },
+      item: {
+        productId: item.productId,
+        modificationId: item.modificationId,
+        sectionId: product.section_id,
+        quantity: item.quantity,
+      },
+      cart: { total: cartTotal },
       now: new Date(),
     });
 
