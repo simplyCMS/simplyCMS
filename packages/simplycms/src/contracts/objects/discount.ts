@@ -92,6 +92,7 @@ export type DiscountRejectionReason =
   | 'target_mismatch'
   | 'condition_failed'
   | 'condition_unknown'
+  | 'condition_invalid'
   | 'lost_to_operator'
   | 'exceeds_price';
 
@@ -100,7 +101,7 @@ export interface RejectedDiscount {
   name: string;
   groupName: string;
   reason: DiscountRejectionReason;
-  /** Тип умови для `condition_failed`/`condition_unknown`, інакше `null`. */
+  /** Тип умови для `condition_*`, інакше `null`. */
   conditionType: string | null;
 }
 

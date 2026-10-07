@@ -29,6 +29,19 @@ describe('розбір умов', () => {
     expect(priceWith('min_quantity', '>=', 'abc', 5).finalPrice).toBe(1000);
   });
 
+  // Е6в-23: зареєстрований тип зі зламаним значенням — `condition_invalid`,
+  // а не `condition_unknown` (той лише для незареєстрованого типу).
+  it.each(['abc', 2.5, 1000] as const)(
+    'min_quantity >= %s → condition_invalid',
+    (value) => {
+      const res = priceWith('min_quantity', '>=', value, 5);
+      expect(res.finalPrice).toBe(1000);
+      expect(res.rejectedDiscounts).toMatchObject([
+        { reason: 'condition_invalid', conditionType: 'min_quantity' },
+      ]);
+    },
+  );
+
   it.each([2.5, 1000, 0, -1])(
     'min_quantity >= %s → parse null (ціле 1…999)',
     (value) => {

@@ -57,9 +57,11 @@ export function parseDiscountCondition(
 }
 
 /**
- * Перша умова знижки, що не пройшла, або `null`. Невідомий тип і значення
- * поза контрактом — `condition_unknown`: рушій цієї умови не розуміє, і
- * адмінка має сказати саме це, а не «покупець не підходить».
+ * Перша умова знижки, що не пройшла, або `null` (Е6в-23). Незареєстрований
+ * тип — `condition_unknown`; зареєстрований, але значення поза контрактом
+ * (`parse → null`) — `condition_invalid`. Обидва fail-closed, а різні коди
+ * потрібні діагностиці: «рушій не знає такої умови» і «умову записано
+ * зламаною» лагодяться по-різному.
  */
 export function failedCondition(
   conditions: readonly DiscountCondition[],
@@ -67,9 +69,11 @@ export function failedCondition(
 ): { reason: DiscountRejectionReason; conditionType: string } | null {
   for (const { condition_type, operator, value } of conditions) {
     const definition = getDiscountCondition(condition_type);
-    const config = definition?.parse(operator, value) ?? null;
-    if (!definition || config === null)
+    if (!definition)
       return { reason: 'condition_unknown', conditionType: condition_type };
+    const config = definition.parse(operator, value);
+    if (config === null)
+      return { reason: 'condition_invalid', conditionType: condition_type };
     if (!definition.evaluate(config, ctx))
       return { reason: 'condition_failed', conditionType: condition_type };
   }
