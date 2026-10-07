@@ -4,13 +4,9 @@ import {
   buildDiscountForest,
   type InvalidDiscountRow,
 } from 'simplycms/domain/discounts';
-import {
-  loadCategoryPriceTypeId,
-  loadDefaultUserCategoryId,
-  loadUserCategoryId,
-} from './categories';
+import { loadDefaultUserCategoryId, loadUserCategoryId } from './categories';
 import { loadDiscountRules } from './discount-rules';
-import { loadDefaultPriceTypeId } from './pricing';
+import { resolvePriceTypes } from './price-types';
 
 /** Усе, від чого залежить ціна позиції, крім самої позиції й кошика (Е6в-9). */
 export interface PricingContext {
@@ -35,7 +31,8 @@ export interface PricingContext {
  * без категорії випав би з роздрібної акції, у яку гість потрапляє (Е6в-19).
  * Тип ціни — тип ЦІЄЇ ефективної категорії; лише коли в ній типу немає —
  * глобальний дефолтний (F5 фінального рев'ю: одне правило для картки,
- * кошика, чеку й діагностики). Ліс — за ЕФЕКТИВНИМ типом ціни (B2 аудиту r1).
+ * кошика, чеку й діагностики; правило — `resolvePriceTypes`, його ж кличуть
+ * SSR-лоадери, F5b). Ліс — за ЕФЕКТИВНИМ типом ціни (B2 аудиту r1).
  *
  * 🔴 `now` береться ОДИН раз на весь розрахунок: межа акції в секунду
  * оформлення не має дати різні ціни двом позиціям одного кошика.
@@ -47,13 +44,12 @@ export async function loadPricingContext(
   userId: string | null,
   opts?: { includeInactive?: boolean },
 ): Promise<PricingContext> {
-  const defaultPriceTypeId = await loadDefaultPriceTypeId(db);
   const userCategoryId = userId ? await loadUserCategoryId(db, userId) : null;
   const categoryId = userCategoryId ?? (await loadDefaultUserCategoryId(db));
-  const categoryPriceTypeId = categoryId
-    ? await loadCategoryPriceTypeId(db, categoryId)
-    : null;
-  const priceTypeId = categoryPriceTypeId ?? defaultPriceTypeId;
+  const { priceTypeId, defaultPriceTypeId } = await resolvePriceTypes(
+    db,
+    categoryId,
+  );
   const rules = await loadDiscountRules(db);
 
   return {

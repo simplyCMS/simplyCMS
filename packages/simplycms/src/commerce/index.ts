@@ -22,6 +22,8 @@ export type {
   ShippingChoiceRejection,
 } from './shipping-choice';
 export { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
+export { loadGuestPriceTypes, resolvePriceTypes } from './price-types';
+export type { PriceTypes } from './price-types';
 export {
   loadCategoryPriceTypeId,
   loadDefaultUserCategoryId,

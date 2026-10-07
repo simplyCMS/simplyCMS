@@ -1,5 +1,6 @@
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
+import type { PriceTypes } from 'simplycms/commerce';
 import type { PriceEntry } from 'simplycms/contracts';
 import { resolvePrice } from 'simplycms/domain/pricing';
 import { toImageList } from './product';
@@ -51,12 +52,16 @@ export function toHomeProduct(
   row: RawHomeProductRow,
   sectionSlug: string | null,
   prices: PriceEntry[],
-  defaultPriceTypeId: string | null,
+  priceTypes: PriceTypes,
 ): HomeProductRow {
   // SSR-ціна — ТИМ САМИМ доменним резолвом, що в каталозі
   // (`product-list-item`): окремий MIN(price)-агрегат був би другим способом
-  // рахувати ціну.
-  const ssr = resolvePrice(prices, defaultPriceTypeId, defaultPriceTypeId);
+  // рахувати ціну. Типи — гостьові (`loadGuestPriceTypes`, F5b).
+  const ssr = resolvePrice(
+    prices,
+    priceTypes.priceTypeId,
+    priceTypes.defaultPriceTypeId,
+  );
   return {
     id: row.id,
     name: row.name,

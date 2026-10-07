@@ -7,10 +7,7 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
-import {
-  loadDefaultPriceTypeId,
-  loadPricesByProduct,
-} from 'simplycms/commerce';
+import { loadGuestPriceTypes, loadPricesByProduct } from 'simplycms/commerce';
 
 /** Скільки товарів показує карусель одного розділу на головній. */
 const PER_SECTION_LIMIT = 8;
@@ -65,7 +62,7 @@ export async function loadSectionProducts(
     db,
     rows.map((row) => row.id),
   );
-  const defaultPriceType = await loadDefaultPriceTypeId(db);
+  const guestPriceTypes = await loadGuestPriceTypes(db);
 
   const slugById = new Map(sections.map((s) => [s.id, s.slug]));
   for (const row of rows) {
@@ -77,7 +74,7 @@ export async function loadSectionProducts(
         row,
         slugById.get(row.section_id) ?? null,
         prices[row.id] ?? [],
-        defaultPriceType,
+        guestPriceTypes,
       ),
     );
   }

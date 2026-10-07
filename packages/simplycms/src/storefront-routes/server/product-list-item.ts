@@ -8,11 +8,15 @@ export type { ProductListRow };
 
 /**
  * Контекст цін для серверного резолву. SSR рендериться анонімно, тож ціни
- * рахуються за типом ціни «за замовчуванням»; персональний тип користувача
- * доклеює клієнт середовищем цін (`useDiscountEnvironment`) під час
- * збагачення списку.
+ * рахуються за типом ціни ГОСТЯ — тим самим правилом, що `loadPricingContext`
+ * (`loadGuestPriceTypes`: тип дефолтної категорії, інакше глобальний
+ * дефолтний, F5b); персональний тип покупця й знижки доклеює клієнт
+ * середовищем цін (`useDiscountEnvironment`) — SSR їх не рахує (К3-Е6в-1).
  */
 export interface PriceContext {
+  /** Тип ціни гостя. */
+  priceTypeId: string | null;
+  /** Глобальний дефолтний — відкат `resolvePrice`, як у `cardPrice`. */
   defaultPriceTypeId: string | null;
 }
 
@@ -59,7 +63,7 @@ export function toProductListItem(
 
   const { price } = resolvePrice(
     row.product_prices,
-    ctx.defaultPriceTypeId,
+    ctx.priceTypeId,
     ctx.defaultPriceTypeId,
     defaultMod?.id ?? null,
   );
@@ -77,10 +81,8 @@ export function toProductListItem(
 /** Мапить рядки списку в DTO за СПІЛЬНИМ контекстом цін (він один на сторінку). */
 export function toProductListPayload(
   rows: ProductListRow[],
-  defaultPriceTypeId: string | null,
+  priceContext: PriceContext,
 ): ProductListPayload {
-  const priceContext: PriceContext = { defaultPriceTypeId };
-
   return {
     items: rows.map((row) => toProductListItem(row, priceContext)),
     priceContext,

@@ -52,9 +52,18 @@ function makeRow(overrides: Partial<ProductListRow> = {}): ProductListRow {
   };
 }
 
+/** Тип гостя збігається з глобальним дефолтним — звичайний магазин. */
+const GUEST_DEFAULT: PriceContext = {
+  priceTypeId: DEFAULT_PRICE_TYPE,
+  defaultPriceTypeId: DEFAULT_PRICE_TYPE,
+};
+
 describe('toProductListItem', () => {
   it('(а) бере ціну default-модифікації за default-типом ціни', () => {
-    const ctx: PriceContext = { defaultPriceTypeId: DEFAULT_PRICE_TYPE };
+    const ctx: PriceContext = {
+      priceTypeId: DEFAULT_PRICE_TYPE,
+      defaultPriceTypeId: DEFAULT_PRICE_TYPE,
+    };
 
     expect(toProductListItem(makeRow(), ctx)).toEqual({
       id: 'prod-1',
@@ -88,9 +97,7 @@ describe('toProductListItem', () => {
       ],
     });
 
-    expect(
-      toProductListItem(row, { defaultPriceTypeId: DEFAULT_PRICE_TYPE }).price,
-    ).toBe(111);
+    expect(toProductListItem(row, GUEST_DEFAULT).price).toBe(111);
   });
 
   it("(а'') товар без модифікацій бере ціну без modification_id", () => {
@@ -99,17 +106,13 @@ describe('toProductListItem', () => {
       product_modifications: [],
     });
 
-    expect(
-      toProductListItem(row, { defaultPriceTypeId: DEFAULT_PRICE_TYPE }).price,
-    ).toBe(1000);
+    expect(toProductListItem(row, GUEST_DEFAULT).price).toBe(1000);
   });
 
   it('(б) без цін → price: null (решта полів на місці)', () => {
     const row = makeRow({ product_prices: [], images: [] });
 
-    expect(
-      toProductListItem(row, { defaultPriceTypeId: DEFAULT_PRICE_TYPE }),
-    ).toEqual({
+    expect(toProductListItem(row, GUEST_DEFAULT)).toEqual({
       id: 'prod-1',
       slug: 'invertor-5kw',
       name: 'Інвертор 5 кВт',
@@ -121,7 +124,42 @@ describe('toProductListItem', () => {
 
   it('(в) defaultPriceTypeId: null → fallback resolvePrice, тобто price: null', () => {
     expect(
-      toProductListItem(makeRow(), { defaultPriceTypeId: null }).price,
+      toProductListItem(makeRow(), {
+        priceTypeId: null,
+        defaultPriceTypeId: null,
+      }).price,
     ).toBeNull();
+  });
+
+  it('(г) F5b: тип гостя ≠ глобального — ціна за типом гостя; без його ціни — відкат на дефолтний', () => {
+    const row = makeRow({
+      has_modifications: false,
+      product_modifications: [],
+      product_prices: [
+        {
+          price_type_id: DEFAULT_PRICE_TYPE,
+          price: 1000,
+          old_price: null,
+          modification_id: null,
+        },
+        {
+          price_type_id: 'pt-guest',
+          price: 800,
+          old_price: null,
+          modification_id: null,
+        },
+      ],
+    });
+    const guest: PriceContext = {
+      priceTypeId: 'pt-guest',
+      defaultPriceTypeId: DEFAULT_PRICE_TYPE,
+    };
+    expect(toProductListItem(row, guest).price).toBe(800);
+    expect(
+      toProductListItem(
+        { ...row, product_prices: [row.product_prices[0]!] },
+        guest,
+      ).price,
+    ).toBe(1000);
   });
 });
