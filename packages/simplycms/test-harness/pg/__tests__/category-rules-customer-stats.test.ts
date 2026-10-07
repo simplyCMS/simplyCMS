@@ -1,9 +1,11 @@
 // К3-Е6в, Task 6, fix round 1 (рев'ю): статистика покупця наскрізь.
 // Домен email — з `users.email` (не з копії в `profiles`), провайдери — з
 // УСІХ рядків `accounts`, сума замовлень — `numeric` → число.
+// Фінальне рев'ю (F3): лок покупця в `applyCategoryRules` прибитий тестом.
 import { describe, expect, it } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { applyCategoryRules, loadCustomerStats } from 'simplycms/commerce';
+import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/customer-categories';
 
 describe('автоправила: статистика покупця з БД (Е6в-19)', () => {
@@ -73,5 +75,40 @@ describe('автоправила: статистика покупця з БД (�
     expect(await F.customerState(url(), customer)).toMatchObject({
       category_id: to,
     });
+  });
+
+  it('F3: applyCategoryRules стоїть на локу покупця customer-category:<userId>; після release — переведено', async () => {
+    const from = await F.seedCategory(url());
+    const to = await F.seedCategory(url());
+    const customer = await F.seedCustomer(url(), {
+      categoryId: from,
+      email: 'f3@lock-domain.test',
+    });
+    await F.seedRule(url(), {
+      from,
+      to,
+      conditions: {
+        type: 'all',
+        rules: [
+          { field: 'email_domain', operator: '=', value: 'lock-domain.test' },
+        ],
+      },
+    });
+    const lock = await holdAdvisoryLock(url(), `customer-category:${customer}`);
+    try {
+      const op = asAdmin((tx) => applyCategoryRules(tx, customer));
+      op.catch(() => {});
+      expect(await stillPending(op, 300)).toBe(true);
+      expect(await F.customerState(url(), customer)).toMatchObject({
+        category_id: from,
+      });
+      await lock.release();
+      await expect(op).resolves.toBe('changed');
+      expect(await F.customerState(url(), customer)).toMatchObject({
+        category_id: to,
+      });
+    } finally {
+      await lock.cleanup();
+    }
   });
 });
