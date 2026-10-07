@@ -19,14 +19,14 @@ export function SectionProductCarousel({
   initialData,
 }: SectionProductCarouselProps) {
   const { data: products } = useSectionProducts(section, { initialData });
-  const { data: env } = useDiscountEnvironment();
+  const { data: env, isError: pricesFailed } = useDiscountEnvironment();
 
   if (!products?.length) return null;
 
   return (
     <ProductCarousel
       title={section.name}
-      products={toCardViewModel(products, env)}
+      products={toCardViewModel(products, env, pricesFailed)}
       viewAllLink={`/catalog/${section.slug}`}
     />
   );

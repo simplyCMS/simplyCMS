@@ -23,6 +23,9 @@ export interface ProductPricing {
   modificationPrices: Record<string, ModificationPrice>;
   /** `null` — товару ще (або вже) немає, рахувати нема що. */
   current: CurrentPricing | null;
+  /** Середовище цін не завантажилось (F1): ціни немає, є повтор. */
+  pricesFailed: boolean;
+  retryPrices: () => void;
 }
 
 export function useProductPricing({
@@ -32,7 +35,7 @@ export function useProductPricing({
   modifications,
   selectedMod,
 }: ProductPricingInput): ProductPricing {
-  const { data: env } = useDiscountEnvironment();
+  const { data: env, isError, refetch } = useDiscountEnvironment();
 
   const modificationPrices = useMemo(() => {
     if (!product) return {};
@@ -55,5 +58,10 @@ export function useProductPricing({
     });
   }, [product, section, hasModifications, selectedMod, env]);
 
-  return { modificationPrices, current };
+  return {
+    modificationPrices,
+    current,
+    pricesFailed: isError,
+    retryPrices: refetch,
+  };
 }

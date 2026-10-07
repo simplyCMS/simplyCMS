@@ -3,6 +3,7 @@ import type { ThresholdHint } from 'simplycms/contracts';
 import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
 import { useFormatPrice } from 'simplycms/react-query';
 import { cn } from 'simplycms/ui/utils';
+import { PricesFailure } from '../../components/PricesFailure';
 
 export interface ProductPriceBlockProps {
   className?: string;
@@ -12,6 +13,9 @@ export interface ProductPriceBlockProps {
   oldPrice?: number | null;
   /** Порогові підказки знижок (Е6в-12): «від 3 шт — 900 ₴/шт». */
   hints?: readonly ThresholdHint[];
+  /** Середовище цін не завантажилось (F1): замість ціни — помилка з повтором. */
+  pricesFailed?: boolean;
+  onRetryPrices?: () => void;
 }
 
 /**
@@ -24,8 +28,20 @@ export function ProductPriceBlock({
   price,
   oldPrice,
   hints = [],
+  pricesFailed = false,
+  onRetryPrices,
 }: ProductPriceBlockProps) {
   const formatPrice = useFormatPrice();
+
+  if (pricesFailed && onRetryPrices)
+    return (
+      <div
+        data-simplycms-requisite={PRODUCT_DETAIL_REQUISITES.PriceBlock}
+        className={className}
+      >
+        <PricesFailure onRetry={onRetryPrices} />
+      </div>
+    );
 
   return (
     <div

@@ -12,6 +12,10 @@ export const messages = {
   'catalog.resetFilters': 'Скинути фільтри',
   'catalog.productsCount': '{count} товарів',
   'catalog.noResults': 'Товарів за вибраними фільтрами не знайдено',
+
+  // Збій середовища цін (картки каталогу, головної, характеристики й товару)
+  'catalog.pricesFailed': 'Ціни не вдалося завантажити',
+  'catalog.pricesRetry': 'Повторити',
   'catalog.sort.popular': 'За популярністю',
   'catalog.sort.newest': 'Новинки',
   'catalog.sort.priceAsc': 'Дешевші',

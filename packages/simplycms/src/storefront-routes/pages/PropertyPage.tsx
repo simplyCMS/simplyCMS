@@ -14,6 +14,7 @@ import type {
   PropertyOptionPageData,
   PropertyRow,
 } from 'simplycms/storefront/loaders';
+import { PricesFailure } from '../components/PricesFailure';
 import { getPropertyOption } from '../server/properties';
 import { priceCatalogRow } from './pricing/priceCatalogRow';
 
@@ -36,7 +37,11 @@ export default function PropertyPage({
   const propertySlug = params?.propertySlug as string | undefined;
   const optionSlug = params?.optionSlug as string | undefined;
 
-  const { data: env } = useDiscountEnvironment();
+  const {
+    data: env,
+    isError: pricesFailed,
+    refetch: retryPrices,
+  } = useDiscountEnvironment();
 
   /**
    * 🔴 Один серверний виклик замість чотирьох клієнтських запитів
@@ -72,7 +77,8 @@ export default function PropertyPage({
   const productsLoading = isLoading;
 
   // Ціни — тим самим `priceForCard`, що каталог і головна (Е6в-11). До
-  // середовища картки лишаються без ціни, як і в серверному HTML.
+  // середовища картки лишаються без ціни, як і в серверному HTML; збій
+  // середовища — помилка з «Повторити» замість сітки (F1).
   const products = useMemo(() => {
     if (!data) return undefined;
     if (!env) return data.products;
@@ -170,6 +176,8 @@ export default function PropertyPage({
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        ) : pricesFailed ? (
+          <PricesFailure onRetry={retryPrices} className="py-12" />
         ) : products && products.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {products.map((product) => (

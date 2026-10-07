@@ -17,6 +17,9 @@ export interface ProductDetailBindings {
   oldPrice: number | null | undefined;
   /** Порогові підказки знижок для блоку ціни (Е6в-12). */
   priceHints: ThresholdHint[];
+  /** Збій середовища цін (F1): блок ціни — помилка з «Повторити». */
+  pricesFailed: boolean;
+  onRetryPrices: () => void;
   modifications: ProductModificationRow[];
   selectedModId: string;
   onSelectModification: (modId: string) => void;

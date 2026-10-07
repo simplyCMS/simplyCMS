@@ -66,8 +66,8 @@ export function useCatalogController({
   const { data: sections } = useSectionsQuery(initialSections);
   const { data: rawProducts, isLoading: productsLoading } =
     useCatalogProductsQuery(sectionId);
-  const { products, isLoading: pricingLoading } =
-    usePricedProducts(rawProducts);
+  const priced = usePricedProducts(rawProducts);
+  const { products } = priced;
   const { data: numericProperties } =
     useNumericPropertiesQuery(activeSectionId);
   const { data: propertyOptions } = usePropertyOptionsQuery();
@@ -136,7 +136,9 @@ export function useCatalogController({
     grid: {
       ssrItems: ssrProducts,
       products: products ? filteredProducts : undefined,
-      isLoading: productsLoading || pricingLoading,
+      isLoading: productsLoading || priced.isLoading,
+      pricesFailed: priced.pricesFailed,
+      onRetryPrices: priced.retryPrices,
       viewMode,
       ratings: ratingsData,
       onResetFilters: onClearAll,

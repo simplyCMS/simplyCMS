@@ -46,13 +46,16 @@ function StockBadge({ className }: SlotAppearanceProps) {
 }
 
 function PriceBlock({ className }: SlotAppearanceProps) {
-  const { price, oldPrice, priceHints } = useProductDetailBindings();
+  const { price, oldPrice, priceHints, pricesFailed, onRetryPrices } =
+    useProductDetailBindings();
   return (
     <ProductPriceBlock
       className={className}
       price={price}
       oldPrice={oldPrice}
       hints={priceHints}
+      pricesFailed={pricesFailed}
+      onRetryPrices={onRetryPrices}
     />
   );
 }

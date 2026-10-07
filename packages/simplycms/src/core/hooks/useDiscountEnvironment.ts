@@ -19,16 +19,27 @@ import { useAuth } from './useAuth';
  * 🔴 Повертає ВЛАСНИЙ вузький об'єкт, а не результат React Query: спред
  * результату зчитує всі його поля й тим самим вимикає відстеження змін
  * (`notifyOnChangeProps`), тобто повертає зайві ререндери сітки каталогу.
+ *
+ * 🔴 Збій (`isError`) — без середовища, як збій квоти кошика: поверхні
+ * показують помилку з «Повторити» (`PricesFailure`), а не застарілі чи базові
+ * ціни, що розійшлися б із чеком (F1 фінального рев'ю К3-Е6в).
  */
 export function useDiscountEnvironment(): {
   data: DiscountEnvironment | undefined;
   isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
 } {
   const { user } = useAuth();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: [...AGGREGATE.discountEnvironment.key, user?.id ?? null],
     queryFn: () => getDiscountEnvironment(),
     staleTime: 0,
   });
-  return { data, isLoading };
+  return {
+    data: isError ? undefined : data,
+    isLoading,
+    isError,
+    refetch: () => void refetch(),
+  };
 }

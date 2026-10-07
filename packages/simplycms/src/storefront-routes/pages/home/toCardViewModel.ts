@@ -12,10 +12,15 @@ import type { HomeProduct } from './types';
  * серверній базі за дефолтним типом ціни і без підказок — як сьогодні.
  * Головна без модифікацій: ціль `modification` на картці головної не діє,
  * так само як база береться з ціни товару, а не модифікації.
+ *
+ * 🔴 `pricesFailed` (збій середовища, F1 фінального рев'ю) — картка БЕЗ
+ * ціни: серверна база поруч із помилкою розійшлася б із кошиком і чеком
+ * покупця іншої категорії; помилку з «Повторити» показує контейнер.
  */
 export function toCardViewModel(
   products: HomeProduct[],
   env: DiscountEnvironment | undefined,
+  pricesFailed = false,
 ): ProductCardViewModel[] {
   return products.map((product) => ({
     id: product.id,
@@ -25,16 +30,18 @@ export function toCardViewModel(
     short_description: product.short_description,
     section: product.section,
     stock_status: product.stock_status,
-    ...(env
-      ? cardPrice(product.prices, env, {
-          productId: product.id,
-          modificationId: null,
-          sectionId: product.section_id,
-        })
-      : {
-          price: product.price,
-          old_price: product.old_price,
-          discount_hints: [],
-        }),
+    ...(pricesFailed
+      ? { price: null, old_price: null, discount_hints: [] }
+      : env
+        ? cardPrice(product.prices, env, {
+            productId: product.id,
+            modificationId: null,
+            sectionId: product.section_id,
+          })
+        : {
+            price: product.price,
+            old_price: product.old_price,
+            discount_hints: [],
+          }),
   }));
 }

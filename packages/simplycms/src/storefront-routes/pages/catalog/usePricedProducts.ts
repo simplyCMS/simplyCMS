@@ -13,19 +13,23 @@ import type { RawCatalogProduct } from './useCatalogProductsQuery';
  * серверному списку з базовими цінами (SSR), а не показує картки без ціни
  * чи з базою, яка за мить зміниться на персональну.
  *
+ * 🔴 Збій середовища — `pricesFailed` з `retryPrices` (F1 фінального
+ * рев'ю): сітка показує помилку з «Повторити», а не лишається назавжди на
+ * SSR-списку з мовчки мертвими фільтрами й сортуванням.
+ *
  * 🔴 Обидва запити (вибірка й середовище) стартують безумовно й паралельно.
  */
 export function usePricedProducts(
   rawProducts: RawCatalogProduct[] | undefined,
 ) {
-  const { data: env, isLoading } = useDiscountEnvironment();
+  const { data: env, isLoading, isError, refetch } = useDiscountEnvironment();
 
   const products = useMemo(() => {
     if (!rawProducts || !env) return undefined;
     return rawProducts.map((p) => priceCatalogRow(p, env));
   }, [rawProducts, env]);
 
-  return { products, isLoading };
+  return { products, isLoading, pricesFailed: isError, retryPrices: refetch };
 }
 
 /** Товар вибірки з резолвленою ціною — саме він їде у фільтри й у сітку. */

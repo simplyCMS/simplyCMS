@@ -6,7 +6,7 @@ import { useProductPricing } from '../../product-detail/useProductPricing';
 import { ProductPriceBlock } from '../../../views/slots/ProductPriceBlock';
 
 export function ProductPrice({ product }: { product: ProductDetailProduct }) {
-  const { current } = useProductPricing({
+  const { current, pricesFailed, retryPrices } = useProductPricing({
     product,
     section: { id: 's1', slug: 'panels', name: 'Панелі' },
     hasModifications: false,
@@ -18,6 +18,8 @@ export function ProductPrice({ product }: { product: ProductDetailProduct }) {
       price={current?.price}
       oldPrice={current?.oldPrice}
       hints={current?.hints}
+      pricesFailed={pricesFailed}
+      onRetryPrices={retryPrices}
     />
   );
 }
