@@ -5,6 +5,8 @@ export { evaluateCategoryRules } from './engine';
 export {
   CATEGORY_RULE_FIELD_OPERATORS,
   MAX_CATEGORY_RULE_CONDITIONS,
+  normalizeCategoryRuleValue,
+  normalizeRuleText,
   parseCategoryRuleConditions,
 } from './parse';
 export type {

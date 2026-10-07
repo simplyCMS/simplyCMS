@@ -3,6 +3,7 @@
 // Чиста функція винятків не кидає: непарсибельне значення чи невідомий
 // оператор — хибна умова (fail-closed).
 
+import { normalizeRuleText } from './parse';
 import type {
   CategoryRuleCondition,
   CategoryRuleConditions,
@@ -33,18 +34,27 @@ function compareNumeric(
   }
 }
 
-/** Мітки немає (`null`) — умова хибна, а не помилка. */
+/**
+ * Мітки немає (`null`) — умова хибна, а не помилка.
+ *
+ * 🔴 Обидві сторони — `normalizeRuleText`: статистика приходить із БД як є
+ * (`users.email`, `registration_utm`, `accounts.provider_id`), а умова могла
+ * потрапити в БД в обхід розбору — регістр чи пробіл не мають тихо вимикати
+ * правило.
+ */
 function compareText(
   statValue: string | null,
   operator: CategoryRuleOperator,
   rawValue: string,
 ): boolean {
   if (statValue === null) return false;
+  const stat = normalizeRuleText(statValue);
+  const value = normalizeRuleText(rawValue);
   switch (operator) {
     case '=':
-      return statValue === rawValue;
+      return stat === value;
     case 'contains':
-      return statValue.includes(rawValue);
+      return stat.includes(value);
     default:
       return false;
   }
@@ -69,7 +79,12 @@ function evaluateCondition(
       return compareText(stats.utmCampaign, item.operator, item.value);
     case 'auth_provider':
       // Будь-який рядок `accounts` покупця має `provider_id = X` (Е6в-19).
-      return item.operator === '=' && stats.authProviders.includes(item.value);
+      return (
+        item.operator === '=' &&
+        stats.authProviders.some(
+          (p) => normalizeRuleText(p) === normalizeRuleText(item.value),
+        )
+      );
     default:
       return false;
   }

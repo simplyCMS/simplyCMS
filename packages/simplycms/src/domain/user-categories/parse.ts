@@ -39,6 +39,30 @@ const NUMERIC_FIELDS: readonly CategoryRuleField[] = [
   'registration_days',
 ];
 
+/**
+ * Текстове значення умови чи статистики в канонічній формі (F7 фінального
+ * рев'ю): `trim` + нижній регістр. Домен, UTM-мітка й провайдер входу
+ * регістр-незалежні для власника: `'Gmail.com '` у формі і `gmail.com` у
+ * статистиці — одна умова, а не тихий промах правила.
+ */
+export function normalizeRuleText(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+/**
+ * Значення умови в тій формі, у якій його пише запис і читає рушій:
+ * текстові поля — `normalizeRuleText`, числові й невідомі — без змін (їх
+ * відсіює розбір). Спільне для форми адмінки й серверного розбору.
+ */
+export function normalizeCategoryRuleValue(
+  field: string,
+  value: string,
+): string {
+  return isField(field) && !NUMERIC_FIELDS.includes(field)
+    ? normalizeRuleText(value)
+    : value;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -66,13 +90,18 @@ function parseCondition(json: unknown): CategoryRuleCondition | null {
   if (value.trim() === '' || value.length > MAX_VALUE_LENGTH) return null;
   if (NUMERIC_FIELDS.includes(field) && !Number.isFinite(Number(value)))
     return null;
-  return { field, operator: operator as CategoryRuleOperator, value };
+  return {
+    field,
+    operator: operator as CategoryRuleOperator,
+    value: normalizeCategoryRuleValue(field, value),
+  };
 }
 
 /**
  * Умови правила або `null`, якщо будь-яка частина невалідна: режим не
  * `all`/`any`, порожній чи задовгий список, невідоме поле, оператор поза
- * переліком поля, нечислове значення числового поля. Зайві ключі відкидаються.
+ * переліком поля, нечислове значення числового поля. Зайві ключі відкидаються,
+ * текстові значення нормалізуються (`normalizeCategoryRuleValue`).
  */
 export function parseCategoryRuleConditions(
   json: unknown,
