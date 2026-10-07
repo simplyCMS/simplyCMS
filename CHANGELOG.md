@@ -18,6 +18,74 @@
 
 ---
 
+## [Unreleased]
+
+К3-Е6в: знижки й категорії покупців — одна ціна на картці, у кошику й у чеку
+(спека
+[`2026-10-07-discounts-customer-categories-design.md`](docs/superpowers/specs/2026-10-07-discounts-customer-categories-design.md);
+план
+[`2026-10-07-v2-k3-e6v-discounts-categories.md`](docs/superpowers/plans/2026-10-07-v2-k3-e6v-discounts-categories.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline міграцій змінено**: базу магазину перестворити (`pnpm db:demo`).
+  `discounts.price_type_id` — nullable («усі типи цін»); FK правил категорій на
+  категорії — `RESTRICT`; `user_category_history` зберігає знімок назв
+  (`from_category_name`, `to_category_name`) з FK `SET NULL`; `profiles` —
+  без `auth_provider`, з `category_locked`; `app_user` оновлює `profiles` лише
+  колонковим грантом (категорію змінює тільки `app_admin`).
+- **Хуки знижок знесено**: `admin.discount.form.fields`,
+  `discount.conditions.evaluate`, `discount.before_apply`, `discount.after_apply`,
+  `discount.types`, порт `CatalogRepository.getDiscounts` і тип `DiscountScope`.
+  Умови знижок — внутрішній реєстр `DiscountConditionDefinition`; плагінам він
+  відкривається в К5.
+- **Кошик не зберігає ціну**: `CartItem` без `price`, `basePrice`,
+  `discountData` — ціни, знижки й підказки дає серверна квота `quoteCart`.
+  Старий формат у `localStorage` читається без помилки, зайві поля ігноруються.
+  `usePriceType`, `getPriceTypeContext` і `AGGREGATE.priceTypeContext` знесено.
+- **Знижка без цілей не діє** (fail-closed): «на все» — явна ціль `all`.
+
+### Додано / змінено
+
+- Рушій знижок (`simplycms/domain/discounts`): вкладений `DiscountContext` з
+  обовʼязковим `now`, реєстр умов (`user_category`, `min_quantity`,
+  `min_order_amount`, `user_logged_in`), невідома чи пошкоджена умова —
+  fail-closed. Результат групи — лише фактично застосоване; причини відхилення —
+  коди (`DiscountRejectionReason`), текст — i18n.
+- Серверне ядро ціни `simplycms/commerce`: `loadPricingContext` + `priceCart` для
+  картки, кошика, чекауту, редагування позицій і діагностики; ліс знижок одним
+  SQL-знімком, пошкоджений рядок виключається (`discount_invalid`), а не валить
+  розрахунок. Суми й пороги — центами.
+- Вітрина: усі картки (каталог, розділ, головна, сторінка властивості, сторінка
+  товару) рахують знижку тим самим рушієм над середовищем цін
+  (`staleTime: 0`, ключ з `userId`); порогові підказки «від 3 шт — 900 ₴/шт
+  (−10%)» на сторінці товару й у рядку кошика; межі кошика `MAX_CART_LINES` /
+  `MAX_LINE_QUANTITY` (`simplycms/contracts/cart-limits`).
+- Адмінка на `simplycms/admin-server` + `simplycms/admin-data`: дерево знижок
+  (групи з операторами, перемикач активності, видалення з підрахунком каскаду),
+  картки групи й знижки (атомарний `saveDiscount`, цілі, умови, дати без зсуву
+  часового поясу), категорії покупців (атомарний дефолт, явні відмови
+  видалення), автоправила з кнопкою «Запустити всі», діагностика ціни тим самим
+  ядром, що чекаут. Права `discount.manage` і `customer.manage`.
+- Автоправила категорій запускаються після оформлення замовлення окремою
+  транзакцією — збій правил не ламає замовлення; вручну призначена категорія
+  (`assignCustomerCategory`) блокує автоправила.
+- Локи конфігурації — `advisoryXactLock` (`simplycms/db`), глобальний порядок
+  `customer-config` → `discount-config` (канон — `docs/architecture/data-layer.md`
+  §13).
+- `pnpm live:smoke` отримав крок знижок і категорій
+  (`scripts/live-smoke/admin-discounts.mjs`, перед кроком «система»).
+
+### Прибрано
+
+- Легасі-сторінки знижок і категорій на `supabase-js` (`Discounts`,
+  `DiscountEdit`, `DiscountGroupEdit`, `PriceValidator`, `UserCategories`,
+  `UserCategoryEdit`, `UserCategoryRules`, `UserCategoryRuleEdit`). Лічильник
+  `useSupabaseClient` у `src/admin/**` — 17 → 9.
+
+---
+
 ## [0.10.0] — 2026-10-06
 
 К3-Е6б: профіль магазину й система (налаштування, теми, плагіни) на серверному
