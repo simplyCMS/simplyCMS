@@ -97,6 +97,8 @@ import {
   assignCustomerCategoryOp,
   findCustomersInput,
   findCustomersOp,
+  diagnosePriceInput,
+  diagnosePriceOp,
 } from 'simplycms/admin-server/impl';
 
 // Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
@@ -105,6 +107,7 @@ export type {
   CategoryCustomerCount,
   CustomerHit,
   PluginRow,
+  PriceDiagnosis,
   SystemSettings,
   ThemeRow,
 } from 'simplycms/admin-server/impl';
@@ -603,3 +606,7 @@ export const assignCustomerCategory = createServerFn({ method: 'POST' })
 export const findCustomers = createServerFn({ method: 'GET' })
   .validator(adminInput(findCustomersInput))
   .handler(findCustomersOp);
+
+export const diagnosePrice = createServerFn({ method: 'POST' })
+  .validator(adminInput(diagnosePriceInput))
+  .handler(diagnosePriceOp);

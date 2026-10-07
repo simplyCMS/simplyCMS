@@ -169,3 +169,6 @@ export type { CustomerHit } from './customers/find';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';
+export { diagnosePriceInput } from './price-diagnosis/input';
+export { diagnosePriceOp } from './price-diagnosis/diagnose';
+export type { PriceDiagnosis } from './price-diagnosis/diagnose';

@@ -137,6 +137,7 @@ export function createAdminServerMock(
     runCategoryRules: vi.fn(),
     assignCustomerCategory: vi.fn(),
     findCustomers: vi.fn(),
+    diagnosePrice: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }
