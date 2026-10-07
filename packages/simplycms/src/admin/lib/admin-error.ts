@@ -64,6 +64,13 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.themeNotBuilt]: 'admin.errors.themeNotBuilt',
   [ADMIN_STATE_CONSTRAINT.themeUnknown]: 'admin.errors.themeUnknown',
   [ADMIN_STATE_CONSTRAINT.pluginUnknown]: 'admin.errors.pluginUnknown',
+  // Е6в-16/17: знижки.
+  [ADMIN_STATE_CONSTRAINT.discountGroupCycle]:
+    'admin.errors.discountGroupCycle',
+  [ADMIN_STATE_CONSTRAINT.discountGroupDatesInvalid]:
+    'admin.errors.discountGroupDatesInvalid',
+  [ADMIN_STATE_CONSTRAINT.discountConditionCategoryMissing]:
+    'admin.errors.discountConditionCategoryMissing',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

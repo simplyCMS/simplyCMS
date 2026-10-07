@@ -34,6 +34,12 @@ export const messages: Catalog = {
     'This theme is not in the store build — add its package and rebuild the store',
   'admin.errors.themeUnknown': 'Theme not found — reload the page',
   'admin.errors.pluginUnknown': 'Plugin not found — reload the page',
+  'admin.errors.discountGroupCycle':
+    'A group cannot be nested inside its own subgroup',
+  'admin.errors.discountGroupDatesInvalid':
+    'The start date must be earlier than the end date',
+  'admin.errors.discountConditionCategoryMissing':
+    'A customer category in the discount condition no longer exists — reload the page and choose the category again',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

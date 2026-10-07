@@ -77,6 +77,14 @@ import {
   listPluginsOp,
   setPluginActiveInput,
   setPluginActiveOp,
+  discountGroupsOps,
+  removeDiscountGroupsInput,
+  removeDiscountGroupsOp,
+  discountsOps,
+  getDiscountInput,
+  getDiscountOp,
+  saveDiscountInput,
+  saveDiscountOp,
 } from 'simplycms/admin-server/impl';
 
 // Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
@@ -487,3 +495,40 @@ export const listPlugins = createServerFn({ method: 'GET' }).handler(
 export const setPluginActive = createServerFn({ method: 'POST' })
   .validator(adminInput(setPluginActiveInput))
   .handler(setPluginActiveOp);
+
+// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14). Insert/update груп —
+// фабрика з guard-ом циклу й пари дат під `discount-config` (Е6в-17);
+// видалення груп — лише іменована операція з піддеревом. Знижка пишеться
+// ЛИШЕ атомарним `saveDiscount` (Е6в-16); фабрика знижок дає список і
+// generic remove (цілі й умови — каскадом).
+export const listDiscountGroups = createServerFn({ method: 'GET' })
+  .validator(adminInput(discountGroupsOps.subsetSchema))
+  .handler(discountGroupsOps.list);
+
+export const insertDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(discountGroupsOps.insertSchema))
+  .handler(discountGroupsOps.insert);
+
+export const updateDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(discountGroupsOps.updateSchema))
+  .handler(discountGroupsOps.update);
+
+export const removeDiscountGroups = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeDiscountGroupsInput))
+  .handler(removeDiscountGroupsOp);
+
+export const listDiscounts = createServerFn({ method: 'GET' })
+  .validator(adminInput(discountsOps.subsetSchema))
+  .handler(discountsOps.list);
+
+export const getDiscount = createServerFn({ method: 'GET' })
+  .validator(adminInput(getDiscountInput))
+  .handler(getDiscountOp);
+
+export const saveDiscount = createServerFn({ method: 'POST' })
+  .validator(adminInput(saveDiscountInput))
+  .handler(saveDiscountOp);
+
+export const removeDiscounts = createServerFn({ method: 'POST' })
+  .validator(adminInput(discountsOps.removeSchema))
+  .handler(discountsOps.remove);

@@ -55,6 +55,16 @@ describe('adminErrorKey', () => {
   ])('стан доставки (Е6а-12): %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
+  it.each([
+    ['discount_group_cycle', 'admin.errors.discountGroupCycle'],
+    ['discount_group_dates_invalid', 'admin.errors.discountGroupDatesInvalid'],
+    [
+      'discount_condition_category_missing',
+      'admin.errors.discountConditionCategoryMissing',
+    ],
+  ])('стан знижок (Е6в-16/17): %s → %s', (constraint, key) => {
+    expect(adminErrorKey(conflict('state', constraint))).toBe(key);
+  });
   it('невідомий код стану — null, а не «дубль»', () => {
     expect(adminErrorKey(conflict('state', 'order_unknown_rule'))).toBeNull();
     expect(adminErrorKey(conflict('state', 'toString'))).toBeNull();

@@ -73,6 +73,10 @@ export const ADMIN_STATE_CONSTRAINT = {
   themeNotBuilt: 'theme_not_built',
   themeUnknown: 'theme_unknown',
   pluginUnknown: 'plugin_unknown',
+  // Е6в-16/17 (ред.2): інваріанти знижок під `discount-config`.
+  discountGroupCycle: 'discount_group_cycle',
+  discountGroupDatesInvalid: 'discount_group_dates_invalid',
+  discountConditionCategoryMissing: 'discount_condition_category_missing',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

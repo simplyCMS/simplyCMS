@@ -116,6 +116,14 @@ export function createAdminServerMock(
     saveThemeSettings: vi.fn(),
     listPlugins: list(),
     setPluginActive: vi.fn(),
+    listDiscountGroups: list(),
+    insertDiscountGroups: vi.fn(),
+    updateDiscountGroups: vi.fn(),
+    removeDiscountGroups: vi.fn(),
+    listDiscounts: list(),
+    getDiscount: vi.fn(),
+    saveDiscount: vi.fn(),
+    removeDiscounts: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

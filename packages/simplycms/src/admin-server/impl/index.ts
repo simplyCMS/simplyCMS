@@ -127,6 +127,19 @@ export {
   setPluginActiveInput,
   setPluginActiveOp,
 } from './site-plugins/set-active';
+// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14..17).
+export { discountGroupsOps } from './discount-groups/resource';
+export {
+  removeDiscountGroupsInput,
+  removeDiscountGroupsOp,
+} from './discount-groups/remove';
+export { discountsOps } from './discounts/resource';
+export { getDiscountInput, getDiscountOp } from './discounts/get';
+export { saveDiscountInput } from './discounts/save-input';
+export type { SaveDiscountInput } from './discounts/save-input';
+export { saveDiscountOp } from './discounts/save';
+export { DISCOUNT_CONFIG_LOCK } from './discount-lock';
+export { CUSTOMER_CONFIG_LOCK } from './customer-lock';
 export { AdminConflictError, ValidationError } from './errors';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';

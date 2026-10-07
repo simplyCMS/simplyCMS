@@ -33,5 +33,11 @@ export const messages = {
     'Цієї теми немає у збірці магазину — додайте її пакет і перезберіть магазин',
   'admin.errors.themeUnknown': 'Тему не знайдено — оновіть сторінку',
   'admin.errors.pluginUnknown': 'Плагін не знайдено — оновіть сторінку',
+  'admin.errors.discountGroupCycle':
+    'Група не може бути вкладена у власну підгрупу',
+  'admin.errors.discountGroupDatesInvalid':
+    'Дата початку має бути раніше за дату завершення',
+  'admin.errors.discountConditionCategoryMissing':
+    'Категорію покупців з умови знижки не знайдено — оновіть сторінку й оберіть категорію ще раз',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

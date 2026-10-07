@@ -1000,7 +1000,8 @@ export const discountConditions = pgTable("discount_conditions", {
 	discountId: uuid("discount_id").notNull(),
 	conditionType: varchar("condition_type").notNull(),
 	operator: varchar().default('=').notNull(),
-	value: jsonb().default({}).notNull(),
+	// Форму значення задає тип умови в реєстрі рушія (Е6в-4), не колонка.
+	value: jsonb().$type<JsonValue>().default({}).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_discount_conditions_discount").using("btree", table.discountId.asc().nullsLast().op("uuid_ops")),

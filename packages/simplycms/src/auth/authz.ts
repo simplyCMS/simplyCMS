@@ -35,6 +35,8 @@ export type Operation =
   | 'order.manage'
   | 'shipping.manage'
   | 'settings.manage'
+  | 'discount.manage'
+  | 'customer.manage'
   | 'profile.read'
   | 'profile.update'
   | 'review.create'
@@ -76,6 +78,13 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // одна ділянка адмінки, а не окремі ролі; прецедент `shipping.manage`.
   // Завантаження логотипа лишається під `media.write`.
   'settings.manage': { admin: 'any' },
+  // Е6в-14: знижки, групи знижок і діагностика ціни — окрема ділянка адмінки
+  // (не `catalog.write`: знижка не каталог); прецедент `shipping.manage`.
+  'discount.manage': { admin: 'any' },
+  // Е6в-14: категорії покупців, автоправила, ручне призначення категорії й
+  // пошук покупця. Окремо від `discount.manage`: категорія визначає тип
+  // ціни, тобто це керування покупцями, а не акціями.
+  'customer.manage': { admin: 'any' },
   'profile.read': { user: 'own', admin: 'any' },
   'profile.update': { user: 'own', admin: 'any' },
   'review.create': { user: 'own', admin: 'any' },
