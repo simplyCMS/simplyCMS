@@ -31,18 +31,17 @@ export function buildCartItem({
   current,
   image,
 }: CartItemInput): AddToCartItem | null {
-  const { price, oldPrice } = current;
-  if (price === undefined) return null;
+  // Без ціни купувати нічого — кнопка вимкнена.
+  if (current.price === undefined) return null;
 
-  // 🔴 Ціна в позиції — лише показ: суму замовлення рахує сервер. Розклад
-  // знижок картки в кошик не їде — закреслена ціна та сама, що на картці.
+  // 🔴 Ціни в позиції НЕМАЄ (Е6в-13): ціну, знижку й суму кошика рахує
+  // серверна квота. Запамʼятована тут ціна не оновлювалась би ні при
+  // повторному додаванні, ні після зміни категорії чи акції.
   return {
     productId: product.id,
     modificationId: hasModifications ? selectedModId : null,
     name: product.name,
     modificationName: hasModifications ? selectedMod?.name : undefined,
-    price: price,
-    basePrice: oldPrice && oldPrice > price ? oldPrice : null,
     image: image,
     sku: current.sku || undefined,
   };

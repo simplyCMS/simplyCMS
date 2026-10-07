@@ -16,6 +16,9 @@ export const messages: Catalog = {
   'cart.empty.cta': 'Go to catalog',
   'cart.viewCart': 'View cart',
   'cart.itemSku': 'SKU: {sku}',
+  'cart.unavailable': 'Product unavailable',
+  'cart.limitReached':
+    'Cart limit reached: up to {lines} items and {quantity} pcs of each',
   'cart.summary.title': 'Order summary',
   'cart.summary.itemsTotal': 'Items subtotal',
   'cart.summary.shipping': 'Shipping',

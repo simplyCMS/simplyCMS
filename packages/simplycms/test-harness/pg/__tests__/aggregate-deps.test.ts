@@ -141,6 +141,17 @@ describe('Е1б: deps агрегатів повні відносно факти�
       await m.discountEnvironmentFor(null);
       await m.discountEnvironmentFor(userId);
     },
+    cartQuote: async () => {
+      // Справжній лоадер serverFn — гість і покупець, товар без модифікацій
+      // і з модифікацією (третій запит `loadCatalog` — лише з модифікацією).
+      const m = await import('simplycms/storefront/loaders');
+      const items = [
+        { productId: PRODUCT_NO_MODS, modificationId: null, quantity: 1 },
+        { productId: PRODUCT_WITH_MODS, modificationId: MOD_ID, quantity: 2 },
+      ];
+      await m.quoteCartFor(items, null);
+      await m.quoteCartFor(items, userId);
+    },
     modificationData: async () => {
       const m = await import('simplycms/storefront/loaders');
       await m.withStorefrontDb(async (db) => {

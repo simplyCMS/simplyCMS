@@ -1,6 +1,8 @@
 import { CART_REQUISITES } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
-import { useCart, useFormatPrice } from 'simplycms/react-query';
+import { useFormatPrice } from 'simplycms/react-query';
+import { PriceSkeleton } from 'simplycms/cart-ui';
+import { useCartQuote } from 'simplycms/core/hooks/useCartQuote';
 import { Separator } from 'simplycms/ui/separator';
 import { cn } from 'simplycms/ui/utils';
 
@@ -11,14 +13,19 @@ export interface CartSummaryProps {
 /**
  * Реквізит «підсумок замовлення»: сума позицій, доставка, разом.
  *
+ * 🔴 Сума — лише `subtotal` серверної квоти кошика (Е6в-13): ціни зі знижками
+ * рахує сервер тим самим ядром, що й чек. До першої квоти — скелет, а не 0.
+ *
  * 🔴 Вертикальні відступи (`space-y-4`) переїхали з `CardContent` сторінки в
  * КОРІНЬ слота: обгортка з `display: contents` тут не годиться — `space-y-*`
  * добирає лише прямих дітей, і рядки підсумку втратили б відступи.
  */
 export function CartSummary({ className }: CartSummaryProps) {
   const t = useT();
-  const { totalPrice } = useCart();
+  const { quote } = useCartQuote();
   const formatPrice = useFormatPrice();
+  const subtotal =
+    quote === null ? <PriceSkeleton /> : formatPrice(quote.subtotal);
 
   return (
     <div
@@ -29,7 +36,7 @@ export function CartSummary({ className }: CartSummaryProps) {
         <span className="text-muted-foreground">
           {t('cart.summary.itemsTotal')}
         </span>
-        <span>{formatPrice(totalPrice)}</span>
+        <span>{subtotal}</span>
       </div>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">
@@ -42,7 +49,7 @@ export function CartSummary({ className }: CartSummaryProps) {
       <Separator />
       <div className="flex justify-between font-semibold text-lg">
         <span>{t('cart.summary.total')}</span>
-        <span className="text-primary">{formatPrice(totalPrice)}</span>
+        <span className="text-primary">{subtotal}</span>
       </div>
     </div>
   );

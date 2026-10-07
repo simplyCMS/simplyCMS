@@ -171,6 +171,28 @@ export const AGGREGATE = {
     ENTITY.discountGroups,
   ]),
   /**
+   * Квота кошика (`core/lib/cart-quote.ts` → `storefront/loaders/quote-cart.ts`
+   * → `loadPricingContext` + `priceCart`, Е6в-13): усе середовище цін (сім
+   * таблиць `discountEnvironment`) плюс каталожні дані позицій — товари,
+   * модифікації й ціни (`commerce/price-cart-catalog.ts`).
+   *
+   * 🔴 Клієнтський ключ — `[...key, userId, трійки позицій]`, `staleTime: 0`:
+   * `userId` — лише сегмент кешу (актора сервер бере з сесії), склад кошика —
+   * бо квота рахує саме його. Серверного кешу немає.
+   */
+  cartQuote: aggregateKey('cart-quote', [
+    ENTITY.products,
+    ENTITY.productModifications,
+    ENTITY.productPrices,
+    ENTITY.priceTypes,
+    ENTITY.profiles,
+    ENTITY.userCategories,
+    ENTITY.discounts,
+    ENTITY.discountTargets,
+    ENTITY.discountConditions,
+    ENTITY.discountGroups,
+  ]),
+  /**
    * Характеристики й наявність модифікацій товару
    * (`storefront-routes/server/products.ts` → `getModificationData`):
    * значення модифікацій (`modification_property_values`, приєднані

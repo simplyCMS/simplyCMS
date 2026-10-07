@@ -1,8 +1,23 @@
+import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
+import type { AvailableCartQuoteLine, CartQuote } from 'simplycms/contracts';
 import { useCart, useFormatPrice } from 'simplycms/react-query';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { CartItem } from './CartItem';
+import { PriceSkeleton } from './CartLinePrice';
+import { findQuoteLine } from './quote-line';
+
+export interface CartDrawerProps {
+  /**
+   * Серверна квота кошика (Е6в-13); `null` — ще немає (скелети, а не 0).
+   * `cart-ui` (T4) serverFn не імпортує: квоту дає T5-контейнер
+   * (`core/components/cart/CartDrawer`).
+   */
+  quote: CartQuote | null;
+  /** Порогові підказки доступного рядка — рендерить контейнер. */
+  renderHints?: (line: AvailableCartQuoteLine) => ReactNode;
+}
 
 /**
  * Українська форма множини лічильника ("товар" / "товари" / "товарів").
@@ -20,12 +35,14 @@ function pluralItemsKey(count: number): MessageKey {
   return 'cart.itemsMany';
 }
 
-export function CartDrawer() {
-  const { items, totalItems, totalPrice, isOpen, setIsOpen } = useCart();
+export function CartDrawer({ quote, renderHints }: CartDrawerProps) {
+  const { items, totalItems, isOpen, setIsOpen } = useCart();
   const t = useT();
   const formatPrice = useFormatPrice();
 
   if (!isOpen) return null;
+  const subtotal =
+    quote === null ? <PriceSkeleton /> : formatPrice(quote.subtotal);
 
   return (
     <div className="fixed inset-0 z-50">
@@ -69,12 +86,17 @@ export function CartDrawer() {
           <>
             <div className="flex-1 overflow-y-auto px-6">
               <div className="space-y-0">
-                {items.map((item) => (
-                  <CartItem
-                    key={`${item.productId}-${item.modificationId}`}
-                    item={item}
-                  />
-                ))}
+                {items.map((item) => {
+                  const line = findQuoteLine(quote, item);
+                  return (
+                    <CartItem
+                      key={`${item.productId}-${item.modificationId}`}
+                      item={item}
+                      line={line}
+                      hints={line?.available ? renderHints?.(line) : null}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -84,13 +106,11 @@ export function CartDrawer() {
                   <span className="text-muted-foreground">
                     {t('common.amount')}
                   </span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <span>{subtotal}</span>
                 </div>
                 <div className="flex justify-between font-medium text-lg">
                   <span>{t('cart.summary.total')}</span>
-                  <span className="text-primary">
-                    {formatPrice(totalPrice)}
-                  </span>
+                  <span className="text-primary">{subtotal}</span>
                 </div>
               </div>
 

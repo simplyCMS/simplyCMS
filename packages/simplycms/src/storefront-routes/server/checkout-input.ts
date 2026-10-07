@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PlaceOrderInput } from 'simplycms/contracts';
+import { cartLinesSchema } from 'simplycms/core/lib/cart-lines';
 
 /**
  * Схема оформлення — ЄДИНЕ джерело валідації запиту НА СЕРВЕРІ.
@@ -22,12 +23,8 @@ import type { PlaceOrderInput } from 'simplycms/contracts';
  *
  * Позиція кошика — ЛИШЕ ідентичність і кількість (К2-Е0, Е0-4): усе, що
  * приїхало б із кошика як «істина», можна підмінити в запиті (борг 0.4.1-4).
+ * Схема позицій спільна з квотою кошика (`core/lib/cart-lines`, Е6в-13).
  */
-export const checkoutItemSchema = z.object({
-  productId: z.string().uuid(),
-  modificationId: z.string().uuid().nullable(),
-  quantity: z.number().int().positive(),
-});
 
 export const checkoutInputSchema = z.object({
   firstName: z.string().min(2).max(100),
@@ -53,9 +50,9 @@ export const checkoutInputSchema = z.object({
   savedRecipientId: z.string().uuid().nullable(),
   savedAddressId: z.string().uuid().nullable(),
   // 🔴 Рев'ю M-6: `quoteCheckout` анонімний і дьоргається з дебаунсом 300 мс
-  // — без верхньої межі кожен виклик міг би нести довільно великий кошик
-  // (6+ запитів у БД на позицію в `priceItems`). `.max(100)` тут
-  // накриває ОБИДВА шляхи (`placeOrder` читає ТУ САМУ схему), тож окремого
-  // ліміту для квоти не потрібно.
-  items: z.array(checkoutItemSchema).min(1).max(100),
+  // — без верхньої межі кожен виклик міг би нести довільно великий кошик.
+  // Межі (`MAX_CART_LINES`, `MAX_LINE_QUANTITY`, без дублів пари) — ті самі,
+  // що в кошику й квоті кошика (Е6в-13), і накривають ОБИДВА шляхи:
+  // `placeOrder` читає ТУ САМУ схему.
+  items: cartLinesSchema.min(1),
 }) satisfies z.ZodType<PlaceOrderInput>;

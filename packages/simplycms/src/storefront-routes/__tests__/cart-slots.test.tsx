@@ -20,6 +20,17 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
+// Квота кошика — керована з тесту: сума підсумку береться ЛИШЕ з неї.
+const quoteState = vi.hoisted(() => ({
+  quote: null as { lines: unknown[]; subtotal: number } | null,
+}));
+vi.mock('simplycms/core/hooks/useCartQuote', () => ({
+  useCartQuote: () => ({
+    quote: quoteState.quote,
+    isLoading: quoteState.quote === null,
+  }),
+}));
+
 import { SlotHarness, requisite } from './slots-harness';
 import {
   CartCheckoutButton,
@@ -30,17 +41,15 @@ import { CartSummary } from '../views/slots/CartSummary';
 
 const storedCart = [
   {
-    productId: 'prod-1',
-    modificationId: 'mod-1',
+    productId: '10000002-0000-4000-8000-000000000004',
+    modificationId: '10000003-0000-4000-8000-000000000001',
     name: 'Item A',
-    price: 1000,
     quantity: 2,
   },
   {
-    productId: 'prod-2',
+    productId: '10000002-0000-4000-8000-000000000001',
     modificationId: null,
     name: 'Item B',
-    price: 500,
     quantity: 1,
   },
 ];
@@ -53,6 +62,7 @@ const storedCart = [
 describe('slot-компоненти кошика', () => {
   beforeEach(() => {
     localStorage.setItem('simplycms-cart', JSON.stringify(storedCart));
+    quoteState.quote = { lines: [], subtotal: 2300 };
   });
   afterEach(() => {
     cleanup();
@@ -85,7 +95,7 @@ describe('slot-компоненти кошика', () => {
     expect(root?.children).toHaveLength(0);
   });
 
-  it('CartSummary: маркер і сума позицій', () => {
+  it('CartSummary: маркер і сума з квоти кошика', () => {
     const { container } = render(
       <SlotHarness>
         <CartSummary />
@@ -94,8 +104,21 @@ describe('slot-компоненти кошика', () => {
 
     const root = requisite(container, CART_REQUISITES.Summary);
     expect(root).not.toBeNull();
-    // 1000 × 2 + 500 = 2500; формат бере локаль і валюту з EngineContext
-    expect(root?.textContent?.replace(/\s/g, '')).toContain('2500');
+    // `subtotal` квоти; формат бере локаль і валюту з EngineContext
+    expect(root?.textContent?.replace(/\s/g, '')).toContain('2300');
+  });
+
+  it('CartSummary: до першої квоти — скелет суми, а не 0', () => {
+    quoteState.quote = null;
+    const { container } = render(
+      <SlotHarness>
+        <CartSummary />
+      </SlotHarness>,
+    );
+
+    const root = requisite(container, CART_REQUISITES.Summary);
+    expect(root?.textContent).not.toContain('₴');
+    expect(root?.querySelector('[aria-busy="true"]')).not.toBeNull();
   });
 
   it('CartClearButton: маркер і очищення кошика', () => {

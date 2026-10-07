@@ -1,25 +1,34 @@
+import type { ReactNode } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
-import {
-  type CartItem as CartItemType,
-  useFormatPrice,
-} from 'simplycms/react-query';
+import { MAX_LINE_QUANTITY } from 'simplycms/contracts/cart-limits';
+import type { CartQuoteLine } from 'simplycms/contracts';
+import type { CartItem as CartItemType } from 'simplycms/react-query';
 import { useT } from 'simplycms/i18n';
+import { CartLinePrice } from './CartLinePrice';
 
 // Presentational-компонент позиції кошика: лише props, без data/стану.
 // HUB може реюзати його зі своїм контейнером.
 export interface CartItemViewProps {
   item: CartItemType;
+  /**
+   * Рядок серверної квоти (Е6в-13): ціна, база, знижки. `null` — квоти ще
+   * немає. Квоту дає T5-контейнер: `cart-ui` serverFn не імпортує.
+   */
+  line: CartQuoteLine | null;
+  /** Порогові підказки рядка — готовий вузол від T5-контейнера. */
+  hints?: ReactNode;
   onChangeQuantity: (quantity: number) => void;
   onRemove: () => void;
 }
 
 export function CartItemView({
   item,
+  line,
+  hints,
   onChangeQuantity,
   onRemove,
 }: CartItemViewProps) {
   const t = useT();
-  const formatPrice = useFormatPrice();
 
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
@@ -79,29 +88,15 @@ export function CartItemView({
               {item.quantity}
             </span>
             <button
-              className="h-7 w-7 flex items-center justify-center border rounded"
+              className="h-7 w-7 flex items-center justify-center border rounded disabled:opacity-50"
+              disabled={item.quantity >= MAX_LINE_QUANTITY}
               onClick={() => onChangeQuantity(item.quantity + 1)}
             >
               <Plus className="h-3 w-3" />
             </button>
           </div>
 
-          {/* Price */}
-          <div className="text-right">
-            <div className="font-semibold text-sm">
-              {formatPrice(item.price * item.quantity)}
-            </div>
-            {item.basePrice && item.basePrice > item.price && (
-              <div className="text-xs text-muted-foreground line-through">
-                {formatPrice(item.basePrice * item.quantity)}
-              </div>
-            )}
-            {item.quantity > 1 && (
-              <div className="text-xs text-muted-foreground">
-                {formatPrice(item.price)} &times; {item.quantity}
-              </div>
-            )}
-          </div>
+          <CartLinePrice line={line} hints={hints} />
         </div>
       </div>
     </div>

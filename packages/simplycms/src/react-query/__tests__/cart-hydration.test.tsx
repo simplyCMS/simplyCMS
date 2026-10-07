@@ -11,7 +11,12 @@ import { renderToString } from 'react-dom/server';
 import { JSDOM } from 'jsdom';
 
 const STORED = JSON.stringify([
-  { productId: 'p1', modificationId: null, name: 'A', price: 100, quantity: 2 },
+  {
+    productId: '10000002-0000-4000-8000-000000000001',
+    modificationId: null,
+    name: 'A',
+    quantity: 2,
+  },
 ]);
 
 function exposeDom(window: JSDOM['window']): void {

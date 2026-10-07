@@ -3,7 +3,10 @@ import { Trash2 } from 'lucide-react';
 import { CART_REQUISITES } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
 import { useCart } from 'simplycms/react-query';
+import { findQuoteLine } from 'simplycms/cart-ui';
+import { DiscountHints } from 'simplycms/catalog-ui/DiscountHints';
 import { CartItem } from 'simplycms/core/components/cart/CartItem';
+import { useCartQuote } from 'simplycms/core/hooks/useCartQuote';
 import { Button } from 'simplycms/ui/button';
 import { cn } from 'simplycms/ui/utils';
 
@@ -12,26 +15,37 @@ export interface CartSlotProps {
 }
 
 /**
- * Реквізити кошика. Дані слоти беруть із самого кошика (`useCart`), тому
- * пропсів, крім оформлення, не мають — тема лише розставляє їх у лейауті.
+ * Реквізити кошика. Дані слоти беруть із самого кошика (`useCart`) і з
+ * серверної квоти (`useCartQuote`, Е6в-13), тому пропсів, крім оформлення,
+ * не мають — тема лише розставляє їх у лейауті.
  *
  * 🔴 Обгортки списку — `display: contents`: позиції лишаються прямими
  * дітьми контейнера теми, як були до виділення в слот.
  */
 export function CartItemsList({ className }: CartSlotProps) {
   const { items } = useCart();
+  const { quote } = useCartQuote();
 
   return (
     <div
       data-simplycms-requisite={CART_REQUISITES.Items}
       className={cn('contents', className)}
     >
-      {items.map((item) => (
-        <CartItem
-          key={`${item.productId}-${item.modificationId}`}
-          item={item}
-        />
-      ))}
+      {items.map((item) => {
+        const line = findQuoteLine(quote, item);
+        return (
+          <CartItem
+            key={`${item.productId}-${item.modificationId}`}
+            item={item}
+            line={line}
+            hints={
+              line?.available ? (
+                <DiscountHints hints={line.hints} className="mt-1 text-right" />
+              ) : null
+            }
+          />
+        );
+      })}
     </div>
   );
 }

@@ -3,8 +3,14 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, screen, fireEvent } from '@testing-library/react';
 import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import {
+  MAX_CART_LINES,
+  MAX_LINE_QUANTITY,
+} from 'simplycms/contracts/cart-limits';
 
 const toast = vi.fn();
+const PRODUCT = '10000002-0000-4000-8000-000000000004';
+const MOD = '10000003-0000-4000-8000-000000000001';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
@@ -90,11 +96,10 @@ describe('slot-компоненти картки товару', () => {
         <ProductAddToCart
           inStock
           item={{
-            productId: 'prod-1',
-            modificationId: 'mod-1',
+            productId: PRODUCT,
+            modificationId: MOD,
             name: 'Інвертор',
             modificationName: '5 кВт',
-            price: 4200,
           }}
         />
       </SlotHarness>,
@@ -105,8 +110,55 @@ describe('slot-компоненти картки товару', () => {
     fireEvent.click(button as HTMLElement);
 
     expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast.mock.calls[0][0].title).toBe('Додано в кошик');
     expect(toast.mock.calls[0][0].description).toBe('Інвертор (5 кВт)');
-    expect(localStorage.getItem('simplycms-cart')).toContain('prod-1');
+    expect(localStorage.getItem('simplycms-cart')).toContain(PRODUCT);
+    // Ціни в кошику немає — її рахує серверна квота (Е6в-13).
+    expect(localStorage.getItem('simplycms-cart')).not.toContain('price');
+  });
+
+  // Е6в-13, ред.3: межу кошика кнопка не обходить мовчки — покупець бачить,
+  // чому товар не додався, а не хибне «Додано до кошика».
+  it.each([
+    [
+      `${MAX_CART_LINES}-й рядок уже є`,
+      Array.from({ length: MAX_CART_LINES }, (_, i) => ({
+        productId: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+        modificationId: null,
+        name: `T${i}`,
+        quantity: 1,
+      })),
+    ],
+    [
+      `${MAX_LINE_QUANTITY} шт цієї позиції`,
+      [
+        {
+          productId: PRODUCT,
+          modificationId: MOD,
+          name: 'Інвертор',
+          quantity: MAX_LINE_QUANTITY,
+        },
+      ],
+    ],
+  ])('ProductAddToCart: межа кошика (%s) — тост межі', (_case, stored) => {
+    localStorage.setItem('simplycms-cart', JSON.stringify(stored));
+    const { container } = render(
+      <SlotHarness>
+        <ProductAddToCart
+          inStock
+          item={{ productId: PRODUCT, modificationId: MOD, name: 'Інвертор' }}
+        />
+      </SlotHarness>,
+    );
+
+    fireEvent.click(
+      requisite(container, PRODUCT_DETAIL_REQUISITES.AddToCart) as HTMLElement,
+    );
+
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast.mock.calls[0][0].title).toBe(
+      `Досягнуто межу кошика: до ${MAX_CART_LINES} позицій і до ${MAX_LINE_QUANTITY} шт кожної`,
+    );
   });
 
   it.each([
@@ -115,7 +167,7 @@ describe('slot-компоненти картки товару', () => {
   ])('ProductAddToCart: кнопка вимкнена — %s', (_case, inStock) => {
     const item = inStock
       ? null
-      : { productId: 'p', modificationId: null, name: 'X', price: 1 };
+      : { productId: PRODUCT, modificationId: null, name: 'X' };
 
     render(
       <SlotHarness>

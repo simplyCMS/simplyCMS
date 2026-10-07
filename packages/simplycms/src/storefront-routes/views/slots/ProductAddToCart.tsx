@@ -1,5 +1,9 @@
 import { ShoppingCart } from 'lucide-react';
 import { PRODUCT_DETAIL_REQUISITES } from 'simplycms/contracts/views';
+import {
+  MAX_CART_LINES,
+  MAX_LINE_QUANTITY,
+} from 'simplycms/contracts/cart-limits';
 import { useT } from 'simplycms/i18n';
 import { useCart, type CartItem } from 'simplycms/react-query';
 import { useToast } from 'simplycms/core/hooks/use-toast';
@@ -11,7 +15,10 @@ export type AddToCartItem = Omit<CartItem, 'quantity'>;
 
 export interface ProductAddToCartProps {
   className?: string;
-  /** Готова позиція; `null` — ціну не визначено, купівля неможлива. */
+  /**
+   * Готова позиція (без ціни — її рахує квота кошика); `null` — ціну не
+   * визначено, купівля неможлива.
+   */
   item: AddToCartItem | null;
   /** Наявність: `out_of_stock` вимикає кнопку. */
   inStock: boolean;
@@ -21,6 +28,9 @@ export interface ProductAddToCartProps {
  * Реквізит «купити»: кнопка з прибінджeною воронкою — запис у кошик і toast
  * підтвердження. Тема кнопку лише РОЗСТАВЛЯЄ і фарбує; зламати додавання в
  * кошик оформленням неможливо.
+ *
+ * 🔴 Межа кошика (Е6в-13, ред.3): якщо кошик уперся в межу, покупець бачить
+ * тост межі, а не хибне «Додано в кошик».
  */
 export function ProductAddToCart({
   className,
@@ -34,7 +44,16 @@ export function ProductAddToCart({
   const handleClick = () => {
     if (!item) return;
 
-    addItem(item);
+    if (addItem(item) === 'limit_reached') {
+      toast({
+        title: t('cart.limitReached', {
+          lines: MAX_CART_LINES,
+          quantity: MAX_LINE_QUANTITY,
+        }),
+        variant: 'destructive',
+      });
+      return;
+    }
     toast({
       title: t('product.addedToCart'),
       description: item.modificationName

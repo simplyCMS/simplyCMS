@@ -18,7 +18,12 @@ import { AddressSaveDialog } from './AddressSaveDialog';
 interface CheckoutDeliveryFormProps {
   values: Record<string, string | boolean>;
   onChange: (field: string, value: string | boolean) => void;
-  subtotal: number;
+  /**
+   * Сума позицій для тарифів до вибору способу — лише серверна (квота
+   * оформлення або кошика, Е6в-13). `null` — квоти ще немає: вартість
+   * способів показується станом завантаження, а не тарифом від 0.
+   */
+  subtotal: number | null;
   /** Чи є хоч один спосіб доставки — батько блокує submit, поки `false`. */
   onAvailabilityChange?: (hasMethods: boolean) => void;
   /** Обраний метод — pickup чи ні; батько цим гейтить запит квоти (рев'ю I3). */
@@ -68,12 +73,13 @@ export function CheckoutDeliveryForm({
   const currentCity = String(values.deliveryCity || '');
   const currentAddress = String(values.deliveryAddress || '');
 
+  // `0` при `null` ніде не показується: без суми `rateFor` не кличеться.
   const {
     methods,
     pickupPoints,
     isLoading: methodsLoading,
     rateFor,
-  } = useShippingDirectory(currentCity, subtotal);
+  } = useShippingDirectory(currentCity, subtotal ?? 0);
   const { addresses: savedAddresses, save: saveAddress } =
     useAddressBook(!!user);
 
@@ -286,7 +292,8 @@ export function CheckoutDeliveryForm({
           <div className="grid gap-3">
             {methods.map((method) => {
               const IconComponent = getMethodIcon(method.icon);
-              const rateInfo = rateFor(method.id);
+              const rateInfo =
+                subtotal === null ? undefined : rateFor(method.id);
               return (
                 <label
                   key={method.id}
@@ -319,14 +326,21 @@ export function CheckoutDeliveryForm({
                     )}
                   </div>
                   <div className="font-medium text-right">
-                    {!rateInfo
-                      ? '—'
-                      : rateInfo.pricing === 'carrier'
-                        ? t('checkout.shipping.carrier')
-                        : formatShippingCost(rateInfo.cost, config, {
-                            byTariff: t('common.shipping.byTariff'),
-                            free: t('common.shipping.free'),
-                          })}
+                    {rateInfo === undefined ? (
+                      <span
+                        aria-busy="true"
+                        className="inline-block h-4 w-14 animate-pulse rounded bg-muted"
+                      />
+                    ) : !rateInfo ? (
+                      '—'
+                    ) : rateInfo.pricing === 'carrier' ? (
+                      t('checkout.shipping.carrier')
+                    ) : (
+                      formatShippingCost(rateInfo.cost, config, {
+                        byTariff: t('common.shipping.byTariff'),
+                        free: t('common.shipping.free'),
+                      })
+                    )}
                   </div>
                 </label>
               );

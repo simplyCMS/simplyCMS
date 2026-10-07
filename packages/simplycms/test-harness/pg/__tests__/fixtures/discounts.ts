@@ -22,7 +22,10 @@ export interface PercentDiscountSpec {
   /** Батьківська група, якщо група створюється цим викликом. */
   parentGroup?: string;
   name: string;
+  /** Значення знижки: відсоток для `percent`, гривні для `fixed_amount`. */
   percent: number;
+  /** Тип знижки; за замовчуванням `percent`. */
+  discountType?: 'percent' | 'fixed_amount';
   priority?: number;
   isActive?: boolean;
   /** Код типу ціни знижки; `null` — для всіх типів (Е6в-2). */
@@ -67,7 +70,7 @@ export function percentDiscountStatements(s: PercentDiscountSpec): string[] {
     }),
     `insert into public.discounts
        (id, name, group_id, discount_type, discount_value, priority, is_active, price_type_id)
-     select gen_random_uuid(), '${s.name}', g.id, 'percent', ${s.percent},
+     select gen_random_uuid(), '${s.name}', g.id, '${s.discountType ?? 'percent'}', ${s.percent},
             ${s.priority ?? 0}, ${s.isActive ?? true}, ${priceType}
        from public.discount_groups g ${priceJoin}
       where g.name = '${s.group}'${priceWhere}`,

@@ -5,6 +5,7 @@ export * from './pricing';
 export * from './inventory';
 export * from './discount';
 export * from './discount-environment';
+export * from './cart-quote';
 export * from './shipping';
 export * from './catalog';
 export * from './order';

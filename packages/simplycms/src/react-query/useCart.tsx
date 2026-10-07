@@ -7,6 +7,12 @@ import React, {
   ReactNode,
 } from 'react';
 import {
+  addLine,
+  clampQuantity,
+  sameLine,
+  type AddItemResult,
+} from './cart-normalize';
+import {
   EMPTY_CART,
   subscribe,
   getSnapshot,
@@ -22,10 +28,13 @@ import {
 // (контекст, провайдер, дії).
 
 export type { CartItem };
+export type { AddItemResult } from './cart-normalize';
 
 interface CartContextType {
   items: readonly CartItem[];
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
+  addItem: (
+    item: Omit<CartItem, 'quantity'> & { quantity?: number },
+  ) => AddItemResult;
   removeItem: (productId: string, modificationId: string | null) => void;
   updateQuantity: (
     productId: string,
@@ -34,7 +43,6 @@ interface CartContextType {
   ) => void;
   clearCart: () => void;
   totalItems: number;
-  totalPrice: number;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   /**
@@ -57,27 +65,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
   const [isOpen, setIsOpen] = useState(false);
 
+  // 🔴 Ціни в позиції немає: наявна позиція лише збільшує кількість, а суму
+  // перераховує серверна квота на новий склад кошика.
   const addItem = useCallback(
     (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+      let result: AddItemResult = 'added';
       writeCart((prev) => {
-        const existingIndex = prev.findIndex(
-          (i) =>
-            i.productId === item.productId &&
-            i.modificationId === item.modificationId,
-        );
-
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            quantity: updated[existingIndex].quantity + (item.quantity || 1),
-          };
-          return updated;
-        }
-
-        return [...prev, { ...item, quantity: item.quantity || 1 }];
+        const next = addLine(prev, item);
+        result = next.result;
+        return next.lines;
       });
-      setIsOpen(true);
+      if (result === 'added') setIsOpen(true);
+      return result;
     },
     [],
   );
@@ -101,10 +100,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Межа рядка тримається й тут: поле кількості чи «+» не виводять
+      // кошик за `MAX_LINE_QUANTITY`, яку відкинув би серверний валідатор.
+      const clamped = clampQuantity(quantity);
       writeCart((prev) =>
         prev.map((i) =>
-          i.productId === productId && i.modificationId === modificationId
-            ? { ...i, quantity }
+          sameLine(i, { productId, modificationId })
+            ? { ...i, quantity: clamped }
             : i,
         ),
       );
@@ -114,11 +116,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => writeCart(() => EMPTY_CART), []);
 
+  // Суми тут немає (Е6в-13): її рахує лише серверна квота (`useCartQuote`).
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
 
   return (
     <CartContext.Provider
@@ -129,7 +128,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         clearCart,
         totalItems,
-        totalPrice,
         isOpen,
         setIsOpen,
         hydrated,

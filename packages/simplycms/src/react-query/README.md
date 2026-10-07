@@ -51,7 +51,9 @@ export function ClientEngineProvider({ children }: { children: ReactNode }) {
 
 // Будь-де нижче:
 const { links } = useEngine();
-const { items, addItem, totalPrice } = useCart();
+const { items, addItem, totalItems } = useCart();
+// Ціни й суми в кошику немає (Е6в-13): їх дає серверна квота
+// `useCartQuote()` із `simplycms/core/hooks/useCartQuote`.
 ```
 
 ## Ліцензія
