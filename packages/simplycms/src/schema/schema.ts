@@ -754,7 +754,7 @@ export const categoryRules = pgTable("category_rules", {
 	toCategoryId: uuid("to_category_id").notNull(),
 	// Без DEFAULT (Е6в-2 ред.2): `{"type":"all","rules":[]}` — порожнє правило,
 	// яке Е6в-19 робить невалідним (fail-closed); форма завжди пише умови явно.
-	conditions: jsonb().notNull(),
+	conditions: jsonb().$type<JsonValue>().notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
 	priority: integer().default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),

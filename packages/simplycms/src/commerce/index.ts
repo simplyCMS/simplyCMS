@@ -27,6 +27,18 @@ export {
   loadUserCategoryId,
   loadUserPriceTypeId,
 } from './categories';
+// Категорії покупців і автоправила (Е6в-15, Е6в-19, Е6в-20): спільні для
+// вітрини (після COMMIT замовлення) і адмінки (кнопка, ручне призначення).
+export {
+  applyCategoryRules,
+  customerCategoryLock,
+  writeCategoryChange,
+} from './customer-categories';
+export type {
+  CategoryChange,
+  CategoryRulesOutcome,
+} from './customer-categories';
+export { loadCustomerStats } from './customer-stats';
 export {
   loadShippingDirectory,
   loadShippingMethods,

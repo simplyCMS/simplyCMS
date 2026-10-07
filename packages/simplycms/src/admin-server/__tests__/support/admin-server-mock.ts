@@ -124,6 +124,19 @@ export function createAdminServerMock(
     getDiscount: vi.fn(),
     saveDiscount: vi.fn(),
     removeDiscounts: vi.fn(),
+    listUserCategories: list(),
+    insertUserCategories: vi.fn(),
+    updateUserCategories: vi.fn(),
+    removeUserCategories: vi.fn(),
+    setDefaultUserCategory: vi.fn(),
+    countCustomersByCategory: vi.fn(),
+    listCategoryRules: list(),
+    insertCategoryRules: vi.fn(),
+    updateCategoryRules: vi.fn(),
+    removeCategoryRules: vi.fn(),
+    runCategoryRules: vi.fn(),
+    assignCustomerCategory: vi.fn(),
+    findCustomers: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

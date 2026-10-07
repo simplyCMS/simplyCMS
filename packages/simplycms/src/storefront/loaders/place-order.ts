@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
+import { applyCategoryRules } from 'simplycms/commerce';
 import { InsufficientStockError } from 'simplycms/inventory';
 import {
   withCustomerDb,
   withOrderTokenDb,
+  withStoreOperatorDb,
   type ActorDb,
   type OperatorEscalation,
 } from './db';
@@ -41,8 +43,9 @@ export async function placeOrderFor(
       ? withOrderTokenDb(accessToken as string, fn)
       : withCustomerDb(userId, fn);
 
+  let result: PlaceOrderResult;
   try {
-    return await run(async (db, operator) => {
+    result = await run(async (db, operator) => {
       const prepared = await prepareCheckout(db, input, userId);
       if (!prepared.ok) return prepared;
 
@@ -66,5 +69,29 @@ export async function placeOrderFor(
     if (error instanceof InsufficientStockError)
       return { ok: false, reason: 'not_purchasable' };
     throw error;
+  }
+  if (result.ok && userId !== null) await applyRulesAfterOrder(userId);
+  return result;
+}
+
+/**
+ * Автоправила категорії покупця ПІСЛЯ COMMIT замовлення (Е6в-19) — в
+ * ОКРЕМІЙ службовій транзакції: правила читають `accounts`/`users` і пишуть
+ * `profiles.category_id`, що покупцю не дозволено (Е6в-24).
+ *
+ * 🔴 Збій правил (зламаний рядок, обрив зʼєднання) НЕ ламає оформлення:
+ * замовлення вже закомічене й мусить повернутись покупцю. Помилка — лише в
+ * `console.error`; категорію перерахує наступне замовлення або кнопка
+ * «Запустити всі правила».
+ */
+async function applyRulesAfterOrder(userId: string): Promise<void> {
+  try {
+    await withStoreOperatorDb((db) => applyCategoryRules(db, userId));
+  } catch (error) {
+    // Службовий лог, не рядок інтерфейсу: i18n-зона вітрини кирилиці не пускає.
+    console.error(
+      '[simplycms/storefront] customer category rules were not applied after the order:',
+      error,
+    );
   }
 }

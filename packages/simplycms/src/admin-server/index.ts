@@ -85,11 +85,25 @@ import {
   getDiscountOp,
   saveDiscountInput,
   saveDiscountOp,
+  userCategoriesOps,
+  setDefaultUserCategoryInput,
+  setDefaultUserCategoryOp,
+  removeUserCategoriesInput,
+  removeUserCategoriesOp,
+  countCustomersByCategoryOp,
+  categoryRulesOps,
+  runCategoryRulesOp,
+  assignCustomerCategoryInput,
+  assignCustomerCategoryOp,
+  findCustomersInput,
+  findCustomersOp,
 } from 'simplycms/admin-server/impl';
 
 // Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
 // живим не-serverFn експортом не є і клієнтську трансформацію не ламає.
 export type {
+  CategoryCustomerCount,
+  CustomerHit,
   PluginRow,
   SystemSettings,
   ThemeRow,
@@ -532,3 +546,60 @@ export const saveDiscount = createServerFn({ method: 'POST' })
 export const removeDiscounts = createServerFn({ method: 'POST' })
   .validator(adminInput(discountsOps.removeSchema))
   .handler(discountsOps.remove);
+
+// К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
+// Е6в-14). Insert/update — фабрика під `customer-config` (Е6в-15);
+// видалення категорій — ЛИШЕ guarded `removeUserCategories` (Е6в-18), дефолт —
+// `setDefaultUserCategory`; видалення правил — фабричне.
+export const listUserCategories = createServerFn({ method: 'GET' })
+  .validator(adminInput(userCategoriesOps.subsetSchema))
+  .handler(userCategoriesOps.list);
+
+export const insertUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(userCategoriesOps.insertSchema))
+  .handler(userCategoriesOps.insert);
+
+export const updateUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(userCategoriesOps.updateSchema))
+  .handler(userCategoriesOps.update);
+
+export const removeUserCategories = createServerFn({ method: 'POST' })
+  .validator(adminInput(removeUserCategoriesInput))
+  .handler(removeUserCategoriesOp);
+
+export const setDefaultUserCategory = createServerFn({ method: 'POST' })
+  .validator(adminInput(setDefaultUserCategoryInput))
+  .handler(setDefaultUserCategoryOp);
+
+export const countCustomersByCategory = createServerFn({
+  method: 'GET',
+}).handler(countCustomersByCategoryOp);
+
+export const listCategoryRules = createServerFn({ method: 'GET' })
+  .validator(adminInput(categoryRulesOps.subsetSchema))
+  .handler(categoryRulesOps.list);
+
+export const insertCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.insertSchema))
+  .handler(categoryRulesOps.insert);
+
+export const updateCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.updateSchema))
+  .handler(categoryRulesOps.update);
+
+export const removeCategoryRules = createServerFn({ method: 'POST' })
+  .validator(adminInput(categoryRulesOps.removeSchema))
+  .handler(categoryRulesOps.remove);
+
+// Запуск без вводу — без валідатора: перевіряти нічого.
+export const runCategoryRules = createServerFn({ method: 'POST' }).handler(
+  runCategoryRulesOp,
+);
+
+export const assignCustomerCategory = createServerFn({ method: 'POST' })
+  .validator(adminInput(assignCustomerCategoryInput))
+  .handler(assignCustomerCategoryOp);
+
+export const findCustomers = createServerFn({ method: 'GET' })
+  .validator(adminInput(findCustomersInput))
+  .handler(findCustomersOp);

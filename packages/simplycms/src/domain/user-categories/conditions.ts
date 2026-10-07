@@ -1,26 +1,22 @@
-// Оцінка окремих умов правила — винесено з `engine.ts`, щоб файл-рушій
-// лишався коротким і читався як послідовність кроків алгоритму
-// `check_category_rules`, а не потопав у деталях кожного оператора.
+// Оцінка умов автоправила (Е6в-19) — окремо від `engine.ts`, щоб рушій
+// читався як послідовність кроків, а не потопав у деталях операторів.
+// Чиста функція винятків не кидає: непарсибельне значення чи невідомий
+// оператор — хибна умова (fail-closed).
 
 import type {
   CategoryRuleCondition,
   CategoryRuleConditions,
+  CategoryRuleOperator,
   UserCategoryStats,
 } from './types';
 
-/** Порівняння для числових полів (`total_purchases`, `registration_days`,
- *  `orders_count`). Оригінал робив `v_value::numeric`/`::integer` і впав би
- *  винятком на непарсибельному значенні — чиста функція винятків не кидає
- *  (контракт T1: нуль побічних ефектів), тож непарсибельне значення трактуємо
- *  як хибну умову (fail-closed), а не як «правило не існує». */
 function compareNumeric(
   statValue: number,
-  operator: string,
+  operator: CategoryRuleOperator,
   rawValue: string,
 ): boolean {
   const value = Number(rawValue);
-  if (Number.isNaN(value)) return false;
-
+  if (!Number.isFinite(value)) return false;
   switch (operator) {
     case '>=':
       return statValue >= value;
@@ -33,21 +29,17 @@ function compareNumeric(
     case '=':
       return statValue === value;
     default:
-      // Невідомий оператор — CASE … ELSE false в оригіналі.
       return false;
   }
 }
 
-/** Порівняння для текстових полів з підтримкою `contains` (`email_domain`,
- *  `utm_source`, `utm_campaign`). `NULL` у SQL порівнюється в NULL (хибно
- *  в IF) — тут те саме через явний null-guard. */
+/** Мітки немає (`null`) — умова хибна, а не помилка. */
 function compareText(
   statValue: string | null,
-  operator: string,
+  operator: CategoryRuleOperator,
   rawValue: string,
 ): boolean {
   if (statValue === null) return false;
-
   switch (operator) {
     case '=':
       return statValue === rawValue;
@@ -58,7 +50,6 @@ function compareText(
   }
 }
 
-/** Одна умова з `conditions->'rules'[]` → true/false. */
 function evaluateCondition(
   item: CategoryRuleCondition,
   stats: UserCategoryStats,
@@ -72,41 +63,31 @@ function evaluateCondition(
       return compareNumeric(stats.ordersCount, item.operator, item.value);
     case 'email_domain':
       return compareText(stats.emailDomain, item.operator, item.value);
-    case 'auth_provider':
-      // 🔴 Оригінал ІГНОРУЄ operator для цього поля — завжди пряма рівність
-      // (`v_stats.auth_provider = v_value`, без CASE по оператору). Повторюємо
-      // буквально, хоч це і виглядає непослідовно порівняно з рештою полів.
-      return stats.authProvider === item.value;
     case 'utm_source':
       return compareText(stats.utmSource, item.operator, item.value);
     case 'utm_campaign':
       return compareText(stats.utmCampaign, item.operator, item.value);
+    case 'auth_provider':
+      // Будь-який рядок `accounts` покупця має `provider_id = X` (Е6в-19).
+      return item.operator === '=' && stats.authProviders.includes(item.value);
     default:
-      // Невідоме поле — CASE … ELSE false в оригіналі: уся умова провалена.
       return false;
   }
 }
 
-/** Усі умови правила → true/false.
+/**
+ * Умови правила → true/false. `any` — АБО, `all` — І (Е6в-19).
  *
- * 🔴 Оригінал ЗАВЖДИ рахує AND по всіх умовах, незалежно від `conditions.type`:
- * `type = 'all'` лише вмикає дострокове переривання циклу на першій хибній
- * умові (`EXIT` в plpgsql), `type = 'any'`/будь-що інше просто не перериває
- * цикл раніше — але семантика AND лишається тією самою (нема жодного OR-гілки
- * в коді). Це фактично мертва/непрацююча "any"-гілка оригіналу; порт
- * відтворює її буквально, а не додає OR, якого в SQL не було.
- *
- * Порожній список умов (`conditions.rules = []`, дефолт стовпця в БД) —
- * цикл по нулю елементів не змінює початкове `true`, тож правило вважається
- * УМОВНО ВИКОНАНИМ («вакуумна істина»). Це навмисно, не хиба порту. */
+ * 🔴 Порожній список умов — `false` (ред.2): «вакуумна істина» колишнього
+ * порту при «Запустити всі правила» перевела б увесь магазин.
+ */
 export function conditionsMatch(
   conditions: CategoryRuleConditions,
   stats: UserCategoryStats,
 ): boolean {
-  let met = true;
-  for (const item of conditions.rules) {
-    met = met && evaluateCondition(item, stats);
-    if (!met && conditions.type === 'all') break;
-  }
-  return met;
+  if (conditions.rules.length === 0) return false;
+  const met = (item: CategoryRuleCondition) => evaluateCondition(item, stats);
+  if (conditions.type === 'any') return conditions.rules.some(met);
+  if (conditions.type === 'all') return conditions.rules.every(met);
+  return false;
 }

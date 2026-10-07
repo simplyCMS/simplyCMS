@@ -72,8 +72,9 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Замовлення покупець не редагує: скасування — серверна операція адміна.
   orders: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
   order_items: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
-  // Профіль створює хук Better Auth під `app_admin`.
-  profiles: { app_user: ['SELECT', 'UPDATE'], app_admin: CRUD },
+  // Профіль створює хук Better Auth під `app_admin`. UPDATE покупця —
+  // лише колонковий (`COLUMN_GRANTS`, Е6в-24).
+  profiles: { app_user: ['SELECT'], app_admin: CRUD },
   // Заявку лишає будь-хто, бачить — лише свою.
   service_requests: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
   // Роль і історію категорії призначає система, не покупець.
@@ -86,6 +87,26 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
 
 /** Ролі, чиї гранти взагалі очікуються (решта — порушення). */
 export const GRANTED_ROLES = ['app_admin', 'app_user'] as const;
+
+/**
+ * Колонкові гранти (Е6в-24): `{ table: { role: { CMD: [колонки] } } }`.
+ * Покупець оновлює в `profiles` ЛИШЕ те, що вітрина справді пише під
+ * `app_user` (виміряно): `updateProfile` — `first_name`, `last_name`, `phone`,
+ * `updated_at`; аватар — `avatar_url`. `category_id`/`category_locked` —
+ * лише `app_admin` (категорія визначає ціну, прапорець — автоправила).
+ */
+export const COLUMN_GRANTS: Record<
+  string,
+  Partial<
+    Record<(typeof GRANTED_ROLES)[number], Partial<Record<Cmd, string[]>>>
+  >
+> = {
+  profiles: {
+    app_user: {
+      UPDATE: ['avatar_url', 'first_name', 'last_name', 'phone', 'updated_at'],
+    },
+  },
+};
 
 /**
  * Плаский очікуваний зріз: `{ table: { role: Cmd[] } }`, команди відсортовані.

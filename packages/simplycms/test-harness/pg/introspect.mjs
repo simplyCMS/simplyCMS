@@ -54,6 +54,39 @@ export async function tableGrants(url, roles) {
 }
 
 /**
+ * Фактичні КОЛОНКОВІ гранти по таблицях `public` (Е6в-24):
+ * `{ table: { role: { UPDATE: ['col', …] } } }` з `pg_attribute.attacl`.
+ * Табличні гранти сюди не потрапляють (вони в `relacl`) — зрізи доповнюють один одного.
+ */
+export async function columnGrants(url, roles) {
+  const rows = await queryRows(
+    url,
+    `select c.relname as table_name, a.attname as column_name,
+            case when x.grantee = 0 then 'PUBLIC'
+                 else pg_get_userbyid(x.grantee) end as role_name,
+            x.privilege_type as privilege
+       from pg_attribute a
+       join pg_class c on c.oid = a.attrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       cross join lateral aclexplode(a.attacl) x
+      where n.nspname = 'public' and c.relkind = 'r'
+        and a.attnum > 0 and not a.attisdropped`,
+  );
+  const matrix = {};
+  for (const row of rows) {
+    if (roles && !roles.includes(row.role_name)) continue;
+    const byRole = (matrix[row.table_name] ??= {});
+    const byPriv = (byRole[row.role_name] ??= {});
+    (byPriv[row.privilege] ??= []).push(row.column_name);
+  }
+  for (const byRole of Object.values(matrix))
+    for (const byPriv of Object.values(byRole))
+      for (const [priv, cols] of Object.entries(byPriv))
+        byPriv[priv] = sorted(cols);
+  return matrix;
+}
+
+/**
  * Функції схем `app` і `public` з їхнім ACL: по рядку на пару
  * «функція × грантований». Функція без жодного гранта теж повертається
  * (з `role_name: null`) — інакше зникла б із поля зору гейта.

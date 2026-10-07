@@ -39,5 +39,15 @@ export const messages = {
     'Дата початку має бути раніше за дату завершення',
   'admin.errors.discountConditionCategoryMissing':
     'Категорію покупців з умови знижки не знайдено — оновіть сторінку й оберіть категорію ще раз',
+  'admin.errors.userCategoryDefault':
+    'Категорію за замовчуванням не можна видалити — спершу зробіть дефолтною іншу',
+  'admin.errors.userCategoryHasCustomers':
+    'У категорії є покупці — перенесіть їх в іншу категорію',
+  'admin.errors.userCategoryHasRules':
+    'Категорію використовують автоправила — спершу змініть або видаліть їх',
+  'admin.errors.userCategoryInDiscount':
+    'Категорію використовує умова знижки — спершу приберіть її з умови',
+  'admin.errors.categoryRuleSameCategory':
+    'Правило не може переводити покупця в ту саму категорію',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

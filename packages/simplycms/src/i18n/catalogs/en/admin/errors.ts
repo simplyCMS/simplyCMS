@@ -40,6 +40,16 @@ export const messages: Catalog = {
     'The start date must be earlier than the end date',
   'admin.errors.discountConditionCategoryMissing':
     'A customer category in the discount condition no longer exists — reload the page and choose the category again',
+  'admin.errors.userCategoryDefault':
+    'The default category cannot be deleted — make another category the default first',
+  'admin.errors.userCategoryHasCustomers':
+    'The category has customers — move them to another category',
+  'admin.errors.userCategoryHasRules':
+    'Automatic rules use this category — change or delete them first',
+  'admin.errors.userCategoryInDiscount':
+    'A discount condition uses this category — remove it from the condition first',
+  'admin.errors.categoryRuleSameCategory':
+    'A rule cannot move a customer into the same category',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

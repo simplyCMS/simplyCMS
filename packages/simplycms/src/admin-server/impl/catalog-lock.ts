@@ -1,5 +1,4 @@
-import { sql } from 'drizzle-orm';
-import type { ActorDb } from 'simplycms/db';
+import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 
 /**
  * Транзакційний advisory-lock, ключований ціллю операції (знахідка аудиту
@@ -11,14 +10,14 @@ import type { ActorDb } from 'simplycms/db';
  * блокує СПЕРШУ рядки залишку, ПОТІМ пише рядок товару (setTargetStatus);
  * адмінка, що блокувала б товар першим, дала б зворотний порядок і
  * дедлок 40P01. Advisory-lock у порядку рядкових локів не бере участі.
- * xact-варіант знімається на COMMIT/ROLLBACK сам — сумісний із pgbouncer
- * transaction-mode (спайк B5).
+ *
+ * 🔴 SQL і хешування ключа живуть в `advisoryXactLock` (`simplycms/db`,
+ * Е6в-15) — тут лише виклик: той самий ключ з адмінки й з `commerce` мусить
+ * давати той самий лок.
  */
 export async function lockCatalogTarget(
   db: ActorDb,
   key: string,
 ): Promise<void> {
-  await db.execute(
-    sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`,
-  );
+  await advisoryXactLock(db, key);
 }

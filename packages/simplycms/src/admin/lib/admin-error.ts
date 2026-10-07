@@ -71,6 +71,17 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
     'admin.errors.discountGroupDatesInvalid',
   [ADMIN_STATE_CONSTRAINT.discountConditionCategoryMissing]:
     'admin.errors.discountConditionCategoryMissing',
+  // Е6в-18/19: категорії покупців і автоправила.
+  [ADMIN_STATE_CONSTRAINT.userCategoryDefault]:
+    'admin.errors.userCategoryDefault',
+  [ADMIN_STATE_CONSTRAINT.userCategoryHasCustomers]:
+    'admin.errors.userCategoryHasCustomers',
+  [ADMIN_STATE_CONSTRAINT.userCategoryHasRules]:
+    'admin.errors.userCategoryHasRules',
+  [ADMIN_STATE_CONSTRAINT.userCategoryInDiscount]:
+    'admin.errors.userCategoryInDiscount',
+  [ADMIN_STATE_CONSTRAINT.categoryRuleSameCategory]:
+    'admin.errors.categoryRuleSameCategory',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

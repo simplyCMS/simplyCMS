@@ -7,12 +7,16 @@ const baseStats: UserCategoryStats = {
   ordersCount: 0,
   registrationDays: 0,
   emailDomain: null,
-  authProvider: null,
+  authProviders: [],
   utmSource: null,
   utmCampaign: null,
 };
 
-const alwaysMatchingConditions = { type: 'all', rules: [] } as const;
+// Умова, що виконується для будь-якої статистики (порожнє правило — fail-closed).
+const alwaysMatchingConditions = {
+  type: 'all',
+  rules: [{ field: 'orders_count', operator: '>=', value: '0' }],
+} as const;
 
 const rule = (overrides: Partial<CategoryRule>): CategoryRule => ({
   id: 'rule-default',
@@ -48,7 +52,7 @@ describe('evaluateCategoryRules — базові переходи', () => {
     });
   });
 
-  it('єдине активне правило зі спрощеними умовами дає перехід + причину', () => {
+  it('єдине активне правило, що спрацювало, дає перехід + причину', () => {
     const rules = [
       rule({ id: 'r1', name: 'VIP за сумою покупок', toCategoryId: 'vip' }),
     ];
@@ -63,6 +67,13 @@ describe('evaluateCategoryRules — базові переходи', () => {
 
   it('неактивне правило (is_active = false) ігнорується', () => {
     const rules = [rule({ id: 'r1', isActive: false })];
+    expect(evaluateCategoryRules(rules, 'retail', baseStats)).toEqual({
+      changed: false,
+    });
+  });
+
+  it('ред.2: правило з порожніми умовами не спрацьовує (fail-closed)', () => {
+    const rules = [rule({ id: 'r1', conditions: { type: 'all', rules: [] } })];
     expect(evaluateCategoryRules(rules, 'retail', baseStats)).toEqual({
       changed: false,
     });
@@ -112,36 +123,11 @@ describe('evaluateCategoryRules — пріоритети', () => {
   });
 
   it('правило, що не змінює категорію, пропускається — оцінюється наступне за пріоритетом', () => {
-    // Правило вищого пріоритету веде в ТУ САМУ категорію — оригінал у цьому
-    // випадку продовжує цикл (EXIT лише в гілці зі зміною), тож має
-    // спрацювати наступне за пріоритетом правило, а не "без переходу".
     const rules = [
       rule({ id: 'noop', toCategoryId: 'retail', priority: 10 }),
       rule({ id: 'real', toCategoryId: 'vip', priority: 1 }),
     ];
     const result = evaluateCategoryRules(rules, 'retail', baseStats);
     expect(result).toMatchObject({ changed: true, ruleId: 'real' });
-  });
-});
-
-describe('evaluateCategoryRules — NULL-евий tri-state оригіналу', () => {
-  it('поточна категорія null → переходу немає НАВІТЬ якщо правило формально підходить', () => {
-    // 🔴 Відтворює SQL tri-state: `to_category_id != NULL` завжди NULL (хибно
-    // в IF). Це узгоджена з БД поведінка, не хиба порту — див. коментар в engine.ts.
-    const rules = [
-      rule({ id: 'r1', fromCategoryId: null, toCategoryId: 'vip' }),
-    ];
-    expect(evaluateCategoryRules(rules, null, baseStats)).toEqual({
-      changed: false,
-    });
-  });
-});
-
-describe('evaluateCategoryRules — no-op при співпадінні категорій', () => {
-  it('to_category_id === поточна категорія → без переходу', () => {
-    const rules = [rule({ id: 'r1', toCategoryId: 'retail' })];
-    expect(evaluateCategoryRules(rules, 'retail', baseStats)).toEqual({
-      changed: false,
-    });
   });
 });
