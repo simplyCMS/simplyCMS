@@ -475,8 +475,9 @@ email в іншому регістрі — не конфлікт, записує
   транзакції. Ключі: `discount-config` — запис і видалення груп (guard циклу),
   `saveDiscount`, видалення знижок (`removeDiscountsOp`: фабричний `remove` лок-хука
   не бере); `customer-config` — запис і видалення категорій, `setDefault`,
-  запис правил; `customer-category:<userId>` — будь-яка зміна категорії одного
-  покупця (вручну чи автоправилом); `admin-roles` — будь-яка зміна «хто адмін»
+  запис правил; `customer-category:<userId>` — стан покупця в одній транзакції:
+  категорія (ручна й автоправила), контакти, бан, видалення; першим у порядку
+  `customer-category` → `admin-roles`; `admin-roles` — будь-яка зміна «хто адмін»
   і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
   `setCustomerBan`, `deleteCustomer` і invite власника (`issueAdminInvite`). Ключ
   `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (invite — auth і не може імпортувати
@@ -488,10 +489,20 @@ email в іншому регістрі — не конфлікт, записує
   існують, — під обома). Нова операція, якій потрібні обидва, бере їх у цьому
   порядку; зворотний порядок — дедлок (Postgres розірве одну транзакцію, `40P01`).
 - 🔴 **Порядок локів покупця: `customer-category:<userId>` → `admin-roles`.**
-  Загальне правило (Е6г-22): будь-яка операція, що пише `users`, `profiles` або
-  `user_category_history` одного покупця (`updateCustomerContacts`, `setCustomerBan`,
-  `deleteCustomer`, зміна категорії), першим бере `customer-category:<userId>`.
-  Причина: FK `user_category_history_user_id_fkey` бере `KEY SHARE` на `users`, а
+  Правило (Е6г-22): операція, яка в одній транзакції пише більше одного ресурсу
+  графа покупця (`users`, `profiles`, `user_category_history`, `user_roles`,
+  `sessions`) або тримає лок рядка `users`/`profiles` під час іншого запису, ПЕРШИМ
+  запитом бере `customer-category:<userId>`. Так працюють адмін-операції покупця
+  (категорія, контакти, бан, видалення) і автоправила. Однорядкові записи без
+  утримання інших локів лока не беруть, бо не тримають жодного ребра графа й циклу
+  не утворять: `updateProfile` вітрини, власні записи Better Auth у
+  `users`/`sessions`, а також аватар вітрини (`replaceAvatarFor`/`clearAvatarFor`),
+  який пише `media` + один рядок `profiles` у порядку `users` → `profiles`, а його
+  операторська транзакція `eraseMedia` чіпає лише `media`. Нова операція, що пише
+  два ресурси графа, підпадає під правило; виняток називає причину в коментарі
+  поруч із кодом. Незалежно від advisory-лока рядки покупця блокуються в порядку
+  `users` → `profiles` (FK-`KEY SHARE` на `users` теж рахується); операція, що бере
+  їх у зворотному порядку, — дефект. Причина правила: FK `user_category_history_user_id_fkey` бере `KEY SHARE` на `users`, а
   UPDATE `users.email` (унікальний `users_email_key`) бере `FOR UPDATE` незалежно від
   явного запиту — рятує лише порядок. `setAdminRole` пише лише `user_roles` і цього
   лока не бере. Видалення покупця бере їх саме так (спершу не дає правилу категорій писати профіль,
