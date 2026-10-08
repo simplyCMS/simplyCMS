@@ -39,7 +39,7 @@ export function reportLines({ env, db }: ShowcaseReport): string[] {
     `    email:  ${SHOWCASE_OWNER_EMAIL}`,
     `    пароль: ${SHOWCASE_OWNER_PASSWORD}`,
     `  Другий адмін: ${SHOWCASE_MANAGER_EMAIL} / ${SHOWCASE_MANAGER_PASSWORD}`,
-    `  Покупці: buyer-01…buyer-${BUYER_COUNT}@showcase.test / ${SHOWCASE_BUYER_PASSWORD}`,
+    `  Покупці: buyer-01…buyer-${BUYER_COUNT}@showcase.test / ${SHOWCASE_BUYER_PASSWORD} (buyer-17 забанений, buyer-18 видалений)`,
     '',
     '  Запуск магазину:',
     `    pnpm build && ${vars} pnpm start`,
