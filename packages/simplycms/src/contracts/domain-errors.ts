@@ -83,6 +83,10 @@ export const ADMIN_STATE_CONSTRAINT = {
   userCategoryHasRules: 'user_category_has_rules',
   userCategoryInDiscount: 'user_category_in_discount',
   categoryRuleSameCategory: 'category_rule_same_category',
+  // Е6г-4/11: роль адміна під `admin-roles`.
+  adminRoleSelf: 'admin_role_self',
+  adminRoleLast: 'admin_role_last',
+  adminRoleBanned: 'admin_role_banned',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

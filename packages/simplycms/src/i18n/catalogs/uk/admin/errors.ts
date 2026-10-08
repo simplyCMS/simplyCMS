@@ -49,5 +49,9 @@ export const messages = {
     'Категорію використовує умова знижки — спершу приберіть її з умови',
   'admin.errors.categoryRuleSameCategory':
     'Правило не може переводити покупця в ту саму категорію',
+  'admin.errors.adminRoleSelf': 'Не можна зняти роль адміністратора із себе',
+  'admin.errors.adminRoleLast':
+    'Це останній адміністратор — роль зняти не можна',
+  'admin.errors.adminRoleBanned': 'Спершу розблокуйте покупця',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

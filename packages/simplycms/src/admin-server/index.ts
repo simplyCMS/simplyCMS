@@ -97,6 +97,8 @@ import {
   runCategoryRulesOp,
   assignCustomerCategoryInput,
   assignCustomerCategoryOp,
+  setAdminRoleInput,
+  setAdminRoleOp,
   findCustomersInput,
   listCustomersInput,
   listCustomersOp,
@@ -610,6 +612,10 @@ export const runCategoryRules = createServerFn({ method: 'POST' }).handler(
 export const assignCustomerCategory = createServerFn({ method: 'POST' })
   .validator(adminInput(assignCustomerCategoryInput))
   .handler(assignCustomerCategoryOp);
+
+export const setAdminRole = createServerFn({ method: 'POST' })
+  .validator(adminInput(setAdminRoleInput))
+  .handler(setAdminRoleOp);
 
 export const findCustomers = createServerFn({ method: 'GET' })
   .validator(adminInput(findCustomersInput))

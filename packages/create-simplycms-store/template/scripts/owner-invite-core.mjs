@@ -10,7 +10,11 @@
 // власника). Замість мовчазної відправки в нікуди посилання друкується в
 // консоль: власник відкриває його сам. Саме тому `sendEmail` тут — лог, а не
 // заглушка-нічого.
-import { issueOwnerInvite, ownerInviteStore } from 'simplycms/auth';
+import {
+  issueOwnerInvite,
+  OwnerInviteError,
+  ownerInviteStore,
+} from 'simplycms/auth';
 
 /**
  * @param {{
@@ -28,15 +32,28 @@ export async function runOwnerInvite({
   log,
   store = ownerInviteStore,
 }) {
-  const result = await issueOwnerInvite({
-    store,
-    sendEmail: async (message) => {
-      log(`Лист «${message.subject}» не надсилається: SMTP не налаштовано.`);
-    },
-    email,
-    siteUrl,
-    storeName,
-  });
+  let result;
+  try {
+    result = await issueOwnerInvite({
+      store,
+      sendEmail: async (message) => {
+        log(`Лист «${message.subject}» не надсилається: SMTP не налаштовано.`);
+      },
+      email,
+      siteUrl,
+      storeName,
+    });
+  } catch (error) {
+    // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду.
+    if (error instanceof OwnerInviteError && error.code === 'banned')
+      throw Object.assign(
+        new Error(
+          `Користувача ${email} заблоковано — спершу розблокуйте покупця.`,
+        ),
+        { code: error.code },
+      );
+    throw error;
+  }
 
   // Ідемпотентність: повторний прогін не створює другого користувача й не
   // дублює роль — він лише перевипускає токен, гасячи попередній.

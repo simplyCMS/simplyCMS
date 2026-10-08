@@ -33,8 +33,11 @@ export type {
   AcceptOwnerInviteResult,
 } from './accept-invite';
 
+export { ADMIN_ROLES_LOCK } from './admin-roles-lock';
+
 export {
   issueOwnerInvite,
+  OwnerInviteError,
   verifyOwnerInvite,
   inviteIdentifier,
 } from './invite';

@@ -37,6 +37,7 @@ export type Operation =
   | 'settings.manage'
   | 'discount.manage'
   | 'customer.manage'
+  | 'customer.delete'
   | 'profile.read'
   | 'profile.update'
   | 'review.create'
@@ -85,6 +86,8 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // пошук покупця. Окремо від `discount.manage`: категорія визначає тип
   // ціни, тобто це керування покупцями, а не акціями.
   'customer.manage': { admin: 'any' },
+  // Е6г: безповоротне видалення покупця — окремо від `customer.manage`.
+  'customer.delete': { admin: 'any' },
   'profile.read': { user: 'own', admin: 'any' },
   'profile.update': { user: 'own', admin: 'any' },
   'review.create': { user: 'own', admin: 'any' },

@@ -19,15 +19,29 @@ import { renderInviteEmail, type SendInviteEmail } from './invite-email';
 export interface OwnerInviteStore {
   findUserIdByEmail(email: string): Promise<string | null>;
   createUser(input: { email: string; name: string }): Promise<string>;
-  storeToken(input: {
+  /**
+   * Роль `admin` + токен в ОДНІЙ транзакції під `admin-roles` (Е6г-19).
+   * `'banned'` — користувач забанений: нічого не записано. Двох окремих
+   * кроків («токен», потім «роль») немає свідомо: між ними лишалась би
+   * щілина «токен є, ролі немає» або видача ролі забаненому.
+   */
+  issueAdminInvite(input: {
+    userId: string;
     identifier: string;
     valueHash: string;
     expiresAt: Date;
-  }): Promise<void>;
+  }): Promise<'issued' | 'banned'>;
   consumeToken(
     identifier: string,
   ): Promise<{ valueHash: string; expiresAt: Date } | null>;
-  grantAdminRole(userId: string): Promise<void>;
+}
+
+/** Відмова випуску invite. Єдина причина зараз — `banned` (Е6г-19). */
+export class OwnerInviteError extends Error {
+  override readonly name = 'OwnerInviteError';
+  constructor(readonly code: 'banned') {
+    super(`[auth] invite відхилено: ${code}`);
+  }
 }
 
 const DEFAULT_TTL_MS = 24 * 3_600_000;
@@ -76,16 +90,17 @@ export async function issueOwnerInvite(
     existing ?? (await input.store.createUser({ email, name: email }));
 
   const token = input.token ?? randomBytes(32).toString('base64url');
-  await input.store.storeToken({
+  // Роль закріплюється НЕ хуком signUp (той дає рівно `user` — інваріант
+  // `first_user_no_auto_admin`), а саме тут: invite власника і є єдиний
+  // легальний шлях до `admin` на чистому магазині. Роль і токен лягають
+  // одним викликом: забанений не отримує ні того, ні іншого.
+  const outcome = await input.store.issueAdminInvite({
+    userId,
     identifier: inviteIdentifier(email),
     valueHash: hashToken(token),
     expiresAt: new Date(now.getTime() + ttlMs),
   });
-
-  // Роль закріплюється НЕ хуком signUp (той дає рівно `user` — інваріант
-  // `first_user_no_auto_admin`), а саме тут: invite власника і є єдиний
-  // легальний шлях до `admin` на чистому магазині.
-  await input.store.grantAdminRole(userId);
+  if (outcome === 'banned') throw new OwnerInviteError('banned');
 
   const url =
     `${input.siteUrl.replace(/\/$/, '')}/auth/invite` +
