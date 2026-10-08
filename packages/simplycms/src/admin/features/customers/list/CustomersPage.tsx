@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useT } from 'simplycms/i18n';
+import { Button } from 'simplycms/ui/button';
 import { Card, CardContent } from 'simplycms/ui/card';
 import CustomersFilters from './CustomersFilters';
 import CustomersTable from './CustomersTable';
@@ -29,8 +30,15 @@ export default function CustomersPage() {
     ...filters,
     search: debounced.length >= SEARCH_MIN ? debounced : undefined,
   };
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useCustomersList(effective);
+  const {
+    data,
+    isPending,
+    isError,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useCustomersList(effective);
   return (
     <div className="space-y-6">
       <div>
@@ -45,12 +53,23 @@ export default function CustomersPage() {
       />
       <Card>
         <CardContent className="pt-6">
-          <CustomersTable
-            rows={data?.pages.flatMap((p) => p.rows) ?? []}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onLoadMore={() => fetchNextPage()}
-          />
+          {isError && !data ? (
+            // Збій — не «не знайдено» (Е6в F1): помилка з повтором.
+            <div role="alert" className="space-y-4 py-8 text-center">
+              <p className="text-destructive">{t('admin.users.loadError')}</p>
+              <Button variant="outline" onClick={() => refetch()}>
+                {t('admin.users.retry')}
+              </Button>
+            </div>
+          ) : (
+            <CustomersTable
+              rows={data?.pages.flatMap((p) => p.rows) ?? []}
+              isPending={isPending}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

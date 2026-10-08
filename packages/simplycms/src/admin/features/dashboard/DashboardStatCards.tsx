@@ -14,9 +14,11 @@ interface Props {
 export default function DashboardStatCards({ summary }: Props) {
   const t = useT();
   const formatPrice = useFormatPrice();
-  const money = (cents: number | undefined) => formatPrice((cents ?? 0) / 100);
+  // Поки зведення вантажиться — «—», а не вигадані нулі (Е6в F1).
+  const money = (cents: number | undefined) =>
+    cents === undefined ? '—' : formatPrice(cents / 100);
   const count = (
-    <div className="text-2xl font-bold">{summary?.newOrders ?? 0}</div>
+    <div className="text-2xl font-bold">{summary?.newOrders ?? '—'}</div>
   );
   return (
     <>

@@ -17,6 +17,8 @@ import { adminPath } from '../../../lib/adminLinks';
 
 interface Props {
   readonly rows: readonly AdminCustomerRow[];
+  /** Перше завантаження ще триває: порожній стан ще не вирішено. */
+  readonly isPending: boolean;
   readonly hasNextPage: boolean;
   readonly isFetchingNextPage: boolean;
   readonly onLoadMore: () => void;
@@ -25,6 +27,7 @@ interface Props {
 /** Таблиця покупців: рядок — посилання на картку, «Показати ще» під нею. */
 export default function CustomersTable({
   rows,
+  isPending,
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
@@ -65,13 +68,23 @@ export default function CustomersTable({
             <TableCell>{formatPrice(c.ordersTotalCents / 100)}</TableCell>
           </TableRow>
         ))}
-        {rows.length === 0 && (
+        {rows.length === 0 && !isPending && (
           <TableRow>
             <TableCell
               colSpan={4}
               className="text-center text-muted-foreground"
             >
               {t('admin.users.empty')}
+            </TableCell>
+          </TableRow>
+        )}
+        {isPending && (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center">
+              <Loader2
+                aria-label={t('common.loading')}
+                className="mx-auto h-6 w-6 animate-spin"
+              />
             </TableCell>
           </TableRow>
         )}

@@ -18,6 +18,7 @@ export const mocks = {
 export const ui = {
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
-  navigate: vi.fn(),
+  // Реальний navigate повертає проміс — код викликача чіпляє на нього `.catch`.
+  navigate: vi.fn(async () => undefined),
   currentUserId: 'a0000000-0000-4000-8000-0000000000ff',
 };

@@ -22,6 +22,8 @@ export const messages = {
   'admin.users.banned': 'Заблоковано',
   'admin.users.onlyBanned': 'Лише заблоковані',
   'admin.users.loadMore': 'Показати ще',
+  'admin.users.loadError': 'Не вдалося завантажити список покупців',
+  'admin.users.retry': 'Повторити',
   'admin.users.notFound': 'Користувача не знайдено',
   'admin.users.backToList': 'Назад до списку',
   'admin.users.card': 'Картка користувача',

@@ -42,7 +42,11 @@ export const page = (rows: unknown[], nextCursor: unknown = null) => ({
 export const renderPage = () =>
   render(<CustomersPage />, {
     wrapper: ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
         <EngineProvider value={ENGINE}>
           <I18nProvider locale="uk">{children}</I18nProvider>
         </EngineProvider>

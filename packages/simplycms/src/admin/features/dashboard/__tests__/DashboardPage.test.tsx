@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 // Дашборд на серверному шарі (Task 8, Е6г): мок межі `dashboardSummary`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { createTranslator, I18nProvider } from 'simplycms/i18n';
@@ -77,7 +83,11 @@ const fmt = (cents: number) =>
 
 const renderPage = () =>
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
       <EngineProvider value={ENGINE}>
         <I18nProvider locale="uk">
           <DashboardPage />
@@ -88,6 +98,7 @@ const renderPage = () =>
 
 beforeEach(() => {
   slot.mockClear();
+  dashboardSummary.mockReset();
   listOrderStatuses.mockResolvedValue([NEW]);
   dashboardSummary.mockResolvedValue(summary());
 });
@@ -145,5 +156,32 @@ describe('DashboardPage', () => {
     expect(
       slot.mock.calls.some((c) => c[0] === 'admin.dashboard.widgets'),
     ).toBe(true);
+  });
+
+  it('поки вантажиться — «—», а не 0 і не 0,00 ₴; слотів немає', async () => {
+    dashboardSummary.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    await screen.findByText(t('admin.dashboard.newOrders'));
+    expect(screen.getAllByText('—')).toHaveLength(3);
+    expect(screen.queryByText('0')).toBeNull();
+    expect(screen.queryByText(fmt(0))).toBeNull();
+    expect(slot).not.toHaveBeenCalled();
+  });
+
+  it('збій → повідомлення з «Повторити», без нулів; повтор кличе читання вдруге', async () => {
+    dashboardSummary
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(summary());
+    renderPage();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(t('admin.dashboard.loadError'));
+    expect(screen.queryByText(t('admin.dashboard.newOrders'))).toBeNull();
+    expect(slot).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.dashboard.retry') }),
+    );
+    await screen.findByText('N-1');
+    expect(dashboardSummary).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

@@ -9,6 +9,8 @@ export const messages: Catalog = {
   'admin.dashboard.revenue7d': 'Revenue, last 7 days',
   'admin.dashboard.revenue30d': 'Revenue, last 30 days',
   'admin.dashboard.recentOrders': 'Recent orders',
+  'admin.dashboard.loadError': 'Could not load the dashboard summary',
+  'admin.dashboard.retry': 'Retry',
 
   'admin.dashboard.quickActions': 'Quick actions',
   'admin.dashboard.quickActionsHint': 'Frequently used functions',

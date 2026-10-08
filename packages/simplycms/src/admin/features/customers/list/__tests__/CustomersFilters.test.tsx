@@ -75,6 +75,16 @@ describe('CustomersFilters', () => {
     expect(lastArg().cursor).toBeUndefined();
   });
 
+  it('роль «покупці» → role: customer, курсор скинуто', async () => {
+    const user = await withSecondPage();
+    await user.click(screen.getByLabelText(t('admin.users.role')));
+    await user.click(
+      await screen.findByRole('option', { name: t('admin.users.user') }),
+    );
+    await waitFor(() => expect(lastArg().role).toBe('customer'));
+    expect(lastArg().cursor).toBeUndefined();
+  });
+
   it('«заблоковані» → banned: true, курсор скинуто', async () => {
     const user = await withSecondPage();
     await user.click(screen.getByLabelText(t('admin.users.onlyBanned')));

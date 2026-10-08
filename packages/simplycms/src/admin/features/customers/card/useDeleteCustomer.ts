@@ -48,7 +48,9 @@ export function useDeleteCustomer(userId: string) {
     // Спершу перехід, щоб відкрита картка не блимнула «не знайдено» після
     // інвалідації; кеш синхронізуємо у фоні.
     toast.success(t('admin.users.card.deleted'));
-    void navigate({ to: adminPath('users') });
+    // Помилка навігації не відкочує видалення й не має стати необробленим
+    // відхиленням промісу: акаунт уже стертий, картка лишається як є.
+    navigate({ to: adminPath('users') }).catch(() => {});
     await Promise.allSettled([
       qc.invalidateQueries({ queryKey: [ENTITY.profiles] }),
       orders.utils.refetch(),

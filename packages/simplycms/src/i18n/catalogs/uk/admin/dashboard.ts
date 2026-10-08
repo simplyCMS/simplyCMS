@@ -7,6 +7,8 @@ export const messages = {
   'admin.dashboard.revenue7d': 'Виручка за 7 днів',
   'admin.dashboard.revenue30d': 'Виручка за 30 днів',
   'admin.dashboard.recentOrders': 'Останні замовлення',
+  'admin.dashboard.loadError': 'Не вдалося завантажити зведення дашборду',
+  'admin.dashboard.retry': 'Повторити',
 
   'admin.dashboard.quickActions': 'Швидкі дії',
   'admin.dashboard.quickActionsHint': 'Часто використовувані функції',

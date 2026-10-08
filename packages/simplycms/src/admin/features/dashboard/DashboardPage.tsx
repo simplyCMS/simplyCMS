@@ -1,5 +1,6 @@
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { useT } from 'simplycms/i18n';
+import { Button } from 'simplycms/ui/button';
 import type { AdminDashboardStats } from 'simplycms/contracts/objects';
 import DashboardInfoCards from './DashboardInfoCards';
 import DashboardStatCards from './DashboardStatCards';
@@ -9,7 +10,7 @@ import { useDashboardSummary } from './useDashboardSummary';
 /** Дашборд адмінки на серверному шарі: `dashboardSummary` + слоти плагінів. */
 export default function DashboardPage() {
   const t = useT();
-  const { data } = useDashboardSummary();
+  const { data, isError, refetch } = useDashboardSummary();
   // Слот отримує рівно контрактну форму `AdminDashboardStats` (без списку) і
   // лише коли дані є: плагін не мусить обробляти `stats: undefined`.
   const stats: AdminDashboardStats | undefined = data && {
@@ -25,18 +26,29 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">{t('admin.dashboard.subtitle')}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <DashboardStatCards summary={data} />
-        {stats && (
-          <PluginSlot
-            name="admin.dashboard.stats"
-            context={{ stats }}
-            wrapper={passthrough}
-          />
-        )}
-      </div>
-
-      <RecentOrdersCard orders={data?.recentOrders ?? []} />
+      {isError ? (
+        // Збій читання — не нулі, а помилка з повтором (Е6в F1).
+        <div role="alert" className="space-y-4 py-8 text-center">
+          <p className="text-destructive">{t('admin.dashboard.loadError')}</p>
+          <Button variant="outline" onClick={() => refetch()}>
+            {t('admin.dashboard.retry')}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <DashboardStatCards summary={data} />
+            {stats && (
+              <PluginSlot
+                name="admin.dashboard.stats"
+                context={{ stats }}
+                wrapper={passthrough}
+              />
+            )}
+          </div>
+          <RecentOrdersCard orders={data?.recentOrders ?? []} />
+        </>
+      )}
       <DashboardInfoCards />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

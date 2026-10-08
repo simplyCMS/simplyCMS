@@ -21,7 +21,6 @@ export const CUSTOMERS_LIST_KEY = entityKey(ENTITY.profiles).variant(
  * сторінки задає сервер.
  */
 export function useCustomersList(filters: CustomersFilters) {
-  // cache-sync-ok: це читання (queryFn), а не мутація
   return useInfiniteQuery({
     queryKey: [...CUSTOMERS_LIST_KEY, filters],
     initialPageParam: undefined as AdminCustomerCursor | undefined,

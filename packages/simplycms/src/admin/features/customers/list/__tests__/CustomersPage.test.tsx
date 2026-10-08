@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 /** Список покупців (Task 9, Е6г): рядки, бейджі, «Показати ще», порожній стан. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { createTranslator } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
@@ -65,6 +71,28 @@ describe('CustomersPage', () => {
     mocks.listCustomers.mockResolvedValue(page([]));
     renderPage();
     await screen.findByText(t('admin.users.empty'));
+  });
+
+  it('поки вантажиться — стан завантаження, а не «не знайдено»', async () => {
+    mocks.listCustomers.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    await screen.findByLabelText(t('common.loading'));
+    expect(screen.queryByText(t('admin.users.empty'))).toBeNull();
+  });
+
+  it('збій → повідомлення з «Повторити», не «не знайдено»; повтор — другий виклик', async () => {
+    mocks.listCustomers
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(page([row(1)]));
+    renderPage();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(t('admin.users.loadError'));
+    expect(screen.queryByText(t('admin.users.empty'))).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.users.retry') }),
+    );
+    await screen.findByText('buyer1@shop.test');
+    expect(mocks.listCustomers).toHaveBeenCalledTimes(2);
   });
 
   it('«Показати ще» кличе listCustomers з cursor попередньої сторінки (Date)', async () => {

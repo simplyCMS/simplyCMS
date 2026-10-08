@@ -24,6 +24,8 @@ export const messages: Catalog = {
   'admin.users.banned': 'Banned',
   'admin.users.onlyBanned': 'Banned only',
   'admin.users.loadMore': 'Show more',
+  'admin.users.loadError': 'Could not load the customer list',
+  'admin.users.retry': 'Retry',
   'admin.users.notFound': 'User not found',
   'admin.users.backToList': 'Back to the list',
   'admin.users.card': 'User card',
