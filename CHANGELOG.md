@@ -18,6 +18,39 @@
 
 ---
 
+## [Unreleased]
+
+Вітринний стенд `pnpm db:showcase` (план
+[`2026-10-08-showcase-seed.md`](docs/superpowers/plans/2026-10-08-showcase-seed.md)):
+локальна база з живими даними для ручного тесту вітрини й адмінки. Тулінг монорепо, не
+продукт: у магазин не їде, у `packages/simplycms/src` слова «showcase» немає.
+
+### Додано
+
+- `pnpm db:showcase`: `db:demo` + наповнення через доменні ядра під `withActor`
+  (8 розділів, 33 товари з PNG, два типи цін, залишки у двох точках, адресна доставка,
+  власник і менеджер через invite, 18 покупців, категорія VIP і знижки, 40 замовлень за
+  30 днів, схвалені відгуки). Детермінований PRNG; база фіксованого імені
+  `simplycms_showcase` перестворюється лише з позначкою `simplycms:showcase`, чужу —
+  не чіпає; модуль сіду відмовляє на непорожній базі. Опис і паролі (лише локалка) —
+  `docs/development/TOOLING.md` § 2.
+- `scripts/demo-db.mjs`: необовʼязковий `--comment` (позначка бази одразу після
+  `CREATE`, до міграцій); без прапорця поведінка `db:demo` та сама.
+- Гейт `pnpm typecheck:showcase` — у ланцюгу гейтів, CI (job `typecheck`) і гейтах
+  релізу одразу після `typecheck`. Гейт сіду (С-8) — у `test:schema`.
+
+### Змінено
+
+- `simplycms/admin-server` (`./impl`): статус відповіді адмін-помилки (409/400) ставить
+  межа операції (`runAdminTransactions`) і валідатор входу; `stateConflict`/`fieldIssue`
+  лише кидають — ядро можна кликати поза HTTP-запитом. Гейт
+  `set-response-status-scan.test.ts`.
+- Фабрика `defineAdminResource` віддає `insertIn/updateIn/removeIn(db, input)`; ядра
+  `saveProductPrices`, `saveStock`, `saveDiscount`, `changeOrderStatus`,
+  `assignCustomerCategory`, `setCustomerBan`, `deleteCustomer` винесено з операцій без
+  зміни поведінки; актор ядра — `CoreActor` (`{ kind: 'admin', userId } | { kind:
+  'system' }`). Канон — `docs/architecture/data-layer.md` §10.
+
 ## [0.12.0] — 2026-10-08
 
 К3-Е6г: покупці й дашборд на серверному шарі (спека

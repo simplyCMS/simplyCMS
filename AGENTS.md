@@ -73,7 +73,7 @@ pnpm release X.Y.Z       # реліз (гарди + бамп + гейти + ко
 ```
 
 **Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
-test → test:schema → build:packages → typecheck:template → test:packaging`.
+typecheck:showcase → test → test:schema → build:packages → typecheck:template → test:packaging`.
 Повний каталог команд, причини порядку, лінт-зони й CI — `docs/development/TOOLING.md`;
 змінні оточення й запуск у проді — `docs/development/ENVIRONMENT.md`.
 
