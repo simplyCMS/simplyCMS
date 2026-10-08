@@ -38,7 +38,6 @@ const CATALOG = [
   'section_properties',
   'section_property_assignments',
   'sections',
-  'services',
   'shipping_methods',
   'shipping_rates',
   'shipping_zones',
@@ -75,8 +74,6 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Профіль створює хук Better Auth під `app_admin`. UPDATE покупця —
   // лише колонковий (`COLUMN_GRANTS`, Е6в-24).
   profiles: { app_user: ['SELECT'], app_admin: CRUD },
-  // Заявку лишає будь-хто, бачить — лише свою.
-  service_requests: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
   // Роль і історію категорії призначає система, не покупець.
   user_roles: { app_user: ['SELECT'], app_admin: CRUD },
   user_category_history: { app_user: ['SELECT'], app_admin: CRUD },

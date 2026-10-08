@@ -133,8 +133,4 @@ export const MEDIA_COLUMNS = [
   { table: 'sections', column: 'image_url' },
   { table: 'property_options', column: 'image_url' },
   { table: 'profiles', column: 'avatar_url' },
-  // 🔴 Не було в первинному переліку плану — знайдено гейтом покриття
-  // (`tests/media-columns-coverage.test.ts`): колонка існує в
-  // схемі, а в реєстрі її не було.
-  { table: 'services', column: 'image_url' },
 ] as const satisfies readonly { table: string; column: string }[];

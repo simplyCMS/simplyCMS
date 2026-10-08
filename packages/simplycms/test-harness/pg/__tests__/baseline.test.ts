@@ -119,7 +119,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // Точне число, а не нижня межа: `>=` пропустив би і зайву таблицю, і
     // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
-    expect(tables.length).toBe(44);
+    // 44 → 42: Е6г прибрала `services` і `service_requests`.
+    expect(tables.length).toBe(42);
     for (const expected of [
       'users',
       'sessions',
@@ -143,13 +144,23 @@ describe('канон міграцій: накат на чисту БД', () => {
     ]);
   });
 
+  it('колонки order_items.service_id немає (Е6г зняла «Послуги»)', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'order_items'
+          and column_name = 'service_id'`,
+    );
+    expect(rows).toEqual([]);
+  });
+
   it('RLS-ядро: політики лише на user-scoped таблицях, у initplan-формі', async () => {
     const rows = await queryRows(
       dbUrl,
       `select tablename, policyname, qual, with_check from pg_policies
         where schemaname = 'public'`,
     );
-    expect(rows.length).toBe(27);
+    expect(rows.length).toBe(24);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
@@ -159,7 +170,6 @@ describe('канон міграцій: накат на чисту БД', () => {
       'orders',
       'product_reviews',
       'profiles',
-      'service_requests',
       'user_addresses',
       'user_category_history',
       'user_recipients',

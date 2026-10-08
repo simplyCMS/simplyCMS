@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm"
 // 🔴 RLS-ядро замість «RLS як є» (B5″). Політики лишились ЛИШЕ на
 // user-scoped таблицях (`orders`, `order_items`, `profiles`, `wishlists`,
 // `comparisons`, `user_addresses`, `user_recipients`, `product_reviews`,
-// `service_requests`, `user_category_history`, `user_roles`) — 27 політик
+// `user_category_history`, `user_roles`) — 24 політики
 // замість 93. Що зникло і чому:
 //   • ~56 політик на `is_admin()` — самої функції в схемі v2 немає. Право
 //     адміна тепер дає РОЛЬ БД (`app_admin`, вмикається `SET LOCAL ROLE`
@@ -228,7 +228,6 @@ export const orderItems = pgTable("order_items", {
 	orderId: uuid("order_id").notNull(),
 	productId: uuid("product_id"),
 	modificationId: uuid("modification_id"),
-	serviceId: uuid("service_id"),
 	name: text().notNull(),
 	price: numeric({ precision: 12, scale:  2 }).notNull(),
 	quantity: integer().default(1).notNull(),
@@ -255,11 +254,6 @@ export const orderItems = pgTable("order_items", {
 			name: "order_items_product_id_fkey"
 		}),
 	foreignKey({
-			columns: [table.serviceId],
-			foreignColumns: [services.id],
-			name: "order_items_service_id_fkey"
-		}),
-	foreignKey({
 			columns: [table.stockPointId],
 			foreignColumns: [pickupPoints.id],
 			name: "order_items_stock_point_id_fkey"
@@ -269,7 +263,6 @@ export const orderItems = pgTable("order_items", {
 	index("idx_order_items_order_id").on(table.orderId),
 	index("idx_order_items_product_id").on(table.productId),
 	index("idx_order_items_modification_id").on(table.modificationId),
-	index("idx_order_items_service_id").on(table.serviceId),
 	index("idx_order_items_stock_point_id").on(table.stockPointId),
 	pgPolicy("order_items_select_own_or_token", { as: "permissive", for: "select", to: ["app_user"], using: sql`exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), '')))))` }),
 	pgPolicy("order_items_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null))` }),
@@ -389,21 +382,6 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 	check("section_property_assignments_applies_to_check", sql`applies_to = ANY (ARRAY['product'::text, 'modification'::text])`),
 ]);
 
-export const services = pgTable("services", {
-	id: uuid().primaryKey().notNull(),
-	slug: varchar({ length: 255 }).notNull(),
-	name: text().notNull(),
-	description: text(),
-	price: numeric({ precision: 12, scale:  2 }),
-	isActive: boolean("is_active").default(true).notNull(),
-	imageUrl: text("image_url"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-}, (table) => [
-	unique("services_slug_key").on(table.slug),
-	check("services_positive_price", sql`(price IS NULL) OR (price >= (0)::numeric)`),
-]);
-
 export const products = pgTable("products", {
 	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id"),
@@ -464,35 +442,6 @@ export const productModifications = pgTable("product_modifications", {
 	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
 	// К3-14: дефолт scoped на product_id — модифікації належать товару.
 	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
-]);
-
-export const serviceRequests = pgTable("service_requests", {
-	id: uuid().primaryKey().notNull(),
-	serviceId: uuid("service_id"),
-	userId: uuid("user_id"),
-	name: text().notNull(),
-	email: text().notNull(),
-	phone: text(),
-	message: text(),
-	status: varchar({ length: 50 }).default('new').notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.serviceId],
-			foreignColumns: [services.id],
-			name: "service_requests_service_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [users.id],
-			name: "service_requests_user_id_fkey"
-		}),
-	check("service_requests_message_length", sql`(char_length(message) <= 10000) OR (message IS NULL)`),
-	index("idx_service_requests_service_id").on(table.serviceId),
-	index("idx_service_requests_user_id").on(table.userId),
-	pgPolicy("service_requests_insert_any", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`true` }),
-	pgPolicy("service_requests_select_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`user_id is not null and user_id = (select app.current_user_id())` }),
-	pgPolicy("service_requests_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
 export const plugins = pgTable("plugins", {

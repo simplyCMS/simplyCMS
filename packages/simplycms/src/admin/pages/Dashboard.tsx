@@ -7,14 +7,7 @@ import {
 } from 'simplycms/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { useSupabaseClient } from 'simplycms/supabase/SupabaseProvider';
-import {
-  Package,
-  FolderTree,
-  ShoppingCart,
-  Users,
-  Wrench,
-  FileText,
-} from 'lucide-react';
+import { Package, FolderTree, ShoppingCart, Users } from 'lucide-react';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { Link } from '@tanstack/react-router';
 import { adminPath } from '../lib/adminLinks';
@@ -26,34 +19,18 @@ export default function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [products, sections, orders, profiles, services, serviceRequests] =
-        await Promise.all([
-          supabase
-            .from('products')
-            .select('id', { count: 'exact', head: true }),
-          supabase
-            .from('sections')
-            .select('id', { count: 'exact', head: true }),
-          supabase.from('orders').select('id', { count: 'exact', head: true }),
-          supabase
-            .from('profiles')
-            .select('id', { count: 'exact', head: true }),
-          supabase
-            .from('services')
-            .select('id', { count: 'exact', head: true }),
-          supabase
-            .from('service_requests')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'new'),
-        ]);
+      const [products, sections, orders, profiles] = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('sections').select('id', { count: 'exact', head: true }),
+        supabase.from('orders').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      ]);
 
       return {
         products: products.count || 0,
         sections: sections.count || 0,
         orders: orders.count || 0,
         users: profiles.count || 0,
-        services: services.count || 0,
-        newRequests: serviceRequests.count || 0,
       };
     },
   });
@@ -87,18 +64,6 @@ export default function Dashboard() {
       value: stats?.users || 0,
       icon: Users,
       color: 'text-purple-500',
-    },
-    {
-      titleKey: 'admin.nav.services',
-      value: stats?.services || 0,
-      icon: Wrench,
-      color: 'text-cyan-500',
-    },
-    {
-      titleKey: 'admin.dashboard.newRequests',
-      value: stats?.newRequests || 0,
-      icon: FileText,
-      color: 'text-red-500',
     },
   ];
 

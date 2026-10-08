@@ -19,7 +19,6 @@ export const PRODUCT = '44444444-4444-4444-8444-444444444444';
 export const ORDER_A = '55555555-5555-4555-8555-555555555555';
 export const ORDER_GUEST = '66666666-6666-4666-8666-666666666666';
 export const MEDIA_A = '77777777-7777-4777-8777-777777777777';
-export const SERVICE = '88888888-8888-4888-8888-888888888888';
 
 /**
  * Категорія `retail` із `0003_seed.sql` — єдина в чистому магазині.
@@ -84,11 +83,6 @@ export const SEED_STATEMENTS: string[] = [
   `insert into public.comparisons (id, user_id, product_id) values
      (gen_random_uuid(), '${USER_A}', '${PRODUCT}'),
      (gen_random_uuid(), '${USER_B}', '${PRODUCT}')`,
-  `insert into public.services (id, slug, name)
-     values ('${SERVICE}', 'test-service', 'Тестова послуга')`,
-  `insert into public.service_requests (id, service_id, user_id, name, email) values
-     (gen_random_uuid(), '${SERVICE}', '${USER_A}', 'Заявка A', 'a@example.test'),
-     (gen_random_uuid(), '${SERVICE}', '${USER_B}', 'Заявка B', 'b@example.test')`,
   // `::uuid` обовʼязковий: у формі `select … union all select …` Postgres
   // виводить тип із літерала (text), а не з цільової колонки, як у `values`.
   // `to_category_name` — знімок назви (Е6в-2): вставка пише його сама.

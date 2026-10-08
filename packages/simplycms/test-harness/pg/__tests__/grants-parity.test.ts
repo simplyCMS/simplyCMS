@@ -42,7 +42,6 @@ const RLS_TABLES = [
   'orders',
   'product_reviews',
   'profiles',
-  'service_requests',
   'user_addresses',
   'user_category_history',
   'user_recipients',

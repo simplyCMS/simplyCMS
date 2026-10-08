@@ -48,7 +48,6 @@ const FORBIDDEN_TABLES = [
   'user_addresses',
   'user_recipients',
   'user_category_history',
-  'service_requests',
 ];
 
 describe('dev-stand: allowlist і санітизація', () => {

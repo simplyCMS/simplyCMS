@@ -17,8 +17,6 @@ import {
   Settings,
   Users,
   ShoppingCart,
-  FileText,
-  Wrench,
   Globe,
   Tags,
   ListChecks,
@@ -86,15 +84,6 @@ const ordersItems = [
     titleKey: 'admin.nav.orderStatuses',
     url: adminPath('order-statuses'),
     icon: Tags,
-  },
-] satisfies SidebarItem[];
-
-const servicesItems = [
-  { titleKey: 'admin.nav.services', url: adminPath('services'), icon: Wrench },
-  {
-    titleKey: 'admin.nav.serviceRequests',
-    url: adminPath('service-requests'),
-    icon: FileText,
   },
 ] satisfies SidebarItem[];
 
@@ -212,31 +201,6 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {ordersItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{t(item.titleKey)}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Services */}
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            {!collapsed && t('admin.nav.group.services')}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {servicesItems.map((item) => (
                 <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink

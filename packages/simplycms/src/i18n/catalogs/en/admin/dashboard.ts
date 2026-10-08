@@ -5,8 +5,6 @@ export const messages: Catalog = {
   'admin.dashboard.title': 'Dashboard',
   'admin.dashboard.subtitle': 'Overview of the key store metrics',
 
-  'admin.dashboard.newRequests': 'New requests',
-
   'admin.dashboard.quickActions': 'Quick actions',
   'admin.dashboard.quickActionsHint': 'Frequently used functions',
   'admin.dashboard.addProduct': 'Add a product',

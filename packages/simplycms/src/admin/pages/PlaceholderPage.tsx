@@ -3,16 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Construction } from 'lucide-react';
 import { useT, type MessageKey } from 'simplycms/i18n';
 
-// Мапа ключів: сегмент URL → підпис розділу. Здебільшого збігається з бічним
-// меню, тож ключі беруться звідти; два розділи мають на заглушці довшу назву.
+// Мапа ключів: сегмент URL → підпис розділу. Лишився єдиний розділ без
+// власної сторінки; решта записів зносились разом зі сторінками, що їх
+// замінили (Е6г-12).
 const pageNameKeys: Record<string, MessageKey> = {
-  'order-statuses': 'admin.common.placeholder.orderStatuses',
-  services: 'admin.nav.services',
-  'service-requests': 'admin.common.placeholder.serviceRequests',
-  users: 'admin.nav.users',
-  'user-categories': 'admin.nav.userCategories',
   languages: 'admin.nav.languages',
-  settings: 'admin.nav.settings',
 };
 
 export default function PlaceholderPage() {

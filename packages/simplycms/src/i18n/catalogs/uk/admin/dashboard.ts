@@ -3,8 +3,6 @@ export const messages = {
   'admin.dashboard.title': 'Дашборд',
   'admin.dashboard.subtitle': 'Огляд основних показників системи',
 
-  'admin.dashboard.newRequests': 'Нові заявки',
-
   'admin.dashboard.quickActions': 'Швидкі дії',
   'admin.dashboard.quickActionsHint': 'Часто використовувані функції',
   'admin.dashboard.addProduct': 'Додати товар',

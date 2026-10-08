@@ -22,7 +22,6 @@ export const orderItemsOps = defineAdminResource({
     'orderId',
     'productId',
     'modificationId',
-    'serviceId',
     'name',
     'price',
     'quantity',

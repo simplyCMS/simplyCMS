@@ -128,7 +128,6 @@ CREATE TABLE "order_items" (
 	"order_id" uuid NOT NULL,
 	"product_id" uuid,
 	"modification_id" uuid,
-	"service_id" uuid,
 	"name" text NOT NULL,
 	"price" numeric(12, 2) NOT NULL,
 	"quantity" integer DEFAULT 1 NOT NULL,
@@ -389,34 +388,6 @@ CREATE TABLE "sections" (
 	CONSTRAINT "sections_slug_key" UNIQUE("slug")
 );
 --> statement-breakpoint
-CREATE TABLE "service_requests" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"service_id" uuid,
-	"user_id" uuid,
-	"name" text NOT NULL,
-	"email" text NOT NULL,
-	"phone" text,
-	"message" text,
-	"status" varchar(50) DEFAULT 'new' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "service_requests_message_length" CHECK ((char_length(message) <= 10000) OR (message IS NULL))
-);
---> statement-breakpoint
-ALTER TABLE "service_requests" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
-CREATE TABLE "services" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"slug" varchar(255) NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
-	"price" numeric(12, 2),
-	"is_active" boolean DEFAULT true NOT NULL,
-	"image_url" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "services_slug_key" UNIQUE("slug"),
-	CONSTRAINT "services_positive_price" CHECK ((price IS NULL) OR (price >= (0)::numeric))
-);
---> statement-breakpoint
 CREATE TABLE "shipping_methods" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"code" varchar(50) NOT NULL,
@@ -647,7 +618,6 @@ ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "order_items" ADD CONSTRAINT "order_items_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_stock_point_id_fkey" FOREIGN KEY ("stock_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_saved_address_id_fkey" FOREIGN KEY ("saved_address_id") REFERENCES "public"."user_addresses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -678,8 +648,6 @@ ALTER TABLE "section_properties" ADD CONSTRAINT "section_properties_section_id_f
 ALTER TABLE "section_property_assignments" ADD CONSTRAINT "section_property_assignments_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "public"."section_properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "section_property_assignments" ADD CONSTRAINT "section_property_assignments_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sections" ADD CONSTRAINT "sections_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."sections"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "service_requests" ADD CONSTRAINT "service_requests_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "service_requests" ADD CONSTRAINT "service_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -712,7 +680,6 @@ CREATE INDEX "idx_modification_property_values_property" ON "modification_proper
 CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
-CREATE INDEX "idx_order_items_service_id" ON "order_items" USING btree ("service_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_stock_point_id" ON "order_items" USING btree ("stock_point_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint
@@ -744,8 +711,6 @@ CREATE INDEX "idx_property_options_slug" ON "property_options" USING btree ("slu
 CREATE INDEX "idx_section_property_assignments_property" ON "section_property_assignments" USING btree ("property_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_section_property_assignments_section" ON "section_property_assignments" USING btree ("section_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_sections_parent_id" ON "sections" USING btree ("parent_id");--> statement-breakpoint
-CREATE INDEX "idx_service_requests_service_id" ON "service_requests" USING btree ("service_id");--> statement-breakpoint
-CREATE INDEX "idx_service_requests_user_id" ON "service_requests" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_method_id" ON "shipping_rates" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_zone_id" ON "shipping_rates" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_shipping_zones_single_default" ON "shipping_zones" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
@@ -785,9 +750,6 @@ CREATE POLICY "product_reviews_admin_all" ON "product_reviews" AS PERMISSIVE FOR
 CREATE POLICY "profiles_select_own" ON "profiles" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "profiles_update_own" ON "profiles" AS PERMISSIVE FOR UPDATE TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "profiles_admin_all" ON "profiles" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "service_requests_insert_any" ON "service_requests" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "service_requests_select_own" ON "service_requests" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id is not null and user_id = (select app.current_user_id()));--> statement-breakpoint
-CREATE POLICY "service_requests_admin_all" ON "service_requests" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "user_addresses_own_all" ON "user_addresses" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "user_addresses_admin_select" ON "user_addresses" AS PERMISSIVE FOR SELECT TO "app_admin" USING (true);--> statement-breakpoint
 CREATE POLICY "user_category_history_select_own" ON "user_category_history" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint

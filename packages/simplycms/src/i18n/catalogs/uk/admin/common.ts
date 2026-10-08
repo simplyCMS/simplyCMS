@@ -16,7 +16,6 @@ export const messages = {
   'admin.common.placeholder.text':
     'Ця функціональність буде доступна найближчим часом. Зараз ви можете користуватись іншими розділами CMS.',
   'admin.common.placeholder.orderStatuses': 'Статуси замовлень',
-  'admin.common.placeholder.serviceRequests': 'Заявки на послуги',
 
   // Спільні підписи форм адмінки (Е4)
   'admin.common.slug': 'URL (slug)',
