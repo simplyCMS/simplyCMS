@@ -1,14 +1,21 @@
 /**
  * Підсумок команди: усе, що треба, щоб стартувати магазин на засіяній базі.
  *
- * 🔴 Пароль власника друкується свідомо (С-4, С-9): це локальний стенд
- * `@showcase.test`, а без пароля власник не зайде в адмінку.
+ * 🔴 Паролі власника, другого адміна й покупців друкуються свідомо (С-4,
+ * С-9): це локальний стенд `@showcase.test`, а без пароля ніхто з них не
+ * зайде ні в адмінку, ні в кабінет.
  */
 import {
   SHOWCASE_OWNER_EMAIL,
   SHOWCASE_OWNER_PASSWORD,
   type ShowcaseEnv,
 } from './env.mts';
+import {
+  BUYER_COUNT,
+  SHOWCASE_BUYER_PASSWORD,
+  SHOWCASE_MANAGER_EMAIL,
+  SHOWCASE_MANAGER_PASSWORD,
+} from './people.mts';
 
 export type ShowcaseReport = {
   readonly env: ShowcaseEnv;
@@ -31,6 +38,8 @@ export function reportLines({ env, db }: ShowcaseReport): string[] {
     '  Власник (лише локалка):',
     `    email:  ${SHOWCASE_OWNER_EMAIL}`,
     `    пароль: ${SHOWCASE_OWNER_PASSWORD}`,
+    `  Другий адмін: ${SHOWCASE_MANAGER_EMAIL} / ${SHOWCASE_MANAGER_PASSWORD}`,
+    `  Покупці: buyer-01…buyer-${BUYER_COUNT}@showcase.test / ${SHOWCASE_BUYER_PASSWORD}`,
     '',
     '  Запуск магазину:',
     `    pnpm build && ${vars} pnpm start`,
