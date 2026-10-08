@@ -5,6 +5,7 @@
 // магазину): справжня функція кидає «No StartEvent found». Тож будь-яке
 // згадування ідентифікатора в коді `admin-server/**` поза allowlist —
 // червоне, хоч би як його імпортували (іменовано, з `as`, через `* as`).
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const sources = import.meta.glob(
@@ -27,17 +28,22 @@ const ALLOWED: Record<string, string> = {
     'вхід serverFn: Zod-відмова → 400 ще ДО runAdminTransactions',
 };
 
-/** Блокові й цілорядкові коментарі геть: згадка в доці — не виклик. */
-const code = (src: string) =>
-  src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => !line.trim().startsWith('//'))
-    .join('\n');
+/**
+ * Чи є ідентифікатор у КОДІ (AST TypeScript): коментарі й рядки — не вузли
+ * `Identifier`, тож згадка в доці не червонить, а regex-стрипер коментарів
+ * помилявся на `/*` усередині рядкового коментаря і ховав живий код.
+ */
+const mentions = (path: string, src: string) => {
+  const file = ts.createSourceFile(path, src, ts.ScriptTarget.Latest, false);
+  const visit = (node: ts.Node): boolean =>
+    (ts.isIdentifier(node) && node.text === 'setResponseStatus') ||
+    (ts.forEachChild(node, visit) ?? false);
+  return visit(file);
+};
 
 const offenders = () =>
   Object.entries(sources)
-    .filter(([, src]) => /\bsetResponseStatus\b/.test(code(src)))
+    .filter(([path, src]) => mentions(path, src))
     .map(([path]) => rel(path));
 
 describe('admin-server: setResponseStatus лише на межі (С-10)', () => {
@@ -47,6 +53,14 @@ describe('admin-server: setResponseStatus лише на межі (С-10)', () =>
 
   it('ідентифікатор живе лише у файлах allowlist', () => {
     expect(offenders().filter((p) => !(p in ALLOWED))).toEqual([]);
+  });
+
+  it('коментар із `/*` не ховає код після себе (регресія стрипера)', () => {
+    const src = '// glob product-modifications/*.ts\nsetResponseStatus(409);\n';
+    expect(mentions('fixture.ts', src)).toBe(true);
+    expect(
+      mentions('doc.ts', '/** setResponseStatus */ // setResponseStatus'),
+    ).toBe(false);
   });
 
   it('allowlist не застарів: кожна межа справді ставить статус', () => {
