@@ -13,13 +13,21 @@ export function OrderDeliveryCard({ order }: { readonly order: AdminOrder }) {
   const t = useT();
   const snapshot = parseShippingSnapshot(order.shippingData);
   const dest = snapshot?.destination;
+  // Знеособлена адреса (Е6г-10): `kind` лишився, місто й адреса обнулені.
+  const erasedAddress = dest?.kind === 'address' && dest.city === null;
+  const notSet = t('common.notSet');
   const rows: [string, string | null][] = [
     [t('admin.orders.methodLabel'), snapshot?.methodName ?? null],
-    [t('admin.orders.cityLabel'), dest?.city ?? order.deliveryCity],
+    [
+      t('admin.orders.cityLabel'),
+      erasedAddress ? notSet : (dest?.city ?? order.deliveryCity),
+    ],
     [
       t('admin.orders.addressLabel'),
-      (dest?.kind === 'address' ? dest.address : null) ??
-        (dest ? null : order.deliveryAddress),
+      erasedAddress
+        ? notSet
+        : ((dest?.kind === 'address' ? dest.address : null) ??
+          (dest ? null : order.deliveryAddress)),
     ],
     [
       t('admin.orders.pickupPointLabel'),

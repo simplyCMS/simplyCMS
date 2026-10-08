@@ -29,7 +29,7 @@ export function ShippingSnapshotLines({
         </>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {destination.city}
+          {destination.city ?? t('common.notSet')}
           {destination.address && `, ${destination.address}`}
         </p>
       )}

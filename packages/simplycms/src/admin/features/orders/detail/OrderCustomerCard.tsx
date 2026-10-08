@@ -17,6 +17,7 @@ export function OrderCustomerCard({ order }: { readonly order: AdminOrder }) {
   const t = useT();
   const email = t('admin.orders.emailLabel');
   const phone = t('admin.orders.phoneLabel');
+  const erased = order.personalDataErasedAt !== null;
   return (
     <>
       <Card>
@@ -26,13 +27,17 @@ export function OrderCustomerCard({ order }: { readonly order: AdminOrder }) {
         <CardContent className="space-y-3 text-sm">
           <Field
             label={t('admin.orders.nameLabel')}
-            value={`${order.firstName} ${order.lastName}`}
+            value={
+              erased
+                ? t('admin.orders.erasedCustomer')
+                : `${order.firstName} ${order.lastName}`
+            }
           />
           <Field label={email} value={order.email} />
           <Field label={phone} value={order.phone} />
         </CardContent>
       </Card>
-      {order.hasDifferentRecipient && (
+      {order.hasDifferentRecipient && !erased && (
         <Card>
           <CardHeader>
             <CardTitle>{t('checkout.success.recipient')}</CardTitle>

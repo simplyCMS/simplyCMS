@@ -41,11 +41,15 @@ export const getProductReviews = createServerFn({ method: 'GET' })
     if (reviews.length === 0) return reviews;
 
     const authors = await withStoreOperatorDb((db) =>
-      loadReviewAuthors(db, [...new Set(reviews.map((row) => row.user_id))]),
+      loadReviewAuthors(db, [
+        ...new Set(
+          reviews.flatMap((row) => (row.user_id === null ? [] : [row.user_id])),
+        ),
+      ]),
     );
     return reviews.map((row) => ({
       ...row,
-      profile: authors[row.user_id] ?? null,
+      profile: row.user_id === null ? null : (authors[row.user_id] ?? null),
     }));
   });
 

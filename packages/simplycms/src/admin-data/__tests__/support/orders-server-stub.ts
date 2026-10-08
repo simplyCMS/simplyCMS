@@ -92,6 +92,7 @@ export function makeOrder(
     recipientEmail: null,
     savedRecipientId: null,
     savedAddressId: null,
+    personalDataErasedAt: null,
   } satisfies AdminOrder;
 }
 

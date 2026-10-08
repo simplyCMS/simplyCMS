@@ -17,7 +17,8 @@ export interface ReviewAuthor {
 export interface ProductReviewRow {
   id: string;
   product_id: string;
-  user_id: string;
+  /** `null` — автора видалено (FK `SET NULL`): відгук лишається анонімним. */
+  user_id: string | null;
   rating: number;
   title: string | null;
   /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */

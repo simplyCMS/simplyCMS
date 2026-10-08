@@ -1,5 +1,5 @@
 import type { PlaceOrderInput } from 'simplycms/contracts';
-import type { ShippingSnapshot } from 'simplycms/contracts/shipping-providers';
+import type { NewShippingSnapshot } from 'simplycms/contracts/shipping-providers';
 import type { ActorDb } from './db';
 import type { NewOrderItem } from 'simplycms/commerce';
 import type { NewOrderInput } from './entities/new-order';
@@ -60,7 +60,7 @@ export function toOrderInput(
     subtotal: number;
     shippingCost: number;
     total: number;
-    shippingSnapshot: ShippingSnapshot;
+    shippingSnapshot: NewShippingSnapshot;
   },
 ): NewOrderInput {
   return {

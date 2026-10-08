@@ -13,6 +13,7 @@ export const messages: Catalog = {
   'reviews.empty': 'No reviews yet. Be the first!',
 
   'reviews.anonymousAuthor': 'Anonymous',
+  'reviews.formerCustomer': 'Former customer',
   'reviews.pendingBadge': 'Pending review',
   'reviews.delete.confirmTitle': 'Delete this review?',
   'reviews.delete.confirmText': 'This action cannot be undone.',

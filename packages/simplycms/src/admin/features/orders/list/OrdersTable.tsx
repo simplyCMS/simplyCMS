@@ -69,10 +69,19 @@ export default function OrdersTable({
               <Link {...cell(o.id)}>{o.orderNumber}</Link>
             </TableCell>
             <TableCell>
-              <div>
-                {o.firstName} {o.lastName}
-              </div>
-              <div className="text-sm text-muted-foreground">{o.email}</div>
+              {o.personalDataErasedAt ? (
+                // Знеособлене замовлення (Е6г): ім'я й контакти стерто.
+                <div className="text-muted-foreground">
+                  {t('admin.orders.erasedCustomer')}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    {o.firstName} {o.lastName}
+                  </div>
+                  <div className="text-sm text-muted-foreground">{o.email}</div>
+                </>
+              )}
             </TableCell>
             <TableCell>{formatPrice(toAmount(o.total))}</TableCell>
             <TableCell>

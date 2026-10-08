@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { NewShippingSnapshot } from 'simplycms/contracts/shipping-providers';
 import { parseShippingSnapshot } from '../shipping';
 
 const pickup = {
@@ -66,5 +67,38 @@ describe('parseShippingSnapshot', () => {
     ['pointId — не рядок', { ...pickup.destination, pointId: 42 }],
   ])('%s дає null', (_case, destination) => {
     expect(parseShippingSnapshot({ ...pickup, destination })).toBeNull();
+  });
+
+  // Знеособлення (Е6г-10): `kind` лишається, `city`/`address` обнулені.
+  it('приймає знеособлену адресу: city null, address null', () => {
+    const snap = {
+      methodName: 'Кур’єр',
+      provider: 'core:address',
+      pricing: 'carrier',
+      destination: { kind: 'address', city: null, address: null },
+    };
+    expect(parseShippingSnapshot(snap)).toEqual(snap);
+  });
+
+  it('city не рядок і не null (5) дає null', () => {
+    expect(
+      parseShippingSnapshot({
+        methodName: 'Кур’єр',
+        provider: 'core:address',
+        pricing: 'carrier',
+        destination: { kind: 'address', city: 5, address: null },
+      }),
+    ).toBeNull();
+  });
+
+  it('тип запису забороняє city: null (послаблена лише читальна сторона)', () => {
+    const write: NewShippingSnapshot = {
+      methodName: 'Кур’єр',
+      provider: 'core:address',
+      pricing: 'carrier',
+      // @ts-expect-error — запис знімка вимагає непорожній рядок city
+      destination: { kind: 'address', city: null, address: null },
+    };
+    expect(write.destination.kind).toBe('address');
   });
 });

@@ -1,7 +1,7 @@
 import {
   SHIPPING_PROVIDERS,
   isShippingProviderId,
-  type ShippingSnapshot,
+  type NewShippingDestination,
 } from 'simplycms/contracts/shipping-providers';
 import type { PlaceOrderRejection } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
@@ -21,7 +21,7 @@ export type DestinationRejection = Extract<
 >;
 
 export interface ResolvedDestination {
-  snapshot: ShippingSnapshot['destination'];
+  snapshot: NewShippingDestination;
   /** Точка видачі — лише для провайдера самовивозу. */
   point: PickupPointRow | null;
 }

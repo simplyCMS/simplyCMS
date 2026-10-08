@@ -37,6 +37,7 @@ export const ORDERS_READONLY = [
   'recipientEmail',
   'savedRecipientId',
   'savedAddressId',
+  'personalDataErasedAt',
 ] as const;
 
 export const ordersConfig = {

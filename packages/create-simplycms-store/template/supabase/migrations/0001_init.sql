@@ -160,10 +160,10 @@ CREATE TABLE "orders" (
 	"user_id" uuid,
 	"order_number" varchar(50) NOT NULL,
 	"status_id" uuid,
-	"first_name" text NOT NULL,
-	"last_name" text NOT NULL,
-	"email" text NOT NULL,
-	"phone" text NOT NULL,
+	"first_name" text,
+	"last_name" text,
+	"email" text,
+	"phone" text,
 	"delivery_address" text,
 	"delivery_city" text,
 	"payment_method" text NOT NULL,
@@ -186,7 +186,9 @@ CREATE TABLE "orders" (
 	"recipient_email" text,
 	"saved_recipient_id" uuid,
 	"saved_address_id" uuid,
+	"personal_data_erased_at" timestamp with time zone,
 	CONSTRAINT "orders_order_number_key" UNIQUE("order_number"),
+	CONSTRAINT "orders_personal_data_present" CHECK ((personal_data_erased_at IS NOT NULL) OR ((first_name IS NOT NULL) AND (last_name IS NOT NULL) AND (email IS NOT NULL) AND (phone IS NOT NULL))),
 	CONSTRAINT "orders_name_length" CHECK ((char_length(first_name) <= 100) AND (char_length(last_name) <= 100)),
 	CONSTRAINT "orders_notes_length" CHECK ((char_length(notes) <= 5000) OR (notes IS NULL)),
 	CONSTRAINT "orders_positive_totals" CHECK ((subtotal >= (0)::numeric) AND (total >= (0)::numeric))
@@ -276,7 +278,7 @@ CREATE TABLE "product_property_values" (
 CREATE TABLE "product_reviews" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" uuid,
 	"rating" integer NOT NULL,
 	"title" text,
 	"content" text,
@@ -577,6 +579,8 @@ CREATE TABLE "users" (
 	"image" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"banned_at" timestamp with time zone,
+	"ban_reason" text,
 	CONSTRAINT "users_email_key" UNIQUE("email")
 );
 --> statement-breakpoint
@@ -626,7 +630,7 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_shipping_method_id_fkey" FOREIGN KEY
 ALTER TABLE "orders" ADD CONSTRAINT "orders_shipping_rate_id_fkey" FOREIGN KEY ("shipping_rate_id") REFERENCES "public"."shipping_rates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_shipping_zone_id_fkey" FOREIGN KEY ("shipping_zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_status_id_fkey" FOREIGN KEY ("status_id") REFERENCES "public"."order_statuses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifications" ADD CONSTRAINT "product_modifications_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -661,6 +665,11 @@ ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_recipients" ADD CONSTRAINT "user_recipients_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "media" ADD CONSTRAINT "media_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_banners_placement" ON "banners" USING btree ("placement" text_ops);--> statement-breakpoint

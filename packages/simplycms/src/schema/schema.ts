@@ -27,7 +27,7 @@ import { sql } from "drizzle-orm"
 // 🔴 НАСЛІДОК, який мусить бути видимим, а не випадковим: разом із
 // «публічним читанням» зникла й фільтрація видимості в БД — предикати
 // `is_active = true` більше НІХТО не застосовує автоматично. Показувати
-// лише активні товари/розділи/послуги/банери — тепер ОБОВʼЯЗОК серверного
+// лише активні товари/розділи/банери — тепер ОБОВʼЯЗОК серверного
 // репозиторію (`where(eq(products.isActive, true))`), і забутий `where` дає
 // витік чернетки на вітрину, а не порожній список. Це свідомий компроміс
 // B5″: RLS у сервер-first перестає бути єдиним рубежем і лишається
@@ -684,6 +684,16 @@ export const userCategoryHistory = pgTable("user_category_history", {
 			foreignColumns: [userCategories.id],
 			name: "user_category_history_to_category_id_fkey"
 		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "user_category_history_user_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.changedBy],
+			foreignColumns: [users.id],
+			name: "user_category_history_changed_by_fkey"
+		}).onDelete("set null"),
 	index("idx_user_category_history_user_id").on(table.userId),
 	index("idx_user_category_history_from_category_id").on(table.fromCategoryId),
 	index("idx_user_category_history_to_category_id").on(table.toCategoryId),
@@ -735,6 +745,11 @@ export const userRecipients = pgTable("user_recipients", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "user_recipients_user_id_fkey"
+		}).onDelete("cascade"),
 	index("idx_user_recipients_user_id").on(table.userId),
 	// К3-14: дефолт scoped на user_id — отримувач належить користувачу.
 	uniqueIndex("idx_user_recipients_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
@@ -747,10 +762,12 @@ export const orders = pgTable("orders", {
 	userId: uuid("user_id"),
 	orderNumber: varchar("order_number", { length: 50 }).notNull(),
 	statusId: uuid("status_id"),
-	firstName: text("first_name").notNull(),
-	lastName: text("last_name").notNull(),
-	email: text().notNull(),
-	phone: text().notNull(),
+	// ПД nullable лише заради знеособлення (Е6г-7): інваріант «або стерто, або
+	// заповнено» тримає CHECK `orders_personal_data_present`, а не NOT NULL.
+	firstName: text("first_name"),
+	lastName: text("last_name"),
+	email: text(),
+	phone: text(),
 	deliveryAddress: text("delivery_address"),
 	deliveryCity: text("delivery_city"),
 	paymentMethod: text("payment_method").notNull(),
@@ -773,6 +790,7 @@ export const orders = pgTable("orders", {
 	recipientEmail: text("recipient_email"),
 	savedRecipientId: uuid("saved_recipient_id"),
 	savedAddressId: uuid("saved_address_id"),
+	personalDataErasedAt: timestamp("personal_data_erased_at", { withTimezone: true, mode: 'date' }),
 }, (table) => [
 	index("idx_orders_pickup_point_id").using("btree", table.pickupPointId.asc().nullsLast().op("uuid_ops")),
 	index("idx_orders_shipping_method_id").using("btree", table.shippingMethodId.asc().nullsLast().op("uuid_ops")),
@@ -815,8 +833,9 @@ export const orders = pgTable("orders", {
 			columns: [table.userId],
 			foreignColumns: [users.id],
 			name: "orders_user_id_fkey"
-		}),
+		}).onDelete("set null"),
 	unique("orders_order_number_key").on(table.orderNumber),
+	check("orders_personal_data_present", sql`(personal_data_erased_at IS NOT NULL) OR ((first_name IS NOT NULL) AND (last_name IS NOT NULL) AND (email IS NOT NULL) AND (phone IS NOT NULL))`),
 	check("orders_name_length", sql`(char_length(first_name) <= 100) AND (char_length(last_name) <= 100)`),
 	check("orders_notes_length", sql`(char_length(notes) <= 5000) OR (notes IS NULL)`),
 	check("orders_positive_totals", sql`(subtotal >= (0)::numeric) AND (total >= (0)::numeric)`),
@@ -841,6 +860,11 @@ export const userAddresses = pgTable("user_addresses", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "user_addresses_user_id_fkey"
+		}).onDelete("cascade"),
 	index("idx_user_addresses_user_id").on(table.userId),
 	// К3-14: дефолт scoped на user_id — адреса належить користувачу.
 	uniqueIndex("idx_user_addresses_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
@@ -994,7 +1018,8 @@ export const discounts = pgTable("discounts", {
 export const productReviews = pgTable("product_reviews", {
 	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
-	userId: uuid("user_id").notNull(),
+	// Nullable: при видаленні покупця відгук лишається анонімним (SET NULL).
+	userId: uuid("user_id"),
 	rating: integer().notNull(),
 	title: text(),
 	content: text(),
@@ -1009,6 +1034,11 @@ export const productReviews = pgTable("product_reviews", {
 			foreignColumns: [products.id],
 			name: "product_reviews_product_id_fkey"
 		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "product_reviews_user_id_fkey"
+		}).onDelete("set null"),
 	unique("product_reviews_product_id_user_id_key").on(table.productId, table.userId),
 	index("idx_product_reviews_user_id").on(table.userId),
 	pgPolicy("product_reviews_select_approved_or_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`status = 'approved' or user_id = (select app.current_user_id())` }),

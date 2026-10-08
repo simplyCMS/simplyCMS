@@ -1,5 +1,5 @@
 {
-  "id": "30ca5861-19b7-4466-8ff1-f71c7828c7d1",
+  "id": "c4aad5dd-5001-458e-92df-2d03816e7eee",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1469,25 +1469,25 @@
           "name": "first_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "last_name": {
           "name": "last_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "phone": {
           "name": "phone",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "delivery_address": {
           "name": "delivery_address",
@@ -1623,6 +1623,12 @@
         "saved_address_id": {
           "name": "saved_address_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "personal_data_erased_at": {
+          "name": "personal_data_erased_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
@@ -1869,7 +1875,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1914,6 +1920,10 @@
         }
       },
       "checkConstraints": {
+        "orders_personal_data_present": {
+          "name": "orders_personal_data_present",
+          "value": "(personal_data_erased_at IS NOT NULL) OR ((first_name IS NOT NULL) AND (last_name IS NOT NULL) AND (email IS NOT NULL) AND (phone IS NOT NULL))"
+        },
         "orders_name_length": {
           "name": "orders_name_length",
           "value": "(char_length(first_name) <= 100) AND (char_length(last_name) <= 100)"
@@ -2717,7 +2727,7 @@
           "name": "user_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "rating": {
           "name": "rating",
@@ -2801,6 +2811,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_reviews_user_id_fkey": {
+          "name": "product_reviews_user_id_fkey",
+          "tableFrom": "product_reviews",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -4570,7 +4593,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "user_addresses_user_id_fkey": {
+          "name": "user_addresses_user_id_fkey",
+          "tableFrom": "user_addresses",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
@@ -4876,6 +4913,32 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
+        },
+        "user_category_history_user_id_fkey": {
+          "name": "user_category_history_user_id_fkey",
+          "tableFrom": "user_category_history",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_category_history_changed_by_fkey": {
+          "name": "user_category_history_changed_by_fkey",
+          "tableFrom": "user_category_history",
+          "tableTo": "users",
+          "columnsFrom": [
+            "changed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5010,7 +5073,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "user_recipients_user_id_fkey": {
+          "name": "user_recipients_user_id_fkey",
+          "tableFrom": "user_recipients",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
@@ -5495,6 +5572,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "banned_at": {
+          "name": "banned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ban_reason": {
+          "name": "ban_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},

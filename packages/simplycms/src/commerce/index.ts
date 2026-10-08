@@ -71,3 +71,5 @@ export {
   toPriceEntry,
 } from './entities/price';
 export type { RawPriceRow } from './entities/price';
+export { ORDER_COLUMN_PRIVACY, eraseOrderPersonalData } from './order-privacy';
+export type { OrderColumnPrivacy } from './order-privacy';

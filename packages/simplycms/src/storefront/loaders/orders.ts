@@ -3,6 +3,7 @@ import { orderItems, orderStatuses, orders } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import {
   groupItemsByOrder,
+  narrowOrderPersonalData,
   orderColumns,
   orderItemColumns,
   orderStatusColumns,
@@ -86,7 +87,7 @@ export async function loadOrderDetail(
 
   const { order, status } = row;
   return {
-    ...order,
+    ...narrowOrderPersonalData(order),
     total: Number(order.total),
     subtotal: Number(order.subtotal),
     status: status?.id ? status : null,

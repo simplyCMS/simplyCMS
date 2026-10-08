@@ -6,7 +6,7 @@ import {
 } from 'simplycms/domain/shipping';
 import type {
   ShippingPricing,
-  ShippingSnapshot,
+  NewShippingSnapshot,
 } from 'simplycms/contracts/shipping-providers';
 import { loadShippingDirectory } from './shipping-directory';
 import {
@@ -30,7 +30,7 @@ export interface ShippingChoice {
   zone: ShippingZoneRow | null;
   directory: ShippingDirectory;
   /** Знімок для `orders.shipping_data` (Е6а-8): назва способу й пункт НА МОМЕНТ вибору. */
-  snapshot: ShippingSnapshot;
+  snapshot: NewShippingSnapshot;
 }
 
 export type ShippingChoiceRejection = Extract<
@@ -64,7 +64,7 @@ export async function validateShippingChoice(
   if (typeof destination === 'string') return destination;
 
   const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
-  const snapshot: ShippingSnapshot = {
+  const snapshot: NewShippingSnapshot = {
     methodName: method.name,
     provider: method.provider,
     pricing: method.pricing,

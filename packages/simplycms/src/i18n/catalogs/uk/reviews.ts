@@ -13,6 +13,7 @@ export const messages = {
 
   // Картка відгуку
   'reviews.anonymousAuthor': 'Користувач',
+  'reviews.formerCustomer': 'Колишній покупець',
   'reviews.pendingBadge': 'На модерації',
   'reviews.delete.confirmTitle': 'Видалити відгук?',
   'reviews.delete.confirmText': 'Цю дію неможливо скасувати.',

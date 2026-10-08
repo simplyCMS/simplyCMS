@@ -76,6 +76,11 @@ describe('доставка commerce', () => {
     });
   });
 
+  it('запис знімка (Е6г-10): адресна доставка з city null або порожнім → shipping_unavailable, а не знімок із null', async () => {
+    expect(await check(ids.courier, null, null)).toBe('shipping_unavailable');
+    expect(await check(ids.courier, '', null)).toBe('shipping_unavailable');
+  });
+
   it('validateShippingChoice паритет із чекаутом: pickup з deliveryCity null і активною точкою → тариф; pickup з неактивною точкою → pickup_point_invalid; не-pickup без міста → shipping_unavailable; метод деактивовано → shipping_unavailable', async () => {
     const pickup = await check(ids.pickup, null, ids.point);
     if (typeof pickup === 'string') throw new Error(pickup);
