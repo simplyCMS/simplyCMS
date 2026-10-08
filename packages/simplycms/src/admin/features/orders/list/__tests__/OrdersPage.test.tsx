@@ -34,6 +34,8 @@ vi.mock('simplycms/admin-server', async () => {
   });
 });
 vi.mock('@tanstack/react-router', () => ({
+  useSearch: () => ({}),
+  useNavigate: () => vi.fn(),
   Link: ({
     to,
     params,
