@@ -213,6 +213,25 @@ describe('канон міграцій: накат на чисту БД', () => {
     expect(await counts()).toEqual({ statuses: 6, themes: 1, settings: 2 });
   }, 120_000);
 
+  // Е6г-14: бан тримає БД — тригер на sessions без SECURITY DEFINER.
+  it('тригер sessions_refuse_banned стоїть на sessions', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      `select t.tgname, c.relname, p.prosecdef
+         from pg_trigger t
+         join pg_class c on c.oid = t.tgrelid
+         join pg_proc p on p.oid = t.tgfoid
+        where t.tgname = 'sessions_refuse_banned' and not t.tgisinternal`,
+    );
+    expect(rows).toEqual([
+      {
+        tgname: 'sessions_refuse_banned',
+        relname: 'sessions',
+        prosecdef: false,
+      },
+    ]);
+  });
+
   // Е6б-5: профіль магазину замість мертвого `active_theme`; `plugin_events`
   // і `plugins.migrations_applied` ніхто не писав — прибрано з baseline.
   it('сід профілю на місці, мертве зі схеми прибрано', async () => {

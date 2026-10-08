@@ -1,6 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { accounts, sessions, users, verifications } from 'simplycms/schema';
+import {
+  createSessionBanHook,
+  isUserBannedInDb,
+  type IsUserBanned,
+} from './ban';
 import { createAuthDb } from './drizzle-proxy';
 import { resolveAuthBaseUrl, resolveAuthSecret } from './env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
@@ -32,6 +37,8 @@ export interface AuthDeps {
   readonly database?: Parameters<typeof betterAuth>[0]['database'];
   /** Провізія `profiles`+`user_roles`. За замовчуванням — запис у Postgres. */
   readonly provisionUser?: ProvisionUser;
+  /** Чи забанений користувач (Е6г-13). За замовчуванням — читання `users.banned_at`. */
+  readonly isUserBanned?: IsUserBanned;
   readonly secret?: string;
   readonly baseURL?: string;
   /**
@@ -89,6 +96,11 @@ export function createAuth(deps: AuthDeps = {}) {
       user: {
         create: {
           after: createUserCreateHook(deps.provisionUser ?? provisionUserInDb),
+        },
+      },
+      session: {
+        create: {
+          before: createSessionBanHook(deps.isUserBanned ?? isUserBannedInDb),
         },
       },
     },

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { authClient } from 'simplycms/core/lib/auth-client';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
+import { bannedMessage } from 'simplycms/core/lib/banned-message';
 import {
   Eye,
   EyeOff,
@@ -17,11 +18,17 @@ import {
 } from 'lucide-react';
 
 interface CheckoutAuthBlockProps {
+  /**
+   * Контакти магазину для повідомлення про бан. Профіль живе в `themes`
+   * (вищий тір), тож ззовні його дає сторінка чекауту, а не хук тут.
+   */
+  storeContacts: { phone: string | null; email: string | null };
   onAuthSuccess?: () => void;
   defaultTab?: 'guest' | 'login' | 'register';
 }
 
 export function CheckoutAuthBlock({
+  storeContacts,
   onAuthSuccess,
   defaultTab = 'guest',
 }: CheckoutAuthBlockProps) {
@@ -59,7 +66,9 @@ export function CheckoutAuthBlock({
       if (error) {
         // За кодом, а не за текстом — текст Better Auth змінюється версією.
         let errorMessage = error.message ?? t('checkout.auth.genericError');
-        if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
+        if (error.code === 'BANNED') {
+          errorMessage = bannedMessage(t, storeContacts);
+        } else if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
           errorMessage = t('checkout.auth.invalidCredentials');
         }
         setAuthError(errorMessage);

@@ -86,6 +86,7 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.adminRoleSelf]: 'admin.errors.adminRoleSelf',
   [ADMIN_STATE_CONSTRAINT.adminRoleLast]: 'admin.errors.adminRoleLast',
   [ADMIN_STATE_CONSTRAINT.adminRoleBanned]: 'admin.errors.adminRoleBanned',
+  [ADMIN_STATE_CONSTRAINT.customerIsAdmin]: 'admin.errors.customerIsAdmin',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

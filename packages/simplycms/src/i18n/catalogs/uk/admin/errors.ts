@@ -53,5 +53,6 @@ export const messages = {
   'admin.errors.adminRoleLast':
     'Це останній адміністратор — роль зняти не можна',
   'admin.errors.adminRoleBanned': 'Спершу розблокуйте покупця',
+  'admin.errors.customerIsAdmin': 'Спершу зніміть роль адміністратора',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

@@ -39,6 +39,9 @@ export const messages: Catalog = {
   'auth.login.pending': 'Signing in...',
   'auth.login.failed': 'Could not sign in',
   'auth.login.badCredentials': 'Wrong email or password',
+  'auth.login.banned': 'Your account is blocked. Please contact the store',
+  'auth.login.bannedContacts':
+    'Your account is blocked. Please contact the store: {contacts}',
   'auth.login.success': 'Signed in',
   'auth.login.welcome': 'Welcome!',
 

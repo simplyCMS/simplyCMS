@@ -87,6 +87,8 @@ export const ADMIN_STATE_CONSTRAINT = {
   adminRoleSelf: 'admin_role_self',
   adminRoleLast: 'admin_role_last',
   adminRoleBanned: 'admin_role_banned',
+  // Е6г-4: бан адміна заборонено — спершу зняти роль.
+  customerIsAdmin: 'customer_is_admin',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

@@ -18,6 +18,7 @@ import { Eye, EyeOff, Mail, Lock, User, Loader2, Zap } from 'lucide-react';
 import { z } from 'zod';
 import { useT, type Translator } from 'simplycms/i18n';
 import { useStoreProfile } from 'simplycms/themes/store-profile';
+import { bannedMessage } from 'simplycms/core/lib/banned-message';
 
 // Фабрики схем: повідомлення беруть з каталогу, тому потребують транслятора.
 const buildLoginSchema = (t: Translator) =>
@@ -44,7 +45,7 @@ export default function Auth() {
   const t = useT();
   // Назва магазину — з профілю, а не з каталогу ядра: ключ `auth.brand`
   // показував би всім магазинам один рядок (Е6б-20).
-  const { name: storeName } = useStoreProfile();
+  const { name: storeName, contacts } = useStoreProfile();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<
     string,
@@ -114,9 +115,11 @@ export default function Auth() {
           variant: 'destructive',
           title: t('auth.login.failed'),
           description:
-            error.code === 'INVALID_EMAIL_OR_PASSWORD'
-              ? t('auth.login.badCredentials')
-              : (error.message ?? t('auth.genericError')),
+            error.code === 'BANNED'
+              ? bannedMessage(t, contacts)
+              : error.code === 'INVALID_EMAIL_OR_PASSWORD'
+                ? t('auth.login.badCredentials')
+                : (error.message ?? t('auth.genericError')),
         });
       } else {
         toast({

@@ -55,6 +55,7 @@ export const messages: Catalog = {
   'admin.errors.adminRoleLast':
     'This is the last administrator — the role cannot be removed',
   'admin.errors.adminRoleBanned': 'Unblock the customer first',
+  'admin.errors.customerIsAdmin': 'Remove the administrator role first',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

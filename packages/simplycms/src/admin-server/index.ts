@@ -99,6 +99,8 @@ import {
   assignCustomerCategoryOp,
   setAdminRoleInput,
   setAdminRoleOp,
+  setCustomerBanInput,
+  setCustomerBanOp,
   findCustomersInput,
   listCustomersInput,
   listCustomersOp,
@@ -616,6 +618,10 @@ export const assignCustomerCategory = createServerFn({ method: 'POST' })
 export const setAdminRole = createServerFn({ method: 'POST' })
   .validator(adminInput(setAdminRoleInput))
   .handler(setAdminRoleOp);
+
+export const setCustomerBan = createServerFn({ method: 'POST' })
+  .validator(adminInput(setCustomerBanInput))
+  .handler(setCustomerBanOp);
 
 export const findCustomers = createServerFn({ method: 'GET' })
   .validator(adminInput(findCustomersInput))
