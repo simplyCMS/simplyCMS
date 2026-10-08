@@ -53,7 +53,7 @@ export interface AdminCustomerCard {
   utmCampaign: string | null;
   /** `null` без профілю (власник, створений CLI). */
   stats: { ordersCount: number; totalPurchasesCents: number } | null;
-  /** `null` без профілю. */
+  /** Ефективна (дефолтна без явної); `null` лише без жодної категорії. */
   category: { id: string; name: string; locked: boolean } | null;
   isAdmin: boolean;
   bannedAt: Date | null;

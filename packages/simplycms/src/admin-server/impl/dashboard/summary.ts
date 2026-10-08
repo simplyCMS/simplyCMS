@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { AdminDashboardSummary } from 'simplycms/contracts';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { runAdmin } from '../run';
-import { isoTs, toDate } from '../customers/timestamps';
+import { isoTs, toDate } from '../sql-timestamps';
 
 const RECENT_LIMIT = 10;
 

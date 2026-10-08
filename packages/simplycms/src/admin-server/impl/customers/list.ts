@@ -8,7 +8,7 @@ import type {
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { escapeLike } from '../products/search-for-order';
 import { runAdmin } from '../run';
-import { isoTs, toDate, toDateOrNull } from './timestamps';
+import { isoTs, toDate, toDateOrNull } from '../sql-timestamps';
 import { parseAdminInput } from '../validation';
 
 export const CUSTOMERS_PAGE_SIZE = 50;
