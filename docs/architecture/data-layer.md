@@ -379,8 +379,9 @@ found». Наслідок для операцій: перетворення од
 **Ядра поза операцією (С-15).** Операція = `parseAdminInput` + `runAdmin(op, db => ядро(db,
 parsed))`; ядро приймає вже розібраний вхід і `ActorDb`, локи й порядок — ті самі, що в
 операції. Розщеплено лише потрібне викликачам поза HTTP (сід `db:showcase`): фабрика
-`defineAdminResource` додатково віддає `insertIn/updateIn/removeIn(db, input)` (`insert/update/
-remove` = `run(db => xIn(db, input))`; `removeIn` — без `prepare`, як і `remove`, захищене
+`defineAdminResource` додатково віддає `insertIn/updateIn/removeIn(db, input)` (спільне тіло
+з `insert/update/remove`; операція парсить вхід ДО `run`, тож 400 — до перевірки гранта, а `xIn`
+валідує сам через `validateAdminInput` без статусу; `removeIn` — без `prepare`, як і `remove`, захищене
 видалення лишається за іменованими операціями), ядра `saveProductPrices`, `saveStock`,
 `saveDiscount`, `changeOrderStatus`, `assignCustomerCategory`, `setCustomerBan`,
 `deleteCustomer`. Ядро, якому потрібен актор, отримує `CoreActor`
