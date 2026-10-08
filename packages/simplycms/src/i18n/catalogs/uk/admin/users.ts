@@ -57,6 +57,26 @@ export const messages = {
   'admin.users.card.email': 'Email',
   'admin.users.card.emailHint': 'Зміна email скидає його підтвердження.',
   'admin.users.card.contactsSaved': 'Контакти збережено',
+  'admin.users.card.access': 'Доступ',
+  'admin.users.card.roleSelfHint': 'Не можна змінити власну роль',
+  'admin.users.card.ban': 'Заблокувати',
+  'admin.users.card.banTitle': 'Заблокувати покупця?',
+  'admin.users.card.banDescription':
+    'Заблокований покупець не зможе увійти. Причину бачать лише адміністратори.',
+  'admin.users.card.banReason': 'Причина (внутрішня примітка)',
+  'admin.users.card.banConfirm': 'Підтвердити блокування',
+  'admin.users.card.bannedDone': 'Покупця заблоковано',
+  'admin.users.card.unban': 'Розблокувати',
+  'admin.users.card.unbanned': 'Покупця розблоковано',
+  'admin.users.card.bannedSince': 'Заблоковано з {date}',
+  'admin.users.card.delete': 'Видалити акаунт',
+  'admin.users.card.deleteTitle': 'Видалити акаунт покупця?',
+  'admin.users.card.deleteWarning':
+    'Акаунт буде видалено, а персональні дані його замовлень стерто. Дію не можна скасувати.',
+  'admin.users.card.deleteConfirmLabel':
+    'Для підтвердження введіть email {email}',
+  'admin.users.card.deleteConfirm': 'Видалити назавжди',
+  'admin.users.card.deleted': 'Акаунт видалено',
 
   // Категорії користувачів
   'admin.users.categories.subtitle':

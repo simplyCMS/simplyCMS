@@ -119,4 +119,23 @@ export const messages: Catalog = {
   'admin.users.card.email': 'Email',
   'admin.users.card.emailHint': 'Changing the email resets its verification.',
   'admin.users.card.contactsSaved': 'Contacts saved',
+  'admin.users.card.access': 'Access',
+  'admin.users.card.roleSelfHint': 'You cannot change your own role',
+  'admin.users.card.ban': 'Block',
+  'admin.users.card.banTitle': 'Block this customer?',
+  'admin.users.card.banDescription':
+    'A blocked customer cannot sign in. Only admins see the reason.',
+  'admin.users.card.banReason': 'Reason (internal note)',
+  'admin.users.card.banConfirm': 'Confirm block',
+  'admin.users.card.bannedDone': 'Customer blocked',
+  'admin.users.card.unban': 'Unblock',
+  'admin.users.card.unbanned': 'Customer unblocked',
+  'admin.users.card.bannedSince': 'Blocked since {date}',
+  'admin.users.card.delete': 'Delete account',
+  'admin.users.card.deleteTitle': 'Delete this customer account?',
+  'admin.users.card.deleteWarning':
+    'The account will be deleted and personal data in its orders erased. This cannot be undone.',
+  'admin.users.card.deleteConfirmLabel': 'Type the email {email} to confirm',
+  'admin.users.card.deleteConfirm': 'Delete permanently',
+  'admin.users.card.deleted': 'Account deleted',
 };

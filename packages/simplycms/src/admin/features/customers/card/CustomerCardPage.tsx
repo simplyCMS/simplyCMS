@@ -5,6 +5,7 @@ import { Button } from 'simplycms/ui/button';
 import { adminPath } from '../../../lib/adminLinks';
 import { CardPageHeader } from '../../catalog-dictionaries/CardPageHeader';
 import { NotFoundState } from '../../catalog-dictionaries/PageStates';
+import CustomerAccessCard from './CustomerAccessCard';
 import CustomerCategoryCard from './CustomerCategoryCard';
 import CustomerContactsForm from './CustomerContactsForm';
 import CustomerInfoCard, { customerLabel } from './CustomerInfoCard';
@@ -50,6 +51,7 @@ export default function CustomerCardPage() {
         <div className="space-y-6">
           <CustomerCategoryCard card={card} />
           <CustomerContactsForm card={card} />
+          <CustomerAccessCard card={card} />
         </div>
       </div>
     </div>
