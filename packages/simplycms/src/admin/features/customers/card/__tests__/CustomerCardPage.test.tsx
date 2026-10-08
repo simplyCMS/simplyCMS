@@ -92,9 +92,16 @@ describe('CustomerCardPage: перегляд', () => {
   });
 
   it('останні замовлення: посилання на картку замовлення', async () => {
-    mocks.listOrders.mockResolvedValue([order(1), order(2)]);
+    // Замовлення іншого покупця мок віддає теж: фільтр — це предикат `userId`.
+    mocks.listOrders.mockResolvedValue([
+      order(1),
+      order(2),
+      { ...order(3), userId: 'u0000000-0000-4000-8000-0000000000aa' },
+    ]);
     renderCard();
     const link = await screen.findByRole('link', { name: 'ORD-2' });
+    expect(screen.getByRole('link', { name: 'ORD-1' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'ORD-3' })).toBeNull();
     expect(link.getAttribute('href')).toBe(
       '/admin/orders/o0000002-0000-4000-8000-000000000001',
     );
@@ -144,6 +151,20 @@ describe('CustomerCardPage: контакти', () => {
         email: 'busy@shop.test',
       }),
     });
+  });
+
+  it('клієнтська валідація: переклад, а не англійський текст Zod', async () => {
+    renderCard();
+    const email = await screen.findByLabelText(t('admin.users.card.email'));
+    fireEvent.change(screen.getByLabelText(t('common.firstName')), {
+      target: { value: '' },
+    });
+    fireEvent.change(email, { target: { value: 'not-an-email' } });
+    fireEvent.click(screen.getByRole('button', { name: t('common.save') }));
+    expect(await screen.findByText(t('validation.nameRequired'))).toBeTruthy();
+    expect(screen.getByText(t('validation.emailFormat'))).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Too small|Invalid/);
+    expect(mocks.updateCustomerContacts).not.toHaveBeenCalled();
   });
 
   it('успіх: тост і інвалідація [profiles]', async () => {

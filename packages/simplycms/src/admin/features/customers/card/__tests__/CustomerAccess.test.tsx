@@ -65,11 +65,16 @@ describe('роль адміністратора', () => {
     mocks.getCustomerCard.mockResolvedValue(card({ isAdmin: true }));
     mocks.setAdminRole.mockResolvedValue({});
     renderCard();
-    fireEvent.click(await roleSwitch());
+    const sw = await roleSwitch();
+    const spy = vi.spyOn(clientRef.current, 'invalidateQueries');
+    fireEvent.click(sw);
     await waitFor(() =>
       expect(mocks.setAdminRole).toHaveBeenCalledWith({
         data: { userId: USER_ID, admin: false },
       }),
+    );
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
     // Картку перечитано після інвалідації префікса.
     await waitFor(() =>
@@ -108,6 +113,7 @@ describe('бан', () => {
     mocks.setCustomerBan.mockResolvedValue({});
     renderCard();
     await heading();
+    const spy = vi.spyOn(clientRef.current, 'invalidateQueries');
     fireEvent.click(
       screen.getByRole('button', { name: t('admin.users.card.ban') }),
     );
@@ -125,6 +131,9 @@ describe('бан', () => {
         data: { userId: USER_ID, banned: true, reason: 'Шахрайство' },
       }),
     );
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
+    );
   });
 
   it('банер «Заблоковано з …» і «Розблокувати»', async () => {
@@ -134,6 +143,7 @@ describe('бан', () => {
     mocks.setCustomerBan.mockResolvedValue({});
     renderCard();
     expect(await screen.findByText(/Заблоковано з/)).toBeTruthy();
+    const spy = vi.spyOn(clientRef.current, 'invalidateQueries');
     expect(screen.getByText(/Спам/)).toBeTruthy();
     fireEvent.click(
       screen.getByRole('button', { name: t('admin.users.card.unban') }),
@@ -142,6 +152,9 @@ describe('бан', () => {
       expect(mocks.setCustomerBan).toHaveBeenCalledWith({
         data: { userId: USER_ID, banned: false },
       }),
+    );
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
   });
 
@@ -197,9 +210,13 @@ describe('видалення', () => {
     await waitFor(() =>
       expect(ui.navigate).toHaveBeenCalledWith({ to: '/admin/users' }),
     );
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] });
     expect(ui.toastSuccess).toHaveBeenCalled();
-    expect(mocks.listOrders.mock.calls.length).toBeGreaterThan(ordersCalls);
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
+    );
+    await waitFor(() =>
+      expect(mocks.listOrders.mock.calls.length).toBeGreaterThan(ordersCalls),
+    );
   });
 
   it('409 customer_is_admin → тост, діалог лишається, переходу немає', async () => {
@@ -216,5 +233,55 @@ describe('видалення', () => {
       ),
     );
     expect(ui.navigate).not.toHaveBeenCalled();
+  });
+
+  it('ValidationError на confirmEmail → під полем, без тосту, діалог відкритий', async () => {
+    mocks.deleteCustomer.mockRejectedValue(
+      Object.assign(new Error('v'), {
+        name: DOMAIN_ERROR_NAME.validation,
+        issues: [{ path: ['confirmEmail'], code: 'invalid_value' }],
+      }),
+    );
+    renderCard();
+    const input = await open();
+    fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
+    fireEvent.click(confirmBtn());
+    expect(
+      await screen.findByText(t('admin.validation.invalid_value')),
+    ).toBeTruthy();
+    expect(ui.toastError).not.toHaveBeenCalled();
+    expect(ui.navigate).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/buyer@shop\.test/)).toBeTruthy();
+    // Зміна вводу прибирає помилку поля.
+    fireEvent.change(input, { target: { value: 'buyer@shop.tes' } });
+    expect(screen.queryByText(t('admin.validation.invalid_value'))).toBeNull();
+  });
+
+  it('збій пост-кроку після видалення не показується як невдале видалення', async () => {
+    mocks.deleteCustomer.mockResolvedValue({});
+    renderCard();
+    const input = await open();
+    ui.navigate.mockRejectedValueOnce(new Error('nav'));
+    fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
+    fireEvent.click(confirmBtn());
+    await waitFor(() => expect(ui.toastSuccess).toHaveBeenCalled());
+    expect(ui.toastError).not.toHaveBeenCalled();
+  });
+
+  it('закриття діалогу скидає введений email', async () => {
+    renderCard();
+    const input = await open();
+    fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
+    fireEvent.click(screen.getByRole('button', { name: t('common.cancel') }));
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/buyer@shop\.test/)).toBeNull(),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.users.card.delete') }),
+    );
+    expect(
+      ((await screen.findByLabelText(/buyer@shop\.test/)) as HTMLInputElement)
+        .value,
+    ).toBe('');
   });
 });

@@ -35,6 +35,13 @@ export default function CustomerDeleteDialog({
   const [fieldError, setFieldError] = useState<string>();
   // Сервер звіряє так само (trim + нижній регістр) — клієнт лише не пускає зайвий запит.
   const matches = typed.trim().toLowerCase() === email.toLowerCase();
+  const changeOpen = (next: boolean) => {
+    if (!next) {
+      setTyped('');
+      setFieldError(undefined);
+    }
+    onOpenChange(next);
+  };
   const submit = async () => {
     setPending(true);
     const r = await remove(typed.trim());
@@ -42,7 +49,7 @@ export default function CustomerDeleteDialog({
     setFieldError(r.fieldError);
   };
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={changeOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -60,7 +67,10 @@ export default function CustomerDeleteDialog({
             id="delete-email"
             value={typed}
             aria-invalid={!!fieldError}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => {
+              setTyped(e.target.value);
+              setFieldError(undefined);
+            }}
           />
           {fieldError && (
             <p role="alert" className="text-xs text-destructive">

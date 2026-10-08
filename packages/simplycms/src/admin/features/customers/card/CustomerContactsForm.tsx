@@ -5,6 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { TextField } from '../../catalog-dictionaries/form-fields';
 import { useUpdateContacts } from './useUpdateContacts';
 
+/**
+ * Після `zodResolver` `message` — англійський текст Zod: показуємо його лише
+ * для серверної помилки (вже перекладена `applyServerValidation`).
+ */
+const serverOr = (
+  e: { type?: string; message?: string } | undefined,
+  fallback: string,
+) => (e?.type === 'server' && e.message ? e.message : fallback);
+
 /** Контакти й email покупця; серверна помилка `taken` показується під email. */
 export default function CustomerContactsForm({
   card,
@@ -29,9 +38,7 @@ export default function CustomerContactsForm({
             label={t('common.firstName')}
             registration={register('firstName')}
             invalid={!!errors.firstName}
-            errorText={
-              errors.firstName?.message ?? t('validation.nameRequired')
-            }
+            errorText={serverOr(errors.firstName, t('validation.nameRequired'))}
           />
           <TextField
             id="cc-last"
@@ -48,9 +55,7 @@ export default function CustomerContactsForm({
             label={t('admin.users.card.email')}
             registration={register('email')}
             invalid={!!errors.email}
-            errorText={
-              errors.email?.message || t('admin.validation.invalid_format')
-            }
+            errorText={serverOr(errors.email, t('validation.emailFormat'))}
           />
           <p className="text-xs text-muted-foreground">
             {t('admin.users.card.emailHint')}

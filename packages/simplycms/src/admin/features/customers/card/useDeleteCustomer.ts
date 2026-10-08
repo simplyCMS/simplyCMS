@@ -28,11 +28,6 @@ export function useDeleteCustomer(userId: string) {
   return async (confirmEmail: string): Promise<DeleteResult> => {
     try {
       await deleteCustomer({ data: { userId, confirmEmail } });
-      await qc.invalidateQueries({ queryKey: [ENTITY.profiles] });
-      await orders.utils.refetch();
-      toast.success(t('admin.users.card.deleted'));
-      await navigate({ to: adminPath('users') });
-      return { ok: true };
     } catch (e) {
       let fieldError: string | undefined;
       const unmapped = applyServerValidation(
@@ -49,5 +44,15 @@ export function useDeleteCustomer(userId: string) {
       if (unmapped === null || unmapped.length > 0) reportTxError(t, e);
       return { ok: false, fieldError };
     }
+    // Видалення вже відбулось: збій кроків нижче не є «видалення не вдалось».
+    // Спершу перехід, щоб відкрита картка не блимнула «не знайдено» після
+    // інвалідації; кеш синхронізуємо у фоні.
+    toast.success(t('admin.users.card.deleted'));
+    void navigate({ to: adminPath('users') });
+    await Promise.allSettled([
+      qc.invalidateQueries({ queryKey: [ENTITY.profiles] }),
+      orders.utils.refetch(),
+    ]);
+    return { ok: true };
   };
 }
