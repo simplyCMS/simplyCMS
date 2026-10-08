@@ -98,6 +98,11 @@ import {
   assignCustomerCategoryInput,
   assignCustomerCategoryOp,
   findCustomersInput,
+  listCustomersInput,
+  listCustomersOp,
+  getCustomerCardInput,
+  getCustomerCardOp,
+  dashboardSummaryOp,
   findCustomersOp,
   diagnosePriceInput,
   diagnosePriceOp,
@@ -613,3 +618,17 @@ export const findCustomers = createServerFn({ method: 'GET' })
 export const diagnosePrice = createServerFn({ method: 'POST' })
   .validator(adminInput(diagnosePriceInput))
   .handler(diagnosePriceOp);
+
+// К3-Е6г: читання без колекцій (Е6г-6); розмір сторінки списку задає сервер.
+export const listCustomers = createServerFn({ method: 'GET' })
+  .validator(adminInput(listCustomersInput))
+  .handler(listCustomersOp);
+
+export const getCustomerCard = createServerFn({ method: 'GET' })
+  .validator(adminInput(getCustomerCardInput))
+  .handler(getCustomerCardOp);
+
+// Без вводу — без валідатора (зразок countCustomersByCategory).
+export const dashboardSummary = createServerFn({ method: 'GET' }).handler(
+  dashboardSummaryOp,
+);

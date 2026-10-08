@@ -173,3 +173,12 @@ export { reviewContentInput, getReviewContentOp } from './reviews/content';
 export { diagnosePriceInput } from './price-diagnosis/input';
 export { diagnosePriceOp } from './price-diagnosis/diagnose';
 export type { PriceDiagnosis } from './price-diagnosis/diagnose';
+
+// К3-Е6г, Task 3: читання покупців і дашборду.
+export {
+  CUSTOMERS_PAGE_SIZE,
+  listCustomersInput,
+  listCustomersOp,
+} from './customers/list';
+export { getCustomerCardInput, getCustomerCardOp } from './customers/card';
+export { dashboardSummaryOp } from './dashboard/summary';
