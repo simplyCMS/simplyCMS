@@ -16,6 +16,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { withActor } from '../actors.mjs';
+import { findOrphans } from './fixtures/orphans';
 
 const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 import {
@@ -59,26 +60,7 @@ describe('граф користувача: видалення users', () => {
     await harness?.teardown();
   });
 
-  const orphans = async () => {
-    const cols = (await q(
-      `select table_name, column_name from information_schema.columns
-        where table_schema = 'public'
-          and column_name in ('user_id', 'changed_by', 'uploaded_by')`,
-    )) as { table_name: string; column_name: string }[];
-    expect(cols.length).toBeGreaterThan(10);
-    const result: Record<string, number> = {};
-    for (const { table_name: t, column_name: c } of cols) {
-      const n = (
-        (await q(
-          `select count(*)::int n from public."${t}" x
-            where x."${c}" is not null
-              and not exists (select 1 from public.users u where u.id = x."${c}")`,
-        )) as { n: number }[]
-      )[0]!.n;
-      if (n > 0) result[`${t}.${c}`] = n;
-    }
-    return result;
-  };
+  const orphans = () => findOrphans(q);
 
   it('CHECK: ПД не можна обнулити без personal_data_erased_at', async () => {
     const nullify = (extra = '') =>

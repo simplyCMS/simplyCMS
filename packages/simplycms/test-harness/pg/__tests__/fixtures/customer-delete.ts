@@ -7,6 +7,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
+import { findOrphans } from './orphans';
 import { useOrderItemsEditDb } from './order-items-edit';
 
 export const ADMIN_ID = 'a0000000-0000-4000-8000-00000000e6a7';
@@ -84,8 +85,22 @@ export function useDeleteDb(prefix: string) {
        values (gen_random_uuid(), $1, $2, now() + interval '1 day')`,
       [`reset-password:${crypto.randomUUID()}`, userId],
     );
-    return { userId, email, avatar };
+    // Власний рядок історії покупця й чужий, де він лише `changed_by`.
+    const other = crypto.randomUUID();
+    await f.rows(
+      `insert into public.users (id, name, email) values ($1, 'Інший', $2)`,
+      [other, `other-${other.slice(0, 8)}@example.test`],
+    );
+    await f.rows(
+      `insert into public.user_category_history (id, user_id, changed_by, to_category_id, to_category_name)
+       select gen_random_uuid(), u, c, (select id from public.user_categories where is_default limit 1), 'X'
+         from (values ($1::uuid, null::uuid), ($2::uuid, $1::uuid)) v(u, c)`,
+      [userId, other],
+    );
+    return { userId, email, avatar, other };
   };
+
+  const orphans = () => findOrphans((sql) => f.rows(sql));
 
   /** Три замовлення: адреса, точка видачі, зіпсований `{}` (Review Focus 2). */
   const placeThree = async (userId: string) => {
@@ -127,5 +142,6 @@ export function useDeleteDb(prefix: string) {
     placeThree,
     count,
     userExists,
+    orphans,
   };
 }

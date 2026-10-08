@@ -9,7 +9,7 @@ import {
   changeOrderStatusOp,
   deleteCustomerOp,
 } from 'simplycms/admin-server/impl';
-import { ADMIN_ID, useDeleteDb } from './fixtures/customer-delete';
+import { useDeleteDb } from './fixtures/customer-delete';
 import { conflict as itemConflict } from './fixtures/order-items-edit';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
@@ -27,7 +27,6 @@ vi.mock('simplycms/auth', async (orig) => ({
 describe('admin: стерте замовлення (Е6г-16/17)', () => {
   const d = useDeleteDb('simplycms_e6g_delete_orders');
   const { f } = d;
-  void ADMIN_ID;
   const call = (userId: string, confirmEmail: string) =>
     deleteCustomerOp({ data: { userId, confirmEmail } });
 

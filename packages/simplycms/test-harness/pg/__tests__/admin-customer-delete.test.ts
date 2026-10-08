@@ -49,6 +49,14 @@ describe('admin: видалення акаунта покупця (Е6г-15…17
       sums: await Promise.all(ids.map((id) => f.snapshot(id))),
     };
 
+    // Сід справді вказує на покупця — інакше «NULL після» нічого б не доводило.
+    expect(
+      await f.rows(
+        `select changed_by from public.user_category_history where user_id = $1`,
+        [b.other],
+      ),
+    ).toEqual([{ changed_by: b.userId }]);
+
     const res = await call(b.userId, `  ${b.email.toUpperCase()} `);
     expect(res).toEqual({ erasedOrders: 3, anonymizedReviews: 1 });
 
@@ -73,20 +81,17 @@ describe('admin: видалення акаунта покупця (Е6г-15…17
     expect(d.hasFile(b.avatar!)).toBe(false);
     expect(await d.mediaRows(b.avatar!)).toEqual([]);
     expect(await d.count('verifications', 'value = $1', [b.userId])).toBe(0);
-    // Сиріт немає: жодне посилання на users не вказує в нікуди.
-    const cols = await f.rows<{ t: string; c: string }>(
-      `select table_name as t, column_name as c from information_schema.columns
-        where table_schema = 'public' and column_name in ('user_id','changed_by','uploaded_by')`,
-    );
-    for (const { t, c } of cols)
-      expect(
-        await d.count(
-          t,
-          `"${c}" is not null and not exists (select 1 from public.users u where u.id = "${c}")`,
-          [],
-        ),
-        `${t}.${c}`,
-      ).toBe(0);
+    // Власна історія зникла, чужий рядок лишився з changed_by = NULL.
+    expect(
+      await d.count('user_category_history', 'user_id = $1', [b.userId]),
+    ).toBe(0);
+    expect(
+      await f.rows(
+        `select changed_by from public.user_category_history where user_id = $1`,
+        [b.other],
+      ),
+    ).toEqual([{ changed_by: null }]);
+    expect(await d.orphans()).toEqual({});
   });
 
   it('відмови: адмін, себе, невірний email, неіснуючий', async () => {

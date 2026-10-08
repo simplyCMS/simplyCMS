@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { getMediaDriver } from 'simplycms/storage';
 import { deleteCustomerOp } from 'simplycms/admin-server/impl';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
-import { ADMIN_ID, useDeleteDb } from './fixtures/customer-delete';
+import { useDeleteDb } from './fixtures/customer-delete';
 import { conflict as stateOf } from './fixtures/admin-shipping';
 import * as H from '../apply.mjs';
 
@@ -26,7 +26,6 @@ describe('admin: видалення акаунта — локи й обрив (�
   const { f } = d;
   const call = (userId: string, confirmEmail: string) =>
     deleteCustomerOp({ data: { userId, confirmEmail } });
-  void ADMIN_ID;
 
   it('роль видана під час видалення → customer_is_admin, аватар і рядок media цілі', async () => {
     const b = await d.seedBuyer({ avatar: true });
@@ -60,13 +59,14 @@ describe('admin: видалення акаунта — локи й обрив (�
         await client.query('rollback');
         await client.end();
       }
+      // Прибирання ролі — навіть якщо асерти вище впали.
+      await f.rows(`delete from public.user_roles where user_id = $1`, [
+        b.userId,
+      ]);
     }
     expect(d.hasFile(b.avatar!)).toBe(true);
     expect(await d.mediaRows(b.avatar!)).toHaveLength(1);
     expect(await d.userExists(b.userId)).toBe(true);
-    await f.rows(`delete from public.user_roles where user_id = $1`, [
-      b.userId,
-    ]);
   });
 
   it.each(['customer-category:', 'admin-roles'])(
@@ -99,27 +99,31 @@ describe('admin: видалення акаунта — локи й обрив (�
     const spy = vi
       .spyOn(getMediaDriver(), 'delete')
       .mockRejectedValueOnce(new Error('disk'));
-    await expect(call(b.userId, b.email)).rejects.toThrow('disk');
-    expect(await d.userExists(b.userId)).toBe(true);
-    expect(
-      (
-        await f.one<{ e: string | null; a: string | null }>(
-          `select email as e, access_token as a from public.orders where id = $1`,
-          [address],
-        )
-      ).e,
-    ).not.toBeNull();
-    expect(await d.count('product_reviews', 'user_id = $1', [b.userId])).toBe(
-      1,
-    );
-    expect(await d.mediaRows(b.avatar!)).toHaveLength(1);
-    expect(d.hasFile(b.avatar!)).toBe(true);
-    expect(await d.count('verifications', 'value = $1', [b.userId])).toBe(1);
-    await expect(call(b.userId, b.email)).resolves.toMatchObject({
-      erasedOrders: 3,
-    });
-    spy.mockRestore();
-    expect(d.hasFile(b.avatar!)).toBe(false);
+    try {
+      await expect(call(b.userId, b.email)).rejects.toThrow('disk');
+      expect(await d.userExists(b.userId)).toBe(true);
+      expect(
+        (
+          await f.one<{ e: string | null }>(
+            `select email as e from public.orders where id = $1`,
+            [address],
+          )
+        ).e,
+      ).not.toBeNull();
+      expect(await d.count('product_reviews', 'user_id = $1', [b.userId])).toBe(
+        1,
+      );
+      expect(await d.mediaRows(b.avatar!)).toHaveLength(1);
+      expect(d.hasFile(b.avatar!)).toBe(true);
+      expect(await d.count('verifications', 'value = $1', [b.userId])).toBe(1);
+      await expect(call(b.userId, b.email)).resolves.toMatchObject({
+        erasedOrders: 3,
+      });
+      expect(d.hasFile(b.avatar!)).toBe(false);
+    } finally {
+      // Шпигун не має пережити тест навіть при падінні асертів.
+      spy.mockRestore();
+    }
   });
 
   it('файла вже немає, рядок media є → успіх (ENOENT); без аватара → успіх', async () => {
@@ -128,6 +132,7 @@ describe('admin: видалення акаунта — локи й обрив (�
     const { join } = await import('node:path');
     rmSync(join(d.state.root, b.avatar!));
     await expect(call(b.userId, b.email)).resolves.toBeDefined();
+    expect(await d.userExists(b.userId)).toBe(false);
     expect(await d.mediaRows(b.avatar!)).toEqual([]);
     const c = await d.seedBuyer();
     await expect(call(c.userId, c.email)).resolves.toBeDefined();
