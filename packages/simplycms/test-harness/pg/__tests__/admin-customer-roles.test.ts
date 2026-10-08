@@ -1,7 +1,6 @@
-// К3-Е6г, Task 4 (Е6г-4, Е6г-11): роль адміна з картки покупця під локом
-// `admin-roles`. Лок доводиться детерміновано (holdAdvisoryLock/stillPending).
+// К3-Е6г, Task 4 (Е6г-4, Е6г-11): роль адміна з картки покупця. Поведінка під
+// локом `admin-roles` — у `admin-customer-roles-locks.test.ts`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/customer-categories';
 
 const grantAs = vi.hoisted(() => ({ id: '' }));
@@ -19,7 +18,6 @@ import { setAdminRoleOp } from 'simplycms/admin-server/impl';
 describe('admin: роль адміна (Е6г-4/11)', () => {
   const db = F.useCustomersDb('simplycms_admin_roles');
   const url = () => db.url();
-  const LOCK = 'admin-roles';
 
   const makeAdmin = async (): Promise<string> => {
     const id = await F.seedCustomer(url());
@@ -107,45 +105,6 @@ describe('admin: роль адміна (Е6г-4/11)', () => {
       F.conflict('state', 'admin_role_banned'),
     );
     expect(await rolesOf(target)).toEqual([]);
-  });
-
-  it('стоїть, поки зовнішній тримає admin-roles; після release завершується', async () => {
-    const actor = await makeAdmin();
-    const target = await F.seedCustomer(url());
-    const lock = await holdAdvisoryLock(url(), LOCK);
-    try {
-      const op = call(actor, target, true);
-      op.catch(() => {});
-      expect(await stillPending(op, 300)).toBe(true);
-      expect(await rolesOf(target)).toEqual([]);
-      await lock.release();
-      await expect(op).resolves.toEqual({ isAdmin: true });
-    } finally {
-      await lock.cleanup();
-    }
-  });
-
-  it('гонка: A знімає B і B знімає A під зайнятим локом → одна OK, друга admin_role_last, адмінів 1', async () => {
-    const a = await makeAdmin();
-    const b = await makeAdmin();
-    const lock = await holdAdvisoryLock(url(), LOCK);
-    try {
-      const opAB = call(a, b, false);
-      const opBA = call(b, a, false);
-      const settled = Promise.allSettled([opAB, opBA]);
-      expect(await stillPending(settled, 300)).toBe(true);
-      expect(await adminCount()).toBe(2);
-      await lock.release();
-      const results = await settled;
-      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-      const failed = results.find((r) => r.status === 'rejected');
-      expect((failed as PromiseRejectedResult).reason).toMatchObject(
-        F.conflict('state', 'admin_role_last'),
-      );
-      expect(await adminCount()).toBe(1);
-    } finally {
-      await lock.cleanup();
-    }
   });
 
   it('видача неіснуючому → customer_not_found, а не reference', async () => {
