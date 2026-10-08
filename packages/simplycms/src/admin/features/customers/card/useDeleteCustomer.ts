@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { ordersCollection, useCollection } from 'simplycms/admin-data';
 import { deleteCustomer } from 'simplycms/admin-server';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
@@ -15,17 +16,17 @@ export interface DeleteResult {
 }
 
 /**
- * Видалення акаунта (Е6г-15). Знеособлення зачіпає замовлення, тож окрім
- * `[profiles]` інвалідуємо префікс `[orders]` (Е6г-6): ключ колекції
- * `[orders,'list']` під ним, тому ЄДИНИЙ механізм будить і колекцію
- * замовлень, і дашборд (`[orders,'admin-dashboard']`). Окремого `refetch`
- * колекції немає — файл не імпортує `simplycms/admin-data`. Після успіху —
- * на список; відмови 409 — тост, діалог лишається.
+ * Видалення акаунта (Е6г-15). Знеособлення зачіпає замовлення, а вони в
+ * колекції on-demand: `invalidateQueries` колекцію не будить (урок №6),
+ * тож окрім `[profiles]` кличемо `refetch` колекції (Е6г-6), а інвалідація
+ * `[orders]` лишається для дашборду (`[orders,'admin-dashboard']`). Після
+ * успіху — на список; відмови 409 — тост, діалог лишається.
  */
 export function useDeleteCustomer(userId: string) {
   const t = useT();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const orders = useCollection(ordersCollection);
   return async (confirmEmail: string): Promise<DeleteResult> => {
     try {
       await deleteCustomer({ data: { userId, confirmEmail } });
@@ -57,6 +58,8 @@ export function useDeleteCustomer(userId: string) {
       // Дашборд (`[orders, 'admin-dashboard']`) показує імʼя клієнта в
       // останніх замовленнях — знеособлене не має лишитись у кеші.
       qc.invalidateQueries({ queryKey: [ENTITY.orders] }),
+      // Колекцію інвалідація не будить (урок №6, mutation-cache-sync).
+      orders.utils.refetch(),
     ]);
     return { ok: true };
   };

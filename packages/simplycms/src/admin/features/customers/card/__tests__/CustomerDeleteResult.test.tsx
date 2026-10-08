@@ -2,6 +2,7 @@
 /** Картка покупця (Task 11, Е6г): роль, бан, видалення. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { getCollection, ordersCollection } from 'simplycms/admin-data';
 import { createTranslator } from 'simplycms/i18n';
 import {
   ADMIN_STATE_CONSTRAINT,
@@ -69,12 +70,15 @@ describe('видалення', () => {
   const confirmBtn = () =>
     screen.getByRole('button', { name: t('admin.users.card.deleteConfirm') });
 
-  it('успіх → інвалідація [profiles] і [orders] (колекція замовлень перечитується), перехід, тост', async () => {
+  it('успіх → [profiles], [orders] для дашборду, refetch колекції замовлень, перехід, тост', async () => {
     mocks.deleteCustomer.mockResolvedValue({});
     renderCard();
     const input = await open();
     await waitFor(() => expect(mocks.listOrders).toHaveBeenCalled());
-    const ordersCalls = mocks.listOrders.mock.calls.length;
+    const refetch = vi.spyOn(
+      getCollection(clientRef.current, ordersCollection).utils,
+      'refetch',
+    );
     const spy = vi.spyOn(clientRef.current, 'invalidateQueries');
     fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
     fireEvent.click(confirmBtn());
@@ -90,14 +94,12 @@ describe('видалення', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
-    // Префікс [orders] накриває і дашборд (`[orders, 'admin-dashboard']`), і
-    // колекцію замовлень (`[orders, 'list']`) — окремого refetch немає.
+    // Дашборд тримає імʼя клієнта в `[orders, 'admin-dashboard']`.
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['orders'] }),
     );
-    await waitFor(() =>
-      expect(mocks.listOrders.mock.calls.length).toBeGreaterThan(ordersCalls),
-    );
+    // Саме refetch колекції: інвалідація її не будить (урок №6).
+    await waitFor(() => expect(refetch).toHaveBeenCalled());
   });
 
   it('409 customer_is_admin → тост, діалог лишається, переходу немає', async () => {
