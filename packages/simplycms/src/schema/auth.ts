@@ -52,6 +52,10 @@ export const users = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
+    // Бан покупця (Е6г): `banned_at IS NOT NULL` = забанений. Ці колонки не
+    // читає Better Auth, їх веде наша адмін-операція й хук/тригер сесій.
+    bannedAt: timestamp('banned_at', { withTimezone: true, mode: 'date' }),
+    banReason: text('ban_reason'),
   },
   (table) => [unique('users_email_key').on(table.email)],
 );

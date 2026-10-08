@@ -1,7 +1,7 @@
 import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
 import type {
   ShippingPricing,
-  ShippingSnapshot,
+  NewShippingSnapshot,
 } from 'simplycms/contracts/shipping-providers';
 import {
   priceItems,
@@ -32,7 +32,7 @@ export interface PreparedCheckout {
   /** Режим ціни способу — їде в квоту, щоб підсумок не показав `carrier` як «Безкоштовно» (Е6а-18). */
   shippingPricing: ShippingPricing;
   /** Знімок доставки для `orders.shipping_data` (Е6а-8). */
-  shippingSnapshot: ShippingSnapshot;
+  shippingSnapshot: NewShippingSnapshot;
   /**
    * 🔴 Рахується ТУТ, а не в обох викликачах (рев'ю I1): `total` — число під
    * `id="checkout-total"`, яке звірятиме live-smoke, і саме сюди адитивно

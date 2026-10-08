@@ -43,6 +43,13 @@ export function useCustomersDb(
       .map((n) => join(MIGRATIONS, n));
     if (opts.demo) files.push(join(MIGRATIONS, 'demo/demo-seed.sql'));
     await H.applySqlFiles(dbUrl, files);
+    // Автор ручних призначень: `user_category_history.changed_by` — FK на users.
+    await H.queryRows(
+      dbUrl,
+      `insert into public.users (id, name, email) values ($1, 'Адмін Е6в', 'admin-e6v@example.test')
+         on conflict (id) do nothing`,
+      [ADMIN_ID],
+    );
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
   }, 120_000);
   afterAll(async () => {

@@ -8,6 +8,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { createTranslator } from 'simplycms/i18n';
+import { QueryClient } from '@tanstack/react-query';
 import {
   CATEGORIES,
   RULES,
@@ -94,5 +95,17 @@ describe('CategoryRulesPage', () => {
       ),
     );
     expect(toastSuccess).toHaveBeenCalledWith('Перевірено: 7, змінено: 3');
+  });
+
+  it('після запуску інвалідовує [profiles]: список і картка покупців показують категорію', async () => {
+    const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+    m.runCategoryRules.mockResolvedValue({ checked: 1, changed: 1, failed: 0 });
+    render(<CategoryRulesPage />, { wrapper });
+    await screen.findByText('VIP за сумою');
+    run();
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
+    );
+    spy.mockRestore();
   });
 });

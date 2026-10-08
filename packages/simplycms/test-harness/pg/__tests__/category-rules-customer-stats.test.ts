@@ -3,6 +3,7 @@
 // УСІХ рядків `accounts`, сума замовлень — `numeric` → число.
 // Фінальне рев'ю (F3): лок покупця в `applyCategoryRules` прибитий тестом.
 import { describe, expect, it } from 'vitest';
+import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import { applyCategoryRules, loadCustomerStats } from 'simplycms/commerce';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
@@ -13,6 +14,35 @@ describe('автоправила: статистика покупця з БД (�
   const url = () => db.url();
   const asAdmin = <T>(fn: Parameters<typeof withActor<T>>[1]) =>
     withActor({ role: 'app_admin' }, fn);
+
+  it('authProviders відсортовані й при HashAggregate (без orderBy порядок плаває)', async () => {
+    const customer = await F.seedCustomer(url(), {
+      categoryId: await F.seedCategory(url()),
+    });
+    const providers = [
+      'google',
+      'github',
+      'credential',
+      'apple',
+      'discord',
+      'x',
+    ];
+    for (const provider of providers)
+      await F.rows(
+        url(),
+        `insert into public.accounts (id, account_id, provider_id, user_id)
+         values ($1, $2, $3, $4)`,
+        [crypto.randomUUID(), `${provider}-acc`, provider, customer],
+      );
+    const stats = await asAdmin(async (tx) => {
+      // Без сортування планувальник йде через HashAggregate: порядок рядків —
+      // порядок хешів, а не алфавіту. Лише ORDER BY дає детермінізм.
+      await tx.execute(sql`set local enable_sort = off`);
+      await tx.execute(sql`set local enable_indexscan = off`);
+      return loadCustomerStats(tx, customer, new Date());
+    });
+    expect(stats!.authProviders).toEqual([...providers].sort());
+  });
 
   it('users.email ≠ profiles.email, accounts credential + google, сума 1500.50 → статистика й правило з трьох умов', async () => {
     const from = await F.seedCategory(url());
@@ -26,7 +56,8 @@ describe('автоправила: статистика покупця з БД (�
       `update public.profiles set email = 'buyer@profile-domain.test' where user_id = $1`,
       [customer],
     );
-    for (const provider of ['credential', 'google'])
+    // Сід у зворотному порядку: результат має бути відсортований за providerId.
+    for (const provider of ['google', 'github', 'credential', 'apple'])
       await F.rows(
         url(),
         `insert into public.accounts (id, account_id, provider_id, user_id)
@@ -50,7 +81,12 @@ describe('автоправила: статистика покупця з БД (�
       totalPurchases: 1500.5,
       ordersCount: 1,
     });
-    expect([...stats!.authProviders].sort()).toEqual(['credential', 'google']);
+    expect(stats!.authProviders).toEqual([
+      'apple',
+      'credential',
+      'github',
+      'google',
+    ]);
 
     const rule = (field: string, operator: string, value: string) => ({
       field,

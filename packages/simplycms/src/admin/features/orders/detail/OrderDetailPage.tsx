@@ -22,7 +22,10 @@ export default function OrderDetailPage() {
   const locale = useLocale();
   const { orderId } = useParams({ strict: false }) as { orderId: string };
   const { order, items, isLoading } = useOrderDetail(orderId);
-  const locked = useOrderLocked(order?.statusId ?? null);
+  const locked = useOrderLocked(
+    order?.statusId ?? null,
+    order?.personalDataErasedAt ?? null,
+  );
 
   if (!order && isLoading)
     return <div className="p-8 text-center">{t('common.loading')}</div>;

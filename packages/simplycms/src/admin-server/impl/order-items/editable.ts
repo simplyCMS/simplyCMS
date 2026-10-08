@@ -46,6 +46,11 @@ export async function lockEditableOrder(
   if (!order) throw new Error(`[admin-server] замовлення ${orderId} не існує`);
   if ((await statusCode(db, order.statusId)) === ORDER_STATUS_CODE.cancelled)
     stateConflict(ADMIN_STATE_CONSTRAINT.orderCancelledFinal);
+  // Е6г-16: у стертого замовлення немає міста/адреси — перерахунок доставки
+  // (`validateShippingChoice`) дав би хибний `shipping_unavailable`. Статус і
+  // скасування лишаються дозволеними (гвард стоїть лише тут).
+  if (order.personalDataErasedAt !== null)
+    stateConflict(ADMIN_STATE_CONSTRAINT.orderPersonalDataErased);
   return order;
 }
 

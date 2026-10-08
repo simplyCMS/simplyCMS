@@ -40,6 +40,7 @@ export function useOrdersList(filters: OrdersFilters) {
           firstName: o.firstName,
           lastName: o.lastName,
           email: o.email,
+          personalDataErasedAt: o.personalDataErasedAt,
           total: o.total,
           createdAt: o.createdAt,
           statusName: s?.name,

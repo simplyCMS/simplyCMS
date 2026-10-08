@@ -33,8 +33,17 @@ export type {
   AcceptOwnerInviteResult,
 } from './accept-invite';
 
+export { ADMIN_ROLES_LOCK } from './admin-roles-lock';
+
+export { isResetStillValid } from './reset-guard';
+export type { ResetGuard } from './reset-guard';
+
+export { createSessionBanHook, isUserBannedInDb } from './ban';
+export type { IsUserBanned } from './ban';
+
 export {
   issueOwnerInvite,
+  OwnerInviteError,
   verifyOwnerInvite,
   inviteIdentifier,
 } from './invite';

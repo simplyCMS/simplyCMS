@@ -136,7 +136,7 @@ describe('поведінка RLS: матриця акторів', () => {
   // запиту двома акторами. Підміна `user_roles_select_own` на `using: true`
   // лишала весь гейт зеленим (42/42). Тепер кожна з них екзаменується
   // так само, як решта: свій рядок видно, чужий — ні, адмін — усе.
-  it('порівняння і заявки на послуги звужені до власника', async () => {
+  it('порівняння звужені до власника', async () => {
     const comparisons = countSql('comparisons');
     expect(await countAs(AS_A, comparisons)).toBe(1);
     expect(await countAs(AS_B, comparisons)).toBe(1);
@@ -150,13 +150,6 @@ describe('поведінка RLS: матриця акторів', () => {
         comparisons,
       ]),
     ).rejects.toThrow(/permission denied/i);
-
-    const requests = countSql('service_requests');
-    expect(await countAs(AS_A, requests)).toBe(1);
-    expect(await countAs(AS_ANON, requests)).toBe(0);
-    // Адмінська політика `service_requests_admin_all` — на відміну від
-    // `comparisons`, де адмінської політики свідомо немає.
-    expect(await countAs(AS_ADMIN, requests)).toBe(2);
   });
 
   it('історія категорій і ролі: чужий рядок невидимий', async () => {

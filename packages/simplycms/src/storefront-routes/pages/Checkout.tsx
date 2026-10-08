@@ -11,6 +11,7 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { getProfileSettings } from '../server/profile';
 import { placeOrder } from '../server/checkout';
 import { useT, type Translator } from 'simplycms/i18n';
+import { useStoreProfile } from 'simplycms/themes/store-profile';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import {
   CheckoutAuthBlock,
@@ -113,6 +114,7 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
 export default function Checkout() {
   const t = useT();
+  const storeProfile = useStoreProfile();
   const navigate = useNavigate();
   const { items, clearCart, hydrated } = useCart();
   const { user } = useAuth();
@@ -365,7 +367,12 @@ export default function Checkout() {
               />
 
               {/* Auth block for non-logged-in users */}
-              {!user && <CheckoutAuthBlock onAuthSuccess={handleAuthSuccess} />}
+              {!user && (
+                <CheckoutAuthBlock
+                  storeContacts={storeProfile.contacts}
+                  onAuthSuccess={handleAuthSuccess}
+                />
+              )}
 
               <CheckoutContactForm
                 values={{

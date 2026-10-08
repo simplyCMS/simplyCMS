@@ -97,7 +97,20 @@ import {
   runCategoryRulesOp,
   assignCustomerCategoryInput,
   assignCustomerCategoryOp,
+  setAdminRoleInput,
+  setAdminRoleOp,
+  setCustomerBanInput,
+  setCustomerBanOp,
+  deleteCustomerInput,
+  deleteCustomerOp,
+  updateCustomerContactsInput,
+  updateCustomerContactsOp,
   findCustomersInput,
+  listCustomersInput,
+  listCustomersOp,
+  getCustomerCardInput,
+  getCustomerCardOp,
+  dashboardSummaryOp,
   findCustomersOp,
   diagnosePriceInput,
   diagnosePriceOp,
@@ -606,6 +619,22 @@ export const assignCustomerCategory = createServerFn({ method: 'POST' })
   .validator(adminInput(assignCustomerCategoryInput))
   .handler(assignCustomerCategoryOp);
 
+export const setAdminRole = createServerFn({ method: 'POST' })
+  .validator(adminInput(setAdminRoleInput))
+  .handler(setAdminRoleOp);
+
+export const setCustomerBan = createServerFn({ method: 'POST' })
+  .validator(adminInput(setCustomerBanInput))
+  .handler(setCustomerBanOp);
+
+export const deleteCustomer = createServerFn({ method: 'POST' })
+  .validator(adminInput(deleteCustomerInput))
+  .handler(deleteCustomerOp);
+
+export const updateCustomerContacts = createServerFn({ method: 'POST' })
+  .validator(adminInput(updateCustomerContactsInput))
+  .handler(updateCustomerContactsOp);
+
 export const findCustomers = createServerFn({ method: 'GET' })
   .validator(adminInput(findCustomersInput))
   .handler(findCustomersOp);
@@ -613,3 +642,17 @@ export const findCustomers = createServerFn({ method: 'GET' })
 export const diagnosePrice = createServerFn({ method: 'POST' })
   .validator(adminInput(diagnosePriceInput))
   .handler(diagnosePriceOp);
+
+// К3-Е6г: читання без колекцій (Е6г-6); розмір сторінки списку задає сервер.
+export const listCustomers = createServerFn({ method: 'GET' })
+  .validator(adminInput(listCustomersInput))
+  .handler(listCustomersOp);
+
+export const getCustomerCard = createServerFn({ method: 'GET' })
+  .validator(adminInput(getCustomerCardInput))
+  .handler(getCustomerCardOp);
+
+// Без вводу — без валідатора (зразок countCustomersByCategory).
+export const dashboardSummary = createServerFn({ method: 'GET' }).handler(
+  dashboardSummaryOp,
+);

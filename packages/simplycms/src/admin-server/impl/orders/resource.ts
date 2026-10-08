@@ -64,5 +64,6 @@ export const ordersOps = defineAdminResource({
     'recipientEmail',
     'savedRecipientId',
     'savedAddressId',
+    'personalDataErasedAt',
   ],
 });

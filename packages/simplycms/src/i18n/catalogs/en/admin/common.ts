@@ -16,7 +16,6 @@ export const messages: Catalog = {
   'admin.common.placeholder.text':
     'This functionality will be available soon. In the meantime you can use the other sections of the CMS.',
   'admin.common.placeholder.orderStatuses': 'Order statuses',
-  'admin.common.placeholder.serviceRequests': 'Service requests',
 
   'admin.common.slug': 'URL (slug)',
   'admin.common.seo': 'SEO',

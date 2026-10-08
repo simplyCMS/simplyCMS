@@ -46,8 +46,6 @@ import { Route as AdminReviewsIndexRouteImport } from './../packages/simplycms/r
 import { Route as AdminReviewsReviewIdRouteImport } from './../packages/simplycms/routes/admin/admin/reviews/$reviewId'
 import { Route as AdminSectionsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/sections/index'
 import { Route as AdminSectionsSectionIdRouteImport } from './../packages/simplycms/routes/admin/admin/sections/$sectionId'
-import { Route as AdminServiceRequestsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/service-requests/index'
-import { Route as AdminServicesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/services/index'
 import { Route as AdminSettingsIndexRouteImport } from './../packages/simplycms/routes/admin/admin/settings/index'
 import { Route as AdminShippingIndexRouteImport } from './../packages/simplycms/routes/admin/admin/shipping/index'
 import { Route as AdminThemesIndexRouteImport } from './../packages/simplycms/routes/admin/admin/themes/index'
@@ -265,17 +263,6 @@ const AdminSectionsSectionIdRoute = AdminSectionsSectionIdRouteImport.update({
   path: '/sections/$sectionId',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminServiceRequestsIndexRoute =
-  AdminServiceRequestsIndexRouteImport.update({
-    id: '/service-requests/',
-    path: '/service-requests/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminServicesIndexRoute = AdminServicesIndexRouteImport.update({
-  id: '/services/',
-  path: '/services/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
@@ -471,8 +458,6 @@ export interface FileRoutesByFullPath {
   '/admin/properties/': typeof AdminPropertiesIndexRoute
   '/admin/reviews/': typeof AdminReviewsIndexRoute
   '/admin/sections/': typeof AdminSectionsIndexRoute
-  '/admin/service-requests/': typeof AdminServiceRequestsIndexRoute
-  '/admin/services/': typeof AdminServicesIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/shipping/': typeof AdminShippingIndexRoute
   '/admin/themes/': typeof AdminThemesIndexRoute
@@ -536,8 +521,6 @@ export interface FileRoutesByTo {
   '/admin/properties': typeof AdminPropertiesIndexRoute
   '/admin/reviews': typeof AdminReviewsIndexRoute
   '/admin/sections': typeof AdminSectionsIndexRoute
-  '/admin/service-requests': typeof AdminServiceRequestsIndexRoute
-  '/admin/services': typeof AdminServicesIndexRoute
   '/admin/settings': typeof AdminSettingsIndexRoute
   '/admin/shipping': typeof AdminShippingIndexRoute
   '/admin/themes': typeof AdminThemesIndexRoute
@@ -605,8 +588,6 @@ export interface FileRoutesById {
   '/admin/properties/': typeof AdminPropertiesIndexRoute
   '/admin/reviews/': typeof AdminReviewsIndexRoute
   '/admin/sections/': typeof AdminSectionsIndexRoute
-  '/admin/service-requests/': typeof AdminServiceRequestsIndexRoute
-  '/admin/services/': typeof AdminServicesIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/shipping/': typeof AdminShippingIndexRoute
   '/admin/themes/': typeof AdminThemesIndexRoute
@@ -673,8 +654,6 @@ export interface FileRouteTypes {
     | '/admin/properties/'
     | '/admin/reviews/'
     | '/admin/sections/'
-    | '/admin/service-requests/'
-    | '/admin/services/'
     | '/admin/settings/'
     | '/admin/shipping/'
     | '/admin/themes/'
@@ -738,8 +717,6 @@ export interface FileRouteTypes {
     | '/admin/properties'
     | '/admin/reviews'
     | '/admin/sections'
-    | '/admin/service-requests'
-    | '/admin/services'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/themes'
@@ -806,8 +783,6 @@ export interface FileRouteTypes {
     | '/admin/properties/'
     | '/admin/reviews/'
     | '/admin/sections/'
-    | '/admin/service-requests/'
-    | '/admin/services/'
     | '/admin/settings/'
     | '/admin/shipping/'
     | '/admin/themes/'
@@ -1107,20 +1082,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSectionsSectionIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/service-requests/': {
-      id: '/admin/service-requests/'
-      path: '/service-requests'
-      fullPath: '/admin/service-requests/'
-      preLoaderRoute: typeof AdminServiceRequestsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/services/': {
-      id: '/admin/services/'
-      path: '/services'
-      fullPath: '/admin/services/'
-      preLoaderRoute: typeof AdminServicesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/settings/': {
       id: '/admin/settings/'
       path: '/settings'
@@ -1389,8 +1350,6 @@ interface AdminRouteChildren {
   AdminPropertiesIndexRoute: typeof AdminPropertiesIndexRoute
   AdminReviewsIndexRoute: typeof AdminReviewsIndexRoute
   AdminSectionsIndexRoute: typeof AdminSectionsIndexRoute
-  AdminServiceRequestsIndexRoute: typeof AdminServiceRequestsIndexRoute
-  AdminServicesIndexRoute: typeof AdminServicesIndexRoute
   AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
   AdminShippingIndexRoute: typeof AdminShippingIndexRoute
   AdminThemesIndexRoute: typeof AdminThemesIndexRoute
@@ -1435,8 +1394,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPropertiesIndexRoute: AdminPropertiesIndexRoute,
   AdminReviewsIndexRoute: AdminReviewsIndexRoute,
   AdminSectionsIndexRoute: AdminSectionsIndexRoute,
-  AdminServiceRequestsIndexRoute: AdminServiceRequestsIndexRoute,
-  AdminServicesIndexRoute: AdminServicesIndexRoute,
   AdminSettingsIndexRoute: AdminSettingsIndexRoute,
   AdminShippingIndexRoute: AdminShippingIndexRoute,
   AdminThemesIndexRoute: AdminThemesIndexRoute,

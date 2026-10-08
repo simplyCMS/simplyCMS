@@ -34,6 +34,8 @@ vi.mock('simplycms/admin-server', async () => {
   });
 });
 vi.mock('@tanstack/react-router', () => ({
+  useSearch: () => ({}),
+  useNavigate: () => vi.fn(),
   Link: ({
     to,
     params,
@@ -93,6 +95,24 @@ describe('OrdersPage', () => {
     render(<OrdersPage />, { wrapper: wrap(new QueryClient()) });
     await screen.findByText(t('admin.orders.noStatus'));
     expect(screen.queryByText(t('common.new'))).toBeNull();
+  });
+
+  it('знеособлене замовлення (Е6г): «Видалений покупець», без null і без email', async () => {
+    reset([
+      {
+        ...makeOrder(1, at(0)),
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null,
+        personalDataErasedAt: at(0),
+      },
+    ]);
+    const { container } = render(<OrdersPage />, {
+      wrapper: wrap(new QueryClient()),
+    });
+    await screen.findByText(t('admin.orders.erasedCustomer'));
+    expect(container.textContent).not.toMatch(/null/);
   });
 
   it('порожній список → «Замовлень ще немає»', async () => {

@@ -19,7 +19,7 @@ export default defineConfig({
   schema: './src/schema/schema.ts',
   // МЕТА+snapshots+staging SQL Drizzle — ОКРЕМО від канону `migrations/`:
   // журнал і snapshot потрібні самому drizzle-kit, а канон тримає лише
-  // застосовний SQL із ручним порядком (0000_prelude → 0003_seed).
+  // застосовний SQL із ручним порядком (0000_prelude → 0004_functions).
   out: './drizzle',
   dbCredentials: { url: process.env.DATABASE_URL! },
   // Схема одна — `public`; ані GoTrue, ані storage у v2 більше немає (B13).

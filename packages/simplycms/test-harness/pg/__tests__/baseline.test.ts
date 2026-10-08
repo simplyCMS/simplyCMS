@@ -6,7 +6,7 @@
 // Supabase Storage не існує як класу. Поява такої залежності знову зробить
 // цей файл червоним.
 //
-// Другий сенс — довести ідемпотентність: `0000_prelude` і `0003_seed`
+// Другий сенс — довести ідемпотентність: `0000_prelude`, `0003_seed` і `0004_functions`
 // котяться повторно (докат канону в магазині, що вже стартував), тому
 // прогін «двічі поспіль» тут обовʼязковий, а не косметичний.
 import { readdirSync } from 'node:fs';
@@ -48,12 +48,13 @@ describe('канон міграцій: накат на чисту БД', () => {
     await harness?.teardown();
   });
 
-  it('канон складається рівно з чотирьох упорядкованих файлів', () => {
+  it('канон складається рівно з пʼяти упорядкованих файлів', () => {
     expect(canonFiles().map((p) => p.split('/').pop())).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
       '0002_grants.sql',
       '0003_seed.sql',
+      '0004_functions.sql',
     ]);
   });
 
@@ -119,7 +120,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // Точне число, а не нижня межа: `>=` пропустив би і зайву таблицю, і
     // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
-    expect(tables.length).toBe(44);
+    // 44 → 42: Е6г прибрала `services` і `service_requests`.
+    expect(tables.length).toBe(42);
     for (const expected of [
       'users',
       'sessions',
@@ -143,13 +145,23 @@ describe('канон міграцій: накат на чисту БД', () => {
     ]);
   });
 
+  it('колонки order_items.service_id немає (Е6г зняла «Послуги»)', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'order_items'
+          and column_name = 'service_id'`,
+    );
+    expect(rows).toEqual([]);
+  });
+
   it('RLS-ядро: політики лише на user-scoped таблицях, у initplan-формі', async () => {
     const rows = await queryRows(
       dbUrl,
       `select tablename, policyname, qual, with_check from pg_policies
         where schemaname = 'public'`,
     );
-    expect(rows.length).toBe(27);
+    expect(rows.length).toBe(24);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
@@ -159,7 +171,6 @@ describe('канон міграцій: накат на чисту БД', () => {
       'orders',
       'product_reviews',
       'profiles',
-      'service_requests',
       'user_addresses',
       'user_category_history',
       'user_recipients',
@@ -194,14 +205,34 @@ describe('канон міграцій: накат на чисту БД', () => {
 
     // 🔴 Ідемпотентні саме рукописні файли — `0000_prelude` (ролі кластерні:
     // друга БД того самого кластера бачить їх наявними) і `0003_seed`
-    // (докат канону в магазині, що вже стартував). Генерат `0001_init`
+    // (докат канону в магазині, що вже стартував); `0004_functions` — `CREATE OR
+    // REPLACE`. Генерат `0001_init`
     // ідемпотентним НЕ є і бути не мусить: DDL-міграція котиться раз.
     await applySqlFiles(
       dbUrl,
-      canonFiles().filter((p) => /000[03]_/.test(p)),
+      canonFiles().filter((p) => /000[034]_/.test(p)),
     );
     expect(await counts()).toEqual({ statuses: 6, themes: 1, settings: 2 });
   }, 120_000);
+
+  // Е6г-14: бан тримає БД — тригер на sessions без SECURITY DEFINER.
+  it('тригер sessions_refuse_banned стоїть на sessions', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      `select t.tgname, c.relname, p.prosecdef
+         from pg_trigger t
+         join pg_class c on c.oid = t.tgrelid
+         join pg_proc p on p.oid = t.tgfoid
+        where t.tgname = 'sessions_refuse_banned' and not t.tgisinternal`,
+    );
+    expect(rows).toEqual([
+      {
+        tgname: 'sessions_refuse_banned',
+        relname: 'sessions',
+        prosecdef: false,
+      },
+    ]);
+  });
 
   // Е6б-5: профіль магазину замість мертвого `active_theme`; `plugin_events`
   // і `plugins.migrations_applied` ніхто не писав — прибрано з baseline.

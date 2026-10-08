@@ -33,6 +33,8 @@ function setup() {
     provisionUser: async (plan) => {
       provisioned.push(plan);
     },
+    // Без підміни хук бану пішов би в реальну БД (Е6г-13).
+    isUserBanned: async () => false,
   });
   return { auth, provisioned };
 }

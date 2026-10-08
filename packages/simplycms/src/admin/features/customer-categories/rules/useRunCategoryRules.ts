@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateDiscountConsumers } from 'simplycms/admin-data';
 import { runCategoryRules } from 'simplycms/admin-server';
+import { ENTITY } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
 import { toast } from 'sonner';
 import { reportTxError } from '../../../lib/report-tx-error';
@@ -32,6 +33,8 @@ export function useRunCategoryRules() {
       await Promise.all([
         invalidateCustomerCounts(queryClient),
         invalidateDiscountConsumers(queryClient),
+        // Список і картка покупців показують категорію (Е6г-6).
+        queryClient.invalidateQueries({ queryKey: [ENTITY.profiles] }),
       ]);
     } catch (e) {
       reportTxError(t, e);

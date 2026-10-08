@@ -19,6 +19,7 @@ function makeStore() {
   const users = new Map<string, string>();
   const tokens = new Map<string, { valueHash: string; expiresAt: Date }>();
   const roles: { userId: string; role: string }[] = [];
+  const banned = new Set<string>();
   let nextId = 1;
 
   const store: OwnerInviteStore = {
@@ -28,23 +29,23 @@ function makeStore() {
       users.set(email.toLowerCase(), id);
       return id;
     },
-    storeToken: async ({ identifier, valueHash, expiresAt }) => {
+    issueAdminInvite: async ({ userId, identifier, valueHash, expiresAt }) => {
+      if (banned.has(userId)) return 'banned';
+      if (!roles.some((row) => row.userId === userId && row.role === 'admin')) {
+        roles.push({ userId, role: 'admin' });
+      }
       // Перевипуск гасить попередній токен — та сама семантика, що в БД.
       tokens.set(identifier, { valueHash, expiresAt });
+      return 'issued';
     },
     consumeToken: async (identifier) => {
       const record = tokens.get(identifier) ?? null;
       tokens.delete(identifier);
       return record;
     },
-    grantAdminRole: async (userId) => {
-      if (!roles.some((row) => row.userId === userId && row.role === 'admin')) {
-        roles.push({ userId, role: 'admin' });
-      }
-    },
   };
 
-  return { store, users, tokens, roles };
+  return { store, users, tokens, roles, banned };
 }
 
 /** Прогін скрипта зі збором того, що він надрукував. */
@@ -113,5 +114,22 @@ describe('owner-invite (скрипт шаблону)', () => {
     expect(
       await verifyOwnerInvite({ store, email: EMAIL, token: staleToken }),
     ).toEqual({ ok: false, reason: 'mismatch' });
+  });
+
+  it('забанений: скрипт відмовляє з підказкою «спершу розблокуйте покупця»', async () => {
+    const { store, users, roles, tokens, banned } = makeStore();
+    const first = await run(store);
+    roles.length = 0;
+    tokens.clear();
+    banned.add([...users.values()][0]!);
+
+    await expect(run(store)).rejects.toMatchObject({
+      code: 'banned',
+      cause: { code: 'banned' },
+    });
+    await expect(run(store)).rejects.toThrow(/розблокуйте покупця/);
+    expect(roles).toHaveLength(0);
+    expect(tokens.size).toBe(0);
+    expect(first.result.created).toBe(true);
   });
 });

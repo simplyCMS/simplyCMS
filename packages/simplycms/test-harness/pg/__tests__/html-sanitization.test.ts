@@ -77,6 +77,14 @@ describe('санітизація HTML: запис і віддача проти �
   const authorId = rnd();
   const propertyId = rnd();
 
+  /** Автор відгуку мусить існувати в `users`: `product_reviews.user_id` — FK. */
+  const seedUser = (id: string) =>
+    queryRows(
+      dbUrl,
+      `insert into public.users (id, name, email) values ($1, 'Автор', $2)`,
+      [id, `${id}@example.test`],
+    );
+
   const scalar = async (sql: string, params: unknown[] = []) => {
     const [row] = (await queryRows(dbUrl, sql, params)) as Record<
       string,
@@ -90,6 +98,7 @@ describe('санітизація HTML: запис і віддача проти �
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
     await applySqlFiles(dbUrl, canonFiles());
+    await seedUser(authorId);
     await queryRows(
       dbUrl,
       `insert into public.products (id, slug, name, is_active) values ($1, $2, 'Товар', true)`,
@@ -200,6 +209,7 @@ describe('санітизація HTML: запис і віддача проти �
 
   it('🔴 віддача: старий сирий відгук віддається очищеним', async () => {
     const legacyAuthor = rnd();
+    await seedUser(legacyAuthor);
     await queryRows(
       dbUrl,
       `insert into public.product_reviews (id, product_id, user_id, rating, content, status)
@@ -283,11 +293,13 @@ describe('санітизація HTML: запис і віддача проти �
 
   it('🔴 віддача: розмітка відгуку для модерації очищена', async () => {
     const reviewId = rnd();
+    const moderated = rnd();
+    await seedUser(moderated);
     await queryRows(
       dbUrl,
       `insert into public.product_reviews (id, product_id, user_id, rating, content)
        values ($1, $2, $3, 3, $4)`,
-      [reviewId, productId, rnd(), EVIL],
+      [reviewId, productId, moderated, EVIL],
     );
     const { content } = await getReviewContentOp({ data: { reviewId } });
     expect(content).toBeTruthy();

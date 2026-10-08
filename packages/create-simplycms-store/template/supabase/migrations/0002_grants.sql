@@ -80,7 +80,6 @@ grant select on table
   public.section_properties,
   public.section_property_assignments,
   public.sections,
-  public.services,
   public.shipping_methods,
   public.shipping_rates,
   public.shipping_zones,
@@ -114,9 +113,6 @@ grant select, insert on table public.orders, public.order_items to app_user;
 grant select on table public.profiles to app_user;
 grant update (first_name, last_name, phone, avatar_url, updated_at)
   on table public.profiles to app_user;
-
--- Заявку сміє лишити будь-хто (політика INSERT — `true`), бачити — лише свою.
-grant select, insert on table public.service_requests to app_user;
 
 -- Тільки читання: роль і історію категорії призначає система, не покупець.
 grant select on table public.user_roles, public.user_category_history to app_user;
@@ -155,8 +151,6 @@ grant select, insert, update, delete on table
   public.section_properties,
   public.section_property_assignments,
   public.sections,
-  public.service_requests,
-  public.services,
   public.shipping_methods,
   public.shipping_rates,
   public.shipping_zones,

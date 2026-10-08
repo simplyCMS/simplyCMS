@@ -19,6 +19,7 @@ export const messages = {
   'admin.orders.totalSum': 'Загальна сума:',
   'admin.orders.statusSection': 'Статус замовлення',
   'admin.orders.pickStatus': 'Виберіть статус',
+  'admin.orders.erasedCustomer': 'Видалений покупець',
   'admin.orders.customerInfo': 'Інформація про клієнта',
   'admin.orders.nameLabel': "Ім'я:",
   'admin.orders.phoneLabel': 'Телефон:',

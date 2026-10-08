@@ -125,3 +125,39 @@ export function groupItemsByOrder(
   for (const row of rows) (byOrder[row.order_id] ??= []).push(toOrderItem(row));
   return byOrder;
 }
+
+/**
+ * Звужує ПД замовлення до рядків (колонки nullable лише заради знеособлення,
+ * Е6г-7). Кидає, а не підставляє `''`: інваріант «або стерто, або заповнено»
+ * тримає CHECK, а стерте замовлення вітрині недосяжне (`user_id` і
+ * `access_token` — `NULL`), тож `null` тут — порушення інваріанта, і тихий
+ * порожній рядок його б сховав.
+ */
+export function narrowOrderPersonalData<
+  T extends {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    phone: string | null;
+  },
+>(
+  order: T,
+): Omit<T, 'first_name' | 'last_name' | 'email' | 'phone'> & {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+} {
+  const { first_name, last_name, email, phone } = order;
+  if (
+    first_name === null ||
+    last_name === null ||
+    email === null ||
+    phone === null
+  ) {
+    throw new Error(
+      'Order without personal data is unreachable for storefront',
+    );
+  }
+  return { ...order, first_name, last_name, email, phone };
+}

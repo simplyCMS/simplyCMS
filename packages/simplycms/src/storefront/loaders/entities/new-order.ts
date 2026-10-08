@@ -1,5 +1,5 @@
 import type { NewOrderItem } from 'simplycms/commerce';
-import type { ShippingSnapshot } from 'simplycms/contracts/shipping-providers';
+import type { NewShippingSnapshot } from 'simplycms/contracts/shipping-providers';
 
 /** Контактні й доставкові дані оформлення. */
 export interface NewOrderInput {
@@ -9,7 +9,7 @@ export interface NewOrderInput {
   phone: string;
   shippingMethodId: string;
   /** Знімок доставки з `prepareCheckout` (Е6а-8) — пишеться в `orders.shipping_data`. */
-  shippingSnapshot: ShippingSnapshot;
+  shippingSnapshot: NewShippingSnapshot;
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;

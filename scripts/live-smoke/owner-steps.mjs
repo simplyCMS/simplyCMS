@@ -11,7 +11,9 @@
  * ці кроки сіють рядки й прибирають за собою) → доставка К3-Е6а
  * (`./admin-shipping.mjs`, потребує й сторінки покупця; прибирає за собою) →
  * знижки й категорії покупців К3-Е6в (`./admin-discounts.mjs`: власний новий
- * покупець; прибирає за собою) → система К3-Е6б (`./admin-system.mjs`: профіль, логотип, склад, теми, плагіни;
+ * покупець; прибирає за собою) → покупці й дашборд К3-Е6г
+ * (`./admin-customers.mjs`: два нові покупці, контакти, категорія, роль, бан,
+ * видалення; прибирає за собою) → система К3-Е6б (`./admin-system.mjs`: профіль, логотип, склад, теми, плагіни;
  * ОСТАННІМ — відновлює стан SQL-ом повз кеш процесу). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
@@ -28,6 +30,7 @@ import { runAdminListsPaginationStep } from './admin-lists-pagination.mjs';
 import { runAdminValidationErrorsStep } from './admin-validation-errors.mjs';
 import { runAdminShippingStep } from './admin-shipping.mjs';
 import { runAdminDiscountsStep } from './admin-discounts.mjs';
+import { runAdminCustomersStep } from './admin-customers.mjs';
 import { runAdminSystemStep } from './admin-system.mjs';
 
 export async function runOwnerSteps({
@@ -113,6 +116,16 @@ export async function runOwnerSteps({
     // лишається останньою. Прибирає за собою сам (правило «2+ замовлення»
     // інакше перевело б покупця воронки у «VIP» на замовленні кроку системи).
     await runAdminDiscountsStep({
+      context: owner.context,
+      buyerPage,
+      base,
+      dbUrl,
+      check,
+    });
+    // Покупці К3-Е6г — ПІСЛЯ знижок (власні покупці A/B у своїх context-ах,
+    // тимчасова пара категорій з автоправилом) і ПЕРЕД системою; прибирає
+    // за собою сам: покупців, правило, категорії, залишок.
+    await runAdminCustomersStep({
       context: owner.context,
       buyerPage,
       base,

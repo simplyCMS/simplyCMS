@@ -5,6 +5,7 @@ import type { InviteEmail } from '../invite-email';
 import {
   inviteIdentifier,
   issueOwnerInvite,
+  OwnerInviteError,
   verifyOwnerInvite,
   type OwnerInviteStore,
 } from '../invite';
@@ -24,6 +25,7 @@ function createFakeStore() {
   const usersByEmail = new Map<string, string>();
   const tokens = new Map<string, TokenRow>();
   const adminRoles = new Set<string>();
+  const banned = new Set<string>();
   let nextId = 1;
 
   const store: OwnerInviteStore = {
@@ -33,20 +35,21 @@ function createFakeStore() {
       usersByEmail.set(email, id);
       return id;
     },
-    storeToken: async ({ identifier, valueHash, expiresAt }) => {
+    // Е6г-19: роль і токен — ОДИН метод; на бані не лягає нічого.
+    issueAdminInvite: async ({ userId, identifier, valueHash, expiresAt }) => {
+      if (banned.has(userId)) return 'banned';
+      adminRoles.add(userId);
       tokens.set(identifier, { valueHash, expiresAt });
+      return 'issued';
     },
     consumeToken: async (identifier) => {
       const row = tokens.get(identifier) ?? null;
       tokens.delete(identifier);
       return row;
     },
-    grantAdminRole: async (userId) => {
-      adminRoles.add(userId);
-    },
   };
 
-  return { store, usersByEmail, tokens, adminRoles };
+  return { store, usersByEmail, tokens, adminRoles, banned };
 }
 
 const NOW = new Date('2026-08-23T10:00:00Z');
@@ -125,6 +128,44 @@ describe('issueOwnerInvite', () => {
     expect(second.created).toBe(false);
     expect(fake.usersByEmail.size).toBe(1);
     expect(fake.adminRoles.size).toBe(1);
+  });
+});
+
+describe('issueOwnerInvite: забанений (Е6г-19)', () => {
+  it('відмова OwnerInviteError(banned): URL немає, листа немає, ролі й токена немає', async () => {
+    const fake = createFakeStore();
+    const sent: InviteEmail[] = [];
+    const sendEmail = async (message: InviteEmail) => {
+      sent.push(message);
+    };
+    const first = await issueOwnerInvite({
+      store: fake.store,
+      sendEmail,
+      email: 'owner@example.test',
+      siteUrl: SITE,
+      now: NOW,
+      token: 'tok-1',
+    });
+    // Свіжий стан: роль і токен прибираємо, бан ставимо.
+    fake.adminRoles.clear();
+    fake.tokens.clear();
+    fake.banned.add(first.userId);
+    sent.length = 0;
+
+    const attempt = issueOwnerInvite({
+      store: fake.store,
+      sendEmail,
+      email: 'owner@example.test',
+      siteUrl: SITE,
+      now: NOW,
+      token: 'tok-2',
+    });
+
+    await expect(attempt).rejects.toBeInstanceOf(OwnerInviteError);
+    await expect(attempt).rejects.toMatchObject({ code: 'banned' });
+    expect(sent).toHaveLength(0);
+    expect(fake.adminRoles.size).toBe(0);
+    expect(fake.tokens.size).toBe(0);
   });
 });
 

@@ -75,6 +75,11 @@ export default definePlugin({
 - Результат **структурно задовольняє** старий `PluginModule`
   (`register`/`unregister` згенеровані з декларацій) — тому
   `bootstrapPlugins`/`PluginLoader` не знають про SDK.
+- **Слот дашборду `admin.dashboard.stats`** (К3-Е6г): `props.context.stats` має
+  рівно форму `AdminDashboardStats` (`simplycms/contracts`) —
+  `{ newOrders: number; revenue7dCents: number; revenue30dCents: number }`, гроші в
+  центах. Слот рендериться лише коли зведення вже завантажене, тож плагін не обробляє
+  `stats: undefined`; список останніх замовлень у контекст НЕ входить.
 - Помилки контракту `definePlugin` кидає при імпорті модуля — автор бачить їх
   першим рендером, а магазин не падає (catch у bootstrap).
 - `validatePluginModule` (живе в `simplycms/plugins`, SDK реекспортує; ідіом
@@ -212,7 +217,7 @@ React або віддає на очищення ядру окремим ріше
   (поле `files`); drizzle-композиції немає свідомо (Р4). Конвенція імені —
   `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql` (виключає колізії між канонами).
   🔴 Обовʼязкова частина конвенції — саме `plg_<name>_` в ІМЕНІ ФАЙЛА, а не
-  лише в таблиці: канон ядра нумерується `0000_prelude` … `0003_seed`, тож
+  лише в таблиці: канон ядра нумерується `0000_prelude` … `0004_functions`, тож
   імʼя без префікса (класика — `0001_init.sql`) дає колізію канонів, і
   `db:diff` не скопіює в магазин узагалі нічого. Скаффолд
   `simplycms create plugin <name>` тому кладе `0001_plg_<name>_init.sql`.

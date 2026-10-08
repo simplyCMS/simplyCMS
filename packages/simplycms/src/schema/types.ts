@@ -42,8 +42,6 @@ import type {
   sectionProperties,
   sectionPropertyAssignments,
   sections,
-  serviceRequests,
-  services,
   shippingMethods,
   shippingRates,
   shippingZones,
@@ -162,6 +160,3 @@ export type SystemSetting = InferSelectModel<typeof systemSettings>;
 export type Language = InferSelectModel<typeof languages>;
 export type Banner = InferSelectModel<typeof banners>;
 export type NewBanner = InferInsertModel<typeof banners>;
-export type Service = InferSelectModel<typeof services>;
-export type ServiceRequest = InferSelectModel<typeof serviceRequests>;
-export type NewServiceRequest = InferInsertModel<typeof serviceRequests>;

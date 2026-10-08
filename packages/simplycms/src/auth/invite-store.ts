@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
-import { withActor } from 'simplycms/db';
+import { advisoryXactLock, withActor } from 'simplycms/db';
 import { userRoles, users, verifications } from 'simplycms/schema';
+import { ADMIN_ROLES_LOCK } from './admin-roles-lock';
 import type { OwnerInviteStore } from './invite';
 
 /**
@@ -37,8 +38,26 @@ export const ownerInviteStore: OwnerInviteStore = {
     });
   },
 
-  async storeToken({ identifier, valueHash, expiresAt }) {
-    await withActor({ role: 'app_admin' }, async (db) => {
+  async issueAdminInvite({ userId, identifier, valueHash, expiresAt }) {
+    return withActor({ role: 'app_admin' }, async (db) => {
+      // Лок ПЕРШИМ запитом: серіалізує invite з видачею/зняттям ролі, баном
+      // і видаленням покупця. Для порядку «invite першим» він обов'язковий:
+      // `FOR SHARE` не бачить незакоміченої ролі конкурента (Е6г-4).
+      await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+      // Безумовний `FOR SHARE` за id (умова в WHERE ламає блокування), а
+      // значення бану перевіряємо після читання.
+      const [user] = await db
+        .select({ bannedAt: users.bannedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for('share');
+      if (user?.bannedAt) return 'banned' as const;
+      await db
+        .insert(userRoles)
+        .values({ id: randomUUID(), userId, role: 'admin' })
+        .onConflictDoNothing({
+          target: [userRoles.userId, userRoles.role],
+        });
       // Старий токен тієї ж пошти знищується: «надішли ще раз» мусить робити
       // попереднє посилання недійсним, інакше в обігу живуть два ключі.
       await db
@@ -47,6 +66,7 @@ export const ownerInviteStore: OwnerInviteStore = {
       await db
         .insert(verifications)
         .values({ identifier, value: valueHash, expiresAt });
+      return 'issued' as const;
     });
   },
 
@@ -63,17 +83,6 @@ export const ownerInviteStore: OwnerInviteStore = {
           expiresAt: verifications.expiresAt,
         });
       return rows[0] ?? null;
-    });
-  },
-
-  async grantAdminRole(userId) {
-    await withActor({ role: 'app_admin' }, async (db) => {
-      await db
-        .insert(userRoles)
-        .values({ id: randomUUID(), userId, role: 'admin' })
-        .onConflictDoNothing({
-          target: [userRoles.userId, userRoles.role],
-        });
     });
   },
 };

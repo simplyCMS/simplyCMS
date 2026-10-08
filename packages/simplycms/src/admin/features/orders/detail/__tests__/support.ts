@@ -29,7 +29,6 @@ export function makeItem(n: number, over: Partial<OrderItem> = {}): OrderItem {
     orderId: 'o0001',
     productId: null,
     modificationId: null,
-    serviceId: null,
     name: `Товар ${n}`,
     price: '100.00',
     quantity: 1,

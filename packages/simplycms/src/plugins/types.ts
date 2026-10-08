@@ -158,6 +158,10 @@ export interface OrderActionsContext {
 export type HookName =
   // Admin hooks
   | 'admin.sidebar.items'
+  /**
+   * Статистика дашборду. Контекст слота — `{ stats: AdminDashboardStats }`
+   * (`simplycms/contracts`: нові замовлення, виручка за 7 і 30 днів у центах).
+   */
   | 'admin.dashboard.stats'
   | 'admin.dashboard.widgets'
   | 'admin.product.form.before'

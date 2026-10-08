@@ -88,17 +88,19 @@ describe('authz: settings.manage (Е6б-13)', () => {
   });
 });
 
-describe.each(['discount.manage', 'customer.manage'] as const)(
-  'authz: %s (Е6в-14)',
-  (operation) => {
-    it('адмін з scope any; покупцю й аноніму — AuthzError', () => {
-      expect(requireOperation(ADMIN, operation)).toBe('any');
-      expect(() => requireOperation(USER, operation)).toThrow(AuthzError);
-      expect(() => requireOperation(ANON, operation)).toThrow(AuthzError);
-      expect(AUTHZ_MATRIX[operation]).toEqual({ admin: 'any' });
-    });
-  },
-);
+describe.each([
+  'discount.manage',
+  'customer.manage',
+  'customer.delete',
+] as const)('authz: %s (Е6в-14, Е6г)', (operation) => {
+  it('адмін з scope any; покупцю й аноніму — AuthzError', () => {
+    expect(requireOperation(ADMIN, operation)).toBe('any');
+    expect(can(USER, operation)).toBe(false);
+    expect(() => requireOperation(USER, operation)).toThrow(AuthzError);
+    expect(() => requireOperation(ANON, operation)).toThrow(AuthzError);
+    expect(AUTHZ_MATRIX[operation]).toEqual({ admin: 'any' });
+  });
+});
 
 describe('authz: хелпери відмови', () => {
   it('requireOperation повертає scope, а не void', () => {

@@ -1,6 +1,9 @@
 import { setResponseStatus } from '@tanstack/react-start/server';
 import type { z } from 'zod';
-import { sanitizeValidationIssues } from 'simplycms/contracts/domain-errors';
+import {
+  sanitizeValidationIssues,
+  type ValidationIssueCode,
+} from 'simplycms/contracts/domain-errors';
 import { ValidationError } from './errors';
 
 /**
@@ -40,4 +43,17 @@ export function adminInput<S extends z.ZodType>(
   schema: S,
 ): (data: z.input<S>) => z.output<S> {
   return (data) => parseAdminInput(schema, data);
+}
+
+/**
+ * Помилка ОДНОГО поля, яку знає лише операція (не схема): зайнятий email
+ * (Е6г-1). Той самий канал, що й Zod-відмова, — клієнт покаже її під
+ * полем (`applyServerValidation`). Статус — ДО throw (К3-13).
+ */
+export function fieldIssue(
+  path: readonly (string | number)[],
+  code: ValidationIssueCode,
+): never {
+  setResponseStatus(400);
+  throw new ValidationError([{ path, code }]);
 }

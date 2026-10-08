@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import OrdersStatusFilter from './OrdersStatusFilter';
 import OrdersTable from './OrdersTable';
+import { adminPath } from '../../../lib/adminLinks';
+import type { OrdersSearch } from './orders-search';
 import { useOrdersList } from './useOrdersList';
 
 /**
  * Список замовлень (Е5, Task 6) на on-demand колекції. Дані/пагінація —
- * `useOrdersList`; фільтр і таблиця — окремі компоненти.
+ * `useOrdersList`; фільтр (стан у URL) і таблиця — окремі компоненти.
  */
 export default function OrdersPage() {
   const t = useT();
-  const [statusId, setStatusId] = useState<string | undefined>();
+  // Фільтр статусу живе в URL (Е6г-5): глибоке посилання з дашборду.
+  const { status: statusId } = useSearch({ strict: false }) as OrdersSearch;
+  const navigate = useNavigate();
+  const setStatusId = (status: string | undefined) =>
+    void navigate({ to: adminPath('orders'), search: { status } });
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useOrdersList({ statusId });
 

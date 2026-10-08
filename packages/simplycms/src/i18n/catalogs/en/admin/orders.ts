@@ -21,6 +21,7 @@ export const messages: Catalog = {
   'admin.orders.totalSum': 'Total:',
   'admin.orders.statusSection': 'Order status',
   'admin.orders.pickStatus': 'Choose a status',
+  'admin.orders.erasedCustomer': 'Deleted customer',
   'admin.orders.customerInfo': 'Customer details',
   'admin.orders.nameLabel': 'Name:',
   'admin.orders.phoneLabel': 'Phone:',

@@ -5,7 +5,12 @@ export const messages: Catalog = {
   'admin.dashboard.title': 'Dashboard',
   'admin.dashboard.subtitle': 'Overview of the key store metrics',
 
-  'admin.dashboard.newRequests': 'New requests',
+  'admin.dashboard.newOrders': 'New orders',
+  'admin.dashboard.revenue7d': 'Revenue, last 7 days',
+  'admin.dashboard.revenue30d': 'Revenue, last 30 days',
+  'admin.dashboard.recentOrders': 'Recent orders',
+  'admin.dashboard.loadError': 'Could not load the dashboard summary',
+  'admin.dashboard.retry': 'Retry',
 
   'admin.dashboard.quickActions': 'Quick actions',
   'admin.dashboard.quickActionsHint': 'Frequently used functions',
@@ -20,5 +25,4 @@ export const messages: Catalog = {
   'admin.dashboard.aboutText':
     'Welcome to the SimplyCMS admin panel. Here you can manage the product catalog, process orders and configure the system.',
   'admin.dashboard.version': 'CMS version:',
-  'admin.dashboard.status': 'Status:',
 };

@@ -18,6 +18,51 @@
 
 ---
 
+## [0.12.0] — 2026-10-08
+
+К3-Е6г: покупці й дашборд на серверному шарі (спека
+[`2026-10-07-customers-dashboard-design.md`](docs/superpowers/specs/2026-10-07-customers-dashboard-design.md);
+план
+[`2026-10-07-v2-k3-e6g-customers-dashboard.md`](docs/superpowers/plans/2026-10-07-v2-k3-e6g-customers-dashboard.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Канон міграцій змінено**: базу магазину перестворити (`pnpm db:demo`). Нова
+  ручна міграція `0004_functions.sql` (тригер `sessions_refuse_banned`, функція
+  `refuse_banned_session()`) — ручні функції й тригери живуть лише в ручних файлах
+  канону, множину стереже `functions-allowlist.test.ts`. Таблиці `services` і
+  `service_requests` та колонка `order_items.service_id` зняті («Послуги» знесено);
+  `orders.user_id` — FK `SET NULL` (було `NO ACTION`), `product_reviews.user_id` — новий
+  FK на `users` із `SET NULL`.
+- **`orders`**: нова колонка `personal_data_erased_at`; реєстр ПД колонок
+  (`ORDER_COLUMN_PRIVACY`) — нова колонка без запису в ньому не компілюється.
+  `ShippingSnapshot.city` може бути `null` (лише на читанні).
+- **Invite власника**: store має один метод `issueAdminInvite` (лок `admin-roles` +
+  `FOR SHARE` на бан); `storeToken` і `grantAdminRole` прибрано. `pnpm owner:invite`
+  для забаненого відмовляє — «спершу розблокуйте покупця».
+
+### Додано
+
+- Адмінка: `/admin/users` (список покупців з пошуком, фільтрами й «Показати ще»),
+  `/admin/users/$userId` (контакти й email, категорія з закріпленням, роль адміна,
+  бан, видалення акаунта зі знеособленням замовлень), дашборд `/admin`
+  (`dashboardSummary`: нові замовлення з глибоким посиланням у
+  `/admin/orders?status=<uuid>`, виручка за 7/30 днів, останні замовлення).
+- Бан: хук Better Auth + тригер БД; вхід забаненого дає `BANNED` (тост
+  `auth.login.banned`/`bannedContacts`), скидання пароля сесії не створює.
+- Вітрина: відгук видаленого покупця — «Колишній покупець»; адмінка — «Видалений
+  покупець».
+- Код помилки валідації `taken` (`admin.validation.taken`) — зайнятий email у формі.
+- Слот плагінів `admin.dashboard.stats`: `context.stats` — `AdminDashboardStats`.
+- `live:smoke`: крок покупців (`admin-customers.mjs`).
+
+### Змінено
+
+- Легасі `Dashboard`, `Users`, `UserEdit` знесено; легасі на `supabase-js` — **6**
+  файлів `src/admin/**`.
+- `live:smoke`: крок «відгук-XSS» кладе старий відгук з `user_id NULL` (FK на `users`).
+
 ## [0.11.0] — 2026-10-07
 
 К3-Е6в: знижки й категорії покупців — одна ціна на картці, у кошику й у чеку

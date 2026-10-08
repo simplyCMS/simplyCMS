@@ -22,11 +22,16 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const anonymousAuthor = t('reviews.anonymousAuthor');
-  const displayName = review.profile
-    ? [review.profile.first_name, review.profile.last_name]
-        .filter(Boolean)
-        .join(' ') || anonymousAuthor
-    : anonymousAuthor;
+  // `user_id === null` — автора видалено, відгук лишився (Е6г): «колишній
+  // покупець», а не «Анонім», бо відгук колись мав автора.
+  const displayName =
+    review.user_id === null
+      ? t('reviews.formerCustomer')
+      : review.profile
+        ? [review.profile.first_name, review.profile.last_name]
+            .filter(Boolean)
+            .join(' ') || anonymousAuthor
+        : anonymousAuthor;
 
   const initials = review.profile
     ? [review.profile.first_name?.[0], review.profile.last_name?.[0]]

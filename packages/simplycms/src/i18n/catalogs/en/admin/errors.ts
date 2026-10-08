@@ -50,6 +50,16 @@ export const messages: Catalog = {
     'A discount condition uses this category — remove it from the condition first',
   'admin.errors.categoryRuleSameCategory':
     'A rule cannot move a customer into the same category',
+  'admin.errors.adminRoleSelf':
+    'You cannot remove the admin role from yourself',
+  'admin.errors.adminRoleLast':
+    'This is the last administrator — the role cannot be removed',
+  'admin.errors.adminRoleBanned': 'Unblock the customer first',
+  'admin.errors.customerIsAdmin': 'Remove the administrator role first',
+  'admin.errors.customerNotFound': 'Customer not found',
+  'admin.errors.customerSelf': 'You cannot delete your own account',
+  'admin.errors.orderPersonalDataErased':
+    'The customer was deleted — order items can no longer be changed',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

@@ -45,6 +45,9 @@ export const messages = {
   'auth.login.pending': 'Вхід...',
   'auth.login.failed': 'Помилка входу',
   'auth.login.badCredentials': 'Невірний email або пароль',
+  'auth.login.banned': 'Акаунт заблоковано. Звʼяжіться з магазином',
+  'auth.login.bannedContacts':
+    'Акаунт заблоковано. Звʼяжіться з магазином: {contacts}',
   'auth.login.success': 'Успішний вхід',
   'auth.login.welcome': 'Ласкаво просимо!',
 

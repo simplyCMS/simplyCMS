@@ -21,7 +21,7 @@
 Зображення окремої таблиці не мають — вони в jsonb `products.images`
 (публічні URL-и Storage; локальне дзеркалення — опція, не вимога).
 Персональних даних немає за побудовою: `profiles`, `orders`, `order_items`,
-`user_*`, `service_requests` в allowlist-і відсутні, і додавати їх туди не
+`user_*` в allowlist-і відсутні, і додавати їх туди не
 можна. `created_at`/`updated_at` теж поза allowlist-ом — на стенді доречніші
 дефолти БД.
 

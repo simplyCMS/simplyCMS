@@ -83,6 +83,16 @@ export const ADMIN_STATE_CONSTRAINT = {
   userCategoryHasRules: 'user_category_has_rules',
   userCategoryInDiscount: 'user_category_in_discount',
   categoryRuleSameCategory: 'category_rule_same_category',
+  // Е6г-4/11: роль адміна під `admin-roles`.
+  adminRoleSelf: 'admin_role_self',
+  adminRoleLast: 'admin_role_last',
+  adminRoleBanned: 'admin_role_banned',
+  // Е6г-4: бан адміна заборонено — спершу зняти роль.
+  customerIsAdmin: 'customer_is_admin',
+  // Е6г-15/16: видалення акаунта; позиції стертого замовлення не редагуються.
+  customerNotFound: 'customer_not_found',
+  customerSelf: 'customer_self',
+  orderPersonalDataErased: 'order_personal_data_erased',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */
@@ -118,6 +128,7 @@ export const VALIDATION_ISSUE_CODES = [
   'unrecognized_keys',
   'invalid_decimal',
   'custom',
+  'taken',
 ] as const;
 
 export type ValidationIssueCode = (typeof VALIDATION_ISSUE_CODES)[number];

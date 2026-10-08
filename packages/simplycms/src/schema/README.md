@@ -114,7 +114,7 @@ SQL. Нумерація в них своя в кожної: drizzle рахує �
 підняття БД з нуля (у npm-tarball не потрапляє).
 
 Tarball пакета везе теку `migrations/` — **канон** застосовного SQL ядра
-(baseline `0000_prelude` → `0003_seed` плюс усе, що додав `db:diff`). Це
+(baseline `0000_prelude` → `0004_functions` плюс усе, що додав `db:diff`). Це
 джерело для `simplycms db:diff` у магазині: команда порівнює
 `supabase/migrations/` магазину з `node_modules/simplycms/migrations/` і
 докопіює нові міграції ядра. Копію для скаффолдера тримає `pnpm

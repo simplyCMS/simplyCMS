@@ -203,8 +203,12 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 ```
 
 - Канон застосовного SQL — `packages/simplycms/migrations/`: baseline
-  (`0000_prelude` → `0003_seed`) плюс усе, що додав `db:diff`. Порядок накату — за
+  (`0000_prelude` → `0004_functions`) плюс усе, що додав `db:diff`. Порядок накату — за
   числовим префіксом імені. Теки `supabase/migrations/` немає.
+- 🔴 Ручні функції/тригери — лише в ручних файлах канону (`0000_prelude`,
+  `0004_functions`), `0001_init` — чистий генерат (парність із drizzle-kit повна,
+  без винятків за маркером); множину функцій і тригерів стереже гейт
+  `functions-allowlist.test.ts`.
 - 🔴 Ревʼю SQL обовʼязкове: drizzle-kit не бачить перейменувань (генерує
   `DROP`+`ADD`) і не діфить ролі, гранти й функції.
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/` (подвійна
@@ -358,6 +362,19 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
 валідатора без `adminInput` не пишемо.
 
+**Прецедент: зайнятий email — помилка поля (К3-Е6г, Е6г-1).** Унікальність, яку
+форма може виправити, — це `ValidationError`, а не 409 «дубль»: тост без поля не каже,
+що саме міняти. Код `taken` — у закритому переліку `VALIDATION_ISSUE_CODES`, повідомлення —
+`admin.validation.taken`. `updateCustomerContacts` нормалізує email
+(`trim().toLowerCase()`), у транзакції перевіряє `lower(email)` серед ІНШИХ
+користувачів і кидає `ValidationError([{ path: ['email'], code: 'taken' }])` (400);
+гонку `23505 users_email_key` перехоплює та сама гілка. Причина: `users_email_key`
+чутливий до регістру, а Better Auth і `ownerInviteStore` порівнюють email у нижньому
+регістрі — без явної перевірки `Buyer@x` і `buyer@x` стали б двома акаунтами. Власний
+email в іншому регістрі — не конфлікт, записується нижній регістр. Нова унікальність,
+яку виправляє користувач у формі, повторює цей прецедент (код у переліку + ключ
+повідомлення), а не додає окремий state-код.
+
 ## 11. Знімок доставки в замовленні (К3-Е6а)
 
 - Спосіб доставки — **провайдер + режим ціни**. Провайдер (`shipping_methods.provider`,
@@ -458,13 +475,65 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
   транзакції. Ключі: `discount-config` — запис і видалення груп (guard циклу),
   `saveDiscount`, видалення знижок (`removeDiscountsOp`: фабричний `remove` лок-хука
   не бере); `customer-config` — запис і видалення категорій, `setDefault`,
-  запис правил; `customer-category:<userId>` — будь-яка зміна категорії одного
-  покупця (вручну чи автоправилом).
+  запис правил; `customer-category:<userId>` — стан покупця в одній транзакції:
+  категорія (ручна й автоправила), контакти, бан, видалення; першим у порядку
+  `customer-category` → `admin-roles`; `admin-roles` — будь-яка зміна «хто адмін»
+  і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
+  `setCustomerBan`, `deleteCustomer` і invite власника (`issueAdminInvite`). Ключ
+  `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (invite — auth і не може імпортувати
+  адмінку), адмінка імпортує його звідти. Перевірки «не адмін», «не я», «не
+  останній адмін» і «не забанений» виконуються лише під ним.
 - 🔴 **Глобальний порядок локів: `customer-config` → `discount-config`.** Жодна
   операція не бере їх навпаки: `saveDiscount` з умовою `user_category` бере
   `customer-config`, потім `discount-config` (перевірка, що категорії умови
   існують, — під обома). Нова операція, якій потрібні обидва, бере їх у цьому
   порядку; зворотний порядок — дедлок (Postgres розірве одну транзакцію, `40P01`).
+- 🔴 **Порядок локів покупця: `customer-category:<userId>` → `admin-roles`.**
+  Правило (Е6г-22): операція, яка в одній транзакції пише більше одного ресурсу
+  графа покупця (`users`, `profiles`, `user_category_history`, `user_roles`,
+  `sessions`) або тримає лок рядка `users`/`profiles` під час іншого запису, ПЕРШИМ
+  запитом бере `customer-category:<userId>`. Так працюють адмін-операції покупця
+  (категорія, контакти, бан, видалення) і автоправила. Однорядкові записи без
+  утримання інших локів лока не беруть, бо не тримають жодного ребра графа й циклу
+  не утворять: `updateProfile` вітрини, власні записи Better Auth у
+  `users`/`sessions`, а також аватар вітрини (`replaceAvatarFor`/`clearAvatarFor`),
+  який пише `media` + один рядок `profiles` у порядку `users` → `profiles`, а його
+  операторська транзакція `eraseMedia` чіпає лише `media`. Нова операція, що пише
+  два ресурси графа, підпадає під правило; виняток називає причину в коментарі
+  поруч із кодом. Незалежно від advisory-лока рядки покупця блокуються в порядку
+  `users` → `profiles` (FK-`KEY SHARE` на `users` теж рахується); операція, що бере
+  їх у зворотному порядку, — дефект. Причина правила: FK `user_category_history_user_id_fkey` бере `KEY SHARE` на `users`, а
+  UPDATE `users.email` (унікальний `users_email_key`) бере `FOR UPDATE` незалежно від
+  явного запиту — рятує лише порядок. `setAdminRole` пише лише `user_roles` і цього
+  лока не бере. Видалення покупця бере їх саме так (спершу не дає правилу категорій писати профіль,
+  що зникає, потім серіалізує з видачею ролі); зворотного порядку не бере ніхто.
+  `admin-roles` — кінцевий для цього ланцюга: він не береться перед
+  `customer-config` чи `discount-config`, і з жодним із них операція покупців його не
+  комбінує.
+- 🔴 **Клас «рішення Better Auth окремими транзакціями».** BA виконує кожен свій
+  запит окремою транзакцією (`drizzle-proxy.ts`), тож між «перевірили» і «записали»
+  в самого BA є вікно, яке advisory-лок адмін-операції не бачить. Закриття — на
+  стороні БД або в колбеку, не в хуку: (1) тригер `sessions_refuse_banned`
+  (`BEFORE INSERT ON sessions`, функція `refuse_banned_session()`, ручний файл
+  `0004_functions.sql`, Е6г-14): `SELECT banned_at FROM users WHERE id = NEW.user_id
+  FOR SHARE` — БЕЗУМОВНО за `id` (умова `banned_at IS NULL` у `WHERE` ламала б
+  `FOR SHARE` у READ COMMITTED), значення перевіряється ПІСЛЯ читання; хук
+  `createSessionBanHook` лишається і дає чистий код `BANNED` у звичайному випадку,
+  а в гонці клієнт отримує загальну помилку створення сесії; (2) guard у
+  `sendResetPassword` (`auth/reset-guard.ts`, Е6г-18): BA вставляє
+  `reset-password:<token>` окремим запитом ПЕРЕД викликом колбека, тому колбек
+  безумовно читає `email` користувача `FOR SHARE` і, якщо рядка немає чи email
+  розійшовся зі знімком BA, видаляє токен і не шле листа (назовні винятку немає: BA і
+  так відповідає однаково). Новий випадок цього класу закривається так само —
+  `FOR SHARE` у точці запису, а не ще одна перевірка перед нею.
+- 🔴 **Invite власника і бан: лок закриває одне, `FOR SHARE` — інше.**
+  `issueAdminInvite` (одна транзакція `app_admin`) бере `admin-roles`, потім
+  `select banned_at from users where id = $1 for share`. Лок закриває порядок
+  «invite першим»: роль без коміту невидима для бану, а лок змушує бан зачекати й
+  побачити видану роль (бан адміна відмовляє). `FOR SHARE` закриває лише порядок «бан
+  першим»: забанений не отримує ні ролі, ні токена (`banned`, нічого не записано).
+  Одне не замінює другого. CLI `owner:invite` на `banned` друкує «спершу
+  розблокуйте покупця».
 - 🔴 **Межа узгодженості розрахунків поверх кількох агрегатів** (канон для ВСІХ
   таких розрахунків, не лише знижок; рішення Е6в-8 ред.3): Узгодженість
   гарантується в межах агрегата, що пишеться ОДНІЄЮ транзакцією (знижка з цілями й
@@ -486,3 +555,85 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
   правила після оформлення), юніти рушія й підказок, `live:smoke` (крок
   `admin-discounts.mjs`: поріг у картці, кошику й `order_items`, вимкнений батько
   стримує дитину, автоправило змінює ціну).
+
+## 14. Покупці: роль, бан, видалення (К3-Е6г)
+
+Канон операцій адмінки над акаунтом покупця: `setAdminRole`, `setCustomerBan`,
+`updateCustomerContacts`, `deleteCustomer` (`admin-server/impl/customers/*`) і зведення
+`dashboardSummary`. Читання покупців — не колекція `admin-data`, а серверні `listCustomers`
+(keyset `(created_at desc, id desc)`, сторінка 50, `useInfiniteQuery`) і `getCustomerCard`:
+база — `users LEFT JOIN profiles`, тож власник, створений CLI `owner:invite` без
+`profiles`, у списку є, а його статистика — `null` («—»). Спека —
+[`2026-10-07-customers-dashboard-design.md`](../superpowers/specs/2026-10-07-customers-dashboard-design.md).
+
+- 🔴 **Бан живе в хуку Better Auth і в БД (Е6г-13, Е6г-14).** `setCustomerBan`
+  одним рядком транзакції під `admin-roles` ставить `users.banned_at`/`ban_reason` і
+  `DELETE FROM sessions` — вікна, де забанений має живу сесію, немає. Нову сесію
+  відсікають два шари: хук `session.create.before` кидає
+  `APIError.from('FORBIDDEN', { code: 'BANNED' })` (повернення `false` заборонене:
+  клієнт отримав би загальний `FAILED_TO_CREATE_SESSION`; тест через реальний
+  `auth.handler` обовʼязковий) і тригер `sessions_refuse_banned` (§13, клас «рішення BA
+  окремими транзакціями»). Скидання пароля забаненого проходить, але сесії не створює:
+  вхід відмовляє з `BANNED` (вітрина показує `auth.login.banned`/`bannedContacts`).
+  Відкрита вкладка забаненого після перезавантаження — гостьова, `/admin` для нього
+  редіректить на `/auth` (guard не змінюється, Е6г-3). Взаємовиключність «адмін ↔
+  бан» тримається з обох боків під одним локом: бан адміна → 409
+  `customer_is_admin`, роль забаненому → 409 `admin_role_banned` (Е6г-11). Бан
+  блокує ОБЛІКОВИЙ ЗАПИС, а не особу: гостьове оформлення замовлення він не зупиняє.
+- 🔴 **Порядок `deleteCustomer` (Е6г-15) — одна транзакція `runAdmin`, не
+  `runAdminTransactions`:** `customer-category:<id>` → `admin-roles` →
+  `users`/`profiles` `FOR UPDATE` → перевірки (існує, не я, не адмін, введений email
+  збігається без регістру) → ref аватара читається ДО знеособлення → знеособлення
+  замовлень → відгуки анонімні (`user_id NULL`, рейтинг і текст лишаються) →
+  `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMedia(tx, ref)`
+  ОСТАННІМ кроком перед COMMIT. Рядок `media` переживає каскад, бо `uploaded_by` має
+  `SET NULL`. Збій `driver.delete` відкочує все (покупець, замовлення з ПД, відгук і
+  `media` на місці), повтор завершує видалення; збій самого COMMIT лишає лише «файл
+  зник, рядок є», що лікується повтором (`local-fs` вважає `ENOENT` успіхом).
+  Окремої транзакції для аватара немає: інакше роль, видана між перевіркою й стиранням,
+  стерла б аватар нового адміна при відмові видалення.
+- 🔴 **Реєстр ПД `orders` (Е6г-7)** — `commerce/order-privacy.ts`:
+  `ORDER_COLUMN_PRIVACY: { readonly [K in keyof Order]: 'personal' | 'operational' }`.
+  Нова drizzle-колонка без запису червонить `typecheck`; харнес звіряє реєстр з
+  `information_schema`. `personal` стираються (`NULL`): імʼя, email, телефон, адреса,
+  місто, нотатки, дані отримувача, `userId`, посилання на збережені адреси/отримувачів,
+  `accessToken`; `shippingData` — частково (нижче). `operational` (номер, суми, статус,
+  точка видачі, дати) лишаються. Знеособлюються ЛИШЕ замовлення з `user_id` покупця.
+- **Знімок доставки після стирання (Е6г-10).** Адресна доставка: `destination` стає
+  `{ kind: 'address', city: null, address: null }`; точка видачі (`kind: 'pickup-point'`)
+  і зіпсований `{}` знеособлення не змінює. Контракт `ShippingSnapshot.city` — `string |
+  null`, а `null` допускає лише ЧИТАЛЬНА сторона (три читачі показують «Не вказано»):
+  запис знімка (`prepareCheckout`/`placeOrder`, `order-items/totals.ts`) будує
+  `destination` з непорожнім `city`, тест «чекаут відхиляє порожнє місто» це стереже.
+- **Стерте замовлення не редагується (Е6г-16).** `lockEditableOrder` відмовляє позиціям
+  409 `order_personal_data_erased` (поруч з `order_cancelled_final`): перерахунок
+  доставки читав би `orders.delivery_city = NULL` і дав би `shipping_unavailable`.
+  Зміна статусу й скасування дозволені. `loadOrderDetail` фільтра стертих НЕ має
+  (Е6г-17): стерте замовлення недосяжне за побудовою (`user_id NULL`, `access_token
+  NULL`), доступ вирішує RLS-роль. Адмінка показує «Видалений покупець» (картка,
+  список замовлень, останні замовлення дашборду), вітрина — «Колишній покупець»
+  у відгуку (`reviews.formerCustomer`).
+- **`revokeUserVerifications(db, { userId, email })` (Е6г-2).** Видаляє
+  `verifications` з `identifier LIKE 'reset-password:%' AND value = userId` та рядок
+  `owner-invite:<lower(email)>`. Кличуть зміна email (зі СТАРИМ email) і видалення.
+- **FK-граф `users`.** Каскадом зникають `accounts`, `sessions`, `profiles`, `user_roles`,
+  `user_addresses`, `user_recipients`, `wishlists`, `comparisons`, `user_category_history`;
+  `SET NULL` — `orders.user_id`, `product_reviews.user_id`, `media.uploaded_by`,
+  `*.changed_by`. «Сиріт» (посилання на `users(id)` у нікуди) після видалення немає: це
+  доводить спільний `findOrphans` (`test-harness/pg/__tests__/fixtures/orphans.ts`) і
+  живий прогін.
+- 🔴 **Межі.** (1) Гостьове замовлення — не акаунт: замовлення без `user_id`, навіть з
+  тим самим email, видалення не знеособлює (борг К3-Е6г-1). (2) Бан не зупиняє
+  гостьове оформлення. (3) Тимчасового бану й ролей персоналу немає: бан безстроковий,
+  роль одна — `admin`; операції `customer.delete` і `user.role.assign` розділені під
+  це наперед.
+- **Дашборд.** `dashboardSummary` (`order.manage`): нові замовлення, виручка за 7/30
+  днів від серверного `now()` (скасовані не рахуються, `status_id NULL` рахуються),
+  10 останніх; слот `admin.dashboard.stats` отримує рівно `AdminDashboardStats`. Фільтр
+  замовлень живе в URL (`/admin/orders?status=<uuid>`, Е6г-5).
+- Гейти: харнес `test:schema` (`admin-customer-*`, `user-graph`, реєстр ПД, `baseline`
+  з тригером і allowlist `functions-allowlist`), юніти, `live:smoke` (крок
+  `admin-customers.mjs`: контакти й email, закріплена категорія проти автоправила, видача
+  й зняття ролі з 403 адмін-serverFn, бан із гостьовою вкладкою, видалення зі
+  знеособленням, дашборд = прямий SQL; негативні контролі — без `delete from sessions`
+  у бані і без `eraseOrderPersonalData` у видаленні).

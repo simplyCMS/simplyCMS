@@ -42,6 +42,28 @@ export function isShippingProviderId(x: string): x is ShippingProviderId {
 }
 
 /**
+ * Пункт видачі в знімку — однаковий на читанні й записі. `type`, а не
+ * `interface`: знімок пишеться в `jsonb`, а інтерфейс не має індекс-сигнатури
+ * й не присвоюється `JsonValue`.
+ */
+export type PickupPointDestination = {
+  kind: 'pickup-point';
+  pointId: string;
+  name: string;
+  address: string;
+  city: string;
+};
+
+/**
+ * Куди їде замовлення, як його ЧИТАЮТЬ. Знеособлення (Е6г-10) лишає `kind`, а
+ * `city`/`address` адресної доставки обнуляє, тож на читанні `city` може бути
+ * `null`. Пункт видачі знеособлення не змінює.
+ */
+export type ShippingDestination =
+  | { kind: 'address'; city: string | null; address: string | null }
+  | PickupPointDestination;
+
+/**
  * Знімок доставки в `orders.shipping_data` (Е6а-8): замовлення читається
  * після перейменування чи видалення точки або способу.
  */
@@ -49,13 +71,19 @@ export interface ShippingSnapshot {
   methodName: string;
   provider: ShippingProviderId;
   pricing: ShippingPricing;
-  destination:
-    | { kind: 'address'; city: string; address: string | null }
-    | {
-        kind: 'pickup-point';
-        pointId: string;
-        name: string;
-        address: string;
-        city: string;
-      };
+  destination: ShippingDestination;
 }
+
+/** Адресна доставка на ЗАПИСІ: місто обовʼязкове (Е6г-10, умова архітектора). */
+export type NewShippingDestination =
+  | { kind: 'address'; city: string; address: string | null }
+  | PickupPointDestination;
+
+/**
+ * Знімок, який будує чекаут. Окремий від читального типу: `city: null`
+ * допускає лише читальна сторона, а запис не сміє тихо пропустити живе
+ * замовлення без міста.
+ */
+export type NewShippingSnapshot = Omit<ShippingSnapshot, 'destination'> & {
+  destination: NewShippingDestination;
+};

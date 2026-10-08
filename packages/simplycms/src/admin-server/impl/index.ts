@@ -173,3 +173,25 @@ export { reviewContentInput, getReviewContentOp } from './reviews/content';
 export { diagnosePriceInput } from './price-diagnosis/input';
 export { diagnosePriceOp } from './price-diagnosis/diagnose';
 export type { PriceDiagnosis } from './price-diagnosis/diagnose';
+
+// К3-Е6г, Task 3: читання покупців і дашборду.
+export {
+  CUSTOMERS_PAGE_SIZE,
+  listCustomersInput,
+  listCustomersOp,
+} from './customers/list';
+export {
+  HISTORY_LIMIT,
+  getCustomerCardInput,
+  getCustomerCardOp,
+} from './customers/card';
+export { dashboardSummaryOp } from './dashboard/summary';
+export { setAdminRoleInput, setAdminRoleOp } from './customers/roles';
+export { setCustomerBanInput, setCustomerBanOp } from './customers/ban';
+export { deleteCustomerInput, deleteCustomerOp } from './customers/delete';
+export {
+  updateCustomerContactsInput,
+  updateCustomerContactsOp,
+} from './customers/contacts';
+export { revokeUserVerifications } from './customers/verifications';
+export { countAdmins, isAdminUser } from './customers/guards';

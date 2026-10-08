@@ -127,6 +127,10 @@ async function replaceAvatarFor(
     .set({ avatarUrl: record.ref })
     .where(eq(profiles.userId, userId));
 
+  // 🔴 Тримаючи рядкові локи `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище),
+  // чекаємо на ІНШЕ зʼєднання; дедлок-детектор PG такого очікування не бачить.
+  // Операторська транзакція не сміє чіпати `users`/`profiles`, інакше буде вічний
+  // висяк, а не 40P01 (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
   if (previous) await operator((tx) => eraseMedia(tx, previous, driver));
 
   return { ref: record.ref };
@@ -146,5 +150,6 @@ export async function clearAvatarFor(
     .update(profiles)
     .set({ avatarUrl: null })
     .where(eq(profiles.userId, userId));
+  // 🔴 Те саме очікування між зʼєднаннями, що в `replaceAvatarFor` (див. там).
   await operator((tx) => eraseMedia(tx, previous, driver));
 }

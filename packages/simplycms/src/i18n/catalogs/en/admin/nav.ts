@@ -4,7 +4,6 @@ import type { Catalog } from '../../../types';
 export const messages: Catalog = {
   'admin.nav.group.catalog': 'Catalog',
   'admin.nav.group.orders': 'Orders',
-  'admin.nav.group.services': 'Services',
   'admin.nav.group.shipping': 'Shipping',
   'admin.nav.group.content': 'Content',
   'admin.nav.group.plugins': 'Plugins',
@@ -19,8 +18,6 @@ export const messages: Catalog = {
   'admin.nav.priceValidator': 'Price validator',
   'admin.nav.orders': 'Orders',
   'admin.nav.orderStatuses': 'Statuses',
-  'admin.nav.services': 'Services',
-  'admin.nav.serviceRequests': 'Requests',
   'admin.nav.shippingMethods': 'Shipping carriers',
   'admin.nav.shippingZones': 'Shipping zones',
   'admin.nav.pickupPoints': 'Pickup points',

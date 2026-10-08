@@ -57,6 +57,7 @@ const KEYS = {
   unrecognized_keys: 'admin.validation.unrecognized_keys',
   invalid_decimal: 'admin.validation.invalid_decimal',
   custom: 'admin.validation.custom',
+  taken: 'admin.validation.taken',
 } as const satisfies Record<ValidationIssueCode, MessageKey>;
 
 /** Ключ повідомлення для проблеми; повнота за кодами — типом `KEYS`. */

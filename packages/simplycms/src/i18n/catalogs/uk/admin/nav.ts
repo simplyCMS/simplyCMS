@@ -3,7 +3,6 @@ export const messages = {
   // Групи
   'admin.nav.group.catalog': 'Каталог',
   'admin.nav.group.orders': 'Замовлення',
-  'admin.nav.group.services': 'Послуги',
   'admin.nav.group.shipping': 'Доставка',
   'admin.nav.group.content': 'Контент',
   'admin.nav.group.plugins': 'Розширення',
@@ -19,8 +18,6 @@ export const messages = {
   'admin.nav.priceValidator': 'Валідатор цін',
   'admin.nav.orders': 'Замовлення',
   'admin.nav.orderStatuses': 'Статуси',
-  'admin.nav.services': 'Послуги',
-  'admin.nav.serviceRequests': 'Заявки',
   'admin.nav.shippingMethods': 'Служби доставки',
   'admin.nav.shippingZones': 'Зони доставки',
   'admin.nav.pickupPoints': 'Точки самовивозу',

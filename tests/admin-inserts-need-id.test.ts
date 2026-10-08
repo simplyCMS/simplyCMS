@@ -58,7 +58,9 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
 // UserCategoryRuleEdit, UserEdit).
 // Е6в Task 9: виміряно 2 (категорії й автоправила пішли на колекції:
 // UserCategoryEdit, UserCategoryRuleEdit; лишились BannerEdit, UserEdit).
-const KNOWN_WITHOUT_ID = 2;
+// Е6г Task 10: виміряно 1 (картка покупця пішла на серверний шар: UserEdit;
+// лишився BannerEdit).
+const KNOWN_WITHOUT_ID = 1;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за

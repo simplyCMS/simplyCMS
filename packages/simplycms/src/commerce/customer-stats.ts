@@ -72,7 +72,9 @@ export async function loadCustomerStats(
   const providers = await db
     .selectDistinct({ providerId: accounts.providerId })
     .from(accounts)
-    .where(eq(accounts.userId, userId));
+    .where(eq(accounts.userId, userId))
+    // Порядок має бути детермінованим: його бачить картка покупця.
+    .orderBy(accounts.providerId);
 
   return {
     totalPurchases: Number(totals?.total ?? 0),
