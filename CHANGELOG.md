@@ -44,7 +44,8 @@
 - `simplycms/admin-server` (`./impl`): статус відповіді адмін-помилки (409/400) ставить
   межа операції (`runAdminTransactions`) і валідатор входу; `stateConflict`/`fieldIssue`
   лише кидають — ядро можна кликати поза HTTP-запитом. Гейт
-  `set-response-status-scan.test.ts`.
+  `set-response-status-scan.test.ts`. Побічно: «Запустити всі правила» категорій більше
+  не віддає 409 на успішну відповідь, коли конфлікт одного покупця проковтнуто циклом.
 - Фабрика `defineAdminResource` віддає `insertIn/updateIn/removeIn(db, input)`; ядра
   `saveProductPrices`, `saveStock`, `saveDiscount`, `changeOrderStatus`,
   `assignCustomerCategory`, `setCustomerBan`, `deleteCustomer` винесено з операцій без
