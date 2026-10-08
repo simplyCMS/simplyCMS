@@ -10,12 +10,15 @@
 import { restoreStock } from './admin-discounts-sql.mjs';
 import * as q from './admin-customers-sql.mjs';
 import { dropRule, dropUser } from './admin-customers-seed.mjs';
+import { sql } from './sql.mjs';
 import { orphans } from './admin-customers-facts.mjs';
 
 async function attempt(facts, what, action) {
   try {
-    facts.push(`${what}: ${JSON.stringify(await action())}`);
-    return true;
+    const result = await action();
+    facts.push(`${what}: ${JSON.stringify(result)}`);
+    // Лише `true` — успіх: обʼєкт (напр. сироти) чи `false` червонять рядок.
+    return result === true;
   } catch (e) {
     facts.push(`${what}: виняток ${e.message}`);
     return false;
@@ -25,6 +28,15 @@ async function attempt(facts, what, action) {
 export async function cleanupCustomersStep({ dbUrl, check, st }) {
   const facts = [];
   const results = [];
+  if (st.reviewId)
+    results.push(
+      await attempt(facts, 'відгук A', async () => {
+        await sql(dbUrl, 'delete from public.product_reviews where id = $1', [
+          st.reviewId,
+        ]);
+        return true;
+      }),
+    );
   for (const who of ['a', 'b'])
     if (st[who]?.userId)
       results.push(
@@ -50,12 +62,13 @@ export async function cleanupCustomersStep({ dbUrl, check, st }) {
   results.push(
     await attempt(facts, 'сироти', async () => {
       const found = await orphans(dbUrl);
-      return Object.keys(found).length === 0 || found;
+      facts.push(`сироти (деталі): ${JSON.stringify(found)}`);
+      return Object.keys(found).length === 0;
     }),
   );
   check(
     'прибирання покупців: A і B, правило, категорії, залишок — як до кроку; сиріт немає',
-    results.every(Boolean) && facts.every((f) => !f.includes('false')),
+    results.every(Boolean),
     facts.join('; '),
   );
 }

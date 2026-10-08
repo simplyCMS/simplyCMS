@@ -1152,8 +1152,8 @@ direct-upload, облік невдалих видалень і sweep орфан�
   `DiscountContext` без слота розширення); `findCustomers` (`customer.manage`)
   у `PriceValidator` (`discount.manage`); холодний старт — два запити середовища
   й квоти замість одного; флейк бейджа зони в live-smoke доставки; `exceeds_price`
-  для знижки, округленої до 0 коп., — окрема причина в поясненні. JSON-LD: гілка OutOfStock-fallback `AggregateOffer` без тесту. Хвиля «покупці»: `UserEdit` пише обидві
-  назви категорій історії, знімає `category_locked`, без `auth_provider`.
+  для знижки, округленої до 0 коп., — окрема причина в поясненні. JSON-LD: гілка OutOfStock-fallback `AggregateOffer` без тесту. ✅ Закрито Е6г: `UserEdit`
+  знесено, нова картка пише назви категорій історії й знімає `category_locked`.
 
 ### 3.9. Борги К3-Е6г (2026-10-08) — свідомо поза хвилею
 
