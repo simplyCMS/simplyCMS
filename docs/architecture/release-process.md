@@ -190,7 +190,7 @@ remote незворотне, а автоматичний код на це пра
 
 ```
 install --frozen-lockfile → format:check → lint → build
-→ typecheck → test → build:packages → typecheck:template → test:packaging
+→ typecheck → typecheck:showcase → test → build:packages → typecheck:template → test:packaging
 → pilot:pack
 ```
 

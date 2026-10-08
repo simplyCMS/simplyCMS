@@ -12,6 +12,7 @@ describe('гейти релізу', () => {
       'lint',
       'build',
       'typecheck',
+      'typecheck:showcase',
       'test',
       'build:packages',
       'typecheck:template',
