@@ -180,7 +180,11 @@ export {
   listCustomersInput,
   listCustomersOp,
 } from './customers/list';
-export { getCustomerCardInput, getCustomerCardOp } from './customers/card';
+export {
+  HISTORY_LIMIT,
+  getCustomerCardInput,
+  getCustomerCardOp,
+} from './customers/card';
 export { dashboardSummaryOp } from './dashboard/summary';
 export { setAdminRoleInput, setAdminRoleOp } from './customers/roles';
 export { setCustomerBanInput, setCustomerBanOp } from './customers/ban';

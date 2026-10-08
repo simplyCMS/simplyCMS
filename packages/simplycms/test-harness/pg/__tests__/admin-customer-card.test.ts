@@ -13,7 +13,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-import { getCustomerCardOp } from 'simplycms/admin-server/impl';
+import { HISTORY_LIMIT, getCustomerCardOp } from 'simplycms/admin-server/impl';
 
 describe('admin: картка покупця (Е6г-6)', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_card');
@@ -60,5 +60,55 @@ describe('admin: картка покупця (Е6г-6)', () => {
     expect(
       await getCustomerCardOp({ data: { userId: crypto.randomUUID() } }),
     ).toBeNull();
+  });
+
+  it('історія: новіші зверху, byRule лише у запису правила; понад ліміт — обрізано', async () => {
+    const buyer = await F.seedCustomer(url());
+    const rule = await F.seedRule(url(), {
+      from: null,
+      to: F.DEFAULT_CATEGORY,
+      conditions: F.ORDERS_GTE_2,
+    });
+    const add = (reason: string, createdAt: string, ruleId: string | null) =>
+      F.rows(
+        url(),
+        `insert into public.user_category_history
+           (id, user_id, to_category_id, to_category_name, reason, rule_id, created_at)
+         values ($1, $2, $3, 'Роздріб', $4, $5, $6)`,
+        [
+          crypto.randomUUID(),
+          buyer,
+          F.DEFAULT_CATEGORY,
+          reason,
+          ruleId,
+          createdAt,
+        ],
+      );
+    await add('середній', '2026-03-02T00:00:00Z', rule);
+    await add('старий', '2026-03-01T00:00:00Z', null);
+    await add('новий', '2026-03-03T00:00:00Z', null);
+    const card = (await getCustomerCardOp({ data: { userId: buyer } }))!;
+    expect(card.history.map((h) => [h.reason, h.byRule])).toEqual([
+      ['новий', false],
+      ['середній', true],
+      ['старий', false],
+    ]);
+
+    const many = await F.seedCustomer(url());
+    for (let i = 0; i < HISTORY_LIMIT + 1; i++) {
+      await F.rows(
+        url(),
+        `insert into public.user_category_history
+           (id, user_id, to_category_id, to_category_name, reason, created_at)
+         values ($1, $2, $3, 'Роздріб', $4, now() - ($5 || ' minutes')::interval)`,
+        [crypto.randomUUID(), many, F.DEFAULT_CATEGORY, `№${i}`, String(i)],
+      );
+    }
+    const capped = (await getCustomerCardOp({ data: { userId: many } }))!;
+    expect(capped.history).toHaveLength(HISTORY_LIMIT);
+    // Найстарішого (№50) серед повернутих немає: ліміт відсікає хвіст, а не голову.
+    expect(capped.history.map((h) => h.reason)).not.toContain(
+      `№${HISTORY_LIMIT}`,
+    );
   });
 });

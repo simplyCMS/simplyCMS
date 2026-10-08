@@ -12,7 +12,8 @@ import { parseAdminInput } from '../validation';
 
 export const getCustomerCardInput = z.object({ userId: z.uuid() });
 
-const HISTORY_LIMIT = 50;
+/** Скільки останніх записів історії категорій віддає картка. */
+export const HISTORY_LIMIT = 50;
 
 type HistoryRaw = Omit<AdminCategoryHistoryEntry, 'createdAt'> & {
   createdAt: string;
